@@ -40,8 +40,14 @@ module rooch_examples::rooch_examples {
     const ErrorBothPlayersDoNotHaveDecisionsSubmitted: u64 = 7;
     const ErrorPlayerHasDecisionSubmitted: u64 = 8;
 
+    // TODO: remove resource account address
     struct ResouceAccountAddress has key {
         addr: address
+    }
+
+    // TODO: Account holder holds an account of the resource
+    struct AccountHolder {
+        account: Object<Account>,
     }
 
     struct State has key {
@@ -107,9 +113,96 @@ module rooch_examples::rooch_examples {
         event_creation_timestamp_in_seconds: u64
     }
 
+    /// ----------TODO---------- ///
+    /// Scheme identifier used when hashing an account's address together with a seed to derive the address (not the
+    /// authentication key) of a resource account. This is an abuse of the notion of a scheme identifier which, for now,
+    /// serves to domain separate hashes used to derive resource account addresses from hashes used to derive
+    /// authentication keys. Without such separation, an adversary could create (and get a signer for) a resource account
+    /// whose address matches an existing address of a MultiEd25519 wallet.
+    const SCHEME_DERIVE_RESOURCE_ACCOUNT: u8 = 255;
+
+    /// A resource account is used to manage resources independent of an account managed by a user.
+    /// In Rooch a resource account is created based upon the sha3 256 of the source's address and additional seed data.
+    /// A resource account can only be created once
+    public fun create_resource_account(source: &signer): (signer, SignerCapability) {
+        let source_addr = signer::address_of(source);
+        let seed = account::generate_seed_bytes(&source_addr);
+        let resource_addr = create_resource_address(&source_addr, seed);
+        assert!(!is_resource_account(resource_addr), ErrorAccountIsAlreadyResourceAccount);
+        let resource_signer = if (exists_at(resource_addr)) {
+            let object_id = account_object_id(resource_addr);
+            let obj = object::borrow_object<Account>(object_id);
+            let account = object::borrow<Account>(obj);
+            assert!(account.sequence_number == 0, ErrorResourceAccountAlreadyUsed);
+            create_signer(resource_addr)
+        } else {
+            create_account_unchecked(resource_addr)
+        };
+
+        move_resource_to<ResourceAccount>(&resource_signer,ResourceAccount {});
+
+        let signer_cap = SignerCapability { addr: resource_addr };
+
+        account_authentication::init_authentication_keys(&resource_signer);
+        account_coin_store::init_account_coin_stores(&resource_signer);
+        (resource_signer, signer_cap)
+    }
+
+    public fun is_resource_account(addr: address): bool {
+        exists_resource<ResourceAccount>(addr)
+    }
+
+    /// This is a helper function to compute resource addresses. Computation of the address
+    /// involves the use of a cryptographic hash operation and should be use thoughtfully.
+    fun create_resource_address(source: &address, seed: vector<u8>): address {
+        let bytes = bcs::to_bytes(source);
+        vector::append(&mut bytes, seed);
+        vector::push_back(&mut bytes, SCHEME_DERIVE_RESOURCE_ACCOUNT);
+        bcs::to_address(hash::sha3_256(bytes))
+    }
+
+    #[test]
+    fun test_create_resource_account()  {
+        let alice_addr = @123456;
+        let alice = create_account_for_testing(alice_addr);
+        let (resource_account, resource_account_cap) = create_resource_account(&alice);
+        let signer_cap_addr = get_signer_capability_address(&resource_account_cap);
+        move_resource_to<CapResponsbility>(
+            &resource_account,
+            CapResponsbility {
+                cap: resource_account_cap
+            }
+        );
+
+        let resource_addr = signer::address_of(&resource_account);
+        std::debug::print(&100100);
+        std::debug::print(&resource_addr);
+        assert!(resource_addr != signer::address_of(&alice), 106);
+        assert!(resource_addr == signer_cap_addr, 107);
+    }
+
+    //TODO figure out why this test should failed
+    #[test(sender=@0x42, resource_account=@0xbb6e573f7feb9d8474ac20813fc086cc3100b8b7d49c246b0f4aee8ea19eaef4)]
+    #[expected_failure(abort_code = ErrorResourceAccountAlreadyUsed, location = Self)]
+    fun test_failure_create_resource_account_wrong_sequence_number(sender: address, resource_account: address){
+        {
+            create_account_for_testing(resource_account);
+            increment_sequence_number_internal(resource_account);
+        };
+        let sender_signer = create_account_for_testing(sender);
+        let (signer, cap) = create_resource_account(&sender_signer);
+        move_resource_to<CapResponsbility>(
+            &signer,
+            CapResponsbility {
+                cap
+            }
+        );
+    }
+    /// ----------TODO---------- ///
+
     fun init(account: &signer) {
         // let source_addr = signer::address_of(account);
-        let (signer, cap) = account_entry::create_resource_account(account);
+        let (signer, cap) = create_resource_account(account);
         let resource_address = signer::address_of(&signer);
 
         account::move_resource_to(account, ResouceAccountAddress {

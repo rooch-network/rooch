@@ -16,8 +16,6 @@ module moveos_std::account {
       sequence_number: u64,
    }
 
-   /// ResourceAccount can only be stored under address, not in other structs.
-   struct ResourceAccount has key {}
    /// SignerCapability can only be stored in other structs, not under address.
    /// So that the capability is always controlled by contracts, not by some EOA.
    struct SignerCapability has store { addr: address }
@@ -27,33 +25,18 @@ module moveos_std::account {
    // cannot be dummy key, or empty key
    const CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000001";
 
-   /// Scheme identifier used when hashing an account's address together with a seed to derive the address (not the
-   /// authentication key) of a resource account. This is an abuse of the notion of a scheme identifier which, for now,
-   /// serves to domain separate hashes used to derive resource account addresses from hashes used to derive
-   /// authentication keys. Without such separation, an adversary could create (and get a signer for) a resource account
-   /// whose address matches an existing address of a MultiEd25519 wallet.
-   const SCHEME_DERIVE_RESOURCE_ACCOUNT: u8 = 255;
-
    /// Account already exists
    const ErrorAccountAlreadyExists: u64 = 1;
-   /// Account does not exists
-   const ErrorAccountNotExists: u64 = 2;
    /// Sequence number exceeds the maximum value for a u64
-   const ErrorSequenceNumberTooBig: u64 = 3;
+   const ErrorSequenceNumberTooBig: u64 = 2;
    /// Cannot create account because address is reserved
-   const ErrorAddressReserved: u64 = 4;
-   /// An attempt to create a resource account on an account that has a committed transaction
-   const ErrorResourceAccountAlreadyUsed: u64 = 5;
-   /// Resource Account can't derive resource account
-   const ErrorAccountIsAlreadyResourceAccount: u64 = 6;
+   const ErrorAddressReserved: u64 = 3;
    /// Address to create is not a valid reserved address
-   const ErrorNotValidSystemReservedAddress: u64 = 7;
-
-
+   const ErrorNotValidSystemReservedAddress: u64 = 4;
    /// The resource with the given type already exists
-   const ErrorResourceAlreadyExists: u64 = 8;
+   const ErrorResourceAlreadyExists: u64 = 5;
    /// The resource with the given type not exists
-   const ErrorResourceNotExists: u64 = 9;
+   const ErrorResourceNotExists: u64 = 6;
 
 
    /// Publishes a new `Account` resource under `new_address` via system. A signer representing `new_address`
@@ -99,6 +82,15 @@ module moveos_std::account {
       (signer, signer_cap)
    }
 
+   /// This is a helper function to generate seed for resource address
+   fun generate_seed_bytes(addr: &address): vector<u8> {
+      let sequence_number = Self::sequence_number(*addr);
+
+      let seed_bytes = bcs::to_bytes(addr);
+      vector::append(&mut seed_bytes, bcs::to_bytes(&sequence_number));
+
+      hash::sha3_256(seed_bytes)
+   }
 
    /// Return the current sequence number at `addr`
    public fun sequence_number(addr: address): u64 {
@@ -140,10 +132,6 @@ module moveos_std::account {
       cap.addr
    }
 
-   public fun is_resource_account(addr: address): bool {
-      exists_resource<ResourceAccount>(addr)
-   }
-
    public fun exists_at(addr: address): bool {
       exist_account_object(addr)
    }
@@ -155,49 +143,6 @@ module moveos_std::account {
 
    native public(friend) fun create_signer(addr: address): signer;
 
-   /// A resource account is used to manage resources independent of an account managed by a user.
-   /// In Rooch a resource account is created based upon the sha3 256 of the source's address and additional seed data.
-   /// A resource account can only be created once
-   public fun create_resource_account(source: &signer): (signer, SignerCapability) {
-      let source_addr = signer::address_of(source);
-      let seed = generate_seed_bytes(&source_addr);
-      let resource_addr = create_resource_address(&source_addr, seed);
-      assert!(!is_resource_account(resource_addr), ErrorAccountIsAlreadyResourceAccount);
-      let resource_signer = if (exists_at(resource_addr)) {
-         let object_id = account_object_id(resource_addr);
-         let obj = object::borrow_object<Account>(object_id);
-         let account = object::borrow<Account>(obj);
-         assert!(account.sequence_number == 0, ErrorResourceAccountAlreadyUsed);
-         create_signer(resource_addr)
-      } else {
-         create_account_unchecked(resource_addr)
-      };
-
-      move_resource_to<ResourceAccount>(&resource_signer,ResourceAccount {});
-
-      let signer_cap = SignerCapability { addr: resource_addr };
-      (resource_signer, signer_cap)
-   }
-
-
-   /// This is a helper function to generate seed for resource address
-   fun generate_seed_bytes(addr: &address): vector<u8> {
-      let sequence_number = Self::sequence_number(*addr);
-
-      let seed_bytes = bcs::to_bytes(addr);
-      vector::append(&mut seed_bytes, bcs::to_bytes(&sequence_number));
-
-      hash::sha3_256(seed_bytes)
-   }
-
-   /// This is a helper function to compute resource addresses. Computation of the address
-   /// involves the use of a cryptographic hash operation and should be use thoughtfully.
-   fun create_resource_address(source: &address, seed: vector<u8>): address {
-      let bytes = bcs::to_bytes(source);
-      vector::append(&mut bytes, seed);
-      vector::push_back(&mut bytes, SCHEME_DERIVE_RESOURCE_ACCOUNT);
-      bcs::to_address(hash::sha3_256(bytes))
-   }
 
    public fun create_signer_with_capability(capability: &SignerCapability): signer {
       let addr = &capability.addr;
@@ -341,7 +286,6 @@ module moveos_std::account {
       let alice = create_account_for_testing(alice_addr);
       let alice_addr_actual = signer::address_of(&alice);
       let sequence_number = sequence_number(alice_addr);
-      //std::debug::print(&sequence_number);
       assert!(alice_addr_actual == alice_addr, 103);
       assert!(sequence_number >= 0, 104);
    }
@@ -349,44 +293,6 @@ module moveos_std::account {
    #[test_only]
    struct CapResponsbility has key {
       cap: SignerCapability
-   }
-
-   #[test]
-   fun test_create_resource_account()  {
-      let alice_addr = @123456;
-      let alice = create_account_for_testing(alice_addr);
-      let (resource_account, resource_account_cap) = create_resource_account(&alice);
-      let signer_cap_addr = get_signer_capability_address(&resource_account_cap);
-      move_resource_to<CapResponsbility>(
-         &resource_account,
-         CapResponsbility {
-            cap: resource_account_cap
-         }
-      );
-
-      let resource_addr = signer::address_of(&resource_account);
-      std::debug::print(&100100);
-      std::debug::print(&resource_addr);
-      assert!(resource_addr != signer::address_of(&alice), 106);
-      assert!(resource_addr == signer_cap_addr, 107);
-   }
-
-   //TODO figure out why this test should failed
-   #[test(sender=@0x42, resource_account=@0xbb6e573f7feb9d8474ac20813fc086cc3100b8b7d49c246b0f4aee8ea19eaef4)]
-   #[expected_failure(abort_code = ErrorResourceAccountAlreadyUsed, location = Self)]
-   fun test_failure_create_resource_account_wrong_sequence_number(sender: address, resource_account: address){
-      {
-         create_account_for_testing(resource_account);
-         increment_sequence_number_internal(resource_account);
-      };
-      let sender_signer = create_account_for_testing(sender);
-      let (signer, cap) = create_resource_account(&sender_signer);
-      move_resource_to<CapResponsbility>(
-         &signer,
-         CapResponsbility {
-            cap
-         }
-      );
    }
 
    #[test_only]
