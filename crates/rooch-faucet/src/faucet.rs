@@ -21,7 +21,7 @@ use tokio::sync::{mpsc::Receiver, RwLock, RwLockWriteGuard};
 use rooch_rpc_api::jsonrpc_types::KeptVMStatusView;
 use rooch_types::error::RoochError;
 
-pub const DEFAULT_AMOUNT: u64 = 1_000 * 8;
+pub const DEFAULT_AMOUNT: u64 = 5_000_000_000;
 
 #[derive(Parser, Debug, Clone)]
 pub struct FaucetConfig {
@@ -97,14 +97,20 @@ impl Faucet {
         while let Some(request) = self.faucet_receiver.write().await.recv().await {
             match request {
                 FaucetRequest::FixedBTCAddressRequest(req) => {
+                    let recipient_str = req.recipient.to_string();
                     let mul_addr = MultiChainAddress::from(req.recipient);
                     if let Err(e) = self.transfer_gases_with_multi_addr(mul_addr).await {
-                        tracing::error!("Transfer gases failed {}", e)
+                        tracing::error!("Transfer gases to {} failed {}", recipient_str, e)
+                    } else {
+                        tracing::error!("Transfer gases success {}", recipient_str)
                     }
                 }
                 FaucetRequest::FixedRoochAddressRequest(req) => {
+                    let recipient_str = req.recipient.to_string();
                     if let Err(e) = self.transfer_gases(req.recipient).await {
-                        tracing::error!("Transfer gases failed {}", e)
+                        tracing::error!("Transfer gases to {} failed {}", recipient_str, e)
+                    } else {
+                        tracing::error!("Transfer gases to {} success", recipient_str)
                     }
                 }
                 _ => {}
