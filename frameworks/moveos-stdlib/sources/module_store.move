@@ -73,7 +73,7 @@ module moveos_std::module_store {
         if (!exists_package(module_object, package_id)) {
             return false
         };
-        let package = borrow_package(package_id);
+        let package = borrow_package(module_object, package_id);
         object::contains_field(package, name)
     }
 
@@ -137,23 +137,21 @@ module moveos_std::module_store {
         upgrade_flag
     }
 
-    fun borrow_package(package_id: address): &Object<Package> {
-        let store = borrow_module_store();
-        object::borrow_field(store, package_id)
+    fun borrow_package(module_store: &Object<ModuleStore>, package_id: address): &Object<Package> {
+        object::borrow_field(module_store, package_id)
     }
 
-    fun borrow_mut_package(package_id: address): &mut Object<Package> {
-        let store = borrow_mut_module_store();
-        object::borrow_mut_field(store, package_id)
+    fun borrow_mut_package(module_store: &mut Object<ModuleStore>, package_id: address): &mut Object<Package> {
+        object::borrow_mut_field(module_store, package_id)
     }
 
     fun add_module(module_object: &mut Object<ModuleStore>, package_id: address, name: String, mod: MoveModule) {
-        let package = borrow_mut_package(package_id);
+        let package = borrow_mut_package(module_object, package_id);
         object::add_field(package, name, mod);
     }
 
     fun remove_module(module_object: &mut Object<ModuleStore>, package_id: address, name: String): MoveModule {
-        let package = borrow_mut_package(package_id);
+        let package = borrow_mut_package(module_object, package_id);
         object::remove_field(package, name)
     }
 
