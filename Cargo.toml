@@ -54,6 +54,7 @@ default-members = [
     "moveos/moveos",
     "frameworks/framework-release",
     "crates/rooch",
+    "crates/rooch-faucet"
 ]
 
 # All workspace members should inherit these keys

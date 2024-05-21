@@ -5,7 +5,6 @@ use std::{
     borrow::Cow,
     env,
     net::{IpAddr, Ipv4Addr, SocketAddr},
-    str::FromStr,
     time::Duration,
 };
 use tokio::sync::mpsc::Sender;
@@ -14,7 +13,6 @@ use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 
 use crate::{FaucetError, FaucetRequest, FaucetResponse};
-use rooch_types::address::BitcoinAddress;
 
 use axum::{
     error_handling::HandleErrorLayer,

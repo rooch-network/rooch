@@ -9,17 +9,17 @@ use moveos_types::transaction::MoveAction;
 use prometheus::Registry;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_client::wallet_context::WalletContext;
-use rooch_types::address::{BitcoinAddress, MultiChainAddress, RoochAddress};
+use rooch_types::address::{MultiChainAddress, RoochAddress};
 use rooch_types::authentication_key::AuthenticationKey;
 use rooch_types::framework::transfer::TransferModule;
 use std::env;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
-use tokio::sync::{mpsc::Receiver, RwLock, RwLockMappedWriteGuard, RwLockWriteGuard};
+use tokio::sync::{mpsc::Receiver, RwLock, RwLockWriteGuard};
 
 use rooch_rpc_api::jsonrpc_types::KeptVMStatusView;
-use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::error::RoochError;
 
 pub const DEFAULT_AMOUNT: u64 = 1_000 * 8;
 

@@ -12,7 +12,6 @@ use bitcoin::{
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
-use move_vm_types::values::Struct;
 use move_vm_types::{
     loaded_data::runtime_types::Type,
     natives::function::NativeResult,
@@ -20,7 +19,7 @@ use move_vm_types::{
     values::{Value, VectorRef},
 };
 use moveos_stdlib::natives::helpers::{make_module_natives, make_native};
-use moveos_types::state::{MoveState, MoveStructState};
+use moveos_types::state::MoveStructState;
 use rooch_types::address::BitcoinAddress;
 use smallvec::smallvec;
 
