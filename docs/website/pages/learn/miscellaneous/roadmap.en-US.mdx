@@ -1,41 +1,57 @@
 # Roadmap
 
 
-import { Callout } from 'nextra/components'
+import { Steps } from 'nextra/components'
+ 
+<Steps>
 
-<Callout>
-TODO: This section of the document needs improvement
+### Seeding
 
-1. Update the roadmap with ecosystem perspective growth plan
-</Callout>
+Complete the technical solution design and team formation.
 
-## Rooch Milestones
+### Sprouting
 
-We have named these milestones via the stages of plant growth, aiming for Rooch to grow from a seed to a towering tree, becoming the application layer of Bitcoin Ecosystem.
+Release the first preview version of the Rooch VApp container, providing basic developer tools so that developers can develop based on the Rooch container. Explore the state storage requirements and development model of VApp applications, and provide some sample applications.
 
-### Seeding -- 2023 Q1
+1. VApp container, CLI tools, and RPC interfaces.
+2. Move standard library and framework.
+3. Account abstraction and SessionKey support, ensuring that users' L1 assets are not compromised when using L2 applications.
+4. **Launch Devnet**.
 
-Complete technical design and implementation for verifiable execution container with MoveVM and DSTP.
-* Launch Rooch v0.3 Testnet
+### Rooting
 
-### Sprouting -- 2023 Q2
+Rooting to the Bitcoin network, run the Rooch PreMainnet, and upgrade to Mainnet. Explore application development models based on Bitcoin native assets without bridges, as well as social and gaming applications based on CSV assets.
 
-Adding Bitcoin state into DSTP and drive adoption by encouraging the innovation on Bitcoin based asset protocols.
-* Launch Rooch v0.4 Testnet
-* Launch Rooch Pre-Mainnet
-* Launch Bitseed Protocol for experimenting CSV assets leaping
+**Phase-1**
 
-### Rooting -- 2023 Q3
+1. **Launch Testnet** and provide a framework upgrade plan.
+2. Upgrade the object model to ObjectV2, achieving hierarchical stacking of objects.
+3. Implement a stackable Layer2 model, complete validation of Bitcoin's UTXO and Inscription assets in smart contracts, and provide programming pattern based on UTXO and Inscription. Explore applications based on Bitcoin L1 assets and their derivatives.
+4. Integrate Bitcoin ecosystem wallets and provide Rooch Portal to facilitate user asset management.
 
-Build more individual Rooch nodes by partnering with versatile communities, and let the assets grow freely in each of them. Build a DSTP based peer-to-peer network to connect all Rooch nodes into a single network, allowing the states to be shared between all nodes.
+**Phase-2 (Ongoing)**
 
-* Connect to DA
+1. Synchronize Bitcoin's historical transactions from Bitcoin Genesis and run the **Rooch PreMainnet**.
+2. Design and implement the Bitseed protocol, exploring the leap of CSV assets between L1 and L2. Explore application scenarios for asset leaps between Bitcoin L1 and L2.
+3. Integrate DA to ensure data availability.
+4. Connect to the P2P network and support third parties to run full nodes.
+5. Regularly update the root of the state tree to Bitcoin and provide state proof interfaces to achieve state verification between nodes.
 
-### Branching -- 2023 Q4
+**Phase-3**
 
-Find the security source for the network and build the security mechanism.
-* Launch Mainnet
+1. Implement a decentralized sequencer solution based on Bitcoin time.
+2. Implement a PoS sequencer security solution based on Babylon.
+3. Implement a fraud-proof solution based on state trees and optimistic challenges.
+4. Explore non-custodial BTC cross-chain solutions combining Rooch Move and Bitcoin Script.
+5. Publish Rooch Network Tokenomics.
+6. Upgrade Rooch PreMainnet to **Rooch Mainnet**.
 
-### Strengthening -- 2024 Q1~
+### Branching
 
-Enhance security and optimize performance. 
+Implement an application network based on DSTP, explore the circulation of CSV assets between applications, and assetize application data through VApp and upload them to the blockchain.
+
+1. Support VApp container applications to connect to the Bitcoin ecosystem through Rooch Network.
+2. Collaborate with ecosystem partners to provide more DA and security options for VApp.
+3. Implement state channel applications based on DSTP and explore incentive models on the P2P network.
+
+</Steps>
