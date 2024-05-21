@@ -10,6 +10,7 @@ jobs:
   deploy-rooch-testnet:
     name: deploy rooch testnet
     runs-on: self-hosted
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'release' }}
     steps:
       - name: Extract version
         id: extract-version
