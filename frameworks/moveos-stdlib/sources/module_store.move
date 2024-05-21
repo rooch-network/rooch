@@ -24,9 +24,15 @@ module moveos_std::module_store {
 
     }
 
-    /// It is used to store the modules
+    /// Used to store packages.
+    /// A package is an Object, and the package ID is the module address.
+    /// Packages are dynamic fields of ModuleStore.
     struct ModuleStore has key {
     }
+
+    /// Used to store modules.
+    /// Modules are the Package's dynamic fields, with the module name as the key.
+    struct Package has key {}
 
     public fun module_store_id(): ObjectID {
         object::named_object_id<ModuleStore>()
@@ -56,15 +62,19 @@ module moveos_std::module_store {
 
     // ==== Module functions ====
 
-    /// Check if the module object has a module with the given name
-    public fun exists_module(module_object: &Object<ModuleStore>, account: address, name: String): bool {
-        let module_id = move_module::module_id_from_name(account, name);
-        exists_module_id(module_object, module_id)
+    public fun exists_package(module_object: &Object<ModuleStore>, package_id: address): bool {
+        object::contains_field(module_object, package_id)
     }
 
-    /// Check if the module object has a module with the given id
-    public fun exists_module_id(module_object: &Object<ModuleStore>, module_id: String): bool {
-        object::contains_field(module_object, module_id)
+    /// Check if module exists
+    /// package_id: the address of the package
+    /// name: the name of the module
+    public fun exists_module(module_object: &Object<ModuleStore>, package_id: address, name: String): bool {
+        if (!exists_package(module_object, package_id)) {
+            return false
+        };
+        let package = borrow_package(package_id);
+        object::contains_field(package, name)
     }
 
     /// Publish modules to the account's storage
@@ -98,61 +108,90 @@ module moveos_std::module_store {
 
     /// Publish modules to the module object's storage
     /// Return true if the modules are upgraded
-    public(friend) fun publish_modules_internal(module_object: &mut Object<ModuleStore>, account_address: address, modules: vector<MoveModule>) : bool {
+    public(friend) fun publish_modules_internal(module_object: &mut Object<ModuleStore>, package_id: address, modules: vector<MoveModule>) : bool {
         let i = 0;
         let len = vector::length(&modules);
-        let (module_ids, module_ids_with_init_fn, indices) = move_module::sort_and_verify_modules(&modules, account_address);
+        let (module_names, module_names_with_init_fn, indices) = move_module::sort_and_verify_modules(&modules, package_id);
 
         let upgrade_flag = false;
         while (i < len) {
-            let module_id = vector::pop_back(&mut module_ids);
+            let module_name = vector::pop_back(&mut module_names);
             let index = vector::pop_back(&mut indices);
             let m = vector::borrow(&modules, index);
 
             // The module already exists, which means we are upgrading the module
-            if (exists_module_id(module_object, module_id)) {
-                let old_m = object::remove_field(module_object, module_id);
+            if (exists_module(module_object, package_id, module_name)) {
+                let old_m = remove_module(module_object, package_id, module_name);
                 move_module::check_comatibility(m, &old_m);
                 upgrade_flag = true;
             } else {
                 // request init function invoking
-                if (vector::contains(&module_ids_with_init_fn, &module_id)) {
-                    move_module::request_init_functions(vector::singleton(copy module_id));
+                if (vector::contains(&module_names_with_init_fn, &module_name)) {
+                    let module_id = move_module::module_id_from_name(package_id, module_name);
+                    move_module::request_init_functions(vector::singleton(module_id));
                 }
             };
-            object::add_field(module_object, module_id, *m);
+            add_module(module_object, package_id, module_name, *m);
             i = i + 1;
         };
         upgrade_flag
     }
 
-    public fun borrow_allowlist(): &Allowlist {
+    fun borrow_package(package_id: address): &Object<Package> {
+        let store = borrow_module_store();
+        object::borrow_field(store, package_id)
+    }
+
+    fun borrow_mut_package(package_id: address): &mut Object<Package> {
+        let store = borrow_mut_module_store();
+        object::borrow_mut_field(store, package_id)
+    }
+
+    fun add_module(module_object: &mut Object<ModuleStore>, package_id: address, name: String, mod: MoveModule) {
+        let package = borrow_mut_package(package_id);
+        object::add_field(package, name, mod);
+    }
+
+    fun remove_module(module_object: &mut Object<ModuleStore>, package_id: address, name: String): MoveModule {
+        let package = borrow_mut_package(package_id);
+        object::remove_field(package, name)
+    }
+
+    fun borrow_allowlist(): &Allowlist {
         let allowlist_id = object::named_object_id<Allowlist>();
         let allowlist_obj = object::borrow_object(allowlist_id);
         object::borrow<Allowlist>(allowlist_obj)
     }
 
-    public fun borrow_mut_allowlist(): &mut Allowlist {
+    fun borrow_mut_allowlist(): &mut Allowlist {
         let allowlist_id = object::named_object_id<Allowlist>();
         let allowlist_obj = object::borrow_mut_object_shared(allowlist_id);
         object::borrow_mut<Allowlist>(allowlist_obj)
     }
 
-    public fun add_to_allowlist(allowlist: &mut Allowlist, account: &signer, publisher: address) {
+    /// Add an account to the allowlist. Only account in allowlist can publish modules.
+    /// This is only valid when module_publishing_allowlist_enabled feature is enabled.
+    public fun add_to_allowlist(account: &signer, publisher: address) {
         let sender = signer::address_of(account);
         core_addresses::assert_system_reserved_address(sender);
+        
+        let allowlist = borrow_mut_allowlist();
         if (!vector::contains(&allowlist.publisher, &publisher)) {
             vector::push_back(&mut allowlist.publisher, publisher);
         };
     }
 
-    public fun remove_from_allowlist(allowlist: &mut Allowlist, account: &signer, publisher: address) {
+    /// Remove an account from the allowlist.
+    public fun remove_from_allowlist(account: &signer, publisher: address) {
         let sender = signer::address_of(account);
         core_addresses::assert_system_reserved_address(sender);
+        let allowlist = borrow_mut_allowlist();
         let _ = vector::remove_value(&mut allowlist.publisher, &publisher);
     }
 
-    public fun is_in_allowlist(allowlist: &Allowlist, publisher: address): bool {
+    /// Check if an account is in the allowlist.
+    public fun is_in_allowlist(publisher: address): bool {
+        let allowlist = borrow_allowlist();
         vector::contains(&allowlist.publisher, &publisher)
     }
 
@@ -160,8 +199,7 @@ module moveos_std::module_store {
         if (core_addresses::is_system_reserved_address(publisher)) {
             return
         };
-        let allowlist = borrow_allowlist().publisher;
-        assert!(vector::contains(&allowlist, &publisher), ErrorNotAllowToPublish);
+        assert!(is_in_allowlist(publisher), ErrorNotAllowToPublish);
     }
 
     #[test_only]
@@ -214,9 +252,8 @@ module moveos_std::module_store {
             vector[features::get_module_publishing_allowlist_feature()], 
             vector[]
         );
-        let allowlist = borrow_mut_allowlist();
         let system_account = signer::module_signer<Allowlist>();
-        add_to_allowlist(allowlist, &system_account, signer::address_of(account));
+        add_to_allowlist(&system_account, signer::address_of(account));
 
         let module_object = borrow_mut_module_store();
         let module_bytes = COUNTER_MV_BYTES;
@@ -229,15 +266,12 @@ module moveos_std::module_store {
         init_module_store();
         let system_account = signer::module_signer<Allowlist>();
 
-        let allowlist = borrow_allowlist();
-        assert!(!is_in_allowlist(allowlist, @0x42), 1);
+        assert!(!is_in_allowlist(@0x42), 1);
+        add_to_allowlist(&system_account, @0x42);
+        assert!(is_in_allowlist(@0x42), 2);
 
-        let allowlist = borrow_mut_allowlist();
-        add_to_allowlist(allowlist, &system_account, @0x42);
-        assert!(is_in_allowlist(allowlist, @0x42), 2);
-
-        remove_from_allowlist(allowlist, &system_account, @0x42);
-        assert!(!is_in_allowlist(allowlist, @0x42), 3);
+        remove_from_allowlist(&system_account, @0x42);
+        assert!(!is_in_allowlist(@0x42), 3);
     }
 }
 

@@ -8,18 +8,17 @@
 
 -  [Resource `Allowlist`](#0x2_module_store_Allowlist)
 -  [Resource `ModuleStore`](#0x2_module_store_ModuleStore)
+-  [Resource `Package`](#0x2_module_store_Package)
 -  [Constants](#@Constants_0)
 -  [Function `module_store_id`](#0x2_module_store_module_store_id)
 -  [Function `init_module_store`](#0x2_module_store_init_module_store)
 -  [Function `borrow_module_store`](#0x2_module_store_borrow_module_store)
 -  [Function `borrow_mut_module_store`](#0x2_module_store_borrow_mut_module_store)
+-  [Function `exists_package`](#0x2_module_store_exists_package)
 -  [Function `exists_module`](#0x2_module_store_exists_module)
--  [Function `exists_module_id`](#0x2_module_store_exists_module_id)
 -  [Function `publish_modules`](#0x2_module_store_publish_modules)
 -  [Function `publish_modules_entry`](#0x2_module_store_publish_modules_entry)
 -  [Function `publish_modules_internal`](#0x2_module_store_publish_modules_internal)
--  [Function `borrow_allowlist`](#0x2_module_store_borrow_allowlist)
--  [Function `borrow_mut_allowlist`](#0x2_module_store_borrow_mut_allowlist)
 -  [Function `add_to_allowlist`](#0x2_module_store_add_to_allowlist)
 -  [Function `remove_from_allowlist`](#0x2_module_store_remove_from_allowlist)
 -  [Function `is_in_allowlist`](#0x2_module_store_is_in_allowlist)
@@ -53,10 +52,25 @@ Allowlist for module function invocation
 
 ## Resource `ModuleStore`
 
-It is used to store the modules
+Used to store packages.
+A package is an Object, and the package ID is the module address.
+Packages are dynamic fields of ModuleStore.
 
 
 <pre><code><b>struct</b> <a href="module_store.md#0x2_module_store_ModuleStore">ModuleStore</a> <b>has</b> key
+</code></pre>
+
+
+
+<a name="0x2_module_store_Package"></a>
+
+## Resource `Package`
+
+Used to store modules.
+Modules are the Package's dynamic fields, with the module name as the key.
+
+
+<pre><code><b>struct</b> <a href="module_store.md#0x2_module_store_Package">Package</a> <b>has</b> key
 </code></pre>
 
 
@@ -121,26 +135,27 @@ Create a new module object space
 
 
 
-<a name="0x2_module_store_exists_module"></a>
+<a name="0x2_module_store_exists_package"></a>
 
-## Function `exists_module`
-
-Check if the module object has a module with the given name
+## Function `exists_package`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_exists_module">exists_module</a>(module_object: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="module_store.md#0x2_module_store_ModuleStore">module_store::ModuleStore</a>&gt;, <a href="account.md#0x2_account">account</a>: <b>address</b>, name: <a href="_String">string::String</a>): bool
+
+<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_exists_package">exists_package</a>(module_object: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="module_store.md#0x2_module_store_ModuleStore">module_store::ModuleStore</a>&gt;, package_id: <b>address</b>): bool
 </code></pre>
 
 
 
-<a name="0x2_module_store_exists_module_id"></a>
+<a name="0x2_module_store_exists_module"></a>
 
-## Function `exists_module_id`
+## Function `exists_module`
 
-Check if the module object has a module with the given id
+Check if module exists
+package_id: the address of the package
+name: the name of the module
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_exists_module_id">exists_module_id</a>(module_object: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="module_store.md#0x2_module_store_ModuleStore">module_store::ModuleStore</a>&gt;, module_id: <a href="_String">string::String</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_exists_module">exists_module</a>(module_object: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="module_store.md#0x2_module_store_ModuleStore">module_store::ModuleStore</a>&gt;, package_id: <b>address</b>, name: <a href="_String">string::String</a>): bool
 </code></pre>
 
 
@@ -178,29 +193,7 @@ Publish modules to the module object's storage
 Return true if the modules are upgraded
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="module_store.md#0x2_module_store_publish_modules_internal">publish_modules_internal</a>(module_object: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="module_store.md#0x2_module_store_ModuleStore">module_store::ModuleStore</a>&gt;, account_address: <b>address</b>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;): bool
-</code></pre>
-
-
-
-<a name="0x2_module_store_borrow_allowlist"></a>
-
-## Function `borrow_allowlist`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_borrow_allowlist">borrow_allowlist</a>(): &<a href="module_store.md#0x2_module_store_Allowlist">module_store::Allowlist</a>
-</code></pre>
-
-
-
-<a name="0x2_module_store_borrow_mut_allowlist"></a>
-
-## Function `borrow_mut_allowlist`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_borrow_mut_allowlist">borrow_mut_allowlist</a>(): &<b>mut</b> <a href="module_store.md#0x2_module_store_Allowlist">module_store::Allowlist</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="module_store.md#0x2_module_store_publish_modules_internal">publish_modules_internal</a>(module_object: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="module_store.md#0x2_module_store_ModuleStore">module_store::ModuleStore</a>&gt;, package_id: <b>address</b>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;): bool
 </code></pre>
 
 
@@ -209,9 +202,11 @@ Return true if the modules are upgraded
 
 ## Function `add_to_allowlist`
 
+Add an account to the allowlist. Only account in allowlist can publish modules.
+This is only valid when module_publishing_allowlist_enabled feature is enabled.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_add_to_allowlist">add_to_allowlist</a>(allowlist: &<b>mut</b> <a href="module_store.md#0x2_module_store_Allowlist">module_store::Allowlist</a>, <a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, publisher: <b>address</b>)
+<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_add_to_allowlist">add_to_allowlist</a>(<a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, publisher: <b>address</b>)
 </code></pre>
 
 
@@ -220,9 +215,10 @@ Return true if the modules are upgraded
 
 ## Function `remove_from_allowlist`
 
+Remove an account from the allowlist.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_remove_from_allowlist">remove_from_allowlist</a>(allowlist: &<b>mut</b> <a href="module_store.md#0x2_module_store_Allowlist">module_store::Allowlist</a>, <a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, publisher: <b>address</b>)
+<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_remove_from_allowlist">remove_from_allowlist</a>(<a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, publisher: <b>address</b>)
 </code></pre>
 
 
@@ -231,7 +227,8 @@ Return true if the modules are upgraded
 
 ## Function `is_in_allowlist`
 
+Check if an account is in the allowlist.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_is_in_allowlist">is_in_allowlist</a>(allowlist: &<a href="module_store.md#0x2_module_store_Allowlist">module_store::Allowlist</a>, publisher: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_is_in_allowlist">is_in_allowlist</a>(publisher: <b>address</b>): bool
 </code></pre>

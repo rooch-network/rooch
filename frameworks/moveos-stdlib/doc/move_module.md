@@ -149,8 +149,8 @@ Sort modules by dependency order and then verify.
 Return their names and names of the modules with init function if sorted dependency order.
 This function will ensure the module's bytecode is valid and the module id is matching the module object address.
 Return
-1. Module ids of all the modules. Order of names is not matching the input, but sorted by module dependency order
-2. Module ids of the modules with init function.
+1. Module names of all the modules. Order of names is not matching the input, but sorted by module dependency order
+2. Module names of the modules with init function.
 3. Indices in input modules of each sorted modules.
 
 
@@ -285,8 +285,8 @@ Replace given u256 constant to the new ones
 
 Sort modules by dependency order and then verify.
 Return
-The first vector is the module ids of all the modules.
-The second vector is the module ids of the modules with init function.
+The first vector is the module names of all the modules.
+The second vector is the module names of the modules with init function.
 The third vector is the indices in input modules of each sorted modules.
 
 

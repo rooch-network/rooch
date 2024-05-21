@@ -63,16 +63,14 @@ module rooch_framework::onchain_config {
     public entry fun add_to_publishing_allowlist(account: &signer, publisher: address) {
         ensure_sequencer(account);
         let system_account = signer::module_signer<OnchainConfig>();
-        let allowlist = module_store::borrow_mut_allowlist();
-        module_store::add_to_allowlist(allowlist, &system_account, publisher);
+        module_store::add_to_allowlist(&system_account, publisher);
     }
 
     /// Remove `publisher` from publishing allowlist.
     public entry fun remove_from_publishing_allowlist(account: &signer, publisher: address) {
         ensure_sequencer(account);
         let system_account = signer::module_signer<OnchainConfig>();
-        let allowlist = module_store::borrow_mut_allowlist();
-        module_store::remove_from_allowlist(allowlist, &system_account, publisher);
+        module_store::remove_from_allowlist(&system_account, publisher);
     }
     /****** End of API for update module publishing allowlist. ******/
 

@@ -65,8 +65,8 @@ module moveos_std::move_module {
     /// Return their names and names of the modules with init function if sorted dependency order.
     /// This function will ensure the module's bytecode is valid and the module id is matching the module object address.
     /// Return
-    ///     1. Module ids of all the modules. Order of names is not matching the input, but sorted by module dependency order
-    ///     2. Module ids of the modules with init function.
+    ///     1. Module names of all the modules. Order of names is not matching the input, but sorted by module dependency order
+    ///     2. Module names of the modules with init function.
     ///     3. Indices in input modules of each sorted modules.
     public fun sort_and_verify_modules(
         modules: &vector<MoveModule>, account_address: address
@@ -238,8 +238,8 @@ module moveos_std::move_module {
 
     /// Sort modules by dependency order and then verify. 
     /// Return
-    ///  The first vector is the module ids of all the modules.
-    ///  The second vector is the module ids of the modules with init function.
+    ///  The first vector is the module names of all the modules.
+    ///  The second vector is the module names of the modules with init function.
     ///  The third vector is the indices in input modules of each sorted modules.
     native public(friend) fun sort_and_verify_modules_inner(modules: vector<vector<u8>>, account_address: address): (vector<String>, vector<String>, vector<u64>);
     
@@ -328,8 +328,9 @@ module moveos_std::move_module {
         let module_bytes = COUNTER_MV_BYTES;
         let m: MoveModule = Self::new(module_bytes);
         let modules = vector::singleton(m);
-        let (module_ids, _module_names_with_init_fn, _indices) = Self::sort_and_verify_modules(&modules, addr);
-        debug::print(&module_ids);
+        let (module_names, _module_names_with_init_fn, _indices) = Self::sort_and_verify_modules(&modules, addr);
+        assert!(vector::length(&module_names)==1, 101);
+        assert!(vector::borrow(&module_names, 0) == &string::utf8(b"counter"), 102);
     }
 
     #[test(account=@0x1314)]
@@ -339,8 +340,7 @@ module moveos_std::move_module {
         let module_bytes = COUNTER_MV_BYTES;
         let m: MoveModule = Self::new(module_bytes);
         let modules = vector::singleton(m);
-        let (module_ids, _module_names_with_init_fn, _indices) = Self::sort_and_verify_modules(&modules, addr);
-        debug::print(&module_ids);
+        let (_module_names, _module_names_with_init_fn, _indices) = Self::sort_and_verify_modules(&modules, addr);
     }
     
     #[test(account=@0x42)]

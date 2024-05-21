@@ -116,7 +116,7 @@ fn native_module_id_from_name(
  *      account_address: address
  * ): (vector<String>, vector<String>, vector<u64>);
  * Return
- *  The first vector is the module ids of all the modules.
+ *  The first vector is the module names of all the modules.
  *  The second vector is the module names of the modules with init function.
  *  The third vector is the indices in input modules of each sorted modules.
  **************************************************************************************************/
@@ -173,7 +173,7 @@ fn native_sort_and_verify_modules_inner(
         })?;
     // moveos verifier
     let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
-    let mut module_ids = vec![];
+    let mut module_names = vec![];
     let mut init_identifier = vec![];
 
     let verify_result =
@@ -197,9 +197,9 @@ fn native_sort_and_verify_modules_inner(
         match result {
             Ok(res) => {
                 if res {
-                    init_identifier.push(module.self_id());
+                    init_identifier.push(format!("{}", module.self_id().name()));
                 }
-                module_ids.push(module.self_id().short_str_lossless());
+                module_names.push(format!("{}", module.self_id().name()));
             }
             Err(e) => {
                 //TODO provide a flag to control whether to print debug log.
@@ -209,7 +209,7 @@ fn native_sort_and_verify_modules_inner(
         }
     }
 
-    let module_ids: Vec<Value> = module_ids
+    let module_names: Vec<Value> = module_names
         .iter()
         .map(|module_id| {
             Value::struct_(Struct::pack(vec![Value::vector_u8(
@@ -217,21 +217,17 @@ fn native_sort_and_verify_modules_inner(
             )]))
         })
         .collect();
-    let module_ids = Vector::pack(&Type::Struct(CachedStructIndex(0)), module_ids)?;
+    let module_names = Vector::pack(&Type::Struct(CachedStructIndex(0)), module_names)?;
 
-    let init_module_ids: Vec<Value> = init_identifier
+    let init_module_names: Vec<Value> = init_identifier
         .iter()
-        .map(|id| {
-            Value::struct_(Struct::pack(vec![Value::vector_u8(
-                id.short_str_lossless().as_bytes().to_vec(),
-            )]))
-        })
+        .map(|id| Value::struct_(Struct::pack(vec![Value::vector_u8(id.as_bytes().to_vec())])))
         .collect();
-    let init_module_ids = Vector::pack(&Type::Struct(CachedStructIndex(0)), init_module_ids)?;
+    let init_module_names = Vector::pack(&Type::Struct(CachedStructIndex(0)), init_module_names)?;
     let sorted_indices = Value::vector_u64(indices);
     Ok(NativeResult::ok(
         cost,
-        smallvec![module_ids, init_module_ids, sorted_indices],
+        smallvec![module_names, init_module_names, sorted_indices],
     ))
 }
 
