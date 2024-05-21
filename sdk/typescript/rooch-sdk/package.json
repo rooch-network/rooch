@@ -78,7 +78,9 @@
     "isomorphic-fetch": "^3.0.0",
     "superstruct": "^1.0.3",
     "tweetnacl": "^1.0.3",
-    "@ethersproject/bytes": "^5.7.0"
+    "@ethersproject/bytes": "^5.7.0",
+    "base58-js": "^1.0.0",
+    "bech32": "^2.0.0"
   },
   "publishConfig": {
     "access": "public",

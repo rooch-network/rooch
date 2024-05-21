@@ -1,9 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::App;
+use crate::{App, FaucetRequest, FixedBTCAddressRequest, FixedRoochAddressRequest};
 use clap::Parser;
-use rooch_types::address::BitcoinAddress;
+use rooch_types::address::{BitcoinAddress, RoochAddress};
 use serenity::all::{CommandDataOption, CommandDataOptionValue, CommandOptionType};
 use serenity::async_trait;
 use serenity::builder::{CreateCommand, CreateCommandOption};
@@ -30,15 +30,25 @@ impl App {
 
         match value {
             CommandDataOptionValue::String(address) => {
-                let btc_address =
-                    BitcoinAddress::from_str(address.as_str()).expect("Invalid address");
 
-                if let Err(err) = self.request(btc_address).await {
+                let request = match address.starts_with("0x") {
+                    true => FaucetRequest::FixedRoochAddressRequest(FixedRoochAddressRequest{
+                        recipient: RoochAddress::from_str(address.as_str()).expect("Invalid address")
+                    }),
+                    false => FaucetRequest::FixedBTCAddressRequest(FixedBTCAddressRequest{
+                        recipient: BitcoinAddress::from_str(address.as_str()).expect("Invalid address")
+                    })
+                };
+
+                let address = request.recipient().to_string();
+
+                if let Err(err) = self.request(request).await {
                     tracing::error!("Failed make faucet request for {address:?}: {}", err);
                     format!("Internal Error: Failed to send funds to {address:?}")
                 } else {
                     format!("Sending funds to {address:?}")
                 }
+
             }
             _ => "No address found!".to_string(),
         }
@@ -70,7 +80,7 @@ impl EventHandler for App {
         let command = CreateCommand::new("faucet")
             .description("Request funds from the faucet")
             .add_option(
-                CreateCommandOption::new(CommandOptionType::String, "address", "Your BTC address")
+                CreateCommandOption::new(CommandOptionType::String, "address", "Your BTC/Rooch address")
                     .required(true),
             );
 

@@ -84,7 +84,7 @@ module rooch_framework::bitcoin_validator {
 
         validate_signature(payload, tx_hash);
 
-        let bitcoin_addr = bitcoin_address::from_bytes(auth_payload::from_address(payload));
+        let bitcoin_addr = bitcoin_address::new(&auth_payload::from_address(payload));
         let multi_chain_addr = multichain_address::from_bitcoin(bitcoin_addr);
 
         // Check if the address and public key are related
