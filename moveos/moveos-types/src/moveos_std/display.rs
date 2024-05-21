@@ -21,6 +21,17 @@ use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("display");
 
+pub fn get_display_id_from_object_struct_tag(struct_tag: StructTag) -> ObjectID {
+    let object_type_tag = TypeTag::from(struct_tag);
+    let display_struct_tag = StructTag {
+        address: MOVEOS_STD_ADDRESS,
+        name: ident_str!("Display").to_owned(),
+        module: MODULE_NAME.to_owned(),
+        type_params: vec![object_type_tag],
+    };
+    object::named_object_id(&display_struct_tag)
+}
+
 pub fn get_object_display_id(value_type: TypeTag) -> ObjectID {
     let object_tag = StructTag {
         address: MOVEOS_STD_ADDRESS,
@@ -28,14 +39,7 @@ pub fn get_object_display_id(value_type: TypeTag) -> ObjectID {
         module: ident_str!("object").to_owned(),
         type_params: vec![value_type],
     };
-    let object_type = TypeTag::from(object_tag);
-    let struct_tag = StructTag {
-        address: MOVEOS_STD_ADDRESS,
-        name: ident_str!("Display").to_owned(),
-        module: MODULE_NAME.to_owned(),
-        type_params: vec![object_type],
-    };
-    object::named_object_id(&struct_tag)
+    get_display_id_from_object_struct_tag(object_tag)
 }
 
 pub fn get_resource_display_id(value_type: TypeTag) -> ObjectID {
@@ -58,13 +62,14 @@ fn display_move_string(move_struct: &AnnotatedMoveStruct) -> Result<String> {
 }
 
 /// Convert 0x2::object::ObjectID to displayable string.
-fn display_object_id(move_struct: &AnnotatedMoveStruct) -> String {
-    if let AnnotatedMoveValue::Address(address) = &move_struct.value[0].1 {
-        address.to_canonical_string()
-    } else {
-        unreachable!("Invalid object_id type")
-    }
-}
+// fn display_object_id(move_struct: &AnnotatedMoveStruct) -> String {
+//     ObjectID::try_from(*move_struct)
+//     if let AnnotatedMoveValue::Address(address) = &move_struct.value[0].1 {
+//         address.to_canonical_string()
+//     } else {
+//         unreachable!("Invalid object_id type")
+//     }
+// }
 
 fn get_string_from_valid_move_struct(move_struct: &AnnotatedMoveStruct) -> Result<String> {
     let move_std_string = StructTag {
@@ -75,7 +80,7 @@ fn get_string_from_valid_move_struct(move_struct: &AnnotatedMoveStruct) -> Resul
     };
     let moveos_std_object_id = StructTag {
         address: MOVEOS_STD_ADDRESS,
-        module: ident_str!("object_id").to_owned(),
+        module: ident_str!("object").to_owned(),
         name: ident_str!("ObjectID").to_owned(),
         type_params: vec![],
     };
@@ -83,7 +88,7 @@ fn get_string_from_valid_move_struct(move_struct: &AnnotatedMoveStruct) -> Resul
     if move_struct.type_ == move_std_string {
         display_move_string(move_struct)
     } else if move_struct.type_ == moveos_std_object_id {
-        Ok(display_object_id(move_struct))
+        Ok(ObjectID::try_from_annotated_move_struct_ref(move_struct)?.to_hex())
     } else {
         anyhow::bail!("Invalid move type to display");
     }
@@ -96,7 +101,7 @@ fn get_value_from_move_struct(move_value: &AnnotatedMoveValue, var_name: &str) -
     }
     let mut current_value = move_value;
     // iterate over the parts and try to access the corresponding field
-    for part in parts {
+    for part in parts.clone() {
         match current_value {
             AnnotatedMoveValue::Struct(move_struct) => {
                 let mut fields = BTreeMap::new();
@@ -159,7 +164,7 @@ fn parse_template(template: &str, move_value: &AnnotatedMoveValue) -> Result<Str
 /// Display struct in rust, binding for moveos_std::display::Display
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
 pub struct RawDisplay {
-    pub fields: SimpleMap<MoveString, MoveString>,
+    pub sample_map: SimpleMap<MoveString, MoveString>,
 }
 
 impl RawDisplay {
@@ -169,7 +174,7 @@ impl RawDisplay {
             match parse_template(&entry.1, annotated_obj) {
                 Ok(value) => (entry.0, value),
                 Err(err) => {
-                    println!("Display template render error: {:?}", err);
+                    tracing::debug!("Display template render error: {:?}", err);
                     entry // TODO: handle render error
                 }
             }
@@ -179,7 +184,7 @@ impl RawDisplay {
 
     pub fn to_btree_map(&self) -> BTreeMap<String, String> {
         let mut btree_map = BTreeMap::new();
-        for element in &self.fields.data {
+        for element in &self.sample_map.data {
             btree_map.insert(element.key.to_string(), element.value.to_string());
         }
         btree_map

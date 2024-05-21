@@ -374,8 +374,13 @@ impl IndexerReader {
             ObjectStateFilter::Owner(owner) => {
                 format!("{STATE_OWNER_STR} = \"{}\"", owner.to_hex_literal())
             }
-            ObjectStateFilter::ObjectId(object_id) => {
-                format!("{OBJECT_ID_STR} = \"{}\"", object_id)
+            ObjectStateFilter::ObjectId(object_ids) => {
+                let object_ids_str = object_ids
+                    .into_iter()
+                    .map(|obj_id| format!("\"{}\"", obj_id))
+                    .collect::<Vec<_>>()
+                    .join(",");
+                format!("{OBJECT_ID_STR} IN ({object_ids_str})")
             }
         };
 
