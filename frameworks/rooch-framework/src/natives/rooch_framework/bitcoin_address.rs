@@ -23,6 +23,8 @@ use moveos_types::state::MoveStructState;
 use rooch_types::address::BitcoinAddress;
 use smallvec::smallvec;
 
+pub const E_INVALID_ADDRESS: u64 = 1;
+
 pub fn new(
     gas_params: &FromBytesGasParameters,
     _context: &mut NativeContext,
@@ -35,13 +37,13 @@ pub fn new(
     let cost = gas_params.base + gas_params.per_byte * NumBytes::new(addr_ref.len() as u64);
 
     let Ok(addr_str) = std::str::from_utf8(&addr_ref) else {
-        return Ok(NativeResult::err(cost, E_INVALID_PUBKEY));
+        return Ok(NativeResult::err(cost, E_INVALID_ADDRESS));
     };
 
     let addr = match BitcoinAddress::from_str(addr_str) {
         Ok(addr) => addr,
         Err(_) => {
-            return Ok(NativeResult::err(cost, E_INVALID_PUBKEY));
+            return Ok(NativeResult::err(cost, E_INVALID_ADDRESS));
         }
     };
 
