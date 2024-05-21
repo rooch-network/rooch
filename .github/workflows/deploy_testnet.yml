@@ -1,8 +1,10 @@
 name: Deploy TESTNET Seed
 on:
   workflow_dispatch:
-  release:
-    types: [ published ]
+  workflow_run:
+    workflows: ["Build Docker And Deploy Seed"]
+    types:
+      - completed
 
 jobs:
   deploy-rooch-testnet:
