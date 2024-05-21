@@ -41,6 +41,7 @@ members = [
     "crates/rooch-benchmarks",
     "crates/rooch-test-transaction-builder",
     "crates/data_verify",
+    "crates/rooch-faucet",
     "frameworks/framework-builder",
     "frameworks/framework-release",
     "frameworks/moveos-stdlib",
@@ -53,6 +54,7 @@ default-members = [
     "moveos/moveos",
     "frameworks/framework-release",
     "crates/rooch",
+    "crates/rooch-faucet"
 ]
 
 # All workspace members should inherit these keys
@@ -110,6 +112,7 @@ rooch-store = { path = "crates/rooch-store" }
 rooch-indexer = { path = "crates/rooch-indexer" }
 rooch-da = { path = "crates/rooch-da" }
 rooch-benchmarks = { path = "crates/rooch-benchmarks" }
+rooch-faucet = { path = "crates/rooch-faucet" }
 rooch-test-transaction-builder = { path = "crates/rooch-test-transaction-builder" }
 data-verify = { path = "crates/data_verify" }
 
@@ -244,6 +247,28 @@ diesel = { version = "2.1.0", features = [
     "r2d2",
     "serde_json",
     "64-column-tables",
+] }
+axum = { version = "0.6.6", default-features = false, features = [
+    "headers",
+    "tokio",
+    "http1",
+    "http2",
+    "json",
+    "matched-path",
+    "original-uri",
+    "form",
+    "query",
+    "ws",
+] }
+axum-extra = "0.4.2"
+axum-server = { version = "0.5.1", default-features = false, features = [
+    "tls-rustls",
+] }
+serenity = { version = "0.12.1", default-features = false, features = [
+    "client",
+    "gateway",
+    "rustls_backend",
+    "model",
 ] }
 diesel-derive-enum = { version = "2.0.1", features = ["sqlite"] }
 diesel_migrations = { version = "2.0.0" }

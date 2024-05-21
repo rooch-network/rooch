@@ -19,7 +19,39 @@ use move_vm_types::{
     values::{Value, VectorRef},
 };
 use moveos_stdlib::natives::helpers::{make_module_natives, make_native};
+use moveos_types::state::MoveStructState;
+use rooch_types::address::BitcoinAddress;
 use smallvec::smallvec;
+
+pub const E_INVALID_ADDRESS: u64 = 1;
+
+pub fn new(
+    gas_params: &FromBytesGasParameters,
+    _context: &mut NativeContext,
+    _ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    let addr_bytes = pop_arg!(args, VectorRef);
+    let addr_ref = addr_bytes.as_bytes_ref();
+
+    let cost = gas_params.base + gas_params.per_byte * NumBytes::new(addr_ref.len() as u64);
+
+    let Ok(addr_str) = std::str::from_utf8(&addr_ref) else {
+        return Ok(NativeResult::err(cost, E_INVALID_ADDRESS));
+    };
+
+    let addr = match BitcoinAddress::from_str(addr_str) {
+        Ok(addr) => addr,
+        Err(_) => {
+            return Ok(NativeResult::err(cost, E_INVALID_ADDRESS));
+        }
+    };
+
+    Ok(NativeResult::ok(
+        cost,
+        smallvec![Value::struct_(addr.to_runtime_value_struct())],
+    ))
+}
 
 /// Returns true if the given pubkey is directly related to the address payload.
 pub fn verify_with_pk(
@@ -86,22 +118,27 @@ impl FromBytesGasParameters {
 
 #[derive(Debug, Clone)]
 pub struct GasParameters {
+    pub new: FromBytesGasParameters,
     pub verify_with_pk: FromBytesGasParameters,
 }
 
 impl GasParameters {
     pub fn zeros() -> Self {
         Self {
+            new: FromBytesGasParameters::zeros(),
             verify_with_pk: FromBytesGasParameters::zeros(),
         }
     }
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
-    let natives = [(
-        "verify_with_pk",
-        make_native(gas_params.verify_with_pk, verify_with_pk),
-    )];
+    let natives = [
+        ("new", make_native(gas_params.new, new)),
+        (
+            "verify_with_pk",
+            make_native(gas_params.verify_with_pk, verify_with_pk),
+        ),
+    ];
 
     make_module_natives(natives)
 }

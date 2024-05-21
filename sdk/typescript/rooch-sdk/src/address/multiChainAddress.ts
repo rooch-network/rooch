@@ -3,8 +3,8 @@
 
 import { getAddressInfo } from './bitcoinAddress'
 import { bech32 } from 'bech32'
-import { RoochMultiChainID, RoochMultiChainIDToString } from '@roochnetwork/rooch-sdk'
-import { bcs } from '@roochnetwork/rooch-sdk'
+import { RoochMultiChainID, RoochMultiChainIDToString } from '../constants'
+import { bcs } from '../types'
 
 export class MultiChainAddress implements bcs.Serializable {
   private readonly multiChainId: RoochMultiChainID
