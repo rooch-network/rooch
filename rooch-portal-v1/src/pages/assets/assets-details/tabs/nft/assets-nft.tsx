@@ -53,26 +53,25 @@ export const AssetsNft = () => {
     }),
     [paginationModel],
   )
-  // TODO: How do I get all the nft
-  // TODO: 1, fetch data/image loading, 2, pagination
   const {
     data: nfts,
     refetch: reFetchNFTS,
     isLoading,
     isError,
-  } = useRoochClientQuery('queryGlobalStates', {
+  } = useRoochClientQuery('queryObjectStates', {
     filter: {
       object_type_with_owner: {
         owner: sessionKey?.getAddress() || '',
         object_type: `${ROOCH_OPERATING_ADDRESS}::nft::NFT`,
       },
     },
-    // TODO: 待解决的类型问题
     // @ts-ignore
     cursor: queryOptions.cursor,
     limit: queryOptions.pageSize,
     descending_order: true,
   })
+
+  console.log(nfts)
 
   // fetch collection info
   useEffect(() => {
@@ -84,7 +83,7 @@ export const AssetsNft = () => {
         nfts.data
           .map((item) => ({
             key: item.object_id,
-            collection: item.value.value.collection,
+            collection: (item.value as any).value.value.value.collection,
           }))
           .map(async (obj) => {
             const result = await client.getStates({ accessPath: `/object/${obj.collection}` })
@@ -213,7 +212,7 @@ export const AssetsNft = () => {
               </AspectRatio>
             </CardContent>
             <CardHeader className="px-4 md:px-6">
-              <CardTitle>{nft.value.value.name as string}</CardTitle>
+              <CardTitle>{(nft.value as any).value.name as string}</CardTitle>
               {/*<CardDescription>{nft.price}</CardDescription>*/}
             </CardHeader>
             <CardFooter className="px-4 md:px-6">

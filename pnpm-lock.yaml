@@ -495,11 +495,11 @@ importers:
         specifier: ^1.0.7
         version: 1.0.7(@types/react-dom@18.2.17)(@types/react@18.2.63)(react-dom@18.2.0)(react@18.2.0)
       '@roochnetwork/rooch-sdk':
-        specifier: 0.1.2
-        version: 0.1.2
+        specifier: 0.1.4
+        version: 0.1.4
       '@roochnetwork/rooch-sdk-kit':
-        specifier: 0.1.2
-        version: 0.1.2(@types/react@18.2.63)(react-native@0.72.4)
+        specifier: 0.1.4
+        version: 0.1.4(@types/react@18.2.63)(react-native@0.72.4)
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.12.2(react@18.2.0)
@@ -670,6 +670,9 @@ importers:
       isomorphic-fetch:
         specifier: ^3.0.0
         version: 3.0.0
+      sha256-uint8array:
+        specifier: ^0.10.3
+        version: 0.10.7
       superstruct:
         specifier: ^1.0.3
         version: 1.0.3
@@ -752,15 +755,6 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.12.2(react@18.2.0)
-      base58-js:
-        specifier: ^1.0.0
-        version: 1.0.5
-      bech32:
-        specifier: ^2.0.0
-        version: 2.0.0
-      bitcoinjs-lib:
-        specifier: ^6.1.5
-        version: 6.1.5
       buffer:
         specifier: 6.0.0
         version: 6.0.0
@@ -773,9 +767,6 @@ importers:
       react-dom:
         specifier: ^18.2.0
         version: 18.2.0(react@18.2.0)
-      sha256-uint8array:
-        specifier: ^0.10.3
-        version: 0.10.7
       zustand:
         specifier: ^4.4.1
         version: 4.4.7(@types/react@18.2.42)(react@18.2.0)
@@ -9426,14 +9417,14 @@ packages:
     dev: true
     optional: true
 
-  /@roochnetwork/rooch-sdk-kit@0.1.2(@types/react@18.2.63)(react-native@0.72.4):
-    resolution: {integrity: sha512-3ZGiGr+BXaYT30VNvWwncXZncafd+UGVVQdqFP9vNIcl4aNRvQCem625Tva/lpmiPl52Tf85Atm1QbOq/s8bHg==}
+  /@roochnetwork/rooch-sdk-kit@0.1.4(@types/react@18.2.63)(react-native@0.72.4):
+    resolution: {integrity: sha512-MWueYL9mFcyhf8DxqDOxktJUr/slRahJFt3xIgV/b4n5trKNbXZ1VJDGnMOQ4crycFhM4AewSS0i1lBRTwGoWQ==}
     engines: {node: '>=18.0.0'}
     dependencies:
       '@metamask/detect-provider': 2.0.0
       '@metamask/sdk': 0.14.1(@types/react@18.2.63)(react-dom@18.2.0)(react-native@0.72.4)(react@18.2.0)
       '@noble/hashes': 1.3.2
-      '@roochnetwork/rooch-sdk': 0.1.2
+      '@roochnetwork/rooch-sdk': 0.1.4
       '@tanstack/react-query': 5.12.2(react@18.2.0)
       base58-js: 1.0.5
       bech32: 2.0.0
@@ -9455,8 +9446,8 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@roochnetwork/rooch-sdk@0.1.2:
-    resolution: {integrity: sha512-SdddLSPC/8XnNSU67Ufp9BtgNb/vHjxsskuAdLg7/aSm2PxUqL4RLvFEzoRKmjfIM/qh1auu4b7NHNo5INeSyA==}
+  /@roochnetwork/rooch-sdk@0.1.4:
+    resolution: {integrity: sha512-8zXCNcwgjTDNuP1nlhnkQamVLJo1UkRZ1AMOHvMXl4Ummdkc+Iy7tMxJThHHWRB5qHQv/ipOdnqnNCQqpEDvCA==}
     engines: {node: '>=18.0.0'}
     dependencies:
       '@ethersproject/bytes': 5.7.0
@@ -9466,6 +9457,8 @@ packages:
       '@scure/bip39': 1.2.1
       '@suchipi/femver': 1.0.0
       '@types/ws': 8.5.5
+      base58-js: 1.0.5
+      bech32: 2.0.0
       events: 3.3.0
       isomorphic-fetch: 3.0.0
       superstruct: 1.0.3
