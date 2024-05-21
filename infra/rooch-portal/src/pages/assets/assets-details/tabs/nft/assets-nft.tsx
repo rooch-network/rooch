@@ -2,13 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  useCurrentAccount,
   useCurrentSession,
   useRoochClient,
   useRoochClientQuery,
   useTransferObject,
 } from '@roochnetwork/rooch-sdk-kit'
 
-import { AlertCircle, ArrowLeft, Copy } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Copy, Wallet } from 'lucide-react'
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -23,6 +24,7 @@ import { ROOCH_OPERATING_ADDRESS } from '@/common/constant.ts'
 
 export const AssetsNft = () => {
   const sessionKey = useCurrentSession()
+  const account = useCurrentAccount()
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedNFTId, setSelectedNFTId] = useState('')
   // const [curNFT, setCurNFT] = useState<ObjectStateView>()
@@ -170,6 +172,18 @@ export const AssetsNft = () => {
     handleClose()
     setTransferLoading(false)
     reFetchNFTS()
+  }
+
+  if (!account) {
+    return (
+      <div className="flex flex-col items-center justify-center text-center p-40">
+        <Wallet className="w-12 h-12 mb-4 text-zinc-500" />
+        <p className="text-xl text-zinc-500 font-semibold">Haven't connected to wallet</p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Please connect your wallet to view your assets.
+        </p>
+      </div>
+    )
   }
 
   if (isLoading || isError) {

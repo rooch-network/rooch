@@ -82,6 +82,20 @@ export const ManageSessions: React.FC = () => {
     maxInactiveInterval: session.maxInactiveInterval.toString(),
   })
 
+  if (!sessionKeys?.data.length) {
+    return (
+      <div className="rounded-lg border w-full flex justify-center items-center h-full p-20">
+        <div className="flex flex-col items-center justify-center text-center text-xl text-muted-foreground">
+          <AlertCircle className="w-12 h-12 mb-4 text-zinc-500" />
+          <p className="mb-2 font-semibold">No Data</p>
+          <p className="text-base text-gray-500">
+            No session keys found. Please check again later.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   if (isLoading || isError) {
     return (
       <div className="relative p-40">
@@ -97,20 +111,6 @@ export const ManageSessions: React.FC = () => {
               </p>
             </div>
           )}
-        </div>
-      </div>
-    )
-  }
-
-  if (!sessionKeys?.data.length) {
-    return (
-      <div className="rounded-lg border w-full flex justify-center items-center h-full p-20">
-        <div className="flex flex-col items-center justify-center text-center text-xl text-muted-foreground">
-          <AlertCircle className="w-12 h-12 mb-4 text-blue-500" />
-          <p className="mb-2 font-semibold">No Data</p>
-          <p className="text-base text-gray-500">
-            No session keys found. Please check again later.
-          </p>
         </div>
       </div>
     )

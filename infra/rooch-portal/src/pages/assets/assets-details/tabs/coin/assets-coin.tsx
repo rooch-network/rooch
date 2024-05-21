@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BalanceInfoView } from '@roochnetwork/rooch-sdk'
 import {
+  useCurrentAccount,
   useCurrentSession,
   useRoochClientQuery,
   useTransferCoin,
 } from '@roochnetwork/rooch-sdk-kit'
 
-import { AlertCircle, ArrowLeft } from 'lucide-react'
+import {AlertCircle, ArrowLeft, Wallet} from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -26,6 +27,7 @@ import { Textarea } from '@/components/ui/textarea'
 import CustomPagination from '@/components/custom-pagination.tsx'
 
 export const AssetsCoin = () => {
+  const account = useCurrentAccount()
   const sessionKey = useCurrentSession()
 
   const { mutateAsync: transferCoin } = useTransferCoin()
@@ -124,7 +126,6 @@ export const AssetsCoin = () => {
 
     setTransferLoading(true)
 
-    // TODO: resolve
     await transferCoin({
       account: sessionKey!,
       recipient: recipient,
@@ -136,22 +137,34 @@ export const AssetsCoin = () => {
     setTransferLoading(false)
   }
 
-  if (isLoading || isError) {
+  if (!account) {
     return (
-      <div className="relative p-40">
-        <div className="absolute inset-0 bg-inherit bg-opacity-50 flex justify-center items-center">
-          {isLoading ? (
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-          ) : (
-            <div className="flex flex-col items-center justify-center text-center">
-              <AlertCircle className="w-12 h-12 mb-4 text-red-500" />
-              <p className="text-xl text-red-500 font-semibold">Error loading data</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Something went wrong while fetching the data. Please try again later.
-              </p>
-            </div>
-          )}
-        </div>
+      <div className="flex flex-col items-center justify-center text-center p-40">
+        <Wallet className="w-12 h-12 mb-4 text-zinc-500" />
+        <p className="text-xl text-zinc-500 font-semibold">Haven't connected to wallet</p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Please connect your wallet to view your assets.
+        </p>
+      </div>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-40">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center text-center p-40">
+        <AlertCircle className="w-12 h-12 mb-4 text-red-500" />
+        <p className="text-xl text-red-500 font-semibold">Error loading data</p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Something went wrong while fetching the data. Please try again later.
+        </p>
       </div>
     )
   }

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useMemo, useRef, useState } from 'react'
 import {
+  useCurrentAccount,
   // useCurrentAccount,
   useRoochClientQuery,
 } from '@roochnetwork/rooch-sdk-kit'
@@ -10,16 +11,15 @@ import { Card, CardHeader } from '@/components/ui/card'
 import CustomPagination from '@/components/custom-pagination.tsx'
 
 import { hexToString } from '@/utils/format.ts'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Wallet } from 'lucide-react'
 
 // test address
 // const testAddress = ''
 
 // TODO: 1, loading, 2 pagination, 3 目前只处理了json 铭文，其他类型还需添加ui
 export const BitcoinAssetsOrdi = () => {
-  // const account = useCurrentAccount()
+  const account = useCurrentAccount()
 
-  // ** PAGINATION
   // ** PAGINATION
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 1 })
   const mapPageToNextCursor = useRef<{ [page: number]: string | null }>({})
@@ -53,6 +53,18 @@ export const BitcoinAssetsOrdi = () => {
     cursor: queryOptions.cursor,
     limit: queryOptions.pageSize,
   })
+
+  if (!account) {
+    return (
+      <div className="flex flex-col items-center justify-center text-center p-40">
+        <Wallet className="w-12 h-12 mb-4 text-zinc-500" />
+        <p className="text-xl text-zinc-500 font-semibold">Haven't connected to wallet</p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Please connect your wallet to view your assets.
+        </p>
+      </div>
+    )
+  }
 
   if (isLoading || isError) {
     return (

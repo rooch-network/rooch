@@ -30,7 +30,7 @@ import { NoData } from '@/components/no-data'
 import { useCurrentAccount, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 
 // ** ICONS
-import { MenuSquare, ExternalLink } from 'lucide-react'
+import { MenuSquare, ExternalLink, Wallet } from 'lucide-react'
 import { LedgerTxDataView1 } from '@roochnetwork/rooch-sdk'
 import { SkeletonList } from '@/components/skeleton-list'
 import { formatAddress } from '@/utils/format'
@@ -81,6 +81,18 @@ export const TransactionsTable = () => {
 
   const handleToTransactionDetail = (hash: string) => {
     navigate(`txblock/${hash}`)
+  }
+
+  if (!account) {
+    return (
+      <div className="flex flex-col items-center justify-center text-center p-40">
+        <Wallet className="w-12 h-12 mb-4 text-zinc-500" />
+        <p className="text-xl text-zinc-500 font-semibold">Haven't connected to wallet</p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Please connect your wallet to view your assets.
+        </p>
+      </div>
+    )
   }
 
   return isPending ? (

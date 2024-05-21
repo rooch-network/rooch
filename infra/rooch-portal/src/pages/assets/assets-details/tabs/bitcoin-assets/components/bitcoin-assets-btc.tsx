@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useMemo, useRef, useState } from 'react'
 import {
+  useCurrentAccount,
   // useCurrentAccount,
   useRoochClientQuery,
 } from '@roochnetwork/rooch-sdk-kit'
@@ -10,13 +11,13 @@ import { NoData } from '@/components/no-data.tsx'
 import CustomPagination from '@/components/custom-pagination.tsx'
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Wallet } from 'lucide-react'
 
 // test address
 // const testAddress = ''
 
 export const BitcoinAssetsBtc = () => {
-  // const account = useCurrentAccount()
+  const account = useCurrentAccount()
 
   // ** PAGINATION
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 1 })
@@ -52,6 +53,18 @@ export const BitcoinAssetsBtc = () => {
     cursor: queryOptions.cursor,
     limit: queryOptions.pageSize,
   })
+
+  if (!account) {
+    return (
+      <div className="flex flex-col items-center justify-center text-center p-40">
+        <Wallet className="w-12 h-12 mb-4 text-zinc-500" />
+        <p className="text-xl text-zinc-500 font-semibold">Haven't connected to wallet</p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Please connect your wallet to view your assets.
+        </p>
+      </div>
+    )
+  }
 
   if (isLoading || isError) {
     return (
