@@ -70,7 +70,7 @@ Used to store modules.
 Modules are the Package's dynamic fields, with the module name as the key.
 
 
-<pre><code><b>struct</b> <a href="module_store.md#0x2_module_store_Package">Package</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="module_store.md#0x2_module_store_Package">Package</a> <b>has</b> store, key
 </code></pre>
 
 

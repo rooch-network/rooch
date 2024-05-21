@@ -305,7 +305,7 @@ module moveos_std::move_module {
     ): vector<vector<u8>>;
 
     #[test_only]
-    use std::debug;
+    use moveos_std::signer;
 
     //The following is the bytes and hex of the compiled module: example/counter/sources/counter.move with account 0x42
     // Run the follow commands to get the bytecode of the module
@@ -319,7 +319,7 @@ module moveos_std::move_module {
         let module_bytes = COUNTER_MV_BYTES;
         let m: MoveModule = Self::new(module_bytes);
         let name = Self::module_id(&m);
-        debug::print(&name);
+        assert!(name == string::utf8(b"0x42::counter"), 101);
     }
 
     #[test(account=@0x42)]

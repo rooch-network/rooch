@@ -32,7 +32,7 @@ module moveos_std::module_store {
 
     /// Used to store modules.
     /// Modules are the Package's dynamic fields, with the module name as the key.
-    struct Package has key {}
+    struct Package has key, store {}
 
     public fun module_store_id(): ObjectID {
         object::named_object_id<ModuleStore>()
@@ -113,6 +113,11 @@ module moveos_std::module_store {
         let len = vector::length(&modules);
         let (module_names, module_names_with_init_fn, indices) = move_module::sort_and_verify_modules(&modules, package_id);
 
+        if (!exists_package(module_object, package_id)) {
+            object::add_field(module_object, package_id, object::new(Package {}));
+        };
+        let package = borrow_mut_package(module_object, package_id);
+
         let upgrade_flag = false;
         while (i < len) {
             let module_name = vector::pop_back(&mut module_names);
@@ -120,8 +125,8 @@ module moveos_std::module_store {
             let m = vector::borrow(&modules, index);
 
             // The module already exists, which means we are upgrading the module
-            if (exists_module(module_object, package_id, module_name)) {
-                let old_m = remove_module(module_object, package_id, module_name);
+            if (object::contains_field(package, module_name)) {
+                let old_m = remove_module(package, module_name);
                 move_module::check_comatibility(m, &old_m);
                 upgrade_flag = true;
             } else {
@@ -131,7 +136,7 @@ module moveos_std::module_store {
                     move_module::request_init_functions(vector::singleton(module_id));
                 }
             };
-            add_module(module_object, package_id, module_name, *m);
+            add_module(package, module_name, *m);
             i = i + 1;
         };
         upgrade_flag
@@ -145,13 +150,11 @@ module moveos_std::module_store {
         object::borrow_mut_field(module_store, package_id)
     }
 
-    fun add_module(module_object: &mut Object<ModuleStore>, package_id: address, name: String, mod: MoveModule) {
-        let package = borrow_mut_package(module_object, package_id);
+    fun add_module(package: &mut Object<Package>, name: String, mod: MoveModule) {
         object::add_field(package, name, mod);
     }
 
-    fun remove_module(module_object: &mut Object<ModuleStore>, package_id: address, name: String): MoveModule {
-        let package = borrow_mut_package(module_object, package_id);
+    fun remove_module(package: &mut Object<Package>, name: String): MoveModule {
         object::remove_field(package, name)
     }
 
@@ -200,9 +203,6 @@ module moveos_std::module_store {
         assert!(is_in_allowlist(publisher), ErrorNotAllowToPublish);
     }
 
-    #[test_only]
-    use std::debug;
-
     //The following is the bytes and hex of the compiled module: example/counter/sources/counter.move with account 0x42
     // Run the follow commands to get the bytecode of the module
     //./target/debug/rooch move build -p examples/counter -d
@@ -223,7 +223,8 @@ module moveos_std::module_store {
         
         let module_object = borrow_mut_module_store();
         let module_bytes = COUNTER_MV_BYTES;
-        let m: MoveModule = Self::new(module_bytes);
+        let m: MoveModule = move_module::new(module_bytes);
+
         Self::publish_modules(module_object, account, vector::singleton(m));
     }
 
@@ -238,7 +239,7 @@ module moveos_std::module_store {
         );
         let module_object = borrow_mut_module_store();
         let module_bytes = COUNTER_MV_BYTES;
-        let m: MoveModule = Self::new(module_bytes);
+        let m: MoveModule = move_module::new(module_bytes);
         Self::publish_modules(module_object, sender, vector::singleton(m));
     }
 
@@ -255,7 +256,7 @@ module moveos_std::module_store {
 
         let module_object = borrow_mut_module_store();
         let module_bytes = COUNTER_MV_BYTES;
-        let m: MoveModule = Self::new(module_bytes);
+        let m: MoveModule = move_module::new(module_bytes);
         Self::publish_modules(module_object, account, vector::singleton(m));
     }
 
