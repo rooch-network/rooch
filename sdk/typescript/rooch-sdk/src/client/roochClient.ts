@@ -240,7 +240,10 @@ export class RoochClient {
       params.filter,
       params.cursor || DEFAULT_NULL_CURSOR,
       params.limit?.toString() || DEFAULT_LIMIT,
-      params.descending_order || true,
+      {
+        descending: params.descending_order || true,
+        showDisplay: params.showDisplay || true
+      },
     )
   }
 
@@ -249,7 +252,10 @@ export class RoochClient {
       params.filter,
       params.cursor || DEFAULT_NULL_CURSOR,
       params.limit?.toString() || DEFAULT_LIMIT,
-      params.descending_order || true,
+      {
+        descending: params.descending_order || true,
+        showDisplay: params.showDisplay || true
+      },
     )
   }
 
@@ -276,7 +282,10 @@ export class RoochClient {
       params.filter,
       params.cursor?.toString() || DEFAULT_NULL_CURSOR,
       params.limit?.toString() || DEFAULT_LIMIT,
-      params.descending_order || true,
+      {
+        descending: params.descending_order || true,
+        showDisplay: params.showDisplay || false
+      },
     )
   }
 
@@ -285,7 +294,10 @@ export class RoochClient {
       params.filter,
       params.cursor || DEFAULT_NULL_CURSOR,
       params.limit?.toString() || DEFAULT_LIMIT,
-      params.descending_order || true,
+      {
+        descending: params.descending_order || true,
+        showDisplay: params.showDisplay || false
+      },
     )
   }
 
