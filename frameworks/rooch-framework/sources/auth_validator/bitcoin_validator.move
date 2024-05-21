@@ -31,32 +31,38 @@ module rooch_framework::bitcoin_validator {
 
         // tx hash in use wallet signature is hex
         let tx_hex = hex::encode(tx_hash);
-        let tx_hex_len = (vector::length(&tx_hex) as u8);
+        let tx_hex_len = (vector::length(&tx_hex));
 
         let sign_info_prefix = auth_payload::sign_info_prefix(payload);
+        let sign_info_prefix_len = (vector::length(&sign_info_prefix));
+
         let sign_info = auth_payload::sign_info(payload);
+        let sign_info_len = (vector::length(&sign_info));
+
+        assert!(
+            sign_info_len + tx_hex_len <= 255,
+            auth_validator::error_invalid_authenticator()
+        );
 
         // append tx hash
         let full_tx = vector<u8>[];
 
-        let sign_info_prefix_len = (vector::length(&sign_info_prefix) as u8);
         if (sign_info_prefix_len > 0) {
-            vector::insert(&mut sign_info_prefix, 0, sign_info_prefix_len);
+            vector::insert(&mut sign_info_prefix, 0, (sign_info_prefix_len as u8));
             vector::append(&mut full_tx, sign_info_prefix);
         };
 
-        let sign_info_len = (vector::length(&sign_info) as u8);
         let sign_info_insert_index = 0u64;
         if (sign_info_prefix_len > 0) {
-            sign_info_insert_index = (sign_info_prefix_len as u64) + 1;
+            sign_info_insert_index = sign_info_prefix_len + 1;
         };
 
         if (vector::length(&sign_info) > 0) {
-            vector::insert(&mut full_tx, sign_info_insert_index,sign_info_len + tx_hex_len);
+            vector::insert(&mut full_tx, sign_info_insert_index, ((sign_info_len + tx_hex_len) as u8));
             vector::append(&mut full_tx, sign_info);
             vector::append(&mut full_tx, tx_hex);
         } else {
-            vector::insert(&mut full_tx, sign_info_insert_index, tx_hex_len);
+            vector::insert(&mut full_tx, sign_info_insert_index, (tx_hex_len as u8));
             vector::append(&mut full_tx, tx_hex);
         };
         // append tx hash end

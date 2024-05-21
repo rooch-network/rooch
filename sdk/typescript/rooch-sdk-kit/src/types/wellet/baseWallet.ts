@@ -140,15 +140,23 @@ export abstract class BaseWallet implements IAuthorizer {
    * @param msgInfo - Additional information about the message.
    * @returns A promise that resolves to the serialized signature object.
    */
-  async signMessageWithHashed(msgHash: Uint8Array, msgInfo: any): Promise<SerializedSignature> {
+  async signMessageWithHashed(msgHash: Uint8Array, msgInfo?: any): Promise<SerializedSignature> {
     let msgHex = Buffer.from(msgHash).toString('hex')
 
-    if (msgInfo.charAt(msgInfo.length - 1) !== '\n') {
+    if (msgInfo && msgInfo.charAt(msgInfo.length - 1) !== '\n') {
       msgInfo += '\n'
+      msgInfo = msgInfo + RoochSignPrefix
+    } else {
+      msgInfo = RoochSignPrefix
     }
 
-    msgInfo = msgInfo + RoochSignPrefix
     let fullMsg = msgInfo + msgHex
+
+    // TODO: remove this, btc contracts can be implemented with reference to eth，The stitching is done by the front end。
+    // Avoid the 255 length limit
+    if (fullMsg.length > 255) {
+      throw Error(`authInfo length cannot be greater than > ${fullMsg.length - msgHex.length}`)
+    }
 
     const sign = await this.sign(fullMsg)
 
