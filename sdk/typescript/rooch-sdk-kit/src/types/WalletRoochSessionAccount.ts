@@ -33,7 +33,7 @@ export class WalletRoochSessionAccount extends RoochSessionAccount {
       maxInactiveInterval,
       account,
       authInfo ??
-        `Welcome to ${window.location.hostname}\nYou will authorize session:\n${
+        `Welcome to ${appName}\nYou will authorize session:\n${
           'Scope:\n' +
           scopes
             .filter((v) => !v.startsWith('0x1') && !v.startsWith('0x3'))
