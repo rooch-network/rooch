@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use rooch_types::address::{BitcoinAddress, EthereumAddress, RoochAddress};
-use serde::{Deserialize, Serialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::str::FromStr;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -39,8 +39,8 @@ pub struct FixedBTCAddressRequest {
 
 impl<'de> Deserialize<'de> for FixedBTCAddressRequest {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         #[derive(Deserialize)]
         struct TempFixedBTCAddressRequest {
@@ -48,8 +48,8 @@ impl<'de> Deserialize<'de> for FixedBTCAddressRequest {
         }
 
         let temp = TempFixedBTCAddressRequest::deserialize(deserializer)?;
-        let recipient = BitcoinAddress::from_str(&temp.recipient)
-            .map_err(serde::de::Error::custom)?;
+        let recipient =
+            BitcoinAddress::from_str(&temp.recipient).map_err(serde::de::Error::custom)?;
 
         Ok(FixedBTCAddressRequest { recipient })
     }

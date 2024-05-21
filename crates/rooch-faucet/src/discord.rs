@@ -30,14 +30,15 @@ impl App {
 
         match value {
             CommandDataOptionValue::String(address) => {
-
                 let request = match address.starts_with("0x") {
-                    true => FaucetRequest::FixedRoochAddressRequest(FixedRoochAddressRequest{
-                        recipient: RoochAddress::from_str(address.as_str()).expect("Invalid address")
+                    true => FaucetRequest::FixedRoochAddressRequest(FixedRoochAddressRequest {
+                        recipient: RoochAddress::from_str(address.as_str())
+                            .expect("Invalid address"),
                     }),
-                    false => FaucetRequest::FixedBTCAddressRequest(FixedBTCAddressRequest{
-                        recipient: BitcoinAddress::from_str(address.as_str()).expect("Invalid address")
-                    })
+                    false => FaucetRequest::FixedBTCAddressRequest(FixedBTCAddressRequest {
+                        recipient: BitcoinAddress::from_str(address.as_str())
+                            .expect("Invalid address"),
+                    }),
                 };
 
                 let address = request.recipient().to_string();
@@ -48,7 +49,6 @@ impl App {
                 } else {
                     format!("Sending funds to {address:?}")
                 }
-
             }
             _ => "No address found!".to_string(),
         }
@@ -80,8 +80,12 @@ impl EventHandler for App {
         let command = CreateCommand::new("faucet")
             .description("Request funds from the faucet")
             .add_option(
-                CreateCommandOption::new(CommandOptionType::String, "address", "Your BTC/Rooch address")
-                    .required(true),
+                CreateCommandOption::new(
+                    CommandOptionType::String,
+                    "address",
+                    "Your BTC/Rooch address",
+                )
+                .required(true),
             );
 
         let guild_command = Command::create_global_command(&ctx.http, command).await;

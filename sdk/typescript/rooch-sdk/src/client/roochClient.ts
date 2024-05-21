@@ -442,7 +442,9 @@ export class RoochClient {
     const handleAddress = () => {
       switch (params.multiChainID) {
         case RoochMultiChainID.Bitcoin:
-          return Array.from(new MultiChainAddress(params.multiChainID, params.address).getRawAddress())
+          return Array.from(
+            new MultiChainAddress(params.multiChainID, params.address).getRawAddress(),
+          )
         case RoochMultiChainID.Ether:
           return Array.from(Buffer.from(params.address.substring(2), 'hex'))
         default:

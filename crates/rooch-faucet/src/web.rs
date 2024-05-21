@@ -146,7 +146,9 @@ async fn request_gas(
         tracing::warn!("request gas with ETH: {:?}", recipient);
         return (
             StatusCode::BAD_REQUEST,
-            Json(FaucetResponse::from(FaucetError::NotSupport("ETH".to_string()))),
+            Json(FaucetResponse::from(FaucetError::NotSupport(
+                "ETH".to_string(),
+            ))),
         );
     }
 
@@ -159,14 +161,14 @@ async fn request_gas(
                 StatusCode::CREATED,
                 Json(FaucetResponse::from("Success".to_string())),
             )
-        },
+        }
         Err(e) => {
             tracing::info!("request gas error: {}, {:?}", recipient, e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(FaucetResponse::from(e)),
             )
-        },
+        }
     }
 }
 

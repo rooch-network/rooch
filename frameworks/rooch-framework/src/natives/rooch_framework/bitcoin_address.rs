@@ -12,17 +12,17 @@ use bitcoin::{
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
+use move_vm_types::values::Struct;
 use move_vm_types::{
     loaded_data::runtime_types::Type,
     natives::function::NativeResult,
     pop_arg,
     values::{Value, VectorRef},
 };
-use move_vm_types::values::Struct;
 use moveos_stdlib::natives::helpers::{make_module_natives, make_native};
-use smallvec::smallvec;
 use moveos_types::state::{MoveState, MoveStructState};
 use rooch_types::address::BitcoinAddress;
+use smallvec::smallvec;
 
 pub fn new(
     gas_params: &FromBytesGasParameters,
@@ -33,8 +33,7 @@ pub fn new(
     let addr_bytes = pop_arg!(args, VectorRef);
     let addr_ref = addr_bytes.as_bytes_ref();
 
-    let cost = gas_params.base
-        + gas_params.per_byte * NumBytes::new(addr_ref.len() as u64);
+    let cost = gas_params.base + gas_params.per_byte * NumBytes::new(addr_ref.len() as u64);
 
     let Ok(addr_str) = std::str::from_utf8(&addr_ref) else {
         return Ok(NativeResult::err(cost, E_INVALID_PUBKEY));
@@ -47,7 +46,10 @@ pub fn new(
         }
     };
 
-    Ok(NativeResult::ok(cost, smallvec![Value::struct_(addr.to_runtime_value_struct())]))
+    Ok(NativeResult::ok(
+        cost,
+        smallvec![Value::struct_(addr.to_runtime_value_struct())],
+    ))
 }
 
 /// Returns true if the given pubkey is directly related to the address payload.
@@ -128,11 +130,14 @@ impl GasParameters {
     }
 }
 
-pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item=(String, NativeFunction)> {
-    let natives = [("new", make_native(gas_params.new, new)), (
-        "verify_with_pk",
-        make_native(gas_params.verify_with_pk, verify_with_pk),
-    )];
+pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
+    let natives = [
+        ("new", make_native(gas_params.new, new)),
+        (
+            "verify_with_pk",
+            make_native(gas_params.verify_with_pk, verify_with_pk),
+        ),
+    ];
 
     make_module_natives(natives)
 }

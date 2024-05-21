@@ -1,14 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    FaucetError,
-    metrics::FaucetMetrics,
-    FaucetRequest
-};
+use crate::{metrics::FaucetMetrics, FaucetError, FaucetRequest};
 use anyhow::Result;
 use clap::Parser;
 use move_core_types::language_storage::StructTag;
+use moveos_types::transaction::MoveAction;
 use prometheus::Registry;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_client::wallet_context::WalletContext;
@@ -20,7 +17,6 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::{mpsc::Receiver, RwLock, RwLockMappedWriteGuard, RwLockWriteGuard};
-use moveos_types::transaction::MoveAction;
 
 use rooch_rpc_api::jsonrpc_types::KeptVMStatusView;
 use rooch_types::error::{RoochError, RoochResult};
@@ -99,22 +95,19 @@ impl Faucet {
 
     async fn monitor_faucet_requests(&self) -> Result<(), FaucetError> {
         while let Some(request) = self.faucet_receiver.write().await.recv().await {
-
             match request {
                 FaucetRequest::FixedBTCAddressRequest(req) => {
                     let mul_addr = MultiChainAddress::from(req.recipient);
                     if let Err(e) = self.transfer_gases_with_multi_addr(mul_addr).await {
                         tracing::error!("Transfer gases failed {}", e)
                     }
-                },
+                }
                 FaucetRequest::FixedRoochAddressRequest(req) => {
                     if let Err(e) = self.transfer_gases(req.recipient).await {
                         tracing::error!("Transfer gases failed {}", e)
                     }
                 }
-                _ => {
-
-                }
+                _ => {}
             }
         }
 
@@ -127,8 +120,11 @@ impl Faucet {
     //     }
     // }
 
-    async fn execute_transaction<'a>(&self, action: MoveAction, state: RwLockWriteGuard<'a, State>) -> Result<(), FaucetError> {
-
+    async fn execute_transaction<'a>(
+        &self,
+        action: MoveAction,
+        state: RwLockWriteGuard<'a, State>,
+    ) -> Result<(), FaucetError> {
         let sender: RoochAddress = state.context.client_config.active_address.unwrap();
         let pwd = state.wallet_pwd.clone();
         let result = if let Some(session_key) = state.config.session_key.clone() {
@@ -163,7 +159,10 @@ impl Faucet {
         }
     }
 
-    async fn transfer_gases_with_multi_addr(&self, recipient: MultiChainAddress) -> Result<(), FaucetError> {
+    async fn transfer_gases_with_multi_addr(
+        &self,
+        recipient: MultiChainAddress,
+    ) -> Result<(), FaucetError> {
         tracing::info!("transfer gases recipient: {}", recipient);
 
         let state = self.state.write().await;
