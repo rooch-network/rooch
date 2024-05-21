@@ -92,3 +92,5 @@ impl EventHandler for App {
         tracing::info!("I created the following global slash command: {guild_command:#?}");
     }
 }
+
+default_amount

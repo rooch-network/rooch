@@ -110,7 +110,7 @@ impl Faucet {
                     if let Err(e) = self.transfer_gases(req.recipient).await {
                         tracing::error!("Transfer gases to {} failed {}", recipient_str, e)
                     } else {
-                        tracing::error!("Transfer gases to {} success", recipient_str)
+                        tracing::error!("Transfer gases to {} success {}", recipient_str)
                     }
                 }
                 _ => {}
