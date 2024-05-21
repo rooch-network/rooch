@@ -23,7 +23,7 @@ pub struct DiscordConfig {
 impl App {
     async fn handle_faucet_request(&self, options: &[CommandDataOption]) -> String {
         let value = options
-            .get(0)
+            .first()
             .expect("Expected address option")
             .value
             .clone();
