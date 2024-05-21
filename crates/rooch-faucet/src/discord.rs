@@ -13,7 +13,7 @@ use serenity::model::gateway::Ready;
 use serenity::prelude::*;
 use std::str::FromStr;
 
-#[derive(Parser, Clone)]
+#[derive(Parser, Debug, Clone)]
 #[clap(rename_all = "kebab-case")]
 pub struct DiscordConfig {
     #[arg(long, env = "ROOCH_FAUCET_DISCORD_TOKEN")]
@@ -92,3 +92,5 @@ impl EventHandler for App {
         tracing::info!("I created the following global slash command: {guild_command:#?}");
     }
 }
+
+default_amount

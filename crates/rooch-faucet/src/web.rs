@@ -31,7 +31,7 @@ const CONCURRENCY_LIMIT: usize = 10;
 
 // const PROM_PORT_ADDR: &str = "0.0.0.0:9184";
 
-#[derive(Parser, Clone)]
+#[derive(Parser, Debug, Clone)]
 #[clap(rename_all = "kebab-case")]
 pub struct AppConfig {
     #[clap(long, default_value_t = 50052)]
@@ -154,7 +154,7 @@ async fn request_gas(
 
     match result {
         Ok(()) => {
-            tracing::info!("request gas success: {}", recipient);
+            tracing::info!("request gas success add queue: {}", recipient);
             (
                 StatusCode::CREATED,
                 Json(FaucetResponse::from("Success".to_string())),
