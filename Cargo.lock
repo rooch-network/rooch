@@ -2467,6 +2467,7 @@ dependencies = [
  "lock_api",
  "once_cell",
  "parking_lot_core 0.9.10",
+ "serde 1.0.202",
 ]
 
 [[package]]
@@ -10462,9 +10463,12 @@ dependencies = [
  "base64 0.21.7",
  "bitflags 2.5.0",
  "bytes",
+ "dashmap",
  "flate2",
  "futures",
+ "fxhash",
  "mime_guess",
+ "parking_lot 0.12.2",
  "percent-encoding",
  "reqwest 0.11.27",
  "secrecy",

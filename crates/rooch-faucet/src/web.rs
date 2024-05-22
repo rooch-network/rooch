@@ -1,20 +1,21 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::path::PathBuf;
 use std::{
     borrow::Cow,
     env,
     net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::PathBuf,
     str::FromStr,
+    sync::{atomic::AtomicBool, Arc},
     time::Duration,
 };
-use tokio::sync::mpsc::Sender;
+use tokio::sync::mpsc::{Receiver, Sender};
 use tower::limit::RateLimitLayer;
 use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 
-use crate::{FaucetError, FaucetRequest, FaucetResponse, InfoResponse};
+use crate::{DiscordConfig, FaucetError, FaucetRequest, FaucetResponse, InfoResponse};
 
 use axum::{
     error_handling::HandleErrorLayer,
@@ -26,12 +27,10 @@ use axum::{
 use clap::Parser;
 use http::Method;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::language_storage::StructTag;
-use move_core_types::u256::U256;
 use prometheus::{Registry, TextEncoder};
-use rooch_rpc_client::wallet_context::WalletContext;
-use serde_json::json;
 use rooch_rpc_api::jsonrpc_types::{AccountAddressView, StructTagView};
+use rooch_rpc_client::wallet_context::WalletContext;
+use tokio::sync::RwLock;
 
 pub const METRICS_ROUTE: &str = "/metrics";
 
@@ -64,15 +63,26 @@ impl Default for AppConfig {
 
 #[derive(Clone, Debug)]
 pub struct App {
-    faucet_queue: Sender<FaucetRequest>,
-    wallet_config_dir: Option<PathBuf>,
+    pub faucet_queue: Sender<FaucetRequest>,
+    pub err_receiver: Arc<RwLock<Receiver<FaucetError>>>,
+    pub wallet_config_dir: Option<PathBuf>,
+    pub discord_config: DiscordConfig,
+    pub is_loop_running: Arc<AtomicBool>,
 }
 
 impl App {
-    pub fn new(faucet_queue: Sender<FaucetRequest>, wallet_config_dir: Option<PathBuf>) -> Self {
+    pub fn new(
+        faucet_queue: Sender<FaucetRequest>,
+        wallet_config_dir: Option<PathBuf>,
+        discord_config: DiscordConfig,
+        err_receiver: Receiver<FaucetError>,
+    ) -> Self {
         Self {
             faucet_queue,
             wallet_config_dir,
+            discord_config,
+            is_loop_running: Arc::new(AtomicBool::new(false)),
+            err_receiver: Arc::new(RwLock::new(err_receiver)),
         }
     }
 
@@ -94,7 +104,7 @@ impl App {
             .rooch
             .get_balance(
                 AccountAddressView::from(faucet_address),
-                StructTagView::from_str("0x3::gas_coin::GasCoin").unwrap()
+                StructTagView::from_str("0x3::gas_coin::GasCoin").unwrap(),
             )
             .await
             .map_err(FaucetError::internal)?;

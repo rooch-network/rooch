@@ -43,17 +43,25 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let registry = Registry::new();
     let (sender, receiver) = mpsc::channel(faucet_config.max_request_queue_length as usize);
-    let app = App::new(sender, faucet_config.wallet_config_dir.clone());
-    let faucet = Faucet::new(&registry, faucet_config, receiver)
+    let (err_sender, err_receiver) = mpsc::channel(faucet_config.max_request_queue_length as usize);
+    let app = App::new(
+        sender,
+        faucet_config.wallet_config_dir.clone(),
+        discord_config.clone(),
+        err_receiver,
+    );
+    let faucet = Faucet::new(&registry, faucet_config, receiver, err_sender)
         .await
         .expect("Failed to create faucet");
 
     let discord_client = if let Some(token) = discord_config
         .discord_token
+        .clone()
         .filter(|token| !token.is_empty())
     {
         // Set gateway intents, which decides what events the bot will be notified about
         let intents = GatewayIntents::GUILD_MESSAGES
+            | GatewayIntents::GUILDS
             | GatewayIntents::DIRECT_MESSAGES
             | GatewayIntents::MESSAGE_CONTENT;
 

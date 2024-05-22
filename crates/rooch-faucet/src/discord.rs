@@ -6,19 +6,40 @@ use clap::Parser;
 use rooch_types::address::{BitcoinAddress, RoochAddress};
 use serenity::all::{CommandDataOption, CommandDataOptionValue, CommandOptionType};
 use serenity::async_trait;
-use serenity::builder::{CreateCommand, CreateCommandOption};
-use serenity::builder::{CreateInteractionResponse, CreateInteractionResponseMessage};
-use serenity::model::application::{Command, Interaction};
-use serenity::model::gateway::Ready;
+use serenity::builder::{
+    CreateCommand, CreateCommandOption, CreateEmbed, CreateInteractionResponse,
+    CreateInteractionResponseMessage, CreateMessage,
+};
+use serenity::model::{
+    application::{Command, Interaction},
+    gateway::Ready,
+    id::{ChannelId, GuildId},
+};
 use serenity::prelude::*;
-use std::str::FromStr;
-use tokio::spawn;
+use std::{
+    str::FromStr,
+    sync::{atomic::Ordering, Arc},
+    time::Duration,
+};
 
 #[derive(Parser, Debug, Clone)]
 #[clap(rename_all = "kebab-case")]
 pub struct DiscordConfig {
     #[arg(long, env = "ROOCH_FAUCET_DISCORD_TOKEN")]
     pub discord_token: Option<String>,
+
+    #[arg(
+        long,
+        env = "ROOCH_FAUCET_NOTIFY_CHANNEL_ID",
+        default_value = "1239641898591977534"
+    )]
+    pub notify_channel_id: u64,
+
+    #[arg(long, env = "ROOCH_FAUCET_CHECK_INTERVAL", default_value = "1")]
+    pub check_interval: u64,
+
+    #[arg(long, env = "ROOCH_FAUCET_NOTIFY_THRESHOLD", default_value = "89999")]
+    pub notify_threshold: u64,
 }
 
 impl App {
@@ -76,25 +97,6 @@ impl EventHandler for App {
     async fn ready(&self, ctx: Context, ready: Ready) {
         tracing::info!("{} is connected!", ready.user.name);
 
-        // self.check_gas_balance()
-
-        let discord_handle = spawn(async move {
-            loop {
-                let channel_id = ChannelId(122);
-            }
-            // while let Some(message) = faucet_rx.recv().await {
-            //     if let FaucetMessage::LowWaterBalance(balance) = message {
-            //         // Replace with your channel ID and message content
-            //         let channel_id = ChannelId(123456789012345678); // Replace with your actual channel ID
-            //         let message_content = format!("Warning: Low water balance: {} units", balance);
-            //         if let Err(why) = channel_id.say(&discord.http, &message_content).await {
-            //             eprintln!("Error sending message: {:?}", why);
-            //         }
-            //     }
-            // }
-        });
-
-
         let command = CreateCommand::new("faucet")
             .description("Request funds from the faucet")
             .add_option(
@@ -111,10 +113,15 @@ impl EventHandler for App {
     }
 
     async fn cache_ready(&self, ctx: Context, _guilds: Vec<GuildId>) {
-        println!("Cache built successfully!");
+        tracing::info!("Cache built successfully!");
 
-        // It's safe to clone Context, but Arc is cheaper for this use case.
-        // Untested claim, just theoretically. :P
+        let discord_cfg = self.discord_config.clone();
+
+        if discord_cfg.notify_channel_id == 0 {
+            tracing::info!("Notify channel id is zero, not check gas balance!");
+            return;
+        }
+
         let ctx = Arc::new(ctx);
 
         // We need to check that the loop is not already running when this event triggers, as this
@@ -126,21 +133,64 @@ impl EventHandler for App {
         if !self.is_loop_running.load(Ordering::Relaxed) {
             // We have to clone the Arc, as it gets moved into the new thread.
             let ctx1 = Arc::clone(&ctx);
+            let app = Arc::new(self.clone());
             // tokio::spawn creates a new green thread that can run in parallel with the rest of
             // the application.
             tokio::spawn(async move {
                 loop {
-                    log_system_load(&ctx1).await;
-                    tokio::time::sleep(Duration::from_secs(120)).await;
+                    let result = app.check_gas_balance().await;
+
+                    match result {
+                        Ok(v) => {
+                            if v < discord_cfg.notify_threshold as f64 {
+                                let embed = CreateEmbed::new()
+                                    .title("Insufficient gas balance")
+                                    .field("current balance", v.to_string(), true);
+                                let builder = CreateMessage::new().embed(embed);
+                                let message = ChannelId::new(discord_cfg.notify_channel_id)
+                                    .send_message(&ctx1, builder)
+                                    .await;
+                                if let Err(why) = message {
+                                    tracing::error!("Error sending message: {why:?}");
+                                };
+                            }
+                        }
+                        Err(e) => {
+                            let embed = CreateEmbed::new().title("Check gas balance failed").field(
+                                "error",
+                                e.to_string(),
+                                false,
+                            );
+                            let builder = CreateMessage::new().embed(embed);
+                            let message = ChannelId::new(discord_cfg.notify_channel_id)
+                                .send_message(&ctx1, builder)
+                                .await;
+                            if let Err(why) = message {
+                                tracing::error!("Error sending message: {why:?}");
+                            };
+                        }
+                    }
+
+                    tokio::time::sleep(Duration::from_secs(discord_cfg.check_interval)).await;
                 }
             });
 
-            // And of course, we can run more than one thread at different timings.
             let ctx2 = Arc::clone(&ctx);
+            let app2 = Arc::new(self.clone());
             tokio::spawn(async move {
-                loop {
-                    set_activity_to_current_time(&ctx2);
-                    tokio::time::sleep(Duration::from_secs(60)).await;
+                while let Some(err) = app2.err_receiver.write().await.recv().await {
+                    let embed = CreateEmbed::new().title("Sending gas funds failed").field(
+                        "error",
+                        err.to_string(),
+                        false,
+                    );
+                    let builder = CreateMessage::new().embed(embed);
+                    let message = ChannelId::new(discord_cfg.notify_channel_id)
+                        .send_message(&ctx2, builder)
+                        .await;
+                    if let Err(why) = message {
+                        tracing::error!("Error sending message: {why:?}");
+                    };
                 }
             });
 
