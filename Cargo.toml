@@ -267,6 +267,7 @@ axum-server = { version = "0.5.1", default-features = false, features = [
 serenity = { version = "0.12.1", default-features = false, features = [
     "client",
     "gateway",
+    "cache",
     "rustls_backend",
     "model",
 ] }

@@ -16,7 +16,10 @@ use std::env;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
-use tokio::sync::{mpsc::Receiver, RwLock, RwLockWriteGuard};
+use tokio::sync::{
+    mpsc::{Receiver, Sender},
+    RwLock, RwLockWriteGuard,
+};
 
 use rooch_rpc_api::jsonrpc_types::KeptVMStatusView;
 use rooch_types::error::RoochError;
@@ -60,6 +63,7 @@ struct State {
 pub struct Faucet {
     state: Arc<RwLock<State>>,
     faucet_receiver: Arc<RwLock<Receiver<FaucetRequest>>>,
+    faucet_error_sender: Sender<FaucetError>,
 }
 
 // TODO: add queue bitch run ?
@@ -70,6 +74,7 @@ impl Faucet {
         prometheus_registry: &Registry,
         config: FaucetConfig,
         faucet_receiver: Receiver<FaucetRequest>,
+        faucet_error_sender: Sender<FaucetError>,
     ) -> Result<Self> {
         let wallet = WalletContext::new(config.wallet_config_dir.clone()).unwrap();
         let _metrics = FaucetMetrics::new(prometheus_registry);
@@ -85,33 +90,28 @@ impl Faucet {
                 context: wallet,
                 // metrics,
             })),
+            faucet_error_sender,
             faucet_receiver: Arc::new(RwLock::new(faucet_receiver)),
         })
     }
 
-    pub async fn start(self) -> Result<(), FaucetError> {
+    pub async fn start(self) -> Result<()> {
         self.monitor_faucet_requests().await
     }
 
-    async fn monitor_faucet_requests(&self) -> Result<(), FaucetError> {
+    async fn monitor_faucet_requests(&self) -> Result<()> {
         while let Some(request) = self.faucet_receiver.write().await.recv().await {
             match request {
                 FaucetRequest::FixedBTCAddressRequest(req) => {
-                    let recipient_str = req.recipient.to_string();
                     let mul_addr = MultiChainAddress::from(req.recipient);
-                    if let Err(e) = self.transfer_gases_with_multi_addr(mul_addr).await {
-                        tracing::error!("Transfer gases to {} failed {}", recipient_str, e)
-                    } else {
-                        tracing::error!("Transfer gases success {}", recipient_str)
-                    }
+                    self.transfer_gases_with_multi_addr(mul_addr)
+                        .await
+                        .expect("TODO: panic message");
                 }
                 FaucetRequest::FixedRoochAddressRequest(req) => {
-                    let recipient_str = req.recipient.to_string();
-                    if let Err(e) = self.transfer_gases(req.recipient).await {
-                        tracing::error!("Transfer gases to {} failed {}", recipient_str, e)
-                    } else {
-                        tracing::error!("Transfer gases to {} success", recipient_str)
-                    }
+                    self.transfer_gases(req.recipient)
+                        .await
+                        .expect("TODO: panic message");
                 }
                 _ => {}
             }
@@ -130,7 +130,7 @@ impl Faucet {
         &self,
         action: MoveAction,
         state: RwLockWriteGuard<'a, State>,
-    ) -> Result<(), FaucetError> {
+    ) -> Result<()> {
         let sender: RoochAddress = state.context.client_config.active_address.unwrap();
         let pwd = state.wallet_pwd.clone();
         let result = if let Some(session_key) = state.config.session_key.clone() {
@@ -155,20 +155,29 @@ impl Faucet {
 
         match result {
             Ok(tx) => match tx.execution_info.status {
-                KeptVMStatusView::Executed => Ok(()),
-                _ => Err(FaucetError::Transfer(format!(
-                    "{:?}",
-                    tx.execution_info.status
-                ))),
+                KeptVMStatusView::Executed => {
+                    tracing::info!(
+                        "Transfer gases success tx_has: {}",
+                        tx.execution_info.tx_hash
+                    );
+                }
+                _ => {
+                    // tracing::info!("Transfer gases success {}", recipient_str)
+                    let err = FaucetError::Transfer(format!("{:?}", tx.execution_info.status));
+                    tracing::error!("Transfer gases failed {}", err);
+                    let _ = self.faucet_error_sender.send(err).await;
+                }
             },
-            Err(e) => Err(FaucetError::transfer(e)),
-        }
+            Err(e) => {
+                let err = FaucetError::transfer(e);
+                tracing::error!("Transfer gases failed {}", err);
+                let _ = self.faucet_error_sender.send(err).await;
+            }
+        };
+        Ok(())
     }
 
-    async fn transfer_gases_with_multi_addr(
-        &self,
-        recipient: MultiChainAddress,
-    ) -> Result<(), FaucetError> {
+    async fn transfer_gases_with_multi_addr(&self, recipient: MultiChainAddress) -> Result<()> {
         tracing::info!("transfer gases recipient: {}", recipient);
 
         let state = self.state.write().await;
@@ -182,7 +191,7 @@ impl Faucet {
         self.execute_transaction(move_action, state).await
     }
 
-    async fn transfer_gases(&self, recipient: RoochAddress) -> Result<(), FaucetError> {
+    async fn transfer_gases(&self, recipient: RoochAddress) -> Result<()> {
         tracing::info!("transfer gases recipient: {}", recipient);
 
         let state = self.state.write().await;
