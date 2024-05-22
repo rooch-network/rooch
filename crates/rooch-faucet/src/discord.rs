@@ -31,14 +31,14 @@ pub struct DiscordConfig {
     #[arg(
         long,
         env = "ROOCH_FAUCET_NOTIFY_CHANNEL_ID",
-        default_value = "1239641898591977534"
+        default_value = "0"
     )]
     pub notify_channel_id: u64,
 
-    #[arg(long, env = "ROOCH_FAUCET_CHECK_INTERVAL", default_value = "1")]
+    #[arg(long, env = "ROOCH_FAUCET_CHECK_INTERVAL", default_value = "3600")]
     pub check_interval: u64,
 
-    #[arg(long, env = "ROOCH_FAUCET_NOTIFY_THRESHOLD", default_value = "89999")]
+    #[arg(long, env = "ROOCH_FAUCET_NOTIFY_THRESHOLD", default_value = "1000")]
     pub notify_threshold: u64,
 }
 
