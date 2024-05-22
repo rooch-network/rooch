@@ -12,6 +12,7 @@ use serenity::model::application::{Command, Interaction};
 use serenity::model::gateway::Ready;
 use serenity::prelude::*;
 use std::str::FromStr;
+use tokio::spawn;
 
 #[derive(Parser, Debug, Clone)]
 #[clap(rename_all = "kebab-case")]
@@ -40,8 +41,6 @@ impl App {
                             .expect("Invalid address"),
                     }),
                 };
-
-                let address = request.recipient().to_string();
 
                 if let Err(err) = self.request(request).await {
                     tracing::error!("Failed make faucet request for {address:?}: {}", err);
@@ -77,6 +76,25 @@ impl EventHandler for App {
     async fn ready(&self, ctx: Context, ready: Ready) {
         tracing::info!("{} is connected!", ready.user.name);
 
+        // self.check_gas_balance()
+
+        let discord_handle = spawn(async move {
+            loop {
+                let channel_id = ChannelId(122);
+            }
+            // while let Some(message) = faucet_rx.recv().await {
+            //     if let FaucetMessage::LowWaterBalance(balance) = message {
+            //         // Replace with your channel ID and message content
+            //         let channel_id = ChannelId(123456789012345678); // Replace with your actual channel ID
+            //         let message_content = format!("Warning: Low water balance: {} units", balance);
+            //         if let Err(why) = channel_id.say(&discord.http, &message_content).await {
+            //             eprintln!("Error sending message: {:?}", why);
+            //         }
+            //     }
+            // }
+        });
+
+
         let command = CreateCommand::new("faucet")
             .description("Request funds from the faucet")
             .add_option(
@@ -90,5 +108,44 @@ impl EventHandler for App {
 
         let guild_command = Command::create_global_command(&ctx.http, command).await;
         tracing::info!("I created the following global slash command: {guild_command:#?}");
+    }
+
+    async fn cache_ready(&self, ctx: Context, _guilds: Vec<GuildId>) {
+        println!("Cache built successfully!");
+
+        // It's safe to clone Context, but Arc is cheaper for this use case.
+        // Untested claim, just theoretically. :P
+        let ctx = Arc::new(ctx);
+
+        // We need to check that the loop is not already running when this event triggers, as this
+        // event triggers every time the bot enters or leaves a guild, along every time the ready
+        // shard event triggers.
+        //
+        // An AtomicBool is used because it doesn't require a mutable reference to be changed, as
+        // we don't have one due to self being an immutable reference.
+        if !self.is_loop_running.load(Ordering::Relaxed) {
+            // We have to clone the Arc, as it gets moved into the new thread.
+            let ctx1 = Arc::clone(&ctx);
+            // tokio::spawn creates a new green thread that can run in parallel with the rest of
+            // the application.
+            tokio::spawn(async move {
+                loop {
+                    log_system_load(&ctx1).await;
+                    tokio::time::sleep(Duration::from_secs(120)).await;
+                }
+            });
+
+            // And of course, we can run more than one thread at different timings.
+            let ctx2 = Arc::clone(&ctx);
+            tokio::spawn(async move {
+                loop {
+                    set_activity_to_current_time(&ctx2);
+                    tokio::time::sleep(Duration::from_secs(60)).await;
+                }
+            });
+
+            // Now that the loop is running, we set the bool to true
+            self.is_loop_running.swap(true, Ordering::Relaxed);
+        }
     }
 }

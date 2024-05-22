@@ -43,7 +43,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let registry = Registry::new();
     let (sender, receiver) = mpsc::channel(faucet_config.max_request_queue_length as usize);
-    let app = App::new(sender);
+    let app = App::new(sender, faucet_config.wallet_config_dir.clone());
     let faucet = Faucet::new(&registry, faucet_config, receiver)
         .await
         .expect("Failed to create faucet");
