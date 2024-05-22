@@ -1,6 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use framework_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
+use move_core_types::account_address::AccountAddress;
+use move_core_types::ident_str;
+use move_core_types::identifier::IdentStr;
+use moveos_types::state::{MoveStructState, MoveStructType};
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::{h256::H256, transaction::TransactionOutput};
 use serde::{Deserialize, Serialize};
@@ -49,22 +54,47 @@ pub struct TransactionSequenceInfo {
     /// The tx order
     pub tx_order: u64,
     /// The tx order signature, it is the signature of the sequencer to commit the tx order.
-    pub tx_order_signature: Authenticator,
+    pub tx_order_signature: Vec<u8>,
     /// The tx accumulator root after the tx is append to the accumulator.
     pub tx_accumulator_root: H256,
+    /// The timestamp of the sequencer when the tx is sequenced, in millisecond.
+    pub tx_timestamp: u64,
 }
 
 impl TransactionSequenceInfo {
     pub fn new(
         tx_order: u64,
-        tx_order_signature: Authenticator,
+        tx_order_signature: Vec<u8>,
         tx_accumulator_root: H256,
+        tx_timestamp: u64,
     ) -> TransactionSequenceInfo {
         TransactionSequenceInfo {
             tx_order,
             tx_order_signature,
             tx_accumulator_root,
+            tx_timestamp,
         }
+    }
+}
+
+impl MoveStructType for TransactionSequenceInfo {
+    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = ident_str!("transaction");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("TransactionSequenceInfo");
+}
+
+impl MoveStructState for TransactionSequenceInfo {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![
+            move_core_types::value::MoveTypeLayout::U64,
+            move_core_types::value::MoveTypeLayout::Vector(Box::new(
+                move_core_types::value::MoveTypeLayout::U8,
+            )),
+            move_core_types::value::MoveTypeLayout::Vector(Box::new(
+                move_core_types::value::MoveTypeLayout::U8,
+            )),
+            move_core_types::value::MoveTypeLayout::U64,
+        ])
     }
 }
 

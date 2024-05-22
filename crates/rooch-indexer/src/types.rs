@@ -43,9 +43,6 @@ pub struct IndexedTransaction {
     pub gas_used: u64,
     // the vm status.
     pub status: String,
-    // The tx order signature,
-    pub tx_order_auth_validator_id: u64,
-    pub tx_order_authenticator_payload: Vec<u8>,
 
     pub created_at: u64,
 }
@@ -92,15 +89,7 @@ impl IndexedTransaction {
             // the vm status.
             status,
 
-            // The tx order signature,
-            tx_order_auth_validator_id: transaction
-                .sequence_info
-                .tx_order_signature
-                .auth_validator_id,
-            tx_order_authenticator_payload: transaction.sequence_info.tx_order_signature.payload,
-
-            //TODO record transaction timestamp
-            created_at: 0,
+            created_at: transaction.sequence_info.tx_timestamp,
         };
         Ok(indexed_transaction)
     }
@@ -146,8 +135,7 @@ impl IndexedEvent {
             tx_order: transaction.sequence_info.tx_order,
             sender: moveos_tx.ctx.sender,
 
-            //TODO record transaction timestamp
-            created_at: 0,
+            created_at: transaction.sequence_info.tx_timestamp,
         }
     }
 }

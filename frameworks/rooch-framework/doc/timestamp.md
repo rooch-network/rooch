@@ -7,7 +7,7 @@ This module keeps a global wall clock that stores the current Unix time in milli
 It interacts with the other modules in the following ways:
 * genesis: to initialize the timestamp
 * L1 block: update the timestamp via L1s block header timestamp
-* TickTransaction: update the timestamp via the time offset in the TickTransaction(TODO)
+* L2 transactions: update the timestamp via L2 transaction's timestamp
 
 
 -  [Resource `Timestamp`](#0x3_timestamp_Timestamp)
@@ -15,6 +15,7 @@ It interacts with the other modules in the following ways:
 -  [Function `genesis_init`](#0x3_timestamp_genesis_init)
 -  [Function `update_global_time`](#0x3_timestamp_update_global_time)
 -  [Function `try_update_global_time`](#0x3_timestamp_try_update_global_time)
+-  [Function `try_update_global_time_internal`](#0x3_timestamp_try_update_global_time_internal)
 -  [Function `timestamp`](#0x3_timestamp_timestamp)
 -  [Function `milliseconds`](#0x3_timestamp_milliseconds)
 -  [Function `seconds`](#0x3_timestamp_seconds)
@@ -110,6 +111,17 @@ Only the framework genesis account can update the global clock time.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x3_timestamp_try_update_global_time">try_update_global_time</a>(genesis_account: &<a href="">signer</a>, timestamp_milliseconds: u64): bool
+</code></pre>
+
+
+
+<a name="0x3_timestamp_try_update_global_time_internal"></a>
+
+## Function `try_update_global_time_internal`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="timestamp.md#0x3_timestamp_try_update_global_time_internal">try_update_global_time_internal</a>(timestamp_milliseconds: u64): bool
 </code></pre>
 
 

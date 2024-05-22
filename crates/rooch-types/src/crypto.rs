@@ -5,7 +5,6 @@ use crate::{
     address::RoochAddress,
     authentication_key::AuthenticationKey,
     error::{RoochError, RoochResult},
-    framework::auth_validator::BuiltinAuthValidator,
 };
 use derive_more::{AsMut, AsRef, From};
 pub use enum_dispatch::enum_dispatch;
@@ -34,6 +33,25 @@ use std::{hash::Hash, str::FromStr};
 
 pub type DefaultHash = Blake2b256;
 
+pub enum SignatureScheme {
+    Ed25519,
+}
+
+impl SignatureScheme {
+    pub fn flag(&self) -> u8 {
+        match self {
+            SignatureScheme::Ed25519 => 0,
+        }
+    }
+
+    pub fn from_flag_byte(byte_int: u8) -> Result<SignatureScheme, RoochError> {
+        match byte_int {
+            0 => Ok(SignatureScheme::Ed25519),
+            _ => Err(RoochError::InvalidSignatureScheme),
+        }
+    }
+}
+
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, From, PartialEq, Eq)]
 pub enum RoochKeyPair {
@@ -55,6 +73,13 @@ impl RoochKeyPair {
         match self {
             RoochKeyPair::Ed25519(kp) => RoochKeyPair::Ed25519(kp.copy()),
         }
+    }
+
+    #[cfg(test)]
+    pub fn generate_for_testing() -> Self {
+        let rng = &mut rand::thread_rng();
+        let ed25519_keypair = Ed25519KeyPair::generate(rng);
+        RoochKeyPair::Ed25519(ed25519_keypair)
     }
 }
 
@@ -92,13 +117,15 @@ impl EncodeDecodeBase64 for RoochKeyPair {
     /// Decode a RoochKeyPair from `flag || privkey` in Base64. The public key is computed directly from the private key bytes.
     fn decode_base64(value: &str) -> Result<Self, eyre::Report> {
         let bytes = Base64::decode(value).map_err(|e| eyre!("{}", e.to_string()))?;
-        match BuiltinAuthValidator::from_flag_byte(
+        match SignatureScheme::from_flag_byte(
             *bytes.first().ok_or_else(|| eyre!("Invalid length"))?,
         ) {
             // Process Rooch key pair by default
-            Ok(_x) => Ok(RoochKeyPair::Ed25519(Ed25519KeyPair::from_bytes(
-                bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
-            )?)),
+            Ok(scheme) => match scheme {
+                SignatureScheme::Ed25519 => Ok(RoochKeyPair::Ed25519(Ed25519KeyPair::from_bytes(
+                    bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
+                )?)),
+            },
             _ => Err(eyre!("Invalid bytes")),
         }
     }
@@ -151,7 +178,7 @@ impl EncodeDecodeBase64 for PublicKey {
         let bytes = Base64::decode(value).map_err(|e| eyre!("{}", e.to_string()))?;
         match bytes.first() {
             Some(x) => {
-                if x == &BuiltinAuthValidator::Rooch.flag() {
+                if x == &SignatureScheme::Ed25519.flag() {
                     let pk: Ed25519PublicKey = Ed25519PublicKey::from_bytes(
                         bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
                     )?;
@@ -193,16 +220,8 @@ impl PublicKey {
             PublicKey::Ed25519(_) => Ed25519RoochSignature::SCHEME.flag(),
         }
     }
-    pub fn try_from_bytes(
-        _auth_validator: BuiltinAuthValidator,
-        key_bytes: &[u8],
-    ) -> Result<PublicKey, eyre::Report> {
-        // Process Rooch public key by default
-        Ok(PublicKey::Ed25519(
-            (&Ed25519PublicKey::from_bytes(key_bytes)?).into(),
-        ))
-    }
-    pub fn auth_validator(&self) -> BuiltinAuthValidator {
+
+    pub fn auth_validator(&self) -> SignatureScheme {
         match self {
             PublicKey::Ed25519(_) => Ed25519RoochSignature::SCHEME,
         }
@@ -218,11 +237,11 @@ impl PublicKey {
 }
 
 pub trait RoochPublicKey: VerifyingKey {
-    const SIGNATURE_SCHEME: BuiltinAuthValidator;
+    const SIGNATURE_SCHEME: SignatureScheme;
 }
 
 impl RoochPublicKey for Ed25519PublicKey {
-    const SIGNATURE_SCHEME: BuiltinAuthValidator = BuiltinAuthValidator::Rooch;
+    const SIGNATURE_SCHEME: SignatureScheme = SignatureScheme::Ed25519;
 }
 
 impl<T: RoochPublicKey> From<&T> for RoochAddress {
@@ -269,7 +288,7 @@ pub trait RoochSignatureInner: Sized + ToFromBytes + PartialEq + Eq + Hash {
     type KeyPair: KeypairTraits<PubKey = Self::PubKey, Sig = Self::Sig>;
 
     const LENGTH: usize = Self::Sig::LENGTH + Self::PubKey::LENGTH + 1;
-    const SCHEME: BuiltinAuthValidator = Self::PubKey::SIGNATURE_SCHEME;
+    const SCHEME: SignatureScheme = Self::PubKey::SIGNATURE_SCHEME;
 
     fn get_verification_inputs(
         &self,
@@ -442,7 +461,7 @@ impl AsRef<[u8]> for CompressedSignature {
 pub trait RoochSignature: Sized + ToFromBytes {
     fn signature_bytes(&self) -> &[u8];
     fn public_key_bytes(&self) -> &[u8];
-    fn auth_validator(&self) -> BuiltinAuthValidator;
+    fn scheme(&self) -> SignatureScheme;
 
     fn verify_secure<T>(&self, value: &T, author: RoochAddress) -> RoochResult<()>
     where
@@ -462,7 +481,7 @@ impl<S: RoochSignatureInner + Sized> RoochSignature for S {
         &self.as_ref()[S::Sig::LENGTH + 1..]
     }
 
-    fn auth_validator(&self) -> BuiltinAuthValidator {
+    fn scheme(&self) -> SignatureScheme {
         S::PubKey::SIGNATURE_SCHEME
     }
 

@@ -675,21 +675,6 @@
           }
         ]
       },
-      "AuthenticatorView": {
-        "type": "object",
-        "required": [
-          "auth_validator_id",
-          "payload"
-        ],
-        "properties": {
-          "auth_validator_id": {
-            "$ref": "#/components/schemas/u64"
-          },
-          "payload": {
-            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
-          }
-        }
-      },
       "BalanceInfoView": {
         "type": "object",
         "required": [
@@ -2556,7 +2541,8 @@
         "required": [
           "tx_accumulator_root",
           "tx_order",
-          "tx_order_signature"
+          "tx_order_signature",
+          "tx_timestamp"
         ],
         "properties": {
           "tx_accumulator_root": {
@@ -2566,7 +2552,10 @@
             "$ref": "#/components/schemas/u64"
           },
           "tx_order_signature": {
-            "$ref": "#/components/schemas/AuthenticatorView"
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          },
+          "tx_timestamp": {
+            "$ref": "#/components/schemas/u64"
           }
         }
       },

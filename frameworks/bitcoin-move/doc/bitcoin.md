@@ -16,6 +16,7 @@
 -  [Function `get_block_by_height`](#0x4_bitcoin_get_block_by_height)
 -  [Function `get_genesis_block_height`](#0x4_bitcoin_get_genesis_block_height)
 -  [Function `get_latest_block_height`](#0x4_bitcoin_get_latest_block_height)
+-  [Function `get_bitcoin_time`](#0x4_bitcoin_get_bitcoin_time)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -182,4 +183,16 @@ Get latest block height
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_get_latest_block_height">get_latest_block_height</a>(): <a href="_Option">option::Option</a>&lt;u64&gt;
+</code></pre>
+
+
+
+<a name="0x4_bitcoin_get_bitcoin_time"></a>
+
+## Function `get_bitcoin_time`
+
+Get the bitcoin time, if the latest block is not exist, return 0
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_get_bitcoin_time">get_bitcoin_time</a>(): u32
 </code></pre>

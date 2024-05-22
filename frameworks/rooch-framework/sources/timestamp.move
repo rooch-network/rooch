@@ -5,7 +5,7 @@
 /// It interacts with the other modules in the following ways:
 /// * genesis: to initialize the timestamp
 /// * L1 block: update the timestamp via L1s block header timestamp
-/// * TickTransaction: update the timestamp via the time offset in the TickTransaction(TODO)
+/// * L2 transactions: update the timestamp via L2 transaction's timestamp 
 module rooch_framework::timestamp {
 
     use moveos_std::object;
@@ -13,6 +13,7 @@ module rooch_framework::timestamp {
     use moveos_std::core_addresses;
 
     friend rooch_framework::genesis;
+    friend rooch_framework::transaction_validator;
 
     /// A object holding the current Unix time in milliseconds
     struct Timestamp has key {
@@ -45,7 +46,10 @@ module rooch_framework::timestamp {
     public fun try_update_global_time(genesis_account: &signer, timestamp_milliseconds: u64) : bool {
         let genesis_address = signer::address_of(genesis_account);
         assert!(core_addresses::is_system_reserved_address(genesis_address), ErrorNotGenesisAddress);
+        try_update_global_time_internal(timestamp_milliseconds)
+    }
 
+    public(friend) fun try_update_global_time_internal(timestamp_milliseconds: u64) : bool {
         let current_timestamp = timestamp_mut(); 
         let now = current_timestamp.milliseconds;
         if(now < timestamp_milliseconds) {
@@ -91,6 +95,11 @@ module rooch_framework::timestamp {
         seconds * MILLI_CONVERSION_FACTOR
     }
 
+    fun fast_forward_seconds(timestamp_seconds: u64) {
+        let now_milliseconds = now_milliseconds();
+        update_global_time(now_milliseconds + (timestamp_seconds * MILLI_CONVERSION_FACTOR));
+    }
+
     #[test_only]
     public fun update_global_time_for_test(timestamp_milliseconds: u64){
         update_global_time(timestamp_milliseconds);
@@ -106,13 +115,7 @@ module rooch_framework::timestamp {
         fast_forward_seconds(timestamp_seconds)
     }
 
-    fun fast_forward_seconds(timestamp_seconds: u64) {
-        let now_milliseconds = now_milliseconds();
-        update_global_time(now_milliseconds + (timestamp_seconds * MILLI_CONVERSION_FACTOR));
-    }
-
     /// Fast forwards the clock by the given number of seconds, but only if the chain is in local mode.
-    //TODO find a better way to do this, maybe some module that is only available in local chain?
     public entry fun fast_forward_seconds_for_local(timestamp_seconds: u64) {
         assert!(rooch_framework::chain_id::is_local(), ErrorInvalidTimestamp);
         fast_forward_seconds(timestamp_seconds);
