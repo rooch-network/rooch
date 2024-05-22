@@ -62,7 +62,8 @@ module moveos_std::module_store {
     // ==== Module functions ====
 
     public fun exists_package(module_object: &Object<ModuleStore>, package_id: address): bool {
-        object::contains_field(module_object, package_id)
+        let package_obj_id = object::custom_child_object_id<address, Package>(object::id(module_object), package_id);
+        object::contains_object_field<ModuleStore, Package>(module_object, package_obj_id)
     }
 
     /// Check if module exists
@@ -114,9 +115,7 @@ module moveos_std::module_store {
 
         if (!exists_package(module_object, package_id)) {
             let package = object::add_object_field_with_id(module_object, package_id, Package {});
-            let package_obj_id = object::id(&package);
-            object::add_field(module_object, package_id, package_obj_id);
-            object::transfer(package, tx_context::sender());
+            object::transfer_extend(package, tx_context::sender());
         };
         let package = borrow_mut_package(module_object, package_id);
 
@@ -145,12 +144,12 @@ module moveos_std::module_store {
     }
 
     fun borrow_package(module_store: &Object<ModuleStore>, package_id: address): &Object<Package> {
-        let package_obj_id = object::borrow_field(module_store, package_id);
+        let package_obj_id = object::custom_child_object_id<address, Package>(object::id(module_store), package_id);
         object::borrow_object_field<ModuleStore, Package>(module_store, package_obj_id)
     }
 
     fun borrow_mut_package(module_store: &mut Object<ModuleStore>, package_id: address): &mut Object<Package> {
-        let package_obj_id = object::borrow_field(module_store, package_id);
+        let package_obj_id = object::custom_child_object_id<address, Package>(object::id(module_store), package_id);
         object::borrow_mut_object_field<ModuleStore, Package>(module_store, package_obj_id)
     }
 
