@@ -66,9 +66,6 @@ pub struct Faucet {
     faucet_error_sender: Sender<FaucetError>,
 }
 
-// TODO: add queue bitch run ?
-// TODO: retry ?
-// TODO: record faucet address
 impl Faucet {
     pub async fn new(
         prometheus_registry: &Registry,
@@ -119,12 +116,6 @@ impl Faucet {
 
         Ok(())
     }
-
-    // TODO: check balance
-    // async fn monitor_check_ba(&self) -> Result<()> {
-    //     loop {
-    //     }
-    // }
 
     async fn execute_transaction<'a>(
         &self,
