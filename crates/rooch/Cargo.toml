@@ -86,6 +86,7 @@ rooch-rpc-api = { workspace = true }
 rooch-rpc-server = { workspace = true }
 rooch-rpc-client = { workspace = true }
 rooch-integration-test-runner = { workspace = true }
+rooch-indexer = { workspace = true }
 
 framework-release = { workspace = true }
 

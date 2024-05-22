@@ -88,7 +88,6 @@ fn random_new_field_states() -> Vec<IndexedFieldState> {
         let state = IndexedFieldState::new(
             ObjectID::from(AccountAddress::random()),
             H256::random().to_string(),
-            random_string(),
             random_type_tag(),
             random_type_tag(),
             n as u64,
@@ -107,7 +106,6 @@ fn random_update_field_states(states: Vec<IndexedFieldState>) -> Vec<IndexedFiel
         .map(|item| IndexedFieldState {
             object_id: item.object_id,
             key_hex: item.key_hex,
-            key_str: random_string(),
             key_type: random_type_tag(),
             value_type: random_type_tag(),
             tx_order: item.tx_order,

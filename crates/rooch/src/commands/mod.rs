@@ -5,6 +5,7 @@ pub mod abi;
 pub mod account;
 pub mod env;
 pub mod event;
+pub mod indexer;
 pub mod init;
 pub mod move_cli;
 pub mod object;

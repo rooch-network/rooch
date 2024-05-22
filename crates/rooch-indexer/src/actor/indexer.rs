@@ -4,28 +4,22 @@
 use crate::actor::messages::{
     IndexerEventsMessage, IndexerStatesMessage, IndexerTransactionMessage,
 };
+use crate::actor::{new_field_state, new_object_state_from_raw_object};
 use crate::store::traits::IndexerStoreTrait;
 use crate::types::{IndexedEvent, IndexedFieldState, IndexedObjectState, IndexedTransaction};
-use crate::utils::format_struct_tag;
 use crate::IndexerStore;
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use move_core_types::effects::Op;
-use move_core_types::language_storage::TypeTag;
-use move_core_types::resolver::MoveResolver;
-use move_resource_viewer::MoveValueAnnotator;
 use moveos_store::MoveOSStore;
 use moveos_types::moveos_std::object::{ObjectID, RootObjectEntity};
-use moveos_types::state::{FieldChange, KeyState, MoveStructType, ObjectChange, State};
-use moveos_types::state_resolver::RootObjectResolver;
-use rooch_rpc_api::jsonrpc_types::AnnotatedMoveValueView;
-use rooch_types::bitcoin::utxo::UTXO;
+use moveos_types::state::{FieldChange, ObjectChange};
 
 pub struct IndexerActor {
     root: RootObjectEntity,
     indexer_store: IndexerStore,
-    moveos_store: MoveOSStore,
+    _moveos_store: MoveOSStore,
 }
 
 impl IndexerActor {
@@ -37,70 +31,13 @@ impl IndexerActor {
         Ok(Self {
             root,
             indexer_store,
-            moveos_store,
+            _moveos_store: moveos_store,
         })
-    }
-
-    pub fn resolve_state_to_json(
-        resolver: &dyn MoveResolver,
-        ty_tag: &TypeTag,
-        value: &[u8],
-    ) -> Result<String> {
-        let annotator_state = MoveValueAnnotator::new(&resolver).view_value(ty_tag, value)?;
-        let annotator_state_view = AnnotatedMoveValueView::from(annotator_state);
-        let annotator_state_json = serde_json::to_string(&annotator_state_view)?;
-        Ok(annotator_state_json)
-    }
-
-    pub fn is_utxo_object(&self, state_opt: Option<State>) -> bool {
-        match state_opt {
-            Some(state) => state.match_struct_type(&UTXO::struct_tag()),
-            None => false,
-        }
-    }
-
-    pub fn new_object_state_from_raw_object(
-        &self,
-        value: State,
-        tx_order: u64,
-        state_index: u64,
-    ) -> Result<IndexedObjectState> {
-        let raw_object = value.as_raw_object()?;
-        let object_type = format_struct_tag(raw_object.value.struct_tag.clone());
-
-        let state =
-            IndexedObjectState::new_from_raw_object(raw_object, object_type, tx_order, state_index);
-        Ok(state)
-    }
-
-    pub fn new_field_state(
-        &self,
-        key: KeyState,
-        value: State,
-        object_id: ObjectID,
-        tx_order: u64,
-        state_index: u64,
-    ) -> Result<IndexedFieldState> {
-        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
-        let key_hex = key.to_string();
-        let key_state_json =
-            Self::resolve_state_to_json(&resolver, &key.key_type, key.key.as_slice())?;
-        let state = IndexedFieldState::new(
-            object_id,
-            key_hex,
-            key_state_json,
-            key.key_type,
-            value.value_type,
-            tx_order,
-            state_index,
-        );
-        Ok(state)
     }
 
     //TODO wrap the arguments to a struct
     #[allow(clippy::too_many_arguments)]
     fn handle_object_change(
-        &self,
         mut state_index_generator: u64,
         tx_order: u64,
         new_object_states: &mut Vec<IndexedObjectState>,
@@ -119,11 +56,8 @@ impl IndexerActor {
             match op {
                 Op::Modify(value) => {
                     debug_assert!(value.is_object());
-                    let state = self.new_object_state_from_raw_object(
-                        value,
-                        tx_order,
-                        state_index_generator,
-                    )?;
+                    let state =
+                        new_object_state_from_raw_object(value, tx_order, state_index_generator)?;
                     update_object_states.push(state);
                 }
                 Op::Delete => {
@@ -132,11 +66,8 @@ impl IndexerActor {
                 }
                 Op::New(value) => {
                     debug_assert!(value.is_object());
-                    let state = self.new_object_state_from_raw_object(
-                        value,
-                        tx_order,
-                        state_index_generator,
-                    )?;
+                    let state =
+                        new_object_state_from_raw_object(value, tx_order, state_index_generator)?;
                     new_object_states.push(state);
                 }
             }
@@ -148,7 +79,7 @@ impl IndexerActor {
                 FieldChange::Normal(normal_change) => {
                     match normal_change.op {
                         Op::Modify(value) => {
-                            let state = self.new_field_state(
+                            let state = new_field_state(
                                 key,
                                 value,
                                 object_id.clone(),
@@ -161,7 +92,7 @@ impl IndexerActor {
                             remove_field_states.push((object_id.to_string(), key.to_string()));
                         }
                         Op::New(value) => {
-                            let state = self.new_field_state(
+                            let state = new_field_state(
                                 key,
                                 value,
                                 object_id.clone(),
@@ -174,7 +105,7 @@ impl IndexerActor {
                     state_index_generator += 1;
                 }
                 FieldChange::Object(object_change) => {
-                    state_index_generator = self.handle_object_change(
+                    state_index_generator = Self::handle_object_change(
                         state_index_generator,
                         tx_order,
                         new_object_states,
@@ -222,7 +153,7 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
         let mut remove_field_states_by_object_id = vec![];
 
         for (object_id, object_change) in state_change_set.changes {
-            state_index_generator = self.handle_object_change(
+            state_index_generator = Self::handle_object_change(
                 state_index_generator,
                 tx_order,
                 &mut new_object_states,

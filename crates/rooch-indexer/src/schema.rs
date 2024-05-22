@@ -36,7 +36,6 @@ diesel::table! {
     field_states (object_id, key_hex) {
         object_id -> Text,
         key_hex -> Text,
-        key_str -> Text,
         key_type -> Text,
         value_type -> Text,
         tx_order -> BigInt,

@@ -100,9 +100,6 @@ pub struct StoredFieldState {
     /// The hex of the table key
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub key_hex: String,
-    /// The key of the table, json format
-    #[diesel(sql_type = diesel::sql_types::Text)]
-    pub key_str: String,
     /// The type tag of the key
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub key_type: String,
@@ -128,7 +125,6 @@ impl From<IndexedFieldState> for StoredFieldState {
         Self {
             object_id: state.object_id.to_string(),
             key_hex: state.key_hex,
-            key_str: state.key_str,
             key_type: state.key_type.to_string(),
             value_type: state.value_type.to_string(),
             tx_order: state.tx_order as i64,
@@ -148,7 +144,6 @@ impl StoredFieldState {
         let state = IndexerFieldState {
             object_id,
             key_hex: self.key_hex.clone(),
-            key_str: self.key_str.clone(),
             key_type,
             value_type,
             tx_order: self.tx_order as u64,

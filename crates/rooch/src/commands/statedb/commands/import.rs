@@ -29,7 +29,9 @@ use rooch_types::rooch_network::RoochChainID;
 use smt::{TreeChangeSet, UpdateSet};
 
 use crate::commands::statedb::commands::export::ExportID;
-use crate::commands::statedb::commands::{init_statedb, STATE_HEADER_PREFIX};
+use crate::commands::statedb::commands::{
+    init_statedb, GLOBAL_STATE_TYPE_PREFIX, GLOBAL_STATE_TYPE_ROOT,
+};
 
 /// Import statedb
 #[derive(Debug, Parser)]
@@ -74,7 +76,7 @@ impl ImportCommand {
             .map_err(|_e| RoochError::from(Error::msg("Produce updates error".to_string())))?;
         let _ = apply_updates_thread
             .join()
-            .map_err(|_e| RoochError::from(Error::msg("Produce updates error ".to_string())))?;
+            .map_err(|_e| RoochError::from(Error::msg("Apply updates error ".to_string())))?;
 
         Ok(())
     }
@@ -97,24 +99,21 @@ impl ImportCommand {
 }
 
 struct BatchUpdates {
-    states: BTreeMap<StateRootKey, UpdateSet<KeyState, State>>,
+    states: BTreeMap<StateID, UpdateSet<KeyState, State>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Ord, Eq, PartialOrd, PartialEq)]
-pub struct StateRootKey {
-    pub object_id: ObjectID,
+pub struct StateID {
+    pub export_id: ExportID,
     // start state root
-    pub state_root: H256,
-    // eventual expect state root
-    pub eventual_state_root: H256,
+    pub pre_state_root: H256,
 }
 
-impl StateRootKey {
-    pub fn new(object_id: ObjectID, state_root: H256, eventual_state_root: H256) -> Self {
+impl StateID {
+    pub fn new(export_id: ExportID, pre_state_root: H256) -> Self {
         Self {
-            object_id,
-            state_root,
-            eventual_state_root,
+            export_id,
+            pre_state_root,
         }
     }
 }
@@ -127,7 +126,7 @@ fn produce_updates(
     batch_size: usize,
 ) -> Result<()> {
     let mut csv_reader = BufReader::new(File::open(input).unwrap());
-    let mut last_state_root_key = None;
+    let mut last_state_id = None;
     loop {
         let mut updates = BatchUpdates {
             states: BTreeMap::new(),
@@ -135,30 +134,29 @@ fn produce_updates(
         for line in csv_reader.by_ref().lines().take(batch_size) {
             let line = line?;
 
-            if line.starts_with(STATE_HEADER_PREFIX) {
-                let (c1, c2) = parse_state_data_from_csv_line(&line)?;
-                let export_id = ExportID::from_str(&c1)?;
-                let eventual_state_root = H256::from_str(&c2)?;
-                // TODO add cache to avoid duplicate read smt
-                let state_root =
-                    get_state_root(moveos_store, root_state_root, export_id.object_id.clone())?;
+            if line.starts_with(GLOBAL_STATE_TYPE_PREFIX) {
+                // TODO check current statedb root state root
+                if line.starts_with(GLOBAL_STATE_TYPE_ROOT) {
+                    break;
+                }
+                let (_c1, c2) = parse_state_data_from_csv_line(&line)?;
+                let export_id = ExportID::from_str(&c2)?;
+                // let eventual_state_root = export_id.parent_state_root;
+                // // TODO add cache to avoid duplicate read smt
+                let pre_state_root =
+                    get_pre_state_root(moveos_store, root_state_root, export_id.object_id.clone())?;
 
-                let state_root_key =
-                    StateRootKey::new(export_id.object_id, state_root, eventual_state_root);
-                updates
-                    .states
-                    .insert(state_root_key.clone(), UpdateSet::new());
-                last_state_root_key = Some(state_root_key);
+                let state_id = StateID::new(export_id, pre_state_root);
+                updates.states.insert(state_id.clone(), UpdateSet::new());
+                last_state_id = Some(state_id);
                 continue;
             }
 
             let (c1, c2) = parse_state_data_from_csv_line(&line)?;
             let key_state = KeyState::from_str(&c1)?;
             let state = State::from_str(&c2)?;
-            let state_root_key = last_state_root_key
-                .clone()
-                .expect("State root key should have value");
-            let update_set = updates.states.entry(state_root_key).or_default();
+            let state_id = last_state_id.clone().expect("State ID should have value");
+            let update_set = updates.states.entry(state_id).or_default();
             update_set.put(key_state, state);
         }
         if updates.states.is_empty() {
@@ -172,7 +170,7 @@ fn produce_updates(
 }
 
 // csv format: c1,c2
-fn parse_state_data_from_csv_line(line: &str) -> Result<(String, String)> {
+pub fn parse_state_data_from_csv_line(line: &str) -> Result<(String, String)> {
     let str_list: Vec<&str> = line.trim().split(',').collect();
     if str_list.len() != 2 {
         return Err(Error::from(RoochError::from(Error::msg(format!(
@@ -197,9 +195,9 @@ fn apply_updates_to_state(
     while let Ok(batch) = rx.recv() {
         let loop_start_time = SystemTime::now();
 
-        for (state_root_key, update_set) in batch.states.into_iter() {
+        for (state_id, update_set) in batch.states.into_iter() {
             let mut tree_change_set =
-                apply_fields(&moveos_store, state_root_key.state_root, update_set)?;
+                apply_fields(&moveos_store, state_id.pre_state_root, update_set)?;
             let mut nodes: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
             nodes.append(&mut tree_change_set.nodes);
             last_state_root = tree_change_set.state_root;
@@ -208,9 +206,9 @@ fn apply_updates_to_state(
 
             log::debug!(
                 "state_root: {:?}, new state_root: {:?} execpt state_root: {:?}",
-                state_root_key.state_root,
+                state_id.pre_state_root,
                 last_state_root,
-                state_root_key.eventual_state_root
+                state_id.export_id.state_root
             );
         }
 
@@ -242,9 +240,12 @@ fn finish_task(
     );
 }
 
-pub fn get_state_root(
+/// Get current pre state root of object id for import node
+pub fn get_pre_state_root(
     moveos_store: &MoveOSStore,
     root_state_root: H256,
+    // state_root: H256,
+    // parent_state_root: H256,
     object_id: ObjectID,
 ) -> Result<H256> {
     let parent_state_root_opt = match object_id.parent() {

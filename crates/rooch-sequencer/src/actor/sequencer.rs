@@ -29,7 +29,8 @@ impl SequencerActor {
             .get_meta_store()
             .get_sequencer_order()?
             .map(|order| order.last_order);
-        let last_order = last_order_opt.unwrap_or(0u64);
+        // Reserve tx_order = 0 for data import transaction and indexer rebuild
+        let last_order = last_order_opt.unwrap_or(1u64);
         info!("Load latest sequencer order {:?}", last_order);
         Ok(Self {
             last_order,
@@ -39,7 +40,7 @@ impl SequencerActor {
     }
 
     pub fn sequence(&mut self, mut tx_data: LedgerTxData) -> Result<LedgerTransaction> {
-        let tx_order = if self.last_order == 0 {
+        let tx_order = if self.last_order == 1 {
             let last_order_opt = self
                 .rooch_store
                 .get_meta_store()
@@ -47,7 +48,7 @@ impl SequencerActor {
                 .map(|order| order.last_order);
             match last_order_opt {
                 Some(last_order) => last_order + 1,
-                None => 0,
+                None => 1,
             }
         } else {
             self.last_order + 1
