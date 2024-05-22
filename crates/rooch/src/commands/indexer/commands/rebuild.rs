@@ -104,7 +104,7 @@ fn produce_updates(tx: SyncSender<BatchUpdates>, input: PathBuf, batch_size: usi
     let mut last_state_type = None;
     let mut last_export_id = None;
 
-    // TODO set genesis tx_order and state_index_generator
+    // set genesis tx_order and state_index_generator
     let tx_order: u64 = 0;
     let mut state_index_generator: u64 = 0;
 

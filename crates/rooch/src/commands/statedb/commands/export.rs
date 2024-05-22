@@ -238,7 +238,7 @@ impl ExportCommand {
         {
             let root_export_id = ExportID::new(ObjectID::root(), root_state_root, root_state_root);
             writer.write_field(GLOBAL_STATE_TYPE_ROOT)?;
-            writer.write_field(format!("{:?}", root_export_id))?;
+            writer.write_field(root_export_id.to_string())?;
             writer.write_record(None::<&[u8]>)?;
         }
         for (k, v) in genesis_states.into_iter() {
@@ -281,7 +281,7 @@ impl ExportCommand {
         {
             let export_id = ExportID::new(object_id.clone(), state_root, root_state_root);
             writer.write_field(GLOBAL_STATE_TYPE_OBJECT)?;
-            writer.write_field(format!("{:?}", export_id))?;
+            writer.write_field(export_id.to_string())?;
             writer.write_record(None::<&[u8]>)?;
         }
         writer.write_field(object_id.to_key().to_string())?;
@@ -336,8 +336,7 @@ impl ExportCommand {
         {
             let export_id = ExportID::new(object_id.clone(), state_root, parent_state_root);
             writer.write_field(GLOBAL_STATE_TYPE_FIELD)?;
-            writer.write_field(format!("{:?}", export_id))?;
-            writer.write_field(parent_state_root)?;
+            writer.write_field(export_id.to_string())?;
             writer.write_record(None::<&[u8]>)?;
         }
 
@@ -398,7 +397,7 @@ impl ExportCommand {
         {
             let root_export_id = ExportID::new(ObjectID::root(), root_state_root, root_state_root);
             writer.write_field(GLOBAL_STATE_TYPE_ROOT)?;
-            writer.write_field(format!("{:?}", root_export_id))?;
+            writer.write_field(root_export_id.to_string())?;
             writer.write_record(None::<&[u8]>)?;
         }
         for (k, v) in genesis_states.into_iter() {
