@@ -62,7 +62,6 @@ pub struct IndexerObjectState {
 pub struct IndexerFieldState {
     pub object_id: ObjectID,
     pub key_hex: String,
-    pub key_str: String,
     pub key_type: TypeTag,
     pub value_type: TypeTag,
     pub tx_order: u64,

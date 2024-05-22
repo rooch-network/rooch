@@ -702,9 +702,9 @@ impl RoochAPIServer for RoochServer {
             .into_iter()
             .zip(states)
             .map(|(annotated_state, state)| {
-                IndexerFieldStateView::try_new_from_field_state(annotated_state, state)
+                IndexerFieldStateView::new_from_field_state(annotated_state, state)
             })
-            .collect::<Result<Vec<_>>>()?;
+            .collect::<Vec<_>>();
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);

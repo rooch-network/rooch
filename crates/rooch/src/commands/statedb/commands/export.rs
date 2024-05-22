@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::WalletContextOptions;
-use crate::commands::statedb::commands::{init_statedb, BATCH_SIZE, STATE_HEADER_PREFIX};
+use crate::commands::statedb::commands::{
+    init_statedb, BATCH_SIZE, GLOBAL_STATE_TYPE_FIELD, GLOBAL_STATE_TYPE_OBJECT,
+    GLOBAL_STATE_TYPE_ROOT,
+};
 use anyhow::Result;
 use clap::Parser;
 use csv::Writer;
@@ -32,7 +35,9 @@ pub enum ExportMode {
     Genesis = 0,
     Full = 1,
     Snapshot = 2,
-    Object = 3,
+    // rebuild indexer, including UTXO and Inscription
+    Indexer = 3,
+    Object = 4,
 }
 
 impl TryFrom<u8> for ExportMode {
@@ -43,7 +48,8 @@ impl TryFrom<u8> for ExportMode {
             0 => Ok(ExportMode::Genesis),
             1 => Ok(ExportMode::Full),
             2 => Ok(ExportMode::Snapshot),
-            3 => Ok(ExportMode::Object),
+            3 => Ok(ExportMode::Indexer),
+            4 => Ok(ExportMode::Object),
             _ => Err(anyhow::anyhow!(
                 "Statedb cli export mode {} is invalid",
                 value
@@ -58,21 +64,32 @@ impl ExportMode {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Ord, Eq, PartialOrd, PartialEq)]
 pub struct ExportID {
-    pub prefix: String,
     pub object_id: ObjectID,
+    pub state_root: H256,
+    pub parent_state_root: H256,
 }
 
 impl ExportID {
-    pub fn new(prefix: String, object_id: ObjectID) -> Self {
-        Self { prefix, object_id }
+    pub fn new(object_id: ObjectID, state_root: H256, parent_state_root: H256) -> Self {
+        Self {
+            object_id,
+            state_root,
+            parent_state_root,
+        }
     }
 }
 
 impl std::fmt::Display for ExportID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}:{:?}", self.prefix, self.object_id)
+        let state_root_str = format!("{:?}", self.state_root);
+        let parent_state_root_str = format!("{:?}", self.parent_state_root);
+        write!(
+            f,
+            "{:?}:{}:{}",
+            self.object_id, state_root_str, parent_state_root_str
+        )
     }
 }
 
@@ -80,13 +97,13 @@ impl FromStr for ExportID {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut parts = s.split(':');
-        let prefix = parts
-            .next()
-            .ok_or(anyhow::anyhow!("invalid export id"))?
-            .to_string();
         let object_id =
             ObjectID::from_str(parts.next().ok_or(anyhow::anyhow!("invalid export id"))?)?;
-        Ok(ExportID::new(prefix, object_id))
+        let state_root = H256::from_str(parts.next().ok_or(anyhow::anyhow!("invalid export id"))?)?;
+        let parent_state_root =
+            H256::from_str(parts.next().ok_or(anyhow::anyhow!("invalid export id"))?)?;
+
+        Ok(ExportID::new(object_id, state_root, parent_state_root))
     }
 }
 
@@ -153,6 +170,9 @@ impl ExportCommand {
             ExportMode::Snapshot => {
                 todo!()
             }
+            ExportMode::Indexer => {
+                Self::export_indexer(&moveos_store, root_state_root, &mut writer)?;
+            }
             ExportMode::Object => {
                 let obj_id = self
                     .object_id
@@ -208,6 +228,7 @@ impl ExportCommand {
             Self::export_field_states(
                 moveos_store,
                 H256::from(obj.state_root.into_bytes()),
+                root_state_root,
                 obj.id,
                 writer,
             )?;
@@ -215,9 +236,9 @@ impl ExportCommand {
 
         // write csv object states.
         {
-            let root_export_id = ExportID::new(STATE_HEADER_PREFIX.to_string(), ObjectID::root());
-            writer.write_field(root_export_id.to_string())?;
-            writer.write_field(format!("{:?}", root_state_root))?;
+            let root_export_id = ExportID::new(ObjectID::root(), root_state_root, root_state_root);
+            writer.write_field(GLOBAL_STATE_TYPE_ROOT)?;
+            writer.write_field(format!("{:?}", root_export_id))?;
             writer.write_record(None::<&[u8]>)?;
         }
         for (k, v) in genesis_states.into_iter() {
@@ -246,19 +267,21 @@ impl ExportCommand {
             .expect("state should exist.");
         let obj = state.clone().as_raw_object()?;
 
+        let state_root = H256::from(obj.state_root.into_bytes());
         // write csv field states
         Self::export_field_states(
             moveos_store,
-            H256::from(obj.state_root.into_bytes()),
+            state_root,
+            root_state_root,
             object_id.clone(),
             writer,
         )?;
 
         // write csv object states.
         {
-            let export_id = ExportID::new(STATE_HEADER_PREFIX.to_string(), object_id.clone());
-            writer.write_field(export_id.to_string())?;
-            writer.write_field(format!("{:?}", root_state_root))?;
+            let export_id = ExportID::new(object_id.clone(), state_root, root_state_root);
+            writer.write_field(GLOBAL_STATE_TYPE_OBJECT)?;
+            writer.write_field(format!("{:?}", export_id))?;
             writer.write_record(None::<&[u8]>)?;
         }
         writer.write_field(object_id.to_key().to_string())?;
@@ -275,6 +298,7 @@ impl ExportCommand {
     fn export_field_states<W: std::io::Write>(
         moveos_store: &MoveOSStore,
         state_root: H256,
+        parent_state_root: H256,
         object_id: ObjectID,
         writer: &mut Writer<W>,
     ) -> Result<()> {
@@ -294,6 +318,7 @@ impl ExportCommand {
                         Self::export_field_states(
                             moveos_store,
                             H256::from(object.state_root.into_bytes()),
+                            state_root,
                             object.id,
                             writer,
                         )?;
@@ -309,9 +334,10 @@ impl ExportCommand {
 
         // write csv header.
         {
-            let export_id = ExportID::new(STATE_HEADER_PREFIX.to_string(), object_id.clone());
-            writer.write_field(export_id.to_string())?;
-            writer.write_field(format!("{:?}", state_root))?;
+            let export_id = ExportID::new(object_id.clone(), state_root, parent_state_root);
+            writer.write_field(GLOBAL_STATE_TYPE_FIELD)?;
+            writer.write_field(format!("{:?}", export_id))?;
+            writer.write_field(parent_state_root)?;
             writer.write_record(None::<&[u8]>)?;
         }
 
@@ -328,6 +354,63 @@ impl ExportCommand {
             "export_field_states object_id {:?}, state_root: {:?} export field counts {}",
             object_id, state_root, count
         );
+        Ok(())
+    }
+
+    fn export_indexer<W: std::io::Write>(
+        moveos_store: &MoveOSStore,
+        root_state_root: H256,
+        writer: &mut Writer<W>,
+    ) -> Result<()> {
+        let utxo_store_id = BitcoinUTXOStore::object_id();
+        let inscription_store_id = InscriptionStore::object_id();
+        println!("export_indexer utxo_store_id: {:?}", utxo_store_id);
+        println!(
+            "export_indexer inscription_store_id: {:?}",
+            inscription_store_id
+        );
+
+        let genesis_object_ids = vec![utxo_store_id.clone(), inscription_store_id.clone()];
+
+        let mut genesis_objects = vec![];
+        let mut genesis_states = vec![];
+        for object_id in genesis_object_ids.into_iter() {
+            let state = moveos_store
+                .get_field_at(root_state_root, &object_id.to_key())?
+                .expect("state should exist.");
+            let object = state.clone().as_raw_object()?;
+            genesis_states.push((object_id.to_key(), state));
+            genesis_objects.push(object);
+        }
+
+        // write csv field states
+        for obj in genesis_objects.into_iter() {
+            Self::export_field_states(
+                moveos_store,
+                H256::from(obj.state_root.into_bytes()),
+                root_state_root,
+                obj.id,
+                writer,
+            )?;
+        }
+
+        // write csv object states.
+        {
+            let root_export_id = ExportID::new(ObjectID::root(), root_state_root, root_state_root);
+            writer.write_field(GLOBAL_STATE_TYPE_ROOT)?;
+            writer.write_field(format!("{:?}", root_export_id))?;
+            writer.write_record(None::<&[u8]>)?;
+        }
+        for (k, v) in genesis_states.into_iter() {
+            writer.write_field(k.to_string())?;
+            writer.write_field(v.to_string())?;
+            writer.write_record(None::<&[u8]>)?;
+        }
+
+        // flush csv writer
+        writer.flush()?;
+        println!("export_genesis root state_root: {:?}", root_state_root);
+
         Ok(())
     }
 }

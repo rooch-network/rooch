@@ -451,7 +451,6 @@ impl ObjectStateFilterView {
 pub struct IndexerFieldStateView {
     pub object_id: ObjectID,
     pub key_hex: String,
-    pub key: AnnotatedMoveValueView,
     pub value: Option<AnnotatedMoveValueView>,
     pub key_type: TypeTagView,
     pub value_type: TypeTagView,
@@ -462,15 +461,13 @@ pub struct IndexerFieldStateView {
 }
 
 impl IndexerFieldStateView {
-    pub fn try_new_from_field_state(
+    pub fn new_from_field_state(
         annotated_state: Option<AnnotatedState>,
         state: IndexerFieldState,
-    ) -> Result<IndexerFieldStateView, anyhow::Error> {
-        let key: AnnotatedMoveValueView = serde_json::from_str(state.key_str.as_str())?;
-        let state_view = IndexerFieldStateView {
+    ) -> IndexerFieldStateView {
+        IndexerFieldStateView {
             object_id: state.object_id,
             key_hex: state.key_hex,
-            key,
             value: annotated_state.map(|v| AnnotatedMoveValueView::from(v.decoded_value)),
             key_type: state.key_type.into(),
             value_type: state.value_type.into(),
@@ -478,8 +475,7 @@ impl IndexerFieldStateView {
             state_index: state.state_index,
             created_at: state.created_at,
             updated_at: state.updated_at,
-        };
-        Ok(state_view)
+        }
     }
 }
 
