@@ -64,3 +64,33 @@ impl TxOptions {
         self
     }
 }
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema, Eq, PartialEq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct QueryOptions {
+    /// If true, return query items in descending order.
+    pub descending: bool,
+    /// If true, result with display rendered is returned
+    pub show_display: bool,
+}
+
+impl QueryOptions {
+    pub fn descending(mut self, descending: bool) -> Self {
+        self.descending = descending;
+        self
+    }
+
+    pub fn show_display(mut self, show_display: bool) -> Self {
+        self.show_display = show_display;
+        self
+    }
+}
+
+impl Default for QueryOptions {
+    fn default() -> Self {
+        Self {
+            descending: true,
+            show_display: false,
+        }
+    }
+}

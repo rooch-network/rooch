@@ -4,5 +4,4 @@
 export * from './utilityTypes'
 export * from './WalletAccount'
 export * from './wellet'
-export * from './address'
 export * from './WalletRoochSessionAccount'

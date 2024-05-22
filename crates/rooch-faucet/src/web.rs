@@ -5,7 +5,6 @@ use std::{
     borrow::Cow,
     env,
     net::{IpAddr, Ipv4Addr, SocketAddr},
-    str::FromStr,
     time::Duration,
 };
 use tokio::sync::mpsc::Sender;
@@ -14,7 +13,6 @@ use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 
 use crate::{FaucetError, FaucetRequest, FaucetResponse};
-use rooch_types::address::BitcoinAddress;
 
 use axum::{
     error_handling::HandleErrorLayer,
@@ -33,7 +31,7 @@ const CONCURRENCY_LIMIT: usize = 10;
 
 // const PROM_PORT_ADDR: &str = "0.0.0.0:9184";
 
-#[derive(Parser, Clone)]
+#[derive(Parser, Debug, Clone)]
 #[clap(rename_all = "kebab-case")]
 pub struct AppConfig {
     #[clap(long, default_value_t = 50052)]
@@ -58,15 +56,15 @@ impl Default for AppConfig {
 
 #[derive(Clone, Debug)]
 pub struct App {
-    faucet_queue: Sender<BitcoinAddress>,
+    faucet_queue: Sender<FaucetRequest>,
 }
 
 impl App {
-    pub fn new(faucet_queue: Sender<BitcoinAddress>) -> Self {
+    pub fn new(faucet_queue: Sender<FaucetRequest>) -> Self {
         Self { faucet_queue }
     }
 
-    pub async fn request(&self, address: BitcoinAddress) -> Result<(), FaucetError> {
+    pub async fn request(&self, address: FaucetRequest) -> Result<(), FaucetError> {
         self.faucet_queue
             .send(address)
             .await
@@ -138,40 +136,37 @@ async fn request_gas(
     Extension(app): Extension<App>,
     Json(payload): Json<FaucetRequest>,
 ) -> impl IntoResponse {
-    tracing::info!("request gas payload: {:?}", payload);
+    let recipient = payload.recipient().to_string();
 
-    let result = match payload {
-        FaucetRequest::FixedBTCAddressRequest(requests) => {
-            let recipient = BitcoinAddress::from_str(requests.recipient.as_str()).unwrap();
-            app.request(recipient).await
-        }
-        FaucetRequest::FixedRoochAddressRequest(_) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(FaucetResponse::from(FaucetError::NotSupport(
-                    "Rooch".to_string(),
-                ))),
-            )
-        }
-        FaucetRequest::FixedETHAddressRequest(_) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(FaucetResponse::from(FaucetError::NotSupport(
-                    "ETH".to_string(),
-                ))),
-            )
-        }
-    };
+    tracing::info!("request gas payload: {:?}", recipient);
+
+    if let FaucetRequest::FixedETHAddressRequest(_) = payload {
+        tracing::warn!("request gas with ETH: {:?}", recipient);
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(FaucetResponse::from(FaucetError::NotSupport(
+                "ETH".to_string(),
+            ))),
+        );
+    }
+
+    let result = app.request(payload).await;
 
     match result {
-        Ok(()) => (
-            StatusCode::CREATED,
-            Json(FaucetResponse::from("Success".to_string())),
-        ),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(FaucetResponse::from(e)),
-        ),
+        Ok(()) => {
+            tracing::info!("request gas success add queue: {}", recipient);
+            (
+                StatusCode::CREATED,
+                Json(FaucetResponse::from("Success".to_string())),
+            )
+        }
+        Err(e) => {
+            tracing::info!("request gas error: {}, {:?}", recipient, e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(FaucetResponse::from(e)),
+            )
+        }
     }
 }
 

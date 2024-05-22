@@ -1,38 +1,56 @@
 # 路线图
 
-## 2023 Q1 - 项目启动
+import { Steps } from 'nextra/components'
+ 
+<Steps>
 
-主要成果包括：
+### Seeding
 
-- [x] 项目初步设计
-- [x] MoveVM 欺诈证明的概念验证（PoC）
+完成技术方案设计和团队组建。
 
-## 2023 Q2 - Alpha 测试
+### Sprouting
 
-在这个阶段，将提供中心化的公共 Rooch 测试环境，包括：
+发布第一个 Rooch VApp 容器预览版本，提供基本的开发者工具，让开发者可以基于 Rooch 容器进行开发。探索 VApp 应用的状态存储需求以及开发模式，并提供一些示例应用。
 
-- [ ] Rooch 的命令行界面（CLI）
-- [ ] Rooch 定制的 Move 框架
+1. VApp 容器、CLI 工具和 RPC 接口。
+2. Move 标准库和框架。
+3. 账户抽象和 SessionKey 支持，确保用户在使用 L2 应用时不会影响 L1 资产的安全性。
+4. **启动 Devnet**。
 
-## 2023 Q3 - 测试网
+### Rooting
 
-将交付以下组件：
+Root 到 Bitcoin 网络，运行 Rooch PreMainnet，并升级到 Mainnet。探索无需桥接的基于 Bitcoin 原生资产的应用开发模式，以及基于 CSV 资产的社交和游戏应用。
 
-- [ ] 排序器设计和实现
-- [ ] 提交器（proposer）设计和实现
-- [ ] DA 设计和实现
-- [ ] SDK
+**Phase-1**
 
-## 2023 Q4 - 主网就绪测试网
+1. **启动 Testnet**，并提供框架升级方案。
+2. 升级对象模型到 ObjectV2，实现对象的分层堆叠。
+3. 实现堆叠式 Layer2 模型，完成 Bitcoin 的 UTXO 及 Inscription 资产在智能合约中的验证，提供基于 UTXO 及 Inscription 的编程能力。探索基于 Bitcoin L1 及其衍生资产的应用。
+4. 集成 Bitcoin 生态钱包，提供 Rooch Portal，方便用户管理资产。
 
-在这个阶段，启动 Rooch Network 主网所需的所有组件都将准备就绪：
+**Phase-2（进行中）**
 
-- [ ] 欺诈证明
-- [ ] 并行交易处理
-- [ ] 代币经济设计
+1. 从 Bitcoin Genesis 同步 Bitcoin 的历史交易，运行 **Rooch PreMainnet**。
+2. 设计并实现 Bitseed 协议，探索 CSV 类型资产在 L1 和 L2 之间的跃迁。探索 Bitcoin L1 与 L2 之间的资产跃迁应用场景。
+3. 集成 DA，确保数据的可用性。
+4. 接入 P2P 网络，支持第三方运行全节点。
+5. 定期将状态树的根更新到 Bitcoin，并提供状态证明接口，实现节点间的状态校验。
 
-## 主网启动
+**Phase-3**
 
-具体时间取决于相关组件的实现和测试。
+1. 实现基于 Bitcoin 时间的去中心化排序器方案。
+2. 实现基于 Babylon 的 PoS 排序器安全方案。
+3. 实现基于状态树及乐观挑战的欺诈证明方案。
+4. 探索结合 Rooch Move 和 Bitcoin Script 的非托管 BTC 跨链方案。
+5. 发布 Rooch Network 经济模型方案。
+6. 将 Rooch PreMainnet 升级为 **Rooch Mainnet**。
 
-预计 2023 年第四季度或 2024 年第一季度
+### Branching
+
+实现基于 DSTP 的应用网络，探索 CSV 类资产在应用间的流通，并通过 VApp 实现应用数据资产化及上链。
+
+1. 支持 VApp 容器应用通过 Rooch Network 接入 Bitcoin 生态。
+2. 与生态合作伙伴合作，为 VApp 提供更多的 DA 及安全选项。
+3. 实现基于 DSTP 的状态通道应用，探索 P2P 网络上的激励模型。
+
+</Steps>

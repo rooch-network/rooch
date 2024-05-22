@@ -23,8 +23,8 @@ use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, FieldStateFilterView, IndexerEventPageView,
     IndexerFieldStatePageView, IndexerFieldStateView, IndexerObjectStatePageView,
-    IndexerObjectStateView, KeyStateView, ObjectStateFilterView, StateKVView, StateOptions,
-    TxOptions,
+    IndexerObjectStateView, KeyStateView, ObjectStateFilterView, QueryOptions, StateKVView,
+    StateOptions, TxOptions,
 };
 use rooch_rpc_api::jsonrpc_types::{transaction_view::TransactionWithInfoView, EventOptions};
 use rooch_rpc_api::jsonrpc_types::{
@@ -518,14 +518,15 @@ impl RoochAPIServer for RoochServer {
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<StrView<u64>>,
         limit: Option<StrView<usize>>,
-        descending_order: Option<bool>,
+        query_option: Option<QueryOptions>,
     ) -> RpcResult<TransactionWithInfoPageView> {
         let limit_of = min(
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
         );
         let cursor = cursor.map(|v| v.0);
-        let descending_order = descending_order.unwrap_or(true);
+        let query_option = query_option.unwrap_or_default();
+        let descending_order = query_option.descending;
 
         let limit_value = limit_of
             .checked_add(1)
@@ -560,13 +561,14 @@ impl RoochAPIServer for RoochServer {
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerEventID>,
         limit: Option<StrView<usize>>,
-        descending_order: Option<bool>,
+        query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerEventPageView> {
         let limit_of = min(
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
         );
-        let descending_order = descending_order.unwrap_or(true);
+        let query_option = query_option.unwrap_or_default();
+        let descending_order = query_option.descending;
 
         let limit_value = limit_of
             .checked_add(1)
@@ -601,13 +603,14 @@ impl RoochAPIServer for RoochServer {
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
-        descending_order: Option<bool>,
+        query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerObjectStatePageView> {
         let limit_of = min(
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
         );
-        let descending_order = descending_order.unwrap_or(true);
+        let query_option = query_option.unwrap_or_default();
+        let descending_order = query_option.descending;
 
         // resolve multichain address
         let resolve_address = match filter.clone() {
@@ -642,19 +645,49 @@ impl RoochAPIServer for RoochServer {
             .map(|m| m.object_id.clone())
             .collect::<Vec<_>>();
         let access_path = AccessPath::objects(object_ids.clone());
-        let mut data = self
-            .rpc_service
-            .get_annotated_states(access_path)
-            .await?
+        let annotated_states = self.rpc_service.get_annotated_states(access_path).await?;
+
+        let annotated_states_with_display = if query_option.show_display {
+            let valid_states = annotated_states
+                .iter()
+                .filter_map(|s| s.as_ref())
+                .collect::<Vec<_>>();
+            let mut valid_display_field_views = self
+                .get_display_fields_and_render(valid_states, true)
+                .await?;
+            valid_display_field_views.reverse();
+            annotated_states
+                .into_iter()
+                .map(|option_annotated_s| match option_annotated_s {
+                    Some(s) => {
+                        debug_assert!(
+                            !valid_display_field_views.is_empty(),
+                            "display fields should not be empty"
+                        );
+                        (Some(s), valid_display_field_views.pop().unwrap())
+                    }
+                    None => (None, None),
+                })
+                .collect::<Vec<_>>()
+        } else {
+            annotated_states
+                .into_iter()
+                .map(|s| (s, None))
+                .collect::<Vec<_>>()
+        };
+
+        let mut data = annotated_states_with_display
             .into_iter()
             .zip(states)
-            .map(|(annotated_state, state)| {
+            .map(|((annotated_state, display_fields), state)| {
                 IndexerObjectStateView::new_from_object_state(annotated_state, state)
+                    .with_display_fields(display_fields)
             })
             .collect::<Vec<_>>();
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
+
         let next_cursor = data.last().cloned().map_or(cursor, |t| {
             Some(IndexerStateID::new(t.tx_order, t.state_index))
         });
@@ -672,13 +705,14 @@ impl RoochAPIServer for RoochServer {
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
-        descending_order: Option<bool>,
+        query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerFieldStatePageView> {
         let limit_of = min(
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
         );
-        let descending_order = descending_order.unwrap_or(true);
+        let query_option = query_option.unwrap_or_default();
+        let descending_order = query_option.descending;
 
         let limit_value = limit_of
             .checked_add(1)

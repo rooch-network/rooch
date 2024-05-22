@@ -149,6 +149,28 @@ impl ObjectID {
             Self::from_hex(literal)
         }
     }
+
+    pub fn try_from_annotated_move_struct_ref(value: &AnnotatedMoveStruct) -> Result<Self> {
+        if value.value.len() != 1 {
+            return Err(anyhow::anyhow!("Invalid ObjectID"));
+        }
+        let (field_name, field_value) = &value.value[0];
+        debug_assert!(field_name.as_str() == "path");
+        let path = match field_value {
+            AnnotatedMoveValue::Vector(t, vector) => {
+                debug_assert!(t == &TypeTag::Address);
+                vector
+                    .iter()
+                    .map(|annotated_move_value| match annotated_move_value {
+                        AnnotatedMoveValue::Address(addr) => Ok(*addr),
+                        _ => Err(anyhow::anyhow!("Invalid ObjectID")),
+                    })
+                    .collect::<Result<Vec<AccountAddress>>>()?
+            }
+            _ => return Err(anyhow::anyhow!("Invalid ObjectID")),
+        };
+        Ok(ObjectID(path))
+    }
 }
 
 impl std::fmt::Display for ObjectID {
@@ -241,26 +263,7 @@ impl TryFrom<AnnotatedMoveStruct> for ObjectID {
     type Error = anyhow::Error;
 
     fn try_from(value: AnnotatedMoveStruct) -> Result<Self, Self::Error> {
-        let mut annotated_move_struct = value;
-        let (field_name, field_value) = annotated_move_struct
-            .value
-            .pop()
-            .ok_or_else(|| anyhow::anyhow!("Invalid ObjectID"))?;
-        debug_assert!(field_name.as_str() == "path");
-        let path = match field_value {
-            AnnotatedMoveValue::Vector(t, vector) => {
-                debug_assert!(t == TypeTag::Address);
-                vector
-                    .into_iter()
-                    .map(|annotated_move_value| match annotated_move_value {
-                        AnnotatedMoveValue::Address(addr) => Ok(addr),
-                        _ => Err(anyhow::anyhow!("Invalid ObjectID")),
-                    })
-                    .collect::<Result<Vec<AccountAddress>>>()?
-            }
-            _ => return Err(anyhow::anyhow!("Invalid ObjectID")),
-        };
-        Ok(ObjectID(path))
+        ObjectID::try_from_annotated_move_struct_ref(&value)
     }
 }
 

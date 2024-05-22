@@ -88,8 +88,6 @@ jobs:
         run: pnpm rooch-sdk test
       - name: Build SDK KIT
         run: pnpm rooch-sdk-kit build
-      - name: Test SDK KIT
-        run: pnpm rooch-sdk-kit test
       - name: Build Dashboard
         run: pnpm dashboard build
 

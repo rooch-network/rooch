@@ -95,6 +95,7 @@ module rooch_framework::bitcoin_address {
         abort 0
     }
 
+    native public fun new(raw_addr: &vector<u8>): BitcoinAddress;
     native public fun verify_with_pk (addr: &vector<u8>, pk: &vector<u8>): bool;
 
     #[test]

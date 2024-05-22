@@ -92,10 +92,12 @@ export type ListStatesParams = PagesOpts<string> & {
 
 export type QueryObjectStatesParams = PagesOpts<IndexerStateID> & {
   filter: ObjectStateFilterView
+  showDisplay?: boolean
 }
 
 export type QueryFieldStatesParams = PagesOpts<IndexerStateID> & {
   filter: FieldStateFilterView
+  showDisplay?: boolean
 }
 
 export type QueryInscriptionsParams = PagesOpts<IndexerStateID> & {
@@ -121,6 +123,7 @@ export type QueryTransactionFilterParams =
 
 export type QueryTransactionParams = PagesOpts<number> & {
   filter: QueryTransactionFilterParams
+  showDisplay?: boolean
 }
 
 export type QueryEventFilterParams =
@@ -132,6 +135,7 @@ export type QueryEventFilterParams =
 
 export type QueryEventParams = PagesOpts<string> & {
   filter: QueryEventFilterParams
+  showDisplay?: boolean
 }
 
 export type GetBalanceParams = {
