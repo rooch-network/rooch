@@ -495,11 +495,11 @@ importers:
         specifier: ^1.0.7
         version: 1.0.7(@types/react-dom@18.2.17)(@types/react@18.2.63)(react-dom@18.2.0)(react@18.2.0)
       '@roochnetwork/rooch-sdk':
-        specifier: 0.1.2
-        version: 0.1.2
+        specifier: 0.1.4
+        version: 0.1.4
       '@roochnetwork/rooch-sdk-kit':
-        specifier: 0.1.2
-        version: 0.1.2(@types/react@18.2.63)(react-native@0.72.4)
+        specifier: 0.1.4
+        version: 0.1.4(@types/react@18.2.63)(react-native@0.72.4)
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.12.2(react@18.2.0)
@@ -658,12 +658,21 @@ importers:
       '@types/ws':
         specifier: ^8.5.5
         version: 8.5.5
+      base58-js:
+        specifier: ^1.0.0
+        version: 1.0.5
+      bech32:
+        specifier: ^2.0.0
+        version: 2.0.0
       events:
         specifier: ^3.3.0
         version: 3.3.0
       isomorphic-fetch:
         specifier: ^3.0.0
         version: 3.0.0
+      sha256-uint8array:
+        specifier: ^0.10.3
+        version: 0.10.7
       superstruct:
         specifier: ^1.0.3
         version: 1.0.3
@@ -746,15 +755,6 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.12.2(react@18.2.0)
-      base58-js:
-        specifier: ^1.0.0
-        version: 1.0.5
-      bech32:
-        specifier: ^2.0.0
-        version: 2.0.0
-      bitcoinjs-lib:
-        specifier: ^6.1.5
-        version: 6.1.5
       buffer:
         specifier: 6.0.0
         version: 6.0.0
@@ -767,9 +767,6 @@ importers:
       react-dom:
         specifier: ^18.2.0
         version: 18.2.0(react@18.2.0)
-      sha256-uint8array:
-        specifier: ^0.10.3
-        version: 0.10.7
       zustand:
         specifier: ^4.4.1
         version: 4.4.7(@types/react@18.2.42)(react@18.2.0)
@@ -1843,16 +1840,6 @@ packages:
       '@babel/core': 7.23.5
       '@babel/helper-plugin-utils': 7.22.5
 
-  /@babel/plugin-syntax-flow@7.22.5(@babel/core@7.22.11):
-    resolution: {integrity: sha512-9RdCl0i+q0QExayk2nOS7853w08yLucnnPML6EN9S8fgMPVtdLDCdx/cOQ/i44Lb9UeQX9A35yaqBBOMMZxPxQ==}
-    engines: {node: '>=6.9.0'}
-    peerDependencies:
-      '@babel/core': ^7.0.0-0
-    dependencies:
-      '@babel/core': 7.22.11
-      '@babel/helper-plugin-utils': 7.22.5
-    dev: true
-
   /@babel/plugin-syntax-flow@7.22.5(@babel/core@7.23.0):
     resolution: {integrity: sha512-9RdCl0i+q0QExayk2nOS7853w08yLucnnPML6EN9S8fgMPVtdLDCdx/cOQ/i44Lb9UeQX9A35yaqBBOMMZxPxQ==}
     engines: {node: '>=6.9.0'}
@@ -1943,16 +1930,6 @@ packages:
     dependencies:
       '@babel/core': 7.23.5
       '@babel/helper-plugin-utils': 7.22.5
-
-  /@babel/plugin-syntax-jsx@7.22.5(@babel/core@7.22.11):
-    resolution: {integrity: sha512-gvyP4hZrgrs/wWMaocvxZ44Hw0b3W8Pe+cMxc8V1ULQ07oh8VNbIRaoD1LRZVTvD+0nieDKjfgKg89sD7rrKrg==}
-    engines: {node: '>=6.9.0'}
-    peerDependencies:
-      '@babel/core': ^7.0.0-0
-    dependencies:
-      '@babel/core': 7.22.11
-      '@babel/helper-plugin-utils': 7.22.5
-    dev: true
 
   /@babel/plugin-syntax-jsx@7.22.5(@babel/core@7.23.0):
     resolution: {integrity: sha512-gvyP4hZrgrs/wWMaocvxZ44Hw0b3W8Pe+cMxc8V1ULQ07oh8VNbIRaoD1LRZVTvD+0nieDKjfgKg89sD7rrKrg==}
@@ -3017,20 +2994,6 @@ packages:
     dependencies:
       '@babel/core': 7.23.5
       '@babel/helper-plugin-utils': 7.22.5
-
-  /@babel/plugin-transform-react-jsx@7.22.5(@babel/core@7.22.11):
-    resolution: {integrity: sha512-rog5gZaVbUip5iWDMTYbVM15XQq+RkUKhET/IHR6oizR+JEoN6CAfTTuHcK4vwUyzca30qqHqEpzBOnaRMWYMA==}
-    engines: {node: '>=6.9.0'}
-    peerDependencies:
-      '@babel/core': ^7.0.0-0
-    dependencies:
-      '@babel/core': 7.22.11
-      '@babel/helper-annotate-as-pure': 7.22.5
-      '@babel/helper-module-imports': 7.22.5
-      '@babel/helper-plugin-utils': 7.22.5
-      '@babel/plugin-syntax-jsx': 7.22.5(@babel/core@7.22.11)
-      '@babel/types': 7.23.0
-    dev: true
 
   /@babel/plugin-transform-react-jsx@7.22.5(@babel/core@7.23.0):
     resolution: {integrity: sha512-rog5gZaVbUip5iWDMTYbVM15XQq+RkUKhET/IHR6oizR+JEoN6CAfTTuHcK4vwUyzca30qqHqEpzBOnaRMWYMA==}
@@ -9454,14 +9417,14 @@ packages:
     dev: true
     optional: true
 
-  /@roochnetwork/rooch-sdk-kit@0.1.2(@types/react@18.2.63)(react-native@0.72.4):
-    resolution: {integrity: sha512-3ZGiGr+BXaYT30VNvWwncXZncafd+UGVVQdqFP9vNIcl4aNRvQCem625Tva/lpmiPl52Tf85Atm1QbOq/s8bHg==}
+  /@roochnetwork/rooch-sdk-kit@0.1.4(@types/react@18.2.63)(react-native@0.72.4):
+    resolution: {integrity: sha512-MWueYL9mFcyhf8DxqDOxktJUr/slRahJFt3xIgV/b4n5trKNbXZ1VJDGnMOQ4crycFhM4AewSS0i1lBRTwGoWQ==}
     engines: {node: '>=18.0.0'}
     dependencies:
       '@metamask/detect-provider': 2.0.0
       '@metamask/sdk': 0.14.1(@types/react@18.2.63)(react-dom@18.2.0)(react-native@0.72.4)(react@18.2.0)
       '@noble/hashes': 1.3.2
-      '@roochnetwork/rooch-sdk': 0.1.2
+      '@roochnetwork/rooch-sdk': 0.1.4
       '@tanstack/react-query': 5.12.2(react@18.2.0)
       base58-js: 1.0.5
       bech32: 2.0.0
@@ -9483,8 +9446,8 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@roochnetwork/rooch-sdk@0.1.2:
-    resolution: {integrity: sha512-SdddLSPC/8XnNSU67Ufp9BtgNb/vHjxsskuAdLg7/aSm2PxUqL4RLvFEzoRKmjfIM/qh1auu4b7NHNo5INeSyA==}
+  /@roochnetwork/rooch-sdk@0.1.4:
+    resolution: {integrity: sha512-8zXCNcwgjTDNuP1nlhnkQamVLJo1UkRZ1AMOHvMXl4Ummdkc+Iy7tMxJThHHWRB5qHQv/ipOdnqnNCQqpEDvCA==}
     engines: {node: '>=18.0.0'}
     dependencies:
       '@ethersproject/bytes': 5.7.0
@@ -9494,6 +9457,8 @@ packages:
       '@scure/bip39': 1.2.1
       '@suchipi/femver': 1.0.0
       '@types/ws': 8.5.5
+      base58-js: 1.0.5
+      bech32: 2.0.0
       events: 3.3.0
       isomorphic-fetch: 3.0.0
       superstruct: 1.0.3
@@ -13889,8 +13854,8 @@ packages:
       '@babel/plugin-transform-react-jsx': ^7.14.9
       eslint: ^8.1.0
     dependencies:
-      '@babel/plugin-syntax-flow': 7.22.5(@babel/core@7.22.11)
-      '@babel/plugin-transform-react-jsx': 7.22.5(@babel/core@7.22.11)
+      '@babel/plugin-syntax-flow': 7.22.5(@babel/core@7.23.5)
+      '@babel/plugin-transform-react-jsx': 7.22.5(@babel/core@7.23.5)
       eslint: 8.48.0
       lodash: 4.17.21
       string-natural-compare: 3.0.1

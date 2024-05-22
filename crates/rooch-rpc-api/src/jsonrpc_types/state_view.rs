@@ -381,6 +381,7 @@ pub struct IndexerObjectStateView {
     pub state_index: u64,
     pub created_at: u64,
     pub updated_at: u64,
+    pub display_fields: Option<DisplayFieldsView>,
 }
 
 impl IndexerObjectStateView {
@@ -400,7 +401,13 @@ impl IndexerObjectStateView {
             state_index: state.state_index,
             created_at: state.created_at,
             updated_at: state.updated_at,
+            display_fields: None,
         }
+    }
+
+    pub fn with_display_fields(mut self, display_fields: Option<DisplayFieldsView>) -> Self {
+        self.display_fields = display_fields;
+        self
     }
 }
 
@@ -417,7 +424,7 @@ pub enum ObjectStateFilterView {
     /// Query by owner.
     Owner(AccountAddressView),
     /// Query by object id.
-    ObjectId(ObjectID),
+    ObjectId(Vec<ObjectID>),
     /// Query by multi chain address
     MultiChainAddress { multichain_id: u64, address: String },
 }
@@ -438,7 +445,7 @@ impl ObjectStateFilterView {
                 ObjectStateFilter::ObjectType(object_type.into())
             }
             ObjectStateFilterView::Owner(owner) => ObjectStateFilter::Owner(owner.into()),
-            ObjectStateFilterView::ObjectId(object_id) => ObjectStateFilter::ObjectId(object_id),
+            ObjectStateFilterView::ObjectId(object_ids) => ObjectStateFilter::ObjectId(object_ids),
             ObjectStateFilterView::MultiChainAddress {
                 multichain_id: _,
                 address: _,

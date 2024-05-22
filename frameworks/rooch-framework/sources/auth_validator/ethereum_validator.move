@@ -32,12 +32,13 @@ module rooch_framework::ethereum_validator {
         let tx_hex_len = (vector::length(&tx_hex) as u8);
 
         let sign_info_prefix = auth_payload::sign_info_prefix(payload);
+        let sign_info_prefix_len = (vector::length(&sign_info_prefix) as u8);
+
         let sign_info = auth_payload::sign_info(payload);
 
         // append tx hash
         let full_tx = vector<u8>[];
 
-        let sign_info_prefix_len = (vector::length(&sign_info_prefix) as u8);
         if (sign_info_prefix_len > 0) {
             vector::append(&mut full_tx, sign_info_prefix);
         };

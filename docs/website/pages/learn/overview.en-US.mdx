@@ -1,5 +1,7 @@
 # Rooch Overview
 
+import Image from "next/image";
+
 <Image
     src="/docs/rooch-bitcoin-application-layer.png"
     alt="Rooch as Bitcoin Application Layer"
@@ -10,11 +12,10 @@
 
 
 The Rooch project aims to build the application layer of Bitcoin ecosystem. The Rooch project takes a native approach to extend the functionalities of Bitcoin blockchain and enables decentralized applications for Bitcoin assets, with the Bitcoin level security.
-- If you are a user who are looking into paly with some Bitcoin applications, you may find that all your Bitcoin assets, including BTC, Ordinals or BRC20 assets, can be used directly in all the Bitcoin Apps powered by Rooch, without going through a custodial bridge 
+
+- If you are a user who are looking into play with some Bitcoin applications, you may find that all your Bitcoin assets, including BTC, Ordinals or BRC20 assets, can be used directly in all the Bitcoin Apps powered by Rooch, without going through a custodial bridge 
 - If you are a developer who wants to build an app with Bitcoin assets, Rooch provides you with an easy to program environment with MoveVM and the full access to all Bitcoin states from your smart contracts, which means your app can 
 - If you are a community member who hold some assets from any Bitcoin apps, Rooch makes sure that all your assets are Bitcoin L1 native assets that can be leaped back to Bitcoin L1 at any time without permissions.
-
-
 
 ## Architecture
 
@@ -23,9 +24,6 @@ Rooch is a verfiable application (VApp) execution runtime container for Bitcoin 
 - **MoveVM** - Rooch embeds a full MoveVM for developers to program the smart contracts with Move Language
 - **Bitcoin Full State** - Rooch has the full state of Bitcoin blockchain which can work with smart contract based interpreter to identify not only plain UTXO but also Ordinals based asset protocol such BRC20
 - **Scalable** - Rooch is a fast execution environment that can achieve 100k peak TPS powered by parallel execuion
-
-
-import Image from "next/image";
 
 <Image
   src="/docs/rooch-architecture.png"
@@ -37,11 +35,11 @@ import Image from "next/image";
 
 Rooch is composed of the core component MoveOS as well as interfaces and tools for accessing smart contracts and states.
 
-**MoveOS** is the component that does all the computation and state storage work.  
-  - **MoveVM** is a full function turing-complete VM that executes smart contracts written in [Move Language](/learn/core-concepts/move-contracts/move-language)
-  - **flexEmu** is a general purpose MIPS emulator that generates [Fraud Proof](/learn/in-depth-tech/fraud-proof) from MoveVM
-  - **State Storage** contains the full state of Bitcoin blockchain and the application states
-  - **Frameworks** contains the modules for interpreting the Bitcoin state and the standard Move libraries, along with customized Rooch Framework which provide rich features for a better dev exerperience  
+- **MoveOS** is the component that does all the computation and state storage work.  
+- **MoveVM** is a full function turing-complete VM that executes smart contracts written in [Move Language](/learn/core-concepts/move-contracts/move-language)
+- **flexEmu** is a general purpose MIPS emulator that generates [Fraud Proof](/learn/in-depth-tech/fraud-proof) from MoveVM
+- **State Storage** contains the full state of Bitcoin blockchain and the application states
+- **Frameworks** contains the modules for interpreting the Bitcoin state and the standard Move libraries, along with customized Rooch Framework which provide rich features for a better dev exerperience  
 
 ## Usage
 

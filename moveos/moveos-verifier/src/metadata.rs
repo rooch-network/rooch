@@ -24,17 +24,20 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::ops::Deref;
+use std::sync::{Arc, RwLock};
 use thiserror::Error;
 
+type GlobalVariableWithRWLocker<T> = Lazy<Arc<RwLock<T>>>;
 // This is only used for local integration testing and compiling multiple Move Packages.
 // When publishing, use FunctionIndex -> ModuleID to read the module from the DB.
-pub static mut GLOBAL_PRIVATE_GENERICS: Lazy<BTreeMap<String, Vec<usize>>> =
-    Lazy::new(|| BTreeMap::new());
+pub static mut GLOBAL_PRIVATE_GENERICS: GlobalVariableWithRWLocker<BTreeMap<String, Vec<usize>>> =
+    Lazy::new(|| Arc::new(RwLock::new(BTreeMap::new())));
 
-pub static mut GLOBAL_DATA_STRUCT: Lazy<BTreeMap<String, bool>> = Lazy::new(|| BTreeMap::new());
+pub static mut GLOBAL_DATA_STRUCT: GlobalVariableWithRWLocker<BTreeMap<String, bool>> =
+    Lazy::new(|| Arc::new(RwLock::new(BTreeMap::new())));
 
-pub static mut GLOBAL_DATA_STRUCT_FUNC: Lazy<BTreeMap<String, Vec<usize>>> =
-    Lazy::new(|| BTreeMap::new());
+pub static mut GLOBAL_DATA_STRUCT_FUNC: GlobalVariableWithRWLocker<BTreeMap<String, Vec<usize>>> =
+    Lazy::new(|| Arc::new(RwLock::new(BTreeMap::new())));
 
 pub static mut GLOBAL_GAS_FREE_RECORDER: Lazy<BTreeMap<String, Vec<usize>>> =
     Lazy::new(|| BTreeMap::new());
@@ -321,6 +324,8 @@ fn get_type_name_indices(
 
                     unsafe {
                         GLOBAL_PRIVATE_GENERICS
+                            .write()
+                            .unwrap()
                             .insert(full_func_name.clone(), attribute_type_index.clone());
                     }
 
@@ -370,6 +375,8 @@ fn check_call_generics(global_env: &GlobalEnv, module: &ModuleEnv, view: BinaryI
                 let private_generics_types = {
                     unsafe {
                         GLOBAL_PRIVATE_GENERICS
+                            .read()
+                            .unwrap()
                             .get(full_path_func_name.as_str())
                             .map(|list| list.clone())
                     }
@@ -1050,7 +1057,10 @@ fn check_data_struct_fields(
     let full_struct_name = format!("{}::{}", module_env.get_full_name_str(), struct_name);
     valid_structs.insert(full_struct_name.clone(), true);
     unsafe {
-        GLOBAL_DATA_STRUCT.insert(full_struct_name, true);
+        GLOBAL_DATA_STRUCT
+            .write()
+            .unwrap()
+            .insert(full_struct_name, true);
     }
 
     ("".to_string(), true)
@@ -1100,9 +1110,12 @@ fn check_data_struct_fields_type(
 
             check_data_struct_fields(&struct_env, &struct_module, valid_structs);
 
-            let is_allowed_opt = unsafe { GLOBAL_DATA_STRUCT.get(full_struct_name.as_str()) };
+            let is_allowed_opt = unsafe {
+                let data = GLOBAL_DATA_STRUCT.read().unwrap();
+                data.get(full_struct_name.as_str()).map(|_| true)
+            };
             return if let Some(is_allowed) = is_allowed_opt {
-                *is_allowed
+                is_allowed
             } else {
                 false
             };
@@ -1271,6 +1284,8 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
 
                     unsafe {
                         GLOBAL_DATA_STRUCT_FUNC
+                            .write()
+                            .unwrap()
                             .insert(full_path_func_name, attribute_type_index.clone());
                     }
 
@@ -1347,6 +1362,8 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
                 let data_struct_func_types = {
                     unsafe {
                         GLOBAL_DATA_STRUCT_FUNC
+                            .read()
+                            .unwrap()
                             .get(full_path_func_name.as_str())
                             .map(|list| list.clone())
                     }
@@ -1415,9 +1432,12 @@ fn check_func_data_struct(
             }
 
             unsafe {
-                let data_struct_opt = GLOBAL_DATA_STRUCT.get(full_struct_name.as_str());
+                let data_struct_opt = {
+                    let data = GLOBAL_DATA_STRUCT.read().unwrap();
+                    data.get(full_struct_name.as_str()).map(|_| true)
+                };
                 if let Some(is_data_struct) = data_struct_opt {
-                    if *is_data_struct {
+                    if is_data_struct {
                         return (true, "".to_string());
                     }
                 }

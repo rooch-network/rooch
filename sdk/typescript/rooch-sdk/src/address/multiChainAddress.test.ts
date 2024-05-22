@@ -3,7 +3,7 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { RoochMultiChainID } from '@roochnetwork/rooch-sdk'
+import { RoochMultiChainID } from '../constants'
 import { MultiChainAddress } from './multiChainAddress'
 
 describe('multiChainAddress', () => {

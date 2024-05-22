@@ -56,9 +56,9 @@ impl UTXOFilterView {
                 let outpoint =
                     rooch_types::bitcoin::types::OutPoint::new(txid.into_address(), vout);
                 let utxo_id = utxo::derive_utxo_id(&outpoint);
-                ObjectStateFilter::ObjectId(utxo_id)
+                ObjectStateFilter::ObjectId(vec![utxo_id])
             }
-            UTXOFilterView::ObjectId(object_id) => ObjectStateFilter::ObjectId(object_id),
+            UTXOFilterView::ObjectId(object_id) => ObjectStateFilter::ObjectId(vec![object_id]),
             UTXOFilterView::All => ObjectStateFilter::ObjectType(UTXO::struct_tag()),
         })
     }

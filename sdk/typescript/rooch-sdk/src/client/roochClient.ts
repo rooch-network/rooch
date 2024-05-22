@@ -72,6 +72,7 @@ import {
 
 import { BcsSerializer } from '../generated/runtime/bcs/bcsSerializer'
 import { Buffer } from 'buffer'
+import { MultiChainAddress } from '../address'
 
 export const ROOCH_CLIENT_BRAND = Symbol.for('@roochnetwork/rooch-sdk')
 
@@ -239,7 +240,10 @@ export class RoochClient {
       params.filter,
       params.cursor || DEFAULT_NULL_CURSOR,
       params.limit?.toString() || DEFAULT_LIMIT,
-      params.descending_order || true,
+      {
+        descending: params.descending_order || true,
+        showDisplay: params.showDisplay || true
+      },
     )
   }
 
@@ -248,7 +252,10 @@ export class RoochClient {
       params.filter,
       params.cursor || DEFAULT_NULL_CURSOR,
       params.limit?.toString() || DEFAULT_LIMIT,
-      params.descending_order || true,
+      {
+        descending: params.descending_order || true,
+        showDisplay: params.showDisplay || true
+      },
     )
   }
 
@@ -275,7 +282,10 @@ export class RoochClient {
       params.filter,
       params.cursor?.toString() || DEFAULT_NULL_CURSOR,
       params.limit?.toString() || DEFAULT_LIMIT,
-      params.descending_order || true,
+      {
+        descending: params.descending_order || true,
+        showDisplay: params.showDisplay || false
+      },
     )
   }
 
@@ -284,7 +294,10 @@ export class RoochClient {
       params.filter,
       params.cursor || DEFAULT_NULL_CURSOR,
       params.limit?.toString() || DEFAULT_LIMIT,
-      params.descending_order || true,
+      {
+        descending: params.descending_order || true,
+        showDisplay: params.showDisplay || false
+      },
     )
   }
 
@@ -441,7 +454,9 @@ export class RoochClient {
     const handleAddress = () => {
       switch (params.multiChainID) {
         case RoochMultiChainID.Bitcoin:
-          return Array.from(Buffer.from(params.address))
+          return Array.from(
+            new MultiChainAddress(params.multiChainID, params.address).getRawAddress(),
+          )
         case RoochMultiChainID.Ether:
           return Array.from(Buffer.from(params.address.substring(2), 'hex'))
         default:
