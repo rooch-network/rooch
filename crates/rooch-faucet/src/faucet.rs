@@ -85,7 +85,6 @@ impl Faucet {
                 config,
                 wallet_pwd,
                 context: wallet,
-                // metrics,
             })),
             faucet_error_sender,
             faucet_receiver: Arc::new(RwLock::new(faucet_receiver)),
@@ -153,7 +152,6 @@ impl Faucet {
                     );
                 }
                 _ => {
-                    // tracing::info!("Transfer gases success {}", recipient_str)
                     let err = FaucetError::Transfer(format!("{:?}", tx.execution_info.status));
                     tracing::error!("Transfer gases failed {}", err);
                     if let Err(e) = self.faucet_error_sender.try_send(err) {

@@ -28,8 +28,8 @@ pub struct DiscordConfig {
     #[arg(long, env = "ROOCH_FAUCET_DISCORD_TOKEN")]
     pub discord_token: Option<String>,
 
-    #[arg(long, env = "ROOCH_FAUCET_NOTIFY_CHANNEL_ID", default_value = "0")]
-    pub notify_channel_id: u64,
+    #[arg(long, env = "ROOCH_FAUCET_NOTIFY_CHANNEL_ID")]
+    pub notify_channel_id: Option<u64>,
 
     #[arg(long, env = "ROOCH_FAUCET_CHECK_INTERVAL", default_value = "3600")]
     pub check_interval: u64,
@@ -63,7 +63,9 @@ impl App {
                     tracing::error!("Failed make faucet request for {address:?}: {}", err);
                     format!("Internal Error: Failed to send funds to {address:?}")
                 } else {
-                    format!("Sending funds to {address:?}")
+                    //TODO: use coin decimals
+                    let funds = self.faucet_funds as f64 / 10000000f64;
+                    format!("Sending gas {funds} to {address:?}")
                 }
             }
             _ => "No address found!".to_string(),
@@ -113,85 +115,84 @@ impl EventHandler for App {
 
         let discord_cfg = self.discord_config.clone();
 
-        if discord_cfg.notify_channel_id == 0 {
-            tracing::info!("Notify channel id is zero, not check gas balance!");
-            return;
-        }
+        match discord_cfg.notify_channel_id {
+            Some(notify_channel_id) => {
+                let ctx = Arc::new(ctx);
 
-        let ctx = Arc::new(ctx);
+                // We need to check that the loop is not already running when this event triggers, as this
+                // event triggers every time the bot enters or leaves a guild, along every time the ready
+                // shard event triggers.
+                //
+                // An AtomicBool is used because it doesn't require a mutable reference to be changed, as
+                // we don't have one due to self being an immutable reference.
+                if !self.is_loop_running.load(Ordering::Relaxed) {
+                    // We have to clone the Arc, as it gets moved into the new thread.
+                    let ctx1 = Arc::clone(&ctx);
+                    let app = Arc::new(self.clone());
+                    // tokio::spawn creates a new green thread that can run in parallel with the rest of
+                    // the application.
+                    tokio::spawn(async move {
+                        loop {
+                            let result = app.check_gas_balance().await;
 
-        // We need to check that the loop is not already running when this event triggers, as this
-        // event triggers every time the bot enters or leaves a guild, along every time the ready
-        // shard event triggers.
-        //
-        // An AtomicBool is used because it doesn't require a mutable reference to be changed, as
-        // we don't have one due to self being an immutable reference.
-        if !self.is_loop_running.load(Ordering::Relaxed) {
-            // We have to clone the Arc, as it gets moved into the new thread.
-            let ctx1 = Arc::clone(&ctx);
-            let app = Arc::new(self.clone());
-            // tokio::spawn creates a new green thread that can run in parallel with the rest of
-            // the application.
-            tokio::spawn(async move {
-                loop {
-                    let result = app.check_gas_balance().await;
-
-                    match result {
-                        Ok(v) => {
-                            if v < discord_cfg.notify_threshold as f64 {
-                                let embed = CreateEmbed::new()
-                                    .title("Insufficient gas balance")
-                                    .field("current balance", v.to_string(), true);
-                                let builder = CreateMessage::new().embed(embed);
-                                let message = ChannelId::new(discord_cfg.notify_channel_id)
-                                    .send_message(&ctx1, builder)
-                                    .await;
-                                if let Err(why) = message {
-                                    tracing::error!("Error sending message: {why:?}");
-                                };
+                            match result {
+                                Ok(v) => {
+                                    if v < discord_cfg.notify_threshold as f64 {
+                                        let embed = CreateEmbed::new()
+                                            .title("Insufficient gas balance")
+                                            .field("current balance", v.to_string(), true);
+                                        let builder = CreateMessage::new().embed(embed);
+                                        let message = ChannelId::new(notify_channel_id)
+                                            .send_message(&ctx1, builder)
+                                            .await;
+                                        if let Err(why) = message {
+                                            tracing::error!("Error sending message: {why:?}");
+                                        };
+                                    }
+                                }
+                                Err(e) => {
+                                    let embed = CreateEmbed::new()
+                                        .title("Check gas balance failed")
+                                        .field("error", e.to_string(), false);
+                                    let builder = CreateMessage::new().embed(embed);
+                                    let message = ChannelId::new(notify_channel_id)
+                                        .send_message(&ctx1, builder)
+                                        .await;
+                                    if let Err(why) = message {
+                                        tracing::error!("Error sending message: {why:?}");
+                                    };
+                                }
                             }
+
+                            tokio::time::sleep(Duration::from_secs(discord_cfg.check_interval))
+                                .await;
                         }
-                        Err(e) => {
-                            let embed = CreateEmbed::new().title("Check gas balance failed").field(
+                    });
+
+                    let ctx2 = Arc::clone(&ctx);
+                    let app2 = Arc::new(self.clone());
+                    tokio::spawn(async move {
+                        while let Some(err) = app2.err_receiver.write().await.recv().await {
+                            let embed = CreateEmbed::new().title("Sending gas funds failed").field(
                                 "error",
-                                e.to_string(),
+                                err.to_string(),
                                 false,
                             );
                             let builder = CreateMessage::new().embed(embed);
-                            let message = ChannelId::new(discord_cfg.notify_channel_id)
-                                .send_message(&ctx1, builder)
+                            let message = ChannelId::new(notify_channel_id)
+                                .send_message(&ctx2, builder)
                                 .await;
                             if let Err(why) = message {
                                 tracing::error!("Error sending message: {why:?}");
                             };
                         }
-                    }
+                    });
 
-                    tokio::time::sleep(Duration::from_secs(discord_cfg.check_interval)).await;
+                    // Now that the loop is running, we set the bool to true
+                    self.is_loop_running.swap(true, Ordering::Relaxed);
                 }
-            });
-
-            let ctx2 = Arc::clone(&ctx);
-            let app2 = Arc::new(self.clone());
-            tokio::spawn(async move {
-                while let Some(err) = app2.err_receiver.write().await.recv().await {
-                    let embed = CreateEmbed::new().title("Sending gas funds failed").field(
-                        "error",
-                        err.to_string(),
-                        false,
-                    );
-                    let builder = CreateMessage::new().embed(embed);
-                    let message = ChannelId::new(discord_cfg.notify_channel_id)
-                        .send_message(&ctx2, builder)
-                        .await;
-                    if let Err(why) = message {
-                        tracing::error!("Error sending message: {why:?}");
-                    };
-                }
-            });
-
-            // Now that the loop is running, we set the bool to true
-            self.is_loop_running.swap(true, Ordering::Relaxed);
-        }
+            }
+            None => tracing::info!("Notify channel id is zero, not check gas balance!"),
+        };
     }
 }

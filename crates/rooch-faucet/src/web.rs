@@ -36,8 +36,6 @@ pub const METRICS_ROUTE: &str = "/metrics";
 
 const CONCURRENCY_LIMIT: usize = 10;
 
-// const PROM_PORT_ADDR: &str = "0.0.0.0:9184";
-
 #[derive(Parser, Debug, Clone)]
 #[clap(rename_all = "kebab-case")]
 pub struct AppConfig {
@@ -67,6 +65,7 @@ pub struct App {
     pub err_receiver: Arc<RwLock<Receiver<FaucetError>>>,
     pub wallet_config_dir: Option<PathBuf>,
     pub discord_config: DiscordConfig,
+    pub faucet_funds: u64,
     pub is_loop_running: Arc<AtomicBool>,
 }
 
@@ -76,11 +75,13 @@ impl App {
         wallet_config_dir: Option<PathBuf>,
         discord_config: DiscordConfig,
         err_receiver: Receiver<FaucetError>,
+        faucet_funds: u64,
     ) -> Self {
         Self {
             faucet_queue,
             wallet_config_dir,
             discord_config,
+            faucet_funds,
             is_loop_running: Arc::new(AtomicBool::new(false)),
             err_receiver: Arc::new(RwLock::new(err_receiver)),
         }
@@ -201,7 +202,7 @@ async fn request_gas(
             tracing::info!("request gas success add queue: {}", recipient);
             (
                 StatusCode::CREATED,
-                Json(FaucetResponse::from("Success".to_string())),
+                Json(FaucetResponse::from(app.faucet_funds.to_string())),
             )
         }
         Err(e) => {

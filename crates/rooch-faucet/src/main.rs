@@ -49,6 +49,7 @@ async fn main() -> Result<(), anyhow::Error> {
         faucet_config.wallet_config_dir.clone(),
         discord_config.clone(),
         err_receiver,
+        faucet_config.faucet_grant_amount,
     );
     let faucet = Faucet::new(&registry, faucet_config, receiver, err_sender)
         .await
