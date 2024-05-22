@@ -1,16 +1,27 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-import { Bitcoin, LucideIcon, Compass, LayoutGrid, Scroll, UserCog } from 'lucide-react'
+import {
+  Bitcoin,
+  LucideIcon,
+  Compass,
+  LayoutGrid,
+  Scroll,
+  UserCog,
+  CandlestickChart,
+  ArrowLeftRight,
+} from 'lucide-react'
 import * as React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { AssetsLayout } from '@/pages/assets/assets-layout.tsx'
 import { MintLayout } from '@/pages/mint/mint-layout.tsx'
-import { AppsLayout } from '@/pages/apps/apps-layout.tsx'
-import { TransactionsLayout } from '@/pages/transactions/transactions-layout.tsx'
-import { SettingsLayout } from '@/pages/settings/settings-layout.tsx'
+import { TradeLayout } from '@/pages/trade/trade-layout.tsx'
+import { LeapLayout } from '@/pages/leap/leap-layout.tsx'
 import { SftDetailLayout } from '@/pages/mint/sftDetail/sft-detail-layout.tsx'
-import { TransactionsBrowserLayout } from '@/pages/txblock/transactions-browser-layout.tsx'
 import { SftDetailLayoutForSelfStaking } from '@/pages/mint/sftDetailForSelfStaking/sft-detail-layout-for-self-staking.tsx'
+import { TransactionsLayout } from '@/pages/transactions/transactions-layout.tsx'
+import { TransactionsBrowserLayout } from '@/pages/txblock/transactions-browser-layout.tsx'
+import { AppsLayout } from '@/pages/apps/apps-layout.tsx'
+import { SettingsLayout } from '@/pages/settings/settings-layout.tsx'
 
 export type NavLink = {
   icon: LucideIcon
@@ -27,13 +38,25 @@ export const navItems = (): NavItemsType => {
   return [
     { icon: Bitcoin, label: 'Sidebar.assets', path: '/', auth: true, element: <AssetsLayout /> },
     { icon: Scroll, label: 'Sidebar.mint', path: '/mint', auth: true, element: <MintLayout /> },
-    { icon: LayoutGrid, label: 'Sidebar.apps', path: '/apps', element: <AppsLayout /> },
+    {
+      icon: CandlestickChart,
+      label: 'Sidebar.trade',
+      path: '/trade',
+      element: <TradeLayout />,
+    },
+    {
+      icon: ArrowLeftRight,
+      label: 'Sidebar.leap',
+      path: '/leap',
+      element: <LeapLayout />,
+    },
     {
       icon: Compass,
       label: 'Sidebar.transactions',
       path: '/transactions',
       element: <TransactionsLayout />,
     },
+    { icon: LayoutGrid, label: 'Sidebar.apps', path: '/apps', element: <AppsLayout /> },
     {
       icon: UserCog,
       label: 'Sidebar.settings',
@@ -45,8 +68,10 @@ export const navItems = (): NavItemsType => {
 }
 
 const otherRouter = [
+  { path: '/trade', element: <TradeLayout /> },
+  { path: '/leap', element: <LeapLayout /> },
   {
-    path: 'mint/sft/:sftid',
+    path: '/mint/sft/:sftid',
     element: <SftDetailLayout />,
   },
   {
