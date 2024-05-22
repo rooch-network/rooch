@@ -8,6 +8,7 @@ module moveos_std::module_store {
     use moveos_std::core_addresses;
     use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::tx_context;
+    use moveos_std::table;
     use moveos_std::signer;
     use moveos_std::move_module::{Self, MoveModule};
     use moveos_std::features;
@@ -25,14 +26,16 @@ module moveos_std::module_store {
     }
 
     /// Used to store packages.
-    /// A package is an Object, and the package ID is the module address.
-    /// Packages are dynamic fields of ModuleStore.
+    /// A package is an Object, and the package id is the module address.
+    /// Packages are child objects of ModuleStore.
+    /// `packages_ids` maps package id to the package object id.
     struct ModuleStore has key {
+        package_ids: Table<address, ObjectID>,
     }
 
     /// Used to store modules.
     /// Modules are the Package's dynamic fields, with the module name as the key.
-    struct Package has key, store {}
+    struct Package has key {}
 
     public fun module_store_id(): ObjectID {
         object::named_object_id<ModuleStore>()
@@ -44,7 +47,7 @@ module moveos_std::module_store {
         // The ModuleStore object will initialize before the genesis.
         // It should be exists, we add this for the test case.
         if (!object::exists_object(module_store_id)) {
-            let obj = object::new_named_object(ModuleStore {});
+            let obj = object::new_named_object(ModuleStore { package_ids: table::new<address, ObjectID>() });
             object::to_shared(obj)
         };
 
@@ -63,7 +66,7 @@ module moveos_std::module_store {
     // ==== Module functions ====
 
     public fun exists_package(module_object: &Object<ModuleStore>, package_id: address): bool {
-        object::contains_field(module_object, package_id)
+        table::contains(&module_object.package_ids, package_id);
     }
 
     /// Check if module exists
@@ -114,7 +117,10 @@ module moveos_std::module_store {
         let (module_names, module_names_with_init_fn, indices) = move_module::sort_and_verify_modules(&modules, package_id);
 
         if (!exists_package(module_object, package_id)) {
-            object::add_field(module_object, package_id, object::new(Package {}));
+            let package = object::add_object_field_with_id(module_object, package_id, Package {});
+            let package_obj_id = object::id(&package);
+            table::add(&mut module_object.package_ids, package_id, package_obj_id);
+            object::transfer(package, tx_context::sender());
         };
         let package = borrow_mut_package(module_object, package_id);
 
@@ -143,11 +149,13 @@ module moveos_std::module_store {
     }
 
     fun borrow_package(module_store: &Object<ModuleStore>, package_id: address): &Object<Package> {
-        object::borrow_field(module_store, package_id)
+        let package_obj_id = table::borrow(&module_store.package_ids, package_id);
+        object::borrow_object_field<ModuleStore, Package>(module_store, package_obj_id)
     }
 
     fun borrow_mut_package(module_store: &mut Object<ModuleStore>, package_id: address): &mut Object<Package> {
-        object::borrow_mut_field(module_store, package_id)
+        let package_obj_id = table::borrow(&module_store.package_ids, package_id);
+        object::borrow_mut_object_field<ModuleStore, Package>(module_store, package_obj_id)
     }
 
     fun add_module(package: &mut Object<Package>, name: String, mod: MoveModule) {
