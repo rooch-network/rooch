@@ -7,7 +7,7 @@ A tool to handle rooch indexer.
 1. rooch indexer rebuild
 
 ```shell
-rooch indexer rebuild --input ~/utxo.txt -d ~/.rooch -n main
+rooch indexer rebuild --input ~/indexer.csv -d ~/.rooch -n main
 ```
 
 Step 1, cleanup database files
@@ -28,10 +28,16 @@ Step 3, stop server
 kill {server pid} or Ctrl-C
 ```
 
-Step 4 run indexer genesis-utxo command
+Step 4, export indexer data
 
 ```shell
-rooch indexer genesis-utxo --input {your utxo file} -d {your rooch data dir} -n main
+rooch statedb export --output {your file} -d {your rooch data dir} -n main -m 3
+```
+
+Step 5 run indexer rebuild command
+
+```shell
+rooch indexer rebuild --input {your indexer file} -d {your rooch data dir} -n main
 ```
 
 ### Config
