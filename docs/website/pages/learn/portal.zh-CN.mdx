@@ -18,7 +18,7 @@ Rooch Portal 是一个综合仪表板，旨在简化 Unisat 等比特币钱包�
 
 ### 首页
 
-- Rooch Portal 网址: TODO
+- Rooch Portal 网址：https://portal.rooch.network
 
 打开 Rooch Portal 网址后，如下图所示：
 
@@ -34,7 +34,7 @@ Rooch Portal 是一个综合仪表板，旨在简化 Unisat 等比特币钱包�
 
 ### 连接钱包
 
-点击右上角的 `Connect Wallet` 按钮，将提示连接钱包，点击连接 Unisat Wallet，如果还没有安装，请参阅[安装 UniSat](./install-unisat.zh-CN.mdx)。
+点击右上角的 `Connect Wallet` 按钮，将提示连接钱包，点击连接 Unisat Wallet，如果还没有安装，请参阅安装 UniSat。
 
 ![](/docs/portal/connect-wallet.png)
 
@@ -62,19 +62,21 @@ Rooch Portal 是一个综合仪表板，旨在简化 Unisat 等比特币钱包�
 
 如上图所示，Coin 默认展示 5 个代币，可点击 `Previous/Next` 进行翻页或直接点击显示的页码。
 
+![](/docs/portal/assets-transfer.png)
+
+当前显示了 `Rooch Gas Coin` 这种代币，以及它的余额，点击 `TRANSFER` 按钮可以将它发送到其他账户。
+
+![](/docs/portal/transfer-coin.png)
+
+输入要转账的地址，以及转账的数量，点击 `Send Rooch Gas Coin` 按钮即可发送代币。
+
 #### NFT
 
 NFT 展示的是我们常见的非同质化资产。
 
 ![](/docs/portal/assets-nft.png)
 
-#### SFT
-
-SFT 展示的是半同质化资产。
-
-![](/docs/portal/assets-sft.png)
-
-#### UTXO
+#### Indexed Assets
 
 Indexed Assets 展示的是一些索引资产，比如 UTXO。
 
@@ -82,16 +84,34 @@ Indexed Assets 展示的是一些索引资产，比如 UTXO。
 
 ### Mint
 
+![](/docs/portal/mint.png)
+
 这个主要提供铭文、NFT 等资产的铸造场所，方便用户一站式注册新的资产和公平的资产发射。
 
 ### Apps
+
+![](/docs/portal/apps.png)
 
 这里提供了 Rooch 生态应用的入口，增强对 L2 的使用体验，相当于 Web3 世界的门户网站，集成了众多生态应用，比如跨链桥、DEX、游戏等。
 
 ### Transactions
 
+![](/docs/portal/transactions.png)
+
 这部分主要显示交易信息，可以看作一个简易的交易浏览器。
 
 ### Settings
 
+![](/docs/portal/settings.png)
+
 这里是 Rooch Portal 的设置入口，提供账户管理和会话密钥的管理功能。
+
+#### Connected Account
+
+这里主要显示 Portal 当前连接的比特币钱包（Taproot 类型）。
+
+#### Manage Sessions
+
+这里是控制当前账户生成的全部会话密钥，目前只跟 Rooch Portal 有交互，所以这里只产生了一个会话密钥。
+
+`Disconnect` 按钮可以删除当前会话密钥。
