@@ -156,13 +156,17 @@ impl Faucet {
                     // tracing::info!("Transfer gases success {}", recipient_str)
                     let err = FaucetError::Transfer(format!("{:?}", tx.execution_info.status));
                     tracing::error!("Transfer gases failed {}", err);
-                    let _ = self.faucet_error_sender.send(err).await;
+                    if let Err(e) = self.faucet_error_sender.try_send(err) {
+                        tracing::warn!("Failed to send error to faucet_error_sender: {:?}", e);
+                    }
                 }
             },
             Err(e) => {
                 let err = FaucetError::transfer(e);
                 tracing::error!("Transfer gases failed {}", err);
-                let _ = self.faucet_error_sender.send(err).await;
+                if let Err(e) = self.faucet_error_sender.try_send(err) {
+                    tracing::warn!("Failed to send error to faucet_error_sender: {:?}", e);
+                }
             }
         };
         Ok(())

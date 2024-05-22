@@ -28,11 +28,7 @@ pub struct DiscordConfig {
     #[arg(long, env = "ROOCH_FAUCET_DISCORD_TOKEN")]
     pub discord_token: Option<String>,
 
-    #[arg(
-        long,
-        env = "ROOCH_FAUCET_NOTIFY_CHANNEL_ID",
-        default_value = "0"
-    )]
+    #[arg(long, env = "ROOCH_FAUCET_NOTIFY_CHANNEL_ID", default_value = "0")]
     pub notify_channel_id: u64,
 
     #[arg(long, env = "ROOCH_FAUCET_CHECK_INTERVAL", default_value = "3600")]
