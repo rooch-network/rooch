@@ -16,6 +16,7 @@ serenity = { features = [
     "client",
     "gateway",
     "rustls_backend",
+    "cache",
     "model",
 ], workspace = true }
 axum = { workspace = true }

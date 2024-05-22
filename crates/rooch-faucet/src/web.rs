@@ -5,14 +5,17 @@ use std::{
     borrow::Cow,
     env,
     net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::PathBuf,
+    str::FromStr,
+    sync::{atomic::AtomicBool, Arc},
     time::Duration,
 };
-use tokio::sync::mpsc::Sender;
+use tokio::sync::mpsc::{Receiver, Sender};
 use tower::limit::RateLimitLayer;
 use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 
-use crate::{FaucetError, FaucetRequest, FaucetResponse};
+use crate::{DiscordConfig, FaucetError, FaucetRequest, FaucetResponse, InfoResponse};
 
 use axum::{
     error_handling::HandleErrorLayer,
@@ -23,13 +26,15 @@ use axum::{
 };
 use clap::Parser;
 use http::Method;
+use move_core_types::account_address::AccountAddress;
 use prometheus::{Registry, TextEncoder};
+use rooch_rpc_api::jsonrpc_types::{AccountAddressView, StructTagView};
+use rooch_rpc_client::wallet_context::WalletContext;
+use tokio::sync::RwLock;
 
 pub const METRICS_ROUTE: &str = "/metrics";
 
 const CONCURRENCY_LIMIT: usize = 10;
-
-// const PROM_PORT_ADDR: &str = "0.0.0.0:9184";
 
 #[derive(Parser, Debug, Clone)]
 #[clap(rename_all = "kebab-case")]
@@ -56,12 +61,30 @@ impl Default for AppConfig {
 
 #[derive(Clone, Debug)]
 pub struct App {
-    faucet_queue: Sender<FaucetRequest>,
+    pub faucet_queue: Sender<FaucetRequest>,
+    pub err_receiver: Arc<RwLock<Receiver<FaucetError>>>,
+    pub wallet_config_dir: Option<PathBuf>,
+    pub discord_config: DiscordConfig,
+    pub faucet_funds: u64,
+    pub is_loop_running: Arc<AtomicBool>,
 }
 
 impl App {
-    pub fn new(faucet_queue: Sender<FaucetRequest>) -> Self {
-        Self { faucet_queue }
+    pub fn new(
+        faucet_queue: Sender<FaucetRequest>,
+        wallet_config_dir: Option<PathBuf>,
+        discord_config: DiscordConfig,
+        err_receiver: Receiver<FaucetError>,
+        faucet_funds: u64,
+    ) -> Self {
+        Self {
+            faucet_queue,
+            wallet_config_dir,
+            discord_config,
+            faucet_funds,
+            is_loop_running: Arc::new(AtomicBool::new(false)),
+            err_receiver: Arc::new(RwLock::new(err_receiver)),
+        }
     }
 
     pub async fn request(&self, address: FaucetRequest) -> Result<(), FaucetError> {
@@ -70,6 +93,27 @@ impl App {
             .await
             .map_err(FaucetError::internal)?;
         Ok(())
+    }
+
+    pub async fn check_gas_balance(&self) -> Result<f64, FaucetError> {
+        let context = WalletContext::new(self.wallet_config_dir.clone())
+            .map_err(|e| FaucetError::Wallet(e.to_string()))?;
+        let client = context.get_client().await.unwrap();
+        let faucet_address: AccountAddress = context.client_config.active_address.unwrap().into();
+
+        let s = client
+            .rooch
+            .get_balance(
+                AccountAddressView::from(faucet_address),
+                StructTagView::from_str("0x3::gas_coin::GasCoin").unwrap(),
+            )
+            .await
+            .map_err(FaucetError::internal)?;
+
+        let divisor: u64 = 10u64.pow(s.coin_info.decimals as u32);
+        let result = s.balance.0.unchecked_as_u64() as f64 / divisor as f64;
+
+        Ok(result)
     }
 }
 
@@ -91,6 +135,7 @@ pub async fn serve(app: App, app_config: AppConfig) -> Result<(), anyhow::Error>
     let router = Router::new()
         .route("/", get(health))
         .route(METRICS_ROUTE, get(metrics))
+        .route("/info", get(request_info))
         .route("/gas", post(request_gas))
         .layer(
             ServiceBuilder::new()
@@ -108,7 +153,7 @@ pub async fn serve(app: App, app_config: AppConfig) -> Result<(), anyhow::Error>
                 .into_inner(),
         );
 
-    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), app_config.port);
+    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), app_config.port);
 
     axum::Server::bind(&addr)
         .serve(router.into_make_service())
@@ -157,7 +202,7 @@ async fn request_gas(
             tracing::info!("request gas success add queue: {}", recipient);
             (
                 StatusCode::CREATED,
-                Json(FaucetResponse::from("Success".to_string())),
+                Json(FaucetResponse::from(app.faucet_funds.to_string())),
             )
         }
         Err(e) => {
@@ -167,6 +212,18 @@ async fn request_gas(
                 Json(FaucetResponse::from(e)),
             )
         }
+    }
+}
+
+pub async fn request_info(Extension(app): Extension<App>) -> impl IntoResponse {
+    let result = app.check_gas_balance().await;
+
+    match result {
+        Ok(v) => (StatusCode::OK, Json(InfoResponse::from(v))),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(InfoResponse::from(e)),
+        ),
     }
 }
 
