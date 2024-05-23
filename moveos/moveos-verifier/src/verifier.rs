@@ -48,22 +48,6 @@ where
     Ok(true)
 }
 
-pub fn verify_module<Resolver>(
-    module: &CompiledModule,
-    db: Resolver,
-    verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
-) -> VMResult<bool>
-where
-    Resolver: ModuleResolver,
-{
-    verify_private_generics(module, &db, verified_modules)?;
-    verify_entry_function_at_publish(module)?;
-    verify_global_storage_access(module)?;
-    verify_gas_free_function(module)?;
-    verify_data_struct(module, &db, verified_modules)?;
-    verify_init_function(module)
-}
-
 /// The initializer function must have the following properties in order to be executed at publication:
 /// - Name init
 /// - Single parameter of &mut TxContext type
