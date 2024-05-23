@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 
 import CustomPagination from '@/components/custom-pagination.tsx'
+import {formatCoin} from '@/utils/format.ts';
 
 export const AssetsCoin = () => {
   const account = useCurrentAccount()
@@ -186,7 +187,7 @@ export const AssetsCoin = () => {
             {data?.data.map((coin) => (
               <TableRow key={coin.name}>
                 <TableCell>{coin.name}</TableCell>
-                <TableCell>{coin.balance}</TableCell>
+                <TableCell>{formatCoin(Number(coin.balance), coin.decimals)}</TableCell>
                 <TableCell className="text-right">
                   <Button
                     variant="link"

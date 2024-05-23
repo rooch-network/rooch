@@ -3,6 +3,11 @@
 
 import { PaymentTypes } from '@/common/interface'
 
+export const formatCoin = (balance: number, decimals: number, precision = 2) => {
+  const divisor = Math.pow(10, decimals)
+  return (balance / divisor).toFixed(precision)
+}
+
 export const formatAddress = (address?: string) => {
   if (!address) {
     return ''
