@@ -1431,15 +1431,13 @@ fn check_func_data_struct(
                 return (true, "".to_string());
             }
 
-            unsafe {
-                let data_struct_opt = {
-                    let data = GLOBAL_DATA_STRUCT.read().unwrap();
-                    data.get(full_struct_name.as_str()).map(|_| true)
-                };
-                if let Some(is_data_struct) = data_struct_opt {
-                    if is_data_struct {
-                        return (true, "".to_string());
-                    }
+            let data_struct_opt = unsafe {
+                let data = GLOBAL_DATA_STRUCT.read().unwrap();
+                data.get(full_struct_name.as_str()).map(|_| true)
+            };
+            if let Some(is_data_struct) = data_struct_opt {
+                if is_data_struct {
+                    return (true, "".to_string());
                 }
             }
 
