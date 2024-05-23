@@ -455,13 +455,16 @@ impl ObjectRuntime {
             .get_loaded_object(&module_store_id)?
             .expect("module store object must exist");
         let package_obj_id = Package::package_id(module_id.address());
-        let package_obj = module_store_obj
-            .get_loaded_object_field(&package_obj_id)?
-            .expect("package object must exist");
-        let key = KeyState::from_string(&format!("{}", module_id.name()));
-        let module_field = package_obj.get_loaded_field(&key);
-        match module_field {
-            Some(field) => field.as_move_module(),
+        let package_obj = module_store_obj.get_loaded_object_field(&package_obj_id)?;
+        match package_obj {
+            Some(package_obj) => {
+                let key = KeyState::from_string(&format!("{}", module_id.name()));
+                let module_field = package_obj.get_loaded_field(&key);
+                match module_field {
+                    Some(field) => field.as_move_module(),
+                    None => Ok(None),
+                }
+            }
             None => Ok(None),
         }
     }

@@ -276,7 +276,7 @@ pub enum FieldChangeView {
         #[serde(flatten)]
         change: ObjectChangeView,
     },
-    Nomarl {
+    Normal {
         key: KeyStateView,
         #[serde(flatten)]
         change: NormalFieldChangeView,
@@ -290,7 +290,7 @@ impl From<(KeyState, FieldChange)> for FieldChangeView {
                 key: key.into(),
                 change: object_change.into(),
             },
-            FieldChange::Normal(normal_field_change) => Self::Nomarl {
+            FieldChange::Normal(normal_field_change) => Self::Normal {
                 key: key.into(),
                 change: normal_field_change.into(),
             },
