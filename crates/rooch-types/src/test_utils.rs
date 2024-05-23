@@ -18,9 +18,9 @@ pub fn random_rooch_transaction() -> RoochTransaction {
 pub fn random_ledger_transaction() -> LedgerTransaction {
     let rooch_transaction = random_rooch_transaction();
 
-    let tx_order_signature = Authenticator::new(rand::random(), random_bytes());
+    let tx_order_signature = random_bytes();
     let random_sequence_info =
-        TransactionSequenceInfo::new(rand::random(), tx_order_signature, H256::random());
+        TransactionSequenceInfo::new(rand::random(), tx_order_signature, H256::random(), 0);
     LedgerTransaction::new_l2_tx(rooch_transaction, random_sequence_info)
 }
 

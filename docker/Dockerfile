@@ -69,6 +69,8 @@ RUN set -eux; \
 ENV RELEASE_PATH="/rooch/target/release"
 COPY --from=builder $RELEASE_PATH/rooch \
      /rooch/
+COPY --from=builder $RELEASE_PATH/rooch-faucet \
+  /rooch-faucet/
 
 ENTRYPOINT [ "/rooch/rooch" ]
 CMD [ "server", "start" ]

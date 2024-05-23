@@ -411,9 +411,9 @@
           }
         },
         {
-          "name": "descending_order",
+          "name": "query_option",
           "schema": {
-            "type": "boolean"
+            "$ref": "#/components/schemas/QueryOptions"
           }
         }
       ],
@@ -449,9 +449,9 @@
           }
         },
         {
-          "name": "descending_order",
+          "name": "query_option",
           "schema": {
-            "type": "boolean"
+            "$ref": "#/components/schemas/QueryOptions"
           }
         }
       ],
@@ -487,9 +487,9 @@
           }
         },
         {
-          "name": "descending_order",
+          "name": "query_option",
           "schema": {
-            "type": "boolean"
+            "$ref": "#/components/schemas/QueryOptions"
           }
         }
       ],
@@ -525,9 +525,9 @@
           }
         },
         {
-          "name": "descending_order",
+          "name": "query_option",
           "schema": {
-            "type": "boolean"
+            "$ref": "#/components/schemas/QueryOptions"
           }
         }
       ],
@@ -674,21 +674,6 @@
             "$ref": "#/components/schemas/move_core_types::u256::U256"
           }
         ]
-      },
-      "AuthenticatorView": {
-        "type": "object",
-        "required": [
-          "auth_validator_id",
-          "payload"
-        ],
-        "properties": {
-          "auth_validator_id": {
-            "$ref": "#/components/schemas/u64"
-          },
-          "payload": {
-            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
-          }
-        }
       },
       "BalanceInfoView": {
         "type": "object",
@@ -1128,7 +1113,6 @@
         "type": "object",
         "required": [
           "created_at",
-          "key",
           "key_hex",
           "key_type",
           "object_id",
@@ -1142,9 +1126,6 @@
             "type": "integer",
             "format": "uint64",
             "minimum": 0.0
-          },
-          "key": {
-            "$ref": "#/components/schemas/AnnotatedMoveValueView"
           },
           "key_hex": {
             "type": "string"
@@ -1204,6 +1185,16 @@
             "type": "integer",
             "format": "uint64",
             "minimum": 0.0
+          },
+          "display_fields": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DisplayFieldsView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "flag": {
             "type": "integer",
@@ -1849,7 +1840,10 @@
             ],
             "properties": {
               "object_id": {
-                "$ref": "#/components/schemas/ObjectID"
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ObjectID"
+                }
               }
             },
             "additionalProperties": false
@@ -2234,6 +2228,21 @@
           }
         }
       },
+      "QueryOptions": {
+        "type": "object",
+        "properties": {
+          "descending": {
+            "description": "If true, return query items in descending order.",
+            "default": true,
+            "type": "boolean"
+          },
+          "showDisplay": {
+            "description": "If true, result with display rendered is returned",
+            "default": false,
+            "type": "boolean"
+          }
+        }
+      },
       "ScriptCallView": {
         "type": "object",
         "required": [
@@ -2532,7 +2541,8 @@
         "required": [
           "tx_accumulator_root",
           "tx_order",
-          "tx_order_signature"
+          "tx_order_signature",
+          "tx_timestamp"
         ],
         "properties": {
           "tx_accumulator_root": {
@@ -2542,7 +2552,10 @@
             "$ref": "#/components/schemas/u64"
           },
           "tx_order_signature": {
-            "$ref": "#/components/schemas/AuthenticatorView"
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          },
+          "tx_timestamp": {
+            "$ref": "#/components/schemas/u64"
           }
         }
       },

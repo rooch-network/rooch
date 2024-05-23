@@ -62,7 +62,6 @@ pub struct IndexerObjectState {
 pub struct IndexerFieldState {
     pub object_id: ObjectID,
     pub key_hex: String,
-    pub key_str: String,
     pub key_type: TypeTag,
     pub value_type: TypeTag,
     pub tx_order: u64,
@@ -83,8 +82,8 @@ pub enum ObjectStateFilter {
     ObjectType(StructTag),
     /// Query by owner.
     Owner(AccountAddress),
-    /// Query by object id.
-    ObjectId(ObjectID),
+    /// Query by object ids.
+    ObjectId(Vec<ObjectID>),
 }
 
 impl ObjectStateFilter {
@@ -95,7 +94,9 @@ impl ObjectStateFilter {
             }
             ObjectStateFilter::ObjectType(object_type) => object_type == &item.object_type,
             ObjectStateFilter::Owner(owner) => owner == &item.owner,
-            ObjectStateFilter::ObjectId(object_id) => object_id == &item.object_id,
+            ObjectStateFilter::ObjectId(object_ids) => {
+                object_ids.len() == 1 && object_ids[0] == item.object_id
+            }
         })
     }
 }

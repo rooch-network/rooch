@@ -61,9 +61,11 @@ impl InscriptionFilterView {
                 let txid = hex_to_txid(txid.as_str())?;
                 let inscription_id = InscriptionID::new(txid.into_address(), index);
                 let obj_id = ord::derive_inscription_id(&inscription_id);
-                ObjectStateFilter::ObjectId(obj_id)
+                ObjectStateFilter::ObjectId(vec![obj_id])
             }
-            InscriptionFilterView::ObjectId(object_id) => ObjectStateFilter::ObjectId(object_id),
+            InscriptionFilterView::ObjectId(object_id) => {
+                ObjectStateFilter::ObjectId(vec![object_id])
+            }
             InscriptionFilterView::All => ObjectStateFilter::ObjectType(Inscription::struct_tag()),
         })
     }

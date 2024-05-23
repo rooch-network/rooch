@@ -74,8 +74,10 @@ impl PipelineProcessorActor {
     pub async fn execute_tx(
         &mut self,
         tx: LedgerTransaction,
-        moveos_tx: VerifiedMoveOSTransaction,
+        mut moveos_tx: VerifiedMoveOSTransaction,
     ) -> Result<ExecuteTransactionResponse> {
+        // Add sequence info to tx context, let the Move contract can get the sequence info
+        moveos_tx.ctx.add(tx.sequence_info.clone())?;
         // Then execute
         let (output, execution_info) = self.executor.execute_transaction(moveos_tx.clone()).await?;
         self.proposer

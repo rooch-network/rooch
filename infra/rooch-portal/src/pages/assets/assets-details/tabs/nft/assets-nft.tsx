@@ -55,8 +55,6 @@ export const AssetsNft = () => {
     }),
     [paginationModel],
   )
-  // TODO: How do I get all the nft
-  // TODO: 1, fetch data/image loading, 2, pagination
   const {
     data: nfts,
     refetch: reFetchNFTS,
@@ -69,7 +67,6 @@ export const AssetsNft = () => {
         object_type: `${ROOCH_OPERATING_ADDRESS}::nft::NFT`,
       },
     },
-    // TODO: 待解决的类型问题
     // @ts-ignore
     cursor: queryOptions.cursor,
     limit: queryOptions.pageSize,

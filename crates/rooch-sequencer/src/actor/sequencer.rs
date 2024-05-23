@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::time::SystemTime;
+
 use crate::messages::{
     GetSequencerOrderMessage, GetTransactionByHashMessage, GetTransactionsByHashMessage,
     GetTxHashsMessage, TransactionSequenceMessage,
@@ -29,7 +31,8 @@ impl SequencerActor {
             .get_meta_store()
             .get_sequencer_order()?
             .map(|order| order.last_order);
-        let last_order = last_order_opt.unwrap_or(0u64);
+        // Reserve tx_order = 0 for data import transaction and indexer rebuild
+        let last_order = last_order_opt.unwrap_or(1u64);
         info!("Load latest sequencer order {:?}", last_order);
         Ok(Self {
             last_order,
@@ -39,7 +42,9 @@ impl SequencerActor {
     }
 
     pub fn sequence(&mut self, mut tx_data: LedgerTxData) -> Result<LedgerTransaction> {
-        let tx_order = if self.last_order == 0 {
+        let now = SystemTime::now();
+        let tx_timestamp = now.duration_since(SystemTime::UNIX_EPOCH)?.as_millis() as u64;
+        let tx_order = if self.last_order == 1 {
             let last_order_opt = self
                 .rooch_store
                 .get_meta_store()
@@ -47,7 +52,7 @@ impl SequencerActor {
                 .map(|order| order.last_order);
             match last_order_opt {
                 Some(last_order) => last_order + 1,
-                None => 0,
+                None => 1,
             }
         } else {
             self.last_order + 1
@@ -56,13 +61,16 @@ impl SequencerActor {
         let mut witness_data = hash.as_ref().to_vec();
         witness_data.extend(tx_order.to_le_bytes().iter());
         let witness_hash = h256::sha3_256_of(&witness_data);
-        let tx_order_signature = Signature::new_hashed(&witness_hash.0, &self.sequencer_key).into();
+        let tx_order_signature = Signature::new_hashed(&witness_hash.0, &self.sequencer_key)
+            .as_ref()
+            .to_vec();
 
         let tx_accumulator_root = H256::random();
         let tx_sequence_info = TransactionSequenceInfo {
             tx_order,
             tx_order_signature,
             tx_accumulator_root,
+            tx_timestamp,
         };
 
         let tx = LedgerTransaction::new(tx_data, tx_sequence_info);

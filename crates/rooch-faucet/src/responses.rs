@@ -7,24 +7,46 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FaucetResponse {
-    pub transferred_gas_objects: Vec<String>,
+    pub gas: String,
     pub error: Option<String>,
 }
 
 impl From<FaucetError> for FaucetResponse {
     fn from(e: FaucetError) -> Self {
         Self {
+            gas: "0".to_string(),
             error: Some(e.to_string()),
-            transferred_gas_objects: vec![],
         }
     }
 }
 
 impl From<String> for FaucetResponse {
-    fn from(v: String) -> Self {
+    fn from(gas: String) -> Self {
+        Self { gas, error: None }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct InfoResponse {
+    pub gas_balance: f64,
+    pub error: Option<String>,
+}
+
+impl From<FaucetError> for InfoResponse {
+    fn from(e: FaucetError) -> Self {
         Self {
-            transferred_gas_objects: vec![v],
+            error: Some(e.to_string()),
+            gas_balance: 0f64,
+        }
+    }
+}
+
+impl From<f64> for InfoResponse {
+    fn from(v: f64) -> Self {
+        Self {
             error: None,
+            gas_balance: v,
         }
     }
 }

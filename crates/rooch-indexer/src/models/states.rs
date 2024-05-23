@@ -67,7 +67,12 @@ impl StoredObjectState {
     pub fn try_into_indexer_global_state(&self) -> Result<IndexerObjectState, anyhow::Error> {
         let object_id = ObjectID::from_str(self.object_id.as_str())?;
         let owner = AccountAddress::from_hex_literal(self.owner.as_str())?;
-        let object_type = StructTag::from_str(self.object_type.as_str())?;
+        let obj_type_str = if !self.object_type.starts_with("0x") {
+            format!("0x{}", self.object_type)
+        } else {
+            self.object_type.clone()
+        };
+        let object_type = StructTag::from_str(obj_type_str.as_str())?;
         let state_root = AccountAddress::from_hex_literal(self.state_root.as_str())?;
 
         let state = IndexerObjectState {
@@ -95,9 +100,6 @@ pub struct StoredFieldState {
     /// The hex of the table key
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub key_hex: String,
-    /// The key of the table, json format
-    #[diesel(sql_type = diesel::sql_types::Text)]
-    pub key_str: String,
     /// The type tag of the key
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub key_type: String,
@@ -123,7 +125,6 @@ impl From<IndexedFieldState> for StoredFieldState {
         Self {
             object_id: state.object_id.to_string(),
             key_hex: state.key_hex,
-            key_str: state.key_str,
             key_type: state.key_type.to_string(),
             value_type: state.value_type.to_string(),
             tx_order: state.tx_order as i64,
@@ -143,7 +144,6 @@ impl StoredFieldState {
         let state = IndexerFieldState {
             object_id,
             key_hex: self.key_hex.clone(),
-            key_str: self.key_str.clone(),
             key_type,
             value_type,
             tx_order: self.tx_order as u64,

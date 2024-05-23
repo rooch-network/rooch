@@ -36,7 +36,6 @@ diesel::table! {
     field_states (object_id, key_hex) {
         object_id -> Text,
         key_hex -> Text,
-        key_str -> Text,
         key_type -> Text,
         value_type -> Text,
         tx_order -> BigInt,
@@ -64,8 +63,6 @@ diesel::table! {
         event_root -> Text,
         gas_used -> BigInt,
         status -> Text,
-        tx_order_auth_validator_id -> BigInt,
-        tx_order_authenticator_payload -> Binary,
         created_at -> BigInt,
     }
 }

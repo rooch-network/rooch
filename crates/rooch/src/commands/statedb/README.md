@@ -37,13 +37,13 @@ rooch statedb genesis-utxo --input {your utxo file} -d {your rooch data dir} -n 
 2. rooch statedb export
 
 ```shell
-todo!
+rooch statedb export --output {your file} -d {your rooch data dir} -n main -m {export mode}
 ```
 
 3. rooch statedb import
 
 ```shell
-todo!
+rooch statedb statedb --input {your file} -d {your rooch data dir} -n main
 ```
 
 ### Config

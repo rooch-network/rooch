@@ -43,9 +43,6 @@ pub struct IndexedTransaction {
     pub gas_used: u64,
     // the vm status.
     pub status: String,
-    // The tx order signature,
-    pub tx_order_auth_validator_id: u64,
-    pub tx_order_authenticator_payload: Vec<u8>,
 
     pub created_at: u64,
 }
@@ -92,15 +89,7 @@ impl IndexedTransaction {
             // the vm status.
             status,
 
-            // The tx order signature,
-            tx_order_auth_validator_id: transaction
-                .sequence_info
-                .tx_order_signature
-                .auth_validator_id,
-            tx_order_authenticator_payload: transaction.sequence_info.tx_order_signature.payload,
-
-            //TODO record transaction timestamp
-            created_at: 0,
+            created_at: transaction.sequence_info.tx_timestamp,
         };
         Ok(indexed_transaction)
     }
@@ -146,8 +135,7 @@ impl IndexedEvent {
             tx_order: transaction.sequence_info.tx_order,
             sender: moveos_tx.ctx.sender,
 
-            //TODO record transaction timestamp
-            created_at: 0,
+            created_at: transaction.sequence_info.tx_timestamp,
         }
     }
 }
@@ -212,9 +200,6 @@ pub struct IndexedFieldState {
     pub object_id: ObjectID,
     // The hex of the field key state
     pub key_hex: String,
-    // The key of the field, json format
-    // `key` is a key word in SQlite, so use key_str as column name
-    pub key_str: String,
     // The type tag of the key
     pub key_type: TypeTag,
     // The type tag of the value
@@ -233,7 +218,6 @@ impl IndexedFieldState {
     pub fn new(
         object_id: ObjectID,
         key_hex: String,
-        key_state_json: String,
         key_type: TypeTag,
         value_type: TypeTag,
         tx_order: u64,
@@ -242,7 +226,6 @@ impl IndexedFieldState {
         IndexedFieldState {
             object_id,
             key_hex,
-            key_str: key_state_json,
             key_type,
             value_type,
             tx_order,
@@ -253,8 +236,4 @@ impl IndexedFieldState {
             updated_at: 0,
         }
     }
-
-    // pub fn is_utxo_object_state(&self) -> bool {
-    //     self.object_type == format_struct_tag(UTXO::struct_tag())
-    // }
 }
