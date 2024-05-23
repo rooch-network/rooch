@@ -25,7 +25,18 @@ function App() {
       <CacheProvider value={clientSideEmotionCache}>
         <QueryClientProvider client={queryClient}>
           <RoochClientProvider network={TestNetwork}>
-            <WalletProvider chain={SupportChain.BITCOIN} autoConnect>
+            <WalletProvider chain={SupportChain.BITCOIN} autoConnect fallback={
+              <div className="h-screen w-screen flex items-center justify-center bg-gradient-to-r from-zinc-900 to-zinc-800">
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-6">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                  </div>
+                  <h3 className="text-white text-2xl font-semibold">Loading data...</h3>
+                  <p className="text-gray-400 mt-2">Please wait a moment while we fetch your data.</p>
+                </div>
+              </div>
+            }
+            >
               <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
                 <ToastProvider />
                 <SessionGuard>
