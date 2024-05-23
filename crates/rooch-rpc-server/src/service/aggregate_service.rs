@@ -155,7 +155,7 @@ impl AggregateService {
                 let coin_types = coin_stores
                     .iter()
                     .flatten()
-                    .map(|coin_store| coin_store.coin_type_tag())
+                    .map(|coin_store| coin_store.coin_type())
                     .collect::<Vec<_>>();
 
                 let coin_info_map = self.get_coin_infos(coin_types).await?;
@@ -166,11 +166,14 @@ impl AggregateService {
                         anyhow::anyhow!("Can not find CoinStore with id: {}", object_id)
                     })?;
                     let coin_info = coin_info_map
-                        .get(&coin_store.coin_type_tag())
+                        .get(&coin_store.coin_type())
                         .cloned()
                         .flatten()
                         .ok_or_else(|| {
-                            anyhow::anyhow!("Can not find CoinInfo for {}", coin_store.coin_type())
+                            anyhow::anyhow!(
+                                "Can not find CoinInfo for {}",
+                                coin_store.coin_type_str()
+                            )
                         })?;
                     let balance_info =
                         BalanceInfoView::new(coin_info.clone(), coin_store.balance());

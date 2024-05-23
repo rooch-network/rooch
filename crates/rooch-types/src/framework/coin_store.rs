@@ -5,8 +5,7 @@ use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use move_core_types::language_storage::StructTag;
 use move_core_types::u256::U256;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
-use moveos_types::move_std::string::MoveString;
-use moveos_types::state::{MoveState, MoveStructState, MoveStructType};
+use moveos_types::state::{MoveState, MoveStructState, MoveStructType, PlaceholderStruct};
 use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("coin_store");
@@ -40,11 +39,21 @@ impl MoveStructState for Balance {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CoinStore<CoinType> {
-    coin_type: MoveString,
+pub struct CoinStore<CoinType = PlaceholderStruct> {
     balance: Balance,
     frozen: bool,
     phantom: std::marker::PhantomData<CoinType>,
+}
+
+impl CoinStore {
+    pub fn struct_tag_without_coin_type() -> StructTag {
+        move_core_types::language_storage::StructTag {
+            address: Self::ADDRESS,
+            module: Self::MODULE_NAME.to_owned(),
+            name: Self::STRUCT_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
 }
 
 impl<CoinType> MoveStructType for CoinStore<CoinType>
@@ -55,13 +64,8 @@ where
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("CoinStore");
 
-    fn struct_tag() -> move_core_types::language_storage::StructTag {
-        move_core_types::language_storage::StructTag {
-            address: Self::ADDRESS,
-            module: Self::MODULE_NAME.to_owned(),
-            name: Self::STRUCT_NAME.to_owned(),
-            type_params: vec![CoinType::type_tag()],
-        }
+    fn type_params() -> Vec<move_core_types::language_storage::TypeTag> {
+        vec![CoinType::struct_tag().into()]
     }
 }
 
@@ -71,7 +75,6 @@ where
 {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
-            MoveString::type_layout(),
             Balance::type_layout(),
             move_core_types::value::MoveTypeLayout::Bool,
         ])
@@ -92,15 +95,23 @@ where
     }
 }
 
-impl<CoinType> CoinStore<CoinType> {
-    pub fn coin_type(&self) -> String {
-        self.coin_type.to_string()
+impl<CoinType> CoinStore<CoinType>
+where
+    CoinType: MoveStructType,
+{
+    pub fn new(balance: U256, frozen: bool) -> Self {
+        Self {
+            balance: Balance { value: balance },
+            frozen,
+            phantom: std::marker::PhantomData,
+        }
     }
-    pub fn coin_type_tag(&self) -> StructTag {
-        let coin_type_str = format!("0x{}", self.coin_type);
-        coin_type_str
-            .parse::<StructTag>()
-            .expect("CoinType in CoinStore should be valid StructTag")
+
+    pub fn coin_type_str(&self) -> String {
+        self.coin_type().to_string()
+    }
+    pub fn coin_type(&self) -> StructTag {
+        CoinType::struct_tag()
     }
     pub fn balance(&self) -> U256 {
         self.balance.value
