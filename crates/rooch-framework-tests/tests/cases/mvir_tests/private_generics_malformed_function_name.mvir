@@ -1,0 +1,11 @@
+//# publish
+module 0x1.TestModule1 {
+    struct S0 has drop { x: u64 }
+
+    metadata {
+        private_generics {
+            // error code 10007: MALFORMED_FUNCTION_NAME
+            invalid_module_function_name -> true;
+        }
+    }
+}

@@ -11,7 +11,6 @@ use move_binary_format::file_format::{
     FunctionInstantiation, FunctionInstantiationIndex, Signature, SignatureToken, StructDefinition,
     StructHandleIndex, Visibility,
 };
-use move_binary_format::IndexKind;
 use move_binary_format::{access::ModuleAccess, CompiledModule};
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::ModuleId;
@@ -22,6 +21,7 @@ use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
 use move_vm_types::loaded_data::runtime_types::Type;
 use once_cell::sync::Lazy;
 
+use crate::error_code::ErrorCode;
 use crate::metadata::{
     check_metadata_format, extract_module_name, get_metadata_from_compiled_module,
     is_allowed_data_struct_type, is_allowed_input_struct, is_defined_or_allowed_in_current_module,
@@ -76,7 +76,7 @@ pub fn verify_init_function(module: &CompiledModule) -> VMResult<bool> {
         if fname == INIT_FN_NAME_IDENTIFIER.as_ident_str() {
             if Visibility::Private != fdef.visibility {
                 return Err(vm_error_for_init_func_checking(
-                    StatusCode::INVALID_MAIN_FUNCTION_SIGNATURE,
+                    ErrorCode::INVALID_PUBLIC_INIT_FUNC,
                     "init function should private",
                     fdef,
                     module.self_id(),
@@ -85,7 +85,7 @@ pub fn verify_init_function(module: &CompiledModule) -> VMResult<bool> {
 
             if fdef.is_entry {
                 return Err(vm_error_for_init_func_checking(
-                    StatusCode::INVALID_MAIN_FUNCTION_SIGNATURE,
+                    ErrorCode::INVALID_INIT_FUNC_WITH_ENTRY,
                     "init function should not entry function",
                     fdef,
                     module.self_id(),
@@ -98,7 +98,7 @@ pub fn verify_init_function(module: &CompiledModule) -> VMResult<bool> {
 
             if func_parameter_vec.len() > 1 {
                 return Err(vm_error_for_init_func_checking(
-                    StatusCode::NUMBER_OF_TYPE_ARGUMENTS_MISMATCH,
+                    ErrorCode::TOO_MANY_PARAMETERS,
                     "init function only should have one parameter with signer",
                     fdef,
                     module.self_id(),
@@ -109,7 +109,7 @@ pub fn verify_init_function(module: &CompiledModule) -> VMResult<bool> {
                 let is_allowed = is_allowed_init_func_param(&view, st);
                 if !is_allowed {
                     return Err(vm_error_for_init_func_checking(
-                        StatusCode::TYPE_MISMATCH,
+                        ErrorCode::INVALID_TOO_MANY_PARAMS_INIT_FUNC,
                         "init function should only enter signer",
                         fdef,
                         module.self_id(),
@@ -148,10 +148,11 @@ pub fn verify_entry_function_at_publish(module: &CompiledModule) -> VMResult<boo
             .0
             .clone();
         if !return_types.is_empty() {
-            return Err(
-                PartialVMError::new(StatusCode::INVALID_MAIN_FUNCTION_SIGNATURE)
-                    .with_message("function should not return values".to_owned())
-                    .finish(Location::Module(module.self_id())),
+            return generate_vm_error(
+                ErrorCode::INVALID_ENTRY_FUNC_SIGNATURE,
+                "function should not return values".to_string(),
+                Some(fdef.function),
+                module,
             );
         }
 
@@ -162,10 +163,12 @@ pub fn verify_entry_function_at_publish(module: &CompiledModule) -> VMResult<boo
 
         for (idx, ty) in func_parameters_types.iter().enumerate() {
             if !check_transaction_input_type_at_publish(ty, &module_bin_view) {
-                return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
-                    .with_message(format!("The type of the {} parameter is not allowed", idx))
-                    .at_index(IndexKind::FunctionDefinition, fdef.function.0)
-                    .finish(Location::Module(module.self_id())));
+                return generate_vm_error(
+                    ErrorCode::INVALID_PARAM_TYPE_ENTRY_FUNCTION,
+                    format!("The type {} of the parameter is not allowed", idx),
+                    Some(fdef.function),
+                    module,
+                );
             }
         }
     }
@@ -181,15 +184,15 @@ where
     S: TransactionCache,
 {
     if !func.return_.is_empty() {
-        return Err(
-            PartialVMError::new(StatusCode::INVALID_MAIN_FUNCTION_SIGNATURE)
-                .with_message("function should not return values".to_owned()),
-        );
+        return Err(PartialVMError::new(StatusCode::ABORTED)
+            .with_sub_status(ErrorCode::INVALID_PARAM_TYPE_ENTRY_FUNCTION.into())
+            .with_message("function should not return values".to_owned()));
     }
 
     for (idx, ty) in func.parameters.iter().enumerate() {
         if !check_transaction_input_type(ty, session) {
-            return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
+            return Err(PartialVMError::new(StatusCode::ABORTED)
+                .with_sub_status(ErrorCode::INVALID_ENTRY_FUNC_SIGNATURE.into())
                 .with_message(format!("The type of the {} parameter is not allowed", idx)));
         }
     }
@@ -324,12 +327,13 @@ where
 }
 
 fn vm_error_for_init_func_checking(
-    status_code: StatusCode,
+    error_code: ErrorCode,
     error_message: &str,
     func_def: &FunctionDefinition,
     module_id: ModuleId,
 ) -> VMError {
-    PartialVMError::new(status_code)
+    PartialVMError::new(StatusCode::ABORTED)
+        .with_sub_status(error_code as u64)
         .with_message(error_message.to_string())
         .at_code_offset(FunctionDefinitionIndex::new(func_def.function.0), 0_u16)
         .finish(Location::Module(module_id))
@@ -339,8 +343,12 @@ fn check_module_owner(item: &String, current_module: &CompiledModule) -> VMResul
     let func_name_split = item.split("::");
     let parts_vec = func_name_split.collect::<Vec<&str>>();
     if (parts_vec.len() as u32) < 3 {
-        return Err(PartialVMError::new(StatusCode::MALFORMED)
-            .with_message("incorrect format of the item name in metadata".to_string())
+        return Err(PartialVMError::new(StatusCode::ABORTED)
+            .with_sub_status(ErrorCode::MALFORMED_FUNCTION_NAME.into())
+            .with_message(format!(
+                "incorrect format of the function name {} in metadata",
+                item
+            ))
             .finish(Location::Module(current_module.self_id())));
     }
 
@@ -353,7 +361,8 @@ fn check_module_owner(item: &String, current_module: &CompiledModule) -> VMResul
     if *module_address != current_module_address.as_str()
         || *module_name != current_module_name.as_str()
     {
-        return Err(PartialVMError::new(StatusCode::MALFORMED)
+        return Err(PartialVMError::new(StatusCode::ABORTED)
+            .with_sub_status(ErrorCode::INVALID_MODULE_OWNER.into())
             .with_message(format!(
                 "the metadata item {} is not belongs to {} module",
                 item,
@@ -373,8 +382,9 @@ where
     Resolver: ModuleResolver,
 {
     if let Err(err) = check_metadata_format(module) {
-        return Err(PartialVMError::new(StatusCode::MALFORMED)
+        return Err(PartialVMError::new(StatusCode::ABORTED)
             .with_message(err.to_string())
+            .with_sub_status(ErrorCode::MALFORMED_METADATA.into())
             .finish(Location::Module(module.self_id())));
     }
 
@@ -396,7 +406,7 @@ where
                 let (exists, _) = check_if_function_exist_in_module(module, full_func_name);
                 if !exists {
                     return generate_vm_error(
-                        StatusCode::RESOURCE_DOES_NOT_EXIST,
+                        ErrorCode::FUNCTION_NOT_EXITS,
                         format!(
                             "Function {} not exist in module {}",
                             full_func_name,
@@ -426,7 +436,8 @@ where
 
                             if let Some(compiled_module) = compiled_module_opt {
                                 if let Err(err) = check_metadata_format(&compiled_module) {
-                                    return Err(PartialVMError::new(StatusCode::MALFORMED)
+                                    return Err(PartialVMError::new(StatusCode::ABORTED)
+                                        .with_sub_status(ErrorCode::MALFORMED_METADATA.into())
                                         .with_message(err.to_string())
                                         .finish(Location::Module(compiled_module.self_id())));
                                 }
@@ -461,7 +472,7 @@ where
                                     let type_arg = match type_arguments.get(*generic_type_index) {
                                         None => {
                                             return generate_vm_error(
-                                                StatusCode::RESOURCE_DOES_NOT_EXIST,
+                                                ErrorCode::NOT_ENOUGH_PARAMETERS,
                                                 format!("the function {} does not have enough type arguments.", full_path_func_name),
                                                 None,
                                                 module,
@@ -479,15 +490,14 @@ where
                                             struct_name, full_path_func_name
                                         );
 
-                                        return Err(PartialVMError::new(
-                                            StatusCode::ABORT_TYPE_MISMATCH_ERROR,
-                                        )
-                                        .with_message(err_msg)
-                                        .at_code_offset(
-                                            FunctionDefinitionIndex::new(func.function.0),
-                                            0_u16,
-                                        )
-                                        .finish(Location::Module(module.self_id())));
+                                        return Err(PartialVMError::new(StatusCode::ABORTED)
+                                            .with_message(err_msg)
+                                            .with_sub_status(ErrorCode::INVALID_DATA_STRUCT.into())
+                                            .at_code_offset(
+                                                FunctionDefinitionIndex::new(func.function.0),
+                                                0_u16,
+                                            )
+                                            .finish(Location::Module(module.self_id())));
                                     }
                                 }
                             }
@@ -516,7 +526,8 @@ fn build_full_function_name(fhandle_idx: &FunctionHandleIndex, view: BinaryIndex
 
 pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
     if let Err(err) = check_metadata_format(module) {
-        return Err(PartialVMError::new(StatusCode::MALFORMED)
+        return Err(PartialVMError::new(StatusCode::ABORTED)
+            .with_sub_status(ErrorCode::MALFORMED_METADATA.into())
             .with_message(err.to_string())
             .finish(Location::Module(module.self_id())));
     }
@@ -550,7 +561,7 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                     );
 
                     return generate_vm_error(
-                        StatusCode::RESOURCE_DOES_NOT_EXIST,
+                        ErrorCode::FUNCTION_NOT_EXITS,
                         err_msg,
                         Some(func_handle_index),
                         module,
@@ -570,7 +581,7 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                     );
 
                     return generate_vm_error(
-                        StatusCode::RESOURCE_DOES_NOT_EXIST,
+                        ErrorCode::FUNCTION_NOT_EXITS,
                         err_msg,
                         Some(func_handle_index),
                         module,
@@ -593,7 +604,7 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                     );
 
                     return generate_vm_error(
-                        StatusCode::RESOURCE_DOES_NOT_EXIST,
+                        ErrorCode::NOT_ENOUGH_PARAMETERS,
                         err_msg,
                         Some(func_handle_index),
                         module,
@@ -609,7 +620,7 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                         );
 
                     return generate_vm_error(
-                        StatusCode::TOO_MANY_PARAMETERS,
+                        ErrorCode::TOO_MANY_PARAMETERS,
                         err_msg,
                         Some(func_handle_index),
                         module,
@@ -626,7 +637,7 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                         gas_validate_function, full_path_module_name
                     );
                     return generate_vm_error(
-                        StatusCode::TYPE_MISMATCH,
+                        ErrorCode::TYPE_MISMATCH,
                         err_msg,
                         Some(func_handle_index),
                         module,
@@ -647,7 +658,7 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                     );
 
                     return generate_vm_error(
-                        StatusCode::RESOURCE_DOES_NOT_EXIST,
+                        ErrorCode::FUNCTION_NOT_EXITS,
                         err_msg,
                         Some(func_handle_index),
                         module,
@@ -670,7 +681,7 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                     );
 
                     return generate_vm_error(
-                        StatusCode::RESOURCE_DOES_NOT_EXIST,
+                        ErrorCode::NOT_ENOUGH_PARAMETERS,
                         err_msg,
                         Some(func_handle_index),
                         module,
@@ -686,7 +697,7 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                     );
 
                     return generate_vm_error(
-                        StatusCode::TOO_MANY_PARAMETERS,
+                        ErrorCode::TOO_MANY_PARAMETERS,
                         err_msg,
                         Some(func_handle_index),
                         module,
@@ -704,7 +715,7 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                         gas_validate_function, full_path_module_name
                     );
                     return generate_vm_error(
-                        StatusCode::TYPE_MISMATCH,
+                        ErrorCode::TYPE_MISMATCH,
                         err_msg,
                         Some(func_handle_index),
                         module,
@@ -726,8 +737,9 @@ where
     Resolver: ModuleResolver,
 {
     if let Err(err) = check_metadata_format(caller_module) {
-        return Err(PartialVMError::new(StatusCode::MALFORMED)
+        return Err(PartialVMError::new(StatusCode::ABORTED)
             .with_message(err.to_string())
+            .with_sub_status(ErrorCode::MALFORMED_METADATA.into())
             .finish(Location::Module(caller_module.self_id())));
     }
 
@@ -752,7 +764,7 @@ where
                 let exists = check_if_struct_exist_in_module(caller_module, full_struct_name);
                 if !exists {
                     return generate_vm_error(
-                        StatusCode::RESOURCE_DOES_NOT_EXIST,
+                        ErrorCode::STRUCT_NOT_EXISTS,
                         format!(
                             "Struct {} not exist in module {}",
                             full_struct_name,
@@ -769,7 +781,7 @@ where
                 let (exists, _) = check_if_function_exist_in_module(caller_module, full_func_name);
                 if !exists {
                     return generate_vm_error(
-                        StatusCode::RESOURCE_DOES_NOT_EXIST,
+                        ErrorCode::FUNCTION_NOT_EXITS,
                         format!(
                             "Function {} not exist in module {}",
                             full_func_name,
@@ -799,8 +811,9 @@ where
 
                             if let Some(callee_module) = compiled_module_opt {
                                 if let Err(err) = check_metadata_format(&callee_module) {
-                                    return Err(PartialVMError::new(StatusCode::MALFORMED)
+                                    return Err(PartialVMError::new(StatusCode::ABORTED)
                                         .with_message(err.to_string())
+                                        .with_sub_status(ErrorCode::MALFORMED_METADATA.into())
                                         .finish(Location::Module(callee_module.self_id())));
                                 }
 
@@ -845,7 +858,7 @@ where
                                     let type_arg = match type_arguments.get(*generic_type_index) {
                                         None => {
                                             return generate_vm_error(
-                                                StatusCode::RESOURCE_DOES_NOT_EXIST,
+                                                ErrorCode::NOT_ENOUGH_PARAMETERS,
                                                 format!("the function {} does not have enough type arguments.", full_path_func_name),
                                                 None,
                                                 caller_module,
@@ -880,9 +893,12 @@ where
                                                     check_metadata_format(&callee_module)
                                                 {
                                                     return Err(PartialVMError::new(
-                                                        StatusCode::MALFORMED,
+                                                        StatusCode::ABORTED,
                                                     )
                                                     .with_message(err.to_string())
+                                                    .with_sub_status(
+                                                        ErrorCode::MALFORMED_METADATA.into(),
+                                                    )
                                                     .finish(Location::Module(
                                                         callee_module.self_id(),
                                                     )));
@@ -925,7 +941,7 @@ where
                                                 let error_msg = format!("function {:} call {:} with type {:} is not a data struct.",
                                                                         caller_func_name, full_path_func_name, full_struct_name);
                                                 return generate_vm_error(
-                                                    StatusCode::TYPE_MISMATCH,
+                                                    ErrorCode::INVALID_DATA_STRUCT,
                                                     error_msg,
                                                     Some(*fhandle_idx),
                                                     caller_module,
@@ -944,7 +960,7 @@ where
                                             let error_msg = format!("The type parameter when calling function {} is now allowed",
                                                                     full_path_func_name);
                                             return generate_vm_error(
-                                                StatusCode::TYPE_MISMATCH,
+                                                ErrorCode::INVALID_DATA_STRUCT_TYPE,
                                                 error_msg,
                                                 Some(*fhandle_idx),
                                                 caller_module,
@@ -979,15 +995,16 @@ fn generate_full_module_name(
 }
 
 pub fn generate_vm_error(
-    status_code: StatusCode,
+    error_code: ErrorCode,
     error_msg: String,
     fhandle: Option<FunctionHandleIndex>,
     module: &CompiledModule,
 ) -> VMResult<bool> {
-    let err_incomplete = PartialVMError::new(status_code).with_message(error_msg);
+    let err_incomplete = PartialVMError::new(StatusCode::ABORTED).with_message(error_msg);
     let fdef_idx = fhandle.unwrap_or_else(|| FunctionHandleIndex::new(0));
     Err(err_incomplete
         .at_code_offset(FunctionDefinitionIndex::new(fdef_idx.0), 0_u16)
+        .with_sub_status(error_code as u64)
         .finish(Location::Module(module.self_id())))
 }
 
@@ -1014,7 +1031,7 @@ fn validate_data_struct_map(
         match module_name_opt {
             None => {
                 return generate_vm_error(
-                    StatusCode::DATA_FORMAT_ERROR,
+                    ErrorCode::MALFORMED_STRUCT_NAME,
                     format!(
                         "Struct name {} is not a valid struct name.",
                         data_struct_name,
@@ -1033,7 +1050,7 @@ fn validate_data_struct_map(
                         && !validate_struct_fields(struct_def, module, &module_bin_view)
                     {
                         return generate_vm_error(
-                            StatusCode::RESOURCE_DOES_NOT_EXIST,
+                            ErrorCode::INVALID_DATA_STRUCT,
                             format!(
                                 "Struct {} in module {} is not a valid data_struct.",
                                 data_struct_name,
@@ -1450,7 +1467,8 @@ pub fn verify_global_storage_access(module: &CompiledModule) -> VMResult<bool> {
                 func_name, invalid_bytecode,
             );
 
-            return Err(PartialVMError::new(StatusCode::MALFORMED)
+            return Err(PartialVMError::new(StatusCode::ABORTED)
+                .with_sub_status(ErrorCode::INVALID_INSTRUCTION.into())
                 .with_message(error_msg)
                 .at_code_offset(FunctionDefinitionIndex::new(func.function.0), 0_u16)
                 .finish(Location::Module(module.self_id())));
