@@ -456,21 +456,16 @@ impl RoochAPIServer for RoochServer {
     async fn get_balances(
         &self,
         account_addr: AccountAddressView,
-        cursor: Option<String>,
+        cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
     ) -> RpcResult<BalanceInfoPageView> {
         let limit_of = min(
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
         );
-        let cursor_of = match cursor.clone() {
-            Some(key_state_str) => Some(KeyState::from_str(key_state_str.as_str())?),
-            None => None,
-        };
-
         let mut data = self
             .aggregate_service
-            .get_balances(account_addr.into(), cursor_of, limit_of + 1)
+            .get_balances(account_addr.into(), cursor, limit_of + 1)
             .await?;
 
         let has_next_page = data.len() > limit_of;
@@ -479,7 +474,7 @@ impl RoochAPIServer for RoochServer {
         let next_cursor = data
             .last()
             .cloned()
-            .map_or(cursor, |(key, _balance_info)| key.map(|k| k.to_string()));
+            .map_or(cursor, |(key, _balance_info)| key);
 
         Ok(BalanceInfoPageView {
             data: data

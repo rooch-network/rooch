@@ -22,7 +22,7 @@ use std::string::String;
 pub type EventPageView = PageView<EventView, u64>;
 pub type TransactionWithInfoPageView = PageView<TransactionWithInfoView, u64>;
 pub type StatePageView = PageView<StateKVView, String>;
-pub type BalanceInfoPageView = PageView<BalanceInfoView, String>;
+pub type BalanceInfoPageView = PageView<BalanceInfoView, IndexerStateID>;
 pub type IndexerEventPageView = PageView<IndexerEventView, IndexerEventID>;
 
 pub type IndexerObjectStatePageView = PageView<IndexerObjectStateView, IndexerStateID>;

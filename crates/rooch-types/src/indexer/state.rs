@@ -58,6 +58,12 @@ pub struct IndexerObjectState {
     pub updated_at: u64,
 }
 
+impl IndexerObjectState {
+    pub fn indexer_state_id(&self) -> IndexerStateID {
+        IndexerStateID::new(self.tx_order, self.state_index)
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct IndexerFieldState {
     pub object_id: ObjectID,

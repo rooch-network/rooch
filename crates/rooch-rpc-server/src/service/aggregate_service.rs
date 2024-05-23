@@ -19,8 +19,8 @@ use rooch_types::bitcoin::utxo::{UTXOState, UTXO};
 use rooch_types::framework::account_coin_store::AccountCoinStoreModule;
 use rooch_types::framework::address_mapping::AddressMappingModule;
 use rooch_types::framework::coin::{CoinInfo, CoinModule};
-use rooch_types::framework::coin_store::CoinStore;
-use rooch_types::indexer::state::IndexerObjectState;
+use rooch_types::framework::coin_store::{CoinStore, CoinStoreInfo};
+use rooch_types::indexer::state::{IndexerObjectState, IndexerStateID, ObjectStateFilter};
 use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::TransactionWithInfo;
 use std::collections::HashMap;
@@ -74,7 +74,7 @@ impl AggregateService {
     pub async fn get_coin_stores(
         &self,
         coin_store_ids: Vec<ObjectID>,
-    ) -> Result<Vec<Option<CoinStore<PlaceholderStruct>>>> {
+    ) -> Result<Vec<Option<CoinStoreInfo>>> {
         let access_path = AccessPath::objects(coin_store_ids);
         self.rpc_service
             .get_states(access_path)
@@ -82,11 +82,7 @@ impl AggregateService {
             .into_iter()
             .map(|state_opt| {
                 state_opt
-                    .map(|state| {
-                        Ok(state
-                            .as_object_uncheck::<CoinStore<PlaceholderStruct>>()?
-                            .value)
-                    })
+                    .map(|state| CoinStoreInfo::try_from(state))
                     .transpose()
             })
             .collect::<Result<Vec<_>>>()
@@ -119,71 +115,68 @@ impl AggregateService {
         Ok(BalanceInfoView::new(coin_info, balance))
     }
 
+    pub async fn query_account_coin_stores(
+        &self,
+        owner: AccountAddress,
+        cursor: Option<IndexerStateID>,
+        limit: usize,
+    ) -> Result<Vec<IndexerObjectState>> {
+        self.rpc_service
+            .indexer
+            .query_object_states(
+                ObjectStateFilter::ObjectTypeWithOwner {
+                    object_type: CoinStore::struct_tag_without_coin_type(),
+                    owner,
+                },
+                cursor,
+                limit,
+                false,
+            )
+            .await
+    }
+
     pub async fn get_balances(
         &self,
-        account_addr: AccountAddress,
-        cursor: Option<KeyState>,
+        owner: AccountAddress,
+        cursor: Option<IndexerStateID>,
         limit: usize,
-    ) -> Result<Vec<(Option<KeyState>, BalanceInfoView)>> {
-        let account_coin_store_module = self
-            .rpc_service
-            .executor
-            .as_module_binding::<AccountCoinStoreModule>();
-        let coin_stores_handle_opt = account_coin_store_module.coin_stores_handle(account_addr)?;
+    ) -> Result<Vec<(Option<IndexerStateID>, BalanceInfoView)>> {
+        let indexer_coin_stores = self.query_account_coin_stores(owner, cursor, limit).await?;
+        let coin_store_ids = indexer_coin_stores
+            .iter()
+            .map(|m| m.object_id.clone())
+            .collect::<Vec<_>>();
 
-        match coin_stores_handle_opt {
-            Some(coin_stores_handle) => {
-                let coin_store_ids = self
-                    .rpc_service
-                    .list_states(
-                        AccessPath::fields_without_keys(coin_stores_handle),
-                        cursor,
-                        limit,
-                    )
-                    .await?
-                    .into_iter()
-                    .map(|(k, v)| {
-                        let coin_store_id = v.cast::<ObjectID>()?;
-                        Ok((k, coin_store_id))
-                    })
-                    .collect::<Result<Vec<_>>>()?;
+        let coin_stores = self.get_coin_stores(coin_store_ids.clone()).await?;
 
-                let coin_stores = self
-                    .get_coin_stores(coin_store_ids.iter().map(|(_, v)| v.clone()).collect())
-                    .await?;
+        let coin_types = coin_stores
+            .iter()
+            .flatten()
+            .map(|coin_store| coin_store.coin_type())
+            .collect::<Vec<_>>();
 
-                let coin_types = coin_stores
-                    .iter()
-                    .flatten()
-                    .map(|coin_store| coin_store.coin_type())
-                    .collect::<Vec<_>>();
+        let coin_info_map = self.get_coin_infos(coin_types).await?;
 
-                let coin_info_map = self.get_coin_infos(coin_types).await?;
-
-                let mut result = vec![];
-                for ((key, object_id), coin_store) in coin_store_ids.into_iter().zip(coin_stores) {
-                    let coin_store = coin_store.ok_or_else(|| {
-                        anyhow::anyhow!("Can not find CoinStore with id: {}", object_id)
-                    })?;
-                    let coin_info = coin_info_map
-                        .get(&coin_store.coin_type())
-                        .cloned()
-                        .flatten()
-                        .ok_or_else(|| {
-                            anyhow::anyhow!(
-                                "Can not find CoinInfo for {}",
-                                coin_store.coin_type_str()
-                            )
-                        })?;
-                    let balance_info =
-                        BalanceInfoView::new(coin_info.clone(), coin_store.balance());
-                    result.push((Some(key), balance_info))
-                }
-
-                Ok(result)
-            }
-            None => Ok(vec![]),
+        let mut result = vec![];
+        for (indexer_coin_store, coin_store) in indexer_coin_stores.into_iter().zip(coin_stores) {
+            let coin_store = coin_store.ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Can not find CoinStore with id: {}",
+                    indexer_coin_store.object_id
+                )
+            })?;
+            let coin_info = coin_info_map
+                .get(&coin_store.coin_type())
+                .cloned()
+                .flatten()
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Can not find CoinInfo for {}", coin_store.coin_type_str())
+                })?;
+            let balance_info = BalanceInfoView::new(coin_info.clone(), coin_store.balance());
+            result.push((Some(indexer_coin_store.indexer_state_id()), balance_info))
         }
+
+        Ok(result)
     }
 
     pub async fn get_transaction_with_info(

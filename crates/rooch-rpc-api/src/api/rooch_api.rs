@@ -105,7 +105,7 @@ pub trait RoochAPI {
     async fn get_balances(
         &self,
         account_addr: AccountAddressView,
-        cursor: Option<String>,
+        cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
     ) -> RpcResult<BalanceInfoPageView>;
 
