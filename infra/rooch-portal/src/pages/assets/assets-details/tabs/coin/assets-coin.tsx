@@ -9,7 +9,7 @@ import {
   useTransferCoin,
 } from '@roochnetwork/rooch-sdk-kit'
 
-import {AlertCircle, ArrowLeft, Wallet} from 'lucide-react'
+import { AlertCircle, ArrowLeft, Wallet } from 'lucide-react'
 import {
   Table,
   TableBody,
