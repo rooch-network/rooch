@@ -182,7 +182,8 @@ fn native_sort_and_verify_modules_inner(
         Ok(_) => {}
         Err(e) => {
             log::info!("modules verification error: {:?}", e);
-            return Ok(NativeResult::err(cost, E_MODULE_VERIFICATION_ERROR));
+            let error_code = e.sub_status().unwrap_or(E_MODULE_VERIFICATION_ERROR);
+            return Ok(NativeResult::err(cost, error_code));
         }
     }
 

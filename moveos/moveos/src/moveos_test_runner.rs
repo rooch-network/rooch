@@ -34,11 +34,9 @@ use rayon::iter::Either;
 
 use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::term::termcolor::Buffer;
-use move_core_types::metadata::Metadata;
-use move_ir_types::ast::{CopyableVal_, Exp_, Metadata as ASTMetadata};
+use move_ir_types::ast::Metadata as ASTMetadata;
 use move_model::options::ModelBuilderOptions;
-use moveos_verifier::build::ROOCH_METADATA_KEY;
-use moveos_verifier::metadata::RuntimeModuleMetadataV1;
+use moveos_verifier::build::compile_and_inject_metadata;
 use regex::Regex;
 use std::ffi::CString;
 use std::string::ToString;
@@ -1022,41 +1020,4 @@ pub fn taskify<Command: Debug + Parser>(filename: &Path) -> Result<Vec<TaskInput
         })
     }
     Ok(tasks)
-}
-
-fn compile_and_inject_metadata(
-    compiled_module: &CompiledModule,
-    ast_metadata: ASTMetadata,
-) -> CompiledModule {
-    let mut module = compiled_module.clone();
-
-    let mut rooch_metadata = RuntimeModuleMetadataV1::default();
-    for (metadata_type, metadata_item) in ast_metadata.value {
-        if metadata_type == "private_generics" {
-            let mut private_generics_map: BTreeMap<String, Vec<usize>> = BTreeMap::new();
-            for (metadata_key, metadata_value) in metadata_item.iter() {
-                let mut generic_type_indices: Vec<usize> = Vec::new();
-                for idx_expr in metadata_value.iter() {
-                    let expr_value = idx_expr.value.clone();
-                    if let Exp_::Value(copyable_val) = expr_value {
-                        if let CopyableVal_::U64(u64_valu) = copyable_val.value {
-                            generic_type_indices.push(u64_valu as usize);
-                        }
-                    }
-                }
-                private_generics_map.insert(metadata_key.clone(), generic_type_indices);
-            }
-
-            rooch_metadata.private_generics_indices = private_generics_map;
-        }
-    }
-
-    let serialized_metadata =
-        bcs::to_bytes(&rooch_metadata).expect("BCS for RuntimeModuleMetadata");
-    module.metadata.push(Metadata {
-        key: ROOCH_METADATA_KEY.to_vec(),
-        value: serialized_metadata,
-    });
-
-    module
 }

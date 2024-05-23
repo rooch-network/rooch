@@ -762,7 +762,7 @@ fn check_script_function() {
         let res = call_script_function(module, function_name, serialize_values(&dummy_args))
             .err()
             .unwrap();
-        assert_eq!(res.major_status(), StatusCode::TYPE_MISMATCH)
+        assert_eq!(res.major_status(), StatusCode::ABORTED,)
     }
 
     //

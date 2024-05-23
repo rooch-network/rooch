@@ -6516,6 +6516,7 @@ dependencies = [
  "move-command-line-common",
  "move-compiler",
  "move-core-types",
+ "move-ir-types",
  "move-model",
  "move-package",
  "move-symbol-pool",

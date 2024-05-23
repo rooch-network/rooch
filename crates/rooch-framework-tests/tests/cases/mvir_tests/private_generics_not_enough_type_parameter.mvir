@@ -12,6 +12,7 @@ module 0x1.TestModule1 {
     import 0x1.TestModule0;
     metadata {
         private_generics {
+            // error code 10003: NOT_ENOUGH_PARAMETERS
             0x1::TestModule1::f1 -> [2, 3];
         }
     }
