@@ -2,26 +2,31 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import React, { useState } from 'react'
-import { Loader2 } from 'lucide-react' // Import the loader icon from lucide-react
+import { useState } from 'react'
+import { Loader2 } from 'lucide-react'
 
 interface SessionKeyModalProps {
   isOpen: boolean
   scopes: string[]
-  onAuthorize: () => Promise<void> // Ensure onAuthorize returns a Promise to handle async operations
+  onAuthorize: () => Promise<void>
+  error: string | null
 }
 
 export const SessionKeyModal: React.FC<SessionKeyModalProps> = ({
                                                                   isOpen,
                                                                   scopes,
                                                                   onAuthorize,
+                                                                  error,
                                                                 }) => {
   const [loading, setLoading] = useState(false)
 
   const onAuthorizeWrapper = async () => {
     setLoading(true)
-    await onAuthorize()
-    setLoading(false)
+    try {
+      await onAuthorize()
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (!isOpen) return null
@@ -33,6 +38,11 @@ export const SessionKeyModal: React.FC<SessionKeyModalProps> = ({
         <p className="text-sm text-muted-foreground mb-2">
           The current session does not exist or has expired. Please authorize the creation of a new session.
         </p>
+        {error && (
+          <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">
+            {error}
+          </div>
+        )}
         <div className="bg-zinc-700 p-4 rounded-lg">
           {/* SCOPE */}
           <div className="flex flex-col items-start justify-start text-gray-300 text-sm overflow-auto">

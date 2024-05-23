@@ -25,6 +25,7 @@ export const SessionGuard = (props: SessionGuardProps) => {
 
   const { isConnected } = useCurrentWallet()
   const [open, setOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const sessionKey = useCurrentSession()
   const { mutateAsync: createSessionKey } = useCreateSessionKey()
@@ -38,21 +39,26 @@ export const SessionGuard = (props: SessionGuardProps) => {
 
     setOpen(
       sessionKey === null &&
-        navItems().find((item) => s.pathname.startsWith(item.path) && item.auth) !== undefined,
+      navItems().find((item) => s.pathname.startsWith(item.path) && item.auth) !== undefined,
     )
   }, [isConnected, s, sessionKey])
 
   const handleAuth = async () => {
-    await createSessionKey({
+    setError(null)
+    const result = await createSessionKey({
       appName: 'rooch-portal',
       appUrl: 'portal.rooch.network',
       scopes: defaultScope,
     })
+
+    if (result === null) {
+      setError('Authorization failed due to insufficient gas fees. Please ensure you have enough gas fees.')
+    }
   }
 
   return (
     <>
-      <SessionKeyModal isOpen={open} onAuthorize={handleAuth} scopes={defaultScope} />
+      <SessionKeyModal isOpen={open} onAuthorize={handleAuth} scopes={defaultScope} error={error} />
       {children}
     </>
   )
