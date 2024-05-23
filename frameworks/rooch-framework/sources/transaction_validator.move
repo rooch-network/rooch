@@ -18,6 +18,8 @@ module rooch_framework::transaction_validator {
     use rooch_framework::chain_id;
     use rooch_framework::transaction_fee;
     use rooch_framework::gas_coin;
+    use rooch_framework::transaction::{Self, TransactionSequenceInfo};
+    use rooch_framework::timestamp;
 
     const MAX_U64: u128 = 18446744073709551615;
 
@@ -120,7 +122,6 @@ module rooch_framework::transaction_validator {
     /// Execute before the transaction is executed, automatically called by the MoveOS VM.
     /// This function is for Rooch to auto create account and address maping.
     fun pre_execute(
-        
     ) {
         let sender = tx_context::sender();
         //Auto create account if not exist
@@ -142,13 +143,18 @@ module rooch_framework::transaction_validator {
                 address_mapping::bind_no_check(sender, multichain_address);
             };
         };
+        let tx_sequence_info = tx_context::get_attribute<TransactionSequenceInfo>();
+        if (option::is_some(&tx_sequence_info)) {
+            let tx_sequence_info = option::extract(&mut tx_sequence_info);
+            let tx_timestamp = transaction::tx_timestamp(&tx_sequence_info);
+            timestamp::try_update_global_time_internal(tx_timestamp);
+        };
     }
 
     /// Transaction post_execute function.
     /// Execute after the transaction is executed, automatically called by the MoveOS VM.
     /// This function is for Rooch to update the sender's sequence number and pay the gas fee.
     fun post_execute(
-        
     ) {
         let sender = tx_context::sender();
 

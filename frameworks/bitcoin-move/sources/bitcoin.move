@@ -366,6 +366,21 @@ module bitcoin_move::bitcoin{
         btc_block_store.latest_block_height
     }
 
+    /// Get the bitcoin time, if the latest block is not exist, return 0 
+    public fun get_bitcoin_time(): u32 {
+        let btc_block_store_obj = borrow_block_store();
+        let btc_block_store = object::borrow(btc_block_store_obj);
+        let latest_block_height = btc_block_store.latest_block_height;
+        if(option::is_some(&latest_block_height)){
+            let latest_block_height = option::destroy_some(latest_block_height);
+            let block_hash = *table::borrow(&btc_block_store.height_to_hash, latest_block_height);
+            let header = table::borrow(&btc_block_store.blocks, block_hash);
+            types::time(header)
+        }else{
+            0u32
+        }
+    }
+
     fun need_process_oridinals(block_height: u64) : bool {
         if(network::is_mainnet()){
             block_height >= ORDINAL_GENESIS_HEIGHT

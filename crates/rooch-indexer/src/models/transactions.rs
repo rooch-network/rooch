@@ -54,12 +54,6 @@ pub struct StoredTransaction {
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub status: String,
 
-    /// The tx order signature,
-    #[diesel(sql_type = diesel::sql_types::BigInt)]
-    pub tx_order_auth_validator_id: i64,
-    #[diesel(sql_type = diesel::sql_types::Blob)]
-    pub tx_order_authenticator_payload: Vec<u8>,
-
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub created_at: i64,
 }
@@ -83,10 +77,6 @@ impl From<IndexedTransaction> for StoredTransaction {
             event_root: format!("{:?}", transaction.event_root),
             gas_used: transaction.gas_used as i64,
             status: transaction.status,
-
-            tx_order_auth_validator_id: transaction.tx_order_auth_validator_id as i64,
-            tx_order_authenticator_payload: transaction.tx_order_authenticator_payload,
-
             created_at: transaction.created_at as i64,
         }
     }
