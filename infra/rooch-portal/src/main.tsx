@@ -15,6 +15,8 @@ import { TransactionsBrowserLayout } from './pages/txblock/transactions-browser-
 import { TransactionsLayout } from './pages/transactions/transactions-layout.tsx'
 
 import './styles/globals.css'
+import { TradeLayout } from '@/pages/trade/trade-layout.tsx'
+import { LeapLayout } from '@/pages/leap/leap-layout.tsx'
 
 const router = createBrowserRouter([
   {
@@ -23,8 +25,10 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
     children: [
       { path: '/mint', element: <MintLayout /> },
-      { path: '/mint/sft/:sftId', element: <App /> },
-      { path: '/mint/sft/self-staking/:sftId', element: <App /> },
+      { path: '/mint/sft/:sftId', element: <MintLayout /> },
+      { path: '/mint/sft/self-staking/:sftId', element: <MintLayout /> },
+      { path: '/trade', element: <TradeLayout /> },
+      { path: '/leap', element: <LeapLayout /> },
       { path: '/apps', element: <AppsLayout /> },
       { path: '/transactions', element: <TransactionsLayout /> },
       { path: '/transactions/txblock/:hash', element: <TransactionsBrowserLayout /> },
