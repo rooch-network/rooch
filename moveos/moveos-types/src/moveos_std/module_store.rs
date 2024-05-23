@@ -51,3 +51,43 @@ impl MoveStructState for ModuleStore {
         MoveStructLayout::new(vec![MoveTypeLayout::Bool])
     }
 }
+
+///////////// Package ////////////////
+#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Default)]
+pub struct Package {
+    // // Move VM will auto add a bool field to the empty struct
+    // // So we manually add a bool field to the struct
+    _placeholder: bool,
+}
+
+impl Package {
+    pub fn package_id(address: &AccountAddress) -> ObjectID {
+        let module_store_id = ModuleStore::module_store_id();
+        object::custom_child_object_id::<AccountAddress>(
+            module_store_id,
+            address,
+            &Package::struct_tag(),
+        )
+    }
+}
+
+impl MoveStructType for Package {
+    const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Package");
+
+    fn struct_tag() -> StructTag {
+        StructTag {
+            address: Self::ADDRESS,
+            module: Self::MODULE_NAME.to_owned(),
+            name: Self::STRUCT_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
+}
+
+impl MoveStructState for Package {
+    fn struct_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![MoveTypeLayout::Bool])
+    }
+}

@@ -53,8 +53,8 @@ Allowlist for module function invocation
 ## Resource `ModuleStore`
 
 Used to store packages.
-A package is an Object, and the package ID is the module address.
-Packages are dynamic fields of ModuleStore.
+A package is an Object, and the package id is the module address.
+Packages are child objects of ModuleStore.
 
 
 <pre><code><b>struct</b> <a href="module_store.md#0x2_module_store_ModuleStore">ModuleStore</a> <b>has</b> key
@@ -70,7 +70,7 @@ Used to store modules.
 Modules are the Package's dynamic fields, with the module name as the key.
 
 
-<pre><code><b>struct</b> <a href="module_store.md#0x2_module_store_Package">Package</a> <b>has</b> store, key
+<pre><code><b>struct</b> <a href="module_store.md#0x2_module_store_Package">Package</a> <b>has</b> key
 </code></pre>
 
 

@@ -61,6 +61,11 @@ impl KeyState {
         Self { key, key_type }
     }
 
+    pub fn from_string(s: &String) -> Self {
+        let key = bcs::to_bytes(s).expect("bcs to_bytes String must success.");
+        KeyState::new(key, MoveString::type_tag())
+    }
+
     pub fn from_module_id(module_id: &ModuleId) -> Self {
         // The key is the moduleId string in bcs serialize format, not String::into_bytes.
         // bcs::to_bytes(&String) same as bcs::to_bytes(&MoveString)
