@@ -1,9 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { IAccount, IAuthorizer, RoochClient, RoochMultiChainID } from '@roochnetwork/rooch-sdk'
+import { IAccount, IAuthorizer, RoochClient } from '@roochnetwork/rooch-sdk'
 
-import { MultiChainAddress } from './address'
 import { SupportChain } from '../feature'
 import { chain2MultiChainID } from '../utils/chain2MultiChainID'
 
@@ -35,14 +34,6 @@ export class WalletAccount implements IAccount {
 
   toJSON(): any {
     return {}
-  }
-
-  public toMultiChainAddress(): MultiChainAddress | null {
-    if (this.chain !== SupportChain.ETH) {
-      return new MultiChainAddress(RoochMultiChainID.Bitcoin, this.address)
-    }
-
-    return null
   }
 
   getAddress(): string {
