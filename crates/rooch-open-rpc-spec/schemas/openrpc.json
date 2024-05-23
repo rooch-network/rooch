@@ -975,7 +975,7 @@
               "type": {
                 "type": "string",
                 "enum": [
-                  "nomarl"
+                  "normal"
                 ]
               }
             }
