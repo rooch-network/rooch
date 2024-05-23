@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::errors::IndexerError;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{StructTag, TypeTag};
@@ -12,9 +13,6 @@ use moveos_types::state::MoveStructType;
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::bitcoin::utxo::UTXO;
 use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
-
-use crate::errors::IndexerError;
-use crate::utils::format_struct_tag;
 
 pub type IndexerResult<T> = Result<T, IndexerError>;
 
@@ -154,7 +152,7 @@ pub struct IndexedObjectState {
     // The table length
     pub size: u64,
     // The T struct tag of the object value
-    pub object_type: String,
+    pub object_type: StructTag,
     // The tx order of this transaction
     pub tx_order: u64,
     // The state index in the tx
@@ -166,19 +164,14 @@ pub struct IndexedObjectState {
 }
 
 impl IndexedObjectState {
-    pub fn new_from_raw_object(
-        raw_object: RawObject,
-        object_type: String,
-        tx_order: u64,
-        state_index: u64,
-    ) -> Self {
+    pub fn new_from_raw_object(raw_object: RawObject, tx_order: u64, state_index: u64) -> Self {
         IndexedObjectState {
             object_id: raw_object.id,
             owner: raw_object.owner,
             flag: raw_object.flag,
             state_root: raw_object.state_root,
             size: raw_object.size,
-            object_type,
+            object_type: raw_object.value.struct_tag,
             tx_order,
             state_index,
 
@@ -189,7 +182,7 @@ impl IndexedObjectState {
     }
 
     pub fn is_utxo_object_state(&self) -> bool {
-        self.object_type == format_struct_tag(UTXO::struct_tag())
+        self.object_type == UTXO::struct_tag()
     }
 }
 

@@ -4,6 +4,7 @@
 use crate::schema::field_states;
 use crate::schema::object_states;
 use crate::types::{IndexedFieldState, IndexedObjectState};
+use crate::utils;
 use diesel::prelude::*;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{StructTag, TypeTag};
@@ -52,7 +53,7 @@ impl From<IndexedObjectState> for StoredObjectState {
             object_id: state.object_id.to_string(),
             owner: state.owner.to_hex_literal(),
             flag: state.flag as i16,
-            object_type: state.object_type,
+            object_type: utils::format_struct_tag(&state.object_type),
             state_root: state.state_root.to_hex_literal(),
             size: state.size as i64,
             tx_order: state.tx_order as i64,
@@ -67,12 +68,8 @@ impl StoredObjectState {
     pub fn try_into_indexer_global_state(&self) -> Result<IndexerObjectState, anyhow::Error> {
         let object_id = ObjectID::from_str(self.object_id.as_str())?;
         let owner = AccountAddress::from_hex_literal(self.owner.as_str())?;
-        let obj_type_str = if !self.object_type.starts_with("0x") {
-            format!("0x{}", self.object_type)
-        } else {
-            self.object_type.clone()
-        };
-        let object_type = StructTag::from_str(obj_type_str.as_str())?;
+
+        let object_type = StructTag::from_str(self.object_type.as_str())?;
         let state_root = AccountAddress::from_hex_literal(self.state_root.as_str())?;
 
         let state = IndexerObjectState {

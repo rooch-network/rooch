@@ -4,30 +4,27 @@
 use crate::indexer_reader::IndexerReader;
 use crate::store::traits::IndexerStoreTrait;
 use crate::types::{IndexedEvent, IndexedFieldState, IndexedObjectState, IndexedTransaction};
-use crate::utils::format_struct_tag;
 use crate::IndexerStore;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::language_storage::StructTag;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::h256::H256;
-use moveos_types::move_types::{random_struct_tag, random_type_tag};
+use moveos_types::move_types::random_type_tag;
 use moveos_types::moveos_std::object::{ObjectEntity, ObjectID};
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::MoveStructType;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rand::{random, thread_rng, Rng};
 use rooch_config::indexer_config::ROOCH_INDEXER_DB_DIR;
-use rooch_types::framework::coin::CoinInfo;
+use rooch_types::framework::coin_store::CoinStore;
 use rooch_types::framework::gas_coin::GasCoin;
 use rooch_types::indexer::event_filter::EventFilter;
-use rooch_types::indexer::state::{FieldStateFilter, ObjectStateFilter};
+use rooch_types::indexer::state::ObjectStateFilter;
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::test_utils::{
     random_event, random_function_calls, random_ledger_transaction, random_string,
     random_table_object, random_verified_move_action,
 };
-use std::str::FromStr;
 
 fn random_update_object_states(states: Vec<IndexedObjectState>) -> Vec<IndexedObjectState> {
     states
@@ -55,7 +52,6 @@ fn random_new_object_states() -> Result<Vec<IndexedObjectState>> {
     for n in 0..rng.gen_range(1..=10) {
         let state = IndexedObjectState::new_from_raw_object(
             random_table_object()?.to_raw(),
-            random_struct_tag().to_canonical_string(),
             n as u64,
             state_index,
         );
@@ -132,9 +128,6 @@ fn random_remove_field_states() -> Vec<(String, String)> {
 fn test_transaction_store() -> Result<()> {
     let tmpdir = moveos_config::temp_dir();
     let indexer_db = tmpdir.path().join(ROOCH_INDEXER_DB_DIR);
-    if !indexer_db.exists() {
-        std::fs::create_dir_all(indexer_db.clone())?;
-    }
     let indexer_store = IndexerStore::new(indexer_db.clone())?;
     indexer_store.create_all_tables_if_not_exists()?;
     let indexer_reader = IndexerReader::new(indexer_db)?;
@@ -179,9 +172,6 @@ fn test_transaction_store() -> Result<()> {
 fn test_event_store() -> Result<()> {
     let tmpdir = moveos_config::temp_dir();
     let indexer_db = tmpdir.path().join(ROOCH_INDEXER_DB_DIR);
-    if !indexer_db.exists() {
-        std::fs::create_dir_all(indexer_db.clone())?;
-    }
     let indexer_store = IndexerStore::new(indexer_db.clone())?;
     indexer_store.create_all_tables_if_not_exists()?;
     let indexer_reader = IndexerReader::new(indexer_db)?;
@@ -214,9 +204,6 @@ fn test_event_store() -> Result<()> {
 fn test_state_store() -> Result<()> {
     let tmpdir = moveos_config::temp_dir();
     let indexer_db = tmpdir.path().join(ROOCH_INDEXER_DB_DIR);
-    if !indexer_db.exists() {
-        std::fs::create_dir_all(indexer_db.clone())?;
-    }
     let indexer_store = IndexerStore::new(indexer_db.clone())?;
     indexer_store.create_all_tables_if_not_exists()?;
     let indexer_reader = IndexerReader::new(indexer_db)?;
@@ -243,13 +230,6 @@ fn test_state_store() -> Result<()> {
     indexer_store.persist_or_update_field_states(new_field_states)?;
     indexer_store.delete_field_states(remove_field_states)?;
 
-    let coin_info_type =
-        StructTag::from_str(format_struct_tag(CoinInfo::<GasCoin>::struct_tag()).as_str())?;
-    let filter = ObjectStateFilter::ObjectType(coin_info_type);
-    let query_object_states =
-        indexer_reader.query_object_states_with_filter(filter, None, 1, true)?;
-    assert_eq!(query_object_states.len(), 0);
-
     // test for querying batch objects with filter ObjectStateFilter::ObjectId
     let num_objs = new_object_ids.len();
     let filter = ObjectStateFilter::ObjectId(new_object_ids);
@@ -257,11 +237,47 @@ fn test_state_store() -> Result<()> {
         indexer_reader.query_object_states_with_filter(filter, None, num_objs, true)?;
     assert_eq!(query_object_states.len(), num_objs);
 
-    let talbe_handle = ObjectID::from_str("0x0")?;
-    let filter = FieldStateFilter::ObjectId(talbe_handle);
-    let query_field_states =
-        indexer_reader.query_field_states_with_filter(filter, None, 1, true)?;
-    assert_eq!(query_field_states.len(), 0);
+    Ok(())
+}
 
+#[test]
+fn test_object_type_query() -> Result<()> {
+    let tmpdir = moveos_config::temp_dir();
+    let indexer_db = tmpdir.path().join(ROOCH_INDEXER_DB_DIR);
+    let indexer_store = IndexerStore::new(indexer_db.clone())?;
+    indexer_store.create_all_tables_if_not_exists()?;
+    let indexer_reader = IndexerReader::new(indexer_db)?;
+    let object_id = ObjectID::random();
+    let owner = AccountAddress::random();
+    let coin_store_obj = ObjectEntity::new(
+        object_id.clone(),
+        owner,
+        0,
+        H256::random(),
+        0,
+        CoinStore::<GasCoin>::new(100u64.into(), false),
+    );
+    let raw_obj = coin_store_obj.to_raw();
+    let state = IndexedObjectState::new_from_raw_object(raw_obj, 1, 0);
+    let object_states = vec![state];
+    indexer_store.persist_or_update_object_states(object_states.clone())?;
+    // filter by exact object type
+    let filter = ObjectStateFilter::ObjectType(CoinStore::<GasCoin>::struct_tag());
+    let query_object_states =
+        indexer_reader.query_object_states_with_filter(filter, None, 1, true)?;
+    assert_eq!(query_object_states.len(), 1);
+    // filter by object type and owner
+    let filter = ObjectStateFilter::ObjectTypeWithOwner {
+        object_type: CoinStore::<GasCoin>::struct_tag(),
+        owner,
+    };
+    let query_object_states =
+        indexer_reader.query_object_states_with_filter(filter, None, 1, true)?;
+    assert_eq!(query_object_states.len(), 1);
+    // filter by object type without type params
+    let filter = ObjectStateFilter::ObjectType(CoinStore::struct_tag_without_coin_type());
+    let query_object_states =
+        indexer_reader.query_object_states_with_filter(filter, None, 1, true)?;
+    assert_eq!(query_object_states.len(), 1);
     Ok(())
 }
