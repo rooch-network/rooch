@@ -80,11 +80,7 @@ impl AggregateService {
             .get_states(access_path)
             .await?
             .into_iter()
-            .map(|state_opt| {
-                state_opt
-                    .map(|state| CoinStoreInfo::try_from(state))
-                    .transpose()
-            })
+            .map(|state_opt| state_opt.map(CoinStoreInfo::try_from).transpose())
             .collect::<Result<Vec<_>>>()
     }
 

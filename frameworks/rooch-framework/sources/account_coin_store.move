@@ -3,17 +3,13 @@
 
 module rooch_framework::account_coin_store {
 
-    use std::string;
-    use std::option;
-    use std::option::Option;
     use moveos_std::account;
     use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::table;
     use moveos_std::table::Table;
-    
     use moveos_std::event;
-    use moveos_std::type_info;
     use moveos_std::signer;
+
     use rooch_framework::coin::{Coin};
     use rooch_framework::coin_store::{Self, CoinStore};
 
@@ -33,12 +29,6 @@ module rooch_framework::account_coin_store {
         auto_accept_coins: Table<address, bool>,
     }
 
-    /// A resource that holds all the ids of Object<CoinStore<T>> for account.
-    /// TODO after the indexer is ready, we can use the indexer to list all the CoinStore<T> objects for account
-    struct CoinStores has key {
-        coin_stores: Table<string::String, ObjectID>,
-    }
-
     /// Event for auto accept coin set
     struct AcceptCoinEvent has drop, store, copy {
         /// auto accept coin config
@@ -50,13 +40,6 @@ module rooch_framework::account_coin_store {
             auto_accept_coins: table::new<address, bool>(),
         };
         account::move_resource_to(genesis_account, auto_accepted_coins);
-    }
-
-    public(friend) fun init_account_coin_stores(account: &signer) {
-        let coin_stores = CoinStores {
-            coin_stores: table::new<string::String, ObjectID>(),
-        };
-        account::move_resource_to(account, coin_stores);
     }
 
     // Public functions
@@ -75,17 +58,6 @@ module rooch_framework::account_coin_store {
     /// the account CoinStore is a account named object, the id is determinate for each addr and CoinType
     public fun account_coin_store_id<CoinType: key>(addr: address): ObjectID {
         object::account_named_object_id<CoinStore<CoinType>>(addr)
-    }
-
-    /// Return CoinStores table handle for addr
-    public fun coin_stores_handle(addr: address): Option<ObjectID> {
-        if (account::exists_resource<CoinStores>(addr))
-            {
-                let coin_stores = account::borrow_resource<CoinStores>(addr);
-                option::some(table::handle(&coin_stores.coin_stores))
-            } else {
-            option::none<ObjectID>()
-        }
     }
 
     /// Return whether the account at `addr` accept `Coin` type coins
@@ -237,21 +209,13 @@ module rooch_framework::account_coin_store {
     }
 
     fun create_or_borrow_mut_account_coin_store<CoinType: key>(
-        
         addr: address
     ): &mut Object<CoinStore<CoinType>> {
         let account_coin_store_id = account_coin_store_id<CoinType>(addr);
         if (!object::exists_object_with_type<CoinStore<CoinType>>(account_coin_store_id)) {
-            create_account_coin_store<CoinType>(addr);
+            coin_store::create_account_coin_store<CoinType>(addr);
         };
         coin_store::borrow_mut_coin_store_internal<CoinType>(account_coin_store_id)
-    }
-
-    fun create_account_coin_store<CoinType: key>(addr: address) {
-        let account_coin_store_id = coin_store::create_account_coin_store<CoinType>(addr);
-        let coin_stores = account::borrow_mut_resource<CoinStores>(addr);
-        let coin_type = type_info::type_name<CoinType>();
-        table::add(&mut coin_stores.coin_stores, coin_type, account_coin_store_id);
     }
 
 
