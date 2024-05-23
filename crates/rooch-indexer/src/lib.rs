@@ -70,11 +70,14 @@ pub struct IndexerStore {
 
 impl IndexerStore {
     pub fn new(db_path: PathBuf) -> Result<Self> {
+        if !db_path.exists() {
+            std::fs::create_dir_all(&db_path)?;
+        }
         let tables = IndexerStoreMeta::get_indexer_table_names().to_vec();
 
         let mut sqlite_store_mapping = HashMap::<String, SqliteIndexerStore>::new();
         for table in tables {
-            let indexer_db_path = db_path.clone().join(table);
+            let indexer_db_path = db_path.as_path().join(table);
             if !indexer_db_path.exists() {
                 std::fs::File::create(indexer_db_path.clone())?;
             };

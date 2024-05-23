@@ -73,6 +73,14 @@ fn main() {
                 .join("sources")
                 .display()
         );
-        framework_builder::releaser::release_latest().expect("Release stdlib latest failed")
+        match framework_builder::releaser::release_latest() {
+            Ok(_) => {}
+            Err(e) => {
+                println!(
+                    "cargo::warning=\"Failed to release latest framework: {:?}\"",
+                    e
+                );
+            }
+        }
     }
 }

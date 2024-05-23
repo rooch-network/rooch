@@ -4,8 +4,7 @@
 module rooch_framework::transfer {
     use moveos_std::object::ObjectID;
     use moveos_std::object;
-    use moveos_std::account;
-    use rooch_framework::account as account_entry;
+
     use rooch_framework::account_coin_store;
     use rooch_framework::multichain_address;
     use rooch_framework::address_mapping;
@@ -19,12 +18,6 @@ module rooch_framework::transfer {
         to: address,
         amount: u256,
     ) {
-        //assert!(account::exists_at(to), ErrorAccountNotExists);
-        //We auto create account if not exists temporarily for testing
-        //We can remove auto create account after https://github.com/rooch-network/rooch/issues/1669
-        if(!account::exists_at(to)) {
-            account_entry::create_account(to);
-        };
         account_coin_store::transfer<CoinType>(from, to, amount)
     }
 
@@ -39,11 +32,6 @@ module rooch_framework::transfer {
     ) {
         let maddress = multichain_address::new(multichain_id, raw_address);
         let to = address_mapping::resolve_or_generate(maddress);
-        //We auto create account if not exists temporarily for testing
-        //We can remove auto create account after https://github.com/rooch-network/rooch/issues/1669
-        if(!account::exists_at(to)) {
-            account_entry::create_account(to);
-        };
         account_coin_store::transfer<CoinType>(from, to, amount)
     }
 

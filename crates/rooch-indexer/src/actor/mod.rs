@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::types::{IndexedFieldState, IndexedObjectState};
-use crate::utils::format_struct_tag;
 use anyhow::Result;
 use move_core_types::language_storage::TypeTag;
 use move_core_types::resolver::MoveResolver;
@@ -40,10 +39,8 @@ pub fn new_object_state_from_raw_object(
     state_index: u64,
 ) -> Result<IndexedObjectState> {
     let raw_object = value.as_raw_object()?;
-    let object_type = format_struct_tag(raw_object.value.struct_tag.clone());
 
-    let state =
-        IndexedObjectState::new_from_raw_object(raw_object, object_type, tx_order, state_index);
+    let state = IndexedObjectState::new_from_raw_object(raw_object, tx_order, state_index);
     Ok(state)
 }
 

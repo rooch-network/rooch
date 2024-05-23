@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::schema::events;
 use crate::types::IndexedEvent;
+use crate::{schema::events, utils};
 use diesel::prelude::*;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
@@ -50,7 +50,7 @@ impl From<IndexedEvent> for StoredEvent {
         Self {
             event_handle_id: event.event_handle_id.to_string(),
             event_seq: event.event_seq as i64,
-            event_type: format!("0x{}", event.event_type.to_canonical_string()),
+            event_type: utils::format_struct_tag(&event.event_type),
             event_data: event.event_data,
             event_index: event.event_index as i64,
 

@@ -3,7 +3,6 @@
 
 module rooch_framework::account {
    use moveos_std::account::SignerCapability;
-   use rooch_framework::account_coin_store;
    use rooch_framework::account_authentication;
    use moveos_std::signer::module_signer;
    use moveos_std::account;
@@ -34,7 +33,6 @@ module rooch_framework::account {
       let new_account = account::create_account_by_system(&system, new_address);
 
       account_authentication::init_authentication_keys(&new_account);
-      account_coin_store::init_account_coin_stores(&new_account);
       new_account
    }
 
@@ -46,7 +44,6 @@ module rooch_framework::account {
       let (resource_signer, signer_cap) = account::create_resource_account(source);
 
       account_authentication::init_authentication_keys(&resource_signer);
-      account_coin_store::init_account_coin_stores(&resource_signer);
       (resource_signer, signer_cap)
    }
 

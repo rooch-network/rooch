@@ -16,6 +16,7 @@ use rooch_rpc_api::jsonrpc_types::{
 };
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, StateView};
 use rooch_rpc_api::jsonrpc_types::{TransactionWithInfoPageView, TxOptions};
+use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
 use std::sync::Arc;
 
@@ -191,7 +192,7 @@ impl RoochRpcClient {
     pub async fn get_balances(
         &self,
         account_addr: AccountAddressView,
-        cursor: Option<String>,
+        cursor: Option<IndexerStateID>,
         limit: Option<usize>,
     ) -> Result<BalanceInfoPageView> {
         Ok(self

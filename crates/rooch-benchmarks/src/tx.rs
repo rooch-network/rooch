@@ -206,9 +206,6 @@ pub fn init_storage(datadir: &DataDirPath) -> Result<(MoveOSStore, RoochStore)> 
 
 pub fn init_indexer(datadir: &DataDirPath) -> Result<(IndexerStore, IndexerReader)> {
     let indexer_db_path = IndexerConfig::get_mock_indexer_db(datadir);
-    if !indexer_db_path.exists() {
-        fs::create_dir_all(indexer_db_path.clone())?;
-    }
     let indexer_store = IndexerStore::new(indexer_db_path.clone())?;
     indexer_store.create_all_tables_if_not_exists()?;
     let indexer_reader = IndexerReader::new(indexer_db_path)?;
