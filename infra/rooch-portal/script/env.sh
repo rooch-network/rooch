@@ -44,7 +44,7 @@ dep_nft() {
   rooch move run --function default::nft::mint_entry --args object:${collection_object_id} --args string:testg
 
   # find nft
-  nft_obj_id=$(rooch rpc request --method rooch_queryObjectStates --params '[{"object_type":"'"${default_address}"'::nft::NFT"}, null, "10", true]' | jq -r '.data[0].object_id')
+  nft_obj_id=$(rooch rpc request --method rooch_queryObjectStates --params '[{"object_type":"'"${default_address}"'::nft::NFT"}, null, "10", {"descending":true, "showDisplay":true}]' | jq -r '.data[0].object_id')
 
   # transfer nft
   rooch move run --function rooch_framework::transfer::transfer_object --type-args default::nft::NFT --args address:$1 --args object:${nft_obj_id}
