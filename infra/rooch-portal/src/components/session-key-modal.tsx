@@ -2,25 +2,25 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { useState } from 'react'
+import React, { useState } from 'react'
+import { Loader2 } from 'lucide-react' // Import the loader icon from lucide-react
 
 interface SessionKeyModalProps {
   isOpen: boolean
   scopes: string[]
-  // onAuthorize: () => Promise<RoochSessionAccount | null>
-  onAuthorize: () => void
+  onAuthorize: () => Promise<void> // Ensure onAuthorize returns a Promise to handle async operations
 }
 
 export const SessionKeyModal: React.FC<SessionKeyModalProps> = ({
-  isOpen,
-  scopes,
-  onAuthorize,
-}) => {
+                                                                  isOpen,
+                                                                  scopes,
+                                                                  onAuthorize,
+                                                                }) => {
   const [loading, setLoading] = useState(false)
 
   const onAuthorizeWrapper = async () => {
     setLoading(true)
-    onAuthorize()
+    await onAuthorize()
     setLoading(false)
   }
 
@@ -28,11 +28,10 @@ export const SessionKeyModal: React.FC<SessionKeyModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center">
-      <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg shadow-lg max-w-sm w-full">
+      <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg shadow-lg max-w-sm w-full relative">
         <h2 className="text-lg font-bold mb-4">Session Authorize</h2>
         <p className="text-sm text-muted-foreground mb-2">
-          The current session dose not exist or has expired. please authorize the creation of a new
-          session.
+          The current session does not exist or has expired. Please authorize the creation of a new session.
         </p>
         <div className="bg-zinc-700 p-4 rounded-lg">
           {/* SCOPE */}
@@ -52,7 +51,14 @@ export const SessionKeyModal: React.FC<SessionKeyModalProps> = ({
         <div className="flex items-center justify-end mt-4">
           <div className="flex justify-end">
             <Button variant="default" size="sm" onClick={onAuthorizeWrapper} disabled={loading}>
-              {loading ? 'Createing' : 'Authorize'}
+              {loading ? (
+                <div className="flex items-center">
+                  <Loader2 className="animate-spin mr-2" />
+                  Creating
+                </div>
+              ) : (
+                'Authorize'
+              )}
             </Button>
           </div>
         </div>
