@@ -37,15 +37,15 @@ module orderbook::market {
     const MIN_BID_ORDER_ID: u64 = 1;
     const MIN_ASK_ORDER_ID: u64 = 1 << 63;
 
-    const EWrongVersion: u64 = 0;
-    const EWrongPaused: u64 = 1;
-    const EInputCoin: u64 = 2;
-    const EWrongMarket: u64 = 3;
-    const EPriceTooLow: u64 = 4;
-    const EWrongCreateBid: u64 = 5;
-    const EFeeTooHigh: u64 = 6;
-    const EInvalidOrderId: u64 = 7;
-    const EUnauthorizedCancel: u64 = 8;
+    const ErrorWrongVersion: u64 = 0;
+    const ErrorWrongPaused: u64 = 1;
+    const ErrorInputCoin: u64 = 2;
+    const ErrorWrongMarket: u64 = 3;
+    const ErrorPriceTooLow: u64 = 4;
+    const ErrorWrongCreateBid: u64 = 5;
+    const ErrorFeeTooHigh: u64 = 6;
+    const ErrorInvalidOrderId: u64 = 7;
+    const ErrorUnauthorizedCancel: u64 = 8;
 
 
     /// listing info in the market
@@ -113,11 +113,6 @@ module orderbook::market {
 
 
 
-    struct USDT has key, store {}
-    struct BHC has key, store {}
-
-
-
     public entry fun create_market<BaseAsset: key + store, QuoteAsset: key + store>(
         market_house_obj: &mut Object<MarketplaceHouse>,
     ) {
@@ -169,14 +164,14 @@ module orderbook::market {
         unit_price: u64,
     ) {
         let market = object::borrow_mut(market_obj);
-        assert!(market.version == VERSION, EWrongVersion);
-        assert!(market.is_paused == false, EWrongPaused);
+        assert!(market.version == VERSION, ErrorWrongVersion);
+        assert!(market.is_paused == false, ErrorWrongPaused);
         let quantity = coin::value(&coin);
         let order_id = market.next_ask_order_id;
         market.next_ask_order_id = market.next_ask_order_id + 1;
         // TODO here maybe wrap to u512?
         // let price = (unit_price as u256) * quantity;
-        assert!(unit_price > 0, EPriceTooLow);
+        assert!(unit_price > 0, ErrorPriceTooLow);
         let asks = Order {
             order_id,
             unit_price,
@@ -210,13 +205,13 @@ module orderbook::market {
         quantity: u256,
     ) {
         let market = object::borrow_mut(market_obj);
-        assert!(market.version == VERSION, EWrongVersion);
-        assert!(market.is_paused == false, EWrongPaused);
-        assert!(quantity > 0, EWrongCreateBid);
-        assert!(unit_price > 0, EWrongCreateBid);
+        assert!(market.version == VERSION, ErrorWrongVersion);
+        assert!(market.is_paused == false, ErrorWrongPaused);
+        assert!(quantity > 0, ErrorWrongCreateBid);
+        assert!(unit_price > 0, ErrorWrongCreateBid);
         // TODO here maybe wrap to u512?
         let price = (unit_price as u256) * quantity;
-        assert!(price <= coin::value(paid), EInputCoin);
+        assert!(price <= coin::value(paid), ErrorInputCoin);
         let order_id = market.next_bid_order_id;
         market.next_bid_order_id = market.next_bid_order_id + 1;
         let bid = Order {
@@ -246,13 +241,13 @@ module orderbook::market {
     ) {
         //Get the list from the collection
         let market = object::borrow_mut(market_obj);
-        assert!(market.version == VERSION, EWrongVersion);
+        assert!(market.version == VERSION, ErrorWrongVersion);
 
         let usr_open_orders = table::borrow_mut(&mut market.user_order_info, sender());
         let tick_price = *linked_table::borrow(usr_open_orders, order_id);
         let is_bid = order_is_bid(order_id);
         let (tick_exists, tick_index) = find_leaf(if (is_bid) { &market.bids } else { &market.asks }, tick_price);
-        assert!(tick_exists, EInvalidOrderId);
+        assert!(tick_exists, ErrorInvalidOrderId);
         let order = remove_order(
             if (is_bid) { &mut market.bids } else { &mut market.asks },
             usr_open_orders,
@@ -278,8 +273,8 @@ module orderbook::market {
         paid: &mut Coin<BaseAsset>,
     ): Option<Coin<QuoteAsset>> {
         let market = object::borrow_mut(market_obj);
-        assert!(market.is_paused == false, EWrongPaused);
-        assert!(market.version == VERSION, EWrongVersion);
+        assert!(market.is_paused == false, ErrorWrongPaused);
+        assert!(market.version == VERSION, ErrorWrongVersion);
         let usr_open_orders = table::borrow_mut(&mut market.user_order_info, sender());
         let tick_price = *linked_table::borrow(usr_open_orders, order_id);
         let (tick_exists, tick_index) = find_leaf(&market.asks, tick_price);
@@ -287,12 +282,12 @@ module orderbook::market {
         if (!assert_order_exist && !tick_exists) {
             return option::none()
         };
-        assert!(tick_exists, EInvalidOrderId);
+        assert!(tick_exists, ErrorInvalidOrderId);
         let order = remove_order(&mut market.asks, usr_open_orders, tick_index, order_id, sender());
         // TODO here maybe wrap to u512?
         let total_price = order.quantity * (order.unit_price as u256);
         let trade_coin = coin::extract(paid, total_price);
-        assert!(coin::value(paid) >= total_price, EInputCoin);
+        assert!(coin::value(paid) >= total_price, ErrorInputCoin);
         let trade_info = &mut market.trade_info;
         trade_info.total_volume = trade_info.total_volume + total_price;
         trade_info.txs = trade_info.txs + 1;
@@ -320,8 +315,8 @@ module orderbook::market {
     ): Option<Coin<BaseAsset>>
     {
         let market = object::borrow_mut(market_obj);
-        assert!(market.is_paused == false, EWrongPaused);
-        assert!(market.version == VERSION, EWrongVersion);
+        assert!(market.is_paused == false, ErrorWrongPaused);
+        assert!(market.version == VERSION, ErrorWrongVersion);
         let usr_open_orders = table::borrow_mut(&mut market.user_order_info, sender());
         let tick_price = *linked_table::borrow(usr_open_orders, order_id);
         let (tick_exists, tick_index) = find_leaf(&market.bids, tick_price);
@@ -329,10 +324,10 @@ module orderbook::market {
         if (!assert_order_exist && !tick_exists) {
             return option::none()
         };
-        assert!(tick_exists, EInvalidOrderId);
+        assert!(tick_exists, ErrorInvalidOrderId);
 
         let order = remove_order(&mut market.bids, usr_open_orders, tick_index, order_id, sender());
-        assert!(coin::value(paid) >=  order.quantity, EInputCoin);
+        assert!(coin::value(paid) >=  order.quantity, ErrorInputCoin);
         let trade_coin = coin::extract(paid, order.quantity);
 
         // TODO here maybe wrap to u512?
@@ -364,7 +359,7 @@ module orderbook::market {
         receiver: address,
     ) {
         let market = object::borrow_mut(market_obj);
-        assert!(market.version == VERSION, EWrongVersion);
+        assert!(market.version == VERSION, ErrorWrongVersion);
         let quote_amount = coin_store::balance(&market.quote_asset_trading_fees);
         account_coin_store::deposit(receiver, coin_store::withdraw(&mut market.quote_asset_trading_fees, quote_amount));
         let base_amount = coin_store::balance(&market.base_asset_trading_fees);
@@ -378,8 +373,8 @@ module orderbook::market {
         fee: u256,
     ) {
         let market = object::borrow_mut(market_obj);
-        assert!(market.version == VERSION, EWrongVersion);
-        assert!(fee < TRADE_FEE_BASE_RATIO, EFeeTooHigh);
+        assert!(market.version == VERSION, ErrorWrongVersion);
+        assert!(fee < TRADE_FEE_BASE_RATIO, ErrorFeeTooHigh);
         market.fee = fee
     }
 
@@ -387,7 +382,7 @@ module orderbook::market {
         market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
     ) {
         let market = object::borrow_mut(market_obj);
-        assert!(market.version <= VERSION, EWrongVersion);
+        assert!(market.version <= VERSION, ErrorWrongVersion);
         market.version = VERSION;
     }
 
@@ -400,10 +395,10 @@ module orderbook::market {
     ): Order {
         linked_table::remove(user_order_info, order_id);
         let tick_level = borrow_leaf_by_index(open_orders, tick_index);
-        assert!(linked_table::contains(&tick_level.open_orders, order_id), EInvalidOrderId);
+        assert!(linked_table::contains(&tick_level.open_orders, order_id), ErrorInvalidOrderId);
         let mut_tick_level = borrow_mut_leaf_by_index(open_orders, tick_index);
         let order = linked_table::remove(&mut mut_tick_level.open_orders, order_id);
-        assert!(order.owner == user, EUnauthorizedCancel);
+        assert!(order.owner == user, ErrorUnauthorizedCancel);
         if (linked_table::is_empty(&mut_tick_level.open_orders)) {
             destroy_empty_level(remove_leaf_by_index(open_orders, tick_index));
         };
