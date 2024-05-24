@@ -6,6 +6,7 @@
 
 
 -  [Resource `Account`](#0x2_account_Account)
+-  [Resource `AccountHolder`](#0x2_account_AccountHolder)
 -  [Struct `SignerCapability`](#0x2_account_SignerCapability)
 -  [Constants](#@Constants_0)
 -  [Function `create_account_by_system`](#0x2_account_create_account_by_system)
@@ -20,13 +21,19 @@
 -  [Function `get_signer_capability_address`](#0x2_account_get_signer_capability_address)
 -  [Function `account_object_id`](#0x2_account_account_object_id)
 -  [Function `create_account_object`](#0x2_account_create_account_object)
+-  [Function `create_account_holder_object`](#0x2_account_create_account_holder_object)
 -  [Function `account_borrow_resource`](#0x2_account_account_borrow_resource)
+-  [Function `account_holder_borrow_resource`](#0x2_account_account_holder_borrow_resource)
 -  [Function `account_borrow_mut_resource`](#0x2_account_account_borrow_mut_resource)
+-  [Function `account_holder_borrow_mut_resource`](#0x2_account_account_holder_borrow_mut_resource)
 -  [Function `account_move_resource_to`](#0x2_account_account_move_resource_to)
+-  [Function `account_holder_move_resource_to`](#0x2_account_account_holder_move_resource_to)
 -  [Function `account_move_resource_from`](#0x2_account_account_move_resource_from)
 -  [Function `account_exists_resource`](#0x2_account_account_exists_resource)
+-  [Function `account_holder_exists_resource`](#0x2_account_account_holder_exists_resource)
 -  [Function `transfer`](#0x2_account_transfer)
 -  [Function `borrow_account`](#0x2_account_borrow_account)
+-  [Function `borrow_mut_account_holder`](#0x2_account_borrow_mut_account_holder)
 -  [Function `borrow_resource`](#0x2_account_borrow_resource)
 -  [Function `borrow_mut_resource`](#0x2_account_borrow_mut_resource)
 -  [Function `move_resource_to`](#0x2_account_move_resource_to)
@@ -55,6 +62,17 @@ It is also used to store the account's resources
 
 
 <pre><code><b>struct</b> <a href="account.md#0x2_account_Account">Account</a> <b>has</b> key
+</code></pre>
+
+
+
+<a name="0x2_account_AccountHolder"></a>
+
+## Resource `AccountHolder`
+
+
+
+<pre><code><b>struct</b> <a href="account.md#0x2_account_AccountHolder">AccountHolder</a> <b>has</b> key
 </code></pre>
 
 
@@ -302,6 +320,17 @@ Create a new account object space
 
 
 
+<a name="0x2_account_create_account_holder_object"></a>
+
+## Function `create_account_holder_object`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_account_holder_object">create_account_holder_object</a>(<a href="account.md#0x2_account">account</a>: <b>address</b>)
+</code></pre>
+
+
+
 <a name="0x2_account_account_borrow_resource"></a>
 
 ## Function `account_borrow_resource`
@@ -309,6 +338,17 @@ Create a new account object space
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_borrow_resource">account_borrow_resource</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): &T
+</code></pre>
+
+
+
+<a name="0x2_account_account_holder_borrow_resource"></a>
+
+## Function `account_holder_borrow_resource`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_holder_borrow_resource">account_holder_borrow_resource</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_AccountHolder">account::AccountHolder</a>&gt;): &T
 </code></pre>
 
 
@@ -324,6 +364,17 @@ Create a new account object space
 
 
 
+<a name="0x2_account_account_holder_borrow_mut_resource"></a>
+
+## Function `account_holder_borrow_mut_resource`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_holder_borrow_mut_resource">account_holder_borrow_mut_resource</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_AccountHolder">account::AccountHolder</a>&gt;): &<b>mut</b> T
+</code></pre>
+
+
+
 <a name="0x2_account_account_move_resource_to"></a>
 
 ## Function `account_move_resource_to`
@@ -331,6 +382,17 @@ Create a new account object space
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_move_resource_to">account_move_resource_to</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;, resource: T)
+</code></pre>
+
+
+
+<a name="0x2_account_account_holder_move_resource_to"></a>
+
+## Function `account_holder_move_resource_to`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_holder_move_resource_to">account_holder_move_resource_to</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_AccountHolder">account::AccountHolder</a>&gt;, resource: T)
 </code></pre>
 
 
@@ -357,6 +419,17 @@ Create a new account object space
 
 
 
+<a name="0x2_account_account_holder_exists_resource"></a>
+
+## Function `account_holder_exists_resource`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_holder_exists_resource">account_holder_exists_resource</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_AccountHolder">account::AccountHolder</a>&gt;): bool
+</code></pre>
+
+
+
 <a name="0x2_account_transfer"></a>
 
 ## Function `transfer`
@@ -375,6 +448,17 @@ Create a new account object space
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_borrow_account">borrow_account</a>(<a href="account.md#0x2_account">account</a>: <b>address</b>): &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;
+</code></pre>
+
+
+
+<a name="0x2_account_borrow_mut_account_holder"></a>
+
+## Function `borrow_mut_account_holder`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_borrow_mut_account_holder">borrow_mut_account_holder</a>(<a href="account.md#0x2_account">account</a>: <b>address</b>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_AccountHolder">account::AccountHolder</a>&gt;
 </code></pre>
 
 
