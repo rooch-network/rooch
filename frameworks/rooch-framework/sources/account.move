@@ -4,6 +4,7 @@
 module rooch_framework::account {
    use rooch_framework::account_authentication;
    use moveos_std::signer::module_signer;
+   use moveos_std::account;
    use moveos_std::core_addresses;
 
    friend rooch_framework::genesis;
