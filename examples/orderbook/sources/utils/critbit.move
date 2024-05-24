@@ -5,12 +5,12 @@ module orderbook::critbit {
     use moveos_std::table::{Self, Table};
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
-    const EExceedCapacity: u64 = 2;
-    const ETreeNotEmpty: u64 = 3;
-    const EKeyAlreadyExist: u64 = 4;
-    const ELeafNotExist: u64 = 5;
-    const EIndexOutOfRange: u64 = 7;
-    const ENullParent: u64 = 8;
+    const ErrorExceedCapacity: u64 = 2;
+    const ErrorTreeNotEmpty: u64 = 3;
+    const ErrorKeyAlreadyExist: u64 = 4;
+    const ErrorLeafNotExist: u64 = 5;
+    const ErrorIndexOutOfRange: u64 = 7;
+    const ErrorNullParent: u64 = 8;
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 
 
@@ -71,7 +71,7 @@ module orderbook::critbit {
     // Return (key, index) the leaf with minimum value.
     // A market buy order will start consuming liquidty from the min leaf.
     public fun min_leaf<V: store>(tree: &CritbitTree<V>): (u64, u64) {
-        assert!(!is_empty(tree), ELeafNotExist);
+        assert!(!is_empty(tree), ErrorLeafNotExist);
         let min_leaf = table::borrow(&tree.leaves, tree.min_leaf);
         return (min_leaf.key, tree.min_leaf)
     }
@@ -79,7 +79,7 @@ module orderbook::critbit {
     // Return (key, index) the leaf with maximum value.
     // A market sell order will start consuming liquidity from the max leaf.
     public fun max_leaf<V: store>(tree: &CritbitTree<V>): (u64, u64) {
-        assert!(!is_empty(tree), ELeafNotExist);
+        assert!(!is_empty(tree), ErrorLeafNotExist);
         let max_leaf = table::borrow(&tree.leaves, tree.max_leaf);
         return (max_leaf.key, tree.max_leaf)
     }
@@ -89,7 +89,7 @@ module orderbook::critbit {
     // This function provides the iterator for this procedure.
     public fun previous_leaf<V: store>(tree: &CritbitTree<V>, key: u64): (u64, u64) {
         let (_, index) = find_leaf(tree, key);
-        assert!(index != PARTITION_INDEX, ELeafNotExist);
+        assert!(index != PARTITION_INDEX, ErrorLeafNotExist);
         let ptr = MAX_U64 - index;
         let parent = table::borrow(&tree.leaves, index).parent;
         while (parent != PARTITION_INDEX && is_left_child(tree, parent, ptr)) {
@@ -109,7 +109,7 @@ module orderbook::critbit {
     // This function provides the iterator for this procedure.
     public fun next_leaf<V: store>(tree: &CritbitTree<V>, key: u64): (u64, u64) {
         let (_, index) = find_leaf(tree, key);
-        assert!(index != PARTITION_INDEX, ELeafNotExist);
+        assert!(index != PARTITION_INDEX, ErrorLeafNotExist);
         let ptr = MAX_U64 - index;
         let parent = table::borrow(&tree.leaves, index).parent;
         while (parent != PARTITION_INDEX && !is_left_child(tree, parent, ptr)) {
@@ -152,14 +152,14 @@ module orderbook::critbit {
         };
         let new_leaf_index = tree.next_leaf_index;
         tree.next_leaf_index = tree.next_leaf_index + 1;
-        assert!(new_leaf_index < MAX_CAPACITY - 1, EExceedCapacity);
+        assert!(new_leaf_index < MAX_CAPACITY - 1, ErrorExceedCapacity);
         table::add(&mut tree.leaves, new_leaf_index, new_leaf);
 
         let closest_leaf_index = get_closest_leaf_index_by_key(tree, key);
 
         // Handle the first insertion
         if (closest_leaf_index == PARTITION_INDEX) {
-            assert!(new_leaf_index == 0, ETreeNotEmpty);
+            assert!(new_leaf_index == 0, ErrorTreeNotEmpty);
             tree.root = MAX_U64 - new_leaf_index;
             tree.min_leaf = new_leaf_index;
             tree.max_leaf = new_leaf_index;
@@ -167,7 +167,7 @@ module orderbook::critbit {
         };
 
         let closest_key = table::borrow(&tree.leaves, closest_leaf_index).key;
-        assert!(closest_key != key, EKeyAlreadyExist);
+        assert!(closest_key != key, ErrorKeyAlreadyExist);
 
         // Note that we reserve count_leading_zeros of form u128 for future use
         let critbit = 64 - (count_leading_zeros(((closest_key ^ key) as u128)) - 64);
@@ -269,7 +269,7 @@ module orderbook::critbit {
             tree.next_internal_node_index = 0;
             tree.next_leaf_index = 0;
         } else {
-            assert!(removed_leaf_parent_index != PARTITION_INDEX, EIndexOutOfRange);
+            assert!(removed_leaf_parent_index != PARTITION_INDEX, ErrorIndexOutOfRange);
             let removed_leaf_parent = table::borrow(&tree.internal_nodes, removed_leaf_parent_index);
             let removed_leaf_grand_parent_index = removed_leaf_parent.parent;
 
@@ -312,13 +312,13 @@ module orderbook::critbit {
 
     public fun borrow_leaf_by_key<V: store>(tree: & CritbitTree<V>, key: u64): &V {
         let (is_exist, index) = find_leaf(tree, key);
-        assert!(is_exist, ELeafNotExist);
+        assert!(is_exist, ErrorLeafNotExist);
         borrow_leaf_by_index(tree, index)
     }
 
     public fun borrow_mut_leaf_by_key<V: store>(tree: &mut CritbitTree<V>, key: u64): &mut V {
         let (is_exist, index) = find_leaf(tree, key);
-        assert!(is_exist, ELeafNotExist);
+        assert!(is_exist, ErrorLeafNotExist);
         borrow_mut_leaf_by_index(tree, index)
     }
 
@@ -371,7 +371,7 @@ module orderbook::critbit {
 
     // new_child can be either internal node or leaf
     fun update_child<V: store>(tree: &mut CritbitTree<V>, parent_index: u64, new_child: u64, is_left_child: bool) {
-        assert!(parent_index != PARTITION_INDEX, ENullParent);
+        assert!(parent_index != PARTITION_INDEX, ErrorNullParent);
         if (is_left_child) {
             table::borrow_mut(&mut tree.internal_nodes, parent_index).left_child = new_child;
         } else {

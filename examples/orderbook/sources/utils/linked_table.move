@@ -10,9 +10,9 @@ module orderbook::linked_table {
 
 
     // Attempted to destroy a non-empty table
-    const ETableNotEmpty: u64 = 0;
+    const ErrorTableNotEmpty: u64 = 0;
     // Attempted to remove the front or back of an empty table
-    const ETableIsEmpty: u64 = 1;
+    const ErrorTableIsEmpty: u64 = 1;
 
     struct LinkedTable<K: copy + drop + store, phantom V: store> has key, store {
         /// the number of key-value pairs in the table
@@ -161,7 +161,7 @@ module orderbook::linked_table {
     /// Aborts with `ETableIsEmpty` if the table is empty
     public fun pop_front<K: copy + drop + store, V: store>(table_obj: &mut Object<LinkedTable<K, V>>): (K, V) {
         let table = object::borrow_mut(table_obj);
-        assert!(option::is_some(&table.head), ETableIsEmpty);
+        assert!(option::is_some(&table.head), ErrorTableIsEmpty);
         let head = *option::borrow(&table.head);
         (head, remove(table_obj, head))
     }
@@ -170,7 +170,7 @@ module orderbook::linked_table {
     /// Aborts with `ETableIsEmpty` if the table is empty
     public fun pop_back<K: copy + drop + store, V: store>(table_obj: &mut Object<LinkedTable<K, V>>): (K, V) {
         let table = object::borrow_mut(table_obj);
-        assert!(option::is_some(&table.tail), ETableIsEmpty);
+        assert!(option::is_some(&table.tail), ErrorTableIsEmpty);
         let tail = *option::borrow(&table.tail);
         (tail, remove(table_obj, tail))
     }
@@ -198,7 +198,7 @@ module orderbook::linked_table {
     public fun destroy_empty<K: copy + drop + store, V: store>(table_obj: Object<LinkedTable<K, V>>) {
         let table = object::remove(table_obj);
         let LinkedTable { size, head: _, tail: _ } = table;
-        assert!(size == 0, ETableNotEmpty);
+        assert!(size == 0, ErrorTableNotEmpty);
     }
 
     /// Drop a possibly non-empty table.
