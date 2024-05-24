@@ -136,7 +136,6 @@ impl RoochTransaction {
         bcs::to_bytes(self).expect("encode transaction should success")
     }
 
-    //TODO unify the hash function
     pub fn tx_hash(&mut self) -> H256 {
         if let Some(hash) = self.data_hash {
             hash
