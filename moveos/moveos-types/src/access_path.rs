@@ -68,13 +68,10 @@ impl StateQuery {
                     .map(|id| (id.parent().unwrap_or(ObjectID::root()), id.to_key()))
                     .collect())
             }
-            StateQuery::Fields(object_id, fields) => {
-                ensure!(!fields.is_empty(), "Please specify fields");
-                Ok(fields
-                    .into_iter()
-                    .map(|field| (object_id.clone(), field))
-                    .collect())
-            }
+            StateQuery::Fields(object_id, fields) => Ok(fields
+                .into_iter()
+                .map(|field| (object_id.clone(), field))
+                .collect()),
         }
     }
 }
@@ -208,13 +205,18 @@ impl FromStr for Path {
                         } else {
                             v.split(',')
                                 .map(|key| {
-                                    KeyState::from_str(key).map_err(|e| {
-                                        anyhow::anyhow!(
-                                            "Invalid access path key: {}, err: {:?}",
-                                            key,
-                                            e
-                                        )
-                                    })
+                                    if key.starts_with("0x") {
+                                        KeyState::from_str(key).map_err(|e| {
+                                            anyhow::anyhow!(
+                                                "Invalid access path key: {}, err: {:?}",
+                                                key,
+                                                e
+                                            )
+                                        })
+                                    } else {
+                                        //If the key is not a hex string, treat it as a MoveString
+                                        Ok(KeyState::from_string(key))
+                                    }
                                 })
                                 .collect::<Result<Vec<_>, _>>()?
                         }

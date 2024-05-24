@@ -154,9 +154,9 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].vm_status}} == Executed"
       Then assert: "{{$.move[-1].return_values[0].decoded_value}} == value1"
       #the access-path argument do not support named address yet, so, we use `{{$.address_mapping.default}}` template var to repleace it.
-      #Then cmd: "state --access-path /resource/{{$.address_mapping.default}}/{{$.address_mapping.default}}::kv_store::KVStore"
-      #Then cmd: "state --access-path /fields/{{$.state[-1][0].decoded_value.value.table.value.handle.value.id}}/key1"
-      Then assert: "{{$.state[-1][0].decoded_value}} == "value1""
+      Then cmd: "state --access-path /resource/{{$.address_mapping.default}}/{{$.address_mapping.default}}::kv_store::KVStore"
+      Then cmd: "state --access-path /fields/{{$.state[-1][0].decoded_value.value.table.value.handle.value.id}}/key1"
+      Then assert: "{{$.state[-1][0].decoded_value}} == value1"
 
 
       Then stop the server

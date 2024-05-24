@@ -10,6 +10,7 @@
 module rooch_examples::publish {
     use std::vector;
     use moveos_std::move_module::{Self, MoveModule};
+    use moveos_std::module_store;
     
 
     public entry fun publish_modules_entry(account: &signer, module_bytes: vector<u8>) {
