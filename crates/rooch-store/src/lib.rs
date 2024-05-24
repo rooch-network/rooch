@@ -102,7 +102,9 @@ impl Debug for RoochStore {
 
 impl TransactionStore for RoochStore {
     fn save_transaction(&mut self, tx: LedgerTransaction) -> Result<()> {
-        self.transaction_store.save_transaction(tx)
+        let sequencer_order = SequencerOrder::new(tx.sequence_info.tx_order);
+        self.transaction_store.save_transaction(tx)?;
+        self.meta_store.save_sequencer_order(sequencer_order)
     }
 
     fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<LedgerTransaction>> {

@@ -11,7 +11,6 @@ use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_types::h256::{self, H256};
-use rooch_store::meta_store::MetaStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
 use rooch_types::crypto::{RoochKeyPair, Signature};
@@ -42,6 +41,9 @@ impl SequencerActor {
     }
 
     pub fn sequence(&mut self, mut tx_data: LedgerTxData) -> Result<LedgerTransaction> {
+        let now = SystemTime::now();
+        let tx_timestamp = now.duration_since(SystemTime::UNIX_EPOCH)?.as_millis() as u64;
+
         let tx_order = if self.last_order == 0 {
             let last_order_opt = self
                 .rooch_store
@@ -62,25 +64,21 @@ impl SequencerActor {
         let tx_order_signature = Signature::new_hashed(&witness_hash.0, &self.sequencer_key)
             .as_ref()
             .to_vec();
-        let tx = Self::build_ledger_transaction(tx_data, tx_order, tx_order_signature)?;
+        let tx =
+            Self::build_ledger_transaction(tx_data, tx_timestamp, tx_order, tx_order_signature)?;
 
         self.rooch_store.save_transaction(tx.clone())?;
         debug!("sequencer tx: {} order: {:?}", hash, tx_order);
-        self.last_order = tx_order;
-        self.rooch_store
-            .save_sequencer_order(SequencerOrder::new(self.last_order))?;
 
         Ok(tx)
     }
 
     pub fn build_ledger_transaction(
         tx_data: LedgerTxData,
+        tx_timestamp: u64,
         tx_order: u64,
         tx_order_signature: Vec<u8>,
     ) -> Result<LedgerTransaction> {
-        let now = SystemTime::now();
-        let tx_timestamp = now.duration_since(SystemTime::UNIX_EPOCH)?.as_millis() as u64;
-
         let tx_accumulator_root = H256::random();
         let tx_sequence_info = TransactionSequenceInfo {
             tx_order,
