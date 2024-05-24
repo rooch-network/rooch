@@ -31,8 +31,8 @@ impl SequencerActor {
             .get_meta_store()
             .get_sequencer_order()?
             .map(|order| order.last_order);
-        // Reserve tx_order = 0 for data import transaction and indexer rebuild
-        let last_order = last_order_opt.unwrap_or(1u64);
+        // Reserve tx_order = 0 for genesis tx
+        let last_order = last_order_opt.unwrap_or(0u64);
         info!("Load latest sequencer order {:?}", last_order);
         Ok(Self {
             last_order,
@@ -42,9 +42,7 @@ impl SequencerActor {
     }
 
     pub fn sequence(&mut self, mut tx_data: LedgerTxData) -> Result<LedgerTransaction> {
-        let now = SystemTime::now();
-        let tx_timestamp = now.duration_since(SystemTime::UNIX_EPOCH)?.as_millis() as u64;
-        let tx_order = if self.last_order == 1 {
+        let tx_order = if self.last_order == 0 {
             let last_order_opt = self
                 .rooch_store
                 .get_meta_store()
@@ -52,7 +50,7 @@ impl SequencerActor {
                 .map(|order| order.last_order);
             match last_order_opt {
                 Some(last_order) => last_order + 1,
-                None => 1,
+                None => 0,
             }
         } else {
             self.last_order + 1
@@ -64,6 +62,24 @@ impl SequencerActor {
         let tx_order_signature = Signature::new_hashed(&witness_hash.0, &self.sequencer_key)
             .as_ref()
             .to_vec();
+        let tx = Self::build_ledger_transaction(tx_data, tx_order, tx_order_signature)?;
+
+        self.rooch_store.save_transaction(tx.clone())?;
+        debug!("sequencer tx: {} order: {:?}", hash, tx_order);
+        self.last_order = tx_order;
+        self.rooch_store
+            .save_sequencer_order(SequencerOrder::new(self.last_order))?;
+
+        Ok(tx)
+    }
+
+    pub fn build_ledger_transaction(
+        tx_data: LedgerTxData,
+        tx_order: u64,
+        tx_order_signature: Vec<u8>,
+    ) -> Result<LedgerTransaction> {
+        let now = SystemTime::now();
+        let tx_timestamp = now.duration_since(SystemTime::UNIX_EPOCH)?.as_millis() as u64;
 
         let tx_accumulator_root = H256::random();
         let tx_sequence_info = TransactionSequenceInfo {
@@ -73,15 +89,8 @@ impl SequencerActor {
             tx_timestamp,
         };
 
-        let tx = LedgerTransaction::new(tx_data, tx_sequence_info);
-
-        self.rooch_store.save_transaction(tx.clone())?;
-        debug!("sequencer tx: {} order: {:?}", hash, tx_order);
-        self.last_order = tx_order;
-        self.rooch_store
-            .save_sequencer_order(SequencerOrder::new(self.last_order))?;
-
-        Ok(tx)
+        let ledger_tx = LedgerTransaction::new(tx_data, tx_sequence_info);
+        Ok(ledger_tx)
     }
 }
 

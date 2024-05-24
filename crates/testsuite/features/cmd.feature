@@ -113,19 +113,19 @@ Feature: Rooch CLI integration tests
     # because the indexer is async update, so sleep 5 seconds to wait indexer update.
     Then sleep: "5"
 
-    #TODO fixme 
-    #Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, null, "1", {"descending": true,"showDisplay":false}]'"
-    #Then assert: "{{$.rpc[-1].data[0].transaction.sequence_info.tx_order}} == 1"
-    #Then assert: "{{$.rpc[-1].next_cursor}} == 1"
-    #Then assert: "{{$.rpc[-1].has_next_page}} == true"
-    #Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, "1", "1", {"descending": true,"showDisplay":false}]'"
-    #Then assert: "{{$.rpc[-1].data[0].transaction.sequence_info.tx_order}} == 0"
-    #Then assert: "{{$.rpc[-1].next_cursor}} == 0"
-    #Then assert: "{{$.rpc[-1].has_next_page}} == false"
-    #Then cmd: "rpc request --method rooch_queryEvents --params '[{"tx_order_range":{"from_order":0, "to_order":2}}, null, "10", {"descending": true,"showDisplay":false}]'"
-    #Then assert: "{{$.rpc[-1].data[0].indexer_event_id.tx_order}} == 1"
-    #Then assert: "{{$.rpc[-1].next_cursor.tx_order}} == 0"
-    #Then assert: "{{$.rpc[-1].has_next_page}} == false"
+    # genesis tx does not write indexer
+    Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":3}}, null, "1", {"descending": true,"showDisplay":false}]'"
+    Then assert: "{{$.rpc[-1].data[0].transaction.sequence_info.tx_order}} == 2"
+    Then assert: "{{$.rpc[-1].next_cursor}} == 2"
+    Then assert: "{{$.rpc[-1].has_next_page}} == true"
+    Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":3}}, "2", "1", {"descending": true,"showDisplay":false}]'"
+    Then assert: "{{$.rpc[-1].data[0].transaction.sequence_info.tx_order}} == 1"
+    Then assert: "{{$.rpc[-1].next_cursor}} == 1"
+    Then assert: "{{$.rpc[-1].has_next_page}} == false"
+    Then cmd: "rpc request --method rooch_queryEvents --params '[{"tx_order_range":{"from_order":0, "to_order":2}}, null, "10", {"descending": true,"showDisplay":false}]'"
+    Then assert: "{{$.rpc[-1].data[0].indexer_event_id.tx_order}} == 1"
+    Then assert: "{{$.rpc[-1].next_cursor.tx_order}} == 1"
+    Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
     # Sync states
     Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x3::coin::CoinInfo"}, null, "10", {"descending": true,"showDisplay":false}]'"

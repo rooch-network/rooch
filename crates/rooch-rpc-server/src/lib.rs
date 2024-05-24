@@ -185,7 +185,7 @@ pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<S
     let arc_base_config = Arc::new(base_config);
     let mut store_config = StoreConfig::default();
     store_config.merge_with_opt_with_init(opt, Arc::clone(&arc_base_config), true)?;
-    let (mut root, mut moveos_store, rooch_store) = init_storage(&store_config)?;
+    let (mut root, mut moveos_store, mut rooch_store) = init_storage(&store_config)?;
 
     //Init indexer store
     let mut indexer_config = IndexerConfig::default();
@@ -217,7 +217,7 @@ pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<S
         }
         let genesis = RoochGenesis::build(network)?;
         if root.is_genesis() {
-            root = genesis.init_genesis(&mut moveos_store)?;
+            root = genesis.init_genesis(&mut moveos_store, &mut rooch_store)?;
         } else {
             genesis.check_genesis(moveos_store.get_config_store())?;
         }
