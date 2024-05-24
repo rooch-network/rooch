@@ -92,6 +92,7 @@ module bitcoin_move::bitcoin{
         let block_header = types::header(&block);
 
         if(table::contains(&btc_block_store.height_to_hash, block_height)){
+            //https://github.com/rooch-network/rooch/issues/1685
             //TODO handle reorg
         };
         let time = types::time(block_header);

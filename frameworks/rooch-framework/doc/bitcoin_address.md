@@ -17,6 +17,7 @@
 -  [Function `is_empty`](#0x3_bitcoin_address_is_empty)
 -  [Function `as_bytes`](#0x3_bitcoin_address_as_bytes)
 -  [Function `into_bytes`](#0x3_bitcoin_address_into_bytes)
+<<<<<<< HEAD
 -  [Function `from_string`](#0x3_bitcoin_address_from_string)
 -  [Function `verify_with_public_key`](#0x3_bitcoin_address_verify_with_public_key)
 -  [Function `to_rooch_address`](#0x3_bitcoin_address_to_rooch_address)
@@ -26,6 +27,13 @@
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::hash</a>;
+=======
+-  [Function `new`](#0x3_bitcoin_address_new)
+-  [Function `verify_with_pk`](#0x3_bitcoin_address_verify_with_pk)
+
+
+<pre><code><b>use</b> <a href="">0x1::vector</a>;
+>>>>>>> a1277c33 (clean some todo)
 </code></pre>
 
 
@@ -241,6 +249,7 @@ Empty address is a special address that is used to if we parse address failed fr
 
 
 
+<<<<<<< HEAD
 <a name="0x3_bitcoin_address_from_string"></a>
 
 ## Function `from_string`
@@ -253,6 +262,9 @@ Empty address is a special address that is used to if we parse address failed fr
 
 
 <a name="0x3_bitcoin_address_verify_with_public_key"></a>
+=======
+<a name="0x3_bitcoin_address_new"></a>
+>>>>>>> a1277c33 (clean some todo)
 
 ## Function `verify_with_public_key`
 
