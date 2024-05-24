@@ -147,11 +147,8 @@ impl RoochTransaction {
         }
     }
 
-    pub fn authenticator_info(&self) -> Result<AuthenticatorInfo> {
-        Ok(AuthenticatorInfo::new(
-            self.chain_id(),
-            self.authenticator.clone(),
-        ))
+    pub fn authenticator_info(&self) -> AuthenticatorInfo {
+        AuthenticatorInfo::new(self.chain_id(), self.authenticator.clone())
     }
 
     pub fn authenticator(&self) -> &Authenticator {

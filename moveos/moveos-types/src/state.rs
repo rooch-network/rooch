@@ -61,7 +61,7 @@ impl KeyState {
         Self { key, key_type }
     }
 
-    pub fn from_string(s: &String) -> Self {
+    pub fn from_string(s: &str) -> Self {
         let key = bcs::to_bytes(s).expect("bcs to_bytes String must success.");
         KeyState::new(key, MoveString::type_tag())
     }

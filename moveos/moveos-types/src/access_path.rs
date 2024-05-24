@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::moveos_std::account::Account;
-use crate::moveos_std::module_store::ModuleStore;
+use crate::moveos_std::module_store::Package;
 use crate::state::KeyState;
 use crate::{
     move_types::{random_identity, random_struct_tag},
     moveos_std::object::ObjectID,
 };
-use anyhow::{bail, ensure, Result};
+use anyhow::{ensure, Result};
 use move_core_types::language_storage::ModuleId;
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::StructTag,
@@ -69,7 +69,7 @@ impl StateQuery {
                     .collect())
             }
             StateQuery::Fields(object_id, fields) => {
-                // ensure!(!fields.is_empty(), "Please specify fields");
+                ensure!(!fields.is_empty(), "Please specify fields");
                 Ok(fields
                     .into_iter()
                     .map(|field| (object_id.clone(), field))
@@ -187,9 +187,7 @@ impl FromStr for Path {
                         .map(Identifier::from_str)
                         .collect::<Result<Vec<_>, _>>()?,
 
-                    None => {
-                        bail!("Invalid access path, require module name")
-                    }
+                    None => vec![],
                 };
 
                 Ok(Path::Module {
@@ -265,10 +263,10 @@ impl AccessPath {
         })
     }
 
-    pub fn module(account: AccountAddress, module_name: Identifier) -> Self {
+    pub fn module(module_id: &ModuleId) -> Self {
         AccessPath(Path::Module {
-            account,
-            module_names: vec![module_name],
+            account: *module_id.address(),
+            module_names: vec![module_id.name().to_owned()],
         })
     }
 
@@ -305,15 +303,12 @@ impl AccessPath {
                 account,
                 module_names,
             } => {
-                let module_object_id = ModuleStore::module_store_id();
+                let package_object_id = Package::package_id(&account);
                 let keys = module_names
                     .into_iter()
-                    .map(|name| {
-                        let module_id = ModuleId::new(account, name);
-                        KeyState::from_module_id(&module_id)
-                    })
+                    .map(|name| KeyState::from_string(name.as_str()))
                     .collect();
-                StateQuery::Fields(module_object_id, keys)
+                StateQuery::Fields(package_object_id, keys)
             }
             Path::Resource {
                 account,
@@ -342,7 +337,10 @@ impl AccessPath {
     }
 
     pub fn random_module_with_fixed_address(addr: AccountAddress) -> AccessPath {
-        Self::module(addr, random_identity())
+        AccessPath(Path::Module {
+            account: addr,
+            module_names: vec![random_identity()],
+        })
     }
 
     pub fn random_resource() -> AccessPath {

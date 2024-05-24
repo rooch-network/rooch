@@ -330,10 +330,14 @@ impl RoochGenesis {
 #[cfg(test)]
 mod tests {
     use crate::FrameworksGasParameters;
+    use move_core_types::identifier::Identifier;
+    use move_core_types::language_storage::ModuleId;
+    use move_core_types::resolver::ModuleResolver;
     use moveos_store::MoveOSStore;
-    use moveos_types::moveos_std::module_store::ModuleStore;
+    use moveos_types::moveos_std::module_store::{ModuleStore, Package};
     use moveos_types::state_resolver::{RootObjectResolver, StateResolver};
     use rooch_store::RoochStore;
+    use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
     use rooch_types::bitcoin::network::BitcoinNetwork;
     use rooch_types::rooch_network::RoochNetwork;
     use tracing::info;
@@ -374,6 +378,25 @@ mod tests {
             module_store_obj.size > 0,
             "module store fields size should > 0"
         );
+
+        let package_object_state = resolver
+            .get_object(&Package::package_id(&ROOCH_FRAMEWORK_ADDRESS))
+            .unwrap();
+        assert!(package_object_state.is_some());
+        let package_obj = package_object_state
+            .unwrap()
+            .into_object::<Package>()
+            .unwrap();
+        assert!(package_obj.size > 0, "package fields size should > 0");
+
+        let module = resolver
+            .get_module(&ModuleId::new(
+                ROOCH_FRAMEWORK_ADDRESS,
+                Identifier::new("genesis").unwrap(),
+            ))
+            .unwrap();
+        assert!(module.is_some(), "genesis module should exist");
+
         let chain_id_state = resolver
             .get_object(&rooch_types::framework::chain_id::ChainID::chain_id_object_id())
             .unwrap();
