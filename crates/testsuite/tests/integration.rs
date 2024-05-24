@@ -222,7 +222,7 @@ async fn run_cmd(world: &mut World, args: String) {
     args.push(config_dir.to_str().unwrap().to_string());
     let opts: RoochCli = RoochCli::parse_from(args);
     let ret = rooch::run_cli(opts).await;
-    
+
     match ret {
         Ok(output) => {
             let result_json = serde_json::from_str::<Value>(&output);

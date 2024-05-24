@@ -71,7 +71,7 @@ fn native_create_wasm_instance(
             E_INCORRECT_LENGTH_OF_ARGS,
         ));
     }
-    
+
     let wasm_bytes = pop_arg!(args, Vec<u8>);
     let (instance_id, error_code) = create_wasm_instance(&wasm_bytes)
         .map(|instance| {

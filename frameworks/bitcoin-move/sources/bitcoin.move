@@ -292,6 +292,8 @@ module bitcoin_move::bitcoin{
 
     /// The relay server submit a new Bitcoin block to the light client.
     fun submit_new_block(block_height: u64, block_hash: address, block_bytes: vector<u8>){
+        std::debug::print(&string::utf8(b"submit_new_block_start"));
+
         let btc_block_store_obj = borrow_block_store_mut();
         let time = process_block(btc_block_store_obj, block_height, block_hash, block_bytes);
 

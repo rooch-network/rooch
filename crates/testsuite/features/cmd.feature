@@ -371,7 +371,11 @@ Feature: Rooch CLI integration tests
       Then cmd ord: "wallet receive"
       Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].address}}"
       Then sleep: "10"
-      
+
+      # query utxos and inscriptions
+      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x4::utxo::UTXO"}, null, "2", true]'"
+      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x4::ord::Inscription"}, null, "2", true]'"
+
       # Sync bitseed
       Then cmd: "move run --function default::bitseed_runner::run"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"

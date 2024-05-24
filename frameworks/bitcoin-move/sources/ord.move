@@ -392,6 +392,8 @@ module bitcoin_move::ord {
     }
 
     public fun process_transaction(tx: &Transaction, input_utxo_values: vector<u64>): vector<SatPoint>{
+        std::debug::print(&string::utf8(b"ord_process_transaction_start"));
+
         let sat_points = vector::empty();
 
         let inscriptions = from_transaction(tx, option::some(input_utxo_values));
