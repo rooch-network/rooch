@@ -117,7 +117,7 @@ pub struct RoochOpt {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long, env = "BTC_SYNC_BLOCK_INTERVAL")]
-    /// The interval sync BTC block, default is none.
+    /// The interval of sync BTC block, default is none.
     pub btc_sync_block_interval: Option<u64>,
 
     /// The address of the sequencer account
