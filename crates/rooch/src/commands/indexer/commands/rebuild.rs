@@ -37,7 +37,7 @@ use crate::commands::statedb::commands::{
 #[derive(Debug, Parser)]
 pub struct RebuildCommand {
     #[clap(long, short = 'i')]
-    /// import input file. like ~/.rooch/local/utxo.csv or utxo.csv
+    /// import input file. like ~/.rooch/local/indexer.csv or indexer.csv
     pub input: PathBuf,
 
     #[clap(long = "data-dir", short = 'd')]
@@ -94,7 +94,6 @@ impl RebuildCommand {
 }
 
 struct BatchUpdates {
-    // states: BTreeMap<String, UpdateSet<KeyState, State>>,
     object_states: Vec<IndexedObjectState>,
     field_states: Vec<IndexedFieldState>,
 }

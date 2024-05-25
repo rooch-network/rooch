@@ -57,14 +57,27 @@ impl RoochStore {
         Ok(store)
     }
 
+    pub fn mock_store_instance(data_dir: Option<&Path>) -> StoreInstance {
+        let tmpdir = moveos_config::temp_dir();
+        let db_path = data_dir.unwrap_or(tmpdir.path());
+        StoreInstance::new_db_instance(
+            RocksDB::new(
+                db_path,
+                StoreMeta::get_column_family_names().to_vec(),
+                RocksdbConfig::default(),
+                None,
+            )
+            .unwrap(),
+        )
+    }
+
     //TODO implement a memory mock store
-    pub fn mock_rooch_store(data_dir: &Path) -> Result<Self> {
-        Self::new(StoreInstance::new_db_instance(RocksDB::new(
-            data_dir,
-            moveos_store::StoreMeta::get_column_family_names().to_vec(),
-            RocksdbConfig::default(),
-            None,
-        )?))
+    pub fn mock_rooch_store() -> Result<Self> {
+        Self::new(Self::mock_store_instance(None))
+    }
+
+    pub fn mock_rooch_store_with_data_dir(data_dir: &Path) -> Result<Self> {
+        Self::new(Self::mock_store_instance(Some(data_dir)))
     }
 
     pub fn get_transaction_store(&self) -> &TransactionDBStore {
@@ -89,7 +102,9 @@ impl Debug for RoochStore {
 
 impl TransactionStore for RoochStore {
     fn save_transaction(&mut self, tx: LedgerTransaction) -> Result<()> {
-        self.transaction_store.save_transaction(tx)
+        let sequencer_order = SequencerOrder::new(tx.sequence_info.tx_order);
+        self.transaction_store.save_transaction(tx)?;
+        self.meta_store.save_sequencer_order(sequencer_order)
     }
 
     fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<LedgerTransaction>> {

@@ -230,6 +230,7 @@ impl ExportCommand {
                 H256::from(obj.state_root.into_bytes()),
                 root_state_root,
                 obj.id,
+                false,
                 writer,
             )?;
         }
@@ -274,6 +275,7 @@ impl ExportCommand {
             state_root,
             root_state_root,
             object_id.clone(),
+            false,
             writer,
         )?;
 
@@ -300,6 +302,8 @@ impl ExportCommand {
         state_root: H256,
         parent_state_root: H256,
         object_id: ObjectID,
+        // export child object as object state under indexer mode
+        is_child_object_as_object_state: bool,
         writer: &mut Writer<W>,
     ) -> Result<()> {
         let starting_key = None;
@@ -320,6 +324,7 @@ impl ExportCommand {
                             H256::from(object.state_root.into_bytes()),
                             state_root,
                             object.id,
+                            false,
                             writer,
                         )?;
                     }
@@ -334,8 +339,13 @@ impl ExportCommand {
 
         // write csv header.
         {
+            let state_type = if is_child_object_as_object_state {
+                GLOBAL_STATE_TYPE_OBJECT
+            } else {
+                GLOBAL_STATE_TYPE_FIELD
+            };
             let export_id = ExportID::new(object_id.clone(), state_root, parent_state_root);
-            writer.write_field(GLOBAL_STATE_TYPE_FIELD)?;
+            writer.write_field(state_type)?;
             writer.write_field(export_id.to_string())?;
             writer.write_record(None::<&[u8]>)?;
         }
@@ -389,6 +399,7 @@ impl ExportCommand {
                 H256::from(obj.state_root.into_bytes()),
                 root_state_root,
                 obj.id,
+                true,
                 writer,
             )?;
         }

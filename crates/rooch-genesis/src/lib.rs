@@ -21,11 +21,15 @@ use rooch_framework::natives::gas_parameter::gas_member::{
     FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule,
 };
 use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
+use rooch_sequencer::actor::sequencer::SequencerActor;
+use rooch_store::transaction_store::TransactionStore;
+use rooch_store::RoochStore;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::error::GenesisError;
 use rooch_types::framework::genesis::GenesisContext;
 use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
 use rooch_types::transaction::rooch::RoochTransaction;
+use rooch_types::transaction::LedgerTxData;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::str::FromStr;
@@ -250,7 +254,11 @@ impl RoochGenesis {
         Ok(())
     }
 
-    pub fn init_genesis(&self, moveos_store: &mut MoveOSStore) -> Result<RootObjectEntity> {
+    pub fn init_genesis(
+        &self,
+        moveos_store: &mut MoveOSStore,
+        rooch_store: &mut RoochStore,
+    ) -> Result<RootObjectEntity> {
         //we load the gas parameter from genesis binary, avoid the code change affect the genesis result
         let genesis_gas_parameter = FrameworksGasParameters::load_from_gas_entries(
             self.initial_gas_config.max_gas_amount,
@@ -273,9 +281,24 @@ impl RoochGenesis {
             "Genesis state root mismatch"
         );
 
-        //TODO save the genesis txs to sequencer
         let tx_hash = self.genesis_tx().tx_hash();
         moveos_store.handle_tx_output(tx_hash, genesis_state_root, size, genesis_tx_output)?;
+
+        // Save the genesis txs to sequencer
+        let genesis_tx_order: u64 = 0;
+        let genesis_context = self
+            .genesis_moveos_tx()
+            .ctx
+            .get::<GenesisContext>()?
+            .expect("Genesis context should exist");
+        let tx_ledger_data = LedgerTxData::L2Tx(self.genesis_tx());
+        let ledger_tx = SequencerActor::build_ledger_transaction(
+            tx_ledger_data,
+            genesis_context.timestamp,
+            genesis_tx_order,
+            vec![],
+        )?;
+        rooch_store.save_transaction(ledger_tx)?;
 
         let genesis_info = GenesisInfo::new(self.genesis_hash(), inited_root.clone());
         moveos_store.get_config_store().save_genesis(genesis_info)?;
@@ -310,6 +333,7 @@ mod tests {
     use moveos_store::MoveOSStore;
     use moveos_types::moveos_std::move_module::ModuleStore;
     use moveos_types::state_resolver::{RootObjectResolver, StateResolver};
+    use rooch_store::RoochStore;
     use rooch_types::bitcoin::network::BitcoinNetwork;
     use rooch_types::rooch_network::RoochNetwork;
     use tracing::info;
@@ -323,8 +347,11 @@ mod tests {
             super::RoochGenesis::build(network.clone()).expect("build rooch genesis failed");
 
         let mut moveos_store = MoveOSStore::mock_moveos_store().unwrap();
+        let mut rooch_store = RoochStore::mock_rooch_store().unwrap();
 
-        let root = genesis.init_genesis(&mut moveos_store).unwrap();
+        let root = genesis
+            .init_genesis(&mut moveos_store, &mut rooch_store)
+            .unwrap();
 
         let resolver = RootObjectResolver::new(root, &moveos_store);
         let gas_parameter = FrameworksGasParameters::load_from_chain(&resolver)
