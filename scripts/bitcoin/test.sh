@@ -43,7 +43,7 @@ export RUST_BACKTRACE=1
 
 if [ ! -z "$UNIT_TEST" ]; then
   cargo run --bin rooch move test -p frameworks/bitcoin-move
-  cargo run --bin rooch move test -p frameworks/rooch-nursery bitseed
+  cargo run --bin rooch move test -p frameworks/rooch-nursery
 fi
 
 if [ ! -z "$INT_TEST" ]; then

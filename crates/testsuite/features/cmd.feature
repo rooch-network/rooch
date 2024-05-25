@@ -372,17 +372,14 @@ Feature: Rooch CLI integration tests
       Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].address}}"
       Then sleep: "10"
 
-      # query utxos and inscriptions
-      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x4::utxo::UTXO"}, null, "2", {"descending": true,"showDisplay":false}]'"
-      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x4::ord::Inscription"}, null, "2", {"descending": true,"showDisplay":false}]'"
-
       # Sync bitseed
       Then cmd: "move run --function default::bitseed_runner::run"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
-      # View mint generator validity
+      # Check mint generator validity
       Then cmd: "move view --function 0xa::bitseed::view_validity --args string:{{$.generator[-1].inscriptions[0].Id}} "
       Then assert: "{{$.move[-1].vm_status}} == Executed"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
 
       # release servers
       Then stop the server

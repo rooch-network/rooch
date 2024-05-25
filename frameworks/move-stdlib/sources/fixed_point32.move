@@ -292,4 +292,5 @@ module std::fixed_point32 {
     spec module {
         pragma aborts_if_is_strict;
     }
+    
 }

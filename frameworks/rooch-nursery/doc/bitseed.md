@@ -27,7 +27,6 @@
 
 
 <pre><code><b>use</b> <a href="">0x1::bcs</a>;
-<b>use</b> <a href="">0x1::debug</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
@@ -89,6 +88,15 @@
 
 
 <pre><code><b>const</b> <a href="bitseed.md#0xa_bitseed_BIT_SEED_DEPLOY">BIT_SEED_DEPLOY</a>: <a href="">vector</a>&lt;u8&gt; = [98, 105, 116, 115, 101, 101, 100, 95, 100, 101, 112, 108, 111, 121];
+</code></pre>
+
+
+
+<a name="0xa_bitseed_BIT_SEED_GENERATOR_TICK"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitseed.md#0xa_bitseed_BIT_SEED_GENERATOR_TICK">BIT_SEED_GENERATOR_TICK</a>: <a href="">vector</a>&lt;u8&gt; = [103, 101, 110, 101, 114, 97, 116, 111, 114];
 </code></pre>
 
 
@@ -163,7 +171,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_coin_info_generator">coin_info_generator</a>(self: &<a href="bitseed.md#0xa_bitseed_BitseedCoinInfo">bitseed::BitseedCoinInfo</a>): <a href="_InscriptionID">ord::InscriptionID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_coin_info_generator">coin_info_generator</a>(self: &<a href="bitseed.md#0xa_bitseed_BitseedCoinInfo">bitseed::BitseedCoinInfo</a>): <a href="_Option">option::Option</a>&lt;<a href="_InscriptionID">ord::InscriptionID</a>&gt;
 </code></pre>
 
 

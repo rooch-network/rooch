@@ -7,6 +7,7 @@
 // Source https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/sources/address.move
 
 module moveos_std::address {
+    use std::vector;
     use std::ascii;
     use std::option::{Self, Option};
     use moveos_std::bcs;
@@ -61,6 +62,8 @@ module moveos_std::address {
         };
 
         let bytes = option::destroy_some(opt_bytes);
+
+        vector::reverse(&mut bytes); // Convert little endian encoding to big endian
         bcs::from_bytes_option<address>(bytes)
     }
 

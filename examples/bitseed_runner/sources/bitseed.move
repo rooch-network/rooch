@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_examples::bitseed_runner {
-   use std::string;
    use moveos_std::object;
    use bitcoin_move::ord;
    use rooch_nursery::bitseed;
@@ -27,17 +26,10 @@ module rooch_examples::bitseed_runner {
       let latest_height = ord::inscription_latest_height();
       let current_index = runner.index;
 
-      std::debug::print(&string::utf8(b"bitseed_runner_run latest_height and current_index:"));
-      std::debug::print(&latest_height);
-      std::debug::print(&current_index);
-
       if (current_index < latest_height) {
          // get a Inscription by InscriptionId
          let inscription_id = ord::get_inscription_id_by_index(current_index);
          let inscription = ord::borrow_inscription_by_id(*inscription_id);
-
-         std::debug::print(&string::utf8(b"bitseed_runner process_inscription:"));
-         std::debug::print(inscription_id);
 
          bitseed::process_inscription(inscription);
 

@@ -1088,7 +1088,7 @@ module bitcoin_move::ord {
 
         // prepare test inscription
         let test_address = @0x5416690eaaf671031dc609ff8d36766d2eb91ca44f04c85c27628db330f40fd1;
-        let test_txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
+        let test_txid = @0x21da2ae8cc773b020b4873f597369416cf961a1896c24106b0198459fec2df77;
         let test_inscription_id = new_inscription_id_for_test(test_txid, 0);
 
         let content_type = b"application/wasm";
@@ -1163,7 +1163,8 @@ module bitcoin_move::ord {
             return option::none()
         };
 
-        let txid_option = address::from_ascii_string(option::extract(&mut ascii_txid_option));
+        let txid_hex_ascii = option::extract(&mut ascii_txid_option);
+        let txid_option = address::from_ascii_string(txid_hex_ascii);
         if (option::is_none(&txid_option)) {
             return option::none()
         };

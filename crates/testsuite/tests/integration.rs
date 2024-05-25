@@ -241,7 +241,7 @@ async fn run_cmd(world: &mut World, args: String) {
         Err(err) => {
             debug!("cmd: {} output err: {}", cmd_name, err.to_string());
             let err_msg = Value::String(err.to_string());
-            debug!("run_cli fail: {:?}", &err_msg);
+            error!("run_cli fail: {:?}", &err_msg);
 
             tpl_ctx.entry(cmd_name).append::<Value>(err_msg);
         }
@@ -378,10 +378,10 @@ async fn bitseed_run_cmd(w: &mut World, input_tpl: String) {
 
     let result_json = extract_json(&stdout_string);
     if let Ok(json_value) = result_json {
-        info!("cmd bitseed: {} output: {}", cmd_name, json_value);
+        debug!("cmd bitseed: {} output: {}", cmd_name, json_value);
         tpl_ctx.entry(cmd_name).append::<Value>(json_value);
     } else {
-        info!("result_json not ok!");
+        debug!("result_json not ok!");
     }
 
     debug!("current tpl_ctx: {:?}", tpl_ctx);

@@ -22,6 +22,7 @@ module rooch_nursery::bitseed {
 
     const BIT_SEED_DEPLOY: vector<u8> = b"bitseed_deploy";
     const BIT_SEED_MINT: vector<u8> = b"bitseed_mint";
+    const BIT_SEED_GENERATOR_TICK: vector<u8> = b"generator";
 
     friend rooch_nursery::genesis;
 
@@ -29,7 +30,7 @@ module rooch_nursery::bitseed {
 
     struct BitseedCoinInfo has store, copy, drop {
         tick: String,
-        generator: InscriptionID,
+        generator: Option<InscriptionID>,
         max: u64,
         repeat: u64,
         has_user_input: bool,
@@ -45,6 +46,19 @@ module rooch_nursery::bitseed {
         let bitseed_store = BitseedStore{
             coins: table::new(),
         };
+
+        // init built-in generator tick
+        let tick = string::utf8(BIT_SEED_GENERATOR_TICK);
+        let coin_info = BitseedCoinInfo{ 
+            tick: tick, 
+            generator: option::none(),
+            max: 1000000u64,
+            repeat: 0,
+            has_user_input: false,
+            deploy_args: option::none(),
+            supply: 0,
+        };
+        table::add(&mut bitseed_store.coins, tick, coin_info);
 
         let obj = object::new_named_object(bitseed_store);
         object::to_shared(obj);
@@ -84,7 +98,7 @@ module rooch_nursery::bitseed {
         self.tick
     }
 
-    public fun coin_info_generator(self: &BitseedCoinInfo): InscriptionID {
+    public fun coin_info_generator(self: &BitseedCoinInfo): Option<InscriptionID> {
         self.generator
     }
 
@@ -332,7 +346,7 @@ module rooch_nursery::bitseed {
 
         let coin_info = BitseedCoinInfo{ 
             tick, 
-            generator: inscription_id,
+            generator: option::some(inscription_id),
             max,
             repeat,
             has_user_input,
@@ -387,8 +401,13 @@ module rooch_nursery::bitseed {
             user_input = *option::borrow(&user_input_option);
         };
 
-        let generator_inscription_id = coin_info_generator(&coin_info);
+        let generator_inscription_id_option = coin_info_generator(&coin_info);
+        if (option::is_none(&generator_inscription_id_option)) {
+            simple_map::drop(attributes);
+            return (true, option::none<String>())
+        };
 
+        let generator_inscription_id = option::destroy_some(generator_inscription_id_option);
         if (!ord::exists_metaprotocol_validity(generator_inscription_id)) {
             simple_map::drop(attributes);
             return (false, option::some(std::string::utf8(b"generator_inscription_id is not validity bitseed")))
@@ -502,9 +521,6 @@ module rooch_nursery::bitseed {
         let index = ord::index(inscription);
         let inscription_id = ord::new_inscription_id(txid, index);
 
-        std::debug::print(&string::utf8(b"bitseed process_inscription inscription_id:"));
-        std::debug::print(&inscription_id);
-
         if (is_bitseed(inscription)) {
             let metadata_bytes = ord::metadata(inscription);
             let metadata = cbor::to_map(metadata_bytes);
@@ -549,28 +565,17 @@ module rooch_nursery::bitseed {
     }
 
     public fun view_validity(inscription_id_str: String) : Option<MetaprotocolValidity> {
-        std::debug::print(&string::utf8(b"view_validity 1 inscription_id_str:"));
-        std::debug::print(&inscription_id_str);
-
         let inscription_id_option = ord::parse_inscription_id(&inscription_id_str);
         if (option::is_none(&inscription_id_option)) {
             return option::none()
         };
-
-        std::debug::print(&string::utf8(b"view_validity 2 inscription_id_option:"));
-        std::debug::print(&inscription_id_option);
 
         let inscription_id = option::destroy_some(inscription_id_option);
         if (!ord::exists_metaprotocol_validity(inscription_id)) {
             return option::none()
         };
 
-        std::debug::print(&string::utf8(b"view_validity 3 inscription_id:"));
-        std::debug::print(&inscription_id);
-
         let validity = ord::borrow_metaprotocol_validity(inscription_id);
-        std::debug::print(&string::utf8(b"view_validity 4 validity:"));
-        std::debug::print(validity);
 
         option::some(*validity)
     }
@@ -751,27 +756,30 @@ module rooch_nursery::bitseed {
         assert!(tick == string::utf8(b"move"), 2);
 
         // check generator
-        let generator = coin_info_generator(&coin_info);
-        let test_txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
+        let generator_option = coin_info_generator(&coin_info);
+        assert!(option::is_some(&generator_option), 3);
+
+        let generator = option::destroy_some(generator_option);
+        let test_txid = @0x21da2ae8cc773b020b4873f597369416cf961a1896c24106b0198459fec2df77;
         let test_index = 0;
-        assert!(ord::inscription_id_txid(&generator) == test_txid, 3);
-        assert!(ord::inscription_id_index(&generator) == test_index, 4);
+        assert!(ord::inscription_id_txid(&generator) == test_txid, 4);
+        assert!(ord::inscription_id_index(&generator) == test_index, 5);
 
         // check max
         let max = coin_info_max(&coin_info);
-        assert!(max == 1u64, 5);
+        assert!(max == 1u64, 6);
 
         // check repeat
         let repeat = coin_info_repeat(&coin_info);
-        assert!(repeat == 0, 6);
+        assert!(repeat == 0, 7);
 
         // check has_user_input
         let has_user_input = coin_info_has_user_input(&coin_info);
-        assert!(!has_user_input, 7);
+        assert!(!has_user_input, 8);
 
         // check deploy_args
         let deploy_args = coin_info_deploy_args_option(&coin_info);
-        assert!(option::is_none(&deploy_args), 8)
+        assert!(option::is_none(&deploy_args), 9)
     }
 
     #[test_only]
