@@ -55,7 +55,7 @@ impl BitcoinRelayer {
             rpc_client,
             move_caller: executor,
             buffer: vec![],
-            sync_block_interval: sync_block_interval,
+            sync_block_interval,
             latest_sync_timestamp: 0u64,
             sync_to_latest: false,
         })
