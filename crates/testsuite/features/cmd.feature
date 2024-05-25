@@ -337,31 +337,46 @@ Feature: Rooch CLI integration tests
 
     @serial
     Scenario: rooch bitseed test
+      Then cmd: "init --skip-password"
+      Then cmd: "env switch --alias local"
+
       # prepare servers
-      #Given a bitcoind server for rooch_bitseed_test
-      #Given a ord server for rooch_bitseed_test
-      #Given a server for rooch_bitseed_test
+      Given a bitcoind server for rooch_bitseed_test
+      Given a ord server for rooch_bitseed_test
+      Given a server for rooch_bitseed_test
+
+      # create rooch account
+      Then cmd: "account create"
+      Then cmd: "account list"
 
       # init wallet
-      #Then cmd ord: "wallet create"
-      #Then cmd ord: "wallet receive"
+      Then cmd ord: "wallet create"
+      Then cmd ord: "wallet receive"
 
       # mint utxos
-      #Then cmd bitcoin-cli: "generatetoaddress 101 {{$.wallet[-1].address}}"
-      #Then sleep: "10" # wait ord sync and index
-      #Then cmd ord: "wallet balance"
-      #Then assert: "{{$.wallet[-1].total}} == 5000000000"
+      Then cmd bitcoin-cli: "generatetoaddress 101 {{$.wallet[-1].address}}"
+      Then sleep: "10" # wait ord sync and index
+      Then cmd ord: "wallet balance"
+      Then assert: "{{$.wallet[-1].total}} == 5000000000"
+
+      # publish bitseed runner
+      Then cmd: "move publish -p ../../examples/bitseed_runner  --named-addresses rooch_examples=default"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # generator
-      #Then cmd bitseed: "generator --fee-rate 1 --name random --generator /app/test-data/generator.wasm"
-      #Then assert: "'{{$.generator[-1]}}' not_contains error"
+      Then cmd bitseed: "generator --fee-rate 1 --name random --generator /app/test-data/generator.wasm"
+      Then assert: "'{{$.generator[-1]}}' not_contains error"
 
       # mine a block
-      #Then cmd ord: "wallet receive"
-      #Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].address}}"
-      #Then sleep: "5"
+      Then cmd ord: "wallet receive"
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].address}}"
+      Then sleep: "10"
       
+      # Sync bitseed
+      Then cmd: "move run --function default::bitseed_runner::run"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
       # release servers
-      #Then stop the server
-      #Then stop the ord server 
-      #Then stop the bitcoind server 
+      Then stop the server
+      Then stop the ord server 
+      Then stop the bitcoind server 

@@ -4,7 +4,7 @@
 
 set -e
 
-while getopts "huia" opt; do
+while getopts "hubsa" opt; do
   case $opt in
     h)
       cat <<EOF

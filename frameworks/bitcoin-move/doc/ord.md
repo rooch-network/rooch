@@ -18,6 +18,7 @@
 -  [Function `new_inscription_id`](#0x4_ord_new_inscription_id)
 -  [Function `derive_inscription_id`](#0x4_ord_derive_inscription_id)
 -  [Function `get_inscription_id_by_index`](#0x4_ord_get_inscription_id_by_index)
+-  [Function `inscription_latest_height`](#0x4_ord_inscription_latest_height)
 -  [Function `exists_inscription`](#0x4_ord_exists_inscription)
 -  [Function `borrow_inscription`](#0x4_ord_borrow_inscription)
 -  [Function `spend_utxo`](#0x4_ord_spend_utxo)
@@ -282,6 +283,17 @@ How may blocks between halvings.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_get_inscription_id_by_index">get_inscription_id_by_index</a>(index: u64): &<a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_inscription_latest_height"></a>
+
+## Function `inscription_latest_height`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_inscription_latest_height">inscription_latest_height</a>(): u64
 </code></pre>
 
 

@@ -222,28 +222,25 @@ async fn run_cmd(world: &mut World, args: String) {
     args.push(config_dir.to_str().unwrap().to_string());
     let opts: RoochCli = RoochCli::parse_from(args);
     let ret = rooch::run_cli(opts).await;
+    
     match ret {
         Ok(output) => {
             let result_json = serde_json::from_str::<Value>(&output);
-            match result_json {
-                Ok(result_json) => {
-                    debug!(
-                        "cmd: {} output json: {:#}",
-                        cmd_name,
-                        result_json.to_string()
-                    );
-                    tpl_ctx.entry(cmd_name).append::<Value>(result_json);
-                }
-                Err(_err) => {
-                    debug!("cmd: {} output string: {}", cmd_name, output);
-                    let output = Value::String(output);
-                    tpl_ctx.entry(cmd_name).append::<Value>(output);
-                }
+            if result_json.is_ok() {
+                debug!("run_cli ok: {:?}", &result_json);
+
+                tpl_ctx
+                    .entry(cmd_name)
+                    .append::<Value>(result_json.unwrap());
+            } else {
+                debug!("run_cli ok: {:?}", &output);
             }
         }
         Err(err) => {
             debug!("cmd: {} output err: {}", cmd_name, err.to_string());
             let err_msg = Value::String(err.to_string());
+            debug!("run_cli fail: {:?}", &err_msg);
+
             tpl_ctx.entry(cmd_name).append::<Value>(err_msg);
         }
     }

@@ -155,6 +155,13 @@ module bitcoin_move::ord {
         table_vec::borrow(& store.inscriptions, index)
     }
 
+    public fun inscription_latest_height() : u64 {
+        let store_obj_id = object::named_object_id<InscriptionStore>();
+        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
+        let store = object::borrow_mut(store_obj);
+        table_vec::length(& store.inscriptions)
+    }
+
     fun record_to_inscription(txid: address, index: u32, input: u32, offset: u64, record: InscriptionRecord): Inscription{
         let parent = option::map(record.parent, |e| derive_inscription_id(e));
         Inscription{
