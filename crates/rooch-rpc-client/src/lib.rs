@@ -115,10 +115,7 @@ impl ModuleResolver for &Client {
     fn get_module(&self, id: &ModuleId) -> Result<Option<Vec<u8>>> {
         tokio::task::block_in_place(|| {
             Handle::current().block_on(async {
-                let mut states = self
-                    .rooch
-                    .get_states(AccessPath::module(*id.address(), id.name().to_owned()))
-                    .await?;
+                let mut states = self.rooch.get_states(AccessPath::module(id)).await?;
                 states
                     .pop()
                     .flatten()

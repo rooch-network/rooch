@@ -8,11 +8,11 @@ module test::m {
 //# run --signers test
 script {
     use std::string::{Self};
-    use moveos_std::move_module;
+    use moveos_std::module_store;
 
     fun main() {
         let module_store = borrow_module_store();
-        assert!(move_module::exists_module(module_store, @moveos_std, string::utf8(b"move_module")), 0);
-        assert!(move_module::exists_module(module_store, @test, string::utf8(b"m")), 1);
+        assert!(module_store::exists_module(module_store, @moveos_std, string::utf8(b"module_store")), 0);
+        assert!(module_store::exists_module(module_store, @test, string::utf8(b"m")), 1);
     }
 }

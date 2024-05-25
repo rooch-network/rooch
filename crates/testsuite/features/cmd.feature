@@ -133,7 +133,7 @@ Feature: Rooch CLI integration tests
     Then assert: "{{$.rpc[-1].data[0].object_type}} == 0x3::coin::CoinInfo"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
-    Then cmd: "rpc request --method rooch_queryFieldStates --params '[{"object_id":"0x3"}, null, "10", {"descending": true,"showDisplay":false}]'"
+    Then cmd: "rpc request --method rooch_queryFieldStates --params '[{"object_id":"{{$.address_mapping.default}}"}, null, "10", {"descending": true,"showDisplay":false}]'"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
 #    Then cmd: "rpc request --method rooch_syncStates --params '[null, null, "2", false]'"
@@ -154,9 +154,9 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].vm_status}} == Executed"
       Then assert: "{{$.move[-1].return_values[0].decoded_value}} == value1"
       #the access-path argument do not support named address yet, so, we use `{{$.address_mapping.default}}` template var to repleace it.
-      Then cmd: "state --access-path /resource/{{$.address_mapping.default}}/{{$.address_mapping.default}}::kv_store::KVStore
-      Then cmd: "state --access-path /table/{{$.state[-1][0].decoded_value.value.table.value.handle}}/key1"
-      Then assert: "{{$.state[-1][0].decoded_value}} == "value1""
+      Then cmd: "state --access-path /resource/{{$.address_mapping.default}}/{{$.address_mapping.default}}::kv_store::KVStore"
+      Then cmd: "state --access-path /fields/{{$.state[-1][0].decoded_value.value.table.value.handle.value.id}}/key1"
+      Then assert: "{{$.state[-1][0].decoded_value}} == value1"
 
 
       Then stop the server

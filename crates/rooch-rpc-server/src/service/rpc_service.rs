@@ -102,12 +102,7 @@ impl RpcService {
     }
 
     pub async fn exists_module(&self, module_id: ModuleId) -> Result<bool> {
-        let mut resp = self
-            .get_states(AccessPath::module(
-                *module_id.address(),
-                module_id.name().into(),
-            ))
-            .await?;
+        let mut resp = self.get_states(AccessPath::module(&module_id)).await?;
         Ok(resp.pop().flatten().is_some())
     }
 

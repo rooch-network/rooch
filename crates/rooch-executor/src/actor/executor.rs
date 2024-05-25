@@ -31,6 +31,7 @@ use rooch_types::framework::transaction_validator::TransactionValidator;
 use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
 use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::{AuthenticatorInfo, L1Block, L1BlockWithBody, RoochTransaction};
+use tracing::{debug, warn};
 
 pub struct ExecutorActor {
     root: RootObjectEntity,
@@ -158,48 +159,68 @@ impl ExecutorActor {
         }
     }
 
-    pub fn validate_l2_tx(&self, tx: RoochTransaction) -> Result<VerifiedMoveOSTransaction> {
+    pub fn validate_l2_tx(&self, mut tx: RoochTransaction) -> Result<VerifiedMoveOSTransaction> {
+        debug!("executor validate_l2_tx: {:?}", tx.tx_hash());
         let sender = tx.sender();
+        let tx_hash = tx.tx_hash();
 
-        let authenticator = tx.authenticator_info()?;
+        let authenticator = tx.authenticator_info();
 
         let mut moveos_tx: MoveOSTransaction = tx.into_moveos_transaction(self.root.clone());
+        let result = self.validate_authenticator(&moveos_tx.ctx, authenticator);
+        match result {
+            Ok(vm_result) => match vm_result {
+                Ok((
+                    tx_validate_result,
+                    multi_chain_address,
+                    pre_execute_functions,
+                    post_execute_functions,
+                )) => {
+                    // Add the original multichain address to the context
+                    moveos_tx
+                        .ctx
+                        .add(multi_chain_address.unwrap_or(sender.into()))
+                        .expect("add sender to context failed");
 
-        let vm_result = self.validate_authenticator(&moveos_tx.ctx, authenticator)?;
+                    // Add the tx_validate_result to the context
+                    moveos_tx
+                        .ctx
+                        .add(tx_validate_result)
+                        .expect("add tx_validate_result failed");
 
-        match vm_result {
-            Ok((
-                tx_validate_result,
-                multi_chain_address,
-                pre_execute_functions,
-                post_execute_functions,
-            )) => {
-                // Add the original multichain address to the context
-                moveos_tx
-                    .ctx
-                    .add(multi_chain_address.unwrap_or(sender.into()))
-                    .expect("add sender to context failed");
-
-                // Add the tx_validate_result to the context
-                moveos_tx
-                    .ctx
-                    .add(tx_validate_result)
-                    .expect("add tx_validate_result failed");
-
-                moveos_tx.append_pre_execute_functions(pre_execute_functions);
-                moveos_tx.append_post_execute_functions(post_execute_functions);
-                Ok(self.moveos().verify(moveos_tx)?)
-            }
+                    moveos_tx.append_pre_execute_functions(pre_execute_functions);
+                    moveos_tx.append_post_execute_functions(post_execute_functions);
+                    let verify_result = self.moveos.verify(moveos_tx);
+                    match verify_result {
+                        Ok(verified_tx) => Ok(verified_tx),
+                        Err(e) => {
+                            log::warn!(
+                                "transaction verify vm error, tx_hash: {}, error:{:?}",
+                                tx_hash,
+                                e
+                            );
+                            Err(e.into())
+                        }
+                    }
+                }
+                Err(e) => {
+                    let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
+                    let status_view = explain_vm_status(&resolver, e.clone())?;
+                    warn!(
+                        "transaction validate vm error, tx_hash: {}, error:{:?}",
+                        tx_hash, status_view,
+                    );
+                    //TODO how to return the vm status to rpc client.
+                    Err(e.into())
+                }
+            },
             Err(e) => {
-                let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
-                let status_view = explain_vm_status(&resolver, e.clone())?;
                 log::warn!(
-                    "transaction validate vm error, tx_hash: {}, error:{:?}",
-                    moveos_tx.ctx.tx_hash(),
-                    status_view,
+                    "transaction validate error, tx_hash: {}, error:{:?}",
+                    tx_hash,
+                    e
                 );
-                //TODO how to return the vm status to rpc client.
-                Err(e.into())
+                Err(e)
             }
         }
     }

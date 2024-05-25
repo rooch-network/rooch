@@ -24,7 +24,7 @@ use testcontainers::{
     core::{Container, ExecCommand, WaitFor},
     RunnableImage,
 };
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, trace};
 use uuid::Uuid;
 
 const RPC_USER: &str = "roochuser";
@@ -222,23 +222,32 @@ async fn run_cmd(world: &mut World, args: String) {
     args.push(config_dir.to_str().unwrap().to_string());
     let opts: RoochCli = RoochCli::parse_from(args);
     let ret = rooch::run_cli(opts).await;
-    debug!("run_cli result: {:?}", ret);
     match ret {
         Ok(output) => {
             let result_json = serde_json::from_str::<Value>(&output);
-
-            if result_json.is_ok() {
-                tpl_ctx
-                    .entry(cmd_name)
-                    .append::<Value>(result_json.unwrap());
+            match result_json {
+                Ok(result_json) => {
+                    debug!(
+                        "cmd: {} output json: {:#}",
+                        cmd_name,
+                        result_json.to_string()
+                    );
+                    tpl_ctx.entry(cmd_name).append::<Value>(result_json);
+                }
+                Err(_err) => {
+                    debug!("cmd: {} output string: {}", cmd_name, output);
+                    let output = Value::String(output);
+                    tpl_ctx.entry(cmd_name).append::<Value>(output);
+                }
             }
         }
         Err(err) => {
+            debug!("cmd: {} output err: {}", cmd_name, err.to_string());
             let err_msg = Value::String(err.to_string());
             tpl_ctx.entry(cmd_name).append::<Value>(err_msg);
         }
     }
-    debug!("current tpl_ctx: {:?}", tpl_ctx);
+    trace!("current tpl_ctx: {:#}", tpl_ctx.as_value());
 }
 
 #[then(regex = r#"cmd ord bash: "(.*)?""#)]

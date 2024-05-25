@@ -158,7 +158,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             FunctionId::new(
                 ModuleId::new(
                     MOVEOS_STD_ADDRESS,
-                    Identifier::new("move_module".to_owned()).unwrap(),
+                    Identifier::new("module_store".to_owned()).unwrap(),
                 ),
                 Identifier::new("publish_modules_entry".to_owned()).unwrap(),
             ),

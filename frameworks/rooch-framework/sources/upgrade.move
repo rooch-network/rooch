@@ -8,7 +8,7 @@ module rooch_framework::upgrade {
     use moveos_std::event;
     
     use moveos_std::account::create_signer_for_system;
-    use moveos_std::move_module;
+    use moveos_std::module_store;
     use rooch_framework::onchain_config;
 
     const ErrorNotSequencer: u64 = 1;
@@ -34,16 +34,16 @@ module rooch_framework::upgrade {
 
         let system = module_signer<FrameworkUpgradeEvent>();
         let std_signer = create_signer_for_system(&system, MoveStdAccount);
-        move_module::publish_modules_entry(&std_signer, move_std_bundles);
+        module_store::publish_modules_entry(&std_signer, move_std_bundles);
 
         let moveos_std_signer = create_signer_for_system(&system, MoveosStdAccount);
-        move_module::publish_modules_entry(&moveos_std_signer, moveos_std_bundles);
+        module_store::publish_modules_entry(&moveos_std_signer, moveos_std_bundles);
 
         let framework_signer = create_signer_for_system(&system, RoochFrameworkAccount);
-        move_module::publish_modules_entry(&framework_signer, rooch_framework_bundles);
+        module_store::publish_modules_entry(&framework_signer, rooch_framework_bundles);
 
         let bitcoin_move_signer = create_signer_for_system(&system, BitcoinMoveAccount);
-        move_module::publish_modules_entry(&bitcoin_move_signer, bitcoin_move_bundles);
+        module_store::publish_modules_entry(&bitcoin_move_signer, bitcoin_move_bundles);
 
         onchain_config::update_framework_version();
         event::emit<FrameworkUpgradeEvent>(FrameworkUpgradeEvent { version: onchain_config::framework_version() });

@@ -13,7 +13,7 @@ module moveos_std::object {
     use moveos_std::address;
 
     friend moveos_std::account;
-    friend moveos_std::move_module;
+    friend moveos_std::module_store;
     friend moveos_std::event;
     friend moveos_std::table;
     friend moveos_std::type_table;
