@@ -44,10 +44,7 @@ impl BitcoinRelayer {
     ) -> Result<Self> {
         let bitcoin_module = executor.as_module_binding::<BitcoinModule>();
         let genesis_block_height = bitcoin_module.get_genesis_block_height()?;
-        let sync_block_interval = match config.btc_sync_block_interval {
-            Some(value) => value,
-            None => 60u64,
-        };
+        let sync_block_interval = config.btc_sync_block_interval.unwrap_or(60u64);
 
         Ok(Self {
             genesis_block_height,
