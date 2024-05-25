@@ -68,6 +68,7 @@ module rooch_framework::account_authentication {
       }
    }
 
+   // TODO: do we need to remove it for resource account?
    #[private_generics(ValidatorType)]
    /// This function is used to rotate a resource account's authentication key, only the module which define the `ValidatorType` can call this function.
    public fun rotate_authentication_key<ValidatorType>(account_addr: address, new_auth_key: vector<u8>) {
@@ -96,6 +97,7 @@ module rooch_framework::account_authentication {
       };
    }
 
+   // TODO: do we need to remove it for resource account?
    #[private_generics(ValidatorType)]
    /// This function is used to remove a resource account's authentication key, only the module which define the `ValidatorType` can call this function.
    public fun remove_authentication_key<ValidatorType>(account_addr: address): AuthenticationKey<ValidatorType> {

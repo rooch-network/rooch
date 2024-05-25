@@ -8,15 +8,17 @@ module rooch_examples::rooch_examples {
     use std::signer;
     use std::string::{Self, String};
     use std::vector;
-    use moveos_std::account;
-    use moveos_std::account::AccountHolder;
 
+    use moveos_std::account;
     use moveos_std::event::Self;
     use moveos_std::simple_map::{Self, SimpleMap};
-
+    use moveos_std::type_table::key;
     use moveos_std::object;
+    use moveos_std::object::ObjectID;
+
     use rooch_framework::coin;
     use rooch_framework::account_coin_store;
+
     use rooch_examples::timestamp;
 
     #[test_only]
@@ -29,15 +31,20 @@ module rooch_examples::rooch_examples {
     const DECISION_SPLIT: u64 = 1;
     const DECISION_STEAL: u64 = 2;
 
-    const ErrorStateIsNotInitialized: u64 = 0;
-    const ErrorSignerIsNotDeployer: u64 = 1;
-    const ErrorSignerHasInsufficientAptBalance: u64 = 2;
-    const ErrorGameDoesNotExist: u64 = 3;
-    const ErrorPlayerDoesNotParticipateInTheGame: u64 = 4;
-    const ErrorIncorrectHashValue: u64 = 5;
-    const ErrorGameNotExpiredYet: u64 = 6;
-    const ErrorBothPlayersDoNotHaveDecisionsSubmitted: u64 = 7;
-    const ErrorPlayerHasDecisionSubmitted: u64 = 8;
+    const ErrorResourceAccountIsNotInitialized: u64 = 0;
+    const ErrorStateIsNotInitialized: u64 = 1;
+    const ErrorSignerIsNotDeployer: u64 = 2;
+    const ErrorSignerHasInsufficientAptBalance: u64 = 3;
+    const ErrorGameDoesNotExist: u64 = 4;
+    const ErrorPlayerDoesNotParticipateInTheGame: u64 = 5;
+    const ErrorIncorrectHashValue: u64 = 6;
+    const ErrorGameNotExpiredYet: u64 = 7;
+    const ErrorBothPlayersDoNotHaveDecisionsSubmitted: u64 = 8;
+    const ErrorPlayerHasDecisionSubmitted: u64 = 9;
+
+    struct ResourceAccount has key {
+        sequence_number: u64,
+    }
 
     struct State has key, store {
         next_game_id: u128,
@@ -101,18 +108,30 @@ module rooch_examples::rooch_examples {
     }
 
     fun init(account: &signer) {
+        // Get address of account
         let account_address = signer::address_of(account);
-        account::create_account_holder_object(account_address);
-        let account_holder_obj = account::borrow_mut_account_holder(account_address);
+        // Get the account object id
+        let account_obj_id = account::account_object_id(account_address);
+        // Create a resource account object with account object id
+        let account_obj = object::new_with_id<ObjectID, ResourceAccount>(account_obj_id, ResourceAccount { sequence_number: 0 });
+        // Store the resource account object in the account
+        object::transfer_extend(account_obj, account_address);
+        // Register and mint WGBCOIN
         let coin_info = coin::register_extend<WGBCOIN>(string::utf8(b"WGBCOIN"),string::utf8(b"WGB"), 8);
         let coin = coin::mint_extend<WGBCOIN>(&mut coin_info, 1000 * 1000 * 1000);
         account_coin_store::do_accept_coin<WGBCOIN>(account);
         account_coin_store::deposit_extend(account_address, coin);
+        // Store the coin info object in the account
         object::transfer(coin_info, account_address);
-        account::account_holder_move_resource_to(account_holder_obj, State {
+        // Initialize the state object
+        let state = State {
             next_game_id: 0,
             games: simple_map::create()
-        });
+        };
+        // Get the mutable account object
+        let account_mut_obj = object::borrow_mut_object_extend<ResourceAccount>(account::account_object_id(account_address));
+        // Move the state object into the resource account object
+        object::add_field(account_mut_obj, key<State>(), state)
     }
 
     public entry fun create_game(
@@ -124,9 +143,9 @@ module rooch_examples::rooch_examples {
         let account_address = check_if_state_exists(account);
         let now = timestamp::now_seconds();
         check_if_signer_is_contract_deployer(account);
-        let account_holder = account::borrow_mut_account_holder(account_address);
+        let account_obj = object::borrow_mut_object_extend<ResourceAccount>(account::account_object_id(account_address));
         let next_game_id = {
-            let state_mut_ref = account::account_holder_borrow_mut_resource<State>(account_holder);
+            let state_mut_ref = object::borrow_mut_field<ResourceAccount, std::ascii::String, State>(account_obj, key<State>());
             get_next_game_id(&mut state_mut_ref.next_game_id)
         };
 
@@ -147,7 +166,7 @@ module rooch_examples::rooch_examples {
             expiration_timestamp_in_seconds: EXPIRATION_TIME_IN_SECONDS + now,
         };
         {
-            let state_mut_ref = account::account_holder_borrow_mut_resource<State>(account_holder);
+            let state_mut_ref = object::borrow_mut_field<ResourceAccount, std::ascii::String, State>(account_obj, key<State>());
             simple_map::add(&mut state_mut_ref.games, next_game_id, new_game);
         };
         account_coin_store::transfer<WGBCOIN>(account, account_address, prize_pool_amount);
@@ -171,8 +190,8 @@ module rooch_examples::rooch_examples {
     ) {
         let player_address = check_if_state_exists(player);
         let now = timestamp::now_seconds();
-        let account_holder = account::borrow_mut_account_holder(player_address);
-        let state_mut_ref = account::account_holder_borrow_mut_resource<State>(account_holder);
+        let account_obj = object::borrow_mut_object_extend<ResourceAccount>(account::account_object_id(player_address));
+        let state_mut_ref = object::borrow_mut_field<ResourceAccount, std::ascii::String, State>(account_obj, key<State>());
         check_if_game_exists(&state_mut_ref.games, &game_id);
         let game_mut_ref = simple_map::borrow_mut(&mut state_mut_ref.games, &game_id);
         check_if_player_participates_in_the_game(player, game_mut_ref);
@@ -204,9 +223,9 @@ module rooch_examples::rooch_examples {
     ) {
         let player_address = check_if_state_exists(player);
         let now = timestamp::now_seconds();
-        let account_holder = account::borrow_mut_account_holder(player_address);
+        let account_obj = object::borrow_mut_object_extend<ResourceAccount>(account::account_object_id(player_address));
         let (game_id, decision) = {
-            let state_mut_ref = account::account_holder_borrow_mut_resource<State>(account_holder);
+            let state_mut_ref = object::borrow_mut_field<ResourceAccount, std::ascii::String, State>(account_obj, key<State>());
 
             check_if_game_exists(&state_mut_ref.games, &game_id);
             let game_mut_ref = simple_map::borrow_mut(&mut state_mut_ref.games, &game_id);
@@ -272,9 +291,9 @@ module rooch_examples::rooch_examples {
     public entry fun release_funds_after_expiration(account: &signer, game_id: u128) {
         let account_address = check_if_state_exists(account);
         let now = timestamp::now_seconds();
-        let account_holder = account::borrow_mut_account_holder(account_address);
+        let account_obj = object::borrow_mut_object_extend<ResourceAccount>(account::account_object_id(account_address));
         let game = {
-            let state_mut_ref = account::account_holder_borrow_mut_resource<State>(account_holder);
+            let state_mut_ref = object::borrow_mut_field<ResourceAccount, std::ascii::String, State>(account_obj, key<State>());
             check_if_game_exists(&state_mut_ref.games, &game_id);
 
             let (_, game) = simple_map::remove(&mut state_mut_ref.games, &game_id);
@@ -347,9 +366,9 @@ module rooch_examples::rooch_examples {
 
     fun check_if_state_exists(signer: &signer): address {
         let signer_address = signer::address_of(signer);
-        let account_holder = account::borrow_mut_account_holder(signer_address);
-        assert!(account::account_holder_exists_resource<AccountHolder>(account_holder), ErrorStateIsNotInitialized);
-        assert!(account::account_holder_exists_resource<State>(account_holder), ErrorStateIsNotInitialized);
+        let account_obj = object::borrow_object<ResourceAccount>(account::account_object_id(signer_address));
+        assert!(object::contains_field(account_obj, key<ResourceAccount>()), ErrorResourceAccountIsNotInitialized);
+        assert!(object::contains_field(account_obj, key<State>()), ErrorStateIsNotInitialized);
         signer_address
     }
 
@@ -409,6 +428,8 @@ module rooch_examples::rooch_examples {
 
     #[test]
     fun test_init() {
+        use rooch_framework::account as account_entry;
+
         genesis::init_for_test();
         
 
@@ -428,6 +449,8 @@ module rooch_examples::rooch_examples {
     #[test]
     #[expected_failure(abort_code = 6, location = moveos_std::account)]
     fun test_init_again() {
+        use rooch_framework::account as account_entry;
+
         genesis::init_for_test();
         
         let account = &account_entry::create_account_for_testing(@rooch_examples);
@@ -441,9 +464,10 @@ module rooch_examples::rooch_examples {
 
     #[test]
     fun test_create_game() {
+        use rooch_framework::account as account_entry;
+
         genesis::init_for_test();
         
-        //let account = &account_entry::create_account_for_testing(moveos_std::tx_context::sender());
         let account = &account_entry::create_account_for_testing(@rooch_examples);
         let _move_os = &account_entry::create_account_for_testing(@moveos_std);
         timestamp::set_time_has_started_for_testing();
@@ -459,8 +483,9 @@ module rooch_examples::rooch_examples {
         timestamp::update_global_time_for_test_secs(10);
         create_game(account, prize_pool_amount, player_one_address, player_two_address);
 
-        let account_holder = account::borrow_mut_account_holder(account_address);
-        let state = account::account_holder_borrow_mut_resource<State>(account_holder);
+        let account_obj = object::borrow_mut_object_extend<ResourceAccount>(account::account_object_id(player_address));
+        let state = object::borrow_field<ResourceAccount, std::ascii::String, State>(account_obj, key<State>());
+
         assert!(state.next_game_id == 1, 0);
         assert!(simple_map::length(&state.games) == 1, 1);
         assert!(simple_map::contains_key(&state.games, &0), 2);
@@ -480,13 +505,13 @@ module rooch_examples::rooch_examples {
         assert!(game.player_two.decision == DECISION_NOT_MADE, 22);
 
         assert!(account_coin_store::balance<WGBCOIN>(account_address) == prize_pool_amount, 23);
-
-        
     }
 
 
     #[test]
     fun test_submit_decision() {
+        use rooch_framework::account as account_entry;
+
         genesis::init_for_test();
         
 
@@ -549,6 +574,8 @@ module rooch_examples::rooch_examples {
     #[test]
     #[expected_failure(abort_code = ErrorPlayerHasDecisionSubmitted, location = Self)]
     fun test_submit_decision_player_one_has_a_decision_submitted() {
+        use rooch_framework::account as account_entry;
+
         genesis::init_for_test();
         
 
@@ -585,6 +612,8 @@ module rooch_examples::rooch_examples {
 
     #[test]
     fun test_reveal_decision_split() {
+        use rooch_framework::account as account_entry;
+
         genesis::init_for_test();
         
 
@@ -677,6 +706,8 @@ module rooch_examples::rooch_examples {
 
     #[test]
     fun test_reveal_decision_player_one_steals() {
+        use rooch_framework::account as account_entry;
+
         genesis::init_for_test();
         
 
@@ -739,6 +770,8 @@ module rooch_examples::rooch_examples {
 
     #[test]
     fun test_reveal_decision_player_two_steals() {
+        use rooch_framework::account as account_entry;
+        
         genesis::init_for_test();
         
 
@@ -803,6 +836,8 @@ module rooch_examples::rooch_examples {
 
     #[test]
     fun test_reveal_decision_both_players_steal() {
+        use rooch_framework::account as account_entry;
+
         genesis::init_for_test();
         
 
@@ -868,6 +903,8 @@ module rooch_examples::rooch_examples {
     #[test]
     #[expected_failure(abort_code = ErrorBothPlayersDoNotHaveDecisionsSubmitted, location = Self)]
     fun test_reveal_decision_player_one_does_not_have_a_decision_submitted() {
+        use rooch_framework::account as account_entry;
+
         genesis::init_for_test();
         
 
@@ -908,6 +945,8 @@ module rooch_examples::rooch_examples {
 
     #[test]
     fun test_release_funds_after_expiration_transfer_to_creator() {
+        use rooch_framework::account as account_entry;
+
         genesis::init_for_test();
         
 
@@ -952,6 +991,8 @@ module rooch_examples::rooch_examples {
 
     #[test]
     fun test_release_funds_after_expiration_transfer_to_player_one() {
+        use rooch_framework::account as account_entry;
+        
         genesis::init_for_test();
         
 

@@ -2,11 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module moveos_std::account {
-   use std::hash;
-   use std::vector;
    use std::signer;
    use moveos_std::core_addresses;
-   use moveos_std::bcs;
    use moveos_std::type_table::{key};
    use moveos_std::object::{Self, ObjectID, Object};
 
@@ -14,11 +11,6 @@ module moveos_std::account {
    /// It is also used to store the account's resources
    struct Account has key {
       sequence_number: u64,
-   }
-
-   // Account holder holds an account of the resource
-   struct AccountHolder has key {
-      account: Object<Account>,
    }
 
    /// SignerCapability can only be stored in other structs, not under address.
@@ -75,13 +67,6 @@ module moveos_std::account {
       new_account
    }
 
-   fun create_account_holder_unchecked(new_address: address): signer {
-      let new_account = create_signer(new_address);
-
-      create_account_holder_object(new_address);
-      new_account
-   }
-
    /// create the account for system reserved addresses
    public fun create_system_reserved_account(system: &signer, addr: address): (signer, SignerCapability) {
       core_addresses::assert_system_reserved(system);
@@ -92,16 +77,6 @@ module moveos_std::account {
       let signer = create_account_unchecked(addr);
       let signer_cap = SignerCapability { addr };
       (signer, signer_cap)
-   }
-
-   /// This is a helper function to generate seed for resource address
-   fun generate_seed_bytes(addr: &address): vector<u8> {
-      let sequence_number = Self::sequence_number(*addr);
-
-      let seed_bytes = bcs::to_bytes(addr);
-      vector::append(&mut seed_bytes, bcs::to_bytes(&sequence_number));
-
-      hash::sha3_256(seed_bytes)
    }
 
    /// Return the current sequence number at `addr`
@@ -176,21 +151,9 @@ module moveos_std::account {
       object::transfer_extend(obj, account)
    }
 
-   // Create a new account holder object to hold the account
-   public fun create_account_holder_object(account: address) {
-      let object_id = object::address_to_object_id(account);
-      let account_obj = object::new_with_object_id(object_id, Account {sequence_number: 0});
-      let account_holder_obj = object::new_with_object_id(object_id, AccountHolder { account: account_obj });
-      object::transfer_extend(account_holder_obj, account)
-   }
-
    // === Account Object Functions
 
    public fun account_borrow_resource<T: key>(self: &Object<Account>): &T {
-      object::borrow_field_internal(object::id(self), key<T>())
-   }
-
-   public fun account_holder_borrow_resource<T: key>(self: &Object<AccountHolder>): &T {
       object::borrow_field_internal(object::id(self), key<T>())
    }
 
@@ -198,18 +161,9 @@ module moveos_std::account {
       object::borrow_mut_field_internal(object::id(self), key<T>())
    }
 
-   public fun account_holder_borrow_mut_resource<T: key>(self: &mut Object<AccountHolder>): &mut T {
-      object::borrow_mut_field_internal(object::id(self), key<T>())
-   }
-
    public fun account_move_resource_to<T: key>(self: &mut Object<Account>, resource: T){
       assert!(!object::contains_field(self, key<T>()), ErrorResourceAlreadyExists);
       object::add_field_internal<Account, std::ascii::String, T>(object::id(self), key<T>(), resource)
-   }
-
-   public fun account_holder_move_resource_to<T: key>(self: &mut Object<AccountHolder>, resource: T){
-      assert!(!object::contains_field(self, key<T>()), ErrorResourceAlreadyExists);
-      object::add_field_internal<AccountHolder, std::ascii::String, T>(object::id(self), key<T>(), resource)
    }
 
    public fun account_move_resource_from<T: key>(self: &mut Object<Account>): T {
@@ -221,10 +175,6 @@ module moveos_std::account {
       object::contains_field_internal(object::id(self), key<T>())
    }
 
-   public fun account_holder_exists_resource<T: key>(self: &Object<AccountHolder>) : bool {
-      object::contains_field_internal(object::id(self), key<T>())
-   }
-
    public(friend) fun transfer(obj: Object<Account>, account: address) {
       object::transfer_extend(obj, account);
    }
@@ -233,10 +183,6 @@ module moveos_std::account {
 
    public fun borrow_account(account: address): &Object<Account>{
       object::borrow_object<Account>(account_object_id(account))
-   }
-
-   public fun borrow_mut_account_holder(account: address): &mut Object<AccountHolder>{
-      object::borrow_mut_object_extend<AccountHolder>(account_object_id(account))
    }
 
    fun borrow_mut_account_internal(account: address): &mut Object<Account>{
