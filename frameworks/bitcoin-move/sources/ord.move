@@ -220,6 +220,13 @@ module bitcoin_move::ord {
         object::borrow_object(object_id)
     }
 
+    public fun borrow_inscription_by_id(id: InscriptionID): &Inscription {
+        let txid = inscription_id_txid(&id);
+        let index = inscription_id_index(&id);
+        let inscription_obj = borrow_inscription(txid, index);
+        object::borrow(inscription_obj)
+    }
+
     public fun spend_utxo(utxo_obj: &mut Object<UTXO>, tx: &Transaction, input_utxo_values: vector<u64>, input_index: u64): (vector<SatPoint>, vector<Flotsam>){
         let utxo = object::borrow_mut(utxo_obj);
 
@@ -392,8 +399,6 @@ module bitcoin_move::ord {
     }
 
     public fun process_transaction(tx: &Transaction, input_utxo_values: vector<u64>): vector<SatPoint>{
-        std::debug::print(&string::utf8(b"ord_process_transaction_start"));
-
         let sat_points = vector::empty();
 
         let inscriptions = from_transaction(tx, option::some(input_utxo_values));

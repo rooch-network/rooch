@@ -44,13 +44,18 @@ impl BitcoinRelayer {
     ) -> Result<Self> {
         let bitcoin_module = executor.as_module_binding::<BitcoinModule>();
         let genesis_block_height = bitcoin_module.get_genesis_block_height()?;
+        let sync_block_interval = match config.btc_sync_block_interval {
+            Some(value) => value,
+            None => 60u64,
+        };
+
         Ok(Self {
             genesis_block_height,
             end_block_height: config.btc_end_block_height,
             rpc_client,
             move_caller: executor,
             buffer: vec![],
-            sync_block_interval: 60u64,
+            sync_block_interval: sync_block_interval,
             latest_sync_timestamp: 0u64,
             sync_to_latest: false,
         })
@@ -66,6 +71,7 @@ impl BitcoinRelayer {
         {
             return Ok(());
         }
+
         self.latest_sync_timestamp = chrono::Utc::now().timestamp() as u64;
         let bitcoin_module = self.move_caller.as_module_binding::<BitcoinModule>();
         let latest_block_height_in_rooch = bitcoin_module.get_latest_block_height()?;

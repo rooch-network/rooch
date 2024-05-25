@@ -73,6 +73,8 @@ async fn start_server(w: &mut World, _scenario: String) {
             opt.btc_rpc_username = Some(RPC_USER.to_string());
             opt.btc_rpc_password = Some(RPC_PASS.to_string());
             opt.data_import_flag = false; // Enable data import without writing indexes
+            opt.btc_sync_block_interval = Some(1u64); // Update sync interval as 1s
+
             info!("config btc rpc ok");
 
             w.bitcoind = Some(bitcoind);
@@ -376,10 +378,10 @@ async fn bitseed_run_cmd(w: &mut World, input_tpl: String) {
 
     let result_json = extract_json(&stdout_string);
     if let Ok(json_value) = result_json {
-        debug!("cmd bitseed: {} output: {}", cmd_name, json_value);
+        info!("cmd bitseed: {} output: {}", cmd_name, json_value);
         tpl_ctx.entry(cmd_name).append::<Value>(json_value);
     } else {
-        debug!("result_json not ok!");
+        info!("result_json not ok!");
     }
 
     debug!("current tpl_ctx: {:?}", tpl_ctx);

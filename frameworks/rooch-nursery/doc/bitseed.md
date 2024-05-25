@@ -23,9 +23,11 @@
 -  [Function `coin_info_supply`](#0xa_bitseed_coin_info_supply)
 -  [Function `inscribe_verify`](#0xa_bitseed_inscribe_verify)
 -  [Function `process_inscription`](#0xa_bitseed_process_inscription)
+-  [Function `view_validity`](#0xa_bitseed_view_validity)
 
 
 <pre><code><b>use</b> <a href="">0x1::bcs</a>;
+<b>use</b> <a href="">0x1::debug</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
@@ -250,4 +252,15 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_process_inscription">process_inscription</a>(inscription: &<a href="_Inscription">ord::Inscription</a>)
+</code></pre>
+
+
+
+<a name="0xa_bitseed_view_validity"></a>
+
+## Function `view_validity`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_view_validity">view_validity</a>(inscription_id_str: <a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="_MetaprotocolValidity">ord::MetaprotocolValidity</a>&gt;
 </code></pre>

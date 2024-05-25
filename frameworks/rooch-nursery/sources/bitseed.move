@@ -17,7 +17,7 @@ module rooch_nursery::bitseed {
     use moveos_std::cbor;
 
     use bitcoin_move::types;
-    use bitcoin_move::ord::{Self, Inscription, InscriptionID};
+    use bitcoin_move::ord::{Self, Inscription, InscriptionID, MetaprotocolValidity};
     use bitcoin_move::bitcoin;
 
     const BIT_SEED_DEPLOY: vector<u8> = b"bitseed_deploy";
@@ -502,6 +502,9 @@ module rooch_nursery::bitseed {
         let index = ord::index(inscription);
         let inscription_id = ord::new_inscription_id(txid, index);
 
+        std::debug::print(&string::utf8(b"bitseed process_inscription inscription_id:"));
+        std::debug::print(&inscription_id);
+
         if (is_bitseed(inscription)) {
             let metadata_bytes = ord::metadata(inscription);
             let metadata = cbor::to_map(metadata_bytes);
@@ -545,6 +548,32 @@ module rooch_nursery::bitseed {
         }
     }
 
+    public fun view_validity(inscription_id_str: String) : Option<MetaprotocolValidity> {
+        std::debug::print(&string::utf8(b"view_validity 1 inscription_id_str:"));
+        std::debug::print(&inscription_id_str);
+
+        let inscription_id_option = ord::parse_inscription_id(&inscription_id_str);
+        if (option::is_none(&inscription_id_option)) {
+            return option::none()
+        };
+
+        std::debug::print(&string::utf8(b"view_validity 2 inscription_id_option:"));
+        std::debug::print(&inscription_id_option);
+
+        let inscription_id = option::destroy_some(inscription_id_option);
+        if (!ord::exists_metaprotocol_validity(inscription_id)) {
+            return option::none()
+        };
+
+        std::debug::print(&string::utf8(b"view_validity 3 inscription_id:"));
+        std::debug::print(&inscription_id);
+
+        let validity = ord::borrow_metaprotocol_validity(inscription_id);
+        std::debug::print(&string::utf8(b"view_validity 4 validity:"));
+        std::debug::print(validity);
+
+        option::some(*validity)
+    }
 
     #[test_only]
     struct TestProtocol has key {}

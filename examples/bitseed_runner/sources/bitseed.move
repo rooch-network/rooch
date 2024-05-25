@@ -4,8 +4,6 @@
 module rooch_examples::bitseed_runner {
    use std::string;
    use moveos_std::object;
-
-   use bitcoin_move::ord::{InscriptionID, Inscription};
    use bitcoin_move::ord;
    use rooch_nursery::bitseed;
 
@@ -36,12 +34,11 @@ module rooch_examples::bitseed_runner {
       if (current_index < latest_height) {
          // get a Inscription by InscriptionId
          let inscription_id = ord::get_inscription_id_by_index(current_index);
-         let object_id = object::custom_object_id<InscriptionID, Inscription>(*inscription_id);
-         let inscription_obj = object::borrow_object<Inscription>(object_id);
-         let inscription = object::borrow(inscription_obj);
+         let inscription = ord::borrow_inscription_by_id(*inscription_id);
 
-         std::debug::print(&string::utf8(b"bitseed_runner_run inscription:"));
-         std::debug::print(inscription);
+         std::debug::print(&string::utf8(b"bitseed_runner process_inscription:"));
+         std::debug::print(inscription_id);
+
          bitseed::process_inscription(inscription);
 
          runner.index = current_index + 1;
