@@ -336,8 +336,8 @@ mod tests {
     use moveos_store::MoveOSStore;
     use moveos_types::moveos_std::module_store::{ModuleStore, Package};
     use moveos_types::state_resolver::{RootObjectResolver, StateResolver};
-    use rooch_store::RoochStore;
     use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
+    use rooch_store::RoochStore;
     use rooch_types::bitcoin::network::BitcoinNetwork;
     use rooch_types::rooch_network::RoochNetwork;
     use tracing::info;
