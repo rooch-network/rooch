@@ -9,7 +9,7 @@ import {
 import {useState} from "react";
 
 // Your publish counter contract address
-const devCounterAddress = "0xb7ac336861ff431cf867400a1eaa9708b5666954b5268486e6bd2e948aab1a42"
+const devCounterAddress = ""
 const devCounterModule = `${devCounterAddress}::counter`
 
 function App() {
