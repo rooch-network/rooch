@@ -1,33 +1,39 @@
 {
   "name": "@roochnetwork/create-rooch",
-  "version": "0.0.6",
+  "version": "0.1.0",
   "description": "Create a new Rooch project",
   "license": "Apache-2.0",
   "author": "Rooch.network <opensource@rooch.network>",
   "bin": {
-    "rooch": "dist/index.js"
+    "rooch": "./bin/index.js"
   },
-  "files": ["dist"],
+  "files": ["dist", "bin"],
+  "type": "commonjs",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/cjs/index.d.ts",
   "scripts": {
     "build": "pnpm run build:js",
-    "build:js": "tsup && ./scripts/copy-templates.sh",
-    "clean": "pnpm run clean:js",
-    "clean:js": "rimraf dist",
-    "dev": "tsup --watch",
-    "prepublishOnly": "npm run clean && npm run build",
-    "test": "pnpm run test:react",
-    "test:ci": "pnpm run test",
-    "test:react": "dist/cli.js test-project --template react && rimraf test-project"
+    "build:js": "tsc --build && ./scripts/copy-templates.sh",
+    "clean": "rm -rf tsconfig.tsbuildinfo ./dist",
+    "prepublishOnly": "pnpm build",
+    "prettier:check": "prettier -c --ignore-unknown .",
+    "prettier:fix": "prettier -w --ignore-unknown .",
+    "eslint:check": "eslint --max-warnings=0 .",
+    "eslint:fix": "pnpm run eslint:check --fix",
+    "lint": "pnpm run eslint:check && pnpm run prettier:check",
+    "lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix"
   },
   "dependencies": {
-    "create-create-app": "git+https://github.com/holic/create-create-app#74376c59b48a04aabbe94d9cacfe9cb1cecccd63"
+    "typescript": "^5.1.6"
   },
   "devDependencies": {
     "@types/node": "^18.15.13",
-    "tsup": "^6.7.0"
+    "enquirer": "^2.4.1"
   },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"
-  }
+  },
+  "sideEffects": false
 }
