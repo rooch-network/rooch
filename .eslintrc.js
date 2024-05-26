@@ -72,7 +72,7 @@ module.exports = {
   },
   overrides: [
     {
-      files: ['dashboard/src/**/*'],
+      files: ['infra/dashboard/src/**/*'],
       rules: {
         'react/display-name': 'off',
         '@next/next/no-img-element': 'off',
@@ -106,13 +106,13 @@ module.exports = {
       },
     },
     {
-      files: ['dashboard/src/iconify-bundle/*'],
+      files: ['infra/dashboard/src/iconify-bundle/*'],
       rules: {
         '@typescript-eslint/no-var-requires': 'off',
       },
     },
     {
-      files: ['rooch-portal-v1'],
+      files: ['infra/rooch-portal-v1'],
       rules: {
         'import/no-duplicates': ['error'],
         'import/no-anonymous-default-export': 'off',
