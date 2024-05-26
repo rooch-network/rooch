@@ -6,9 +6,10 @@ module rooch_nursery::bitseed {
     use std::option::{Self, Option};
     use std::string::{Self, String};
     use std::bcs;
-
+    
     use moveos_std::address;
     use moveos_std::hash;
+    use moveos_std::hex;
     use moveos_std::object::{Self, Object};
     use moveos_std::string_utils;
     use moveos_std::simple_map::{Self, SimpleMap};
@@ -451,26 +452,39 @@ module rooch_nursery::bitseed {
         vector::push_back(&mut arg_list, attributes_output);
         let memory_args_list = wasm::create_memory_wasm_args(&mut wasm_instance, function_name, arg_list);
 
-        let ret_val = wasm::execute_wasm_function(&mut wasm_instance, function_name, memory_args_list);
+        let ret_val_option = wasm::execute_wasm_function_option(&mut wasm_instance, function_name, memory_args_list);
+
         wasm::release_wasm_instance(wasm_instance);
 
-        if (ret_val != 0 ) {
+        if (option::is_none(&ret_val_option)) {
+            option::destroy_none(ret_val_option);
+            return (false, option::some(std::string::utf8(b"inscribe verify execute_wasm_function fail")))
+        };
+
+        let ret_val = option::destroy_some(ret_val_option);
+        if (ret_val != 1 ) {
             return (false, option::some(std::string::utf8(b"inscribe verify fail")))
         };
 
         (true, option::none<String>())
     }
 
-    fun pack_inscribe_generate_args(deploy_args: vector<u8>, seed: vector<u8>, user_input: vector<u8>): vector<u8>{
-        native_pack_inscribe_generate_args(deploy_args, b"attrs", seed, b"seed",
-            user_input, b"user_input")
+    #[data_struct]
+    struct InscribeGenerateArgs has copy, drop, store {
+        attrs: vector<u8>,
+        seed: std::string::String,
+        user_input: std::string::String,
     }
 
-    native fun native_pack_inscribe_generate_args(
-        deploy_args: vector<u8>, deploy_args_key: vector<u8>,
-        seed: vector<u8>, seed_key: vector<u8>,
-        user_input: vector<u8>, user_input_key: vector<u8>,
-    ): vector<u8>;
+    fun pack_inscribe_generate_args(deploy_args: vector<u8>, seed: vector<u8>, user_input: vector<u8>): vector<u8>{
+        let args = InscribeGenerateArgs{
+            attrs: deploy_args,
+            seed: string::utf8(seed),
+            user_input: string::utf8(user_input)
+        };
+
+        cbor::to_cbor(&args)
+    }
 
     fun generate_seed_from_inscription(inscription: &Inscription): vector<u8> {
         let inscription_txid = ord::txid(inscription);
@@ -512,7 +526,7 @@ module rooch_nursery::bitseed {
         vector::append(&mut buf, address::to_bytes(block_hash));
         vector::append(&mut buf, address::to_bytes(txid));
         vector::append(&mut buf, bcs::to_bytes(&vout)); //TODO vout to le_bytes
-        hash::sha3_256(buf)
+        hex::encode(hash::sha3_256(buf))
     }
 
     // ==== Process Bitseed Entry ==== //
@@ -894,4 +908,12 @@ module rooch_nursery::bitseed {
         assert!(option::borrow(&reason) == &std::string::utf8(b"create wasm instance fail"), 1);
     }
 
+    #[test]
+    fun test_pack_inscribe_generate_args() {
+        let deploy_args = x"8178377b22686569676874223a7b2274797065223a2272616e6765222c2264617461223a7b226d696e223a312c226d6178223a313030307d7d7d";
+        let seed = b"0xe4b6de2407ad9455a364ba0227a8591631d1253508bc41f7d1992d218dd29b47";
+        let user_input = b"";
+
+        pack_inscribe_generate_args(deploy_args, seed, user_input);
+    }
 }

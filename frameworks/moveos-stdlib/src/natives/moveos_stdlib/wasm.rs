@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use log::debug;
 use std::collections::VecDeque;
 use std::ffi::CString;
 use std::ops::Deref;
@@ -15,7 +16,7 @@ use move_vm_types::natives::function::NativeResult;
 use move_vm_types::pop_arg;
 use move_vm_types::values::{Struct, Value};
 use serde_json::Value as JSONValue;
-use smallvec::smallvec;
+use smallvec::{smallvec, SmallVec};
 
 use moveos_wasm::wasm::{
     create_wasm_instance, get_instance_pool, insert_wasm_instance, put_data_on_stack,
@@ -41,6 +42,7 @@ pub const E_GET_INSTANCE_POOL_FAILED: u64 = 15;
 pub const E_UNPACK_STRUCT_FAILED: u64 = 16;
 pub const E_WASM_INSTANCE_CREATION_FAILED: u64 = 17;
 pub const E_WASM_REMOVE_INSTANCE_FAILED: u64 = 18;
+pub const E_VM_ERROR: u64 = 99;
 
 #[derive(Debug, Clone)]
 pub struct WASMCreateInstanceGasParameters {
@@ -347,6 +349,41 @@ fn build_err(cost: InternalGas, abort_code: u64) -> PartialVMResult<NativeResult
 // native_execute_wasm_function
 #[inline]
 fn native_execute_wasm_function(
+    gas_params: &WASMExecuteGasParameters,
+    _context: &mut NativeContext,
+    _ty_args: Vec<Type>,
+    args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    let vm_result = execute_wasm_function_inner(gas_params, _context, _ty_args, args);
+    match vm_result {
+        PartialVMResult::Ok(native_result) => match native_result {
+            NativeResult::Success { cost, ret_vals } => {
+                let mut new_ret_vals: SmallVec<[Value; 1]> = ret_vals;
+                new_ret_vals.push(Value::u64(0));
+
+                Ok(NativeResult::Success {
+                    cost,
+                    ret_vals: new_ret_vals,
+                })
+            }
+            NativeResult::Abort { cost, abort_code } => Ok(NativeResult::Success {
+                cost,
+                ret_vals: smallvec![Value::u64(0), Value::u64(abort_code)],
+            }),
+            NativeResult::OutOfGas { partial_cost } => Ok(NativeResult::OutOfGas { partial_cost }),
+        },
+        PartialVMResult::Err(err) => {
+            debug!("execute_wasm_function_inner vm_error: {:?}", err);
+
+            Ok(NativeResult::Success {
+                cost: gas_params.base_create_execution,
+                ret_vals: smallvec![Value::u64(0), Value::u64(E_VM_ERROR)],
+            })
+        }
+    }
+}
+
+fn execute_wasm_function_inner(
     gas_params: &WASMExecuteGasParameters,
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,

@@ -47,7 +47,21 @@ module moveos_std::wasm {
 
     public fun execute_wasm_function(instance: &mut WASMInstance, func_name: vector<u8>, args: vector<u64>): u64 {
         features::ensure_wasm_enabled();
-        native_execute_wasm_function(instance.id, func_name, args)
+
+        let (ret_val, error_code) = native_execute_wasm_function(instance.id, func_name, args);
+        assert!(error_code > 0, error_code);
+        ret_val
+    }
+
+    public fun execute_wasm_function_option(instance: &mut WASMInstance, func_name: vector<u8>, args: vector<u64>): Option<u64> {
+        features::ensure_wasm_enabled();
+        
+        let (ret_val, error_code) = native_execute_wasm_function(instance.id, func_name, args);
+        if (error_code > 0) {
+            return option::none()
+        };
+
+        option::some(ret_val)
     }
 
     public fun read_data_length(instance: &WASMInstance, data_ptr: u64): u32 {
@@ -70,7 +84,7 @@ module moveos_std::wasm {
 
     native fun native_create_wasm_args_in_memory(instance_id: u64, func_name: vector<u8>, args_bytes: vector<vector<u8>>): vector<u64>;
 
-    native fun native_execute_wasm_function(instance_id: u64, func_name: vector<u8>, args: vector<u64>): u64;
+    native fun native_execute_wasm_function(instance_id: u64, func_name: vector<u8>, args: vector<u64>): (u64, u64);
 
     native fun native_read_data_length(instance_id: u64, data_ptr: u64): u32;
 

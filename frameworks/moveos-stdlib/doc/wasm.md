@@ -13,6 +13,7 @@
 -  [Function `add_length_with_data`](#0x2_wasm_add_length_with_data)
 -  [Function `create_memory_wasm_args`](#0x2_wasm_create_memory_wasm_args)
 -  [Function `execute_wasm_function`](#0x2_wasm_execute_wasm_function)
+-  [Function `execute_wasm_function_option`](#0x2_wasm_execute_wasm_function_option)
 -  [Function `read_data_length`](#0x2_wasm_read_data_length)
 -  [Function `read_data_from_heap`](#0x2_wasm_read_data_from_heap)
 -  [Function `release_wasm_instance`](#0x2_wasm_release_wasm_instance)
@@ -108,6 +109,17 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_execute_wasm_function">execute_wasm_function</a>(instance: &<b>mut</b> <a href="wasm.md#0x2_wasm_WASMInstance">wasm::WASMInstance</a>, func_name: <a href="">vector</a>&lt;u8&gt;, args: <a href="">vector</a>&lt;u64&gt;): u64
+</code></pre>
+
+
+
+<a name="0x2_wasm_execute_wasm_function_option"></a>
+
+## Function `execute_wasm_function_option`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_execute_wasm_function_option">execute_wasm_function_option</a>(instance: &<b>mut</b> <a href="wasm.md#0x2_wasm_WASMInstance">wasm::WASMInstance</a>, func_name: <a href="">vector</a>&lt;u8&gt;, args: <a href="">vector</a>&lt;u64&gt;): <a href="_Option">option::Option</a>&lt;u64&gt;
 </code></pre>
 
 

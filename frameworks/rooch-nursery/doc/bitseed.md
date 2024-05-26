@@ -8,6 +8,7 @@
 -  [Resource `Bitseed`](#0xa_bitseed_Bitseed)
 -  [Struct `BitseedCoinInfo`](#0xa_bitseed_BitseedCoinInfo)
 -  [Resource `BitseedStore`](#0xa_bitseed_BitseedStore)
+-  [Struct `InscribeGenerateArgs`](#0xa_bitseed_InscribeGenerateArgs)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0xa_bitseed_genesis_init)
 -  [Function `bitseed_deploy_key`](#0xa_bitseed_bitseed_deploy_key)
@@ -27,12 +28,14 @@
 
 
 <pre><code><b>use</b> <a href="">0x1::bcs</a>;
+<b>use</b> <a href="">0x1::debug</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::address</a>;
 <b>use</b> <a href="">0x2::cbor</a>;
 <b>use</b> <a href="">0x2::hash</a>;
+<b>use</b> <a href="">0x2::hex</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
 <b>use</b> <a href="">0x2::string_utils</a>;
@@ -74,6 +77,18 @@
 
 
 <pre><code><b>struct</b> <a href="bitseed.md#0xa_bitseed_BitseedStore">BitseedStore</a> <b>has</b> key
+</code></pre>
+
+
+
+<a name="0xa_bitseed_InscribeGenerateArgs"></a>
+
+## Struct `InscribeGenerateArgs`
+
+
+
+<pre><code>#[data_struct]
+<b>struct</b> <a href="bitseed.md#0xa_bitseed_InscribeGenerateArgs">InscribeGenerateArgs</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
