@@ -91,6 +91,7 @@ impl FromOnChainGasSchedule for MoveOSStdlibGasParameters {
             bech32: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             hash: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             bls12381: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
+            evm: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
         })
     }
 }
@@ -116,6 +117,7 @@ impl ToOnChainGasSchedule for MoveOSStdlibGasParameters {
         entires.extend(self.bech32.to_on_chain_gas_schedule());
         entires.extend(self.hash.to_on_chain_gas_schedule());
         entires.extend(self.bls12381.to_on_chain_gas_schedule());
+        entires.extend(self.evm.to_on_chain_gas_schedule());
         entires
     }
 }
@@ -142,6 +144,7 @@ impl InitialGasSchedule for MoveOSStdlibGasParameters {
             bech32: InitialGasSchedule::initial(),
             hash: InitialGasSchedule::initial(),
             bls12381: InitialGasSchedule::initial(),
+            evm: InitialGasSchedule::initial(),
         }
     }
 }
