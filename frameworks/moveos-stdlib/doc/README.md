@@ -26,6 +26,7 @@ This is the reference documentation of the MoveOS standard library.
 -  [`0x2::core_addresses`](core_addresses.md#0x2_core_addresses)
 -  [`0x2::display`](display.md#0x2_display)
 -  [`0x2::event`](event.md#0x2_event)
+-  [`0x2::evm`](evm.md#0x2_evm)
 -  [`0x2::features`](features.md#0x2_features)
 -  [`0x2::gas_schedule`](gas_schedule.md#0x2_gas_schedule)
 -  [`0x2::genesis`](genesis.md#0x2_genesis)

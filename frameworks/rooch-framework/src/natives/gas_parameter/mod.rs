@@ -10,6 +10,7 @@ mod cbor;
 mod ecdsa_k1;
 mod ed25519;
 mod events;
+pub mod evm;
 pub mod gas_member;
 mod hash;
 mod json;
