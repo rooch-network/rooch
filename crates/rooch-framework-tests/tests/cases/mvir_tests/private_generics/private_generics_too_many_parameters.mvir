@@ -12,7 +12,8 @@ module 0x1.TestModule1 {
     import 0x1.TestModule0;
     metadata {
         private_generics {
-            0x1::TestModule1::f1 -> [0, 1];
+            // error code 10004: TOO_MANY_PARAMETERS
+            0x1::TestModule1::f1 -> [1, 1, 1, 1, 1, 1];
         }
     }
 
@@ -29,7 +30,6 @@ module 0x1.TestModule1 {
         label b0:
             s0 = TestModule0.new();
             s1 = TestModule0.new();
-            // error code 10008: INVALID_DATA_STRUCT
             Self.f1<TestModule0.S0, TestModule0.S0>(move(s0), move(s1));
             return;
     }
