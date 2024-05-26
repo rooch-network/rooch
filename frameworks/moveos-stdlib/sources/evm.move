@@ -4,11 +4,11 @@
 // Evm Precompiled Contracts https://www.evm.codes/precompiled?fork=cancun
 module moveos_std::evm {
 
-    const E_EC_ADD_FAILED: u64 = 6;
-    const E_EC_PAIRING_FAILED: u64 = 8;
+    const ErrorEcAddFailed: u64 = 6;
+    const ErrorEcPairingFailed: u64 = 8;
 
     // The coordinate must be 32 bytes.
-    const E_EXPECT_32_BYTES: u64 = 11;
+    const ErrorInvalidCoordinate: u64 = 11;
 
     /// @param data: Arbitrary binary data to hash
     /// 
@@ -46,8 +46,8 @@ module moveos_std::evm {
         let y2 = x"0000000000000000000000000000000000000000000000000000000000000002";
 
         let (x3, y3) = ec_add(x1, y1, x2, y2);
-        assert!(x3 == x"030644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd3", E_EC_ADD_FAILED);
-        assert!(y3 == x"15ed738c0e0a7c92e7845f96b2ae9c0a68a6a449e3538fc7ff3ebf7a5a18a2c4", E_EC_ADD_FAILED);
+        assert!(x3 == x"030644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd3", ErrorEcAddFailed);
+        assert!(y3 == x"15ed738c0e0a7c92e7845f96b2ae9c0a68a6a449e3538fc7ff3ebf7a5a18a2c4", ErrorEcAddFailed);
     }
 
     #[test]
@@ -78,11 +78,11 @@ module moveos_std::evm {
         vector::append<u8>(&mut x1, y6);
 
         let success = ec_pairing(x1);
-        assert!(success == x"0000000000000000000000000000000000000000000000000000000000000001", E_EC_PAIRING_FAILED);
+        assert!(success == x"0000000000000000000000000000000000000000000000000000000000000001", ErrorEcPairingFailed);
     }
 
     #[test]
-    #[expected_failure(abort_code = E_EXPECT_32_BYTES, location = Self)]
+    #[expected_failure(abort_code = ErrorInvalidCoordinate, location = Self)]
     fun test_ec_add_input_not_match() {
         let x1 = x"01";
         let y1 = x"02";
@@ -93,7 +93,7 @@ module moveos_std::evm {
     }
 
     #[test]
-    #[expected_failure(abort_code = E_EC_PAIRING_FAILED, location = Self)]
+    #[expected_failure(abort_code = ErrorEcPairingFailed, location = Self)]
     fun test_ec_pairing_input_not_match() {
         let x1 = x"2cf44499d5d27bb186308b7af7af02ac5bc9eeb6a3d147c186b21fb1b76e18da";
         let y1 = x"2c0f001f52110ccfe69108924926e45f0b0c868df0e7bde1fe16d3242dc715f6";

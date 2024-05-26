@@ -14,8 +14,7 @@ use std::collections::VecDeque;
 
 pub const E_EC_ADD_FAILED: u64 = 6;
 pub const E_EC_PAIRING_FAILED: u64 = 8;
-pub const E_EXPECT_32_BYTES: u64 = 11;
-
+pub const E_INVALID_COORDINATE: u64 = 11;
 
 /***************************************************************************************************
  * native fun ec_add
@@ -39,7 +38,7 @@ pub fn native_ec_add(
     let x1 = pop_arg!(args, Vec<u8>);
 
     if y2.len() != 32 || x2.len() != 32 || y1.len() != 32 || x1.len() != 32 {
-        return Ok(NativeResult::err(0.into(), E_EXPECT_32_BYTES));
+        return Ok(NativeResult::err(0.into(), E_INVALID_COORDINATE));
     }
 
     let cost = gas_params.base + (gas_params.per_byte * NumBytes::new(128_u64));
@@ -61,7 +60,6 @@ pub fn native_ec_add(
         Err(_) => Ok(NativeResult::err(cost, E_EC_ADD_FAILED)),
     }
 }
-
 
 /***************************************************************************************************
  * native fun ec_pairing

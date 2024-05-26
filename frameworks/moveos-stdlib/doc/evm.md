@@ -21,29 +21,29 @@
 ## Constants
 
 
-<a name="0x2_evm_E_EC_ADD_FAILED"></a>
+<a name="0x2_evm_ErrorEcAddFailed"></a>
 
 
 
-<pre><code><b>const</b> <a href="evm.md#0x2_evm_E_EC_ADD_FAILED">E_EC_ADD_FAILED</a>: u64 = 6;
+<pre><code><b>const</b> <a href="evm.md#0x2_evm_ErrorEcAddFailed">ErrorEcAddFailed</a>: u64 = 6;
 </code></pre>
 
 
 
-<a name="0x2_evm_E_EC_PAIRING_FAILED"></a>
+<a name="0x2_evm_ErrorEcPairingFailed"></a>
 
 
 
-<pre><code><b>const</b> <a href="evm.md#0x2_evm_E_EC_PAIRING_FAILED">E_EC_PAIRING_FAILED</a>: u64 = 8;
+<pre><code><b>const</b> <a href="evm.md#0x2_evm_ErrorEcPairingFailed">ErrorEcPairingFailed</a>: u64 = 8;
 </code></pre>
 
 
 
-<a name="0x2_evm_E_EXPECT_32_BYTES"></a>
+<a name="0x2_evm_ErrorInvalidCoordinate"></a>
 
 
 
-<pre><code><b>const</b> <a href="evm.md#0x2_evm_E_EXPECT_32_BYTES">E_EXPECT_32_BYTES</a>: u64 = 11;
+<pre><code><b>const</b> <a href="evm.md#0x2_evm_ErrorInvalidCoordinate">ErrorInvalidCoordinate</a>: u64 = 11;
 </code></pre>
 
 
