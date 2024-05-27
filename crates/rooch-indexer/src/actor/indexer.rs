@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{
-    IndexerEventsMessage, IndexerStatesMessage, IndexerTransactionMessage,
+    IndexerEventsMessage, IndexerStatesMessage, IndexerTransactionMessage, UpdateIndexerMessage,
 };
 use crate::store::traits::IndexerStoreTrait;
 use crate::IndexerStore;
@@ -38,6 +38,77 @@ impl IndexerActor {
 }
 
 impl Actor for IndexerActor {}
+
+#[async_trait]
+impl Handler<UpdateIndexerMessage> for IndexerActor {
+    async fn handle(&mut self, msg: UpdateIndexerMessage, _ctx: &mut ActorContext) -> Result<()> {
+        let UpdateIndexerMessage {
+            root,
+            transaction,
+            execution_info,
+            moveos_tx,
+            events,
+            state_change_set,
+        } = msg;
+
+        self.root = root;
+        let tx_order = transaction.sequence_info.tx_order;
+
+        // 1. update indexer transaction
+        let indexer_transaction = IndexerTransaction::new(
+            transaction.clone(),
+            execution_info.clone(),
+            moveos_tx.clone(),
+        )?;
+        let transactions = vec![indexer_transaction];
+        self.indexer_store.persist_transactions(transactions)?;
+
+        // 2. update indexer state
+        let events: Vec<_> = events
+            .into_iter()
+            .map(|event| IndexerEvent::new(event.clone(), transaction.clone(), moveos_tx.clone()))
+            .collect();
+        self.indexer_store.persist_events(events)?;
+
+        // 3. update indexer state
+        // indexer state index generator
+        let mut state_index_generator = 0u64;
+        let mut indexer_object_state_changes = IndexerObjectStateChanges::default();
+        let mut indexer_field_state_changes = IndexerFieldStateChanges::default();
+
+        for (object_id, object_change) in state_change_set.changes {
+            state_index_generator = handle_object_change(
+                state_index_generator,
+                tx_order,
+                &mut indexer_object_state_changes,
+                &mut indexer_field_state_changes,
+                object_id,
+                object_change,
+            )?;
+        }
+
+        //Merge new object states and update object states
+        let mut object_states_new_and_update = indexer_object_state_changes.new_object_states;
+        object_states_new_and_update.append(&mut indexer_object_state_changes.update_object_states);
+        self.indexer_store
+            .persist_or_update_object_states(object_states_new_and_update)?;
+        self.indexer_store
+            .delete_object_states(indexer_object_state_changes.remove_object_states)?;
+
+        //Merge new field states and update field states
+        let mut fiels_states_new_and_update = indexer_field_state_changes.new_field_states;
+        fiels_states_new_and_update.append(&mut indexer_field_state_changes.update_field_states);
+        self.indexer_store
+            .persist_or_update_field_states(fiels_states_new_and_update)?;
+        self.indexer_store
+            .delete_field_states(indexer_field_state_changes.remove_field_states)?;
+        self.indexer_store.delete_field_states_by_object_id(
+            indexer_field_state_changes.remove_field_states_by_object_id,
+        )?;
+
+        Ok(())
+    }
+}
 
 #[async_trait]
 impl Handler<IndexerStatesMessage> for IndexerActor {
@@ -105,7 +176,6 @@ impl Handler<IndexerTransactionMessage> for IndexerActor {
         let indexer_transaction = IndexerTransaction::new(transaction, execution_info, moveos_tx)?;
         let transactions = vec![indexer_transaction];
 
-        // just for bitcoin block data import, don't write transaction indexer
         self.indexer_store.persist_transactions(transactions)?;
         Ok(())
     }

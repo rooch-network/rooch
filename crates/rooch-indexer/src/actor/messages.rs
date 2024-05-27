@@ -16,6 +16,21 @@ use rooch_types::transaction::LedgerTransaction;
 use rooch_types::transaction::TransactionWithInfo;
 use serde::{Deserialize, Serialize};
 
+/// Indexer write Message
+#[derive(Debug, Clone)]
+pub struct UpdateIndexerMessage {
+    pub root: RootObjectEntity,
+    pub transaction: LedgerTransaction,
+    pub execution_info: TransactionExecutionInfo,
+    pub moveos_tx: VerifiedMoveOSTransaction,
+    pub events: Vec<Event>,
+    pub state_change_set: StateChangeSet,
+}
+
+impl Message for UpdateIndexerMessage {
+    type Result = Result<()>;
+}
+
 /// Indexer Transaction write Message
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IndexerTransactionMessage {
@@ -41,8 +56,7 @@ impl Message for IndexerEventsMessage {
 }
 
 /// Indexer State write Message
-// #[derive(Debug, Serialize, Deserialize)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IndexerStatesMessage {
     pub root: RootObjectEntity,
     pub tx_order: u64,
