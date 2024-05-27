@@ -3,8 +3,8 @@
 
 use async_trait::async_trait;
 use clap::Parser;
-use move_command_line_common::address::ParsedAddress;
 use rooch_rpc_client::wallet_context::WalletContext;
+use rooch_types::address::ParsedAddress;
 use rooch_types::authentication_key::AuthenticationKey;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::authenticator::Authenticator;

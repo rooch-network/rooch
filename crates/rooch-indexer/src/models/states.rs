@@ -6,9 +6,10 @@ use crate::schema::object_states;
 use crate::types::{IndexedFieldState, IndexedObjectState};
 use crate::utils;
 use diesel::prelude::*;
-use move_core_types::account_address::AccountAddress;
+use ethers::types::H256;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use moveos_types::moveos_std::object::ObjectID;
+use rooch_types::address::RoochAddress;
 use rooch_types::indexer::state::{IndexerFieldState, IndexerObjectState};
 use std::str::FromStr;
 
@@ -67,10 +68,10 @@ impl From<IndexedObjectState> for StoredObjectState {
 impl StoredObjectState {
     pub fn try_into_indexer_global_state(&self) -> Result<IndexerObjectState, anyhow::Error> {
         let object_id = ObjectID::from_str(self.object_id.as_str())?;
-        let owner = AccountAddress::from_hex_literal(self.owner.as_str())?;
+        let owner = RoochAddress::from_str(self.owner.as_str())?;
 
         let object_type = StructTag::from_str(self.object_type.as_str())?;
-        let state_root = AccountAddress::from_hex_literal(self.state_root.as_str())?;
+        let state_root = H256::from_str(self.state_root.as_str())?;
 
         let state = IndexerObjectState {
             object_id,

@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::account_address::AccountAddress;
+use crate::address::RoochAddress;
 use moveos_types::h256::H256;
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub enum TransactionFilter {
     /// Query by sender address.
-    Sender(AccountAddress),
+    Sender(RoochAddress),
     /// Query by multi chain original address.
     OriginalAddress(String),
     /// Query by the transaction hash list.

@@ -4,12 +4,12 @@
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use move_command_line_common::address::ParsedAddress;
 use move_command_line_common::types::ParsedStructType;
 use move_core_types::u256::U256;
 use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
+use rooch_types::address::ParsedAddress;
 use rooch_types::address::RoochAddress;
 use rooch_types::framework::transfer::TransferModule;
 use rooch_types::{

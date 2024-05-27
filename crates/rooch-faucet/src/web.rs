@@ -26,9 +26,9 @@ use axum::{
 };
 use clap::Parser;
 use http::Method;
-use move_core_types::account_address::AccountAddress;
+
 use prometheus::{Registry, TextEncoder};
-use rooch_rpc_api::jsonrpc_types::{AccountAddressView, StructTagView};
+use rooch_rpc_api::jsonrpc_types::StructTagView;
 use rooch_rpc_client::wallet_context::WalletContext;
 use tokio::sync::RwLock;
 
@@ -99,12 +99,12 @@ impl App {
         let context = WalletContext::new(self.wallet_config_dir.clone())
             .map_err(|e| FaucetError::Wallet(e.to_string()))?;
         let client = context.get_client().await.unwrap();
-        let faucet_address: AccountAddress = context.client_config.active_address.unwrap().into();
+        let faucet_address = context.client_config.active_address.unwrap();
 
         let s = client
             .rooch
             .get_balance(
-                AccountAddressView::from(faucet_address),
+                faucet_address.into(),
                 StructTagView::from_str("0x3::gas_coin::GasCoin").unwrap(),
             )
             .await

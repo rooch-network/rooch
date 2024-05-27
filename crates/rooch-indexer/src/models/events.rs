@@ -4,11 +4,11 @@
 use crate::types::IndexedEvent;
 use crate::{schema::events, utils};
 use diesel::prelude::*;
-use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::EventID;
 use moveos_types::moveos_std::object::ObjectID;
+use rooch_types::address::RoochAddress;
 use rooch_types::indexer::event_filter::{IndexerEvent, IndexerEventID};
 use std::str::FromStr;
 
@@ -65,7 +65,7 @@ impl From<IndexedEvent> for StoredEvent {
 impl StoredEvent {
     pub fn try_into_indexer_event(&self) -> Result<IndexerEvent, anyhow::Error> {
         let event_handle_id = ObjectID::from_str(self.event_handle_id.as_str())?;
-        let sender = AccountAddress::from_hex_literal(self.sender.as_str())?;
+        let sender = RoochAddress::from_str(self.sender.as_str())?;
         let tx_hash = H256::from_str(self.tx_hash.as_str())?;
         let event_type = StructTag::from_str(self.event_type.as_str())?;
 

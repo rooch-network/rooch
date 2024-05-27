@@ -161,7 +161,7 @@ fn test_transaction_store() -> Result<()> {
     let transactions = vec![indexed_transaction];
     let _ = indexer_store.persist_transactions(transactions)?;
 
-    let filter = TransactionFilter::Sender(random_moveos_tx.ctx.sender);
+    let filter = TransactionFilter::Sender(random_moveos_tx.ctx.sender.into());
     let query_transactions =
         indexer_reader.query_transactions_with_filter(filter, None, 1, true)?;
     assert_eq!(query_transactions.len(), 1);
@@ -194,7 +194,7 @@ fn test_event_store() -> Result<()> {
     let events = vec![indexed_event];
     let _ = indexer_store.persist_events(events)?;
 
-    let filter = EventFilter::Sender(random_moveos_tx.ctx.sender);
+    let filter = EventFilter::Sender(random_moveos_tx.ctx.sender.into());
     let query_events = indexer_reader.query_events_with_filter(filter, None, 1, true)?;
     assert_eq!(query_events.len(), 1);
     Ok(())
@@ -269,7 +269,7 @@ fn test_object_type_query() -> Result<()> {
     // filter by object type and owner
     let filter = ObjectStateFilter::ObjectTypeWithOwner {
         object_type: CoinStore::<GasCoin>::struct_tag(),
-        owner,
+        owner: owner.into(),
     };
     let query_object_states =
         indexer_reader.query_object_states_with_filter(filter, None, 1, true)?;

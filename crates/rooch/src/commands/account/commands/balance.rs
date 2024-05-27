@@ -7,9 +7,9 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use move_command_line_common::address::ParsedAddress;
 use move_command_line_common::types::ParsedStructType;
 use rooch_rpc_api::api::MAX_RESULT_LIMIT_USIZE;
+use rooch_types::address::ParsedAddress;
 use rooch_types::error::RoochResult;
 
 /// Show account balance, only the accounts managed by the current node are supported

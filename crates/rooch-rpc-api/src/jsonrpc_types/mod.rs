@@ -22,6 +22,7 @@ pub mod address;
 pub mod btc;
 
 pub use self::rooch_types::*;
+pub use address::*;
 pub use execute_tx_response::*;
 pub use function_return_value_view::*;
 pub use move_types::*;
