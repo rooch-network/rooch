@@ -17,12 +17,11 @@ use clap::Parser;
 
 use moveos_types::state::{KeyState, State};
 use rooch_config::R_OPT_NET_HELP;
-use rooch_indexer::actor::{new_field_state, new_object_state_from_raw_object};
 use rooch_indexer::indexer_reader::IndexerReader;
 use rooch_indexer::store::traits::IndexerStoreTrait;
-use rooch_indexer::types::{IndexedFieldState, IndexedObjectState};
 use rooch_indexer::IndexerStore;
 use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::indexer::state::{IndexerFieldState, IndexerObjectState};
 use rooch_types::rooch_network::RoochChainID;
 
 use crate::commands::indexer::commands::init_indexer;
@@ -94,8 +93,8 @@ impl RebuildCommand {
 }
 
 struct BatchUpdates {
-    object_states: Vec<IndexedObjectState>,
-    field_states: Vec<IndexedFieldState>,
+    object_states: Vec<IndexerObjectState>,
+    field_states: Vec<IndexerFieldState>,
 }
 
 fn produce_updates(tx: SyncSender<BatchUpdates>, input: PathBuf, batch_size: usize) -> Result<()> {
@@ -138,17 +137,17 @@ fn produce_updates(tx: SyncSender<BatchUpdates>, input: PathBuf, batch_size: usi
 
             if state_type.eq(GLOBAL_STATE_TYPE_OBJECT) || state_type.eq(GLOBAL_STATE_TYPE_ROOT) {
                 let state =
-                    new_object_state_from_raw_object(state, tx_order, state_index_generator)?;
+                    IndexerObjectState::try_new_from_state(state, tx_order, state_index_generator)?;
                 state_index_generator += 1;
                 updates.object_states.push(state);
             } else if state_type.eq(GLOBAL_STATE_TYPE_FIELD) {
-                let state = new_field_state(
+                let state = IndexerFieldState::new_field_state(
                     key_state,
                     state,
                     export_id.object_id.clone(),
                     tx_order,
                     state_index_generator,
-                )?;
+                );
                 state_index_generator += 1;
                 updates.field_states.push(state);
             };

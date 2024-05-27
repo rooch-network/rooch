@@ -13,12 +13,14 @@ use diesel::sqlite::SqliteConnection;
 
 use crate::store::sqlite_store::SqliteIndexerStore;
 use crate::store::traits::IndexerStoreTrait;
-use crate::types::{IndexedEvent, IndexedFieldState, IndexedObjectState, IndexedTransaction};
 use crate::utils::create_all_tables_if_not_exists;
-use errors::IndexerError;
 use rooch_config::indexer_config::ROOCH_INDEXER_DB_DIR;
 
+use errors::IndexerError;
 use once_cell::sync::Lazy;
+use rooch_types::indexer::event::IndexerEvent;
+use rooch_types::indexer::state::{IndexerFieldState, IndexerObjectState};
+use rooch_types::indexer::transaction::IndexerTransaction;
 
 pub mod actor;
 pub mod errors;
@@ -29,10 +31,10 @@ pub mod schema;
 pub mod store;
 #[cfg(test)]
 mod tests;
-pub mod types;
 pub mod utils;
 
 /// Type alias to improve readability.
+pub type IndexerResult<T> = Result<T, IndexerError>;
 pub type IndexerTableName = &'static str;
 pub const INDEXER_EVENTS_TABLE_NAME: IndexerTableName = "events";
 pub const INDEXER_OBJECT_STATES_TABLE_NAME: IndexerTableName = "object_states";
@@ -146,7 +148,7 @@ pub fn new_sqlite_connection_pool(db_url: &str) -> Result<SqliteConnectionPool, 
 impl IndexerStoreTrait for IndexerStore {
     fn persist_or_update_object_states(
         &self,
-        states: Vec<IndexedObjectState>,
+        states: Vec<IndexerObjectState>,
     ) -> Result<(), IndexerError> {
         self.get_sqlite_store(INDEXER_OBJECT_STATES_TABLE_NAME)?
             .persist_or_update_object_states(states)
@@ -159,7 +161,7 @@ impl IndexerStoreTrait for IndexerStore {
 
     fn persist_or_update_field_states(
         &self,
-        states: Vec<IndexedFieldState>,
+        states: Vec<IndexerFieldState>,
     ) -> Result<(), IndexerError> {
         self.get_sqlite_store(INDEXER_FIELD_STATES_TABLE_NAME)?
             .persist_or_update_field_states(states)
@@ -180,13 +182,13 @@ impl IndexerStoreTrait for IndexerStore {
 
     fn persist_transactions(
         &self,
-        transactions: Vec<IndexedTransaction>,
+        transactions: Vec<IndexerTransaction>,
     ) -> Result<(), IndexerError> {
         self.get_sqlite_store(INDEXER_TRANSACTIONS_TABLE_NAME)?
             .persist_transactions(transactions)
     }
 
-    fn persist_events(&self, events: Vec<IndexedEvent>) -> Result<(), IndexerError> {
+    fn persist_events(&self, events: Vec<IndexerEvent>) -> Result<(), IndexerError> {
         self.get_sqlite_store(INDEXER_EVENTS_TABLE_NAME)?
             .persist_events(events)
     }

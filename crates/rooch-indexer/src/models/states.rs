@@ -3,7 +3,6 @@
 
 use crate::schema::field_states;
 use crate::schema::object_states;
-use crate::types::{IndexedFieldState, IndexedObjectState};
 use crate::utils;
 use diesel::prelude::*;
 use move_core_types::account_address::AccountAddress;
@@ -47,8 +46,8 @@ pub struct StoredObjectState {
     pub updated_at: i64,
 }
 
-impl From<IndexedObjectState> for StoredObjectState {
-    fn from(state: IndexedObjectState) -> Self {
+impl From<IndexerObjectState> for StoredObjectState {
+    fn from(state: IndexerObjectState) -> Self {
         Self {
             object_id: state.object_id.to_string(),
             owner: state.owner.to_hex_literal(),
@@ -117,8 +116,8 @@ pub struct StoredFieldState {
     pub updated_at: i64,
 }
 
-impl From<IndexedFieldState> for StoredFieldState {
-    fn from(state: IndexedFieldState) -> Self {
+impl From<IndexerFieldState> for StoredFieldState {
+    fn from(state: IndexerFieldState) -> Self {
         Self {
             object_id: state.object_id.to_string(),
             key_hex: state.key_hex,

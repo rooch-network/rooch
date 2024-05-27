@@ -17,11 +17,11 @@ use rooch_indexer::proxy::IndexerProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::address::MultiChainAddress;
-use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
+use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
     FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateID, ObjectStateFilter,
 };
-use rooch_types::indexer::transaction_filter::TransactionFilter;
+use rooch_types::indexer::transaction::TransactionFilter;
 use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::{
     ExecuteTransactionResponse, LedgerTransaction, RoochTransaction, TransactionWithInfo,

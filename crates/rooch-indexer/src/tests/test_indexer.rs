@@ -3,7 +3,6 @@
 
 use crate::indexer_reader::IndexerReader;
 use crate::store::traits::IndexerStoreTrait;
-use crate::types::{IndexedEvent, IndexedFieldState, IndexedObjectState, IndexedTransaction};
 use crate::IndexerStore;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
@@ -18,18 +17,18 @@ use rand::{random, thread_rng, Rng};
 use rooch_config::indexer_config::ROOCH_INDEXER_DB_DIR;
 use rooch_types::framework::coin_store::CoinStore;
 use rooch_types::framework::gas_coin::GasCoin;
-use rooch_types::indexer::event_filter::EventFilter;
-use rooch_types::indexer::state::ObjectStateFilter;
-use rooch_types::indexer::transaction_filter::TransactionFilter;
+use rooch_types::indexer::event::{EventFilter, IndexerEvent};
+use rooch_types::indexer::state::{IndexerFieldState, IndexerObjectState, ObjectStateFilter};
+use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::test_utils::{
     random_event, random_function_calls, random_ledger_transaction, random_string,
     random_table_object, random_verified_move_action,
 };
 
-fn random_update_object_states(states: Vec<IndexedObjectState>) -> Vec<IndexedObjectState> {
+fn random_update_object_states(states: Vec<IndexerObjectState>) -> Vec<IndexerObjectState> {
     states
         .into_iter()
-        .map(|item| IndexedObjectState {
+        .map(|item| IndexerObjectState {
             object_id: item.object_id,
             owner: item.owner,
             flag: item.flag,
@@ -44,13 +43,13 @@ fn random_update_object_states(states: Vec<IndexedObjectState>) -> Vec<IndexedOb
         .collect()
 }
 
-fn random_new_object_states() -> Result<Vec<IndexedObjectState>> {
+fn random_new_object_states() -> Result<Vec<IndexerObjectState>> {
     let mut new_object_states = vec![];
 
     let mut state_index = 0u64;
     let mut rng = thread_rng();
     for n in 0..rng.gen_range(1..=10) {
-        let state = IndexedObjectState::new_from_raw_object(
+        let state = IndexerObjectState::new_from_raw_object(
             random_table_object()?.to_raw(),
             n as u64,
             state_index,
@@ -75,13 +74,13 @@ fn random_remove_object_states() -> Vec<String> {
     remove_object_states
 }
 
-fn random_new_field_states() -> Vec<IndexedFieldState> {
+fn random_new_field_states() -> Vec<IndexerFieldState> {
     let mut field_states = vec![];
 
     let mut state_index = 0u64;
     let mut rng = thread_rng();
     for n in 0..rng.gen_range(1..=10) {
-        let state = IndexedFieldState::new(
+        let state = IndexerFieldState::new(
             ObjectID::from(AccountAddress::random()),
             H256::random().to_string(),
             random_type_tag(),
@@ -96,10 +95,10 @@ fn random_new_field_states() -> Vec<IndexedFieldState> {
     field_states
 }
 
-fn random_update_field_states(states: Vec<IndexedFieldState>) -> Vec<IndexedFieldState> {
+fn random_update_field_states(states: Vec<IndexerFieldState>) -> Vec<IndexerFieldState> {
     states
         .into_iter()
-        .map(|item| IndexedFieldState {
+        .map(|item| IndexerFieldState {
             object_id: item.object_id,
             key_hex: item.key_hex,
             key_type: random_type_tag(),
@@ -153,12 +152,12 @@ fn test_transaction_store() -> Result<()> {
         post_execute_functions: random_function_calls(),
     };
 
-    let indexed_transaction = IndexedTransaction::new(
+    let indexer_transaction = IndexerTransaction::new(
         random_transaction,
         random_execution_info,
         random_moveos_tx.clone(),
     )?;
-    let transactions = vec![indexed_transaction];
+    let transactions = vec![indexer_transaction];
     let _ = indexer_store.persist_transactions(transactions)?;
 
     let filter = TransactionFilter::Sender(random_moveos_tx.ctx.sender);
@@ -189,9 +188,9 @@ fn test_event_store() -> Result<()> {
         post_execute_functions: random_function_calls(),
     };
 
-    let indexed_event =
-        IndexedEvent::new(random_event, random_transaction, random_moveos_tx.clone());
-    let events = vec![indexed_event];
+    let indexer_event =
+        IndexerEvent::new(random_event, random_transaction, random_moveos_tx.clone());
+    let events = vec![indexer_event];
     let _ = indexer_store.persist_events(events)?;
 
     let filter = EventFilter::Sender(random_moveos_tx.ctx.sender);
@@ -258,7 +257,7 @@ fn test_object_type_query() -> Result<()> {
         CoinStore::<GasCoin>::new(100u64.into(), false),
     );
     let raw_obj = coin_store_obj.to_raw();
-    let state = IndexedObjectState::new_from_raw_object(raw_obj, 1, 0);
+    let state = IndexerObjectState::new_from_raw_object(raw_obj, 1, 0);
     let object_states = vec![state];
     indexer_store.persist_or_update_object_states(object_states.clone())?;
     // filter by exact object type

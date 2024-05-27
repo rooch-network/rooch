@@ -15,7 +15,7 @@ use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
 use rooch_types::crypto::{RoochKeyPair, Signature};
 use rooch_types::sequencer::SequencerOrder;
-use rooch_types::transaction::{LedgerTransaction, LedgerTxData, TransactionSequenceInfo};
+use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
 use tracing::{debug, info};
 
 pub struct SequencerActor {

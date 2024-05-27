@@ -5,7 +5,7 @@ use crate::jsonrpc_types::{
     AccountAddressView, AnnotatedMoveStructView, H256View, StrView, StructTagView,
 };
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID, TransactionEvent};
-use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
+use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

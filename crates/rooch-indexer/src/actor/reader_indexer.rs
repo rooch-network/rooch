@@ -9,7 +9,7 @@ use crate::indexer_reader::IndexerReader;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
-use rooch_types::indexer::event_filter::IndexerEvent;
+use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::indexer::state::{IndexerFieldState, IndexerObjectState};
 use rooch_types::transaction::TransactionWithInfo;
 

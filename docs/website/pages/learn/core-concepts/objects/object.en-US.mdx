@@ -252,7 +252,7 @@ In the above functions, if the `#[private_generics<T>]` column is `true`, it ind
 #### Sui Object
 
 * Sui Object is a special kind of `struct` that requires the `struct` to has a `key` ability, and UID must be its first field. An Object is provided by the VM and storage, and there's no Object type in Move. In Rooch, Object is a type defined in Move itself.
-* Sui Object is indexed by the external system, and there's no method provided in the contract to retrieve the Object using ID; it can only be passed through parameters. Rooch provides both methods.
+* Sui Object is indexer by the external system, and there's no method provided in the contract to retrieve the Object using ID; it can only be passed through parameters. Rooch provides both methods.
 * If a Sui Object gets nested or saved into other containers, it will become invisible in the global Object Storage. However, even when nested or saved into other containers, the Rooch Object can still be accessed in the global Object Storage.
 
 #### Aptos Object

@@ -41,7 +41,7 @@ use rooch_rpc_api::{
     api::{MAX_RESULT_LIMIT, MAX_RESULT_LIMIT_USIZE},
     jsonrpc_types::BytesView,
 };
-use rooch_types::indexer::event_filter::IndexerEventID;
+use rooch_types::indexer::event::IndexerEventID;
 use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::{address::MultiChainAddress, multichain_id::RoochMultiChainID};

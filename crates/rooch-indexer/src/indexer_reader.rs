@@ -1,15 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::errors::IndexerError;
 use crate::models::events::StoredEvent;
 use crate::models::states::{StoredFieldState, StoredObjectState};
 use crate::models::transactions::StoredTransaction;
 use crate::schema::object_states;
 use crate::schema::{events, field_states, transactions};
-use crate::types::IndexerResult;
 use crate::utils::format_struct_tag;
 use crate::{
-    errors::IndexerError, IndexerStoreMeta, SqliteConnectionConfig, SqliteConnectionPoolConfig,
+    IndexerResult, IndexerStoreMeta, SqliteConnectionConfig, SqliteConnectionPoolConfig,
     SqlitePoolConnection, INDEXER_EVENTS_TABLE_NAME, INDEXER_FIELD_STATES_TABLE_NAME,
     INDEXER_OBJECT_STATES_TABLE_NAME, INDEXER_TRANSACTIONS_TABLE_NAME,
 };
@@ -18,11 +18,11 @@ use diesel::{
     r2d2::ConnectionManager, Connection, ExpressionMethods, QueryDsl, RunQueryDsl, SqliteConnection,
 };
 use move_core_types::language_storage::StructTag;
-use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
+use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
     FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateID, ObjectStateFilter,
 };
-use rooch_types::indexer::transaction_filter::TransactionFilter;
+use rooch_types::indexer::transaction::TransactionFilter;
 use rooch_types::transaction::TransactionWithInfo;
 use std::collections::HashMap;
 use std::ops::DerefMut;

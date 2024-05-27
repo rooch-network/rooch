@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::schema::transactions;
-use crate::types::IndexedTransaction;
 use diesel::prelude::*;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::h256::H256;
 use moveos_types::transaction::TransactionExecutionInfo;
+use rooch_types::indexer::transaction::IndexerTransaction;
 use rooch_types::transaction::{LedgerTransaction, TransactionWithInfo};
 use std::str::FromStr;
 
@@ -58,8 +58,8 @@ pub struct StoredTransaction {
     pub created_at: i64,
 }
 
-impl From<IndexedTransaction> for StoredTransaction {
-    fn from(transaction: IndexedTransaction) -> Self {
+impl From<IndexerTransaction> for StoredTransaction {
+    fn from(transaction: IndexerTransaction) -> Self {
         StoredTransaction {
             tx_hash: format!("{:?}", transaction.tx_hash),
             tx_order: transaction.tx_order as i64,

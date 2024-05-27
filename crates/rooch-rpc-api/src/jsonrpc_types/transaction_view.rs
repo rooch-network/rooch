@@ -6,7 +6,7 @@ use crate::jsonrpc_types::{
     AccountAddressView, H256View, TransactionExecutionInfoView, TransactionSequenceInfoView,
     TransactionView,
 };
-use rooch_types::indexer::transaction_filter::TransactionFilter;
+use rooch_types::indexer::transaction::TransactionFilter;
 use rooch_types::transaction::{L1Block, LedgerTransaction, LedgerTxData, TransactionWithInfo};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

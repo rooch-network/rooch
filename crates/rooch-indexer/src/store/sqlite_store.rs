@@ -1,17 +1,19 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::errors::{Context, IndexerError};
 use anyhow::Result;
 use diesel::QueryDsl;
 use diesel::{ExpressionMethods, RunQueryDsl};
+use rooch_types::indexer::event::IndexerEvent;
+use rooch_types::indexer::state::{IndexerFieldState, IndexerObjectState};
+use rooch_types::indexer::transaction::IndexerTransaction;
 use tracing::log;
 
-use crate::errors::{Context, IndexerError};
 use crate::models::events::StoredEvent;
 use crate::models::states::{StoredFieldState, StoredObjectState};
 use crate::models::transactions::StoredTransaction;
 use crate::schema::{events, field_states, object_states, transactions};
-use crate::types::{IndexedEvent, IndexedFieldState, IndexedObjectState, IndexedTransaction};
 use crate::utils::escape_sql_string;
 use crate::{get_sqlite_pool_connection, SqliteConnectionPool};
 
@@ -27,7 +29,7 @@ impl SqliteIndexerStore {
 
     pub fn persist_or_update_object_states(
         &self,
-        states: Vec<IndexedObjectState>,
+        states: Vec<IndexerObjectState>,
     ) -> Result<(), IndexerError> {
         if states.is_empty() {
             return Ok(());
@@ -122,7 +124,7 @@ impl SqliteIndexerStore {
 
     pub fn persist_or_update_field_states(
         &self,
-        states: Vec<IndexedFieldState>,
+        states: Vec<IndexerFieldState>,
     ) -> Result<(), IndexerError> {
         if states.is_empty() {
             return Ok(());
@@ -240,7 +242,7 @@ impl SqliteIndexerStore {
 
     pub fn persist_transactions(
         &self,
-        transactions: Vec<IndexedTransaction>,
+        transactions: Vec<IndexerTransaction>,
     ) -> Result<(), IndexerError> {
         if transactions.is_empty() {
             return Ok(());
@@ -261,7 +263,7 @@ impl SqliteIndexerStore {
         Ok(())
     }
 
-    pub fn persist_events(&self, events: Vec<IndexedEvent>) -> Result<(), IndexerError> {
+    pub fn persist_events(&self, events: Vec<IndexerEvent>) -> Result<(), IndexerError> {
         if events.is_empty() {
             return Ok(());
         }

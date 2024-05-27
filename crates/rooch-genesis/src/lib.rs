@@ -299,6 +299,8 @@ impl RoochGenesis {
         );
         rooch_store.save_transaction(ledger_tx)?;
 
+        // Save the genesis to indexer
+
         let genesis_info = GenesisInfo::new(self.genesis_hash(), inited_root.clone());
         moveos_store.get_config_store().save_genesis(genesis_info)?;
         Ok(inited_root)
