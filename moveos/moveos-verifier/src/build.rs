@@ -429,6 +429,24 @@ pub fn compile_and_inject_metadata(
 
             rooch_metadata.data_struct_map = data_structs_map;
         }
+
+        if metadata_type == "data_struct_func" {
+            let mut data_struct_func_map: BTreeMap<String, Vec<usize>> = BTreeMap::new();
+            for (metadata_key, metadata_value) in metadata_item.iter() {
+                let mut generic_type_indices: Vec<usize> = Vec::new();
+                for idx_expr in metadata_value.iter() {
+                    let expr_value = idx_expr.value.clone();
+                    if let Exp_::Value(copyable_val) = expr_value {
+                        if let CopyableVal_::U64(u64_value) = copyable_val.value {
+                            generic_type_indices.push(u64_value as usize);
+                        }
+                    }
+                }
+                data_struct_func_map.insert(metadata_key.clone(), generic_type_indices);
+            }
+
+            rooch_metadata.data_struct_func_map = data_struct_func_map;
+        }
     }
 
     let serialized_metadata =
