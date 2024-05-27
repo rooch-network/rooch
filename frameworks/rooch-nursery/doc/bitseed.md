@@ -8,6 +8,7 @@
 -  [Resource `Bitseed`](#0xa_bitseed_Bitseed)
 -  [Struct `BitseedCoinInfo`](#0xa_bitseed_BitseedCoinInfo)
 -  [Resource `BitseedStore`](#0xa_bitseed_BitseedStore)
+-  [Struct `InscribeGenerateArgs`](#0xa_bitseed_InscribeGenerateArgs)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0xa_bitseed_genesis_init)
 -  [Function `bitseed_deploy_key`](#0xa_bitseed_bitseed_deploy_key)
@@ -23,6 +24,7 @@
 -  [Function `coin_info_supply`](#0xa_bitseed_coin_info_supply)
 -  [Function `inscribe_verify`](#0xa_bitseed_inscribe_verify)
 -  [Function `process_inscription`](#0xa_bitseed_process_inscription)
+-  [Function `view_validity`](#0xa_bitseed_view_validity)
 
 
 <pre><code><b>use</b> <a href="">0x1::bcs</a>;
@@ -32,6 +34,7 @@
 <b>use</b> <a href="">0x2::address</a>;
 <b>use</b> <a href="">0x2::cbor</a>;
 <b>use</b> <a href="">0x2::hash</a>;
+<b>use</b> <a href="">0x2::hex</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
 <b>use</b> <a href="">0x2::string_utils</a>;
@@ -77,6 +80,18 @@
 
 
 
+<a name="0xa_bitseed_InscribeGenerateArgs"></a>
+
+## Struct `InscribeGenerateArgs`
+
+
+
+<pre><code>#[data_struct]
+<b>struct</b> <a href="bitseed.md#0xa_bitseed_InscribeGenerateArgs">InscribeGenerateArgs</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -87,6 +102,15 @@
 
 
 <pre><code><b>const</b> <a href="bitseed.md#0xa_bitseed_BIT_SEED_DEPLOY">BIT_SEED_DEPLOY</a>: <a href="">vector</a>&lt;u8&gt; = [98, 105, 116, 115, 101, 101, 100, 95, 100, 101, 112, 108, 111, 121];
+</code></pre>
+
+
+
+<a name="0xa_bitseed_BIT_SEED_GENERATOR_TICK"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitseed.md#0xa_bitseed_BIT_SEED_GENERATOR_TICK">BIT_SEED_GENERATOR_TICK</a>: <a href="">vector</a>&lt;u8&gt; = [103, 101, 110, 101, 114, 97, 116, 111, 114];
 </code></pre>
 
 
@@ -161,7 +185,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_coin_info_generator">coin_info_generator</a>(self: &<a href="bitseed.md#0xa_bitseed_BitseedCoinInfo">bitseed::BitseedCoinInfo</a>): <a href="_InscriptionID">ord::InscriptionID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_coin_info_generator">coin_info_generator</a>(self: &<a href="bitseed.md#0xa_bitseed_BitseedCoinInfo">bitseed::BitseedCoinInfo</a>): <a href="_Option">option::Option</a>&lt;<a href="_InscriptionID">ord::InscriptionID</a>&gt;
 </code></pre>
 
 
@@ -238,7 +262,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_inscribe_verify">inscribe_verify</a>(wasm_bytes: <a href="">vector</a>&lt;u8&gt;, deploy_args: <a href="">vector</a>&lt;u8&gt;, seed: <a href="">vector</a>&lt;u8&gt;, user_input: <a href="">vector</a>&lt;u8&gt;, attributes_output: <a href="">vector</a>&lt;u8&gt;): bool
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_inscribe_verify">inscribe_verify</a>(wasm_bytes: <a href="">vector</a>&lt;u8&gt;, deploy_args: <a href="">vector</a>&lt;u8&gt;, seed: <a href="">vector</a>&lt;u8&gt;, user_input: <a href="">vector</a>&lt;u8&gt;, attributes_output: <a href="">vector</a>&lt;u8&gt;): (bool, <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;)
 </code></pre>
 
 
@@ -250,4 +274,15 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_process_inscription">process_inscription</a>(inscription: &<a href="_Inscription">ord::Inscription</a>)
+</code></pre>
+
+
+
+<a name="0xa_bitseed_view_validity"></a>
+
+## Function `view_validity`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_view_validity">view_validity</a>(inscription_id_str: <a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="_MetaprotocolValidity">ord::MetaprotocolValidity</a>&gt;
 </code></pre>

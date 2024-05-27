@@ -73,6 +73,8 @@ async fn start_server(w: &mut World, _scenario: String) {
             opt.btc_rpc_username = Some(RPC_USER.to_string());
             opt.btc_rpc_password = Some(RPC_PASS.to_string());
             opt.data_import_flag = false; // Enable data import without writing indexes
+            opt.btc_sync_block_interval = Some(1u64); // Update sync interval as 1s
+
             info!("config btc rpc ok");
 
             w.bitcoind = Some(bitcoind);
@@ -222,28 +224,25 @@ async fn run_cmd(world: &mut World, args: String) {
     args.push(config_dir.to_str().unwrap().to_string());
     let opts: RoochCli = RoochCli::parse_from(args);
     let ret = rooch::run_cli(opts).await;
+
     match ret {
         Ok(output) => {
             let result_json = serde_json::from_str::<Value>(&output);
-            match result_json {
-                Ok(result_json) => {
-                    debug!(
-                        "cmd: {} output json: {:#}",
-                        cmd_name,
-                        result_json.to_string()
-                    );
-                    tpl_ctx.entry(cmd_name).append::<Value>(result_json);
-                }
-                Err(_err) => {
-                    debug!("cmd: {} output string: {}", cmd_name, output);
-                    let output = Value::String(output);
-                    tpl_ctx.entry(cmd_name).append::<Value>(output);
-                }
+            if result_json.is_ok() {
+                debug!("run_cli ok: {:?}", &result_json);
+
+                tpl_ctx
+                    .entry(cmd_name)
+                    .append::<Value>(result_json.unwrap());
+            } else {
+                debug!("run_cli ok: {:?}", &output);
             }
         }
         Err(err) => {
             debug!("cmd: {} output err: {}", cmd_name, err.to_string());
             let err_msg = Value::String(err.to_string());
+            error!("run_cli fail: {:?}", &err_msg);
+
             tpl_ctx.entry(cmd_name).append::<Value>(err_msg);
         }
     }
