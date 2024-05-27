@@ -4,6 +4,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use move_core_types::account_address::AccountAddress;
 use moveos_types::move_std::string::MoveString;
 use schemars::gen::SchemaGenerator;
 use schemars::schema::{InstanceType, Schema, SchemaObject};
@@ -220,6 +221,13 @@ impl FromStr for H256View {
 impl From<H256View> for ethers::types::H256 {
     fn from(value: H256View) -> Self {
         value.0
+    }
+}
+
+/// In Move Struct, we use AccountAddress to represent H256
+impl From<AccountAddress> for H256View {
+    fn from(value: AccountAddress) -> Self {
+        StrView(ethers::types::H256::from(value.into_bytes()))
     }
 }
 

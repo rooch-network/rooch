@@ -1,9 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::address::RoochAddress;
 use crate::indexer::Filter;
 use anyhow::Result;
-use move_core_types::account_address::AccountAddress;
+use ethers::types::H256;
+
 use move_core_types::language_storage::{StructTag, TypeTag};
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::StateChangeSet;
@@ -47,10 +49,10 @@ impl IndexerStateID {
 #[derive(Clone, Debug)]
 pub struct IndexerObjectState {
     pub object_id: ObjectID,
-    pub owner: AccountAddress,
+    pub owner: RoochAddress,
     pub flag: u8,
     pub object_type: StructTag,
-    pub state_root: AccountAddress,
+    pub state_root: H256,
     pub size: u64,
     pub tx_order: u64,
     pub state_index: u64,
@@ -82,12 +84,12 @@ pub enum ObjectStateFilter {
     /// Query by object type and owner.
     ObjectTypeWithOwner {
         object_type: StructTag,
-        owner: AccountAddress,
+        owner: RoochAddress,
     },
     /// Query by object type.
     ObjectType(StructTag),
     /// Query by owner.
-    Owner(AccountAddress),
+    Owner(RoochAddress),
     /// Query by object ids.
     ObjectId(Vec<ObjectID>),
 }

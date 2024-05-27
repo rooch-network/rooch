@@ -18,7 +18,6 @@ use moveos_types::{
     },
     state::{AnnotatedKeyState, AnnotatedState, KeyState},
 };
-use rooch_rpc_api::jsonrpc_types::event_view::{EventFilterView, EventView, IndexerEventView};
 use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, FieldStateFilterView, IndexerEventPageView,
@@ -26,9 +25,13 @@ use rooch_rpc_api::jsonrpc_types::{
     IndexerObjectStateView, KeyStateView, ObjectStateFilterView, QueryOptions, StateKVView,
     StateOptions, TxOptions,
 };
+use rooch_rpc_api::jsonrpc_types::{
+    event_view::{EventFilterView, EventView, IndexerEventView},
+    RoochAddressView,
+};
 use rooch_rpc_api::jsonrpc_types::{transaction_view::TransactionWithInfoView, EventOptions};
 use rooch_rpc_api::jsonrpc_types::{
-    AccessPathView, AccountAddressView, BalanceInfoPageView, DisplayFieldsView, EventPageView,
+    AccessPathView, BalanceInfoPageView, DisplayFieldsView, EventPageView,
     ExecuteTransactionResponseView, FunctionCallView, H256View, StatePageView, StateView, StrView,
     StructTagView, TransactionWithInfoPageView,
 };
@@ -442,7 +445,7 @@ impl RoochAPIServer for RoochServer {
 
     async fn get_balance(
         &self,
-        account_addr: AccountAddressView,
+        account_addr: RoochAddressView,
         coin_type: StructTagView,
     ) -> RpcResult<BalanceInfoView> {
         Ok(self
@@ -452,10 +455,10 @@ impl RoochAPIServer for RoochServer {
             .map(Into::into)?)
     }
 
-    /// get account balances by AccountAddress
+    /// get account balances by RoochAddress
     async fn get_balances(
         &self,
-        account_addr: AccountAddressView,
+        account_addr: RoochAddressView,
         cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
     ) -> RpcResult<BalanceInfoPageView> {
@@ -590,7 +593,7 @@ impl RoochAPIServer for RoochServer {
                     .resolve_address(multi_chain_address)
                     .await?
             }
-            _ => AccountAddress::ZERO,
+            _ => AccountAddress::ZERO.into(),
         };
         let global_state_filter =
             ObjectStateFilterView::into_object_state_filter(filter, resolve_address);

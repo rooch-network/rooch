@@ -3,7 +3,6 @@
 
 use crate::service::rpc_service::RpcService;
 use anyhow::Result;
-use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use moveos_types::access_path::AccessPath;
 use moveos_types::h256::H256;
@@ -13,7 +12,7 @@ use moveos_types::moveos_std::object::RawObject;
 use moveos_types::state::{KeyState, PlaceholderStruct};
 use rooch_rpc_api::jsonrpc_types::account_view::BalanceInfoView;
 use rooch_rpc_api::jsonrpc_types::CoinInfoView;
-use rooch_types::address::{BitcoinAddress, MultiChainAddress};
+use rooch_types::address::{BitcoinAddress, MultiChainAddress, RoochAddress};
 use rooch_types::bitcoin::ord::{Inscription, InscriptionState};
 use rooch_types::bitcoin::utxo::{UTXOState, UTXO};
 use rooch_types::framework::account_coin_store::AccountCoinStoreModule;
@@ -86,7 +85,7 @@ impl AggregateService {
 
     pub async fn get_balance(
         &self,
-        account_addr: AccountAddress,
+        account_addr: RoochAddress,
         coin_type: StructTag,
     ) -> Result<BalanceInfoView> {
         let coin_info = self
@@ -99,7 +98,8 @@ impl AggregateService {
                 anyhow::anyhow!("Can not find CoinInfo with coin_type: {}", coin_type)
             })?;
 
-        let coin_store_id = AccountCoinStoreModule::account_coin_store_id(account_addr, coin_type);
+        let coin_store_id =
+            AccountCoinStoreModule::account_coin_store_id(account_addr.into(), coin_type);
         let balance = self
             .get_coin_stores(vec![coin_store_id])
             .await?
@@ -113,7 +113,7 @@ impl AggregateService {
 
     pub async fn query_account_coin_stores(
         &self,
-        owner: AccountAddress,
+        owner: RoochAddress,
         cursor: Option<IndexerStateID>,
         limit: usize,
     ) -> Result<Vec<IndexerObjectState>> {
@@ -133,7 +133,7 @@ impl AggregateService {
 
     pub async fn get_balances(
         &self,
-        owner: AccountAddress,
+        owner: RoochAddress,
         cursor: Option<IndexerStateID>,
         limit: usize,
     ) -> Result<Vec<(Option<IndexerStateID>, BalanceInfoView)>> {
