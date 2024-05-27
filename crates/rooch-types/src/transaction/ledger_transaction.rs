@@ -98,4 +98,21 @@ impl LedgerTransaction {
     pub fn decode(bytes: &[u8]) -> Result<Self> {
         Ok(bcs::from_bytes(bytes)?)
     }
+
+    pub fn build_ledger_transaction(
+        tx_data: LedgerTxData,
+        tx_timestamp: u64,
+        tx_order: u64,
+        tx_order_signature: Vec<u8>,
+    ) -> LedgerTransaction {
+        let tx_accumulator_root = H256::random();
+        let tx_sequence_info = TransactionSequenceInfo {
+            tx_order,
+            tx_order_signature,
+            tx_accumulator_root,
+            tx_timestamp,
+        };
+
+        LedgerTransaction::new(tx_data, tx_sequence_info)
+    }
 }

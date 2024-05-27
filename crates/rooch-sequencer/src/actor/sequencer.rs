@@ -64,31 +64,17 @@ impl SequencerActor {
         let tx_order_signature = Signature::new_hashed(&witness_hash.0, &self.sequencer_key)
             .as_ref()
             .to_vec();
-        let tx =
-            Self::build_ledger_transaction(tx_data, tx_timestamp, tx_order, tx_order_signature)?;
+        let tx = LedgerTransaction::build_ledger_transaction(
+            tx_data,
+            tx_timestamp,
+            tx_order,
+            tx_order_signature,
+        );
 
         self.rooch_store.save_transaction(tx.clone())?;
         debug!("sequencer tx: {} order: {:?}", hash, tx_order);
 
         Ok(tx)
-    }
-
-    pub fn build_ledger_transaction(
-        tx_data: LedgerTxData,
-        tx_timestamp: u64,
-        tx_order: u64,
-        tx_order_signature: Vec<u8>,
-    ) -> Result<LedgerTransaction> {
-        let tx_accumulator_root = H256::random();
-        let tx_sequence_info = TransactionSequenceInfo {
-            tx_order,
-            tx_order_signature,
-            tx_accumulator_root,
-            tx_timestamp,
-        };
-
-        let ledger_tx = LedgerTransaction::new(tx_data, tx_sequence_info);
-        Ok(ledger_tx)
     }
 }
 

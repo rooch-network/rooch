@@ -21,7 +21,6 @@ use rooch_framework::natives::gas_parameter::gas_member::{
     FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule,
 };
 use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
-use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
@@ -29,7 +28,7 @@ use rooch_types::error::GenesisError;
 use rooch_types::framework::genesis::GenesisContext;
 use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
 use rooch_types::transaction::rooch::RoochTransaction;
-use rooch_types::transaction::LedgerTxData;
+use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::str::FromStr;
@@ -292,12 +291,12 @@ impl RoochGenesis {
             .get::<GenesisContext>()?
             .expect("Genesis context should exist");
         let tx_ledger_data = LedgerTxData::L2Tx(self.genesis_tx());
-        let ledger_tx = SequencerActor::build_ledger_transaction(
+        let ledger_tx = LedgerTransaction::build_ledger_transaction(
             tx_ledger_data,
             genesis_context.timestamp,
             genesis_tx_order,
             vec![],
-        )?;
+        );
         rooch_store.save_transaction(ledger_tx)?;
 
         let genesis_info = GenesisInfo::new(self.genesis_hash(), inited_root.clone());

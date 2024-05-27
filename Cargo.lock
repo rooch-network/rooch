@@ -9195,7 +9195,6 @@ dependencies = [
  "moveos-verifier",
  "once_cell",
  "rooch-framework",
- "rooch-sequencer",
  "rooch-store",
  "rooch-types",
  "serde 1.0.202",
