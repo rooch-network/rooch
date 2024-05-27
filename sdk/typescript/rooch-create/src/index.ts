@@ -2,11 +2,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { existsSync, statSync } from 'fs';
-import { mkdir, readdir, readFile, writeFile } from 'fs/promises';
-import { relative, resolve } from 'path';
-import { parseArgs } from 'util';
-import { prompt } from 'enquirer';
+import { existsSync, statSync } from 'fs'
+import { mkdir, readdir, readFile, writeFile } from 'fs/promises'
+import { relative, resolve } from 'path'
+import { parseArgs } from 'util'
+import { prompt } from 'enquirer'
 
 const { values: args } = parseArgs({
   options: {
@@ -16,12 +16,12 @@ const { values: args } = parseArgs({
       short: 't',
     },
   },
-});
+})
 
 async function main() {
   const results = await prompt<{
-    template: string;
-    dAppName: string;
+    template: string
+    dAppName: string
   }>(
     [
       {
@@ -42,59 +42,59 @@ async function main() {
         initial: 'my-first-dapp',
       },
     ].filter((question) => !args[question.name as 'template']),
-  );
+  )
 
-  const outDir = resolve(process.cwd(), results.dAppName);
+  const outDir = resolve(process.cwd(), results.dAppName)
 
   if (existsSync(outDir)) {
-    throw new Error(`Directory ${outDir} already exists`);
+    throw new Error(`Directory ${outDir} already exists`)
   }
 
-  const files = await collectFiles(results.template ?? args.template, results.dAppName);
-  await writeFiles(files, outDir);
+  const files = await collectFiles(results.template ?? args.template, results.dAppName)
+  await writeFiles(files, outDir)
 }
 
-main();
+main()
 
 async function collectFiles(template: string, dAppName: string) {
   // const dependencies = await getDependencyVersions();
-  const templateDir = resolve(__dirname, '../dist/templates', template);
+  const templateDir = resolve(__dirname, '../dist/templates', template)
   const files = new Array<{
-    path: string;
-    content: Buffer;
-  }>();
+    path: string
+    content: Buffer
+  }>()
 
   if (!statSync(templateDir).isDirectory()) {
-    throw new Error(`Template ${templateDir} could not be found`);
+    throw new Error(`Template ${templateDir} could not be found`)
   }
 
-  await addDir(templateDir);
+  await addDir(templateDir)
 
-  return files;
+  return files
 
   async function addDir(dir: string) {
-    const entries = await readdir(dir);
+    const entries = await readdir(dir)
 
     for (const entry of entries) {
       if (entry === 'node_modules') {
-        continue;
+        continue
       }
-      const entryPath = resolve(dir, entry);
-      const stat = statSync(entryPath);
+      const entryPath = resolve(dir, entry)
+      const stat = statSync(entryPath)
 
       if (stat.isDirectory()) {
-        await addDir(entryPath);
+        await addDir(entryPath)
       } else {
-        let content = await readFile(entryPath);
+        let content = await readFile(entryPath)
 
         if (entry === 'package.json') {
-          const json = JSON.parse(content.toString());
-          json.name = dAppName;
+          const json = JSON.parse(content.toString())
+          json.name = dAppName
 
-          content = Buffer.from(JSON.stringify(json, null, 2));
+          content = Buffer.from(JSON.stringify(json, null, 2))
         }
 
-        files.push({ path: relative(templateDir, entryPath), content });
+        files.push({ path: relative(templateDir, entryPath), content })
       }
     }
   }
@@ -102,12 +102,12 @@ async function collectFiles(template: string, dAppName: string) {
 
 async function writeFiles(files: Array<{ path: string; content: Buffer }>, outDir: string) {
   for (const file of files) {
-    const filePath = resolve(outDir, file.path);
-    const dirPath = resolve(filePath, '..');
+    const filePath = resolve(outDir, file.path)
+    const dirPath = resolve(filePath, '..')
     if (!existsSync(dirPath)) {
-      await mkdir(dirPath, { recursive: true });
+      await mkdir(dirPath, { recursive: true })
     }
 
-    await writeFile(filePath, file.content);
+    await writeFile(filePath, file.content)
   }
 }

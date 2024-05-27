@@ -225,5 +225,19 @@ module.exports = {
         'arrow-body-style': ['error', 'as-needed'],
       },
     },
+    {
+      files: ['sdk/typescript/rooch-create/**/*'],
+      rules: {
+        '@typescript-eslint/ban-types': 'off',
+        'no-restricted-globals': 'off',
+      },
+    },
+    {
+      files: ['sdk/typescript/templates/**/*'],
+      rules: {
+        'header/header': 'off',
+        'require-extensions/require-extensions': 'off',
+      },
+    },
   ],
 }

@@ -563,8 +563,8 @@ importers:
         version: 5.2.2
     devDependencies:
       '@types/node':
-        specifier: ^18.15.13
-        version: 18.15.13
+        specifier: ^20.4.2
+        version: 20.11.24
 
   sdk/typescript/rooch-sdk:
     dependencies:
@@ -8707,10 +8707,6 @@ packages:
 
   /@types/node@18.15.11:
     resolution: {integrity: sha512-E5Kwq2n4SbMzQOn6wnmBjuK9ouqlURrcZDVfbo9ftDDTFt3nk7ZKK4GMOzoYgnpQJKcxwQw+lGaBvvlMo0qN/Q==}
-    dev: true
-
-  /@types/node@18.15.13:
-    resolution: {integrity: sha512-N+0kuo9KgrUQ1Sn/ifDXsvg0TTleP7rIy4zOBGECxAljqvqfqpTfzx0Q1NUedOixRMBfe2Whhb056a42cWs26Q==}
     dev: true
 
   /@types/node@18.15.3:
