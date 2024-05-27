@@ -19,7 +19,9 @@ use rooch_config::indexer_config::ROOCH_INDEXER_DB_DIR;
 use errors::IndexerError;
 use once_cell::sync::Lazy;
 use rooch_types::indexer::event::IndexerEvent;
-use rooch_types::indexer::state::{IndexerFieldState, IndexerObjectState};
+use rooch_types::indexer::state::{
+    IndexerFieldState, IndexerFieldStateChanges, IndexerObjectState, IndexerObjectStateChanges,
+};
 use rooch_types::indexer::transaction::IndexerTransaction;
 
 pub mod actor;
@@ -146,6 +148,18 @@ pub fn new_sqlite_connection_pool(db_url: &str) -> Result<SqliteConnectionPool, 
 }
 
 impl IndexerStoreTrait for IndexerStore {
+    fn update_object_states(
+        &self,
+        mut object_state_change: IndexerObjectStateChanges,
+    ) -> Result<(), IndexerError> {
+        let mut object_states_new_and_update = object_state_change.new_object_states;
+        object_states_new_and_update.append(&mut object_state_change.update_object_states);
+        self.get_sqlite_store(INDEXER_OBJECT_STATES_TABLE_NAME)?
+            .persist_or_update_object_states(object_states_new_and_update)?;
+        self.get_sqlite_store(INDEXER_OBJECT_STATES_TABLE_NAME)?
+            .delete_object_states(object_state_change.remove_object_states)
+    }
+
     fn persist_or_update_object_states(
         &self,
         states: Vec<IndexerObjectState>,
@@ -157,6 +171,20 @@ impl IndexerStoreTrait for IndexerStore {
     fn delete_object_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError> {
         self.get_sqlite_store(INDEXER_OBJECT_STATES_TABLE_NAME)?
             .delete_object_states(state_pks)
+    }
+
+    fn update_field_states(
+        &self,
+        mut field_state_change: IndexerFieldStateChanges,
+    ) -> Result<(), IndexerError> {
+        let mut field_states_new_and_update = field_state_change.new_field_states;
+        field_states_new_and_update.append(&mut field_state_change.update_field_states);
+        self.get_sqlite_store(INDEXER_FIELD_STATES_TABLE_NAME)?
+            .persist_or_update_field_states(field_states_new_and_update)?;
+        self.get_sqlite_store(INDEXER_FIELD_STATES_TABLE_NAME)
+            .delete_field_states(field_state_change.remove_field_states)?;
+        self.get_sqlite_store(INDEXER_FIELD_STATES_TABLE_NAME)
+            .delete_field_states_by_object_id(field_state_change.remove_field_states_by_object_id)
     }
 
     fn persist_or_update_field_states(

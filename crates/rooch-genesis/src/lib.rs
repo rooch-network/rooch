@@ -21,11 +21,18 @@ use rooch_framework::natives::gas_parameter::gas_member::{
     FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule,
 };
 use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
+use rooch_indexer::store::traits::IndexerStoreTrait;
+use rooch_indexer::IndexerStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::error::GenesisError;
 use rooch_types::framework::genesis::GenesisContext;
+use rooch_types::indexer::event::IndexerEvent;
+use rooch_types::indexer::state::{
+    handle_object_change, IndexerFieldStateChanges, IndexerObjectStateChanges,
+};
+use rooch_types::indexer::transaction::IndexerTransaction;
 use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
@@ -257,6 +264,7 @@ impl RoochGenesis {
         &self,
         moveos_store: &mut MoveOSStore,
         rooch_store: &mut RoochStore,
+        indexer_store: &mut IndexerStore,
     ) -> Result<RootObjectEntity> {
         //we load the gas parameter from genesis binary, avoid the code change affect the genesis result
         let genesis_gas_parameter = FrameworksGasParameters::load_from_gas_entries(
@@ -281,7 +289,12 @@ impl RoochGenesis {
         );
 
         let tx_hash = self.genesis_tx().tx_hash();
-        moveos_store.handle_tx_output(tx_hash, genesis_state_root, size, genesis_tx_output)?;
+        let genesis_execution_info = moveos_store.handle_tx_output(
+            tx_hash,
+            genesis_state_root,
+            size,
+            genesis_tx_output.clone(),
+        )?;
 
         // Save the genesis txs to sequencer
         let genesis_tx_order: u64 = 0;
@@ -300,6 +313,41 @@ impl RoochGenesis {
         rooch_store.save_transaction(ledger_tx)?;
 
         // Save the genesis to indexer
+        // 1. update indexer transaction
+        let indexer_transaction = IndexerTransaction::new(
+            ledger_tx.clone(),
+            genesis_execution_info.clone(),
+            moveos_tx.clone(),
+        )?;
+        let transactions = vec![indexer_transaction];
+        indexer_store.persist_transactions(transactions)?;
+
+        // 2. update indexer state
+        let events: Vec<_> = genesis_tx_output
+            .events
+            .into_iter()
+            .map(|event| IndexerEvent::new(event.clone(), ledger_tx.clone(), moveos_tx.clone()))
+            .collect();
+        indexer_store.persist_events(events)?;
+
+        // 3. update indexer state
+        // indexer state index generator
+        let mut state_index_generator = 0u64;
+        let mut indexer_object_state_changes = IndexerObjectStateChanges::default();
+        let mut indexer_field_state_changes = IndexerFieldStateChanges::default();
+
+        for (object_id, object_change) in genesis_tx_output.changeset.changes {
+            state_index_generator = handle_object_change(
+                state_index_generator,
+                genesis_tx_order,
+                &mut indexer_object_state_changes,
+                &mut indexer_field_state_changes,
+                object_id,
+                object_change,
+            )?;
+        };
+        indexer_store.update_object_states(indexer_object_state_changes)?;
+        indexer_store.update_field_states(indexer_field_state_changes)?;
 
         let genesis_info = GenesisInfo::new(self.genesis_hash(), inited_root.clone());
         moveos_store.get_config_store().save_genesis(genesis_info)?;
