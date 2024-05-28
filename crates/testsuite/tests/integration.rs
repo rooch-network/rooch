@@ -86,9 +86,7 @@ async fn start_server(w: &mut World, _scenario: String) {
 
     let mut server_opt = ServerOpt::new();
 
-    let result = generate_new_key_pair(None, None, None, None).unwrap();
-    let kp: RoochKeyPair =
-        retrieve_key_pair(&result.key_pair_data.private_key_encryption, None).unwrap();
+    let kp: RoochKeyPair = RoochKeyPair::generate();
     server_opt.sequencer_keypair = Some(kp.copy());
     server_opt.proposer_keypair = Some(kp.copy());
 

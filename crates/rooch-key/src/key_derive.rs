@@ -203,7 +203,12 @@ fn validate_derivation_path(path: Option<DerivationPath>) -> Result<DerivationPa
                 {
                     Ok(p)
                 } else {
-                    Err(anyhow::anyhow!("Invalid derivation path: {}, purpose:{}, coin_type: {}", p, p_purpose, p_coin_type))
+                    Err(anyhow::anyhow!(
+                        "Invalid derivation path: {}, purpose:{}, coin_type: {}",
+                        p,
+                        p_purpose,
+                        p_coin_type
+                    ))
                 }
             } else {
                 Err(anyhow::anyhow!("Invalid derivation path: {}", p))

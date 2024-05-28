@@ -75,8 +75,7 @@ impl RoochKeyPair {
         }
     }
 
-    // #[cfg(test)]
-    pub fn generate_for_testing() -> Self {
+    pub fn generate() -> Self {
         let rng = &mut rand::thread_rng();
         let ed25519_keypair = Ed25519KeyPair::generate(rng);
         RoochKeyPair::Ed25519(ed25519_keypair)

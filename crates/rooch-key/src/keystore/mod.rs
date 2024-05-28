@@ -125,22 +125,6 @@ impl AccountKeystore for Keystore {
         }
     }
 
-    // fn update_address_encryption_data(
-    //     &mut self,
-    //     address: &RoochAddress,
-    //     encryption: EncryptionData,
-    // ) -> Result<(), anyhow::Error> {
-    //     // Implement this method to update the key pair by coin ID for the appropriate variant (File or InMem)
-    //     match self {
-    //         Keystore::File(file_keystore) => {
-    //             file_keystore.update_address_encryption_data(address, encryption)
-    //         }
-    //         Keystore::InMem(inmem_keystore) => {
-    //             inmem_keystore.update_address_encryption_data(address, encryption)
-    //         }
-    //     }
-    // }
-
     fn nullify(&mut self, address: &RoochAddress) -> Result<(), anyhow::Error> {
         // Implement this method to nullify the key pair by coin ID for the appropriate variant (File or InMem)
         match self {
@@ -264,21 +248,6 @@ impl AccountKeystore for Keystore {
             Keystore::InMem(inmem_keystore) => inmem_keystore.get_mnemonic(password),
         }
     }
-
-    // fn add_mnemonic_data(
-    //     &mut self,
-    //     mnemonic_phrase: String,
-    //     mnemonic_data: MnemonicData,
-    // ) -> Result<(), anyhow::Error> {
-    //     match self {
-    //         Keystore::File(file_keystore) => {
-    //             file_keystore.add_mnemonic_data(mnemonic_phrase, mnemonic_data)
-    //         }
-    //         Keystore::InMem(inmem_keystore) => {
-    //             inmem_keystore.add_mnemonic_data(mnemonic_phrase, mnemonic_data)
-    //         }
-    //     }
-    // }
 }
 
 impl Display for Keystore {

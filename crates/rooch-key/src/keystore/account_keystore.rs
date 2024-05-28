@@ -100,11 +100,6 @@ pub trait AccountKeystore {
         is_password_empty: bool,
     ) -> Result<(), anyhow::Error>;
 
-    // fn update_address_encryption_data(
-    //     &mut self,
-    //     address: &RoochAddress,
-    //     encryption: EncryptionData,
-    // ) -> Result<(), anyhow::Error>;
     fn nullify(&mut self, address: &RoochAddress) -> Result<(), anyhow::Error>;
 
     fn sign_hashed(
@@ -131,53 +126,6 @@ pub trait AccountKeystore {
         T: Serialize;
 
     fn addresses(&self) -> Vec<RoochAddress>;
-
-    // fn import_from_mnemonic(
-    //     &mut self,
-    //     phrase: &str,
-    //     derivation_path: Option<DerivationPath>,
-    //     password: Option<String>,
-    // ) -> Result<ImportedMnemonic, anyhow::Error> {
-    //     let mnemonic = Mnemonic::from_phrase(phrase, Language::English)?;
-    //     let seed = Seed::new(&mnemonic, "");
-
-    //     let sk = derive_private_key_from_path(seed.as_bytes(), derivation_path)?;
-
-    //     let encryption = encrypt_key(&sk, password).expect("Encryption failed for private key");
-
-    //     let address = derive_address_from_private_key(sk)?;
-
-    //     let result = ImportedMnemonic {
-    //         address,
-    //         encryption: encryption.clone(),
-    //     };
-
-    //     self.add_address_encryption_data(result.address, encryption)?;
-
-    //     Ok(result)
-    // }
-
-    // fn update_address_with_encryption_data(
-    //     &mut self,
-    //     _address: &RoochAddress,
-    //     phrase: String,
-    //     derivation_path: Option<DerivationPath>,
-    //     password: Option<String>,
-    // ) -> Result<EncryptionData, anyhow::Error> {
-    //     let mnemonic = Mnemonic::from_phrase(&phrase, Language::English)?;
-    //     let seed = Seed::new(&mnemonic, "");
-
-    //     let sk = derive_private_key_from_path(seed.as_bytes(), derivation_path)?;
-
-    //     let encryption_data =
-    //         encrypt_key(&sk, password).expect("Encryption failed for private key");
-
-    //     let address = derive_address_from_private_key(sk)?;
-
-    //     self.update_address_encryption_data(&address, encryption_data.clone())?;
-
-    //     Ok(encryption_data)
-    // }
 
     fn nullify_address(&mut self, address: &RoochAddress) -> Result<(), anyhow::Error> {
         self.nullify(address)?;

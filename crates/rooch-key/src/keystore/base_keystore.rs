@@ -174,15 +174,6 @@ impl AccountKeystore for BaseKeyStore {
         Ok(())
     }
 
-    // fn update_address_encryption_data(
-    //     &mut self,
-    //     address: &RoochAddress,
-    //     encryption: EncryptionData,
-    // ) -> Result<(), anyhow::Error> {
-    //     self.keys.entry(*address).or_insert(encryption);
-    //     Ok(())
-    // }
-
     fn nullify(&mut self, address: &RoochAddress) -> Result<(), anyhow::Error> {
         self.keys.remove(address);
         Ok(())
@@ -193,10 +184,7 @@ impl AccountKeystore for BaseKeyStore {
         address: &RoochAddress,
         password: Option<String>,
     ) -> Result<AuthenticationKey, anyhow::Error> {
-        //TODO define derivation_path for session key
-        let result = generate_new_key_pair(None, None, None, password.clone())?;
-        let kp: RoochKeyPair =
-            retrieve_key_pair(&result.key_pair_data.private_key_encryption, password)?;
+        let kp: RoochKeyPair = RoochKeyPair::generate();
         let authentication_key = kp.public().authentication_key();
         let inner_map = self.session_keys.entry(*address).or_default();
         let local_session_key = LocalSessionKey {
@@ -243,15 +231,7 @@ impl AccountKeystore for BaseKeyStore {
                     "Cannot find SessionKey for authentication_key: [{authentication_key}]"
                 ))
             })?;
-        //TODO should we check the scope of session key here?
-        // let session_key = local_session_key.session_key.as_ref().ok_or_else(||{
-        //     signature::Error::from_source(
-        //         format!("SessionKey for authentication_key:[{authentication_key}] do not binding to on-chain SessionKey")
-        //     )
-        // })?;
-        // ensure!(session_key.is_scope_match_with_action(&msg.action), signature::Error::from_source(
-        //     format!("SessionKey for authentication_key:[{authentication_key}] scope do not match with transaction")
-        // ));
+
         let kp: RoochKeyPair = retrieve_key_pair(&local_session_key.private_key, password)
             .map_err(signature::Error::from_source)?;
 
@@ -329,47 +309,5 @@ impl AccountKeystore for BaseKeyStore {
                 "Cannot find mnemonic data, please init the keystore first".to_string(),
             ))),
         }
-        // match self.mnemonic.first_key_value() {
-        //     Some((k, v)) => {
-        //         let nonce = Base64::decode(&v.mnemonic_phrase_encryption.nonce).map_err(|e| {
-        //             anyhow::Error::new(RoochError::KeyConversionError(e.to_string()))
-        //         })?;
-        //         let ciphertext =
-        //             Base64::decode(&v.mnemonic_phrase_encryption.ciphertext).map_err(|e| {
-        //                 anyhow::Error::new(RoochError::KeyConversionError(e.to_string()))
-        //             })?;
-        //         let tag = Base64::decode(&v.mnemonic_phrase_encryption.tag).map_err(|e| {
-        //             anyhow::Error::new(RoochError::KeyConversionError(e.to_string()))
-        //         })?;
-
-        //         let mnemonic_phrase = decrypt_key(
-        //             nonce.as_slice(),
-        //             ciphertext.as_slice(),
-        //             tag.as_slice(),
-        //             password,
-        //         )?;
-
-        //         let mnemonic_phrase = String::from_utf8(mnemonic_phrase)
-        //             .map_err(|e| anyhow::anyhow!("Parse mnemonic phrase error:{}", e))?;
-        //         let mnemonic_generated_address = MnemonicResult {
-        //             mnemonic_phrase,
-        //             mnemonic_phrase_key: k.clone(),
-        //             mnemonic_data: v.clone(),
-        //         };
-        //         Ok(vec![mnemonic_generated_address])
-        //     }
-        //     None => Ok(vec![]),
-        // }
     }
-
-    // fn add_mnemonic_data(
-    //     &mut self,
-    //     mnemonic_phrase: String,
-    //     mnemonic_data: MnemonicData,
-    // ) -> Result<(), anyhow::Error> {
-    //     self.mnemonics
-    //         .entry(mnemonic_phrase)
-    //         .or_insert(mnemonic_data);
-    //     Ok(())
-    // }
 }

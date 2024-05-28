@@ -57,17 +57,6 @@ impl AccountKeystore for FileBasedKeystore {
         self.keystore.get_key_pair_with_password(address, password)
     }
 
-    // fn update_address_encryption_data(
-    //     &mut self,
-    //     address: &RoochAddress,
-    //     encryption: EncryptionData,
-    // ) -> Result<(), anyhow::Error> {
-    //     self.keystore
-    //         .update_address_encryption_data(address, encryption)?;
-    //     self.save()?;
-    //     Ok(())
-    // }
-
     fn nullify(&mut self, address: &RoochAddress) -> Result<(), anyhow::Error> {
         self.keystore.nullify(address)?;
         self.save()?;
@@ -173,28 +162,6 @@ impl AccountKeystore for FileBasedKeystore {
     fn get_mnemonic(&self, password: Option<String>) -> Result<MnemonicResult, anyhow::Error> {
         self.keystore.get_mnemonic(password)
     }
-
-    // fn add_mnemonic_data(
-    //     &mut self,
-    //     mnemonic_phrase: String,
-    //     mnemonic_data: MnemonicData,
-    // ) -> Result<(), anyhow::Error> {
-    //     self.keystore
-    //         .add_mnemonic_data(mnemonic_phrase, mnemonic_data)?;
-    //     self.save()?;
-    //     Ok(())
-    // }
-
-    // fn update_mnemonic_data(
-    //     &mut self,
-    //     mnemonic_phrase: String,
-    //     mnemonic_data: MnemonicData,
-    // ) -> Result<(), anyhow::Error> {
-    //     self.keystore
-    //         .update_mnemonic_data(mnemonic_phrase, mnemonic_data)?;
-    //     self.save()?;
-    //     Ok(())
-    // }
 }
 
 impl FileBasedKeystore {
