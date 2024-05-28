@@ -131,24 +131,10 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
             )?;
         }
 
-        //Merge new object states and update object states
-        let mut object_states_new_and_update = indexer_object_state_changes.new_object_states;
-        object_states_new_and_update.append(&mut indexer_object_state_changes.update_object_states);
         self.indexer_store
-            .persist_or_update_object_states(object_states_new_and_update)?;
+            .update_object_states(indexer_object_state_changes)?;
         self.indexer_store
-            .delete_object_states(indexer_object_state_changes.remove_object_states)?;
-
-        //Merge new field states and update field states
-        let mut fiels_states_new_and_update = indexer_field_state_changes.new_field_states;
-        fiels_states_new_and_update.append(&mut indexer_field_state_changes.update_field_states);
-        self.indexer_store
-            .persist_or_update_field_states(fiels_states_new_and_update)?;
-        self.indexer_store
-            .delete_field_states(indexer_field_state_changes.remove_field_states)?;
-        self.indexer_store.delete_field_states_by_object_id(
-            indexer_field_state_changes.remove_field_states_by_object_id,
-        )?;
+            .update_field_states(indexer_field_state_changes)?;
 
         Ok(())
     }

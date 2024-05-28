@@ -3,7 +3,6 @@
 
 use crate::schema::field_states;
 use crate::schema::object_states;
-use crate::utils;
 use diesel::prelude::*;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{StructTag, TypeTag};
@@ -52,7 +51,7 @@ impl From<IndexerObjectState> for StoredObjectState {
             object_id: state.object_id.to_string(),
             owner: state.owner.to_hex_literal(),
             flag: state.flag as i16,
-            object_type: utils::format_struct_tag(&state.object_type),
+            object_type: state.object_type.to_string(),
             state_root: state.state_root.to_hex_literal(),
             size: state.size as i64,
             tx_order: state.tx_order as i64,

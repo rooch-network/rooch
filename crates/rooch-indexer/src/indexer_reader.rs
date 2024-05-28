@@ -7,7 +7,6 @@ use crate::models::states::{StoredFieldState, StoredObjectState};
 use crate::models::transactions::StoredTransaction;
 use crate::schema::object_states;
 use crate::schema::{events, field_states, transactions};
-use crate::utils::format_struct_tag;
 use crate::{
     IndexerResult, IndexerStoreMeta, SqliteConnectionConfig, SqliteConnectionPoolConfig,
     SqlitePoolConnection, INDEXER_EVENTS_TABLE_NAME, INDEXER_FIELD_STATES_TABLE_NAME,
@@ -505,7 +504,7 @@ impl IndexerReader {
 }
 
 fn object_type_query(object_type: &StructTag) -> String {
-    let object_type_str = format_struct_tag(object_type);
+    let object_type_str = object_type.to_string();
     // if the caller does not specify the type parameters, we will use the prefix match
     if object_type.type_params.is_empty() {
         format!("{STATE_OBJECT_TYPE_STR} like \"{}%\"", object_type_str)

@@ -5,7 +5,6 @@ use crate::SqlitePoolConnection;
 use anyhow::anyhow;
 use diesel::{RunQueryDsl, SqliteConnection};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use move_core_types::language_storage::StructTag;
 use tracing::{debug, info};
 
 const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
@@ -104,11 +103,4 @@ pub fn drop_all_tables(conn: &mut SqliteConnection) -> Result<(), diesel::result
 pub fn escape_sql_string(value: String) -> String {
     // In SQLite, replace single quotes with two single quotes
     value.replace(['\''], "''")
-}
-
-// For better generate sql index for indexer query
-pub fn format_struct_tag(sturct_tag: &StructTag) -> String {
-    // let address = format!("0x{}", sturct_tag.address.to_canonical_string());
-    let address = format!("0x{}", sturct_tag.address.short_str_lossless());
-    format!("{}::{}::{}", address, sturct_tag.module, sturct_tag.name,)
 }
