@@ -6,7 +6,11 @@ use async_trait::async_trait;
 use clap::Parser;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::types::LocalAccount;
-use rooch_types::{crypto::EncodeDecodeBase64, error::RoochResult};
+use rooch_types::{
+    address::MultiChainAddress,
+    crypto::{EncodeDecodeBase64, PublicKey},
+    error::RoochResult,
+};
 use rpassword::prompt_password;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
@@ -23,8 +27,29 @@ pub struct ListCommand {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct LocalAccountView {
+    pub address: String,
+    pub hex_address: String,
+    pub multichain_address: Option<MultiChainAddress>,
+    pub public_key: Option<PublicKey>,
+    pub has_session_key: bool,
+}
+
+impl From<LocalAccount> for LocalAccountView {
+    fn from(account: LocalAccount) -> Self {
+        LocalAccountView {
+            address: account.address.to_bech32(),
+            hex_address: account.address.to_hex_literal(),
+            multichain_address: account.multichain_address,
+            public_key: account.public_key,
+            has_session_key: account.has_session_key,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct AccountView {
-    pub local_account: LocalAccount,
+    pub local_account: LocalAccountView,
     pub active: bool,
 }
 
@@ -43,52 +68,51 @@ impl CommandAction<()> for ListCommand {
         };
 
         let accounts: Vec<LocalAccount> = context.keystore.get_accounts(password)?;
+        let accont_views: Vec<AccountView> = accounts
+            .into_iter()
+            .map(|account: LocalAccount| {
+                let active = Some(account.address) == active_address;
+                AccountView {
+                    local_account: account.into(),
+                    active,
+                }
+            })
+            .collect();
 
         if self.json {
-            let accont_views: Vec<AccountView> = accounts
-                .into_iter()
-                .map(|account: LocalAccount| AccountView {
-                    local_account: account.clone(),
-                    active: Some(account.address) == active_address,
-                })
-                .collect();
-
             println!("{}", serde_json::to_string_pretty(&accont_views).unwrap());
-            return Ok(());
-        }
-
-        println!(
-            "{:^66} | {:^66} | {:^48} | {:^16} | {:^12}",
-            "Rooch Address (Ed25519)",
-            "Multichain Address",
-            "Public Key (Base64)",
-            "Has session key",
-            "Active Address"
-        );
-        println!("{}", ["-"; 153].join(""));
-
-        for account in accounts {
-            let address = account.address;
-            let active = if active_address == Some(address) {
-                "True"
-            } else {
-                ""
-            };
-
+        } else {
+            //TODO optimize the output format
             println!(
-                "{:^66} | {:^66} | {:^48} | {:^16} | {:^12}",
-                address,
-                account
-                    .multichain_address
-                    .map(|multichain_address| multichain_address.to_string())
-                    .unwrap_or_default(),
-                account
-                    .public_key
-                    .map(|public_key| public_key.encode_base64())
-                    .unwrap_or_default(),
-                account.has_session_key.to_string(),
-                active
+                "{:^66} | {:^66} | {:^48} | {:^48} | {:^10} | {:^10}",
+                "Address (bech32)",
+                "Address (hex)",
+                "Multichain Address",
+                "Public Key(base64)",
+                "Session key",
+                "Active"
             );
+            println!("{}", ["-"; 68].join(""));
+
+            for account in accont_views {
+                println!(
+                    "{:^66} | {:^66} | {:^48} | {:^48} | {:^10} | {:^10}",
+                    account.local_account.address,
+                    account.local_account.hex_address,
+                    account
+                        .local_account
+                        .multichain_address
+                        .map(|multichain_address| multichain_address.to_string())
+                        .unwrap_or_default(),
+                    account
+                        .local_account
+                        .public_key
+                        .map(|public_key| public_key.encode_base64())
+                        .unwrap_or_default(),
+                    account.local_account.has_session_key.to_string(),
+                    account.active
+                );
+            }
         }
 
         Ok(())

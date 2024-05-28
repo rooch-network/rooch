@@ -2,21 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{ModuleId, StructTag};
 use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
-use moveos_types::moveos_std::account::Account;
+
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
-use moveos_types::state::{AnnotatedState, KeyState, MoveStructType, State};
+use moveos_types::state::{AnnotatedState, KeyState, State};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_sequencer::proxy::SequencerProxy;
-use rooch_types::address::MultiChainAddress;
+use rooch_types::address::{MultiChainAddress, RoochAddress};
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
     FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateID, ObjectStateFilter,
@@ -84,19 +83,12 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn resolve_address(&self, mca: MultiChainAddress) -> Result<AccountAddress> {
-        self.executor.resolve_address(mca).await
+    pub async fn resolve_address(&self, mca: MultiChainAddress) -> Result<RoochAddress> {
+        self.executor.resolve_address(mca).await.map(Into::into)
     }
 
     pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<State>>> {
         self.executor.get_states(access_path).await
-    }
-
-    pub async fn exists_account(&self, address: AccountAddress) -> Result<bool> {
-        let mut resp = self
-            .get_states(AccessPath::resource(address, Account::struct_tag()))
-            .await?;
-        Ok(resp.pop().flatten().is_some())
     }
 
     pub async fn exists_module(&self, module_id: ModuleId) -> Result<bool> {

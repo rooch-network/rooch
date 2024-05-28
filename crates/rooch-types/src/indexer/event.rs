@@ -1,10 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::address::RoochAddress;
 use crate::indexer::Filter;
 use crate::transaction::LedgerTransaction;
 use anyhow::Result;
-use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::h256::H256;
 use moveos_types::move_types::struct_tag_match;
@@ -27,7 +27,7 @@ pub struct IndexerEvent {
     /// the hash of this transaction.
     pub tx_hash: H256,
     /// the account address of sender who emit the event
-    pub sender: AccountAddress,
+    pub sender: RoochAddress,
 
     /// the event created timestamp on chain
     pub created_at: u64,
@@ -45,7 +45,7 @@ impl IndexerEvent {
             event_type: event.event_type,
             event_data: event.event_data,
             tx_hash: ledger_transaction.tx_hash(),
-            sender: ctx.sender,
+            sender: ctx.sender.into(),
 
             created_at: ledger_transaction.sequence_info.tx_timestamp,
         }
@@ -85,7 +85,7 @@ pub enum EventFilter {
     /// Query by event type.
     EventType(StructTag),
     /// Query by sender address.
-    Sender(AccountAddress),
+    Sender(RoochAddress),
     /// Return events emitted by the given transaction hash.
     TxHash(H256),
     /// Return events emitted in [start_time, end_time) interval

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::types::{OutPoint, Transaction};
-use crate::address::BitcoinAddress;
+use crate::address::{BitcoinAddress, RoochAddress};
 use crate::addresses::BITCOIN_MOVE_ADDRESS;
 use crate::indexer::state::IndexerObjectState;
 use crate::into_address::IntoAddress;
@@ -231,7 +231,7 @@ impl<'a> ModuleBinding<'a> for OrdModule<'a> {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct InscriptionState {
     pub object_id: ObjectID,
-    pub owner: AccountAddress,
+    pub owner: RoochAddress,
     pub owner_bitcoin_address: Option<BitcoinAddress>,
     pub flag: u8,
     pub value: Inscription,

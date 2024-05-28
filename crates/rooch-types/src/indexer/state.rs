@@ -1,12 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::address::RoochAddress;
 use crate::bitcoin::utxo::UTXO;
 use crate::indexer::Filter;
 use anyhow::Result;
-use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
 use move_core_types::language_storage::{StructTag, TypeTag};
+use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::{ObjectID, RawObject};
 use moveos_types::state::{
     FieldChange, KeyState, MoveStructType, ObjectChange, State, StateChangeSet,
@@ -20,11 +21,11 @@ pub struct IndexerObjectState {
     // The global state key
     pub object_id: ObjectID,
     // The owner of the object
-    pub owner: AccountAddress,
+    pub owner: RoochAddress,
     // A flag to indicate whether the object is shared or frozen
     pub flag: u8,
     // The table state root of the object
-    pub state_root: AccountAddress,
+    pub state_root: H256,
     // The table length
     pub size: u64,
     // The T struct tag of the object value
@@ -43,9 +44,9 @@ impl IndexerObjectState {
     pub fn new_from_raw_object(raw_object: RawObject, tx_order: u64, state_index: u64) -> Self {
         IndexerObjectState {
             object_id: raw_object.id,
-            owner: raw_object.owner,
+            owner: raw_object.owner.into(),
             flag: raw_object.flag,
-            state_root: raw_object.state_root,
+            state_root: H256::from(raw_object.state_root.into_bytes()),
             size: raw_object.size,
             object_type: raw_object.value.struct_tag,
             tx_order,
@@ -274,12 +275,12 @@ pub enum ObjectStateFilter {
     /// Query by object type and owner.
     ObjectTypeWithOwner {
         object_type: StructTag,
-        owner: AccountAddress,
+        owner: RoochAddress,
     },
     /// Query by object type.
     ObjectType(StructTag),
     /// Query by owner.
-    Owner(AccountAddress),
+    Owner(RoochAddress),
     /// Query by object ids.
     ObjectId(Vec<ObjectID>),
 }

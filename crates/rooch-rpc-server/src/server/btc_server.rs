@@ -61,7 +61,7 @@ impl BtcAPIServer for BtcServer {
                     .resolve_address(multi_chain_address)
                     .await?
             }
-            _ => AccountAddress::ZERO,
+            _ => AccountAddress::ZERO.into(),
         };
 
         let global_state_filter =
@@ -116,7 +116,7 @@ impl BtcAPIServer for BtcServer {
                     .resolve_address(multi_chain_address)
                     .await?
             }
-            _ => AccountAddress::ZERO,
+            _ => AccountAddress::ZERO.into(),
         };
 
         let global_state_filter =

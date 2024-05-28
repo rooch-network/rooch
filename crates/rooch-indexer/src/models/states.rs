@@ -4,9 +4,9 @@
 use crate::schema::field_states;
 use crate::schema::object_states;
 use diesel::prelude::*;
-use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use moveos_types::moveos_std::object::ObjectID;
+use rooch_types::address::RoochAddress;
 use rooch_types::indexer::state::{IndexerFieldState, IndexerObjectState};
 use std::str::FromStr;
 
@@ -47,12 +47,13 @@ pub struct StoredObjectState {
 
 impl From<IndexerObjectState> for StoredObjectState {
     fn from(state: IndexerObjectState) -> Self {
+        let state_root = RoochAddress::from(state.state_root).to_hex_literal();
         Self {
             object_id: state.object_id.to_string(),
             owner: state.owner.to_hex_literal(),
             flag: state.flag as i16,
             object_type: state.object_type.to_string(),
-            state_root: state.state_root.to_hex_literal(),
+            state_root,
             size: state.size as i64,
             tx_order: state.tx_order as i64,
             state_index: state.state_index as i64,
@@ -65,17 +66,16 @@ impl From<IndexerObjectState> for StoredObjectState {
 impl StoredObjectState {
     pub fn try_into_indexer_global_state(&self) -> Result<IndexerObjectState, anyhow::Error> {
         let object_id = ObjectID::from_str(self.object_id.as_str())?;
-        let owner = AccountAddress::from_hex_literal(self.owner.as_str())?;
-
+        let owner = RoochAddress::from_str(self.owner.as_str())?;
         let object_type = StructTag::from_str(self.object_type.as_str())?;
-        let state_root = AccountAddress::from_hex_literal(self.state_root.as_str())?;
+        let state_root = RoochAddress::from_str(self.state_root.as_str())?;
 
         let state = IndexerObjectState {
             object_id,
             owner,
             flag: self.flag as u8,
             object_type,
-            state_root,
+            state_root: state_root.0,
             size: self.size as u64,
             tx_order: self.tx_order as u64,
             state_index: self.state_index as u64,

@@ -200,11 +200,12 @@ pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<S
     }
 
     let sequencer_keypair = server_opt.sequencer_keypair.unwrap();
-    let sequencer_account: AccountAddress = RoochAddress::from(&sequencer_keypair.public()).into();
+    let sequencer_account = RoochAddress::from(&sequencer_keypair.public());
 
     let data_import_flag = opt.data_import_flag;
     if let RoochChainID::Builtin(builtin_chain_id) = chain_id {
         let mut network: RoochNetwork = builtin_chain_id.into();
+        let sequencer_account: AccountAddress = sequencer_account.into();
         match builtin_chain_id {
             // local and dev chain can use any sequencer account
             BuiltinChainID::Local | BuiltinChainID::Dev => {
