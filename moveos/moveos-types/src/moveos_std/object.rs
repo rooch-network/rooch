@@ -4,7 +4,7 @@
 use super::table::TablePlaceholder;
 use crate::h256;
 use crate::moveos_std::account::Account;
-use crate::moveos_std::move_module::ModuleStore;
+use crate::moveos_std::module_store::{ModuleStore, Package};
 use crate::state::{KeyState, PlaceholderStruct};
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
@@ -349,6 +349,7 @@ impl MoveStructState for Root {
 pub type TableObject = ObjectEntity<TablePlaceholder>;
 pub type AccountObject = ObjectEntity<Account>;
 pub type ModuleStoreObject = ObjectEntity<ModuleStore>;
+pub type PackageObject = ObjectEntity<Package>;
 
 /// The Entity of the Object<T>.
 /// The value must be the last field
@@ -515,6 +516,19 @@ impl ObjectEntity<ModuleStore> {
             *GENESIS_STATE_ROOT,
             0,
             ModuleStore::default(),
+        )
+    }
+}
+
+impl ObjectEntity<Package> {
+    pub fn new_package(address: &AccountAddress, owner: AccountAddress) -> PackageObject {
+        Self::new(
+            Package::package_id(address),
+            owner,
+            0u8,
+            *GENESIS_STATE_ROOT,
+            0,
+            Package::default(),
         )
     }
 }

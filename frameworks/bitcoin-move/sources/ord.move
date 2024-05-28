@@ -155,6 +155,13 @@ module bitcoin_move::ord {
         table_vec::borrow(& store.inscriptions, index)
     }
 
+    public fun inscription_latest_height() : u64 {
+        let store_obj_id = object::named_object_id<InscriptionStore>();
+        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
+        let store = object::borrow_mut(store_obj);
+        table_vec::length(& store.inscriptions)
+    }
+
     fun record_to_inscription(txid: address, index: u32, input: u32, offset: u64, record: InscriptionRecord): Inscription{
         let parent = option::map(record.parent, |e| derive_inscription_id(e));
         Inscription{
@@ -211,6 +218,13 @@ module bitcoin_move::ord {
         };
         let object_id = derive_inscription_id(id);
         object::borrow_object(object_id)
+    }
+
+    public fun borrow_inscription_by_id(id: InscriptionID): &Inscription {
+        let txid = inscription_id_txid(&id);
+        let index = inscription_id_index(&id);
+        let inscription_obj = borrow_inscription(txid, index);
+        object::borrow(inscription_obj)
     }
 
     public fun spend_utxo(utxo_obj: &mut Object<UTXO>, tx: &Transaction, input_utxo_values: vector<u64>, input_index: u64): (vector<SatPoint>, vector<Flotsam>){
@@ -1074,17 +1088,20 @@ module bitcoin_move::ord {
 
         // prepare test inscription
         let test_address = @0x5416690eaaf671031dc609ff8d36766d2eb91ca44f04c85c27628db330f40fd1;
-        let test_txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
+        let test_txid = @0x21da2ae8cc773b020b4873f597369416cf961a1896c24106b0198459fec2df77;
         let test_inscription_id = new_inscription_id_for_test(test_txid, 0);
+
+        let content_type = b"application/wasm";
+        let body = x"0061736d0100000001080260017f00600000020f0107636f6e736f6c65036c6f670000030201010503010001071702066d656d6f727902000a68656c6c6f576f726c6400010a08010600410010000b0b14010041000b0e48656c6c6f2c20576f726c642100";
 
         let test_inscription = new_inscription_for_test(
             test_txid,
             0,
             0,
             0,
-            vector[],
+            body,
             option::none(),
-            option::none(),
+            option::some(string::utf8(content_type)),
             vector[],
             option::none(),
             option::none(),
@@ -1146,7 +1163,8 @@ module bitcoin_move::ord {
             return option::none()
         };
 
-        let txid_option = address::from_ascii_string(option::extract(&mut ascii_txid_option));
+        let txid_hex_ascii = option::extract(&mut ascii_txid_option);
+        let txid_option = address::from_ascii_string(txid_hex_ascii);
         if (option::is_none(&txid_option)) {
             return option::none()
         };

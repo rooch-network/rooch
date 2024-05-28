@@ -41,8 +41,12 @@ where
         verify_entry_function_at_publish(module)?;
         verify_global_storage_access(module)?;
         verify_gas_free_function(module)?;
-        verify_data_struct(module, &db, &mut verified_modules)?;
         verify_init_function(module)?;
+    }
+
+    verified_modules.clear();
+    for module in modules {
+        verify_data_struct(module, &db, &mut verified_modules)?;
     }
 
     Ok(true)
@@ -452,6 +456,15 @@ where
                                 type_name_indices.get(full_path_func_name.as_str());
 
                             if let Some(private_generics_types_indices) = private_generics_types {
+                                if private_generics_types_indices.len() > type_arguments.len() {
+                                    return generate_vm_error(
+                                        ErrorCode::TOO_MANY_PARAMETERS,
+                                        "the parameters length of private_generics is more than functions' definition".to_string(),
+                                        Some(*handle),
+                                        module,
+                                    );
+                                }
+
                                 for generic_type_index in private_generics_types_indices {
                                     let type_arg = match type_arguments.get(*generic_type_index) {
                                         None => {
@@ -476,7 +489,9 @@ where
 
                                         return Err(PartialVMError::new(StatusCode::ABORTED)
                                             .with_message(err_msg)
-                                            .with_sub_status(ErrorCode::INVALID_DATA_STRUCT.into())
+                                            .with_sub_status(
+                                                ErrorCode::INVALID_PRIVATE_GENERICS_TYPE.into(),
+                                            )
                                             .at_code_offset(
                                                 FunctionDefinitionIndex::new(func.function.0),
                                                 0_u16,
@@ -734,14 +749,14 @@ where
             // it means that the user's code did not use #[data_struct(T)],
             // or the user intentionally deleted the data in the metadata.
             // In either case, we will skip the verification.
-            return Ok(true);
+            Ok(true)
         }
 
         Some(metadata) => {
             let mut data_structs_map = metadata.data_struct_map;
             let mut data_structs_func_map = metadata.data_struct_func_map;
 
-            validate_data_struct_map(&data_structs_map, caller_module)?;
+            validate_data_struct_map(&data_structs_map, caller_module, verified_modules, db)?;
 
             for (full_struct_name, _) in data_structs_map.iter() {
                 check_module_owner(full_struct_name, caller_module)?;
@@ -838,6 +853,15 @@ where
                                 data_structs_func_map.get(full_path_func_name.as_str());
 
                             if let Some(data_struct_types_indices) = data_struct_func_types {
+                                if data_struct_types_indices.len() > type_arguments.len() {
+                                    return generate_vm_error(
+                                        ErrorCode::TOO_MANY_PARAMETERS,
+                                        "the parameters length of private_generics is more than functions' definition".to_string(),
+                                        Some(*fhandle_idx),
+                                        caller_module,
+                                    );
+                                }
+
                                 for generic_type_index in data_struct_types_indices {
                                     let type_arg = match type_arguments.get(*generic_type_index) {
                                         None => {
@@ -957,11 +981,11 @@ where
                     }
                 }
             }
+
+            verified_modules.insert(caller_module.self_id(), caller_module.clone());
+            Ok(true)
         }
     }
-
-    verified_modules.insert(caller_module.self_id(), caller_module.clone());
-    Ok(true)
 }
 
 fn generate_full_module_name(
@@ -992,22 +1016,64 @@ pub fn generate_vm_error(
         .finish(Location::Module(module.self_id())))
 }
 
-fn struct_def_from_struct_handle(
-    module: &CompiledModule,
+fn struct_def_from_struct_handle<Resolver>(
+    current_module: &CompiledModule,
     struct_handle_idx: &StructHandleIndex,
-) -> Option<StructDefinition> {
-    for struct_def in module.struct_defs.iter() {
+    verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
+    struct_name: &str,
+    db: &Resolver,
+) -> Option<StructDefinition>
+where
+    Resolver: ModuleResolver,
+{
+    for struct_def in current_module.struct_defs.iter() {
         if struct_def.struct_handle == *struct_handle_idx {
             return Some(struct_def.clone());
         }
     }
-    None
+
+    for m in verified_modules.values_mut() {
+        let iterator_module_bin_view = BinaryIndexedView::Module(m);
+        for struct_def in m.struct_defs.iter() {
+            let struct_handle_idx = struct_def.struct_handle;
+            let iterator_struct_name =
+                struct_full_name_from_sid(&struct_handle_idx, &iterator_module_bin_view);
+            if iterator_struct_name == struct_name {
+                return Some(struct_def.clone());
+            }
+        }
+    }
+
+    let module_bin_view = BinaryIndexedView::Module(current_module);
+    let struct_handle = module_bin_view.struct_handle_at(*struct_handle_idx);
+    let module_handle = module_bin_view.module_handle_at(struct_handle.module);
+    let module_id = module_bin_view.module_id_for_handle(module_handle);
+    match get_module_from_db(&module_id, db) {
+        None => None,
+        Some(target_module) => {
+            let target_module_bin_view = BinaryIndexedView::Module(&target_module);
+            for struct_def in target_module.struct_defs.iter() {
+                let struct_handle_idx = struct_def.struct_handle;
+                let iterator_struct_name =
+                    struct_full_name_from_sid(&struct_handle_idx, &target_module_bin_view);
+                if iterator_struct_name == struct_name {
+                    return Some(struct_def.clone());
+                }
+            }
+            None
+        }
+    }
 }
 
-fn validate_data_struct_map(
+fn validate_data_struct_map<Resolver>(
     data_struct_map: &BTreeMap<String, bool>,
     module: &CompiledModule,
-) -> VMResult<bool> {
+    verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
+    db: &Resolver,
+) -> VMResult<bool>
+where
+    Resolver: ModuleResolver,
+{
     let module_bin_view = BinaryIndexedView::Module(module);
     for (data_struct_name, _) in data_struct_map.iter() {
         let module_name_opt = extract_module_name(data_struct_name);
@@ -1030,11 +1096,16 @@ fn validate_data_struct_map(
                     let struct_name = module_bin_view
                         .identifier_at(struct_handle.name)
                         .to_string();
-                    if struct_name == simple_struct_name
-                        && !validate_struct_fields(struct_def, module, &module_bin_view)
-                    {
+                    let (is_valid_struct, error_code) = validate_struct_fields(
+                        struct_def,
+                        module,
+                        &module_bin_view,
+                        verified_modules,
+                        db,
+                    );
+                    if struct_name == simple_struct_name && !is_valid_struct {
                         return generate_vm_error(
-                            ErrorCode::INVALID_DATA_STRUCT,
+                            error_code,
                             format!(
                                 "Struct {} in module {} is not a valid data_struct.",
                                 data_struct_name,
@@ -1066,43 +1137,71 @@ fn is_primitive_type(field_type: &SignatureToken) -> bool {
     )
 }
 
-fn validate_struct_fields(
+fn validate_struct_fields<Resolver>(
     struct_def: &StructDefinition,
-    module: &CompiledModule,
+    current_module: &CompiledModule,
     module_bin_view: &BinaryIndexedView,
-) -> bool {
+    verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
+    db: &Resolver,
+) -> (bool, ErrorCode)
+where
+    Resolver: ModuleResolver,
+{
     let struct_handle = module_bin_view.struct_handle_at(struct_def.struct_handle);
     let abilities_set = struct_handle.abilities;
-    if !(abilities_set.has_copy() && abilities_set.has_drop()) {
-        return false;
+    if !abilities_set.has_drop() {
+        return (false, ErrorCode::INVALID_DATA_STRUCT_WITHOUT_DROP_ABILITY);
+    }
+
+    if !abilities_set.has_copy() {
+        return (false, ErrorCode::INVALID_DATA_STRUCT_WITHOUT_COPY_ABILITY);
     }
 
     let field_count = struct_def.declared_field_count().unwrap();
-    if let Some(idx) = (0..field_count).next() {
+    for idx in (0..field_count).by_ref() {
         let struct_field_def_opt = struct_def.field(idx as usize);
-        return match struct_field_def_opt {
-            None => false,
+        match struct_field_def_opt {
+            None => return (false, ErrorCode::INVALID_DATA_STRUCT),
             Some(struct_fields_def) => {
                 let field_type = struct_fields_def.signature.0.clone();
-                validate_fields_type(&field_type, module, module_bin_view)
+                let (is_valid_struct_field, error_code) = validate_fields_type(
+                    &field_type,
+                    current_module,
+                    module_bin_view,
+                    verified_modules,
+                    db,
+                );
+                if !is_valid_struct_field {
+                    return (false, error_code);
+                }
             }
         };
     }
-    false
+
+    (true, ErrorCode::UNKNOWN_CODE)
 }
 
-fn validate_fields_type(
+fn validate_fields_type<Resolver>(
     field_type: &SignatureToken,
-    module: &CompiledModule,
+    current_module: &CompiledModule,
     module_bin_view: &BinaryIndexedView,
-) -> bool {
+    verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
+    db: &Resolver,
+) -> (bool, ErrorCode)
+where
+    Resolver: ModuleResolver,
+{
     return if is_primitive_type(field_type) {
-        true
+        (true, ErrorCode::UNKNOWN_CODE)
     } else {
         match field_type {
-            SignatureToken::Vector(type_arg) => {
-                validate_fields_type(type_arg.deref(), module, module_bin_view)
-            }
+            SignatureToken::Vector(type_arg) => validate_fields_type(
+                type_arg.deref(),
+                current_module,
+                module_bin_view,
+                verified_modules,
+                db,
+            ),
             SignatureToken::Struct(struct_handle_idx) => {
                 let struct_full_name =
                     struct_full_name_from_sid(struct_handle_idx, module_bin_view);
@@ -1110,8 +1209,10 @@ fn validate_fields_type(
                 validate_struct(
                     &struct_full_name,
                     struct_handle_idx,
-                    module,
+                    current_module,
                     module_bin_view,
+                    verified_modules,
+                    db,
                 )
             }
             SignatureToken::StructInstantiation(struct_handle_idx, type_args) => {
@@ -1120,36 +1221,61 @@ fn validate_fields_type(
 
                 if is_std_option_type(&struct_full_name) {
                     if let Some(field_type) = type_args.first() {
-                        return validate_fields_type(field_type, module, module_bin_view);
+                        return validate_fields_type(
+                            field_type,
+                            current_module,
+                            module_bin_view,
+                            verified_modules,
+                            db,
+                        );
                     }
                 }
 
                 validate_struct(
                     &struct_full_name,
                     struct_handle_idx,
-                    module,
+                    current_module,
                     module_bin_view,
+                    verified_modules,
+                    db,
                 )
             }
-            _ => false,
+            _ => (false, ErrorCode::INVALID_DATA_STRUCT),
         }
     };
 }
 
-fn validate_struct(
+fn validate_struct<Resolver>(
     struct_name: &str,
     struct_handle_idx: &StructHandleIndex,
-    module: &CompiledModule,
+    current_module: &CompiledModule,
     module_bin_view: &BinaryIndexedView,
-) -> bool {
+    verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
+    db: &Resolver,
+) -> (bool, ErrorCode)
+where
+    Resolver: ModuleResolver,
+{
     if is_allowed_data_struct_type(struct_name) {
-        return true;
+        return (true, ErrorCode::UNKNOWN_CODE);
     }
 
-    let struct_def_opt = struct_def_from_struct_handle(module, struct_handle_idx);
+    let struct_def_opt = struct_def_from_struct_handle(
+        current_module,
+        struct_handle_idx,
+        verified_modules,
+        struct_name,
+        db,
+    );
     match struct_def_opt {
-        Some(struct_def) => validate_struct_fields(&struct_def, module, module_bin_view),
-        None => false,
+        Some(struct_def) => validate_struct_fields(
+            &struct_def,
+            current_module,
+            module_bin_view,
+            verified_modules,
+            db,
+        ),
+        None => (false, ErrorCode::INVALID_DATA_STRUCT),
     }
 }
 

@@ -32,6 +32,8 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 lazy_static = { workspace = true }
 tempfile = { workspace = true }
+coerce = { workspace = true }
+tokio = { features = ["full"], workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }
@@ -59,6 +61,7 @@ rooch-key = { workspace = true }
 rooch-executor = { workspace = true }
 rooch-store = { workspace = true }
 rooch-config = { workspace = true }
+rooch-sequencer = { workspace = true }
 
 bitcoin-move = { workspace = true }
 

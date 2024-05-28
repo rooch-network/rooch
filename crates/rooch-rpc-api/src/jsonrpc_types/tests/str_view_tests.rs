@@ -116,3 +116,16 @@ fn test_account_address_view() {
     let address_result = AccountAddressView::from_str("11");
     assert!(address_result.is_err());
 }
+
+#[test]
+fn test_rooch_address_view() {
+    str_view_test_round_trip(
+        RoochAddressView::from(
+            RoochAddressView::from_str(
+                "rooch16kg65sgpy497wc4j09ds6tha6e48cg45303fnxxxua6khevfa8sqwnxk0l",
+            )
+            .unwrap(),
+        ),
+        "rooch16kg65sgpy497wc4j09ds6tha6e48cg45303fnxxxua6khevfa8sqwnxk0l",
+    );
+}

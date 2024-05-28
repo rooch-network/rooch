@@ -27,6 +27,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::str::FromStr;
 
+use super::{H256View, RoochAddressView};
+
 pub type ModuleIdView = StrView<ModuleId>;
 pub type TypeTagView = StrView<TypeTag>;
 pub type StructTagView = StrView<StructTag>;
@@ -194,9 +196,9 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AnnotatedObjectView {
     pub id: ObjectID,
-    pub owner: AccountAddressView,
+    pub owner: RoochAddressView,
     pub flag: u8,
-    pub state_root: AccountAddressView,
+    pub state_root: H256View,
     pub size: u64,
     pub value: AnnotatedMoveStructView,
 }

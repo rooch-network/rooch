@@ -43,7 +43,7 @@ pub struct Publish {
 
     /// Whether publish modules by `MoveAction::ModuleBundle`?
     /// If not set, publish moduels through Move entry function
-    /// `moveos_std::move_module::publish_modules_entry`.
+    /// `moveos_std::module_store::publish_modules_entry`.
     /// **Deprecated**! Publish modules by `MoveAction::ModuleBundle` is no longer used anymore.
     /// So you should never add this option.
     /// For now, the option is kept for test only.
@@ -128,7 +128,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                 FunctionId::new(
                     ModuleId::new(
                         MOVEOS_STD_ADDRESS,
-                        Identifier::new("move_module".to_owned()).unwrap(),
+                        Identifier::new("module_store".to_owned()).unwrap(),
                     ),
                     Identifier::new("publish_modules_entry".to_owned()).unwrap(),
                 ),

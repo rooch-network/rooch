@@ -3,6 +3,10 @@
   "overview": "Overview",
   "in-depth-tech": "In-Depth Tech",
   "core-concepts": "Core Concepts",
+  "portal": {
+    "title":"Rooch Portal",
+    "display": "hidden"
+  },
   "miscellaneous": "Miscellaneous",
   "contribution-guides": "Contributing Guides"
 }

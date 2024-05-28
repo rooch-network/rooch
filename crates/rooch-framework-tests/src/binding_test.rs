@@ -62,11 +62,12 @@ impl RustBindingTest {
 
         let mut moveos_store =
             MoveOSStore::mock_moveos_store_with_data_dir(moveos_db_path.as_path())?;
-        let rooch_store = RoochStore::mock_rooch_store(rooch_db_path.as_path())?;
+        let mut rooch_store = RoochStore::mock_rooch_store_with_data_dir(rooch_db_path.as_path())?;
         let network: RoochNetwork = BuiltinChainID::Local.into();
         let sequencer = network.genesis_config.sequencer_account;
+
         let genesis = RoochGenesis::build(network)?;
-        let root = genesis.init_genesis(&mut moveos_store)?;
+        let root = genesis.init_genesis(&mut moveos_store, &mut rooch_store)?;
 
         let executor = ExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store.clone())?;
 

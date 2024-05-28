@@ -115,6 +115,11 @@ pub struct RoochOpt {
     /// The end block height of the Bitcoin chain to stop relaying from, default is none.
     pub btc_end_block_height: Option<u64>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long, env = "BTC_SYNC_BLOCK_INTERVAL")]
+    /// The interval of sync BTC block, default is none.
+    pub btc_sync_block_interval: Option<u64>,
+
     /// The address of the sequencer account
     #[clap(long)]
     pub sequencer_account: Option<String>,
@@ -157,6 +162,7 @@ impl RoochOpt {
             btc_rpc_username: None,
             btc_rpc_password: None,
             btc_end_block_height: None,
+            btc_sync_block_interval: None,
             sequencer_account: None,
             proposer_account: None,
             da: None,
@@ -190,6 +196,7 @@ impl RoochOpt {
             btc_rpc_user_name: self.btc_rpc_username.clone().unwrap(),
             btc_rpc_password: self.btc_rpc_password.clone().unwrap(),
             btc_end_block_height: self.btc_end_block_height,
+            btc_sync_block_interval: self.btc_sync_block_interval,
         })
     }
 
@@ -209,6 +216,7 @@ pub struct BitcoinRelayerConfig {
     pub btc_rpc_user_name: String,
     pub btc_rpc_password: String,
     pub btc_end_block_height: Option<u64>,
+    pub btc_sync_block_interval: Option<u64>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -16,6 +16,7 @@ use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::transaction::{
     ExecuteTransactionResponse, L1BlockWithBody, LedgerTransaction, LedgerTxData, RoochTransaction,
 };
+use tracing::debug;
 
 /// PipelineProcessor aggregates the executor, sequencer, proposer, and indexer to process transactions.
 pub struct PipelineProcessorActor {
@@ -61,8 +62,9 @@ impl PipelineProcessorActor {
 
     pub async fn execute_l2_tx(
         &mut self,
-        tx: RoochTransaction,
+        mut tx: RoochTransaction,
     ) -> Result<ExecuteTransactionResponse> {
+        debug!("pipeline execute_l2_tx: {:?}", tx.tx_hash());
         let moveos_tx = self.executor.validate_l2_tx(tx.clone()).await?;
         let ledger_tx = self
             .sequencer

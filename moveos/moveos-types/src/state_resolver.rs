@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::moveos_std::account::Account;
-use crate::moveos_std::move_module::ModuleStore;
+use crate::moveos_std::module_store::Package;
 use crate::moveos_std::object::{ObjectID, RawObject, RootObjectEntity};
 use crate::state::{AnnotatedKeyState, KeyState};
 use crate::{
@@ -194,11 +194,11 @@ where
     }
 
     fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Error> {
-        let module_object_id = ModuleStore::module_store_id();
-        let key = KeyState::from_module_id(module_id);
+        let package_obj_id = Package::package_id(module_id.address());
+        let key = KeyState::from_string(&format!("{}", module_id.name()));
         //We wrap the modules byte codes to `MoveModule` type when store the module.
         //So we need unwrap the MoveModule type.
-        self.get_field(&module_object_id, &key)?
+        self.get_field(&package_obj_id, &key)?
             .map(|s| Ok(s.cast::<MoveModule>()?.byte_codes))
             .transpose()
     }

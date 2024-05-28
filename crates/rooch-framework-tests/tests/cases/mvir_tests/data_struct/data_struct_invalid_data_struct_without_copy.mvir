@@ -1,0 +1,11 @@
+//# publish
+module 0x1.TestModule1 {
+    // error code 10013: INVALID_DATA_STRUCT_WITHOUT_COPY_ABILITY
+    struct S0 has drop {v: u64}
+
+    metadata {
+        data_struct {
+            0x1::TestModule1::S0 -> true;
+        }
+    }
+}

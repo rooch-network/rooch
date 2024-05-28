@@ -142,7 +142,9 @@ module moveos_std::features {
             LOCALNET,
             DEVNET,
             TESTNET,
-            MODULE_TEMPLATE
+            MODULE_TEMPLATE,
+            MODULE_PUBLISHING_ALLOWLIST,
+            WASM
         ]
     }
     // --------------------------------------------------------------------------------------------

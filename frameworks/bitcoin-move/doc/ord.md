@@ -18,8 +18,10 @@
 -  [Function `new_inscription_id`](#0x4_ord_new_inscription_id)
 -  [Function `derive_inscription_id`](#0x4_ord_derive_inscription_id)
 -  [Function `get_inscription_id_by_index`](#0x4_ord_get_inscription_id_by_index)
+-  [Function `inscription_latest_height`](#0x4_ord_inscription_latest_height)
 -  [Function `exists_inscription`](#0x4_ord_exists_inscription)
 -  [Function `borrow_inscription`](#0x4_ord_borrow_inscription)
+-  [Function `borrow_inscription_by_id`](#0x4_ord_borrow_inscription_by_id)
 -  [Function `spend_utxo`](#0x4_ord_spend_utxo)
 -  [Function `handle_coinbase_tx`](#0x4_ord_handle_coinbase_tx)
 -  [Function `process_transaction`](#0x4_ord_process_transaction)
@@ -286,6 +288,17 @@ How may blocks between halvings.
 
 
 
+<a name="0x4_ord_inscription_latest_height"></a>
+
+## Function `inscription_latest_height`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_inscription_latest_height">inscription_latest_height</a>(): u64
+</code></pre>
+
+
+
 <a name="0x4_ord_exists_inscription"></a>
 
 ## Function `exists_inscription`
@@ -304,6 +317,17 @@ How may blocks between halvings.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_borrow_inscription">borrow_inscription</a>(txid: <b>address</b>, index: u32): &<a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_borrow_inscription_by_id"></a>
+
+## Function `borrow_inscription_by_id`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_borrow_inscription_by_id">borrow_inscription_by_id</a>(id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>): &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>
 </code></pre>
 
 

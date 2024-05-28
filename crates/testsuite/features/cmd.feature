@@ -113,19 +113,19 @@ Feature: Rooch CLI integration tests
     # because the indexer is async update, so sleep 5 seconds to wait indexer update.
     Then sleep: "5"
 
-    #TODO fixme 
-    #Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, null, "1", {"descending": true,"showDisplay":false}]'"
-    #Then assert: "{{$.rpc[-1].data[0].transaction.sequence_info.tx_order}} == 1"
-    #Then assert: "{{$.rpc[-1].next_cursor}} == 1"
-    #Then assert: "{{$.rpc[-1].has_next_page}} == true"
-    #Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, "1", "1", {"descending": true,"showDisplay":false}]'"
-    #Then assert: "{{$.rpc[-1].data[0].transaction.sequence_info.tx_order}} == 0"
-    #Then assert: "{{$.rpc[-1].next_cursor}} == 0"
-    #Then assert: "{{$.rpc[-1].has_next_page}} == false"
-    #Then cmd: "rpc request --method rooch_queryEvents --params '[{"tx_order_range":{"from_order":0, "to_order":2}}, null, "10", {"descending": true,"showDisplay":false}]'"
-    #Then assert: "{{$.rpc[-1].data[0].indexer_event_id.tx_order}} == 1"
-    #Then assert: "{{$.rpc[-1].next_cursor.tx_order}} == 0"
-    #Then assert: "{{$.rpc[-1].has_next_page}} == false"
+    # genesis tx does not write indexer
+    Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":3}}, null, "1", {"descending": true,"showDisplay":false}]'"
+    Then assert: "{{$.rpc[-1].data[0].transaction.sequence_info.tx_order}} == 2"
+    Then assert: "{{$.rpc[-1].next_cursor}} == 2"
+    Then assert: "{{$.rpc[-1].has_next_page}} == true"
+    Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":3}}, "2", "1", {"descending": true,"showDisplay":false}]'"
+    Then assert: "{{$.rpc[-1].data[0].transaction.sequence_info.tx_order}} == 1"
+    Then assert: "{{$.rpc[-1].next_cursor}} == 1"
+    Then assert: "{{$.rpc[-1].has_next_page}} == false"
+    Then cmd: "rpc request --method rooch_queryEvents --params '[{"tx_order_range":{"from_order":0, "to_order":2}}, null, "10", {"descending": true,"showDisplay":false}]'"
+    Then assert: "{{$.rpc[-1].data[0].indexer_event_id.tx_order}} == 1"
+    Then assert: "{{$.rpc[-1].next_cursor.tx_order}} == 1"
+    Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
     # Sync states
     Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x3::coin::CoinInfo"}, null, "10", {"descending": true,"showDisplay":false}]'"
@@ -133,7 +133,7 @@ Feature: Rooch CLI integration tests
     Then assert: "{{$.rpc[-1].data[0].object_type}} == 0x3::coin::CoinInfo"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
-    Then cmd: "rpc request --method rooch_queryFieldStates --params '[{"object_id":"0x3"}, null, "10", {"descending": true,"showDisplay":false}]'"
+    Then cmd: "rpc request --method rooch_queryFieldStates --params '[{"object_id":"{{$.address_mapping.default}}"}, null, "10", {"descending": true,"showDisplay":false}]'"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
 #    Then cmd: "rpc request --method rooch_syncStates --params '[null, null, "2", false]'"
@@ -154,9 +154,9 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].vm_status}} == Executed"
       Then assert: "{{$.move[-1].return_values[0].decoded_value}} == value1"
       #the access-path argument do not support named address yet, so, we use `{{$.address_mapping.default}}` template var to repleace it.
-      Then cmd: "state --access-path /resource/{{$.address_mapping.default}}/{{$.address_mapping.default}}::kv_store::KVStore
-      Then cmd: "state --access-path /table/{{$.state[-1][0].decoded_value.value.table.value.handle}}/key1"
-      Then assert: "{{$.state[-1][0].decoded_value}} == "value1""
+      Then cmd: "state --access-path /resource/{{$.address_mapping.default}}/{{$.address_mapping.default}}::kv_store::KVStore"
+      Then cmd: "state --access-path /fields/{{$.state[-1][0].decoded_value.value.table.value.handle.value.id}}/key1"
+      Then assert: "{{$.state[-1][0].decoded_value}} == value1"
 
 
       Then stop the server
@@ -337,31 +337,87 @@ Feature: Rooch CLI integration tests
 
     @serial
     Scenario: rooch bitseed test
+      Then cmd: "init --skip-password"
+      Then cmd: "env switch --alias local"
+
       # prepare servers
-      #Given a bitcoind server for rooch_bitseed_test
-      #Given a ord server for rooch_bitseed_test
-      #Given a server for rooch_bitseed_test
+      Given a bitcoind server for rooch_bitseed_test
+      Given a ord server for rooch_bitseed_test
+      Given a server for rooch_bitseed_test
+
+      # create rooch account
+      Then cmd: "account create"
+      Then cmd: "account list"
 
       # init wallet
-      #Then cmd ord: "wallet create"
-      #Then cmd ord: "wallet receive"
+      Then cmd ord: "wallet create"
+      Then cmd ord: "wallet receive"
 
       # mint utxos
-      #Then cmd bitcoin-cli: "generatetoaddress 101 {{$.wallet[-1].address}}"
-      #Then sleep: "10" # wait ord sync and index
-      #Then cmd ord: "wallet balance"
-      #Then assert: "{{$.wallet[-1].total}} == 5000000000"
+      Then cmd bitcoin-cli: "generatetoaddress 101 {{$.wallet[-1].address}}"
+      Then sleep: "10" # wait ord sync and index
+      Then cmd ord: "wallet balance"
+      Then assert: "{{$.wallet[-1].total}} == 5000000000"
+
+      # publish bitseed runner
+      Then cmd: "move publish -p ../../examples/bitseed_runner  --named-addresses rooch_examples=default"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # generator
-      #Then cmd bitseed: "generator --fee-rate 1 --name random --generator /app/test-data/generator.wasm"
-      #Then assert: "'{{$.generator[-1]}}' not_contains error"
+      Then cmd bitseed: "generator --fee-rate 1 --name random --generator /app/test-data/generator.wasm"
+      Then assert: "'{{$.generator[-1]}}' not_contains error"
+
+      # mine a block
+      Then cmd ord: "wallet receive"
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].address}}"
+      Then sleep: "10"
+
+      # Sync bitseed
+      Then cmd: "move run --function default::bitseed_runner::run"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # Check mint generator validity
+      Then cmd: "move view --function 0xa::bitseed::view_validity --args string:{{$.generator[-1].inscriptions[0].Id}} "
+      Then assert: "{{$.move[-1].vm_status}} == Executed"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
+
+      # deploy
+      Then cmd bitseed: "deploy --fee-rate 1 --generator {{$.generator[-1].inscriptions[0].Id}} --tick bits --amount 210000000000 --deploy-args {"height":{"type":"range","data":{"min":1,"max":1000}}}"
+      Then assert: "'{{$.deploy[-1]}}' not_contains error"
+
+      # mine a block
+      Then cmd ord: "wallet receive"
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].address}}"
+      Then sleep: "10"
+
+      # Sync bitseed
+      Then cmd: "move run --function default::bitseed_runner::run"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # Check mint deploy validity
+      Then cmd: "move view --function 0xa::bitseed::view_validity --args string:{{$.deploy[-1].inscriptions[0].Id}} "
+      Then assert: "{{$.move[-1].vm_status}} == Executed"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
+
+      # mint 
+      #Then cmd bitseed: "mint --fee-rate 1 --deploy-inscription-id {{$.deploy[-1].inscriptions[0].Id}} --user-input hello_bitseed" 
+      #Then assert: "'{{$.mint[-1]}}' not_contains error"
 
       # mine a block
       #Then cmd ord: "wallet receive"
       #Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].address}}"
-      #Then sleep: "5"
+      #Then sleep: "10"
+
+      # Sync bitseed
+      #Then cmd: "move run --function default::bitseed_runner::run"
+      #Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # Check mint bits validity
+      #Then cmd: "move view --function 0xa::bitseed::view_validity --args string:{{$.deploy[-1].inscriptions[0].Id}} "
+      #Then assert: "{{$.move[-1].vm_status}} == Executed"
+      #Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
       
       # release servers
-      #Then stop the server
-      #Then stop the ord server 
-      #Then stop the bitcoind server 
+      Then stop the server
+      Then stop the ord server 
+      Then stop the bitcoind server 

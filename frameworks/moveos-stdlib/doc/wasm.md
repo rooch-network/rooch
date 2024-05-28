@@ -8,16 +8,19 @@
 -  [Struct `WASMInstance`](#0x2_wasm_WASMInstance)
 -  [Function `get_instance_id`](#0x2_wasm_get_instance_id)
 -  [Function `create_wasm_instance`](#0x2_wasm_create_wasm_instance)
+-  [Function `create_wasm_instance_option`](#0x2_wasm_create_wasm_instance_option)
 -  [Function `create_cbor_values`](#0x2_wasm_create_cbor_values)
 -  [Function `add_length_with_data`](#0x2_wasm_add_length_with_data)
 -  [Function `create_memory_wasm_args`](#0x2_wasm_create_memory_wasm_args)
 -  [Function `execute_wasm_function`](#0x2_wasm_execute_wasm_function)
+-  [Function `execute_wasm_function_option`](#0x2_wasm_execute_wasm_function_option)
 -  [Function `read_data_length`](#0x2_wasm_read_data_length)
 -  [Function `read_data_from_heap`](#0x2_wasm_read_data_from_heap)
 -  [Function `release_wasm_instance`](#0x2_wasm_release_wasm_instance)
 
 
-<pre><code><b>use</b> <a href="features.md#0x2_features">0x2::features</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="features.md#0x2_features">0x2::features</a>;
 </code></pre>
 
 
@@ -51,6 +54,17 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_create_wasm_instance">create_wasm_instance</a>(bytecode: <a href="">vector</a>&lt;u8&gt;): <a href="wasm.md#0x2_wasm_WASMInstance">wasm::WASMInstance</a>
+</code></pre>
+
+
+
+<a name="0x2_wasm_create_wasm_instance_option"></a>
+
+## Function `create_wasm_instance_option`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_create_wasm_instance_option">create_wasm_instance_option</a>(bytecode: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;<a href="wasm.md#0x2_wasm_WASMInstance">wasm::WASMInstance</a>&gt;
 </code></pre>
 
 
@@ -95,6 +109,17 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_execute_wasm_function">execute_wasm_function</a>(instance: &<b>mut</b> <a href="wasm.md#0x2_wasm_WASMInstance">wasm::WASMInstance</a>, func_name: <a href="">vector</a>&lt;u8&gt;, args: <a href="">vector</a>&lt;u64&gt;): u64
+</code></pre>
+
+
+
+<a name="0x2_wasm_execute_wasm_function_option"></a>
+
+## Function `execute_wasm_function_option`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_execute_wasm_function_option">execute_wasm_function_option</a>(instance: &<b>mut</b> <a href="wasm.md#0x2_wasm_WASMInstance">wasm::WASMInstance</a>, func_name: <a href="">vector</a>&lt;u8&gt;, args: <a href="">vector</a>&lt;u64&gt;): <a href="_Option">option::Option</a>&lt;u64&gt;
 </code></pre>
 
 
