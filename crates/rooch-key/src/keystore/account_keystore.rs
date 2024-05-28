@@ -7,8 +7,8 @@ use crate::key_derive::{
     generate_derivation_path, generate_new_key_pair, hash_password,
 };
 use crate::keystore::ImportedMnemonic;
-use bip32::DerivationPath;
 use bip39::{Language, Mnemonic, Seed};
+use bitcoin::bip32::DerivationPath;
 use fastcrypto::encoding::{Base64, Encoding};
 use rooch_types::framework::session_key::SessionKey;
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
@@ -23,6 +23,59 @@ use rooch_types::{
 use serde::Serialize;
 
 pub trait AccountKeystore {
+    fn init_keystore(
+        &mut self,
+        mnemonic_phrase: Option<String>,
+        word_length: Option<String>,
+        password: Option<String>,
+    ) -> Result<GeneratedKeyPair, anyhow::Error> {
+        let derivation_path = generate_derivation_path(0)?;
+        let result = generate_new_key_pair(
+            mnemonic_phrase,
+            Some(derivation_path),
+            word_length,
+            password,
+        )?;
+        let new_address = result.address;
+        self.add_address_encryption_data(
+            new_address,
+            result.key_pair_data.private_key_encryption.clone(),
+        )?;
+        let mnemonic_data = MnemonicData {
+            addresses: vec![new_address],
+            mnemonic_phrase_encryption: result.key_pair_data.mnemonic_phrase_encryption.clone(),
+        };
+        self.init_mnemonic_data(mnemonic_data)?;
+        Ok(result)
+    }
+
+    fn init_mnemonic_data(&mut self, mnemonic_data: MnemonicData) -> Result<(), anyhow::Error>;
+
+    fn get_mnemonic(&self, password: Option<String>) -> Result<MnemonicResult, anyhow::Error>;
+
+    fn generate_and_add_new_key(
+        &mut self,
+        password: Option<String>,
+    ) -> Result<GeneratedKeyPair, anyhow::Error> {
+        // load mnemonic phrase from keystore
+        let mnemonic = self.get_mnemonic(password.clone())?;
+        let account_index = mnemonic.mnemonic_data.addresses.len() as u32;
+        let derivation_path = generate_derivation_path(account_index)?;
+
+        let result = generate_new_key_pair(
+            Some(mnemonic.mnemonic_phrase),
+            Some(derivation_path),
+            None,
+            password,
+        )?;
+        let new_address = result.address;
+        self.add_address_encryption_data(
+            new_address,
+            result.key_pair_data.private_key_encryption.clone(),
+        )?;
+        Ok(result)
+    }
+
     fn get_accounts(&self, password: Option<String>) -> Result<Vec<LocalAccount>, anyhow::Error>;
 
     fn add_address_encryption_data(
@@ -30,17 +83,7 @@ pub trait AccountKeystore {
         address: RoochAddress,
         encryption: EncryptionData,
     ) -> Result<(), anyhow::Error>;
-    fn get_address_public_keys(
-        &self,
-        password: Option<String>,
-    ) -> Result<Vec<(RoochAddress, PublicKey)>, anyhow::Error>;
 
-    fn get_public_key(&self, password: Option<String>) -> Result<PublicKey, anyhow::Error>;
-    fn get_key_pairs(
-        &self,
-        address: &RoochAddress,
-        password: Option<String>,
-    ) -> Result<Vec<RoochKeyPair>, anyhow::Error>;
     fn get_key_pair_with_password(
         &self,
         address: &RoochAddress,
@@ -57,11 +100,11 @@ pub trait AccountKeystore {
         is_password_empty: bool,
     ) -> Result<(), anyhow::Error>;
 
-    fn update_address_encryption_data(
-        &mut self,
-        address: &RoochAddress,
-        encryption: EncryptionData,
-    ) -> Result<(), anyhow::Error>;
+    // fn update_address_encryption_data(
+    //     &mut self,
+    //     address: &RoochAddress,
+    //     encryption: EncryptionData,
+    // ) -> Result<(), anyhow::Error>;
     fn nullify(&mut self, address: &RoochAddress) -> Result<(), anyhow::Error>;
 
     fn sign_hashed(
@@ -89,106 +132,52 @@ pub trait AccountKeystore {
 
     fn addresses(&self) -> Vec<RoochAddress>;
 
-    fn generate_and_add_new_key(
-        &mut self,
-        mnemonic_phrase: Option<String>,
-        derivation_path: Option<DerivationPath>,
-        word_length: Option<String>,
-        password: Option<String>,
-    ) -> Result<GeneratedKeyPair, anyhow::Error> {
-        // load mnemonic phrase from keystore
-        let one_mnemonic = self.get_mnemonics(password.clone())?.pop();
-        let mnemonic_phrase = if mnemonic_phrase.is_some() {
-            mnemonic_phrase
-        } else {
-            one_mnemonic
-                .clone()
-                .map(|mnemonic| mnemonic.mnemonic_phrase)
-        };
-        let derivation_path = if derivation_path.is_none() && one_mnemonic.is_some() {
-            let account_index = one_mnemonic.clone().unwrap().mnemonic_data.addresses.len() as u32;
-            Some(generate_derivation_path(account_index)?)
-        } else {
-            None
-        };
+    // fn import_from_mnemonic(
+    //     &mut self,
+    //     phrase: &str,
+    //     derivation_path: Option<DerivationPath>,
+    //     password: Option<String>,
+    // ) -> Result<ImportedMnemonic, anyhow::Error> {
+    //     let mnemonic = Mnemonic::from_phrase(phrase, Language::English)?;
+    //     let seed = Seed::new(&mnemonic, "");
 
-        let result =
-            generate_new_key_pair(mnemonic_phrase, derivation_path, word_length, password)?;
-        let new_address = result.address;
-        self.add_address_encryption_data(
-            new_address,
-            result.key_pair_data.private_key_encryption.clone(),
-        )?;
-        // reuse mnemonic if mnemonic already generate
-        if let Some(mut update_mnemonic) = one_mnemonic {
-            update_mnemonic.mnemonic_data.addresses.push(new_address);
-            self.update_mnemonic_data(
-                update_mnemonic.mnemonic_phrase_key,
-                update_mnemonic.mnemonic_data,
-            )?;
-            // generate mnemonic for the first time
-        } else {
-            let mnemonic_key = hash_password(
-                &Base64::decode(&result.key_pair_data.private_key_encryption.nonce)
-                    .map_err(|e| RoochError::KeyConversionError(e.to_string()))?,
-                Some(result.key_pair_data.mnemonic_phrase.clone()),
-            )?;
-            let mnemonic_data = MnemonicData {
-                addresses: vec![new_address],
-                mnemonic_phrase_encryption: result.key_pair_data.mnemonic_phrase_encryption.clone(),
-            };
-            self.add_mnemonic_data(mnemonic_key, mnemonic_data)?;
-        }
+    //     let sk = derive_private_key_from_path(seed.as_bytes(), derivation_path)?;
 
-        Ok(result)
-    }
+    //     let encryption = encrypt_key(&sk, password).expect("Encryption failed for private key");
 
-    fn import_from_mnemonic(
-        &mut self,
-        phrase: &str,
-        derivation_path: Option<DerivationPath>,
-        password: Option<String>,
-    ) -> Result<ImportedMnemonic, anyhow::Error> {
-        let mnemonic = Mnemonic::from_phrase(phrase, Language::English)?;
-        let seed = Seed::new(&mnemonic, "");
+    //     let address = derive_address_from_private_key(sk)?;
 
-        let sk = derive_private_key_from_path(seed.as_bytes(), derivation_path)?;
+    //     let result = ImportedMnemonic {
+    //         address,
+    //         encryption: encryption.clone(),
+    //     };
 
-        let encryption = encrypt_key(&sk, password).expect("Encryption failed for private key");
+    //     self.add_address_encryption_data(result.address, encryption)?;
 
-        let address = derive_address_from_private_key(sk)?;
+    //     Ok(result)
+    // }
 
-        let result = ImportedMnemonic {
-            address,
-            encryption: encryption.clone(),
-        };
+    // fn update_address_with_encryption_data(
+    //     &mut self,
+    //     _address: &RoochAddress,
+    //     phrase: String,
+    //     derivation_path: Option<DerivationPath>,
+    //     password: Option<String>,
+    // ) -> Result<EncryptionData, anyhow::Error> {
+    //     let mnemonic = Mnemonic::from_phrase(&phrase, Language::English)?;
+    //     let seed = Seed::new(&mnemonic, "");
 
-        self.add_address_encryption_data(result.address, encryption)?;
+    //     let sk = derive_private_key_from_path(seed.as_bytes(), derivation_path)?;
 
-        Ok(result)
-    }
+    //     let encryption_data =
+    //         encrypt_key(&sk, password).expect("Encryption failed for private key");
 
-    fn update_address_with_encryption_data(
-        &mut self,
-        _address: &RoochAddress,
-        phrase: String,
-        derivation_path: Option<DerivationPath>,
-        password: Option<String>,
-    ) -> Result<EncryptionData, anyhow::Error> {
-        let mnemonic = Mnemonic::from_phrase(&phrase, Language::English)?;
-        let seed = Seed::new(&mnemonic, "");
+    //     let address = derive_address_from_private_key(sk)?;
 
-        let sk = derive_private_key_from_path(seed.as_bytes(), derivation_path)?;
+    //     self.update_address_encryption_data(&address, encryption_data.clone())?;
 
-        let encryption_data =
-            encrypt_key(&sk, password).expect("Encryption failed for private key");
-
-        let address = derive_address_from_private_key(sk)?;
-
-        self.update_address_encryption_data(&address, encryption_data.clone())?;
-
-        Ok(encryption_data)
-    }
+    //     Ok(encryption_data)
+    // }
 
     fn nullify_address(&mut self, address: &RoochAddress) -> Result<(), anyhow::Error> {
         self.nullify(address)?;
@@ -215,19 +204,4 @@ pub trait AccountKeystore {
         authentication_key: &AuthenticationKey,
         password: Option<String>,
     ) -> Result<RoochTransaction, anyhow::Error>;
-
-    fn get_mnemonics(&self, password: Option<String>)
-        -> Result<Vec<MnemonicResult>, anyhow::Error>;
-
-    fn add_mnemonic_data(
-        &mut self,
-        mnemonic_phrase: String,
-        mnemonic_data: MnemonicData,
-    ) -> Result<(), anyhow::Error>;
-
-    fn update_mnemonic_data(
-        &mut self,
-        mnemonic_phrase: String,
-        mnemonic_data: MnemonicData,
-    ) -> Result<(), anyhow::Error>;
 }

@@ -4,8 +4,13 @@
 use argon2::password_hash::{PasswordHash, PasswordHasher, SaltString};
 use argon2::Argon2;
 use argon2::PasswordVerifier;
-use bip32::DerivationPath;
 use bip39::{Language, Mnemonic, MnemonicType, Seed};
+use bitcoin::address::Address;
+use bitcoin::bip32::{self, ChildNumber, DerivationPath, Xpriv, Xpub};
+use bitcoin::hex::FromHex;
+use bitcoin::secp256k1::ffi::types::AlignedType;
+use bitcoin::secp256k1::Secp256k1;
+use bitcoin::Network;
 use chacha20poly1305::aead::Aead;
 use chacha20poly1305::{AeadCore, ChaCha20Poly1305, KeyInit};
 use fastcrypto::ed25519::{Ed25519KeyPair, Ed25519PrivateKey};
@@ -26,6 +31,7 @@ pub const DERIVATION_PATH_PURPOSE_ED25519: u32 = 44;
 pub const DERIVATION_PATH_PURPOSE_SCHNORR: u32 = 44;
 pub const DERIVATION_PATH_PURPOSE_ECDSA: u32 = 54;
 pub const DERIVATION_PATH_PURPOSE_SECP256R1: u32 = 74;
+pub const DERIVATION_PATH_PURPOSE_BIP84: u32 = 84;
 
 pub fn encrypt_key(key: &[u8], password: Option<String>) -> Result<EncryptionData, RoochError> {
     let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
@@ -119,16 +125,35 @@ pub fn hash_password(nonce: &[u8], password: Option<String>) -> Result<String, R
     Ok(password_hash)
 }
 
-pub fn derive_private_key_from_path(
+pub(crate) fn derive_private_key_from_path(
     seed: &[u8],
     derivation_path: Option<DerivationPath>,
-) -> Result<Vec<u8>, RoochError> {
+) -> Result<Vec<u8>, anyhow::Error> {
     let path = validate_derivation_path(derivation_path)?;
-    let indexes = path.iter().map(|i| i.into()).collect::<Vec<_>>();
+    let indexes = path.to_u32_vec();
     let derived = derive_ed25519_private_key(seed, &indexes);
     let sk = Ed25519PrivateKey::from_bytes(&derived)
         .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
     Ok(sk.as_bytes().to_vec())
+    // // we need secp256k1 context for key derivation
+    // let mut buf: Vec<AlignedType> = Vec::new();
+    // buf.resize(Secp256k1::preallocate_size(), AlignedType::zeroed());
+    // let secp = Secp256k1::preallocated_new(buf.as_mut_slice()).unwrap();
+
+    // // calculate root key from seed
+    // let root = Xpriv::new_master(Network::Bitcoin, &seed)?;
+    // println!("Root key: {}", root);
+
+    // // derive child xpub
+    // //let path = DerivationPath::from_str("84h/0h/0h").unwrap();
+    // let child = root.derive_priv(&secp, &path)?;
+    // println!("Child at {}: {}", path, child);
+    // let xpub = Xpub::from_priv(&secp, &child);
+    // println!("Public key at {}: {}", path, xpub);
+
+    // //let zero = ChildNumber::from_normal_idx(0).unwrap();
+    // //let public_key = xpub.derive_pub(&secp, &[zero, zero]).unwrap().public_key;
+    // Ok(child.to_priv().to_bytes())
 }
 
 pub fn derive_address_from_private_key(private_key: Vec<u8>) -> Result<RoochAddress, RoochError> {
@@ -161,9 +186,7 @@ pub fn retrieve_key_pair(
     Ok(kp.into())
 }
 
-pub fn validate_derivation_path(
-    path: Option<DerivationPath>,
-) -> Result<DerivationPath, anyhow::Error> {
+fn validate_derivation_path(path: Option<DerivationPath>) -> Result<DerivationPath, anyhow::Error> {
     let (purpose, coin_type) = (
         DERIVATION_PATH_PURPOSE_ED25519,
         RoochMultiChainID::Rooch as u32,
@@ -172,15 +195,15 @@ pub fn validate_derivation_path(
     match path {
         Some(p) => {
             if let &[p_purpose, p_coin_type, account, change, address] = p.as_ref() {
-                if p_purpose == bip32::ChildNumber::new(purpose, true)?
-                    && p_coin_type == bip32::ChildNumber::new(coin_type, true)?
+                if p_purpose == bip32::ChildNumber::from_hardened_idx(purpose)?
+                    && p_coin_type == bip32::ChildNumber::from_hardened_idx(coin_type)?
                     && account.is_hardened()
                     && change.is_hardened()
                     && address.is_hardened()
                 {
                     Ok(p)
                 } else {
-                    Err(anyhow::anyhow!("Invalid derivation path: {}", p))
+                    Err(anyhow::anyhow!("Invalid derivation path: {}, purpose:{}, coin_type: {}", p, p_purpose, p_coin_type))
                 }
             } else {
                 Err(anyhow::anyhow!("Invalid derivation path: {}", p))
@@ -197,7 +220,11 @@ pub fn validate_derivation_path(
 /// https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki
 /// for ed25529
 /// m / purpose' / coin_type' / account' / change' / address_index'
-pub fn generate_derivation_path(account_index: u32) -> Result<DerivationPath, RoochError> {
+pub(crate) fn generate_derivation_path(account_index: u32) -> Result<DerivationPath, RoochError> {
+    // let (purpose, coin_type) = (
+    //     DERIVATION_PATH_PURPOSE_BIP84,
+    //     RoochMultiChainID::Bitcoin as u32,
+    // );
     let (purpose, coin_type) = (
         DERIVATION_PATH_PURPOSE_ED25519,
         RoochMultiChainID::Rooch as u32,
@@ -218,7 +245,7 @@ pub fn generate_new_key_pair(
     // Reuse the mnemonic phrase to derive new address
     let mnemonic = match mnemonic_phrase {
         Some(phrase) => {
-            //TODO need validate mnemonic phrase ?
+            Mnemonic::validate(phrase.as_str(), Language::English)?;
             Mnemonic::from_phrase(phrase.as_str(), Language::English)?
         }
         None => Mnemonic::new(parse_word_length(word_length)?, Language::English),
@@ -259,7 +286,7 @@ fn parse_word_length(s: Option<String>) -> Result<MnemonicType, anyhow::Error> {
 }
 
 /// Get a keypair from a random encryption data
-pub fn get_key_pair_from_red() -> (RoochAddress, EncryptionData) {
+pub(crate) fn generate_key_pair_for_tests() -> (RoochAddress, EncryptionData) {
     let random_encryption_data = EncryptionData::new_for_test();
     let kp: RoochKeyPair = retrieve_key_pair(&random_encryption_data, None).unwrap();
 

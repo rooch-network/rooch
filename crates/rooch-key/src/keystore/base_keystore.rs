@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use super::types::{AddressMapping, LocalAccount, LocalSessionKey};
 use crate::key_derive::{decrypt_key, generate_new_key_pair, retrieve_key_pair};
 use crate::keystore::account_keystore::AccountKeystore;
-use anyhow::anyhow;
+use anyhow::{anyhow, ensure};
 use fastcrypto::encoding::{Base64, Encoding};
 use rooch_types::framework::session_key::SessionKey;
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
@@ -30,7 +30,7 @@ pub(crate) struct BaseKeyStore {
     #[serde(default)]
     pub(crate) keys: BTreeMap<RoochAddress, EncryptionData>,
     #[serde(default)]
-    pub(crate) mnemonics: BTreeMap<String, MnemonicData>,
+    pub(crate) mnemonic: Option<MnemonicData>,
     #[serde(default)]
     #[serde_as(as = "BTreeMap<DisplayFromStr, BTreeMap<DisplayFromStr, _>>")]
     pub(crate) session_keys: BTreeMap<RoochAddress, BTreeMap<AuthenticationKey, LocalSessionKey>>,
@@ -43,10 +43,10 @@ pub(crate) struct BaseKeyStore {
 }
 
 impl BaseKeyStore {
-    pub fn new(keys: BTreeMap<RoochAddress, EncryptionData>) -> Self {
+    pub fn new() -> Self {
         Self {
-            keys,
-            mnemonics: BTreeMap::new(),
+            keys: BTreeMap::new(),
+            mnemonic: None,
             session_keys: BTreeMap::new(),
             password_hash: None,
             is_password_empty: true,
@@ -56,6 +56,12 @@ impl BaseKeyStore {
 }
 
 impl AccountKeystore for BaseKeyStore {
+    fn init_mnemonic_data(&mut self, mnemonic_data: MnemonicData) -> Result<(), anyhow::Error> {
+        ensure!(self.mnemonic.is_none(), "Mnemonic data already exists");
+        self.mnemonic = Some(mnemonic_data);
+        Ok(())
+    }
+
     fn get_accounts(&self, password: Option<String>) -> Result<Vec<LocalAccount>, anyhow::Error> {
         let mut accounts = BTreeMap::new();
         for (address, encryption) in &self.keys {
@@ -168,51 +174,14 @@ impl AccountKeystore for BaseKeyStore {
         Ok(())
     }
 
-    fn get_public_key(&self, password: Option<String>) -> Result<PublicKey, anyhow::Error> {
-        self.keys
-            .values()
-            .find_map(|encryption| {
-                let keypair: RoochKeyPair = retrieve_key_pair(encryption, password.clone()).ok()?;
-                Some(keypair.public())
-            })
-            .ok_or_else(|| anyhow::Error::msg("No valid public key found"))
-    }
-
-    fn get_address_public_keys(
-        &self,
-        password: Option<String>,
-    ) -> Result<Vec<(RoochAddress, PublicKey)>, anyhow::Error> {
-        let mut result = Vec::new();
-        for (address, encryption) in &self.keys {
-            let keypair: RoochKeyPair = retrieve_key_pair(encryption, password.clone())?;
-            let public_key = keypair.public();
-            result.push((*address, public_key));
-        }
-        Ok(result)
-    }
-
-    fn get_key_pairs(
-        &self,
-        address: &RoochAddress,
-        password: Option<String>,
-    ) -> Result<Vec<RoochKeyPair>, anyhow::Error> {
-        match self.keys.get(address) {
-            Some(encryption) => {
-                let kp = retrieve_key_pair(encryption, password)?;
-                Ok(vec![kp])
-            }
-            None => Err(anyhow!("Cannot find key for address: [{address}]")),
-        }
-    }
-
-    fn update_address_encryption_data(
-        &mut self,
-        address: &RoochAddress,
-        encryption: EncryptionData,
-    ) -> Result<(), anyhow::Error> {
-        self.keys.entry(*address).or_insert(encryption);
-        Ok(())
-    }
+    // fn update_address_encryption_data(
+    //     &mut self,
+    //     address: &RoochAddress,
+    //     encryption: EncryptionData,
+    // ) -> Result<(), anyhow::Error> {
+    //     self.keys.entry(*address).or_insert(encryption);
+    //     Ok(())
+    // }
 
     fn nullify(&mut self, address: &RoochAddress) -> Result<(), anyhow::Error> {
         self.keys.remove(address);
@@ -326,22 +295,21 @@ impl AccountKeystore for BaseKeyStore {
         self.is_password_empty
     }
 
-    fn get_mnemonics(
-        &self,
-        password: Option<String>,
-    ) -> Result<Vec<MnemonicResult>, anyhow::Error> {
-        match self.mnemonics.first_key_value() {
-            Some((k, v)) => {
-                let nonce = Base64::decode(&v.mnemonic_phrase_encryption.nonce).map_err(|e| {
-                    anyhow::Error::new(RoochError::KeyConversionError(e.to_string()))
-                })?;
-                let ciphertext =
-                    Base64::decode(&v.mnemonic_phrase_encryption.ciphertext).map_err(|e| {
+    fn get_mnemonic(&self, password: Option<String>) -> Result<MnemonicResult, anyhow::Error> {
+        match &self.mnemonic {
+            Some(mnemonic_data) => {
+                let nonce = Base64::decode(&mnemonic_data.mnemonic_phrase_encryption.nonce)
+                    .map_err(|e| {
                         anyhow::Error::new(RoochError::KeyConversionError(e.to_string()))
                     })?;
-                let tag = Base64::decode(&v.mnemonic_phrase_encryption.tag).map_err(|e| {
-                    anyhow::Error::new(RoochError::KeyConversionError(e.to_string()))
-                })?;
+                let ciphertext = Base64::decode(
+                    &mnemonic_data.mnemonic_phrase_encryption.ciphertext,
+                )
+                .map_err(|e| anyhow::Error::new(RoochError::KeyConversionError(e.to_string())))?;
+                let tag =
+                    Base64::decode(&mnemonic_data.mnemonic_phrase_encryption.tag).map_err(|e| {
+                        anyhow::Error::new(RoochError::KeyConversionError(e.to_string()))
+                    })?;
 
                 let mnemonic_phrase = decrypt_key(
                     nonce.as_slice(),
@@ -352,35 +320,56 @@ impl AccountKeystore for BaseKeyStore {
 
                 let mnemonic_phrase = String::from_utf8(mnemonic_phrase)
                     .map_err(|e| anyhow::anyhow!("Parse mnemonic phrase error:{}", e))?;
-                let mnemonic_generated_address = MnemonicResult {
+                Ok(MnemonicResult {
                     mnemonic_phrase,
-                    mnemonic_phrase_key: k.clone(),
-                    mnemonic_data: v.clone(),
-                };
-                Ok(vec![mnemonic_generated_address])
+                    mnemonic_data: mnemonic_data.clone(),
+                })
             }
-            None => Ok(vec![]),
+            None => Err(anyhow::Error::new(RoochError::KeyConversionError(
+                "Cannot find mnemonic data, please init the keystore first".to_string(),
+            ))),
         }
+        // match self.mnemonic.first_key_value() {
+        //     Some((k, v)) => {
+        //         let nonce = Base64::decode(&v.mnemonic_phrase_encryption.nonce).map_err(|e| {
+        //             anyhow::Error::new(RoochError::KeyConversionError(e.to_string()))
+        //         })?;
+        //         let ciphertext =
+        //             Base64::decode(&v.mnemonic_phrase_encryption.ciphertext).map_err(|e| {
+        //                 anyhow::Error::new(RoochError::KeyConversionError(e.to_string()))
+        //             })?;
+        //         let tag = Base64::decode(&v.mnemonic_phrase_encryption.tag).map_err(|e| {
+        //             anyhow::Error::new(RoochError::KeyConversionError(e.to_string()))
+        //         })?;
+
+        //         let mnemonic_phrase = decrypt_key(
+        //             nonce.as_slice(),
+        //             ciphertext.as_slice(),
+        //             tag.as_slice(),
+        //             password,
+        //         )?;
+
+        //         let mnemonic_phrase = String::from_utf8(mnemonic_phrase)
+        //             .map_err(|e| anyhow::anyhow!("Parse mnemonic phrase error:{}", e))?;
+        //         let mnemonic_generated_address = MnemonicResult {
+        //             mnemonic_phrase,
+        //             mnemonic_phrase_key: k.clone(),
+        //             mnemonic_data: v.clone(),
+        //         };
+        //         Ok(vec![mnemonic_generated_address])
+        //     }
+        //     None => Ok(vec![]),
+        // }
     }
 
-    fn add_mnemonic_data(
-        &mut self,
-        mnemonic_phrase: String,
-        mnemonic_data: MnemonicData,
-    ) -> Result<(), anyhow::Error> {
-        self.mnemonics
-            .entry(mnemonic_phrase)
-            .or_insert(mnemonic_data);
-        Ok(())
-    }
-
-    fn update_mnemonic_data(
-        &mut self,
-        mnemonic_phrase: String,
-        mnemonic_data: MnemonicData,
-    ) -> Result<(), anyhow::Error> {
-        // insert or update
-        self.mnemonics.insert(mnemonic_phrase, mnemonic_data);
-        Ok(())
-    }
+    // fn add_mnemonic_data(
+    //     &mut self,
+    //     mnemonic_phrase: String,
+    //     mnemonic_data: MnemonicData,
+    // ) -> Result<(), anyhow::Error> {
+    //     self.mnemonics
+    //         .entry(mnemonic_phrase)
+    //         .or_insert(mnemonic_data);
+    //     Ok(())
+    // }
 }

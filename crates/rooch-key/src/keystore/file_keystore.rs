@@ -28,6 +28,12 @@ pub struct FileBasedKeystore {
 }
 
 impl AccountKeystore for FileBasedKeystore {
+    fn init_mnemonic_data(&mut self, mnemonic_data: MnemonicData) -> Result<(), anyhow::Error> {
+        self.keystore.init_mnemonic_data(mnemonic_data)?;
+        self.save()?;
+        Ok(())
+    }
+
     fn get_accounts(&self, password: Option<String>) -> Result<Vec<LocalAccount>, anyhow::Error> {
         self.keystore.get_accounts(password)
     }
@@ -43,25 +49,6 @@ impl AccountKeystore for FileBasedKeystore {
         Ok(())
     }
 
-    fn get_address_public_keys(
-        &self,
-        password: Option<String>,
-    ) -> Result<Vec<(RoochAddress, PublicKey)>, anyhow::Error> {
-        self.keystore.get_address_public_keys(password)
-    }
-
-    fn get_public_key(&self, password: Option<String>) -> Result<PublicKey, anyhow::Error> {
-        self.keystore.get_public_key(password)
-    }
-
-    fn get_key_pairs(
-        &self,
-        address: &RoochAddress,
-        password: Option<String>,
-    ) -> Result<Vec<RoochKeyPair>, anyhow::Error> {
-        self.keystore.get_key_pairs(address, password)
-    }
-
     fn get_key_pair_with_password(
         &self,
         address: &RoochAddress,
@@ -70,16 +57,16 @@ impl AccountKeystore for FileBasedKeystore {
         self.keystore.get_key_pair_with_password(address, password)
     }
 
-    fn update_address_encryption_data(
-        &mut self,
-        address: &RoochAddress,
-        encryption: EncryptionData,
-    ) -> Result<(), anyhow::Error> {
-        self.keystore
-            .update_address_encryption_data(address, encryption)?;
-        self.save()?;
-        Ok(())
-    }
+    // fn update_address_encryption_data(
+    //     &mut self,
+    //     address: &RoochAddress,
+    //     encryption: EncryptionData,
+    // ) -> Result<(), anyhow::Error> {
+    //     self.keystore
+    //         .update_address_encryption_data(address, encryption)?;
+    //     self.save()?;
+    //     Ok(())
+    // }
 
     fn nullify(&mut self, address: &RoochAddress) -> Result<(), anyhow::Error> {
         self.keystore.nullify(address)?;
@@ -183,34 +170,31 @@ impl AccountKeystore for FileBasedKeystore {
         self.keystore.is_password_empty
     }
 
-    fn get_mnemonics(
-        &self,
-        password: Option<String>,
-    ) -> Result<Vec<MnemonicResult>, anyhow::Error> {
-        self.keystore.get_mnemonics(password)
+    fn get_mnemonic(&self, password: Option<String>) -> Result<MnemonicResult, anyhow::Error> {
+        self.keystore.get_mnemonic(password)
     }
 
-    fn add_mnemonic_data(
-        &mut self,
-        mnemonic_phrase: String,
-        mnemonic_data: MnemonicData,
-    ) -> Result<(), anyhow::Error> {
-        self.keystore
-            .add_mnemonic_data(mnemonic_phrase, mnemonic_data)?;
-        self.save()?;
-        Ok(())
-    }
+    // fn add_mnemonic_data(
+    //     &mut self,
+    //     mnemonic_phrase: String,
+    //     mnemonic_data: MnemonicData,
+    // ) -> Result<(), anyhow::Error> {
+    //     self.keystore
+    //         .add_mnemonic_data(mnemonic_phrase, mnemonic_data)?;
+    //     self.save()?;
+    //     Ok(())
+    // }
 
-    fn update_mnemonic_data(
-        &mut self,
-        mnemonic_phrase: String,
-        mnemonic_data: MnemonicData,
-    ) -> Result<(), anyhow::Error> {
-        self.keystore
-            .update_mnemonic_data(mnemonic_phrase, mnemonic_data)?;
-        self.save()?;
-        Ok(())
-    }
+    // fn update_mnemonic_data(
+    //     &mut self,
+    //     mnemonic_phrase: String,
+    //     mnemonic_data: MnemonicData,
+    // ) -> Result<(), anyhow::Error> {
+    //     self.keystore
+    //         .update_mnemonic_data(mnemonic_phrase, mnemonic_data)?;
+    //     self.save()?;
+    //     Ok(())
+    // }
 }
 
 impl FileBasedKeystore {
@@ -231,7 +215,7 @@ impl FileBasedKeystore {
                 )
             })?
         } else {
-            BaseKeyStore::new(BTreeMap::new())
+            BaseKeyStore::new()
         };
 
         Ok(Self {

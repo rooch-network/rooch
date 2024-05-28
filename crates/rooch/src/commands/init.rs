@@ -152,12 +152,8 @@ impl CommandAction<()> for Init {
                     (None, true)
                 };
 
-                let result = keystore.generate_and_add_new_key(
-                    self.mnemonic_phrase,
-                    None,
-                    None,
-                    password.clone(),
-                )?;
+                let result =
+                    keystore.init_keystore(self.mnemonic_phrase, None, password.clone())?;
                 println!("Generated new keypair for address [{}]", result.address);
                 println!(
                     "Secret Recovery Phrase : [{}]",

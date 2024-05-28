@@ -35,6 +35,7 @@ pub struct WalletContext {
     pub server_config: PersistedConfig<ServerConfig>,
     pub keystore: Keystore,
     pub address_mapping: BTreeMap<String, AccountAddress>,
+    password: Option<String>,
 }
 
 pub type AddressMappingFn = Box<dyn Fn(&str) -> Option<AccountAddress> + Send + Sync>;
@@ -80,6 +81,7 @@ impl WalletContext {
             server_config,
             keystore,
             address_mapping,
+            password: None,
         })
     }
 
@@ -223,5 +225,13 @@ impl WalletContext {
         } else {
             Ok(result)
         }
+    }
+
+    pub fn set_password(&mut self, password: Option<String>) {
+        self.password = password;
+    }
+
+    pub fn get_password(&self) -> Option<String> {
+        self.password.clone()
     }
 }

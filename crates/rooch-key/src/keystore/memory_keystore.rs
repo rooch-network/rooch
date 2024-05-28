@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::types::LocalAccount;
-use crate::key_derive::get_key_pair_from_red;
+use crate::key_derive::generate_key_pair_for_tests;
 use crate::keystore::account_keystore::AccountKeystore;
 use crate::keystore::base_keystore::BaseKeyStore;
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
@@ -35,25 +35,6 @@ impl AccountKeystore for InMemKeystore {
             .add_address_encryption_data(address, encryption)
     }
 
-    fn get_address_public_keys(
-        &self,
-        password: Option<String>,
-    ) -> Result<Vec<(RoochAddress, PublicKey)>, anyhow::Error> {
-        self.keystore.get_address_public_keys(password)
-    }
-
-    fn get_public_key(&self, password: Option<String>) -> Result<PublicKey, anyhow::Error> {
-        self.keystore.get_public_key(password)
-    }
-
-    fn get_key_pairs(
-        &self,
-        address: &RoochAddress,
-        password: Option<String>,
-    ) -> Result<Vec<RoochKeyPair>, anyhow::Error> {
-        self.keystore.get_key_pairs(address, password)
-    }
-
     fn get_key_pair_with_password(
         &self,
         address: &RoochAddress,
@@ -62,14 +43,14 @@ impl AccountKeystore for InMemKeystore {
         self.keystore.get_key_pair_with_password(address, password)
     }
 
-    fn update_address_encryption_data(
-        &mut self,
-        address: &RoochAddress,
-        encryption: EncryptionData,
-    ) -> Result<(), anyhow::Error> {
-        self.keystore
-            .update_address_encryption_data(address, encryption)
-    }
+    // fn update_address_encryption_data(
+    //     &mut self,
+    //     address: &RoochAddress,
+    //     encryption: EncryptionData,
+    // ) -> Result<(), anyhow::Error> {
+    //     self.keystore
+    //         .update_address_encryption_data(address, encryption)
+    // }
 
     fn nullify(&mut self, address: &RoochAddress) -> Result<(), anyhow::Error> {
         self.keystore.nullify(address)
@@ -166,40 +147,23 @@ impl AccountKeystore for InMemKeystore {
         self.keystore.is_password_empty
     }
 
-    fn get_mnemonics(
-        &self,
-        password: Option<String>,
-    ) -> Result<Vec<MnemonicResult>, anyhow::Error> {
-        self.keystore.get_mnemonics(password)
+    fn get_mnemonic(&self, password: Option<String>) -> Result<MnemonicResult, anyhow::Error> {
+        self.keystore.get_mnemonic(password)
     }
 
-    fn add_mnemonic_data(
-        &mut self,
-        mnemonic_phrase: String,
-        mnemonic_data: MnemonicData,
-    ) -> Result<(), anyhow::Error> {
-        self.keystore
-            .add_mnemonic_data(mnemonic_phrase, mnemonic_data)
-    }
-
-    fn update_mnemonic_data(
-        &mut self,
-        mnemonic_phrase: String,
-        mnemonic_data: MnemonicData,
-    ) -> Result<(), anyhow::Error> {
-        self.keystore
-            .update_mnemonic_data(mnemonic_phrase, mnemonic_data)
+    fn init_mnemonic_data(&mut self, mnemonic_data: MnemonicData) -> Result<(), anyhow::Error> {
+        self.keystore.init_mnemonic_data(mnemonic_data)
     }
 }
 
 impl InMemKeystore {
     pub fn new_insecure_for_tests(initial_key_number: usize) -> Self {
-        let keys = (0..initial_key_number)
-            .map(|_| get_key_pair_from_red())
-            .collect::<BTreeMap<RoochAddress, EncryptionData>>();
-
-        Self {
-            keystore: BaseKeyStore::new(keys),
+        let mut keystore = BaseKeyStore::new();
+        keystore.init_keystore(None, None, None).unwrap();
+        for _ in 0..initial_key_number {
+            keystore.generate_and_add_new_key(None).unwrap();
         }
+
+        Self { keystore }
     }
 }
