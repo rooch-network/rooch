@@ -3,9 +3,11 @@
 
 // Evm Precompiled Contracts https://www.evm.codes/precompiled?fork=cancun
 module moveos_std::evm {
-    use std::vector;
     use moveos_std::hash;
 
+    #[test_only]
+    use std::vector;
+    
     const ErrorEcRecoverFailed: u64 = 1;
     const ErrorModexpFailed: u64 = 5;
     const ErrorEcAddFailed: u64 = 6;

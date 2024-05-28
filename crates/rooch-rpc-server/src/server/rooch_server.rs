@@ -626,7 +626,11 @@ impl RoochAPIServer for RoochServer {
                             !valid_display_field_views.is_empty(),
                             "display fields should not be empty"
                         );
-                        (Some(s), valid_display_field_views.pop().unwrap())
+                        let annotated_obj = s.into_annotated_object().expect("should be object");
+                        (
+                            Some(annotated_obj),
+                            valid_display_field_views.pop().unwrap(),
+                        )
                     }
                     None => (None, None),
                 })
@@ -634,7 +638,14 @@ impl RoochAPIServer for RoochServer {
         } else {
             annotated_states
                 .into_iter()
-                .map(|s| (s, None))
+                .map(|s| {
+                    let obj = s.map(|annotated_s| {
+                        annotated_s
+                            .into_annotated_object()
+                            .expect("should be object")
+                    });
+                    (obj, None)
+                })
                 .collect::<Vec<_>>()
         };
 
