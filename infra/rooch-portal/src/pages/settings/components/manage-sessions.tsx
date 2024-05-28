@@ -18,6 +18,8 @@ import {
 } from '@roochnetwork/rooch-sdk-kit'
 import { Copy, ChevronDown, ChevronUp, Check, AlertCircle } from 'lucide-react'
 
+import {formatTimestamp} from '@/utils/format.ts'
+
 interface Session {
   authenticationKey: string
   appName: string
@@ -39,11 +41,6 @@ interface SessionInfoResult {
 interface ExpandableRowProps {
   session: Session
   remove: (authKey: string) => void
-}
-
-const formatTimestamp = (timestamp: number): string => {
-  const date = new Date(timestamp)
-  return date.toLocaleString()
 }
 
 const copyToClipboard = async (text: string, setCopied: (value: boolean) => void) => {
@@ -115,6 +112,8 @@ export const ManageSessions: React.FC = () => {
       </div>
     )
   }
+
+  console.log(sessionKeys)
 
   return (
     <div className="rounded-lg border w-full">
