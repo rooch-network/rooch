@@ -9,32 +9,10 @@ use move_core_types::language_storage::StructTag;
 use moveos_types::h256::H256;
 use moveos_types::move_types::struct_tag_match;
 use moveos_types::moveos_std::event::{Event, EventID};
-use moveos_types::transaction::VerifiedMoveOSTransaction;
+use moveos_types::moveos_std::tx_context::TxContext;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-// #[derive(Debug, Clone)]
-// pub struct IndexerEvent {
-//     // event handle id
-//     pub event_handle_id: ObjectID,
-//     // the number of messages that have been emitted to the path previously
-//     pub event_seq: u64,
-//     // the type of the event data
-//     pub event_type: StructTag,
-//     // the data payload of the event
-//     pub event_data: Vec<u8>,
-//     // event index in the transaction events
-//     pub event_index: u64,
-//
-//     // the hash of this transaction.
-//     pub tx_hash: H256,
-//     // the tx order of this transaction.
-//     pub tx_order: u64,
-//     // the account address of sender who emit the event
-//     pub sender: AccountAddress,
-//
-//     pub created_at: u64,
-// }
 #[derive(Eq, PartialEq, Clone, Debug, Serialize, Deserialize)]
 pub struct IndexerEvent {
     /// The unique event_id that the event was indexer
@@ -56,28 +34,20 @@ pub struct IndexerEvent {
 }
 
 impl IndexerEvent {
-    pub fn new(
-        event: Event,
-        mut transaction: LedgerTransaction,
-        moveos_tx: VerifiedMoveOSTransaction,
-    ) -> Self {
+    pub fn new(event: Event, mut ledger_transaction: LedgerTransaction, ctx: TxContext) -> Self {
         IndexerEvent {
-            // event_handle_id: event.event_id.event_handle_id,
-            // event_seq: event.event_id.event_seq,
             indexer_event_id: IndexerEventID::new(
-                transaction.sequence_info.tx_order,
+                ledger_transaction.sequence_info.tx_order,
                 event.event_index,
             ),
             event_id: event.event_id,
 
             event_type: event.event_type,
             event_data: event.event_data,
-            // event_index: event.event_index,
-            tx_hash: transaction.tx_hash(),
-            // tx_order: transaction.sequence_info.tx_order,
-            sender: moveos_tx.ctx.sender,
+            tx_hash: ledger_transaction.tx_hash(),
+            sender: ctx.sender,
 
-            created_at: transaction.sequence_info.tx_timestamp,
+            created_at: ledger_transaction.sequence_info.tx_timestamp,
         }
     }
 }
@@ -108,26 +78,6 @@ impl IndexerEventID {
         }
     }
 }
-
-// #[derive(Eq, PartialEq, Clone, Debug, Serialize, Deserialize)]
-// pub struct IndexerEvent {
-//     /// The unique event_id that the event was indexer
-//     pub indexer_event_id: IndexerEventID,
-//     /// The unique event_id that the event was emitted to
-//     pub event_id: EventID,
-//     /// The type of the data
-//     pub event_type: StructTag,
-//     /// The data payload of the event
-//     pub event_data: Vec<u8>,
-//
-//     /// the hash of this transaction.
-//     pub tx_hash: H256,
-//     /// the account address of sender who emit the event
-//     pub sender: AccountAddress,
-//
-//     /// the event created timestamp on chain
-//     pub created_at: u64,
-// }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

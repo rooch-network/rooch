@@ -11,6 +11,7 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_store::MoveOSStore;
 use moveos_types::moveos_std::object::RootObjectEntity;
+use moveos_types::transaction::MoveAction;
 use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::indexer::state::{
     handle_object_change, IndexerFieldStateChanges, IndexerObjectStateChanges,
@@ -44,7 +45,7 @@ impl Handler<UpdateIndexerMessage> for IndexerActor {
     async fn handle(&mut self, msg: UpdateIndexerMessage, _ctx: &mut ActorContext) -> Result<()> {
         let UpdateIndexerMessage {
             root,
-            transaction,
+            ledger_transaction,
             execution_info,
             moveos_tx,
             events,
@@ -52,13 +53,15 @@ impl Handler<UpdateIndexerMessage> for IndexerActor {
         } = msg;
 
         self.root = root;
-        let tx_order = transaction.sequence_info.tx_order;
+        let tx_order = ledger_transaction.sequence_info.tx_order;
 
         // 1. update indexer transaction
+        let move_action = MoveAction::from(moveos_tx.action);
         let indexer_transaction = IndexerTransaction::new(
-            transaction.clone(),
+            ledger_transaction.clone(),
             execution_info.clone(),
-            moveos_tx.clone(),
+            move_action,
+            moveos_tx.ctx.clone(),
         )?;
         let transactions = vec![indexer_transaction];
         self.indexer_store.persist_transactions(transactions)?;
@@ -66,7 +69,13 @@ impl Handler<UpdateIndexerMessage> for IndexerActor {
         // 2. update indexer state
         let events: Vec<_> = events
             .into_iter()
-            .map(|event| IndexerEvent::new(event.clone(), transaction.clone(), moveos_tx.clone()))
+            .map(|event| {
+                IndexerEvent::new(
+                    event.clone(),
+                    ledger_transaction.clone(),
+                    moveos_tx.ctx.clone(),
+                )
+            })
             .collect();
         self.indexer_store.persist_events(events)?;
 
@@ -153,12 +162,14 @@ impl Handler<IndexerTransactionMessage> for IndexerActor {
         _ctx: &mut ActorContext,
     ) -> Result<()> {
         let IndexerTransactionMessage {
-            transaction,
+            ledger_transaction,
             execution_info,
-            moveos_tx,
+            move_action,
+            tx_context,
         } = msg;
 
-        let indexer_transaction = IndexerTransaction::new(transaction, execution_info, moveos_tx)?;
+        let indexer_transaction =
+            IndexerTransaction::new(ledger_transaction, execution_info, move_action, tx_context)?;
         let transactions = vec![indexer_transaction];
 
         self.indexer_store.persist_transactions(transactions)?;
@@ -171,13 +182,13 @@ impl Handler<IndexerEventsMessage> for IndexerActor {
     async fn handle(&mut self, msg: IndexerEventsMessage, _ctx: &mut ActorContext) -> Result<()> {
         let IndexerEventsMessage {
             events,
-            transaction,
-            moveos_tx,
+            ledger_transaction,
+            tx_context,
         } = msg;
 
         let events: Vec<_> = events
             .into_iter()
-            .map(|event| IndexerEvent::new(event, transaction.clone(), moveos_tx.clone()))
+            .map(|event| IndexerEvent::new(event, ledger_transaction.clone(), tx_context.clone()))
             .collect();
         self.indexer_store.persist_events(events)?;
         Ok(())

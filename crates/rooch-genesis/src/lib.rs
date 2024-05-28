@@ -310,14 +310,15 @@ impl RoochGenesis {
             genesis_tx_order,
             vec![],
         );
-        rooch_store.save_transaction(ledger_tx)?;
+        rooch_store.save_transaction(ledger_tx.clone())?;
 
         // Save the genesis to indexer
         // 1. update indexer transaction
         let indexer_transaction = IndexerTransaction::new(
             ledger_tx.clone(),
             genesis_execution_info.clone(),
-            moveos_tx.clone(),
+            self.genesis_moveos_tx().action,
+            self.genesis_moveos_tx().ctx,
         )?;
         let transactions = vec![indexer_transaction];
         indexer_store.persist_transactions(transactions)?;
@@ -326,7 +327,13 @@ impl RoochGenesis {
         let events: Vec<_> = genesis_tx_output
             .events
             .into_iter()
-            .map(|event| IndexerEvent::new(event.clone(), ledger_tx.clone(), moveos_tx.clone()))
+            .map(|event| {
+                IndexerEvent::new(
+                    event.clone(),
+                    ledger_tx.clone(),
+                    self.genesis_moveos_tx().ctx,
+                )
+            })
             .collect();
         indexer_store.persist_events(events)?;
 
@@ -345,7 +352,7 @@ impl RoochGenesis {
                 object_id,
                 object_change,
             )?;
-        };
+        }
         indexer_store.update_object_states(indexer_object_state_changes)?;
         indexer_store.update_field_states(indexer_field_state_changes)?;
 
@@ -386,6 +393,7 @@ mod tests {
     use moveos_types::moveos_std::module_store::{ModuleStore, Package};
     use moveos_types::state_resolver::{RootObjectResolver, StateResolver};
     use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
+    use rooch_indexer::IndexerStore;
     use rooch_store::RoochStore;
     use rooch_types::bitcoin::network::BitcoinNetwork;
     use rooch_types::rooch_network::RoochNetwork;
@@ -401,9 +409,10 @@ mod tests {
 
         let mut moveos_store = MoveOSStore::mock_moveos_store().unwrap();
         let mut rooch_store = RoochStore::mock_rooch_store().unwrap();
+        let mut indexer_store = IndexerStore::mock_indexer_store().unwrap();
 
         let root = genesis
-            .init_genesis(&mut moveos_store, &mut rooch_store)
+            .init_genesis(&mut moveos_store, &mut rooch_store, &mut indexer_store)
             .unwrap();
 
         let resolver = RootObjectResolver::new(root, &moveos_store);

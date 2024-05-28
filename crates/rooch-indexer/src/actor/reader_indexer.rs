@@ -11,7 +11,7 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::indexer::state::{IndexerFieldState, IndexerObjectState};
-use rooch_types::transaction::TransactionWithInfo;
+use rooch_types::indexer::transaction::IndexerTransaction;
 
 pub struct IndexerReaderActor {
     indexer_reader: IndexerReader,
@@ -31,7 +31,7 @@ impl Handler<QueryIndexerTransactionsMessage> for IndexerReaderActor {
         &mut self,
         msg: QueryIndexerTransactionsMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Vec<TransactionWithInfo>> {
+    ) -> Result<Vec<IndexerTransaction>> {
         let QueryIndexerTransactionsMessage {
             filter,
             cursor,

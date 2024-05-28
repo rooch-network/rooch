@@ -98,18 +98,6 @@ pub struct IndexerFieldState {
     pub updated_at: u64,
 }
 
-// #[derive(Clone, Debug)]
-// pub struct IndexerFieldState {
-//     pub object_id: ObjectID,
-//     pub key_hex: String,
-//     pub key_type: TypeTag,
-//     pub value_type: TypeTag,
-//     pub tx_order: u64,
-//     pub state_index: u64,
-//     pub created_at: u64,
-//     pub updated_at: u64,
-// }
-
 impl IndexerFieldState {
     pub fn new(
         object_id: ObjectID,
@@ -279,38 +267,6 @@ impl IndexerStateID {
         }
     }
 }
-
-// #[derive(Clone, Debug)]
-// pub struct IndexerObjectState {
-//     pub object_id: ObjectID,
-//     pub owner: AccountAddress,
-//     pub flag: u8,
-//     pub object_type: StructTag,
-//     pub state_root: AccountAddress,
-//     pub size: u64,
-//     pub tx_order: u64,
-//     pub state_index: u64,
-//     pub created_at: u64,
-//     pub updated_at: u64,
-// }
-//
-// impl IndexerObjectState {
-//     pub fn indexer_state_id(&self) -> IndexerStateID {
-//         IndexerStateID::new(self.tx_order, self.state_index)
-//     }
-// }
-
-// #[derive(Clone, Debug)]
-// pub struct IndexerFieldState {
-//     pub object_id: ObjectID,
-//     pub key_hex: String,
-//     pub key_type: TypeTag,
-//     pub value_type: TypeTag,
-//     pub tx_order: u64,
-//     pub state_index: u64,
-//     pub created_at: u64,
-//     pub updated_at: u64,
-// }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

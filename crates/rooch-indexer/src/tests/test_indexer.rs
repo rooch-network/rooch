@@ -155,7 +155,8 @@ fn test_transaction_store() -> Result<()> {
     let indexer_transaction = IndexerTransaction::new(
         random_transaction,
         random_execution_info,
-        random_moveos_tx.clone(),
+        random_moveos_tx.action.into(),
+        random_moveos_tx.ctx.clone(),
     )?;
     let transactions = vec![indexer_transaction];
     let _ = indexer_store.persist_transactions(transactions)?;
@@ -188,8 +189,11 @@ fn test_event_store() -> Result<()> {
         post_execute_functions: random_function_calls(),
     };
 
-    let indexer_event =
-        IndexerEvent::new(random_event, random_transaction, random_moveos_tx.clone());
+    let indexer_event = IndexerEvent::new(
+        random_event,
+        random_transaction,
+        random_moveos_tx.ctx.clone(),
+    );
     let events = vec![indexer_event];
     let _ = indexer_store.persist_events(events)?;
 

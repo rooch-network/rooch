@@ -502,23 +502,28 @@ impl RoochAPIServer for RoochServer {
         let query_option = query_option.unwrap_or_default();
         let descending_order = query_option.descending;
 
-        let mut data = self
+        let txs = self
             .rpc_service
             .query_transactions(filter.into(), cursor, limit_of + 1, descending_order)
             .await?;
+
+        let mut data = self
+            .aggregate_service
+            .build_transaction_with_infos(txs)
+            .await?
+            .into_iter()
+            .map(TransactionWithInfoView::from)
+            .collect::<Vec<_>>();
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
         let next_cursor = data
             .last()
             .cloned()
-            .map_or(cursor, |t| Some(t.transaction.sequence_info.tx_order));
+            .map_or(cursor, |t| Some(t.transaction.sequence_info.tx_order.0));
 
         Ok(TransactionWithInfoPageView {
-            data: data
-                .into_iter()
-                .map(TransactionWithInfoView::from)
-                .collect::<Vec<_>>(),
+            data,
             next_cursor,
             has_next_page,
         })

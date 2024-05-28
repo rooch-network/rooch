@@ -22,8 +22,7 @@ use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
     FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateID, ObjectStateFilter,
 };
-use rooch_types::indexer::transaction::TransactionFilter;
-use rooch_types::transaction::TransactionWithInfo;
+use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::path::PathBuf;
@@ -138,7 +137,7 @@ impl IndexerReader {
         cursor: Option<u64>,
         limit: usize,
         descending_order: bool,
-    ) -> IndexerResult<Vec<TransactionWithInfo>> {
+    ) -> IndexerResult<Vec<IndexerTransaction>> {
         let tx_order = if let Some(cursor) = cursor {
             cursor as i64
         } else if descending_order {
@@ -218,7 +217,7 @@ impl IndexerReader {
 
         let result = stored_transactions
             .into_iter()
-            .map(|t| t.try_into_transaction_with_info())
+            .map(IndexerTransaction::try_from)
             .collect::<Result<Vec<_>>>()
             .map_err(|e| {
                 IndexerError::SQLiteReadError(format!("Cast indexer transactions failed: {:?}", e))

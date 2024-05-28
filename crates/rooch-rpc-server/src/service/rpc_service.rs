@@ -21,11 +21,9 @@ use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
     FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateID, ObjectStateFilter,
 };
-use rooch_types::indexer::transaction::TransactionFilter;
+use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::sequencer::SequencerOrder;
-use rooch_types::transaction::{
-    ExecuteTransactionResponse, LedgerTransaction, RoochTransaction, TransactionWithInfo,
-};
+use rooch_types::transaction::{ExecuteTransactionResponse, LedgerTransaction, RoochTransaction};
 
 /// RpcService is the implementation of the RPC service.
 /// It is the glue between the RPC server(EthAPIServer,RoochApiServer) and the rooch's actors.
@@ -223,7 +221,7 @@ impl RpcService {
         cursor: Option<u64>,
         limit: usize,
         descending_order: bool,
-    ) -> Result<Vec<TransactionWithInfo>> {
+    ) -> Result<Vec<IndexerTransaction>> {
         let resp = self
             .indexer
             .query_transactions(filter, cursor, limit, descending_order)

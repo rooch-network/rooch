@@ -5,7 +5,8 @@ use crate::transaction::{LedgerTransaction, LedgerTxData};
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::h256::H256;
-use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
+use moveos_types::moveos_std::tx_context::TxContext;
+use moveos_types::transaction::{MoveAction, TransactionExecutionInfo};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
@@ -18,14 +19,11 @@ pub struct IndexerTransaction {
     pub sequence_number: u64,
     // the account address of sender who send the transaction
     pub sender: AccountAddress,
-    pub action: MoveAction,
+    pub action: Option<MoveAction>,
     pub action_type: u8,
-    pub action_raw: Vec<u8>,
     pub auth_validator_id: u64,
     pub authenticator_payload: Vec<u8>,
     pub tx_accumulator_root: H256,
-    pub transaction_raw: Vec<u8>,
-
     pub state_root: H256,
     pub size: u64,
     pub event_root: H256,
@@ -41,11 +39,9 @@ impl IndexerTransaction {
     pub fn new(
         mut transaction: LedgerTransaction,
         execution_info: TransactionExecutionInfo,
-        moveos_tx: VerifiedMoveOSTransaction,
+        move_action: MoveAction,
+        tx_context: TxContext,
     ) -> Result<Self> {
-        let move_action = MoveAction::from(moveos_tx.action);
-        //TODO remove the action_raw field, and simply use the action field
-        let action_raw = move_action.encode()?;
         let status = serde_json::to_string(&execution_info.status)?;
         let (auth_validator_id, authenticator_payload) = match &transaction.data {
             LedgerTxData::L1Block(_block) => (0, vec![]),
@@ -60,17 +56,14 @@ impl IndexerTransaction {
             // The tx order of this transaction.
             tx_order: transaction.sequence_info.tx_order,
 
-            sequence_number: moveos_tx.ctx.sequence_number,
+            sequence_number: tx_context.sequence_number,
             // the account address of sender who send the transaction
-            sender: moveos_tx.ctx.sender,
-            action: move_action.clone(),
+            sender: tx_context.sender,
             action_type: move_action.action_type(),
-            action_raw,
+            action: Some(move_action),
             auth_validator_id,
             authenticator_payload,
             tx_accumulator_root: transaction.sequence_info.tx_accumulator_root,
-            transaction_raw: transaction.encode(),
-
             state_root: execution_info.state_root,
             size: execution_info.size,
             event_root: execution_info.event_root,

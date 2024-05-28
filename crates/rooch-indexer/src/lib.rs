@@ -120,7 +120,9 @@ impl IndexerStore {
 
     pub fn mock_indexer_store() -> Result<Self> {
         let indexer_db_dir = Self::mock_db_dir()?;
-        Self::new(indexer_db_dir)
+        let mock_store = Self::new(indexer_db_dir)?;
+        mock_store.create_all_tables_if_not_exists()?;
+        Ok(mock_store)
     }
 
     pub fn create_all_tables_if_not_exists(&self) -> Result<()> {
@@ -181,9 +183,9 @@ impl IndexerStoreTrait for IndexerStore {
         field_states_new_and_update.append(&mut field_state_change.update_field_states);
         self.get_sqlite_store(INDEXER_FIELD_STATES_TABLE_NAME)?
             .persist_or_update_field_states(field_states_new_and_update)?;
-        self.get_sqlite_store(INDEXER_FIELD_STATES_TABLE_NAME)
+        self.get_sqlite_store(INDEXER_FIELD_STATES_TABLE_NAME)?
             .delete_field_states(field_state_change.remove_field_states)?;
-        self.get_sqlite_store(INDEXER_FIELD_STATES_TABLE_NAME)
+        self.get_sqlite_store(INDEXER_FIELD_STATES_TABLE_NAME)?
             .delete_field_states_by_object_id(field_state_change.remove_field_states_by_object_id)
     }
 

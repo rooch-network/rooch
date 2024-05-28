@@ -5,22 +5,22 @@ use anyhow::Result;
 use coerce::actor::message::Message;
 use moveos_types::moveos_std::event::Event;
 use moveos_types::moveos_std::object::RootObjectEntity;
+use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::StateChangeSet;
-use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
+use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
     FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateID, ObjectStateFilter,
 };
-use rooch_types::indexer::transaction::TransactionFilter;
+use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::transaction::LedgerTransaction;
-use rooch_types::transaction::TransactionWithInfo;
 use serde::{Deserialize, Serialize};
 
 /// Indexer write Message
 #[derive(Debug, Clone)]
 pub struct UpdateIndexerMessage {
     pub root: RootObjectEntity,
-    pub transaction: LedgerTransaction,
+    pub ledger_transaction: LedgerTransaction,
     pub execution_info: TransactionExecutionInfo,
     pub moveos_tx: VerifiedMoveOSTransaction,
     pub events: Vec<Event>,
@@ -34,9 +34,10 @@ impl Message for UpdateIndexerMessage {
 /// Indexer Transaction write Message
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IndexerTransactionMessage {
-    pub transaction: LedgerTransaction,
+    pub ledger_transaction: LedgerTransaction,
     pub execution_info: TransactionExecutionInfo,
-    pub moveos_tx: VerifiedMoveOSTransaction,
+    pub move_action: MoveAction,
+    pub tx_context: TxContext,
 }
 
 impl Message for IndexerTransactionMessage {
@@ -47,8 +48,8 @@ impl Message for IndexerTransactionMessage {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IndexerEventsMessage {
     pub events: Vec<Event>,
-    pub transaction: LedgerTransaction,
-    pub moveos_tx: VerifiedMoveOSTransaction,
+    pub ledger_transaction: LedgerTransaction,
+    pub tx_context: TxContext,
 }
 
 impl Message for IndexerEventsMessage {
@@ -78,7 +79,7 @@ pub struct QueryIndexerTransactionsMessage {
 }
 
 impl Message for QueryIndexerTransactionsMessage {
-    type Result = Result<Vec<TransactionWithInfo>>;
+    type Result = Result<Vec<IndexerTransaction>>;
 }
 
 /// Query Indexer Events Message

@@ -21,6 +21,7 @@ use rooch_types::framework::address_mapping::AddressMappingModule;
 use rooch_types::framework::coin::{CoinInfo, CoinModule};
 use rooch_types::framework::coin_store::{CoinStore, CoinStoreInfo};
 use rooch_types::indexer::state::{IndexerObjectState, IndexerStateID, ObjectStateFilter};
+use rooch_types::indexer::transaction::IndexerTransaction;
 use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::TransactionWithInfo;
 use std::collections::HashMap;
@@ -227,7 +228,7 @@ impl AggregateService {
             .collect::<Result<HashMap<_, _>>>()
     }
 
-    pub async fn pack_uxtos(&self, states: Vec<IndexerObjectState>) -> Result<Vec<UTXOState>> {
+    pub async fn build_utxos(&self, states: Vec<IndexerObjectState>) -> Result<Vec<UTXOState>> {
         let object_ids = states
             .iter()
             .map(|m| m.object_id.clone())
@@ -304,7 +305,7 @@ impl AggregateService {
         Ok(data)
     }
 
-    pub async fn pack_inscriptions(
+    pub async fn build_inscriptions(
         &self,
         states: Vec<IndexerObjectState>,
     ) -> Result<Vec<InscriptionState>> {
@@ -386,6 +387,25 @@ impl AggregateService {
                     inscription,
                     reverse_address,
                 ))
+            })
+            .collect::<Result<Vec<_>>>()?;
+        Ok(data)
+    }
+
+    pub async fn build_transaction_with_infos(
+        &self,
+        indexer_txs: Vec<IndexerTransaction>,
+    ) -> Result<Vec<TransactionWithInfo>> {
+        let tx_hashs = indexer_txs.iter().map(|m| m.tx_hash).collect::<Vec<_>>();
+        let ledger_txs = self.rpc_service.get_transactions_by_hash(tx_hashs).await?;
+
+        let data = indexer_txs
+            .into_iter()
+            .zip(ledger_txs)
+            .map(|(indexer_tx, ledger_tx_opt)| {
+                let ledger_tx =
+                    ledger_tx_opt.ok_or(anyhow::anyhow!("LedgerTransaction should have value"))?;
+                TransactionWithInfo::new(ledger_tx, indexer_tx)
             })
             .collect::<Result<Vec<_>>>()?;
         Ok(data)
