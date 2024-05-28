@@ -57,7 +57,7 @@ impl Child {
     }
 }
 
-/// [`Children`] is just a collection of children belonging to a [`InternalNode`], indexer from 0 to
+/// [`Children`] is just a collection of children belonging to a [`InternalNode`], indexed from 0 to
 /// 15, inclusive.
 pub(crate) type Children = HashMap<Nibble, Child>;
 

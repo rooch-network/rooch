@@ -113,7 +113,7 @@ template Sha256General(maxBitsPadded) {
         for (j=0; j<maxBlocks; j++) {
             arraySelectors[k].in[j] <== sha256compression[j].out[k];
         }
-        arraySelectors[k].index <== inBlockIndex - 1; // The index is 0 indexer and the block numbers are 1 indexer.
+        arraySelectors[k].index <== inBlockIndex - 1; // The index is 0 indexed and the block numbers are 1 indexed.
         out[k] <== arraySelectors[k].out;
     }
 
