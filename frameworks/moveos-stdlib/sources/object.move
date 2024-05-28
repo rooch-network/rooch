@@ -476,7 +476,7 @@ module moveos_std::object {
     // === Object Raw Dynamic Fields ===
 
     #[private_generics(T)]
-    /// Add a dynamic filed to the object. Aborts if an field for this
+    /// Add a dynamic field to the object. Aborts if an field for this
     /// key already exists. The field itself is not stored in the
     /// object, and cannot be discovered from it.
     public fun add_field<T: key, K: copy + drop, V: store>(obj: &mut Object<T>, key: K, val: V) {
