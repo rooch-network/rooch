@@ -6509,6 +6509,7 @@ dependencies = [
  "petgraph 0.5.1",
  "primitive-types 0.12.2",
  "revm-precompile",
+ "revm-primitives",
  "rlp",
  "serde 1.0.202",
  "serde_bytes",
