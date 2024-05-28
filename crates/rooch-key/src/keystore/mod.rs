@@ -9,7 +9,7 @@ use rooch_types::key_struct::{GeneratedKeyPair, MnemonicData, MnemonicResult};
 use rooch_types::{
     address::RoochAddress,
     authentication_key::AuthenticationKey,
-    crypto::{PublicKey, RoochKeyPair, Signature},
+    crypto::{RoochKeyPair, Signature},
     key_struct::EncryptionData,
     transaction::rooch::{RoochTransaction, RoochTransactionData},
 };
@@ -109,19 +109,15 @@ impl AccountKeystore for Keystore {
         }
     }
 
-    fn get_key_pair_with_password(
+    fn get_key_pair(
         &self,
         address: &RoochAddress,
         password: Option<String>,
     ) -> Result<RoochKeyPair, anyhow::Error> {
         // Implement this method to get the key pair by coin ID from the appropriate variant (File or InMem)
         match self {
-            Keystore::File(file_keystore) => {
-                file_keystore.get_key_pair_with_password(address, password)
-            }
-            Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.get_key_pair_with_password(address, password)
-            }
+            Keystore::File(file_keystore) => file_keystore.get_key_pair(address, password),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.get_key_pair(address, password),
         }
     }
 

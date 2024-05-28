@@ -2,19 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::types::LocalAccount;
-use crate::key_derive::generate_key_pair_for_tests;
 use crate::keystore::account_keystore::AccountKeystore;
 use crate::keystore::base_keystore::BaseKeyStore;
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
 use rooch_types::{
     address::RoochAddress,
     authentication_key::AuthenticationKey,
-    crypto::{PublicKey, RoochKeyPair, Signature},
+    crypto::{RoochKeyPair, Signature},
     key_struct::EncryptionData,
     transaction::rooch::{RoochTransaction, RoochTransactionData},
 };
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct InMemKeystore {
@@ -35,12 +33,12 @@ impl AccountKeystore for InMemKeystore {
             .add_address_encryption_data(address, encryption)
     }
 
-    fn get_key_pair_with_password(
+    fn get_key_pair(
         &self,
         address: &RoochAddress,
         password: Option<String>,
     ) -> Result<RoochKeyPair, anyhow::Error> {
-        self.keystore.get_key_pair_with_password(address, password)
+        self.keystore.get_key_pair(address, password)
     }
 
     // fn update_address_encryption_data(

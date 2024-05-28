@@ -83,8 +83,7 @@ pub async fn setup_service(
     // init keystore
     let rooch_account = keystore.addresses()[0];
     let rooch_key_pair = keystore
-        .get_key_pairs(&rooch_account, None)?
-        .pop()
+        .get_key_pair(&rooch_account, None)
         .expect("Key pair should have value");
 
     let sequencer_keypair = rooch_key_pair.copy();

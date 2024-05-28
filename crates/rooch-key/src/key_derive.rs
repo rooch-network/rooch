@@ -5,18 +5,9 @@ use argon2::password_hash::{PasswordHash, PasswordHasher, SaltString};
 use argon2::Argon2;
 use argon2::PasswordVerifier;
 use bip39::{Language, Mnemonic, MnemonicType, Seed};
-use bitcoin::address::Address;
-use bitcoin::bip32::{self, ChildNumber, DerivationPath, Xpriv, Xpub};
-use bitcoin::hex::FromHex;
-use bitcoin::secp256k1::ffi::types::AlignedType;
-use bitcoin::secp256k1::Secp256k1;
-use bitcoin::Network;
-use chacha20poly1305::aead::Aead;
-use chacha20poly1305::{AeadCore, ChaCha20Poly1305, KeyInit};
+use bitcoin::bip32::{self, DerivationPath};
 use fastcrypto::ed25519::{Ed25519KeyPair, Ed25519PrivateKey};
-use fastcrypto::encoding::{Base64, Encoding};
 use fastcrypto::traits::{KeyPair, ToFromBytes};
-use rand::rngs::OsRng;
 use rooch_types::address::RoochAddress;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::RoochError;
@@ -32,69 +23,6 @@ pub const DERIVATION_PATH_PURPOSE_SCHNORR: u32 = 44;
 pub const DERIVATION_PATH_PURPOSE_ECDSA: u32 = 54;
 pub const DERIVATION_PATH_PURPOSE_SECP256R1: u32 = 74;
 pub const DERIVATION_PATH_PURPOSE_BIP84: u32 = 84;
-
-pub fn encrypt_key(key: &[u8], password: Option<String>) -> Result<EncryptionData, RoochError> {
-    let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
-    let mut output_key_material = [0u8; 32];
-    Argon2::default()
-        .hash_password_into(
-            password.unwrap_or_default().as_bytes(),
-            &nonce,
-            &mut output_key_material,
-        )
-        .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
-
-    let cipher = ChaCha20Poly1305::new_from_slice(&output_key_material)
-        .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
-
-    let ciphertext_with_tag = match cipher.encrypt(&nonce, key) {
-        Ok(ciphertext) => ciphertext,
-        Err(_) => {
-            return Err(RoochError::KeyConversionError(
-                "Encryption failed".to_owned(),
-            ))
-        }
-    };
-
-    let ciphertext = ciphertext_with_tag[..ciphertext_with_tag.len() - 16].to_vec();
-    let tag = ciphertext_with_tag[ciphertext_with_tag.len() - 16..].to_vec();
-
-    Ok(EncryptionData {
-        nonce: Base64::encode(nonce),
-        ciphertext: Base64::encode(ciphertext),
-        tag: Base64::encode(tag),
-    })
-}
-
-pub fn decrypt_key(
-    nonce: &[u8],
-    ciphertext: &[u8],
-    tag: &[u8],
-    password: Option<String>,
-) -> Result<Vec<u8>, RoochError> {
-    let mut output_key_material = [0u8; 32];
-    Argon2::default()
-        .hash_password_into(
-            password.unwrap_or_default().as_bytes(),
-            nonce,
-            &mut output_key_material,
-        )
-        .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
-
-    let cipher = ChaCha20Poly1305::new_from_slice(&output_key_material)
-        .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
-
-    let mut ciphertext_with_tag = Vec::with_capacity(tag.len() + ciphertext.len());
-    ciphertext_with_tag.extend_from_slice(ciphertext);
-    ciphertext_with_tag.extend_from_slice(tag);
-
-    match cipher.decrypt(nonce.into(), &*ciphertext_with_tag) {
-        Ok(pk) => Ok(pk),
-        Err(_) => Err(RoochError::KeyConversionError(
-            "Decryption failed".to_owned(),
-        )),
-    }
-}
 
 pub fn verify_password(
     password: Option<String>,
@@ -127,9 +55,8 @@ pub fn hash_password(nonce: &[u8], password: Option<String>) -> Result<String, R
 
 pub(crate) fn derive_private_key_from_path(
     seed: &[u8],
-    derivation_path: Option<DerivationPath>,
+    path: DerivationPath,
 ) -> Result<Vec<u8>, anyhow::Error> {
-    let path = validate_derivation_path(derivation_path)?;
     let indexes = path.to_u32_vec();
     let derived = derive_ed25519_private_key(seed, &indexes);
     let sk = Ed25519PrivateKey::from_bytes(&derived)
@@ -168,15 +95,8 @@ pub fn derive_address_from_private_key(private_key: Vec<u8>) -> Result<RoochAddr
 pub fn retrieve_key_pair(
     encryption: &EncryptionData,
     password: Option<String>,
-) -> Result<RoochKeyPair, RoochError> {
-    let nonce = Base64::decode(&encryption.nonce)
-        .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
-    let ciphertext = Base64::decode(&encryption.ciphertext)
-        .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
-    let tag = Base64::decode(&encryption.tag)
-        .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
-
-    let private_key = decrypt_key(&nonce, &ciphertext, &tag, password)?;
+) -> Result<RoochKeyPair, anyhow::Error> {
+    let private_key = encryption.decrypt(password)?;
 
     let kp = Ed25519KeyPair::from(
         Ed25519PrivateKey::from_bytes(&private_key)
@@ -186,6 +106,8 @@ pub fn retrieve_key_pair(
     Ok(kp.into())
 }
 
+//In the future, we may support for custom derivation path to recover the keypair
+#[allow(dead_code)]
 fn validate_derivation_path(path: Option<DerivationPath>) -> Result<DerivationPath, anyhow::Error> {
     let (purpose, coin_type) = (
         DERIVATION_PATH_PURPOSE_ED25519,
@@ -243,7 +165,7 @@ pub(crate) fn generate_derivation_path(account_index: u32) -> Result<DerivationP
 
 pub fn generate_new_key_pair(
     mnemonic_phrase: Option<String>,
-    derivation_path: Option<DerivationPath>,
+    derivation_path: DerivationPath,
     word_length: Option<String>,
     password: Option<String>,
 ) -> Result<GeneratedKeyPair, anyhow::Error> {
@@ -259,10 +181,9 @@ pub fn generate_new_key_pair(
 
     let sk = derive_private_key_from_path(seed.as_bytes(), derivation_path)?;
 
-    let private_key_encryption =
-        encrypt_key(&sk, password.clone()).expect("Encryption failed for private key");
-    let mnemonic_phrase_encryption = encrypt_key(mnemonic.phrase().as_bytes(), password)
-        .expect("Encryption failed for mnemonic phrase");
+    let private_key_encryption = EncryptionData::encrypt(&sk, password.clone())?;
+    let mnemonic_phrase_encryption =
+        EncryptionData::encrypt(mnemonic.phrase().as_bytes(), password)?;
 
     let address = derive_address_from_private_key(sk)?;
 
@@ -288,12 +209,4 @@ fn parse_word_length(s: Option<String>) -> Result<MnemonicType, anyhow::Error> {
         None => Ok(MnemonicType::Words12),
         _ => Err(anyhow::anyhow!("Invalid word length")),
     }
-}
-
-/// Get a keypair from a random encryption data
-pub(crate) fn generate_key_pair_for_tests() -> (RoochAddress, EncryptionData) {
-    let random_encryption_data = EncryptionData::new_for_test();
-    let kp: RoochKeyPair = retrieve_key_pair(&random_encryption_data, None).unwrap();
-
-    ((&kp.public()).into(), random_encryption_data)
 }

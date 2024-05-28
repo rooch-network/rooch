@@ -4,16 +4,15 @@
 use std::collections::BTreeMap;
 
 use super::types::{AddressMapping, LocalAccount, LocalSessionKey};
-use crate::key_derive::{decrypt_key, generate_new_key_pair, retrieve_key_pair};
+use crate::key_derive::retrieve_key_pair;
 use crate::keystore::account_keystore::AccountKeystore;
-use anyhow::{anyhow, ensure};
-use fastcrypto::encoding::{Base64, Encoding};
+use anyhow::ensure;
 use rooch_types::framework::session_key::SessionKey;
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
 use rooch_types::{
     address::RoochAddress,
     authentication_key::AuthenticationKey,
-    crypto::{PublicKey, RoochKeyPair, Signature},
+    crypto::{RoochKeyPair, Signature},
     error::RoochError,
     key_struct::EncryptionData,
     transaction::{
@@ -102,7 +101,7 @@ impl AccountKeystore for BaseKeyStore {
         Ok(accounts.into_values().collect())
     }
 
-    fn get_key_pair_with_password(
+    fn get_key_pair(
         &self,
         address: &RoochAddress,
         password: Option<String>,
@@ -126,7 +125,7 @@ impl AccountKeystore for BaseKeyStore {
     ) -> Result<Signature, anyhow::Error> {
         Ok(Signature::new_hashed(
             msg,
-            &self.get_key_pair_with_password(address, password)?,
+            &self.get_key_pair(address, password)?,
         ))
     }
 
@@ -141,7 +140,7 @@ impl AccountKeystore for BaseKeyStore {
     {
         Ok(Signature::new_secure(
             msg,
-            &self.get_key_pair_with_password(address, password)?,
+            &self.get_key_pair(address, password)?,
         ))
     }
 
@@ -151,12 +150,9 @@ impl AccountKeystore for BaseKeyStore {
         msg: RoochTransactionData,
         password: Option<String>,
     ) -> Result<RoochTransaction, anyhow::Error> {
-        let kp = self
-            .get_key_pair_with_password(address, password)
-            .ok()
-            .ok_or_else(|| {
-                RoochError::SignMessageError(format!("Cannot find key for address: [{address}]"))
-            })?;
+        let kp = self.get_key_pair(address, password).ok().ok_or_else(|| {
+            RoochError::SignMessageError(format!("Cannot find key for address: [{address}]"))
+        })?;
 
         let signature = Signature::new_hashed(msg.tx_hash().as_bytes(), &kp);
 
@@ -187,9 +183,10 @@ impl AccountKeystore for BaseKeyStore {
         let kp: RoochKeyPair = RoochKeyPair::generate();
         let authentication_key = kp.public().authentication_key();
         let inner_map = self.session_keys.entry(*address).or_default();
+        let private_key_encryption = EncryptionData::encrypt(kp.private(), password)?;
         let local_session_key = LocalSessionKey {
             session_key: None,
-            private_key: result.key_pair_data.private_key_encryption,
+            private_key: private_key_encryption,
         };
         inner_map.insert(authentication_key.clone(), local_session_key);
         Ok(authentication_key)
@@ -278,25 +275,7 @@ impl AccountKeystore for BaseKeyStore {
     fn get_mnemonic(&self, password: Option<String>) -> Result<MnemonicResult, anyhow::Error> {
         match &self.mnemonic {
             Some(mnemonic_data) => {
-                let nonce = Base64::decode(&mnemonic_data.mnemonic_phrase_encryption.nonce)
-                    .map_err(|e| {
-                        anyhow::Error::new(RoochError::KeyConversionError(e.to_string()))
-                    })?;
-                let ciphertext = Base64::decode(
-                    &mnemonic_data.mnemonic_phrase_encryption.ciphertext,
-                )
-                .map_err(|e| anyhow::Error::new(RoochError::KeyConversionError(e.to_string())))?;
-                let tag =
-                    Base64::decode(&mnemonic_data.mnemonic_phrase_encryption.tag).map_err(|e| {
-                        anyhow::Error::new(RoochError::KeyConversionError(e.to_string()))
-                    })?;
-
-                let mnemonic_phrase = decrypt_key(
-                    nonce.as_slice(),
-                    ciphertext.as_slice(),
-                    tag.as_slice(),
-                    password,
-                )?;
+                let mnemonic_phrase = mnemonic_data.mnemonic_phrase_encryption.decrypt(password)?;
 
                 let mnemonic_phrase = String::from_utf8(mnemonic_phrase)
                     .map_err(|e| anyhow::anyhow!("Parse mnemonic phrase error:{}", e))?;

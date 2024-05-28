@@ -2,21 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::types::LocalAccount;
-use crate::key_derive::{
-    derive_address_from_private_key, derive_private_key_from_path, encrypt_key,
-    generate_derivation_path, generate_new_key_pair, hash_password,
-};
-use crate::keystore::ImportedMnemonic;
-use bip39::{Language, Mnemonic, Seed};
-use bitcoin::bip32::DerivationPath;
-use fastcrypto::encoding::{Base64, Encoding};
+use crate::key_derive::{generate_derivation_path, generate_new_key_pair};
 use rooch_types::framework::session_key::SessionKey;
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
 use rooch_types::{
     address::RoochAddress,
     authentication_key::AuthenticationKey,
-    crypto::{PublicKey, RoochKeyPair, Signature},
-    error::RoochError,
+    crypto::{RoochKeyPair, Signature},
     key_struct::{EncryptionData, GeneratedKeyPair},
     transaction::rooch::{RoochTransaction, RoochTransactionData},
 };
@@ -30,12 +22,8 @@ pub trait AccountKeystore {
         password: Option<String>,
     ) -> Result<GeneratedKeyPair, anyhow::Error> {
         let derivation_path = generate_derivation_path(0)?;
-        let result = generate_new_key_pair(
-            mnemonic_phrase,
-            Some(derivation_path),
-            word_length,
-            password,
-        )?;
+        let result =
+            generate_new_key_pair(mnemonic_phrase, derivation_path, word_length, password)?;
         let new_address = result.address;
         self.add_address_encryption_data(
             new_address,
@@ -64,7 +52,7 @@ pub trait AccountKeystore {
 
         let result = generate_new_key_pair(
             Some(mnemonic.mnemonic_phrase),
-            Some(derivation_path),
+            derivation_path,
             None,
             password,
         )?;
@@ -84,7 +72,7 @@ pub trait AccountKeystore {
         encryption: EncryptionData,
     ) -> Result<(), anyhow::Error>;
 
-    fn get_key_pair_with_password(
+    fn get_key_pair(
         &self,
         address: &RoochAddress,
         password: Option<String>,

@@ -4,10 +4,8 @@
 use crate::cli_types::WalletContextOptions;
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
-use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
-use rooch_types::error::{RoochError, RoochResult};
-use rpassword::prompt_password;
+use rooch_types::error::RoochResult;
 
 /// Create a new account off-chain.
 /// If an account not exist on-chain, contract will auto create the account on-chain.

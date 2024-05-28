@@ -21,9 +21,7 @@ pub fn tx_sequence_benchmark(c: &mut Criterion) {
 
     let rooch_account = keystore.addresses()[0];
     let rooch_key_pair = keystore
-        .get_key_pairs(&rooch_account, None)
-        .unwrap()
-        .pop()
+        .get_key_pair(&rooch_account, None)
         .expect("key pair should have value");
     let sequencer_keypair = rooch_key_pair.copy();
     let mut sequencer =

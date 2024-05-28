@@ -10,12 +10,11 @@ use rooch_types::key_struct::{MnemonicData, MnemonicResult};
 use rooch_types::{
     address::RoochAddress,
     authentication_key::AuthenticationKey,
-    crypto::{PublicKey, RoochKeyPair, Signature},
+    crypto::{RoochKeyPair, Signature},
     key_struct::EncryptionData,
     transaction::rooch::{RoochTransaction, RoochTransactionData},
 };
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 use std::fs;
 use std::fs::File;
 use std::io::BufReader;
@@ -49,12 +48,12 @@ impl AccountKeystore for FileBasedKeystore {
         Ok(())
     }
 
-    fn get_key_pair_with_password(
+    fn get_key_pair(
         &self,
         address: &RoochAddress,
         password: Option<String>,
     ) -> Result<RoochKeyPair, anyhow::Error> {
-        self.keystore.get_key_pair_with_password(address, password)
+        self.keystore.get_key_pair(address, password)
     }
 
     fn nullify(&mut self, address: &RoochAddress) -> Result<(), anyhow::Error> {

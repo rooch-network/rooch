@@ -65,6 +65,12 @@ impl RoochKeyPair {
         }
     }
 
+    pub fn private(&self) -> &[u8] {
+        match self {
+            RoochKeyPair::Ed25519(kp) => kp.as_bytes(),
+        }
+    }
+
     pub fn authentication_key(&self) -> AuthenticationKey {
         self.public().authentication_key()
     }
