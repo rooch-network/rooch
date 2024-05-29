@@ -1,0 +1,85 @@
+# 第一个 DApp
+
+本篇教程主要介绍如何使用 Rooch 提供的 DApp 前端模板工具来创建一个计数器程序。
+
+## 创建项目
+
+```bash
+pnpm create @roochnetwork/create-rooch
+```
+
+## 初始化项目
+
+安装 DApp 所需依赖：
+
+```bash
+pnpm install
+```
+
+运行 DApp：
+
+```bash
+pnpm dev
+```
+
+当一切顺利后，在浏览器中能看到如下：
+
+![](/docs/first-dapp/dapp-counter.png)
+
+到这一步说明，前端已经能够正常工作了，接下来需要部署合约，使得 DApp 能够与合约进行交互。
+
+## 切换网络
+
+当前在本地网络演示创建 Counter DApp 应用，使用 `rooch env switch` 来切换网络：
+
+```bash
+rooch env switch --alias local
+
+The active environment was successfully switched to `local`
+```
+
+## 启动 Rooch 本地节点
+
+```bash
+rooch server start
+```
+
+## 部署合约
+
+我们使用 `examples/counter` 这个合约来部署。
+
+```bash
+rooch move publish --named-addresses rooch_examples=default
+```
+
+## 修改前端配置
+
+找到前端项目中的 `src/App.tsx` 文件，修改 `devCounterAddress` 这个常量：
+
+```tsx
+// Your publish counter contract address
+const devCounterAddress = ""
+const devCounterModule = `${devCounterAddress}::counter`
+```
+
+添加部署 Counter 合约的地址：
+
+```bash
+const devCounterAddress = "0x634e4b692ac7873bb937af3f0ac9bc63c4c6ead3f857c5bbc92e3ff41f756651"
+```
+
+> 注意：根据实际部署地址修改！
+
+## 调用合约
+
+连接上钱包，就会提示创建会话密钥：
+
+![](/docs/first-dapp/dapp-create-sk.png)
+
+一切就绪后，就可以在 DApp 调用 Counter 合约了，点击 `Increment` 按钮，增加计数器的值：
+
+![](/docs/first-dapp/dapp-ok.png)
+
+## 总结
+
+至此，你已经掌握了如何创建 DApp，并且如何在前端与合约端完成初始化工作，进行基本的交互。
