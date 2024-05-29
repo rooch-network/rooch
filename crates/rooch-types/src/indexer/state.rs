@@ -166,15 +166,15 @@ pub fn handle_object_change(
     resolver: &dyn StateResolver,
 ) -> Result<u64> {
     let ObjectChange { op, fields } = object_change;
-    // refresh object to acquire lastest object state root
-    let refresh_object = resolver
-        .get_object(&object_id)?
-        .ok_or(anyhow::anyhow!("Object should exist"))?;
 
     if let Some(op) = op {
         match op {
             Op::Modify(value) => {
                 debug_assert!(value.is_object());
+                // refresh object to acquire lastest object state root
+                let refresh_object = resolver
+                    .get_object(&object_id)?
+                    .unwrap_or(value.as_raw_object()?);
                 let state = IndexerObjectState::try_new_from_state(
                     tx_order,
                     state_index_generator,
@@ -194,6 +194,10 @@ pub fn handle_object_change(
             }
             Op::New(value) => {
                 debug_assert!(value.is_object());
+                // refresh object to acquire lastest object state root
+                let refresh_object = resolver
+                    .get_object(&object_id)?
+                    .unwrap_or(value.as_raw_object()?);
                 let state = IndexerObjectState::try_new_from_state(
                     tx_order,
                     state_index_generator,
