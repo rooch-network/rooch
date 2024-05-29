@@ -449,7 +449,7 @@ where
                                 type_parameters,
                             } = view.function_instantiation_at(finst_idx);
 
-                            let full_path_func_name = build_full_function_name(handle, view);
+                            let full_path_func_name = build_full_function_name(handle, &view);
 
                             let type_arguments = &view.signature_at(*type_parameters).0;
                             let private_generics_types =
@@ -510,7 +510,7 @@ where
     Ok(true)
 }
 
-fn build_full_function_name(fhandle_idx: &FunctionHandleIndex, view: BinaryIndexedView) -> String {
+fn build_full_function_name(fhandle_idx: &FunctionHandleIndex, view: &BinaryIndexedView) -> String {
     let fhandle = view.function_handle_at(*fhandle_idx);
     let module_handle = view.module_handle_at(fhandle.module);
 
@@ -875,106 +875,24 @@ where
                                         Some(v) => v,
                                     };
 
-                                    match type_arg {
-                                        SignatureToken::Struct(struct_handle_idx) => {
-                                            let struct_handle =
-                                                view.struct_handle_at(*struct_handle_idx);
-                                            let module_handle =
-                                                view.module_handle_at(struct_handle.module);
-                                            let module_name = format!(
-                                                "{}::{}",
-                                                view.address_identifier_at(module_handle.address)
-                                                    .to_hex_literal(),
-                                                view.identifier_at(module_handle.name),
-                                            );
+                                    let data_structs_map_in_struct_module =
+                                        load_data_structs_map_from_struct(
+                                            type_arg,
+                                            db,
+                                            &view,
+                                            verified_modules,
+                                        )?;
+                                    data_structs_map.extend(data_structs_map_in_struct_module);
 
-                                            // load module from struct handle
-                                            let compiled_module_opt =
-                                                load_compiled_module_from_struct_handle(
-                                                    db,
-                                                    &view,
-                                                    *struct_handle_idx,
-                                                    verified_modules,
-                                                );
-                                            if let Some(callee_module) = compiled_module_opt {
-                                                if let Err(err) =
-                                                    check_metadata_format(&callee_module)
-                                                {
-                                                    return Err(PartialVMError::new(
-                                                        StatusCode::ABORTED,
-                                                    )
-                                                    .with_message(err.to_string())
-                                                    .with_sub_status(
-                                                        ErrorCode::MALFORMED_METADATA.into(),
-                                                    )
-                                                    .finish(Location::Module(
-                                                        callee_module.self_id(),
-                                                    )));
-                                                }
-
-                                                // Find the definition records of compile-time data_struct from CompiledModule.
-                                                let metadata_opt =
-                                                    get_metadata_from_compiled_module(
-                                                        &callee_module,
-                                                    );
-                                                if let Some(metadata) = metadata_opt {
-                                                    let _ = metadata
-                                                        .data_struct_map
-                                                        .iter()
-                                                        .map(|(key, value)| {
-                                                            data_structs_map
-                                                                .insert(key.clone(), *value);
-                                                        })
-                                                        .collect::<Vec<_>>();
-                                                }
-                                            }
-
-                                            let full_struct_name = format!(
-                                                "{}::{}",
-                                                module_name,
-                                                view.identifier_at(struct_handle.name)
-                                            );
-                                            // allow string::String, ascii::String as data struct
-                                            if is_allowed_data_struct_type(
-                                                full_struct_name.as_str(),
-                                            ) {
-                                                continue;
-                                            }
-
-                                            let is_data_struct_opt =
-                                                data_structs_map.get(full_struct_name.as_str());
-                                            if is_data_struct_opt.is_none() {
-                                                let caller_func_name =
-                                                    build_full_function_name(&func.function, view);
-                                                let error_msg = format!("function {:} call {:} with type {:} is not a data struct.",
-                                                                        caller_func_name, full_path_func_name, full_struct_name);
-                                                return generate_vm_error(
-                                                    ErrorCode::INVALID_DATA_STRUCT,
-                                                    error_msg,
-                                                    Some(*fhandle_idx),
-                                                    caller_module,
-                                                );
-                                            }
-                                        }
-                                        SignatureToken::Address => {}
-                                        SignatureToken::Bool => {}
-                                        SignatureToken::U8 => {}
-                                        SignatureToken::U16 => {}
-                                        SignatureToken::U32 => {}
-                                        SignatureToken::U64 => {}
-                                        SignatureToken::U128 => {}
-                                        SignatureToken::U256 => {}
-                                        _ => {
-                                            let error_msg = format!("The type parameter when calling function {} is now allowed",
-                                                                    full_path_func_name);
-                                            return generate_vm_error(
-                                                ErrorCode::INVALID_DATA_STRUCT_TYPE,
-                                                error_msg,
-                                                Some(*fhandle_idx),
-                                                caller_module,
-                                            );
-                                        }
-                                    }
+                                    check_field_type(
+                                        type_arg,
+                                        &view,
+                                        &full_path_func_name,
+                                        data_structs_map.clone(),
+                                        *fhandle_idx,
+                                        func.clone(),
+                                        caller_module,
+                                    )?;
                                 }
                             }
                         }
@@ -984,6 +902,193 @@ where
 
             verified_modules.insert(caller_module.self_id(), caller_module.clone());
             Ok(true)
+        }
+    }
+}
+
+fn load_data_structs_map_from_struct<Resolver>(
+    type_arg: &SignatureToken,
+    db: &Resolver,
+    view: &BinaryIndexedView,
+    verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
+) -> VMResult<BTreeMap<String, bool>>
+where
+    Resolver: ModuleResolver,
+{
+    match type_arg {
+        SignatureToken::Struct(struct_handle_idx) => {
+            load_data_structs(db, view, struct_handle_idx.clone(), verified_modules)
+        }
+        SignatureToken::StructInstantiation(struct_handle_idx, _) => {
+            load_data_structs(db, view, struct_handle_idx.clone(), verified_modules)
+        }
+        _ => Ok(BTreeMap::new()),
+    }
+}
+
+fn load_data_structs<Resolver>(
+    db: &Resolver,
+    view: &BinaryIndexedView,
+    struct_handle_idx: StructHandleIndex,
+    verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
+) -> VMResult<BTreeMap<String, bool>>
+where
+    Resolver: ModuleResolver,
+{
+    let mut data_structs_map: BTreeMap<String, bool> = BTreeMap::new();
+
+    // load module from struct handle
+    let compiled_module_opt = load_compiled_module_from_struct_handle(
+        db,
+        &view,
+        struct_handle_idx.clone(),
+        verified_modules,
+    );
+
+    if let Some(callee_module) = compiled_module_opt {
+        if let Err(err) = check_metadata_format(&callee_module) {
+            return Err(PartialVMError::new(StatusCode::ABORTED)
+                .with_message(err.to_string())
+                .with_sub_status(ErrorCode::MALFORMED_METADATA.into())
+                .finish(Location::Module(callee_module.self_id())));
+        }
+
+        // Find the definition records of compile-time data_struct from CompiledModule.
+        let metadata_opt = get_metadata_from_compiled_module(&callee_module);
+        if let Some(metadata) = metadata_opt {
+            let _ = metadata
+                .data_struct_map
+                .iter()
+                .map(|(key, value)| {
+                    data_structs_map.insert(key.clone(), *value);
+                })
+                .collect::<Vec<_>>();
+        }
+        Ok(data_structs_map)
+    } else {
+        Ok(data_structs_map)
+    }
+}
+
+fn check_field_type(
+    type_arg: &SignatureToken,
+    view: &BinaryIndexedView,
+    full_path_func_name: &String,
+    data_structs_map: BTreeMap<String, bool>,
+    fhandle_idx: FunctionHandleIndex,
+    func: FunctionDefinition,
+    caller_module: &CompiledModule,
+) -> VMResult<bool> {
+    match type_arg {
+        SignatureToken::Struct(struct_handle_idx) => {
+            let struct_handle = view.struct_handle_at(*struct_handle_idx);
+            let module_handle = view.module_handle_at(struct_handle.module);
+            let module_name = format!(
+                "{}::{}",
+                view.address_identifier_at(module_handle.address)
+                    .to_hex_literal(),
+                view.identifier_at(module_handle.name),
+            );
+
+            let full_struct_name = format!(
+                "{}::{}",
+                module_name,
+                view.identifier_at(struct_handle.name)
+            );
+            // allow string::String, ascii::String as data struct
+            if is_allowed_data_struct_type(full_struct_name.as_str()) {
+                return Ok(true);
+            }
+
+            let is_data_struct_opt = data_structs_map.get(full_struct_name.as_str());
+            if is_data_struct_opt.is_none() {
+                let caller_func_name = build_full_function_name(&func.function, view);
+                let error_msg = format!(
+                    "function {:} call {:} with type {:} is not a data struct.",
+                    caller_func_name, full_path_func_name, full_struct_name
+                );
+                return generate_vm_error(
+                    ErrorCode::INVALID_DATA_STRUCT,
+                    error_msg,
+                    Some(fhandle_idx.clone()),
+                    caller_module,
+                );
+            }
+            Ok(true)
+        }
+        SignatureToken::StructInstantiation(struct_handle_idx, type_parameters) => {
+            let struct_handle = view.struct_handle_at(*struct_handle_idx);
+            let module_handle = view.module_handle_at(struct_handle.module);
+            let module_name = format!(
+                "{}::{}",
+                view.address_identifier_at(module_handle.address)
+                    .to_hex_literal(),
+                view.identifier_at(module_handle.name),
+            );
+
+            let full_struct_name = format!(
+                "{}::{}",
+                module_name,
+                view.identifier_at(struct_handle.name)
+            );
+
+            if is_std_option_type(&full_struct_name) {
+                let first_type_parameter_opt = type_parameters.first();
+                match first_type_parameter_opt {
+                    None => {
+                        let error_msg = format!(
+                            "The type parameter when calling function {} is missed",
+                            full_path_func_name
+                        );
+                        return generate_vm_error(
+                            ErrorCode::INVALID_DATA_STRUCT_OPTION_WITHOUT_TYPE_PARAMETER,
+                            error_msg,
+                            Some(fhandle_idx.clone()),
+                            caller_module,
+                        );
+                    }
+                    Some(first_type_parameter) => check_field_type(
+                        first_type_parameter,
+                        &view,
+                        &full_path_func_name,
+                        data_structs_map.clone(),
+                        fhandle_idx.clone(),
+                        func.clone(),
+                        caller_module,
+                    ),
+                }
+            } else {
+                let error_msg = format!(
+                    "The type parameter when calling function {} is now allowed",
+                    full_path_func_name
+                );
+                return generate_vm_error(
+                    ErrorCode::INVALID_DATA_STRUCT_WITH_TYPE_PARAMETER,
+                    error_msg,
+                    Some(fhandle_idx.clone()),
+                    caller_module,
+                );
+            }
+        }
+        SignatureToken::Address => Ok(true),
+        SignatureToken::Bool => Ok(true),
+        SignatureToken::U8 => Ok(true),
+        SignatureToken::U16 => Ok(true),
+        SignatureToken::U32 => Ok(true),
+        SignatureToken::U64 => Ok(true),
+        SignatureToken::U128 => Ok(true),
+        SignatureToken::U256 => Ok(true),
+        _ => {
+            let error_msg = format!(
+                "The type parameter when calling function {} is now allowed",
+                full_path_func_name
+            );
+            return generate_vm_error(
+                ErrorCode::INVALID_DATA_STRUCT_TYPE,
+                error_msg,
+                Some(fhandle_idx.clone()),
+                caller_module,
+            );
         }
     }
 }
