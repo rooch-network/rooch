@@ -61,7 +61,7 @@ impl SequencerActor {
         let mut witness_data = hash.as_ref().to_vec();
         witness_data.extend(tx_order.to_le_bytes().iter());
         let witness_hash = h256::sha3_256_of(&witness_data);
-        let tx_order_signature = Signature::new_hashed(&witness_hash.0, &self.sequencer_key)
+        let tx_order_signature = Signature::sign(&witness_hash.0, &self.sequencer_key)
             .as_ref()
             .to_vec();
         let tx = LedgerTransaction::build_ledger_transaction(

@@ -17,12 +17,8 @@ use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusV
 use rooch_types::address::ParsedAddress;
 use rooch_types::address::RoochAddress;
 use rooch_types::addresses;
-use rooch_types::crypto::Signature;
 use rooch_types::error::{RoochError, RoochResult};
-use rooch_types::transaction::{
-    authenticator::Authenticator,
-    rooch::{RoochTransaction, RoochTransactionData},
-};
+use rooch_types::transaction::rooch::{RoochTransaction, RoochTransactionData};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -172,22 +168,9 @@ impl WalletContext {
         password: Option<String>,
         max_gas_amount: Option<u64>,
     ) -> RoochResult<RoochTransaction> {
-        let kp = self
-            .keystore
-            .get_key_pair(&sender, password)
-            .ok()
-            .ok_or_else(|| {
-                RoochError::SignMessageError(format!(
-                    "Cannot find encryption data for address: [{sender}]"
-                ))
-            })?;
-
         let tx_data = self.build_tx_data(sender, action, max_gas_amount).await?;
-        let signature = Signature::new_hashed(tx_data.tx_hash().as_bytes(), &kp);
-        Ok(RoochTransaction::new(
-            tx_data,
-            Authenticator::rooch(signature),
-        ))
+        let tx = self.keystore.sign_transaction(&sender, tx_data, password)?;
+        Ok(tx)
     }
 
     pub async fn execute(

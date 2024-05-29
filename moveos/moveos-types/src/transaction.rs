@@ -69,7 +69,6 @@ impl Arbitrary for ScriptCall {
 pub struct FunctionCall {
     pub function_id: FunctionId,
     pub ty_args: Vec<TypeTag>,
-    //TOOD custom serialize
     pub args: Vec<Vec<u8>>,
 }
 
@@ -179,6 +178,18 @@ impl From<VerifiedMoveAction> for MoveAction {
                 init_function_modules: _init_function_modules,
             } => MoveAction::ModuleBundle(module_bundle),
         }
+    }
+}
+
+impl From<FunctionCall> for MoveAction {
+    fn from(call: FunctionCall) -> Self {
+        MoveAction::Function(call)
+    }
+}
+
+impl From<ScriptCall> for MoveAction {
+    fn from(call: ScriptCall) -> Self {
+        MoveAction::Script(call)
     }
 }
 

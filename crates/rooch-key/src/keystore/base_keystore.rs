@@ -96,10 +96,7 @@ impl AccountKeystore for BaseKeyStore {
         msg: &[u8],
         password: Option<String>,
     ) -> Result<Signature, anyhow::Error> {
-        Ok(Signature::new_hashed(
-            msg,
-            &self.get_key_pair(address, password)?,
-        ))
+        Ok(Signature::sign(msg, &self.get_key_pair(address, password)?))
     }
 
     fn sign_secure<T>(
@@ -111,7 +108,7 @@ impl AccountKeystore for BaseKeyStore {
     where
         T: Serialize,
     {
-        Ok(Signature::new_secure(
+        Ok(Signature::sign_secure(
             msg,
             &self.get_key_pair(address, password)?,
         ))
@@ -126,11 +123,7 @@ impl AccountKeystore for BaseKeyStore {
         let kp = self.get_key_pair(address, password).ok().ok_or_else(|| {
             RoochError::SignMessageError(format!("Cannot find key for address: [{address}]"))
         })?;
-
-        let signature = Signature::new_hashed(msg.tx_hash().as_bytes(), &kp);
-
-        let auth = authenticator::Authenticator::rooch(signature);
-
+        let auth = authenticator::Authenticator::bitcoin(&kp, &msg);
         Ok(RoochTransaction::new(msg, auth))
     }
 
@@ -156,7 +149,7 @@ impl AccountKeystore for BaseKeyStore {
         let kp: RoochKeyPair = RoochKeyPair::generate_ed25519();
         let authentication_key = kp.public().authentication_key();
         let inner_map = self.session_keys.entry(*address).or_default();
-        let private_key_encryption = EncryptionData::encrypt(kp.private(), password)?;
+        let private_key_encryption = EncryptionData::encrypt_with_type(&kp, password)?;
         let local_session_key = LocalSessionKey {
             session_key: None,
             private_key: private_key_encryption,
@@ -207,9 +200,7 @@ impl AccountKeystore for BaseKeyStore {
             .decrypt_with_type(password)
             .map_err(signature::Error::from_source)?;
 
-        let signature = Signature::new_hashed(msg.tx_hash().as_bytes(), &kp);
-
-        let auth = authenticator::Authenticator::rooch(signature);
+        let auth = authenticator::Authenticator::rooch(&kp, &msg);
         Ok(RoochTransaction::new(msg, auth))
     }
 

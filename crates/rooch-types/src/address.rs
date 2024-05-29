@@ -428,6 +428,12 @@ prop_compose! {
     }
 }
 
+impl From<BitcoinAddress> for RoochAddress {
+    fn from(value: BitcoinAddress) -> Self {
+        value.to_rooch_address()
+    }
+}
+
 /// Ethereum address type
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Ord, PartialOrd, Copy)]
 #[serde_as]
@@ -857,7 +863,7 @@ impl ParsedAddress {
 mod test {
     use super::*;
     use bitcoin::hex::DisplayHex;
-    use std::fmt::Debug;
+    use std::{fmt::Debug, vec};
 
     #[test]
     fn test_bech32() {
@@ -1095,27 +1101,49 @@ mod test {
 
     #[test]
     pub fn test_bitcoin_address_to_rooch_address() -> Result<()> {
-        // let bitcoin_address_str = "bc1qvz9u76epzm67x0gkxj8l8udzldc0lskspecuf5";
-        // let bitcoin_address_str = "18cBEMRxXHqzWWCxZNtU91F5sbUNKhL5PX";
-        let bitcoin_address_str = "bc1q262qeyyhdakrje5qaux8m2a3r4z8sw8vu5mysh";
+        let bitcoin_address_strs = vec![
+            "18cBEMRxXHqzWWCxZNtU91F5sbUNKhL5PX",
+            "bc1q262qeyyhdakrje5qaux8m2a3r4z8sw8vu5mysh",
+        ];
+        let btc_addresses = bitcoin_address_strs
+            .iter()
+            .map(|s| BitcoinAddress::from_str(s).unwrap())
+            .collect::<Vec<BitcoinAddress>>();
 
-        let maddress = MultiChainAddress::try_from_str_with_multichain_id(
-            RoochMultiChainID::Bitcoin,
-            bitcoin_address_str,
-        )?;
-        // println!(
-        //     "test_bitcoin_address_to_rooch_address {} ",
-        //     hex::encode(maddress.raw_address.clone())
-        // );
+        let origin_btc_addresses = bitcoin_address_strs
+            .iter()
+            .map(|s| {
+                bitcoin::Address::from_str(s)
+                    .unwrap()
+                    .require_network(bitcoin::Network::Bitcoin)
+                    .unwrap()
+            })
+            .collect::<Vec<bitcoin::Address>>();
 
-        let rooch_address = RoochAddress::try_from(maddress)?;
-        println!(
-            "test_bitcoin_address_to_rooch_address rooch_address {} ",
-            rooch_address.to_string()
-        );
+        for (btc_address, origin_btc_address) in
+            btc_addresses.iter().zip(origin_btc_addresses.iter())
+        {
+            assert_eq!(btc_address.to_string(), origin_btc_address.to_string());
+        }
+
+        let rooch_addresses = btc_addresses
+            .iter()
+            .map(|btc_address| btc_address.to_rooch_address().to_string())
+            .collect::<Vec<String>>();
+
+        // for rooch_address in rooch_addresses.iter(){
+        //     println!(
+        //         "test_bitcoin_address_to_rooch_address rooch_address {} ",
+        //         rooch_address
+        //     );
+        // }
+
         assert_eq!(
-            rooch_address.to_string(),
-            "rooch10lnft7hhq37vl0y97lwvkmzqt48fk76y0z88rfcu8zg6qm8qegfqx0rq2h"
+            rooch_addresses,
+            vec![
+                "rooch1gxterelcypsyvh8cc9kg73dtnyct822ykx8pmu383qruzt4r93jshtc9fj".to_owned(),
+                "rooch10lnft7hhq37vl0y97lwvkmzqt48fk76y0z88rfcu8zg6qm8qegfqx0rq2h".to_owned(),
+            ]
         );
 
         Ok(())

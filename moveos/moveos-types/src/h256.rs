@@ -1,11 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use fastcrypto::hash::{HashFunction, Sha256};
 use once_cell::sync::Lazy;
-use std::str::FromStr;
-
 pub use primitive_types::H256;
 use serde::{Deserialize, Serializer};
+use std::str::FromStr;
 use tiny_keccak::{Hasher, Sha3};
 
 pub const LENGTH: usize = 32;
@@ -16,6 +16,11 @@ pub fn sha3_256_of(buffer: &[u8]) -> H256 {
     let mut hash = [0u8; LENGTH];
     sha3.finalize(&mut hash);
     H256(hash)
+}
+
+pub fn sha2_256_of(buffer: &[u8]) -> H256 {
+    let data = Sha256::digest(buffer);
+    H256(data.digest)
 }
 
 pub fn serialize<S>(hash: &H256, serializer: S) -> Result<S::Ok, S::Error>

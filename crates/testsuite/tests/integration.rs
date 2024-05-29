@@ -12,7 +12,6 @@ use images::ord::Ord;
 use jpst::TemplateContext;
 use rooch::RoochCli;
 use rooch_config::{rooch_config_dir, RoochOpt, ServerOpt};
-use rooch_key::key_derive::{generate_new_key_pair, retrieve_key_pair};
 use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_rpc_server::Service;
 use rooch_types::crypto::RoochKeyPair;
@@ -86,7 +85,7 @@ async fn start_server(w: &mut World, _scenario: String) {
 
     let mut server_opt = ServerOpt::new();
 
-    let kp: RoochKeyPair = RoochKeyPair::generate_ed25519();
+    let kp: RoochKeyPair = RoochKeyPair::generate_secp256k1();
     server_opt.sequencer_keypair = Some(kp.copy());
     server_opt.proposer_keypair = Some(kp.copy());
 
