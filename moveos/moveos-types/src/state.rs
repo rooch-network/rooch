@@ -534,7 +534,7 @@ pub trait MoveStructState: MoveState + MoveStructType + DeserializeOwned + Seria
             .simple_serialize(&Self::struct_layout())
             .ok_or_else(|| {
                 anyhow::anyhow!(
-                    "Serilaize the MoveState to bytes error: {:?}",
+                    "Serialize the MoveState to bytes error: {:?}",
                     Self::type_tag()
                 )
             })?;

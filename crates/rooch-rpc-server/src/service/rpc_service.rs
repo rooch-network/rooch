@@ -62,8 +62,8 @@ impl RpcService {
         Ok(self.executor.bitcoin_network().await?.network)
     }
 
-    pub async fn quene_tx(&self, tx: RoochTransaction) -> Result<()> {
-        //TODO implement quene tx and do not wait to execute
+    pub async fn queue_tx(&self, tx: RoochTransaction) -> Result<()> {
+        //TODO implement queue tx and do not wait to execute
         let _ = self.execute_tx(tx).await?;
         Ok(())
     }

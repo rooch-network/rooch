@@ -135,7 +135,7 @@ impl RoochAPIServer for RoochServer {
         info!("send_raw_transaction tx: {:?}", tx);
 
         let hash = tx.tx_hash();
-        self.rpc_service.quene_tx(tx).await?;
+        self.rpc_service.queue_tx(tx).await?;
         Ok(hash.into())
     }
 
