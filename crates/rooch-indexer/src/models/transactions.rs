@@ -84,7 +84,6 @@ impl TryFrom<StoredTransaction> for IndexerTransaction {
             tx_order: transaction.tx_order as u64,
             sequence_number: transaction.sequence_number as u64,
             sender,
-            action: None,
             action_type: transaction.action_type as u8,
             auth_validator_id: transaction.auth_validator_id as u64,
             authenticator_payload: transaction.authenticator_payload,

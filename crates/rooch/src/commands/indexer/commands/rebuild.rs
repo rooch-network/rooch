@@ -136,8 +136,12 @@ fn produce_updates(tx: SyncSender<BatchUpdates>, input: PathBuf, batch_size: usi
                 .expect("Last export id should have value");
 
             if state_type.eq(GLOBAL_STATE_TYPE_OBJECT) || state_type.eq(GLOBAL_STATE_TYPE_ROOT) {
-                let state =
-                    IndexerObjectState::try_new_from_state(state, tx_order, state_index_generator)?;
+                let raw_object = state.as_raw_object()?;
+                let state = IndexerObjectState::try_new_from_state(
+                    tx_order,
+                    state_index_generator,
+                    raw_object,
+                )?;
                 state_index_generator += 1;
                 updates.object_states.push(state);
             } else if state_type.eq(GLOBAL_STATE_TYPE_FIELD) {

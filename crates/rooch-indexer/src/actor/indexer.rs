@@ -11,6 +11,7 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_store::MoveOSStore;
 use moveos_types::moveos_std::object::RootObjectEntity;
+use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::MoveAction;
 use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::indexer::state::{
@@ -21,7 +22,7 @@ use rooch_types::indexer::transaction::IndexerTransaction;
 pub struct IndexerActor {
     root: RootObjectEntity,
     indexer_store: IndexerStore,
-    _moveos_store: MoveOSStore,
+    moveos_store: MoveOSStore,
 }
 
 impl IndexerActor {
@@ -33,7 +34,7 @@ impl IndexerActor {
         Ok(Self {
             root,
             indexer_store,
-            _moveos_store: moveos_store,
+            moveos_store,
         })
     }
 }
@@ -54,6 +55,7 @@ impl Handler<UpdateIndexerMessage> for IndexerActor {
 
         self.root = root;
         let tx_order = ledger_transaction.sequence_info.tx_order;
+        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
 
         // 1. update indexer transaction
         let move_action = MoveAction::from(moveos_tx.action);
@@ -93,6 +95,7 @@ impl Handler<UpdateIndexerMessage> for IndexerActor {
                 &mut indexer_field_state_changes,
                 object_id,
                 object_change,
+                &resolver,
             )?;
         }
         self.indexer_store
@@ -120,6 +123,7 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
         let mut indexer_object_state_changes = IndexerObjectStateChanges::default();
         let mut indexer_field_state_changes = IndexerFieldStateChanges::default();
 
+        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
         for (object_id, object_change) in state_change_set.changes {
             state_index_generator = handle_object_change(
                 state_index_generator,
@@ -128,6 +132,7 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                 &mut indexer_field_state_changes,
                 object_id,
                 object_change,
+                &resolver,
             )?;
         }
 

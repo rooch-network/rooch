@@ -19,7 +19,6 @@ pub struct IndexerTransaction {
     pub sequence_number: u64,
     // the account address of sender who send the transaction
     pub sender: RoochAddress,
-    pub action: Option<MoveAction>,
     pub action_type: u8,
     pub auth_validator_id: u64,
     pub authenticator_payload: Vec<u8>,
@@ -60,7 +59,6 @@ impl IndexerTransaction {
             // the account address of sender who send the transaction
             sender: tx_context.sender.into(),
             action_type: move_action.action_type(),
-            action: Some(move_action),
             auth_validator_id,
             authenticator_payload,
             tx_accumulator_root: transaction.sequence_info.tx_accumulator_root,

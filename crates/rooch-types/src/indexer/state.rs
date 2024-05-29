@@ -12,6 +12,7 @@ use moveos_types::moveos_std::object::{ObjectID, RawObject};
 use moveos_types::state::{
     FieldChange, KeyState, MoveStructType, ObjectChange, State, StateChangeSet,
 };
+use moveos_types::state_resolver::StateResolver;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -63,13 +64,11 @@ impl IndexerObjectState {
     }
 
     pub fn try_new_from_state(
-        value: State,
         tx_order: u64,
         state_index: u64,
+        refresh_object: RawObject,
     ) -> Result<IndexerObjectState> {
-        let raw_object = value.as_raw_object()?;
-
-        let state = IndexerObjectState::new_from_raw_object(raw_object, tx_order, state_index);
+        let state = IndexerObjectState::new_from_raw_object(refresh_object, tx_order, state_index);
         Ok(state)
     }
 
@@ -164,15 +163,23 @@ pub fn handle_object_change(
     indexer_field_state_changes: &mut IndexerFieldStateChanges,
     object_id: ObjectID,
     object_change: ObjectChange,
+    resolver: &dyn StateResolver,
 ) -> Result<u64> {
     let ObjectChange { op, fields } = object_change;
+    // refresh object to acquire lastest object state root
+    let refresh_object = resolver
+        .get_object(&object_id)?
+        .ok_or(anyhow::anyhow!("Object should exist"))?;
 
     if let Some(op) = op {
         match op {
             Op::Modify(value) => {
                 debug_assert!(value.is_object());
-                let state =
-                    IndexerObjectState::try_new_from_state(value, tx_order, state_index_generator)?;
+                let state = IndexerObjectState::try_new_from_state(
+                    tx_order,
+                    state_index_generator,
+                    refresh_object,
+                )?;
                 indexer_object_state_changes
                     .update_object_states
                     .push(state);
@@ -187,8 +194,11 @@ pub fn handle_object_change(
             }
             Op::New(value) => {
                 debug_assert!(value.is_object());
-                let state =
-                    IndexerObjectState::try_new_from_state(value, tx_order, state_index_generator)?;
+                let state = IndexerObjectState::try_new_from_state(
+                    tx_order,
+                    state_index_generator,
+                    refresh_object,
+                )?;
                 indexer_object_state_changes.new_object_states.push(state);
             }
         }
@@ -235,6 +245,7 @@ pub fn handle_object_change(
                     indexer_field_state_changes,
                     key.as_object_id()?,
                     object_change,
+                    resolver,
                 )?;
             }
         }

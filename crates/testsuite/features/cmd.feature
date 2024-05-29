@@ -130,7 +130,7 @@ Feature: Rooch CLI integration tests
     # Sync states
     Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x3::coin::CoinInfo"}, null, "10", {"descending": true,"showDisplay":false}]'"
     Then assert: "{{$.rpc[-1].data[0].tx_order}} == 1"
-    Then assert: "{{$.rpc[-1].data[0].object_type}} == 0x3::coin::CoinInfo"
+    Then assert: "{{$.rpc[-1].data[0].object_type}} == 0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
     Then cmd: "rpc request --method rooch_queryFieldStates --params '[{"object_id":"{{$.address_mapping.default}}"}, null, "10", {"descending": true,"showDisplay":false}]'"

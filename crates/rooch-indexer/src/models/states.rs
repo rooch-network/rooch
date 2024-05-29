@@ -5,6 +5,7 @@ use crate::schema::field_states;
 use crate::schema::object_states;
 use diesel::prelude::*;
 use move_core_types::language_storage::{StructTag, TypeTag};
+use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectID;
 use rooch_types::address::RoochAddress;
 use rooch_types::indexer::state::{IndexerFieldState, IndexerObjectState};
@@ -47,13 +48,13 @@ pub struct StoredObjectState {
 
 impl From<IndexerObjectState> for StoredObjectState {
     fn from(state: IndexerObjectState) -> Self {
-        let state_root = RoochAddress::from(state.state_root).to_hex_literal();
+        // let state_root = RoochAddress::from(state.state_root).to_hex_literal();
         Self {
             object_id: state.object_id.to_string(),
             owner: state.owner.to_hex_literal(),
             flag: state.flag as i16,
             object_type: state.object_type.to_string(),
-            state_root,
+            state_root: format!("{:?}", state.state_root),
             size: state.size as i64,
             tx_order: state.tx_order as i64,
             state_index: state.state_index as i64,
@@ -68,14 +69,15 @@ impl StoredObjectState {
         let object_id = ObjectID::from_str(self.object_id.as_str())?;
         let owner = RoochAddress::from_str(self.owner.as_str())?;
         let object_type = StructTag::from_str(self.object_type.as_str())?;
-        let state_root = RoochAddress::from_str(self.state_root.as_str())?;
+        // let state_root = RoochAddress::from_str(self.state_root.as_str())?;
+        let state_root = H256::from_str(self.state_root.as_str())?;
 
         let state = IndexerObjectState {
             object_id,
             owner,
             flag: self.flag as u8,
             object_type,
-            state_root: state_root.0,
+            state_root,
             size: self.size as u64,
             tx_order: self.tx_order as u64,
             state_index: self.state_index as u64,

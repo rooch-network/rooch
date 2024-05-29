@@ -14,6 +14,7 @@ use moveos_types::h256::H256;
 use moveos_types::move_std::ascii::MoveAsciiString;
 use moveos_types::moveos_std::gas_schedule::{GasEntry, GasSchedule, GasScheduleConfig};
 use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
+use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use moveos_types::{h256, state_resolver};
 use once_cell::sync::Lazy;
@@ -343,6 +344,7 @@ impl RoochGenesis {
         let mut indexer_object_state_changes = IndexerObjectStateChanges::default();
         let mut indexer_field_state_changes = IndexerFieldStateChanges::default();
 
+        let resolver = RootObjectResolver::new(inited_root.clone(), moveos_store);
         for (object_id, object_change) in genesis_tx_output.changeset.changes {
             state_index_generator = handle_object_change(
                 state_index_generator,
@@ -351,6 +353,7 @@ impl RoochGenesis {
                 &mut indexer_field_state_changes,
                 object_id,
                 object_change,
+                &resolver,
             )?;
         }
         indexer_store.update_object_states(indexer_object_state_changes)?;
