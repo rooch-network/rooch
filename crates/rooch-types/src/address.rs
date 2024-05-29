@@ -292,6 +292,12 @@ impl From<AccountAddress> for RoochAddress {
     }
 }
 
+impl From<H256> for RoochAddress {
+    fn from(hash: H256) -> Self {
+        Self(hash)
+    }
+}
+
 impl From<RoochAddress> for AccountAddress {
     fn from(address: RoochAddress) -> Self {
         AccountAddress::from(address.0 .0)

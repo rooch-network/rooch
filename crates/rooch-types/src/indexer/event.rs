@@ -1,15 +1,56 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{address::RoochAddress, indexer::Filter};
+use crate::address::RoochAddress;
+use crate::indexer::Filter;
+use crate::transaction::LedgerTransaction;
 use anyhow::Result;
-
 use move_core_types::language_storage::StructTag;
 use moveos_types::h256::H256;
 use moveos_types::move_types::struct_tag_match;
-use moveos_types::moveos_std::event::EventID;
+use moveos_types::moveos_std::event::{Event, EventID};
+use moveos_types::moveos_std::tx_context::TxContext;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+#[derive(Eq, PartialEq, Clone, Debug, Serialize, Deserialize)]
+pub struct IndexerEvent {
+    /// The unique event_id that the event was indexer
+    pub indexer_event_id: IndexerEventID,
+    /// The unique event_id that the event was emitted to
+    pub event_id: EventID,
+    /// The type of the data
+    pub event_type: StructTag,
+    /// The data payload of the event
+    pub event_data: Vec<u8>,
+
+    /// the hash of this transaction.
+    pub tx_hash: H256,
+    /// the account address of sender who emit the event
+    pub sender: RoochAddress,
+
+    /// the event created timestamp on chain
+    pub created_at: u64,
+}
+
+impl IndexerEvent {
+    pub fn new(event: Event, mut ledger_transaction: LedgerTransaction, ctx: TxContext) -> Self {
+        IndexerEvent {
+            indexer_event_id: IndexerEventID::new(
+                ledger_transaction.sequence_info.tx_order,
+                event.event_index,
+            ),
+            event_id: event.event_id,
+
+            event_type: event.event_type,
+            event_data: event.event_data,
+            tx_hash: ledger_transaction.tx_hash(),
+            sender: ctx.sender.into(),
+
+            created_at: ledger_transaction.sequence_info.tx_timestamp,
+        }
+    }
+}
 
 #[derive(
     Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize, JsonSchema,
@@ -36,26 +77,6 @@ impl IndexerEventID {
             event_index,
         }
     }
-}
-
-#[derive(Eq, PartialEq, Clone, Debug, Serialize, Deserialize)]
-pub struct IndexerEvent {
-    /// The unique event_id that the event was indexed
-    pub indexer_event_id: IndexerEventID,
-    /// The unique event_id that the event was emitted to
-    pub event_id: EventID,
-    /// The type of the data
-    pub event_type: StructTag,
-    /// The data payload of the event
-    pub event_data: Vec<u8>,
-
-    /// the hash of this transaction.
-    pub tx_hash: H256,
-    /// the account address of sender who emit the event
-    pub sender: RoochAddress,
-
-    /// the event created timestamp on chain
-    pub created_at: u64,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

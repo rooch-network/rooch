@@ -78,7 +78,7 @@ pub async fn setup_service(
 
     // init storage
     let (mut moveos_store, mut rooch_store) = init_storage(datadir)?;
-    let (indexer_store, indexer_reader) = init_indexer(datadir)?;
+    let (mut indexer_store, indexer_reader) = init_indexer(datadir)?;
 
     // init keystore
     let rooch_account = keystore.addresses()[0];
@@ -96,7 +96,7 @@ pub async fn setup_service(
     let mut network: RoochNetwork = BuiltinChainID::Dev.into();
     network.set_sequencer_account(rooch_account.into());
     let genesis: RoochGenesis = RoochGenesis::build(network)?;
-    let root = genesis.init_genesis(&mut moveos_store, &mut rooch_store)?;
+    let root = genesis.init_genesis(&mut moveos_store, &mut rooch_store, &mut indexer_store)?;
 
     let executor_actor =
         ExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store.clone())?;

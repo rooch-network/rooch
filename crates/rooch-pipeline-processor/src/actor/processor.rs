@@ -92,43 +92,26 @@ impl PipelineProcessorActor {
             .await?;
 
         let indexer = self.indexer.clone();
-        let moveos_tx_clone = moveos_tx.clone();
-        let execution_info_clone = execution_info.clone();
         let sequence_info = tx.sequence_info.clone();
+        let execution_info_clone = execution_info.clone();
         let output_clone = output.clone();
 
         // If bitcoin block data import, don't write all indexer
-        // TODO put all indexer data into a single message
         if !self.data_import_flag {
             tokio::spawn(async move {
                 let result = indexer
-                    .indexer_states(
+                    .update_indexer(
                         root,
-                        tx.sequence_info.tx_order,
-                        output_clone.changeset.clone(),
+                        tx,
+                        execution_info_clone,
+                        moveos_tx,
+                        output_clone.events,
+                        output_clone.changeset,
                     )
                     .await;
                 match result {
                     Ok(_) => {}
-                    Err(error) => log::error!("indexer states error: {}", error),
-                };
-                let result = indexer
-                    .indexer_transaction(
-                        tx.clone(),
-                        execution_info_clone.clone(),
-                        moveos_tx_clone.clone(),
-                    )
-                    .await;
-                match result {
-                    Ok(_) => {}
-                    Err(error) => log::error!("indexer transactions error: {}", error),
-                };
-                let result = indexer
-                    .indexer_events(output_clone.events.clone(), tx.clone(), moveos_tx_clone)
-                    .await;
-                match result {
-                    Ok(_) => {}
-                    Err(error) => log::error!("indexer events error: {}", error),
+                    Err(error) => log::error!("Update indexer error: {}", error),
                 };
             });
         };

@@ -5,22 +5,22 @@ use crate::actor::indexer::IndexerActor;
 use crate::actor::messages::{
     IndexerEventsMessage, IndexerStatesMessage, IndexerTransactionMessage,
     QueryIndexerEventsMessage, QueryIndexerFieldStatesMessage, QueryIndexerObjectStatesMessage,
-    QueryIndexerTransactionsMessage,
+    QueryIndexerTransactionsMessage, UpdateIndexerMessage,
 };
 use crate::actor::reader_indexer::IndexerReaderActor;
 use anyhow::Result;
 use coerce::actor::ActorRef;
 use moveos_types::moveos_std::event::Event;
 use moveos_types::moveos_std::object::RootObjectEntity;
+use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::StateChangeSet;
-use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
-use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
+use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
+use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
     FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateID, ObjectStateFilter,
 };
-use rooch_types::indexer::transaction_filter::TransactionFilter;
+use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::transaction::LedgerTransaction;
-use rooch_types::transaction::TransactionWithInfo;
 
 #[derive(Clone)]
 pub struct IndexerProxy {
@@ -34,6 +34,27 @@ impl IndexerProxy {
             actor,
             reader_actor,
         }
+    }
+
+    pub async fn update_indexer(
+        &self,
+        root: RootObjectEntity,
+        ledger_transaction: LedgerTransaction,
+        execution_info: TransactionExecutionInfo,
+        moveos_tx: VerifiedMoveOSTransaction,
+        events: Vec<Event>,
+        state_change_set: StateChangeSet,
+    ) -> Result<()> {
+        self.actor
+            .send(UpdateIndexerMessage {
+                root,
+                ledger_transaction,
+                execution_info,
+                moveos_tx,
+                events,
+                state_change_set,
+            })
+            .await?
     }
 
     pub async fn indexer_states(
@@ -53,15 +74,17 @@ impl IndexerProxy {
 
     pub async fn indexer_transaction(
         &self,
-        transaction: LedgerTransaction,
+        ledger_transaction: LedgerTransaction,
         execution_info: TransactionExecutionInfo,
-        moveos_tx: VerifiedMoveOSTransaction,
+        move_action: MoveAction,
+        tx_context: TxContext,
     ) -> Result<()> {
         self.actor
             .send(IndexerTransactionMessage {
-                transaction,
+                ledger_transaction,
                 execution_info,
-                moveos_tx,
+                move_action,
+                tx_context,
             })
             .await?
     }
@@ -69,14 +92,14 @@ impl IndexerProxy {
     pub async fn indexer_events(
         &self,
         events: Vec<Event>,
-        transaction: LedgerTransaction,
-        moveos_tx: VerifiedMoveOSTransaction,
+        ledger_transaction: LedgerTransaction,
+        tx_context: TxContext,
     ) -> Result<()> {
         self.actor
             .send(IndexerEventsMessage {
                 events,
-                transaction,
-                moveos_tx,
+                ledger_transaction,
+                tx_context,
             })
             .await?
     }
@@ -88,7 +111,7 @@ impl IndexerProxy {
         cursor: Option<u64>,
         limit: usize,
         descending_order: bool,
-    ) -> Result<Vec<TransactionWithInfo>> {
+    ) -> Result<Vec<IndexerTransaction>> {
         self.reader_actor
             .send(QueryIndexerTransactionsMessage {
                 filter,
