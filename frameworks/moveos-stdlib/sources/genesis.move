@@ -12,14 +12,14 @@ module moveos_std::genesis {
     const ErrorGenesisInit: u64 = 1;
 
     /// GenesisContext is a genesis init parameters in the TxContext.
-    struct MoveosGenesisContext has copy,store,drop{
+    struct GenesisContext has copy,store,drop{
         /// genesis timestamp in microseconds
         timestamp: u64,
     }
 
     fun init(){
-        let genesis_account = moveos_std::signer::module_signer<MoveosGenesisContext>();
-        let genesis_context_option = tx_context::get_attribute<MoveosGenesisContext>();
+        let genesis_account = moveos_std::signer::module_signer<GenesisContext>();
+        let genesis_context_option = tx_context::get_attribute<GenesisContext>();
         assert!(option::is_some(&genesis_context_option), ErrorGenesisInit);
         let genesis_context = option::extract(&mut genesis_context_option);
         timestamp::genesis_init(&genesis_account, genesis_context.timestamp);
@@ -34,8 +34,8 @@ module moveos_std::genesis {
     #[test_only]
     /// init the genesis context for test
     public fun init_for_test(){
-        let genesis_account = moveos_std::signer::module_signer<MoveosGenesisContext>();
-        tx_context::add_attribute_via_system(&genesis_account, MoveosGenesisContext{timestamp: 0});
+        let genesis_account = moveos_std::signer::module_signer<GenesisContext>();
+        tx_context::add_attribute_via_system(&genesis_account, GenesisContext{timestamp: 0});
         tx_context::add_attribute_via_system(&genesis_account, gas_schedule::new_gas_schedule_config(gas_schedule::initial_max_gas_amount(),std::vector::empty()));
         init()
     }

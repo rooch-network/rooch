@@ -9,18 +9,18 @@ use serde::{Deserialize, Serialize};
 pub const MODULE_NAME: &IdentStr = ident_str!("genesis");
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MoveosGenesisContext {
+pub struct GenesisContext {
     /// The timestamp of the genesis, in microseconds
     pub timestamp: u64,
 }
 
-impl MoveStructType for MoveosGenesisContext {
+impl MoveStructType for GenesisContext {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = ident_str!("MoveosGenesisContext");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("GenesisContext");
 }
 
-impl MoveStructState for MoveosGenesisContext {
+impl MoveStructState for GenesisContext {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
             move_core_types::value::MoveTypeLayout::U64,
@@ -28,7 +28,7 @@ impl MoveStructState for MoveosGenesisContext {
     }
 }
 
-impl MoveosGenesisContext {
+impl GenesisContext {
     pub fn new(timestamp: u64) -> Self {
         Self { timestamp }
     }
