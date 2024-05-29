@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::types::LocalAccount;
-use crate::key_derive::retrieve_key_pair;
 use crate::keystore::account_keystore::AccountKeystore;
 use crate::keystore::base_keystore::BaseKeyStore;
 use anyhow::anyhow;
@@ -238,8 +237,7 @@ impl FileBasedKeystore {
             .keys
             .values() // Get inner maps
             .flat_map(|encryption| {
-                // Transform EncryptionData into RoochKeyPair using your conversion function.
-                Some(retrieve_key_pair(encryption, password.clone()))
+                Some(encryption.decrypt_with_type::<RoochKeyPair>(password.clone()))
             })
             .collect::<Result<_, _>>()?;
 

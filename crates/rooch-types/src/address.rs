@@ -314,15 +314,13 @@ impl TryFrom<MultiChainAddress> for RoochAddress {
     type Error = anyhow::Error;
 
     fn try_from(value: MultiChainAddress) -> Result<Self, Self::Error> {
-        let address = if value.multichain_id != RoochMultiChainID::Rooch {
-            let mut hasher = Blake2b256::default();
-            hasher.update(&value.raw_address);
-            let g_arr = hasher.finalize();
-            Self(H256(g_arr.digest))
-        } else {
-            Self(H256::from_slice(&value.raw_address))
-        };
-        Ok(address)
+        if value.multichain_id != RoochMultiChainID::Rooch {
+            return Err(anyhow::anyhow!(
+                "multichain_id type {} is invalid",
+                value.multichain_id
+            ));
+        }
+        Ok(Self(H256::from_slice(&value.raw_address)))
     }
 }
 
@@ -634,6 +632,14 @@ impl BitcoinAddress {
     /// The empty address is used to if we parse the address failed from the script
     pub fn is_empty(&self) -> bool {
         self.bytes.is_empty()
+    }
+
+    /// Convert the Bitcoin address to Rooch address
+    pub fn to_rooch_address(&self) -> RoochAddress {
+        let mut hasher = Blake2b256::default();
+        hasher.update(&self.bytes);
+        let g_arr = hasher.finalize();
+        RoochAddress(H256(g_arr.digest))
     }
 
     ///  Format the base58 as a hexadecimal string

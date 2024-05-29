@@ -1,10 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::BTreeMap;
-
-use super::types::{AddressMapping, LocalAccount, LocalSessionKey};
-use crate::key_derive::retrieve_key_pair;
+use super::types::{LocalAccount, LocalSessionKey};
 use crate::keystore::account_keystore::AccountKeystore;
 use anyhow::ensure;
 use rooch_types::framework::session_key::SessionKey;
@@ -22,6 +19,7 @@ use rooch_types::{
 };
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
+use std::collections::BTreeMap;
 
 #[derive(Default, Debug, Serialize, Deserialize)]
 #[serde_as]
@@ -37,8 +35,6 @@ pub(crate) struct BaseKeyStore {
     pub(crate) password_hash: Option<String>,
     #[serde(default)]
     pub(crate) is_password_empty: bool,
-    #[serde(default)]
-    pub(crate) address_mapping: AddressMapping,
 }
 
 impl BaseKeyStore {
@@ -49,7 +45,6 @@ impl BaseKeyStore {
             session_keys: BTreeMap::new(),
             password_hash: None,
             is_password_empty: true,
-            address_mapping: AddressMapping::default(),
         }
     }
 }
@@ -64,36 +59,14 @@ impl AccountKeystore for BaseKeyStore {
     fn get_accounts(&self, password: Option<String>) -> Result<Vec<LocalAccount>, anyhow::Error> {
         let mut accounts = BTreeMap::new();
         for (address, encryption) in &self.keys {
-            let keypair: RoochKeyPair = retrieve_key_pair(encryption, password.clone())?;
+            let keypair: RoochKeyPair = encryption.decrypt_with_type(password.clone())?;
             let public_key = keypair.public();
-            let multichain_address = self
-                .address_mapping
-                .rooch_to_multichain
-                .get(address)
-                .cloned();
+            let bitcoin_address = public_key.bitcoin_address()?;
             let has_session_key = self.session_keys.get(address).is_some();
             let local_account = LocalAccount {
                 address: *address,
-                multichain_address,
-                public_key: Some(public_key),
-                has_session_key,
-            };
-            accounts.insert(*address, local_account);
-        }
-        for address in self.session_keys.keys() {
-            if accounts.contains_key(address) {
-                continue;
-            }
-            let multichain_address = self
-                .address_mapping
-                .rooch_to_multichain
-                .get(address)
-                .cloned();
-            let has_session_key = true;
-            let local_account = LocalAccount {
-                address: *address,
-                multichain_address,
-                public_key: None,
+                bitcoin_address,
+                public_key,
                 has_session_key,
             };
             accounts.insert(*address, local_account);
@@ -107,7 +80,7 @@ impl AccountKeystore for BaseKeyStore {
         password: Option<String>,
     ) -> Result<RoochKeyPair, anyhow::Error> {
         if let Some(encryption) = self.keys.get(address) {
-            let keypair: RoochKeyPair = retrieve_key_pair(encryption, password)?;
+            let keypair: RoochKeyPair = encryption.decrypt_with_type::<RoochKeyPair>(password)?;
             Ok(keypair)
         } else {
             Err(anyhow::Error::new(RoochError::SignMessageError(format!(
@@ -180,7 +153,7 @@ impl AccountKeystore for BaseKeyStore {
         address: &RoochAddress,
         password: Option<String>,
     ) -> Result<AuthenticationKey, anyhow::Error> {
-        let kp: RoochKeyPair = RoochKeyPair::generate();
+        let kp: RoochKeyPair = RoochKeyPair::generate_ed25519();
         let authentication_key = kp.public().authentication_key();
         let inner_map = self.session_keys.entry(*address).or_default();
         let private_key_encryption = EncryptionData::encrypt(kp.private(), password)?;
@@ -229,7 +202,9 @@ impl AccountKeystore for BaseKeyStore {
                 ))
             })?;
 
-        let kp: RoochKeyPair = retrieve_key_pair(&local_session_key.private_key, password)
+        let kp: RoochKeyPair = local_session_key
+            .private_key
+            .decrypt_with_type(password)
             .map_err(signature::Error::from_source)?;
 
         let signature = Signature::new_hashed(msg.tx_hash().as_bytes(), &kp);

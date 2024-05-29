@@ -10,6 +10,7 @@ use chacha20poly1305::ChaCha20Poly1305;
 use chacha20poly1305::KeyInit;
 use fastcrypto::encoding::{Base64, Encoding};
 use rand::rngs::OsRng;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -105,6 +106,25 @@ impl EncryptionData {
             .decrypt(nonce.as_slice().into(), &*ciphertext_with_tag)
             .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
         Ok(data)
+    }
+
+    pub fn encrypt_with_type<T>(data: &T, password: Option<String>) -> Result<Self>
+    where
+        T: Serialize,
+    {
+        let data =
+            bcs::to_bytes(data).map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
+        Self::encrypt(&data, password)
+    }
+
+    pub fn decrypt_with_type<T>(&self, password: Option<String>) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        let data = self.decrypt(password)?;
+        let t: T =
+            bcs::from_bytes(&data).map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
+        Ok(t)
     }
 }
 

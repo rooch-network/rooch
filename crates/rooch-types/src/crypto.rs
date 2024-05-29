@@ -1,16 +1,18 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+// Copyright (c) Mysten Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::{
-    address::RoochAddress,
+    address::{BitcoinAddress, RoochAddress},
     authentication_key::AuthenticationKey,
-    error::{RoochError, RoochResult},
+    error::RoochError,
 };
+use anyhow::bail;
 use derive_more::{AsMut, AsRef, From};
 pub use enum_dispatch::enum_dispatch;
 use eyre::eyre;
-use fastcrypto::error::FastCryptoError;
-use fastcrypto::hash::{Blake2b256, HashFunction};
 pub use fastcrypto::traits::KeyPair as KeypairTraits;
 pub use fastcrypto::traits::Signer;
 pub use fastcrypto::traits::{
@@ -24,7 +26,15 @@ use fastcrypto::{
     },
     encoding::{Base64, Encoding},
 };
-use moveos_types::{h256::H256, serde::Readable};
+use fastcrypto::{
+    error::FastCryptoError,
+    secp256k1::{Secp256k1KeyPair, Secp256k1PublicKeyAsBytes},
+};
+use fastcrypto::{
+    hash::{Blake2b256, HashFunction},
+    secp256k1::{Secp256k1PublicKey, Secp256k1Signature, Secp256k1SignatureAsBytes},
+};
+use moveos_types::serde::Readable;
 use schemars::JsonSchema;
 use serde::ser::Serializer;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -35,18 +45,21 @@ pub type DefaultHash = Blake2b256;
 
 pub enum SignatureScheme {
     Ed25519,
+    Secp256k1,
 }
 
 impl SignatureScheme {
     pub fn flag(&self) -> u8 {
         match self {
             SignatureScheme::Ed25519 => 0,
+            SignatureScheme::Secp256k1 => 1,
         }
     }
 
     pub fn from_flag_byte(byte_int: u8) -> Result<SignatureScheme, RoochError> {
         match byte_int {
             0 => Ok(SignatureScheme::Ed25519),
+            1 => Ok(SignatureScheme::Secp256k1),
             _ => Err(RoochError::InvalidSignatureScheme),
         }
     }
@@ -55,19 +68,24 @@ impl SignatureScheme {
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, From, PartialEq, Eq)]
 pub enum RoochKeyPair {
+    ///For SessionKey
     Ed25519(Ed25519KeyPair),
+    ///For Bitcoin
+    Secp256k1(Secp256k1KeyPair),
 }
 
 impl RoochKeyPair {
     pub fn public(&self) -> PublicKey {
         match self {
             RoochKeyPair::Ed25519(kp) => PublicKey::Ed25519(kp.public().into()),
+            RoochKeyPair::Secp256k1(kp) => PublicKey::Secp256k1(kp.public().into()),
         }
     }
 
     pub fn private(&self) -> &[u8] {
         match self {
             RoochKeyPair::Ed25519(kp) => kp.as_bytes(),
+            RoochKeyPair::Secp256k1(kp) => kp.as_bytes(),
         }
     }
 
@@ -78,13 +96,20 @@ impl RoochKeyPair {
     pub fn copy(&self) -> Self {
         match self {
             RoochKeyPair::Ed25519(kp) => RoochKeyPair::Ed25519(kp.copy()),
+            RoochKeyPair::Secp256k1(kp) => RoochKeyPair::Secp256k1(kp.copy()),
         }
     }
 
-    pub fn generate() -> Self {
+    pub fn generate_ed25519() -> Self {
         let rng = &mut rand::thread_rng();
         let ed25519_keypair = Ed25519KeyPair::generate(rng);
         RoochKeyPair::Ed25519(ed25519_keypair)
+    }
+
+    pub fn generate_secp256k1() -> Self {
+        let rng = &mut rand::thread_rng();
+        let secp256k1_keypair = Secp256k1KeyPair::generate(rng);
+        RoochKeyPair::Secp256k1(secp256k1_keypair)
     }
 }
 
@@ -92,6 +117,7 @@ impl Signer<Signature> for RoochKeyPair {
     fn sign(&self, msg: &[u8]) -> Signature {
         match self {
             RoochKeyPair::Ed25519(kp) => kp.sign(msg),
+            RoochKeyPair::Secp256k1(kp) => kp.sign(msg),
         }
     }
 }
@@ -115,6 +141,9 @@ impl EncodeDecodeBase64 for RoochKeyPair {
             RoochKeyPair::Ed25519(kp) => {
                 bytes.extend_from_slice(kp.as_bytes());
             }
+            RoochKeyPair::Secp256k1(kp) => {
+                bytes.extend_from_slice(kp.as_bytes());
+            }
         }
         Base64::encode(&bytes[..])
     }
@@ -130,6 +159,11 @@ impl EncodeDecodeBase64 for RoochKeyPair {
                 SignatureScheme::Ed25519 => Ok(RoochKeyPair::Ed25519(Ed25519KeyPair::from_bytes(
                     bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
                 )?)),
+                SignatureScheme::Secp256k1 => {
+                    Ok(RoochKeyPair::Secp256k1(Secp256k1KeyPair::from_bytes(
+                        bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
+                    )?))
+                }
             },
             _ => Err(eyre!("Invalid bytes")),
         }
@@ -161,12 +195,14 @@ impl<'de> Deserialize<'de> for RoochKeyPair {
 #[derive(Debug, Clone, PartialEq, Eq, JsonSchema)]
 pub enum PublicKey {
     Ed25519(Ed25519PublicKeyAsBytes),
+    Secp256k1(Secp256k1PublicKeyAsBytes),
 }
 
 impl AsRef<[u8]> for PublicKey {
     fn as_ref(&self) -> &[u8] {
         match self {
             PublicKey::Ed25519(pk) => &pk.0,
+            PublicKey::Secp256k1(pk) => &pk.0,
         }
     }
 }
@@ -181,18 +217,24 @@ impl EncodeDecodeBase64 for PublicKey {
 
     fn decode_base64(value: &str) -> Result<Self, eyre::Report> {
         let bytes = Base64::decode(value).map_err(|e| eyre!("{}", e.to_string()))?;
-        match bytes.first() {
-            Some(x) => {
-                if x == &SignatureScheme::Ed25519.flag() {
+        match SignatureScheme::from_flag_byte(
+            *bytes.first().ok_or_else(|| eyre!("Invalid length"))?,
+        ) {
+            Ok(x) => match x {
+                SignatureScheme::Ed25519 => {
                     let pk: Ed25519PublicKey = Ed25519PublicKey::from_bytes(
                         bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
                     )?;
                     Ok(PublicKey::Ed25519((&pk).into()))
-                } else {
-                    Err(eyre!("Invalid flag byte"))
                 }
-            }
-            _ => Err(eyre!("Invalid bytes")),
+                SignatureScheme::Secp256k1 => {
+                    let pk: Secp256k1PublicKey = Secp256k1PublicKey::from_bytes(
+                        bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
+                    )?;
+                    Ok(PublicKey::Secp256k1((&pk).into()))
+                }
+            },
+            Err(e) => Err(eyre!("Invalid bytes :{}", e)),
         }
     }
 }
@@ -221,14 +263,13 @@ impl<'de> Deserialize<'de> for PublicKey {
 
 impl PublicKey {
     pub fn flag(&self) -> u8 {
-        match self {
-            PublicKey::Ed25519(_) => Ed25519RoochSignature::SCHEME.flag(),
-        }
+        self.scheme().flag()
     }
 
-    pub fn auth_validator(&self) -> SignatureScheme {
+    pub fn scheme(&self) -> SignatureScheme {
         match self {
             PublicKey::Ed25519(_) => Ed25519RoochSignature::SCHEME,
+            PublicKey::Secp256k1(_) => Secp256k1RoochSignature::SCHEME,
         }
     }
 
@@ -236,8 +277,27 @@ impl PublicKey {
         self.into()
     }
 
-    pub fn address(&self) -> RoochAddress {
-        self.into()
+    pub fn rooch_address(&self) -> Result<RoochAddress, anyhow::Error> {
+        let bitcoin_address = self.bitcoin_address()?;
+        Ok(bitcoin_address.to_rooch_address())
+    }
+
+    pub fn bitcoin_address(&self) -> Result<BitcoinAddress, anyhow::Error> {
+        match self {
+            PublicKey::Secp256k1(pk) => {
+                let xonly_pubkey =
+                    bitcoin::XOnlyPublicKey::from(bitcoin::PublicKey::from_slice(&pk.0)?);
+                let secp = bitcoin::secp256k1::Secp256k1::verification_only();
+                // Rooch BitcoinAddress do not distinguish between network
+                Ok(BitcoinAddress::from(bitcoin::Address::p2tr(
+                    &secp,
+                    xonly_pubkey,
+                    None,
+                    bitcoin::Network::Bitcoin,
+                )))
+            }
+            _ => bail!("Only secp256k1 public key can be converted to bitcoin address"),
+        }
     }
 }
 
@@ -247,27 +307,6 @@ pub trait RoochPublicKey: VerifyingKey {
 
 impl RoochPublicKey for Ed25519PublicKey {
     const SIGNATURE_SCHEME: SignatureScheme = SignatureScheme::Ed25519;
-}
-
-impl<T: RoochPublicKey> From<&T> for RoochAddress {
-    fn from(pk: &T) -> Self {
-        let mut hasher = DefaultHash::default();
-        hasher.update([T::SIGNATURE_SCHEME.flag()]);
-        hasher.update(pk);
-        let g_arr = hasher.finalize();
-        RoochAddress(H256(g_arr.digest))
-    }
-}
-
-/// The address is the hash of the public key
-impl From<&PublicKey> for RoochAddress {
-    fn from(pk: &PublicKey) -> Self {
-        let mut hasher = DefaultHash::default();
-        hasher.update([pk.flag()]);
-        hasher.update(pk);
-        let g_arr = hasher.finalize();
-        RoochAddress(H256(g_arr.digest))
-    }
 }
 
 ///The authentication key is the hash of the public key
@@ -295,31 +334,31 @@ pub trait RoochSignatureInner: Sized + ToFromBytes + PartialEq + Eq + Hash {
     const LENGTH: usize = Self::Sig::LENGTH + Self::PubKey::LENGTH + 1;
     const SCHEME: SignatureScheme = Self::PubKey::SIGNATURE_SCHEME;
 
-    fn get_verification_inputs(
-        &self,
-        author: RoochAddress,
-    ) -> RoochResult<(Self::Sig, Self::PubKey)> {
-        // Is this signature emitted by the expected author?
-        let bytes = self.public_key_bytes();
-        let pk = Self::PubKey::from_bytes(bytes)
-            .map_err(|_| RoochError::KeyConversionError("Invalid public key".to_owned()))?;
+    // fn get_verification_inputs(
+    //     &self,
+    //     author: RoochAddress,
+    // ) -> RoochResult<(Self::Sig, Self::PubKey)> {
+    //     // Is this signature emitted by the expected author?
+    //     let bytes = self.public_key_bytes();
+    //     let pk = Self::PubKey::from_bytes(bytes)
+    //         .map_err(|_| RoochError::KeyConversionError("Invalid public key".to_owned()))?;
 
-        let received_addr = RoochAddress::from(&pk);
-        if received_addr != author {
-            return Err(RoochError::IncorrectSigner {
-                error: format!("Signature get_verification_inputs() failure. Author is {author}, received address is {received_addr}")
-            });
-        }
+    //     let received_addr = RoochAddress::from(&pk);
+    //     if received_addr != author {
+    //         return Err(RoochError::IncorrectSigner {
+    //             error: format!("Signature get_verification_inputs() failure. Author is {author}, received address is {received_addr}")
+    //         });
+    //     }
 
-        // deserialize the signature
-        let signature = Self::Sig::from_bytes(self.signature_bytes()).map_err(|_| {
-            RoochError::InvalidSignature {
-                error: "Fail to get pubkey and sig".to_owned(),
-            }
-        })?;
+    //     // deserialize the signature
+    //     let signature = Self::Sig::from_bytes(self.signature_bytes()).map_err(|_| {
+    //         RoochError::InvalidSignature {
+    //             error: "Fail to get pubkey and sig".to_owned(),
+    //         }
+    //     })?;
 
-        Ok((signature, pk))
-    }
+    //     Ok((signature, pk))
+    // }
 
     fn new(kp: &Self::KeyPair, message: &[u8]) -> Self {
         let sig = Signer::sign(kp, message);
@@ -340,6 +379,7 @@ pub trait RoochSignatureInner: Sized + ToFromBytes + PartialEq + Eq + Hash {
 #[derive(Clone, JsonSchema, Debug, PartialEq, Eq, Hash)]
 pub enum Signature {
     Ed25519RoochSignature,
+    Secp256k1RoochSignature,
 }
 
 impl Serialize for Signature {
@@ -422,6 +462,7 @@ impl AsRef<[u8]> for Signature {
     fn as_ref(&self) -> &[u8] {
         match self {
             Signature::Ed25519RoochSignature(sig) => sig.as_ref(),
+            Signature::Secp256k1RoochSignature(sig) => sig.as_ref(),
         }
     }
 }
@@ -429,6 +470,7 @@ impl AsMut<[u8]> for Signature {
     fn as_mut(&mut self) -> &mut [u8] {
         match self {
             Signature::Ed25519RoochSignature(sig) => sig.as_mut(),
+            Signature::Secp256k1RoochSignature(sig) => sig.as_mut(),
         }
     }
 }
@@ -439,6 +481,8 @@ impl ToFromBytes for Signature {
             Some(x) => {
                 if x == &Ed25519RoochSignature::SCHEME.flag() {
                     Ok(<Ed25519RoochSignature as ToFromBytes>::from_bytes(bytes)?.into())
+                } else if x == &Secp256k1RoochSignature::SCHEME.flag() {
+                    Ok(<Secp256k1RoochSignature as ToFromBytes>::from_bytes(bytes)?.into())
                 } else {
                     Err(FastCryptoError::InvalidInput)
                 }
@@ -452,12 +496,14 @@ impl ToFromBytes for Signature {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, JsonSchema)]
 pub enum CompressedSignature {
     Ed25519(Ed25519SignatureAsBytes),
+    Secp256k1(Secp256k1SignatureAsBytes),
 }
 
 impl AsRef<[u8]> for CompressedSignature {
     fn as_ref(&self) -> &[u8] {
         match self {
             CompressedSignature::Ed25519(sig) => &sig.0,
+            CompressedSignature::Secp256k1(sig) => &sig.0,
         }
     }
 }
@@ -468,9 +514,9 @@ pub trait RoochSignature: Sized + ToFromBytes {
     fn public_key_bytes(&self) -> &[u8];
     fn scheme(&self) -> SignatureScheme;
 
-    fn verify_secure<T>(&self, value: &T, author: RoochAddress) -> RoochResult<()>
-    where
-        T: Serialize;
+    // fn verify_secure<T>(&self, value: &T, author: RoochAddress) -> RoochResult<()>
+    // where
+    //     T: Serialize;
 }
 
 impl<S: RoochSignatureInner + Sized> RoochSignature for S {
@@ -490,20 +536,20 @@ impl<S: RoochSignatureInner + Sized> RoochSignature for S {
         S::PubKey::SIGNATURE_SCHEME
     }
 
-    fn verify_secure<T>(&self, value: &T, author: RoochAddress) -> Result<(), RoochError>
-    where
-        T: Serialize,
-    {
-        let mut hasher = DefaultHash::default();
-        hasher.update(&bcs::to_bytes(&value).expect("Message serialization should not fail"));
-        let digest = hasher.finalize().digest;
+    // fn verify_secure<T>(&self, value: &T, author: RoochAddress) -> Result<(), RoochError>
+    // where
+    //     T: Serialize,
+    // {
+    //     let mut hasher = DefaultHash::default();
+    //     hasher.update(&bcs::to_bytes(&value).expect("Message serialization should not fail"));
+    //     let digest = hasher.finalize().digest;
 
-        let (sig, pk) = &self.get_verification_inputs(author)?;
-        pk.verify(&digest, sig)
-            .map_err(|e| RoochError::InvalidSignature {
-                error: format!("Fail to verify user sig {}", e),
-            })
-    }
+    //     let (sig, pk) = &self.get_verification_inputs(author)?;
+    //     pk.verify(&digest, sig)
+    //         .map_err(|e| RoochError::InvalidSignature {
+    //             error: format!("Fail to verify user sig {}", e),
+    //         })
+    // }
 }
 
 //
@@ -550,9 +596,51 @@ impl RoochSignatureInner for Ed25519RoochSignature {
     const LENGTH: usize = Ed25519PublicKey::LENGTH + Ed25519Signature::LENGTH + 1;
 }
 
+//
+// Secp256k1 Signature port
+//
+#[serde_as]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq, Hash, AsRef, AsMut)]
+#[as_ref(forward)]
+#[as_mut(forward)]
+pub struct Secp256k1RoochSignature(
+    #[schemars(with = "Base64")]
+    #[serde_as(as = "Readable<Base64, Bytes>")]
+    [u8; Secp256k1PublicKey::LENGTH + Secp256k1Signature::LENGTH + 1],
+);
+
+impl RoochSignatureInner for Secp256k1RoochSignature {
+    type Sig = Secp256k1Signature;
+    type PubKey = Secp256k1PublicKey;
+    type KeyPair = Secp256k1KeyPair;
+    const LENGTH: usize = Secp256k1PublicKey::LENGTH + Secp256k1Signature::LENGTH + 1;
+}
+
+impl RoochPublicKey for Secp256k1PublicKey {
+    const SIGNATURE_SCHEME: SignatureScheme = SignatureScheme::Secp256k1;
+}
+
+impl ToFromBytes for Secp256k1RoochSignature {
+    fn from_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
+        if bytes.len() != Self::LENGTH {
+            return Err(FastCryptoError::InputLengthWrong(Self::LENGTH));
+        }
+        let mut sig_bytes = [0; Self::LENGTH];
+        sig_bytes.copy_from_slice(bytes);
+        Ok(Self(sig_bytes))
+    }
+}
+
+impl Signer<Signature> for Secp256k1KeyPair {
+    fn sign(&self, msg: &[u8]) -> Signature {
+        Secp256k1RoochSignature::new(self, msg).into()
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::address::RoochAddress;
+    use super::RoochKeyPair;
+    use crate::{address::RoochAddress, bitcoin::network};
     use ethers::utils::keccak256;
     use fastcrypto::{
         ed25519::{Ed25519KeyPair, Ed25519PrivateKey},
@@ -564,12 +652,26 @@ mod tests {
     // we should also keep the Rooch public key to address algorithm the same as the move version
     #[test]
     fn test_rooch_public_key_to_address() {
-        let private_key = Ed25519PrivateKey::from_bytes(&[0u8; 32]).unwrap();
-        let keypair: Ed25519KeyPair = private_key.into();
-        let address: RoochAddress = keypair.public().into();
+        let private_key = Secp256k1PrivateKey::from_bytes(&[0xcd; 32]).unwrap();
+        let rooch_keypair = RoochKeyPair::Secp256k1(Secp256k1KeyPair::from(private_key));
+        let btc_address = rooch_keypair.public().bitcoin_address().unwrap();
+        let btc_address_str = btc_address
+            .format(network::Network::Bitcoin.to_num())
+            .unwrap();
+        //println!("{}", btc_address_str);
         assert_eq!(
-            address.to_hex_literal(),
-            "0x7a1378aafadef8ce743b72e8b248295c8f61c102c94040161146ea4d51a182b6"
+            btc_address_str,
+            "bc1pesylj5fdhxktcnl34t9r9ple0anatqwhanhtsh33szpehqhgtagqcj0rk5"
+        );
+        let rooch_address = btc_address.to_rooch_address();
+        //println!("hex:{}, bech32:{}", rooch_address.to_hex(), rooch_address.to_bech32());
+        assert_eq!(
+            rooch_address.to_hex_literal(),
+            "0x0c9fae081aec16249e3c9c94e09170eb7222767e0b2db04e9c7144d6e5a4e804"
+        );
+        assert_eq!(
+            rooch_address.to_bech32(),
+            "rooch1pj06uzq6astzf83unj2wpytsadezyan7pvkmqn5uw9zddedyaqzq4090g0"
         );
     }
 
