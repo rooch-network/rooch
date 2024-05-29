@@ -13,6 +13,7 @@ use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
 use moveos_types::move_std::ascii::MoveAsciiString;
 use moveos_types::moveos_std::gas_schedule::{GasEntry, GasSchedule, GasScheduleConfig};
+use moveos_types::moveos_std::genesis::MoveosGenesisContext;
 use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
@@ -154,11 +155,9 @@ impl RoochGenesis {
             BuildOption::Release => Self::load_stdlib(genesis_config.stdlib_version)?,
         };
 
-        let genesis_ctx = GenesisContext::new(
-            network.chain_id.id,
-            genesis_config.timestamp,
-            genesis_config.sequencer_account,
-        );
+        let genesis_ctx =
+            GenesisContext::new(network.chain_id.id, genesis_config.sequencer_account);
+        let moveos_genesis_ctx = MoveosGenesisContext::new(genesis_config.timestamp);
         let bitcoin_genesis_ctx = BitcoinGenesisContext::new(
             genesis_config.bitcoin_network,
             genesis_config.bitcoin_block_height,
@@ -187,6 +186,7 @@ impl RoochGenesis {
         genesis_moveos_tx.ctx.add(genesis_ctx.clone())?;
         genesis_moveos_tx.ctx.add(bitcoin_genesis_ctx.clone())?;
         genesis_moveos_tx.ctx.add(gas_config.clone())?;
+        genesis_moveos_tx.ctx.add(moveos_genesis_ctx.clone())?;
 
         let vm_config = MoveOSConfig::default();
 
@@ -299,15 +299,15 @@ impl RoochGenesis {
 
         // Save the genesis txs to sequencer
         let genesis_tx_order: u64 = 0;
-        let genesis_context = self
+        let moveos_genesis_context = self
             .genesis_moveos_tx()
             .ctx
-            .get::<GenesisContext>()?
-            .expect("Genesis context should exist");
+            .get::<MoveosGenesisContext>()?
+            .expect("Moveos Genesis context should exist");
         let tx_ledger_data = LedgerTxData::L2Tx(self.genesis_tx());
         let ledger_tx = LedgerTransaction::build_ledger_transaction(
             tx_ledger_data,
-            genesis_context.timestamp,
+            moveos_genesis_context.timestamp,
             genesis_tx_order,
             vec![],
         );
@@ -353,6 +353,7 @@ impl RoochGenesis {
                 &mut indexer_field_state_changes,
                 object_id,
                 object_change,
+                ledger_tx.sequence_info.tx_timestamp,
                 &resolver,
             )?;
         }

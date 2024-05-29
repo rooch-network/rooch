@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #[test_only]
-module rooch_framework::timestamp_test{
+module moveos_std::timestamp_test{
 
-    use rooch_framework::timestamp;
+    use moveos_std::timestamp;
     
     #[test]
     fun test_timestamp(){
-        rooch_framework::genesis::init_for_test();
+        moveos_std::genesis::init_for_test();
         {
             let timestamp = timestamp::timestamp();
             assert!(timestamp::milliseconds(timestamp) == 0, 1);

@@ -12,7 +12,7 @@ module rooch_framework::session_key {
     use moveos_std::features;
     use rooch_framework::auth_validator;
     use rooch_framework::native_validator;
-    use rooch_framework::timestamp;
+    use moveos_std::timestamp;
 
     friend rooch_framework::transaction_validator;
 

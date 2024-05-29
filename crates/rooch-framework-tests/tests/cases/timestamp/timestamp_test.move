@@ -4,7 +4,7 @@
 //# run --signers test
 script {
     fun main() {
-        let object_id = moveos_std::object::named_object_id<rooch_framework::timestamp::Timestamp>();
+        let object_id = moveos_std::object::named_object_id<moveos_std::timestamp::Timestamp>();
         std::debug::print(&object_id);
     }
 }
@@ -13,7 +13,7 @@ script {
 //# run --signers test --args object:0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3
 script {
     use moveos_std::object::{Self, Object};
-    use rooch_framework::timestamp::{Self, Timestamp};
+    use moveos_std::timestamp::{Self, Timestamp};
 
     fun main(timestamp_obj: &Object<Timestamp>) {
         let timestamp = object::borrow(timestamp_obj);
@@ -26,7 +26,7 @@ script {
 //# run --signers test
 script {
     
-    use rooch_framework::timestamp;
+    use moveos_std::timestamp;
 
     fun main() {
         let now_seconds = timestamp::now_seconds();
@@ -38,7 +38,7 @@ script {
 //# run --signers test
 script {
     
-    use rooch_framework::timestamp;
+    use moveos_std::timestamp;
 
     fun main() {
         let seconds = 100;

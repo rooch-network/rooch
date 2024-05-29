@@ -23,7 +23,6 @@ pub mod genesis;
 pub mod native_validator;
 pub mod onchain_config;
 pub mod session_key;
-pub mod timestamp;
 pub mod transaction_validator;
 pub mod transfer;
 

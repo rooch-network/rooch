@@ -381,6 +381,8 @@ fn create_genesis_utxostore_object() -> Result<ObjectEntity<BitcoinUTXOStore>> {
         SHARED_OBJECT_FLAG_MASK,
         *GENESIS_STATE_ROOT,
         0,
+        0,
+        0,
         utxostore_object,
     );
     Ok(utxostore_object)
@@ -393,6 +395,8 @@ fn create_genesis_address_mapping_object() -> Result<ObjectEntity<TablePlacehold
         SYSTEM_OWNER_ADDRESS,
         0u8,
         *GENESIS_STATE_ROOT,
+        0,
+        0,
         0,
         TablePlaceholder {
             _placeholder: false,
@@ -408,6 +412,8 @@ fn create_genesis_reverse_address_mapping_object() -> Result<ObjectEntity<TableP
         SYSTEM_OWNER_ADDRESS,
         0u8,
         *GENESIS_STATE_ROOT,
+        0,
+        0,
         0,
         TablePlaceholder {
             _placeholder: false,
@@ -513,7 +519,7 @@ fn gen_utxo_update(
     );
     let out_point = types::OutPoint::new(txid, utxo_data.vout);
     let utxo_id = utxo::derive_utxo_id(&out_point);
-    let utxo_object = ObjectEntity::new(utxo_id, address, 0u8, *GENESIS_STATE_ROOT, 0, utxo);
+    let utxo_object = ObjectEntity::new(utxo_id, address, 0u8, *GENESIS_STATE_ROOT, 0, 0, 0, utxo);
     Ok((
         utxo_object.id.to_key(),
         utxo_object.into_state(),

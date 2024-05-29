@@ -1,16 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
-use anyhow::Result;
-use move_core_types::{
-    account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
-};
-use moveos_types::{
+use crate::addresses::MOVEOS_STD_ADDRESS;
+use crate::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     moveos_std::tx_context::TxContext,
     state::{MoveStructState, MoveStructType},
     transaction::{FunctionCall, MoveAction},
+};
+use anyhow::Result;
+use move_core_types::{
+    account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
 };
 use serde::{Deserialize, Serialize};
 
@@ -22,7 +22,7 @@ pub struct Timestamp {
 }
 
 impl MoveStructType for Timestamp {
-    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("Timestamp");
 }
@@ -93,7 +93,7 @@ impl<'a> TimestampModule<'a> {
 
 impl<'a> ModuleBinding<'a> for TimestampModule<'a> {
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const MODULE_ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const MODULE_ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
 
     fn new(caller: &'a impl MoveFunctionCaller) -> Self
     where

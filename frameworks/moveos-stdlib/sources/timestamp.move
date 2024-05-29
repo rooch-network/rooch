@@ -6,14 +6,13 @@
 /// * genesis: to initialize the timestamp
 /// * L1 block: update the timestamp via L1s block header timestamp
 /// * L2 transactions: update the timestamp via L2 transaction's timestamp 
-module rooch_framework::timestamp {
+module moveos_std::timestamp {
 
     use moveos_std::object;
     use moveos_std::signer;
     use moveos_std::core_addresses;
 
-    friend rooch_framework::genesis;
-    friend rooch_framework::transaction_validator;
+    friend moveos_std::genesis;
 
     /// A object holding the current Unix time in milliseconds
     struct Timestamp has key {
@@ -30,7 +29,7 @@ module rooch_framework::timestamp {
     public(friend) fun genesis_init(_genesis_account: &signer, initial_time_milliseconds: u64) {
         let timestamp = Timestamp { milliseconds: initial_time_milliseconds };
         let obj = object::new_named_object(timestamp);
-        object::transfer_extend(obj, @rooch_framework);
+        object::transfer_extend(obj, @moveos_std);
     }
 
     /// Updates the global clock time, if the new time is smaller than the current time, aborts.
