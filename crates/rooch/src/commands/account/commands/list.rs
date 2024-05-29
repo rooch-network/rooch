@@ -68,7 +68,7 @@ impl CommandAction<()> for ListCommand {
         };
 
         let accounts: Vec<LocalAccount> = context.keystore.get_accounts(password)?;
-        let accont_views: Vec<AccountView> = accounts
+        let account_views: Vec<AccountView> = accounts
             .into_iter()
             .map(|account: LocalAccount| {
                 let active = Some(account.address) == active_address;
@@ -80,7 +80,7 @@ impl CommandAction<()> for ListCommand {
             .collect();
 
         if self.json {
-            println!("{}", serde_json::to_string_pretty(&accont_views).unwrap());
+            println!("{}", serde_json::to_string_pretty(&account_views).unwrap());
         } else {
             //TODO optimize the output format
             println!(
@@ -94,7 +94,7 @@ impl CommandAction<()> for ListCommand {
             );
             println!("{}", ["-"; 68].join(""));
 
-            for account in accont_views {
+            for account in account_views {
                 println!(
                     "{:^66} | {:^66} | {:^48} | {:^48} | {:^10} | {:^10}",
                     account.local_account.address,

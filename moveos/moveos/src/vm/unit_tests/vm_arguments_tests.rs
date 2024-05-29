@@ -869,7 +869,7 @@ fn call_missing_item() {
     let module = empty_module();
     let id = &module.self_id();
     let function_name = IdentStr::new("foo").unwrap();
-    // mising module
+    // missing module
     let moveos_vm = MoveOSVM::new(vec![], VMConfig::default()).unwrap();
     let mut remote_view = RemoteStore::new();
     let ctx = TxContext::random_for_testing_only();
