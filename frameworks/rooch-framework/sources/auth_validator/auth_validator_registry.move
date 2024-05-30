@@ -47,8 +47,7 @@ module rooch_framework::auth_validator_registry {
     public(friend) fun register_internal<ValidatorType: store>() : u64{
         let type_info = type_info::type_of<ValidatorType>();
         let module_address = type_info::account_address(&type_info);
-        //TODO consider change type_info::module_name to ascii::String.
-        let module_name = std::ascii::string(type_info::module_name(&type_info));
+        let module_name = type_info::module_name(&type_info);
 
         let registry = account::borrow_mut_resource<ValidatorRegistry>(@rooch_framework);
         let id = registry.validator_num;

@@ -6,11 +6,10 @@ use crate::authentication_key::AuthenticationKey;
 use anyhow::Result;
 use move_core_types::value::MoveValue;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
-use moveos_types::move_std::string::MoveString;
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
-    move_std::ascii::MoveAsciiString,
     move_std::option::MoveOption,
+    move_std::string::MoveString,
     moveos_std::tx_context::TxContext,
     serde::Readable,
     state::{MoveState, MoveStructState, MoveStructType},
@@ -28,8 +27,8 @@ pub const MODULE_NAME: &IdentStr = ident_str!("session_key");
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub struct SessionScope {
     pub module_address: AccountAddress,
-    pub module_name: MoveAsciiString,
-    pub function_name: MoveAsciiString,
+    pub module_name: MoveString,
+    pub function_name: MoveString,
 }
 
 impl SessionScope {
@@ -38,8 +37,8 @@ impl SessionScope {
         module_name: &str,
         function_name: &str,
     ) -> Result<Self> {
-        let module_name_value = MoveAsciiString::from_str(module_name)?;
-        let function_name_value = MoveAsciiString::from_str(function_name)?;
+        let module_name_value = MoveString::from_str(module_name)?;
+        let function_name_value = MoveString::from_str(function_name)?;
         Ok(Self {
             module_address,
             module_name: module_name_value,
@@ -47,7 +46,7 @@ impl SessionScope {
         })
     }
 
-    fn is_asterisk(s: &MoveAsciiString) -> bool {
+    fn is_asterisk(s: &MoveString) -> bool {
         s.as_bytes() == b"*"
     }
 
@@ -81,8 +80,8 @@ impl MoveStructState for SessionScope {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
             move_core_types::value::MoveTypeLayout::Address,
-            MoveAsciiString::type_layout(),
-            MoveAsciiString::type_layout(),
+            MoveString::type_layout(),
+            MoveString::type_layout(),
         ])
     }
 }
@@ -123,7 +122,7 @@ pub struct SessionKey {
     #[serde(default)]
     pub app_name: MoveString,
     #[serde(default)]
-    pub app_url: MoveAsciiString,
+    pub app_url: MoveString,
     #[serde_as(as = "Readable<Hex, _>")]
     pub authentication_key: Vec<u8>,
     #[serde_as(as = "Vec<Readable<DisplayFromStr, _>>")]
@@ -226,7 +225,7 @@ impl<'a> SessionKeyModule<'a> {
 
     pub fn create_session_key_action(
         app_name: MoveString,
-        app_url: MoveAsciiString,
+        app_url: MoveString,
         authentication_key: Vec<u8>,
         scope: SessionScope,
         max_inactive_interval: u64,
@@ -266,7 +265,7 @@ mod tests {
     use super::SessionScope;
     use move_core_types::{account_address::AccountAddress, ident_str, language_storage::ModuleId};
     use moveos_types::{
-        move_std::ascii::MoveAsciiString, move_types::FunctionId, transaction::FunctionCall,
+        move_std::string::MoveString, move_types::FunctionId, transaction::FunctionCall,
     };
 
     fn do_test_scope_match(scope: &SessionScope, function: &FunctionCall, expect: bool) {
@@ -283,8 +282,8 @@ mod tests {
     fn test_scope_match() {
         let session_scope = SessionScope {
             module_address: AccountAddress::ONE,
-            module_name: MoveAsciiString::from_str("test").unwrap(),
-            function_name: MoveAsciiString::from_str("test").unwrap(),
+            module_name: MoveString::from_str("test").unwrap(),
+            function_name: MoveString::from_str("test").unwrap(),
         };
         let cases = vec![
             (
@@ -341,8 +340,8 @@ mod tests {
     fn test_check_scope_match_asterisk() {
         let session_scope = SessionScope {
             module_address: AccountAddress::ONE,
-            module_name: MoveAsciiString::from_str("*").unwrap(),
-            function_name: MoveAsciiString::from_str("*").unwrap(),
+            module_name: MoveString::from_str("*").unwrap(),
+            function_name: MoveString::from_str("*").unwrap(),
         };
         let cases = vec![
             (

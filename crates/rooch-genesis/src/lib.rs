@@ -11,7 +11,7 @@ use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos_store::{config_store::ConfigDBStore, MoveOSStore};
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
-use moveos_types::move_std::ascii::MoveAsciiString;
+use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::gas_schedule::{GasEntry, GasSchedule, GasScheduleConfig};
 use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
 use moveos_types::state_resolver::RootObjectResolver;
@@ -73,8 +73,7 @@ impl FrameworksGasParameters {
             entries: entries
                 .into_iter()
                 .map(|(key, val)| GasEntry {
-                    key: MoveAsciiString::from_str(key.as_str())
-                        .expect("GasEntry key must be ascii"),
+                    key: MoveString::from_str(key.as_str()).expect("GasEntry key must be ascii"),
                     val,
                 })
                 .collect(),

@@ -4,7 +4,7 @@
 module moveos_std::account {
    use std::signer;
    use moveos_std::core_addresses;
-   use moveos_std::type_table::{key};
+   use moveos_std::type_table::key;
    use moveos_std::object::{Self, ObjectID, Object};
 
    /// Account is part of the StorageAbstraction
@@ -163,12 +163,12 @@ module moveos_std::account {
 
    public fun account_move_resource_to<T: key>(self: &mut Object<Account>, resource: T){
       assert!(!object::contains_field(self, key<T>()), ErrorResourceAlreadyExists);
-      object::add_field_internal<Account, std::ascii::String, T>(object::id(self), key<T>(), resource)
+      object::add_field_internal<Account, std::string::String, T>(object::id(self), key<T>(), resource)
    }
 
    public fun account_move_resource_from<T: key>(self: &mut Object<Account>): T {
       assert!(object::contains_field(self, key<T>()), ErrorResourceNotExists);
-      object::remove_field_internal<Account, std::ascii::String, T>(object::id(self), key<T>())
+      object::remove_field_internal<Account, std::string::String, T>(object::id(self), key<T>())
    }
 
    public fun account_exists_resource<T: key>(self: &Object<Account>) : bool {

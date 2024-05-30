@@ -21,8 +21,8 @@
 -  [Function `function_meta_function_name`](#0x2_tx_meta_function_meta_function_name)
 
 
-<pre><code><b>use</b> <a href="">0x1::ascii</a>;
-<b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x1::string</a>;
 </code></pre>
 
 
@@ -189,7 +189,7 @@ The FunctionCall Meta data
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta_function_meta_module_name">function_meta_module_name</a>(function_meta: &<a href="tx_meta.md#0x2_tx_meta_FunctionCallMeta">tx_meta::FunctionCallMeta</a>): &<a href="_String">ascii::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta_function_meta_module_name">function_meta_module_name</a>(function_meta: &<a href="tx_meta.md#0x2_tx_meta_FunctionCallMeta">tx_meta::FunctionCallMeta</a>): &<a href="_String">string::String</a>
 </code></pre>
 
 
@@ -200,5 +200,5 @@ The FunctionCall Meta data
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta_function_meta_function_name">function_meta_function_name</a>(function_meta: &<a href="tx_meta.md#0x2_tx_meta_FunctionCallMeta">tx_meta::FunctionCallMeta</a>): &<a href="_String">ascii::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta_function_meta_function_name">function_meta_function_name</a>(function_meta: &<a href="tx_meta.md#0x2_tx_meta_FunctionCallMeta">tx_meta::FunctionCallMeta</a>): &<a href="_String">string::String</a>
 </code></pre>

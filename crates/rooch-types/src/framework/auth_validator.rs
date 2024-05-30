@@ -17,7 +17,7 @@ use moveos_types::function_return_value::DecodedFunctionResult;
 use moveos_types::move_std::option::MoveOption;
 use moveos_types::{
     module_binding::MoveFunctionCaller,
-    move_std::ascii::MoveAsciiString,
+    move_std::string::MoveString,
     move_types::FunctionId,
     moveos_std::tx_context::TxContext,
     state::{MoveStructState, MoveStructType},
@@ -86,20 +86,17 @@ impl BuiltinAuthValidator {
             BuiltinAuthValidator::Rooch => AuthValidator {
                 id: self.flag().into(),
                 module_address: ROOCH_FRAMEWORK_ADDRESS,
-                module_name: MoveAsciiString::from_str("native_validator")
-                    .expect("Should be valid"),
+                module_name: MoveString::from_str("native_validator").expect("Should be valid"),
             },
             BuiltinAuthValidator::Ethereum => AuthValidator {
                 id: self.flag().into(),
                 module_address: ROOCH_FRAMEWORK_ADDRESS,
-                module_name: MoveAsciiString::from_str("ethereum_validator")
-                    .expect("Should be valid"),
+                module_name: MoveString::from_str("ethereum_validator").expect("Should be valid"),
             },
             BuiltinAuthValidator::Bitcoin => AuthValidator {
                 id: self.flag().into(),
                 module_address: ROOCH_FRAMEWORK_ADDRESS,
-                module_name: MoveAsciiString::from_str("bitcoin_validator")
-                    .expect("Should be valid"),
+                module_name: MoveString::from_str("bitcoin_validator").expect("Should be valid"),
             },
         }
     }
@@ -109,7 +106,7 @@ impl BuiltinAuthValidator {
 pub struct AuthValidator {
     pub id: u64,
     pub module_address: AccountAddress,
-    pub module_name: MoveAsciiString,
+    pub module_name: MoveString,
 }
 
 impl MoveStructType for AuthValidator {

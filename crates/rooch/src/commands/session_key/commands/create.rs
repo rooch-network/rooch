@@ -4,7 +4,6 @@
 use crate::cli_types::{TransactionOptions, WalletContextOptions};
 use clap::Parser;
 use moveos_types::module_binding::MoveFunctionCaller;
-use moveos_types::move_std::ascii::MoveAsciiString;
 use moveos_types::move_std::string::MoveString;
 use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
@@ -21,7 +20,7 @@ pub struct CreateCommand {
     #[clap(long)]
     pub app_name: MoveString,
     #[clap(long)]
-    pub app_url: MoveAsciiString,
+    pub app_url: MoveString,
 
     /// The scope of the session key, format: address::module_name::function_name.
     /// The module_name and function_name must be valid Move identifiers or '*'. `*` means any module or function.

@@ -21,6 +21,12 @@ pub struct MoveString {
     bytes: Vec<u8>,
 }
 
+impl MoveString {
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+}
+
 impl std::fmt::Debug for MoveString {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self)

@@ -10,7 +10,6 @@ use move_core_types::{
     u256,
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
-use moveos_types::move_std::string::MoveString;
 use moveos_types::move_types::parse_module_id;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::type_info::TypeInfo;
@@ -21,7 +20,10 @@ use moveos_types::{
     moveos_std::object::AnnotatedObject,
     transaction::{FunctionCall, ScriptCall},
 };
-use moveos_types::{move_std::ascii::MoveAsciiString, state::MoveStructType};
+use moveos_types::{
+    move_std::{ascii::MoveAsciiString, string::MoveString},
+    state::MoveStructType,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
