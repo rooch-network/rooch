@@ -38,6 +38,7 @@ EOF
   esac
 done
 
+export CARGO_BUILD_JOBS=8
 export RUST_LOG=info 
 export RUST_BACKTRACE=1
 
