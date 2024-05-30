@@ -917,10 +917,10 @@ where
 {
     match type_arg {
         SignatureToken::Struct(struct_handle_idx) => {
-            load_data_structs(db, view, struct_handle_idx.clone(), verified_modules)
+            load_data_structs(db, view, *struct_handle_idx, verified_modules)
         }
         SignatureToken::StructInstantiation(struct_handle_idx, _) => {
-            load_data_structs(db, view, struct_handle_idx.clone(), verified_modules)
+            load_data_structs(db, view, *struct_handle_idx, verified_modules)
         }
         _ => Ok(BTreeMap::new()),
     }
@@ -938,12 +938,8 @@ where
     let mut data_structs_map: BTreeMap<String, bool> = BTreeMap::new();
 
     // load module from struct handle
-    let compiled_module_opt = load_compiled_module_from_struct_handle(
-        db,
-        &view,
-        struct_handle_idx.clone(),
-        verified_modules,
-    );
+    let compiled_module_opt =
+        load_compiled_module_from_struct_handle(db, view, struct_handle_idx, verified_modules);
 
     if let Some(callee_module) = compiled_module_opt {
         if let Err(err) = check_metadata_format(&callee_module) {
@@ -1010,7 +1006,7 @@ fn check_field_type(
                 return generate_vm_error(
                     ErrorCode::INVALID_DATA_STRUCT,
                     error_msg,
-                    Some(fhandle_idx.clone()),
+                    Some(fhandle_idx),
                     caller_module,
                 );
             }
@@ -1040,19 +1036,19 @@ fn check_field_type(
                             "The type parameter when calling function {} is missed",
                             full_path_func_name
                         );
-                        return generate_vm_error(
+                        generate_vm_error(
                             ErrorCode::INVALID_DATA_STRUCT_OPTION_WITHOUT_TYPE_PARAMETER,
                             error_msg,
-                            Some(fhandle_idx.clone()),
+                            Some(fhandle_idx),
                             caller_module,
-                        );
+                        )
                     }
                     Some(first_type_parameter) => check_field_type(
                         first_type_parameter,
-                        &view,
-                        &full_path_func_name,
+                        view,
+                        full_path_func_name,
                         data_structs_map.clone(),
-                        fhandle_idx.clone(),
+                        fhandle_idx,
                         func.clone(),
                         caller_module,
                     ),
@@ -1062,12 +1058,12 @@ fn check_field_type(
                     "The type parameter when calling function {} is now allowed",
                     full_path_func_name
                 );
-                return generate_vm_error(
+                generate_vm_error(
                     ErrorCode::INVALID_DATA_STRUCT_WITH_TYPE_PARAMETER,
                     error_msg,
-                    Some(fhandle_idx.clone()),
+                    Some(fhandle_idx),
                     caller_module,
-                );
+                )
             }
         }
         SignatureToken::Address => Ok(true),
@@ -1083,12 +1079,12 @@ fn check_field_type(
                 "The type parameter when calling function {} is now allowed",
                 full_path_func_name
             );
-            return generate_vm_error(
+            generate_vm_error(
                 ErrorCode::INVALID_DATA_STRUCT_TYPE,
                 error_msg,
-                Some(fhandle_idx.clone()),
+                Some(fhandle_idx),
                 caller_module,
-            );
+            )
         }
     }
 }
