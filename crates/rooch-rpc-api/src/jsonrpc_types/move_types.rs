@@ -43,7 +43,7 @@ pub type AccountAddressView = StrView<AccountAddress>;
 impl std::fmt::Display for AccountAddressView {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         //Ensure append `0x` before the address, and output full address
-        //The Display implemention of AccountAddress has not `0x` prefix
+        //The Display implementation of AccountAddress has not `0x` prefix
         write!(f, "{:#x}", self.0)
     }
 }
@@ -51,7 +51,7 @@ impl std::fmt::Display for AccountAddressView {
 impl FromStr for AccountAddressView {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // AccountAddress::from_str suppport both 0xADDRESS and ADDRESS
+        // AccountAddress::from_str support both 0xADDRESS and ADDRESS
         Ok(StrView(AccountAddress::from_str(s)?))
     }
 }

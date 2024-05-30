@@ -200,7 +200,7 @@ pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<S
     }
 
     let sequencer_keypair = server_opt.sequencer_keypair.unwrap();
-    let sequencer_account = RoochAddress::from(&sequencer_keypair.public());
+    let sequencer_account = sequencer_keypair.public().rooch_address()?;
 
     let data_import_flag = opt.data_import_flag;
     if let RoochChainID::Builtin(builtin_chain_id) = chain_id {
@@ -257,7 +257,7 @@ pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<S
 
     // Init proposer
     let proposer_keypair = server_opt.proposer_keypair.unwrap();
-    let proposer_account: RoochAddress = (&proposer_keypair.public()).into();
+    let proposer_account: RoochAddress = proposer_keypair.public().rooch_address()?;
     info!("RPC Server proposer address: {:?}", proposer_account);
     let proposer = ProposerActor::new(proposer_keypair, da_proxy)
         .into_actor(Some("Proposer"), &actor_system)

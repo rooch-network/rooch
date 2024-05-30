@@ -37,7 +37,7 @@ impl RelayerActor {
         ethereum_config: Option<EthereumRelayerConfig>,
         bitcoin_config: Option<BitcoinRelayerConfig>,
     ) -> Result<Self> {
-        let relayer_address = relayer_key.public().address().into();
+        let relayer_address = relayer_key.public().rooch_address()?.into();
         let mut relayers: Vec<Box<dyn Relayer>> = vec![];
         if let Some(ethereum_config) = ethereum_config {
             let eth_relayer = EthereumRelayer::new(ethereum_config)?;

@@ -656,8 +656,8 @@ impl ObjectRuntime {
             .map_err(|e| e.finish(Location::Undefined))
     }
 
-    pub fn load_arguments(&mut self, resovled_args: &[ResolvedArg]) -> VMResult<()> {
-        for resolved_arg in resovled_args {
+    pub fn load_arguments(&mut self, resolved_args: &[ResolvedArg]) -> VMResult<()> {
+        for resolved_arg in resolved_args {
             if let ResolvedArg::Object(object_arg) = resolved_arg {
                 let object_id = object_arg.object_id();
                 self.load_object_reference(object_id)?;

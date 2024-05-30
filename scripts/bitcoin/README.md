@@ -8,14 +8,16 @@ This directory contains scripts for setting up a local development environment f
 
 ## Setup
 
-1. Run `./run_local_node_docker.sh` or `./run_local_node_podman.sh` to start a local Bitcoin Core node
+1. Run `./node/run_local_node_docker.sh` or `./node/run_local_node_podman.sh` to start a local Bitcoin Core node
 2. Run `source ./cmd_alias.sh` to set up aliases for running `bitcoin-cli` and `ord` commands
 
 ## Development on rooch
 
-1. Run `rooch server start --btc-rpc-url http://127.0.0.1:18443 --btc-rpc-username roochuser --btc-rpc-password roochpass --btc-start-block-height 0`
-2. Run `rooch rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x4::utxo::UTXO"},null, "2", true]'` to query the UTXO set
-3. Run `rooch rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x4::ord::Inscription"},null, "2", true]'` to query the Inscription set
+1. Run `rooch server start --btc-rpc-url http://127.0.0.1:18443 --btc-rpc-username roochuser --btc-rpc-password roochpass`
+2. Run `rooch account list --json` to get the `bitcoin_address`
+3. Run `bitcoin-cli generatetoaddress 101 <bitcoin_address>` to generate 101 blocks to the address
+2. Run `rooch rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x4::utxo::UTXO"},  null, "2", {"descending": true,"showDisplay":false}]'` to query the UTXO set
+3. Run `rooch rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x4::ord::Inscription"},  null, "2", {"descending": true,"showDisplay":false}]'` to query the Inscription set
 
 ## Usage
 
