@@ -44,7 +44,7 @@ use rooch_rpc_api::{
     api::{MAX_RESULT_LIMIT, MAX_RESULT_LIMIT_USIZE},
     jsonrpc_types::BytesView,
 };
-use rooch_types::indexer::event_filter::IndexerEventID;
+use rooch_types::indexer::event::IndexerEventID;
 use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::{address::MultiChainAddress, multichain_id::RoochMultiChainID};
@@ -135,7 +135,7 @@ impl RoochAPIServer for RoochServer {
         info!("send_raw_transaction tx: {:?}", tx);
 
         let hash = tx.tx_hash();
-        self.rpc_service.quene_tx(tx).await?;
+        self.rpc_service.queue_tx(tx).await?;
         Ok(hash.into())
     }
 
@@ -505,23 +505,28 @@ impl RoochAPIServer for RoochServer {
         let query_option = query_option.unwrap_or_default();
         let descending_order = query_option.descending;
 
-        let mut data = self
+        let txs = self
             .rpc_service
             .query_transactions(filter.into(), cursor, limit_of + 1, descending_order)
             .await?;
+
+        let mut data = self
+            .aggregate_service
+            .build_transaction_with_infos(txs)
+            .await?
+            .into_iter()
+            .map(TransactionWithInfoView::from)
+            .collect::<Vec<_>>();
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
         let next_cursor = data
             .last()
             .cloned()
-            .map_or(cursor, |t| Some(t.transaction.sequence_info.tx_order));
+            .map_or(cursor, |t| Some(t.transaction.sequence_info.tx_order.0));
 
         Ok(TransactionWithInfoPageView {
-            data: data
-                .into_iter()
-                .map(TransactionWithInfoView::from)
-                .collect::<Vec<_>>(),
+            data,
             next_cursor,
             has_next_page,
         })
@@ -626,7 +631,11 @@ impl RoochAPIServer for RoochServer {
                             !valid_display_field_views.is_empty(),
                             "display fields should not be empty"
                         );
-                        (Some(s), valid_display_field_views.pop().unwrap())
+                        let annotated_obj = s.into_annotated_object().expect("should be object");
+                        (
+                            Some(annotated_obj),
+                            valid_display_field_views.pop().unwrap(),
+                        )
                     }
                     None => (None, None),
                 })
@@ -634,7 +643,14 @@ impl RoochAPIServer for RoochServer {
         } else {
             annotated_states
                 .into_iter()
-                .map(|s| (s, None))
+                .map(|s| {
+                    let obj = s.map(|annotated_s| {
+                        annotated_s
+                            .into_annotated_object()
+                            .expect("should be object")
+                    });
+                    (obj, None)
+                })
                 .collect::<Vec<_>>()
         };
 

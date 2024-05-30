@@ -25,7 +25,7 @@ Feature: Rooch CLI integration tests
       Given a server for account
 
       Then cmd: "account create"
-      Then cmd: "account list"
+      Then cmd: "account list --json"
       #Then cmd: "account nullify --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce"
 
       Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::GasCoin"]'"
@@ -114,23 +114,23 @@ Feature: Rooch CLI integration tests
     Then sleep: "5"
 
     # genesis tx does not write indexer
-    Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":3}}, null, "1", {"descending": true,"showDisplay":false}]'"
-    Then assert: "{{$.rpc[-1].data[0].transaction.sequence_info.tx_order}} == 2"
-    Then assert: "{{$.rpc[-1].next_cursor}} == 2"
-    Then assert: "{{$.rpc[-1].has_next_page}} == true"
-    Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":3}}, "2", "1", {"descending": true,"showDisplay":false}]'"
+    Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, null, "1", {"descending": true,"showDisplay":false}]'"
     Then assert: "{{$.rpc[-1].data[0].transaction.sequence_info.tx_order}} == 1"
     Then assert: "{{$.rpc[-1].next_cursor}} == 1"
+    Then assert: "{{$.rpc[-1].has_next_page}} == true"
+    Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, "1", "1", {"descending": true,"showDisplay":false}]'"
+    Then assert: "{{$.rpc[-1].data[0].transaction.sequence_info.tx_order}} == 0"
+    Then assert: "{{$.rpc[-1].next_cursor}} == 0"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
-    Then cmd: "rpc request --method rooch_queryEvents --params '[{"tx_order_range":{"from_order":0, "to_order":2}}, null, "10", {"descending": true,"showDisplay":false}]'"
+    Then cmd: "rpc request --method rooch_queryEvents --params '[{"tx_order_range":{"from_order":0, "to_order":2}}, null, "20", {"descending": true,"showDisplay":false}]'"
     Then assert: "{{$.rpc[-1].data[0].indexer_event_id.tx_order}} == 1"
-    Then assert: "{{$.rpc[-1].next_cursor.tx_order}} == 1"
+    Then assert: "{{$.rpc[-1].next_cursor.tx_order}} == 0"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
     # Sync states
     Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x3::coin::CoinInfo"}, null, "10", {"descending": true,"showDisplay":false}]'"
-    #Then assert: "{{$.rpc[-1].data[0].tx_order}} == 0"
-    Then assert: "{{$.rpc[-1].data[0].object_type}} == 0x3::coin::CoinInfo"
+    Then assert: "{{$.rpc[-1].data[0].tx_order}} == 1"
+    Then assert: "{{$.rpc[-1].data[0].object_type}} == 0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
     Then cmd: "rpc request --method rooch_queryFieldStates --params '[{"object_id":"{{$.address_mapping.default}}"}, null, "10", {"descending": true,"showDisplay":false}]'"
@@ -310,29 +310,23 @@ Feature: Rooch CLI integration tests
       Then stop the server
   
     @serial
-    Scenario: rooch bitcoin test
+    Scenario: rooch_bitcoin test
       # prepare servers
       Given a bitcoind server for rooch_bitcoin_test
-      Given a ord server for rooch_bitcoin_test
       Given a server for rooch_bitcoin_test
 
-      # init wallet
-      Then cmd ord: "wallet create"
-      Then cmd ord: "wallet receive"
-
+      Then cmd: "account list --json" 
+      
       # mint utxos
-      Then cmd bitcoin-cli: "generatetoaddress 101 {{$.wallet[-1].address}}"
-      Then sleep: "10" # wait ord sync and index
-      Then cmd ord: "wallet balance"
-      Then assert: "{{$.wallet[-1].total}} == 5000000000"
+      Then cmd bitcoin-cli: "generatetoaddress 101 {{$.account[-1][0].local_account.bitcoin_address}}"
+      Then sleep: "10" # wait rooch sync and index
 
-      # query utxos and inscriptions
-      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x4::utxo::UTXO"}, null, "2", {"descending": true,"showDisplay":false}]'"
-      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x4::ord::Inscription"}, null, "2", {"descending": true,"showDisplay":false}]'"
+      # query utxos
+      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type_with_owner":{"object_type":"0x4::utxo::UTXO","owner":"{{$.account[-1][0].local_account.address}}"}},null, null, null]'"
+      Then assert: "{{$.rpc[-1].data[0].owner}} == {{$.account[-1][0].local_account.address}}"
 
       # release servers
       Then stop the server
-      Then stop the ord server 
       Then stop the bitcoind server 
 
     @serial
@@ -347,7 +341,7 @@ Feature: Rooch CLI integration tests
 
       # create rooch account
       Then cmd: "account create"
-      Then cmd: "account list"
+      Then cmd: "account list --json"
 
       # init wallet
       Then cmd ord: "wallet create"

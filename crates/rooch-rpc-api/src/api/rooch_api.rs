@@ -16,7 +16,7 @@ use crate::jsonrpc_types::{
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 use rooch_open_rpc_macros::open_rpc;
-use rooch_types::indexer::event_filter::IndexerEventID;
+use rooch_types::indexer::event::IndexerEventID;
 use rooch_types::indexer::state::IndexerStateID;
 
 #[open_rpc(namespace = "rooch")]

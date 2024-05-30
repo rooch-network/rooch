@@ -190,7 +190,7 @@ pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<S
     //Init indexer store
     let mut indexer_config = IndexerConfig::default();
     indexer_config.merge_with_opt_with_init(opt, Arc::clone(&arc_base_config), true)?;
-    let (indexer_store, indexer_reader) = init_indexer(&indexer_config)?;
+    let (mut indexer_store, indexer_reader) = init_indexer(&indexer_config)?;
 
     // Check for key pairs
     if server_opt.sequencer_keypair.is_none() || server_opt.proposer_keypair.is_none() {
@@ -200,10 +200,9 @@ pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<S
     }
 
     let sequencer_keypair = server_opt.sequencer_keypair.unwrap();
-    let sequencer_account = RoochAddress::from(&sequencer_keypair.public());
+    let sequencer_account = sequencer_keypair.public().rooch_address()?;
 
     let data_import_flag = opt.data_import_flag;
-
     if let RoochChainID::Builtin(builtin_chain_id) = chain_id {
         let mut network: RoochNetwork = builtin_chain_id.into();
         let sequencer_account: AccountAddress = sequencer_account.into();
@@ -218,7 +217,7 @@ pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<S
         }
         let genesis = RoochGenesis::build(network)?;
         if root.is_genesis() {
-            root = genesis.init_genesis(&mut moveos_store, &mut rooch_store)?;
+            root = genesis.init_genesis(&mut moveos_store, &mut rooch_store, &mut indexer_store)?;
         } else {
             genesis.check_genesis(moveos_store.get_config_store())?;
         }
@@ -258,7 +257,7 @@ pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<S
 
     // Init proposer
     let proposer_keypair = server_opt.proposer_keypair.unwrap();
-    let proposer_account: RoochAddress = (&proposer_keypair.public()).into();
+    let proposer_account: RoochAddress = proposer_keypair.public().rooch_address()?;
     info!("RPC Server proposer address: {:?}", proposer_account);
     let proposer = ProposerActor::new(proposer_keypair, da_proxy)
         .into_actor(Some("Proposer"), &actor_system)

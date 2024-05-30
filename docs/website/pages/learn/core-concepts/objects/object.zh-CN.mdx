@@ -120,7 +120,7 @@ module moveos_std::object {
 
 #### 共享的(Shared)和冻结的(Frozen) Object
 
-`Object<T>` 有两种状态，一种是 `shared`，一种是 `frozen`。
+SystemOwnedObject `Object<T>` 有两种状态，一种是 `shared`，一种是 `frozen`。
 
 * `SharedObject`：任何人都可以直接获取到 `&mut Object<T>` 引用。
 * `FrozenObject`：任何人都无法获取到 `&mut Object<T>` 引用，包括 `T` 所在的模块。
@@ -179,6 +179,26 @@ module moveos_std::object {
 ```
 
 删除 Object 后会返回 Object 中封装的数据，只有 `T` 所在的模块才能调用该方法。
+
+综上所述，针对不同状态的 Object 的操作，不同的用户具有不同的权限。以下是合约开发者和普通用户对不同类型 Object，使用 `moveos_std::object` 提供的方法可以进行的操作：
+
+- 合约开发者
+
+| object  | owner             | value abilities | transfer | borrow mut | take value | remove |
+|---------|-------------------|-----------------|----------|------------|------------|--------|
+| shared  | SystemOwnedObject | not required    | ×        | √          | ×          | ×      |
+| frozen  | SystemOwnedObject | not required    | ×        | ×          | ×          | ×      |
+| public  | UserOwnedObject   | key, store      | √        | √          | √          | √      |
+| private | UserOwnedObject   | key             | √        | √          | √          | √      |
+
+- 普通用户
+
+| object  | owner             | value abilities | transfer | borrow mut | take value | remove |
+|---------|-------------------|-----------------|----------|------------|------------|--------|
+| shared  | SystemOwnedObject | not required    | ×        | √          | ×          | ×      |
+| frozen  | SystemOwnedObject | not required    | ×        | ×          | ×          | ×      |
+| public  | UserOwnedObject   | key, store      | √        | √          | √          | ×      |
+| private | UserOwnedObject   | key             | ×        | √          | ×          | ×      |
 
 ### Object RPC
 
@@ -247,15 +267,55 @@ https://dev-seed.rooch.network
 
 以上函数中，如果 `#[private_generics<T>]` 列为 `true`，表明只有 `T` 所在的模块才能调用。
 
-### Rooch Object, Sui Object, Aptos Object 的比较
+## Object 的 dynamic fields
 
-#### Sui Object 
+Rooch 为 object 提供了管理动态字段的能力。动态字段是指将 Resource 或者 Object 以 key, value 的形式储存在 Object 中。特别是，key 可以是异质的，即不受 key 类型的限制。更具体的说，Object 可以被当作 [Table](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/sources/table.move) 或 [Bag](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/sources/bag.move) 来使用。
+
+Rooch object 的提供了两种类型的动态字段：常规类型和Object类型。
+
+常规类型的动态字段是指任何具有 `store` ability 的类型存放在 object 下；Object 类型的动态字段是将子 Object 对象存放在 object 下。
+
+<Callout>
+注意：由于 Object 类型本身也具有 `store` ability，那把整个 `Obejct<T>` 作为一个普通的字段存放在 object 下和使用 Object 类型字段有什么区别？
+1. 如果通过 `add_object_field` 创建的子 object，是属于父 object 的子对象，与父 object 在同一个 SMT 子树下。这对于整个父 object 的状态迁移，查询等管理都很便捷。
+2. 如果在全局创建的 object，即使通过 `add_field` 放到 object 的动态字段中了，它实际上也是属于 global object，它的状态树处于 Root 根下。
+</Callout>
+
+### 常规类型动态字段相关方法列表
+
+| 方法 | 说明
+|---|---
+| `add_field<T: key, K: copy + drop, V: store>(obj: &mut Object<T>, key: K, val: V)` | 添加一个动态字段到对象。如果已经存在相同的键，则会中止。字段本身不会存储在对象中，并且不能从对象中发现。
+| `borrow_field<T: key, K: copy + drop, V: store>(obj: &Object<T>, key: K): &V` | 获取对象中键对应的值的不可变引用。如果没有对应的键，则会中止。
+| `borrow_field_with_default<T: key, K: copy + drop, V: store>(obj: &Object<T>, key: K, default: &V): &V` | 获取对象中键对应的值的不可变引用。如果没有对应的键，则返回默认值。
+| `borrow_mut_field<T: key, K: copy + drop, V: store>(obj: &mut Object<T>, key: K): &mut V` | 获取对象中键对应的值的可变引用。如果没有对应的键，则会中止。
+| `borrow_mut_field_with_default<T: key, K: copy + drop, V: store + drop>(obj: &mut Object<T>, key: K, default: V): &mut V` | 获取对象中键对应的值的可变引用。如果没有对应的键，则插入键值对（`key`, `default`），然后返回对应的值的可变引用。
+| `remove_field<T: key, K: copy + drop, V: store>(obj: &mut Object<T>, key: K): V` | 从对象中移除键对应的字段，并返回字段的值。如果没有对应的键，则会中止。
+| `contains_field<T: key, K: copy + drop>(obj: &Object<T>, key: K): bool` | 如果对象中存在键对应的字段，则返回`true`，否则返回`false`。
+| `contains_field_with_type<T: key, K: copy + drop, V: store>(obj: &Object<T>, key: K): bool` | 如果对象中存在键对应的字段，并且字段的值类型为`V`，则返回`true`，否则返回`false`。
+| `upsert_field<T: key, K: copy + drop, V: store + drop>(obj: &mut Object<T>, key: K, value: V)` | 如果对象中存在键对应的字段，则更新字段的值。如果没有对应的键，则插入键值对（`key`, `value`）。
+| `field_size<T: key>(obj: &Object<T>): u64` | 返回对象中字段的数量，即键值对的数量。
+
+### Object 类型动态字段相关方法列表
+
+| 方法 | 说明
+|---|---
+| `add_object_field<T: key, V: key>(obj: &mut Object<T>, v: V): Object<V>` | 向对象添加一个新的子对象字段，返回新添加的子对象。只有共享对象可以添加子对象字段。
+| `add_object_field_with_id<T: key, ID:drop, V: key>(obj: &mut Object<T>, id: ID, v: V): Object<V>` | 使用自定义ID向对象添加一个新的子对象字段，返回新添加的子对象。只有共享对象可以添加子对象字段。
+| `borrow_object_field<T: key, V: key>(obj: &Object<T>, key: ObjectID): &Object<V>` | 借用对象中指定子对象字段的不可变引用。如果子对象字段不存在，此操作将失败。
+| `borrow_mut_object_field<T: key, V: key>(obj: &mut Object<T>, key: ObjectID): &mut Object<V>` | 借用对象中指定子对象字段的可变引用。如果子对象字段不存在，此操作将失败。
+| `remove_object_field<T: key, V: key>(obj: &mut Object<T>, child: Object<V>): V` | 从对象中移除指定的子对象字段并返回其值。如果子对象字段不存在，此操作将失败。
+| `contains_object_field<T: key, V: key>(obj: &Object<T>, key: ObjectID): bool` | 检查对象中是否存在指定的子对象字段。
+
+## Rooch Object, Sui Object, Aptos Object 的比较
+
+### Sui Object 
 
 * Sui Object 是一种特殊的 `struct` 要求该 `struct` 必须拥有 `key` ability, 同时第一个字段必须是 `UID`，Object 是虚拟机和存储提供的，Move 中并不存在 Object 类型。Rooch 中的 Object 是在 Move 中定义的类型。
 * Sui Object 由外部系统索引，合约内并没有提供通过 ID 获取 Object 的方法，只能通过参数传递。Rooch 同时提供两种方式。
 * Sui Object 如果发生嵌套或者保存到其他容器中，Object 在全局 Object Storage 就不可见。而 Rooch 中的 Object 嵌套或者保存到其他容器中，Object 依然在全局 Object Storage 中可访问。
 
-#### Aptos Object 
+### Aptos Object 
 
 * Aptos Object 底层是一种特殊的账户，该账户的 `address` 即 `ObjectID`。
 * `Object<T>` 代表对 Object 的引用，可以 `copy`，`drop`，而 Rooch 中 `Object<T>` 只有一个实例，不可以 `copy`，`drop`。
@@ -265,7 +325,7 @@ https://dev-seed.rooch.network
 TODO: This part of this document needs to be improved
 </Callout>
 
-### 参考链接
+## 参考链接
 
 1. [Rooch Object API document](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/doc/object.md)
 2. [Rooch Object Source code](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/sources/object.move)

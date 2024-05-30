@@ -33,7 +33,7 @@ impl DurationHistogram {
     }
 
     pub fn observe_duration(&self, d: Duration) {
-        // Duration is full seconds + nanos elapsed from the presious full second
+        // Duration is full seconds + nanos elapsed from the previous full second
         let v = d.as_secs() as f64 + f64::from(d.subsec_nanos()) / 1e9;
         self.histogram.observe(v);
     }
@@ -132,7 +132,7 @@ impl OpMetrics {
     }
 
     pub fn observe_duration(&self, op: &str, d: Duration) {
-        // Duration is full seconds + nanos elapsed from the presious full second
+        // Duration is full seconds + nanos elapsed from the previous full second
         let v = d.as_secs() as f64 + f64::from(d.subsec_nanos()) / 1e9;
         self.duration_histograms.with_label_values(&[op]).observe(v);
     }

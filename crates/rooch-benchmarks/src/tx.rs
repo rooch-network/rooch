@@ -48,7 +48,6 @@ use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
 use rooch_test_transaction_builder::TestTransactionBuilder;
-use rooch_types::address::RoochAddress;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
@@ -78,25 +77,24 @@ pub async fn setup_service(
 
     // init storage
     let (mut moveos_store, mut rooch_store) = init_storage(datadir)?;
-    let (indexer_store, indexer_reader) = init_indexer(datadir)?;
+    let (mut indexer_store, indexer_reader) = init_indexer(datadir)?;
 
     // init keystore
     let rooch_account = keystore.addresses()[0];
     let rooch_key_pair = keystore
-        .get_key_pairs(&rooch_account, None)?
-        .pop()
+        .get_key_pair(&rooch_account, None)
         .expect("Key pair should have value");
 
     let sequencer_keypair = rooch_key_pair.copy();
     let proposer_keypair = rooch_key_pair.copy();
-    let sequencer_account = RoochAddress::from(&sequencer_keypair.public());
-    let proposer_account = RoochAddress::from(&proposer_keypair.public());
+    let sequencer_account = sequencer_keypair.public().rooch_address()?;
+    let proposer_account = proposer_keypair.public().rooch_address()?;
 
     // Init executor
     let mut network: RoochNetwork = BuiltinChainID::Dev.into();
     network.set_sequencer_account(rooch_account.into());
     let genesis: RoochGenesis = RoochGenesis::build(network)?;
-    let root = genesis.init_genesis(&mut moveos_store, &mut rooch_store)?;
+    let root = genesis.init_genesis(&mut moveos_store, &mut rooch_store, &mut indexer_store)?;
 
     let executor_actor =
         ExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store.clone())?;

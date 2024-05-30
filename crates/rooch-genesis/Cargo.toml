@@ -54,8 +54,8 @@ moveos-store = { workspace = true }
 
 rooch-framework = { workspace = true }
 rooch-types = { workspace = true }
-rooch-sequencer = { workspace = true }
 rooch-store = { workspace = true }
+rooch-indexer = { workspace = true }
 bitcoin-move = { workspace = true }
 
 framework-builder = { workspace = true }

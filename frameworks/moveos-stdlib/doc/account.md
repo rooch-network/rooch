@@ -6,7 +6,6 @@
 
 
 -  [Resource `Account`](#0x2_account_Account)
--  [Resource `ResourceAccount`](#0x2_account_ResourceAccount)
 -  [Struct `SignerCapability`](#0x2_account_SignerCapability)
 -  [Constants](#@Constants_0)
 -  [Function `create_account_by_system`](#0x2_account_create_account_by_system)
@@ -14,11 +13,9 @@
 -  [Function `sequence_number`](#0x2_account_sequence_number)
 -  [Function `increment_sequence_number_for_system`](#0x2_account_increment_sequence_number_for_system)
 -  [Function `signer_address`](#0x2_account_signer_address)
--  [Function `is_resource_account`](#0x2_account_is_resource_account)
 -  [Function `exists_at`](#0x2_account_exists_at)
 -  [Function `create_signer_for_system`](#0x2_account_create_signer_for_system)
 -  [Function `create_signer`](#0x2_account_create_signer)
--  [Function `create_resource_account`](#0x2_account_create_resource_account)
 -  [Function `create_signer_with_capability`](#0x2_account_create_signer_with_capability)
 -  [Function `get_signer_capability_address`](#0x2_account_get_signer_capability_address)
 -  [Function `account_object_id`](#0x2_account_account_object_id)
@@ -38,10 +35,7 @@
 
 
 <pre><code><b>use</b> <a href="">0x1::ascii</a>;
-<b>use</b> <a href="">0x1::hash</a>;
 <b>use</b> <a href="">0x1::signer</a>;
-<b>use</b> <a href="">0x1::vector</a>;
-<b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="core_addresses.md#0x2_core_addresses">0x2::core_addresses</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="type_table.md#0x2_type_table">0x2::type_table</a>;
@@ -58,18 +52,6 @@ It is also used to store the account's resources
 
 
 <pre><code><b>struct</b> <a href="account.md#0x2_account_Account">Account</a> <b>has</b> key
-</code></pre>
-
-
-
-<a name="0x2_account_ResourceAccount"></a>
-
-## Resource `ResourceAccount`
-
-ResourceAccount can only be stored under address, not in other structs.
-
-
-<pre><code><b>struct</b> <a href="account.md#0x2_account_ResourceAccount">ResourceAccount</a> <b>has</b> key
 </code></pre>
 
 
@@ -120,32 +102,12 @@ Account already exists
 
 
 
-<a name="0x2_account_ErrorAccountIsAlreadyResourceAccount"></a>
-
-Resource Account can't derive resource account
-
-
-<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorAccountIsAlreadyResourceAccount">ErrorAccountIsAlreadyResourceAccount</a>: u64 = 6;
-</code></pre>
-
-
-
-<a name="0x2_account_ErrorAccountNotExists"></a>
-
-Account does not exists
-
-
-<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorAccountNotExists">ErrorAccountNotExists</a>: u64 = 2;
-</code></pre>
-
-
-
 <a name="0x2_account_ErrorAddressReserved"></a>
 
 Cannot create account because address is reserved
 
 
-<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorAddressReserved">ErrorAddressReserved</a>: u64 = 4;
+<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorAddressReserved">ErrorAddressReserved</a>: u64 = 3;
 </code></pre>
 
 
@@ -155,17 +117,7 @@ Cannot create account because address is reserved
 Address to create is not a valid reserved address
 
 
-<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorNotValidSystemReservedAddress">ErrorNotValidSystemReservedAddress</a>: u64 = 7;
-</code></pre>
-
-
-
-<a name="0x2_account_ErrorResourceAccountAlreadyUsed"></a>
-
-An attempt to create a resource account on an account that has a committed transaction
-
-
-<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorResourceAccountAlreadyUsed">ErrorResourceAccountAlreadyUsed</a>: u64 = 5;
+<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorNotValidSystemReservedAddress">ErrorNotValidSystemReservedAddress</a>: u64 = 4;
 </code></pre>
 
 
@@ -175,7 +127,7 @@ An attempt to create a resource account on an account that has a committed trans
 The resource with the given type already exists
 
 
-<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorResourceAlreadyExists">ErrorResourceAlreadyExists</a>: u64 = 8;
+<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorResourceAlreadyExists">ErrorResourceAlreadyExists</a>: u64 = 5;
 </code></pre>
 
 
@@ -185,7 +137,7 @@ The resource with the given type already exists
 The resource with the given type not exists
 
 
-<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorResourceNotExists">ErrorResourceNotExists</a>: u64 = 9;
+<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorResourceNotExists">ErrorResourceNotExists</a>: u64 = 6;
 </code></pre>
 
 
@@ -195,21 +147,7 @@ The resource with the given type not exists
 Sequence number exceeds the maximum value for a u64
 
 
-<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorSequenceNumberTooBig">ErrorSequenceNumberTooBig</a>: u64 = 3;
-</code></pre>
-
-
-
-<a name="0x2_account_SCHEME_DERIVE_RESOURCE_ACCOUNT"></a>
-
-Scheme identifier used when hashing an account's address together with a seed to derive the address (not the
-authentication key) of a resource account. This is an abuse of the notion of a scheme identifier which, for now,
-serves to domain separate hashes used to derive resource account addresses from hashes used to derive
-authentication keys. Without such separation, an adversary could create (and get a signer for) a resource account
-whose address matches an existing address of a MultiEd25519 wallet.
-
-
-<pre><code><b>const</b> <a href="account.md#0x2_account_SCHEME_DERIVE_RESOURCE_ACCOUNT">SCHEME_DERIVE_RESOURCE_ACCOUNT</a>: u8 = 255;
+<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorSequenceNumberTooBig">ErrorSequenceNumberTooBig</a>: u64 = 2;
 </code></pre>
 
 
@@ -283,17 +221,6 @@ Return the current sequence number at <code>addr</code>
 
 
 
-<a name="0x2_account_is_resource_account"></a>
-
-## Function `is_resource_account`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_is_resource_account">is_resource_account</a>(addr: <b>address</b>): bool
-</code></pre>
-
-
-
 <a name="0x2_account_exists_at"></a>
 
 ## Function `exists_at`
@@ -323,20 +250,6 @@ Return the current sequence number at <code>addr</code>
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x2_account_create_signer">create_signer</a>(addr: <b>address</b>): <a href="">signer</a>
-</code></pre>
-
-
-
-<a name="0x2_account_create_resource_account"></a>
-
-## Function `create_resource_account`
-
-A resource account is used to manage resources independent of an account managed by a user.
-In Rooch a resource account is created based upon the sha3 256 of the source's address and additional seed data.
-A resource account can only be created once
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_resource_account">create_resource_account</a>(source: &<a href="">signer</a>): (<a href="">signer</a>, <a href="account.md#0x2_account_SignerCapability">account::SignerCapability</a>)
 </code></pre>
 
 

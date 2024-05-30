@@ -3,6 +3,14 @@
 
 import { PaymentTypes } from '@/common/interface'
 
+export const formatTimestamp = (timestamp: number): string => {
+  if (timestamp < 1e10) {
+    timestamp *= 1000
+  }
+  const date = new Date(timestamp);
+  return date.toLocaleString();
+}
+
 export const formatCoin = (balance: number, decimals: number, precision = 2) => {
   const divisor = Math.pow(10, decimals)
   return (balance / divisor).toFixed(precision)

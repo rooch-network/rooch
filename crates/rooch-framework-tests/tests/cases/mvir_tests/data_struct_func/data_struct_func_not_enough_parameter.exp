@@ -1,0 +1,7 @@
+processed 2 tasks
+
+task 0 'publish'. lines 1-15:
+status EXECUTED
+
+task 1 'publish'. lines 17-43:
+status ABORTED with code 10003 in 0000000000000000000000000000000000000000000000000000000000000002::move_module

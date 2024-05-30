@@ -7,9 +7,9 @@ use clap::Parser;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::types::LocalAccount;
 use rooch_types::{
-    address::MultiChainAddress,
-    crypto::{EncodeDecodeBase64, PublicKey},
+    crypto::EncodeDecodeBase64,
     error::RoochResult,
+    rooch_network::{BuiltinChainID, RoochNetwork},
 };
 use rpassword::prompt_password;
 use serde::{Deserialize, Serialize};
@@ -30,18 +30,21 @@ pub struct ListCommand {
 pub struct LocalAccountView {
     pub address: String,
     pub hex_address: String,
-    pub multichain_address: Option<MultiChainAddress>,
-    pub public_key: Option<PublicKey>,
+    pub bitcoin_address: String,
+    pub public_key: String,
     pub has_session_key: bool,
 }
 
-impl From<LocalAccount> for LocalAccountView {
-    fn from(account: LocalAccount) -> Self {
+impl LocalAccountView {
+    pub fn from_account(account: LocalAccount, btc_network: u8) -> Self {
         LocalAccountView {
             address: account.address.to_bech32(),
             hex_address: account.address.to_hex_literal(),
-            multichain_address: account.multichain_address,
-            public_key: account.public_key,
+            bitcoin_address: account
+                .bitcoin_address
+                .format(btc_network)
+                .expect("Failed to format bitcoin address"),
+            public_key: account.public_key.encode_base64(),
             has_session_key: account.has_session_key,
         }
     }
@@ -54,8 +57,8 @@ pub struct AccountView {
 }
 
 #[async_trait]
-impl CommandAction<()> for ListCommand {
-    async fn execute(self) -> RoochResult<()> {
+impl CommandAction<String> for ListCommand {
+    async fn execute(self) -> RoochResult<String> {
         let context = self.context_options.build()?;
         let active_address = context.client_config.active_address;
 
@@ -68,53 +71,46 @@ impl CommandAction<()> for ListCommand {
         };
 
         let accounts: Vec<LocalAccount> = context.keystore.get_accounts(password)?;
-        let accont_views: Vec<AccountView> = accounts
+        let rooch_network: RoochNetwork = context
+            .client_config
+            .get_active_env()
+            .map(|env| env.guess_network())
+            .unwrap_or(RoochNetwork::from(BuiltinChainID::Local));
+        let account_views: Vec<AccountView> = accounts
             .into_iter()
             .map(|account: LocalAccount| {
                 let active = Some(account.address) == active_address;
                 AccountView {
-                    local_account: account.into(),
+                    local_account: LocalAccountView::from_account(
+                        account,
+                        rooch_network.genesis_config.bitcoin_network,
+                    ),
                     active,
                 }
             })
             .collect();
 
         if self.json {
-            println!("{}", serde_json::to_string_pretty(&accont_views).unwrap());
+            Ok(serde_json::to_string_pretty(&account_views)?)
         } else {
-            //TODO optimize the output format
-            println!(
-                "{:^66} | {:^66} | {:^48} | {:^48} | {:^10} | {:^10}",
-                "Address (bech32)",
-                "Address (hex)",
-                "Multichain Address",
-                "Public Key(base64)",
-                "Session key",
-                "Active"
-            );
-            println!("{}", ["-"; 68].join(""));
+            let mut output = String::new();
 
-            for account in accont_views {
-                println!(
-                    "{:^66} | {:^66} | {:^48} | {:^48} | {:^10} | {:^10}",
+            output.push_str(&format!(
+                "{:^66} | {:^66} | {:^48} | {:^10}\n",
+                "Address", "Hex Address", "Bitcoin Address", "Active"
+            ));
+            output.push_str(&format!("{}\n", ["-"; 190].join("")));
+
+            for account in account_views {
+                output.push_str(&format!(
+                    "{:^66} | {:^66} | {:^48} | {:^10}\n",
                     account.local_account.address,
                     account.local_account.hex_address,
-                    account
-                        .local_account
-                        .multichain_address
-                        .map(|multichain_address| multichain_address.to_string())
-                        .unwrap_or_default(),
-                    account
-                        .local_account
-                        .public_key
-                        .map(|public_key| public_key.encode_base64())
-                        .unwrap_or_default(),
-                    account.local_account.has_session_key.to_string(),
+                    account.local_account.bitcoin_address,
                     account.active
-                );
+                ));
             }
+            Ok(output)
         }
-
-        Ok(())
     }
 }

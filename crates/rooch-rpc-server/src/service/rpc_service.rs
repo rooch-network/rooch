@@ -16,15 +16,13 @@ use rooch_indexer::proxy::IndexerProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::address::{MultiChainAddress, RoochAddress};
-use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
+use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
     FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateID, ObjectStateFilter,
 };
-use rooch_types::indexer::transaction_filter::TransactionFilter;
+use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::sequencer::SequencerOrder;
-use rooch_types::transaction::{
-    ExecuteTransactionResponse, LedgerTransaction, RoochTransaction, TransactionWithInfo,
-};
+use rooch_types::transaction::{ExecuteTransactionResponse, LedgerTransaction, RoochTransaction};
 
 /// RpcService is the implementation of the RPC service.
 /// It is the glue between the RPC server(EthAPIServer,RoochApiServer) and the rooch's actors.
@@ -62,8 +60,8 @@ impl RpcService {
         Ok(self.executor.bitcoin_network().await?.network)
     }
 
-    pub async fn quene_tx(&self, tx: RoochTransaction) -> Result<()> {
-        //TODO implement quene tx and do not wait to execute
+    pub async fn queue_tx(&self, tx: RoochTransaction) -> Result<()> {
+        //TODO implement queue tx and do not wait to execute
         let _ = self.execute_tx(tx).await?;
         Ok(())
     }
@@ -215,7 +213,7 @@ impl RpcService {
         cursor: Option<u64>,
         limit: usize,
         descending_order: bool,
-    ) -> Result<Vec<TransactionWithInfo>> {
+    ) -> Result<Vec<IndexerTransaction>> {
         let resp = self
             .indexer
             .query_transactions(filter, cursor, limit, descending_order)

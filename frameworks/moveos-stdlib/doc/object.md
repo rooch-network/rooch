@@ -907,7 +907,7 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 ## Function `add_field`
 
-Add a dynamic filed to the object. Aborts if an field for this
+Add a dynamic field to the object. Aborts if an field for this
 key already exists. The field itself is not stored in the
 object, and cannot be discovered from it.
 

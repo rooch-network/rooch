@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    AnnotatedMoveValueView, BytesView, H256View, RoochAddressView, StrView, StructTagView,
-    TypeTagView,
+    AnnotatedMoveStructView, AnnotatedMoveValueView, BytesView, H256View, RoochAddressView,
+    StrView, StructTagView, TypeTagView,
 };
 use anyhow::Result;
 
@@ -13,7 +13,7 @@ use moveos_types::state::{
 };
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
-    moveos_std::object::ObjectID,
+    moveos_std::object::{AnnotatedObject, ObjectID},
     state::{AnnotatedState, State, StateChangeSet, TableTypeInfo},
 };
 use rooch_types::address::RoochAddress;
@@ -375,7 +375,7 @@ pub struct IndexerObjectStateView {
     pub object_id: ObjectID,
     pub owner: RoochAddressView,
     pub flag: u8,
-    pub value: Option<AnnotatedMoveValueView>,
+    pub value: Option<AnnotatedMoveStructView>,
     pub object_type: StructTagView,
     pub state_root: H256View,
     pub size: u64,
@@ -388,14 +388,14 @@ pub struct IndexerObjectStateView {
 
 impl IndexerObjectStateView {
     pub fn new_from_object_state(
-        annotated_state: Option<AnnotatedState>,
+        annotated_state: Option<AnnotatedObject>,
         state: IndexerObjectState,
     ) -> IndexerObjectStateView {
         IndexerObjectStateView {
             object_id: state.object_id,
             owner: state.owner.into(),
             flag: state.flag,
-            value: annotated_state.map(|v| AnnotatedMoveValueView::from(v.decoded_value)),
+            value: annotated_state.map(|v| AnnotatedMoveStructView::from(v.value)),
             object_type: state.object_type.into(),
             state_root: state.state_root.into(),
             size: state.size,

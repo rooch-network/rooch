@@ -35,7 +35,7 @@ macro_rules! derive_code_try_from_repr {
         }
 
         #[cfg(any(test, feature = "fuzzing"))]
-        const ERROR_CODE_VALUES: &'static [$repr_ty] = &[
+        pub const ERROR_CODE_VALUES: &'static [$repr_ty] = &[
             $($value),*
         ];
     };
@@ -60,6 +60,8 @@ pub enum ErrorCode {
     INVALID_PRIVATE_GENERICS_TYPE = 10011,
     INVALID_DATA_STRUCT_WITHOUT_DROP_ABILITY = 10012,
     INVALID_DATA_STRUCT_WITHOUT_COPY_ABILITY = 10013,
+    INVALID_DATA_STRUCT_NOT_ALLOWED_TYPE = 10014,
+    INVALID_DATA_STRUCT_NOT_IN_MODULE_METADATA = 10015,
 
     INVALID_ENTRY_FUNC_SIGNATURE = 11000,
     INVALID_PARAM_TYPE_ENTRY_FUNCTION = 11001,

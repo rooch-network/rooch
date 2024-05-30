@@ -856,7 +856,7 @@ where
                                 if data_struct_types_indices.len() > type_arguments.len() {
                                     return generate_vm_error(
                                         ErrorCode::TOO_MANY_PARAMETERS,
-                                        "the parameters length of private_generics is more than functions' definition".to_string(),
+                                        "the parameters length of data_strut_func is more than functions' definition".to_string(),
                                         Some(*fhandle_idx),
                                         caller_module,
                                     );
@@ -1026,8 +1026,12 @@ fn struct_def_from_struct_handle<Resolver>(
 where
     Resolver: ModuleResolver,
 {
+    let current_module_bin_view = BinaryIndexedView::Module(current_module);
     for struct_def in current_module.struct_defs.iter() {
-        if struct_def.struct_handle == *struct_handle_idx {
+        let struct_handle_idx = struct_def.struct_handle;
+        let iterator_struct_name =
+            struct_full_name_from_sid(&struct_handle_idx, &current_module_bin_view);
+        if iterator_struct_name == struct_name {
             return Some(struct_def.clone());
         }
     }
@@ -1240,7 +1244,7 @@ where
                     db,
                 )
             }
-            _ => (false, ErrorCode::INVALID_DATA_STRUCT),
+            _ => (false, ErrorCode::INVALID_DATA_STRUCT_NOT_ALLOWED_TYPE),
         }
     };
 }
@@ -1260,6 +1264,17 @@ where
         return (true, ErrorCode::UNKNOWN_CODE);
     }
 
+    let (is_defined_in_current_module, other_module_id) =
+        struct_in_current_module(current_module, struct_handle_idx);
+    if !is_defined_in_current_module {
+        return verify_struct_from_module_metadata(
+            struct_name,
+            &other_module_id,
+            verified_modules,
+            db,
+        );
+    }
+
     let struct_def_opt = struct_def_from_struct_handle(
         current_module,
         struct_handle_idx,
@@ -1277,6 +1292,57 @@ where
         ),
         None => (false, ErrorCode::INVALID_DATA_STRUCT),
     }
+}
+
+fn struct_in_current_module(
+    current_module: &CompiledModule,
+    struct_handle_idx: &StructHandleIndex,
+) -> (bool, ModuleId) {
+    let module_bin_view = BinaryIndexedView::Module(current_module);
+    let struct_handle = module_bin_view.struct_handle_at(*struct_handle_idx);
+    let module_handle = module_bin_view.module_handle_at(struct_handle.module);
+    let module_id = module_bin_view.module_id_for_handle(module_handle);
+    if module_id == current_module.self_id() {
+        return (true, module_id);
+    }
+    (false, module_id)
+}
+
+fn verify_struct_from_module_metadata<Resolver>(
+    struct_name: &str,
+    other_module_id: &ModuleId,
+    verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
+    db: &Resolver,
+) -> (bool, ErrorCode)
+where
+    Resolver: ModuleResolver,
+{
+    for (_, m) in verified_modules.iter() {
+        match get_metadata_from_compiled_module(m) {
+            None => {}
+            Some(metadata) => {
+                let data_struct_maps = metadata.data_struct_map;
+                if data_struct_maps.get(struct_name).is_some() {
+                    return (true, ErrorCode::UNKNOWN_CODE);
+                }
+            }
+        }
+    }
+
+    match get_module_from_db(other_module_id, db) {
+        None => {}
+        Some(target_module) => match get_metadata_from_compiled_module(&target_module) {
+            None => {}
+            Some(metadata) => {
+                let data_struct_maps = metadata.data_struct_map;
+                if data_struct_maps.get(struct_name).is_some() {
+                    return (true, ErrorCode::UNKNOWN_CODE);
+                }
+            }
+        },
+    }
+
+    (false, ErrorCode::INVALID_DATA_STRUCT_NOT_IN_MODULE_METADATA)
 }
 
 fn check_if_struct_exist_in_module(module: &CompiledModule, origin_struct_name: &str) -> bool {
