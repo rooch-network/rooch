@@ -43,11 +43,6 @@ interface ExpandableRowProps {
   remove: (authKey: string) => void
 }
 
-const formatTimestamp = (timestamp: number): string => {
-  const date = new Date(timestamp)
-  return date.toLocaleString()
-}
-
 const copyToClipboard = async (text: string, setCopied: (value: boolean) => void) => {
   try {
     await navigator.clipboard.writeText(text)

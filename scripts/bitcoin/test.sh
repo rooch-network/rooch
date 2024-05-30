@@ -4,7 +4,7 @@
 
 set -e
 
-while getopts "huia" opt; do
+while getopts "hubsa" opt; do
   case $opt in
     h)
       cat <<EOF
@@ -23,9 +23,11 @@ EOF
       UNIT_TEST=1
       ;;
     b)
+      UNIT_TEST=1
       INT_TEST=1
       ;;
     s)
+      UNIT_TEST=1
       BITSEED_INT_TEST=1
       ;;
     a)
@@ -36,11 +38,12 @@ EOF
   esac
 done
 
-export RUST_LOG=debug 
+export RUST_LOG=info 
 export RUST_BACKTRACE=1
 
 if [ ! -z "$UNIT_TEST" ]; then
-  cargo run --bin rooch move test -p frameworks/rooch-nursery bitseed
+  cargo run --bin rooch move test -p frameworks/bitcoin-move
+  cargo run --bin rooch move test -p frameworks/rooch-nursery
 fi
 
 if [ ! -z "$INT_TEST" ]; then

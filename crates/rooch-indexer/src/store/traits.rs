@@ -2,19 +2,31 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::errors::IndexerError;
-use crate::types::{IndexedEvent, IndexedFieldState, IndexedObjectState, IndexedTransaction};
+use rooch_types::indexer::event::IndexerEvent;
+use rooch_types::indexer::state::{
+    IndexerFieldState, IndexerFieldStateChanges, IndexerObjectState, IndexerObjectStateChanges,
+};
+use rooch_types::indexer::transaction::IndexerTransaction;
 
 pub trait IndexerStoreTrait: Send + Sync {
+    fn update_object_states(
+        &self,
+        object_state_change: IndexerObjectStateChanges,
+    ) -> Result<(), IndexerError>;
     fn persist_or_update_object_states(
         &self,
-        states: Vec<IndexedObjectState>,
+        states: Vec<IndexerObjectState>,
     ) -> Result<(), IndexerError>;
 
     fn delete_object_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError>;
 
+    fn update_field_states(
+        &self,
+        field_state_change: IndexerFieldStateChanges,
+    ) -> Result<(), IndexerError>;
     fn persist_or_update_field_states(
         &self,
-        states: Vec<IndexedFieldState>,
+        states: Vec<IndexerFieldState>,
     ) -> Result<(), IndexerError>;
 
     fn delete_field_states(&self, state_pks: Vec<(String, String)>) -> Result<(), IndexerError>;
@@ -24,8 +36,8 @@ pub trait IndexerStoreTrait: Send + Sync {
 
     fn persist_transactions(
         &self,
-        transactions: Vec<IndexedTransaction>,
+        transactions: Vec<IndexerTransaction>,
     ) -> Result<(), IndexerError>;
 
-    fn persist_events(&self, events: Vec<IndexedEvent>) -> Result<(), IndexerError>;
+    fn persist_events(&self, events: Vec<IndexerEvent>) -> Result<(), IndexerError>;
 }

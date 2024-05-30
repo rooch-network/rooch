@@ -2,19 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    AccountAddressView, AnnotatedMoveValueView, BytesView, StrView, StructTagView, TypeTagView,
+    AnnotatedMoveStructView, AnnotatedMoveValueView, BytesView, H256View, RoochAddressView,
+    StrView, StructTagView, TypeTagView,
 };
 use anyhow::Result;
-use move_core_types::account_address::AccountAddress;
+
 use move_core_types::effects::Op;
 use moveos_types::state::{
     AnnotatedKeyState, FieldChange, KeyState, NormalFieldChange, ObjectChange,
 };
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
-    moveos_std::object::ObjectID,
+    moveos_std::object::{AnnotatedObject, ObjectID},
     state::{AnnotatedState, State, StateChangeSet, TableTypeInfo},
 };
+use rooch_types::address::RoochAddress;
 use rooch_types::indexer::state::{
     FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateChangeSet,
     ObjectStateFilter, StateSyncFilter,
@@ -371,11 +373,11 @@ impl From<StateSyncFilterView> for StateSyncFilter {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct IndexerObjectStateView {
     pub object_id: ObjectID,
-    pub owner: AccountAddressView,
+    pub owner: RoochAddressView,
     pub flag: u8,
-    pub value: Option<AnnotatedMoveValueView>,
+    pub value: Option<AnnotatedMoveStructView>,
     pub object_type: StructTagView,
-    pub state_root: AccountAddressView,
+    pub state_root: H256View,
     pub size: u64,
     pub tx_order: u64,
     pub state_index: u64,
@@ -386,14 +388,14 @@ pub struct IndexerObjectStateView {
 
 impl IndexerObjectStateView {
     pub fn new_from_object_state(
-        annotated_state: Option<AnnotatedState>,
+        annotated_state: Option<AnnotatedObject>,
         state: IndexerObjectState,
     ) -> IndexerObjectStateView {
         IndexerObjectStateView {
             object_id: state.object_id,
             owner: state.owner.into(),
             flag: state.flag,
-            value: annotated_state.map(|v| AnnotatedMoveValueView::from(v.decoded_value)),
+            value: annotated_state.map(|v| AnnotatedMoveStructView::from(v.value)),
             object_type: state.object_type.into(),
             state_root: state.state_root.into(),
             size: state.size,
@@ -417,12 +419,12 @@ pub enum ObjectStateFilterView {
     /// Query by object value type and owner.
     ObjectTypeWithOwner {
         object_type: StructTagView,
-        owner: AccountAddressView,
+        owner: RoochAddressView,
     },
     /// Query by object value type.
     ObjectType(StructTagView),
     /// Query by owner.
-    Owner(AccountAddressView),
+    Owner(RoochAddressView),
     /// Query by object id.
     ObjectId(Vec<ObjectID>),
     /// Query by multi chain address
@@ -432,7 +434,7 @@ pub enum ObjectStateFilterView {
 impl ObjectStateFilterView {
     pub fn into_object_state_filter(
         state_filter: ObjectStateFilterView,
-        resolve_address: AccountAddress,
+        resolve_address: RoochAddress,
     ) -> ObjectStateFilter {
         match state_filter {
             ObjectStateFilterView::ObjectTypeWithOwner { object_type, owner } => {

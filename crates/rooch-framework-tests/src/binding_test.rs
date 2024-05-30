@@ -17,6 +17,7 @@ use rooch_config::store_config::StoreConfig;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::actor::{executor::ExecutorActor, messages::ExecuteTransactionResult};
 use rooch_genesis::RoochGenesis;
+use rooch_indexer::IndexerStore;
 use rooch_store::RoochStore;
 use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
 use rooch_types::transaction::{L1BlockWithBody, RoochTransaction};
@@ -63,11 +64,12 @@ impl RustBindingTest {
         let mut moveos_store =
             MoveOSStore::mock_moveos_store_with_data_dir(moveos_db_path.as_path())?;
         let mut rooch_store = RoochStore::mock_rooch_store_with_data_dir(rooch_db_path.as_path())?;
+        let mut indexer_store = IndexerStore::mock_indexer_store()?;
         let network: RoochNetwork = BuiltinChainID::Local.into();
         let sequencer = network.genesis_config.sequencer_account;
 
         let genesis = RoochGenesis::build(network)?;
-        let root = genesis.init_genesis(&mut moveos_store, &mut rooch_store)?;
+        let root = genesis.init_genesis(&mut moveos_store, &mut rooch_store, &mut indexer_store)?;
 
         let executor = ExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store.clone())?;
 

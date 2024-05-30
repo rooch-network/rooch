@@ -120,7 +120,7 @@ module moveos_std::object {
 
 #### Shared and Frozen Object
 
-`Object<T>` has two states, `shared` and `frozen`.
+SystemOwnedObject `Object<T>` has two states, `shared` and `frozen`.
 
 * `SharedObject`: Everyone can directly get the `&mut Object<T>` reference.
 * `FrozenObject`: No one can get the `&mut Object<T>` reference, even the module where `T` is located.
@@ -179,6 +179,27 @@ module moveos_std::object {
 ```
 
 Deleting an Object will return the encapsulated data in the Object, this method can only be called by the module where `T` is located.
+
+In summary, different users have different permissions for operations on Objects in different states. The following are the operations that contract developers and normal users can perform on different types of Objects using the methods provided by `moveos_std::object`:
+
+- Contract developers
+
+| object  | owner             | value abilities | transfer | borrow mut | take value | remove |
+|---------|-------------------|-----------------|----------|------------|------------|--------|
+| shared  | SystemOwnedObject | not required    | ×        | √          | ×          | ×      |
+| frozen  | SystemOwnedObject | not required    | ×        | ×          | ×          | ×      |
+| public  | UserOwnedObject   | key, store      | √        | √          | √          | √      |
+| private | UserOwnedObject   | key             | √        | √          | √          | √      |
+
+- Normal users
+
+| object  | owner             | value abilities | transfer | borrow mut | take value | remove |
+|---------|-------------------|-----------------|----------|------------|------------|--------|
+| shared  | SystemOwnedObject | not required    | ×        | √          | ×          | ×      |
+| frozen  | SystemOwnedObject | not required    | ×        | ×          | ×          | ×      |
+| public  | UserOwnedObject   | key, store      | √        | √          | √          | ×      |
+| private | UserOwnedObject   | key             | ×        | √          | ×          | ×      |
+
 
 ### Object RPC
 
@@ -247,15 +268,55 @@ The `context` and `object` modules provide the following functions that can oper
 
 In the above functions, if the `#[private_generics<T>]` column is `true`, it indicates that only the module where `T` is located can call the function.
 
-### Comparison between Rooch Object, Sui Object, and Aptos Object
+## Dynamic Fields of Object in Rooch
 
-#### Sui Object
+Rooch provides the capability to manage dynamic fields for objects. Dynamic fields are Resources or Objects stored within an Object in the form of key-value pairs. Notably, the key can be heterogeneous, meaning it is not restricted by the type of the key. More specifically, an Object can be used as a [Table](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/sources/table.move) or [Bag](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/sources/bag.move).
+
+Rooch objects offer two types of dynamic fields: normal types and Object types.
+
+Normal dynamic fields are resources with `store` ability stored under an object; Object type dynamic fields store child Object instances under an object.
+
+<Callout>
+Note: Since the Object type itself also has the `store` ability, what is the difference between storing the entire `Object<T>` as a normal field under an object and using an Object type field?
+1. If a child object is created via `add_object_field`, it is a child of the parent object and is under the same SMT subtree. This facilitates management of the entire parent object's state transition, queries and so on.
+2. If an object is created globally, even if it is added to the dynamic fields of an object via `add_field`, it actually a global object, and its state tree is under the global Root.
+</Callout>
+
+### List of Methods for Regular Dynamic Fields
+
+| Method | Description
+|---|---
+| `add_field<T: key, K: copy + drop, V: store>(obj: &mut Object<T>, key: K, val: V)` | Adds a dynamic field to the object. If the same key already exists, it aborts. The field itself is not stored in the object and cannot be discovered from the object.
+| `borrow_field<T: key, K: copy + drop, V: store>(obj: &Object<T>, key: K): &V` | Gets an immutable reference to the value corresponding to the key in the object. If there is no corresponding key, it aborts.
+| `borrow_field_with_default<T: key, K: copy + drop, V: store>(obj: &Object<T>, key: K, default: &V): &V` | Gets an immutable reference to the value corresponding to the key in the object. If there is no corresponding key, it returns the default value.
+| `borrow_mut_field<T: key, K: copy + drop, V: store>(obj: &mut Object<T>, key: K): &mut V` | Gets a mutable reference to the value corresponding to the key in the object. If there is no corresponding key, it aborts.
+| `borrow_mut_field_with_default<T: key, K: copy + drop, V: store + drop>(obj: &mut Object<T>, key: K, default: V): &mut V` | Gets a mutable reference to the value corresponding to the key in the object. If there is no corresponding key, it inserts the key-value pair (`key`, `default`) and then returns a mutable reference to the corresponding value.
+| `remove_field<T: key, K: copy + drop, V: store>(obj: &mut Object<T>, key: K): V` | Removes the field corresponding to the key from the object and returns the value of the field. If there is no corresponding key, it aborts.
+| `contains_field<T: key, K: copy + drop>(obj: &Object<T>, key: K): bool` | Returns `true` if the object contains the field corresponding to the key, otherwise `false`.
+| `contains_field_with_type<T: key, K: copy + drop, V: store>(obj: &Object<T>, key: K): bool` | Returns `true` if the object contains the field corresponding to the key and the value type is `V`, otherwise `false`.
+| `upsert_field<T: key, K: copy + drop, V: store + drop>(obj: &mut Object<T>, key: K, value: V)` | If the object contains the field corresponding to the key, it updates the value of the field. If there is no corresponding key, it inserts the key-value pair (`key`, `value`).
+| `field_size<T: key>(obj: &Object<T>): u64` | Returns the number of fields in the object, i.e., the number of key-value pairs.
+
+### List of Methods for Object Type Dynamic Fields
+
+| Method | Description
+|---|---
+| `add_object_field<T: key, V: key>(obj: &mut Object<T>, v: V): Object<V>` | Adds a new child object field to the object and returns the newly added child object. Only shared objects can add child object fields.
+| `add_object_field_with_id<T: key, ID:drop, V: key>(obj: &mut Object<T>, id: ID, v: V): Object<V>` | Adds a new child object field to the object with a custom ID and returns the newly added child object. Only shared objects can add child object fields.
+| `borrow_object_field<T: key, V: key>(obj: &Object<T>, key: ObjectID): &Object<V>` | Borrows an immutable reference to the specified child object field in the object. If the child object field does not exist, the operation fails.
+| `borrow_mut_object_field<T: key, V: key>(obj: &mut Object<T>, key: ObjectID): &mut Object<V>` | Borrows a mutable reference to the specified child object field in the object. If the child object field does not exist, the operation fails.
+| `remove_object_field<T: key, V: key>(obj: &mut Object<T>, child: Object<V>): V` | Removes the specified child object field from the object and returns its value. If the child object field does not exist, the operation fails.
+| `contains_object_field<T: key, V: key>(obj: &Object<T>, key: ObjectID): bool` | Checks if the object contains the specified child object field.
+
+## Comparison between Rooch Object, Sui Object, and Aptos Object
+
+### Sui Object
 
 * Sui Object is a special kind of `struct` that requires the `struct` to has a `key` ability, and UID must be its first field. An Object is provided by the VM and storage, and there's no Object type in Move. In Rooch, Object is a type defined in Move itself.
 * Sui Object is indexed by the external system, and there's no method provided in the contract to retrieve the Object using ID; it can only be passed through parameters. Rooch provides both methods.
 * If a Sui Object gets nested or saved into other containers, it will become invisible in the global Object Storage. However, even when nested or saved into other containers, the Rooch Object can still be accessed in the global Object Storage.
 
-#### Aptos Object
+### Aptos Object
 
 * At the base level, an Aptos Object is a special account, where the `address` is the `ObjectID`.
 * `Object<T>` represents the reference to an Object that can be `copy`,`drop`, whereas in Rooch, `Object<T>` is a single instance and cannot be `copy`, `drop`.
@@ -265,7 +326,7 @@ In the above functions, if the `#[private_generics<T>]` column is `true`, it ind
 TODO: This part of this document needs to be improved
 </Callout>
 
-### References
+## References
 
 1. [Rooch Object API document](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/doc/object.md)
 2. [Rooch Object Source code](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/sources/object.move)

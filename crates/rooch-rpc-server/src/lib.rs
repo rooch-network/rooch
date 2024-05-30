@@ -190,7 +190,7 @@ pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<S
     //Init indexer store
     let mut indexer_config = IndexerConfig::default();
     indexer_config.merge_with_opt_with_init(opt, Arc::clone(&arc_base_config), true)?;
-    let (indexer_store, indexer_reader) = init_indexer(&indexer_config)?;
+    let (mut indexer_store, indexer_reader) = init_indexer(&indexer_config)?;
 
     // Check for key pairs
     if server_opt.sequencer_keypair.is_none() || server_opt.proposer_keypair.is_none() {
@@ -200,12 +200,12 @@ pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<S
     }
 
     let sequencer_keypair = server_opt.sequencer_keypair.unwrap();
-    let sequencer_account: AccountAddress = RoochAddress::from(&sequencer_keypair.public()).into();
+    let sequencer_account = RoochAddress::from(&sequencer_keypair.public());
 
     let data_import_flag = opt.data_import_flag;
-
     if let RoochChainID::Builtin(builtin_chain_id) = chain_id {
         let mut network: RoochNetwork = builtin_chain_id.into();
+        let sequencer_account: AccountAddress = sequencer_account.into();
         match builtin_chain_id {
             // local and dev chain can use any sequencer account
             BuiltinChainID::Local | BuiltinChainID::Dev => {
@@ -217,7 +217,7 @@ pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<S
         }
         let genesis = RoochGenesis::build(network)?;
         if root.is_genesis() {
-            root = genesis.init_genesis(&mut moveos_store, &mut rooch_store)?;
+            root = genesis.init_genesis(&mut moveos_store, &mut rooch_store, &mut indexer_store)?;
         } else {
             genesis.check_genesis(moveos_store.get_config_store())?;
         }

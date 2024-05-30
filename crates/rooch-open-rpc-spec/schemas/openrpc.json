@@ -139,13 +139,13 @@
     },
     {
       "name": "rooch_getBalance",
-      "description": "get account balance by AccountAddress and CoinType",
+      "description": "get account balance by RoochAddress and CoinType",
       "params": [
         {
           "name": "account_addr",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+            "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
           }
         },
         {
@@ -166,13 +166,13 @@
     },
     {
       "name": "rooch_getBalances",
-      "description": "get account balances by AccountAddress",
+      "description": "get account balances by RoochAddress",
       "params": [
         {
           "name": "account_addr",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+            "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
           }
         },
         {
@@ -745,7 +745,7 @@
             ],
             "properties": {
               "sender": {
-                "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+                "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
               }
             },
             "additionalProperties": false
@@ -1102,7 +1102,7 @@
             "$ref": "#/components/schemas/IndexerEventID"
           },
           "sender": {
-            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+            "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
           },
           "tx_hash": {
             "$ref": "#/components/schemas/primitive_types::H256"
@@ -1208,7 +1208,7 @@
             "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
           },
           "owner": {
-            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+            "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
           },
           "size": {
             "type": "integer",
@@ -1221,7 +1221,7 @@
             "minimum": 0.0
           },
           "state_root": {
-            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+            "$ref": "#/components/schemas/primitive_types::H256"
           },
           "tx_order": {
             "type": "integer",
@@ -1236,7 +1236,7 @@
           "value": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/AnnotatedMoveValueView"
+                "$ref": "#/components/schemas/AnnotatedMoveStructView"
               },
               {
                 "type": "null"
@@ -1359,7 +1359,7 @@
             "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
           },
           "owner": {
-            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+            "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
           },
           "owner_bitcoin_address": {
             "type": [
@@ -1466,7 +1466,7 @@
             "minimum": 0.0
           },
           "txid": {
-            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+            "$ref": "#/components/schemas/primitive_types::H256"
           }
         }
       },
@@ -1799,7 +1799,7 @@
                     "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
                   },
                   "owner": {
-                    "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+                    "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
                   }
                 }
               }
@@ -1827,7 +1827,7 @@
             ],
             "properties": {
               "owner": {
-                "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+                "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
               }
             },
             "additionalProperties": false
@@ -2410,7 +2410,7 @@
             ],
             "properties": {
               "sender": {
-                "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+                "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
               }
             },
             "additionalProperties": false
@@ -2682,7 +2682,7 @@
             "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
           },
           "owner": {
-            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+            "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
           },
           "owner_bitcoin_address": {
             "type": [
@@ -2743,7 +2743,7 @@
             "description": "The txid of the UTXO",
             "allOf": [
               {
-                "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+                "$ref": "#/components/schemas/primitive_types::H256"
               }
             ]
           },
@@ -2877,6 +2877,9 @@
         "type": "string"
       },
       "rooch_types::address::BitcoinAddress": {
+        "type": "string"
+      },
+      "rooch_types::address::RoochAddress": {
         "type": "string"
       },
       "u128": {

@@ -542,7 +542,7 @@ fn modify_modules(
         .map(|b| CompiledModule::deserialize(&b))
         .collect::<PartialVMResult<Vec<CompiledModule>>>()?;
 
-    let mut remapped_bubdles = vec![];
+    let mut remapped_bundles = vec![];
     for module in compiled_modules.iter_mut() {
         replace_fn(module)?;
         let mut binary: Vec<u8> = vec![];
@@ -550,9 +550,9 @@ fn modify_modules(
             PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR).with_message(e.to_string())
         })?;
         let value = Value::vector_u8(binary);
-        remapped_bubdles.push(value);
+        remapped_bundles.push(value);
     }
-    let output_modules = Vector::pack(&Type::Vector(Box::new(Type::U8)), remapped_bubdles)?;
+    let output_modules = Vector::pack(&Type::Vector(Box::new(Type::U8)), remapped_bundles)?;
     Ok(output_modules)
 }
 

@@ -563,7 +563,7 @@ mod tests {
         let keypair: Ed25519KeyPair = private_key.into();
         let address: RoochAddress = keypair.public().into();
         assert_eq!(
-            address.to_string(),
+            address.to_hex_literal(),
             "0x7a1378aafadef8ce743b72e8b248295c8f61c102c94040161146ea4d51a182b6"
         );
     }

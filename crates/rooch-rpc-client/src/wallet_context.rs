@@ -4,7 +4,6 @@
 use crate::client_config::{ClientConfig, DEFAULT_EXPIRATION_SECS};
 use crate::Client;
 use anyhow::{anyhow, Result};
-use move_command_line_common::address::ParsedAddress;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::moveos_std::gas_schedule::GasScheduleConfig;
 use moveos_types::transaction::MoveAction;
@@ -15,6 +14,7 @@ use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::file_keystore::FileBasedKeystore;
 use rooch_key::keystore::Keystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView, TxOptions};
+use rooch_types::address::ParsedAddress;
 use rooch_types::address::RoochAddress;
 use rooch_types::addresses;
 use rooch_types::crypto::Signature;
@@ -71,7 +71,7 @@ impl WalletContext {
 
         //TODO support account name alias name.
         if let Some(active_address) = client_config.active_address {
-            address_mapping.insert("default".to_string(), AccountAddress::from(active_address));
+            address_mapping.insert("default".to_string(), active_address.into());
         }
 
         Ok(Self {
@@ -83,8 +83,8 @@ impl WalletContext {
         })
     }
 
-    pub fn add_address_mapping(&mut self, name: String, address: AccountAddress) {
-        self.address_mapping.insert(name, address);
+    pub fn add_address_mapping(&mut self, name: String, address: RoochAddress) {
+        self.address_mapping.insert(name, address.into());
     }
 
     pub fn address_mapping(&self) -> AddressMappingFn {
@@ -94,7 +94,7 @@ impl WalletContext {
 
     pub fn resolve_address(&self, parsed_address: ParsedAddress) -> RoochResult<AccountAddress> {
         match parsed_address {
-            ParsedAddress::Numerical(address) => Ok(address.into_inner()),
+            ParsedAddress::Numerical(address) => Ok(address.into()),
             ParsedAddress::Named(name) => {
                 self.address_mapping.get(&name).cloned().ok_or_else(|| {
                     RoochError::CommandArgumentError(format!("Unknown named address: {}", name))

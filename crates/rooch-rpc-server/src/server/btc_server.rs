@@ -61,7 +61,7 @@ impl BtcAPIServer for BtcServer {
                     .resolve_address(multi_chain_address)
                     .await?
             }
-            _ => AccountAddress::ZERO,
+            _ => AccountAddress::ZERO.into(),
         };
 
         let global_state_filter =
@@ -73,7 +73,7 @@ impl BtcAPIServer for BtcServer {
 
         let mut data = self
             .aggregate_service
-            .pack_uxtos(states)
+            .build_utxos(states)
             .await?
             .into_iter()
             .map(|v| UTXOStateView::try_new_from_utxo_state(v, self.btc_network))
@@ -116,7 +116,7 @@ impl BtcAPIServer for BtcServer {
                     .resolve_address(multi_chain_address)
                     .await?
             }
-            _ => AccountAddress::ZERO,
+            _ => AccountAddress::ZERO.into(),
         };
 
         let global_state_filter =
@@ -128,7 +128,7 @@ impl BtcAPIServer for BtcServer {
 
         let mut data = self
             .aggregate_service
-            .pack_inscriptions(states)
+            .build_inscriptions(states)
             .await?
             .into_iter()
             .map(|v| InscriptionStateView::try_new_from_inscription_state(v, self.btc_network))
