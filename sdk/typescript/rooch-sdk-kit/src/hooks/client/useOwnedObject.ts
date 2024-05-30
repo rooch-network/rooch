@@ -15,7 +15,7 @@
 //     initialPageParam: null,
 //     queryKey: ['get-owned-objects', address, filter, limit],
 //     queryFn: ({ pageParam }) =>
-//       client.queryGlobalStates({
+//       client.queryObjectStates({
 //         filter: filter || { owner: address },
 //         limit: limit,
 //         cursor: (pageParam as IndexerStateID) || null,

@@ -1,9 +1,9 @@
 # ignore everything by default
 /*
 # Enable prettier for apps, dapps and sdk
-!/dashboard
+!/infra/dashboard
 !/sdk
-!/rooch-portal-v1
+!/infra/rooch-portal-v1
 !/.config
 !/*.js
 

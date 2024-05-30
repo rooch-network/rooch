@@ -2,20 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::account_view::BalanceInfoView;
+use crate::jsonrpc_types::address::RoochAddressView;
 use crate::jsonrpc_types::event_view::EventFilterView;
 use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionWithInfoView};
 use crate::jsonrpc_types::TxOptions;
 use crate::jsonrpc_types::{
-    AccessPathView, AccountAddressView, AnnotatedFunctionResultView, BalanceInfoPageView,
-    BytesView, EventOptions, EventPageView, ExecuteTransactionResponseView, FieldStateFilterView,
-    FunctionCallView, H256View, IndexerEventPageView, IndexerFieldStatePageView,
-    IndexerObjectStatePageView, ObjectStateFilterView, StateOptions, StatePageView, StateView,
-    StrView, StructTagView, TransactionWithInfoPageView,
+    AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
+    EventPageView, ExecuteTransactionResponseView, FieldStateFilterView, FunctionCallView,
+    H256View, IndexerEventPageView, IndexerFieldStatePageView, IndexerObjectStatePageView,
+    ObjectStateFilterView, QueryOptions, StateOptions, StatePageView, StateView, StrView,
+    StructTagView, TransactionWithInfoPageView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 use rooch_open_rpc_macros::open_rpc;
-use rooch_types::indexer::event_filter::IndexerEventID;
+use rooch_types::indexer::event::IndexerEventID;
 use rooch_types::indexer::state::IndexerStateID;
 
 #[open_rpc(namespace = "rooch")]
@@ -92,20 +93,20 @@ pub trait RoochAPI {
         descending_order: Option<bool>,
     ) -> RpcResult<TransactionWithInfoPageView>;
 
-    /// get account balance by AccountAddress and CoinType
+    /// get account balance by RoochAddress and CoinType
     #[method(name = "getBalance")]
     async fn get_balance(
         &self,
-        account_addr: AccountAddressView,
+        account_addr: RoochAddressView,
         coin_type: StructTagView,
     ) -> RpcResult<BalanceInfoView>;
 
-    /// get account balances by AccountAddress
+    /// get account balances by RoochAddress
     #[method(name = "getBalances")]
     async fn get_balances(
         &self,
-        account_addr: AccountAddressView,
-        cursor: Option<String>,
+        account_addr: RoochAddressView,
+        cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
     ) -> RpcResult<BalanceInfoPageView>;
 
@@ -117,7 +118,7 @@ pub trait RoochAPI {
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<StrView<u64>>,
         limit: Option<StrView<usize>>,
-        descending_order: Option<bool>,
+        query_option: Option<QueryOptions>,
     ) -> RpcResult<TransactionWithInfoPageView>;
 
     /// Query the events indexer by event filter
@@ -128,7 +129,7 @@ pub trait RoochAPI {
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerEventID>,
         limit: Option<StrView<usize>>,
-        descending_order: Option<bool>,
+        query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerEventPageView>;
 
     /// Query the object states indexer by state filter
@@ -139,21 +140,8 @@ pub trait RoochAPI {
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
-        descending_order: Option<bool>,
+        query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerObjectStatePageView>;
-
-    #[deprecated(note = "please use `queryObjectStates` instead")]
-    #[method(name = "queryGlobalStates")]
-    async fn query_global_states(
-        &self,
-        filter: ObjectStateFilterView,
-        cursor: Option<IndexerStateID>,
-        limit: Option<StrView<usize>>,
-        descending_order: Option<bool>,
-    ) -> RpcResult<IndexerObjectStatePageView> {
-        self.query_object_states(filter, cursor, limit, descending_order)
-            .await
-    }
 
     /// Query the Object field states indexer by state filter
     #[method(name = "queryFieldStates")]
@@ -163,20 +151,6 @@ pub trait RoochAPI {
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
-        descending_order: Option<bool>,
+        query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerFieldStatePageView>;
-
-    #[deprecated(note = "please use `queryFieldStates` instead")]
-    #[method(name = "queryTableStates")]
-    async fn query_table_states(
-        &self,
-        filter: FieldStateFilterView,
-        // exclusive cursor if `Some`, otherwise start from the beginning
-        cursor: Option<IndexerStateID>,
-        limit: Option<StrView<usize>>,
-        descending_order: Option<bool>,
-    ) -> RpcResult<IndexerFieldStatePageView> {
-        self.query_field_states(filter, cursor, limit, descending_order)
-            .await
-    }
 }

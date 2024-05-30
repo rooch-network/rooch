@@ -26,9 +26,9 @@ export type FunctionId =
   | { address: AccountAddress; module: Identifier; functionName: Identifier }
 
 export interface StructTag {
-  address: string
-  module: string
-  name: string
+  address: AccountAddress
+  module: Identifier
+  name: Identifier
   // eslint-disable-next-line no-use-before-define
   type_params?: TypeTag[]
 }

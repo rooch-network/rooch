@@ -4,7 +4,7 @@
 use super::table::TablePlaceholder;
 use crate::h256;
 use crate::moveos_std::account::Account;
-use crate::moveos_std::move_module::ModuleStore;
+use crate::moveos_std::module_store::{ModuleStore, Package};
 use crate::state::{KeyState, PlaceholderStruct};
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
@@ -99,6 +99,10 @@ impl ObjectID {
         !self.is_root()
     }
 
+    pub fn has_child(&self) -> bool {
+        self.is_root() || self.parent().is_some()
+    }
+
     pub fn is_child(&self, parent_id: ObjectID) -> bool {
         match self.parent() {
             Some(obj_id) => obj_id == parent_id,
@@ -144,6 +148,28 @@ impl ObjectID {
         } else {
             Self::from_hex(literal)
         }
+    }
+
+    pub fn try_from_annotated_move_struct_ref(value: &AnnotatedMoveStruct) -> Result<Self> {
+        if value.value.len() != 1 {
+            return Err(anyhow::anyhow!("Invalid ObjectID"));
+        }
+        let (field_name, field_value) = &value.value[0];
+        debug_assert!(field_name.as_str() == "path");
+        let path = match field_value {
+            AnnotatedMoveValue::Vector(t, vector) => {
+                debug_assert!(t == &TypeTag::Address);
+                vector
+                    .iter()
+                    .map(|annotated_move_value| match annotated_move_value {
+                        AnnotatedMoveValue::Address(addr) => Ok(*addr),
+                        _ => Err(anyhow::anyhow!("Invalid ObjectID")),
+                    })
+                    .collect::<Result<Vec<AccountAddress>>>()?
+            }
+            _ => return Err(anyhow::anyhow!("Invalid ObjectID")),
+        };
+        Ok(ObjectID(path))
     }
 }
 
@@ -237,26 +263,7 @@ impl TryFrom<AnnotatedMoveStruct> for ObjectID {
     type Error = anyhow::Error;
 
     fn try_from(value: AnnotatedMoveStruct) -> Result<Self, Self::Error> {
-        let mut annotated_move_struct = value;
-        let (field_name, field_value) = annotated_move_struct
-            .value
-            .pop()
-            .ok_or_else(|| anyhow::anyhow!("Invalid ObjectID"))?;
-        debug_assert!(field_name.as_str() == "path");
-        let path = match field_value {
-            AnnotatedMoveValue::Vector(t, vector) => {
-                debug_assert!(t == TypeTag::Address);
-                vector
-                    .into_iter()
-                    .map(|annotated_move_value| match annotated_move_value {
-                        AnnotatedMoveValue::Address(addr) => Ok(addr),
-                        _ => Err(anyhow::anyhow!("Invalid ObjectID")),
-                    })
-                    .collect::<Result<Vec<AccountAddress>>>()?
-            }
-            _ => return Err(anyhow::anyhow!("Invalid ObjectID")),
-        };
-        Ok(ObjectID(path))
+        ObjectID::try_from_annotated_move_struct_ref(&value)
     }
 }
 
@@ -342,6 +349,7 @@ impl MoveStructState for Root {
 pub type TableObject = ObjectEntity<TablePlaceholder>;
 pub type AccountObject = ObjectEntity<Account>;
 pub type ModuleStoreObject = ObjectEntity<ModuleStore>;
+pub type PackageObject = ObjectEntity<Package>;
 
 /// The Entity of the Object<T>.
 /// The value must be the last field
@@ -508,6 +516,19 @@ impl ObjectEntity<ModuleStore> {
             *GENESIS_STATE_ROOT,
             0,
             ModuleStore::default(),
+        )
+    }
+}
+
+impl ObjectEntity<Package> {
+    pub fn new_package(address: &AccountAddress, owner: AccountAddress) -> PackageObject {
+        Self::new(
+            Package::package_id(address),
+            owner,
+            0u8,
+            *GENESIS_STATE_ROOT,
+            0,
+            Package::default(),
         )
     }
 }

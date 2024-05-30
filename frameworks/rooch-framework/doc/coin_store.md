@@ -16,7 +16,6 @@
 -  [Function `create_coin_store`](#0x3_coin_store_create_coin_store)
 -  [Function `create_coin_store_extend`](#0x3_coin_store_create_coin_store_extend)
 -  [Function `remove_coin_store`](#0x3_coin_store_remove_coin_store)
--  [Function `coin_type`](#0x3_coin_store_coin_type)
 -  [Function `balance`](#0x3_coin_store_balance)
 -  [Function `is_frozen`](#0x3_coin_store_is_frozen)
 -  [Function `withdraw`](#0x3_coin_store_withdraw)
@@ -216,17 +215,6 @@ Remove the CoinStore Object, return the Coin<T> in balance
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_remove_coin_store">remove_coin_store</a>&lt;CoinType: key&gt;(coin_store_object: <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
-</code></pre>
-
-
-
-<a name="0x3_coin_store_coin_type"></a>
-
-## Function `coin_type`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_coin_type">coin_type</a>&lt;CoinType: key&gt;(coin_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;): <a href="_String">string::String</a>
 </code></pre>
 
 

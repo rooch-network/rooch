@@ -13,8 +13,6 @@ use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-use crate::chain_id::ChainID;
-
 pub const BITCOIN: u64 = 0;
 pub const ETHER: u64 = 60;
 pub const SUI: u64 = 784;
@@ -84,12 +82,6 @@ impl FromStr for MultiChainID {
 impl From<u64> for MultiChainID {
     fn from(id: u64) -> Self {
         Self::new(id)
-    }
-}
-
-impl From<ChainID> for MultiChainID {
-    fn from(chain_id: ChainID) -> Self {
-        Self::new(chain_id.id())
     }
 }
 

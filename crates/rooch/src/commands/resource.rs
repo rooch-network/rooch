@@ -4,10 +4,10 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use move_command_line_common::{address::ParsedAddress, types::ParsedStructType};
+use move_command_line_common::types::ParsedStructType;
 use moveos_types::access_path::AccessPath;
 use rooch_rpc_api::jsonrpc_types::StateView;
-use rooch_types::error::RoochResult;
+use rooch_types::{address::ParsedAddress, error::RoochResult};
 
 #[derive(Debug, Parser)]
 

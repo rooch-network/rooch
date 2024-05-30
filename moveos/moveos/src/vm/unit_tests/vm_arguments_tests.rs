@@ -762,7 +762,7 @@ fn check_script_function() {
         let res = call_script_function(module, function_name, serialize_values(&dummy_args))
             .err()
             .unwrap();
-        assert_eq!(res.major_status(), StatusCode::TYPE_MISMATCH)
+        assert_eq!(res.major_status(), StatusCode::ABORTED,)
     }
 
     //
@@ -869,7 +869,7 @@ fn call_missing_item() {
     let module = empty_module();
     let id = &module.self_id();
     let function_name = IdentStr::new("foo").unwrap();
-    // mising module
+    // missing module
     let moveos_vm = MoveOSVM::new(vec![], VMConfig::default()).unwrap();
     let mut remote_view = RemoteStore::new();
     let ctx = TxContext::random_for_testing_only();

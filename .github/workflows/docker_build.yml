@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-rooch-docker:
-    name: build rooch docker
+    name: Build Rooch Docker
     runs-on: self-hosted
     steps:
       - name: Checkout
@@ -20,7 +20,6 @@ jobs:
         id: docker_meta
         uses: crazy-max/ghaction-docker-meta@v1
         with:
-        #   images: rooch/rooch,ghcr.io/rooch-network/rooch
           images: ghcr.io/rooch-network/rooch
           tag-sha: true # add git short SHA as Docker tag
       - name: Set up Docker Buildx
@@ -39,9 +38,44 @@ jobs:
           context: .
           file: docker/Dockerfile
           push: true
-          tags: ${{ steps.docker_meta.outputs.tags }}
-          labels: ${{ steps.docker_meta.outputs.labels }}
-      - name: Deploy to GCP DEV VM
+          tags: |
+            ghcr.io/rooch-network/rooch:${{ steps.docker_meta.outputs.version }}
+            ghcr.io/rooch-network/rooch:main
+
+  build-debug-rooch-docker:
+    name: Build and Deploy Debug Rooch Docker
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+        with:
+          submodules: recursive
+      - name: Docker meta debug
+        id: docker_meta_debug
+        uses: crazy-max/ghaction-docker-meta@v1
+        with:
+          images: ghcr.io/rooch-network/rooch
+          tag-sha: true # add git short SHA as Docker tag
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver: docker
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GIT_PACKAGE_TOKEN }}
+      - name: Build and push debug
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: docker/DockerfileDebug
+          push: true
+          tags: |
+            ghcr.io/rooch-network/rooch:${{ steps.docker_meta_debug.outputs.version }}_debug
+            ghcr.io/rooch-network/rooch:main_debug
+      - name: Deploy debug to GCP DEV VM
         env:
           PRIVATE_KEY: ${{ secrets.GCP_SSH_PRIVATE_KEY }}
           HOST: ${{ secrets.GCP_VM_HOST }}
@@ -51,6 +85,5 @@ jobs:
           chmod 600 private_key.pem
           sudo apt update
           sudo apt install -y --no-install-recommends openssh-server
-          ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST bash -c "'sleep 30' && docker ps | grep rooch | awk '{print \$1}' | xargs -r docker stop && docker ps -a | grep rooch | awk '{print \$1}' | xargs -r docker rm -f && docker pull 'ghcr.io/rooch-network/rooch:${{ steps.docker_meta.outputs.version }}' && docker run --rm -v /root:/root ghcr.io/rooch-network/rooch:${{ steps.docker_meta.outputs.version }} server clean -n dev && docker run -d -v /root:/root -p 50051:50051 'ghcr.io/rooch-network/rooch:${{ steps.docker_meta.outputs.version }}' server start -n dev --eth-rpc-url https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161 --btc-rpc-url '${{secrets.BTC_TEST_RPC_URL}}' --btc-rpc-username rooch-test --btc-rpc-password '${{secrets.BTC_TEST_RPC_PWD}}' --btc-network 2 --da '{\"internal-da-server\": {\"servers\": [{\"open-da\": {\"scheme\": \"fs\"}}]}}'"
-          ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST "cd /root/rooch && git pull origin main && bash scripts/check_dev_deploy_status.sh ${{ steps.docker_meta.outputs.version }} '${{ secrets.DEV_MNEMONIC_PHRASE }}'"
-
+          ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST bash -c "'sleep 30' && docker image prune -a -f && docker ps | grep main_debug | awk '{print \$1}' | xargs -r docker stop && docker ps -a | grep main_debug | awk '{print \$1}' | xargs -r docker rm -f && docker pull 'ghcr.io/rooch-network/rooch:main_debug' && docker run --rm -v /root:/root ghcr.io/rooch-network/rooch:main_debug server clean -n dev && docker run -d -v /root:/root -p 50051:50051 'ghcr.io/rooch-network/rooch:main_debug' server start -n dev --btc-rpc-url '${{secrets.BTC_REGTEST_RPC_URL}}' --btc-rpc-username rooch-regtest --btc-rpc-password '${{secrets.BTC_REGTEST_RPC_PWD}}' --da '{\"internal-da-server\": {\"servers\": [{\"open-da\": {\"scheme\": \"fs\"}}]}}'"
+          ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST "cd /root/rooch && git pull origin main && bash scripts/check_dev_deploy_status.sh main_debug '${{ secrets.DEV_MNEMONIC_PHRASE }}'"

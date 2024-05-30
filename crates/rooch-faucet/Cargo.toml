@@ -1,0 +1,52 @@
+[package]
+name = "rooch-faucet"
+version = "0.4.1"
+
+# Workspace inherited keys
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+serenity = { features = [
+    "client",
+    "gateway",
+    "rustls_backend",
+    "cache",
+    "model",
+], workspace = true }
+axum = { workspace = true }
+tracing = { workspace = true}
+tower = { workspace = true }
+tower-http = { workspace = true }
+http = { workspace = true }
+futures = { workspace = true }
+prometheus = { workspace = true}
+tap = { workspace = true }
+eyre = { workspace = true }
+rocksdb = { workspace = true }
+tempfile = { workspace = true}
+
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+clap = { workspace = true }
+serde = { workspace = true }
+serde_yaml = { workspace = true }
+serde_json = { workspace = true }
+serde_with = { workspace = true }
+
+thiserror = { workspace = true }
+tokio = { features = ["full"], workspace = true }
+tracing-subscriber = { workspace = true }
+
+
+move-core-types = { workspace = true }
+moveos-types = { workspace = true }
+rooch-key = { workspace = true }
+rooch-types = { workspace = true }
+rooch-rpc-client = { workspace = true }
+rooch-rpc-api = { workspace = true }

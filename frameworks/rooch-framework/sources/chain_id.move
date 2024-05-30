@@ -48,6 +48,11 @@ module rooch_framework::chain_id {
         chain_id() == CHAIN_ID_DEV
     }
 
+    public fun is_local_or_dev() : bool {
+        let id = chain_id();
+        id == CHAIN_ID_LOCAL || id == CHAIN_ID_DEV
+    }
+
     public fun is_test() : bool {
         chain_id() == CHAIN_ID_TEST
     }

@@ -6,7 +6,7 @@ module rooch_framework::onchain_config {
     use std::vector;
     use moveos_std::object;
     use moveos_std::features;
-    use moveos_std::move_module;
+    use moveos_std::module_store;
     use moveos_std::signer;
     use rooch_framework::chain_id;
 
@@ -50,26 +50,27 @@ module rooch_framework::onchain_config {
         object::borrow(obj)
     }
 
+    public fun ensure_sequencer(account: &signer) {
+        let sender = signer::address_of(account);
+        assert!(sender == sequencer(), ErrorNotSequencer);
+    }
+
     /******  API for update module publishing allowlist. ******/
 
     /// When module_publishing_allowlist_feature is enabled, only address in allowlist 
     /// can publish modules.
     /// Add `publisher` to publishing allowlist.
     public entry fun add_to_publishing_allowlist(account: &signer, publisher: address) {
-        let sender = signer::address_of(account);
-        assert!(sender == sequencer(), ErrorNotSequencer);
+        ensure_sequencer(account);
         let system_account = signer::module_signer<OnchainConfig>();
-        let allowlist = move_module::borrow_mut_allowlist();
-        move_module::add_to_allowlist(allowlist, &system_account, publisher);
+        module_store::add_to_allowlist(&system_account, publisher);
     }
 
     /// Remove `publisher` from publishing allowlist.
     public entry fun remove_from_publishing_allowlist(account: &signer, publisher: address) {
-        let sender = signer::address_of(account);
-        assert!(sender == sequencer(), ErrorNotSequencer);
+        ensure_sequencer(account);
         let system_account = signer::module_signer<OnchainConfig>();
-        let allowlist = move_module::borrow_mut_allowlist();
-        move_module::remove_from_allowlist(allowlist, &system_account, publisher);
+        module_store::remove_from_allowlist(&system_account, publisher);
     }
     /****** End of API for update module publishing allowlist. ******/
 
@@ -77,8 +78,7 @@ module rooch_framework::onchain_config {
 
     /// Enable or disable features. You can find all feature flags in moveos_std::features.
     public entry fun change_feature_flags(account: &signer, enable: vector<u64>, disable: vector<u64>) {
-        let sender = signer::address_of(account);
-        assert!(sender == sequencer(), ErrorNotSequencer);
+        ensure_sequencer(account);
         let system_account = signer::module_signer<OnchainConfig>();
         features::change_feature_flags(&system_account, enable, disable);
     }

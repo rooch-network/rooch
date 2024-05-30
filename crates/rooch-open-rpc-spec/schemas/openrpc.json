@@ -12,7 +12,7 @@
       "name": "Apache-2.0",
       "url": "https://raw.githubusercontent.com/rooch-network/rooch/main/LICENSE"
     },
-    "version": "0.1.0"
+    "version": "0.4.1"
   },
   "methods": [
     {
@@ -139,13 +139,13 @@
     },
     {
       "name": "rooch_getBalance",
-      "description": "get account balance by AccountAddress and CoinType",
+      "description": "get account balance by RoochAddress and CoinType",
       "params": [
         {
           "name": "account_addr",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+            "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
           }
         },
         {
@@ -166,19 +166,19 @@
     },
     {
       "name": "rooch_getBalances",
-      "description": "get account balances by AccountAddress",
+      "description": "get account balances by RoochAddress",
       "params": [
         {
           "name": "account_addr",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+            "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
           }
         },
         {
           "name": "cursor",
           "schema": {
-            "type": "string"
+            "$ref": "#/components/schemas/IndexerStateID"
           }
         },
         {
@@ -192,7 +192,7 @@
         "name": "BalanceInfoPageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_BalanceInfoView_and_String"
+          "$ref": "#/components/schemas/PageView_for_BalanceInfoView_and_IndexerStateID"
         }
       }
     },
@@ -411,9 +411,9 @@
           }
         },
         {
-          "name": "descending_order",
+          "name": "query_option",
           "schema": {
-            "type": "boolean"
+            "$ref": "#/components/schemas/QueryOptions"
           }
         }
       ],
@@ -449,9 +449,9 @@
           }
         },
         {
-          "name": "descending_order",
+          "name": "query_option",
           "schema": {
-            "type": "boolean"
+            "$ref": "#/components/schemas/QueryOptions"
           }
         }
       ],
@@ -460,43 +460,6 @@
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/PageView_for_IndexerFieldStateView_and_IndexerStateID"
-        }
-      }
-    },
-    {
-      "name": "rooch_queryGlobalStates",
-      "params": [
-        {
-          "name": "filter",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/ObjectStateFilterView"
-          }
-        },
-        {
-          "name": "cursor",
-          "schema": {
-            "$ref": "#/components/schemas/IndexerStateID"
-          }
-        },
-        {
-          "name": "limit",
-          "schema": {
-            "$ref": "#/components/schemas/usize"
-          }
-        },
-        {
-          "name": "descending_order",
-          "schema": {
-            "type": "boolean"
-          }
-        }
-      ],
-      "result": {
-        "name": "IndexerObjectStatePageView",
-        "required": true,
-        "schema": {
-          "$ref": "#/components/schemas/PageView_for_IndexerObjectStateView_and_IndexerStateID"
         }
       }
     },
@@ -524,9 +487,9 @@
           }
         },
         {
-          "name": "descending_order",
+          "name": "query_option",
           "schema": {
-            "type": "boolean"
+            "$ref": "#/components/schemas/QueryOptions"
           }
         }
       ],
@@ -535,43 +498,6 @@
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/PageView_for_IndexerObjectStateView_and_IndexerStateID"
-        }
-      }
-    },
-    {
-      "name": "rooch_queryTableStates",
-      "params": [
-        {
-          "name": "filter",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/FieldStateFilterView"
-          }
-        },
-        {
-          "name": "cursor",
-          "schema": {
-            "$ref": "#/components/schemas/IndexerStateID"
-          }
-        },
-        {
-          "name": "limit",
-          "schema": {
-            "$ref": "#/components/schemas/usize"
-          }
-        },
-        {
-          "name": "descending_order",
-          "schema": {
-            "type": "boolean"
-          }
-        }
-      ],
-      "result": {
-        "name": "IndexerFieldStatePageView",
-        "required": true,
-        "schema": {
-          "$ref": "#/components/schemas/PageView_for_IndexerFieldStateView_and_IndexerStateID"
         }
       }
     },
@@ -599,9 +525,9 @@
           }
         },
         {
-          "name": "descending_order",
+          "name": "query_option",
           "schema": {
-            "type": "boolean"
+            "$ref": "#/components/schemas/QueryOptions"
           }
         }
       ],
@@ -749,21 +675,6 @@
           }
         ]
       },
-      "AuthenticatorView": {
-        "type": "object",
-        "required": [
-          "auth_validator_id",
-          "payload"
-        ],
-        "properties": {
-          "auth_validator_id": {
-            "$ref": "#/components/schemas/u64"
-          },
-          "payload": {
-            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
-          }
-        }
-      },
       "BalanceInfoView": {
         "type": "object",
         "required": [
@@ -834,7 +745,7 @@
             ],
             "properties": {
               "sender": {
-                "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+                "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
               }
             },
             "additionalProperties": false
@@ -1064,7 +975,7 @@
               "type": {
                 "type": "string",
                 "enum": [
-                  "nomarl"
+                  "normal"
                 ]
               }
             }
@@ -1191,7 +1102,7 @@
             "$ref": "#/components/schemas/IndexerEventID"
           },
           "sender": {
-            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+            "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
           },
           "tx_hash": {
             "$ref": "#/components/schemas/primitive_types::H256"
@@ -1202,14 +1113,12 @@
         "type": "object",
         "required": [
           "created_at",
-          "key",
           "key_hex",
           "key_type",
           "object_id",
           "state_index",
           "tx_order",
           "updated_at",
-          "value",
           "value_type"
         ],
         "properties": {
@@ -1217,9 +1126,6 @@
             "type": "integer",
             "format": "uint64",
             "minimum": 0.0
-          },
-          "key": {
-            "$ref": "#/components/schemas/AnnotatedMoveValueView"
           },
           "key_hex": {
             "type": "string"
@@ -1246,7 +1152,14 @@
             "minimum": 0.0
           },
           "value": {
-            "$ref": "#/components/schemas/AnnotatedMoveValueView"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnnotatedMoveValueView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "value_type": {
             "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
@@ -1265,14 +1178,23 @@
           "state_index",
           "state_root",
           "tx_order",
-          "updated_at",
-          "value"
+          "updated_at"
         ],
         "properties": {
           "created_at": {
             "type": "integer",
             "format": "uint64",
             "minimum": 0.0
+          },
+          "display_fields": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DisplayFieldsView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "flag": {
             "type": "integer",
@@ -1286,7 +1208,7 @@
             "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
           },
           "owner": {
-            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+            "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
           },
           "size": {
             "type": "integer",
@@ -1299,7 +1221,7 @@
             "minimum": 0.0
           },
           "state_root": {
-            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+            "$ref": "#/components/schemas/primitive_types::H256"
           },
           "tx_order": {
             "type": "integer",
@@ -1312,7 +1234,14 @@
             "minimum": 0.0
           },
           "value": {
-            "$ref": "#/components/schemas/AnnotatedMoveStructView"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnnotatedMoveStructView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -1430,7 +1359,7 @@
             "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
           },
           "owner": {
-            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+            "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
           },
           "owner_bitcoin_address": {
             "type": [
@@ -1537,7 +1466,7 @@
             "minimum": 0.0
           },
           "txid": {
-            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+            "$ref": "#/components/schemas/primitive_types::H256"
           }
         }
       },
@@ -1870,7 +1799,7 @@
                     "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
                   },
                   "owner": {
-                    "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+                    "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
                   }
                 }
               }
@@ -1898,7 +1827,7 @@
             ],
             "properties": {
               "owner": {
-                "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+                "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
               }
             },
             "additionalProperties": false
@@ -1911,7 +1840,10 @@
             ],
             "properties": {
               "object_id": {
-                "$ref": "#/components/schemas/ObjectID"
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ObjectID"
+                }
               }
             },
             "additionalProperties": false
@@ -2047,7 +1979,7 @@
           }
         ]
       },
-      "PageView_for_BalanceInfoView_and_String": {
+      "PageView_for_BalanceInfoView_and_IndexerStateID": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -2065,9 +1997,13 @@
             "type": "boolean"
           },
           "next_cursor": {
-            "type": [
-              "string",
-              "null"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IndexerStateID"
+              },
+              {
+                "type": "null"
+              }
             ]
           }
         }
@@ -2296,6 +2232,21 @@
           }
         }
       },
+      "QueryOptions": {
+        "type": "object",
+        "properties": {
+          "descending": {
+            "description": "If true, return query items in descending order.",
+            "default": true,
+            "type": "boolean"
+          },
+          "showDisplay": {
+            "description": "If true, result with display rendered is returned",
+            "default": false,
+            "type": "boolean"
+          }
+        }
+      },
       "ScriptCallView": {
         "type": "object",
         "required": [
@@ -2459,7 +2410,7 @@
             ],
             "properties": {
               "sender": {
-                "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+                "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
               }
             },
             "additionalProperties": false
@@ -2594,7 +2545,8 @@
         "required": [
           "tx_accumulator_root",
           "tx_order",
-          "tx_order_signature"
+          "tx_order_signature",
+          "tx_timestamp"
         ],
         "properties": {
           "tx_accumulator_root": {
@@ -2604,7 +2556,10 @@
             "$ref": "#/components/schemas/u64"
           },
           "tx_order_signature": {
-            "$ref": "#/components/schemas/AuthenticatorView"
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          },
+          "tx_timestamp": {
+            "$ref": "#/components/schemas/u64"
           }
         }
       },
@@ -2727,7 +2682,7 @@
             "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
           },
           "owner": {
-            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+            "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
           },
           "owner_bitcoin_address": {
             "type": [
@@ -2788,7 +2743,7 @@
             "description": "The txid of the UTXO",
             "allOf": [
               {
-                "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+                "$ref": "#/components/schemas/primitive_types::H256"
               }
             ]
           },
@@ -2922,6 +2877,9 @@
         "type": "string"
       },
       "rooch_types::address::BitcoinAddress": {
+        "type": "string"
+      },
+      "rooch_types::address::RoochAddress": {
         "type": "string"
       },
       "u128": {

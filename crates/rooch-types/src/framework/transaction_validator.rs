@@ -46,7 +46,7 @@ impl<'a> TransactionValidator<'a> {
                     .unwrap(),
             ],
         );
-        let auth_validator =
+        let function_result =
             self.caller
                 .call_function(ctx, tx_validator_call)?
                 .decode(|mut values| {
@@ -54,7 +54,7 @@ impl<'a> TransactionValidator<'a> {
                     let result = bcs::from_bytes::<TxValidateResult>(&value.value)?;
                     Ok(result)
                 })?;
-        Ok(auth_validator)
+        Ok(function_result)
     }
 
     pub fn pre_execute_function_id() -> FunctionId {

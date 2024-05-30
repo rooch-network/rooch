@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::types::{OutPoint, Transaction};
-use crate::address::BitcoinAddress;
+use crate::address::{BitcoinAddress, RoochAddress};
 use crate::addresses::BITCOIN_MOVE_ADDRESS;
 use crate::indexer::state::IndexerObjectState;
 use crate::into_address::IntoAddress;
@@ -59,6 +59,9 @@ pub struct Inscription {
     pub index: u32,
     pub input: u32,
     pub offset: u64,
+    pub sequence_number: u32,
+    pub inscription_number: u32,
+    pub is_curse: bool,
     pub body: Vec<u8>,
     pub content_encoding: MoveOption<MoveString>,
     pub content_type: MoveOption<MoveString>,
@@ -81,6 +84,9 @@ impl MoveStructState for Inscription {
             u32::type_layout(),
             u32::type_layout(),
             u64::type_layout(),
+            u32::type_layout(),
+            u32::type_layout(),
+            bool::type_layout(),
             Vec::<u8>::type_layout(),
             MoveOption::<MoveString>::type_layout(),
             MoveOption::<MoveString>::type_layout(),
@@ -225,7 +231,7 @@ impl<'a> ModuleBinding<'a> for OrdModule<'a> {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct InscriptionState {
     pub object_id: ObjectID,
-    pub owner: AccountAddress,
+    pub owner: RoochAddress,
     pub owner_bitcoin_address: Option<BitcoinAddress>,
     pub flag: u8,
     pub value: Inscription,
@@ -237,7 +243,7 @@ pub struct InscriptionState {
 }
 
 impl InscriptionState {
-    pub fn new_from_global_state(
+    pub fn new_from_object_state(
         state: IndexerObjectState,
         inscription: Inscription,
         owner_bitcoin_address: Option<BitcoinAddress>,

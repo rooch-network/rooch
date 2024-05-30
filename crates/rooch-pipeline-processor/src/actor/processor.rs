@@ -16,6 +16,7 @@ use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::transaction::{
     ExecuteTransactionResponse, L1BlockWithBody, LedgerTransaction, LedgerTxData, RoochTransaction,
 };
+use tracing::debug;
 
 /// PipelineProcessor aggregates the executor, sequencer, proposer, and indexer to process transactions.
 pub struct PipelineProcessorActor {
@@ -61,8 +62,9 @@ impl PipelineProcessorActor {
 
     pub async fn execute_l2_tx(
         &mut self,
-        tx: RoochTransaction,
+        mut tx: RoochTransaction,
     ) -> Result<ExecuteTransactionResponse> {
+        debug!("pipeline execute_l2_tx: {:?}", tx.tx_hash());
         let moveos_tx = self.executor.validate_l2_tx(tx.clone()).await?;
         let ledger_tx = self
             .sequencer
@@ -74,8 +76,10 @@ impl PipelineProcessorActor {
     pub async fn execute_tx(
         &mut self,
         tx: LedgerTransaction,
-        moveos_tx: VerifiedMoveOSTransaction,
+        mut moveos_tx: VerifiedMoveOSTransaction,
     ) -> Result<ExecuteTransactionResponse> {
+        // Add sequence info to tx context, let the Move contract can get the sequence info
+        moveos_tx.ctx.add(tx.sequence_info.clone())?;
         // Then execute
         let (output, execution_info) = self.executor.execute_transaction(moveos_tx.clone()).await?;
         self.proposer
@@ -88,43 +92,26 @@ impl PipelineProcessorActor {
             .await?;
 
         let indexer = self.indexer.clone();
-        let moveos_tx_clone = moveos_tx.clone();
-        let execution_info_clone = execution_info.clone();
         let sequence_info = tx.sequence_info.clone();
+        let execution_info_clone = execution_info.clone();
         let output_clone = output.clone();
 
         // If bitcoin block data import, don't write all indexer
-        // TODO put all indexer data into a single message
         if !self.data_import_flag {
             tokio::spawn(async move {
                 let result = indexer
-                    .indexer_states(
+                    .update_indexer(
                         root,
-                        tx.sequence_info.tx_order,
-                        output_clone.changeset.clone(),
+                        tx,
+                        execution_info_clone,
+                        moveos_tx,
+                        output_clone.events,
+                        output_clone.changeset,
                     )
                     .await;
                 match result {
                     Ok(_) => {}
-                    Err(error) => log::error!("indexer states error: {}", error),
-                };
-                let result = indexer
-                    .indexer_transaction(
-                        tx.clone(),
-                        execution_info_clone.clone(),
-                        moveos_tx_clone.clone(),
-                    )
-                    .await;
-                match result {
-                    Ok(_) => {}
-                    Err(error) => log::error!("indexer transactions error: {}", error),
-                };
-                let result = indexer
-                    .indexer_events(output_clone.events.clone(), tx.clone(), moveos_tx_clone)
-                    .await;
-                match result {
-                    Ok(_) => {}
-                    Err(error) => log::error!("indexer events error: {}", error),
+                    Err(error) => log::error!("Update indexer error: {}", error),
                 };
             });
         };

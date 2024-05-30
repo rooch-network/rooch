@@ -1,0 +1,65 @@
+# Rooch 概览
+
+import Image from "next/image";
+
+<Image
+    src="/docs/rooch-bitcoin-application-layer.png"
+    alt="Rooch as Bitcoin Application Layer"
+    width={1000}
+    height={1000}
+    className="mx-auto my-2"
+  />
+
+Rooch 项目旨在构建比特币生态系统的应用层。Rooch 项目采用原生方法来扩展比特币区块链的功能，并实现比特币资产的去中心化应用，且具有比特币级别的安全性。
+
+- 如果您是正在使用某些比特币应用程序的用户，您可能会发现您的所有比特币资产，包括 BTC、Ordinals 或 BRC20 资产，都可以直接在 Rooch 支持的所有比特币应用程序中使用，无需经过托管桥
+- 如果您是一名想要使用比特币资产构建应用程序的开发人员，Rooch 为您提供了一个易于编程的 `MoveVM` 环境，并可以通过您的智能合约完全访问所有比特币状态，这意味着您的应用程序可以
+- 如果您是社区成员，持有任何比特币应用程序中的一些资产，Rooch 会确保您的所有资产都是比特币 L1 原生资产，无需许可即可随时跃迁到比特币 L1。
+
+## 架构
+
+Rooch 是比特币区块链的可验证应用程序（VApp）执行运行时容器，具有以下功能：
+
+- **MoveVM** - Rooch 嵌入了完整的 MoveVM，供开发人员使用 Move 语言对智能合约进行编程
+- **比特币完整状态** - Rooch 拥有比特币区块链的完整状态，它可以与基于智能合约的解释器配合使用，不仅可以识别普通的 UTXO，还可以识别基于 Ordinals 的资产协议，例如 BRC20
+- **可扩展** - Rooch 是一个快速执行环境，可通过并行执行实现 100k 峰值 TPS
+
+<Image
+  src="/docs/rooch-architecture.png"
+  alt="Rooch Architecture"
+  width={600}
+  height={600}
+  className="mx-auto my-4"
+/>
+
+Rooch 由核心组件 MoveOS 以及用于访问智能合约和状态的接口和工具组成。
+
+- **MoveOS** 是完成所有计算和状态存储工作的组件。
+- **MoveVM** 是一个全功能图灵完备的 VM，执行用 [Move 语言](/learn/core-concepts/move-contracts/move-language)编写的智能合约
+- **flexEmu** 是一个通用 MIPS 模拟器，可从 MoveVM 生成[欺诈证明](/learn/in-depth-tech/fraud-proof)
+- **状态存储**包含比特币区块链的完整状态和应用程序状态
+- **Frameworks** 包含用于解释比特币状态的模块和标准 Move 库，以及定制的 Rooch 框架，为更好的开发体验提供丰富的功能
+
+## Usage
+
+<Image
+  src="/docs/rooch-usage.png"
+  alt="Rooch Usage"
+  width={600}
+  height={600}
+  className="mx-auto my-4"
+/>
+
+Rooch 提供了两种构建比特币应用程序的方法：状态绑定和 CSV 资产跃迁。
+
+### 状态绑定
+
+Rooch 允许应用程序智能合约中的状态转换与比特币状态绑定。借助 Rooch 中可用的完整比特币状态，智能合约可以访问和读取所有比特币状态并解释它们以获取有关用户的比特币地址及其控制下的资产的信息。状态绑定机制允许一个应用程序状态与某个比特币 UTXO 的状态绑定，无论是普通 UTXO 还是 Ordinals UTXO。
+
+> 欲了解更多详情，请参阅 [Stackable L2](https://rooch.network/blog/stackable-l2)
+
+### CSV资产
+
+客户端验证资产（CSV 资产）是实现比特币生态系统中所有创新的核心。Rooch 提供了一种称为 Bitseed 的 Ordinals 元协议设计，可以实现 CSV 资产在比特币状态和 Rooch 应用程序状态之间跃迁，使得所有比特币资产都可以以无需许可的方式跃迁到任何基于 Rooch 的比特币应用程序中。
+
+更多详情请参阅 [CSV 资产](./in-depth-tech/client-side-validation.en-US.mdx)

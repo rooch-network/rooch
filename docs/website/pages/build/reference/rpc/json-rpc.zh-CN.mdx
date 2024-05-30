@@ -131,10 +131,10 @@ curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","metho
         },
         "state": {
           "value": "0x01124d1a8b62c543cb04eb62038101f4016bd4a620a23127125431abb241c71eac",
-          "value_type": "0x3::account_coin_store::CoinStores",
+          "value_type": "0x3::account_coin_store::AutoAcceptCoins",
           "decoded_value": {
             "abilities": 12,
-            "type": "0x3::account_coin_store::CoinStores",
+            "type": "0x3::account_coin_store::AutoAcceptCoins",
             "value": {
               "coin_stores": {
                 "abilities": 4,
@@ -945,7 +945,7 @@ curl --location --header 'Content-Type: application/json' --data '{
 }
 ```
 
-### rooch_queryGlobalStates
+### rooch_queryObjectStates
 
 通过状态过滤器查询全局状态索引器。
 
@@ -964,7 +964,7 @@ curl --location --header 'Content-Type: application/json' --data '{
 curl --location 'https://dev-seed.rooch.network:443' --header 'Content-Type: application/json' --data '{
  "id":101,
  "jsonrpc":"2.0",
- "method":"rooch_queryGlobalStates",
+ "method":"rooch_queryObjectStates",
  "params":[{"owner":"0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069"}, null, "5", false]
 }' | jq
 ```

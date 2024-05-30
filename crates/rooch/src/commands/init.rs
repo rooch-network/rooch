@@ -104,10 +104,7 @@ impl CommandAction<()> for Init {
                 }
 
                 None => {
-                    println!(
-                        "Creating client config file [{:?}] with rooch native validator.",
-                        client_config_path
-                    );
+                    println!("Creating client config file [{:?}].", client_config_path);
                     let url = if self.server_url.is_none() {
                         String::new()
                     } else {
@@ -155,12 +152,8 @@ impl CommandAction<()> for Init {
                     (None, true)
                 };
 
-                let result = keystore.generate_and_add_new_key(
-                    self.mnemonic_phrase,
-                    None,
-                    None,
-                    password.clone(),
-                )?;
+                let result =
+                    keystore.init_keystore(self.mnemonic_phrase, None, password.clone())?;
                 println!("Generated new keypair for address [{}]", result.address);
                 println!(
                     "Secret Recovery Phrase : [{}]",
@@ -178,7 +171,7 @@ impl CommandAction<()> for Init {
 
                 let client_config = ClientConfig {
                     keystore_path,
-                    envs: vec![env, dev_env],
+                    envs: vec![env, dev_env, Env::new_test_env()],
                     active_address: Some(result.address),
                     // make dev env as default env
                     active_env: Some(active_env_alias),

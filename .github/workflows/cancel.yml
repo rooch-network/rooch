@@ -1,0 +1,18 @@
+name: Cancel
+on:
+  push:
+  pull_request:
+    types: [closed]
+jobs:
+  cancel:
+    name: 'Cancel Previous Runs'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: styfle/cancel-workflow-action@0.3.1
+        with:
+          # get work flow id by https://api.github.com/repos/rooch-network/rooch/actions/workflows
+          # 57258338: check_build_test
+          workflow_id: 57258338
+          ignore_sha: true
+          access_token: ${{ github.token }}

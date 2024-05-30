@@ -30,7 +30,7 @@ module rooch_framework::genesis {
     }
 
     fun init(){
-        //TODO genesis account should be a resource account?
+        
         let genesis_account = &account::create_account_internal(@rooch_framework);
         let genesis_context_option = tx_context::get_attribute<GenesisContext>();
         assert!(option::is_some(&genesis_context_option), ErrorGenesisInit);
@@ -43,9 +43,15 @@ module rooch_framework::genesis {
         gas_coin::genesis_init(genesis_account);
         transaction_fee::genesis_init(genesis_account);
         timestamp::genesis_init(genesis_account, genesis_context.timestamp);
-        address_mapping::genesis_init(genesis_account); 
-
+        address_mapping::genesis_init(genesis_account);
         onchain_config::genesis_init(genesis_account, genesis_context.sequencer);
+
+        // Some test cases use framework account as sequencer, it may already exist
+        if(!moveos_std::account::exists_at(genesis_context.sequencer)){
+            account::create_account_internal(genesis_context.sequencer);
+        };
+        // give some gas coin to the sequencer
+        gas_coin::faucet(genesis_context.sequencer, 1000000_00000000u256);
     }
 
 

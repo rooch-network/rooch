@@ -82,7 +82,7 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                 let tx_data = context
                     .build_tx_data(sender, action, max_gas_amount)
                     .await?;
-                //TODO the authenticator usually is associalted with the RoochTransactinData
+                //TODO the authenticator usually is associated with the RoochTransactinData
                 //So we need to find a way to let user generate the authenticator based on the tx_data.
                 let tx = RoochTransaction::new(tx_data, authenticator.into());
                 context.execute(tx).await

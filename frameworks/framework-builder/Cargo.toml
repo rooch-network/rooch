@@ -1,6 +1,6 @@
 [package]
 name = "framework-builder"
-version = "0.1.0"
+version = "0.4.1"
 
 # Workspace inherited keys
 authors = { workspace = true }
@@ -24,10 +24,11 @@ serde_bytes = { workspace = true }
 sha3 = { workspace = true }
 smallvec = { workspace = true }
 hex = { workspace = true }
-petgraph = { workspace = true }
 bcs = { workspace = true }
 codespan-reporting = { workspace = true }
 pathdiff = { workspace = true }
+itertools = { workspace = true }
+tracing = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }
@@ -48,3 +49,7 @@ move-model = { workspace = true }
 
 moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }
+moveos-stdlib = { workspace = true }
+moveos-compiler = { workspace = true }
+
+framework-types = { workspace = true }

@@ -34,7 +34,9 @@ use rayon::iter::Either;
 
 use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::term::termcolor::Buffer;
+use move_ir_types::ast::Metadata as ASTMetadata;
 use move_model::options::ModelBuilderOptions;
+use moveos_verifier::build::compile_and_inject_metadata;
 use regex::Regex;
 use std::ffi::CString;
 use std::string::ToString;
@@ -346,9 +348,9 @@ fn compile_source_unit(
 fn compile_ir_module_with_source<'a>(
     deps: impl Iterator<Item = &'a CompiledModule>,
     file_content: String,
-) -> Result<CompiledModule> {
+) -> Result<(CompiledModule, ASTMetadata)> {
     use move_ir_compiler::Compiler as IRCompiler;
-    IRCompiler::new(deps.collect()).into_compiled_module(&file_content)
+    IRCompiler::new(deps.collect()).into_compiled_module_with_metadata(&file_content)
 }
 
 fn compile_ir_script_with_source<'a>(
@@ -462,7 +464,7 @@ pub trait MoveOSTestAdapter<'a>: Sized {
                         compile_ir_script_with_source(state.dep_modules(), data_content)?,
                     ),
                     PrintBytecodeInputChoice::Module => Either::Right(
-                        compile_ir_module_with_source(state.dep_modules(), data_content)?,
+                        compile_ir_module_with_source(state.dep_modules(), data_content)?.0,
                     ),
                 };
                 let source_mapping = SourceMapping::new_from_view(
@@ -517,11 +519,12 @@ pub trait MoveOSTestAdapter<'a>: Sized {
                         (named_addr_opt, module, warnings_opt)
                     }
                     SyntaxChoice::IR => {
-                        let module = compile_ir_module_with_source(
+                        let (module, metadata) = compile_ir_module_with_source(
                             state.dep_modules(),
                             data_content.clone(),
                         )?;
-                        (None, module, None)
+                        let final_module = compile_and_inject_metadata(&module, metadata);
+                        (None, final_module, None)
                     }
                 };
                 let (output, module) = self.publish_module(

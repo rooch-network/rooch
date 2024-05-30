@@ -1,0 +1,49 @@
+# 欺诈证明
+
+Rooch Network 使用基于 [Optimistic Rollups](https://ethereum.org/en/developers/docs/scaling/optimistic-rollups/) 机制的欺诈证明来确保 Rooch DApp 的安全性。
+
+> Rooch 还将支持[由 ZK Proof 启用的混合安全性](./hybrid-security.zh-CN.mdx)。
+
+## flexEmu - 提供单步证明的通用模拟器
+
+生成欺诈证明是确保 Optimistic Rollup 系统中链下系统安全的关键部分。为此，我们设计了 [flexEmu](https://github.com/rooch-network/flexemu)。
+
+import Image from "next/image";
+
+<Image
+  src="/docs/rooch-flexemu.svg"
+  alt="Rooch flexEmu"
+  width={500}
+  height={500}
+  className="mx-auto my-4"
+/>
+
+> 在 GitHub 上查找 [flexEmu 的详细说明](https://github.com/rooch-network/flexemu/blob/main/docs/guidelines.md)。
+
+### 多轮交互式仲裁
+
+欺诈证明生成基于多轮交互式证明过程。目标是找到导致挑战者和防御者之间出现分歧状态的确切指令步骤。
+
+以下是其工作原理的详细说明：
+
+假设一个块包含要执行的 `N` 个步骤。挑战者和防御者在最终执行后（即第 `N` 步），首先将各自状态的证明发送给仲裁合约，如果仲裁合约发现结果不一致，会要求双方提供第 `N/2` 步的状态证明。
+
+- 如果此时结果一致，则一定是步骤 `N/2` 和 `N` 之间发生了分歧，仲裁合约会要求双方提供步骤 `(N/2 + N) / 2` 的证明。
+- 如果结果不一致，则为第 `0` 步和第 `N/2` 步不一致，仲裁合约将对第 `(N/2)/2` 步取双方的证明。
+
+各方将继续进行多轮这样的证明过程，直到仲裁合约确定导致分歧状态的确切指令步骤。
+
+此时，挑战者和防御者已经就上一步（`m-1`）的中间状态证明达成一致，仲裁合约只需要根据第 `m-1` 步的状态执行第 `m` 步，然后将生成的状态证明与挑战者和防御者提供的证明进行比较，以确定哪一方提供了正确的状态。
+
+提供错误状态的一方将被经济机制惩罚。
+
+> Tokenomics 将于 [2024 年第四季度发布](/learn/miscellaneous/roadmap)
+
+### flexEmu 优势
+
+flexEmu 被设计为具有单步状态证明的通用字节码模拟器。它的通用目标为 Rooch 的实现提供了 2 个优势：
+
+- **与任意 Layer1 的兼容性**
+  任何支持 MIPS 指令集的 Layer1 都可以仲裁 flexEmu 生成的证明。这使得 Rooch 成为任意 Layer1 的 Layer2。
+- **易于维护、调试和升级**
+  如果未来 MoveVM 有重大升级，flexEmu 可以快速容纳。

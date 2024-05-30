@@ -26,12 +26,13 @@ use move_vm_types::{
 use moveos_stdlib::natives::helpers::{make_module_natives, make_native};
 use moveos_types::state::{MoveState, MoveType};
 use rooch_types::bitcoin::types::Witness;
+use serde::{Deserialize, Serialize};
 use smallvec::smallvec;
 use std::collections::VecDeque;
 use tracing::error;
 use {envelope::ParsedEnvelope, envelope::RawEnvelope, inscription::Inscription};
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, Serialize, PartialEq, Eq, Deserialize)]
 pub struct FromWitnessGasParameters {
     pub base: InternalGas,
     pub per_byte: InternalGasPerByte,
@@ -91,7 +92,7 @@ pub(crate) fn native_from_witness(
     Ok(NativeResult::ok(cost, smallvec![val]))
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, Serialize, PartialEq, Eq, Deserialize)]
 pub struct GasParameters {
     pub from_witness: FromWitnessGasParameters,
 }

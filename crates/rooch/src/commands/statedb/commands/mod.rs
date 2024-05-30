@@ -8,7 +8,7 @@ use raw_store::rocks::RocksDB;
 use raw_store::StoreInstance;
 use rooch_config::store_config::StoreConfig;
 use rooch_config::{BaseConfig, RoochOpt};
-use rooch_types::chain_id::RoochChainID;
+use rooch_types::rooch_network::RoochChainID;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tracing::info;
@@ -17,6 +17,12 @@ pub mod export;
 pub mod genesis_utxo;
 pub mod import;
 
+pub const BATCH_SIZE: usize = 5000;
+
+pub const GLOBAL_STATE_TYPE_PREFIX: &str = "states";
+pub const GLOBAL_STATE_TYPE_ROOT: &str = "states_root";
+pub const GLOBAL_STATE_TYPE_OBJECT: &str = "states_object";
+pub const GLOBAL_STATE_TYPE_FIELD: &str = "states_field";
 pub fn init_statedb(
     base_data_dir: Option<PathBuf>,
     chain_id: Option<RoochChainID>,

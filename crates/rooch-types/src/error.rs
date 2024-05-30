@@ -96,6 +96,8 @@ pub enum RoochError {
     InvalidChainID,
     #[error("Invalid password error: {0}")]
     InvalidPasswordError(String),
+    #[error("Invalid signature scheme error")]
+    InvalidSignatureScheme,
 
     #[error("Clean server error: {0}")]
     CleanServerError(String),
@@ -143,6 +145,12 @@ impl From<io::Error> for RoochError {
 impl From<VMError> for RoochError {
     fn from(e: VMError) -> Self {
         RoochError::VMError(e)
+    }
+}
+
+impl From<serde_json::Error> for RoochError {
+    fn from(e: serde_json::Error) -> Self {
+        RoochError::UnexpectedError(e.to_string())
     }
 }
 

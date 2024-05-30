@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use clap::Parser;
 use move_cli::Move;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
-use moveos::vm::dependency_order::sort_by_dependency_order;
+use moveos_compiler::dependency_order::sort_by_dependency_order;
 use moveos_types::{
     addresses::MOVEOS_STD_ADDRESS, move_types::FunctionId, transaction::MoveAction,
 };
@@ -43,7 +43,7 @@ pub struct Publish {
 
     /// Whether publish modules by `MoveAction::ModuleBundle`?
     /// If not set, publish moduels through Move entry function
-    /// `moveos_std::move_module::publish_modules_entry`.
+    /// `moveos_std::module_store::publish_modules_entry`.
     /// **Deprecated**! Publish modules by `MoveAction::ModuleBundle` is no longer used anymore.
     /// So you should never add this option.
     /// For now, the option is kept for test only.
@@ -92,6 +92,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         let sorted_modules = sort_by_dependency_order(modules.iter_modules())?;
         let resolver = context.get_client().await?;
         // Serialize and collect module binaries into bundles
+        verifier::verify_modules(&sorted_modules, &resolver)?;
         for module in sorted_modules {
             let module_address = module.self_id().address().to_owned();
             if module_address != pkg_address {
@@ -101,7 +102,6 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                     pkg_address.clone(),
                 )));
             };
-            verifier::verify_module(&module, &resolver)?;
             let mut binary: Vec<u8> = vec![];
             module.serialize(&mut binary)?;
             bundles.push(binary);
@@ -128,7 +128,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                 FunctionId::new(
                     ModuleId::new(
                         MOVEOS_STD_ADDRESS,
-                        Identifier::new("move_module".to_owned()).unwrap(),
+                        Identifier::new("module_store".to_owned()).unwrap(),
                     ),
                     Identifier::new("publish_modules_entry".to_owned()).unwrap(),
                 ),

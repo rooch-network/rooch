@@ -203,7 +203,8 @@ where
                     Err(err) => return Err(err.finish(Location::Undefined)),
                 };
                 let script_module = script_into_module(compiled_script);
-                let result = moveos_verifier::verifier::verify_module(&script_module, self.remote);
+                let modules = vec![script_module];
+                let result = moveos_verifier::verifier::verify_modules(&modules, self.remote);
                 match result {
                     Ok(_) => {}
                     Err(err) => return Err(err),
@@ -247,8 +248,16 @@ where
                     )?;
 
                 let mut init_function_modules = vec![];
+
+                let result =
+                    moveos_verifier::verifier::verify_modules(&compiled_modules, self.remote);
+                match result {
+                    Ok(_) => {}
+                    Err(err) => return Err(err),
+                }
+
                 for module in &compiled_modules {
-                    let result = moveos_verifier::verifier::verify_module(module, self.remote);
+                    let result = moveos_verifier::verifier::verify_init_function(module);
                     match result {
                         Ok(res) => {
                             if res {
@@ -307,7 +316,10 @@ where
                 let resolved_args = self.resolve_argument(&loaded_function, call.args, location)?;
                 let serialized_args = self.load_arguments(resolved_args)?;
                 if bypass_visibility {
-                    self.session
+                    // bypass visibility call is system call, we do not charge gas for it, like L1 block transaction
+                    self.gas_meter.stop_metering();
+                    let result = self
+                        .session
                         .execute_function_bypass_visibility(
                             &call.function_id.module_id,
                             &call.function_id.function_name,
@@ -320,7 +332,9 @@ where
                                 ret.return_values.is_empty(),
                                 "Function should not return values"
                             );
-                        })
+                        });
+                    self.gas_meter.start_metering();
+                    result
                 } else {
                     self.session
                         .execute_entry_function(

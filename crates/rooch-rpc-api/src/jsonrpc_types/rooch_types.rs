@@ -12,7 +12,7 @@ use crate::jsonrpc_types::{
 };
 use move_core_types::u256::U256;
 use rooch_types::framework::coin::CoinInfo;
-use rooch_types::indexer::event_filter::IndexerEventID;
+use rooch_types::indexer::event::IndexerEventID;
 use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::transaction::rooch::RoochTransaction;
 use schemars::JsonSchema;
@@ -22,7 +22,7 @@ use std::string::String;
 pub type EventPageView = PageView<EventView, u64>;
 pub type TransactionWithInfoPageView = PageView<TransactionWithInfoView, u64>;
 pub type StatePageView = PageView<StateKVView, String>;
-pub type BalanceInfoPageView = PageView<BalanceInfoView, String>;
+pub type BalanceInfoPageView = PageView<BalanceInfoView, IndexerStateID>;
 pub type IndexerEventPageView = PageView<IndexerEventView, IndexerEventID>;
 
 pub type IndexerObjectStatePageView = PageView<IndexerObjectStateView, IndexerStateID>;

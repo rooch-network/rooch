@@ -7,6 +7,7 @@ module rooch_framework::transaction_validator {
     use moveos_std::tx_context;
     use moveos_std::tx_result;
     use moveos_std::account;
+    use moveos_std::gas_schedule;
     use rooch_framework::account as account_entry;
     use rooch_framework::multichain_address::MultiChainAddress;
     use rooch_framework::address_mapping;
@@ -17,14 +18,12 @@ module rooch_framework::transaction_validator {
     use rooch_framework::chain_id;
     use rooch_framework::transaction_fee;
     use rooch_framework::gas_coin;
+    use rooch_framework::transaction::{Self, TransactionSequenceInfo};
+    use rooch_framework::timestamp;
 
     const MAX_U64: u128 = 18446744073709551615;
 
 
-    /// Transaction exceeded its allocated max gas
-    const ErrorOutOfGas: u64 = 1;
-
-    //TODO Migrate the error code to the auth_validator module 
     /// Validate errors. These are separated out from the other errors in this
     /// module since they are mapped separately to major VM statuses, and are
     /// important to the semantics of the system.
@@ -35,6 +34,7 @@ module rooch_framework::transaction_validator {
     const ErrorValidateTransactionExpired: u64 = 1005;
     const ErrorValidateBadChainId: u64 = 1006;
     const ErrorValidateSequenceNumberTooBig: u64 = 1007;
+    const ErrorMaxGasAmountExceeded: u64 = 1008;
 
     /// The authenticator's auth validator id is not installed to the sender's account
     const ErrorValidateNotInstalledAuthValidator: u64 = 1010;
@@ -71,22 +71,26 @@ module rooch_framework::transaction_validator {
 
         // Check that the transaction's sequence number matches the
         // current sequence number. Otherwise sequence number is too new.
-        //FIXME we temporarily disable this check, in order to improve the devnet experience
-        //Because the devnet will be reset frequently, so the sequence number will be reset to 0
-        //But the sequence number(nonce) in MetaMask will not be reset, so the transaction will be rejected 
-        // assert!(
-        //     tx_sequence_number == account_sequence_number,
-        //     ErrorValidateSequenceNumberTooNew
-        // );
+        assert!(
+            tx_sequence_number == account_sequence_number,
+            ErrorValidateSequenceNumberTooNew
+        );
 
         // === validate gas ===
         let max_gas_amount = tx_context::max_gas_amount();
         let gas = transaction_fee::calculate_gas(max_gas_amount);
 
-        // We skip the gas check for the new account, for avoid break the current testcase
-        // TODO remove the skip afater we provide the gas faucet and update all testcase
-        if(account::exists_at(sender)){
-            let gas_balance = gas_coin::balance(sender);
+        let gas_schedule = gas_schedule::gas_schedule();
+        let max_gas_amount_config = gas_schedule::gas_schedule_max_gas_amount(gas_schedule);
+        assert!(
+            max_gas_amount <= max_gas_amount_config,
+            ErrorMaxGasAmountExceeded
+        );
+
+        let gas_balance = gas_coin::balance(sender);
+
+        // we do not need to check the gas balance in local or dev chain
+        if(!chain_id::is_local_or_dev()){
             assert!(
                 gas_balance >= gas,
                 ErrorValidateCantPayGasDeposit
@@ -118,17 +122,17 @@ module rooch_framework::transaction_validator {
     /// Execute before the transaction is executed, automatically called by the MoveOS VM.
     /// This function is for Rooch to auto create account and address maping.
     fun pre_execute(
-        
     ) {
         let sender = tx_context::sender();
         //Auto create account if not exist
         if (!account::exists_at(sender)) {
             account_entry::create_account_internal(sender);
-            // Auto get gas coin from faucet if not enough
-            // TODO remove this after we provide the gas faucet
-            //100 RGC
-            let init_gas = 100_000_000_000_000_000_000u256;
-            gas_coin::faucet(sender, init_gas); 
+            //if the chain is local or dev, give the sender some RGC
+            if (chain_id::is_local_or_dev()) {
+                //100 RGC
+                let init_gas = 1_00_000_000u256;
+                gas_coin::faucet(sender, init_gas); 
+            };
         }; 
         //the transaction validator will put the multi chain address into the context
         let multichain_address = tx_context::get_attribute<MultiChainAddress>();
@@ -139,13 +143,18 @@ module rooch_framework::transaction_validator {
                 address_mapping::bind_no_check(sender, multichain_address);
             };
         };
+        let tx_sequence_info = tx_context::get_attribute<TransactionSequenceInfo>();
+        if (option::is_some(&tx_sequence_info)) {
+            let tx_sequence_info = option::extract(&mut tx_sequence_info);
+            let tx_timestamp = transaction::tx_timestamp(&tx_sequence_info);
+            timestamp::try_update_global_time_internal(tx_timestamp);
+        };
     }
 
     /// Transaction post_execute function.
     /// Execute after the transaction is executed, automatically called by the MoveOS VM.
     /// This function is for Rooch to update the sender's sequence number and pay the gas fee.
     fun post_execute(
-        
     ) {
         let sender = tx_context::sender();
 

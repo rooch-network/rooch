@@ -3,22 +3,16 @@ CREATE TABLE transactions (
     tx_hash                             VARCHAR      NOT NULL,
     sequence_number                     BIGINT       NOT NULL,
     sender                              VARCHAR      NOT NULL,
-    action                              VARCHAR      NOT NULL,
     action_type                         SMALLINT     NOT NULL,
-    action_raw                          BLOB         NOT NULL,
     auth_validator_id                   BIGINT       NOT NULL,
     authenticator_payload               BLOB         NOT NULL,
     tx_accumulator_root                 VARCHAR      NOT NULL,
-    transaction_raw                     BLOB         NOT NULL,
 
     state_root                          VARCHAR      NOT NULL,
     size                                BIGINT       NOT NULL,
     event_root                          VARCHAR      NOT NULL,
     gas_used                            BIGINT       NOT NULL,
     status                              VARCHAR      NOT NULL,
-
-    tx_order_auth_validator_id          BIGINT       NOT NULL,
-    tx_order_authenticator_payload      BLOB         NOT NULL,
 
     created_at                          BIGINT       NOT NULL,
     UNIQUE (tx_hash)

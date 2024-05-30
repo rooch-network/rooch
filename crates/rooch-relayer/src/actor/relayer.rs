@@ -13,7 +13,7 @@ use coerce::actor::system::ActorSystem;
 use coerce::actor::{context::ActorContext, message::Handler, Actor, IntoActor};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::KeptVMStatus;
-use moveos_types::gas_config::GasConfig;
+use moveos_types::moveos_std::gas_schedule::GasScheduleConfig;
 use moveos_types::moveos_std::tx_context::TxContext;
 use rooch_config::{BitcoinRelayerConfig, EthereumRelayerConfig};
 use rooch_executor::proxy::ExecutorProxy;
@@ -37,7 +37,7 @@ impl RelayerActor {
         ethereum_config: Option<EthereumRelayerConfig>,
         bitcoin_config: Option<BitcoinRelayerConfig>,
     ) -> Result<Self> {
-        let relayer_address = relayer_key.public().address().into();
+        let relayer_address = relayer_key.public().rooch_address()?.into();
         let mut relayers: Vec<Box<dyn Relayer>> = vec![];
         if let Some(ethereum_config) = ethereum_config {
             let eth_relayer = EthereumRelayer::new(ethereum_config)?;
@@ -57,7 +57,7 @@ impl RelayerActor {
 
         Ok(Self {
             relayer_address,
-            max_gas_amount: GasConfig::DEFAULT_MAX_GAS_AMOUNT * 1000,
+            max_gas_amount: GasScheduleConfig::INITIAL_MAX_GAS_AMOUNT * 1000,
             relayers,
             executor,
             processor,

@@ -61,7 +61,7 @@ impl BtcAPIServer for BtcServer {
                     .resolve_address(multi_chain_address)
                     .await?
             }
-            _ => AccountAddress::ZERO,
+            _ => AccountAddress::ZERO.into(),
         };
 
         let global_state_filter =
@@ -73,7 +73,7 @@ impl BtcAPIServer for BtcServer {
 
         let mut data = self
             .aggregate_service
-            .pack_uxtos(states)
+            .build_utxos(states)
             .await?
             .into_iter()
             .map(|v| UTXOStateView::try_new_from_utxo_state(v, self.btc_network))
@@ -116,24 +116,19 @@ impl BtcAPIServer for BtcServer {
                     .resolve_address(multi_chain_address)
                     .await?
             }
-            _ => AccountAddress::ZERO,
+            _ => AccountAddress::ZERO.into(),
         };
 
         let global_state_filter =
             InscriptionFilterView::into_global_state_filter(filter, resolve_address)?;
-        let limit_value = limit_of
-            .checked_add(1)
-            .ok_or(jsonrpsee::core::Error::Custom(
-                "limit value overflow".to_string(),
-            ))?;
         let states = self
             .rpc_service
-            .query_object_states(global_state_filter, cursor, limit_value, descending_order)
+            .query_object_states(global_state_filter, cursor, limit_of + 1, descending_order)
             .await?;
 
         let mut data = self
             .aggregate_service
-            .pack_inscriptions(states)
+            .build_inscriptions(states)
             .await?
             .into_iter()
             .map(|v| InscriptionStateView::try_new_from_inscription_state(v, self.btc_network))

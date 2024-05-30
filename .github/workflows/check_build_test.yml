@@ -42,6 +42,7 @@ jobs:
           docker --version
           sleep 6
           docker images
+          docker pull bitseed/bitseed:0.1.4
 
       - name: Check code format
         run: cargo fmt -- --check
@@ -51,20 +52,15 @@ jobs:
         run: cargo build
       - name: Framework compatibiliy
         run: cargo run --package framework-release --bin framework-release
-      - name: Execute rust tests
-        run: cargo nextest run --workspace --all-features --exclude rooch-framework-tests --exclude rooch-integration-test-runner -v
-      - name: Execute the framework test with 1 thread
-        run: cargo test --release run -p rooch-framework-tests -p rooch-integration-test-runner
-      - name: Run CLI integration test
-        # cargo-nextest does not support the CLI integration test powered by Cucumber Rust.
-        # Use cargo test to run CLI integration tests.
-        run: cargo test --release -p testsuite --test integration
       - name: Run Rooch init
         run: cargo run --bin rooch init --skip-password
       - name: Execute Move stdlib and framework tests
         run: ./scripts/pr.sh -m
+      - name: Execute rust tests
+        run: ./scripts/pr.sh -t
       - name: Build and test example projects
         run: ./scripts/pr.sh -e
+      
 
       # web & sdk & dashboard
       - name: Use Node.js
@@ -93,8 +89,6 @@ jobs:
         run: pnpm rooch-sdk test
       - name: Build SDK KIT
         run: pnpm rooch-sdk-kit build
-      - name: Test SDK KIT
-        run: pnpm rooch-sdk-kit test
       - name: Build Dashboard
         run: pnpm dashboard build
 

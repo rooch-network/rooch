@@ -6,13 +6,14 @@ use crate::server::rooch_server::RoochServer;
 use crate::service::aggregate_service::AggregateService;
 use crate::service::rpc_logger::RpcLogger;
 use crate::service::rpc_service::RpcService;
-use anyhow::{Error, Result};
+use anyhow::{bail, ensure, Error, Result};
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
 use hyper::header::HeaderValue;
 use hyper::Method;
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
+use move_core_types::account_address::AccountAddress;
 use moveos_store::{MoveOSDB, MoveOSStore};
 use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
 use raw_store::errors::RawStoreError;
@@ -34,7 +35,6 @@ use rooch_indexer::actor::reader_indexer::IndexerReaderActor;
 use rooch_indexer::indexer_reader::IndexerReader;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_indexer::IndexerStore;
-use rooch_key::key_derive::{generate_new_key_pair, retrieve_key_pair};
 use rooch_pipeline_processor::actor::processor::PipelineProcessorActor;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_proposer::actor::messages::ProposeBlock;
@@ -47,10 +47,8 @@ use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
 use rooch_types::address::RoochAddress;
-use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
-use rooch_types::bitcoin::network::Network;
-use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{GenesisError, RoochError};
+use rooch_types::rooch_network::{BuiltinChainID, RoochChainID, RoochNetwork};
 use serde_json::json;
 use std::env;
 use std::fmt::Debug;
@@ -171,14 +169,14 @@ pub async fn start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<Serve
 }
 
 // run json-rpc server
-pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Result<ServerHandle> {
+pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<ServerHandle> {
     // We may call `start_server` multiple times in testing scenarios
     // tracing_subscriber can only be inited once.
     let _ = tracing_subscriber::fmt::try_init();
 
     let config = ServerConfig::new_with_port(opt.port());
 
-    let chain_id_opt = opt.chain_id.clone().unwrap_or_default();
+    let chain_id = opt.chain_id.clone().unwrap_or_default();
 
     let actor_system = ActorSystem::global_system();
 
@@ -187,51 +185,45 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     let arc_base_config = Arc::new(base_config);
     let mut store_config = StoreConfig::default();
     store_config.merge_with_opt_with_init(opt, Arc::clone(&arc_base_config), true)?;
-    let (mut root, mut moveos_store, rooch_store) = init_storage(&store_config)?;
+    let (mut root, mut moveos_store, mut rooch_store) = init_storage(&store_config)?;
 
     //Init indexer store
     let mut indexer_config = IndexerConfig::default();
     indexer_config.merge_with_opt_with_init(opt, Arc::clone(&arc_base_config), true)?;
-    let (indexer_store, indexer_reader) = init_indexer(&indexer_config)?;
+    let (mut indexer_store, indexer_reader) = init_indexer(&indexer_config)?;
 
     // Check for key pairs
-    if server_opt.sequencer_keypair.is_none()
-        || server_opt.proposer_keypair.is_none()
-        || server_opt.relayer_keypair.is_none()
-    {
-        // only for integration test, generate test key pairs
-        if chain_id_opt.is_test_or_dev_or_local() {
-            let result = generate_new_key_pair(None, None, None, None)?;
-            let kp: RoochKeyPair =
-                retrieve_key_pair(&result.key_pair_data.private_key_encryption, None)?;
-            server_opt.sequencer_keypair = Some(kp.copy());
-            server_opt.proposer_keypair = Some(kp.copy());
-            server_opt.relayer_keypair = Some(kp.copy());
-        } else {
-            return Err(Error::from(
-                RoochError::InvalidSequencerOrProposerOrRelayerKeyPair,
-            ));
-        }
+    if server_opt.sequencer_keypair.is_none() || server_opt.proposer_keypair.is_none() {
+        return Err(Error::from(
+            RoochError::InvalidSequencerOrProposerOrRelayerKeyPair,
+        ));
     }
 
     let sequencer_keypair = server_opt.sequencer_keypair.unwrap();
-    let sequencer_account: RoochAddress = (&sequencer_keypair.public()).into();
+    let sequencer_account = sequencer_keypair.public().rooch_address()?;
 
-    let btc_network = opt.btc_network.unwrap_or(Network::default().to_num());
     let data_import_flag = opt.data_import_flag;
-
-    if root.is_genesis() {
-        let genesis_ctx = chain_id_opt.genesis_ctx(sequencer_account);
-        let bitcoin_genesis_ctx = BitcoinGenesisContext::new(btc_network);
-        let genesis: RoochGenesis = RoochGenesis::build(genesis_ctx, bitcoin_genesis_ctx)?;
-        root = genesis.init_genesis(&mut moveos_store)?;
-    } else {
-        //TODO if root is not genesis, we should load genesis from store
-        let genesis_ctx = chain_id_opt.genesis_ctx(sequencer_account);
-        let bitcoin_genesis_ctx = BitcoinGenesisContext::new(btc_network);
-        let genesis: RoochGenesis = RoochGenesis::build(genesis_ctx, bitcoin_genesis_ctx)?;
-        genesis.check_genesis(moveos_store.get_config_store())?;
-    };
+    if let RoochChainID::Builtin(builtin_chain_id) = chain_id {
+        let mut network: RoochNetwork = builtin_chain_id.into();
+        let sequencer_account: AccountAddress = sequencer_account.into();
+        match builtin_chain_id {
+            // local and dev chain can use any sequencer account
+            BuiltinChainID::Local | BuiltinChainID::Dev => {
+                network.set_sequencer_account(sequencer_account);
+            }
+            _ => {
+                ensure!(network.genesis_config.sequencer_account == sequencer_account, "Sequencer({:?}) in genesis config is not equal to sequencer({:?}) in cli config", network.genesis_config.sequencer_account, sequencer_account);
+            }
+        }
+        let genesis = RoochGenesis::build(network)?;
+        if root.is_genesis() {
+            root = genesis.init_genesis(&mut moveos_store, &mut rooch_store, &mut indexer_store)?;
+        } else {
+            genesis.check_genesis(moveos_store.get_config_store())?;
+        }
+    } else if root.is_genesis() {
+        bail!("Custom chain_id is not supported auto genesis, please use `rooch genesis` to init genesis. ");
+    }
 
     let executor_actor =
         ExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store.clone())?;
@@ -246,7 +238,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
 
     // Init sequencer
     info!("RPC Server sequencer address: {:?}", sequencer_account);
-    let sequencer = SequencerActor::new(sequencer_keypair, rooch_store)?
+    let sequencer = SequencerActor::new(sequencer_keypair.copy(), rooch_store)?
         .into_actor(Some("Sequencer"), &actor_system)
         .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
@@ -265,7 +257,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
 
     // Init proposer
     let proposer_keypair = server_opt.proposer_keypair.unwrap();
-    let proposer_account: RoochAddress = (&proposer_keypair.public()).into();
+    let proposer_account: RoochAddress = proposer_keypair.public().rooch_address()?;
     info!("RPC Server proposer address: {:?}", proposer_account);
     let proposer = ProposerActor::new(proposer_keypair, da_proxy)
         .into_actor(Some("Proposer"), &actor_system)
@@ -313,13 +305,10 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     let bitcoin_relayer_config = opt.bitcoin_relayer_config();
 
     if ethereum_relayer_config.is_some() || bitcoin_relayer_config.is_some() {
-        let relayer_keypair = server_opt.relayer_keypair.unwrap();
-        let relayer_account: RoochAddress = (&relayer_keypair.public()).into();
-        info!("RPC Server relayer address: {:?}", relayer_account);
         let relayer = RelayerActor::new(
             executor_proxy,
             processor_proxy.clone(),
-            relayer_keypair,
+            sequencer_keypair.copy(),
             ethereum_relayer_config,
             bitcoin_relayer_config,
         )

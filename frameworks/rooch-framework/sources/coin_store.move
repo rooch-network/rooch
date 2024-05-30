@@ -40,7 +40,6 @@ module rooch_framework::coin_store {
     /// A holder of a specific coin types.
     /// These are kept in a single resource to ensure locality of data.
     struct CoinStore<phantom CoinType: key> has key {
-        coin_type: string::String,
         balance: Balance,
         frozen: bool,
     }
@@ -109,22 +108,19 @@ module rooch_framework::coin_store {
         let coin_store_id = object::id(&coin_store_object);
         let coin_store = object::remove(coin_store_object);
 
-        let CoinStore { coin_type, balance, frozen } = coin_store;
+        let CoinStore { balance, frozen } = coin_store;
         // Cannot remove a frozen CoinStore, because if we allow this, the frozen is meaningless
         assert!(!frozen, ErrorCoinStoreIsFrozen);
         let Balance { value } = balance;
         let coin = coin::pack<CoinType>(value);
 
+        let coin_type = type_info::type_name<CoinType>();
         event::emit(RemoveEvent {
             coin_store_id,
             coin_type,
         });
 
         coin
-    }
-
-    public fun coin_type<CoinType: key>(coin_store_obj: &Object<CoinStore<CoinType>>): string::String {
-        object::borrow(coin_store_obj).coin_type
     }
 
     public fun balance<CoinType: key>(coin_store_obj: &Object<CoinStore<CoinType>>): u256 {
@@ -178,7 +174,6 @@ module rooch_framework::coin_store {
     /// Borrow a mut CoinStore Object by the coin store id
     /// This function is for the `CoinType` module to extend
     public fun borrow_mut_coin_store_extend<CoinType: key>(
-        
         object_id: ObjectID
     ): &mut Object<CoinStore<CoinType>> {
         borrow_mut_coin_store_internal(object_id)
@@ -194,8 +189,8 @@ module rooch_framework::coin_store {
     ) {
         let coin_store_id = object::id(coin_store_obj);
         let coin_store = object::borrow_mut(coin_store_obj);
-        let coin_type = coin_store.coin_type;
         coin_store.frozen = frozen;
+        let coin_type = type_info::type_name<CoinType>();
         event::emit(FreezeEvent {
             coin_store_id,
             coin_type,
@@ -209,7 +204,6 @@ module rooch_framework::coin_store {
         coin::check_coin_info_registered<CoinType>();
         let coin_type = type_info::type_name<CoinType>();
         let coin_store_obj = object::new(CoinStore<CoinType> {
-            coin_type,
             balance: Balance { value: 0 },
             frozen: false,
         });
@@ -224,7 +218,6 @@ module rooch_framework::coin_store {
         coin::check_coin_info_registered<CoinType>();
         let coin_type = type_info::type_name<CoinType>();
         let coin_store_obj = object::new_account_named_object(account, CoinStore<CoinType> {
-            coin_type,
             balance: Balance { value: 0 },
             frozen: false,
         });
@@ -270,9 +263,10 @@ module rooch_framework::coin_store {
         let coin_store = object::borrow_mut(coin_store_obj);
         check_coin_store_not_frozen(coin_store);
         let coin = extract_from_balance<CoinType>(coin_store, amount);
+        let coin_type = type_info::type_name<CoinType>();
         event::emit(WithdrawEvent {
             coin_store_id: object_id,
-            coin_type: coin_store.coin_type,
+            coin_type,
             amount,
         });
         coin
@@ -288,9 +282,10 @@ module rooch_framework::coin_store {
         check_coin_store_not_frozen(coin_store);
         let amount = coin::value(&coin);
         merge_to_balance<CoinType>(coin_store, coin);
+        let coin_type = type_info::type_name<CoinType>();
         event::emit(DepositEvent {
             coin_store_id: object_id,
-            coin_type: coin_store.coin_type,
+            coin_type,
             amount,
         });
     }

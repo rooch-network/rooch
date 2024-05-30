@@ -5,8 +5,8 @@
 module rooch_framework::bitcoin_validator {
 
     use std::vector;
-    use std::signer;
-    use std::option::{Self, Option};
+    use rooch_framework::multichain_address::{Self, MultiChainAddress};
+    use rooch_framework::multichain_address::mapping_to_rooch_address;
     use moveos_std::hex;
     use moveos_std::tx_context;
     use moveos_std::features;
@@ -14,15 +14,11 @@ module rooch_framework::bitcoin_validator {
     use rooch_framework::ecdsa_k1;
     use rooch_framework::auth_payload;
     use rooch_framework::auth_validator;
-    use rooch_framework::account_authentication;
     use rooch_framework::auth_payload::AuthPayload;
-    use rooch_framework::multichain_address::MultiChainAddress;
+    use rooch_framework::bitcoin_address;
 
     /// there defines auth validator id for each blockchain
     const BITCOIN_AUTH_VALIDATOR_ID: u64 = 2;
-
-    // error code
-    const ErrorInvalidPublicKeyLength: u64 = 1;
 
     struct BitcoinValidator has store, drop {}
 
@@ -30,87 +26,48 @@ module rooch_framework::bitcoin_validator {
         BITCOIN_AUTH_VALIDATOR_ID
     }
 
-    public entry fun rotate_authentication_key_entry(
-        account: &signer,
-        public_key: vector<u8>
-    ) {
-        // compare newly passed public key with Ethereum public key length to ensure it's compatible
-        assert!(
-            vector::length(&public_key) == ecdsa_k1::public_key_length(),
-            ErrorInvalidPublicKeyLength
-        );
-
-        // User can rotate the authentication key arbitrarily, so we do not need to check the new public key with the account address.
-        let authentication_key = public_key_to_authentication_key(public_key);
-        let account_addr = signer::address_of(account);
-        rotate_authentication_key(account_addr, authentication_key);
-    }
-
-    fun rotate_authentication_key(account_addr: address, authentication_key: vector<u8>) {
-        account_authentication::rotate_authentication_key<BitcoinValidator>(account_addr, authentication_key);
-    }
-
-    public entry fun remove_authentication_key_entry(account: &signer) {
-        account_authentication::remove_authentication_key<BitcoinValidator>(signer::address_of(account));
-    }
-
-    public fun public_key_to_authentication_key(public_key: vector<u8>): vector<u8> {
-      public_key
-    }
-
-    /// Get the authentication key option of the given account.
-    public fun get_authentication_key_option_from_account(addr: address): Option<vector<u8>> {
-        account_authentication::get_authentication_key<BitcoinValidator>(addr)
-    }
-
-    /// The authentication key exists in account or not.
-    public fun is_authentication_key_in_account(addr: address): bool {
-        option::is_some(&get_authentication_key_option_from_account(addr))
-    }
-
-    /// Extract the authentication key of the authentication key option.
-    public fun get_authentication_key_from_account(addr: address): vector<u8> {
-        option::extract(&mut get_authentication_key_option_from_account(addr))
-    }
-
     /// Only validate the authenticator's signature.
     public fun validate_signature(payload: AuthPayload, tx_hash: vector<u8>) {
 
         // tx hash in use wallet signature is hex
         let tx_hex = hex::encode(tx_hash);
-        let tx_hex_len = (vector::length(&tx_hex) as u8);
+        let tx_hex_len = (vector::length(&tx_hex));
 
         let sign_info_prefix = auth_payload::sign_info_prefix(payload);
+        let sign_info_prefix_len = (vector::length(&sign_info_prefix));
+
         let sign_info = auth_payload::sign_info(payload);
+        let sign_info_len = (vector::length(&sign_info));
+
+        assert!(
+            sign_info_len + tx_hex_len <= 255,
+            auth_validator::error_invalid_authenticator()
+        );
 
         // append tx hash
         let full_tx = vector<u8>[];
 
-        let sign_info_prefix_len = (vector::length(&sign_info_prefix) as u8);
         if (sign_info_prefix_len > 0) {
-            vector::insert(&mut sign_info_prefix, 0, sign_info_prefix_len);
+            vector::insert(&mut sign_info_prefix, 0, (sign_info_prefix_len as u8));
             vector::append(&mut full_tx, sign_info_prefix);
         };
 
-        let sign_info_len = (vector::length(&sign_info) as u8);
         let sign_info_insert_index = 0u64;
         if (sign_info_prefix_len > 0) {
-            sign_info_insert_index = (sign_info_prefix_len as u64) + 1;
+            sign_info_insert_index = sign_info_prefix_len + 1;
         };
 
         if (vector::length(&sign_info) > 0) {
-            vector::insert(&mut full_tx, sign_info_insert_index,sign_info_len + tx_hex_len);
+            vector::insert(&mut full_tx, sign_info_insert_index, ((sign_info_len + tx_hex_len) as u8));
             vector::append(&mut full_tx, sign_info);
             vector::append(&mut full_tx, tx_hex);
         } else {
-            vector::insert(&mut full_tx, sign_info_insert_index, tx_hex_len);
+            vector::insert(&mut full_tx, sign_info_insert_index, (tx_hex_len as u8));
             vector::append(&mut full_tx, tx_hex);
         };
         // append tx hash end
-
-        // The Bitcoin wallet uses has256 twice
+        // The Bitcoin wallet uses sha2_256 twice, the `ecdsa_k1::verify` function also does sha2_256 once
         let full_tx_hash = hash::sha2_256(full_tx);
-
         assert!(
             ecdsa_k1::verify(
                 &auth_payload::sign(payload),
@@ -124,13 +81,32 @@ module rooch_framework::bitcoin_validator {
 
     public fun validate(authenticator_payload: vector<u8>): MultiChainAddress {
         features::ensure_testnet_enabled();
-        
+
+        let sender = tx_context::sender();
         let tx_hash = tx_context::tx_hash();
         let payload = auth_payload::from_bytes(authenticator_payload);
 
         validate_signature(payload, tx_hash);
 
-        auth_payload::multi_address(payload)
+        let from_address_in_payload = auth_payload::from_address(payload);
+        let bitcoin_addr = bitcoin_address::new(&from_address_in_payload);
+        let multi_chain_addr = multichain_address::from_bitcoin(bitcoin_addr);
+        // Check if the address and public key are related
+        assert!(
+            bitcoin_address::verify_with_pk(&from_address_in_payload, &auth_payload::public_key(payload)),
+            auth_validator::error_invalid_authenticator()
+        );
+
+        let rooch_addr = mapping_to_rooch_address(multi_chain_addr);
+
+
+        // Check if the sender is related to the Rooch address
+        assert!(
+            sender == rooch_addr,
+            auth_validator::error_invalid_authenticator()
+        );
+
+        multi_chain_addr
     }
 
     fun pre_execute() {}
@@ -140,8 +116,8 @@ module rooch_framework::bitcoin_validator {
 
     #[test]
     fun test_validate_signature_success() {
-        let tx_hash = x"d60d66db3188c8b07f43143e428ff7dd6b9f4bff706586e9d90a8f290374377c";
-        let auth_payload_bytes = x"402e8ef34763557c87041d3691ee0bc9cc941885c9c777f93ef6d26b2df8efdb4564cad195f8f339de5c3d2bcbda49b11649163be55051256093f510a32a3d825218426974636f696e205369676e6564204d6573736167653a0a9d0157656c636f6d6520746f206c6f63616c686f73740a596f752077696c6c20617574686f72697a652073657373696f6e3a0a53636f70653a0a3078343965653363663137613031376233333161623262386134643430656363393730366633323835363266396462363363626136323561396331303663646633353a3a2a3a3a2a0a54696d654f75743a313230300a526f6f636820747820686173683a0a2103ee14a358f6e924f82f0a263807d585a7a222f14bf45bfbeebaa33991c700d08e1f0000000000000000160200a696edc27ef17e9f079ee07d4d915c23a738a80d00";
+        let tx_hash = x"21756929c0b93b54daf211d0b7607a5876bf9d34bb069d3330eef198d23ae1f0";
+        let auth_payload_bytes = x"40a761d2cb97cde5535e65f918d111061207e16701f4cfc24fdcf3db474bbfae0f0e751a47c1536ea1bfc6860ca647238c234b86d02fbba6853e34a3c845b643c918426974636f696e205369676e6564204d6573736167653a0a9d0157656c636f6d6520746f206c6f63616c686f73740a596f752077696c6c20617574686f72697a652073657373696f6e3a0a53636f70653a0a3078343965653363663137613031376233333161623262386134643430656363393730366633323835363266396462363363626136323561396331303663646633353a3a2a3a3a2a0a54696d654f75743a313230300a526f6f636820747820686173683a0a21038e3d29b653e40f5b620f9443ee05222d1e40be58f544b6fed3d464edd54db8833e626331703878706a706b6339757a6a3264657863786a67397377386c786a6538357861343037307a7063797335383965337266366b3230716d36676a7274";
         let payload = auth_payload::from_bytes(auth_payload_bytes);
 
         validate_signature(payload, tx_hash);
@@ -150,8 +126,8 @@ module rooch_framework::bitcoin_validator {
     #[test]
     #[expected_failure(location=Self, abort_code = 1002)]
     fun test_validate_signature_fail() {
-        let tx_hash = x"deb8d910fcb86e00545234c7a10da3d6cf51e08014299d473cf07545899b1d25";
-        let auth_payload_bytes = x"402e8ef34763557c87041d3691ee0bc9cc941885c9c777f93ef6d26b2df8efdb4564cad195f8f339de5c3d2bcbda49b11649163be55051256093f510a32a3d825218426974636f696e205369676e6564204d6573736167653a0a9d0157656c636f6d6520746f206c6f63616c686f73740a596f752077696c6c20617574686f72697a652073657373696f6e3a0a53636f70653a0a3078343965653363663137613031376233333161623262386134643430656363393730366633323835363266396462363363626136323561396331303663646633353a3a2a3a3a2a0a54696d654f75743a313230300a526f6f636820747820686173683a0a2103ee14a358f6e924f82f0a263807d585a7a222f14bf45bfbeebaa33991c700d08e1f0000000000000000160200a696edc27ef17e9f079ee07d4d915c23a738a80d00";
+        let tx_hash = x"22756929c0b93b54daf211d0b7607a5876bf9d34bb069d3330eef198d23ae1f0";
+        let auth_payload_bytes = x"40a761d2cb97cde5535e65f918d111061207e16701f4cfc24fdcf3db474bbfae0f0e751a47c1536ea1bfc6860ca647238c234b86d02fbba6853e34a3c845b643c918426974636f696e205369676e6564204d6573736167653a0a9d0157656c636f6d6520746f206c6f63616c686f73740a596f752077696c6c20617574686f72697a652073657373696f6e3a0a53636f70653a0a3078343965653363663137613031376233333161623262386134643430656363393730366633323835363266396462363363626136323561396331303663646633353a3a2a3a3a2a0a54696d654f75743a313230300a526f6f636820747820686173683a0a21038e3d29b653e40f5b620f9443ee05222d1e40be58f544b6fed3d464edd54db8833e626331703878706a706b6339757a6a3264657863786a67397377386c786a6538357861343037307a7063797335383965337266366b3230716d36676a7274";
         let payload = auth_payload::from_bytes(auth_payload_bytes);
 
         validate_signature(payload, tx_hash);

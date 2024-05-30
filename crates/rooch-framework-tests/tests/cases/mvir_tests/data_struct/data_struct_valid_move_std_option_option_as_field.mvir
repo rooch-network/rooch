@@ -1,0 +1,11 @@
+//# publish
+module 0x1.TestModule1 {
+    import 0x1.option;
+    struct S0 has copy,drop {v: option.Option<u32>}
+
+    metadata {
+        data_struct {
+            0x1::TestModule1::S0 -> true;
+        }
+    }
+}

@@ -94,5 +94,40 @@ module rooch_framework::bitcoin_address {
         //We need to add the network and address type
         abort 0
     }
- 
+
+    native public fun new(raw_addr: &vector<u8>): BitcoinAddress;
+    native public fun verify_with_pk (addr: &vector<u8>, pk: &vector<u8>): bool;
+
+    #[test]
+    fun test_verify_with_pk_success() {
+        // p2tr
+        let addr = x"626331703878706a706b6339757a6a3264657863786a67397377386c786a6538357861343037307a7063797335383965337266366b3230716d36676a7274";
+        let pk = x"038e3d29b653e40f5b620f9443ee05222d1e40be58f544b6fed3d464edd54db883";
+
+        verify_with_pk(&addr, &pk);
+
+        // p2wpkh
+        let addr = x"6263317139796d6c6e6132656671783561727663737a75363333727a667871373763653963337a33346c";
+        let pk = x"02481521eb57656db4bc9ec81857e105cc7853fe8cad61be23667bb401840fc7f8";
+        verify_with_pk(&addr, &pk);
+
+        // p2pkh
+        let addr = x"313531364d67424b5a317438784641726d475a7a796e6354714142526f7665794c47";
+        let pk = x"02c3bc6ff4dec7f43dd4f587d4dc227fb171755779425ca032e0fcb2f0bb639cc2";
+        verify_with_pk(&addr, &pk);
+
+        // p2sh-p2wpkh
+        let addr = x"33385972544d547051345a55736a766373776557676d48696b556d67466356374435";
+        let pk = x"02ebdc1107552f81d188a2c63806cb6fa5d734eaa7316a85dc1f608fcaee412b72";
+        verify_with_pk(&addr, &pk);
+    }
+
+    #[test]
+    #[expected_failure(location=Self, abort_code = 3)]
+    fun test_validate_signature_fail() {
+        let addr = x"616331703878706a706b6339757a6a3264657863786a67397377386c786a6538357861343037307a7063797335383965337266366b3230716d36676a7274";
+        let pk = x"038e3d29b653e40f5b620f9443ee05222d1e40be58f544b6fed3d464edd54db883";
+
+        verify_with_pk(&addr, &pk);
+    }
 }

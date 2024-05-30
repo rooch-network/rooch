@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::types;
-use crate::address::BitcoinAddress;
+use crate::address::{BitcoinAddress, RoochAddress};
 use crate::addresses::BITCOIN_MOVE_ADDRESS;
 use crate::indexer::state::IndexerObjectState;
 use anyhow::Result;
@@ -93,7 +93,7 @@ pub fn derive_utxo_id(outpoint: &types::OutPoint) -> ObjectID {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct UTXOState {
     pub object_id: ObjectID,
-    pub owner: AccountAddress,
+    pub owner: RoochAddress,
     pub owner_bitcoin_address: Option<BitcoinAddress>,
     pub flag: u8,
     // There is a case when rooch bitcoin relayer synchronizes the bitcoin node data and processes the `process_block`
@@ -108,7 +108,7 @@ pub struct UTXOState {
 }
 
 impl UTXOState {
-    pub fn new_from_global_state(
+    pub fn new_from_object_state(
         state: IndexerObjectState,
         utxo: Option<UTXO>,
         owner_bitcoin_address: Option<BitcoinAddress>,

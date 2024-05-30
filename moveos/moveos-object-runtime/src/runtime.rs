@@ -8,6 +8,7 @@ use better_any::{Tid, TidAble};
 use log::debug;
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use move_core_types::{
+    account_address::AccountAddress,
     effects::Op,
     gas_algebra::NumBytes,
     ident_str,
@@ -25,9 +26,11 @@ use moveos_types::{
     addresses::MOVEOS_STD_ADDRESS,
     h256::H256,
     moveos_std::{
-        move_module::{ModuleStore, MoveModule},
+        module_store::{ModuleStore, Package},
+        move_module::MoveModule,
         object::{
-            ModuleStoreObject, ObjectEntity, ObjectID, Root, RootObjectEntity, GENESIS_STATE_ROOT,
+            ModuleStoreObject, ObjectEntity, ObjectID, PackageObject, Root, RootObjectEntity,
+            GENESIS_STATE_ROOT,
         },
     },
     state::{
@@ -321,6 +324,67 @@ impl ObjectRuntime {
         Ok(())
     }
 
+    fn load_or_create_package_object<'a>(
+        module_store_obj: &'a mut RuntimeObject,
+        layout_loader: &'a dyn TypeLayoutLoader,
+        resolver: &'a dyn StatelessResolver,
+        address: &'a AccountAddress,
+        package_owner: AccountAddress,
+    ) -> PartialVMResult<&'a mut RuntimeObject> {
+        let package_obj_id = Package::package_id(address);
+        let package_obj_exists =
+            match module_store_obj.load_object_field(layout_loader, resolver, &package_obj_id) {
+                Ok((_, _)) => true,
+                Err(e) => {
+                    if e.major_status() == StatusCode::MISSING_DATA {
+                        // Package not exists.
+                        false
+                    } else {
+                        return Err(e);
+                    }
+                }
+            };
+
+        if !package_obj_exists {
+            let obj = PackageObject::new_package(address, package_owner);
+            let state_root = obj.state_root();
+            let value = obj.to_runtime_value();
+            let mut global_value = GlobalValue::none();
+            global_value
+                .move_to(value)
+                .expect("Move value to GlobalValue none should success");
+            let package_runtime = RuntimeObject::init(
+                package_obj_id.clone(),
+                ObjectEntity::<Package>::type_layout(),
+                ObjectEntity::<Package>::type_tag(),
+                global_value,
+                state_root,
+            )?;
+            module_store_obj.fields.insert(
+                package_obj_id.to_key(),
+                RuntimeField::Object(package_runtime),
+            );
+            // Increase the size of module store, as we create a new package.
+            let module_store_obj_value = module_store_obj.value.move_from()?;
+            let mut module_store_obj_entity = ObjectEntity::<ModuleStore>::from_runtime_value(
+                module_store_obj_value,
+            )
+            .map_err(|e| {
+                PartialVMError::new(StatusCode::TYPE_MISMATCH)
+                    .with_message(format!("expect ObjectEntity<ModuleStore>, but got {:?}", e))
+            })?;
+            module_store_obj_entity.size += 1;
+            let module_store_obj_value = module_store_obj_entity.to_runtime_value();
+            module_store_obj
+                .value
+                .move_to(module_store_obj_value)
+                .map_err(|(e, _)| e)?;
+        };
+        let (package_obj, _) =
+            module_store_obj.load_object_field(layout_loader, resolver, &package_obj_id)?;
+        Ok(package_obj)
+    }
+
     pub fn tx_context(&self) -> TxContext {
         self.tx_context
             .as_tx_context()
@@ -390,10 +454,17 @@ impl ObjectRuntime {
         let module_store_obj = self
             .get_loaded_object(&module_store_id)?
             .expect("module store object must exist");
-        let key = KeyState::from_module_id(module_id);
-        let module_field = module_store_obj.get_loaded_field(&key);
-        match module_field {
-            Some(field) => field.as_move_module(),
+        let package_obj_id = Package::package_id(module_id.address());
+        let package_obj = module_store_obj.get_loaded_object_field(&package_obj_id)?;
+        match package_obj {
+            Some(package_obj) => {
+                let key = KeyState::from_string(&format!("{}", module_id.name()));
+                let module_field = package_obj.get_loaded_field(&key);
+                match module_field {
+                    Some(field) => field.as_move_module(),
+                    None => Ok(None),
+                }
+            }
             None => Ok(None),
         }
     }
@@ -407,9 +478,12 @@ impl ObjectRuntime {
         let module_store_id = ModuleStore::module_store_id();
         match self.load_object(layout_loader, resolver, &module_store_id) {
             Ok((module_store_obj, _)) => {
-                let key = KeyState::from_module_id(module_id);
+                let package_obj_id = Package::package_id(module_id.address());
+                let (package_obj, _) =
+                    module_store_obj.load_object_field(layout_loader, resolver, &package_obj_id)?;
+                let key = KeyState::from_string(&format!("{}", module_id.name()));
                 let (module_field, _loaded) =
-                    module_store_obj.load_field(layout_loader, resolver, key)?;
+                    package_obj.load_field(layout_loader, resolver, key)?;
                 let move_module = module_field.as_move_module()?;
                 Ok(move_module.map(|m| m.byte_codes))
             }
@@ -434,9 +508,21 @@ impl ObjectRuntime {
         is_republishing: bool,
     ) -> PartialVMResult<()> {
         let module_store_id = ModuleStore::module_store_id();
+        // TODO: Publishing module in Rust is only available for genesis transaction.
+        // The tx sender will be used ad package object owner,
+        // Is the genesis tx sender framework addresses?
+        let tx_sender = self.tx_context().sender();
         let (module_store_obj, _) = self.load_object(layout_loader, resolver, &module_store_id)?;
-        let key = KeyState::from_module_id(module_id);
-        let (module_field, _) = module_store_obj.load_field(layout_loader, resolver, key)?;
+        let package_obj = Self::load_or_create_package_object(
+            module_store_obj,
+            layout_loader,
+            resolver,
+            module_id.address(),
+            tx_sender,
+        )?;
+
+        let key = KeyState::from_string(&format!("{}", module_id.name()));
+        let (module_field, _) = package_obj.load_field(layout_loader, resolver, key)?;
 
         let value_type = FieldValue::<MoveModule>::type_tag();
         let value_layout = FieldValue::<MoveModule>::type_layout();
@@ -450,6 +536,22 @@ impl ObjectRuntime {
 
         module_field.move_to(runtime_field_value, value_layout, value_type)?;
 
+        if !is_republishing {
+            // If we directly publish module in Rust, not in Move, we need to increase the size of module store
+            // TODO we need to find a better way to handle this
+            let package_obj_value = package_obj.value.move_from()?;
+            let mut package_obj_entity =
+                ObjectEntity::<Package>::from_runtime_value(package_obj_value).map_err(|e| {
+                    PartialVMError::new(StatusCode::TYPE_MISMATCH)
+                        .with_message(format!("expect ObjectEntity<Package>, but got {:?}", e))
+                })?;
+            package_obj_entity.size += 1;
+            let package_obj_value = package_obj_entity.to_runtime_value();
+            package_obj
+                .value
+                .move_to(package_obj_value)
+                .map_err(|(e, _)| e)?;
+        }
         Ok(())
     }
 
@@ -489,8 +591,8 @@ impl ObjectRuntime {
             .map_err(|e| e.finish(Location::Undefined))
     }
 
-    pub fn load_arguments(&mut self, resovled_args: &[ResolvedArg]) -> VMResult<()> {
-        for resolved_arg in resovled_args {
+    pub fn load_arguments(&mut self, resolved_args: &[ResolvedArg]) -> VMResult<()> {
+        for resolved_arg in resolved_args {
             if let ResolvedArg::Object(object_arg) = resolved_arg {
                 let object_id = object_arg.object_id();
                 self.load_object_reference(object_id)?;

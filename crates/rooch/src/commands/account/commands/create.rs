@@ -4,10 +4,8 @@
 use crate::cli_types::WalletContextOptions;
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
-use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
-use rooch_types::error::{RoochError, RoochResult};
-use rpassword::prompt_password;
+use rooch_types::error::RoochResult;
 
 /// Create a new account off-chain.
 /// If an account not exist on-chain, contract will auto create the account on-chain.
@@ -23,27 +21,9 @@ pub struct CreateCommand {
 
 impl CreateCommand {
     pub async fn execute(self) -> RoochResult<String> {
-        let mut context = self.context_options.build()?;
-        let result = if context.keystore.get_if_password_is_empty() {
-            context
-                .keystore
-                .generate_and_add_new_key(None, None, None, None)?
-        } else {
-            let password =
-                prompt_password("Enter the password to create a new key pair:").unwrap_or_default();
-            let is_verified =
-                verify_password(Some(password.clone()), context.keystore.get_password_hash())?;
-
-            if !is_verified {
-                return Err(RoochError::InvalidPasswordError(
-                    "Password is invalid".to_owned(),
-                ));
-            }
-
-            context
-                .keystore
-                .generate_and_add_new_key(None, None, None, Some(password))?
-        };
+        let mut context = self.context_options.build_require_password()?;
+        let password = context.get_password();
+        let result = context.keystore.generate_and_add_new_key(password)?;
 
         let address = AccountAddress::from(result.address).to_hex_literal();
         println!(

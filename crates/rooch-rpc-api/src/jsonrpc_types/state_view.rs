@@ -2,20 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    AccountAddressView, AnnotatedMoveStructView, AnnotatedMoveValueView, BytesView, StrView,
-    StructTagView, TypeTagView,
+    AnnotatedMoveStructView, AnnotatedMoveValueView, BytesView, H256View, RoochAddressView,
+    StrView, StructTagView, TypeTagView,
 };
 use anyhow::Result;
-use move_core_types::account_address::AccountAddress;
+
 use move_core_types::effects::Op;
 use moveos_types::state::{
     AnnotatedKeyState, FieldChange, KeyState, NormalFieldChange, ObjectChange,
 };
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
-    moveos_std::object::ObjectID,
+    moveos_std::object::{AnnotatedObject, ObjectID},
     state::{AnnotatedState, State, StateChangeSet, TableTypeInfo},
 };
+use rooch_types::address::RoochAddress;
 use rooch_types::indexer::state::{
     FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateChangeSet,
     ObjectStateFilter, StateSyncFilter,
@@ -277,7 +278,7 @@ pub enum FieldChangeView {
         #[serde(flatten)]
         change: ObjectChangeView,
     },
-    Nomarl {
+    Normal {
         key: KeyStateView,
         #[serde(flatten)]
         change: NormalFieldChangeView,
@@ -291,7 +292,7 @@ impl From<(KeyState, FieldChange)> for FieldChangeView {
                 key: key.into(),
                 change: object_change.into(),
             },
-            FieldChange::Normal(normal_field_change) => Self::Nomarl {
+            FieldChange::Normal(normal_field_change) => Self::Normal {
                 key: key.into(),
                 change: normal_field_change.into(),
             },
@@ -372,28 +373,29 @@ impl From<StateSyncFilterView> for StateSyncFilter {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct IndexerObjectStateView {
     pub object_id: ObjectID,
-    pub owner: AccountAddressView,
+    pub owner: RoochAddressView,
     pub flag: u8,
-    pub value: AnnotatedMoveStructView,
+    pub value: Option<AnnotatedMoveStructView>,
     pub object_type: StructTagView,
-    pub state_root: AccountAddressView,
+    pub state_root: H256View,
     pub size: u64,
     pub tx_order: u64,
     pub state_index: u64,
     pub created_at: u64,
     pub updated_at: u64,
+    pub display_fields: Option<DisplayFieldsView>,
 }
 
 impl IndexerObjectStateView {
-    pub fn try_new_from_global_state(
+    pub fn new_from_object_state(
+        annotated_state: Option<AnnotatedObject>,
         state: IndexerObjectState,
-    ) -> Result<IndexerObjectStateView, anyhow::Error> {
-        let value: AnnotatedMoveStructView = serde_json::from_str(state.value.as_str())?;
-        let global_state_view = IndexerObjectStateView {
+    ) -> IndexerObjectStateView {
+        IndexerObjectStateView {
             object_id: state.object_id,
             owner: state.owner.into(),
             flag: state.flag,
-            value,
+            value: annotated_state.map(|v| AnnotatedMoveStructView::from(v.value)),
             object_type: state.object_type.into(),
             state_root: state.state_root.into(),
             size: state.size,
@@ -401,8 +403,13 @@ impl IndexerObjectStateView {
             state_index: state.state_index,
             created_at: state.created_at,
             updated_at: state.updated_at,
-        };
-        Ok(global_state_view)
+            display_fields: None,
+        }
+    }
+
+    pub fn with_display_fields(mut self, display_fields: Option<DisplayFieldsView>) -> Self {
+        self.display_fields = display_fields;
+        self
     }
 }
 
@@ -412,14 +419,14 @@ pub enum ObjectStateFilterView {
     /// Query by object value type and owner.
     ObjectTypeWithOwner {
         object_type: StructTagView,
-        owner: AccountAddressView,
+        owner: RoochAddressView,
     },
     /// Query by object value type.
     ObjectType(StructTagView),
     /// Query by owner.
-    Owner(AccountAddressView),
+    Owner(RoochAddressView),
     /// Query by object id.
-    ObjectId(ObjectID),
+    ObjectId(Vec<ObjectID>),
     /// Query by multi chain address
     MultiChainAddress { multichain_id: u64, address: String },
 }
@@ -427,7 +434,7 @@ pub enum ObjectStateFilterView {
 impl ObjectStateFilterView {
     pub fn into_object_state_filter(
         state_filter: ObjectStateFilterView,
-        resolve_address: AccountAddress,
+        resolve_address: RoochAddress,
     ) -> ObjectStateFilter {
         match state_filter {
             ObjectStateFilterView::ObjectTypeWithOwner { object_type, owner } => {
@@ -440,7 +447,7 @@ impl ObjectStateFilterView {
                 ObjectStateFilter::ObjectType(object_type.into())
             }
             ObjectStateFilterView::Owner(owner) => ObjectStateFilter::Owner(owner.into()),
-            ObjectStateFilterView::ObjectId(object_id) => ObjectStateFilter::ObjectId(object_id),
+            ObjectStateFilterView::ObjectId(object_ids) => ObjectStateFilter::ObjectId(object_ids),
             ObjectStateFilterView::MultiChainAddress {
                 multichain_id: _,
                 address: _,
@@ -453,8 +460,7 @@ impl ObjectStateFilterView {
 pub struct IndexerFieldStateView {
     pub object_id: ObjectID,
     pub key_hex: String,
-    pub key: AnnotatedMoveValueView,
-    pub value: AnnotatedMoveValueView,
+    pub value: Option<AnnotatedMoveValueView>,
     pub key_type: TypeTagView,
     pub value_type: TypeTagView,
     pub tx_order: u64,
@@ -464,24 +470,21 @@ pub struct IndexerFieldStateView {
 }
 
 impl IndexerFieldStateView {
-    pub fn try_new_from_table_state(
+    pub fn new_from_field_state(
+        annotated_state: Option<AnnotatedState>,
         state: IndexerFieldState,
-    ) -> Result<IndexerFieldStateView, anyhow::Error> {
-        let key: AnnotatedMoveValueView = serde_json::from_str(state.key_str.as_str())?;
-        let value: AnnotatedMoveValueView = serde_json::from_str(state.value.as_str())?;
-        let state_view = IndexerFieldStateView {
+    ) -> IndexerFieldStateView {
+        IndexerFieldStateView {
             object_id: state.object_id,
             key_hex: state.key_hex,
-            key,
-            value,
+            value: annotated_state.map(|v| AnnotatedMoveValueView::from(v.decoded_value)),
             key_type: state.key_type.into(),
             value_type: state.value_type.into(),
             tx_order: state.tx_order,
             state_index: state.state_index,
             created_at: state.created_at,
             updated_at: state.updated_at,
-        };
-        Ok(state_view)
+        }
     }
 }
 

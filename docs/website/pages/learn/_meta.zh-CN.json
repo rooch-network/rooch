@@ -1,9 +1,12 @@
 {
-  "introduction": "简介",
-  "architecture": "架构",
-  "core-concepts": "核心概念",
+  "welcome": "欢迎",
+  "overview": "概览",
   "in-depth-tech": "深入技术",
-  "user-guides": "用户指南",
-  "contribution-guides": "贡献指南",
-  "miscellaneous": "其他"
+  "core-concepts": "核心概念",
+  "portal": {
+    "title":"Rooch Portal",
+    "display": "hidden"
+  },
+  "miscellaneous": "其他",
+  "contribution-guides": "贡献指南"
 }

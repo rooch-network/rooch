@@ -50,8 +50,16 @@ module bitcoin_move::network{
         NETWORK_REGTEST
     }
 
-    public fun is_mainnet(network: u8): bool {
-        network == NETWORK_BITCOIN
+    public fun is_mainnet(): bool {
+        network() == NETWORK_BITCOIN
+    }
+
+    public fun is_testnet(): bool {
+        network() == NETWORK_TESTNET
+    }
+
+    public fun is_signet(): bool {
+        network() == NETWORK_SIGNET
     }
 
     public fun from_str(network: &String): u8 {

@@ -1,6 +1,6 @@
 [package]
 name = "rooch-test-transaction-builder"
-version = "0.1.0"
+version = "0.4.1"
 
 # Workspace inherited keys
 authors = { workspace = true }
@@ -40,12 +40,12 @@ moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }
 raw-store = { workspace = true }
 moveos-config = { workspace = true }
+moveos-compiler = { workspace = true }
 
 rooch-config = { workspace = true }
 rooch-types ={ workspace = true }
 rooch-framework = { workspace = true }
 rooch-genesis = { workspace = true }
-rooch-genesis-builder = { workspace = true }
 rooch-rpc-client = { workspace = true }
 rooch-key = { workspace = true }
 

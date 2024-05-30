@@ -5,7 +5,7 @@ import { SupportChain, SupportChains } from '../feature'
 import { BaseWallet, Metamask, UniSatWallet } from '../types'
 import { RoochClient } from '@roochnetwork/rooch-sdk'
 
-export async function getInstalledWallets(client: RoochClient, filter?: SupportChain) {
+export async function checkWallets(client: RoochClient, filter?: SupportChain) {
   const wallets: BaseWallet[] = []
   SupportChains.filter((v) => !filter || filter === v).forEach((w) => {
     switch (w) {
@@ -21,15 +21,13 @@ export async function getInstalledWallets(client: RoochClient, filter?: SupportC
     }
   })
 
-  const installWallets = await Promise.all(
+  return await Promise.all(
     wallets.map(async (w) => {
       if (await w.checkInstalled()) {
         w.installed = true
         return w
       }
-      return undefined
+      return w
     }),
   )
-
-  return installWallets.filter((w): w is BaseWallet => w !== undefined)
 }

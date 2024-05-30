@@ -1,0 +1,9 @@
+//# publish
+module 0x1.TestModule1 {
+    metadata {
+        data_struct {
+            // error code 10006: MALFORMED_STRUCT_NAME
+            invalid_module_struct_name -> true;
+        }
+    }
+}

@@ -258,9 +258,15 @@ module rooch_framework::session_key {
     public(friend) fun active_session_key(authentication_key: vector<u8>) {
         let sender_addr = tx_context::sender();
         let now_seconds = timestamp::now_seconds();
-        assert!(account::exists_resource<SessionKeys>(sender_addr), ErrorSessionKeyIsInvalid);
+        // If the session key is not exists, do nothing
+        // Because the user may remove the session key in the same transaction
+        if(!account::exists_resource<SessionKeys>(sender_addr)){
+            return
+        };
         let session_keys = account::borrow_mut_resource<SessionKeys>(sender_addr);
-        assert!(table::contains(&session_keys.keys, authentication_key), ErrorSessionKeyIsInvalid);
+        if(!table::contains(&session_keys.keys, authentication_key)){
+            return
+        };
         let session_key = table::borrow_mut(&mut session_keys.keys, authentication_key);
         session_key.last_active_time = now_seconds;
     }

@@ -4,6 +4,7 @@
 use crate::metadata::{run_extended_checks, RuntimeModuleMetadataV1};
 use codespan_reporting::diagnostic::Severity;
 use itertools::Itertools;
+use move_binary_format::CompiledModule;
 use move_command_line_common::address::NumericalAddress;
 use move_command_line_common::files::MOVE_COMPILED_EXTENSION;
 use move_compiler::compiled_unit::CompiledUnit;
@@ -12,6 +13,9 @@ use move_compiler::Flags;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::metadata::Metadata;
+use move_ir_types::ast::CopyableVal_;
+use move_ir_types::ast::Exp_;
+use move_ir_types::ast::Metadata as ASTMetadata;
 use move_model::model::GlobalEnv;
 use move_model::options::ModelBuilderOptions;
 use move_model::run_model_builder_with_options_and_compilation_flags;
@@ -341,6 +345,22 @@ pub fn inject_runtime_metadata<P: AsRef<Path>>(
             CompiledUnit::Module(named_module) => {
                 if let Some(module_metadata) = metadata.get(&named_module.module.self_id()) {
                     if !module_metadata.is_empty() {
+                        log::debug!(
+                            "\n\nstart dump data structs map {:?}",
+                            named_module.module.self_id().to_string()
+                        );
+                        for (k, v) in module_metadata.data_struct_map.iter() {
+                            log::debug!("{:?} -> {:?}", k, v);
+                        }
+                        log::debug!("\n");
+                        for (k, v) in module_metadata.data_struct_func_map.iter() {
+                            log::debug!("{:?} -> {:?}", k, v);
+                        }
+                        log::debug!(
+                            "start dump data structs map {:?}\n\n",
+                            named_module.module.self_id().to_string()
+                        );
+
                         let serialized_metadata =
                             bcs::to_bytes(&module_metadata).expect("BCS for RuntimeModuleMetadata");
                         named_module.module.metadata.push(Metadata {
@@ -366,4 +386,75 @@ pub fn inject_runtime_metadata<P: AsRef<Path>>(
             CompiledUnit::Script(_) => {}
         }
     }
+}
+
+pub fn compile_and_inject_metadata(
+    compiled_module: &CompiledModule,
+    ast_metadata: ASTMetadata,
+) -> CompiledModule {
+    let mut module = compiled_module.clone();
+
+    let mut rooch_metadata = RuntimeModuleMetadataV1::default();
+    for (metadata_type, metadata_item) in ast_metadata.value {
+        if metadata_type == "private_generics" {
+            let mut private_generics_map: BTreeMap<String, Vec<usize>> = BTreeMap::new();
+            for (metadata_key, metadata_value) in metadata_item.iter() {
+                let mut generic_type_indices: Vec<usize> = Vec::new();
+                for idx_expr in metadata_value.iter() {
+                    let expr_value = idx_expr.value.clone();
+                    if let Exp_::Value(copyable_val) = expr_value {
+                        if let CopyableVal_::U64(u64_value) = copyable_val.value {
+                            generic_type_indices.push(u64_value as usize);
+                        }
+                    }
+                }
+                private_generics_map.insert(metadata_key.clone(), generic_type_indices);
+            }
+
+            rooch_metadata.private_generics_indices = private_generics_map;
+        }
+
+        if metadata_type == "data_struct" {
+            let mut data_structs_map: BTreeMap<String, bool> = BTreeMap::new();
+            for (metadata_key, metadata_value) in metadata_item.iter() {
+                for idx_expr in metadata_value.iter() {
+                    let expr_value = idx_expr.value.clone();
+                    if let Exp_::Value(copyable_val) = expr_value {
+                        if let CopyableVal_::Bool(bool_value) = copyable_val.value {
+                            data_structs_map.insert(metadata_key.clone(), bool_value);
+                        }
+                    }
+                }
+            }
+
+            rooch_metadata.data_struct_map = data_structs_map;
+        }
+
+        if metadata_type == "data_struct_func" {
+            let mut data_struct_func_map: BTreeMap<String, Vec<usize>> = BTreeMap::new();
+            for (metadata_key, metadata_value) in metadata_item.iter() {
+                let mut generic_type_indices: Vec<usize> = Vec::new();
+                for idx_expr in metadata_value.iter() {
+                    let expr_value = idx_expr.value.clone();
+                    if let Exp_::Value(copyable_val) = expr_value {
+                        if let CopyableVal_::U64(u64_value) = copyable_val.value {
+                            generic_type_indices.push(u64_value as usize);
+                        }
+                    }
+                }
+                data_struct_func_map.insert(metadata_key.clone(), generic_type_indices);
+            }
+
+            rooch_metadata.data_struct_func_map = data_struct_func_map;
+        }
+    }
+
+    let serialized_metadata =
+        bcs::to_bytes(&rooch_metadata).expect("BCS for RuntimeModuleMetadata");
+    module.metadata.push(Metadata {
+        key: ROOCH_METADATA_KEY.to_vec(),
+        value: serialized_metadata,
+    });
+
+    module
 }

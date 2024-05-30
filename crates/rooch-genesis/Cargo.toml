@@ -1,6 +1,6 @@
 [package]
 name = "rooch-genesis"
-version = "0.1.0"
+version = "0.4.1"
 
 # Workspace inherited keys
 authors = { workspace = true }
@@ -27,6 +27,10 @@ smallvec = { workspace = true }
 hex = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+coerce = { workspace = true }
+tokio = { features = ["full"], workspace = true }
+futures = { workspace = true }
+
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }
@@ -45,15 +49,14 @@ move-prover = { workspace = true }
 moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }
 moveos-stdlib = { workspace = true }
-framework-builder = { workspace = true }
 moveos = { workspace = true }
 moveos-store = { workspace = true }
 
 rooch-framework = { workspace = true }
 rooch-types = { workspace = true }
-rooch-genesis-builder = { workspace = true }
+rooch-store = { workspace = true }
+rooch-indexer = { workspace = true }
 bitcoin-move = { workspace = true }
 
-[build-dependencies]
-rooch-genesis-builder = { workspace = true }
 framework-builder = { workspace = true }
+framework-release = { workspace = true }

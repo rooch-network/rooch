@@ -18,6 +18,8 @@
 -  [Function `as_bytes`](#0x3_bitcoin_address_as_bytes)
 -  [Function `into_bytes`](#0x3_bitcoin_address_into_bytes)
 -  [Function `to_bech32`](#0x3_bitcoin_address_to_bech32)
+-  [Function `new`](#0x3_bitcoin_address_new)
+-  [Function `verify_with_pk`](#0x3_bitcoin_address_verify_with_pk)
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
@@ -244,4 +246,26 @@ Empty address is a special address that is used to if we parse address failed fr
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_to_bech32">to_bech32</a>(_addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_new"></a>
+
+## Function `new`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new">new</a>(raw_addr: &<a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_verify_with_pk"></a>
+
+## Function `verify_with_pk`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_verify_with_pk">verify_with_pk</a>(addr: &<a href="">vector</a>&lt;u8&gt;, pk: &<a href="">vector</a>&lt;u8&gt;): bool
 </code></pre>

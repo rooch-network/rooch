@@ -1,0 +1,23 @@
+//# publish
+module 0x1.TestModule0 {
+    struct S0 has drop,copy { x: u64 }
+    public new(): Self.S0 {
+        label b0:
+            return S0{ x: 123 };
+    }
+}
+
+//# publish
+module 0x2.TestModule1 {
+    import 0x2.event;
+    import 0x1.TestModule0;
+
+    public f2() {
+        let s0: TestModule0.S0;
+        label b0:
+            s0 = TestModule0.new();
+            // error code 10011: INVALID_PRIVATE_GENERICS_TYPE
+            event.emit<TestModule0.S0>(move(s0));
+            return;
+    }
+}

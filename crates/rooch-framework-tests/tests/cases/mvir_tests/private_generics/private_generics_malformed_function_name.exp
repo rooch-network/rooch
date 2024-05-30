@@ -1,0 +1,4 @@
+processed 1 task
+
+task 0 'publish'. lines 1-11:
+status ABORTED with code 10007 in 0000000000000000000000000000000000000000000000000000000000000002::move_module

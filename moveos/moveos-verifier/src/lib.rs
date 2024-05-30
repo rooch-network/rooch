@@ -4,3 +4,5 @@
 pub mod build;
 pub mod metadata;
 pub mod verifier;
+
+pub mod error_code;

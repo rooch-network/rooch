@@ -1,6 +1,6 @@
 [package]
 name = "rooch-types"
-version = "0.1.0"
+version = "0.4.1"
 
 # Workspace inherited keys
 authors = { workspace = true }
@@ -41,6 +41,8 @@ nostr = { workspace = true }
 clap = { workspace = true }
 sha3 = { workspace = true }
 bs58 = { workspace = true, features = ["check"] }
+chacha20poly1305 = { workspace = true }
+argon2 = { workspace = true }
 
 move-core-types = { workspace = true }
 move-vm-types = { workspace = true }
@@ -52,6 +54,9 @@ move-resource-viewer = { workspace = true }
 moveos-types = { workspace = true }
 moveos-stdlib = { workspace = true }
 moveos = { workspace = true }
+
+framework-builder = { workspace = true }
+framework-types = { workspace = true }
 
 proptest = { optional = true, workspace = true }
 proptest-derive = { optional = true, workspace = true }

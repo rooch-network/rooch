@@ -48,12 +48,9 @@ use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
 use rooch_test_transaction_builder::TestTransactionBuilder;
-use rooch_types::address::RoochAddress;
-use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
-use rooch_types::bitcoin::network::Network;
-use rooch_types::chain_id::RoochChainID;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::multichain_id::RoochMultiChainID;
+use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::L1BlockWithBody;
 
@@ -77,34 +74,27 @@ pub async fn setup_service(
     let _ = tracing_subscriber::fmt::try_init();
 
     let actor_system = ActorSystem::global_system();
-    let chain_id = RoochChainID::LOCAL;
 
     // init storage
-    let (mut moveos_store, rooch_store) = init_storage(datadir)?;
-    let (indexer_store, indexer_reader) = init_indexer(datadir)?;
+    let (mut moveos_store, mut rooch_store) = init_storage(datadir)?;
+    let (mut indexer_store, indexer_reader) = init_indexer(datadir)?;
 
     // init keystore
     let rooch_account = keystore.addresses()[0];
     let rooch_key_pair = keystore
-        .get_key_pairs(&rooch_account, None)?
-        .pop()
+        .get_key_pair(&rooch_account, None)
         .expect("Key pair should have value");
 
     let sequencer_keypair = rooch_key_pair.copy();
     let proposer_keypair = rooch_key_pair.copy();
-    let relayer_keypair = rooch_key_pair.copy();
-    let sequencer_account = RoochAddress::from(&sequencer_keypair.public());
-    let proposer_account = RoochAddress::from(&proposer_keypair.public());
-    let _relayer_account = RoochAddress::from(&relayer_keypair.public());
+    let sequencer_account = sequencer_keypair.public().rooch_address()?;
+    let proposer_account = proposer_keypair.public().rooch_address()?;
 
     // Init executor
-    let btc_network = Network::default().to_num();
-    let _data_import_flag = false;
-
-    let genesis_ctx = chain_id.genesis_ctx(rooch_account);
-    let bitcoin_genesis_ctx = BitcoinGenesisContext::new(btc_network);
-    let genesis: RoochGenesis = RoochGenesis::build(genesis_ctx, bitcoin_genesis_ctx)?;
-    let root = genesis.init_genesis(&mut moveos_store)?;
+    let mut network: RoochNetwork = BuiltinChainID::Dev.into();
+    network.set_sequencer_account(rooch_account.into());
+    let genesis: RoochGenesis = RoochGenesis::build(network)?;
+    let root = genesis.init_genesis(&mut moveos_store, &mut rooch_store, &mut indexer_store)?;
 
     let executor_actor =
         ExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store.clone())?;
@@ -214,9 +204,6 @@ pub fn init_storage(datadir: &DataDirPath) -> Result<(MoveOSStore, RoochStore)> 
 
 pub fn init_indexer(datadir: &DataDirPath) -> Result<(IndexerStore, IndexerReader)> {
     let indexer_db_path = IndexerConfig::get_mock_indexer_db(datadir);
-    if !indexer_db_path.exists() {
-        fs::create_dir_all(indexer_db_path.clone())?;
-    }
     let indexer_store = IndexerStore::new(indexer_db_path.clone())?;
     indexer_store.create_all_tables_if_not_exists()?;
     let indexer_reader = IndexerReader::new(indexer_db_path)?;

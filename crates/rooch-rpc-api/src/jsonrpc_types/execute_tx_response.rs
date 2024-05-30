@@ -98,18 +98,18 @@ impl From<Authenticator> for AuthenticatorView {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionSequenceInfoView {
     pub tx_order: StrView<u64>,
-    pub tx_order_signature: AuthenticatorView,
+    pub tx_order_signature: BytesView,
     pub tx_accumulator_root: H256View,
+    pub tx_timestamp: StrView<u64>,
 }
 
 impl From<TransactionSequenceInfo> for TransactionSequenceInfoView {
     fn from(transaction_sequence_info: TransactionSequenceInfo) -> Self {
         Self {
             tx_order: StrView(transaction_sequence_info.tx_order),
-            tx_order_signature: AuthenticatorView::from(
-                transaction_sequence_info.tx_order_signature,
-            ),
+            tx_order_signature: transaction_sequence_info.tx_order_signature.into(),
             tx_accumulator_root: transaction_sequence_info.tx_accumulator_root.into(),
+            tx_timestamp: StrView(transaction_sequence_info.tx_timestamp),
         }
     }
 }

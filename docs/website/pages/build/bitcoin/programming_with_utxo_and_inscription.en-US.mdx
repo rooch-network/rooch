@@ -18,13 +18,65 @@ As shown above, this represents a Bitcoin blockchain state in Move, such as an O
 
 ## Programming with UTXO
 
-<Callout>
-TODO: This section of the document needs improvement
+### 1. Description of UTXO Fields
 
-1. Explanation of UTXO fields
-2. How to accept UTXO as method parameters
-3. How to store data in the UTXO's temporary area
-</Callout>
+UTXO (Unspent Transaction Output) is a core concept in the Bitcoin system, representing unspent transaction outputs. In the Rooch Bitcoin framework, the `UTXO` structure defines several key fields of a UTXO:
+
+- `txid`: `address`, Represents the hash value of the transaction that generated this UTXO.
+- `vout`: `u32`, Represents the index position of this UTXO within its transaction.
+- `value`: `u64`, Represents the value of this UTXO, i.e., the amount of Bitcoin it contains.
+- `seals`: Represents protocol inscriptions associated with this UTXO, stored using the `SimpleMultiMap` structure, mapping protocol names (`String` type) to object IDs (`ObjectID` type).
+
+### 2. How to Accept UTXO as Method Parameters
+
+In Rooch, UTXOs are stored as Objects in the global state. Developers can obtain a (mutable) reference to `Object<UTXO>` via `ObjectID`. The (mutable) reference to `Object<UTXO>` can be passed as a parameter to a function. Here are some examples:
+
+- Passing an immutable reference: `fun some_function(utxo: &UTXO)`
+- Passing a mutable reference: `fun some_function(utxo: &mut UTXO)`
+
+`UTXO` objects are created and destroyed by MoveVM in real-time when parsing Bitcoin transactions, and developers cannot obtain ownership of them. They can only read the state of `UTXO` through references or store state in the temporary state area of `UTXO` through a mutable reference.
+
+### 3. How to Store Data in the Temporary Area of UTXO
+
+The temporary area is a field of `Object<UTXO>` and can be used to store some state. Once the UTXO is spent on Bitcoin, the MoveVM will promptly destroy the `UTXO` object on Rooch, and the state in its temporary state area will also be cleared.
+
+The `Temporary Area` in the code is used to store temporary state data related to `UTXO`. Here are the interfaces for adding, modifying, and deleting state in the temporary area of `UTXO`:
+
+- Use the `add_temp_state` function to add state data to the temporary area of `UTXO`. The function accepts an `UTXO` object and the state data to be stored.
+- Use the `contains_temp_state` function to check if the temporary area of `UTXO` contains state data of a specific type.
+- Use the `borrow_temp_state` function to borrow an immutable reference to state data of a specific type in the temporary area.
+- Use the `borrow_mut_temp_state` function to borrow a mutable reference to state data of a specific type in the temporary area to modify it.
+- Use the `remove_temp_state` function to remove state data of a specific type from the temporary area of `UTXO` and obtain its value.
+
+Here are some example codes:
+
+```rust
+struct TempState has store, copy, drop {
+    value: u64,
+}
+
+// Add temporary state data
+add_temp_state(&mut utxo, TempState{value: 10});
+
+// Check if temporary state data exists
+if contains_temp_state::<TempState>(&utxo) {
+    // ...
+}
+
+// Borrow an immutable reference to temporary state data
+let state_ref = borrow_temp_state::<TempState>(&utxo);
+
+// Borrow a mutable reference to temporary state data and modify it
+{
+    let state_mut = borrow_mut_temp_state::<TempState>(&mut utxo);
+    state_mut.value = 20;
+};
+
+// Remove temporary state data and obtain its value
+let removed_state = remove_temp_state::<TempState>(&mut utxo);
+```
+
+In the above code, `TempState` is an example state structure, which should be replaced with the specific data type in actual use.
 
 ### Examples
 
@@ -33,12 +85,81 @@ TODO: This section of the document needs improvement
 
 ## Programming with Inscription
 
+### 1. Description of Inscription Fields
+
+The Inscription structure is defined in the `ord.move` file and represents an ordered record on the Rooch network.
+
+The Inscription structure includes the following fields:
+
+- `txid`: Transaction ID, of type `address`.
+- `index`: Index, of type `u32`.
+- `input`: Transaction input index, of type `u32`.
+- `offset`: Offset, of type `u64`.
+- `body`: Content body, of type `vector<u8>`.
+- `content_encoding`: Content encoding, of type `Option<String>`.
+- `content_type`: Content type, of type `Option<String>`.
+- `metadata`: Metadata, of type `vector<u8>`.
+- `metaprotocol`: Meta-protocol, of type `Option<String>`.
+- `parent`: Parent object ID, of type `Option<ObjectID>`.
+- `pointer`: Pointer, of type `Option<u64>`.
+
 <Callout>
-TODO: This section of the document needs improvement
-1. Explanation of Inscription fields
-2. How to accept Inscription as method parameters
-3. How to store data in the Inscription's temporary and permanent areas
+TODO: This section of the document requires improvement.
+
+1. Provide a more detailed description of the "Inscription" field.
 </Callout>
+
+### 2. How to Accept Inscription as Method Parameters
+
+In Rooch, `Inscription` is stored as an `Object<Inscription>` in the global state. Developers can accept the structure as a parameter by using a reference (`&`) or a mutable reference (`&mut`) to read data contained in the Inscription or to save temporary or permanent state in the Inscription object.
+
+For example, you can define a method to accept a mutable reference to an `Inscription` as follows:
+
+```move
+public entry fun plant(seed: &mut Object<Inscription>) {
+    // ...
+}
+```
+
+### 3. How to Store Data in the Temporary and Permanent Areas of Inscription
+
+Similar to the temporary area of `UTXO`, the `Object<Inscription>` object also has a temporary area that is cleared once the `Object<Inscription>` is transferred. Additionally, `Object<Inscription>` has a permanent area where state can be stored permanently and will be transferred along with the `Object<Inscription>`.
+
+In the `plants.move` example, it demonstrates how to store data in the permanent and temporary areas of Inscription:
+
+- **Permanent Area**: Use the `ord::add_permanent_state` function to store data. This data will remain in the Inscription until explicitly removed. For example, planting information and plant status are stored in the permanent area:
+
+```move
+ord::add_permanent_state(seed, plant);
+```
+
+- **Temporary Area**: Use the `ord::add_temp_state` function to store data. This data is temporary and can be cleaned up after certain operations. For example, planting actions are stored in the temporary area:
+
+```move
+ord::add_temp_state(seed, actions);
+```
+
+In addition, there are corresponding functions for reading and removing data from these areas:
+
+- `ord::borrow_mut_permanent_state<T>` is used to obtain a mutable reference to data of a specific type stored in the permanent area.
+- `ord::borrow_mut_temp_state<T>` is used to obtain a mutable reference to data of a specific type stored in the temporary area.
+- `ord::remove_permanent_state<T>` is used to remove data of a specific type from the permanent area.
+
+Interfaces for adding, modifying, and deleting state in the temporary area:
+
+- Use the `add_temp_state` function to add state data to the temporary area of `Inscription`. The function accepts an `Inscription` object and the state data to be stored.
+- Use the `contains_temp_state` function to check if the temporary area of `Inscription` contains state data of a specific type.
+- Use the `borrow_temp_state` function to borrow an immutable reference to state data of a specific type in the temporary area.
+- Use the `borrow_mut_temp_state` function to borrow a mutable reference to state data of a specific type in the temporary area to modify it.
+- Use the `remove_temp_state` function to remove state data of a specific type from the temporary area of `Inscription` and obtain its value.
+
+Interfaces for adding, modifying, and deleting state in the permanent area:
+
+- Use the `add_permanent_state` function to add state data to the permanent area of `Inscription`. The function accepts an `Inscription` object and the state data to be stored.
+- Use the `contains_permanent_state` function to check if the permanent area of `Inscription` contains state data of a specific type.
+- Use the `borrow_permanent_state` function to borrow an immutable reference to state data of a specific type in the permanent area.
+- Use the `borrow_mut_permanent_state` function to borrow a mutable reference to state data of a specific type in the permanent area to modify it.
+- Use the `remove_permanent_state` function to remove state data of a specific type from the permanent area of `Inscription` and obtain its value.
 
 ### Examples
 

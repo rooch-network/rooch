@@ -1,6 +1,6 @@
 [package]
 name = "rooch"
-version = "0.1.0"
+version = "0.4.1"
 
 # Workspace inherited keys
 authors = { workspace = true }
@@ -16,10 +16,11 @@ rust-version = { workspace = true }
 [dependencies]
 anyhow = { workspace = true }
 bcs = { workspace = true }
-clap = { features = [ "derive", ], workspace = true }
+clap = { features = ["derive", ], workspace = true }
+chrono = { workspace = true }
 datatest-stable = { git = "https://github.com/rooch-network/diem-devtools", branch = "feature/pub-test-opts" }
 tokio = { features = ["full"], workspace = true }
-dirs  = { workspace = true }
+dirs = { workspace = true }
 serde = { workspace = true }
 serde_with = { workspace = true }
 serde_yaml = { workspace = true }
@@ -40,6 +41,9 @@ bcs-ext = { workspace = true }
 rpassword = { workspace = true }
 fastcrypto = { workspace = true }
 log = { workspace = true }
+proptest = { optional = true, workspace = true }
+proptest-derive = { optional = true, workspace = true }
+csv = { workspace = true }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }
@@ -65,7 +69,10 @@ moveos-common = { workspace = true }
 moveos = { workspace = true }
 moveos-verifier = { workspace = true }
 moveos-object-runtime = { workspace = true }
+moveos-compiler = { workspace = true }
+
 framework-builder = { workspace = true }
+framework-types = { workspace = true }
 raw-store = { workspace = true }
 smt = { workspace = true }
 bitcoin = { workspace = true }
@@ -79,6 +86,9 @@ rooch-rpc-api = { workspace = true }
 rooch-rpc-server = { workspace = true }
 rooch-rpc-client = { workspace = true }
 rooch-integration-test-runner = { workspace = true }
+rooch-indexer = { workspace = true }
+
+framework-release = { workspace = true }
 
 [features]
 dashboard = []

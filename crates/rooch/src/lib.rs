@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::commands::event::EventCommand;
+use crate::commands::indexer::Indexer;
 use crate::commands::statedb::Statedb;
 use cli_types::CommandAction;
 use commands::{
@@ -39,6 +40,7 @@ pub enum Command {
     SessionKey(SessionKey),
     Rpc(Rpc),
     Statedb(Statedb),
+    Indexer(Indexer),
 }
 
 pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
@@ -57,5 +59,6 @@ pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
         Command::SessionKey(session_key) => session_key.execute().await,
         Command::Rpc(rpc) => rpc.execute().await,
         Command::Statedb(statedb) => statedb.execute().await,
+        Command::Indexer(indexer) => indexer.execute().await,
     }
 }

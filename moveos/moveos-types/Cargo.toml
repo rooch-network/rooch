@@ -1,6 +1,6 @@
 [package]
 name = "moveos-types"
-version = "0.1.0"
+version = "0.4.1"
 
 # Workspace inherited keys
 authors = { workspace = true }
@@ -30,6 +30,7 @@ tiny-keccak = { workspace = true, features = ["keccak", "sha3"] }
 fastcrypto = { workspace = true }
 proptest = { optional = true, workspace = true }
 proptest-derive = { optional = true, workspace = true }
+tracing = { workspace = true }
 
 move-core-types = { workspace = true }
 move-vm-types = { workspace = true }

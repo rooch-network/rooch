@@ -13,12 +13,16 @@ use diesel::sqlite::SqliteConnection;
 
 use crate::store::sqlite_store::SqliteIndexerStore;
 use crate::store::traits::IndexerStoreTrait;
-use crate::types::{IndexedEvent, IndexedFieldState, IndexedObjectState, IndexedTransaction};
 use crate::utils::create_all_tables_if_not_exists;
-use errors::IndexerError;
 use rooch_config::indexer_config::ROOCH_INDEXER_DB_DIR;
 
+use errors::IndexerError;
 use once_cell::sync::Lazy;
+use rooch_types::indexer::event::IndexerEvent;
+use rooch_types::indexer::state::{
+    IndexerFieldState, IndexerFieldStateChanges, IndexerObjectState, IndexerObjectStateChanges,
+};
+use rooch_types::indexer::transaction::IndexerTransaction;
 
 pub mod actor;
 pub mod errors;
@@ -29,10 +33,10 @@ pub mod schema;
 pub mod store;
 #[cfg(test)]
 mod tests;
-pub mod types;
 pub mod utils;
 
 /// Type alias to improve readability.
+pub type IndexerResult<T> = Result<T, IndexerError>;
 pub type IndexerTableName = &'static str;
 pub const INDEXER_EVENTS_TABLE_NAME: IndexerTableName = "events";
 pub const INDEXER_OBJECT_STATES_TABLE_NAME: IndexerTableName = "object_states";
@@ -70,11 +74,14 @@ pub struct IndexerStore {
 
 impl IndexerStore {
     pub fn new(db_path: PathBuf) -> Result<Self> {
+        if !db_path.exists() {
+            std::fs::create_dir_all(&db_path)?;
+        }
         let tables = IndexerStoreMeta::get_indexer_table_names().to_vec();
 
         let mut sqlite_store_mapping = HashMap::<String, SqliteIndexerStore>::new();
         for table in tables {
-            let indexer_db_path = db_path.clone().join(table);
+            let indexer_db_path = db_path.as_path().join(table);
             if !indexer_db_path.exists() {
                 std::fs::File::create(indexer_db_path.clone())?;
             };
@@ -113,7 +120,9 @@ impl IndexerStore {
 
     pub fn mock_indexer_store() -> Result<Self> {
         let indexer_db_dir = Self::mock_db_dir()?;
-        Self::new(indexer_db_dir)
+        let mock_store = Self::new(indexer_db_dir)?;
+        mock_store.create_all_tables_if_not_exists()?;
+        Ok(mock_store)
     }
 
     pub fn create_all_tables_if_not_exists(&self) -> Result<()> {
@@ -141,9 +150,21 @@ pub fn new_sqlite_connection_pool(db_url: &str) -> Result<SqliteConnectionPool, 
 }
 
 impl IndexerStoreTrait for IndexerStore {
+    fn update_object_states(
+        &self,
+        mut object_state_change: IndexerObjectStateChanges,
+    ) -> Result<(), IndexerError> {
+        let mut object_states_new_and_update = object_state_change.new_object_states;
+        object_states_new_and_update.append(&mut object_state_change.update_object_states);
+        self.get_sqlite_store(INDEXER_OBJECT_STATES_TABLE_NAME)?
+            .persist_or_update_object_states(object_states_new_and_update)?;
+        self.get_sqlite_store(INDEXER_OBJECT_STATES_TABLE_NAME)?
+            .delete_object_states(object_state_change.remove_object_states)
+    }
+
     fn persist_or_update_object_states(
         &self,
-        states: Vec<IndexedObjectState>,
+        states: Vec<IndexerObjectState>,
     ) -> Result<(), IndexerError> {
         self.get_sqlite_store(INDEXER_OBJECT_STATES_TABLE_NAME)?
             .persist_or_update_object_states(states)
@@ -154,9 +175,23 @@ impl IndexerStoreTrait for IndexerStore {
             .delete_object_states(state_pks)
     }
 
+    fn update_field_states(
+        &self,
+        mut field_state_change: IndexerFieldStateChanges,
+    ) -> Result<(), IndexerError> {
+        let mut field_states_new_and_update = field_state_change.new_field_states;
+        field_states_new_and_update.append(&mut field_state_change.update_field_states);
+        self.get_sqlite_store(INDEXER_FIELD_STATES_TABLE_NAME)?
+            .persist_or_update_field_states(field_states_new_and_update)?;
+        self.get_sqlite_store(INDEXER_FIELD_STATES_TABLE_NAME)?
+            .delete_field_states(field_state_change.remove_field_states)?;
+        self.get_sqlite_store(INDEXER_FIELD_STATES_TABLE_NAME)?
+            .delete_field_states_by_object_id(field_state_change.remove_field_states_by_object_id)
+    }
+
     fn persist_or_update_field_states(
         &self,
-        states: Vec<IndexedFieldState>,
+        states: Vec<IndexerFieldState>,
     ) -> Result<(), IndexerError> {
         self.get_sqlite_store(INDEXER_FIELD_STATES_TABLE_NAME)?
             .persist_or_update_field_states(states)
@@ -177,13 +212,13 @@ impl IndexerStoreTrait for IndexerStore {
 
     fn persist_transactions(
         &self,
-        transactions: Vec<IndexedTransaction>,
+        transactions: Vec<IndexerTransaction>,
     ) -> Result<(), IndexerError> {
         self.get_sqlite_store(INDEXER_TRANSACTIONS_TABLE_NAME)?
             .persist_transactions(transactions)
     }
 
-    fn persist_events(&self, events: Vec<IndexedEvent>) -> Result<(), IndexerError> {
+    fn persist_events(&self, events: Vec<IndexerEvent>) -> Result<(), IndexerError> {
         self.get_sqlite_store(INDEXER_EVENTS_TABLE_NAME)?
             .persist_events(events)
     }

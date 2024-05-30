@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { BaseWallet } from './baseWallet'
-import { RoochMultiChainID, SerializedSignature } from '@roochnetwork/rooch-sdk'
+import { SerializedSignature } from '@roochnetwork/rooch-sdk'
 import { Buffer } from 'buffer'
-import { MultiChainAddress } from '../address'
 import { AuthenticatorPayload } from '../AuthenticatorPayload'
 import { SupportChain } from '../../feature'
 
@@ -23,8 +22,8 @@ export abstract class BitcoinWallet extends BaseWallet {
     // remove recover id
     const normalizeSignBuffer = signBuffer.subarray(1)
 
-    let multiAddress = new MultiChainAddress(RoochMultiChainID.Bitcoin, walletAccount.address)
-    let multiAddressBytes = multiAddress.toBytes()
+    // let multiAddress = new MultiChainAddress(RoochMultiChainID.Bitcoin, walletAccount.address)
+    // let multiAddressBytes = multiAddress.toBytes()
     let bitcoinMagicSignPrefixBytes = Array.from(BITCOIN_MAGIC_SIGN_PREFIX, (char) =>
       char.charCodeAt(0),
     )
@@ -36,8 +35,7 @@ export abstract class BitcoinWallet extends BaseWallet {
       bitcoinMagicSignPrefixBytes,
       signatureInfoBytes,
       Array.from(publicKey),
-      Array.from(multiAddressBytes),
-      [],
+      Array.from(Buffer.from(walletAccount.address)),
     )
 
     return authPayload.toBytes()

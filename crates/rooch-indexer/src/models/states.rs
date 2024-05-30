@@ -3,11 +3,11 @@
 
 use crate::schema::field_states;
 use crate::schema::object_states;
-use crate::types::{IndexedFieldState, IndexedObjectState};
 use diesel::prelude::*;
-use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{StructTag, TypeTag};
+use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectID;
+use rooch_types::address::RoochAddress;
 use rooch_types::indexer::state::{IndexerFieldState, IndexerObjectState};
 use std::str::FromStr;
 
@@ -29,9 +29,6 @@ pub struct StoredObjectState {
     /// The table state root of the object
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub state_root: String,
-    /// The value of the object, json format
-    #[diesel(sql_type = diesel::sql_types::Text)]
-    pub value: String,
     /// The table length
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub size: i64,
@@ -49,15 +46,15 @@ pub struct StoredObjectState {
     pub updated_at: i64,
 }
 
-impl From<IndexedObjectState> for StoredObjectState {
-    fn from(state: IndexedObjectState) -> Self {
+impl From<IndexerObjectState> for StoredObjectState {
+    fn from(state: IndexerObjectState) -> Self {
+        // let state_root = RoochAddress::from(state.state_root).to_hex_literal();
         Self {
             object_id: state.object_id.to_string(),
             owner: state.owner.to_hex_literal(),
             flag: state.flag as i16,
-            value: state.value,
-            object_type: state.object_type,
-            state_root: state.state_root.to_hex_literal(),
+            object_type: state.object_type.to_string(),
+            state_root: format!("{:?}", state.state_root),
             size: state.size as i64,
             tx_order: state.tx_order as i64,
             state_index: state.state_index as i64,
@@ -70,15 +67,15 @@ impl From<IndexedObjectState> for StoredObjectState {
 impl StoredObjectState {
     pub fn try_into_indexer_global_state(&self) -> Result<IndexerObjectState, anyhow::Error> {
         let object_id = ObjectID::from_str(self.object_id.as_str())?;
-        let owner = AccountAddress::from_hex_literal(self.owner.as_str())?;
+        let owner = RoochAddress::from_str(self.owner.as_str())?;
         let object_type = StructTag::from_str(self.object_type.as_str())?;
-        let state_root = AccountAddress::from_hex_literal(self.state_root.as_str())?;
+        // let state_root = RoochAddress::from_str(self.state_root.as_str())?;
+        let state_root = H256::from_str(self.state_root.as_str())?;
 
         let state = IndexerObjectState {
             object_id,
             owner,
             flag: self.flag as u8,
-            value: self.value.clone(),
             object_type,
             state_root,
             size: self.size as u64,
@@ -100,12 +97,6 @@ pub struct StoredFieldState {
     /// The hex of the table key
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub key_hex: String,
-    /// The key of the table, json format
-    #[diesel(sql_type = diesel::sql_types::Text)]
-    pub key_str: String,
-    /// The value of the table, json format
-    #[diesel(sql_type = diesel::sql_types::Text)]
-    pub value: String,
     /// The type tag of the key
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub key_type: String,
@@ -126,13 +117,11 @@ pub struct StoredFieldState {
     pub updated_at: i64,
 }
 
-impl From<IndexedFieldState> for StoredFieldState {
-    fn from(state: IndexedFieldState) -> Self {
+impl From<IndexerFieldState> for StoredFieldState {
+    fn from(state: IndexerFieldState) -> Self {
         Self {
             object_id: state.object_id.to_string(),
             key_hex: state.key_hex,
-            key_str: state.key_str,
-            value: state.value,
             key_type: state.key_type.to_string(),
             value_type: state.value_type.to_string(),
             tx_order: state.tx_order as i64,
@@ -152,8 +141,6 @@ impl StoredFieldState {
         let state = IndexerFieldState {
             object_id,
             key_hex: self.key_hex.clone(),
-            key_str: self.key_str.clone(),
-            value: self.value.clone(),
             key_type,
             value_type,
             tx_order: self.tx_order as u64,

@@ -1,21 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use bcs_ext;
+use crate::cli_types::WalletContextOptions;
 use clap::*;
 use move_core_types::errmap::{ErrorDescription, ErrorMapping};
 use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::AbortLocation;
-use moveos_types::addresses::MOVEOS_STD_ADDRESS;
-use moveos_types::addresses::MOVE_STD_ADDRESS;
-use rooch_genesis::{
-    move_std_error_descriptions, moveos_std_error_descriptions, rooch_framework_error_descriptions,
-};
-use rooch_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use rooch_types::function_arg::ParsedModuleId;
 use serde::{Deserialize, Serialize};
-
-use crate::cli_types::WalletContextOptions;
 
 ///Explain Move abort codes. Errors are defined as
 ///a global category + module-specific reason for the error.
@@ -38,20 +30,16 @@ impl Explain {
         let context = self.context_options.build()?;
         let address_mapping = context.address_mapping();
         let module_id = self.location.into_module_id(&address_mapping)?;
+        let error_descriptions = &framework_release::error_descriptions::ERROR_DESCRIPTIONS;
+        let error_mapping = error_descriptions.get(module_id.address());
 
-        let error_description_bytes = {
-            match *module_id.address() {
-                MOVE_STD_ADDRESS => Some(move_std_error_descriptions()),
-                MOVEOS_STD_ADDRESS => Some(moveos_std_error_descriptions()),
-                ROOCH_FRAMEWORK_ADDRESS => Some(rooch_framework_error_descriptions()),
-                _ => None,
-            }
-        };
-
-        match error_description_bytes {
-            Some(bytes) => {
-                let explain_result =
-                    explain_move_abort(AbortLocation::Module(module_id), self.abort_code, bytes);
+        match error_mapping {
+            Some(error_mapping) => {
+                let explain_result = explain_move_abort(
+                    AbortLocation::Module(module_id),
+                    self.abort_code,
+                    error_mapping,
+                );
                 println!("{}", explain_result)
             }
             None => {
@@ -68,11 +56,10 @@ impl Explain {
 pub fn get_explanation(
     module_id: &ModuleId,
     abort_code: u64,
-    data: &[u8],
+    error_mapping: &ErrorMapping,
 ) -> Option<ErrorDescription> {
-    let error_descriptions: ErrorMapping =
-        bcs_ext::from_bytes(data).expect("Decode err map failed");
-    error_descriptions.get_explanation(module_id.to_string().as_str(), abort_code)
+    let module_name = module_id.short_str_lossless();
+    error_mapping.get_explanation(&module_name, abort_code)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, Eq, PartialEq)]
@@ -104,10 +91,10 @@ impl std::fmt::Display for MoveAbortExplain {
 pub fn explain_move_abort(
     abort_location: AbortLocation,
     abort_code: u64,
-    data: &[u8],
+    error_mapping: &ErrorMapping,
 ) -> MoveAbortExplain {
     let err_description = match abort_location {
-        AbortLocation::Module(module_id) => get_explanation(&module_id, abort_code, data),
+        AbortLocation::Module(module_id) => get_explanation(&module_id, abort_code, error_mapping),
         AbortLocation::Script => None,
     };
     match err_description {

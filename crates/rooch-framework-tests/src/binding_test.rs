@@ -7,8 +7,8 @@ use move_core_types::vm_status::KeptVMStatus;
 use moveos_config::DataDirPath;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
-use moveos_types::gas_config::GasConfig;
 use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::moveos_std::gas_schedule::GasScheduleConfig;
 use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state_resolver::RootObjectResolver;
@@ -17,11 +17,9 @@ use rooch_config::store_config::StoreConfig;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::actor::{executor::ExecutorActor, messages::ExecuteTransactionResult};
 use rooch_genesis::RoochGenesis;
+use rooch_indexer::IndexerStore;
 use rooch_store::RoochStore;
-use rooch_types::address::RoochAddress;
-use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
-use rooch_types::bitcoin::network::Network;
-use rooch_types::chain_id::RoochChainID;
+use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
 use rooch_types::transaction::{L1BlockWithBody, RoochTransaction};
 use std::env;
 use std::path::Path;
@@ -42,7 +40,7 @@ pub fn get_data_dir() -> DataDirPath {
 pub struct RustBindingTest {
     //we should keep data_dir to make sure the temp dir is not deleted.
     data_dir: DataDirPath,
-    sequencer: RoochAddress,
+    sequencer: AccountAddress,
     pub executor: ExecutorActor,
     pub reader_executor: ReaderExecutorActor,
     root: RootObjectEntity,
@@ -65,15 +63,13 @@ impl RustBindingTest {
 
         let mut moveos_store =
             MoveOSStore::mock_moveos_store_with_data_dir(moveos_db_path.as_path())?;
-        let rooch_store = RoochStore::mock_rooch_store(rooch_db_path.as_path())?;
-        let sequencer = AccountAddress::ONE.into();
+        let mut rooch_store = RoochStore::mock_rooch_store_with_data_dir(rooch_db_path.as_path())?;
+        let mut indexer_store = IndexerStore::mock_indexer_store()?;
+        let network: RoochNetwork = BuiltinChainID::Local.into();
+        let sequencer = network.genesis_config.sequencer_account;
 
-        let genesis = RoochGenesis::build(
-            RoochChainID::LOCAL.genesis_ctx(sequencer),
-            BitcoinGenesisContext::new(Network::NetworkTestnet.to_num()),
-            // BitcoinGenesisContext::new(Network::default().to_num()),
-        )?;
-        let root = genesis.init_genesis(&mut moveos_store)?;
+        let genesis = RoochGenesis::build(network)?;
+        let root = genesis.init_genesis(&mut moveos_store, &mut rooch_store, &mut indexer_store)?;
 
         let executor = ExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store.clone())?;
 
@@ -131,11 +127,11 @@ impl RustBindingTest {
         sequence_number: u64,
         l1_block: L1BlockWithBody,
     ) -> TxContext {
-        let max_gas_amount = GasConfig::DEFAULT_MAX_GAS_AMOUNT * 1000;
+        let max_gas_amount = GasScheduleConfig::INITIAL_MAX_GAS_AMOUNT * 1000;
         let tx_hash = l1_block.block.tx_hash();
         let tx_size = l1_block.block.tx_size();
         TxContext::new(
-            self.sequencer.into(),
+            self.sequencer,
             sequence_number,
             max_gas_amount,
             tx_hash,

@@ -3,7 +3,6 @@
 
 use crate::natives::helpers::{make_module_natives, make_native};
 use better_any::{Tid, TidAble};
-use framework_builder::dependency_order::sort_by_dependency_order;
 use itertools::zip_eq;
 use move_binary_format::{
     compatibility::Compatibility,
@@ -27,6 +26,7 @@ use move_vm_types::{
     pop_arg,
     values::{Struct, Value, Vector, VectorRef},
 };
+use moveos_compiler::dependency_order::sort_by_dependency_order;
 use moveos_types::moveos_std::move_module::MoveModuleId;
 use smallvec::smallvec;
 use std::collections::{BTreeSet, HashMap, VecDeque};
@@ -85,16 +85,16 @@ fn native_module_id_inner(
 }
 
 /***************************************************************************************************
- * native fun module_id_from_name_inner(account: address, name: String): String;
+ * native fun module_id_from_name(account: address, name: String): String;
  **************************************************************************************************/
 #[derive(Clone, Debug)]
-pub struct ModuleIdFromNameInnerGasParameters {
+pub struct ModuleIdFromNameGasParameters {
     pub base: InternalGas,
     pub per_byte_in_str: InternalGasPerByte,
 }
 
-fn native_module_id_from_name_inner(
-    gas_params: &ModuleIdFromNameInnerGasParameters,
+fn native_module_id_from_name(
+    gas_params: &ModuleIdFromNameGasParameters,
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -116,7 +116,7 @@ fn native_module_id_from_name_inner(
  *      account_address: address
  * ): (vector<String>, vector<String>, vector<u64>);
  * Return
- *  The first vector is the module ids of all the modules.
+ *  The first vector is the module names of all the modules.
  *  The second vector is the module names of the modules with init function.
  *  The third vector is the indices in input modules of each sorted modules.
  **************************************************************************************************/
@@ -173,21 +173,33 @@ fn native_sort_and_verify_modules_inner(
         })?;
     // moveos verifier
     let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
-    let mut module_ids = vec![];
+    let mut module_names = vec![];
     let mut init_identifier = vec![];
+
+    let verify_result =
+        moveos_verifier::verifier::verify_modules(&compiled_modules, module_context.resolver);
+    match verify_result {
+        Ok(_) => {}
+        Err(e) => {
+            log::info!("modules verification error: {:?}", e);
+            let error_code = e.sub_status().unwrap_or(E_MODULE_VERIFICATION_ERROR);
+            return Ok(NativeResult::err(cost, error_code));
+        }
+    }
+
     for module in &compiled_modules {
         let module_address = *module.self_id().address();
 
         if module_address != account_address {
             return Ok(NativeResult::err(cost, E_ADDRESS_NOT_MATCH_WITH_SIGNER));
         }
-        let result = moveos_verifier::verifier::verify_module(module, module_context.resolver);
+        let result = moveos_verifier::verifier::verify_init_function(module);
         match result {
             Ok(res) => {
                 if res {
-                    init_identifier.push(module.self_id());
+                    init_identifier.push(format!("{}", module.self_id().name()));
                 }
-                module_ids.push(module.self_id().short_str_lossless());
+                module_names.push(format!("{}", module.self_id().name()));
             }
             Err(e) => {
                 //TODO provide a flag to control whether to print debug log.
@@ -197,7 +209,7 @@ fn native_sort_and_verify_modules_inner(
         }
     }
 
-    let module_ids: Vec<Value> = module_ids
+    let module_names: Vec<Value> = module_names
         .iter()
         .map(|module_id| {
             Value::struct_(Struct::pack(vec![Value::vector_u8(
@@ -205,21 +217,17 @@ fn native_sort_and_verify_modules_inner(
             )]))
         })
         .collect();
-    let module_ids = Vector::pack(&Type::Struct(CachedStructIndex(0)), module_ids)?;
+    let module_names = Vector::pack(&Type::Struct(CachedStructIndex(0)), module_names)?;
 
-    let init_module_ids: Vec<Value> = init_identifier
+    let init_module_names: Vec<Value> = init_identifier
         .iter()
-        .map(|id| {
-            Value::struct_(Struct::pack(vec![Value::vector_u8(
-                id.short_str_lossless().as_bytes().to_vec(),
-            )]))
-        })
+        .map(|id| Value::struct_(Struct::pack(vec![Value::vector_u8(id.as_bytes().to_vec())])))
         .collect();
-    let init_module_ids = Vector::pack(&Type::Struct(CachedStructIndex(0)), init_module_ids)?;
+    let init_module_names = Vector::pack(&Type::Struct(CachedStructIndex(0)), init_module_names)?;
     let sorted_indices = Value::vector_u64(indices);
     Ok(NativeResult::ok(
         cost,
-        smallvec![module_ids, init_module_ids, sorted_indices],
+        smallvec![module_names, init_module_names, sorted_indices],
     ))
 }
 
@@ -281,7 +289,8 @@ fn check_compatibililty_inner(
 ) -> PartialVMResult<NativeResult> {
     let mut cost = gas_params.base;
     // TODO: config compatibility through global configuration
-    let compat = Compatibility::full_check();
+    // We allow `friend` function to be broken
+    let compat = Compatibility::new(true, true, false);
     if compat.need_check_compat() {
         let old_bytecodes = pop_arg!(args, Vec<u8>);
         let new_bytecodes = pop_arg!(args, Vec<u8>);
@@ -533,7 +542,7 @@ fn modify_modules(
         .map(|b| CompiledModule::deserialize(&b))
         .collect::<PartialVMResult<Vec<CompiledModule>>>()?;
 
-    let mut remapped_bubdles = vec![];
+    let mut remapped_bundles = vec![];
     for module in compiled_modules.iter_mut() {
         replace_fn(module)?;
         let mut binary: Vec<u8> = vec![];
@@ -541,9 +550,9 @@ fn modify_modules(
             PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR).with_message(e.to_string())
         })?;
         let value = Value::vector_u8(binary);
-        remapped_bubdles.push(value);
+        remapped_bundles.push(value);
     }
-    let output_modules = Vector::pack(&Type::Vector(Box::new(Type::U8)), remapped_bubdles)?;
+    let output_modules = Vector::pack(&Type::Vector(Box::new(Type::U8)), remapped_bundles)?;
     Ok(output_modules)
 }
 
@@ -742,7 +751,7 @@ fn unpack_string_to_identifier(value: Value) -> PartialVMResult<Identifier> {
 #[derive(Debug, Clone)]
 pub struct GasParameters {
     pub module_id_inner: ModuleIdInnerGasParameters,
-    pub module_id_from_name_inner: ModuleIdFromNameInnerGasParameters,
+    pub module_id_from_name: ModuleIdFromNameGasParameters,
     pub sort_and_verify_modules_inner: VerifyModulesGasParameters,
     pub request_init_functions: RequestInitFunctionsGasParameters,
     pub check_compatibililty_inner: CheckCompatibilityInnerGasParameters,
@@ -762,7 +771,7 @@ impl GasParameters {
                 base: 0.into(),
                 per_byte_in_str: 0.into(),
             },
-            module_id_from_name_inner: ModuleIdFromNameInnerGasParameters {
+            module_id_from_name: ModuleIdFromNameGasParameters {
                 base: 0.into(),
                 per_byte_in_str: 0.into(),
             },
@@ -818,11 +827,8 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
             make_native(gas_params.module_id_inner, native_module_id_inner),
         ),
         (
-            "module_id_from_name_inner",
-            make_native(
-                gas_params.module_id_from_name_inner,
-                native_module_id_from_name_inner,
-            ),
+            "module_id_from_name",
+            make_native(gas_params.module_id_from_name, native_module_id_from_name),
         ),
         (
             "sort_and_verify_modules_inner",

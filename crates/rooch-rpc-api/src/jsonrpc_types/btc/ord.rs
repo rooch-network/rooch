@@ -3,13 +3,16 @@
 
 use crate::jsonrpc_types::address::BitcoinAddressView;
 use crate::jsonrpc_types::btc::transaction::{hex_to_txid, TxidView};
-use crate::jsonrpc_types::{AccountAddressView, BytesView, MoveStringView, StrView, StructTagView};
+use crate::jsonrpc_types::{
+    BytesView, H256View, MoveStringView, RoochAddressView, StrView, StructTagView,
+};
 use anyhow::Result;
 use bitcoin::hashes::Hash;
 use bitcoin::Txid;
-use move_core_types::account_address::AccountAddress;
+
 use moveos_types::move_std::string::MoveString;
 use moveos_types::{moveos_std::object::ObjectID, state::MoveStructType};
+use rooch_types::address::RoochAddress;
 use rooch_types::bitcoin::ord;
 use rooch_types::bitcoin::ord::{
     BitcoinInscriptionID, Inscription, InscriptionID, InscriptionState,
@@ -50,7 +53,7 @@ pub enum InscriptionFilterView {
 impl InscriptionFilterView {
     pub fn into_global_state_filter(
         filter: InscriptionFilterView,
-        resolve_address: AccountAddress,
+        resolve_address: RoochAddress,
     ) -> Result<ObjectStateFilter> {
         Ok(match filter {
             InscriptionFilterView::Owner(_owner) => ObjectStateFilter::ObjectTypeWithOwner {
@@ -61,9 +64,11 @@ impl InscriptionFilterView {
                 let txid = hex_to_txid(txid.as_str())?;
                 let inscription_id = InscriptionID::new(txid.into_address(), index);
                 let obj_id = ord::derive_inscription_id(&inscription_id);
-                ObjectStateFilter::ObjectId(obj_id)
+                ObjectStateFilter::ObjectId(vec![obj_id])
             }
-            InscriptionFilterView::ObjectId(object_id) => ObjectStateFilter::ObjectId(object_id),
+            InscriptionFilterView::ObjectId(object_id) => {
+                ObjectStateFilter::ObjectId(vec![object_id])
+            }
             InscriptionFilterView::All => ObjectStateFilter::ObjectType(Inscription::struct_tag()),
         })
     }
@@ -71,13 +76,13 @@ impl InscriptionFilterView {
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct InscriptionIDView {
-    pub txid: AccountAddressView,
+    pub txid: H256View,
     pub index: u32,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct InscriptionView {
-    pub txid: AccountAddressView,
+    pub txid: H256View,
     pub bitcoin_txid: TxidView,
     pub index: u32,
     pub offset: u64,
@@ -111,7 +116,7 @@ impl From<Inscription> for InscriptionView {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct InscriptionStateView {
     pub object_id: ObjectID,
-    pub owner: AccountAddressView,
+    pub owner: RoochAddressView,
     pub owner_bitcoin_address: Option<String>,
     pub flag: u8,
     pub value: InscriptionView,

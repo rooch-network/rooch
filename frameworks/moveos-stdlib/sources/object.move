@@ -13,7 +13,7 @@ module moveos_std::object {
     use moveos_std::address;
 
     friend moveos_std::account;
-    friend moveos_std::move_module;
+    friend moveos_std::module_store;
     friend moveos_std::event;
     friend moveos_std::table;
     friend moveos_std::type_table;
@@ -476,7 +476,7 @@ module moveos_std::object {
     // === Object Raw Dynamic Fields ===
 
     #[private_generics(T)]
-    /// Add a dynamic filed to the object. Aborts if an field for this
+    /// Add a dynamic field to the object. Aborts if an field for this
     /// key already exists. The field itself is not stored in the
     /// object, and cannot be discovered from it.
     public fun add_field<T: key, K: copy + drop, V: store>(obj: &mut Object<T>, key: K, val: V) {

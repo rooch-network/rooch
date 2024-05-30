@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::{
-    AccountAddressView, AnnotatedMoveStructView, H256View, StrView, StructTagView,
+    AnnotatedMoveStructView, H256View, RoochAddressView, StrView, StructTagView,
 };
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID, TransactionEvent};
-use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
+use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -79,9 +79,8 @@ pub struct IndexerEventView {
     pub event_type: StructTagView,
     pub event_data: StrView<Vec<u8>>,
     pub tx_hash: H256View,
-    pub sender: AccountAddressView,
+    pub sender: RoochAddressView,
     pub created_at: u64,
-
     pub decoded_event_data: Option<AnnotatedMoveStructView>,
 }
 
@@ -107,7 +106,7 @@ pub enum EventFilterView {
     /// Query by event type.
     EventType(StructTagView),
     /// Query by sender address.
-    Sender(AccountAddressView),
+    Sender(RoochAddressView),
     /// Return events emitted by the given transaction hash.
     TxHash(H256View),
     /// Return events emitted in [start_time, end_time) interval

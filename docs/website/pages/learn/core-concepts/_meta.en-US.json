@@ -1,9 +1,9 @@
 {
+  "vapp":"VApp",
   "accounts": "Account",
   "transaction": "Transaction",
   "objects": "Object",
   "move-contracts": "Move concepts",
-  "client-side-validation": "Client-side Validation",
   "token": {
     "title": "Token",
     "display": "hidden"

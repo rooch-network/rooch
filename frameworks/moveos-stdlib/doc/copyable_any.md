@@ -13,7 +13,8 @@ Source from https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framew
 -  [Function `type_name`](#0x2_copyable_any_type_name)
 
 
-<pre><code><b>use</b> <a href="">0x1::string</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="type_info.md#0x2_type_info">0x2::type_info</a>;
 </code></pre>
@@ -35,6 +36,15 @@ The same as <code><a href="any.md#0x2_any_Any">any::Any</a></code> but with the 
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0x2_copyable_any_ErrorInvalidBytes"></a>
+
+
+
+<pre><code><b>const</b> <a href="copyable_any.md#0x2_copyable_any_ErrorInvalidBytes">ErrorInvalidBytes</a>: u64 = 2;
+</code></pre>
+
 
 
 <a name="0x2_copyable_any_ErrorTypeMismatch"></a>

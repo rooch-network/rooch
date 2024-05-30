@@ -61,6 +61,11 @@ impl KeyState {
         Self { key, key_type }
     }
 
+    pub fn from_string(s: &str) -> Self {
+        let key = bcs::to_bytes(s).expect("bcs to_bytes String must success.");
+        KeyState::new(key, MoveString::type_tag())
+    }
+
     pub fn from_module_id(module_id: &ModuleId) -> Self {
         // The key is the moduleId string in bcs serialize format, not String::into_bytes.
         // bcs::to_bytes(&String) same as bcs::to_bytes(&MoveString)
@@ -529,7 +534,7 @@ pub trait MoveStructState: MoveState + MoveStructType + DeserializeOwned + Seria
             .simple_serialize(&Self::struct_layout())
             .ok_or_else(|| {
                 anyhow::anyhow!(
-                    "Serilaize the MoveState to bytes error: {:?}",
+                    "Serialize the MoveState to bytes error: {:?}",
                     Self::type_tag()
                 )
             })?;
@@ -664,6 +669,36 @@ impl State {
     ) -> Result<AnnotatedState> {
         let decoded_value = annotator.view_value(&self.value_type, &self.value)?;
         Ok(AnnotatedState::new(self, decoded_value))
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        bcs::from_bytes(bytes).map_err(|e| anyhow::anyhow!("Deserialize the State error: {:?}", e))
+    }
+
+    pub fn to_bytes(&self) -> Result<Vec<u8>> {
+        bcs::to_bytes(self).map_err(|e| anyhow::anyhow!("Serialize the State error: {:?}", e))
+    }
+}
+
+impl std::fmt::Display for State {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let hex_state = hex::encode(
+            self.to_bytes()
+                .map_err(|e| std::fmt::Error::custom(e.to_string()))?,
+        );
+        write!(f, "0x{}", hex_state)
+    }
+}
+
+impl FromStr for State {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let state = hex::decode(s.strip_prefix("0x").unwrap_or(s))
+            .map_err(|_| anyhow::anyhow!("Invalid state str: {}", s))?;
+        State::from_bytes(state.as_slice())
     }
 }
 
