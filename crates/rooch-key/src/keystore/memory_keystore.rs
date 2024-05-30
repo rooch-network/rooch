@@ -41,15 +41,6 @@ impl AccountKeystore for InMemKeystore {
         self.keystore.get_key_pair(address, password)
     }
 
-    // fn update_address_encryption_data(
-    //     &mut self,
-    //     address: &RoochAddress,
-    //     encryption: EncryptionData,
-    // ) -> Result<(), anyhow::Error> {
-    //     self.keystore
-    //         .update_address_encryption_data(address, encryption)
-    // }
-
     fn nullify(&mut self, address: &RoochAddress) -> Result<(), anyhow::Error> {
         self.keystore.nullify(address)
     }

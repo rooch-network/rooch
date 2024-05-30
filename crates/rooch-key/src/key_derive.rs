@@ -20,7 +20,7 @@ pub const DERIVATION_PATH_PURPOSE_ED25519: u32 = 44;
 pub const DERIVATION_PATH_PURPOSE_SCHNORR: u32 = 44;
 pub const DERIVATION_PATH_PURPOSE_ECDSA: u32 = 54;
 pub const DERIVATION_PATH_PURPOSE_SECP256R1: u32 = 74;
-pub const DERIVATION_PATH_PURPOSE_BIP84: u32 = 84;
+pub const DERIVATION_PATH_PURPOSE_BIP86: u32 = 86;
 
 pub fn verify_password(
     password: Option<String>,
@@ -67,7 +67,7 @@ pub fn derive_bitcoin_private_key_from_path(
 
 fn validate_derivation_path(path: &DerivationPath) -> Result<(), anyhow::Error> {
     let (purpose, coin_type) = (
-        DERIVATION_PATH_PURPOSE_BIP84,
+        DERIVATION_PATH_PURPOSE_BIP86,
         RoochMultiChainID::Bitcoin as u32,
     );
 
@@ -75,8 +75,8 @@ fn validate_derivation_path(path: &DerivationPath) -> Result<(), anyhow::Error> 
         if p_purpose == ChildNumber::new(purpose, true)?
             && p_coin_type == ChildNumber::new(coin_type, true)?
             && account.is_hardened()
-            && change.is_hardened()
-            && address.is_hardened()
+            && !change.is_hardened()
+            && !address.is_hardened()
         {
             Ok(())
         } else {
@@ -95,16 +95,16 @@ fn validate_derivation_path(path: &DerivationPath) -> Result<(), anyhow::Error> 
 /// Derivation path template
 /// Which tells a wallet how to derive a specific key within a tree of keys
 /// https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki
-/// for ed25529
-/// m / purpose' / coin_type' / account' / change' / address_index'
+/// https://github.com/bitcoin/bips/blob/master/bip-0086.mediawiki
+/// m / purpose' / coin_type' / account' / change / address_index
 pub(crate) fn generate_derivation_path(account_index: u32) -> Result<DerivationPath, RoochError> {
     let (purpose, coin_type) = (
-        DERIVATION_PATH_PURPOSE_BIP84,
+        DERIVATION_PATH_PURPOSE_BIP86,
         RoochMultiChainID::Bitcoin as u32,
     );
 
     DerivationPath::from_str(
-        format!("m/{}'/{}'/0'/0'/{}'", purpose, coin_type, account_index).as_str(),
+        format!("m/{}'/{}'/0'/0/{}", purpose, coin_type, account_index).as_str(),
     )
     .map_err(|_| RoochError::SignatureKeyGenError("Cannot parse derivation path".to_owned()))
 }
@@ -154,5 +154,42 @@ fn parse_word_length(s: Option<String>) -> Result<MnemonicType, anyhow::Error> {
         Some("word24") => Ok(MnemonicType::Words24),
         None => Ok(MnemonicType::Words12),
         _ => Err(anyhow::anyhow!("Invalid word length")),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_generate_key_pair() {
+        let key_pair0 =
+            generate_new_key_pair(None, generate_derivation_path(0).unwrap(), None, None).unwrap();
+        let mnemonic_phrase = key_pair0.key_pair_data.mnemonic_phrase;
+        let key_pair1 = generate_new_key_pair(
+            Some(mnemonic_phrase.clone()),
+            generate_derivation_path(1).unwrap(),
+            None,
+            None,
+        )
+        .unwrap();
+
+        let recovery_key_pair0 = generate_new_key_pair(
+            Some(mnemonic_phrase.clone()),
+            generate_derivation_path(0).unwrap(),
+            None,
+            None,
+        )
+        .unwrap();
+        let recovery_key_pair1 = generate_new_key_pair(
+            Some(mnemonic_phrase),
+            generate_derivation_path(1).unwrap(),
+            None,
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(key_pair0.address, recovery_key_pair0.address);
+        assert_eq!(key_pair1.address, recovery_key_pair1.address);
     }
 }
