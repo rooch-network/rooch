@@ -3,7 +3,7 @@
 
 module moveos_std::genesis {
     use std::option;
-    use moveos_std::timestamp;
+    use moveos_std::object;
     use moveos_std::module_store;
     use moveos_std::features;
     use moveos_std::tx_context;
@@ -22,7 +22,7 @@ module moveos_std::genesis {
         let genesis_context_option = tx_context::get_attribute<GenesisContext>();
         assert!(option::is_some(&genesis_context_option), ErrorGenesisInit);
         let genesis_context = option::extract(&mut genesis_context_option);
-        timestamp::genesis_init(&genesis_account, genesis_context.timestamp);
+        object::genesis_init(&genesis_account, genesis_context.timestamp);
 
         module_store::init_module_store();
         features::init_feature_store();

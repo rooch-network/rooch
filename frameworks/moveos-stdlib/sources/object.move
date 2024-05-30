@@ -6,8 +6,6 @@
 module moveos_std::object {
     use std::hash;
     use std::vector;
-    use moveos_std::timestamp;
-    use moveos_std::timestamp::timestamp;
     use moveos_std::signer;
     use moveos_std::tx_context;
     use moveos_std::bcs;
@@ -20,6 +18,8 @@ module moveos_std::object {
     friend moveos_std::table;
     friend moveos_std::type_table;
     friend moveos_std::bag;
+    friend moveos_std::genesis;
+    friend moveos_std::timestamp;
 
     /// The Object or dynamic field already exists
     const ErrorAlreadyExists: u64 = 1;
@@ -671,13 +671,13 @@ module moveos_std::object {
     }
 
     fun init_timestamp<T: key>(entity: &mut ObjectEntity<T>) {
-        let now_milliseconds = timestamp::now_milliseconds();
+        let now_milliseconds = now_milliseconds();
         entity.created_at = now_milliseconds;
         entity.updated_at = now_milliseconds;
     }
 
     fun update_timestamp<T: key>(obj_id: ObjectID) {
-        let now_milliseconds = timestamp::now_milliseconds();
+        let now_milliseconds = now_milliseconds();
         if(has_parent(&obj_id)) {
             let object_entity = borrow_mut_from_global<T>(obj_id);
             object_entity.updated_at = now_milliseconds;
@@ -747,7 +747,6 @@ module moveos_std::object {
         let object_entity = borrow_from_global<T>(object_id);
         object_entity.size
     }
-
     // ======================================================================================================
     // Internal API
 
@@ -755,6 +754,77 @@ module moveos_std::object {
     /// Because the GlobalValue in MoveVM must be a struct.
     struct FieldValue<V> has key, drop, store {
         val: V
+    }
+
+    // === Timestamp store ===
+    // Limited by Move's circular dependency restrictions,
+    // Timestamp Struct definition and store are placed in Object Module
+
+    /// A object holding the current Unix time in milliseconds
+    struct Timestamp has key {
+        milliseconds: u64,
+    }
+
+    /// Conversion factor between seconds and milliseconds
+    const MILLI_CONVERSION_FACTOR: u64 = 1000;
+
+    /// An invalid timestamp was provided
+    const ErrorInvalidTimestamp: u64 = 21;
+    const ErrorNotGenesisAddress: u64 = 22;
+
+    public(friend) fun genesis_init(_genesis_account: &signer, initial_time_milliseconds: u64) {
+        let timestamp = Timestamp { milliseconds: initial_time_milliseconds };
+        let obj = new_named_object(timestamp);
+        transfer_extend(obj, @moveos_std);
+    }
+
+    /// Updates the global clock time, if the new time is smaller than the current time, aborts.
+    public(friend) fun update_global_time(timestamp_milliseconds: u64) {
+        let current_timestamp = timestamp_mut();
+        let now = current_timestamp.milliseconds;
+        assert!(now < timestamp_milliseconds, ErrorInvalidTimestamp);
+        current_timestamp.milliseconds = timestamp_milliseconds;
+    }
+
+    public(friend) fun try_update_global_time_internal(timestamp_milliseconds: u64) : bool {
+        let current_timestamp = timestamp_mut();
+        let now = current_timestamp.milliseconds;
+        if(now < timestamp_milliseconds) {
+            current_timestamp.milliseconds = timestamp_milliseconds;
+            true
+        }else{
+            false
+        }
+    }
+
+    fun timestamp_mut(): &mut Timestamp {
+        let object_id = named_object_id<Timestamp>();
+        let obj = borrow_mut_object_extend<Timestamp>(object_id);
+        borrow_mut(obj)
+    }
+
+    public(friend) fun timestamp(): &Timestamp {
+        let object_id = named_object_id<Timestamp>();
+        let obj = borrow_object<Timestamp>(object_id);
+        borrow(obj)
+    }
+
+    public(friend) fun milliseconds(self: &Timestamp): u64 {
+        self.milliseconds
+    }
+
+    public(friend) fun seconds(self: &Timestamp): u64 {
+        self.milliseconds / MILLI_CONVERSION_FACTOR
+    }
+
+    /// Gets the current time in milliseconds.
+    public(friend) fun now_milliseconds(): u64 {
+        milliseconds(timestamp())
+    }
+
+    /// Gets the current time in seconds.
+    public(friend) fun now_seconds(): u64 {
+        now_milliseconds() / MILLI_CONVERSION_FACTOR
     }
 
     native fun native_borrow_root(): &mut ObjectEntity<Root>;

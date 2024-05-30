@@ -6,12 +6,10 @@ use crate::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     moveos_std::tx_context::TxContext,
     state::{MoveStructState, MoveStructType},
-    transaction::{FunctionCall, MoveAction},
+    transaction::FunctionCall,
 };
 use anyhow::Result;
-use move_core_types::{
-    account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
-};
+use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("timestamp");
@@ -23,7 +21,7 @@ pub struct Timestamp {
 
 impl MoveStructType for Timestamp {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const MODULE_NAME: &'static IdentStr = ident_str!("object");
     const STRUCT_NAME: &'static IdentStr = ident_str!("Timestamp");
 }
 
@@ -35,7 +33,7 @@ impl MoveStructState for Timestamp {
     }
 }
 
-/// Rust bindings for RoochFramework timestamp module
+/// Rust bindings for MoveosStd timestamp module
 pub struct TimestampModule<'a> {
     caller: &'a dyn MoveFunctionCaller,
 }
@@ -43,8 +41,6 @@ pub struct TimestampModule<'a> {
 impl<'a> TimestampModule<'a> {
     pub const NOW_MICROSECONDS_FUNCTION_NAME: &'static IdentStr = ident_str!("now_milliseconds");
     pub const NOW_SECONDS_FUNCTION_NAME: &'static IdentStr = ident_str!("now_seconds");
-    pub const FAST_FORWARD_SECONDS_FOR_LOCAL_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("fast_forward_seconds_for_local");
 
     pub fn now_milliseconds(&self) -> Result<u64> {
         let call = FunctionCall::new(
@@ -80,14 +76,6 @@ impl<'a> TimestampModule<'a> {
                     bcs::from_bytes::<u64>(&value.value).expect("should be a valid u64")
                 })?;
         Ok(session_key)
-    }
-
-    pub fn create_fast_forward_seconds_for_local_action(seconds: u64) -> MoveAction {
-        MoveAction::Function(FunctionCall::new(
-            Self::function_id(Self::FAST_FORWARD_SECONDS_FOR_LOCAL_FUNCTION_NAME),
-            vec![],
-            vec![MoveValue::U64(seconds).simple_serialize().unwrap()],
-        ))
     }
 }
 

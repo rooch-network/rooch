@@ -38,7 +38,7 @@ script {
 //# run --signers test
 script {
     
-    use moveos_std::timestamp;
+    use rooch_framework::timestamp;
 
     fun main() {
         let seconds = 100;
