@@ -8,7 +8,6 @@ import {
   useRoochClientQuery,
   useTransferCoin,
 } from '@roochnetwork/rooch-sdk-kit'
-
 import { AlertCircle, ArrowLeft, Wallet } from 'lucide-react'
 import {
   Table,
@@ -23,9 +22,8 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-
 import CustomPagination from '@/components/custom-pagination.tsx'
-import {formatCoin} from '@/utils/format.ts';
+import { formatCoin } from '@/utils/format.ts'
 
 export const AssetsCoin = () => {
   const account = useCurrentAccount()
@@ -49,6 +47,7 @@ export const AssetsCoin = () => {
       pageSize: paginationModel.pageSize,
     })
   }
+
   const queryOptions = useMemo(
     () => ({
       cursor: mapPageToNextCursor.current[paginationModel.page - 1],
@@ -82,7 +81,6 @@ export const AssetsCoin = () => {
     }
   }
 
-  // ** modal 打开时，禁止父组件 scroll
   useEffect(() => {
     if (modalOpen) {
       document.body.style.overflow = 'hidden'
@@ -95,10 +93,9 @@ export const AssetsCoin = () => {
     }
   }, [modalOpen])
 
-  // ** ESC 关闭 modal
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
-      if (event.keyCode === 27) {
+      if (event.key === 'Escape') {
         setModalOpen(false)
       }
     }
@@ -127,15 +124,19 @@ export const AssetsCoin = () => {
 
     setTransferLoading(true)
 
-    await transferCoin({
-      account: sessionKey!,
-      recipient: recipient,
-      amount: Number.parseInt(amount),
-      coinType: selectedCoin!.coin_type,
-    })
-
-    handleClose()
-    setTransferLoading(false)
+    try {
+      await transferCoin({
+        account: sessionKey!,
+        recipient: recipient,
+        amount: Number.parseInt(amount),
+        coinType: selectedCoin!.coin_type,
+      })
+    } catch (error) {
+      console.error('Transfer failed', error)
+    } finally {
+      handleClose()
+      setTransferLoading(false)
+    }
   }
 
   if (!account) {
@@ -245,11 +246,13 @@ export const AssetsCoin = () => {
                   {/* Token + Balance */}
                   <div className="grid w-full max-w-md items-center gap-1.5">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="address">Amount</Label>
+                      <Label htmlFor="amount">Amount</Label>
                       <p className="text-xs text-muted-foreground">
                         <span>Balance: </span>
                         <span className="font-semibold text-blue-600 dark:text-blue-400">
-                          {selectedCoin?.balance}
+                          {selectedCoin
+                            ? formatCoin(Number(selectedCoin.balance), selectedCoin.decimals)
+                            : '0.0'}
                         </span>
                       </p>
                     </div>
@@ -261,6 +264,7 @@ export const AssetsCoin = () => {
                         <p className="text-sm">{selectedCoin?.name}</p>
                       </div>
                       <Input
+                        id="amount"
                         className="h-10 rounded-2xl bg-gray-50 dark:bg-gray-200 text-gray-800 w-48 pr-8 mr-2 overflow-hidden border-none"
                         placeholder="0.0"
                         value={amount}
@@ -270,10 +274,6 @@ export const AssetsCoin = () => {
                         disabled={transferLoading}
                         required
                       />
-                      {/*TODO need Calculating gas */}
-                      {/*<button className="text-blue-500 absolute end-4 font-sans text-xs focus:outline-none focus:ring-0 hover:text-blue-300 transition-all bg-gray-50 h-8 w-8 dark:bg-gray-200 rounded-2xl">*/}
-                      {/*  MAX*/}
-                      {/*</button>*/}
                     </div>
                   </div>
 
