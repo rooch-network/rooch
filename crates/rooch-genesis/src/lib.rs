@@ -390,7 +390,7 @@ impl RoochGenesis {
 
 #[cfg(test)]
 mod tests {
-    use crate::FrameworksGasParameters;
+    use crate::{BuildOption, FrameworksGasParameters};
     use move_core_types::identifier::Identifier;
     use move_core_types::language_storage::ModuleId;
     use move_core_types::resolver::ModuleResolver;
@@ -409,8 +409,8 @@ mod tests {
             "genesis init test case for network: {:?}",
             network.chain_id.id
         );
-        let genesis =
-            super::RoochGenesis::build(network.clone()).expect("build rooch genesis failed");
+        let genesis = super::RoochGenesis::build_with_option(network.clone(), BuildOption::Release)
+            .expect("build rooch genesis failed");
 
         let mut moveos_store = MoveOSStore::mock_moveos_store().unwrap();
         let mut rooch_store = RoochStore::mock_rooch_store().unwrap();
