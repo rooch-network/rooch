@@ -5,6 +5,8 @@ interface Card {
   title: string
   description: string
   logo: string
+  buttonHref?: string
+  buttonDesc?: string
 }
 
 interface Brand {
@@ -31,8 +33,6 @@ interface IndexProps {
   featuresTitle: string
   featuresButton: string
   features: Card[]
-  buttonHref: string
-  buttonDesc: string
 
   // EXPLORE
   exploreTitle: string
@@ -58,7 +58,6 @@ const Index = ({
   featuresTitle,
   featuresButton,
   features,
-  buttonHref,
   exploreTitle,
   exploreContent,
   explores,
@@ -107,6 +106,7 @@ const Index = ({
   }
 
   const handleFeaturesButtonOnClick = (href: string) => {
+    console.log(href)
     window.open(href)
   }
 
@@ -171,7 +171,7 @@ const Index = ({
                 <div
                   key={feature.title}
                   className="flex flex-col items-center md:items-start justify-center md:justify-start bg-white dark:bg-[#333] p-6 rounded-2xl shadow-md hover:shadow-lg overflow-hidden hover:cursor-pointer h-full md:h-80 dark:hover:bg-[#555] transition-all relative"
-                  onClick={() => handleFeaturesButtonOnClick(buttonHref)}
+                  onClick={() => handleFeaturesButtonOnClick(feature.buttonHref)}
                 >
                   <div className="w-12 h-12 md:w-16 md:h-16 mb-4">
                     <Image
