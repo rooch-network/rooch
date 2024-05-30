@@ -123,10 +123,10 @@ const Index = ({
     <>
       <div className="antialiased">
         {/* HERO */}
-        <div className="flex flex-col md:flex-row items-center justify-center h-[90vh] px-4 sm:px-6 md:px-8 lg:px-20 dark:border-b dark:border-b-zinc-800">
+        <div className="mt-28 md:mt-0 flex flex-col md:flex-row items-center justify-center md:justify-between h-full md:h-[90vh] px-4 sm:px-6 md:px-8 lg:px-20 dark:border-b dark:border-b-zinc-800">
           <div className="flex flex-col items-center justify-center">
             <div className="mt-5 max-w-3xl text-center mx-auto">
-              <p className="block font-bold text-gray-800 text-4xl md:text-5xl lg:text-6xl dark:text-gray-200">
+              <p className="block font-bold text-gray-800 text-4xl md:text-5xl lg:text-5xl dark:text-gray-200">
                 {heroTitle}
               </p>
               {heroSlogan ? (
@@ -135,7 +135,7 @@ const Index = ({
                 </p>
               ) : null}
             </div>
-            <div className="mt-5 max-w-2xl text-center mx-auto">
+            <div className="mt-5 max-w-xl text-center mx-auto">
               <p className="text-lg text-gray-600 dark:text-gray-400">{heroDescription}</p>
             </div>
             <div className="mt-8 grid gap-3 w-full sm:inline-flex sm:justify-center cta-container">
@@ -155,7 +155,7 @@ const Index = ({
               </Link>
             </div>
           </div>
-          <div className="md:w-3/5 w-full mt-4 md:mt-0">
+          <div className="md:w-3/5 w-full my-12 md:my-0">
             <img src="/logo/hero/hero.svg" alt="hero" />
           </div>
         </div>
