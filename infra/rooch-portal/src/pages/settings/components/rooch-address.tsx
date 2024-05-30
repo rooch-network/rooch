@@ -34,7 +34,7 @@ export const RoochAddress = () => {
 
   if (!account) {
     return (
-      <div className="flex flex-col items-center justify-center p-6 border rounded-lg shadow-md bg-white dark:bg-zinc-900">
+      <div className="flex flex-col items-center justify-center p-6 border rounded-lg bg-white dark:bg-zinc-900">
         <CircleUser className="w-12 h-12 mb-4 text-zinc-500" />
         <p className="text-xl text-zinc-500 font-semibold">Could not find your account</p>
         <p className="text-sm text-muted-foreground mt-2">Please connect to wallet.</p>
@@ -43,7 +43,7 @@ export const RoochAddress = () => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center p-6 border rounded-lg shadow-md bg-white dark:bg-zinc-900">
+    <div className="flex flex-col items-center justify-center p-6 border rounded-lg bg-white dark:bg-zinc-900">
       <div className="flex items-center justify-between w-full mb-4">
         <div className="flex flex-col">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">Rooch Network</h3>

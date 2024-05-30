@@ -1,6 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-import { useState } from 'react'
+import React, { useState } from 'react'
 import {
   Table,
   TableBody,
@@ -17,6 +17,8 @@ import {
   useRoochClientQuery,
 } from '@roochnetwork/rooch-sdk-kit'
 import { Copy, ChevronDown, ChevronUp, Check, AlertCircle } from 'lucide-react'
+
+import { formatTimestamp } from '@/utils/format.ts'
 
 interface Session {
   authenticationKey: string
@@ -69,7 +71,7 @@ export const ManageSessions: React.FC = () => {
   })
 
   const remove = async (authKey: string) => {
-    console.log(authKey)
+    // console.log(authKey)
     await removeSession({
       authKey: authKey,
     })
@@ -123,10 +125,10 @@ export const ManageSessions: React.FC = () => {
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">App</TableHead>
-            <TableHead>Session Key ID</TableHead>
-            <TableHead>Session ID</TableHead>
+            <TableHead>Scope (Show Session Key Scope)</TableHead>
             <TableHead>Granted at</TableHead>
-            <TableHead>Inactive Interval at</TableHead>
+            <TableHead>Last Active at</TableHead>
+            <TableHead>Expiration Interval (seconds)</TableHead>
             <TableHead className="text-center">Action</TableHead>
           </TableRow>
         </TableHeader>
@@ -162,8 +164,8 @@ const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove }) => {
     <>
       <TableRow>
         <TableCell className="font-medium">{session.appName}</TableCell>
-        <TableCell className="cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
-          <div className="flex items-center justify-start gap-1">
+        <TableCell className="cursor-pointer w-64" onClick={() => setIsExpanded(!isExpanded)}>
+          <div className="flex items-center justify-start gap-1 w-full">
             <span className="text-muted-foreground">
               {isExpanded ? 'Hide Session Keys' : 'Show Session Keys'}
             </span>
@@ -184,7 +186,7 @@ const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove }) => {
             onClick={() => remove(session.authenticationKey)}
             className="text-red-500 dark:text-red-400 dark:hover:text-red-300 hover:text-red-600"
           >
-            Disconnect
+            Expired (Clear)
           </Button>
         </TableCell>
       </TableRow>
