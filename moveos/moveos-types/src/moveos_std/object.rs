@@ -5,6 +5,7 @@ use super::table::TablePlaceholder;
 use crate::h256;
 use crate::moveos_std::account::Account;
 use crate::moveos_std::module_store::{ModuleStore, Package};
+use crate::moveos_std::timestamp::Timestamp;
 use crate::state::{KeyState, PlaceholderStruct};
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
@@ -350,6 +351,7 @@ pub type TableObject = ObjectEntity<TablePlaceholder>;
 pub type AccountObject = ObjectEntity<Account>;
 pub type ModuleStoreObject = ObjectEntity<ModuleStore>;
 pub type PackageObject = ObjectEntity<Package>;
+pub type TimestampObject = ObjectEntity<Timestamp>;
 
 /// The Entity of the Object<T>.
 /// The value must be the last field
@@ -549,6 +551,21 @@ impl ObjectEntity<Package> {
             0,
             0,
             Package::default(),
+        )
+    }
+}
+
+impl ObjectEntity<Timestamp> {
+    pub fn genesis_timestamp() -> TimestampObject {
+        Self::new(
+            Timestamp::timestamp_id(),
+            MOVEOS_STD_ADDRESS,
+            0u8,
+            *GENESIS_STATE_ROOT,
+            0,
+            0,
+            0,
+            Timestamp::default(),
         )
     }
 }

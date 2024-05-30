@@ -22,6 +22,8 @@ use move_vm_types::{
     loaded_data::runtime_types::Type,
     values::{GlobalValue, Reference, Struct, StructRef, Value},
 };
+use moveos_types::moveos_std::object::TimestampObject;
+use moveos_types::moveos_std::timestamp::Timestamp;
 use moveos_types::{
     addresses::MOVEOS_STD_ADDRESS,
     h256::H256,
@@ -178,11 +180,16 @@ impl<'a> ObjectRuntimeContext<'a> {
         resolver: &'a dyn StatelessResolver,
         object_runtime: Arc<RwLock<ObjectRuntime>>,
     ) -> Self {
-        //We need to init or load the module store before verify and execute tx
+        //We need to init or load the module store and timestamp store before verify and execute tx
         object_runtime
             .write()
             .init_module_store(resolver)
             .expect("Failed to init module store");
+        object_runtime
+            .write()
+            .init_timestamp_store(resolver)
+            .expect("Failed to init module store");
+
         Self {
             resolver,
             object_runtime,
@@ -320,6 +327,64 @@ impl ObjectRuntime {
         self.root.fields.insert(
             module_store_id.to_key(),
             RuntimeField::Object(module_store_runtime),
+        );
+        Ok(())
+    }
+
+    /// Initialize or load the timestamp store Object into the ObjectRuntime.
+    /// Because the timestamp store is required when execute unit test,
+    /// So we initialize it in the ObjectRuntime.
+    pub fn init_timestamp_store(
+        &mut self,
+        resolver: &dyn StatelessResolver,
+    ) -> PartialVMResult<()> {
+        let timestamp_id = Timestamp::timestamp_id();
+        let state = resolver
+            .get_object_field_at(self.root.state_root, &timestamp_id)
+            .map_err(|e| {
+                partial_extension_error(format!(
+                    "Failed to resolve timestamp object state: {:?}",
+                    e
+                ))
+            })?;
+        let (state_root, global_value) = match state {
+            Some(state) => {
+                let obj = state.into_object::<Timestamp>().map_err(|e| {
+                    partial_extension_error(format!("Failed to resolve timestamp object: {:?}", e))
+                })?;
+                let state_root = obj.state_root();
+                let value = obj.to_runtime_value();
+                // If we load the timestamp object, we should cache it
+                (
+                    state_root,
+                    GlobalValue::cached(value).expect("Cache the Timestamp Object should success"),
+                )
+            }
+            None => {
+                // If the timestamp object is not found, we should create a new one(before genesis).
+                // Init none GlobalValue and move value to it, make the data status is dirty
+                // The change will apart of the state change set
+                let obj = TimestampObject::genesis_timestamp();
+                let state_root = obj.state_root();
+                let value = obj.to_runtime_value();
+                let mut global_value = GlobalValue::none();
+                global_value
+                    .move_to(value)
+                    .expect("Move value to GlobalValue none should success");
+                (state_root, global_value)
+            }
+        };
+        debug!("Init timestamp object with state_root: {}", state_root);
+        let timestamp_runtime = RuntimeObject::init(
+            timestamp_id.clone(),
+            ObjectEntity::<Timestamp>::type_layout(),
+            ObjectEntity::<Timestamp>::type_tag(),
+            global_value,
+            state_root,
+        )?;
+        self.root.fields.insert(
+            timestamp_id.to_key(),
+            RuntimeField::Object(timestamp_runtime),
         );
         Ok(())
     }

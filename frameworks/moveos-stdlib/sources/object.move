@@ -528,6 +528,7 @@ module moveos_std::object {
         init_timestamp(&mut child_entity);
         native_add_field<ObjectID, ObjectEntity<V>>(parent_id, child_id, child_entity);
         increment_size<T>(parent_id);
+        // init_timestamp(&mut child_entity);
         update_timestamp<T>(parent_id);
         Object { id: child_id }
     }
@@ -671,6 +672,10 @@ module moveos_std::object {
     }
 
     fun init_timestamp<T: key>(entity: &mut ObjectEntity<T>) {
+        // // skip timestamp itself
+        // if (type_of<T>() == type_of<Timestamp>()) {
+        //     return
+        // };
         let now_milliseconds = now_milliseconds();
         entity.created_at = now_milliseconds;
         entity.updated_at = now_milliseconds;
@@ -773,23 +778,29 @@ module moveos_std::object {
     const ErrorNotGenesisAddress: u64 = 22;
 
     public(friend) fun genesis_init(_genesis_account: &signer, initial_time_milliseconds: u64) {
-        let timestamp = Timestamp { milliseconds: initial_time_milliseconds };
-        let obj = new_named_object(timestamp);
-        transfer_extend(obj, @moveos_std);
+        let timestamp_id = named_object_id<Timestamp>();
+        // The Timestamp object will initialize before the genesis.
+        if (!exists_object(timestamp_id)) {
+            let timestamp = Timestamp { milliseconds: initial_time_milliseconds };
+            let obj = new_named_object(timestamp);
+            transfer_extend(obj, @moveos_std);
+        } else {
+            update_global_time(initial_time_milliseconds)
+        }
     }
 
     /// Updates the global clock time, if the new time is smaller than the current time, aborts.
     public(friend) fun update_global_time(timestamp_milliseconds: u64) {
         let current_timestamp = timestamp_mut();
         let now = current_timestamp.milliseconds;
-        assert!(now < timestamp_milliseconds, ErrorInvalidTimestamp);
+        assert!(now <= timestamp_milliseconds, ErrorInvalidTimestamp);
         current_timestamp.milliseconds = timestamp_milliseconds;
     }
 
     public(friend) fun try_update_global_time_internal(timestamp_milliseconds: u64) : bool {
         let current_timestamp = timestamp_mut();
         let now = current_timestamp.milliseconds;
-        if(now < timestamp_milliseconds) {
+        if(now <= timestamp_milliseconds) {
             current_timestamp.milliseconds = timestamp_milliseconds;
             true
         }else{

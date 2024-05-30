@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::addresses::MOVEOS_STD_ADDRESS;
+use crate::moveos_std::object;
+use crate::moveos_std::object::ObjectID;
 use crate::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     moveos_std::tx_context::TxContext,
@@ -14,9 +16,15 @@ use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("timestamp");
 
-#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Default)]
 pub struct Timestamp {
     pub microseconds: u64,
+}
+
+impl Timestamp {
+    pub fn timestamp_id() -> ObjectID {
+        object::named_object_id(&Self::struct_tag())
+    }
 }
 
 impl MoveStructType for Timestamp {

@@ -3,7 +3,6 @@
 
 #[test_only]
 module moveos_std::timestamp_test{
-
     use moveos_std::timestamp;
     
     #[test]

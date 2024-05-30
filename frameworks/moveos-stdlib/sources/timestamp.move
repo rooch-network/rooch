@@ -56,6 +56,7 @@ module moveos_std::timestamp {
     fun fast_forward_seconds(timestamp_seconds: u64) {
         let timestamp = timestamp();
         let now_milliseconds = milliseconds(timestamp);
+
         update_global_time(now_milliseconds + (timestamp_seconds * MILLI_CONVERSION_FACTOR));
     }
 

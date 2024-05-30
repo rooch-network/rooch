@@ -11,6 +11,7 @@ use moveos_types::transaction::{FunctionCall, MoveAction};
 pub const MODULE_NAME: &IdentStr = ident_str!("timestamp");
 
 /// Rust bindings for RoochFramework timestamp module
+#[allow(dead_code)]
 pub struct TimestampModule<'a> {
     caller: &'a dyn MoveFunctionCaller,
 }
