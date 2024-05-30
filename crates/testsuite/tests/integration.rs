@@ -226,20 +226,20 @@ async fn run_cmd(world: &mut World, args: String) {
         Ok(output) => {
             let result_json = serde_json::from_str::<Value>(&output);
             if result_json.is_ok() {
-                debug!("run_cli ok: {:?}", &result_json);
+                debug!("run_cli {} ok: {:?}", cmd_name, &result_json);
 
                 tpl_ctx
                     .entry(cmd_name)
                     .append::<Value>(result_json.unwrap());
             } else {
-                debug!("run_cli ok: {:?}", &output);
+                debug!("run_cli {} result not json: {:?}", cmd_name, &output);
             }
         }
         Err(err) => {
-            debug!("cmd: {} output err: {}", cmd_name, err.to_string());
+            debug!("run_cli cmd: {} output err: {}", cmd_name, err.to_string());
             let err_msg = Value::String(err.to_string());
-            error!("run_cli fail: {:?}", &err_msg);
-
+            error!("run_cli cmd: {} fail: {:?}", cmd_name, &err_msg);
+            info!("current tpl_ctx: \n {:#}", tpl_ctx.as_value());
             tpl_ctx.entry(cmd_name).append::<Value>(err_msg);
         }
     }

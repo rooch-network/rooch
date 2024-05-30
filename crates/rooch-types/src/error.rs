@@ -148,6 +148,12 @@ impl From<VMError> for RoochError {
     }
 }
 
+impl From<serde_json::Error> for RoochError {
+    fn from(e: serde_json::Error) -> Self {
+        RoochError::UnexpectedError(e.to_string())
+    }
+}
+
 #[derive(Debug, Error, Eq, PartialEq)]
 pub enum GenesisError {
     #[error("Genesis version mismatch: from store({from_store:?}), from binary({from_binary:?}).")]

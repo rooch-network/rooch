@@ -57,8 +57,8 @@ pub struct AccountView {
 }
 
 #[async_trait]
-impl CommandAction<()> for ListCommand {
-    async fn execute(self) -> RoochResult<()> {
+impl CommandAction<String> for ListCommand {
+    async fn execute(self) -> RoochResult<String> {
         let context = self.context_options.build()?;
         let active_address = context.client_config.active_address;
 
@@ -91,27 +91,26 @@ impl CommandAction<()> for ListCommand {
             .collect();
 
         if self.json {
-            println!("{}", serde_json::to_string_pretty(&account_views).unwrap());
+            Ok(serde_json::to_string_pretty(&account_views)?)
         } else {
-            //TODO optimize the output format
-            println!(
-                "{:^66} | {:^66} | {:^48} | {:^10} | {:^10}",
-                "Address (bech32)", "Address (hex)", "Bitcoin Address", "Session key", "Active"
-            );
-            println!("{}", ["-"; 168].join(""));
+            let mut output = String::new();
+
+            output.push_str(&format!(
+                "{:^66} | {:^66} | {:^48} | {:^10}\n",
+                "Address", "Hex Address", "Bitcoin Address", "Active"
+            ));
+            output.push_str(&format!("{}\n", ["-"; 190].join("")));
 
             for account in account_views {
-                println!(
-                    "{:^66} | {:^66} | {:^48} | {:^10} | {:^10}",
+                output.push_str(&format!(
+                    "{:^66} | {:^66} | {:^48} | {:^10}\n",
                     account.local_account.address,
                     account.local_account.hex_address,
                     account.local_account.bitcoin_address,
-                    account.local_account.has_session_key.to_string(),
                     account.active
-                );
+                ));
             }
+            Ok(output)
         }
-
-        Ok(())
     }
 }
