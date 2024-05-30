@@ -1,6 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Table,
   TableBody,
@@ -65,12 +65,19 @@ export const ManageSessions: React.FC = () => {
     address: sessionKey?.getAddress() || '',
   })
 
-  const remove = async (authKey: string) => {
-    // console.log(authKey)
-    await removeSession({
-      authKey: authKey,
-    })
-  }
+  const [activeSessions, setActiveSessions] = useState<Session[]>([])
+
+  const remove = useCallback(
+    async (authKey: string) => {
+      await removeSession({
+        authKey: authKey,
+      })
+      setActiveSessions((prevSessions) =>
+        prevSessions.filter((session) => session.authenticationKey !== authKey),
+      )
+    },
+    [removeSession],
+  )
 
   const formatSession = (session: SessionInfoResult): Session => ({
     ...session,
@@ -79,7 +86,33 @@ export const ManageSessions: React.FC = () => {
     maxInactiveInterval: session.maxInactiveInterval.toString(),
   })
 
-  if (!sessionKeys?.data.length) {
+  useEffect(() => {
+    if (sessionKeys?.data.length) {
+      const formattedSessions = sessionKeys.data.map(formatSession)
+      setActiveSessions(formattedSessions)
+    }
+  }, [sessionKeys])
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentTime = Date.now() / 1000 // 获取当前时间的 Unix 时间戳（以秒为单位）
+      setActiveSessions((prevSessions) =>
+        prevSessions.filter((session) => {
+          const expirationTime =
+            new Date(session.createTime).getTime() / 1000 + parseInt(session.maxInactiveInterval)
+          if (currentTime > expirationTime) {
+            remove(session.authenticationKey)
+            return false
+          }
+          return true
+        }),
+      )
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [remove])
+
+  if (!activeSessions.length) {
     return (
       <div className="rounded-lg border w-full flex justify-center items-center h-full p-20">
         <div className="flex flex-col items-center justify-center text-center text-xl text-muted-foreground">
@@ -128,12 +161,8 @@ export const ManageSessions: React.FC = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sessionKeys.data.map((session: SessionInfoResult) => (
-            <ExpandableRow
-              key={session.authenticationKey}
-              session={formatSession(session)}
-              remove={remove}
-            />
+          {activeSessions.map((session: Session) => (
+            <ExpandableRow key={session.authenticationKey} session={session} remove={remove} />
           ))}
         </TableBody>
       </Table>
