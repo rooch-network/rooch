@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::types::LocalAccount;
-use crate::key_derive::retrieve_key_pair;
 use crate::keystore::account_keystore::AccountKeystore;
 use crate::keystore::base_keystore::BaseKeyStore;
 use anyhow::anyhow;
@@ -10,12 +9,11 @@ use rooch_types::key_struct::{MnemonicData, MnemonicResult};
 use rooch_types::{
     address::RoochAddress,
     authentication_key::AuthenticationKey,
-    crypto::{PublicKey, RoochKeyPair, Signature},
+    crypto::{RoochKeyPair, Signature},
     key_struct::EncryptionData,
     transaction::rooch::{RoochTransaction, RoochTransactionData},
 };
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 use std::fs;
 use std::fs::File;
 use std::io::BufReader;
@@ -28,6 +26,12 @@ pub struct FileBasedKeystore {
 }
 
 impl AccountKeystore for FileBasedKeystore {
+    fn init_mnemonic_data(&mut self, mnemonic_data: MnemonicData) -> Result<(), anyhow::Error> {
+        self.keystore.init_mnemonic_data(mnemonic_data)?;
+        self.save()?;
+        Ok(())
+    }
+
     fn get_accounts(&self, password: Option<String>) -> Result<Vec<LocalAccount>, anyhow::Error> {
         self.keystore.get_accounts(password)
     }
@@ -43,42 +47,12 @@ impl AccountKeystore for FileBasedKeystore {
         Ok(())
     }
 
-    fn get_address_public_keys(
-        &self,
-        password: Option<String>,
-    ) -> Result<Vec<(RoochAddress, PublicKey)>, anyhow::Error> {
-        self.keystore.get_address_public_keys(password)
-    }
-
-    fn get_public_key(&self, password: Option<String>) -> Result<PublicKey, anyhow::Error> {
-        self.keystore.get_public_key(password)
-    }
-
-    fn get_key_pairs(
-        &self,
-        address: &RoochAddress,
-        password: Option<String>,
-    ) -> Result<Vec<RoochKeyPair>, anyhow::Error> {
-        self.keystore.get_key_pairs(address, password)
-    }
-
-    fn get_key_pair_with_password(
+    fn get_key_pair(
         &self,
         address: &RoochAddress,
         password: Option<String>,
     ) -> Result<RoochKeyPair, anyhow::Error> {
-        self.keystore.get_key_pair_with_password(address, password)
-    }
-
-    fn update_address_encryption_data(
-        &mut self,
-        address: &RoochAddress,
-        encryption: EncryptionData,
-    ) -> Result<(), anyhow::Error> {
-        self.keystore
-            .update_address_encryption_data(address, encryption)?;
-        self.save()?;
-        Ok(())
+        self.keystore.get_key_pair(address, password)
     }
 
     fn nullify(&mut self, address: &RoochAddress) -> Result<(), anyhow::Error> {
@@ -183,33 +157,8 @@ impl AccountKeystore for FileBasedKeystore {
         self.keystore.is_password_empty
     }
 
-    fn get_mnemonics(
-        &self,
-        password: Option<String>,
-    ) -> Result<Vec<MnemonicResult>, anyhow::Error> {
-        self.keystore.get_mnemonics(password)
-    }
-
-    fn add_mnemonic_data(
-        &mut self,
-        mnemonic_phrase: String,
-        mnemonic_data: MnemonicData,
-    ) -> Result<(), anyhow::Error> {
-        self.keystore
-            .add_mnemonic_data(mnemonic_phrase, mnemonic_data)?;
-        self.save()?;
-        Ok(())
-    }
-
-    fn update_mnemonic_data(
-        &mut self,
-        mnemonic_phrase: String,
-        mnemonic_data: MnemonicData,
-    ) -> Result<(), anyhow::Error> {
-        self.keystore
-            .update_mnemonic_data(mnemonic_phrase, mnemonic_data)?;
-        self.save()?;
-        Ok(())
+    fn get_mnemonic(&self, password: Option<String>) -> Result<MnemonicResult, anyhow::Error> {
+        self.keystore.get_mnemonic(password)
     }
 }
 
@@ -231,7 +180,7 @@ impl FileBasedKeystore {
                 )
             })?
         } else {
-            BaseKeyStore::new(BTreeMap::new())
+            BaseKeyStore::new()
         };
 
         Ok(Self {
@@ -288,8 +237,7 @@ impl FileBasedKeystore {
             .keys
             .values() // Get inner maps
             .flat_map(|encryption| {
-                // Transform EncryptionData into RoochKeyPair using your conversion function.
-                Some(retrieve_key_pair(encryption, password.clone()))
+                Some(encryption.decrypt_with_type::<RoochKeyPair>(password.clone()))
             })
             .collect::<Result<_, _>>()?;
 

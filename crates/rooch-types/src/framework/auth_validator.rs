@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::str::FromStr;
+
 use super::transaction_validator::TransactionValidator;
 use crate::address::MultiChainAddress;
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
@@ -76,6 +78,29 @@ impl BuiltinAuthValidator {
             _ => Err(RoochError::KeyConversionError(
                 "Invalid key auth validator".to_owned(),
             )),
+        }
+    }
+
+    pub fn auth_validator(&self) -> AuthValidator {
+        match self {
+            BuiltinAuthValidator::Rooch => AuthValidator {
+                id: self.flag().into(),
+                module_address: ROOCH_FRAMEWORK_ADDRESS,
+                module_name: MoveAsciiString::from_str("native_validator")
+                    .expect("Should be valid"),
+            },
+            BuiltinAuthValidator::Ethereum => AuthValidator {
+                id: self.flag().into(),
+                module_address: ROOCH_FRAMEWORK_ADDRESS,
+                module_name: MoveAsciiString::from_str("ethereum_validator")
+                    .expect("Should be valid"),
+            },
+            BuiltinAuthValidator::Bitcoin => AuthValidator {
+                id: self.flag().into(),
+                module_address: ROOCH_FRAMEWORK_ADDRESS,
+                module_name: MoveAsciiString::from_str("bitcoin_validator")
+                    .expect("Should be valid"),
+            },
         }
     }
 }
