@@ -182,7 +182,7 @@ const Index = ({
                       className="dark:filter dark:invert dark:brightness-150"
                     />
                   </div>
-                  <h3 className="text-xl md:text-2xl font-medium text-[#FF914B] text-center md:text-start mb-2">
+                  <h3 className="md:text-2xl text-[#FF914B] text-center md:text-start mb-2 font-bold text-2xl leading-7">
                     {feature.title}
                   </h3>
                   <p className="text-gray-600 text-center md:text-start dark:text-[#EAEAEA]">
@@ -227,15 +227,13 @@ const Index = ({
               <h3 className="text-[#737B7D] dark:text-[#81888A] text-base font-normal max-w-2xl text-center">
                 {exploreContent}
               </h3>
-              <Image
+              <img
                 src="/logo/explore/explore_logo.svg"
                 alt="explore logo"
-                width={250}
-                height={250}
-                className="dark:filter dark:invert dark:brightness-200"
+                className="w-full md:w-9/12 h-full"
               />
               <div className="mt-8 h-12">
-                <button className="px-8 py-4 bg-[#FF914B] font-bold text-lg text-center rounded-full border border-1 border-b-[6px] border-black active:border-b-4 active:transform active:translate-y-0.5 transition-all hover:shadow-custom1 dark:border-white dark:shadow-custom1 duration-300">
+                <button className="px-8 py-4 bg-[#FF914B] font-bold text-lg text-center rounded-full border border-1 border-b-[6px] border-black active:border-b-4 active:transform active:translate-y-0.5 hover:shadow-custom1 dark:border-white dark:shadow-custom1 transition-all">
                   {featuresButton}
                 </button>
               </div>
@@ -247,13 +245,13 @@ const Index = ({
             {explores.map((explore) => (
               <div
                 key={explore.title}
-                className="bg-[#BFC9C6] rounded-2xl border border-black p-6 flex flex-col items-start justify-center gap-4 hover:cursor-default hover:shadow-lg transition-shadow duration-300"
+                className="bg-[#BFC9C6] rounded-2xl border border-black p-6 flex flex-col items-start justify-center gap-4 hover:cursor-default hover:shadow-lg transition-shadow duration-300 h-full"
               >
                 <div className="flex items-center justify-end w-full mb-4">
                   <Image src={explore.logo} alt={explore.title} width={100} height={100} />
                 </div>
                 <h4 className="text-[#413434] font-bold text-2xl leading-7">{explore.title}</h4>
-                <p className="text-[#413434] text-sm">{explore.description}</p>
+                <p className="text-[#413434]">{explore.description}</p>
               </div>
             ))}
           </div>
