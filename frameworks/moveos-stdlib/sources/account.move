@@ -82,7 +82,6 @@ module moveos_std::account {
    /// Return the current sequence number at `addr`
    public fun sequence_number(addr: address): u64 {
       // if account does not exist, return 0 as sequence number
-      // TODO: refactor this after we decide how to handle account create.
       if (!exist_account_object(addr)) {
          return 0
       };
@@ -211,7 +210,6 @@ module moveos_std::account {
    public fun move_resource_to<T: key>(account: &signer, resource: T){
       let account_address = signer::address_of(account);
       //Auto create the resource object when move resource to the account
-      //TODO should we auto create the account?
       ensure_account_object(account_address);
       let account_obj = borrow_mut_account_internal(account_address); 
       account_move_resource_to(account_obj, resource);
