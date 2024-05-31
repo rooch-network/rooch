@@ -1,0 +1,85 @@
+# The first DApp
+
+This tutorial mainly introduces how to use the DApp front-end template tool provided by Rooch to create a counter program.
+
+## Create project
+
+```bash
+pnpm create @roochnetwork/create-rooch
+```
+
+## Initialize project
+
+Dependencies required to install DApp:
+
+```bash
+pnpm install
+```
+
+Run DApp：
+
+```bash
+pnpm dev
+```
+
+When everything goes well, you will see the following in the browser:
+
+![](/docs/first-dapp/dapp-counter.png)
+
+This step shows that the front end is working normally. Next, the contract needs to be deployed so that the DApp can interact with the contract.
+
+## Switch network
+
+Currently, the Counter DApp application is created in the local network demonstration and uses `rooch env switch` to switch the network:
+
+```bash
+rooch env switch --alias local
+
+The active environment was successfully switched to `local`
+```
+
+## Start the Rooch local node
+
+```bash
+rooch server start
+```
+
+## Deploy contract
+
+We use the `examples/counter` contract for deployment.
+
+```bash
+rooch move publish --named-addresses rooch_examples=default
+```
+
+## Modify front-end configuration
+
+Find the `src/App.tsx` file in the front-end project and modify the `devCounterAddress` constant:
+
+```tsx
+// Your publish counter contract address
+const devCounterAddress = ""
+const devCounterModule = `${devCounterAddress}::counter`
+```
+
+Add the address where the Counter contract is deployed:
+
+```bash
+const devCounterAddress = "0x634e4b692ac7873bb937af3f0ac9bc63c4c6ead3f857c5bbc92e3ff41f756651"
+```
+
+> Note: Modify according to the actual deployment address!
+
+## Call contract
+
+After connecting to the wallet, you will be prompted to create a session key:
+
+![](/docs/first-dapp/dapp-create-sk.png)
+
+After everything is ready, you can call the Counter contract in the DApp. Click the `Increment` button to increase the value of the counter:
+
+![](/docs/first-dapp/dapp-ok.png)
+
+## Summarize
+
+At this point, you have mastered how to create a DApp, complete the initialization work on the front end and contract side, and perform basic interactions.
