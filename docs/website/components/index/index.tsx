@@ -187,8 +187,7 @@ const Index = ({
               {features?.map((feature) => (
                 <div
                   key={feature.title}
-                  className="flex flex-col items-center md:items-start justify-center md:justify-start bg-white dark:bg-[#333] p-6 rounded-2xl shadow-md hover:shadow-lg overflow-hidden hover:cursor-pointer h-full dark:hover:bg-[#555] transition-all relative"
-                  onClick={() => handleButtonOnClick(feature.buttonHref)}
+                  className="flex flex-col items-center md:items-start justify-center md:justify-start space-y-3 bg-white dark:bg-[#333] p-6 rounded-2xl shadow-md overflow-hidden h-full dark:hover:bg-[#555] hover:cursor-default"
                 >
                   <div className="w-12 h-12 md:w-16 md:h-16 mb-4">
                     <Image
@@ -202,9 +201,31 @@ const Index = ({
                   <h3 className="md:text-2xl text-[#FF914B] text-center md:text-start mb-2 font-bold text-2xl leading-7">
                     {feature.title}
                   </h3>
-                  <p className="text-gray-600 text-center md:text-start dark:text-[#EAEAEA]">
-                    {feature.description}
-                  </p>
+                  <div className="text-gray-600 text-center md:text-start dark:text-[#EAEAEA]">
+                    <p>{feature.description}</p>
+                  </div>
+                  <div className="flex items-end justify-end h-full w-full">
+                    <div
+                      className="font-semibold text-[#2E2929] dark:text-[#EEEBEB] hover:cursor-pointer flex items-center justify-center space-x-2 hover:underline transition-all"
+                      onClick={() => handleButtonOnClick(feature.buttonHref)}
+                    >
+                      <span>{feature.buttonDesc}</span>
+                      <svg
+                        className="w-3 h-3"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                      >
+                        <path
+                          d="M5.27921 2L10.9257 7.64645C11.1209 7.84171 11.1209 8.15829 10.9257 8.35355L5.27921 14"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -289,7 +310,7 @@ const Index = ({
           <div className="flex items-center justify-center w-full mt-2">
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 justify-items-center">
               {ecosystemBrand.map((brand) => (
-                <button className="relative bg-white dark:bg-inherit rounded-full md:rounded-lg p-4 flex flex-row md:flex-col items-center md:justify-center justify-start border border-1 border-b-[6px] border-black dark:border-white active:border-b-4 active:transform active:translate-y-0.5 transition-all shadow-sm w-full h-14 md:w-52 md:h-32 gap-2 hover:cursor-pointer hover:shadow-md">
+                <button className="relative bg-white dark:bg-inherit rounded-full md:rounded-lg p-4 flex flex-row md:flex-col items-center md:justify-center justify-start border border-1 border-b-[6px] border-black dark:border-white active:border-b-4 active:transform active:translate-y-0.5 transition-all shadow-sm w-full h-14 md:w-52 md:h-32 gap-2 hover:cursor-default hover:shadow-md">
                   <Image
                     src={brand.brandLogo}
                     alt={brand.brandTitle}
@@ -320,7 +341,7 @@ const Index = ({
             <div className="mt-8 flex flex-col gap-8">
               {blogs?.map((blog) => (
                 <Link key={blog.title} href={blog.link} className="block">
-                  <div className="bg-inherit md:bg-white dark:bg-[#333] shadow-xl md:shadow-md hover:shadow-xl dark:hover:border-[#555] rounded-lg md:border border-gray-200 dark:border-[#333] transition-all duration-300 flex flex-col md:flex-row overflow-hidden">
+                  <div className="bg-inherit md:bg-white dark:bg-[#333] shadow-md hover:shadow-lg dark:hover:border-[#555] rounded-lg md:border border-gray-200 dark:border-[#333] transition-all duration-300 flex flex-col md:flex-row overflow-hidden">
                     <div className="md:w-1/3 w-full h-auto">
                       <img
                         src={blog.image}
