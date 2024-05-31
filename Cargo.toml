@@ -126,7 +126,6 @@ moveos-stdlib = { path = "frameworks/moveos-stdlib" }
 rooch-framework = { path = "frameworks/rooch-framework" }
 bitcoin-move = { path = "frameworks/bitcoin-move" }
 
-
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.
 again = "0.1.2"

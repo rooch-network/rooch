@@ -3769,6 +3769,7 @@ version = "0.5.0"
 dependencies = [
  "anyhow",
  "bcs",
+ "bitcoin-move",
  "clap 4.5.4",
  "framework-builder",
  "framework-types",
@@ -3779,6 +3780,7 @@ dependencies = [
  "moveos-stdlib",
  "moveos-types",
  "once_cell",
+ "rooch-framework",
  "serde 1.0.202",
  "tracing",
  "tracing-subscriber",
