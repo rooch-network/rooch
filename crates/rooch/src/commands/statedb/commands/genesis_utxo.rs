@@ -3,6 +3,31 @@
 
 use crate::cli_types::WalletContextOptions;
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
+use anyhow::{Error, Result};
+use bitcoin::{PublicKey, Txid};
+use chrono::{DateTime, Local};
+use clap::Parser;
+use move_core_types::account_address::AccountAddress;
+use moveos_store::MoveOSStore;
+use moveos_types::h256::H256;
+use moveos_types::moveos_std::object::{
+    ObjectEntity, RootObjectEntity, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK,
+    SYSTEM_OWNER_ADDRESS,
+};
+use moveos_types::moveos_std::simple_multimap::SimpleMultiMap;
+use moveos_types::startup_info::StartupInfo;
+use moveos_types::state::{KeyState, MoveState, State};
+use rooch_config::R_OPT_NET_HELP;
+use rooch_types::address::BitcoinAddress;
+use rooch_types::addresses::BITCOIN_MOVE_ADDRESS;
+use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
+use rooch_types::bitcoin::{types, utxo};
+use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
+use rooch_types::into_address::IntoAddress;
+use rooch_types::rooch_network::RoochChainID;
+use serde::{Deserialize, Serialize};
+use smt::UpdateSet;
 use std::collections::hash_map::Entry;
 use std::collections::{BTreeMap, HashMap};
 use std::fs::File;
@@ -13,36 +38,6 @@ use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, SyncSender};
 use std::thread;
 use std::time::SystemTime;
-
-use anyhow::{Error, Result};
-use bitcoin::{PublicKey, Txid};
-use chrono::{DateTime, Local};
-use clap::Parser;
-use move_core_types::account_address::AccountAddress;
-use move_core_types::language_storage::TypeTag;
-use serde::{Deserialize, Serialize};
-
-use moveos_store::MoveOSStore;
-use moveos_types::h256::H256;
-use moveos_types::moveos_std::object::{
-    ObjectEntity, RootObjectEntity, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK,
-    SYSTEM_OWNER_ADDRESS,
-};
-use moveos_types::moveos_std::simple_multimap::SimpleMultiMap;
-use moveos_types::moveos_std::table::TablePlaceholder;
-use moveos_types::startup_info::StartupInfo;
-use moveos_types::state::{KeyState, MoveState, MoveType, State};
-use rooch_config::R_OPT_NET_HELP;
-use rooch_types::address::{BitcoinAddress, MultiChainAddress, RoochAddress};
-use rooch_types::addresses::BITCOIN_MOVE_ADDRESS;
-use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
-use rooch_types::bitcoin::{types, utxo};
-use rooch_types::error::{RoochError, RoochResult};
-use rooch_types::framework::address_mapping::AddressMappingWrapper;
-use rooch_types::into_address::IntoAddress;
-use rooch_types::multichain_id::RoochMultiChainID;
-use rooch_types::rooch_network::RoochChainID;
-use smt::UpdateSet;
 
 use crate::commands::statedb::commands::init_statedb;
 
@@ -94,7 +89,6 @@ impl GenesisUTXOCommand {
                 pre_root_state_root,
                 *GENESIS_STATE_ROOT,
                 *GENESIS_STATE_ROOT,
-                *GENESIS_STATE_ROOT,
                 start_time,
             );
         });
@@ -111,8 +105,7 @@ impl GenesisUTXOCommand {
         let (root, moveos_store) =
             init_statedb(self.base_data_dir.clone(), self.chain_id.clone()).unwrap();
         let utxo_store_id = BitcoinUTXOStore::object_id();
-        let address_mapping_id = AddressMappingWrapper::mapping_object_id();
-        let reverse_mapping_object_id = AddressMappingWrapper::reverse_mapping_object_id();
+        let address_mapping_id = RoochToBitcoinAddressMapping::object_id();
 
         println!(
             "task progress started at {}, batch_size: {}",
@@ -122,8 +115,8 @@ impl GenesisUTXOCommand {
         println!("root object: {:?}", root);
         println!("utxo_store_id: {:?}", utxo_store_id);
         println!(
-            "address_mapping_id: {:?}, reverse_mapping_object_id {:?}",
-            address_mapping_id, reverse_mapping_object_id
+            "rooch to bitcoin address_mapping_id: {:?}",
+            address_mapping_id
         );
         (root, moveos_store, start_time)
     }
@@ -170,19 +163,15 @@ impl UTXOData {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct AddressMappingData {
     pub origin_address: String,
-    pub maddress: MultiChainAddress,
+    pub baddress: BitcoinAddress,
     pub address: AccountAddress,
 }
 
 impl AddressMappingData {
-    pub fn new(
-        origin_address: String,
-        maddress: MultiChainAddress,
-        address: AccountAddress,
-    ) -> Self {
+    pub fn new(origin_address: String, baddress: BitcoinAddress, address: AccountAddress) -> Self {
         Self {
             origin_address,
-            maddress,
+            baddress,
             address,
         }
     }
@@ -225,8 +214,7 @@ fn apply_updates_to_state(
     root_state_root: H256,
 
     mut utxo_store_state_root: H256,
-    mut address_mapping_state_root: H256,
-    mut reverse_address_mapping_state_root: H256,
+    mut rooch_to_bitcoin_address_mapping_state_root: H256,
 
     task_start_time: SystemTime,
 ) {
@@ -234,8 +222,8 @@ fn apply_updates_to_state(
     let mut address_mapping_count = 0;
 
     let mut last_utxo_store_state_root = utxo_store_state_root;
-    let mut last_address_mapping_state_root = address_mapping_state_root;
-    let mut last_reverse_address_mapping_state_root = reverse_address_mapping_state_root;
+    let mut last_rooch_to_bitcoin_address_mapping_state_root =
+        rooch_to_bitcoin_address_mapping_state_root;
 
     while let Ok(batch) = rx.recv() {
         let loop_start_time = SystemTime::now();
@@ -249,28 +237,18 @@ fn apply_updates_to_state(
         utxo_store_state_root = utxo_tree_change_set.state_root;
         utxo_count += cnt as u64;
 
-        if !batch.address_mapping_updates.is_empty() {
-            let cnt = batch.address_mapping_updates.len();
-            let mut address_mapping_tree_change_set = apply_fields(
+        if !batch.rooch_to_bitcoin_mapping_updates.is_empty() {
+            let cnt = batch.rooch_to_bitcoin_mapping_updates.len();
+            let mut rooch_to_bitcoin_address_mapping_tree_change_set = apply_fields(
                 moveos_store,
-                address_mapping_state_root,
-                batch.address_mapping_updates,
+                rooch_to_bitcoin_address_mapping_state_root,
+                batch.rooch_to_bitcoin_mapping_updates,
             )
             .unwrap();
-            nodes.append(&mut address_mapping_tree_change_set.nodes);
-            address_mapping_state_root = address_mapping_tree_change_set.state_root;
+            nodes.append(&mut rooch_to_bitcoin_address_mapping_tree_change_set.nodes);
+            rooch_to_bitcoin_address_mapping_state_root =
+                rooch_to_bitcoin_address_mapping_tree_change_set.state_root;
             address_mapping_count += cnt as u64;
-        }
-
-        if !batch.reverse_mapping_updates.is_empty() {
-            let mut reverse_address_mapping_tree_change_set = apply_fields(
-                moveos_store,
-                reverse_address_mapping_state_root,
-                batch.reverse_mapping_updates,
-            )
-            .unwrap();
-            nodes.append(&mut reverse_address_mapping_tree_change_set.nodes);
-            reverse_address_mapping_state_root = reverse_address_mapping_tree_change_set.state_root;
         }
 
         apply_nodes(moveos_store, nodes).expect("failed to apply nodes");
@@ -288,16 +266,14 @@ fn apply_updates_to_state(
 
         log::debug!(
             "last_utxo_store_state_root: {:?}, new utxo_store_state_root: {:?}; \
-            last_address_mapping_state_root: {:?}, new address_mapping_state_root: {:?}; \
-            last_reverse_address_mapping_state_root: {:?}, new reverse_address_mapping_state_root: {:?}",
+            last_rooch_to_bitcoin_address_mapping_state_root: {:?}, new rooch_to_bitcoin_address_mapping_state_root: {:?}",
             last_utxo_store_state_root,utxo_store_state_root,
-            last_address_mapping_state_root,address_mapping_state_root,
-            last_reverse_address_mapping_state_root,reverse_address_mapping_state_root
+            last_rooch_to_bitcoin_address_mapping_state_root,rooch_to_bitcoin_address_mapping_state_root
         );
 
         last_utxo_store_state_root = utxo_store_state_root;
-        last_address_mapping_state_root = address_mapping_state_root;
-        last_reverse_address_mapping_state_root = reverse_address_mapping_state_root;
+        last_rooch_to_bitcoin_address_mapping_state_root =
+            rooch_to_bitcoin_address_mapping_state_root;
     }
 
     finish_task(
@@ -307,8 +283,7 @@ fn apply_updates_to_state(
         root_size,
         root_state_root,
         utxo_store_state_root,
-        address_mapping_state_root,
-        reverse_address_mapping_state_root,
+        rooch_to_bitcoin_address_mapping_state_root,
         task_start_time,
     );
 }
@@ -322,8 +297,7 @@ fn finish_task(
     root_size: u64,
     mut root_state_root: H256,
     utxo_store_state_root: H256,
-    address_mapping_state_root: H256,
-    reverse_address_mapping_state_root: H256,
+    rooch_to_bitcoin_address_mapping_state_root: H256,
 
     task_start_time: SystemTime,
 ) {
@@ -336,22 +310,17 @@ fn finish_task(
     update_set.put(parent_id.to_key(), genesis_utxostore_object.into_state());
 
     // Update Address Mapping Object
-    let mut genesis_address_mapping_object = create_genesis_address_mapping_object().unwrap();
-    let mut genesis_reverse_address_mapping_object =
-        create_genesis_reverse_address_mapping_object().unwrap();
-    genesis_address_mapping_object.size += address_mapping_count;
-    genesis_address_mapping_object.state_root = address_mapping_state_root.into_address();
-    genesis_reverse_address_mapping_object.size += address_mapping_count;
-    genesis_reverse_address_mapping_object.state_root =
-        reverse_address_mapping_state_root.into_address();
+
+    let mut genesis_rooch_to_bitcoin_address_mapping_object =
+        create_genesis_rooch_to_bitcoin_address_mapping_object().unwrap();
+
+    genesis_rooch_to_bitcoin_address_mapping_object.size += address_mapping_count;
+    genesis_rooch_to_bitcoin_address_mapping_object.state_root =
+        rooch_to_bitcoin_address_mapping_state_root.into_address();
 
     update_set.put(
-        genesis_address_mapping_object.id.to_key(),
-        genesis_address_mapping_object.into_state(),
-    );
-    update_set.put(
-        genesis_reverse_address_mapping_object.id.to_key(),
-        genesis_reverse_address_mapping_object.into_state(),
+        genesis_rooch_to_bitcoin_address_mapping_object.id.to_key(),
+        genesis_rooch_to_bitcoin_address_mapping_object.into_state(),
     );
     let tree_change_set = apply_fields(moveos_store, root_state_root, update_set).unwrap();
     apply_nodes(moveos_store, tree_change_set.nodes).unwrap();
@@ -388,25 +357,9 @@ fn create_genesis_utxostore_object() -> Result<ObjectEntity<BitcoinUTXOStore>> {
     Ok(utxostore_object)
 }
 
-fn create_genesis_address_mapping_object() -> Result<ObjectEntity<TablePlaceholder>> {
-    let object_id = AddressMappingWrapper::mapping_object_id();
-    let address_mapping_object = ObjectEntity::new(
-        object_id,
-        SYSTEM_OWNER_ADDRESS,
-        0u8,
-        *GENESIS_STATE_ROOT,
-        0,
-        0,
-        0,
-        TablePlaceholder {
-            _placeholder: false,
-        },
-    );
-    Ok(address_mapping_object)
-}
-
-fn create_genesis_reverse_address_mapping_object() -> Result<ObjectEntity<TablePlaceholder>> {
-    let object_id = AddressMappingWrapper::reverse_mapping_object_id();
+fn create_genesis_rooch_to_bitcoin_address_mapping_object(
+) -> Result<ObjectEntity<RoochToBitcoinAddressMapping>> {
+    let object_id = RoochToBitcoinAddressMapping::object_id();
     let reverse_address_mapping_object = ObjectEntity::new(
         object_id,
         SYSTEM_OWNER_ADDRESS,
@@ -415,9 +368,7 @@ fn create_genesis_reverse_address_mapping_object() -> Result<ObjectEntity<TableP
         0,
         0,
         0,
-        TablePlaceholder {
-            _placeholder: false,
-        },
+        RoochToBitcoinAddressMapping::default(),
     );
     Ok(reverse_address_mapping_object)
 }
@@ -425,15 +376,11 @@ fn create_genesis_reverse_address_mapping_object() -> Result<ObjectEntity<TableP
 struct AddressMappingUpdate {
     key: KeyState,
     state: State,
-
-    reverse_key: KeyState,
-    reverse_state: State,
 }
 
 struct BatchUpdates {
     utxo_updates: UpdateSet<KeyState, State>,
-    address_mapping_updates: UpdateSet<KeyState, State>,
-    reverse_mapping_updates: UpdateSet<KeyState, State>,
+    rooch_to_bitcoin_mapping_updates: UpdateSet<KeyState, State>,
 }
 
 fn produce_updates(tx: SyncSender<BatchUpdates>, input: PathBuf, batch_size: usize) {
@@ -443,8 +390,7 @@ fn produce_updates(tx: SyncSender<BatchUpdates>, input: PathBuf, batch_size: usi
     loop {
         let mut updates = BatchUpdates {
             utxo_updates: UpdateSet::new(),
-            address_mapping_updates: UpdateSet::new(),
-            reverse_mapping_updates: UpdateSet::new(),
+            rooch_to_bitcoin_mapping_updates: UpdateSet::new(),
         };
         for line in csv_reader.by_ref().lines().take(batch_size) {
             let line = line.unwrap();
@@ -465,12 +411,8 @@ fn produce_updates(tx: SyncSender<BatchUpdates>, input: PathBuf, batch_size: usi
                     gen_address_mapping_update(address_mapping_data, &mut address_mapping_checker);
                 if let Some(address_mapping_update) = address_mapping_update {
                     updates
-                        .address_mapping_updates
+                        .rooch_to_bitcoin_mapping_updates
                         .put(address_mapping_update.key, address_mapping_update.state);
-                    updates.reverse_mapping_updates.put(
-                        address_mapping_update.reverse_key,
-                        address_mapping_update.reverse_state,
-                    );
                 }
             }
         }
@@ -503,12 +445,10 @@ fn gen_utxo_update(
             utxo_data.address = bitcoin_address.to_string();
         }
 
-        let maddress = MultiChainAddress::try_from_str_with_multichain_id(
-            RoochMultiChainID::Bitcoin,
-            utxo_data.address.as_str(),
-        )?;
-        let address = AccountAddress::from(RoochAddress::try_from(maddress.clone())?);
-        let address_mapping_data = AddressMappingData::new(utxo_data.address, maddress, address);
+        let bitcoin_address = BitcoinAddress::from_str(utxo_data.address.as_str())?;
+        let address = AccountAddress::from(bitcoin_address.to_rooch_address());
+        let address_mapping_data =
+            AddressMappingData::new(utxo_data.address, bitcoin_address, address);
         (address, Some(address_mapping_data))
     };
     let utxo = UTXO::new(
@@ -532,26 +472,12 @@ fn gen_address_mapping_update(
     address_mapping_checker: &mut HashMap<String, bool>,
 ) -> Option<AddressMappingUpdate> {
     if let Entry::Vacant(e) = address_mapping_checker.entry(address_mapping_data.origin_address) {
-        let key = address_mapping_data.maddress.to_key();
-        let state = address_mapping_data.address.into_state();
-
-        let reverse_address_mapping_key = KeyState::new(
-            address_mapping_data.address.to_bytes(),
-            AccountAddress::type_tag(),
-        );
-        let reverse_address_mapping_state = State::new(
-            vec![address_mapping_data.maddress].to_bytes(),
-            TypeTag::Vector(Box::new(MultiChainAddress::type_tag())),
-        );
+        let key = KeyState::from_address(address_mapping_data.address);
+        let state = address_mapping_data.baddress.into_state();
 
         e.insert(true);
 
-        return Some(AddressMappingUpdate {
-            key,
-            state,
-            reverse_key: reverse_address_mapping_key,
-            reverse_state: reverse_address_mapping_state,
-        });
+        return Some(AddressMappingUpdate { key, state });
     }
     None
 }

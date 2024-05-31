@@ -3,25 +3,22 @@
 
 use crate::service::rpc_service::RpcService;
 use anyhow::Result;
-use move_core_types::language_storage::{StructTag, TypeTag};
+use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
 use moveos_types::h256::H256;
-use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::object::RawObject;
-use moveos_types::state::{KeyState, PlaceholderStruct};
+use moveos_types::state::PlaceholderStruct;
 use rooch_rpc_api::jsonrpc_types::account_view::BalanceInfoView;
 use rooch_rpc_api::jsonrpc_types::CoinInfoView;
-use rooch_types::address::{BitcoinAddress, MultiChainAddress, RoochAddress};
+use rooch_types::address::RoochAddress;
 use rooch_types::bitcoin::ord::{Inscription, InscriptionState};
 use rooch_types::bitcoin::utxo::{UTXOState, UTXO};
 use rooch_types::framework::account_coin_store::AccountCoinStoreModule;
-use rooch_types::framework::address_mapping::AddressMappingModule;
 use rooch_types::framework::coin::{CoinInfo, CoinModule};
 use rooch_types::framework::coin_store::{CoinStore, CoinStoreInfo};
 use rooch_types::indexer::state::{IndexerObjectState, IndexerStateID, ObjectStateFilter};
 use rooch_types::indexer::transaction::IndexerTransaction;
-use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::TransactionWithInfo;
 use std::collections::HashMap;
 
@@ -234,10 +231,7 @@ impl AggregateService {
             .map(|m| m.object_id.clone())
             .collect::<Vec<_>>();
         let owners = states.iter().map(|m| m.owner).collect::<Vec<_>>();
-        let owner_keys = states
-            .iter()
-            .map(|m| KeyState::new(m.owner.to_vec(), TypeTag::Address))
-            .collect::<Vec<_>>();
+        let reverse_address_mapping = self.rpc_service.get_bitcoin_addresses(owners).await?;
 
         // Global table 0x0 table's key type is always ObjectID.
         let access_path = AccessPath::objects(object_ids.clone());
@@ -259,41 +253,11 @@ impl AggregateService {
             })
             .collect::<Result<HashMap<_, _>>>()?;
 
-        let address_mapping_module = self
-            .rpc_service
-            .executor
-            .as_module_binding::<AddressMappingModule>();
-        let (_address_mapping_handle, _mapping_handle, reverse_mapping_handle) =
-            address_mapping_module.address_mapping_handle()?;
-
-        let access_path = AccessPath::fields(reverse_mapping_handle, owner_keys);
-        let reverse_address_mapping = self
-            .rpc_service
-            .get_states(access_path)
-            .await?
-            .into_iter()
-            .zip(owners)
-            .map(|(state_opt, owner)| {
-                Ok((
-                    owner,
-                    state_opt
-                        .map(|state| state.cast_unchecked::<Vec<MultiChainAddress>>())
-                        .transpose()?,
-                ))
-            })
-            .collect::<Result<HashMap<_, _>>>()?;
-
         let data = states
             .into_iter()
             .map(|state| {
                 let utxo = objects.get(&state.object_id).cloned().flatten();
-                let reverse_mapping_opt =
-                    reverse_address_mapping.get(&state.owner).cloned().flatten();
-                let reverse_address = reverse_mapping_opt.and_then(|m| {
-                    m.iter()
-                        .find(|v| v.multichain_id == RoochMultiChainID::Bitcoin)
-                        .map(|p| BitcoinAddress::new(p.raw_address.clone()))
-                });
+                let reverse_address = reverse_address_mapping.get(&state.owner).cloned().flatten();
 
                 Ok(UTXOState::new_from_object_state(
                     state,
@@ -314,10 +278,7 @@ impl AggregateService {
             .map(|m| m.object_id.clone())
             .collect::<Vec<_>>();
         let owners = states.iter().map(|m| m.owner).collect::<Vec<_>>();
-        let owner_keys = states
-            .iter()
-            .map(|m| KeyState::new(m.owner.to_vec(), TypeTag::Address))
-            .collect::<Vec<_>>();
+        let reverse_address_mapping = self.rpc_service.get_bitcoin_addresses(owners).await?;
 
         // Global table 0x0 table's key type is always ObjectID.
         let access_path = AccessPath::objects(object_ids.clone());
@@ -341,46 +302,15 @@ impl AggregateService {
             })
             .collect::<Result<HashMap<_, _>>>()?;
 
-        let address_mapping_module = self
-            .rpc_service
-            .executor
-            .as_module_binding::<AddressMappingModule>();
-        let (_address_mapping_handle, _mapping_handle, reverse_mapping_handle) =
-            address_mapping_module.address_mapping_handle()?;
-
-        let access_path = AccessPath::fields(reverse_mapping_handle, owner_keys);
-        let reverse_address_mapping = self
-            .rpc_service
-            .get_states(access_path)
-            .await?
-            .into_iter()
-            .zip(owners)
-            .map(|(state_opt, owner)| {
-                Ok((
-                    owner,
-                    state_opt
-                        .map(|state| state.cast_unchecked::<Vec<MultiChainAddress>>())
-                        .transpose()?,
-                ))
-            })
-            .collect::<Result<HashMap<_, _>>>()?;
-
         let data = states
             .into_iter()
-            // .enumerate()
             .map(|state| {
                 let inscription = objects
                     .get(&state.object_id)
                     .cloned()
                     .flatten()
                     .ok_or(anyhow::anyhow!("Inscription should have value"))?;
-                let reverse_mapping_opt =
-                    reverse_address_mapping.get(&state.owner).cloned().flatten();
-                let reverse_address = reverse_mapping_opt.and_then(|m| {
-                    m.iter()
-                        .find(|v| v.multichain_id == RoochMultiChainID::Bitcoin)
-                        .map(|p| BitcoinAddress::new(p.raw_address.clone()))
-                });
+                let reverse_address = reverse_address_mapping.get(&state.owner).cloned().flatten();
 
                 Ok(InscriptionState::new_from_object_state(
                     state,

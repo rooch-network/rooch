@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::messages::{
-    ExecuteTransactionMessage, ExecuteTransactionResult, GetRootMessage, ResolveMessage,
-    ValidateL1BlockMessage, ValidateL2TxMessage,
+    ExecuteTransactionMessage, ExecuteTransactionResult, GetRootMessage, ValidateL1BlockMessage,
+    ValidateL2TxMessage,
 };
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
-use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::VMStatus;
 use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos::vm::vm_status_explainer::explain_vm_status;
@@ -24,7 +23,6 @@ use rooch_genesis::FrameworksGasParameters;
 use rooch_store::RoochStore;
 use rooch_types::address::MultiChainAddress;
 use rooch_types::bitcoin::BitcoinModule;
-use rooch_types::framework::address_mapping::AddressMappingModule;
 use rooch_types::framework::auth_validator::{AuthValidatorCaller, TxValidateResult};
 use rooch_types::framework::ethereum::EthereumModule;
 use rooch_types::framework::transaction_validator::TransactionValidator;
@@ -85,18 +83,6 @@ impl ExecutorActor {
 
     pub fn moveos(&self) -> &MoveOS {
         &self.moveos
-    }
-
-    pub fn resolve_or_generate(
-        &self,
-        multi_chain_address_sender: MultiChainAddress,
-    ) -> Result<AccountAddress> {
-        let resolved_sender = {
-            let address_mapping = self.as_module_binding::<AddressMappingModule>();
-            address_mapping.resolve_or_generate(multi_chain_address_sender)?
-        };
-
-        Ok(resolved_sender)
     }
 
     pub fn execute(&mut self, tx: VerifiedMoveOSTransaction) -> Result<ExecuteTransactionResult> {
@@ -281,17 +267,6 @@ impl ExecutorActor {
 }
 
 impl Actor for ExecutorActor {}
-
-#[async_trait]
-impl Handler<ResolveMessage> for ExecutorActor {
-    async fn handle(
-        &mut self,
-        msg: ResolveMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<AccountAddress, anyhow::Error> {
-        self.resolve_or_generate(msg.address)
-    }
-}
 
 #[async_trait]
 impl Handler<ValidateL2TxMessage> for ExecutorActor {

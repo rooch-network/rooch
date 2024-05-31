@@ -46,14 +46,14 @@ pub const MODULE_NAME: &IdentStr = ident_str!("auth_validator");
 #[strum(serialize_all = "lowercase")]
 pub enum BuiltinAuthValidator {
     Rooch,
-    Ethereum,
     Bitcoin,
+    Ethereum,
 }
 
 impl BuiltinAuthValidator {
     const ROOCH_FLAG: u8 = 0x00;
-    const ETHEREUM_FLAG: u8 = 0x01;
-    const BITCOIN_FLAG: u8 = 0x02;
+    const BITCOIN_FLAG: u8 = 0x01;
+    const ETHEREUM_FLAG: u8 = 0x02;
 
     pub fn flag(&self) -> u8 {
         match self {

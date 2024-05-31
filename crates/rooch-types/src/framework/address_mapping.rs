@@ -1,13 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::address::{MultiChainAddress, RoochAddress};
+use crate::address::{BitcoinAddress, MultiChainAddress, RoochAddress};
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use anyhow::{Ok, Result};
+use move_core_types::value::MoveTypeLayout;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use moveos_types::moveos_std::object;
 use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::state::MoveStructType;
+use moveos_types::state::{MoveStructState, MoveStructType};
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::option::MoveOption,
@@ -22,37 +23,49 @@ pub const MODULE_NAME: &IdentStr = ident_str!("address_mapping");
 pub const NAMED_MAPPING_INDEX: u64 = 0;
 pub const NAMED_REVERSE_MAPPING_INDEX: u64 = 1;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AddressMappingWrapper {}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AddressMappingIndex {
-    pub index: u64,
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct MultiChainAddressMapping {
+    _placeholder: bool,
 }
 
-impl MoveStructType for AddressMappingWrapper {
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct RoochToBitcoinAddressMapping {
+    _placeholder: bool,
+}
+
+impl MoveStructType for MultiChainAddressMapping {
     const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = ident_str!("AddressMapping");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("MultiChainAddressMapping");
 }
 
-impl AddressMappingWrapper {
-    pub fn address_mapping_object_id() -> ObjectID {
+impl MoveStructState for MultiChainAddressMapping {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![MoveTypeLayout::Bool])
+    }
+}
+
+impl MultiChainAddressMapping {
+    pub fn object_id() -> ObjectID {
         object::named_object_id(&Self::struct_tag())
     }
+}
 
-    pub fn mapping_object_id() -> ObjectID {
-        let named_index = AddressMappingIndex {
-            index: NAMED_MAPPING_INDEX,
-        };
-        object::custom_object_id(&named_index, &Self::struct_tag())
+impl MoveStructType for RoochToBitcoinAddressMapping {
+    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("RoochToBitcoinAddressMapping");
+}
+
+impl MoveStructState for RoochToBitcoinAddressMapping {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![MoveTypeLayout::Bool])
     }
+}
 
-    pub fn reverse_mapping_object_id() -> ObjectID {
-        let named_index = AddressMappingIndex {
-            index: NAMED_REVERSE_MAPPING_INDEX,
-        };
-        object::custom_object_id(&named_index, &Self::struct_tag())
+impl RoochToBitcoinAddressMapping {
+    pub fn object_id() -> ObjectID {
+        object::named_object_id(&Self::struct_tag())
     }
 }
 
@@ -63,14 +76,14 @@ pub struct AddressMappingModule<'a> {
 
 impl<'a> AddressMappingModule<'a> {
     const RESOLVE_FUNCTION_NAME: &'static IdentStr = ident_str!("resolve");
-    const RESOLVE_OR_GENERATE_FUNCTION_NAME: &'static IdentStr = ident_str!("resolve_or_generate");
-    const ADDRESS_MAPPING_HANDLE_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("address_mapping_handle");
 
     pub fn resolve(&self, multichain_address: MultiChainAddress) -> Result<Option<AccountAddress>> {
         if multichain_address.is_rooch_address() {
             let rooch_address: RoochAddress = multichain_address.try_into()?;
             Ok(Some(rooch_address.into()))
+        } else if multichain_address.is_bitcoin_address() {
+            let bitcoin_address: BitcoinAddress = multichain_address.try_into()?;
+            Ok(Some(bitcoin_address.to_rooch_address().into()))
         } else {
             let ctx = TxContext::zero();
             let call = FunctionCall::new(
@@ -90,79 +103,6 @@ impl<'a> AddressMappingModule<'a> {
                 })?;
             Ok(result)
         }
-    }
-
-    pub fn resolve_or_generate(
-        &self,
-        multichain_address: MultiChainAddress,
-    ) -> Result<AccountAddress> {
-        if multichain_address.is_rooch_address() {
-            let rooch_address: RoochAddress = multichain_address.try_into()?;
-            Ok(rooch_address.into())
-        } else {
-            let ctx = TxContext::zero();
-            let call = FunctionCall::new(
-                Self::function_id(Self::RESOLVE_OR_GENERATE_FUNCTION_NAME),
-                vec![],
-                vec![multichain_address.to_bytes()],
-            );
-            let address = self
-                .caller
-                .call_function(&ctx, call)?
-                .into_result()
-                .map(|values| {
-                    let value = values.first().expect("Expected return value");
-                    AccountAddress::from_bytes(&value.value).expect("Expected return address")
-                })?;
-            Ok(address)
-        }
-    }
-
-    pub fn address_mapping_handle(&self) -> Result<(ObjectID, ObjectID, ObjectID)> {
-        let ctx = TxContext::zero();
-        let call = FunctionCall::new(
-            Self::function_id(Self::ADDRESS_MAPPING_HANDLE_FUNCTION_NAME),
-            vec![],
-            vec![],
-        );
-
-        let (address_mapping_handle, mapping_handle, reverse_mapping_handle) = self
-            .caller
-            .call_function(&ctx, call)?
-            .into_result()
-            .map(|values| {
-                let value0 = values.first().ok_or(anyhow::anyhow!(
-                    "Address mapping handle expected return value"
-                ))?;
-                let value1 = values.get(1).ok_or(anyhow::anyhow!(
-                    "Address mapping handle expected return value"
-                ))?;
-                let value2 = values.get(2).ok_or(anyhow::anyhow!(
-                    "Address mapping handle expected return value"
-                ))?;
-                let address_mapping_handle =
-                    ObjectID::from_bytes(value0.value.clone()).map_err(|e| {
-                        anyhow::anyhow!("Address mapping handle convert error {}", e.to_string())
-                    })?;
-                let mapping_handle = ObjectID::from_bytes(value1.value.clone()).map_err(|e| {
-                    anyhow::anyhow!("Address mapping handle convert error {}", e.to_string())
-                })?;
-                let reverse_mapping_handle =
-                    ObjectID::from_bytes(value2.value.clone()).map_err(|e| {
-                        anyhow::anyhow!("Address mapping handle convert error {}", e.to_string())
-                    })?;
-                Ok((
-                    address_mapping_handle,
-                    mapping_handle,
-                    reverse_mapping_handle,
-                ))
-            })??;
-
-        Ok((
-            address_mapping_handle,
-            mapping_handle,
-            reverse_mapping_handle,
-        ))
     }
 }
 
