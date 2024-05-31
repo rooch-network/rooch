@@ -4,10 +4,4 @@ task 1 'run'. lines 4-20:
 status EXECUTED
 
 task 2 'run'. lines 21-56:
-Error: error[E03003]: unbound module member
-   ┌─ /tmp/tempfile:33:48
-   │
-33 │         _v_object: &moveos_std::object::Object<moveos_std::timestamp::Timestamp>,
-   │                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Invalid module access. Unbound struct 'Timestamp' in module '(moveos_std=0x2)::timestamp'
-
-
+status EXECUTED
