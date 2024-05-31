@@ -34,6 +34,10 @@ fn publish_and_load_module() {
         .write()
         .init_module_store(&remote_view)
         .unwrap();
+    object_runtime
+        .write()
+        .init_timestamp_store(&remote_view)
+        .unwrap();
 
     let mut data_cache = MoveosDataCache::new(&remote_view, loader, object_runtime.clone());
 

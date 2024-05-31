@@ -22,7 +22,7 @@ module btc_blind_box::blind_box {
     use moveos_std::tx_context;
     use moveos_std::object::{Self, Object};
     use moveos_std::account as moveos_account;
-    use rooch_framework::timestamp;
+    use moveos_std::timestamp;
     use bitcoin_move::bitcoin;
     use bitcoin_move::types::Header;
 

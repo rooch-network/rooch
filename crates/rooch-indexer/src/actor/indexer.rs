@@ -95,6 +95,7 @@ impl Handler<UpdateIndexerMessage> for IndexerActor {
                 &mut indexer_field_state_changes,
                 object_id,
                 object_change,
+                ledger_transaction.sequence_info.tx_timestamp,
                 &resolver,
             )?;
         }
@@ -113,6 +114,7 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
         let IndexerStatesMessage {
             root,
             tx_order,
+            tx_timestamp,
             state_change_set,
         } = msg;
 
@@ -132,6 +134,7 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                 &mut indexer_field_state_changes,
                 object_id,
                 object_change,
+                tx_timestamp,
                 &resolver,
             )?;
         }

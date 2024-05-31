@@ -129,13 +129,13 @@ describe('structTagToObjectID', () => {
   it('test_named_object_id', () => {
     const structTag: StructTag = {
       address: '0x3',
-      module: 'timestamp',
+      module: 'object',
       name: 'Timestamp',
       type_params: [],
     }
 
     const timestamp_object_id = structTagToObjectID(structTag)
-    const object_id = '0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3'
+    const object_id = '0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9'
     expect(timestamp_object_id).toBe(object_id)
   })
 

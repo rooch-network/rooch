@@ -258,7 +258,7 @@ impl From<OpView<StateView>> for Op<State> {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-// To support dynamic filed for json serialize and deserialize
+// To support dynamic field for json serialize and deserialize
 pub struct DynamicFieldView {
     pub k: KeyStateView,
     pub v: OpView<StateView>,

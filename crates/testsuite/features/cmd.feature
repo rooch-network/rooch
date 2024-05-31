@@ -13,11 +13,11 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::account::Account>'"
       Then cmd: "rpc request --method rooch_listStates --params '["/resource/0x3", null, null, {"decode":true}]"
       Then assert: "'{{$.rpc[-1]}}' contains '0x3::account_coin_store::AutoAcceptCoins'"
-      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3",{"decode":true}]'"
-      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::timestamp::Timestamp>'"
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9",{"decode":true}]'"
+      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::object::Timestamp>'"
       Then assert: "{{$.rpc[-1][0].decoded_value.value.value.value.milliseconds}} == 0"
-      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3::timestamp::Timestamp",{"decode":true}]'"
-      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::timestamp::Timestamp>'"
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x2::object::Timestamp",{"decode":true}]'"
+      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::object::Timestamp>'"
       Then stop the server 
     
     @serial
@@ -36,8 +36,8 @@ Feature: Rooch CLI integration tests
       Then cmd: "move run --function rooch_framework::gas_coin::faucet_entry --args u256:10000000000"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
-      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3",{"decode":true}]'"
-      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::timestamp::Timestamp>'"
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9",{"decode":true}]'"
+      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::object::Timestamp>'"
       # ensure the tx_timestamp update the global timestamp
       Then assert: "{{$.rpc[-1][0].decoded_value.value.value.value.milliseconds}} != 0"
 
@@ -62,9 +62,9 @@ Feature: Rooch CLI integration tests
     Scenario: state
       Given a server for state
       Then cmd: "object --id 0x3" 
-      Then cmd: "object --id 0x3::timestamp::Timestamp"
-      Then cmd: "state --access-path /object/0x3::timestamp::Timestamp"
-      Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::timestamp::Timestamp>'"
+      Then cmd: "object --id 0x2::object::Timestamp"
+      Then cmd: "state --access-path /object/0x2::object::Timestamp"
+      Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::object::Timestamp>'"
       Then cmd: "state --access-path /object/0x3::chain_id::ChainID"
       Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::chain_id::ChainID>'"
       Then assert: "{{$.state[-1][0].decoded_value.value.value.value.id}} == 4"

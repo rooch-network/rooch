@@ -29,10 +29,10 @@
 <b>use</b> <a href="">0x2::simple_multimap</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::table_vec</a>;
+<b>use</b> <a href="">0x2::timestamp</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
 <b>use</b> <a href="">0x3::chain_id</a>;
-<b>use</b> <a href="">0x3::timestamp</a>;
 <b>use</b> <a href="network.md#0x4_network">0x4::network</a>;
 <b>use</b> <a href="ord.md#0x4_ord">0x4::ord</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;

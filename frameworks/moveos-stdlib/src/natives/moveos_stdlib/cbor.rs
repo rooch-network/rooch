@@ -493,8 +493,8 @@ fn serialize_move_fields_to_cbor_value(
 ) -> Result<CborValue> {
     let mut fields = Vec::new();
 
-    for (filed_layout, (name, value)) in layout_fields.iter().zip(value_fields) {
-        let cbor_value = serialize_move_value_to_cbor_value(&filed_layout.layout, value)?;
+    for (field_layout, (name, value)) in layout_fields.iter().zip(value_fields) {
+        let cbor_value = serialize_move_value_to_cbor_value(&field_layout.layout, value)?;
         let values = (CborValue::Text(name.clone().into_string()), cbor_value);
         fields.push(values);
     }

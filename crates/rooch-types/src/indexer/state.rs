@@ -52,10 +52,8 @@ impl IndexerObjectState {
             object_type: raw_object.value.struct_tag,
             tx_order,
             state_index,
-
-            //TODO record transaction timestamp
-            created_at: 0,
-            updated_at: 0,
+            created_at: raw_object.created_at,
+            updated_at: raw_object.updated_at,
         }
     }
 
@@ -99,44 +97,28 @@ pub struct IndexerFieldState {
 }
 
 impl IndexerFieldState {
-    pub fn new(
-        object_id: ObjectID,
-        key_hex: String,
-        key_type: TypeTag,
-        value_type: TypeTag,
-        tx_order: u64,
-        state_index: u64,
-    ) -> Self {
-        IndexerFieldState {
-            object_id,
-            key_hex,
-            key_type,
-            value_type,
-            tx_order,
-            state_index,
-
-            //TODO record transaction timestamp
-            created_at: 0,
-            updated_at: 0,
-        }
-    }
-
     pub fn new_field_state(
         key: KeyState,
         value: State,
         object_id: ObjectID,
         tx_order: u64,
         state_index: u64,
+        tx_timestamp: u64,
+        is_new: bool,
     ) -> IndexerFieldState {
         let key_hex = key.to_string();
-        Self::new(
+        let created_at = if is_new { tx_timestamp } else { 0 };
+        IndexerFieldState {
             object_id,
             key_hex,
-            key.key_type,
-            value.value_type,
+            key_type: key.key_type,
+            value_type: value.value_type,
             tx_order,
             state_index,
-        )
+
+            created_at,
+            updated_at: tx_timestamp,
+        }
     }
 }
 #[derive(Clone, Debug, Default)]
@@ -163,6 +145,7 @@ pub fn handle_object_change(
     indexer_field_state_changes: &mut IndexerFieldStateChanges,
     object_id: ObjectID,
     object_change: ObjectChange,
+    tx_timestamp: u64,
     resolver: &dyn StateResolver,
 ) -> Result<u64> {
     let ObjectChange { op, fields } = object_change;
@@ -220,6 +203,8 @@ pub fn handle_object_change(
                             object_id.clone(),
                             tx_order,
                             state_index_generator,
+                            tx_timestamp,
+                            false,
                         );
                         indexer_field_state_changes.update_field_states.push(state);
                     }
@@ -235,6 +220,8 @@ pub fn handle_object_change(
                             object_id.clone(),
                             tx_order,
                             state_index_generator,
+                            tx_timestamp,
+                            true,
                         );
                         indexer_field_state_changes.new_field_states.push(state);
                     }
@@ -249,6 +236,7 @@ pub fn handle_object_change(
                     indexer_field_state_changes,
                     key.as_object_id()?,
                     object_change,
+                    tx_timestamp,
                     resolver,
                 )?;
             }

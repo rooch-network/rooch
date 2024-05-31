@@ -5,7 +5,8 @@ module bitcoin_move::bitcoin{
     use std::option::{Self, Option};
     use std::vector;
     use std::string::{Self, String};
-    
+    use moveos_std::timestamp;
+
     use moveos_std::simple_multimap::SimpleMultiMap;
     use moveos_std::type_info;
     use moveos_std::table::{Self, Table};
@@ -16,7 +17,6 @@ module bitcoin_move::bitcoin{
     use moveos_std::signer;
     use moveos_std::event;
     
-    use rooch_framework::timestamp;
     use rooch_framework::chain_id;
     
     use bitcoin_move::network;
@@ -57,7 +57,7 @@ module bitcoin_move::bitcoin{
 
     public(friend) fun genesis_init(_genesis_account: &signer, genesis_block_height: u64){
         let btc_block_store = BitcoinBlockStore{
-            genesis_block_height: genesis_block_height,
+            genesis_block_height,
             latest_block_height: option::none(),
             blocks: table::new(),
             height_to_hash: table::new(),

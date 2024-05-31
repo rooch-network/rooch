@@ -269,6 +269,7 @@ module moveos_std::account {
    #[test]
    /// Assert correct account creation.
    fun test_create_account_for_testing() {
+
       let alice_addr = @123456;
       let alice = create_account_for_testing(alice_addr);
       let alice_addr_actual = signer::address_of(&alice);
@@ -336,6 +337,7 @@ module moveos_std::account {
    #[test(sender=@0x42)]
    #[expected_failure(abort_code = ErrorResourceAlreadyExists, location = Self)]
    fun test_failure_repeatedly_move_to_account_object(sender: signer){
+
       let sender_addr = signer::address_of(&sender);
       create_account_object(sender_addr);
       let obj_mut = object::borrow_mut_object<Account>(&sender, account_object_id(sender_addr));

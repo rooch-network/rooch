@@ -3,13 +3,13 @@
 
 module rooch_nursery::ethereum{
 
+    use moveos_std::timestamp;
     use moveos_std::account;
     use moveos_std::table::{Self, Table};
     use moveos_std::bcs;
     use moveos_std::signer;
     use moveos_std::features;
     use rooch_framework::ethereum_address::ETHAddress;
-    use rooch_framework::timestamp; 
 
     friend rooch_nursery::genesis;
 

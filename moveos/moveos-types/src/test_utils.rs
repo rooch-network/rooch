@@ -286,11 +286,15 @@ fn internal_random_raw_object(id: ObjectID) -> RawObject {
     let state_root = *GENESIS_STATE_ROOT;
     let size = 0;
     let value = random_bytes();
+    let created_at = 0;
+    let updated_at = 0;
     let raw_data = RawData {
         struct_tag: random_struct_tag(),
         value,
     };
-    RawObject::new(id, owner, flag, state_root, size, raw_data)
+    RawObject::new(
+        id, owner, flag, state_root, size, created_at, updated_at, raw_data,
+    )
 }
 
 pub fn random_object_change(level: usize) -> (ObjectID, ObjectChange) {

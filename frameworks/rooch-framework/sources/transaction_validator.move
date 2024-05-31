@@ -3,6 +3,7 @@
 
 module rooch_framework::transaction_validator {
     use std::option;
+    use moveos_std::timestamp;
     use moveos_std::signer::module_signer;
     use moveos_std::tx_context;
     use moveos_std::tx_result;
@@ -19,7 +20,6 @@ module rooch_framework::transaction_validator {
     use rooch_framework::transaction_fee;
     use rooch_framework::gas_coin;
     use rooch_framework::transaction::{Self, TransactionSequenceInfo};
-    use rooch_framework::timestamp;
 
     const MAX_U64: u128 = 18446744073709551615;
 
@@ -147,7 +147,8 @@ module rooch_framework::transaction_validator {
         if (option::is_some(&tx_sequence_info)) {
             let tx_sequence_info = option::extract(&mut tx_sequence_info);
             let tx_timestamp = transaction::tx_timestamp(&tx_sequence_info);
-            timestamp::try_update_global_time_internal(tx_timestamp);
+            let module_signer = module_signer<TransactionValidatorPlaceholder>();
+            timestamp::try_update_global_time(&module_signer, tx_timestamp);
         };
     }
 

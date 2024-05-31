@@ -10,7 +10,7 @@ module rooch_framework::session_key_test{
     use moveos_std::bcs;
     use moveos_std::tx_context;
     use rooch_framework::session_key;
-    use rooch_framework::timestamp;
+    use moveos_std::timestamp;
 
     #[test]
     fun test_session_key_end_to_end(){

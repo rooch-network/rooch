@@ -17,7 +17,7 @@ module orderbook::market {
     use moveos_std::type_info::type_name;
     use moveos_std::object::{Object, ObjectID, to_shared, new_named_object, transfer};
     use rooch_framework::coin_store::{CoinStore, create_coin_store};
-    use rooch_framework::timestamp::now_milliseconds;
+    use moveos_std::timestamp::now_milliseconds;
     use orderbook::critbit::{CritbitTree, find_leaf, borrow_leaf_by_index, borrow_mut_leaf_by_index,
         remove_leaf_by_index
     };

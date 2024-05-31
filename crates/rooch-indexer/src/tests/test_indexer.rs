@@ -11,7 +11,8 @@ use moveos_types::h256::H256;
 use moveos_types::move_types::random_type_tag;
 use moveos_types::moveos_std::object::{ObjectEntity, ObjectID};
 use moveos_types::moveos_std::tx_context::TxContext;
-use moveos_types::state::MoveStructType;
+use moveos_types::state::{KeyState, MoveStructType, State};
+use moveos_types::test_utils::random_bytes;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rand::{random, thread_rng, Rng};
 use rooch_config::indexer_config::ROOCH_INDEXER_DB_DIR;
@@ -80,13 +81,14 @@ fn random_new_field_states() -> Vec<IndexerFieldState> {
     let mut state_index = 0u64;
     let mut rng = thread_rng();
     for n in 0..rng.gen_range(1..=10) {
-        let state = IndexerFieldState::new(
+        let state = IndexerFieldState::new_field_state(
+            KeyState::new(random_bytes(), random_type_tag()),
+            State::new(random_bytes(), random_type_tag()),
             ObjectID::from(AccountAddress::random()),
-            H256::random().to_string(),
-            random_type_tag(),
-            random_type_tag(),
             n as u64,
             state_index,
+            0,
+            true,
         );
         field_states.push(state);
         state_index = state_index + 1;
@@ -257,6 +259,8 @@ fn test_object_type_query() -> Result<()> {
         owner,
         0,
         H256::random(),
+        0,
+        0,
         0,
         CoinStore::<GasCoin>::new(100u64.into(), false),
     );
