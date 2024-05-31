@@ -51,14 +51,12 @@ module rooch_framework::auth_payload {
 
     public fun encode_full_message(self: &AuthPayload, tx_hash: vector<u8>): vector<u8> {
         // The signature description must start with Rooch Transaction:\n
-
         assert!(starts_with(&self.message_info, &MessgaeInfoPrefix), ErrorInvalidSignature);
 
         let tx_hex = hex::encode(tx_hash);
         let message_prefix_len = (vector::length(&self.message_prefix) as u8);
 
         let full_message = vector<u8>[];
-
         if (message_prefix_len > 0) {
             vector::append(&mut full_message, self.message_prefix);
         };
