@@ -34,6 +34,8 @@ export const AssetsCoin = () => {
   const [recipient, setRecipient] = useState('')
   const [amount, setAmount] = useState('0')
   const [transferLoading, setTransferLoading] = useState(false)
+  const [error, setError] = useState('')
+
   // ** PAGINATION
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 1 })
   const mapPageToNextCursor = useRef<{ [page: number]: string | null }>({})
@@ -117,10 +119,28 @@ export const AssetsCoin = () => {
     }
   }, [paginationModel, data])
 
+  const handleAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value
+    setAmount(value)
+
+    if (selectedCoin) {
+      const amountNumber = Number(value)
+      const balanceNumber = Number(selectedCoin.balance) / 10 ** selectedCoin.decimals
+      if (amountNumber > balanceNumber) {
+        setError('Amount exceeds available balance.')
+      } else {
+        setError('')
+      }
+    }
+  }
+
   const handleTransferCoin = async () => {
-    if (recipient === '' || amount === '0') {
+    if (recipient === '' || amount === '0' || !selectedCoin || error) {
+      setError('Please enter a valid recipient and amount.')
       return
     }
+
+    const amountNumber = Math.floor(Number(amount) * 10 ** selectedCoin.decimals)
 
     setTransferLoading(true)
 
@@ -128,14 +148,15 @@ export const AssetsCoin = () => {
       await transferCoin({
         account: sessionKey!,
         recipient: recipient,
-        amount: Number.parseInt(amount),
-        coinType: selectedCoin!.coin_type,
+        amount: amountNumber,
+        coinType: selectedCoin.coin_type,
       })
     } catch (error) {
       console.error('Transfer failed', error)
     } finally {
       handleClose()
       setTransferLoading(false)
+      setError('')
     }
   }
 
@@ -268,13 +289,12 @@ export const AssetsCoin = () => {
                         className="h-10 rounded-2xl bg-gray-50 dark:bg-gray-200 text-gray-800 w-48 pr-8 mr-2 overflow-hidden border-none"
                         placeholder="0.0"
                         value={amount}
-                        onChange={(event) => {
-                          setAmount(event.target.value)
-                        }}
+                        onChange={handleAmountChange}
                         disabled={transferLoading}
                         required
                       />
                     </div>
+                    {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
                   </div>
 
                   {/* CTA */}
@@ -283,7 +303,7 @@ export const AssetsCoin = () => {
                     size="default"
                     className="w-full mt-6 font-sans gap-1"
                     onClick={handleTransferCoin}
-                    disabled={transferLoading}
+                    disabled={transferLoading || error !== ''}
                   >
                     <span>Send</span>
                     <span className="font-semibold text-blue-400 dark:text-blue-600">
