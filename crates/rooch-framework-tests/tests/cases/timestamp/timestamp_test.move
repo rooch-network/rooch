@@ -4,16 +4,16 @@
 //# run --signers test
 script {
     fun main() {
-        let object_id = moveos_std::object::named_object_id<rooch_framework::timestamp::Timestamp>();
+        let object_id = moveos_std::object::named_object_id<moveos_std::object::Timestamp>();
         std::debug::print(&object_id);
     }
 }
 
 //Timestamp object as argument.
-//# run --signers test --args object:0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3
+//# run --signers test --args object:0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9
 script {
-    use moveos_std::object::{Self, Object};
-    use rooch_framework::timestamp::{Self, Timestamp};
+    use moveos_std::object::{Self, Object, Timestamp};
+    use moveos_std::timestamp::{Self};
 
     fun main(timestamp_obj: &Object<Timestamp>) {
         let timestamp = object::borrow(timestamp_obj);
@@ -26,7 +26,7 @@ script {
 //# run --signers test
 script {
     
-    use rooch_framework::timestamp;
+    use moveos_std::timestamp;
 
     fun main() {
         let now_seconds = timestamp::now_seconds();
@@ -43,7 +43,7 @@ script {
     fun main() {
         let seconds = 100;
         timestamp::fast_forward_seconds_for_local(seconds);
-        let seconds_from_ctx = timestamp::now_seconds();
+        let seconds_from_ctx = moveos_std::timestamp::now_seconds();
         assert!(seconds == seconds_from_ctx, 1);
     }
 }

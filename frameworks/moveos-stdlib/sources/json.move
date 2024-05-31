@@ -56,7 +56,6 @@ module moveos_std::json{
     #[data_struct]
     struct Test has copy, drop, store {
         balance: u128,
-        ascii_string: std::ascii::String,
         utf8_string: std::string::String,
         age: u8,
         inner: Inner,
@@ -67,7 +66,7 @@ module moveos_std::json{
 
     #[test]
     fun test_from_json() {
-        let json_str = b"{\"balance\": \"170141183460469231731687303715884105728\",\"ascii_string\":\"rooch.network\",\"utf8_string\":\"rooch.network\",\"age\":30,\"inner\":{\"value\":100},\"bytes\":[3,3,2,1],\"inner_array\":[{\"value\":101}],\"account\":\"0x42\"}";
+        let json_str = b"{\"balance\": \"170141183460469231731687303715884105728\",\"utf8_string\":\"rooch.network\",\"age\":30,\"inner\":{\"value\":100},\"bytes\":[3,3,2,1],\"inner_array\":[{\"value\":101}],\"account\":\"0x42\"}";
         let obj = from_json<Test>(json_str);
         
         assert!(obj.balance == 170141183460469231731687303715884105728u128, 1);

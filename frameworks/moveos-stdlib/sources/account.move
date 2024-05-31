@@ -4,7 +4,7 @@
 module moveos_std::account {
    use std::signer;
    use moveos_std::core_addresses;
-   use moveos_std::type_table::{key};
+   use moveos_std::type_table::key;
    use moveos_std::object::{Self, ObjectID, Object};
 
    /// Account is part of the StorageAbstraction
@@ -163,12 +163,12 @@ module moveos_std::account {
 
    public fun account_move_resource_to<T: key>(self: &mut Object<Account>, resource: T){
       assert!(!object::contains_field(self, key<T>()), ErrorResourceAlreadyExists);
-      object::add_field_internal<Account, std::ascii::String, T>(object::id(self), key<T>(), resource)
+      object::add_field_internal<Account, std::string::String, T>(object::id(self), key<T>(), resource)
    }
 
    public fun account_move_resource_from<T: key>(self: &mut Object<Account>): T {
       assert!(object::contains_field(self, key<T>()), ErrorResourceNotExists);
-      object::remove_field_internal<Account, std::ascii::String, T>(object::id(self), key<T>())
+      object::remove_field_internal<Account, std::string::String, T>(object::id(self), key<T>())
    }
 
    public fun account_exists_resource<T: key>(self: &Object<Account>) : bool {
@@ -269,6 +269,7 @@ module moveos_std::account {
    #[test]
    /// Assert correct account creation.
    fun test_create_account_for_testing() {
+
       let alice_addr = @123456;
       let alice = create_account_for_testing(alice_addr);
       let alice_addr_actual = signer::address_of(&alice);
@@ -336,6 +337,7 @@ module moveos_std::account {
    #[test(sender=@0x42)]
    #[expected_failure(abort_code = ErrorResourceAlreadyExists, location = Self)]
    fun test_failure_repeatedly_move_to_account_object(sender: signer){
+
       let sender_addr = signer::address_of(&sender);
       create_account_object(sender_addr);
       let obj_mut = object::borrow_mut_object<Account>(&sender, account_object_id(sender_addr));

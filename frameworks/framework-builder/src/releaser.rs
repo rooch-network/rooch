@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use tracing::{debug, info, warn};
 
 pub fn release_latest() -> Result<()> {
-    release(StdlibVersion::Latest, true)
+    release(StdlibVersion::Latest, false)
 }
 
 pub fn release(version: StdlibVersion, check_compatibility: bool) -> Result<()> {
@@ -50,14 +50,33 @@ pub fn release(version: StdlibVersion, check_compatibility: bool) -> Result<()> 
     let curr_stdlib = build_stdlib(!version.is_latest())?;
     // check compatibility
     if let Some(pre_version) = pre_version {
-        if check_compatibility {
-            info!(
-                "Checking compatibility between version {:?} and version {:?}",
-                version.as_string(),
-                pre_version.as_string()
-            );
-            let prev_stdlib = pre_version.load_from_file()?;
-            check_stdlib_compatibility(&curr_stdlib, &prev_stdlib)?;
+        info!(
+            "Checking compatibility between version {:?} and version {:?}",
+            version.as_string(),
+            pre_version.as_string()
+        );
+        let prev_stdlib = pre_version.load_from_file()?;
+        match check_stdlib_compatibility(&curr_stdlib, &prev_stdlib) {
+            Ok(_) => {}
+            Err(err) => {
+                // if check_compatibility is true, we should bail out and stop the release
+                // otherwise, we just log the error and continue the release
+                if check_compatibility {
+                    bail!(
+                        "Version {:?} is incompatible with previous version {:?}: {:?}",
+                        version.as_string(),
+                        pre_version.as_string(),
+                        err
+                    );
+                } else {
+                    warn!(
+                        "Version {:?} is incompatible with previous version {:?}: {:?}",
+                        version.as_string(),
+                        pre_version.as_string(),
+                        err
+                    );
+                }
+            }
         }
     }
 

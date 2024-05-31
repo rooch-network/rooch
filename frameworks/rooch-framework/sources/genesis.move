@@ -13,7 +13,6 @@ module rooch_framework::genesis {
     use rooch_framework::account_coin_store;
     use rooch_framework::gas_coin;
     use rooch_framework::transaction_fee;
-    use rooch_framework::timestamp;
     use rooch_framework::address_mapping;
     use rooch_framework::onchain_config;
 
@@ -23,14 +22,11 @@ module rooch_framework::genesis {
     /// GenesisContext is a genesis init parameters in the TxContext.
     struct GenesisContext has copy,store,drop{
         chain_id: u64,
-        /// genesis timestamp in microseconds
-        timestamp: u64,
         /// Sequencer account
         sequencer: address, 
     }
 
     fun init(){
-        
         let genesis_account = &account::create_account_internal(@rooch_framework);
         let genesis_context_option = tx_context::get_attribute<GenesisContext>();
         assert!(option::is_some(&genesis_context_option), ErrorGenesisInit);
@@ -42,7 +38,6 @@ module rooch_framework::genesis {
         account_coin_store::genesis_init(genesis_account);
         gas_coin::genesis_init(genesis_account);
         transaction_fee::genesis_init(genesis_account);
-        timestamp::genesis_init(genesis_account, genesis_context.timestamp);
         address_mapping::genesis_init(genesis_account);
         onchain_config::genesis_init(genesis_account, genesis_context.sequencer);
 
@@ -62,7 +57,7 @@ module rooch_framework::genesis {
     /// init the genesis context for test
     public fun init_for_test(){
         let genesis_account = moveos_std::signer::module_signer<GenesisContext>();
-        tx_context::add_attribute_via_system(&genesis_account, GenesisContext{chain_id: 3, timestamp: 0, sequencer: @rooch_framework});
+        tx_context::add_attribute_via_system(&genesis_account, GenesisContext{chain_id: 3, sequencer: @rooch_framework});
         genesis::init_for_test();
         init();
     }

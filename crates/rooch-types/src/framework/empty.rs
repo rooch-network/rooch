@@ -35,6 +35,10 @@ impl<'a> Empty<'a> {
     pub fn empty_function_id() -> FunctionId {
         Self::function_id(Self::EMPTY_FUNCTION_NAME)
     }
+
+    pub fn empty_function_call() -> FunctionCall {
+        FunctionCall::new(Self::empty_function_id(), vec![], vec![])
+    }
 }
 
 impl<'a> ModuleBinding<'a> for Empty<'a> {

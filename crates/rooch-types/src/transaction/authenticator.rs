@@ -19,7 +19,16 @@ use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
 
-use crate::{crypto::Signature, framework::auth_validator::BuiltinAuthValidator};
+use crate::{
+    crypto::{RoochKeyPair, Signature, SignatureScheme},
+    framework::{
+        auth_payload::{AuthPayload, SignData},
+        auth_validator::BuiltinAuthValidator,
+    },
+    rooch_network::{BuiltinChainID, RoochNetwork},
+};
+
+use super::RoochTransactionData;
 
 /// A `Authenticator` is an abstraction of a account authenticator.
 /// It is a part of `AccountAbstraction`
@@ -60,7 +69,7 @@ prop_compose! {
         let mut rng = StdRng::seed_from_u64(seed);
         let ed25519_keypair: Ed25519KeyPair = Ed25519KeyPair::generate(&mut rng);
         RoochAuthenticator {
-            signature: Signature::new_hashed(&message, &ed25519_keypair)
+            signature: Signature::sign(&message, &ed25519_keypair)
         }
     }
 }
@@ -79,9 +88,17 @@ where
     }
 }
 
-impl From<Signature> for Authenticator {
-    fn from(signature: Signature) -> Self {
-        Authenticator::rooch(signature)
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct BitcoinAuthenticator {
+    pub payload: AuthPayload,
+}
+
+impl BuiltinAuthenticator for BitcoinAuthenticator {
+    fn auth_validator_id(&self) -> u64 {
+        BuiltinAuthValidator::Bitcoin.flag().into()
+    }
+    fn payload(&self) -> Vec<u8> {
+        bcs::to_bytes(&self.payload).expect("Serialize BitcoinAuthenticator should success")
     }
 }
 
@@ -97,9 +114,45 @@ impl Authenticator {
         self.auth_validator_id
     }
 
-    /// Create a single-signature rooch authenticator
-    pub fn rooch(signature: Signature) -> Self {
+    pub fn genesis() -> Self {
+        Self {
+            auth_validator_id: BuiltinAuthValidator::Rooch.flag().into(),
+            payload: vec![],
+        }
+    }
+
+    /// Create a rooch authenticator for session key
+    pub fn rooch(kp: &RoochKeyPair, tx_data: &RoochTransactionData) -> Self {
+        debug_assert_eq!(kp.public().scheme(), SignatureScheme::Ed25519);
+        let data_hash = tx_data.tx_hash();
+        let signature = kp.sign(data_hash.as_bytes());
         RoochAuthenticator { signature }.into()
+    }
+
+    /// Create a bitcoin authenticator for RoochTransaction
+    /// We simulate the Bitcoin Wallet message signature
+    pub fn bitcoin(kp: &RoochKeyPair, tx_data: &RoochTransactionData) -> Self {
+        debug_assert_eq!(kp.public().scheme(), SignatureScheme::Secp256k1);
+        let sign_data = SignData::new(tx_data);
+        //The Bitcoin wallet uses sha2_256 twice, the Secp256k1 sign method will hash the data again
+        let data_hash = sign_data.data_hash();
+        let signature = kp.sign(data_hash.as_bytes());
+        let bitcoin_address = kp
+            .public()
+            .bitcoin_address()
+            .expect("Generate bitcoin address should success");
+        //TODO handle custom network
+        let rooch_network = RoochNetwork::from(
+            BuiltinChainID::try_from(tx_data.chain_id).unwrap_or(BuiltinChainID::default()),
+        );
+        let bitcoin_address_str = bitcoin_address
+            .format(rooch_network.genesis_config.bitcoin_network)
+            .expect("format bitcoin address should success");
+        let auth_payload = AuthPayload::new(sign_data, signature, bitcoin_address_str);
+        BitcoinAuthenticator {
+            payload: auth_payload,
+        }
+        .into()
     }
 
     /// Create a custom authenticator

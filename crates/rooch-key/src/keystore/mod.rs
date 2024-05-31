@@ -5,11 +5,11 @@ use crate::keystore::account_keystore::AccountKeystore;
 use crate::keystore::file_keystore::FileBasedKeystore;
 use enum_dispatch::enum_dispatch;
 use memory_keystore::InMemKeystore;
-use rooch_types::key_struct::{MnemonicData, MnemonicResult};
+use rooch_types::key_struct::{GeneratedKeyPair, MnemonicData, MnemonicResult};
 use rooch_types::{
     address::RoochAddress,
     authentication_key::AuthenticationKey,
-    crypto::{PublicKey, RoochKeyPair, Signature},
+    crypto::{RoochKeyPair, Signature},
     key_struct::EncryptionData,
     transaction::rooch::{RoochTransaction, RoochTransactionData},
 };
@@ -36,6 +36,29 @@ pub enum Keystore {
 }
 
 impl AccountKeystore for Keystore {
+    fn init_keystore(
+        &mut self,
+        mnemonic_phrase: Option<String>,
+        word_length: Option<String>,
+        password: Option<String>,
+    ) -> Result<GeneratedKeyPair, anyhow::Error> {
+        match self {
+            Keystore::File(file_keystore) => {
+                file_keystore.init_keystore(mnemonic_phrase, word_length, password)
+            }
+            Keystore::InMem(inmem_keystore) => {
+                inmem_keystore.init_keystore(mnemonic_phrase, word_length, password)
+            }
+        }
+    }
+
+    fn init_mnemonic_data(&mut self, mnemonic_data: MnemonicData) -> Result<(), anyhow::Error> {
+        match self {
+            Keystore::File(file_keystore) => file_keystore.init_mnemonic_data(mnemonic_data),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.init_mnemonic_data(mnemonic_data),
+        }
+    }
+
     fn get_accounts(
         &self,
         password: Option<String>,
@@ -86,66 +109,15 @@ impl AccountKeystore for Keystore {
         }
     }
 
-    fn get_address_public_keys(
-        &self,
-        password: Option<String>,
-    ) -> Result<Vec<(RoochAddress, PublicKey)>, anyhow::Error> {
-        // Implement this method to collect public keys from the appropriate variant (File or InMem)
-        match self {
-            Keystore::File(file_keystore) => file_keystore.get_address_public_keys(password),
-            Keystore::InMem(inmem_keystore) => inmem_keystore.get_address_public_keys(password),
-        }
-    }
-
-    fn get_public_key(&self, password: Option<String>) -> Result<PublicKey, anyhow::Error> {
-        // Implement this method to get the public key by coin ID from the appropriate variant (File or InMem)
-        match self {
-            Keystore::File(file_keystore) => file_keystore.get_public_key(password),
-            Keystore::InMem(inmem_keystore) => inmem_keystore.get_public_key(password),
-        }
-    }
-
-    fn get_key_pairs(
-        &self,
-        address: &RoochAddress,
-        password: Option<String>,
-    ) -> Result<Vec<RoochKeyPair>, anyhow::Error> {
-        // Implement this method to get key pairs for the given address from the appropriate variant (File or InMem)
-        match self {
-            Keystore::File(file_keystore) => file_keystore.get_key_pairs(address, password),
-            Keystore::InMem(inmem_keystore) => inmem_keystore.get_key_pairs(address, password),
-        }
-    }
-
-    fn get_key_pair_with_password(
+    fn get_key_pair(
         &self,
         address: &RoochAddress,
         password: Option<String>,
     ) -> Result<RoochKeyPair, anyhow::Error> {
         // Implement this method to get the key pair by coin ID from the appropriate variant (File or InMem)
         match self {
-            Keystore::File(file_keystore) => {
-                file_keystore.get_key_pair_with_password(address, password)
-            }
-            Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.get_key_pair_with_password(address, password)
-            }
-        }
-    }
-
-    fn update_address_encryption_data(
-        &mut self,
-        address: &RoochAddress,
-        encryption: EncryptionData,
-    ) -> Result<(), anyhow::Error> {
-        // Implement this method to update the key pair by coin ID for the appropriate variant (File or InMem)
-        match self {
-            Keystore::File(file_keystore) => {
-                file_keystore.update_address_encryption_data(address, encryption)
-            }
-            Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.update_address_encryption_data(address, encryption)
-            }
+            Keystore::File(file_keystore) => file_keystore.get_key_pair(address, password),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.get_key_pair(address, password),
         }
     }
 
@@ -266,43 +238,10 @@ impl AccountKeystore for Keystore {
         }
     }
 
-    fn get_mnemonics(
-        &self,
-        password: Option<String>,
-    ) -> Result<Vec<MnemonicResult>, anyhow::Error> {
+    fn get_mnemonic(&self, password: Option<String>) -> Result<MnemonicResult, anyhow::Error> {
         match self {
-            Keystore::File(file_keystore) => file_keystore.get_mnemonics(password),
-            Keystore::InMem(inmem_keystore) => inmem_keystore.get_mnemonics(password),
-        }
-    }
-
-    fn add_mnemonic_data(
-        &mut self,
-        mnemonic_phrase: String,
-        mnemonic_data: MnemonicData,
-    ) -> Result<(), anyhow::Error> {
-        match self {
-            Keystore::File(file_keystore) => {
-                file_keystore.add_mnemonic_data(mnemonic_phrase, mnemonic_data)
-            }
-            Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.add_mnemonic_data(mnemonic_phrase, mnemonic_data)
-            }
-        }
-    }
-
-    fn update_mnemonic_data(
-        &mut self,
-        mnemonic_phrase: String,
-        mnemonic_data: MnemonicData,
-    ) -> Result<(), anyhow::Error> {
-        match self {
-            Keystore::File(file_keystore) => {
-                file_keystore.update_mnemonic_data(mnemonic_phrase, mnemonic_data)
-            }
-            Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.update_mnemonic_data(mnemonic_phrase, mnemonic_data)
-            }
+            Keystore::File(file_keystore) => file_keystore.get_mnemonic(password),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.get_mnemonic(password),
         }
     }
 }

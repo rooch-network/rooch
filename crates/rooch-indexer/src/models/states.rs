@@ -48,7 +48,6 @@ pub struct StoredObjectState {
 
 impl From<IndexerObjectState> for StoredObjectState {
     fn from(state: IndexerObjectState) -> Self {
-        // let state_root = RoochAddress::from(state.state_root).to_hex_literal();
         Self {
             object_id: state.object_id.to_string(),
             owner: state.owner.to_hex_literal(),
@@ -69,7 +68,6 @@ impl StoredObjectState {
         let object_id = ObjectID::from_str(self.object_id.as_str())?;
         let owner = RoochAddress::from_str(self.owner.as_str())?;
         let object_type = StructTag::from_str(self.object_type.as_str())?;
-        // let state_root = RoochAddress::from_str(self.state_root.as_str())?;
         let state_root = H256::from_str(self.state_root.as_str())?;
 
         let state = IndexerObjectState {

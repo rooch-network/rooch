@@ -18,7 +18,7 @@ script {
 }
 
 //call function use FunctionArgs style argument
-//#run --signers tester --args u8:1 u16:1 u32:1 u64:1 u128:1 u256:1 address:0x42 string:hello object_id:0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3 object:rooch_framework::timestamp::Timestamp
+//#run --signers tester --args u8:1 u16:1 u32:1 u64:1 u128:1 u256:1 address:0x42 string:hello object_id:0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9 object:moveos_std::object::Timestamp
 script {
     
     fun main(
@@ -31,7 +31,7 @@ script {
         _v_address: address,
         _v_string: std::string::String,
         _v_object_id: moveos_std::object::ObjectID,
-        _v_object: &moveos_std::object::Object<rooch_framework::timestamp::Timestamp>,
+        _v_object: &moveos_std::object::Object<moveos_std::object::Timestamp>,
         ) {
     }
 }

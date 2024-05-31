@@ -1,4 +1,0 @@
-processed 1 task
-
-task 0 'publish'. lines 1-39:
-status ABORTED with code 10009 in 0000000000000000000000000000000000000000000000000000000000000002::move_module

@@ -30,7 +30,7 @@ impl CommandAction<String> for Account {
             AccountCommand::Create(create) => create.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
-            AccountCommand::List(list) => list.execute().await.map(|_| "".to_owned()),
+            AccountCommand::List(list) => list.execute().await,
             AccountCommand::Switch(switch) => switch.execute().await.map(|_| "".to_owned()),
             AccountCommand::Nullify(nullify) => nullify.execute().await.map(|_| "".to_owned()),
             AccountCommand::Balance(balance) => balance.execute().await.map(|_| "".to_owned()),

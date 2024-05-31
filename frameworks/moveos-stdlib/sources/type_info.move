@@ -22,7 +22,7 @@ module moveos_std::type_info {
 
     struct TypeInfo has copy, drop, store {
         account_address: address,
-        //TODO should use ascii::String to represent module_name and struct_name
+        //TODO should use string::String to represent module_name and struct_name
         module_name: vector<u8>,
         struct_name: vector<u8>,
     }
@@ -35,17 +35,16 @@ module moveos_std::type_info {
         type_info.account_address
     }
 
-    public fun module_name(type_info: &TypeInfo): vector<u8> {
-        type_info.module_name
+    public fun module_name(type_info: &TypeInfo): string::String {
+        string::utf8(type_info.module_name)
     }
 
-    public fun struct_name(type_info: &TypeInfo): vector<u8> {
-        type_info.struct_name
+    public fun struct_name(type_info: &TypeInfo): string::String {
+        string::utf8(type_info.struct_name)
     }
 
     native public fun type_of<T>(): TypeInfo;
 
-    //TODO should use ascii::String to represent type_name
     //TODO check the gas cost, and decide whether to implement by native function.
     public fun type_name<T>(): string::String{
         let ascii = std::type_name::into_string(std::type_name::get<T>());
@@ -68,8 +67,8 @@ module moveos_std::type_info {
     fun test() {
         let type_info = type_of<TypeInfo>();
         assert!(account_address(&type_info) == @moveos_std, 0);
-        assert!(module_name(&type_info) == b"type_info", 1);
-        assert!(struct_name(&type_info) == b"TypeInfo", 2);
+        assert!(module_name(&type_info) == string::utf8(b"type_info"), 1);
+        assert!(struct_name(&type_info) == string::utf8(b"TypeInfo"), 2);
     }
 
     #[test_only]
@@ -127,8 +126,8 @@ module moveos_std::type_info {
         let struct_name = struct_name(&type_info);
         spec {
             assert account_address == @moveos_std;
-            assert module_name == b"type_info";
-            assert struct_name == b"TypeInfo";
+            assert module_name == string::utf8(b"type_info");
+            assert struct_name == string::utf8(b"TypeInfo");
         };
     }
 
@@ -140,8 +139,8 @@ module moveos_std::type_info {
         let struct_name = struct_name(&type_info);
         spec {
             assert account_address == type_of<T>().account_address;
-            assert module_name == type_of<T>().module_name;
-            assert struct_name == type_of<T>().struct_name;
+            assert module_name == string::utf8(type_of<T>().module_name);
+            assert struct_name == string::utf8(type_of<T>().struct_name);
         };
     }
     //spec verify_type_of_generic {

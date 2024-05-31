@@ -4,11 +4,11 @@
 module btc_holder_coin::holder_coin {
 
     use std::string;
+    use moveos_std::timestamp;
     use moveos_std::tx_context;
     use moveos_std::object::{Self, Object};
     use rooch_framework::coin::{Self, Coin, CoinInfo};
     use rooch_framework::account_coin_store;
-    use rooch_framework::timestamp;
     use bitcoin_move::utxo::{Self, UTXO};
 
     /// The decimals of the `BTC Holder Coin`
