@@ -23,11 +23,14 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import CustomPagination from '@/components/custom-pagination.tsx'
-import { formatCoin } from '@/utils/format.ts'
+import {formatAddress, formatCoin} from '@/utils/format.ts'
+import { useToast } from '@/components/ui/use-toast'
+import { ToastAction } from '@/components/ui/toast'
 
 export const AssetsCoin = () => {
   const account = useCurrentAccount()
   const sessionKey = useCurrentSession()
+  const { toast } = useToast()
 
   const { mutateAsync: transferCoin } = useTransferCoin()
 
@@ -75,6 +78,8 @@ export const AssetsCoin = () => {
 
   const handleClose = () => {
     setModalOpen(false)
+    setTransferLoading(false)
+    setError('')
   }
 
   const handleCloseModal = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
@@ -150,6 +155,11 @@ export const AssetsCoin = () => {
         recipient: recipient,
         amount: amountNumber,
         coinType: selectedCoin.coin_type,
+      })
+      toast({
+        title: 'Transfer Successful',
+        description: `Transferred ${amount} ${selectedCoin.name} to ${formatAddress(recipient)}`,
+        action: <ToastAction altText="Close">Close</ToastAction>,
       })
     } catch (error) {
       console.error('Transfer failed', error)
@@ -325,6 +335,7 @@ export const AssetsCoin = () => {
           </div>
         )}
       </div>
+
       <CustomPagination
         currentPage={paginationModel.page}
         hasNextPage={!!data?.has_next_page}
