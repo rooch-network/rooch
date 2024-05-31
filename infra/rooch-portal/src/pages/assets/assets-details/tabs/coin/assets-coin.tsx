@@ -154,8 +154,8 @@ export const AssetsCoin = () => {
     } catch (error) {
       console.error('Transfer failed', error)
     } finally {
-      handleClose()
       setTransferLoading(false)
+      handleClose()
       setError('')
     }
   }
@@ -305,10 +305,19 @@ export const AssetsCoin = () => {
                     onClick={handleTransferCoin}
                     disabled={transferLoading || error !== ''}
                   >
-                    <span>Send</span>
-                    <span className="font-semibold text-blue-400 dark:text-blue-600">
-                      {selectedCoin?.name}
-                    </span>
+                    {transferLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
+                        <span>Transferring...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <span>Send</span>
+                        <span className="font-semibold text-blue-400 dark:text-blue-600">
+                          {selectedCoin?.name}
+                        </span>
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
@@ -316,7 +325,6 @@ export const AssetsCoin = () => {
           </div>
         )}
       </div>
-
       <CustomPagination
         currentPage={paginationModel.page}
         hasNextPage={!!data?.has_next_page}
