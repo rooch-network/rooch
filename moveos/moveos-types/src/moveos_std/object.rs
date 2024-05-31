@@ -558,7 +558,7 @@ impl ObjectEntity<Package> {
 impl ObjectEntity<Timestamp> {
     pub fn genesis_timestamp() -> TimestampObject {
         Self::new(
-            Timestamp::timestamp_id(),
+            Timestamp::object_id(),
             MOVEOS_STD_ADDRESS,
             0u8,
             *GENESIS_STATE_ROOT,

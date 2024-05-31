@@ -7,7 +7,6 @@ module bitcoin_move::types{
     use moveos_std::address;
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
     use bitcoin_move::script_buf::{Self, ScriptBuf};
-    use rooch_framework::multichain_address;
 
     const LOCK_TIME_THRESHOLD: u32 = 500_000_000;
     const TAPROOT_ANNEX_PREFIX: u8 = 0x50;
@@ -251,7 +250,7 @@ module bitcoin_move::types{
         if (bitcoin_address::is_empty(&self.recipient_address)) {
             @bitcoin_move
         }else{
-            multichain_address::mapping_to_rooch_address(multichain_address::from_bitcoin(self.recipient_address))
+            bitcoin_address::to_rooch_address(&self.recipient_address)
         }
     }
 

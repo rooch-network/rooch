@@ -11,34 +11,32 @@ use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     moveos_std::tx_context::TxContext,
     state::MoveStructType,
-    transaction::{FunctionCall, MoveAction},
+    transaction::FunctionCall,
 };
 
-pub struct NativeValidator {}
+pub const MODULE_NAME: &IdentStr = ident_str!("session_validator");
 
-impl NativeValidator {
+pub struct SessionValidator {}
+
+impl SessionValidator {
     pub fn auth_validator_id() -> u64 {
         BuiltinAuthValidator::Rooch.flag().into()
     }
 }
 
-impl MoveStructType for NativeValidator {
+impl MoveStructType for SessionValidator {
     const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = NativeValidatorModule::MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = ident_str!("NativeValidator");
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("SessionValidator");
 }
 
-/// Rust bindings for RoochFramework native_validator module
-pub struct NativeValidatorModule<'a> {
+/// Rust bindings for RoochFramework session_validator module
+pub struct SessionValidatorModule<'a> {
     caller: &'a dyn MoveFunctionCaller,
 }
 
-impl<'a> NativeValidatorModule<'a> {
+impl<'a> SessionValidatorModule<'a> {
     const VALIDATE_FUNCTION_NAME: &'static IdentStr = ident_str!("validate");
-    const ROTATE_AUTHENTICATION_KEY_ENTRY_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("rotate_authentication_key_entry");
-    const REMOVE_AUTHENTICATION_KEY_ENTRY_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("remove_authentication_key_entry");
 
     pub fn validate(&self, ctx: &TxContext, payload: Vec<u8>) -> Result<()> {
         let auth_validator_call = FunctionCall::new(
@@ -54,26 +52,10 @@ impl<'a> NativeValidatorModule<'a> {
             })?;
         Ok(())
     }
-
-    pub fn rotate_authentication_key_action(public_key: Vec<u8>) -> MoveAction {
-        Self::create_move_action(
-            Self::ROTATE_AUTHENTICATION_KEY_ENTRY_FUNCTION_NAME,
-            vec![],
-            vec![MoveValue::vector_u8(public_key)],
-        )
-    }
-
-    pub fn remove_authentication_key_action() -> MoveAction {
-        Self::create_move_action(
-            Self::REMOVE_AUTHENTICATION_KEY_ENTRY_FUNCTION_NAME,
-            vec![],
-            vec![],
-        )
-    }
 }
 
-impl<'a> ModuleBinding<'a> for NativeValidatorModule<'a> {
-    const MODULE_NAME: &'static IdentStr = ident_str!("native_validator");
+impl<'a> ModuleBinding<'a> for SessionValidatorModule<'a> {
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const MODULE_ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
 
     fn new(caller: &'a impl MoveFunctionCaller) -> Self

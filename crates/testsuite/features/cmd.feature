@@ -68,8 +68,8 @@ Feature: Rooch CLI integration tests
       Then cmd: "state --access-path /object/0x3::chain_id::ChainID"
       Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::chain_id::ChainID>'"
       Then assert: "{{$.state[-1][0].decoded_value.value.value.value.id}} == 4"
-      Then cmd: "state --access-path /object/0x3::address_mapping::AddressMapping"
-      Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::address_mapping::AddressMapping>'"
+      Then cmd: "state --access-path /object/0x3::address_mapping::RoochToBitcoinAddressMapping"
+      Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::address_mapping::RoochToBitcoinAddressMapping>'"
       Then cmd: "state --access-path /object/0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>"
       Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>>'"
       Then stop the server

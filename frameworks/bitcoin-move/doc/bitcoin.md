@@ -31,6 +31,7 @@
 <b>use</b> <a href="">0x2::table_vec</a>;
 <b>use</b> <a href="">0x2::timestamp</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
+<b>use</b> <a href="">0x3::address_mapping</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
 <b>use</b> <a href="">0x3::chain_id</a>;
 <b>use</b> <a href="network.md#0x4_network">0x4::network</a>;

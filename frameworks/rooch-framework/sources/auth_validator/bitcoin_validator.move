@@ -5,8 +5,6 @@
 module rooch_framework::bitcoin_validator {
 
     use std::vector;
-    use rooch_framework::multichain_address::{Self, MultiChainAddress};
-    use rooch_framework::multichain_address::mapping_to_rooch_address;
     use moveos_std::hex;
     use moveos_std::tx_context;
     use moveos_std::features;
@@ -15,10 +13,12 @@ module rooch_framework::bitcoin_validator {
     use rooch_framework::auth_payload;
     use rooch_framework::auth_validator;
     use rooch_framework::auth_payload::AuthPayload;
-    use rooch_framework::bitcoin_address;
+    use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
 
-    /// there defines auth validator id for each blockchain
-    const BITCOIN_AUTH_VALIDATOR_ID: u64 = 2;
+    friend rooch_framework::transaction_validator;
+
+    /// there defines auth validator id for each auth validator
+    const BITCOIN_AUTH_VALIDATOR_ID: u64 = 1;
 
     struct BitcoinValidator has store, drop {}
 
@@ -27,7 +27,7 @@ module rooch_framework::bitcoin_validator {
     }
 
     /// Only validate the authenticator's signature.
-    public fun validate_signature(payload: AuthPayload, tx_hash: vector<u8>) {
+    fun validate_signature(payload: AuthPayload, tx_hash: vector<u8>) {
 
         // tx hash in use wallet signature is hex
         let tx_hex = hex::encode(tx_hash);
@@ -79,7 +79,7 @@ module rooch_framework::bitcoin_validator {
         );
     }
 
-    public fun validate(authenticator_payload: vector<u8>): MultiChainAddress {
+    public(friend) fun validate(authenticator_payload: vector<u8>) :BitcoinAddress{
         features::ensure_testnet_enabled();
 
         let sender = tx_context::sender();
@@ -88,25 +88,23 @@ module rooch_framework::bitcoin_validator {
 
         validate_signature(payload, tx_hash);
 
-        let from_address_in_payload = auth_payload::from_address(payload);
-        let bitcoin_addr = bitcoin_address::new(&from_address_in_payload);
-        let multi_chain_addr = multichain_address::from_bitcoin(bitcoin_addr);
+        let from_address_in_payload = std::string::utf8(auth_payload::from_address(payload));
+        let bitcoin_addr = bitcoin_address::from_string(&from_address_in_payload);
+        
         // Check if the address and public key are related
         assert!(
-            bitcoin_address::verify_with_pk(&from_address_in_payload, &auth_payload::public_key(payload)),
+            bitcoin_address::verify_with_public_key(&from_address_in_payload, &auth_payload::public_key(payload)),
             auth_validator::error_invalid_authenticator()
         );
 
-        let rooch_addr = mapping_to_rooch_address(multi_chain_addr);
-
+        let rooch_addr = bitcoin_address::to_rooch_address(&bitcoin_addr);
 
         // Check if the sender is related to the Rooch address
         assert!(
             sender == rooch_addr,
             auth_validator::error_invalid_authenticator()
         );
-
-        multi_chain_addr
+        bitcoin_addr
     }
 
     fun pre_execute() {}

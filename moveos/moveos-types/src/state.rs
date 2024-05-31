@@ -65,6 +65,10 @@ impl KeyState {
         KeyState::new(key, MoveString::type_tag())
     }
 
+    pub fn from_address(address: AccountAddress) -> Self {
+        KeyState::new(address.to_vec(), AccountAddress::type_tag())
+    }
+
     pub fn from_module_id(module_id: &ModuleId) -> Self {
         // The key is the moduleId string in bcs serialize format, not String::into_bytes.
         // bcs::to_bytes(&String) same as bcs::to_bytes(&MoveString)

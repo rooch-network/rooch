@@ -73,6 +73,23 @@ fn main() {
                 .join("sources")
                 .display()
         );
+
+        println!(
+            "cargo:rerun-if-changed={}",
+            root_dir
+                .join("frameworks/rooch-nursery")
+                .join("Move.toml")
+                .display()
+        );
+
+        println!(
+            "cargo:rerun-if-changed={}",
+            root_dir
+                .join("frameworks/rooch-nursery")
+                .join("sources")
+                .display()
+        );
+
         match framework_builder::releaser::release_latest() {
             Ok(_) => {}
             Err(e) => {

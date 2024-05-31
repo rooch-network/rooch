@@ -92,7 +92,7 @@ pub async fn setup_service(
 
     // Init executor
     let mut network: RoochNetwork = BuiltinChainID::Dev.into();
-    network.set_sequencer_account(rooch_account.into());
+    network.set_sequencer_account(sequencer_keypair.public().bitcoin_address()?);
     let genesis: RoochGenesis = RoochGenesis::build(network)?;
     let root = genesis.init_genesis(&mut moveos_store, &mut rooch_store, &mut indexer_store)?;
 

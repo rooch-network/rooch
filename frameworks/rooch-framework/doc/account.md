@@ -14,7 +14,6 @@
 <pre><code><b>use</b> <a href="">0x2::account</a>;
 <b>use</b> <a href="">0x2::core_addresses</a>;
 <b>use</b> <a href="">0x2::signer</a>;
-<b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
 </code></pre>
 
 

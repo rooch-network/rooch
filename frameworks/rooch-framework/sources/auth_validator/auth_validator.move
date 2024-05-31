@@ -9,9 +9,11 @@
 module rooch_framework::auth_validator {
     use std::option::{Self, Option};
     use moveos_std::tx_context;
+    use rooch_framework::bitcoin_address::BitcoinAddress;
 
     friend rooch_framework::auth_validator_registry;
     friend rooch_framework::transaction_validator;
+    friend rooch_framework::session_key;
 
     /// The function must be executed after the transaction is validated
     const ErrorMustExecuteAfterValidate: u64 = 1;
@@ -67,36 +69,39 @@ module rooch_framework::auth_validator {
         auth_validator_id: u64,
         auth_validator: Option<AuthValidator>,
         session_key: Option<vector<u8>>,
+        bitcoin_address: BitcoinAddress,
     }
 
     public(friend) fun new_tx_validate_result(
         auth_validator_id: u64,
         auth_validator: Option<AuthValidator>,
-        session_key: Option<vector<u8>>
+        session_key: Option<vector<u8>>,
+        bitcoin_address: BitcoinAddress,
     ): TxValidateResult {
         TxValidateResult {
             auth_validator_id: auth_validator_id,
             auth_validator: auth_validator,
             session_key: session_key,
+            bitcoin_address: bitcoin_address,
         }
     }
 
     /// Get the TxValidateResult from the TxContext, Only can be called after the transaction is validated
-    public fun get_validate_result_from_ctx(): TxValidateResult {
+    public(friend) fun get_validate_result_from_ctx(): TxValidateResult {
         let validate_result_opt = tx_context::get_attribute<TxValidateResult>();
         assert!(option::is_some(&validate_result_opt), ErrorMustExecuteAfterValidate);
         option::extract(&mut validate_result_opt)
     }
 
     /// Get the auth validator's id from the TxValidateResult in the TxContext
-    public fun get_validator_id_from_ctx(): u64 {
+    public(friend) fun get_validator_id_from_ctx(): u64 {
         let validate_result = get_validate_result_from_ctx();
         validate_result.auth_validator_id
     }
 
     /// Get the session key from the TxValidateResult in the TxContext
     /// If the TxValidateResult is None or SessionKey is None, return None
-    public fun get_session_key_from_ctx_option(): Option<vector<u8>> {
+    public(friend) fun get_session_key_from_ctx_option(): Option<vector<u8>> {
         let validate_result_opt = tx_context::get_attribute<TxValidateResult>();
         if (option::is_some(&validate_result_opt)) {
             let validate_result = option::extract(&mut validate_result_opt);
@@ -107,14 +112,19 @@ module rooch_framework::auth_validator {
     }
 
     /// The current tx is validate via the session key or not
-    public fun is_validate_via_session_key(): bool {
+    public(friend) fun is_validate_via_session_key(): bool {
         option::is_some(&get_session_key_from_ctx_option())
     }
 
     /// Get the session key from the TxValidateResult in the TxContext
     /// Only can be called after the transaction is validated
-    public fun get_session_key_from_ctx(): vector<u8> {
+    public(friend) fun get_session_key_from_ctx(): vector<u8> {
         assert!(is_validate_via_session_key(), ErrorMustExecuteAfterValidate);
         option::extract(&mut get_session_key_from_ctx_option())
+    }
+
+    public(friend) fun get_bitcoin_address_from_ctx(): BitcoinAddress {
+        let validate_result = get_validate_result_from_ctx();
+        validate_result.bitcoin_address
     }
 }

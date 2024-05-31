@@ -25,6 +25,7 @@ use moveos::moveos_test_runner::{CompiledState, MoveOSTestAdapter, TaskInput};
 use moveos_store::MoveOSStore;
 use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
 use moveos_types::state_resolver::RootObjectResolver;
+use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::{
     addresses::MOVEOS_STD_ADDRESS,
     move_types::FunctionId,
@@ -37,6 +38,7 @@ use moveos_verifier::metadata::run_extended_checks;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use rooch_genesis::{FrameworksGasParameters, RoochGenesis};
+use rooch_types::framework::auth_validator::TxValidateResult;
 use rooch_types::function_arg::FunctionArg;
 use std::path::PathBuf;
 use std::{collections::BTreeMap, path::Path};
@@ -50,6 +52,14 @@ pub struct MoveOSTestRunner<'a> {
     //debug: bool,
     moveos: MoveOS,
     root: RootObjectEntity,
+}
+
+impl MoveOSTestRunner<'_> {
+    pub fn validate_tx(&self, tx: MoveOSTransaction) -> anyhow::Result<VerifiedMoveOSTransaction> {
+        let mut verified_tx = self.moveos.verify(tx)?;
+        verified_tx.ctx.add(TxValidateResult::new_for_test())?;
+        Ok(verified_tx)
+    }
 }
 
 #[derive(Parser, Debug)]
@@ -167,7 +177,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         );
 
         let tx = MoveOSTransaction::new_for_test(self.root.clone(), sender, action);
-        let verified_tx = self.moveos.verify(tx)?;
+        let verified_tx = self.validate_tx(tx)?;
         let (state_root, size, output) = self.moveos.execute_and_apply(verified_tx)?;
         self.root = ObjectEntity::root_object(state_root, size);
         Ok((Some(tx_output_to_str(output)), module))
@@ -205,7 +215,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             signers.pop().unwrap(),
             MoveAction::new_script_call(script_bytes, type_args, args),
         );
-        let verified_tx = self.moveos.verify(tx)?;
+        let verified_tx = self.validate_tx(tx)?;
         let (state_root, size, output) = self.moveos.execute_and_apply(verified_tx)?;
         self.root = ObjectEntity::root_object(state_root, size);
         //TODO return values
@@ -246,7 +256,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             signers.pop().unwrap(),
             MoveAction::new_function_call(function_id, type_args, args),
         );
-        let verified_tx = self.moveos.verify(tx)?;
+        let verified_tx = self.validate_tx(tx)?;
         let (state_root, size, output) = self.moveos.execute_and_apply(verified_tx)?;
         self.root = ObjectEntity::root_object(state_root, size);
         debug_assert!(

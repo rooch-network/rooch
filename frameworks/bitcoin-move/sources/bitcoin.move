@@ -5,8 +5,8 @@ module bitcoin_move::bitcoin{
     use std::option::{Self, Option};
     use std::vector;
     use std::string::{Self, String};
-    use moveos_std::timestamp;
 
+    use moveos_std::timestamp;
     use moveos_std::simple_multimap::SimpleMultiMap;
     use moveos_std::type_info;
     use moveos_std::table::{Self, Table};
@@ -18,10 +18,12 @@ module bitcoin_move::bitcoin{
     use moveos_std::event;
     
     use rooch_framework::chain_id;
+    use rooch_framework::address_mapping;
+    use rooch_framework::bitcoin_address::BitcoinAddress;
     
     use bitcoin_move::network;
     use bitcoin_move::types::{Self, Block, Header, Transaction};
-    use bitcoin_move::ord::{Self, Inscription, bind_multichain_address, Flotsam, SatPoint};
+    use bitcoin_move::ord::{Self, Inscription,Flotsam, SatPoint};
     use bitcoin_move::utxo::{Self, UTXOSeal};
 
     friend bitcoin_move::genesis;
@@ -281,10 +283,9 @@ module bitcoin_move::bitcoin{
             let owner_address = types::txout_object_address(txout);
             utxo::transfer(utxo_obj, owner_address);
 
-            //Auto create address mapping if not exist
+            //Auto create address mapping, we ensure when UTXO object create, the address mapping is recored
             let bitcoin_address_opt = types::txout_address(txout);
-            bind_multichain_address(owner_address, bitcoin_address_opt);
-
+            bind_bitcoin_address(owner_address, bitcoin_address_opt);
             idx = idx + 1;
         };
     }
@@ -388,6 +389,16 @@ module bitcoin_move::bitcoin{
             true
         }
     }
+
+    fun bind_bitcoin_address(rooch_address: address, bitcoin_address_opt: Option<BitcoinAddress>) {
+        //Auto create address mapping if not exist
+        if(option::is_some(&bitcoin_address_opt)) {
+            let bitcoin_address = option::extract(&mut bitcoin_address_opt);
+            let bitcoin_move_signer = moveos_std::signer::module_signer<BitcoinBlockStore>();
+            address_mapping::bind_bitcoin_address_by_system(&bitcoin_move_signer, rooch_address, bitcoin_address);
+        };
+    }
+
     #[test_only]
     public fun submit_block_for_test(block_height: u64, block_hash: address, block_header: &Header){
         let btc_block_store_obj = borrow_block_store_mut();
