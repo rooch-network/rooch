@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{collections::VecDeque, str::FromStr};
 use bitcoin::{
     address::{Address, AddressType},
     secp256k1::Secp256k1,
@@ -20,6 +19,7 @@ use moveos_stdlib::natives::helpers::{make_module_natives, make_native};
 use moveos_types::state::MoveStructState;
 use rooch_types::address::BitcoinAddress;
 use smallvec::smallvec;
+use std::{collections::VecDeque, str::FromStr};
 
 pub const E_INVALID_ADDRESS: u64 = 1;
 

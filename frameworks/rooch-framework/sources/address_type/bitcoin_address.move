@@ -100,6 +100,11 @@ module rooch_framework::bitcoin_address {
         verify_with_pk(raw_bytes, pk)
     }
 
+    public fun to_rooch_address(addr: &BitcoinAddress): address{
+        let hash = moveos_std::hash::blake2b256(&addr.bytes);
+        moveos_std::bcs::to_address(hash)
+    }
+
     /// Parse the Bitcoin address string bytes to Move BitcoinAddress
     native fun parse(raw_addr: &vector<u8>): BitcoinAddress;
     native fun verify_with_pk (addr: &vector<u8>, pk: &vector<u8>): bool;

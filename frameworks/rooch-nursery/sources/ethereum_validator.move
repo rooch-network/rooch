@@ -5,7 +5,7 @@
 module rooch_nursery::ethereum_validator {
 
     use std::vector;
-    use rooch_framework::multichain_address::{Self, MultiChainAddress, mapping_to_rooch_address};
+    use rooch_framework::multichain_address::{Self, MultiChainAddress};
     use moveos_std::hex;
     use moveos_std::tx_context;
     use moveos_std::features;
@@ -75,13 +75,14 @@ module rooch_nursery::ethereum_validator {
         let payload = auth_payload::from_bytes(authenticator_payload);
         let eth_addr = validate_signature(payload, tx_hash);
         let multi_chain_addr = multichain_address::from_eth(eth_addr);
-        let rooch_addr= mapping_to_rooch_address(multi_chain_addr);
+        
+        //TODO check if the sender is related to the eth address
 
         // Check if the sender is related to the Rooch address
-        assert!(
-            sender == rooch_addr,
-            auth_validator::error_invalid_authenticator()
-        );
+        // assert!(
+        //     sender == rooch_addr,
+        //     auth_validator::error_invalid_authenticator()
+        // );
 
         multi_chain_addr
     }

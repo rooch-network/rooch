@@ -10,8 +10,6 @@ module rooch_framework::transaction_validator {
     use moveos_std::account;
     use moveos_std::gas_schedule;
     use rooch_framework::account as account_entry;
-    use rooch_framework::multichain_address::MultiChainAddress;
-    use rooch_framework::address_mapping;
     use rooch_framework::account_authentication;
     use rooch_framework::auth_validator::{Self, TxValidateResult};
     use rooch_framework::auth_validator_registry;
@@ -134,15 +132,6 @@ module rooch_framework::transaction_validator {
                 gas_coin::faucet(sender, init_gas); 
             };
         }; 
-        //the transaction validator will put the multi chain address into the context
-        let multichain_address = tx_context::get_attribute<MultiChainAddress>();
-        if (option::is_some(&multichain_address)) {
-            let multichain_address = option::extract(&mut multichain_address);
-            //Auto create address mapping if not exist
-            if (!address_mapping::exists_mapping(multichain_address)) {
-                address_mapping::bind_no_check(sender, multichain_address);
-            };
-        };
         let tx_sequence_info = tx_context::get_attribute<TransactionSequenceInfo>();
         if (option::is_some(&tx_sequence_info)) {
             let tx_sequence_info = option::extract(&mut tx_sequence_info);
