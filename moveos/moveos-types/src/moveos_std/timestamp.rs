@@ -22,7 +22,7 @@ pub struct Timestamp {
 }
 
 impl Timestamp {
-    pub fn timestamp_id() -> ObjectID {
+    pub fn object_id() -> ObjectID {
         object::named_object_id(&Self::struct_tag())
     }
 }
@@ -96,5 +96,24 @@ impl<'a> ModuleBinding<'a> for TimestampModule<'a> {
         Self: Sized,
     {
         Self { caller }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::str::FromStr;
+
+    #[test]
+    pub fn test_timestamp_id() {
+        let object_id = Timestamp::object_id();
+        //println!("{:?}", object_id);
+        assert_eq!(
+            object_id,
+            ObjectID::from_str(
+                "0x05921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9"
+            )
+            .unwrap()
+        );
     }
 }
