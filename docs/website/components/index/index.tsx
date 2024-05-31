@@ -170,7 +170,7 @@ const Index = ({
               {features?.map((feature) => (
                 <div
                   key={feature.title}
-                  className="flex flex-col items-center md:items-start justify-center md:justify-start bg-white dark:bg-[#333] p-6 rounded-2xl shadow-md hover:shadow-lg overflow-hidden hover:cursor-pointer h-full md:h-80 dark:hover:bg-[#555] transition-all relative"
+                  className="flex flex-col items-center md:items-start justify-center md:justify-start bg-white dark:bg-[#333] p-6 rounded-2xl shadow-md hover:shadow-lg overflow-hidden hover:cursor-pointer h-full dark:hover:bg-[#555] transition-all relative"
                   onClick={() => handleFeaturesButtonOnClick(feature.buttonHref)}
                 >
                   <div className="w-12 h-12 md:w-16 md:h-16 mb-4">
@@ -188,22 +188,22 @@ const Index = ({
                   <p className="text-gray-600 text-center md:text-start dark:text-[#EAEAEA]">
                     {feature.description}
                   </p>
-                  <div className="hidden md:block md:absolute bottom-5 left-6">
-                    <svg
-                      className="w-5 h-5 md:w-4 md:h-4 text-gray-400"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                    >
-                      <path
-                        d="M5.27921 2L10.9257 7.64645C11.1209 7.84171 11.1209 8.15829 10.9257 8.35355L5.27921 14"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </div>
+                  {/*<div className="hidden md:block md:absolute bottom-5 left-6">*/}
+                  {/*  <svg*/}
+                  {/*    className="w-5 h-5 md:w-4 md:h-4 text-gray-400"*/}
+                  {/*    width="16"*/}
+                  {/*    height="16"*/}
+                  {/*    viewBox="0 0 16 16"*/}
+                  {/*    fill="none"*/}
+                  {/*  >*/}
+                  {/*    <path*/}
+                  {/*      d="M5.27921 2L10.9257 7.64645C11.1209 7.84171 11.1209 8.15829 10.9257 8.35355L5.27921 14"*/}
+                  {/*      stroke="currentColor"*/}
+                  {/*      strokeWidth="2"*/}
+                  {/*      strokeLinecap="round"*/}
+                  {/*    />*/}
+                  {/*  </svg>*/}
+                  {/*</div>*/}
                 </div>
               ))}
             </div>
