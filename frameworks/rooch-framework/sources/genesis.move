@@ -60,7 +60,8 @@ module rooch_framework::genesis {
     /// init the genesis context for test
     public fun init_for_test(){
         let genesis_account = moveos_std::signer::module_signer<GenesisContext>();
-        tx_context::add_attribute_via_system(&genesis_account, GenesisContext{chain_id: 3, sequencer: @rooch_framework});
+        let sequencer = bitcoin_address::from_string(&std::string::utf8(b"1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"));
+        tx_context::add_attribute_via_system(&genesis_account, GenesisContext{chain_id: 3, sequencer});
         genesis::init_for_test();
         init();
     }

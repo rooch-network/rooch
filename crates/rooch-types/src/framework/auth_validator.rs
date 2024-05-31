@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::transaction_validator::TransactionValidator;
-use crate::address::BitcoinAddress;
+use crate::address::{BitcoinAddress, RoochSupportedAddress};
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use crate::error::RoochError;
 use anyhow::{ensure, Result};
@@ -181,6 +181,17 @@ impl TxValidateResult {
             auth_validator: MoveOption::none(),
             session_key: MoveOption::none(),
             bitcoin_address: sequencer_address,
+        }
+    }
+
+    pub fn new_for_test() -> Self {
+        // generate a random bitcoin address for testing
+        let bitcoin_address = BitcoinAddress::random();
+        Self {
+            auth_validator_id: BuiltinAuthValidator::Bitcoin.flag().into(),
+            auth_validator: MoveOption::none(),
+            session_key: MoveOption::none(),
+            bitcoin_address,
         }
     }
 
