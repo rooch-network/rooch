@@ -187,7 +187,7 @@ const Index = ({
               {features?.map((feature) => (
                 <div
                   key={feature.title}
-                  className="flex flex-col items-center md:items-start justify-center md:justify-start space-y-3 bg-white dark:bg-[#333] p-6 rounded-2xl shadow-md overflow-hidden h-full dark:hover:bg-[#555] hover:cursor-default"
+                  className="flex flex-col items-center md:items-start justify-center md:justify-start space-y-3 bg-white dark:bg-[#333] p-6 rounded-2xl shadow-md overflow-hidden h-full hover:cursor-default"
                 >
                   <div className="w-12 h-12 md:w-16 md:h-16 mb-4">
                     <Image
