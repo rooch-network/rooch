@@ -34,8 +34,8 @@
 -  [Function `exists_resource`](#0x2_account_exists_resource)
 
 
-<pre><code><b>use</b> <a href="">0x1::ascii</a>;
-<b>use</b> <a href="">0x1::signer</a>;
+<pre><code><b>use</b> <a href="">0x1::signer</a>;
+<b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="core_addresses.md#0x2_core_addresses">0x2::core_addresses</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="type_table.md#0x2_type_table">0x2::type_table</a>;

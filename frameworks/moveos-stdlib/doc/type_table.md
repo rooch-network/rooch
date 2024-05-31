@@ -19,9 +19,9 @@ TypeTable is a table use struct Type as Key, struct as Value
 -  [Function `destroy_empty`](#0x2_type_table_destroy_empty)
 
 
-<pre><code><b>use</b> <a href="">0x1::ascii</a>;
-<b>use</b> <a href="">0x1::type_name</a>;
+<pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
+<b>use</b> <a href="type_info.md#0x2_type_info">0x2::type_info</a>;
 </code></pre>
 
 
@@ -67,7 +67,7 @@ Create a new Table.
 Note: We use Type name as key, the key will be serialized by bcs in the native function.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_key">key</a>&lt;V&gt;(): <a href="_String">ascii::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_key">key</a>&lt;V&gt;(): <a href="_String">string::String</a>
 </code></pre>
 
 

@@ -3,7 +3,7 @@
 
 use crate::addresses::MOVEOS_STD_ADDRESS;
 use crate::{
-    move_std::ascii::MoveAsciiString,
+    move_std::string::MoveString,
     moveos_std::object::{self, ObjectID},
     state::{MoveState, MoveStructState, MoveStructType},
 };
@@ -19,7 +19,7 @@ pub const MODULE_NAME: &IdentStr = ident_str!("gas_schedule");
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct GasEntry {
-    pub key: MoveAsciiString,
+    pub key: MoveString,
     pub val: u64,
 }
 
@@ -31,7 +31,7 @@ impl MoveStructType for GasEntry {
 
 impl MoveStructState for GasEntry {
     fn struct_layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![MoveAsciiString::type_layout(), MoveTypeLayout::U64])
+        MoveStructLayout::new(vec![MoveString::type_layout(), MoveTypeLayout::U64])
     }
 }
 

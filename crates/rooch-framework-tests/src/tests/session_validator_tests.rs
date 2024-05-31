@@ -8,7 +8,6 @@ use move_core_types::language_storage::ModuleId;
 use move_core_types::value::MoveValue;
 use move_core_types::vm_status::{AbortLocation, KeptVMStatus, VMStatus};
 use moveos_types::module_binding::MoveFunctionCaller;
-use moveos_types::move_std::ascii::MoveAsciiString;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::move_types::FunctionId;
 use moveos_types::{module_binding::ModuleBinding, transaction::MoveAction};
@@ -33,7 +32,7 @@ fn test_session_key_rooch() {
 
     let session_scope = SessionScope::new(ROOCH_FRAMEWORK_ADDRESS, "*", "*").unwrap();
     let app_name = MoveString::from_str("test").unwrap();
-    let app_url = MoveAsciiString::from_str("https:://test.rooch.network").unwrap();
+    let app_url = MoveString::from_str("https:://test.rooch.network").unwrap();
     let max_inactive_interval = 100;
     let action = rooch_types::framework::session_key::SessionKeyModule::create_session_key_action(
         app_name.clone(),

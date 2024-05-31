@@ -21,7 +21,7 @@
 -  [Function `gas_schedule_entries`](#0x2_gas_schedule_gas_schedule_entries)
 
 
-<pre><code><b>use</b> <a href="">0x1::ascii</a>;
+<pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="core_addresses.md#0x2_core_addresses">0x2::core_addresses</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
@@ -139,7 +139,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="gas_schedule.md#0x2_gas_schedule_new_gas_entry">new_gas_entry</a>(key: <a href="_String">ascii::String</a>, val: u64): <a href="gas_schedule.md#0x2_gas_schedule_GasEntry">gas_schedule::GasEntry</a>
+<pre><code><b>public</b> <b>fun</b> <a href="gas_schedule.md#0x2_gas_schedule_new_gas_entry">new_gas_entry</a>(key: <a href="_String">string::String</a>, val: u64): <a href="gas_schedule.md#0x2_gas_schedule_GasEntry">gas_schedule::GasEntry</a>
 </code></pre>
 
 

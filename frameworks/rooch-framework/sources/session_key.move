@@ -34,16 +34,16 @@ module rooch_framework::session_key {
         /// The scope module address, the address can not support `*`
         module_address: address,
         /// The scope module name, `*` means all modules in the module address
-        module_name: std::ascii::String,
+        module_name: std::string::String,
         /// The scope function name, `*` means all functions in the module
-        function_name: std::ascii::String,
+        function_name: std::string::String,
     }
 
     struct SessionKey has store,copy,drop {
         /// App name
         app_name: std::string::String,
         /// app website url
-        app_url: std::ascii::String,
+        app_url: std::string::String,
         /// The session key's authentication key, it also is the session key's id
         authentication_key: vector<u8>,
         /// The session key's scopes
@@ -62,7 +62,7 @@ module rooch_framework::session_key {
         keys: Table<vector<u8>, SessionKey>,
     }
 
-    public fun new_session_scope(module_address: address, module_name: std::ascii::String, function_name: std::ascii::String) : SessionScope {
+    public fun new_session_scope(module_address: address, module_name: std::string::String, function_name: std::string::String) : SessionScope {
         SessionScope {
             module_address: module_address,
             module_name: module_name,
@@ -108,7 +108,7 @@ module rooch_framework::session_key {
     public fun create_session_key(
         sender: &signer,
         app_name: std::string::String,
-        app_url: std::ascii::String,
+        app_url: std::string::String,
         authentication_key: vector<u8>,
         scopes: vector<SessionScope>,
         max_inactive_interval: u64) {
@@ -139,11 +139,11 @@ module rooch_framework::session_key {
     public entry fun create_session_key_entry(
         sender: &signer,
         app_name: std::string::String,
-        app_url: std::ascii::String,
+        app_url: std::string::String,
         authentication_key: vector<u8>,
         scope_module_address: address,
-        scope_module_name: std::ascii::String,
-        scope_function_name: std::ascii::String,
+        scope_module_name: std::string::String,
+        scope_function_name: std::string::String,
         max_inactive_interval: u64) {
         create_session_key(sender, app_name, app_url, authentication_key, vector::singleton(SessionScope{
             module_address: scope_module_address,
@@ -155,15 +155,15 @@ module rooch_framework::session_key {
     public entry fun create_session_key_with_multi_scope_entry(
         sender: &signer,
         app_name: std::string::String,
-        app_url: std::ascii::String,
+        app_url: std::string::String,
         authentication_key: vector<u8>, 
         scope_module_addresses: vector<address>, 
-        scope_module_names: vector<std::ascii::String>, 
-        scope_function_names: vector<std::ascii::String>, 
+        scope_module_names: vector<std::string::String>, 
+        scope_function_names: vector<std::string::String>, 
         max_inactive_interval: u64) {
         assert!(
-            vector::length<address>(&scope_module_addresses) == vector::length<std::ascii::String>(&scope_module_names) &&
-            vector::length<std::ascii::String>(&scope_module_names) == vector::length<std::ascii::String>(&scope_function_names),
+            vector::length<address>(&scope_module_addresses) == vector::length<std::string::String>(&scope_module_names) &&
+            vector::length<std::string::String>(&scope_module_names) == vector::length<std::string::String>(&scope_function_names),
             ErrorSessionScopePartLengthNotMatch
         );
         
@@ -237,8 +237,8 @@ module rooch_framework::session_key {
         false
     }
 
-    fun is_asterisk(str: &std::ascii::String) : bool {
-        let asterisk = std::ascii::string(b"*");
+    fun is_asterisk(str: &std::string::String) : bool {
+        let asterisk = std::string::utf8(b"*");
         str == &asterisk
     }
 
@@ -290,39 +290,39 @@ module rooch_framework::session_key {
 
     #[test]
     fun test_check_scope_match() {
-        let scope = new_session_scope(@0x1, std::ascii::string(b"test"), std::ascii::string(b"test"));
-        let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::ascii::string(b"test"), std::ascii::string(b"test"));
+        let scope = new_session_scope(@0x1, std::string::utf8(b"test"), std::string::utf8(b"test"));
+        let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::string::utf8(b"test"), std::string::utf8(b"test"));
         assert!(check_scope_match(&scope, &function_call_meta), 1000);
         
-        let function_call_meta = tx_meta::new_function_call_meta(@0x2, std::ascii::string(b"test"), std::ascii::string(b"test"));
+        let function_call_meta = tx_meta::new_function_call_meta(@0x2, std::string::utf8(b"test"), std::string::utf8(b"test"));
         assert!(!check_scope_match(&scope, &function_call_meta), 1001);
 
-        let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::ascii::string(b"test1"), std::ascii::string(b"test"));
+        let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::string::utf8(b"test1"), std::string::utf8(b"test"));
         assert!(!check_scope_match(&scope, &function_call_meta), 1002);
 
-        let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::ascii::string(b"test"), std::ascii::string(b"test1"));
+        let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::string::utf8(b"test"), std::string::utf8(b"test1"));
         assert!(!check_scope_match(&scope, &function_call_meta), 1003);
     }
 
      #[test]
     fun test_check_scope_match_asterisk() {
-        let scope = new_session_scope(@0x1, std::ascii::string(b"*"), std::ascii::string(b"*"));
+        let scope = new_session_scope(@0x1, std::string::utf8(b"*"), std::string::utf8(b"*"));
         
-        let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::ascii::string(b"test"), std::ascii::string(b"test"));
+        let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::string::utf8(b"test"), std::string::utf8(b"test"));
         assert!(check_scope_match(&scope, &function_call_meta), 1000);
 
-        let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::ascii::string(b"test2"), std::ascii::string(b"test2"));
+        let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::string::utf8(b"test2"), std::string::utf8(b"test2"));
         assert!(check_scope_match(&scope, &function_call_meta), 1001);
         
-        let function_call_meta = tx_meta::new_function_call_meta(@0x2, std::ascii::string(b"test"), std::ascii::string(b"test"));
+        let function_call_meta = tx_meta::new_function_call_meta(@0x2, std::string::utf8(b"test"), std::string::utf8(b"test"));
         assert!(!check_scope_match(&scope, &function_call_meta), 1002);
 
-        let scope = new_session_scope(@0x1, std::ascii::string(b"test"), std::ascii::string(b"*"));
+        let scope = new_session_scope(@0x1, std::string::utf8(b"test"), std::string::utf8(b"*"));
 
-        let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::ascii::string(b"test"), std::ascii::string(b"test1"));
+        let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::string::utf8(b"test"), std::string::utf8(b"test1"));
         assert!(check_scope_match(&scope, &function_call_meta), 1003);
 
-        let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::ascii::string(b"test1"), std::ascii::string(b"test"));
+        let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::string::utf8(b"test1"), std::string::utf8(b"test"));
         assert!(!check_scope_match(&scope, &function_call_meta), 1004);
     }
 

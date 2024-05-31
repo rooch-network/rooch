@@ -24,7 +24,7 @@ module btc_blind_box::blind_box {
     use moveos_std::account as moveos_account;
     use rooch_framework::timestamp;
     use bitcoin_move::bitcoin;
-    use bitcoin_move::types::{Self, Header};
+    use bitcoin_move::types::Header;
 
     const ErrorNoPermission: u64 = 1;
     const ErrorSoldOut: u64 = 2;
@@ -153,6 +153,9 @@ module btc_blind_box::blind_box {
 
     #[test_only]
     use rooch_framework::account;
+
+    #[test_only]
+    use bitcoin_move::types; 
 
     #[test(sender=@0x42)]
     fun test_request_and_claim(sender: &signer) {

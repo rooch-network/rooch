@@ -15,7 +15,7 @@
 -  [Function `borrow_validator_by_type`](#0x3_auth_validator_registry_borrow_validator_by_type)
 
 
-<pre><code><b>use</b> <a href="">0x1::ascii</a>;
+<pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::account</a>;
 <b>use</b> <a href="">0x2::features</a>;
 <b>use</b> <a href="">0x2::table</a>;

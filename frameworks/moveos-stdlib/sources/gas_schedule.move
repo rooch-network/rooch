@@ -1,6 +1,6 @@
 module moveos_std::gas_schedule {
     use std::vector;
-    use std::ascii::String;
+    use std::string::String;
     use moveos_std::bcs;
     use moveos_std::tx_context;
     use moveos_std::object;
@@ -109,7 +109,7 @@ module moveos_std::gas_schedule {
         let gas_schedule = gas_schedule();
         assert!(vector::length(gas_schedule_entries(gas_schedule)) == 0, 1000);
         let entries = vector::empty();
-        vector::push_back(&mut entries, new_gas_entry(std::ascii::string(b"test1"), 1));
+        vector::push_back(&mut entries, new_gas_entry(std::string::utf8(b"test1"), 1));
         let gas_schedule_config = new_gas_schedule_config(initial_max_gas_amount(), entries);
         update_gas_schedule_for_testing(gas_schedule_config);
         let gas_schedule2 = gas_schedule();
