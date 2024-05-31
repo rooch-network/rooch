@@ -8,7 +8,7 @@ import { createEmotionCache } from '@/utils/create-emotion-cache'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-import { TestNetwork } from '@roochnetwork/rooch-sdk'
+import { LocalNetwork } from '@roochnetwork/rooch-sdk'
 import { WalletProvider, RoochClientProvider, SupportChain } from '@roochnetwork/rooch-sdk-kit'
 
 import { DashboardLayout } from '@/pages/dashboard-layout'
@@ -24,7 +24,7 @@ function App() {
     <>
       <CacheProvider value={clientSideEmotionCache}>
         <QueryClientProvider client={queryClient}>
-          <RoochClientProvider network={TestNetwork}>
+          <RoochClientProvider network={LocalNetwork}>
             <WalletProvider
               chain={SupportChain.BITCOIN}
               autoConnect
