@@ -38,6 +38,7 @@ module rooch_examples::rooch_examples {
     const ErrorBothPlayersDoNotHaveDecisionsSubmitted: u64 = 6;
     const ErrorPlayerHasDecisionSubmitted: u64 = 7;
 
+    //TODO use Object<Account> to replace ResourceAccount here
     struct ResourceAccount has key {
         sequence_number: u64,
     }

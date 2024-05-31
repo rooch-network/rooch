@@ -16,16 +16,21 @@ module rooch_framework::account {
 
    /// Cannot create account because address is reserved
    const ErrorAddressReserved: u64 = 1;
+   const ErrorAddressNotReserved: u64 = 2;
 
-   /// Publishes a new `Account` resource under `new_address`. A signer representing `new_address`
-   /// is returned. This way, the caller of this function can publish additional resources under
-   /// `new_address`.
+   /// Create a new account with the given address, the address must not be reserved
    public(friend) fun create_account(new_address: address): signer {
       assert!(!core_addresses::is_reserved_address(new_address), ErrorAddressReserved);
       create_account_internal(new_address)
    }
 
-   public(friend) fun create_account_internal(new_address: address): signer {
+   /// Create a new account with the given address, the address must be reserved as system address
+   public(friend) fun create_system_account(new_address: address): signer {
+      assert!(core_addresses::is_reserved_address(new_address), ErrorAddressNotReserved);
+      create_account_internal(new_address)
+   }
+
+   fun create_account_internal(new_address: address): signer {
       let system = module_signer<AccountPlaceholder>();
       let new_account = account::create_account_by_system(&system, new_address);
       new_account
