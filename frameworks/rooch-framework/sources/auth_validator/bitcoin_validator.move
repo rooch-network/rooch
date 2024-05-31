@@ -88,12 +88,12 @@ module rooch_framework::bitcoin_validator {
 
         validate_signature(payload, tx_hash);
 
-        let from_address_in_payload = auth_payload::from_address(payload);
-        let bitcoin_addr = bitcoin_address::new(&from_address_in_payload);
+        let from_address_in_payload = std::string::utf8(auth_payload::from_address(payload));
+        let bitcoin_addr = bitcoin_address::from_string(&from_address_in_payload);
         let multi_chain_addr = multichain_address::from_bitcoin(bitcoin_addr);
         // Check if the address and public key are related
         assert!(
-            bitcoin_address::verify_with_pk(&from_address_in_payload, &auth_payload::public_key(payload)),
+            bitcoin_address::verify_with_public_key(&from_address_in_payload, &auth_payload::public_key(payload)),
             auth_validator::error_invalid_authenticator()
         );
 

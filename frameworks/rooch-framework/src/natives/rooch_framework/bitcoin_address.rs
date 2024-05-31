@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::{collections::VecDeque, str::FromStr};
-
-use crate::natives::rooch_framework::crypto::ecdsa_k1::E_INVALID_PUBKEY;
 use bitcoin::{
     address::{Address, AddressType},
     secp256k1::Secp256k1,
@@ -25,7 +23,7 @@ use smallvec::smallvec;
 
 pub const E_INVALID_ADDRESS: u64 = 1;
 
-pub fn new(
+pub fn parse(
     gas_params: &FromBytesGasParameters,
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,
@@ -70,17 +68,17 @@ pub fn verify_with_pk(
         + gas_params.per_byte * NumBytes::new((pk_ref.len() + addr_ref.len()) as u64);
 
     let Ok(pk) = PublicKey::from_slice(&pk_ref) else {
-        return Ok(NativeResult::err(cost, E_INVALID_PUBKEY));
+        return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
     };
 
     let Ok(addr_str) = std::str::from_utf8(&addr_ref) else {
-        return Ok(NativeResult::err(cost, E_INVALID_PUBKEY));
+        return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
     };
 
     let addr = match Address::from_str(addr_str) {
         Ok(addr) => addr.assume_checked(),
         Err(_) => {
-            return Ok(NativeResult::err(cost, E_INVALID_PUBKEY));
+            return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
         }
     };
 
@@ -133,7 +131,7 @@ impl GasParameters {
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [
-        ("new", make_native(gas_params.new, new)),
+        ("parse", make_native(gas_params.new, parse)),
         (
             "verify_with_pk",
             make_native(gas_params.verify_with_pk, verify_with_pk),

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// This module implements Ethereum validator with the ECDSA recoverable signature over Secp256k1.
-module rooch_framework::ethereum_validator {
+module rooch_nursery::ethereum_validator {
 
     use std::vector;
     use rooch_framework::multichain_address::{Self, MultiChainAddress, mapping_to_rooch_address};

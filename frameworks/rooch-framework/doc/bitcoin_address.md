@@ -10,16 +10,15 @@
 -  [Function `new_p2pkh`](#0x3_bitcoin_address_new_p2pkh)
 -  [Function `new_p2sh`](#0x3_bitcoin_address_new_p2sh)
 -  [Function `new_witness_program`](#0x3_bitcoin_address_new_witness_program)
--  [Function `from_bytes`](#0x3_bitcoin_address_from_bytes)
+-  [Function `new`](#0x3_bitcoin_address_new)
 -  [Function `is_p2pkh`](#0x3_bitcoin_address_is_p2pkh)
 -  [Function `is_p2sh`](#0x3_bitcoin_address_is_p2sh)
 -  [Function `is_witness_program`](#0x3_bitcoin_address_is_witness_program)
 -  [Function `is_empty`](#0x3_bitcoin_address_is_empty)
 -  [Function `as_bytes`](#0x3_bitcoin_address_as_bytes)
 -  [Function `into_bytes`](#0x3_bitcoin_address_into_bytes)
--  [Function `to_bech32`](#0x3_bitcoin_address_to_bech32)
--  [Function `new`](#0x3_bitcoin_address_new)
--  [Function `verify_with_pk`](#0x3_bitcoin_address_verify_with_pk)
+-  [Function `from_string`](#0x3_bitcoin_address_from_string)
+-  [Function `verify_with_public_key`](#0x3_bitcoin_address_verify_with_public_key)
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
@@ -161,13 +160,13 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_from_bytes"></a>
+<a name="0x3_bitcoin_address_new"></a>
 
-## Function `from_bytes`
+## Function `new`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_from_bytes">from_bytes</a>(bytes: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new">new</a>(bytes: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
 </code></pre>
 
 
@@ -239,33 +238,22 @@ Empty address is a special address that is used to if we parse address failed fr
 
 
 
-<a name="0x3_bitcoin_address_to_bech32"></a>
+<a name="0x3_bitcoin_address_from_string"></a>
 
-## Function `to_bech32`
+## Function `from_string`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_to_bech32">to_bech32</a>(_addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>): <a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_from_string">from_string</a>(addr: &<a href="_String">string::String</a>): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
 </code></pre>
 
 
 
-<a name="0x3_bitcoin_address_new"></a>
+<a name="0x3_bitcoin_address_verify_with_public_key"></a>
 
-## Function `new`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new">new</a>(raw_addr: &<a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
-</code></pre>
+## Function `verify_with_public_key`
 
 
 
-<a name="0x3_bitcoin_address_verify_with_pk"></a>
-
-## Function `verify_with_pk`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_verify_with_pk">verify_with_pk</a>(addr: &<a href="">vector</a>&lt;u8&gt;, pk: &<a href="">vector</a>&lt;u8&gt;): bool
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_verify_with_public_key">verify_with_public_key</a>(addr: &<a href="_String">string::String</a>, pk: &<a href="">vector</a>&lt;u8&gt;): bool
 </code></pre>
