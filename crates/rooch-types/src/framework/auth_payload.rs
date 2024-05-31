@@ -141,7 +141,6 @@ impl AuthPayload {
 mod tests {
     use super::*;
     use crate::{
-        address::{RoochAddress, RoochSupportedAddress},
         crypto::RoochKeyPair,
         framework::empty::Empty,
         transaction::{Authenticator, RoochTransactionData},
