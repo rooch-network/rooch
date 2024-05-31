@@ -36,7 +36,7 @@ export const AssetsCoin = () => {
   const { mutateAsync: transferCoin } = useTransferCoin()
 
   const [recipient, setRecipient] = useState('')
-  const [amount, setAmount] = useState('0')
+  const [amount, setAmount] = useState('')
   const [transferLoading, setTransferLoading] = useState(false)
   const [error, setError] = useState('')
 
