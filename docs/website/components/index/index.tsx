@@ -37,6 +37,7 @@ interface IndexProps {
   // EXPLORE
   exploreTitle: string
   exploreContent: string
+  exploreButtonHref: string
   explores: Card[]
 
   // ECOSYSTEM
@@ -60,6 +61,7 @@ const Index = ({
   features,
   exploreTitle,
   exploreContent,
+  exploreButtonHref,
   explores,
   ecosystemTitle,
   ecosystemContent,
@@ -105,7 +107,7 @@ const Index = ({
     }
   }
 
-  const handleFeaturesButtonOnClick = (href: string) => {
+  const handleButtonOnClick = (href: string) => {
     console.log(href)
     window.open(href)
   }
@@ -171,7 +173,7 @@ const Index = ({
                 <div
                   key={feature.title}
                   className="flex flex-col items-center md:items-start justify-center md:justify-start bg-white dark:bg-[#333] p-6 rounded-2xl shadow-md hover:shadow-lg overflow-hidden hover:cursor-pointer h-full dark:hover:bg-[#555] transition-all relative"
-                  onClick={() => handleFeaturesButtonOnClick(feature.buttonHref)}
+                  onClick={() => handleButtonOnClick(feature.buttonHref)}
                 >
                   <div className="w-12 h-12 md:w-16 md:h-16 mb-4">
                     <Image
@@ -230,10 +232,18 @@ const Index = ({
               <img
                 src="/logo/explore/explore_logo.svg"
                 alt="explore logo"
-                className="w-full md:w-9/12 h-full"
+                className="w-full md:w-9/12 h-full dark:hidden block"
+              />
+              <img
+                src="/logo/explore/explore_logo_dark.svg"
+                alt="explore logo"
+                className="w-full md:w-9/12 h-full hidden dark:block"
               />
               <div className="mt-8 h-12">
-                <button className="px-8 py-4 bg-[#FF914B] font-bold text-lg text-center rounded-full border border-1 border-b-[6px] border-black active:border-b-4 active:transform active:translate-y-0.5 hover:shadow-custom1 dark:border-white dark:shadow-custom1 transition-all">
+                <button
+                  className="px-8 py-4 bg-[#FF914B] font-bold text-lg text-center rounded-full border border-1 border-b-[6px] border-black active:border-b-4 active:transform active:translate-y-0.5 hover:shadow-custom1 dark:border-white dark:shadow-custom1 transition-all"
+                  onClick={() => handleButtonOnClick(exploreButtonHref)}
+                >
                   {featuresButton}
                 </button>
               </div>
@@ -264,7 +274,7 @@ const Index = ({
               {highlightTitle(ecosystemTitle, wordsToHighlightForEcosystem, highlightColor)}
             </h2>
             <p className="mt-4 text-[#737B7D] dark:text-[#81888A] text-center md:text-start">
-              {ecosystemContent}
+              {/*{ecosystemContent}*/}
             </p>
           </div>
           <div className="flex items-center justify-center w-full mt-2">
@@ -296,14 +306,12 @@ const Index = ({
             <div className="mt-8 flex flex-col gap-8">
               {blogs?.map((blog) => (
                 <Link key={blog.title} href={blog.link} className="block">
-                  <div className="bg-inherit md:bg-white dark:bg-[#333] shadow-xl md:shadow-md hover:shadow-xl rounded-lg md:border border-gray-200 dark:border-[#333] transition-all duration-300 flex flex-col md:flex-row overflow-hidden">
+                  <div className="bg-inherit md:bg-white dark:bg-[#333] shadow-xl md:shadow-md hover:shadow-xl dark:hover:border-[#555] rounded-lg md:border border-gray-200 dark:border-[#333] transition-all duration-300 flex flex-col md:flex-row overflow-hidden">
                     <div className="md:w-1/3 w-full h-auto">
-                      <Image
+                      <img
                         src={blog.image}
                         alt={blog.title}
-                        height={501}
-                        width={236}
-                        className="h-full w-full object-cover md:rounded-lg dark:scale-105"
+                        className="h-[200px] w-full object-fill rounded-lg"
                       />
                     </div>
                     <div className="flex flex-col p-6 md:p-8 w-full justify-between">
