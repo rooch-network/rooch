@@ -104,5 +104,5 @@ there defines auth validator id for each auth validator
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="session_validator.md#0x3_session_validator_validate">validate</a>(authenticator_payload: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="session_validator.md#0x3_session_validator_validate">validate</a>(authenticator_payload: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>

@@ -20,6 +20,7 @@ module rooch_framework::transaction_validator {
     use rooch_framework::transaction::{Self, TransactionSequenceInfo};
     use rooch_framework::session_validator;
     use rooch_framework::bitcoin_validator;
+    use rooch_framework::address_mapping;
 
     const MAX_U64: u128 = 18446744073709551615;
 
@@ -100,20 +101,26 @@ module rooch_framework::transaction_validator {
         // === validate the authenticator ===
 
         // Try the built-in auth validator first
-        if (auth_validator_id == session_validator::auth_validator_id()){
-            session_validator::validate(authenticator_payload);
-            auth_validator::new_tx_validate_result(auth_validator_id, option::none(), option::none())
+        let (bitcoin_address, session_key, auth_validator)= if (auth_validator_id == session_validator::auth_validator_id()){
+            let session_key = session_validator::validate(authenticator_payload);
+            let bitcoin_address = address_mapping::resolve_bitcoin(sender);
+            (bitcoin_address, option::some(session_key), option::none())
         }else if (auth_validator_id == bitcoin_validator::auth_validator_id()){
-            bitcoin_validator::validate(authenticator_payload);
-            auth_validator::new_tx_validate_result(auth_validator_id, option::none(), option::none())
+            let bitcoin_address = bitcoin_validator::validate(authenticator_payload);
+            (option::some(bitcoin_address), option::none(), option::none())
         }else{
             let auth_validator = auth_validator_registry::borrow_validator(auth_validator_id);
             let validator_id = auth_validator::validator_id(auth_validator);
             // The third-party auth validator must be installed to the sender's account
             assert!(account_authentication::is_auth_validator_installed(sender, validator_id),
                     ErrorValidateNotInstalledAuthValidator);
-            auth_validator::new_tx_validate_result(auth_validator_id, option::some(*auth_validator), option::none())
-        }
+            let bitcoin_address = address_mapping::resolve_bitcoin(sender);
+            (bitcoin_address, option::none(), option::some(*auth_validator))
+        };
+        //The bitcoin address must exist
+        assert!(option::is_some(&bitcoin_address), ErrorValidateAccountDoesNotExist);
+        let bitcoin_address = option::destroy_some(bitcoin_address);
+        auth_validator::new_tx_validate_result(auth_validator_id, auth_validator, session_key, bitcoin_address)
     }
 
     /// Transaction pre_execute function.
@@ -131,7 +138,9 @@ module rooch_framework::transaction_validator {
                 let init_gas = 1_00_000_000u256;
                 gas_coin::faucet(sender, init_gas); 
             };
-        }; 
+        };
+        let bitcoin_addr = auth_validator::get_bitcoin_address_from_ctx();
+        address_mapping::bind_bitcoin_address(sender, bitcoin_addr); 
         let tx_sequence_info = tx_context::get_attribute<TransactionSequenceInfo>();
         if (option::is_some(&tx_sequence_info)) {
             let tx_sequence_info = option::extract(&mut tx_sequence_info);

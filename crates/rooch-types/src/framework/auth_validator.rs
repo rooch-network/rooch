@@ -1,20 +1,20 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::str::FromStr;
-
 use super::transaction_validator::TransactionValidator;
-use crate::address::MultiChainAddress;
+use crate::address::BitcoinAddress;
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use crate::error::RoochError;
-use anyhow::Result;
+use anyhow::{ensure, Result};
 use clap::ValueEnum;
+use framework_types::addresses::ROOCH_NURSERY_ADDRESS;
 use move_core_types::value::MoveValue;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, language_storage::ModuleId,
 };
 use moveos_types::function_return_value::DecodedFunctionResult;
 use moveos_types::move_std::option::MoveOption;
+use moveos_types::state::MoveState;
 use moveos_types::{
     module_binding::MoveFunctionCaller,
     move_std::string::MoveString,
@@ -24,6 +24,7 @@ use moveos_types::{
     transaction::FunctionCall,
 };
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 use strum_macros::{Display, EnumString};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("auth_validator");
@@ -73,8 +74,8 @@ impl BuiltinAuthValidator {
     pub fn from_flag_byte(byte_int: u8) -> Result<BuiltinAuthValidator, RoochError> {
         match byte_int {
             Self::ROOCH_FLAG => Ok(BuiltinAuthValidator::Rooch),
-            Self::ETHEREUM_FLAG => Ok(BuiltinAuthValidator::Ethereum),
             Self::BITCOIN_FLAG => Ok(BuiltinAuthValidator::Bitcoin),
+            Self::ETHEREUM_FLAG => Ok(BuiltinAuthValidator::Ethereum),
             _ => Err(RoochError::KeyConversionError(
                 "Invalid key auth validator".to_owned(),
             )),
@@ -86,17 +87,17 @@ impl BuiltinAuthValidator {
             BuiltinAuthValidator::Rooch => AuthValidator {
                 id: self.flag().into(),
                 module_address: ROOCH_FRAMEWORK_ADDRESS,
-                module_name: MoveString::from_str("native_validator").expect("Should be valid"),
-            },
-            BuiltinAuthValidator::Ethereum => AuthValidator {
-                id: self.flag().into(),
-                module_address: ROOCH_FRAMEWORK_ADDRESS,
-                module_name: MoveString::from_str("ethereum_validator").expect("Should be valid"),
+                module_name: MoveString::from_str("session_validator").expect("Should be valid"),
             },
             BuiltinAuthValidator::Bitcoin => AuthValidator {
                 id: self.flag().into(),
                 module_address: ROOCH_FRAMEWORK_ADDRESS,
                 module_name: MoveString::from_str("bitcoin_validator").expect("Should be valid"),
+            },
+            BuiltinAuthValidator::Ethereum => AuthValidator {
+                id: self.flag().into(),
+                module_address: ROOCH_NURSERY_ADDRESS,
+                module_name: MoveString::from_str("ethereum_validator").expect("Should be valid"),
             },
         }
     }
@@ -153,6 +154,7 @@ pub struct TxValidateResult {
     pub auth_validator_id: u64,
     pub auth_validator: MoveOption<AuthValidator>,
     pub session_key: MoveOption<Vec<u8>>,
+    pub bitcoin_address: BitcoinAddress,
 }
 
 impl MoveStructType for TxValidateResult {
@@ -165,12 +167,9 @@ impl MoveStructState for TxValidateResult {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
             move_core_types::value::MoveTypeLayout::U64,
-            move_core_types::value::MoveTypeLayout::Struct(
-                MoveOption::<AuthValidator>::struct_layout(),
-            ),
-            move_core_types::value::MoveTypeLayout::Vector(Box::new(
-                move_core_types::value::MoveTypeLayout::U8,
-            )),
+            MoveOption::<AuthValidator>::type_layout(),
+            MoveOption::<Vec<u8>>::type_layout(),
+            BitcoinAddress::type_layout(),
         ])
     }
 }
@@ -204,11 +203,7 @@ impl<'a> AuthValidatorCaller<'a> {
         }
     }
 
-    pub fn validate(
-        &self,
-        ctx: &TxContext,
-        payload: Vec<u8>,
-    ) -> Result<DecodedFunctionResult<Option<MultiChainAddress>>> {
+    pub fn validate(&self, ctx: &TxContext, payload: Vec<u8>) -> Result<DecodedFunctionResult<()>> {
         let auth_validator_call = FunctionCall::new(
             self.auth_validator.validator_function_id(),
             vec![],
@@ -216,16 +211,12 @@ impl<'a> AuthValidatorCaller<'a> {
         );
         self.caller
             .call_function(ctx, auth_validator_call)?
-            .decode(|mut values| {
-                // TODO: all validate must return value ?
-                let value = values.pop();
-
-                Ok(
-                    value.and_then(|v| match bcs::from_bytes::<MultiChainAddress>(&v.value) {
-                        Ok(result) => Some(result),
-                        Err(_) => None,
-                    }),
-                )
+            .decode(|values| {
+                ensure!(
+                    !values.is_empty(),
+                    "Unexpect validate function return values"
+                );
+                Ok(())
             })
     }
 

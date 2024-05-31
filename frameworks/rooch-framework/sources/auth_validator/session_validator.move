@@ -12,6 +12,8 @@ module rooch_framework::session_validator {
     use rooch_framework::auth_validator;
     use rooch_framework::session_key;
 
+    friend rooch_framework::transaction_validator;
+
     /// there defines auth validator id for each auth validator
     const SESSION_VALIDATOR_ID: u64 = 0;
 
@@ -77,7 +79,7 @@ module rooch_framework::session_validator {
         public_key_to_authentication_key(SIGNATURE_SCHEME_ED25519, public_key)
     }
 
-    public fun validate(authenticator_payload: vector<u8>) {
+    public(friend) fun validate(authenticator_payload: vector<u8>) :vector<u8> {
         
         let sender_addr = tx_context::sender();
         assert!(session_key::has_session_key(sender_addr), auth_validator::error_invalid_account_auth_key());
@@ -92,6 +94,7 @@ module rooch_framework::session_validator {
         assert!(!session_key::is_expired(&session_key), ErrorSessionIsExpired);
         
         assert!(session_key::in_session_scope(&session_key), ErrorFunctionCallBeyondSessionScope);
+        auth_key
     }
 
     fun pre_execute() {}

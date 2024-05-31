@@ -13,8 +13,9 @@ module rooch_framework::bitcoin_validator {
     use rooch_framework::auth_payload;
     use rooch_framework::auth_validator;
     use rooch_framework::auth_payload::AuthPayload;
-    use rooch_framework::bitcoin_address;
-    use rooch_framework::address_mapping;
+    use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
+
+    friend rooch_framework::transaction_validator;
 
     /// there defines auth validator id for each auth validator
     const BITCOIN_AUTH_VALIDATOR_ID: u64 = 1;
@@ -26,7 +27,7 @@ module rooch_framework::bitcoin_validator {
     }
 
     /// Only validate the authenticator's signature.
-    public fun validate_signature(payload: AuthPayload, tx_hash: vector<u8>) {
+    fun validate_signature(payload: AuthPayload, tx_hash: vector<u8>) {
 
         // tx hash in use wallet signature is hex
         let tx_hex = hex::encode(tx_hash);
@@ -78,7 +79,7 @@ module rooch_framework::bitcoin_validator {
         );
     }
 
-    public fun validate(authenticator_payload: vector<u8>) {
+    public(friend) fun validate(authenticator_payload: vector<u8>) :BitcoinAddress{
         features::ensure_testnet_enabled();
 
         let sender = tx_context::sender();
@@ -103,7 +104,7 @@ module rooch_framework::bitcoin_validator {
             sender == rooch_addr,
             auth_validator::error_invalid_authenticator()
         );
-        address_mapping::bind_bitcoin_address(rooch_addr, bitcoin_addr);
+        bitcoin_addr
     }
 
     fun pre_execute() {}
