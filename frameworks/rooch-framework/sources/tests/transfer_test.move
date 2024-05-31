@@ -6,12 +6,12 @@
 module rooch_framework::transfer_test{
 
     use std::string;
-    
+    use std::option;
     use moveos_std::object::{Self, Object};
     use rooch_framework::transfer;
     use rooch_framework::gas_coin::{Self, GasCoin};
     use rooch_framework::multichain_address::{Self, MultiChainAddress};
-    use rooch_framework::ethereum_address;
+    use rooch_framework::bitcoin_address;
     use rooch_framework::address_mapping;
     use rooch_framework::coin::{Self, CoinInfo};
     use rooch_framework::account_coin_store;
@@ -21,39 +21,41 @@ module rooch_framework::transfer_test{
         value: u64,
     }
 
-    #[test(from = @0x42, to = @0x43)]
-    fun test_transfer_coin(from: address, to: address){
+    #[test_only]
+    fun init_from_account(from: address): signer {
         rooch_framework::genesis::init_for_test();
         let from_signer = account_entry::create_account_for_testing(from);
-        let _ = account_entry::create_account_for_testing(to);
         let init_gas = 9999u256;
         gas_coin::faucet_for_test(from, init_gas); 
         assert!(gas_coin::balance(from) == init_gas, 1000);
+        from_signer
+    }
 
+    #[test(from = @0x42, to = @0x43)]
+    fun test_transfer_coin(from: address, to: address){
+        let from_signer = init_from_account(from);
+
+        let original_balance = gas_coin::balance(from);
         let amount = 11u256;
         transfer::transfer_coin<GasCoin>(&from_signer, to, amount);
 
-        assert!(gas_coin::balance(from) == init_gas - amount, 1001);
+        assert!(gas_coin::balance(from) == original_balance - amount, 1001);
         assert!(gas_coin::balance(to) == amount, 1002);
         
     }
 
     #[test_only]
-    fun test_transfer_coin_to_multichain_address(from: address, to: MultiChainAddress){
-        rooch_framework::genesis::init_for_test();
-        let from_signer = account_entry::create_account_for_testing(from);
-        let init_gas = 9999u256;
-        gas_coin::faucet_for_test(from, init_gas); 
-        assert!(gas_coin::balance(from) == init_gas, 1000);
+    fun transfer_coin_to_multichain_address(from: address, to: MultiChainAddress){
+        let from_signer = init_from_account(from);
         
-        let to_address = address_mapping::resolve_or_generate(to);
-        let to_signer = account_entry::create_account_for_testing(to_address);
-        address_mapping::bind(&to_signer, to);
+        let to_address_opt = address_mapping::resolve(to);
+        let to_address = option::destroy_some(to_address_opt);
 
+        let original_balance = gas_coin::balance(from);
         let amount = 11u256;
         transfer::transfer_coin_to_multichain_address<GasCoin>(&from_signer, multichain_address::multichain_id(&to), *multichain_address::raw_address(&to), amount);
 
-        assert!(gas_coin::balance(from) == init_gas - amount, 1002);
+        assert!(gas_coin::balance(from) == original_balance - amount, 1002);
         assert!(gas_coin::balance(to_address) == amount, 1003);
 
         //transfer again
@@ -61,11 +63,24 @@ module rooch_framework::transfer_test{
         assert!(gas_coin::balance(to_address) == amount*2, 1004);        
     }
 
-     #[test(from = @0x42)]
-    fun test_transfer_coin_to_eth_address(from: address){
-        let eth_address = ethereum_address::from_bytes(x"1111111111111111111111111111111111111111");
-        let multichain_address = multichain_address::from_eth(eth_address);
-        test_transfer_coin_to_multichain_address(from, multichain_address);
+    #[test(from = @0x42)]
+    fun test_transfer_coin_to_multichain_address(from: address){
+        let btc_address = bitcoin_address::from_string(&std::string::utf8(b"bc1q9ymlna2efqx5arvcszu633rzfxq77ce9c3z34l"));
+        let multichain_address = multichain_address::from_bitcoin(btc_address);
+        transfer_coin_to_multichain_address(from, multichain_address);
+    }
+
+    #[test(from = @0x42)]
+    fun test_transfer_coin_to_bitcoin_address(from: address){
+        let from_signer = init_from_account(from);
+        let bitcoin_address_str = std::string::utf8(b"bc1q9ymlna2efqx5arvcszu633rzfxq77ce9c3z34l");
+        let btc_address = bitcoin_address::from_string(&bitcoin_address_str);
+        let to_rooch_address = bitcoin_address::to_rooch_address(&btc_address);
+
+        let original_balance = gas_coin::balance(from);
+        transfer::transfer_coin_to_bitcoin_address<GasCoin>(&from_signer, bitcoin_address_str, 11u256);
+        assert!(gas_coin::balance(from) == original_balance - 11u256, 1002);
+        assert!(gas_coin::balance(to_rooch_address) == 11u256, 1003);
     }
 
     #[test_only]

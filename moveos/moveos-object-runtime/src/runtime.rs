@@ -338,7 +338,7 @@ impl ObjectRuntime {
         &mut self,
         resolver: &dyn StatelessResolver,
     ) -> PartialVMResult<()> {
-        let timestamp_id = Timestamp::timestamp_id();
+        let timestamp_id = Timestamp::object_id();
         let state = resolver
             .get_object_field_at(self.root.state_root, &timestamp_id)
             .map_err(|e| {

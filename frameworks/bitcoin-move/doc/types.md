@@ -49,7 +49,6 @@
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x2::address</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
-<b>use</b> <a href="">0x3::multichain_address</a>;
 <b>use</b> <a href="script_buf.md#0x4_script_buf">0x4::script_buf</a>;
 </code></pre>
 

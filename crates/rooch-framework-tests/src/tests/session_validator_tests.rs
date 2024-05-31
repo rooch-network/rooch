@@ -14,6 +14,7 @@ use moveos_types::{module_binding::ModuleBinding, transaction::MoveAction};
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
 use rooch_types::framework::session_key::SessionKeyModule;
+use rooch_types::framework::session_validator::SessionValidatorModule;
 use rooch_types::framework::timestamp::TimestampModule;
 use rooch_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, framework::empty::Empty};
 use rooch_types::{framework::session_key::SessionScope, transaction::rooch::RoochTransactionData};
@@ -93,14 +94,14 @@ fn test_session_key_rooch() {
                 AbortLocation::Module(module_id) => {
                     assert_eq!(
                         module_id,
-                        &SessionKeyModule::module_id(),
-                        "expect session key module"
+                        &SessionValidatorModule::module_id(),
+                        "expect session validator module"
                     );
                 }
                 _ => panic!("expect move abort in module"),
             }
-            // ErrorFunctionCallBeyondSessionScope = 5
-            assert_eq!(*code, 5, "expect ErrorFunctionCallBeyondSessionScope");
+            // ErrorFunctionCallBeyondSessionScope = 3
+            assert_eq!(*code, 3, "expect ErrorFunctionCallBeyondSessionScope");
         }
         _ => {
             panic!("Expect move abort")
@@ -137,7 +138,7 @@ fn test_session_key_rooch() {
                 }
                 _ => panic!("expect move abort in module"),
             }
-            // ErrorSessionKeyCreatePermissionDenied = 5
+            // ErrorSessionKeyCreatePermissionDenied = 1
             assert_eq!(code, 1, "expect ErrorSessionKeyCreatePermissionDenied");
         }
         _ => {
@@ -166,14 +167,14 @@ fn test_session_key_rooch() {
                 AbortLocation::Module(module_id) => {
                     assert_eq!(
                         module_id,
-                        &SessionKeyModule::module_id(),
+                        &SessionValidatorModule::module_id(),
                         "expect session key module"
                     );
                 }
                 _ => panic!("expect move abort in module"),
             }
-            // ErrorSessionIsExpired = 4
-            assert_eq!(*code, 4, "expect ErrorSessionIsExpired");
+            // ErrorSessionIsExpired = 2
+            assert_eq!(*code, 2, "expect ErrorSessionIsExpired");
         }
         _ => {
             panic!("Expect move abort")

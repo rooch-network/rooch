@@ -7,6 +7,6 @@ use crate::natives::rooch_framework::bitcoin_address::GasParameters;
 crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasParameters, "bitcoin_address", [
     [.verify_with_pk.base, "verify_with_pk.base", 1000 * MUL],
     [.verify_with_pk.per_byte, "verify_with_pk.per_byte", 30 * MUL],
-    [.new.base, "new.base", 1000 * MUL],
-    [.new.per_byte, "new.per_byte", 30 * MUL],
+    [.new.base, "parse.base", 1000 * MUL],
+    [.new.per_byte, "parse.per_byte", 30 * MUL],
 ]);

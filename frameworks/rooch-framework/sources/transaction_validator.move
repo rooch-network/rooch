@@ -10,8 +10,6 @@ module rooch_framework::transaction_validator {
     use moveos_std::account;
     use moveos_std::gas_schedule;
     use rooch_framework::account as account_entry;
-    use rooch_framework::multichain_address::MultiChainAddress;
-    use rooch_framework::address_mapping;
     use rooch_framework::account_authentication;
     use rooch_framework::auth_validator::{Self, TxValidateResult};
     use rooch_framework::auth_validator_registry;
@@ -20,6 +18,9 @@ module rooch_framework::transaction_validator {
     use rooch_framework::transaction_fee;
     use rooch_framework::gas_coin;
     use rooch_framework::transaction::{Self, TransactionSequenceInfo};
+    use rooch_framework::session_validator;
+    use rooch_framework::bitcoin_validator;
+    use rooch_framework::address_mapping;
 
     const MAX_U64: u128 = 18446744073709551615;
 
@@ -99,23 +100,27 @@ module rooch_framework::transaction_validator {
 
         // === validate the authenticator ===
 
-        // if the authenticator authenticator_payload is session key, validate the session key
-        // otherwise return the authentication validator via the auth validator id
-        let session_key_option = session_key::validate(auth_validator_id, authenticator_payload);
-        if (option::is_some(&session_key_option)) {
-            auth_validator::new_tx_validate_result(auth_validator_id, option::none(), session_key_option)
-        }else {
+        // Try the built-in auth validator first
+        let (bitcoin_address, session_key, auth_validator)= if (auth_validator_id == session_validator::auth_validator_id()){
+            let session_key = session_validator::validate(authenticator_payload);
+            let bitcoin_address = address_mapping::resolve_bitcoin(sender);
+            (bitcoin_address, option::some(session_key), option::none())
+        }else if (auth_validator_id == bitcoin_validator::auth_validator_id()){
+            let bitcoin_address = bitcoin_validator::validate(authenticator_payload);
+            (option::some(bitcoin_address), option::none(), option::none())
+        }else{
             let auth_validator = auth_validator_registry::borrow_validator(auth_validator_id);
             let validator_id = auth_validator::validator_id(auth_validator);
-            // builtin auth validator id do not need to install
-            if (!rooch_framework::builtin_validators::is_builtin_auth_validator(auth_validator_id)) {
-                assert!(
-                    account_authentication::is_auth_validator_installed(sender, validator_id),
-                    ErrorValidateNotInstalledAuthValidator
-                );
-            };
-            auth_validator::new_tx_validate_result(auth_validator_id, option::some(*auth_validator), option::none())
-        }
+            // The third-party auth validator must be installed to the sender's account
+            assert!(account_authentication::is_auth_validator_installed(sender, validator_id),
+                    ErrorValidateNotInstalledAuthValidator);
+            let bitcoin_address = address_mapping::resolve_bitcoin(sender);
+            (bitcoin_address, option::none(), option::some(*auth_validator))
+        };
+        //The bitcoin address must exist
+        assert!(option::is_some(&bitcoin_address), ErrorValidateAccountDoesNotExist);
+        let bitcoin_address = option::destroy_some(bitcoin_address);
+        auth_validator::new_tx_validate_result(auth_validator_id, auth_validator, session_key, bitcoin_address)
     }
 
     /// Transaction pre_execute function.
@@ -133,16 +138,9 @@ module rooch_framework::transaction_validator {
                 let init_gas = 1_00_000_000u256;
                 gas_coin::faucet(sender, init_gas); 
             };
-        }; 
-        //the transaction validator will put the multi chain address into the context
-        let multichain_address = tx_context::get_attribute<MultiChainAddress>();
-        if (option::is_some(&multichain_address)) {
-            let multichain_address = option::extract(&mut multichain_address);
-            //Auto create address mapping if not exist
-            if (!address_mapping::exists_mapping(multichain_address)) {
-                address_mapping::bind_no_check(sender, multichain_address);
-            };
         };
+        let bitcoin_addr = auth_validator::get_bitcoin_address_from_ctx();
+        address_mapping::bind_bitcoin_address(sender, bitcoin_addr); 
         let tx_sequence_info = tx_context::get_attribute<TransactionSequenceInfo>();
         if (option::is_some(&tx_sequence_info)) {
             let tx_sequence_info = option::extract(&mut tx_sequence_info);

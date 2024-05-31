@@ -17,7 +17,7 @@ use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
-use rooch_types::address::MultiChainAddress;
+use rooch_types::address::{BitcoinAddress, MultiChainAddress};
 use rooch_types::transaction::{L1BlockWithBody, RoochTransaction};
 use serde::{Deserialize, Serialize};
 
@@ -34,6 +34,7 @@ impl Message for ValidateL2TxMessage {
 pub struct ValidateL1BlockMessage {
     pub ctx: TxContext,
     pub l1_block: L1BlockWithBody,
+    pub sequencer_address: BitcoinAddress,
 }
 
 impl Message for ValidateL1BlockMessage {

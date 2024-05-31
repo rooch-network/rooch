@@ -6,7 +6,6 @@ use move_core_types::language_storage::{ModuleId, StructTag};
 use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
-
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
 use moveos_types::state::{AnnotatedState, KeyState, State};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
@@ -15,7 +14,8 @@ use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_sequencer::proxy::SequencerProxy;
-use rooch_types::address::{MultiChainAddress, RoochAddress};
+use rooch_types::address::{BitcoinAddress, RoochAddress};
+use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
     FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateID, ObjectStateFilter,
@@ -23,6 +23,7 @@ use rooch_types::indexer::state::{
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::{ExecuteTransactionResponse, LedgerTransaction, RoochTransaction};
+use std::collections::HashMap;
 
 /// RpcService is the implementation of the RPC service.
 /// It is the glue between the RPC server(EthAPIServer,RoochApiServer) and the rooch's actors.
@@ -81,10 +82,6 @@ impl RpcService {
 
         let resp = self.executor.execute_view_function(function_call).await?;
         Ok(resp)
-    }
-
-    pub async fn resolve_address(&self, mca: MultiChainAddress) -> Result<RoochAddress> {
-        self.executor.resolve_address(mca).await.map(Into::into)
     }
 
     pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<State>>> {
@@ -266,5 +263,33 @@ impl RpcService {
             .query_field_states(filter, cursor, limit, descending_order)
             .await?;
         Ok(resp)
+    }
+
+    pub async fn get_bitcoin_addresses(
+        &self,
+        rooch_addresses: Vec<RoochAddress>,
+    ) -> Result<HashMap<RoochAddress, Option<BitcoinAddress>>> {
+        let mapping_object_id = RoochToBitcoinAddressMapping::object_id();
+        let owner_keys = rooch_addresses
+            .iter()
+            .map(|addr| KeyState::from_address((*addr).into()))
+            .collect::<Vec<_>>();
+
+        let access_path = AccessPath::fields(mapping_object_id, owner_keys);
+        let address_mapping = self
+            .get_states(access_path)
+            .await?
+            .into_iter()
+            .zip(rooch_addresses)
+            .map(|(state_opt, owner)| {
+                Ok((
+                    owner,
+                    state_opt
+                        .map(|state| state.cast_unchecked::<BitcoinAddress>())
+                        .transpose()?,
+                ))
+            })
+            .collect::<Result<HashMap<_, _>>>()?;
+        Ok(address_mapping)
     }
 }

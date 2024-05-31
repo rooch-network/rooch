@@ -8,7 +8,6 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     RpcModule,
 };
-use move_core_types::account_address::AccountAddress;
 use moveos_types::{
     access_path::AccessPath,
     h256::H256,
@@ -47,7 +46,6 @@ use rooch_rpc_api::{
 use rooch_types::indexer::event::IndexerEventID;
 use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::transaction::rooch::RoochTransaction;
-use rooch_types::{address::MultiChainAddress, multichain_id::RoochMultiChainID};
 use std::cmp::min;
 use std::str::FromStr;
 use tracing::info;
@@ -584,24 +582,7 @@ impl RoochAPIServer for RoochServer {
         let query_option = query_option.unwrap_or_default();
         let descending_order = query_option.descending;
 
-        // resolve multichain address
-        let resolve_address = match filter.clone() {
-            ObjectStateFilterView::MultiChainAddress {
-                multichain_id,
-                address,
-            } => {
-                let multi_chain_address = MultiChainAddress::try_from_str_with_multichain_id(
-                    RoochMultiChainID::try_from(multichain_id)?,
-                    address.as_str(),
-                )?;
-                self.rpc_service
-                    .resolve_address(multi_chain_address)
-                    .await?
-            }
-            _ => AccountAddress::ZERO.into(),
-        };
-        let global_state_filter =
-            ObjectStateFilterView::into_object_state_filter(filter, resolve_address);
+        let global_state_filter = ObjectStateFilterView::into_object_state_filter(filter);
         let states = self
             .rpc_service
             .query_object_states(global_state_filter, cursor, limit_of + 1, descending_order)

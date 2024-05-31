@@ -269,7 +269,6 @@ impl MoveOSTransaction {
             tx_hash,
             1,
         );
-
         Self::new(root, ctx, sender_and_action.1)
     }
 

@@ -13,7 +13,6 @@ use hyper::header::HeaderValue;
 use hyper::Method;
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
-use move_core_types::account_address::AccountAddress;
 use moveos_store::{MoveOSDB, MoveOSStore};
 use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
 use raw_store::errors::RawStoreError;
@@ -46,7 +45,7 @@ use rooch_rpc_api::api::RoochRpcModule;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
-use rooch_types::address::RoochAddress;
+use rooch_types::address::{BitcoinAddress, RoochAddress};
 use rooch_types::error::{GenesisError, RoochError};
 use rooch_types::rooch_network::{BuiltinChainID, RoochChainID, RoochNetwork};
 use serde_json::json;
@@ -205,9 +204,9 @@ pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<S
     let data_import_flag = opt.data_import_flag;
     if let RoochChainID::Builtin(builtin_chain_id) = chain_id {
         let mut network: RoochNetwork = builtin_chain_id.into();
-        let sequencer_account: AccountAddress = sequencer_account.into();
+        let sequencer_account: BitcoinAddress = sequencer_keypair.public().bitcoin_address()?;
         match builtin_chain_id {
-            // local and dev chain can use any sequencer account
+            // local chain can use any sequencer account
             BuiltinChainID::Local | BuiltinChainID::Dev => {
                 network.set_sequencer_account(sequencer_account);
             }

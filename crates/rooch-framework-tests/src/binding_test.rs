@@ -19,6 +19,7 @@ use rooch_executor::actor::{executor::ExecutorActor, messages::ExecuteTransactio
 use rooch_genesis::RoochGenesis;
 use rooch_indexer::IndexerStore;
 use rooch_store::RoochStore;
+use rooch_types::crypto::RoochKeyPair;
 use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
 use rooch_types::transaction::{L1BlockWithBody, RoochTransaction};
 use std::env;
@@ -41,6 +42,7 @@ pub struct RustBindingTest {
     //we should keep data_dir to make sure the temp dir is not deleted.
     data_dir: DataDirPath,
     sequencer: AccountAddress,
+    kp: RoochKeyPair,
     pub executor: ExecutorActor,
     pub reader_executor: ReaderExecutorActor,
     root: RootObjectEntity,
@@ -65,8 +67,12 @@ impl RustBindingTest {
             MoveOSStore::mock_moveos_store_with_data_dir(moveos_db_path.as_path())?;
         let mut rooch_store = RoochStore::mock_rooch_store_with_data_dir(rooch_db_path.as_path())?;
         let mut indexer_store = IndexerStore::mock_indexer_store()?;
-        let network: RoochNetwork = BuiltinChainID::Local.into();
-        let sequencer = network.genesis_config.sequencer_account;
+        let mut network: RoochNetwork = BuiltinChainID::Local.into();
+
+        let kp = RoochKeyPair::generate_secp256k1();
+        let sequencer = kp.public().bitcoin_address()?;
+
+        network.set_sequencer_account(sequencer.clone());
 
         let genesis = RoochGenesis::build(network)?;
         let root = genesis.init_genesis(&mut moveos_store, &mut rooch_store, &mut indexer_store)?;
@@ -78,7 +84,8 @@ impl RustBindingTest {
         Ok(Self {
             root,
             data_dir,
-            sequencer,
+            sequencer: sequencer.to_rooch_address().into(),
+            kp,
             executor,
             reader_executor,
             moveos_store,
@@ -87,6 +94,10 @@ impl RustBindingTest {
 
     pub fn executor(&self) -> &ExecutorActor {
         &self.executor
+    }
+
+    pub fn sequencer_kp(&self) -> &RoochKeyPair {
+        &self.kp
     }
 
     pub fn data_dir(&self) -> &Path {
@@ -118,7 +129,8 @@ impl RustBindingTest {
         let sequence_number = 0;
         let ctx = self.create_bt_blk_tx_ctx(sequence_number, l1_block.clone());
         let verified_tx: VerifiedMoveOSTransaction =
-            self.executor.validate_l1_block(ctx, l1_block)?;
+            self.executor
+                .validate_l1_block(ctx, l1_block, self.kp.public().bitcoin_address()?)?;
         self.execute_verified_tx(verified_tx)
     }
 
@@ -130,6 +142,7 @@ impl RustBindingTest {
         let max_gas_amount = GasScheduleConfig::INITIAL_MAX_GAS_AMOUNT * 1000;
         let tx_hash = l1_block.block.tx_hash();
         let tx_size = l1_block.block.tx_size();
+
         TxContext::new(
             self.sequencer,
             sequence_number,

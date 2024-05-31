@@ -98,6 +98,10 @@ impl MultiChainAddress {
         self.multichain_id.is_rooch()
     }
 
+    pub fn is_bitcoin_address(&self) -> bool {
+        self.multichain_id.is_bitcoin()
+    }
+
     pub fn to_original_string(&self) -> String {
         match self.multichain_id {
             RoochMultiChainID::Bitcoin => {

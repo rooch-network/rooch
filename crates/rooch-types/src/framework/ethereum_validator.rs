@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::auth_validator::BuiltinAuthValidator;
-use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use anyhow::Result;
+use framework_types::addresses::ROOCH_NURSERY_ADDRESS;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
 };
@@ -23,7 +23,7 @@ impl EthereumValidator {
 }
 
 impl MoveStructType for EthereumValidator {
-    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const ADDRESS: AccountAddress = ROOCH_NURSERY_ADDRESS;
     const MODULE_NAME: &'static IdentStr = EthereumValidatorModule::MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("EthereumValidator");
 }
@@ -54,7 +54,7 @@ impl<'a> EthereumValidatorModule<'a> {
 
 impl<'a> ModuleBinding<'a> for EthereumValidatorModule<'a> {
     const MODULE_NAME: &'static IdentStr = ident_str!("ethereum_validator");
-    const MODULE_ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const MODULE_ADDRESS: AccountAddress = ROOCH_NURSERY_ADDRESS;
 
     fn new(caller: &'a impl MoveFunctionCaller) -> Self
     where
