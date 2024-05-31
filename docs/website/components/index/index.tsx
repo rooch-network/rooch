@@ -64,7 +64,7 @@ const Index = ({
   exploreButtonHref,
   explores,
   ecosystemTitle,
-  ecosystemContent,
+  // ecosystemContent,
   ecosystemBrand,
   blogsTitle,
   blogs,
@@ -114,8 +114,8 @@ const Index = ({
 
   // Define words to highlight for Chinese text
   const wordsToHighlightForFeatures = ['比', '特', '币']
-  const wordsToHighlightForExplore = ['新', '型', '架', '构']
-  const wordsToHighlightForEcosystem = ['生', '态']
+  const wordsToHighlightForExplore = ['状', '态', '应', '用']
+  const wordsToHighlightForEcosystem = ['合', '作', '伙', '伴']
   const wordsToHighlightForBlogs = ['博', '客']
 
   const highlightColor = '#FF914B'
@@ -128,7 +128,7 @@ const Index = ({
         <div className="mt-28 md:mt-0 flex flex-col md:flex-row items-center justify-center md:justify-between h-full md:h-[90vh] px-4 sm:px-6 md:px-8 lg:px-20 dark:border-b dark:border-b-zinc-800">
           <div className="flex flex-col items-center justify-center">
             <div className="mt-5 max-w-3xl text-center mx-auto">
-              <p className="block font-bold text-gray-800 text-4xl md:text-5xl lg:text-5xl dark:text-gray-200">
+              <p className="block font-bold text-gray-800 text-4xl md:text-5xl lg:text-6xl dark:text-gray-200">
                 {heroTitle}
               </p>
               {heroSlogan ? (
