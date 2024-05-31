@@ -23,9 +23,10 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import CustomPagination from '@/components/custom-pagination.tsx'
-import {formatAddress, formatCoin} from '@/utils/format.ts'
+import { formatCoin } from '@/utils/format.ts'
 import { useToast } from '@/components/ui/use-toast'
 import { ToastAction } from '@/components/ui/toast'
+import { validate } from '@roochnetwork/rooch-sdk/src/address'
 
 export const AssetsCoin = () => {
   const account = useCurrentAccount()
@@ -126,16 +127,32 @@ export const AssetsCoin = () => {
 
   const handleAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value
-    setAmount(value)
 
-    if (selectedCoin) {
-      const amountNumber = Number(value)
-      const balanceNumber = Number(selectedCoin.balance) / 10 ** selectedCoin.decimals
-      if (amountNumber > balanceNumber) {
-        setError('Amount exceeds available balance.')
-      } else {
-        setError('')
+    // Validate the input to ensure it's a valid number with at most one decimal point
+    const validNumberRegex = /^[0-9]*\.?[0-9]*$/
+    if (validNumberRegex.test(value)) {
+      setAmount(value)
+
+      if (selectedCoin) {
+        const amountNumber = Number(value)
+        const balanceNumber = Number(selectedCoin.balance) / 10 ** selectedCoin.decimals
+        if (amountNumber > balanceNumber) {
+          setError('Amount exceeds available balance.')
+        } else {
+          setError('')
+        }
       }
+    }
+  }
+
+  const handleRecipientChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = event.target.value
+    setRecipient(value)
+
+    if (!validate(value)) {
+      setError('Invalid address')
+    } else {
+      setError('')
     }
   }
 
@@ -158,11 +175,16 @@ export const AssetsCoin = () => {
       })
       toast({
         title: 'Transfer Successful',
-        description: `Transferred ${amount} ${selectedCoin.name} to ${formatAddress(recipient)}`,
+        description: `Transferred ${amount} ${selectedCoin.name} to ${recipient}`,
         action: <ToastAction altText="Close">Close</ToastAction>,
       })
     } catch (error) {
       console.error('Transfer failed', error)
+      toast({
+        title: 'Transfer Failed',
+        description: 'The transfer could not be completed. Please try again.',
+        action: <ToastAction altText="Close">Close</ToastAction>,
+      })
     } finally {
       setTransferLoading(false)
       handleClose()
@@ -265,9 +287,7 @@ export const AssetsCoin = () => {
                       placeholder="Enter Address..."
                       className="h-14 resize-none overflow-hidden rounded-2xl bg-gray-50 dark:bg-gray-200 text-gray-800 w-96"
                       value={recipient}
-                      onChange={(event) => {
-                        setRecipient(event.target.value)
-                      }}
+                      onChange={handleRecipientChange}
                       disabled={transferLoading}
                       required
                       rows={1}
@@ -302,6 +322,7 @@ export const AssetsCoin = () => {
                         onChange={handleAmountChange}
                         disabled={transferLoading}
                         required
+                        pattern="[0-9]*\.?[0-9]*"
                       />
                     </div>
                     {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
