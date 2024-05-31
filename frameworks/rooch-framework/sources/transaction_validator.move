@@ -20,6 +20,8 @@ module rooch_framework::transaction_validator {
     use rooch_framework::transaction_fee;
     use rooch_framework::gas_coin;
     use rooch_framework::transaction::{Self, TransactionSequenceInfo};
+    use rooch_framework::session_validator;
+    use rooch_framework::bitcoin_validator;
 
     const MAX_U64: u128 = 18446744073709551615;
 
@@ -99,21 +101,19 @@ module rooch_framework::transaction_validator {
 
         // === validate the authenticator ===
 
-        // if the authenticator authenticator_payload is session key, validate the session key
-        // otherwise return the authentication validator via the auth validator id
-        let session_key_option = session_key::validate(auth_validator_id, authenticator_payload);
-        if (option::is_some(&session_key_option)) {
-            auth_validator::new_tx_validate_result(auth_validator_id, option::none(), session_key_option)
-        }else {
+        // Try the built-in auth validator first
+        if (auth_validator_id == session_validator::auth_validator_id()){
+            session_validator::validate(authenticator_payload);
+            auth_validator::new_tx_validate_result(auth_validator_id, option::none(), option::none())
+        }else if (auth_validator_id == bitcoin_validator::auth_validator_id()){
+            bitcoin_validator::validate(authenticator_payload);
+            auth_validator::new_tx_validate_result(auth_validator_id, option::none(), option::none())
+        }else{
             let auth_validator = auth_validator_registry::borrow_validator(auth_validator_id);
             let validator_id = auth_validator::validator_id(auth_validator);
-            // builtin auth validator id do not need to install
-            if (!rooch_framework::builtin_validators::is_builtin_auth_validator(auth_validator_id)) {
-                assert!(
-                    account_authentication::is_auth_validator_installed(sender, validator_id),
-                    ErrorValidateNotInstalledAuthValidator
-                );
-            };
+            // The third-party auth validator must be installed to the sender's account
+            assert!(account_authentication::is_auth_validator_installed(sender, validator_id),
+                    ErrorValidateNotInstalledAuthValidator);
             auth_validator::new_tx_validate_result(auth_validator_id, option::some(*auth_validator), option::none())
         }
     }

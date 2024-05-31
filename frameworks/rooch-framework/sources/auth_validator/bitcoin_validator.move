@@ -17,8 +17,8 @@ module rooch_framework::bitcoin_validator {
     use rooch_framework::auth_payload::AuthPayload;
     use rooch_framework::bitcoin_address;
 
-    /// there defines auth validator id for each blockchain
-    const BITCOIN_AUTH_VALIDATOR_ID: u64 = 2;
+    /// there defines auth validator id for each auth validator
+    const BITCOIN_AUTH_VALIDATOR_ID: u64 = 1;
 
     struct BitcoinValidator has store, drop {}
 

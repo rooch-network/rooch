@@ -11,10 +11,10 @@ module rooch_framework::session_key {
     use moveos_std::tx_meta::{Self, FunctionCallMeta};
     use moveos_std::features;
     use rooch_framework::auth_validator;
-    use rooch_framework::native_validator;
     use moveos_std::timestamp;
 
     friend rooch_framework::transaction_validator;
+    friend rooch_framework::session_validator;
 
     /// Create session key in this context is not allowed
     const ErrorSessionKeyCreatePermissionDenied: u64 = 1;
@@ -22,12 +22,8 @@ module rooch_framework::session_key {
     const ErrorSessionKeyAlreadyExists: u64 = 2;
     /// The session key is invalid
     const ErrorSessionKeyIsInvalid: u64 = 3;
-    /// The session is expired
-    const ErrorSessionIsExpired: u64 = 4;
-    /// The function call is beyond the session's scope
-    const ErrorFunctionCallBeyondSessionScope: u64 = 5;
     /// The lengths of the parts of the session's scope do not match.
-    const ErrorSessionScopePartLengthNotMatch: u64 = 6;
+    const ErrorSessionScopePartLengthNotMatch: u64 = 4;
 
     /// The session's scope
     struct SessionScope has store,copy,drop {
@@ -70,7 +66,7 @@ module rooch_framework::session_key {
         }
     }
 
-    fun is_expired(session_key: &SessionKey) : bool {
+    public(friend) fun is_expired(session_key: &SessionKey) : bool {
         let now_seconds = timestamp::now_seconds();
         if (session_key.max_inactive_interval > 0 && session_key.last_active_time + session_key.max_inactive_interval < now_seconds){
             return true
@@ -86,6 +82,10 @@ module rooch_framework::session_key {
 
         let session_key = option::extract(&mut session_key_option);
         is_expired(&session_key)
+    }
+
+    public fun has_session_key(account_address: address) : bool {
+        account::exists_resource<SessionKeys>(account_address)
     }
 
     public fun exists_session_key(account_address: address, authentication_key: vector<u8>) : bool {
@@ -187,36 +187,8 @@ module rooch_framework::session_key {
         create_session_key(sender, app_name, app_url, authentication_key, scopes, max_inactive_interval);
     }
 
-    /// Validate the current tx via the session key
-    /// If the authentication key is not a session key, return option::none
-    /// If the session key is expired or invalid, abort the tx, otherwise return option::some(authentication key)
-    public(friend) fun validate(auth_validator_id: u64, authenticator_payload: vector<u8>) : Option<vector<u8>> {
-        let sender_addr = tx_context::sender();
-        if (!account::exists_resource<SessionKeys>(sender_addr)){
-            return option::none()
-        };
-        // We only support native validator for SessionKey now
-        if(auth_validator_id != native_validator::auth_validator_id()){
-            return option::none()
-        };
-
-        let auth_key = native_validator::get_authentication_key_from_authenticator_payload(&authenticator_payload);
-        
-        let session_key_option = get_session_key(sender_addr, auth_key);
-        if (option::is_none(&session_key_option)){
-            return option::none()
-        };
-        let session_key = option::extract(&mut session_key_option);
-        assert!(!is_expired(&session_key), ErrorSessionIsExpired);
-        
-        assert!(in_session_scope(&session_key), ErrorFunctionCallBeyondSessionScope);
-
-        native_validator::validate_signature(&authenticator_payload, &tx_context::tx_hash());
-        option::some(auth_key)
-    }
-
     /// Check the current tx is in the session scope or not
-    fun in_session_scope(session_key: &SessionKey): bool{
+    public(friend) fun in_session_scope(session_key: &SessionKey): bool{
         let idx = 0;
         let tx_meta = tx_context::tx_meta();
         

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_framework::account {
-   use rooch_framework::account_authentication;
+
    use moveos_std::signer::module_signer;
    use moveos_std::account;
    use moveos_std::core_addresses;
@@ -28,8 +28,6 @@ module rooch_framework::account {
    public(friend) fun create_account_internal(new_address: address): signer {
       let system = module_signer<AccountPlaceholder>();
       let new_account = account::create_account_by_system(&system, new_address);
-
-      account_authentication::init_authentication_keys(&new_account);
       new_account
    }
 
