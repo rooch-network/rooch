@@ -1143,7 +1143,10 @@ mod test {
         // }
 
         assert_eq!(
-            rooch_addresses.iter().map(|a| a.to_string()).collect::<Vec<_>>(),
+            rooch_addresses
+                .iter()
+                .map(|a| a.to_string())
+                .collect::<Vec<_>>(),
             vec![
                 "rooch1gxterelcypsyvh8cc9kg73dtnyct822ykx8pmu383qruzt4r93jshtc9fj".to_owned(),
                 "rooch10lnft7hhq37vl0y97lwvkmzqt48fk76y0z88rfcu8zg6qm8qegfqx0rq2h".to_owned(),
@@ -1151,7 +1154,10 @@ mod test {
         );
 
         assert_eq!(
-            rooch_addresses.iter().map(|a| a.to_hex_literal()).collect::<Vec<_>>(),
+            rooch_addresses
+                .iter()
+                .map(|a| a.to_hex_literal())
+                .collect::<Vec<_>>(),
             vec![
                 "0x419791e7f82060465cf8c16c8f45ab9930b3a944b18e1df2278807c12ea32c65".to_owned(),
                 "0x7fe695faf7047ccfbc85f7dccb6c405d4e9b7b44788e71a71c3891a06ce0ca12".to_owned(),
