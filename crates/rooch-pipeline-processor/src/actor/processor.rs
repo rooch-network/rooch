@@ -13,8 +13,12 @@ use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::proxy::SequencerProxy;
-use rooch_types::transaction::{
-    ExecuteTransactionResponse, L1BlockWithBody, LedgerTransaction, LedgerTxData, RoochTransaction,
+use rooch_types::{
+    address::BitcoinAddress,
+    transaction::{
+        ExecuteTransactionResponse, L1BlockWithBody, LedgerTransaction, LedgerTxData,
+        RoochTransaction,
+    },
 };
 use tracing::debug;
 
@@ -48,10 +52,11 @@ impl PipelineProcessorActor {
         &mut self,
         ctx: TxContext,
         l1_block: L1BlockWithBody,
+        sequencer_address: BitcoinAddress,
     ) -> Result<ExecuteTransactionResponse> {
         let moveos_tx = self
             .executor
-            .validate_l1_block(ctx, l1_block.clone())
+            .validate_l1_block(ctx, l1_block.clone(), sequencer_address)
             .await?;
         let ledger_tx = self
             .sequencer
@@ -144,6 +149,7 @@ impl Handler<ExecuteL1BlockMessage> for PipelineProcessorActor {
         msg: ExecuteL1BlockMessage,
         _ctx: &mut ActorContext,
     ) -> Result<ExecuteTransactionResponse> {
-        self.execute_l1_block(msg.ctx, msg.tx).await
+        self.execute_l1_block(msg.ctx, msg.tx, msg.sequencer_address)
+            .await
     }
 }

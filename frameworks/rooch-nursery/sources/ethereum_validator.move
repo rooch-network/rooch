@@ -70,7 +70,7 @@ module rooch_nursery::ethereum_validator {
     public fun validate(authenticator_payload: vector<u8>): MultiChainAddress {
         features::ensure_testnet_enabled();
         
-        let sender = tx_context::sender();
+        //let sender = tx_context::sender();
         let tx_hash = tx_context::tx_hash();
         let payload = auth_payload::from_bytes(authenticator_payload);
         let eth_addr = validate_signature(payload, tx_hash);

@@ -27,6 +27,7 @@ use rooch_indexer::IndexerStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
+use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::GenesisError;
 use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::indexer::state::{
@@ -42,7 +43,10 @@ use std::str::FromStr;
 use std::{fs::File, io::Write, path::Path};
 
 pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
-    let network: RoochNetwork = BuiltinChainID::Local.into();
+    let mut network: RoochNetwork = BuiltinChainID::Local.into();
+    let kp = RoochKeyPair::generate_secp256k1();
+    let sequencer_account = kp.public().bitcoin_address().unwrap();
+    network.set_sequencer_account(sequencer_account);
     RoochGenesis::build(network).expect("build rooch genesis failed")
 });
 

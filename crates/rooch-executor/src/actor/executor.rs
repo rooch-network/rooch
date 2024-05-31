@@ -21,6 +21,7 @@ use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::transaction::{FunctionCall, MoveOSTransaction, VerifiedMoveAction};
 use rooch_genesis::FrameworksGasParameters;
 use rooch_store::RoochStore;
+use rooch_types::address::BitcoinAddress;
 use rooch_types::bitcoin::BitcoinModule;
 use rooch_types::framework::auth_validator::{AuthValidatorCaller, TxValidateResult};
 use rooch_types::framework::ethereum::EthereumModule;
@@ -93,9 +94,11 @@ impl ExecutorActor {
 
     pub fn validate_l1_block(
         &self,
-        ctx: TxContext,
+        mut ctx: TxContext,
         l1_block: L1BlockWithBody,
+        sequencer_address: BitcoinAddress,
     ) -> Result<VerifiedMoveOSTransaction> {
+        ctx.add(TxValidateResult::new_l1_block(sequencer_address))?;
         //In the future, we should verify the block PoW difficulty or PoS validator signature before the sequencer decentralized
         let L1BlockWithBody {
             block:
@@ -266,7 +269,7 @@ impl Handler<ValidateL1BlockMessage> for ExecutorActor {
         msg: ValidateL1BlockMessage,
         _ctx: &mut ActorContext,
     ) -> Result<VerifiedMoveOSTransaction> {
-        self.validate_l1_block(msg.ctx, msg.l1_block)
+        self.validate_l1_block(msg.ctx, msg.l1_block, msg.sequencer_address)
     }
 }
 
