@@ -672,10 +672,6 @@ module moveos_std::object {
     }
 
     fun init_timestamp<T: key>(entity: &mut ObjectEntity<T>) {
-        // // skip timestamp itself
-        // if (type_of<T>() == type_of<Timestamp>()) {
-        //     return
-        // };
         let now_milliseconds = now_milliseconds();
         entity.created_at = now_milliseconds;
         entity.updated_at = now_milliseconds;

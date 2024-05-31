@@ -109,8 +109,6 @@ impl FromStr for ExportID {
         let state_root = H256::from_str(parts.next().ok_or(anyhow::anyhow!("invalid export id"))?)?;
         let parent_state_root =
             H256::from_str(parts.next().ok_or(anyhow::anyhow!("invalid export id"))?)?;
-        // let timestamp =
-        //     parts.next().and_then(|s| s.parse::<u64>().ok()).unwrap_or(0);
         let timestamp = parts
             .next()
             .ok_or(anyhow::anyhow!("invalid export id"))?
