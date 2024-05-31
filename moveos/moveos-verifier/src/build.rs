@@ -1,7 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::metadata::{run_extended_checks, RuntimeModuleMetadataV1};
+use crate::metadata::{
+    run_extended_checks, RuntimeModuleMetadataV1, DATA_STRUCT_ATTRIBUTE,
+    DATA_STRUCT_FUNC_ATTRIBUTE, PRIVATE_GENERICS_ATTRIBUTE,
+};
 use codespan_reporting::diagnostic::Severity;
 use itertools::Itertools;
 use move_binary_format::CompiledModule;
@@ -396,7 +399,7 @@ pub fn compile_and_inject_metadata(
 
     let mut rooch_metadata = RuntimeModuleMetadataV1::default();
     for (metadata_type, metadata_item) in ast_metadata.value {
-        if metadata_type == "private_generics" {
+        if metadata_type == PRIVATE_GENERICS_ATTRIBUTE {
             let mut private_generics_map: BTreeMap<String, Vec<usize>> = BTreeMap::new();
             for (metadata_key, metadata_value) in metadata_item.iter() {
                 let mut generic_type_indices: Vec<usize> = Vec::new();
@@ -414,7 +417,7 @@ pub fn compile_and_inject_metadata(
             rooch_metadata.private_generics_indices = private_generics_map;
         }
 
-        if metadata_type == "data_struct" {
+        if metadata_type == DATA_STRUCT_ATTRIBUTE {
             let mut data_structs_map: BTreeMap<String, bool> = BTreeMap::new();
             for (metadata_key, metadata_value) in metadata_item.iter() {
                 for idx_expr in metadata_value.iter() {
@@ -430,7 +433,7 @@ pub fn compile_and_inject_metadata(
             rooch_metadata.data_struct_map = data_structs_map;
         }
 
-        if metadata_type == "data_struct_func" {
+        if metadata_type == DATA_STRUCT_FUNC_ATTRIBUTE {
             let mut data_struct_func_map: BTreeMap<String, Vec<usize>> = BTreeMap::new();
             for (metadata_key, metadata_value) in metadata_item.iter() {
                 let mut generic_type_indices: Vec<usize> = Vec::new();

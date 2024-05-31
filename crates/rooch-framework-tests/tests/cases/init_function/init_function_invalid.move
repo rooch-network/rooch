@@ -90,9 +90,9 @@ module creator::test {
 
 //# publish
 module creator::test {
-    use std::ascii;
+    use std::string;
 
-    fun init(_: ascii::String){
+    fun init(_: string::String){
         
     }
 }

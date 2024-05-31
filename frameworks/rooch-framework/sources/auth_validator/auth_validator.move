@@ -33,13 +33,13 @@ module rooch_framework::auth_validator {
     struct AuthValidator has store, copy, drop {
         id: u64,
         module_address: address,
-        module_name: std::ascii::String,
+        module_name: std::string::String,
     }
 
     public(friend) fun new_auth_validator(
         id: u64,
         module_address: address,
-        module_name: std::ascii::String
+        module_name: std::string::String
     ): AuthValidator {
         AuthValidator {
             id: id,
@@ -56,7 +56,7 @@ module rooch_framework::auth_validator {
         validator.module_address
     }
 
-    public fun validator_module_name(validator: &AuthValidator): std::ascii::String {
+    public fun validator_module_name(validator: &AuthValidator): std::string::String {
         validator.module_name
     }
 

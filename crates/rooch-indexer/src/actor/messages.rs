@@ -61,6 +61,7 @@ impl Message for IndexerEventsMessage {
 pub struct IndexerStatesMessage {
     pub root: RootObjectEntity,
     pub tx_order: u64,
+    pub tx_timestamp: u64,
     pub state_change_set: StateChangeSet,
 }
 

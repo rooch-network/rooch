@@ -10,18 +10,18 @@ module rooch_framework::session_key_test{
     use moveos_std::bcs;
     use moveos_std::tx_context;
     use rooch_framework::session_key;
-    use rooch_framework::timestamp;
+    use moveos_std::timestamp;
 
     #[test]
     fun test_session_key_end_to_end(){
         rooch_framework::genesis::init_for_test();
         let sender_addr = tx_context::sender();
         let sender = moveos_std::account::create_signer_for_testing(sender_addr);
-        let scope = session_key::new_session_scope(@0x1, std::ascii::string(b"*"), std::ascii::string(b"*"));
+        let scope = session_key::new_session_scope(@0x1, std::string::utf8(b"*"), std::string::utf8(b"*"));
         let authentication_key = bcs::to_bytes(&sender_addr);
         let max_inactive_interval = 10;
         let app_name = std::string::utf8(b"test");
-        let app_url = std::ascii::string(b"https://test.rooch.network");
+        let app_url = std::string::utf8(b"https://test.rooch.network");
         session_key::create_session_key(&sender, app_name, app_url,  authentication_key, vector::singleton(scope), max_inactive_interval);
         let session_key_opt = session_key::get_session_key(sender_addr, authentication_key);
         assert!(option::is_some(&session_key_opt), 1000);

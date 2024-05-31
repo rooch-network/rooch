@@ -151,6 +151,8 @@ fn produce_updates(tx: SyncSender<BatchUpdates>, input: PathBuf, batch_size: usi
                     export_id.object_id.clone(),
                     tx_order,
                     state_index_generator,
+                    export_id.timestamp,
+                    true,
                 );
                 state_index_generator += 1;
                 updates.field_states.push(state);

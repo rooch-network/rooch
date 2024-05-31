@@ -63,7 +63,7 @@ fn test_submit_block() {
     binding_test.execute(tx).unwrap();
 
     let timestamp_module =
-        binding_test.as_module_binding::<rooch_types::framework::timestamp::TimestampModule>();
+        binding_test.as_module_binding::<moveos_types::moveos_std::timestamp::TimestampModule>();
 
     let now_milliseconds = timestamp_module.now_milliseconds().unwrap();
     let duration = std::time::Duration::from_secs(block_header.timestamp.unchecked_as_u64());

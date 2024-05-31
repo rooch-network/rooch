@@ -4,7 +4,8 @@
 /// TypeTable is a table use struct Type as Key, struct as Value
 
 module moveos_std::type_table {
-    use std::ascii::String;
+    use std::string::String;
+    use moveos_std::type_info;
     use moveos_std::object::ObjectID;
     use moveos_std::object::{Self, Object};
 
@@ -26,8 +27,7 @@ module moveos_std::type_table {
 
     /// Note: We use Type name as key, the key will be serialized by bcs in the native function. 
     public fun key<V>(): String {
-        let type_name = std::type_name::get<V>();
-        std::type_name::into_string(type_name)
+        type_info::type_name<V>()
     }
 
     /// Add a new entry of `V` to the table. Aborts if an entry for

@@ -143,7 +143,7 @@ module rooch_examples::rooch_examples {
         let now = timestamp::now_seconds();
         let account_mut_obj = object::borrow_mut_object<ResourceAccount>(account, object::account_named_object_id<ResourceAccount>(account_address));
         let next_game_id = {
-            let state_mut_ref = object::borrow_mut_field<ResourceAccount, std::ascii::String, State>(account_mut_obj, key<State>());
+            let state_mut_ref = object::borrow_mut_field<ResourceAccount, std::string::String, State>(account_mut_obj, key<State>());
             get_next_game_id(&mut state_mut_ref.next_game_id)
         };
 
@@ -164,7 +164,7 @@ module rooch_examples::rooch_examples {
             expiration_timestamp_in_seconds: EXPIRATION_TIME_IN_SECONDS + now,
         };
         {
-            let state_mut_ref = object::borrow_mut_field<ResourceAccount, std::ascii::String, State>(account_mut_obj, key<State>());
+            let state_mut_ref = object::borrow_mut_field<ResourceAccount, std::string::String, State>(account_mut_obj, key<State>());
             simple_map::add(&mut state_mut_ref.games, next_game_id, new_game);
         };
         event::emit(
@@ -188,7 +188,7 @@ module rooch_examples::rooch_examples {
         let player_address = check_if_state_exists(player);
         let now = timestamp::now_seconds();
         let player_mut_obj = object::borrow_mut_object<ResourceAccount>(player, object::account_named_object_id<ResourceAccount>(player_address));
-        let state_mut_ref = object::borrow_mut_field<ResourceAccount, std::ascii::String, State>(player_mut_obj, key<State>());
+        let state_mut_ref = object::borrow_mut_field<ResourceAccount, std::string::String, State>(player_mut_obj, key<State>());
         check_if_game_exists(&state_mut_ref.games, &game_id);
         let game_mut_ref = simple_map::borrow_mut(&mut state_mut_ref.games, &game_id);
         check_if_player_participates_in_the_game(player, game_mut_ref);
@@ -222,7 +222,7 @@ module rooch_examples::rooch_examples {
         let now = timestamp::now_seconds();
         let player_mut_obj = object::borrow_mut_object<ResourceAccount>(player, object::account_named_object_id<ResourceAccount>(player_address));
         let (game_id, decision) = {
-            let state_mut_ref = object::borrow_mut_field<ResourceAccount, std::ascii::String, State>(player_mut_obj, key<State>());
+            let state_mut_ref = object::borrow_mut_field<ResourceAccount, std::string::String, State>(player_mut_obj, key<State>());
 
             check_if_game_exists(&state_mut_ref.games, &game_id);
             let game_mut_ref = simple_map::borrow_mut(&mut state_mut_ref.games, &game_id);
@@ -290,7 +290,7 @@ module rooch_examples::rooch_examples {
         let now = timestamp::now_seconds();
         let account_mut_obj = object::borrow_mut_object<ResourceAccount>(account, object::account_named_object_id<ResourceAccount>(account_address));
         let game = {
-            let state_mut_ref = object::borrow_mut_field<ResourceAccount, std::ascii::String, State>(account_mut_obj, key<State>());
+            let state_mut_ref = object::borrow_mut_field<ResourceAccount, std::string::String, State>(account_mut_obj, key<State>());
             check_if_game_exists(&state_mut_ref.games, &game_id);
 
             let (_, game) = simple_map::remove(&mut state_mut_ref.games, &game_id);
@@ -433,7 +433,7 @@ module rooch_examples::rooch_examples {
         let account_address = signer::address_of(account);
 
         let account_mut_obj = object::borrow_mut_object<ResourceAccount>(account, object::account_named_object_id<ResourceAccount>(account_address));
-        let state = object::borrow_mut_field<ResourceAccount, std::ascii::String, State>(account_mut_obj, key<State>());
+        let state = object::borrow_mut_field<ResourceAccount, std::string::String, State>(account_mut_obj, key<State>());
         assert!(state.next_game_id == 0, 0);
         assert!(simple_map::length<u128, Game>(&state.games) == 0, 1);
         assert!(account_coin_store::is_accept_coin<WGBCOIN>(account_address), 12);
@@ -477,7 +477,7 @@ module rooch_examples::rooch_examples {
         create_game(account, prize_pool_amount, player_one_address, player_two_address);
 
         let account_obj = object::borrow_object<ResourceAccount>(object::account_named_object_id<ResourceAccount>(account_address));
-        let state = object::borrow_field<ResourceAccount, std::ascii::String, State>(account_obj, key<State>());
+        let state = object::borrow_field<ResourceAccount, std::string::String, State>(account_obj, key<State>());
 
         assert!(state.next_game_id == 1, 0);
         assert!(simple_map::length<u128, Game>(&state.games) == 1, 1);
@@ -533,7 +533,7 @@ module rooch_examples::rooch_examples {
         submit_decision(player_one, 0, decision_hash, salt_hash);
 
         let player_one_obj = object::borrow_object<ResourceAccount>(object::account_named_object_id<ResourceAccount>(player_one_address));
-        let state = object::borrow_field<ResourceAccount, std::ascii::String, State>(player_one_obj, key<State>());
+        let state = object::borrow_field<ResourceAccount, std::string::String, State>(player_one_obj, key<State>());
         assert!(state.next_game_id == 1, 0);
         assert!(simple_map::length<u128, Game>(&state.games) == 1, 1);
         assert!(simple_map::contains_key<u128, Game>(&state.games, &0), 2);
@@ -643,7 +643,7 @@ module rooch_examples::rooch_examples {
         // {
         //     {
         //         let player_one_obj = object::borrow_object<ResourceAccount>(object::account_named_object_id<ResourceAccount>(player_one_address));
-        //         let state = object::borrow_field<ResourceAccount, std::ascii::String, State>(player_one_obj, key<State>());
+        //         let state = object::borrow_field<ResourceAccount, std::string::String, State>(player_one_obj, key<State>());
         //         assert!(state.next_game_id == 1, 0);
         //         assert!(simple_map::length<u128, Game>(&state.games) == 1, 1);
         //         assert!(simple_map::contains_key<u128, Game>(&state.games, &0), 2);
@@ -672,7 +672,7 @@ module rooch_examples::rooch_examples {
         //     reveal_decision(player_two, 0, string::utf8(player_two_salt));
         //     {
         //         let player_two_obj = object::borrow_object<ResourceAccount>(object::account_named_object_id<ResourceAccount>(player_two_address));
-        //         let state = object::borrow_field<ResourceAccount, std::ascii::String, State>(player_two_obj, key<State>());
+        //         let state = object::borrow_field<ResourceAccount, std::string::String, State>(player_two_obj, key<State>());
         //         assert!(state.next_game_id == 1, 28);
         //         assert!(simple_map::length<u128, Game>(&state.games) == 0, 29);
         //     };
@@ -738,7 +738,7 @@ module rooch_examples::rooch_examples {
     //     {
     //         {
     //             let account_obj = object::borrow_mut_object_extend<ResourceAccount>(object::account_named_object_id<ResourceAccount>(account_address));
-    //             let state = object::borrow_field<ResourceAccount, std::ascii::String, State>(account_obj, key<State>());
+    //             let state = object::borrow_field<ResourceAccount, std::string::String, State>(account_obj, key<State>());
     //             assert!(state.next_game_id == 1, 0);
     //         };
     //         assert!(account_coin_store::balance<WGBCOIN>(account_address) == 0, 40);
@@ -804,7 +804,7 @@ module rooch_examples::rooch_examples {
 
     //         {
     //             let account_obj = object::borrow_mut_object_extend<ResourceAccount>(object::account_named_object_id<ResourceAccount>(account_address));
-    //             let state = object::borrow_field<ResourceAccount, std::ascii::String, State>(account_obj, key<State>());
+    //             let state = object::borrow_field<ResourceAccount, std::string::String, State>(account_obj, key<State>());
     //             assert!(state.next_game_id == 1, 0);
     //         };
     //         assert!(account_coin_store::balance<WGBCOIN>(account_address) == 0, 40);
@@ -869,7 +869,7 @@ module rooch_examples::rooch_examples {
     //     {
     //         {
     //             let account_obj = object::borrow_mut_object_extend<ResourceAccount>(object::account_named_object_id<ResourceAccount>(account_address));
-    //             let state = object::borrow_field<ResourceAccount, std::ascii::String, State>(account_obj, key<State>());
+    //             let state = object::borrow_field<ResourceAccount, std::string::String, State>(account_obj, key<State>());
     //             assert!(state.next_game_id == 1, 0);
     //         };
     //         assert!(account_coin_store::balance<WGBCOIN>(account_address) == 0, 40);
@@ -959,7 +959,7 @@ module rooch_examples::rooch_examples {
     //     {
     //         {
     //             let account_obj = object::borrow_mut_object_extend<ResourceAccount>(object::account_named_object_id<ResourceAccount>(account_address));
-    //             let state = object::borrow_field<ResourceAccount, std::ascii::String, State>(account_obj, key<State>());
+    //             let state = object::borrow_field<ResourceAccount, std::string::String, State>(account_obj, key<State>());
     //             assert!(state.next_game_id == 1, 0);
     //         };
     //         assert!(account_coin_store::balance<WGBCOIN>(account_address) == 0, 13);
@@ -1024,7 +1024,7 @@ module rooch_examples::rooch_examples {
     //     {
     //         {
     //             let account_obj = object::borrow_mut_object_extend<ResourceAccount>(object::account_named_object_id<ResourceAccount>(account_address));
-    //             let state = object::borrow_field<ResourceAccount, std::ascii::String, State>(account_obj, key<State>());
+    //             let state = object::borrow_field<ResourceAccount, std::string::String, State>(account_obj, key<State>());
     //             assert!(state.next_game_id == 1, 0);
     //         };
     //         assert!(account_coin_store::balance<WGBCOIN>(account_address) == 0, 40);

@@ -3,13 +3,14 @@
 
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
-    move_std::ascii::MoveAsciiString,
     move_std::option::MoveOption,
+    move_std::string::MoveString,
     state::{MoveState, MoveStructState, MoveStructType},
     transaction::MoveAction,
 };
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("tx_meta");
 
@@ -45,21 +46,19 @@ impl TxMeta {
     pub fn new_from_move_action(move_action: &MoveAction) -> Self {
         let function_meta = match move_action {
             MoveAction::Function(call) => {
-                let module_name =
-                    MoveAsciiString::new(call.function_id.module_id.name().as_bytes().to_vec());
-                let function_name =
-                    MoveAsciiString::new(call.function_id.function_name.as_bytes().to_vec());
+                let module_name = MoveString::from_str(call.function_id.module_id.name().as_str());
+                let function_name = MoveString::from_str(call.function_id.function_name.as_str());
                 if module_name.is_err() || function_name.is_err() {
                     None
                 } else {
                     Some(FunctionCallMeta {
                         module_address: *call.function_id.module_id.address(),
-                        module_name: MoveAsciiString::new(
-                            call.function_id.module_id.name().as_bytes().to_vec(),
+                        module_name: MoveString::from_str(
+                            call.function_id.module_id.name().as_str(),
                         )
                         .expect("module name must be valid ascii"),
-                        function_name: MoveAsciiString::new(
-                            call.function_id.function_name.as_bytes().to_vec(),
+                        function_name: MoveString::from_str(
+                            call.function_id.function_name.as_str(),
                         )
                         .expect("module name must be valid ascii"),
                     })
@@ -77,8 +76,8 @@ impl TxMeta {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FunctionCallMeta {
     pub module_address: AccountAddress,
-    pub module_name: MoveAsciiString,
-    pub function_name: MoveAsciiString,
+    pub module_name: MoveString,
+    pub function_name: MoveString,
 }
 
 impl MoveStructType for FunctionCallMeta {
@@ -91,8 +90,8 @@ impl MoveStructState for FunctionCallMeta {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
             move_core_types::value::MoveTypeLayout::Address,
-            MoveAsciiString::type_layout(),
-            MoveAsciiString::type_layout(),
+            MoveString::type_layout(),
+            MoveString::type_layout(),
         ])
     }
 }

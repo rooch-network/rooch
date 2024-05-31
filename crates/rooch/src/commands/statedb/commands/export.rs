@@ -69,14 +69,21 @@ pub struct ExportID {
     pub object_id: ObjectID,
     pub state_root: H256,
     pub parent_state_root: H256,
+    pub timestamp: u64,
 }
 
 impl ExportID {
-    pub fn new(object_id: ObjectID, state_root: H256, parent_state_root: H256) -> Self {
+    pub fn new(
+        object_id: ObjectID,
+        state_root: H256,
+        parent_state_root: H256,
+        timestamp: u64,
+    ) -> Self {
         Self {
             object_id,
             state_root,
             parent_state_root,
+            timestamp,
         }
     }
 }
@@ -87,8 +94,8 @@ impl std::fmt::Display for ExportID {
         let parent_state_root_str = format!("{:?}", self.parent_state_root);
         write!(
             f,
-            "{:?}:{}:{}",
-            self.object_id, state_root_str, parent_state_root_str
+            "{:?}:{}:{}:{}",
+            self.object_id, state_root_str, parent_state_root_str, self.timestamp
         )
     }
 }
@@ -102,8 +109,17 @@ impl FromStr for ExportID {
         let state_root = H256::from_str(parts.next().ok_or(anyhow::anyhow!("invalid export id"))?)?;
         let parent_state_root =
             H256::from_str(parts.next().ok_or(anyhow::anyhow!("invalid export id"))?)?;
+        let timestamp = parts
+            .next()
+            .ok_or(anyhow::anyhow!("invalid export id"))?
+            .parse::<u64>()?;
 
-        Ok(ExportID::new(object_id, state_root, parent_state_root))
+        Ok(ExportID::new(
+            object_id,
+            state_root,
+            parent_state_root,
+            timestamp,
+        ))
     }
 }
 
@@ -237,7 +253,8 @@ impl ExportCommand {
 
         // write csv object states.
         {
-            let root_export_id = ExportID::new(ObjectID::root(), root_state_root, root_state_root);
+            let root_export_id =
+                ExportID::new(ObjectID::root(), root_state_root, root_state_root, 0);
             writer.write_field(GLOBAL_STATE_TYPE_ROOT)?;
             writer.write_field(root_export_id.to_string())?;
             writer.write_record(None::<&[u8]>)?;
@@ -269,6 +286,7 @@ impl ExportCommand {
         let obj = state.clone().as_raw_object()?;
 
         let state_root = H256::from(obj.state_root.into_bytes());
+        let timestamp = obj.updated_at;
         // write csv field states
         Self::export_field_states(
             moveos_store,
@@ -281,7 +299,8 @@ impl ExportCommand {
 
         // write csv object states.
         {
-            let export_id = ExportID::new(object_id.clone(), state_root, root_state_root);
+            let export_id =
+                ExportID::new(object_id.clone(), state_root, root_state_root, timestamp);
             writer.write_field(GLOBAL_STATE_TYPE_OBJECT)?;
             writer.write_field(export_id.to_string())?;
             writer.write_record(None::<&[u8]>)?;
@@ -344,7 +363,7 @@ impl ExportCommand {
             } else {
                 GLOBAL_STATE_TYPE_FIELD
             };
-            let export_id = ExportID::new(object_id.clone(), state_root, parent_state_root);
+            let export_id = ExportID::new(object_id.clone(), state_root, parent_state_root, 0);
             writer.write_field(state_type)?;
             writer.write_field(export_id.to_string())?;
             writer.write_record(None::<&[u8]>)?;
@@ -406,7 +425,8 @@ impl ExportCommand {
 
         // write csv object states.
         {
-            let root_export_id = ExportID::new(ObjectID::root(), root_state_root, root_state_root);
+            let root_export_id =
+                ExportID::new(ObjectID::root(), root_state_root, root_state_root, 0);
             writer.write_field(GLOBAL_STATE_TYPE_ROOT)?;
             writer.write_field(root_export_id.to_string())?;
             writer.write_record(None::<&[u8]>)?;

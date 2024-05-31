@@ -18,8 +18,8 @@
 <b>use</b> <a href="">0x2::features</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::table</a>;
+<b>use</b> <a href="">0x2::timestamp</a>;
 <b>use</b> <a href="">0x3::ethereum_address</a>;
-<b>use</b> <a href="">0x3::timestamp</a>;
 </code></pre>
 
 

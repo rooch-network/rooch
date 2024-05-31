@@ -4,7 +4,7 @@
 module infinite_wand::infinite_wand {
 
     use std::string;
-    use rooch_framework::timestamp::now_milliseconds;
+    use moveos_std::timestamp::now_milliseconds;
     use moveos_std::table::Table;
     use moveos_std::table;
     use rooch_framework::account_coin_store;

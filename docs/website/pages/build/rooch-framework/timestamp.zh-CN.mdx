@@ -24,24 +24,24 @@ rooch server start --eth-rpc-url https://goerli.infura.io/v3/9aa3d95b3bc440fa88e
 
 ## 如何查看当前时间戳
 
-在启动中继服务后，我们可以使用 `rooch object --id 0x3::timestamp::Timestamp` 命令来获取时间戳对象返回的一些信息，在这些返回信息中就包含了当前的时间戳。
+在启动中继服务后，我们可以使用 `rooch object --id 0x2::object::Timestamp` 命令来获取时间戳对象返回的一些信息，在这些返回信息中就包含了当前的时间戳。
 
 ```shell
-rooch object --id 0x3::timestamp::Timestamp
+rooch object --id 0x2::object::Timestamp
 
 {
   "value": "0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b300000000000000000000000000000000000000000000000000000000000000000060f968ce8b010000",
-  "value_type": "0x2::object::ObjectEntity<0x3::timestamp::Timestamp>",
+  "value_type": "0x2::object::ObjectEntity<0x2::object::Timestamp>",
   "decoded_value": {
     "abilities": 0,
-    "type": "0x2::object::ObjectEntity<0x3::timestamp::Timestamp>",
+    "type": "0x2::object::ObjectEntity<0x2::object::Timestamp>",
     "value": {
       "flag": 0,
-      "id": "0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3",
+      "id": "0x05921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9",
       "owner": "0x0000000000000000000000000000000000000000000000000000000000000000",
       "value": {
         "abilities": 8,
-        "type": "0x3::timestamp::Timestamp",
+        "type": "0x2::object::Timestamp",
         "value": {
           "milliseconds": "1699975068000"           <== Note!
         }
@@ -72,21 +72,21 @@ rooch move run --function 0x3::timestamp::fast_forward_seconds_for_local --args 
 再次查看时间戳：
 
 ```shell
-rooch object --id 0x3::timestamp::Timestamp
+rooch object --id 0x2::object::Timestamp
 
 {
   "value": "0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3000000000000000000000000000000000000000000000000000000000000000000d09941d2c1150000",
-  "value_type": "0x2::object::ObjectEntity<0x3::timestamp::Timestamp>",
+  "value_type": "0x2::object::ObjectEntity<0x2::object::Timestamp>",
   "decoded_value": {
     "abilities": 0,
-    "type": "0x2::object::ObjectEntity<0x3::timestamp::Timestamp>",
+    "type": "0x2::object::ObjectEntity<0x2::object::Timestamp>",
     "value": {
       "flag": 0,
-      "id": "0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3",
+      "id": "0x05921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9",
       "owner": "0x0000000000000000000000000000000000000000000000000000000000000000",
       "value": {
         "abilities": 8,
-        "type": "0x3::timestamp::Timestamp",
+        "type": "0x2::object::Timestamp",
         "value": {
           "milliseconds": "23922200386000"
         }
@@ -109,7 +109,7 @@ rooch object --id 0x3::timestamp::Timestamp
 ```move
 module timestamp::timestamp {
     use std::debug::print;
-    use rooch_framework::timestamp::{Self, Timestamp};
+    use moveos_std::timestamp::{Self, Timestamp};
     use moveos_std::object::Object;
     use moveos_std::object;
 
@@ -130,7 +130,7 @@ module timestamp::timestamp {
 启动中继服务后，执行 Shell 命令：
 
 ```shell
-rooch move run --function 0x9fd886140ae373a85101d2c7a5f2eda077ca9a05c3b1c221594ff4473a702c83::timestamp::get_timestamp --args object:0x3::timestamp::Timestamp --sender-account default
+rooch move run --function 0x9fd886140ae373a85101d2c7a5f2eda077ca9a05c3b1c221594ff4473a702c83::timestamp::get_timestamp --args object:0x2::object::Timestamp --sender-account default
 ```
 
 ![](/docs/timestamp-obtain.png)

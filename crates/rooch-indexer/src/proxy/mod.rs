@@ -61,12 +61,14 @@ impl IndexerProxy {
         &self,
         root: RootObjectEntity,
         tx_order: u64,
+        tx_timestamp: u64,
         state_change_set: StateChangeSet,
     ) -> Result<()> {
         self.actor
             .send(IndexerStatesMessage {
                 root,
                 tx_order,
+                tx_timestamp,
                 state_change_set,
             })
             .await?
