@@ -26,7 +26,6 @@ import CustomPagination from '@/components/custom-pagination.tsx'
 import { formatCoin } from '@/utils/format.ts'
 import { useToast } from '@/components/ui/use-toast'
 import { ToastAction } from '@/components/ui/toast'
-import { validate } from '@roochnetwork/rooch-sdk/src/address'
 
 export const AssetsCoin = () => {
   const account = useCurrentAccount()
@@ -148,12 +147,6 @@ export const AssetsCoin = () => {
   const handleRecipientChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = event.target.value
     setRecipient(value)
-
-    if (!validate(value)) {
-      setError('Invalid address')
-    } else {
-      setError('')
-    }
   }
 
   const handleTransferCoin = async () => {
