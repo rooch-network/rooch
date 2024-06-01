@@ -452,9 +452,13 @@ module rooch_nursery::bitseed {
         vector::push_back(&mut arg_list, attributes_output);
         let memory_args_list = wasm::create_memory_wasm_args(&mut wasm_instance, function_name, arg_list);
 
-        std::debug::print(&string::utf8(b"inscribe_verify 15"));
+        std::debug::print(&string::utf8(b"inscribe_verify 1"));
+        std::debug::print(&deploy_args);
+        std::debug::print(&seed);
+        std::debug::print(&user_input);
+        std::debug::print(&attributes_output);
+
         let ret_val_option = wasm::execute_wasm_function_option(&mut wasm_instance, function_name, memory_args_list);
-        std::debug::print(&string::utf8(b"inscribe_verify 15"));
 
         wasm::release_wasm_instance(wasm_instance);
 

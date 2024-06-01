@@ -309,6 +309,34 @@ Feature: Rooch CLI integration tests
 
       Then stop the server
   
+      @serial
+    Scenario: wasm test
+      # prepare servers
+      Given a server for wasm_test
+
+      # publish wasm execution
+      Then cmd: "move publish -p ../../examples/wasm_execution  --named-addresses rooch_examples=default"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # test wasm trap
+      #Then cmd: "move run --function default::wasm_execution::run_trap"
+      #Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # test wasm forever
+      Then cmd: "move run --function default::wasm_execution::run_infinite_loop"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # run wasm test
+      #Then cmd: "move run --function default::wasm_execution::run"
+      #Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # run wasm generator
+      #Then cmd: "move run --function default::wasm_execution::run_generator"
+      #Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # release servers
+      Then stop the server
+
     @serial
     Scenario: rooch_bitcoin test
       # prepare servers

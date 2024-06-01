@@ -239,7 +239,7 @@ async fn run_cmd(world: &mut World, args: String) {
             debug!("run_cli cmd: {} output err: {}", cmd_name, err.to_string());
             let err_msg = Value::String(err.to_string());
             error!("run_cli cmd: {} fail: {:?}", cmd_name, &err_msg);
-            info!("current tpl_ctx: \n {:#}", tpl_ctx.as_value());
+            //info!("current tpl_ctx: \n {:#}", tpl_ctx.as_value());
             tpl_ctx.entry(cmd_name).append::<Value>(err_msg);
         }
     }

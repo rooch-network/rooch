@@ -10,6 +10,8 @@ use rand;
 use wasmer::Value::I32;
 use wasmer::*;
 
+use crate::middlewares::breakpoint::{BlockBreakpointMiddlewareGenerator};
+
 //#[derive(Clone)]
 pub struct WASMInstance {
     pub bytecode: Vec<u8>,
@@ -223,9 +225,34 @@ pub fn get_data_from_heap(
     // owned_str
 }
 
-pub fn create_wasm_instance(bytecode: &Vec<u8>) -> anyhow::Result<WASMInstance> {
-    let mut store = Store::default();
-    let module = match Module::new(&store, bytecode) {
+pub fn create_store() -> Store {
+    // Create a compiler configuration
+    let mut compiler_config = CompilerConfig::default();
+    compiler_config.push_middleware(Box::new(BlockBreakpointMiddlewareGenerator {
+        threshold,
+        counter: Arc::clone(&counter),
+    }));
+
+    // Create an engine
+    let engine = EngineBuilder::new(compiler_config).engine();
+
+    // Load the WebAssembly module
+    let store = Store::new(&engine);
+
+    store
+}
+
+pub fn create_wasm_instance(code: &Vec<u8>) -> anyhow::Result<WASMInstance> {
+    let mut store = create_store();
+
+    let bytecode = match wasmer::wat2wasm(code){
+        Ok(m) => m,
+        Err(e) => {
+            return Err(anyhow::Error::msg(e.to_string()));
+        }
+    };
+
+    let module = match Module::new(&store, bytecode.clone()) {
         Ok(m) => m,
         Err(e) => {
             return Err(anyhow::Error::msg(e.to_string()));
@@ -253,11 +280,10 @@ pub fn create_wasm_instance(bytecode: &Vec<u8>) -> anyhow::Result<WASMInstance> 
         Ok(v) => v,
         Err(_) => return Err(anyhow::Error::msg("create wasm instance failed")),
     };
-    let memory = match instance.exports.get_memory("memory") {
-        Ok(v) => v,
-        Err(_) => return Err(anyhow::Error::msg("get memory failed")),
-    };
-    unsafe { *GLOBAL_MEMORY = Arc::new(Mutex::new(Some(memory.clone()))) };
 
-    Ok(WASMInstance::new(bytecode.clone(), instance, store))
+    if let Ok(memory) = instance.exports.get_memory("memory") {
+        unsafe { *GLOBAL_MEMORY = Arc::new(Mutex::new(Some(memory.clone()))) };
+    }
+
+    Ok(WASMInstance::new(bytecode.to_vec(), instance, store))
 }
