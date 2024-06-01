@@ -16,7 +16,6 @@ use moveos_types::{
     moveos_std::object::{AnnotatedObject, ObjectID},
     state::{AnnotatedState, State, StateChangeSet, TableTypeInfo},
 };
-use rooch_types::address::RoochAddress;
 use rooch_types::indexer::state::{
     FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateChangeSet,
     ObjectStateFilter, StateSyncFilter,
@@ -427,15 +426,10 @@ pub enum ObjectStateFilterView {
     Owner(RoochAddressView),
     /// Query by object id.
     ObjectId(Vec<ObjectID>),
-    /// Query by multi chain address
-    MultiChainAddress { multichain_id: u64, address: String },
 }
 
 impl ObjectStateFilterView {
-    pub fn into_object_state_filter(
-        state_filter: ObjectStateFilterView,
-        resolve_address: RoochAddress,
-    ) -> ObjectStateFilter {
+    pub fn into_object_state_filter(state_filter: ObjectStateFilterView) -> ObjectStateFilter {
         match state_filter {
             ObjectStateFilterView::ObjectTypeWithOwner { object_type, owner } => {
                 ObjectStateFilter::ObjectTypeWithOwner {
@@ -448,10 +442,6 @@ impl ObjectStateFilterView {
             }
             ObjectStateFilterView::Owner(owner) => ObjectStateFilter::Owner(owner.into()),
             ObjectStateFilterView::ObjectId(object_ids) => ObjectStateFilter::ObjectId(object_ids),
-            ObjectStateFilterView::MultiChainAddress {
-                multichain_id: _,
-                address: _,
-            } => ObjectStateFilter::Owner(resolve_address),
         }
     }
 }

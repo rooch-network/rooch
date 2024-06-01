@@ -4,179 +4,138 @@
 module rooch_framework::address_mapping{
     
     use std::option::{Self, Option};
-    use std::signer;
-    use std::vector;
-    use moveos_std::signer::module_signer;
     use moveos_std::core_addresses;
-    use moveos_std::bcs;
-    use moveos_std::table::{Self, Table};
-    use moveos_std::object::{Self, Object, ObjectID};
+    use moveos_std::object::{Self, Object};
     use rooch_framework::multichain_address::{Self, MultiChainAddress};
+    use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
 
     friend rooch_framework::genesis;
+    friend rooch_framework::bitcoin_validator;
     friend rooch_framework::transaction_validator;
-    friend rooch_framework::transfer;
     
     const ErrorMultiChainAddressInvalid: u64 = 1;
+    const ErrorUnsupportedAddress: u64 = 2;
 
     const NAMED_MAPPING_INDEX: u64 = 0;
     const NAMED_REVERSE_MAPPING_INDEX: u64 = 1;
 
-    struct AddressMapping has key{
-        mapping: Table<MultiChainAddress, address>,
-        reverse_mapping: Table<address, vector<MultiChainAddress>>,
+    /// Mapping from multi-chain address to rooch address
+    /// Not including Bitcoin address, because Bitcoin address can directly hash to rooch address
+    /// The mapping record is the object field, key is the multi-chain address, value is the rooch address
+    struct MultiChainAddressMapping has key{
+        _placeholder: bool,
     }
-
-    struct AddressMappingIndex has drop {
-        index: u64,
+    
+    /// Mapping from rooch address to bitcoin address, other chain can use new table
+    /// The mapping record is the object field, key is the rooch address, value is the Bitcoin address
+    struct RoochToBitcoinAddressMapping has key{
+        _placeholder: bool,
     }
 
     public(friend) fun genesis_init(_genesis_account: &signer) {
-        let mapping_id = object::custom_object_id<AddressMappingIndex, AddressMapping>(AddressMappingIndex {
-            index: NAMED_MAPPING_INDEX
+        let multichain_mapping = object::new_named_object(MultiChainAddressMapping{
+            _placeholder: false
         });
-        let reverse_mapping_id = object::custom_object_id<AddressMappingIndex, AddressMapping>(AddressMappingIndex {
-            index: NAMED_REVERSE_MAPPING_INDEX
+        let rooch_to_bitcoin_mapping = object::new_named_object(RoochToBitcoinAddressMapping{
+            _placeholder: false
         });
-        let module_signer = module_signer<AddressMapping>();
-        let mapping = table::new_with_object_id_by_system<MultiChainAddress, address>(&module_signer, mapping_id);
-        let reverse_mapping = table::new_with_object_id_by_system<address, vector<MultiChainAddress>>(&module_signer, reverse_mapping_id);
-        let obj = object::new_named_object(AddressMapping{
-            mapping,
-            reverse_mapping
-        });
-        object::transfer_extend(obj, @rooch_framework);
+        object::transfer_extend(multichain_mapping, @rooch_framework);
+        object::transfer_extend(rooch_to_bitcoin_mapping, @rooch_framework);
     }
 
-    /// Return AddressMapping table handle, including mapping and reverse_mapping table handle
-    public fun address_mapping_handle(): (ObjectID, ObjectID, ObjectID) {
-        let object_id = object::named_object_id<AddressMapping>();
-        let address_mapping_obj = object::borrow_object<AddressMapping>(object_id);
-        let address_mapping = object::borrow<AddressMapping>(address_mapping_obj);
-        (object_id, table::handle(&address_mapping.mapping), table::handle(&address_mapping.reverse_mapping))
+    fun borrow_multichain() : &Object<MultiChainAddressMapping> {
+        let object_id = object::named_object_id<MultiChainAddressMapping>();
+        object::borrow_object<MultiChainAddressMapping>(object_id)
     }
 
-    /// Borrow the address mapping object
-    public fun borrow() : &Object<AddressMapping> {
-        let object_id = object::named_object_id<AddressMapping>();
-        object::borrow_object<AddressMapping>(object_id)
+    fun borrow_multichain_mut() : &mut Object<MultiChainAddressMapping> {
+        let object_id = object::named_object_id<MultiChainAddressMapping>();
+        object::borrow_mut_object_extend<MultiChainAddressMapping>(object_id)
     }
 
-    fun borrow_mut() : &mut Object<AddressMapping> {
-        let object_id = object::named_object_id<AddressMapping>();
-        object::borrow_mut_object_extend<AddressMapping>(object_id)
+    fun borrow_rooch_to_bitcoin() : &Object<RoochToBitcoinAddressMapping> {
+        let object_id = object::named_object_id<RoochToBitcoinAddressMapping>();
+        object::borrow_object<RoochToBitcoinAddressMapping>(object_id)
     }
 
-    public fun resolve_address(obj: &Object<AddressMapping>, maddress: MultiChainAddress): Option<address> {
-        let am = object::borrow(obj);
+    fun borrow_rooch_to_bitcoin_mut() : &mut Object<RoochToBitcoinAddressMapping> {
+        let object_id = object::named_object_id<RoochToBitcoinAddressMapping>();
+        object::borrow_mut_object_extend<RoochToBitcoinAddressMapping>(object_id)
+    }
+
+    fun resolve_address(obj: &Object<MultiChainAddressMapping>, maddress: MultiChainAddress): Option<address> {
         if (multichain_address::is_rooch_address(&maddress)) {
             return option::some(multichain_address::into_rooch_address(maddress))
         };
-        if(table::contains(&am.mapping, maddress)){
-            let addr = table::borrow(&am.mapping, maddress);
+        if (multichain_address::is_bitcoin_address(&maddress)) {
+            return option::some(bitcoin_address::to_rooch_address(&multichain_address::into_bitcoin_address(maddress)))
+        };
+
+        if(object::contains_field(obj, maddress)){
+            let addr = object::borrow_field(obj, maddress);
             option::some(*addr)
         }else{
             option::none()
         }
     }
 
-    public fun resolve_or_generate_address(obj: &Object<AddressMapping>, maddress: MultiChainAddress): address {
-        let addr = resolve_address(obj, maddress);
-        if(option::is_none(&addr)){
-            multichain_address::mapping_to_rooch_address(maddress)
-        }else{
-            option::extract(&mut addr)
-        }
-    }
-
-    /// Return the first multi chain address for the rooch address
-    public fun reverse_resolve_address(obj: &Object<AddressMapping>, rooch_address: address): Option<MultiChainAddress> {
-        let am = object::borrow(obj);
-        if(table::contains(&am.reverse_mapping, rooch_address)){
-            let maddresses = table::borrow(&am.reverse_mapping, rooch_address);
-            if (!vector::is_empty(maddresses)) {
-                option::some(*vector::borrow(maddresses, 0))
-            } else {
-                option::none()
-            }
+    fun resolve_bitcoin_address(obj: &Object<RoochToBitcoinAddressMapping>, rooch_address: address): Option<BitcoinAddress> {
+        if(object::contains_field(obj, rooch_address)){
+            let addr = object::borrow_field(obj, rooch_address);
+            option::some(*addr)
         }else{
             option::none()
         }
     }
 
-    /// Return the first multi chain address for the rooch address with the same multichain id
-    public fun reverse_resolve_address_with_multichain_id(obj: &Object<AddressMapping>, rooch_address: address, multichain_id: u64): Option<MultiChainAddress> {
-        let am = object::borrow(obj);
-        if (multichain_id == multichain_address::multichain_id_rooch()) {
-            let raw_address = bcs::to_bytes(&rooch_address);
-            return option::some(multichain_address::new(multichain_id, raw_address))
-        };
-        if(table::contains(&am.reverse_mapping, rooch_address)){
-            let maddresses = table::borrow(&am.reverse_mapping, rooch_address);
-            let (exist, first_index) = vector::find(maddresses, |v| multichain_address::multichain_id(v) == multichain_id);
-            if (exist) {
-                option::some(*vector::borrow(maddresses, first_index))
-            } else {
-                option::none()
-            }
-        }else{
-            option::none()
-        }
-    }
-
-    public fun exists_mapping_address(obj: &Object<AddressMapping>, maddress: MultiChainAddress): bool {
-        if (multichain_address::is_rooch_address(&maddress)) {
+    fun exists_mapping_address(obj: &Object<MultiChainAddressMapping>, maddress: MultiChainAddress): bool {
+        if (multichain_address::is_rooch_address(&maddress) || multichain_address::is_bitcoin_address(&maddress)) {
             return true
         };
-        let am = object::borrow(obj);
-        table::contains(&am.mapping, maddress)
+        object::contains_field(obj, maddress)
     }
 
     /// Resolve a multi-chain address to a rooch address
     public fun resolve(maddress: MultiChainAddress): Option<address> {
-        let am = Self::borrow();
+        let am = Self::borrow_multichain();
         Self::resolve_address(am, maddress)
     }
 
-    /// Resolve a multi-chain address to a rooch address, if not exists, generate a new rooch address
+    /// Resolve a rooch address to a bitcoin address
+    public fun resolve_bitcoin(rooch_address: address): Option<BitcoinAddress> {
+        let am = Self::borrow_rooch_to_bitcoin();
+        Self::resolve_bitcoin_address(am, rooch_address)
+    }
+
+    /// Generate a rooch address via bitcoin multi-chain address
+    /// This function will deprecated in the future, client should directly generate rooch address via bitcoin address.
     public fun resolve_or_generate(maddress: MultiChainAddress): address {
-        let am = Self::borrow();
-        Self::resolve_or_generate_address(am, maddress)
+        if (multichain_address::is_rooch_address(&maddress)) {
+            return multichain_address::into_rooch_address(maddress)
+        };
+        if (multichain_address::is_bitcoin_address(&maddress)) {
+            return bitcoin_address::to_rooch_address(&multichain_address::into_bitcoin_address(maddress))
+        };
+        abort ErrorUnsupportedAddress
     }
 
     /// Check if a multi-chain address is bound to a rooch address
     public fun exists_mapping(maddress: MultiChainAddress): bool {
-        let obj = Self::borrow();
+        let obj = Self::borrow_multichain();
         Self::exists_mapping_address(obj, maddress)
     }
 
-    /// Bind a multi-chain address to the sender's rooch address
-    /// The caller need to ensure the relationship between the multi-chain address and the rooch address
-    public fun bind(sender: &signer, maddress: MultiChainAddress) {
-        bind_no_check(signer::address_of(sender), maddress);
+    public(friend) fun bind_bitcoin_address(rooch_address: address, baddress: BitcoinAddress) {
+        // bitcoin address to rooch address do not need to record, we just record rooch address to bitcoin address
+        let obj = Self::borrow_rooch_to_bitcoin_mut();
+        if(!object::contains_field(obj, rooch_address)){
+            object::add_field(obj, rooch_address, baddress);
+        }
     }
 
-    /// Bind a multi-chain address to the rooch address
-    /// Called by system
-    public fun bind_by_system(system: &signer, rooch_address: address, maddress: MultiChainAddress) {
+    public fun bind_bitcoin_address_by_system(system: &signer, rooch_address: address, baddress: BitcoinAddress) {
         core_addresses::assert_system_reserved(system);
-        bind_no_check(rooch_address, maddress);
+        Self::bind_bitcoin_address(rooch_address, baddress);
     }
 
-    /// Bind a rooch address to a multi-chain address
-    public(friend) fun bind_no_check(rooch_address: address, maddress: MultiChainAddress) {
-        if(multichain_address::is_rooch_address(&maddress)){
-            assert!(
-                multichain_address::into_rooch_address(maddress) == rooch_address, 
-                ErrorMultiChainAddressInvalid
-            );
-        };
-        let obj = Self::borrow_mut();
-        let am = object::borrow_mut(obj);
-        table::add(&mut am.mapping, maddress, rooch_address);
-        // maintenance the reverse mapping rooch_address -> vector<MultiChainAddress>
-        let maddresses = table::borrow_mut_with_default(&mut am.reverse_mapping, rooch_address, vector[]);
-        vector::push_back(maddresses, maddress);
-    }
-   
 }

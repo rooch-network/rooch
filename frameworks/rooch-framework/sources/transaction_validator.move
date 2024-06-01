@@ -10,8 +10,6 @@ module rooch_framework::transaction_validator {
     use moveos_std::account;
     use moveos_std::gas_schedule;
     use rooch_framework::account as account_entry;
-    use rooch_framework::multichain_address::MultiChainAddress;
-    use rooch_framework::address_mapping;
     use rooch_framework::account_authentication;
     use rooch_framework::auth_validator::{Self, TxValidateResult};
     use rooch_framework::auth_validator_registry;
@@ -20,24 +18,12 @@ module rooch_framework::transaction_validator {
     use rooch_framework::transaction_fee;
     use rooch_framework::gas_coin;
     use rooch_framework::transaction::{Self, TransactionSequenceInfo};
+    use rooch_framework::session_validator;
+    use rooch_framework::bitcoin_validator;
+    use rooch_framework::address_mapping;
 
     const MAX_U64: u128 = 18446744073709551615;
 
-
-    /// Validate errors. These are separated out from the other errors in this
-    /// module since they are mapped separately to major VM statuses, and are
-    /// important to the semantics of the system.
-    const ErrorValidateSequenceNuberTooOld: u64 = 1001;
-    const ErrorValidateSequenceNumberTooNew: u64 = 1002;
-    const ErrorValidateAccountDoesNotExist: u64 = 1003;
-    const ErrorValidateCantPayGasDeposit: u64 = 1004;
-    const ErrorValidateTransactionExpired: u64 = 1005;
-    const ErrorValidateBadChainId: u64 = 1006;
-    const ErrorValidateSequenceNumberTooBig: u64 = 1007;
-    const ErrorMaxGasAmountExceeded: u64 = 1008;
-
-    /// The authenticator's auth validator id is not installed to the sender's account
-    const ErrorValidateNotInstalledAuthValidator: u64 = 1010;
 
     /// Just using to get module signer
     struct TransactionValidatorPlaceholder {}
@@ -53,27 +39,27 @@ module rooch_framework::transaction_validator {
         // === validate the chain id ===
         assert!(
             chain_id == chain_id::chain_id(),
-            ErrorValidateBadChainId
+            auth_validator::error_validate_bad_chain_id(),
         );
 
         // === validate the sequence number ===
         let tx_sequence_number = tx_context::sequence_number();
         assert!(
             (tx_sequence_number as u128) < MAX_U64,
-            ErrorValidateSequenceNumberTooBig
+            auth_validator::error_validate_sequence_number_too_big(),
         );
         let sender = tx_context::sender();
         let account_sequence_number = account::sequence_number(sender);
         assert!(
             tx_sequence_number >= account_sequence_number,
-            ErrorValidateSequenceNuberTooOld
+            auth_validator::error_validate_sequence_number_too_old(),
         );
 
         // Check that the transaction's sequence number matches the
         // current sequence number. Otherwise sequence number is too new.
         assert!(
             tx_sequence_number == account_sequence_number,
-            ErrorValidateSequenceNumberTooNew
+            auth_validator::error_validate_sequence_number_too_new(),
         );
 
         // === validate gas ===
@@ -84,7 +70,7 @@ module rooch_framework::transaction_validator {
         let max_gas_amount_config = gas_schedule::gas_schedule_max_gas_amount(gas_schedule);
         assert!(
             max_gas_amount <= max_gas_amount_config,
-            ErrorMaxGasAmountExceeded
+            auth_validator::error_validate_max_gas_amount_exceeded(),
         );
 
         let gas_balance = gas_coin::balance(sender);
@@ -93,29 +79,33 @@ module rooch_framework::transaction_validator {
         if(!chain_id::is_local_or_dev()){
             assert!(
                 gas_balance >= gas,
-                ErrorValidateCantPayGasDeposit
+                auth_validator::error_validate_cant_pay_gas_deposit(),
             );
         };
 
         // === validate the authenticator ===
 
-        // if the authenticator authenticator_payload is session key, validate the session key
-        // otherwise return the authentication validator via the auth validator id
-        let session_key_option = session_key::validate(auth_validator_id, authenticator_payload);
-        if (option::is_some(&session_key_option)) {
-            auth_validator::new_tx_validate_result(auth_validator_id, option::none(), session_key_option)
-        }else {
+        // Try the built-in auth validator first
+        let (bitcoin_address, session_key, auth_validator)= if (auth_validator_id == session_validator::auth_validator_id()){
+            let session_key = session_validator::validate(authenticator_payload);
+            let bitcoin_address = address_mapping::resolve_bitcoin(sender);
+            (bitcoin_address, option::some(session_key), option::none())
+        }else if (auth_validator_id == bitcoin_validator::auth_validator_id()){
+            let bitcoin_address = bitcoin_validator::validate(authenticator_payload);
+            (option::some(bitcoin_address), option::none(), option::none())
+        }else{
             let auth_validator = auth_validator_registry::borrow_validator(auth_validator_id);
             let validator_id = auth_validator::validator_id(auth_validator);
-            // builtin auth validator id do not need to install
-            if (!rooch_framework::builtin_validators::is_builtin_auth_validator(auth_validator_id)) {
-                assert!(
-                    account_authentication::is_auth_validator_installed(sender, validator_id),
-                    ErrorValidateNotInstalledAuthValidator
-                );
-            };
-            auth_validator::new_tx_validate_result(auth_validator_id, option::some(*auth_validator), option::none())
-        }
+            // The third-party auth validator must be installed to the sender's account
+            assert!(account_authentication::is_auth_validator_installed(sender, validator_id),
+                    auth_validator::error_validate_not_installed_auth_validator());
+            let bitcoin_address = address_mapping::resolve_bitcoin(sender);
+            (bitcoin_address, option::none(), option::some(*auth_validator))
+        };
+        //The bitcoin address must exist
+        assert!(option::is_some(&bitcoin_address), auth_validator::error_validate_account_does_not_exist());
+        let bitcoin_address = option::destroy_some(bitcoin_address);
+        auth_validator::new_tx_validate_result(auth_validator_id, auth_validator, session_key, bitcoin_address)
     }
 
     /// Transaction pre_execute function.
@@ -126,23 +116,16 @@ module rooch_framework::transaction_validator {
         let sender = tx_context::sender();
         //Auto create account if not exist
         if (!account::exists_at(sender)) {
-            account_entry::create_account_internal(sender);
+            account_entry::create_account(sender);
             //if the chain is local or dev, give the sender some RGC
             if (chain_id::is_local_or_dev()) {
                 //100 RGC
                 let init_gas = 1_00_000_000u256;
                 gas_coin::faucet(sender, init_gas); 
             };
-        }; 
-        //the transaction validator will put the multi chain address into the context
-        let multichain_address = tx_context::get_attribute<MultiChainAddress>();
-        if (option::is_some(&multichain_address)) {
-            let multichain_address = option::extract(&mut multichain_address);
-            //Auto create address mapping if not exist
-            if (!address_mapping::exists_mapping(multichain_address)) {
-                address_mapping::bind_no_check(sender, multichain_address);
-            };
         };
+        let bitcoin_addr = auth_validator::get_bitcoin_address_from_ctx();
+        address_mapping::bind_bitcoin_address(sender, bitcoin_addr); 
         let tx_sequence_info = tx_context::get_attribute<TransactionSequenceInfo>();
         if (option::is_some(&tx_sequence_info)) {
             let tx_sequence_info = option::extract(&mut tx_sequence_info);

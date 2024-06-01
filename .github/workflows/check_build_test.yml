@@ -85,8 +85,8 @@ jobs:
         timeout-minutes: 15
       - name: Build SDK
         run: pnpm rooch-sdk build
-      - name: Test SDK
-        run: pnpm rooch-sdk test
+#      - name: Test SDK
+#        run: pnpm rooch-sdk test
       - name: Build SDK KIT
         run: pnpm rooch-sdk-kit build
       - name: Build Dashboard

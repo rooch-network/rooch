@@ -5,8 +5,8 @@ module bitcoin_move::bitcoin{
     use std::option::{Self, Option};
     use std::vector;
     use std::string::{Self, String};
-    use moveos_std::timestamp;
 
+    use moveos_std::timestamp;
     use moveos_std::simple_multimap::SimpleMultiMap;
     use moveos_std::type_info;
     use moveos_std::table::{Self, Table};
@@ -18,10 +18,12 @@ module bitcoin_move::bitcoin{
     use moveos_std::event;
     
     use rooch_framework::chain_id;
+    use rooch_framework::address_mapping;
+    use rooch_framework::bitcoin_address::BitcoinAddress;
     
     use bitcoin_move::network;
     use bitcoin_move::types::{Self, Block, Header, Transaction};
-    use bitcoin_move::ord::{Self, Inscription, bind_multichain_address, Flotsam, SatPoint};
+    use bitcoin_move::ord::{Self, Inscription,Flotsam, SatPoint};
     use bitcoin_move::utxo::{Self, UTXOSeal};
 
     friend bitcoin_move::genesis;
@@ -90,6 +92,7 @@ module bitcoin_move::bitcoin{
         let block_header = types::header(&block);
 
         if(table::contains(&btc_block_store.height_to_hash, block_height)){
+            //https://github.com/rooch-network/rooch/issues/1685
             //TODO handle reorg
         };
         let time = types::time(block_header);
@@ -281,10 +284,9 @@ module bitcoin_move::bitcoin{
             let owner_address = types::txout_object_address(txout);
             utxo::transfer(utxo_obj, owner_address);
 
-            //Auto create address mapping if not exist
+            //Auto create address mapping, we ensure when UTXO object create, the address mapping is recored
             let bitcoin_address_opt = types::txout_address(txout);
-            bind_multichain_address(owner_address, bitcoin_address_opt);
-
+            bind_bitcoin_address(owner_address, bitcoin_address_opt);
             idx = idx + 1;
         };
     }
@@ -388,6 +390,27 @@ module bitcoin_move::bitcoin{
             true
         }
     }
+
+    fun bind_bitcoin_address(rooch_address: address, bitcoin_address_opt: Option<BitcoinAddress>) {
+        //Auto create address mapping if not exist
+        if(option::is_some(&bitcoin_address_opt)) {
+            let bitcoin_address = option::extract(&mut bitcoin_address_opt);
+            let bitcoin_move_signer = moveos_std::signer::module_signer<BitcoinBlockStore>();
+            address_mapping::bind_bitcoin_address_by_system(&bitcoin_move_signer, rooch_address, bitcoin_address);
+        };
+    }
+
+    public fun verify_header(block_header : Header) : bool {
+        let block_hash = types::header_to_hash(block_header);
+        let btc_block_store_obj = borrow_block_store();
+        let btc_block_store = object::borrow(btc_block_store_obj);
+        if(table::contains(&btc_block_store.blocks, block_hash)){
+            true
+        }else{
+            false
+        }
+    }
+
     #[test_only]
     public fun submit_block_for_test(block_height: u64, block_hash: address, block_header: &Header){
         let btc_block_store_obj = borrow_block_store_mut();
@@ -405,5 +428,29 @@ module bitcoin_move::bitcoin{
         let timestamp_seconds = (time as u64);
         let module_signer = signer::module_signer<BitcoinBlockStore>();
         timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));    
+    }
+
+    #[test_only]
+    use moveos_std::address;
+    #[test_only]
+    use std::ascii;
+
+    #[test]
+    fun verify_header_test() {
+        let version = 536879108;
+        let prev_blockhash =  option::destroy_some(address::from_ascii_string(ascii::string(b"00000000000000000009d54a110cc122960d31567d3ee84a1f18a98f50591046")));
+        let merkle_root = option::destroy_some(address::from_ascii_string(ascii::string(b"e1e0573e6098d8128ee859e7540f56b01fe0a33e56694df6d2fab0f96c4954b3")));
+        let time = 1644403033;
+        let bits = 0x170a8bb4;
+        let nonce =  1693537958;
+
+        let block_header = types::new_header_for_test(version, prev_blockhash, merkle_root, time, bits, nonce);
+        let block_hash = types::header_to_hash(block_header);
+        assert!(block_hash == address::from_bytes(x"00000000000000000002b73f69e81b8b5e98dff0f2b7632fcb83c050c3b099a1"), 1);
+
+        let module_signer = signer::module_signer<BitcoinBlockStore>();
+        genesis_init(&module_signer, 0);
+        submit_block_for_test(1, block_hash, &block_header);
+        assert!(verify_header(block_header), 2);
     }
 }

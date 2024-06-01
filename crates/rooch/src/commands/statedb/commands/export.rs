@@ -17,7 +17,7 @@ use rooch_config::R_OPT_NET_HELP;
 use rooch_types::bitcoin::ord::InscriptionStore;
 use rooch_types::bitcoin::utxo::BitcoinUTXOStore;
 use rooch_types::error::{RoochError, RoochResult};
-use rooch_types::framework::address_mapping::AddressMappingWrapper;
+use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::rooch_network::RoochChainID;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -30,7 +30,7 @@ use std::time::SystemTime;
 #[repr(u8)]
 #[serde(rename_all = "lowercase")]
 pub enum ExportMode {
-    // dump UTXO, Inscription and relative Objects, including AddressMapping object
+    // dump UTXO, Inscription and relative Objects, including RoochToBitcoinAddressMapping object
     #[default]
     Genesis = 0,
     Full = 1,
@@ -209,23 +209,21 @@ impl ExportCommand {
     ) -> Result<()> {
         let utxo_store_id = BitcoinUTXOStore::object_id();
         let inscription_store_id = InscriptionStore::object_id();
-        let address_mapping_id = AddressMappingWrapper::mapping_object_id();
-        let reverse_mapping_id = AddressMappingWrapper::reverse_mapping_object_id();
+        let rooch_to_bitcoin_address_mapping_id = RoochToBitcoinAddressMapping::object_id();
         println!("export_genesis utxo_store_id: {:?}", utxo_store_id);
         println!(
             "export_genesis inscription_store_id: {:?}",
             inscription_store_id
         );
         println!(
-            "export_genesis address_mapping_id: {:?}, reverse_mapping_id {:?}",
-            address_mapping_id, reverse_mapping_id
+            "export_genesis rooch_to_bitcoin_address_mapping_id: {:?}",
+            rooch_to_bitcoin_address_mapping_id
         );
 
         let genesis_object_ids = vec![
             utxo_store_id.clone(),
             inscription_store_id.clone(),
-            address_mapping_id,
-            reverse_mapping_id,
+            rooch_to_bitcoin_address_mapping_id,
         ];
 
         let mut genesis_objects = vec![];

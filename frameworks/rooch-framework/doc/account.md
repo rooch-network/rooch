@@ -8,13 +8,12 @@
 -  [Struct `AccountPlaceholder`](#0x3_account_AccountPlaceholder)
 -  [Constants](#@Constants_0)
 -  [Function `create_account`](#0x3_account_create_account)
--  [Function `create_account_internal`](#0x3_account_create_account_internal)
+-  [Function `create_system_account`](#0x3_account_create_system_account)
 
 
 <pre><code><b>use</b> <a href="">0x2::account</a>;
 <b>use</b> <a href="">0x2::core_addresses</a>;
 <b>use</b> <a href="">0x2::signer</a>;
-<b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
 </code></pre>
 
 
@@ -46,13 +45,20 @@ Cannot create account because address is reserved
 
 
 
+<a name="0x3_account_ErrorAddressNotReserved"></a>
+
+
+
+<pre><code><b>const</b> <a href="account.md#0x3_account_ErrorAddressNotReserved">ErrorAddressNotReserved</a>: u64 = 2;
+</code></pre>
+
+
+
 <a name="0x3_account_create_account"></a>
 
 ## Function `create_account`
 
-Publishes a new <code>Account</code> resource under <code>new_address</code>. A signer representing <code>new_address</code>
-is returned. This way, the caller of this function can publish additional resources under
-<code>new_address</code>.
+Create a new account with the given address, the address must not be reserved
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_account">create_account</a>(new_address: <b>address</b>): <a href="">signer</a>
@@ -60,11 +66,12 @@ is returned. This way, the caller of this function can publish additional resour
 
 
 
-<a name="0x3_account_create_account_internal"></a>
+<a name="0x3_account_create_system_account"></a>
 
-## Function `create_account_internal`
+## Function `create_system_account`
+
+Create a new account with the given address, the address must be reserved as system address
 
 
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_account_internal">create_account_internal</a>(new_address: <b>address</b>): <a href="">signer</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_system_account">create_system_account</a>(new_address: <b>address</b>): <a href="">signer</a>
 </code></pre>

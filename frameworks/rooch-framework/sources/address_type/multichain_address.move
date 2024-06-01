@@ -94,7 +94,7 @@ module rooch_framework::multichain_address {
 
     public fun into_bitcoin_address(maddress: MultiChainAddress) : BitcoinAddress {
         assert!(maddress.multichain_id == MULTICHAIN_ID_BITCOIN, ErrorMultiChainIDMismatch);
-        bitcoin_address::from_bytes(maddress.raw_address)
+        bitcoin_address::new(maddress.raw_address)
     }
 
     /// Mapping from MultiChainAddress to rooch address

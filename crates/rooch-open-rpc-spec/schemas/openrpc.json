@@ -12,7 +12,7 @@
       "name": "Apache-2.0",
       "url": "https://raw.githubusercontent.com/rooch-network/rooch/main/LICENSE"
     },
-    "version": "0.4.1"
+    "version": "0.5.0"
   },
   "methods": [
     {
@@ -1843,33 +1843,6 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/components/schemas/ObjectID"
-                }
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "description": "Query by multi chain address",
-            "type": "object",
-            "required": [
-              "multi_chain_address"
-            ],
-            "properties": {
-              "multi_chain_address": {
-                "type": "object",
-                "required": [
-                  "address",
-                  "multichain_id"
-                ],
-                "properties": {
-                  "address": {
-                    "type": "string"
-                  },
-                  "multichain_id": {
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
-                  }
                 }
               }
             },

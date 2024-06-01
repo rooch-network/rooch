@@ -1,11 +1,11 @@
 //# publish
-module 0x1.TestModule1 {
+module 0x11.TestModule1 {
     struct S0 has drop { x: u64 }
 
     metadata {
         data_struct {
             // error code 10002: STRUCT_NOT_EXISTS
-            0x1::TestModule1::S1 -> true;
+            0x11::TestModule1::S1 -> true;
         }
     }
 }

@@ -26,6 +26,7 @@ module rooch_framework::transaction_fee {
     /// Returns the gas factor of gas.
     public fun get_gas_factor(): u64 {
         //TODO we should provide a algorithm to cordanate the gas factor based on the network throughput
+        //https://github.com/rooch-network/rooch/issues/1733
         return 1
     }
 

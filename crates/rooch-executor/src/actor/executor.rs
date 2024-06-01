@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::messages::{
-    ExecuteTransactionMessage, ExecuteTransactionResult, GetRootMessage, ResolveMessage,
-    ValidateL1BlockMessage, ValidateL2TxMessage,
+    ExecuteTransactionMessage, ExecuteTransactionResult, GetRootMessage, ValidateL1BlockMessage,
+    ValidateL2TxMessage,
 };
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
-use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::VMStatus;
 use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos::vm::vm_status_explainer::explain_vm_status;
@@ -22,9 +21,8 @@ use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::transaction::{FunctionCall, MoveOSTransaction, VerifiedMoveAction};
 use rooch_genesis::FrameworksGasParameters;
 use rooch_store::RoochStore;
-use rooch_types::address::MultiChainAddress;
+use rooch_types::address::BitcoinAddress;
 use rooch_types::bitcoin::BitcoinModule;
-use rooch_types::framework::address_mapping::AddressMappingModule;
 use rooch_types::framework::auth_validator::{AuthValidatorCaller, TxValidateResult};
 use rooch_types::framework::ethereum::EthereumModule;
 use rooch_types::framework::transaction_validator::TransactionValidator;
@@ -40,15 +38,8 @@ pub struct ExecutorActor {
     rooch_store: RoochStore,
 }
 
-type ValidateAuthenticatorResult = Result<
-    (
-        TxValidateResult,
-        Option<MultiChainAddress>,
-        Vec<FunctionCall>,
-        Vec<FunctionCall>,
-    ),
-    VMStatus,
->;
+type ValidateAuthenticatorResult =
+    Result<(TxValidateResult, Vec<FunctionCall>, Vec<FunctionCall>), VMStatus>;
 
 impl ExecutorActor {
     pub fn new(
@@ -87,18 +78,6 @@ impl ExecutorActor {
         &self.moveos
     }
 
-    pub fn resolve_or_generate(
-        &self,
-        multi_chain_address_sender: MultiChainAddress,
-    ) -> Result<AccountAddress> {
-        let resolved_sender = {
-            let address_mapping = self.as_module_binding::<AddressMappingModule>();
-            address_mapping.resolve_or_generate(multi_chain_address_sender)?
-        };
-
-        Ok(resolved_sender)
-    }
-
     pub fn execute(&mut self, tx: VerifiedMoveOSTransaction) -> Result<ExecuteTransactionResult> {
         let tx_hash = tx.ctx.tx_hash();
         let (state_root, size, output) = self.moveos.execute_and_apply(tx)?;
@@ -115,9 +94,11 @@ impl ExecutorActor {
 
     pub fn validate_l1_block(
         &self,
-        ctx: TxContext,
+        mut ctx: TxContext,
         l1_block: L1BlockWithBody,
+        sequencer_address: BitcoinAddress,
     ) -> Result<VerifiedMoveOSTransaction> {
+        ctx.add(TxValidateResult::new_l1_block(sequencer_address))?;
         //In the future, we should verify the block PoW difficulty or PoS validator signature before the sequencer decentralized
         let L1BlockWithBody {
             block:
@@ -160,9 +141,10 @@ impl ExecutorActor {
     }
 
     pub fn validate_l2_tx(&self, mut tx: RoochTransaction) -> Result<VerifiedMoveOSTransaction> {
-        debug!("executor validate_l2_tx: {:?}", tx.tx_hash());
         let sender = tx.sender();
         let tx_hash = tx.tx_hash();
+
+        debug!("executor validate_l2_tx: {:?}, sender: {}", tx_hash, sender);
 
         let authenticator = tx.authenticator_info();
 
@@ -170,18 +152,7 @@ impl ExecutorActor {
         let result = self.validate_authenticator(&moveos_tx.ctx, authenticator);
         match result {
             Ok(vm_result) => match vm_result {
-                Ok((
-                    tx_validate_result,
-                    multi_chain_address,
-                    pre_execute_functions,
-                    post_execute_functions,
-                )) => {
-                    // Add the original multichain address to the context
-                    moveos_tx
-                        .ctx
-                        .add(multi_chain_address.unwrap_or(sender.into()))
-                        .expect("add sender to context failed");
-
+                Ok((tx_validate_result, pre_execute_functions, post_execute_functions)) => {
                     // Add the tx_validate_result to the context
                     moveos_tx
                         .ctx
@@ -245,7 +216,7 @@ impl ExecutorActor {
                             .validate(ctx, authenticator.authenticator.payload)?
                             .into_result();
                         match auth_validator_function_result {
-                            Ok(multi_chain_address) => {
+                            Ok(_) => {
                                 // pre_execute_function: AuthValidator
                                 let pre_execute_functions =
                                     vec![auth_validator_caller.pre_execute_function_call()];
@@ -254,7 +225,6 @@ impl ExecutorActor {
                                     vec![auth_validator_caller.post_execute_function_call()];
                                 Ok((
                                     tx_validate_result,
-                                    multi_chain_address,
                                     pre_execute_functions,
                                     post_execute_functions,
                                 ))
@@ -267,7 +237,6 @@ impl ExecutorActor {
                         let post_execute_functions = vec![];
                         Ok((
                             tx_validate_result,
-                            None,
                             pre_execute_functions,
                             post_execute_functions,
                         ))
@@ -281,17 +250,6 @@ impl ExecutorActor {
 }
 
 impl Actor for ExecutorActor {}
-
-#[async_trait]
-impl Handler<ResolveMessage> for ExecutorActor {
-    async fn handle(
-        &mut self,
-        msg: ResolveMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<AccountAddress, anyhow::Error> {
-        self.resolve_or_generate(msg.address)
-    }
-}
 
 #[async_trait]
 impl Handler<ValidateL2TxMessage> for ExecutorActor {
@@ -311,7 +269,7 @@ impl Handler<ValidateL1BlockMessage> for ExecutorActor {
         msg: ValidateL1BlockMessage,
         _ctx: &mut ActorContext,
     ) -> Result<VerifiedMoveOSTransaction> {
-        self.validate_l1_block(msg.ctx, msg.l1_block)
+        self.validate_l1_block(msg.ctx, msg.l1_block, msg.sequencer_address)
     }
 }
 
