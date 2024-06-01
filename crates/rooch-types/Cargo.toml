@@ -1,6 +1,6 @@
 [package]
 name = "rooch-types"
-version = "0.4.1"
+version = "0.5.0"
 
 # Workspace inherited keys
 authors = { workspace = true }
