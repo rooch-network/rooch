@@ -7,39 +7,39 @@ import { Buffer } from 'buffer'
 import { AuthenticatorPayload } from '../AuthenticatorPayload'
 import { SupportChain } from '../../feature'
 
-const BITCOIN_MAGIC_SIGN_PREFIX = 'Bitcoin Signed Message:\n'
+const BITCOIN_MAGIC_MESSAGE_PREFIX = '\u0018Bitcoin Signed Message:\n'
 
 export abstract class BitcoinWallet extends BaseWallet {
   protected toSerializedSignature(
-    _: string,
+    msg: string,
     signature: string,
-    signatureInfo: string,
+    messageInfo: string,
   ): SerializedSignature {
     const walletAccount = this.account!
 
-    let signBuffer = Buffer.from(signature, 'base64')
-
     // remove recover id
-    const normalizeSignBuffer = signBuffer.subarray(1)
+    let normalizeSignatureBuffer = Buffer.from(signature, 'base64').subarray(1)
 
-    // let multiAddress = new MultiChainAddress(RoochMultiChainID.Bitcoin, walletAccount.address)
-    // let multiAddressBytes = multiAddress.toBytes()
-    let bitcoinMagicSignPrefixBytes = Array.from(BITCOIN_MAGIC_SIGN_PREFIX, (char) =>
-      char.charCodeAt(0),
-    )
-    let signatureInfoBytes = Array.from(signatureInfo, (char) => char.charCodeAt(0))
+    let messageInfoBuffer = Buffer.from(messageInfo)
+
+    const bitcoinMagicMessagePrefixBuffer = Buffer.concat([
+      Buffer.from(`${BITCOIN_MAGIC_MESSAGE_PREFIX}`, 'utf-8'),
+      Buffer.from([messageInfoBuffer.length + msg.length]),
+    ])
+
     let publicKey = Buffer.from(walletAccount.publicKey!, 'hex')
 
     let authPayload = new AuthenticatorPayload(
-      Array.from(normalizeSignBuffer),
-      bitcoinMagicSignPrefixBytes,
-      signatureInfoBytes,
+      Array.from(normalizeSignatureBuffer),
+      Array.from(bitcoinMagicMessagePrefixBuffer),
+      Array.from(messageInfoBuffer),
       Array.from(publicKey),
       Array.from(Buffer.from(walletAccount.address)),
     )
 
     return authPayload.toBytes()
   }
+
   normalize_recovery_id(v: number) {
     let normalizeV = v - 27 - 4
 

@@ -13,9 +13,8 @@ This module implements Ethereum validator with the ECDSA recoverable signature o
 -  [Function `validate`](#0xa_ethereum_validator_validate)
 
 
-<pre><code><b>use</b> <a href="">0x1::vector</a>;
+<pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::features</a>;
-<b>use</b> <a href="">0x2::hex</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="">0x3::auth_payload</a>;
 <b>use</b> <a href="">0x3::auth_validator</a>;

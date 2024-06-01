@@ -35,7 +35,7 @@ export class UniSatWallet extends BitcoinWallet {
   }
 
   getScheme(): number {
-    return 2
+    return 1
   }
 
   async connect(): Promise<WalletAccount[]> {

@@ -5,8 +5,8 @@
 module rooch_nursery::ethereum_validator {
 
     use std::vector;
+    use std::string;
     use rooch_framework::multichain_address::{Self, MultiChainAddress};
-    use moveos_std::hex;
     use moveos_std::tx_context;
     use moveos_std::features;
     use rooch_framework::auth_payload::{AuthPayload};
@@ -27,32 +27,9 @@ module rooch_nursery::ethereum_validator {
     /// Only validate the authenticator's signature.
     public fun validate_signature(payload: AuthPayload, tx_hash: vector<u8>): ETHAddress {
 
-        // tx hash in use wallet signature is hex
-        let tx_hex = hex::encode(tx_hash);
-        let tx_hex_len = (vector::length(&tx_hex) as u8);
+        let message = auth_payload::encode_full_message(&payload, tx_hash);
 
-        let sign_info_prefix = auth_payload::sign_info_prefix(payload);
-        let sign_info_prefix_len = (vector::length(&sign_info_prefix) as u8);
-
-        let sign_info = auth_payload::sign_info(payload);
-
-        // append tx hash
-        let full_tx = vector<u8>[];
-
-        if (sign_info_prefix_len > 0) {
-            vector::append(&mut full_tx, sign_info_prefix);
-        };
-
-        if (vector::length(&sign_info) > 0) {
-            vector::append(&mut full_tx, sign_info);
-            vector::append(&mut full_tx, tx_hex);
-        } else {
-            vector::insert(&mut full_tx, (sign_info_prefix_len as u64) + 1, tx_hex_len);
-            vector::append(&mut full_tx, tx_hex);
-        };
-        // append tx hash end
-
-        let pk = ecdsa_k1::ecrecover(&auth_payload::sign(payload), &full_tx, ecdsa_k1::keccak256());
+        let pk = ecdsa_k1::ecrecover(&auth_payload::signature(payload), &message, ecdsa_k1::keccak256());
         assert!(
             vector::length(&pk) == ecdsa_k1::public_key_length(),
             auth_validator::error_invalid_authenticator()
@@ -60,7 +37,7 @@ module rooch_nursery::ethereum_validator {
 
         let address = ethereum_address::new(pk);
         assert!(
-            *ethereum_address::as_bytes(&address) == auth_payload::from_address(payload),
+            ethereum_address::as_bytes(&address) == string::bytes(&auth_payload::from_address(payload)),
             auth_validator::error_invalid_authenticator()
         );
 
