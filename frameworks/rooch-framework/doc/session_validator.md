@@ -39,35 +39,6 @@ This module implements the session auth validator.
 ## Constants
 
 
-<a name="0x3_session_validator_ErrorFunctionCallBeyondSessionScope"></a>
-
-The function call is beyond the session's scope
-
-
-<pre><code><b>const</b> <a href="session_validator.md#0x3_session_validator_ErrorFunctionCallBeyondSessionScope">ErrorFunctionCallBeyondSessionScope</a>: u64 = 3;
-</code></pre>
-
-
-
-<a name="0x3_session_validator_ErrorInvalidPublicKeyLength"></a>
-
-
-
-<pre><code><b>const</b> <a href="session_validator.md#0x3_session_validator_ErrorInvalidPublicKeyLength">ErrorInvalidPublicKeyLength</a>: u64 = 1;
-</code></pre>
-
-
-
-<a name="0x3_session_validator_ErrorSessionIsExpired"></a>
-
-The session is expired
-
-
-<pre><code><b>const</b> <a href="session_validator.md#0x3_session_validator_ErrorSessionIsExpired">ErrorSessionIsExpired</a>: u64 = 2;
-</code></pre>
-
-
-
 <a name="0x3_session_validator_SESSION_VALIDATOR_ID"></a>
 
 there defines auth validator id for each auth validator

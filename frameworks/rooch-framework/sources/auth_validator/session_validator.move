@@ -19,12 +19,6 @@ module rooch_framework::session_validator {
 
     const SIGNATURE_SCHEME_ED25519: u8 = 0;
 
-    // error code
-    const ErrorInvalidPublicKeyLength: u64 = 1;
-    /// The session is expired
-    const ErrorSessionIsExpired: u64 = 2;
-    /// The function call is beyond the session's scope
-    const ErrorFunctionCallBeyondSessionScope: u64 = 3;
 
     struct SessionValidator has store, drop {}
 
@@ -35,7 +29,7 @@ module rooch_framework::session_validator {
     /// Validate the authenticator payload, return public key and signature
     fun validate_authenticator_payload(authenticator_payload: &vector<u8>): (vector<u8>, vector<u8>) {
         let scheme = vector::borrow(authenticator_payload, 0);
-        assert!(*scheme == SIGNATURE_SCHEME_ED25519, auth_validator::error_invalid_authenticator());
+        assert!(*scheme == SIGNATURE_SCHEME_ED25519, auth_validator::error_validate_invalid_authenticator());
 
         let sign = vector::empty<u8>();
         let i = 1;
@@ -74,7 +68,7 @@ module rooch_framework::session_validator {
                 &public_key,
                 tx_hash
             ),
-            auth_validator::error_invalid_authenticator()
+            auth_validator::error_validate_invalid_authenticator()
         );
         public_key_to_authentication_key(SIGNATURE_SCHEME_ED25519, public_key)
     }
@@ -82,18 +76,18 @@ module rooch_framework::session_validator {
     public(friend) fun validate(authenticator_payload: vector<u8>) :vector<u8> {
         
         let sender_addr = tx_context::sender();
-        assert!(session_key::has_session_key(sender_addr), auth_validator::error_invalid_account_auth_key());
+        assert!(session_key::has_session_key(sender_addr), auth_validator::error_validate_invalid_account_auth_key());
         
         let tx_hash = tx_context::tx_hash();
         let auth_key = validate_signature(&authenticator_payload, &tx_hash);
 
         let session_key_option = session_key::get_session_key(sender_addr, auth_key);
-        assert!(option::is_some(&session_key_option), auth_validator::error_invalid_account_auth_key());
+        assert!(option::is_some(&session_key_option), auth_validator::error_validate_invalid_account_auth_key());
         
         let session_key = option::extract(&mut session_key_option);
-        assert!(!session_key::is_expired(&session_key), ErrorSessionIsExpired);
+        assert!(!session_key::is_expired(&session_key), auth_validator::error_validate_session_is_expired());
         
-        assert!(session_key::in_session_scope(&session_key), ErrorFunctionCallBeyondSessionScope);
+        assert!(session_key::in_session_scope(&session_key), auth_validator::error_validate_function_call_beyond_session_scope());
         auth_key
     }
 

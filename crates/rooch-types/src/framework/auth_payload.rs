@@ -20,8 +20,8 @@ use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("auth_payload");
 
-const SIGN_INFO_PREFIX: &[u8] = b"\x18Bitcoin Signed Message:\n";
-const SIGN_INFO: &[u8] = b"Rooch Transaction:\n";
+const MESSAGE_INFO_PREFIX: &[u8] = b"\x18Bitcoin Signed Message:\n";
+const MESSAGE_INFO: &[u8] = b"Rooch Transaction:\n";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SignData {
@@ -33,28 +33,24 @@ pub struct SignData {
 impl SignData {
     pub fn new(tx_data: &RoochTransactionData) -> Self {
         let tx_hash_hex = hex::encode(tx_data.tx_hash().as_bytes()).into_bytes();
+        let message_info = MESSAGE_INFO.to_vec();
+
+        // We simulate the format of the Bitcoin wallet, append the length of message info and tx hash to the prefix
+        let mut encode_message_prefix = MESSAGE_INFO_PREFIX.to_vec();
+        encode_message_prefix.push((message_info.len() + tx_hash_hex.len()) as u8);
+
         SignData {
-            message_prefix: SIGN_INFO_PREFIX.to_vec(),
-            message_info: SIGN_INFO.to_vec(),
+            message_prefix: encode_message_prefix,
+            message_info,
             tx_hash_hex,
         }
     }
 
     pub fn encode(&self) -> Vec<u8> {
-        // We keep the encode format consistent with the Bitcoin wallet
         let mut data = Vec::new();
         data.extend_from_slice(&self.message_prefix);
-
-        let message_info_len = self.message_info.len() as u8;
-        let tx_hash_len = self.tx_hash_hex.len() as u8;
-        if message_info_len > 0 {
-            data.push(message_info_len + tx_hash_len);
-            data.extend_from_slice(&self.message_info);
-            data.extend_from_slice(&self.tx_hash_hex);
-        } else {
-            data.push(tx_hash_len);
-            data.extend_from_slice(&self.tx_hash_hex);
-        }
+        data.extend_from_slice(&self.message_info);
+        data.extend_from_slice(&self.tx_hash_hex);
         data
     }
 
@@ -110,13 +106,9 @@ impl AuthPayload {
     pub fn new(sign_data: SignData, signature: Signature, bitcoin_address: String) -> Self {
         debug_assert_eq!(signature.scheme(), SignatureScheme::Secp256k1);
 
-        let mut encode_message_prefix =
-            vec![(sign_data.message_info.len() + sign_data.tx_hash_hex.len()) as u8];
-        encode_message_prefix.splice(0..0, sign_data.message_prefix.iter().cloned());
-
         AuthPayload {
             signature: signature.signature_bytes().to_vec(),
-            message_prefix: encode_message_prefix,
+            message_prefix: sign_data.message_prefix,
             message_info: sign_data.message_info,
             public_key: signature.public_key_bytes().to_vec(),
             from_address: bitcoin_address.into_bytes(),
