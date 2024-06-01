@@ -20,13 +20,13 @@ use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("auth_payload");
 
-const SIGN_INFO_PREFIX: &[u8] = b"Bitcoin Signed Message:\n";
-const SIGN_INFO: &[u8] = b"Rooch Transaction\n";
+const SIGN_INFO_PREFIX: &[u8] = b"\x18Bitcoin Signed Message:\n";
+const SIGN_INFO: &[u8] = b"Rooch Transaction:\n";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SignData {
-    pub sign_info_prefix: Vec<u8>,
-    pub sign_info: Vec<u8>,
+    pub message_prefix: Vec<u8>,
+    pub message_info: Vec<u8>,
     pub tx_hash_hex: Vec<u8>,
 }
 
@@ -34,8 +34,8 @@ impl SignData {
     pub fn new(tx_data: &RoochTransactionData) -> Self {
         let tx_hash_hex = hex::encode(tx_data.tx_hash().as_bytes()).into_bytes();
         SignData {
-            sign_info_prefix: SIGN_INFO_PREFIX.to_vec(),
-            sign_info: SIGN_INFO.to_vec(),
+            message_prefix: SIGN_INFO_PREFIX.to_vec(),
+            message_info: SIGN_INFO.to_vec(),
             tx_hash_hex,
         }
     }
@@ -43,16 +43,13 @@ impl SignData {
     pub fn encode(&self) -> Vec<u8> {
         // We keep the encode format consistent with the Bitcoin wallet
         let mut data = Vec::new();
-        let sign_prefix_len = self.sign_info_prefix.len() as u8;
-        if sign_prefix_len > 0 {
-            data.push(sign_prefix_len);
-            data.extend_from_slice(&self.sign_info_prefix);
-        }
-        let sign_info_len = self.sign_info.len() as u8;
+        data.extend_from_slice(&self.message_prefix);
+
+        let message_info_len = self.message_info.len() as u8;
         let tx_hash_len = self.tx_hash_hex.len() as u8;
-        if sign_info_len > 0 {
-            data.push(sign_info_len + tx_hash_len);
-            data.extend_from_slice(&self.sign_info);
+        if message_info_len > 0 {
+            data.push(message_info_len + tx_hash_len);
+            data.extend_from_slice(&self.message_info);
             data.extend_from_slice(&self.tx_hash_hex);
         } else {
             data.push(tx_hash_len);
@@ -69,12 +66,12 @@ impl SignData {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AuthPayload {
-    // Message sin
-    pub sign: Vec<u8>,
+    // Message signature
+    pub signature: Vec<u8>,
     // Some wallets add magic prefixes, such as unisat adding 'Bitcoin Signed Message:\n'
-    pub sign_info_prefix: Vec<u8>,
+    pub message_prefix: Vec<u8>,
     // Description of a user-defined signature
-    pub sign_info: Vec<u8>,
+    pub message_info: Vec<u8>,
     // Public key of address
     pub public_key: Vec<u8>,
     // Wallet address
@@ -112,10 +109,15 @@ impl MoveStructState for AuthPayload {
 impl AuthPayload {
     pub fn new(sign_data: SignData, signature: Signature, bitcoin_address: String) -> Self {
         debug_assert_eq!(signature.scheme(), SignatureScheme::Secp256k1);
+
+        let mut encode_message_prefix =
+            vec![(sign_data.message_info.len() + sign_data.tx_hash_hex.len()) as u8];
+        encode_message_prefix.splice(0..0, sign_data.message_prefix.iter().cloned());
+
         AuthPayload {
-            sign: signature.signature_bytes().to_vec(),
-            sign_info_prefix: sign_data.sign_info_prefix,
-            sign_info: sign_data.sign_info,
+            signature: signature.signature_bytes().to_vec(),
+            message_prefix: encode_message_prefix,
+            message_info: sign_data.message_info,
             public_key: signature.public_key_bytes().to_vec(),
             from_address: bitcoin_address.into_bytes(),
         }
@@ -125,13 +127,13 @@ impl AuthPayload {
         let pk = Secp256k1PublicKey::from_bytes(&self.public_key)?;
         let tx_hash_hex = hex::encode(tx_data.tx_hash().as_bytes()).into_bytes();
         let sign_data = SignData {
-            sign_info_prefix: self.sign_info_prefix.clone(),
-            sign_info: self.sign_info.clone(),
+            message_prefix: self.message_prefix.clone(),
+            message_info: self.message_info.clone(),
             tx_hash_hex,
         };
         let message = sign_data.encode();
         let message_hash = sha2_256_of(&message).0.to_vec();
-        let signature = Secp256k1Signature::from_bytes(&self.sign)?;
+        let signature = Secp256k1Signature::from_bytes(&self.signature)?;
         pk.verify_with_hash::<Sha256>(&message_hash, &signature)?;
         Ok(())
     }

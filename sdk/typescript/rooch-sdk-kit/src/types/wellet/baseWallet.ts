@@ -13,7 +13,7 @@ import {
 import { Buffer } from 'buffer'
 import { SupportChain } from '../../feature'
 
-export const RoochSignPrefix = 'Rooch tx hash:\n'
+export const RoochSignPrefix = 'Rooch Transaction:\n'
 
 export abstract class BaseWallet implements IAuthorizer {
   client: RoochClient
@@ -114,13 +114,13 @@ export abstract class BaseWallet implements IAuthorizer {
    * Converts the message, signature, and signature info to a serialized signature.
    * @param msg - The message in hexadecimal format.
    * @param signature - The signature string.
-   * @param signatureInfo - Additional information about the signature.
+   * @param messageInfo - Additional information about the signature.
    * @returns The serialized signature object.
    */
   protected abstract toSerializedSignature(
     msg: string,
     signature: string,
-    signatureInfo: string,
+    messageInfo: string,
   ): SerializedSignature
 
   /**
@@ -145,17 +145,16 @@ export abstract class BaseWallet implements IAuthorizer {
 
     if (msgInfo && msgInfo.charAt(msgInfo.length - 1) !== '\n') {
       msgInfo += '\n'
-      msgInfo = msgInfo + RoochSignPrefix
+      msgInfo = RoochSignPrefix + msgInfo
     } else {
       msgInfo = RoochSignPrefix
     }
 
     let fullMsg = msgInfo + msgHex
 
-    // TODO: remove this, btc contracts can be implemented with reference to eth，The stitching is done by the front end。
     // Avoid the 255 length limit
     if (fullMsg.length > 255) {
-      throw Error(`authInfo length cannot be greater than > ${fullMsg.length - msgHex.length}`)
+      throw Error(`message info length cannot be greater than > ${fullMsg.length - msgHex.length}`)
     }
 
     const sign = await this.sign(fullMsg)

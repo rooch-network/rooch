@@ -4,8 +4,6 @@
 /// This module implements Bitcoin validator with the ECDSA recoverable signature over Secp256k1.
 module rooch_framework::bitcoin_validator {
 
-    use std::vector;
-    use moveos_std::hex;
     use moveos_std::tx_context;
     use moveos_std::features;
     use moveos_std::hash;
@@ -29,50 +27,15 @@ module rooch_framework::bitcoin_validator {
     /// Only validate the authenticator's signature.
     fun validate_signature(payload: AuthPayload, tx_hash: vector<u8>) {
 
-        // tx hash in use wallet signature is hex
-        let tx_hex = hex::encode(tx_hash);
-        let tx_hex_len = (vector::length(&tx_hex));
+        let message = auth_payload::encode_full_message(&payload, tx_hash);
 
-        let sign_info_prefix = auth_payload::sign_info_prefix(payload);
-        let sign_info_prefix_len = (vector::length(&sign_info_prefix));
-
-        let sign_info = auth_payload::sign_info(payload);
-        let sign_info_len = (vector::length(&sign_info));
-
-        assert!(
-            sign_info_len + tx_hex_len <= 255,
-            auth_validator::error_invalid_authenticator()
-        );
-
-        // append tx hash
-        let full_tx = vector<u8>[];
-
-        if (sign_info_prefix_len > 0) {
-            vector::insert(&mut sign_info_prefix, 0, (sign_info_prefix_len as u8));
-            vector::append(&mut full_tx, sign_info_prefix);
-        };
-
-        let sign_info_insert_index = 0u64;
-        if (sign_info_prefix_len > 0) {
-            sign_info_insert_index = sign_info_prefix_len + 1;
-        };
-
-        if (vector::length(&sign_info) > 0) {
-            vector::insert(&mut full_tx, sign_info_insert_index, ((sign_info_len + tx_hex_len) as u8));
-            vector::append(&mut full_tx, sign_info);
-            vector::append(&mut full_tx, tx_hex);
-        } else {
-            vector::insert(&mut full_tx, sign_info_insert_index, (tx_hex_len as u8));
-            vector::append(&mut full_tx, tx_hex);
-        };
-        // append tx hash end
         // The Bitcoin wallet uses sha2_256 twice, the `ecdsa_k1::verify` function also does sha2_256 once
-        let full_tx_hash = hash::sha2_256(full_tx);
+        let message_hash = hash::sha2_256(message);
         assert!(
             ecdsa_k1::verify(
-                &auth_payload::sign(payload),
+                &auth_payload::signature(payload),
                 &auth_payload::public_key(payload),
-                &full_tx_hash,
+                &message_hash,
                 ecdsa_k1::sha256()
             ),
             auth_validator::error_invalid_authenticator()
@@ -88,7 +51,7 @@ module rooch_framework::bitcoin_validator {
 
         validate_signature(payload, tx_hash);
 
-        let from_address_in_payload = std::string::utf8(auth_payload::from_address(payload));
+        let from_address_in_payload = auth_payload::from_address(payload);
         let bitcoin_addr = bitcoin_address::from_string(&from_address_in_payload);
         
         // Check if the address and public key are related
