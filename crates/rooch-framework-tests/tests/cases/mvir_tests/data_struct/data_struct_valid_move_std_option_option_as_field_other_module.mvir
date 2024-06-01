@@ -10,7 +10,7 @@ module 0x123.TestModule0 {
 }
 
 //# publish
-module 0x1.TestModule1 {
+module 0x11.TestModule1 {
     import 0x123.TestModule0;
     import 0x1.option;
 
@@ -18,7 +18,7 @@ module 0x1.TestModule1 {
 
     metadata {
         data_struct {
-            0x1::TestModule1::S1 -> true;
+            0x11::TestModule1::S1 -> true;
         }
     }
 }

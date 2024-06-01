@@ -1,15 +1,15 @@
 //# publish
-module 0x1.TestModule1 {
+module 0x11.TestModule1 {
     import 0x1.option;
     import 0x1.vector;
     struct S0 has copy,drop { x: u64 }
 
     metadata {
         data_struct {
-            0x1::TestModule1::S0 -> true;
+            0x11::TestModule1::S0 -> true;
         }
         data_struct_func {
-            0x1::TestModule1::f1 -> [0, 1];
+            0x11::TestModule1::f1 -> [0, 1];
         }
     }
 

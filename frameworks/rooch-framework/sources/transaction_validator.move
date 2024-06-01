@@ -131,7 +131,7 @@ module rooch_framework::transaction_validator {
         let sender = tx_context::sender();
         //Auto create account if not exist
         if (!account::exists_at(sender)) {
-            account_entry::create_account_internal(sender);
+            account_entry::create_account(sender);
             //if the chain is local or dev, give the sender some RGC
             if (chain_id::is_local_or_dev()) {
                 //100 RGC

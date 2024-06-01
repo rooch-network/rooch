@@ -1,12 +1,12 @@
 //# publish
-module 0x1.TestModule1 {
+module 0x11.TestModule1 {
     struct S0<T> has copy, drop {x: T}
     // error code 10014: INVALID_DATA_STRUCT_NOT_ALLOWED_TYPE
     struct S1 has drop,copy {v: Self.S0<u32>}
 
     metadata {
         data_struct {
-            0x1::TestModule1::S1 -> true;
+            0x11::TestModule1::S1 -> true;
         }
     }
 }
