@@ -100,8 +100,8 @@ fn test_session_key_rooch() {
                 }
                 _ => panic!("expect move abort in module"),
             }
-            // ErrorFunctionCallBeyondSessionScope = 3
-            assert_eq!(*code, 3, "expect ErrorFunctionCallBeyondSessionScope");
+            // ErrorValidateFunctionCallBeyondSessionScope = 1013
+            assert_eq!(*code, 1013, "expect ErrorValidateFunctionCallBeyondSessionScope");
         }
         _ => {
             panic!("Expect move abort")
@@ -173,8 +173,8 @@ fn test_session_key_rooch() {
                 }
                 _ => panic!("expect move abort in module"),
             }
-            // ErrorSessionIsExpired = 2
-            assert_eq!(*code, 2, "expect ErrorSessionIsExpired");
+            // ErrorValidateSessionIsExpired = 1012
+            assert_eq!(*code, 1012, "expect ErrorValidateSessionIsExpired");
         }
         _ => {
             panic!("Expect move abort")

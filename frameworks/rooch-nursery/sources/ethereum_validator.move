@@ -32,13 +32,13 @@ module rooch_nursery::ethereum_validator {
         let pk = ecdsa_k1::ecrecover(&auth_payload::signature(payload), &message, ecdsa_k1::keccak256());
         assert!(
             vector::length(&pk) == ecdsa_k1::public_key_length(),
-            auth_validator::error_invalid_authenticator()
+            auth_validator::error_validate_invalid_authenticator()
         );
 
         let address = ethereum_address::new(pk);
         assert!(
             ethereum_address::as_bytes(&address) == string::bytes(&auth_payload::from_address(payload)),
-            auth_validator::error_invalid_authenticator()
+            auth_validator::error_validate_invalid_authenticator()
         );
 
         address
@@ -58,7 +58,7 @@ module rooch_nursery::ethereum_validator {
         // Check if the sender is related to the Rooch address
         // assert!(
         //     sender == rooch_addr,
-        //     auth_validator::error_invalid_authenticator()
+        //     auth_validator::error_validate_invalid_authenticator()
         // );
 
         multi_chain_addr
