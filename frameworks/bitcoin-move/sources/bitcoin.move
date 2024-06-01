@@ -446,5 +446,10 @@ module bitcoin_move::bitcoin{
         let block_header = types::new_header_for_test(version, prev_blockhash, merkle_root, time, bits, nonce);
         let block_hash = types::header_to_hash(block_header);
         assert!(block_hash == address::from_bytes(x"00000000000000000002b73f69e81b8b5e98dff0f2b7632fcb83c050c3b099a1"), 1);
+
+        let module_signer = signer::module_signer<BitcoinBlockStore>();
+        genesis_init(&module_signer, 0);
+        submit_block_for_test(1, block_hash, &block_header);
+        assert!(verify_header(block_header), 2);
     }
 }
