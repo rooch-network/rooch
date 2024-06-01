@@ -18,17 +18,78 @@ module rooch_framework::auth_validator {
     /// The function must be executed after the transaction is validated
     const ErrorMustExecuteAfterValidate: u64 = 1;
 
+    /// Validate errors. These are separated out from the other errors in this
+    /// module since they are mapped separately to major VM statuses, and are
+    /// important to the semantics of the system.
+    const ErrorValidateSequenceNuberTooOld: u64 = 1001;
+    const ErrorValidateSequenceNumberTooNew: u64 = 1002;
+    const ErrorValidateAccountDoesNotExist: u64 = 1003;
+    const ErrorValidateCantPayGasDeposit: u64 = 1004;
+    const ErrorValidateTransactionExpired: u64 = 1005;
+    const ErrorValidateBadChainId: u64 = 1006;
+    const ErrorValidateSequenceNumberTooBig: u64 = 1007;
+    const ErrorValidateMaxGasAmountExceeded: u64 = 1008;
     /// The AuthKey in transaction's authenticator do not match with the sender's account auth key
-    const ErrorValidateInvalidAccountAuthKey: u64 = 1001;
+    const ErrorValidateInvalidAccountAuthKey: u64 = 1009;
     /// InvalidAuthenticator, include invalid signature
-    const ErrorValidateInvalidAuthenticator: u64 = 1002;
+    const ErrorValidateInvalidAuthenticator: u64 = 1010;
+    /// The authenticator's auth validator id is not installed to the sender's account
+    const ErrorValidateNotInstalledAuthValidator: u64 = 1011;
+    /// The session is expired
+    const ErrorValidateSessionIsExpired: u64 = 1012;
+    /// The function call is beyond the session's scope
+    const ErrorValidateFunctionCallBeyondSessionScope: u64 = 1013;
 
-    public fun error_invalid_account_auth_key(): u64 {
+    public fun error_validate_sequence_number_too_old(): u64 {
+        ErrorValidateSequenceNuberTooOld
+    }
+
+    public fun error_validate_sequence_number_too_new(): u64 {
+        ErrorValidateSequenceNumberTooNew
+    }
+
+    public fun error_validate_account_does_not_exist(): u64 {
+        ErrorValidateAccountDoesNotExist
+    }
+
+    public fun error_validate_cant_pay_gas_deposit(): u64 {
+        ErrorValidateCantPayGasDeposit
+    }
+
+    public fun error_validate_transaction_expired(): u64 {
+        ErrorValidateTransactionExpired
+    }
+
+    public fun error_validate_bad_chain_id(): u64 {
+        ErrorValidateBadChainId
+    }
+
+    public fun error_validate_sequence_number_too_big(): u64 {
+        ErrorValidateSequenceNumberTooBig
+    }
+
+    public fun error_validate_max_gas_amount_exceeded(): u64 {
+        ErrorValidateMaxGasAmountExceeded
+    }
+    
+    public fun error_validate_invalid_account_auth_key(): u64 {
         ErrorValidateInvalidAccountAuthKey
     }
 
-    public fun error_invalid_authenticator(): u64 {
+    public fun error_validate_invalid_authenticator(): u64 {
         ErrorValidateInvalidAuthenticator
+    }
+
+    public fun error_validate_not_installed_auth_validator(): u64 {
+        ErrorValidateNotInstalledAuthValidator
+    }
+
+    public fun error_validate_session_is_expired(): u64 {
+        ErrorValidateSessionIsExpired
+    }
+
+    public fun error_validate_function_call_beyond_session_scope(): u64 {
+        ErrorValidateFunctionCallBeyondSessionScope
     }
 
     /// The Authentication Validator
