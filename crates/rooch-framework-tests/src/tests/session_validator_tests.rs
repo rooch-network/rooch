@@ -101,7 +101,10 @@ fn test_session_key_rooch() {
                 _ => panic!("expect move abort in module"),
             }
             // ErrorValidateFunctionCallBeyondSessionScope = 1013
-            assert_eq!(*code, 1013, "expect ErrorValidateFunctionCallBeyondSessionScope");
+            assert_eq!(
+                *code, 1013,
+                "expect ErrorValidateFunctionCallBeyondSessionScope"
+            );
         }
         _ => {
             panic!("Expect move abort")

@@ -432,6 +432,7 @@ module bitcoin_move::bitcoin{
 
     #[test_only]
     use moveos_std::address;
+    #[test_only]
     use std::ascii;
 
     #[test]
