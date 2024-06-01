@@ -253,6 +253,8 @@ module bitcoin_move::ord {
                 inscription.offset = new_sat_point.offset;
 
                 // TODO handle curse inscription
+                // https://github.com/rooch-network/rooch/issues/1447
+                
                 // drop the temporary area if inscription is transferred.
                 drop_temp_area(&mut inscription_obj);
                 object::transfer_extend(inscription_obj, to_address);
@@ -700,8 +702,6 @@ module bitcoin_move::ord {
         bag::remove(bag, name)
     }
 
-    // TODO: remove #[test_only]?
-    #[test_only]
     /// Destroy permanent area if it's empty. Aborts if it's not empty.
     public fun destroy_permanent_area(inscription: &mut Object<Inscription>){
         if (object::contains_field(inscription, PERMANENT_AREA)) {

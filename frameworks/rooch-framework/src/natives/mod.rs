@@ -28,7 +28,6 @@ pub struct NativeGasParameters {
     moveos_stdlib: MoveOSStdlibGasParameters,
     ed25519: rooch_framework::crypto::ed25519::GasParameters,
     ecdsa_k1: rooch_framework::crypto::ecdsa_k1::GasParameters,
-    bcs: rooch_framework::bcs::GasParameters,
     bitcoin_address: rooch_framework::bitcoin_address::GasParameters,
 }
 
@@ -39,7 +38,6 @@ impl FromOnChainGasSchedule for NativeGasParameters {
                 .unwrap(),
             ed25519: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             ecdsa_k1: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
-            bcs: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             bitcoin_address: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)
                 .unwrap(),
         })
@@ -51,7 +49,6 @@ impl ToOnChainGasSchedule for NativeGasParameters {
         let mut entires = self.moveos_stdlib.to_on_chain_gas_schedule();
         entires.extend(self.ed25519.to_on_chain_gas_schedule());
         entires.extend(self.ecdsa_k1.to_on_chain_gas_schedule());
-        entires.extend(self.bcs.to_on_chain_gas_schedule());
         entires.extend(self.bitcoin_address.to_on_chain_gas_schedule());
         entires
     }
@@ -63,7 +60,6 @@ impl InitialGasSchedule for NativeGasParameters {
             moveos_stdlib: InitialGasSchedule::initial(),
             ed25519: InitialGasSchedule::initial(),
             ecdsa_k1: InitialGasSchedule::initial(),
-            bcs: InitialGasSchedule::initial(),
             bitcoin_address: InitialGasSchedule::initial(),
         }
     }
@@ -155,7 +151,6 @@ impl NativeGasParameters {
             moveos_stdlib: moveos_stdlib::natives::GasParameters::zeros(),
             ed25519: rooch_framework::crypto::ed25519::GasParameters::zeros(),
             ecdsa_k1: rooch_framework::crypto::ecdsa_k1::GasParameters::zeros(),
-            bcs: rooch_framework::bcs::GasParameters::zeros(),
             bitcoin_address: rooch_framework::bitcoin_address::GasParameters::zeros(),
         }
     }
@@ -183,7 +178,6 @@ pub fn all_natives(gas_params: NativeGasParameters) -> NativeFunctionTable {
         "ecdsa_k1",
         rooch_framework::crypto::ecdsa_k1::make_all(gas_params.ecdsa_k1)
     );
-    add_natives!("bcs", rooch_framework::bcs::make_all(gas_params.bcs));
     add_natives!(
         "bitcoin_address",
         rooch_framework::bitcoin_address::make_all(gas_params.bitcoin_address)

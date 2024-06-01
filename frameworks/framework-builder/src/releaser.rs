@@ -69,6 +69,7 @@ pub fn release(version: StdlibVersion, check_compatibility: bool) -> Result<()> 
                         err
                     );
                 } else {
+                    //TODO collect warn message and return to build.rs, then print it out when build project.
                     warn!(
                         "Version {:?} is incompatible with previous version {:?}: {:?}",
                         version.as_string(),

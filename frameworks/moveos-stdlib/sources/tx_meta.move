@@ -26,9 +26,6 @@ module moveos_std::tx_meta {
         module_address: address,
         module_name: std::string::String,
         function_name: std::string::String,
-        //TODO should we support ty_args and args?
-        //ty_args: vector<TypeInfo>,
-        //args: vector<vector<u8>>,
     }
 
     #[test_only]

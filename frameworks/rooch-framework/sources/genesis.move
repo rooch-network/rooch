@@ -28,7 +28,7 @@ module rooch_framework::genesis {
     }
 
     fun init(){
-        let genesis_account = &account::create_account_internal(@rooch_framework);
+        let genesis_account = &account::create_system_account(@rooch_framework);
         let genesis_context_option = tx_context::get_attribute<GenesisContext>();
         assert!(option::is_some(&genesis_context_option), ErrorGenesisInit);
         let genesis_context = option::extract(&mut genesis_context_option);
@@ -45,7 +45,7 @@ module rooch_framework::genesis {
 
         // Some test cases use framework account as sequencer, it may already exist
         if(!moveos_std::account::exists_at(sequencer_addr)){
-            account::create_account_internal(sequencer_addr);
+            account::create_account(sequencer_addr);
             address_mapping::bind_bitcoin_address(sequencer_addr, genesis_context.sequencer);
         };
         // give some gas coin to the sequencer

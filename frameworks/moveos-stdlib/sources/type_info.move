@@ -22,7 +22,6 @@ module moveos_std::type_info {
 
     struct TypeInfo has copy, drop, store {
         account_address: address,
-        //TODO should use string::String to represent module_name and struct_name
         module_name: vector<u8>,
         struct_name: vector<u8>,
     }

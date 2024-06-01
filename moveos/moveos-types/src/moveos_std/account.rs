@@ -11,14 +11,18 @@ use serde::{Deserialize, Serialize};
 pub const MODULE_NAME: &IdentStr = ident_str!("account");
 
 /// Account is the rust representation of the account in moveos_std
-#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Default)]
+#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
 pub struct Account {
+    pub addr: AccountAddress,
     pub sequence_number: u64,
 }
 
 impl Account {
-    pub fn new(sequence_number: u64) -> Self {
-        Self { sequence_number }
+    pub fn new(addr: AccountAddress, sequence_number: u64) -> Self {
+        Self {
+            addr,
+            sequence_number,
+        }
     }
 
     pub fn account_object_id(account: AccountAddress) -> ObjectID {
@@ -44,6 +48,7 @@ impl MoveStructType for Account {
 impl MoveStructState for Account {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
+            move_core_types::value::MoveTypeLayout::Address,
             move_core_types::value::MoveTypeLayout::U64,
         ])
     }

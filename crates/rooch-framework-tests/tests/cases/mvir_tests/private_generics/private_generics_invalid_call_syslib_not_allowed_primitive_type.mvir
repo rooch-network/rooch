@@ -1,5 +1,5 @@
 //# publish
-module 0x2.TestModule1 {
+module 0x11.TestModule1 {
     import 0x2.event;
 
     public f2() {

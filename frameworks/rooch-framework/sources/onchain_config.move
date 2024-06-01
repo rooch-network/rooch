@@ -95,7 +95,6 @@ module rooch_framework::onchain_config {
     fun set_code_features(framework: &signer) {
         let enables = vector::empty<u64>();
         
-        // TODO: change features
         if (chain_id::is_local()) {
             vector::push_back(&mut enables, features::get_localnet_feature());
             vector::push_back(&mut enables, features::get_devnet_feature());

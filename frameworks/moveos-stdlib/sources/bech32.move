@@ -140,4 +140,11 @@ module moveos_std::bech32 {
 
       assert!(decoded == expected_decoded, E_DECODE_FAILED);
    }
+
+   #[test]
+   fun test_rooch_address(){
+      let rooch_addr_str = b"rooch10lnft7hhq37vl0y97lwvkmzqt48fk76y0z88rfcu8zg6qm8qegfqx0rq2h";
+      let data = decode(b"rooch", rooch_addr_str);
+      assert!(moveos_std::bcs::to_address(data) == @0x7fe695faf7047ccfbc85f7dccb6c405d4e9b7b44788e71a71c3891a06ce0ca12, 1000);
+   }
 }

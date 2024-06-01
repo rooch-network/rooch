@@ -1,11 +1,11 @@
 //# publish
-module 0x1.TestModule1 {
+module 0x11.TestModule1 {
     import 0x2.object;
     struct S0 has copy,drop {v: object.ObjectID}
 
     metadata {
         data_struct {
-            0x1::TestModule1::S0 -> true;
+            0x11::TestModule1::S0 -> true;
         }
     }
 }
