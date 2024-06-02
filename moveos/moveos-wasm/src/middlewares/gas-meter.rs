@@ -6,9 +6,9 @@ use wasmer_compiler::{CompilerConfig, Middleware, MiddlewareChain, ModuleMiddlew
 use wasmer_engine::EngineBuilder;
 use std::sync::{Arc, Mutex};
 
-struct BlockBreakpointMiddleware {}
+struct GasMeterMiddleware {}
 
-impl ModuleMiddleware for BlockBreakpointMiddleware {
+impl ModuleMiddleware for GasMeterMiddleware {
     fn transform_function(
         &self,
         _local_function_index: usize,
@@ -31,13 +31,13 @@ impl ModuleMiddleware for BlockBreakpointMiddleware {
     }
 }
 
-pub struct BlockBreakpointMiddlewareGenerator {
+pub struct GasMeterMiddlewareGenerator {
 
 }
 
-impl Middleware for BlockBreakpointMiddlewareGenerator {
+impl Middleware for GasMeterMiddlewareGenerator {
   fn generate(&self) -> Box<dyn ModuleMiddleware> {
-      Box::new(BlockBreakpointMiddleware {})
+      Box::new(GasMeterMiddleware {})
   }
 }
 

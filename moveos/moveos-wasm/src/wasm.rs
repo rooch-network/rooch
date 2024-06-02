@@ -10,7 +10,7 @@ use rand;
 use wasmer::Value::I32;
 use wasmer::*;
 
-use crate::middlewares::breakpoint::{BlockBreakpointMiddlewareGenerator};
+use crate::middlewares::gas_meter;
 
 //#[derive(Clone)]
 pub struct WASMInstance {
@@ -228,10 +228,7 @@ pub fn get_data_from_heap(
 pub fn create_store() -> Store {
     // Create a compiler configuration
     let mut compiler_config = CompilerConfig::default();
-    compiler_config.push_middleware(Box::new(BlockBreakpointMiddlewareGenerator {
-        threshold,
-        counter: Arc::clone(&counter),
-    }));
+    compiler_config.push_middleware(Box::new(gas_meter::GasMeterMiddlewareGenerator {}));
 
     // Create an engine
     let engine = EngineBuilder::new(compiler_config).engine();
