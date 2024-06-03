@@ -57,7 +57,7 @@ export const ManageSessions: React.FC = () => {
       })
       await refetch()
     },
-    [removeSession],
+    [removeSession, refetch],
   )
 
   if (isLoading || isError) {
@@ -80,7 +80,7 @@ export const ManageSessions: React.FC = () => {
     )
   }
 
-  if (sessionKeys && sessionKeys.data.length == 0) {
+  if (sessionKeys && sessionKeys.data.length === 0) {
     return (
       <div className="rounded-lg border w-full flex justify-center items-center h-full p-20">
         <div className="flex flex-col items-center justify-center text-center text-xl text-muted-foreground">

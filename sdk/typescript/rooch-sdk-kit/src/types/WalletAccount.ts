@@ -5,8 +5,8 @@ import { IAccount, IAuthorizer, RoochClient } from '@roochnetwork/rooch-sdk'
 
 import { SupportChain } from '../feature'
 import { chain2MultiChainID } from '../utils/chain2MultiChainID'
-import {bech32m} from 'bech32';
-import {Buffer} from 'buffer';
+import { bech32m } from 'bech32'
+import { Buffer } from 'buffer'
 
 export class WalletAccount implements IAccount {
   public readonly chain: SupportChain
@@ -49,7 +49,7 @@ export class WalletAccount implements IAccount {
   getBech32RoochAddress(): string {
     if (!this.roochBech32Address) {
       let rad = this.roochHexAddress!.substring(2)
-      return bech32m.encode('rooch', bech32m.toWords(Buffer.from(rad,'hex')))
+      return bech32m.encode('rooch', bech32m.toWords(Buffer.from(rad, 'hex')))
     }
     return this.roochBech32Address
   }
