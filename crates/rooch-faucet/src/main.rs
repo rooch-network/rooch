@@ -3,7 +3,7 @@
 
 use clap::Parser;
 use prometheus::Registry;
-use rooch_faucet::{serve, App, AppConfig, DiscordConfig, Faucet, FaucetConfig};
+use rooch_faucet::{serve, App, DiscordConfig, Faucet, FaucetConfig, WebConfig};
 use serenity::prelude::*;
 use tokio::{
     spawn,
@@ -19,7 +19,7 @@ use tracing::warn;
 )]
 pub struct Config {
     #[clap(flatten)]
-    pub app_config: AppConfig,
+    pub web_config: WebConfig,
 
     #[clap(flatten)]
     pub faucet_config: FaucetConfig,
@@ -35,7 +35,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let config = Config::parse();
 
     let Config {
-        app_config,
+        web_config,
         faucet_config,
         discord_config,
         ..
@@ -79,7 +79,7 @@ async fn main() -> Result<(), anyhow::Error> {
     };
 
     let faucet_handle = spawn(faucet.start());
-    let api_handle = spawn(serve(app, app_config));
+    let api_handle = spawn(serve(app, web_config));
 
     if let Some(mut discord) = discord_client {
         let _result = futures::join!(faucet_handle, api_handle, discord.start());
