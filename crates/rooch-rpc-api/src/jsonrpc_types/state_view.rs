@@ -274,11 +274,13 @@ impl DynamicFieldView {
 pub enum FieldChangeView {
     Object {
         key: KeyStateView,
+        key_state: String,
         #[serde(flatten)]
         change: ObjectChangeView,
     },
     Normal {
         key: KeyStateView,
+        key_state: String,
         #[serde(flatten)]
         change: NormalFieldChangeView,
     },
@@ -288,11 +290,13 @@ impl From<(KeyState, FieldChange)> for FieldChangeView {
     fn from((key, field_change): (KeyState, FieldChange)) -> Self {
         match field_change {
             FieldChange::Object(object_change) => Self::Object {
-                key: key.into(),
+                key: key.clone().into(),
+                key_state: key.to_string(),
                 change: object_change.into(),
             },
             FieldChange::Normal(normal_field_change) => Self::Normal {
-                key: key.into(),
+                key: key.clone().into(),
+                key_state: key.to_string(),
                 change: normal_field_change.into(),
             },
         }
@@ -424,13 +428,15 @@ pub enum ObjectStateFilterView {
     ObjectType(StructTagView),
     /// Query by owner.
     Owner(RoochAddressView),
-    /// Query by object id.
-    ObjectId(Vec<ObjectID>),
+    /// Query by object ids.
+    ObjectId(String),
 }
 
 impl ObjectStateFilterView {
-    pub fn into_object_state_filter(state_filter: ObjectStateFilterView) -> ObjectStateFilter {
-        match state_filter {
+    pub fn try_into_object_state_filter(
+        state_filter: ObjectStateFilterView,
+    ) -> Result<ObjectStateFilter> {
+        Ok(match state_filter {
             ObjectStateFilterView::ObjectTypeWithOwner { object_type, owner } => {
                 ObjectStateFilter::ObjectTypeWithOwner {
                     object_type: object_type.into(),
@@ -441,8 +447,19 @@ impl ObjectStateFilterView {
                 ObjectStateFilter::ObjectType(object_type.into())
             }
             ObjectStateFilterView::Owner(owner) => ObjectStateFilter::Owner(owner.into()),
-            ObjectStateFilterView::ObjectId(object_ids) => ObjectStateFilter::ObjectId(object_ids),
-        }
+            ObjectStateFilterView::ObjectId(object_ids_str) => {
+                let object_ids = if object_ids_str.trim().is_empty() {
+                    vec![]
+                } else {
+                    object_ids_str
+                        .trim()
+                        .split(',')
+                        .map(ObjectID::from_str)
+                        .collect::<Result<Vec<_>, _>>()?
+                };
+                ObjectStateFilter::ObjectId(object_ids)
+            }
+        })
     }
 }
 
