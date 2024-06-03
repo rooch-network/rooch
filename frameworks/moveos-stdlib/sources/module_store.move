@@ -21,7 +21,6 @@ module moveos_std::module_store {
     const ErrorPackageImmutable: u64 = 2;
 
     const REVERSED_KEY_UPGRADE_POLICY: vector<u8> = b"reversed_key_upgrade_policy";
-    const REVERSED_KEY_MODULE_NAMES: vector<u8> = b"reversed_key_module_names";
 
     /// Allowlist for module function invocation
     struct Allowlist has key, store {
@@ -144,8 +143,8 @@ module moveos_std::module_store {
         };
         let package = borrow_mut_package(module_object, package_id);
         if (is_upgrade) {
-            check_upgradability(package, &modules);
-        }
+            check_upgradability(package);
+        };
 
         while (i < len) {
             let module_name = vector::pop_back(&mut module_names);
@@ -173,16 +172,13 @@ module moveos_std::module_store {
         let package = object::add_object_field_with_id(module_object, package_id, Package {});
 
         // init default upgrade policy
-        let policy = if (features::get_localnet_feature() || features::get_devnet_feature()) {
-            upgrade_policy_arbitrary()
-        } else {
-            upgrade_policy_compat()
-        };
-        object::add_field(package, REVERSED_KEY_UPGRADE_POLICY, policy);
+        // TODO: do we need to support arbitrary upgrade policy on dev/local net.
+        let policy = upgrade_policy_compat();
+        object::add_field(&mut package, REVERSED_KEY_UPGRADE_POLICY, policy);
         object::transfer_extend(package, owner);   
     }
 
-    fun check_upgradability(old_pack: &Object<Package>, _new_modules: &vector<MoveModule>) {
+    fun check_upgradability(old_pack: &Object<Package>) {
         let upgrade_policy = object::borrow_field<Package, vector<u8>, UpgradePolicy>(old_pack, REVERSED_KEY_UPGRADE_POLICY);
         assert!(upgrade_policy.policy < upgrade_policy_immutable().policy, ErrorPackageImmutable);
     }
@@ -218,15 +214,6 @@ module moveos_std::module_store {
     }
 
     /*********************** package metadata functions *******************/
-    /// Whether unconditional code upgrade with no compatibility check is allowed. This
-    /// publication mode should only be used for modules which aren't shared with user others,
-    /// or on local/dev network.
-    /// The developer is responsible for not breaking memory layout of any resources he already
-    /// stored on chain.
-    public fun upgrade_policy_arbitrary(): UpgradePolicy {
-        UpgradePolicy { policy: 0 }
-    }
-
     /// Whether a compatibility check should be performed for upgrades. The check only passes if
     /// a new module has (a) the same public functions (b) for existing resources, no layout change.
     public fun upgrade_policy_compat(): UpgradePolicy {
@@ -242,6 +229,11 @@ module moveos_std::module_store {
     /// strengthened but not weakened.
     public fun can_change_upgrade_policy_to(from: UpgradePolicy, to: UpgradePolicy): bool {
         from.policy <= to.policy
+    }
+
+    public entry fun freeze_package(package: &mut Object<Package>) {
+        let policy: &mut UpgradePolicy = object::borrow_mut_field(package, REVERSED_KEY_UPGRADE_POLICY);
+        policy.policy = upgrade_policy_immutable().policy;
     }
 
     /************************ allowlist functions *************************/
@@ -285,7 +277,6 @@ module moveos_std::module_store {
     //xxd -c 99999 -p examples/counter/build/counter/bytecode_modules/counter.mv
     #[test_only]
     const COUNTER_MV_BYTES: vector<u8> = x"a11ceb0b060000000b01000402040403082b04330605391c07557908ce0140068e02220ab002050cb502640d9903020000010100020c000003000000000400000000050100000006010000000700020001080506010c01090700010c010a0508010c0504060407040001060c01030107080001080001050107090002060c09000106090007636f756e746572076163636f756e7407436f756e74657208696e63726561736509696e6372656173655f04696e69740d696e69745f666f725f746573740576616c756513626f72726f775f6d75745f7265736f75726365106d6f76655f7265736f757263655f746f0f626f72726f775f7265736f757263650000000000000000000000000000000000000000000000000000000000000042000000000000000000000000000000000000000000000000000000000000000205200000000000000000000000000000000000000000000000000000000000000042000201070300010400000211010201010000030c070038000c000a00100014060100000000000000160b000f0015020200000000050b0006000000000000000012003801020301000000050b0006000000000000000012003801020401000000050700380210001402000000";
-
 
     #[test_only]
     fun drop_module_store(self: Object<ModuleStore>) {
@@ -347,6 +338,24 @@ module moveos_std::module_store {
 
         remove_from_allowlist(&system_account, @0x42);
         assert!(!is_in_allowlist(@0x42), 3);
+    }
+
+    #[test(account=@0x42)]
+    #[expected_failure(abort_code = ErrorPackageImmutable, location = Self)]
+    fun test_upgrade_policy(account: &signer) {
+        init_module_store();
+        features::init_feature_store_for_test();
+        
+        let module_object = borrow_mut_module_store();
+        let module_bytes = COUNTER_MV_BYTES;
+        let m: MoveModule = move_module::new(module_bytes);
+
+        publish_modules(module_object, account, vector::singleton(m));
+        publish_modules(module_object, account, vector::singleton(m));
+
+        let package = borrow_mut_package(module_object, signer::address_of(account));
+        freeze_package(package);
+        publish_modules(module_object, account, vector::singleton(m));
     }
 }
 
