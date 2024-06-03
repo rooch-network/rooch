@@ -928,6 +928,7 @@
             "required": [
               "fields",
               "key",
+              "key_state",
               "type"
             ],
             "properties": {
@@ -939,6 +940,9 @@
               },
               "key": {
                 "$ref": "#/components/schemas/KeyStateView"
+              },
+              "key_state": {
+                "type": "string"
               },
               "op": {
                 "anyOf": [
@@ -962,12 +966,16 @@
             "type": "object",
             "required": [
               "key",
+              "key_state",
               "op",
               "type"
             ],
             "properties": {
               "key": {
                 "$ref": "#/components/schemas/KeyStateView"
+              },
+              "key_state": {
+                "type": "string"
               },
               "op": {
                 "$ref": "#/components/schemas/OpView_for_StateView"
@@ -1833,17 +1841,14 @@
             "additionalProperties": false
           },
           {
-            "description": "Query by object id.",
+            "description": "Query by object ids.",
             "type": "object",
             "required": [
               "object_id"
             ],
             "properties": {
               "object_id": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/ObjectID"
-                }
+                "type": "string"
               }
             },
             "additionalProperties": false
