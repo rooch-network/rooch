@@ -139,7 +139,7 @@ const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove }) => {
         <TableCell className="cursor-pointer w-64" onClick={() => setIsExpanded(!isExpanded)}>
           <div className="flex items-center justify-start gap-1 w-full">
             <span className="text-muted-foreground">
-              {isExpanded ? 'Hide Session Keys' : 'Show Session Keys'}
+              {isExpanded ? 'Hide Session Key Scopes' : 'Show Session Key Scopes'}
             </span>
             {isExpanded ? (
               <ChevronUp className="w-4 h-4 text-muted-foreground" />
