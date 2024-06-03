@@ -64,7 +64,7 @@ impl App {
                     format!("Internal Error: Failed to send funds to {address:?}")
                 } else {
                     //TODO: use coin decimals
-                    let funds = self.faucet_funds as f64 / 10000000f64;
+                    let funds = self.faucet_funds as f64 / 100000000f64;
                     format!("Sending gas {funds} to {address:?}")
                 }
             }
