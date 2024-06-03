@@ -8,8 +8,8 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 once_cell = { workspace = true }
 wasmer = { workspace = true }
-wasmer-compiler = { workspace = true }
-wasmer-engine = { workspace = true }
+wasmer-types = { workspace = true }
 ciborium = { workspace = true }
 rand = { workspace = true }
 anyhow = { workspace = true }
+tracing = { workspace = true }

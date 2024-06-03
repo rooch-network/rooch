@@ -9,8 +9,9 @@ use once_cell::sync::Lazy;
 use rand;
 use wasmer::Value::I32;
 use wasmer::*;
+use tracing::debug;
 
-use crate::middlewares::gas_meter;
+use crate::middlewares::gas_metering::{GasMeter, GasMiddleware};
 
 //#[derive(Clone)]
 pub struct WASMInstance {
@@ -79,6 +80,7 @@ pub fn remove_instance(instance_id: u64) -> anyhow::Result<()> {
 #[derive(Clone)]
 struct Env {
     memory: Arc<Mutex<Option<Memory>>>,
+    gas_meter: Arc<Mutex<GasMeter>>,
 }
 
 fn fd_write(env: FunctionEnvMut<Env>, _fd: i32, mut iov: i32, iovcnt: i32, pnum: i32) -> i32 {
@@ -167,6 +169,11 @@ fn proc_exit(_env: FunctionEnvMut<Env>, code: i32) {
     eprintln!("program exit with {:}", code)
 }
 
+fn charge(env: FunctionEnvMut<Env>, amount: u64) {
+    let mut gas_meter = env.data().gas_meter.lock().unwrap();
+    gas_meter.charge(amount);
+}
+
 pub fn put_data_on_stack(instance: &mut WASMInstance, data: &[u8]) -> anyhow::Result<i32> {
     let stack_alloc_func = match instance.instance.exports.get_function("stackAlloc") {
         Ok(v) => v,
@@ -225,22 +232,27 @@ pub fn get_data_from_heap(
     // owned_str
 }
 
-pub fn create_store() -> Store {
-    // Create a compiler configuration
-    let mut compiler_config = CompilerConfig::default();
-    compiler_config.push_middleware(Box::new(gas_meter::GasMeterMiddlewareGenerator {}));
-
-    // Create an engine
-    let engine = EngineBuilder::new(compiler_config).engine();
-
-    // Load the WebAssembly module
-    let store = Store::new(&engine);
-
-    store
-}
 
 pub fn create_wasm_instance(code: &Vec<u8>) -> anyhow::Result<WASMInstance> {
-    let mut store = create_store();
+    debug!("create_wasm_instance 1");
+
+    // Create the GasMeter
+    let gas_meter = Arc::new(Mutex::new(GasMeter::new(10)));
+
+    debug!("create_wasm_instance 2");
+
+    // Create and configure the compiler
+    let mut compiler_config = wasmer::Cranelift::default();
+    let gas_middleware = GasMiddleware::new(gas_meter.clone(), None);
+    compiler_config.push_middleware(Arc::new(gas_middleware));
+
+    debug!("create_wasm_instance 3");
+
+    // Create an store
+    let engine = EngineBuilder::new(compiler_config).engine();
+    let mut store = Store::new(&engine);
+
+    debug!("create_wasm_instance 4");
 
     let bytecode = match wasmer::wat2wasm(code){
         Ok(m) => m,
@@ -249,20 +261,28 @@ pub fn create_wasm_instance(code: &Vec<u8>) -> anyhow::Result<WASMInstance> {
         }
     };
 
+    debug!("create_wasm_instance 5");
+
     let module = match Module::new(&store, bytecode.clone()) {
         Ok(m) => m,
         Err(e) => {
+            debug!("create_wasm_instance->new_module_error:{:?}", &e);
             return Err(anyhow::Error::msg(e.to_string()));
         }
     };
+
+    debug!("create_wasm_instance 6");
 
     let global_memory = unsafe { GLOBAL_MEMORY.clone() };
     let env = FunctionEnv::new(
         &mut store,
         Env {
             memory: global_memory,
+            gas_meter: gas_meter,
         },
     );
+
+    debug!("create_wasm_instance 7");
 
     let import_object = imports! {
         "wasi_snapshot_preview1" => {
@@ -270,13 +290,20 @@ pub fn create_wasm_instance(code: &Vec<u8>) -> anyhow::Result<WASMInstance> {
             "fd_seek" => Function::new_typed_with_env(&mut store, &env, fd_seek),
             "fd_close" => Function::new_typed_with_env(&mut store, &env, fd_close),
             "proc_exit" => Function::new_typed_with_env(&mut store, &env, proc_exit),
-        }
+        },
+        "env" => {
+            "charge" => Function::new_typed_with_env(&mut store, &env, charge),
+        },
     };
+
+    debug!("create_wasm_instance 8");
 
     let instance = match Instance::new(&mut store, &module, &import_object) {
         Ok(v) => v,
         Err(_) => return Err(anyhow::Error::msg("create wasm instance failed")),
     };
+
+    debug!("create_wasm_instance 9");
 
     if let Ok(memory) = instance.exports.get_memory("memory") {
         unsafe { *GLOBAL_MEMORY = Arc::new(Mutex::new(Some(memory.clone()))) };

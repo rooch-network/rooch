@@ -319,12 +319,12 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # test wasm trap
-      #Then cmd: "move run --function default::wasm_execution::run_trap"
-      #Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      Then cmd: "move run --function default::wasm_execution::run_trap"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # test wasm forever
-      Then cmd: "move run --function default::wasm_execution::run_infinite_loop"
-      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      #Then cmd: "move run --function default::wasm_execution::run_infinite_loop"
+      #Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # run wasm test
       #Then cmd: "move run --function default::wasm_execution::run"

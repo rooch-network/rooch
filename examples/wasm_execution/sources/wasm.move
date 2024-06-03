@@ -11,10 +11,13 @@ module rooch_examples::wasm_execution {
    use moveos_std::cbor;
    
    entry public fun run_trap() {
+      debug::print(&string::utf8(b"run_trap 1"));
+
       let wasm_code: vector<u8> = b"(module(func (export \"div_s\") (param $x i32) (param $y i32) (result i32) (i32.div_s (local.get $x) (local.get $y))))";
 
       // 1. create wasm VM instance (required step)
       let wasm_instance = wasm::create_wasm_instance(wasm_code);
+      debug::print(&string::utf8(b"run_trap 2"));
       debug::print(&wasm_instance);
 
       // 2. run 10/0
@@ -32,10 +35,12 @@ module rooch_examples::wasm_execution {
    }
 
    entry public fun run_infinite_loop() {
+      debug::print(&string::utf8(b"run_infinite_loop 1"));
       let wasm_code: vector<u8> = b"(module (func $run_forever (loop $loop (br $loop))) (export \"run_forever\" (func $run_forever)))";
 
       // 1. create wasm VM instance (required step)
       let wasm_instance = wasm::create_wasm_instance(wasm_code);
+      debug::print(&string::utf8(b"run_infinite_loop 2"));
       debug::print(&wasm_instance);
 
       // 2. run forever

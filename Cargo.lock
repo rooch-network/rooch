@@ -5474,27 +5474,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "loupe"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b6a72dfa44fe15b5e76b94307eeb2ff995a8c5b283b55008940c02e0c5b634d"
-dependencies = [
- "indexmap 1.9.3",
- "loupe-derive",
- "rustversion",
-]
-
-[[package]]
-name = "loupe-derive"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0fbfc88337168279f2e9ae06e157cfed4efd3316e14dc96ed074d4f2e6c5952"
-dependencies = [
- "quote 1.0.36",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "lru"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5578,15 +5557,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe751422e4a8caa417e13c3ea66452215d7d63e19e604f4980461212f3ae1322"
 dependencies = [
  "libc",
-]
-
-[[package]]
-name = "memoffset"
-version = "0.6.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5aa361d4faea93603064a027415f07bd8e1d5c88c9fbf68bf56a285428fd79ce"
-dependencies = [
- "autocfg",
 ]
 
 [[package]]
@@ -6648,9 +6618,9 @@ dependencies = [
  "rand 0.8.5",
  "serde 1.0.202",
  "serde_json",
+ "tracing",
  "wasmer",
- "wasmer-compiler 4.2.8",
- "wasmer-engine",
+ "wasmer-types",
 ]
 
 [[package]]
@@ -12611,43 +12581,13 @@ dependencies = [
  "thiserror",
  "tracing",
  "wasm-bindgen",
- "wasmer-compiler 4.2.8",
+ "wasmer-compiler",
  "wasmer-compiler-cranelift",
  "wasmer-derive",
- "wasmer-types 4.2.8",
- "wasmer-vm 4.2.8",
+ "wasmer-types",
+ "wasmer-vm",
  "wat",
  "winapi",
-]
-
-[[package]]
-name = "wasmer-artifact"
-version = "2.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7aaf9428c29c1d8ad2ac0e45889ba8a568a835e33fd058964e5e500f2f7ce325"
-dependencies = [
- "enumset",
- "loupe",
- "thiserror",
- "wasmer-compiler 2.3.0",
- "wasmer-types 2.3.0",
-]
-
-[[package]]
-name = "wasmer-compiler"
-version = "2.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e67a6cd866aed456656db2cfea96c18baabbd33f676578482b85c51e1ee19d2c"
-dependencies = [
- "enumset",
- "loupe",
- "rkyv",
- "serde 1.0.202",
- "serde_bytes",
- "smallvec",
- "target-lexicon",
- "thiserror",
- "wasmer-types 2.3.0",
 ]
 
 [[package]]
@@ -12671,8 +12611,8 @@ dependencies = [
  "shared-buffer",
  "smallvec",
  "thiserror",
- "wasmer-types 4.2.8",
- "wasmer-vm 4.2.8",
+ "wasmer-types",
+ "wasmer-vm",
  "wasmparser",
  "winapi",
 ]
@@ -12692,8 +12632,8 @@ dependencies = [
  "smallvec",
  "target-lexicon",
  "tracing",
- "wasmer-compiler 4.2.8",
- "wasmer-types 4.2.8",
+ "wasmer-compiler",
+ "wasmer-types",
 ]
 
 [[package]]
@@ -12706,45 +12646,6 @@ dependencies = [
  "proc-macro2 1.0.83",
  "quote 1.0.36",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "wasmer-engine"
-version = "2.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f98f010978c244db431b392aeab0661df7ea0822343334f8f2a920763548e45"
-dependencies = [
- "backtrace",
- "enumset",
- "lazy_static 1.4.0",
- "loupe",
- "memmap2 0.5.10",
- "more-asserts 0.2.2",
- "rustc-demangle",
- "serde 1.0.202",
- "serde_bytes",
- "target-lexicon",
- "thiserror",
- "wasmer-artifact",
- "wasmer-compiler 2.3.0",
- "wasmer-types 2.3.0",
- "wasmer-vm 2.3.0",
-]
-
-[[package]]
-name = "wasmer-types"
-version = "2.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39df01ea05dc0a9bab67e054c7cb01521e53b35a7bb90bd02eca564ed0b2667f"
-dependencies = [
- "backtrace",
- "enum-iterator",
- "indexmap 1.9.3",
- "loupe",
- "more-asserts 0.2.2",
- "rkyv",
- "serde 1.0.202",
- "thiserror",
 ]
 
 [[package]]
@@ -12761,33 +12662,6 @@ dependencies = [
  "rkyv",
  "target-lexicon",
  "thiserror",
-]
-
-[[package]]
-name = "wasmer-vm"
-version = "2.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30d965fa61f4dc4cdb35a54daaf7ecec3563fbb94154a6c35433f879466247dd"
-dependencies = [
- "backtrace",
- "cc",
- "cfg-if",
- "corosensei",
- "enum-iterator",
- "indexmap 1.9.3",
- "lazy_static 1.4.0",
- "libc",
- "loupe",
- "mach",
- "memoffset 0.6.5",
- "more-asserts 0.2.2",
- "region",
- "scopeguard",
- "serde 1.0.202",
- "thiserror",
- "wasmer-artifact",
- "wasmer-types 2.3.0",
- "winapi",
 ]
 
 [[package]]
@@ -12809,12 +12683,12 @@ dependencies = [
  "lazy_static 1.4.0",
  "libc",
  "mach",
- "memoffset 0.9.1",
+ "memoffset",
  "more-asserts 0.2.2",
  "region",
  "scopeguard",
  "thiserror",
- "wasmer-types 4.2.8",
+ "wasmer-types",
  "winapi",
 ]
 
