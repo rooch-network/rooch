@@ -12,6 +12,9 @@ mod metrics;
 mod errors;
 pub use errors::FaucetError;
 
+pub mod app;
+pub use app::*;
+
 pub mod web;
 pub use web::*;
 
