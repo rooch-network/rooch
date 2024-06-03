@@ -234,7 +234,7 @@ export const AssetsCoin = () => {
             {data?.data.map((coin) => (
               <TableRow key={coin.name}>
                 <TableCell>{coin.name}</TableCell>
-                <TableCell>{formatCoin(Number(coin.balance), coin.decimals)}</TableCell>
+                <TableCell>{formatCoin(Number(coin.balance), coin.decimals, coin.decimals)}</TableCell>
                 <TableCell className="text-right">
                   <Button
                     variant="link"

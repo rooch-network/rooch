@@ -39,7 +39,7 @@ export const TransactionsTable = () => {
   const navigate = useNavigate()
   const account = useCurrentAccount()
 
-  const [paginationModel, setPaginationModel] = useState({ index: 0, limit: 1 })
+  const [paginationModel, setPaginationModel] = useState({ index: 0, limit: 10 })
   const mapPageToNextCursor = useRef<{ [page: number]: number | null }>({})
 
   const queryOptions = useMemo(

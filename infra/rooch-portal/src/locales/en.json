@@ -17,5 +17,31 @@
     "connectWallet": "Connect Wallet",
     "connectWalletOnMobile": "Connect",
     "connectWalletTip": "Connect to your Rooch wallet"
+  },
+  "Mint": {
+    "title": "Mint",
+    "subTitle": "Deploy and mint Bitcoin assets."
+  },
+  "Trade": {
+    "title": "Trade",
+    "subTitle": "Trade your Bitcoin assets with ease."
+  },
+  "Leap": {
+    "title": "Leap",
+    "subTitle": "Leap your assets on/off the Bitcoin network."
+  },
+  "Transactions": {
+    "title": "Transactions",
+    "subTitle": "Browse your account activity history."
+  },
+  "Apps": {
+    "title": "Apps",
+    "subTitle": "Explore Bitcoin applications powered by Rooch."
+  },
+  "Settings": {
+    "address": "Rooch Address",
+    "addressSubTitle": "Use Rooch address in the application and smart contract development.",
+    "session": "Session Keys",
+    "sessionSubTitle": "Manage the site that your account has authorized session keys."
   }
 }
