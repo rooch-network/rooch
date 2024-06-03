@@ -17,6 +17,9 @@ module moveos_std::module_store {
     /// Not allow to publish module
     const ErrorNotAllowToPublish: u64 = 1;
 
+    /// Package is immutable and cannot be upgraded.
+    const ErrorPackageImmutable: u64 = 2;
+
     const REVERSED_KEY_UPGRADE_POLICY: vector<u8> = b"reversed_key_upgrade_policy";
     const REVERSED_KEY_MODULE_NAMES: vector<u8> = b"reversed_key_module_names";
 
@@ -141,7 +144,7 @@ module moveos_std::module_store {
         };
         let package = borrow_mut_package(module_object, package_id);
         if (is_upgrade) {
-            check_upgradable(package, &modules);
+            check_upgradability(package, &modules);
         }
 
         while (i < len) {
@@ -179,8 +182,9 @@ module moveos_std::module_store {
         object::transfer_extend(package, owner);   
     }
 
-    fun check_upgradability(old_pack: &Object<Package>, new_modules: &vector<MoveModule>) {
-        
+    fun check_upgradability(old_pack: &Object<Package>, _new_modules: &vector<MoveModule>) {
+        let upgrade_policy = object::borrow_field<Package, vector<u8>, UpgradePolicy>(old_pack, REVERSED_KEY_UPGRADE_POLICY);
+        assert!(upgrade_policy.policy < upgrade_policy_immutable().policy, ErrorPackageImmutable);
     }
 
     fun borrow_package(module_store: &Object<ModuleStore>, package_id: address): &Object<Package> {
