@@ -365,7 +365,7 @@ export class RoochClient {
 
       for (const scope of data) {
         const value = scope.value
-        result.push(`${value.module_name}::${value.module_address}::${value.function_name}`)
+        result.push(`${value.module_address}::${value.module_name}::${value.function_name}`)
       }
 
       return result
