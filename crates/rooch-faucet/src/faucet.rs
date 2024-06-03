@@ -24,7 +24,7 @@ use tokio::sync::{
 use rooch_rpc_api::jsonrpc_types::KeptVMStatusView;
 use rooch_types::error::RoochError;
 
-pub const DEFAULT_AMOUNT: u64 = 100_000_000_0;
+pub const DEFAULT_AMOUNT: u64 = 1_000_000_000;
 
 #[derive(Parser, Debug, Clone)]
 pub struct FaucetConfig {
