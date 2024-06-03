@@ -9,6 +9,7 @@
 -  [Resource `Allowlist`](#0x2_module_store_Allowlist)
 -  [Resource `ModuleStore`](#0x2_module_store_ModuleStore)
 -  [Resource `Package`](#0x2_module_store_Package)
+-  [Struct `UpgradePolicy`](#0x2_module_store_UpgradePolicy)
 -  [Constants](#@Constants_0)
 -  [Function `module_store_id`](#0x2_module_store_module_store_id)
 -  [Function `init_module_store`](#0x2_module_store_init_module_store)
@@ -71,6 +72,18 @@ Modules are the Package's dynamic fields, with the module name as the key.
 
 
 <pre><code><b>struct</b> <a href="module_store.md#0x2_module_store_Package">Package</a> <b>has</b> key
+</code></pre>
+
+
+
+<a name="0x2_module_store_UpgradePolicy"></a>
+
+## Struct `UpgradePolicy`
+
+Describes an upgrade policy
+
+
+<pre><code><b>struct</b> <a href="module_store.md#0x2_module_store_UpgradePolicy">UpgradePolicy</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 

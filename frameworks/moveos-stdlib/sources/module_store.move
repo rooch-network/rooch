@@ -17,6 +17,9 @@ module moveos_std::module_store {
     /// Not allow to publish module
     const ErrorNotAllowToPublish: u64 = 1;
 
+    const REVERSED_KEY_UPGRADE_POLICY: vector<u8> = b"reversed_key_upgrade_policy";
+    const REVERSED_KEY_MODULE_NAMES: vector<u8> = b"reversed_key_module_names";
+
     /// Allowlist for module function invocation
     struct Allowlist has key, store {
         /// Allow list for publishing modules
@@ -32,6 +35,21 @@ module moveos_std::module_store {
     /// Used to store modules.
     /// Modules are the Package's dynamic fields, with the module name as the key.
     struct Package has key {}
+
+    /// Metadata for a package.
+    struct PackageMetadata has store, drop {
+        /// The upgrade policy.
+        upgrade_policy: UpgradePolicy,
+        /// The upgrade version.
+        version: u64,
+        /// The module bytes in this package.
+        modules: vector<vector<u8>>,
+    }
+
+    /// Describes an upgrade policy
+    struct UpgradePolicy has store, copy, drop {
+        policy: u8
+    }
 
     public fun module_store_id(): ObjectID {
         object::named_object_id<ModuleStore>()
@@ -108,18 +126,24 @@ module moveos_std::module_store {
 
     /// Publish modules to the module object's storage
     /// Return true if the modules are upgraded
-    public(friend) fun publish_modules_internal(module_object: &mut Object<ModuleStore>, package_id: address, modules: vector<MoveModule>) : bool {
+    public(friend) fun publish_modules_internal(
+        module_object: &mut Object<ModuleStore>, package_id: address, modules: vector<MoveModule>
+    ) : bool {
         let i = 0;
         let len = vector::length(&modules);
         let (module_names, module_names_with_init_fn, indices) = move_module::sort_and_verify_modules(&modules, package_id);
 
+        let is_upgrade = true;
         if (!exists_package(module_object, package_id)) {
-            let package = object::add_object_field_with_id(module_object, package_id, Package {});
-            object::transfer_extend(package, tx_context::sender());
+            // TODO: should we transfer the Package object to tx sender or package id address?
+            create_package(module_object, package_id, tx_context::sender());
+            is_upgrade = false;
         };
         let package = borrow_mut_package(module_object, package_id);
+        if (is_upgrade) {
+            check_upgradable(package, &modules);
+        }
 
-        let upgrade_flag = false;
         while (i < len) {
             let module_name = vector::pop_back(&mut module_names);
             let index = vector::pop_back(&mut indices);
@@ -129,7 +153,6 @@ module moveos_std::module_store {
             if (object::contains_field(package, module_name)) {
                 let old_m = remove_module(package, module_name);
                 move_module::check_comatibility(m, &old_m);
-                upgrade_flag = true;
             } else {
                 // request init function invoking
                 if (vector::contains(&module_names_with_init_fn, &module_name)) {
@@ -140,7 +163,24 @@ module moveos_std::module_store {
             add_module(package, module_name, *m);
             i = i + 1;
         };
-        upgrade_flag
+        is_upgrade
+    }
+
+    fun create_package(module_object: &mut Object<ModuleStore>, package_id: address, owner: address) {
+        let package = object::add_object_field_with_id(module_object, package_id, Package {});
+
+        // init default upgrade policy
+        let policy = if (features::get_localnet_feature() || features::get_devnet_feature()) {
+            upgrade_policy_arbitrary()
+        } else {
+            upgrade_policy_compat()
+        };
+        object::add_field(package, REVERSED_KEY_UPGRADE_POLICY, policy);
+        object::transfer_extend(package, owner);   
+    }
+
+    fun check_upgradability(old_pack: &Object<Package>, new_modules: &vector<MoveModule>) {
+        
     }
 
     fun borrow_package(module_store: &Object<ModuleStore>, package_id: address): &Object<Package> {
@@ -172,6 +212,35 @@ module moveos_std::module_store {
         let allowlist_obj = object::borrow_mut_object_shared(allowlist_id);
         object::borrow_mut<Allowlist>(allowlist_obj)
     }
+
+    /*********************** package metadata functions *******************/
+    /// Whether unconditional code upgrade with no compatibility check is allowed. This
+    /// publication mode should only be used for modules which aren't shared with user others,
+    /// or on local/dev network.
+    /// The developer is responsible for not breaking memory layout of any resources he already
+    /// stored on chain.
+    public fun upgrade_policy_arbitrary(): UpgradePolicy {
+        UpgradePolicy { policy: 0 }
+    }
+
+    /// Whether a compatibility check should be performed for upgrades. The check only passes if
+    /// a new module has (a) the same public functions (b) for existing resources, no layout change.
+    public fun upgrade_policy_compat(): UpgradePolicy {
+        UpgradePolicy { policy: 1 }
+    }
+
+    /// Whether the modules in the package are immutable and cannot be upgraded.
+    public fun upgrade_policy_immutable(): UpgradePolicy {
+        UpgradePolicy { policy: 2 }
+    }
+
+    /// Whether the upgrade policy can be changed. In general, the policy can be only
+    /// strengthened but not weakened.
+    public fun can_change_upgrade_policy_to(from: UpgradePolicy, to: UpgradePolicy): bool {
+        from.policy <= to.policy
+    }
+
+    /************************ allowlist functions *************************/
 
     /// Add an account to the allowlist. Only account in allowlist can publish modules.
     /// This is only valid when module_publishing_allowlist_enabled feature is enabled.
