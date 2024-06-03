@@ -7,9 +7,9 @@ use std::sync::{Arc, Mutex};
 
 use once_cell::sync::Lazy;
 use rand;
+use tracing::debug;
 use wasmer::Value::I32;
 use wasmer::*;
-use tracing::debug;
 
 use crate::middlewares::gas_metering::{GasMeter, GasMiddleware};
 
@@ -171,7 +171,7 @@ fn proc_exit(_env: FunctionEnvMut<Env>, code: i32) {
 
 fn charge(env: FunctionEnvMut<Env>, amount: u64) {
     let mut gas_meter = env.data().gas_meter.lock().unwrap();
-    gas_meter.charge(amount);
+    let _ = gas_meter.charge(amount);
 }
 
 pub fn put_data_on_stack(instance: &mut WASMInstance, data: &[u8]) -> anyhow::Result<i32> {
@@ -232,7 +232,6 @@ pub fn get_data_from_heap(
     // owned_str
 }
 
-
 pub fn create_wasm_instance(code: &Vec<u8>) -> anyhow::Result<WASMInstance> {
     debug!("create_wasm_instance 1");
 
@@ -249,12 +248,12 @@ pub fn create_wasm_instance(code: &Vec<u8>) -> anyhow::Result<WASMInstance> {
     debug!("create_wasm_instance 3");
 
     // Create an store
-    let engine = EngineBuilder::new(compiler_config).engine();
+    let engine = wasmer::sys::EngineBuilder::new(compiler_config).engine();
     let mut store = Store::new(&engine);
 
     debug!("create_wasm_instance 4");
 
-    let bytecode = match wasmer::wat2wasm(code){
+    let bytecode = match wasmer::wat2wasm(code) {
         Ok(m) => m,
         Err(e) => {
             return Err(anyhow::Error::msg(e.to_string()));
@@ -278,7 +277,7 @@ pub fn create_wasm_instance(code: &Vec<u8>) -> anyhow::Result<WASMInstance> {
         &mut store,
         Env {
             memory: global_memory,
-            gas_meter: gas_meter,
+            gas_meter,
         },
     );
 

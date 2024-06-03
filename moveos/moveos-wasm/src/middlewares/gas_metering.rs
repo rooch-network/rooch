@@ -6,9 +6,9 @@ use std::sync::{Arc, Mutex};
 use wasmer::wasmparser::Operator;
 use wasmer::{
     LocalFunctionIndex, MiddlewareError, MiddlewareReaderState, ModuleMiddleware,
-    RuntimeError
+    RuntimeError, Type,
 };
-use wasmer_types::FunctionIndex;
+use wasmer_types::{FunctionIndex, ImportKey, ImportIndex, FunctionType};
 use tracing::debug;
 
 #[derive(Debug)]
@@ -89,22 +89,37 @@ impl ModuleMiddleware for GasMiddleware {
     }
 
     fn transform_module_info(&self, module_info: &mut wasmer_types::ModuleInfo) {
-        // Get the index of the charge function
-        if let Some(index) = module_info.imports.iter().find_map(|(name, import_index)| {
-            if name.module == "env" && name.field == "charge" {
-                if let wasmer_types::ImportIndex::Function(index) = import_index {
-                    return Some(*index);
-                }
-            }
-            
-            None
-        }) {
-            debug!("transform_module_info -> charge_func_index:{:?}", &index);
-            let mut gas_meter = self.gas_meter.lock().unwrap();
-            gas_meter.charge_function_index = Some(index);
-        } else {
-            panic!("charge function not found in imports");
-        }
+        // Insert the signature for the charge function
+        let charge_signature = FunctionType::new(vec![Type::I64], vec![]);
+        let charge_signature_index = module_info.signatures.push(charge_signature);
+        debug!("transform_module_info charge_signature_index: {:?}", &charge_signature_index);
+
+        // Insert the charge function
+        let charge_function_index = module_info.functions.push(charge_signature_index);
+        debug!("transform_module_info charge_function_index: {:?}", &charge_function_index);
+
+        // Insert the charge function name
+        module_info.function_names.insert(charge_function_index, "charge".to_string());
+
+        // Insert the charge function import declaration
+        let charge_import_key = ImportKey {
+            module: "env".to_string(),
+            field: "charge".to_string(),
+            import_idx: charge_signature_index.as_u32(),
+        };
+        debug!("transform_module_info charge_import_key: {:?}", &charge_import_key);
+
+        module_info.imports.insert(charge_import_key, ImportIndex::Function(charge_function_index));
+        module_info.num_imported_functions = module_info.imports.len();
+
+        let mut gas_meter = self.gas_meter.lock().unwrap();
+        gas_meter.charge_function_index = Some(charge_function_index);
+ 
+
+        debug!("transform_module_info signatures: {:?}", &module_info.signatures);
+        debug!("transform_module_info functions: {:?}", &module_info.functions);
+        debug!("transform_module_info function_names: {:?}", &module_info.function_names);
+        debug!("transform_module_info imports: {:?}", &module_info.imports);
     }
 }
 
@@ -133,6 +148,7 @@ impl wasmer::FunctionMiddleware for GasFunctionMiddleware {
 
         // Use cost_function to evaluate the cost of the instruction
         self.accumulated_cost += (self.cost_function)(&operator);
+        debug!("feed: accumulated_cost: {:?}", &self.accumulated_cost);
 
         // Perform batch charging at critical points
         match operator {
@@ -146,10 +162,12 @@ impl wasmer::FunctionMiddleware for GasFunctionMiddleware {
             | Operator::CallIndirect { .. }
             | Operator::Return => {
                 if self.accumulated_cost > 0 {
+                    debug!("feed: match op: {:?}", &operator);
+
                     let gas_meter = self.gas_meter.lock().unwrap();
 
                     state.extend(&[
-                        Operator::I32Const { value: self.accumulated_cost as i32 },
+                        Operator::I64Const { value: self.accumulated_cost as i64 },
                         Operator::Call { function_index: gas_meter.charge_function_index.unwrap().as_u32() },
                     ]);
 
@@ -158,6 +176,8 @@ impl wasmer::FunctionMiddleware for GasFunctionMiddleware {
             }
             _ => {}
         }
+
+        debug!("feed: push_operator: {:?}", &operator);
         state.push_operator(operator);
 
         Ok(())

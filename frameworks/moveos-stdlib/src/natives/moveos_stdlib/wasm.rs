@@ -86,16 +86,19 @@ fn native_create_wasm_instance(
                 Err(e) => {
                     debug!("insert_wasm_instance_error: {:?}", &e);
                     (0, E_WASM_INSERT_POOL_FAILED)
-                },
+                }
             }
-        },
+        }
         Err(e) => {
             debug!("create_wasm_instance_error: {:?}", &e);
             (0, E_WASM_INSTANCE_CREATION_FAILED)
-        },
+        }
     };
 
-    debug!("native_create_wasm_instance 2, instance_id:{:?}, error_code:{:?}", &instance_id, &error_code);
+    debug!(
+        "native_create_wasm_instance 2, instance_id:{:?}, error_code:{:?}",
+        &instance_id, &error_code
+    );
 
     let mut cost = gas_params.base_create_instance;
     cost += gas_params.per_byte_instance * NumBytes::new(wasm_bytes.len() as u64);
@@ -320,8 +323,14 @@ fn native_create_wasm_args_in_memory(
                 let buffer_final_ptr = match put_data_on_stack(instance, arg_buffer.as_slice()) {
                     Ok(v) => v,
                     Err(e) => {
-                        debug!("native_create_wasm_args_in_memory->put_data_on_stack error:{:?}", &e); 
-                        return build_err(gas_params.base_create_args, E_WASM_PUT_DATA_ON_STACK_FAILED)
+                        debug!(
+                            "native_create_wasm_args_in_memory->put_data_on_stack error:{:?}",
+                            &e
+                        );
+                        return build_err(
+                            gas_params.base_create_args,
+                            E_WASM_PUT_DATA_ON_STACK_FAILED,
+                        );
                     }
                 };
 
@@ -418,12 +427,15 @@ fn execute_wasm_function_inner(
     let mut pool_object = match instance_pool.lock() {
         Ok(v) => v,
         Err(e) => {
-            debug!("execute_wasm_function_inner->instance_pool_lock_error: {:?}", &e);
-            
+            debug!(
+                "execute_wasm_function_inner->instance_pool_lock_error: {:?}",
+                &e
+            );
+
             return Ok(NativeResult::err(
                 gas_params.base_create_execution,
                 E_GET_INSTANCE_POOL_FAILED,
-            ))
+            ));
         }
     };
 
@@ -447,14 +459,19 @@ fn execute_wasm_function_inner(
                     // TODO: check the length of arguments for the function calling
 
                     // 定义一个 trap handler
-                    let trap_handler: Box<dyn Fn(libc::c_int, *const libc::siginfo_t, *const libc::c_void) -> bool + Send + Sync + 'static> = Box::new(|_signum, _siginfo, _context| {
+                    let trap_handler: Box<
+                        dyn Fn(libc::c_int, *const libc::siginfo_t, *const libc::c_void) -> bool
+                            + Send
+                            + Sync
+                            + 'static,
+                    > = Box::new(|_signum, _siginfo, _context| {
                         debug!("Trap handler called!");
-                        true // 返回 true 表示处理了这个陷阱
+                        false // 返回 true 表示处理了这个陷阱
                     });
 
                     // 设置 trap handler
                     instance.store.set_trap_handler(Some(trap_handler));
-                    
+
                     match calling_function.call(&mut instance.store, wasm_func_args.as_slice()) {
                         Ok(ret) => {
                             let return_value = match ret.deref().first() {
@@ -487,13 +504,16 @@ fn execute_wasm_function_inner(
                             })
                         }
                         Err(err) => {
-                            debug!("execute_wasm_function_inner->calling_function_error:{:?}", &err);
+                            debug!(
+                                "execute_wasm_function_inner->calling_function_error:{:?}",
+                                &err
+                            );
 
                             Ok(NativeResult::err(
                                 gas_params.base_create_execution,
                                 E_WASM_EXECUTION_FAILED,
                             ))
-                        },
+                        }
                     }
                 }
                 Err(_) => Ok(NativeResult::err(

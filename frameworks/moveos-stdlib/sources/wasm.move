@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module moveos_std::wasm {
+    use std::debug;
+    use std::vector;
     use std::string;
     use std::option::{Self,Option};
     use moveos_std::features;
@@ -104,4 +106,31 @@ module moveos_std::wasm {
     native fun native_read_data_from_heap(instance_id: u64, data_ptr: u32, data_length: u32): vector<u8>;
 
     native fun native_release_wasm_instance(instance: WASMInstance): bool;
+
+    #[test]
+    fun test_trap() {
+      features::init_and_enable_all_features_for_test();
+
+      debug::print(&string::utf8(b"run_trap 1"));
+
+      let wasm_code: vector<u8> = b"(module(func (export \"div_s\") (param $x i32) (param $y i32) (result i32) (i32.div_s (local.get $x) (local.get $y))))";
+
+      // 1. create wasm VM instance (required step)
+      let wasm_instance = create_wasm_instance(wasm_code);
+      debug::print(&string::utf8(b"run_trap 2"));
+      debug::print(&wasm_instance);
+
+      // 2. run 10/0
+      let function_name = b"div_s";
+      let arg_list = vector::empty<u64>();
+      vector::push_back(&mut arg_list, 10u64);
+      vector::push_back(&mut arg_list, 0u64);
+      debug::print(&arg_list);
+
+      let ret_val_option = execute_wasm_function_option(&mut wasm_instance, function_name, arg_list);
+      assert!(option::is_none(&ret_val_option), 1);
+
+      // 3. release the wasm VM instance (required step)
+      release_wasm_instance(wasm_instance);
+   }
 }
