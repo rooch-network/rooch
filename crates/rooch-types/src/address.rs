@@ -858,7 +858,10 @@ impl ParsedAddress {
         } else if s.starts_with(ROOCH_HRP.as_str()) && s.len() == RoochAddress::LENGTH_BECH32 {
             Ok(Self::Numerical(RoochAddress::from_bech32(s)?))
         } else {
-            Ok(Self::Named(s.to_string()))
+            match BitcoinAddress::from_str(s) {
+                Ok(a) => Ok(Self::Numerical(a.to_rooch_address())),
+                Err(_) => Ok(Self::Named(s.to_string())),
+            }
         }
     }
 }
