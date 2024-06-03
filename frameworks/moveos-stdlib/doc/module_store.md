@@ -9,7 +9,6 @@
 -  [Resource `Allowlist`](#0x2_module_store_Allowlist)
 -  [Resource `ModuleStore`](#0x2_module_store_ModuleStore)
 -  [Resource `Package`](#0x2_module_store_Package)
--  [Struct `PackageMetadata`](#0x2_module_store_PackageMetadata)
 -  [Struct `UpgradePolicy`](#0x2_module_store_UpgradePolicy)
 -  [Constants](#@Constants_0)
 -  [Function `module_store_id`](#0x2_module_store_module_store_id)
@@ -21,7 +20,6 @@
 -  [Function `publish_modules`](#0x2_module_store_publish_modules)
 -  [Function `publish_modules_entry`](#0x2_module_store_publish_modules_entry)
 -  [Function `publish_modules_internal`](#0x2_module_store_publish_modules_internal)
--  [Function `upgrade_policy_arbitrary`](#0x2_module_store_upgrade_policy_arbitrary)
 -  [Function `upgrade_policy_compat`](#0x2_module_store_upgrade_policy_compat)
 -  [Function `upgrade_policy_immutable`](#0x2_module_store_upgrade_policy_immutable)
 -  [Function `can_change_upgrade_policy_to`](#0x2_module_store_can_change_upgrade_policy_to)
@@ -78,18 +76,6 @@ Modules are the Package's dynamic fields, with the module name as the key.
 
 
 <pre><code><b>struct</b> <a href="module_store.md#0x2_module_store_Package">Package</a> <b>has</b> key
-</code></pre>
-
-
-
-<a name="0x2_module_store_PackageMetadata"></a>
-
-## Struct `PackageMetadata`
-
-Metadata for a package.
-
-
-<pre><code><b>struct</b> <a href="module_store.md#0x2_module_store_PackageMetadata">PackageMetadata</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -244,22 +230,6 @@ Return true if the modules are upgraded
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="module_store.md#0x2_module_store_publish_modules_internal">publish_modules_internal</a>(module_object: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="module_store.md#0x2_module_store_ModuleStore">module_store::ModuleStore</a>&gt;, package_id: <b>address</b>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;): bool
-</code></pre>
-
-
-
-<a name="0x2_module_store_upgrade_policy_arbitrary"></a>
-
-## Function `upgrade_policy_arbitrary`
-
-Whether unconditional code upgrade with no compatibility check is allowed. This
-publication mode should only be used for modules which aren't shared with user others,
-or on local/dev network.
-The developer is responsible for not breaking memory layout of any resources he already
-stored on chain.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_upgrade_policy_arbitrary">upgrade_policy_arbitrary</a>(): <a href="module_store.md#0x2_module_store_UpgradePolicy">module_store::UpgradePolicy</a>
 </code></pre>
 
 

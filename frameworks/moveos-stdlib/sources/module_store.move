@@ -38,16 +38,6 @@ module moveos_std::module_store {
     /// Modules are the Package's dynamic fields, with the module name as the key.
     struct Package has key {}
 
-    /// Metadata for a package.
-    struct PackageMetadata has store, drop {
-        /// The upgrade policy.
-        upgrade_policy: UpgradePolicy,
-        /// The upgrade version.
-        version: u64,
-        /// The module bytes in this package.
-        modules: vector<vector<u8>>,
-    }
-
     /// Describes an upgrade policy
     struct UpgradePolicy has store, copy, drop {
         policy: u8
