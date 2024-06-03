@@ -1,12 +1,12 @@
 {
   "Sidebar": {
-    "assets": "投资组合",
+    "assets": "资产",
     "staking": "质押",
     "mint": "铸造",
     "trade": "交易",
     "leap": "跃迁",
     "apps": "应用",
-    "transactions": "交易",
+    "transactions": "历史",
     "settings": "设置"
   },
   "Theme": {
@@ -18,5 +18,31 @@
     "connectWallet": "连接钱包",
     "connectWalletOnMobile": "连接钱包",
     "connectWalletTip": "连接您的 Rooch 钱包"
+  },
+  "Mint": {
+    "title": "铸造",
+    "subTitle": "部署和铸造比特币资产。"
+  },
+  "Trade": {
+    "title": "交易",
+    "subTitle": "交易你的比特币资产。"
+  },
+  "Leap": {
+    "title": "跃迁",
+    "subTitle": "将你的资产转移到或转移出比特币网络。"
+  },
+  "Transactions": {
+    "title": "历史",
+    "subTitle": "查看你账户的历史活动。"
+  },
+  "Apps": {
+    "title": "应用",
+    "subTitle": "探索基于 Rooch 实现的比特币应用。"
+  },
+  "Settings": {
+    "address": "Rooch 地址",
+    "addressSubTitle": "在应用和合约开发中将使用到该 Rooch 地址。",
+    "session": "会话密钥",
+    "sessionSubTitle": "管理您账户授权过会话密钥的网站。"
   }
 }

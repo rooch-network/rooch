@@ -36,7 +36,7 @@ export type NavItemsType = NavLink[]
 
 export const navItems = (): NavItemsType => {
   return [
-    { icon: Bitcoin, label: 'Sidebar.assets', path: '/', auth: true, element: <AssetsLayout /> },
+    { icon: Bitcoin, label: 'Sidebar.assets', path: '/', auth: true,  element: <AssetsLayout /> },
     { icon: Scroll, label: 'Sidebar.mint', path: '/mint', auth: true, element: <MintLayout /> },
     {
       icon: CandlestickChart,

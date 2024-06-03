@@ -1,6 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useCallback } from 'react'
 import {
   Table,
   TableBody,
@@ -20,26 +20,10 @@ import { Copy, ChevronDown, ChevronUp, Check, AlertCircle } from 'lucide-react'
 
 import { formatTimestamp } from '@/utils/format.ts'
 
-interface Session {
-  authenticationKey: string
-  appName: string
-  createTime: string
-  lastActiveTime: string
-  maxInactiveInterval: string
-  scopes: string[]
-}
-
-interface SessionInfoResult {
-  authenticationKey: string
-  appName: string
-  createTime: number
-  lastActiveTime: number
-  maxInactiveInterval: number
-  scopes: string[]
-}
+import {SessionInfoResult} from '@roochnetwork/rooch-sdk';
 
 interface ExpandableRowProps {
-  session: Session
+  session: SessionInfoResult
   remove: (authKey: string) => void
 }
 
@@ -61,70 +45,20 @@ export const ManageSessions: React.FC = () => {
     data: sessionKeys,
     isLoading,
     isError,
+    refetch
   } = useRoochClientQuery('querySessionKeys', {
     address: sessionKey?.getAddress() || '',
   })
-
-  const [activeSessions, setActiveSessions] = useState<Session[]>([])
 
   const remove = useCallback(
     async (authKey: string) => {
       await removeSession({
         authKey: authKey,
       })
-      setActiveSessions((prevSessions) =>
-        prevSessions.filter((session) => session.authenticationKey !== authKey),
-      )
+      await refetch()
     },
-    [removeSession],
+    [removeSession, refetch],
   )
-
-  const formatSession = (session: SessionInfoResult): Session => ({
-    ...session,
-    createTime: formatTimestamp(session.createTime),
-    lastActiveTime: formatTimestamp(session.lastActiveTime),
-    maxInactiveInterval: session.maxInactiveInterval.toString(),
-  })
-
-  useEffect(() => {
-    if (sessionKeys?.data.length) {
-      const formattedSessions = sessionKeys.data.map(formatSession)
-      setActiveSessions(formattedSessions)
-    }
-  }, [sessionKeys])
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const currentTime = Date.now() / 1000 // 获取当前时间的 Unix 时间戳（以秒为单位）
-      setActiveSessions((prevSessions) =>
-        prevSessions.filter((session) => {
-          const expirationTime =
-            new Date(session.createTime).getTime() / 1000 + parseInt(session.maxInactiveInterval)
-          if (currentTime > expirationTime) {
-            remove(session.authenticationKey)
-            return false
-          }
-          return true
-        }),
-      )
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [remove])
-
-  if (!activeSessions.length) {
-    return (
-      <div className="rounded-lg border w-full flex justify-center items-center h-full p-20">
-        <div className="flex flex-col items-center justify-center text-center text-xl text-muted-foreground">
-          <AlertCircle className="w-12 h-12 mb-4 text-zinc-500" />
-          <p className="mb-2 font-semibold">No Data</p>
-          <p className="text-base text-gray-500">
-            No session keys found. Please check again later.
-          </p>
-        </div>
-      </div>
-    )
-  }
 
   if (isLoading || isError) {
     return (
@@ -146,6 +80,20 @@ export const ManageSessions: React.FC = () => {
     )
   }
 
+  if (sessionKeys && sessionKeys.data.length === 0) {
+    return (
+      <div className="rounded-lg border w-full flex justify-center items-center h-full p-20">
+        <div className="flex flex-col items-center justify-center text-center text-xl text-muted-foreground">
+          <AlertCircle className="w-12 h-12 mb-4 text-zinc-500" />
+          <p className="mb-2 font-semibold">No Data</p>
+          <p className="text-base text-gray-500">
+            No session keys found. Please check again later.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="rounded-lg border w-full">
       <Table>
@@ -161,7 +109,7 @@ export const ManageSessions: React.FC = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {activeSessions.map((session: Session) => (
+          {sessionKeys?.data.map((session) => (
             <ExpandableRow key={session.authenticationKey} session={session} remove={remove} />
           ))}
         </TableBody>
@@ -191,7 +139,7 @@ const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove }) => {
         <TableCell className="cursor-pointer w-64" onClick={() => setIsExpanded(!isExpanded)}>
           <div className="flex items-center justify-start gap-1 w-full">
             <span className="text-muted-foreground">
-              {isExpanded ? 'Hide Session Keys' : 'Show Session Keys'}
+              {isExpanded ? 'Hide Session Key Scopes' : 'Show Session Key Scopes'}
             </span>
             {isExpanded ? (
               <ChevronUp className="w-4 h-4 text-muted-foreground" />
@@ -200,8 +148,8 @@ const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove }) => {
             )}
           </div>
         </TableCell>
-        <TableCell className="text-muted-foreground">{session.createTime}</TableCell>
-        <TableCell className="text-muted-foreground">{session.lastActiveTime}</TableCell>
+        <TableCell className="text-muted-foreground">{formatTimestamp(session.createTime)}</TableCell>
+        <TableCell className="text-muted-foreground">{formatTimestamp(session.lastActiveTime)}</TableCell>
         <TableCell className="text-muted-foreground">{session.maxInactiveInterval}</TableCell>
         <TableCell className="text-center">
           <Button
@@ -210,7 +158,9 @@ const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove }) => {
             onClick={() => remove(session.authenticationKey)}
             className="text-red-500 dark:text-red-400 dark:hover:text-red-300 hover:text-red-600"
           >
-            Expired (Clear)
+            {
+              session.lastActiveTime > new Date().getSeconds() ? 'Disconnect' : 'Expired (Clear)'
+            }
           </Button>
         </TableCell>
       </TableRow>
