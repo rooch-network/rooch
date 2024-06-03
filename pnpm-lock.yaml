@@ -413,11 +413,11 @@ importers:
         specifier: ^1.0.7
         version: 1.0.7(@types/react-dom@18.2.17)(@types/react@18.2.63)(react-dom@18.2.0)(react@18.2.0)
       '@roochnetwork/rooch-sdk':
-        specifier: 0.1.6
-        version: 0.1.6
+        specifier: 0.1.8
+        version: 0.1.8
       '@roochnetwork/rooch-sdk-kit':
-        specifier: 0.1.6
-        version: 0.1.6(@types/react@18.2.63)(react-native@0.72.4)
+        specifier: 0.1.8
+        version: 0.1.8(@types/react@18.2.63)(react-native@0.72.4)
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.12.2(react@18.2.0)
@@ -8106,14 +8106,14 @@ packages:
     dev: true
     optional: true
 
-  /@roochnetwork/rooch-sdk-kit@0.1.6(@types/react@18.2.63)(react-native@0.72.4):
-    resolution: {integrity: sha512-Iw3xQuV3S80HVYLJtq2IXxHqXheDDxjZUUv4zsSwrPJa5uxCI1HCh53YXzwXFf7Ex4O/YVaLTaSu1au7pD+fJg==}
+  /@roochnetwork/rooch-sdk-kit@0.1.8(@types/react@18.2.63)(react-native@0.72.4):
+    resolution: {integrity: sha512-mtcHQnWJb6WqHPYsj6H3XYvQ5AGYnv4Z/AjxRhg6PhLoE2Wr+h14OeWcd2SrArJNQnhoYpFLNRni+IkwioGweA==}
     engines: {node: '>=18.0.0'}
     dependencies:
       '@metamask/detect-provider': 2.0.0
       '@metamask/sdk': 0.14.1(@types/react@18.2.63)(react-dom@18.2.0)(react-native@0.72.4)(react@18.2.0)
       '@noble/hashes': 1.3.2
-      '@roochnetwork/rooch-sdk': 0.1.6
+      '@roochnetwork/rooch-sdk': 0.1.8
       '@tanstack/react-query': 5.12.2(react@18.2.0)
       bech32: 2.0.0
       buffer: 6.0.0
@@ -8132,8 +8132,8 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@roochnetwork/rooch-sdk@0.1.6:
-    resolution: {integrity: sha512-ahpIMx0SROiazSJWFEL5tjrUs0688zesykh+SlyC+gVeJl4aa0ySr4Bho4sSIzHSYYR36xB0udY71EoFH+EGhw==}
+  /@roochnetwork/rooch-sdk@0.1.8:
+    resolution: {integrity: sha512-rQKhHvaUbM0tfSMovqkLPEyAnkp0l5ThYOXPCUlPVhOpUtNLAdfzRKPDeepRCUkPiPmBE92gA6yaMmd8a0x82g==}
     engines: {node: '>=18.0.0'}
     dependencies:
       '@ethersproject/bytes': 5.7.0
