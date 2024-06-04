@@ -108,18 +108,21 @@ module moveos_std::module_store {
 
     /// Publish modules to the module object's storage
     /// Return true if the modules are upgraded
-    public(friend) fun publish_modules_internal(module_object: &mut Object<ModuleStore>, package_id: address, modules: vector<MoveModule>) : bool {
+    public(friend) fun publish_modules_internal(
+        module_object: &mut Object<ModuleStore>, package_id: address, modules: vector<MoveModule>
+    ) : bool {
         let i = 0;
         let len = vector::length(&modules);
         let (module_names, module_names_with_init_fn, indices) = move_module::sort_and_verify_modules(&modules, package_id);
 
+        let is_upgrade = true;
         if (!exists_package(module_object, package_id)) {
-            let package = object::add_object_field_with_id(module_object, package_id, Package {});
-            object::transfer_extend(package, tx_context::sender());
+            // TODO: should we transfer the Package object to tx sender or package id address?
+            create_package(module_object, package_id, tx_context::sender());
+            is_upgrade = false;
         };
         let package = borrow_mut_package(module_object, package_id);
 
-        let upgrade_flag = false;
         while (i < len) {
             let module_name = vector::pop_back(&mut module_names);
             let index = vector::pop_back(&mut indices);
@@ -129,7 +132,6 @@ module moveos_std::module_store {
             if (object::contains_field(package, module_name)) {
                 let old_m = remove_module(package, module_name);
                 move_module::check_comatibility(m, &old_m);
-                upgrade_flag = true;
             } else {
                 // request init function invoking
                 if (vector::contains(&module_names_with_init_fn, &module_name)) {
@@ -140,7 +142,12 @@ module moveos_std::module_store {
             add_module(package, module_name, *m);
             i = i + 1;
         };
-        upgrade_flag
+        is_upgrade
+    }
+
+    fun create_package(module_object: &mut Object<ModuleStore>, package_id: address, owner: address) {
+        let package = object::add_object_field_with_id(module_object, package_id, Package {});
+        object::transfer_extend(package, owner);   
     }
 
     fun borrow_package(module_store: &Object<ModuleStore>, package_id: address): &Object<Package> {
@@ -172,6 +179,12 @@ module moveos_std::module_store {
         let allowlist_obj = object::borrow_mut_object_shared(allowlist_id);
         object::borrow_mut<Allowlist>(allowlist_obj)
     }
+
+    public fun freeze_package(package: Object<Package>) {
+        object::to_frozen(package);
+    }
+
+    /************************ allowlist functions *************************/
 
     /// Add an account to the allowlist. Only account in allowlist can publish modules.
     /// This is only valid when module_publishing_allowlist_enabled feature is enabled.
@@ -212,7 +225,6 @@ module moveos_std::module_store {
     //xxd -c 99999 -p examples/counter/build/counter/bytecode_modules/counter.mv
     #[test_only]
     const COUNTER_MV_BYTES: vector<u8> = x"a11ceb0b060000000b01000402040403082b04330605391c07557908ce0140068e02220ab002050cb502640d9903020000010100020c000003000000000400000000050100000006010000000700020001080506010c01090700010c010a0508010c0504060407040001060c01030107080001080001050107090002060c09000106090007636f756e746572076163636f756e7407436f756e74657208696e63726561736509696e6372656173655f04696e69740d696e69745f666f725f746573740576616c756513626f72726f775f6d75745f7265736f75726365106d6f76655f7265736f757263655f746f0f626f72726f775f7265736f757263650000000000000000000000000000000000000000000000000000000000000042000000000000000000000000000000000000000000000000000000000000000205200000000000000000000000000000000000000000000000000000000000000042000201070300010400000211010201010000030c070038000c000a00100014060100000000000000160b000f0015020200000000050b0006000000000000000012003801020301000000050b0006000000000000000012003801020401000000050700380210001402000000";
-
 
     #[test_only]
     fun drop_module_store(self: Object<ModuleStore>) {
@@ -274,6 +286,25 @@ module moveos_std::module_store {
 
         remove_from_allowlist(&system_account, @0x42);
         assert!(!is_in_allowlist(@0x42), 3);
+    }
+
+    #[test(account=@0x42)]
+    #[expected_failure(abort_code = 9, location = object)]
+    fun test_frozen_package(account: &signer) {
+        init_module_store();
+        features::init_feature_store_for_test();
+        
+        let module_object = borrow_mut_module_store();
+        let module_bytes = COUNTER_MV_BYTES;
+        let m: MoveModule = move_module::new(module_bytes);
+
+        publish_modules(module_object, account, vector::singleton(m));
+        publish_modules(module_object, account, vector::singleton(m));
+
+        let package_obj_id = object::custom_child_object_id<address, Package>(object::id(module_object), signer::address_of(account));
+        let (_, package) = object::take_object_extend< Package>(package_obj_id);
+        freeze_package(package);
+        publish_modules(module_object, account, vector::singleton(m));
     }
 }
 
