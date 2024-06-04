@@ -13,9 +13,7 @@ export const SettingsLayout = () => {
         <div className="flex items-center justify-between space-y-2 mb-4">
           <span>
             <h1 className="text-3xl font-bold tracking-tight">{t('Settings.address')}</h1>
-            <p className="text-muted-foreground">
-              {t('Settings.addressSubTitle')}
-            </p>
+            <p className="text-muted-foreground">{t('Settings.addressSubTitle')}</p>
           </span>
         </div>
         <RoochAddress />
