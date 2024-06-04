@@ -28,7 +28,7 @@
   "dashboard": {
     "title": "Portal 入口",
     "type": "page",
-    "href": "https://dashboard.rooch.network/",
+    "href": "https://portal.rooch.network/",
     "newWindow": true
   },
   "404": {
