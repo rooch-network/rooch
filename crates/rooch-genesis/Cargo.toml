@@ -51,12 +51,15 @@ moveos-verifier = { workspace = true }
 moveos-stdlib = { workspace = true }
 moveos = { workspace = true }
 moveos-store = { workspace = true }
+moveos-config = { workspace = true }
 
 rooch-framework = { workspace = true }
 rooch-types = { workspace = true }
 rooch-store = { workspace = true }
 rooch-indexer = { workspace = true }
-bitcoin-move = { workspace = true }
+rooch-db = { workspace = true }
+rooch-config = { workspace = true }
 
+bitcoin-move = { workspace = true }
 framework-builder = { workspace = true }
 framework-release = { workspace = true }
