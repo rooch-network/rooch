@@ -135,26 +135,147 @@ module moveos_std::wasm {
     }
 
     #[test]
-    fun run_infinite_loop() {
-      features::init_and_enable_all_features_for_test();
+    fun test_unconditional_jump_loop() {
+        // Enable all features for testing
+        features::init_and_enable_all_features_for_test();
 
-      debug::print(&string::utf8(b"run_infinite_loop 1"));
-      let wasm_code: vector<u8> = b"(module (func $run_forever (loop $loop (br $loop))) (export \"run_forever\" (func $run_forever)))";
+        // Print debug information
+        debug::print(&string::utf8(b"test_unconditional_jump_loop 1"));
 
-      // 1. create wasm VM instance (required step)
-      let wasm_instance = create_wasm_instance(wasm_code);
-      debug::print(&string::utf8(b"run_trap 2"));
-      debug::print(&wasm_instance);
+        // Define WASM code with an unconditional jump loop
+        let wasm_code: vector<u8> = b"(module (func $run_forever (loop $loop (br $loop))) (export \"run_forever\" (func $run_forever)))";
 
-      // 2. run 10/0
-      let function_name = b"run_forever";
-      let arg_list = vector::empty<u64>();
-      debug::print(&arg_list);
+        // 1. Create WASM VM instance (required step)
+        let wasm_instance = create_wasm_instance(wasm_code);
+        debug::print(&string::utf8(b"test_unconditional_jump_loop 2"));
+        debug::print(&wasm_instance);
 
-      let ret_val_option = execute_wasm_function_option(&mut wasm_instance, function_name, arg_list);
-      assert!(option::is_none(&ret_val_option), 1);
+        // 2. Execute the function that runs forever
+        let function_name = b"run_forever";
+        let arg_list = vector::empty<u64>();
+        debug::print(&arg_list);
 
-      // 3. release the wasm VM instance (required step)
-      release_wasm_instance(wasm_instance);
-   }
+        // Execute the function and check if it returns None (indicating an infinite loop)
+        let ret_val_option = execute_wasm_function_option(&mut wasm_instance, function_name, arg_list);
+        assert!(option::is_none(&ret_val_option), 1);
+
+        // 3. Release the WASM VM instance (required step)
+        release_wasm_instance(wasm_instance);
+    }
+
+    #[test]
+    fun test_conditional_jump_loop() {
+        // Enable all features for testing
+        features::init_and_enable_all_features_for_test();
+
+        // Print debug information
+        debug::print(&string::utf8(b"test_conditional_jump_loop 1"));
+
+        // Define WASM code with a conditional jump loop that always evaluates to true
+        let wasm_code: vector<u8> = b"(module (func $run_forever (loop $loop (i32.const 1) (br_if $loop))) (export \"run_forever\" (func $run_forever)))";
+
+        // 1. Create WASM VM instance (required step)
+        let wasm_instance = create_wasm_instance(wasm_code);
+        debug::print(&string::utf8(b"test_conditional_jump_loop 2"));
+        debug::print(&wasm_instance);
+
+        // 2. Execute the function that runs forever
+        let function_name = b"run_forever";
+        let arg_list = vector::empty<u64>();
+        debug::print(&arg_list);
+
+        // Execute the function and check if it returns None (indicating an infinite loop)
+        let ret_val_option = execute_wasm_function_option(&mut wasm_instance, function_name, arg_list);
+        assert!(option::is_none(&ret_val_option), 1);
+
+        // 3. Release the WASM VM instance (required step)
+        release_wasm_instance(wasm_instance);
+    }
+
+    #[test]
+    fun test_recursive_call_loop() {
+        // Enable all features for testing
+        features::init_and_enable_all_features_for_test();
+
+        // Print debug information
+        debug::print(&string::utf8(b"test_recursive_call_loop 1"));
+
+        // Define WASM code with a recursive call that never terminates
+        let wasm_code: vector<u8> = b"(module (func $run_forever (call $run_forever)) (export \"run_forever\" (func $run_forever)))";
+
+        // 1. Create WASM VM instance (required step)
+        let wasm_instance = create_wasm_instance(wasm_code);
+        debug::print(&string::utf8(b"test_recursive_call_loop 2"));
+        debug::print(&wasm_instance);
+
+        // 2. Execute the function that runs forever
+        let function_name = b"run_forever";
+        let arg_list = vector::empty<u64>();
+        debug::print(&arg_list);
+
+        // Execute the function and check if it returns None (indicating an infinite loop)
+        let ret_val_option = execute_wasm_function_option(&mut wasm_instance, function_name, arg_list);
+        assert!(option::is_none(&ret_val_option), 1);
+
+        // 3. Release the WASM VM instance (required step)
+        release_wasm_instance(wasm_instance);
+    }
+
+    #[test]
+    fun test_counter_overflow_loop() {
+        // Enable all features for testing
+        features::init_and_enable_all_features_for_test();
+
+        // Print debug information
+        debug::print(&string::utf8(b"test_counter_overflow_loop 1"));
+
+        // Define WASM code with a counter overflow loop
+        let wasm_code: vector<u8> = b"(module (func $run_forever (local $i i32) (loop $loop (local.set $i (i32.add (local.get $i) (i32.const 1))) (br_if $loop (i32.ne (local.get $i) (i32.const 0))))) (export \"run_forever\" (func $run_forever)))";
+
+        // 1. Create WASM VM instance (required step)
+        let wasm_instance = create_wasm_instance(wasm_code);
+        debug::print(&string::utf8(b"test_counter_overflow_loop 2"));
+        debug::print(&wasm_instance);
+
+        // 2. Execute the function that runs forever
+        let function_name = b"run_forever";
+        let arg_list = vector::empty<u64>();
+        debug::print(&arg_list);
+
+        // Execute the function and check if it returns None (indicating an infinite loop)
+        let ret_val_option = execute_wasm_function_option(&mut wasm_instance, function_name, arg_list);
+        assert!(option::is_none(&ret_val_option), 1);
+
+        // 3. Release the WASM VM instance (required step)
+        release_wasm_instance(wasm_instance);
+    }
+
+    #[test]
+    fun test_always_true_condition_loop() {
+        // Enable all features for testing
+        features::init_and_enable_all_features_for_test();
+
+        // Print debug information
+        debug::print(&string::utf8(b"test_always_true_condition_loop 1"));
+
+        // Define WASM code with a loop that always evaluates to true
+        let wasm_code: vector<u8> = b"(module (func $run_forever (loop $loop (if (i32.const 1) (then (br $loop))))) (export \"run_forever\" (func $run_forever)))";
+
+        // 1. Create WASM VM instance (required step)
+        let wasm_instance = create_wasm_instance(wasm_code);
+        debug::print(&string::utf8(b"test_always_true_condition_loop 2"));
+        debug::print(&wasm_instance);
+
+        // 2. Execute the function that runs forever
+        let function_name = b"run_forever";
+        let arg_list = vector::empty<u64>();
+        debug::print(&arg_list);
+
+        // Execute the function and check if it returns None (indicating an infinite loop)
+        let ret_val_option = execute_wasm_function_option(&mut wasm_instance, function_name, arg_list);
+        assert!(option::is_none(&ret_val_option), 1);
+
+        // 3. Release the WASM VM instance (required step)
+        release_wasm_instance(wasm_instance);
+    }
 }

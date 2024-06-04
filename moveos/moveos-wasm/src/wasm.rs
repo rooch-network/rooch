@@ -13,6 +13,8 @@ use wasmer::*;
 
 use crate::middlewares::gas_metering::{GasMeter, GasMiddleware};
 
+const GAS_LIMIT: u64 = 10000;
+
 //#[derive(Clone)]
 pub struct WASMInstance {
     pub bytecode: Vec<u8>,
@@ -241,7 +243,7 @@ pub fn create_wasm_instance(code: &Vec<u8>) -> anyhow::Result<WASMInstance> {
     debug!("create_wasm_instance 1");
 
     // Create the GasMeter
-    let gas_meter = Arc::new(Mutex::new(GasMeter::new(10)));
+    let gas_meter = Arc::new(Mutex::new(GasMeter::new(GAS_LIMIT)));
 
     debug!("create_wasm_instance 2");
 

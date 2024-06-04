@@ -13,6 +13,8 @@ use wasmer_types::{
     entity::PrimaryMap, ExportIndex, FunctionIndex, FunctionType, ImportIndex, ImportKey,
 };
 
+type CostFunction = dyn Fn(&Operator) -> u64 + Send + Sync;
+
 #[derive(Debug)]
 pub struct GasMeter {
     gas_limit: u64,
@@ -65,14 +67,11 @@ fn default_cost_function(operator: &Operator) -> u64 {
 
 pub struct GasMiddleware {
     gas_meter: Arc<Mutex<GasMeter>>,
-    cost_function: Arc<dyn Fn(&Operator) -> u64 + Send + Sync>,
+    cost_function: Arc<CostFunction>,
 }
 
 impl GasMiddleware {
-    pub fn new(
-        gas_meter: Arc<Mutex<GasMeter>>,
-        cost_function: Option<Arc<dyn Fn(&Operator) -> u64 + Send + Sync>>,
-    ) -> Self {
+    pub fn new(gas_meter: Arc<Mutex<GasMeter>>, cost_function: Option<Arc<CostFunction>>) -> Self {
         Self {
             gas_meter: gas_meter.clone(),
             cost_function: cost_function.unwrap_or_else(|| Arc::new(default_cost_function)),
@@ -187,7 +186,7 @@ impl ModuleMiddleware for GasMiddleware {
 struct GasFunctionMiddleware {
     gas_meter: Arc<Mutex<GasMeter>>,
     accumulated_cost: u64,
-    cost_function: Arc<dyn Fn(&Operator) -> u64 + Send + Sync>,
+    cost_function: Arc<CostFunction>,
 }
 
 impl fmt::Debug for GasFunctionMiddleware {
@@ -220,7 +219,7 @@ impl wasmer::FunctionMiddleware for GasFunctionMiddleware {
             | Operator::CallIndirect { .. }
             | Operator::Return => {
                 if self.accumulated_cost > 0 {
-                    debug!("feed: match op: {:?}", &operator);
+                    debug!("feed: match before op: {:?}", &operator);
 
                     let gas_meter = self.gas_meter.lock().unwrap();
 
@@ -240,13 +239,45 @@ impl wasmer::FunctionMiddleware for GasFunctionMiddleware {
         }
 
         debug!("feed: push_operator: {:?}", &operator);
-        state.push_operator(operator.clone());
+
+        // Update function call indices if necessary
+        match operator {
+            Operator::Call { function_index } => {
+                let gas_meter = self.gas_meter.lock().unwrap();
+                if function_index >= gas_meter.charge_function_index.unwrap().as_u32() {
+                    state.push_operator(Operator::Call {
+                        function_index: function_index + 1,
+                    });
+                } else {
+                    state.push_operator(operator.clone());
+                }
+            }
+            Operator::CallIndirect {
+                table_index,
+                type_index,
+                table_byte,
+            } => {
+                let gas_meter = self.gas_meter.lock().unwrap();
+                if table_index >= gas_meter.charge_function_index.unwrap().as_u32() {
+                    state.push_operator(Operator::CallIndirect {
+                        table_index: table_index + 1,
+                        type_index,
+                        table_byte,
+                    });
+                } else {
+                    state.push_operator(operator.clone());
+                }
+            }
+            _ => {
+                state.push_operator(operator.clone());
+            }
+        }
 
         // Perform batch charging after critical points
         match operator {
             Operator::Loop { .. } | Operator::BrIf { .. } | Operator::Else => {
                 if self.accumulated_cost > 0 {
-                    debug!("feed: match op: {:?}", &operator);
+                    debug!("feed: match after op: {:?}", &operator);
 
                     let gas_meter = self.gas_meter.lock().unwrap();
 
