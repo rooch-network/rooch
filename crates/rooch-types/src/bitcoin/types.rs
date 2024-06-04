@@ -172,6 +172,12 @@ impl MoveStructState for Transaction {
     }
 }
 
+impl Transaction {
+    pub fn is_coinbase(&self) -> bool {
+        self.input.len() == 1 && self.input[0].previous_output.is_null()
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct TxIn {
     /// The reference to the previous output that is being used as an input.
@@ -258,6 +264,18 @@ pub struct OutPoint {
 impl OutPoint {
     pub fn new(txid: AccountAddress, vout: u32) -> Self {
         Self { txid, vout }
+    }
+
+    pub fn null() -> Self {
+        Self {
+            txid: AccountAddress::ZERO,
+            vout: u32::MAX,
+        }
+    }
+
+    #[inline]
+    pub fn is_null(&self) -> bool {
+        *self == OutPoint::null()
     }
 }
 
@@ -359,7 +377,10 @@ impl MoveStructState for TxOut {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bitcoin::{consensus::deserialize, Block};
+    use bitcoin::{
+        consensus::{deserialize, Decodable},
+        Block,
+    };
     use hex::FromHex;
 
     #[test]
@@ -387,5 +408,15 @@ mod tests {
         assert_eq!(block_header.time, 1231965655);
         assert_eq!(block_header.bits, 486604799);
         assert_eq!(block_header.nonce, 2067413810);
+    }
+
+    #[test]
+    fn test_coin_base_tx() {
+        //https://mempool.space/api/tx/3ea07d9966895a8a73a5580d34713b8ff302a8413215af156e2ad484e50ccc5c/hex
+        let tx_bytes = Vec::<u8>::from_hex("010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff56035cea0c194d696e656420627920416e74506f6f6c20b9004206d7a9abb4fabe6d6dbbd991d69c05a27bd76b9bc7ad80763da6d836be289c7a53e12612625d5d1fec100000000000000000003d64a66d000000000000ffffffff05220200000000000017a91442402a28dd61f2718a4b27ae72a4791d5bbdade7872d04b0130000000017a9145249bdf2c131d43995cff42e8feee293f79297a8870000000000000000266a24aa21a9ede27dc3f39ba542af6f3b7b10d1b36d123910d46438a360e718ffcdd550d3c37e00000000000000002f6a2d434f52450142fdeae88682a965939fee9b7b2bd5b99694ff644e3ecda72cb7961caa4b541b1e322bcfe0b5a03000000000000000002b6a2952534b424c4f434b3a920ea155edd52e4efb952d4cec821261746fb0aa72b2c1552c1cce2b0061b56e0120000000000000000000000000000000000000000000000000000000000000000000000000").unwrap();
+        let bitcoin_tx: bitcoin::Transaction = deserialize(&tx_bytes).unwrap();
+        assert!(bitcoin_tx.is_coinbase());
+        let tx: Transaction = bitcoin_tx.into();
+        assert!(tx.is_coinbase());
     }
 }

@@ -213,7 +213,7 @@ module moveos_std::cbor {
  
         // check option string
         let option_string_bytes = simple_map::borrow(&map, &std::string::utf8(b"option_string"));
-        std::debug::print(option_string_bytes);
+        //std::debug::print(option_string_bytes);
         let option_string = from_cbor<Option<std::string::String>>(*option_string_bytes);
         assert!(option::is_some(&option_string), 17);
         assert!(option::borrow(&option_string) == &std::string::utf8(b"rooch.network"), 18);

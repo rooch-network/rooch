@@ -103,19 +103,5 @@ module bitcoin_move::network{
             abort ErrorUnknownNetwork
         }
     }
-   
-    public fun network_magic(network: u8): vector<u8> {
-        if (network == NETWORK_BITCOIN) {
-            x"f9beb4d9"
-        } else if (network == NETWORK_TESTNET) {
-            x"0b110907"
-        } else if (network == NETWORK_SIGNET) {
-            x"0f1e2c3d"
-        } else if (network == NETWORK_REGTEST) {
-            x"fabfb5da"
-        } else {
-            abort ErrorUnknownNetwork
-        }
-    }
 
 }

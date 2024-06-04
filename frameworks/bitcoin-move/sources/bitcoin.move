@@ -129,7 +129,7 @@ module bitcoin_move::bitcoin{
 
     fun is_coinbase_tx(tx: &Transaction): bool {
         let txinput = types::tx_input(tx);
-        let is_coinbase = if(vector::length(txinput) > 0) {
+        let is_coinbase = if(vector::length(txinput) == 1) {
             let first_input = vector::borrow(txinput, 0);
             let previous_output = types::txin_previous_output(first_input);
             types::is_null_outpoint(previous_output)
@@ -292,7 +292,7 @@ module bitcoin_move::bitcoin{
     }
 
 
-    /// The relay server submit a new Bitcoin block to the light client.
+    /// The the sequencer submit a new Bitcoin block
     fun submit_new_block(block_height: u64, block_hash: address, block_bytes: vector<u8>){
         let btc_block_store_obj = borrow_block_store_mut();
         let time = process_block(btc_block_store_obj, block_height, block_hash, block_bytes);

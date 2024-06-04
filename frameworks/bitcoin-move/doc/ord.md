@@ -27,6 +27,7 @@
 -  [Function `genesis_init`](#0x4_ord_genesis_init)
 -  [Function `new_inscription_id`](#0x4_ord_new_inscription_id)
 -  [Function `derive_inscription_id`](#0x4_ord_derive_inscription_id)
+-  [Function `parse_inscription_id`](#0x4_ord_parse_inscription_id)
 -  [Function `get_inscription_id_by_index`](#0x4_ord_get_inscription_id_by_index)
 -  [Function `inscription_latest_height`](#0x4_ord_inscription_latest_height)
 -  [Function `exists_inscription`](#0x4_ord_exists_inscription)
@@ -54,9 +55,6 @@
 -  [Function `sat_point_output_index`](#0x4_ord_sat_point_output_index)
 -  [Function `new_flotsam`](#0x4_ord_new_flotsam)
 -  [Function `unpack_flotsam`](#0x4_ord_unpack_flotsam)
--  [Function `unpack_record`](#0x4_ord_unpack_record)
--  [Function `from_transaction`](#0x4_ord_from_transaction)
--  [Function `from_transaction_bytes`](#0x4_ord_from_transaction_bytes)
 -  [Function `subsidy_by_height`](#0x4_ord_subsidy_by_height)
 -  [Function `add_permanent_state`](#0x4_ord_add_permanent_state)
 -  [Function `contains_permanent_state`](#0x4_ord_contains_permanent_state)
@@ -77,7 +75,6 @@
 -  [Function `metaprotocol_validity_protocol_type`](#0x4_ord_metaprotocol_validity_protocol_type)
 -  [Function `metaprotocol_validity_is_valid`](#0x4_ord_metaprotocol_validity_is_valid)
 -  [Function `metaprotocol_validity_invalid_reason`](#0x4_ord_metaprotocol_validity_invalid_reason)
--  [Function `parse_inscription_id`](#0x4_ord_parse_inscription_id)
 
 
 <pre><code><b>use</b> <a href="">0x1::ascii</a>;
@@ -474,6 +471,18 @@ How may blocks between halvings.
 
 
 
+<a name="0x4_ord_parse_inscription_id"></a>
+
+## Function `parse_inscription_id`
+
+Prase InscriptionID from String
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_parse_inscription_id">parse_inscription_id</a>(inscription_id: &<a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>&gt;
+</code></pre>
+
+
+
 <a name="0x4_ord_get_inscription_id_by_index"></a>
 
 ## Function `get_inscription_id_by_index`
@@ -535,7 +544,7 @@ How may blocks between halvings.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_spend_utxo">spend_utxo</a>(utxo_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;, tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>, input_utxo_values: <a href="">vector</a>&lt;u64&gt;, input_index: u64): (<a href="">vector</a>&lt;<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>&gt;, <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_Flotsam">ord::Flotsam</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_spend_utxo">spend_utxo</a>(utxo_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;, tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>, input_utxo_values: <a href="">vector</a>&lt;u64&gt;, input_index: u64): (<a href="">vector</a>&lt;<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>&gt;, <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_Flotsam">ord::Flotsam</a>&gt;)
 </code></pre>
 
 
@@ -546,7 +555,7 @@ How may blocks between halvings.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_handle_coinbase_tx">handle_coinbase_tx</a>(tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>, flotsams: <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_Flotsam">ord::Flotsam</a>&gt;, block_height: u64): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_handle_coinbase_tx">handle_coinbase_tx</a>(tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>, flotsams: <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_Flotsam">ord::Flotsam</a>&gt;, block_height: u64): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>&gt;
 </code></pre>
 
 
@@ -557,7 +566,7 @@ How may blocks between halvings.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_process_transaction">process_transaction</a>(tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>, input_utxo_values: <a href="">vector</a>&lt;u64&gt;): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_process_transaction">process_transaction</a>(tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>, input_utxo_values: <a href="">vector</a>&lt;u64&gt;): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>&gt;
 </code></pre>
 
 
@@ -770,39 +779,6 @@ Get the SatPoint's output_index
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_unpack_flotsam">unpack_flotsam</a>(flotsam: <a href="ord.md#0x4_ord_Flotsam">ord::Flotsam</a>): (u32, u64, <a href="_ObjectID">object::ObjectID</a>)
-</code></pre>
-
-
-
-<a name="0x4_ord_unpack_record"></a>
-
-## Function `unpack_record`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_unpack_record">unpack_record</a>(record: <a href="ord.md#0x4_ord_InscriptionRecord">ord::InscriptionRecord</a>): (<a href="">vector</a>&lt;u8&gt;, <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, <a href="">vector</a>&lt;u8&gt;, <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>&gt;, <a href="_Option">option::Option</a>&lt;u64&gt;)
-</code></pre>
-
-
-
-<a name="0x4_ord_from_transaction"></a>
-
-## Function `from_transaction`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_from_transaction">from_transaction</a>(tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>, input_utxo_values: <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u64&gt;&gt;): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;
-</code></pre>
-
-
-
-<a name="0x4_ord_from_transaction_bytes"></a>
-
-## Function `from_transaction_bytes`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_from_transaction_bytes">from_transaction_bytes</a>(transaction_bytes: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;
 </code></pre>
 
 
@@ -1040,15 +1016,4 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_metaprotocol_validity_invalid_reason">metaprotocol_validity_invalid_reason</a>(validity: &<a href="ord.md#0x4_ord_MetaprotocolValidity">ord::MetaprotocolValidity</a>): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
-</code></pre>
-
-
-
-<a name="0x4_ord_parse_inscription_id"></a>
-
-## Function `parse_inscription_id`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_parse_inscription_id">parse_inscription_id</a>(inscription_id: &<a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>&gt;
 </code></pre>

@@ -267,15 +267,13 @@ module moveos_std::string_utils {
     #[expected_failure(abort_code=ErrorInvalidStringNumber, location=moveos_std::string_utils)]
     fun test_parse_decimal_failed_invalid_char(){
         let s = string::utf8(b"1a.1");
-        let result = parse_decimal(&s, 18);
-        std::debug::print(&result);
+        let _result = parse_decimal(&s, 18);
     }
 
     #[test]
     #[expected_failure(abort_code=ErrorInvalidStringNumber, location=moveos_std::string_utils)]
     fun test_parse_decimal_failed_float_overflow(){
         let s = string::utf8(b"1.01");
-        let result = parse_decimal(&s, 1);
-        std::debug::print(&result);
+        let _result = parse_decimal(&s, 1);
     }
 }
