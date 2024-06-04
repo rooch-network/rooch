@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import ManageSessions from '@/pages/settings/components/manage-sessions'
 import { RoochAddress } from '@/pages/settings/components/rooch-address'
-import {useTranslation} from 'react-i18next';
+import { useTranslation } from 'react-i18next'
 
 export const SettingsLayout = () => {
   const { t } = useTranslation()

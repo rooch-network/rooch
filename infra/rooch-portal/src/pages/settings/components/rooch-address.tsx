@@ -74,7 +74,7 @@ export const RoochAddress = () => {
             alt="rooch logo"
             className="w-4 h-4 rounded-full bg-zinc-900 p-0.5 mr-2"
           />
-          {account.getBech32RoochAddress()}
+          {account.getRoochAddress()}
         </span>
       </div>
     </div>
