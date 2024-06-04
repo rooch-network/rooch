@@ -13,7 +13,7 @@ use moveos_types::{
     h256::H256,
     moveos_std::{
         display::{get_object_display_id, get_resource_display_id, RawDisplay},
-        object::ObjectEntity,
+        object::{ObjectEntity, ObjectID},
     },
     state::{AnnotatedKeyState, AnnotatedState, KeyState},
 };
@@ -21,8 +21,8 @@ use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, FieldStateFilterView, IndexerEventPageView,
     IndexerFieldStatePageView, IndexerFieldStateView, IndexerObjectStatePageView,
-    IndexerObjectStateView, KeyStateView, ObjectStateFilterView, QueryOptions, StateKVView,
-    StateOptions, TxOptions,
+    IndexerObjectStateView, KeyStateView, ObjectIDView, ObjectStateFilterView, ObjectStateView,
+    QueryOptions, StateKVView, StateOptions, TxOptions,
 };
 use rooch_rpc_api::jsonrpc_types::{
     event_view::{EventFilterView, EventView, IndexerEventView},
@@ -288,6 +288,35 @@ impl RoochAPIServer for RoochServer {
             next_cursor,
             has_next_page,
         })
+    }
+
+    async fn get_object_states(
+        &self,
+        object_ids: ObjectIDView,
+        state_option: Option<StateOptions>,
+    ) -> RpcResult<Vec<Option<ObjectStateView>>> {
+        let object_ids: Vec<ObjectID> = object_ids.into();
+        let access_path = AccessPath::objects(object_ids);
+        let state_option = state_option.unwrap_or_default();
+        let show_display = state_option.show_display;
+
+        let objects_view = self
+            .rpc_service
+            .get_annotated_states(access_path)
+            .await?
+            .into_iter()
+            .map(|option_annotated_s| {
+                option_annotated_s
+                    .map(|annotated_s| {
+                        annotated_s
+                            .into_annotated_object()
+                            .map(ObjectStateView::new_from_annotated_object)
+                    })
+                    .transpose()
+            })
+            .collect::<Result<Vec<_>>>()?;
+
+        Ok(objects_view)
     }
 
     async fn get_events_by_event_handle(

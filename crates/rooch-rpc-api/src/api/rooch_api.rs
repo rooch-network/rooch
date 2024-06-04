@@ -5,13 +5,12 @@ use crate::jsonrpc_types::account_view::BalanceInfoView;
 use crate::jsonrpc_types::address::RoochOrBitcoinAddressView;
 use crate::jsonrpc_types::event_view::EventFilterView;
 use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionWithInfoView};
-use crate::jsonrpc_types::TxOptions;
 use crate::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
     EventPageView, ExecuteTransactionResponseView, FieldStateFilterView, FunctionCallView,
     H256View, IndexerEventPageView, IndexerFieldStatePageView, IndexerObjectStatePageView,
-    ObjectStateFilterView, QueryOptions, StateOptions, StatePageView, StateView, StrView,
-    StructTagView, TransactionWithInfoPageView,
+    ObjectIDView, ObjectStateFilterView, ObjectStateView, QueryOptions, StateOptions,
+    StatePageView, StateView, StrView, StructTagView, TransactionWithInfoPageView, TxOptions,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -67,6 +66,14 @@ pub trait RoochAPI {
         limit: Option<StrView<usize>>,
         state_option: Option<StateOptions>,
     ) -> RpcResult<StatePageView>;
+
+    /// Get object states by object id
+    #[method(name = "getObjectStates")]
+    async fn get_object_states(
+        &self,
+        object_ids: ObjectIDView,
+        state_option: Option<StateOptions>,
+    ) -> RpcResult<Vec<Option<ObjectStateView>>>;
 
     /// Get the events by event handle id
     #[method(name = "getEventsByEventHandle")]

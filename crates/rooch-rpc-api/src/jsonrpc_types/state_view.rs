@@ -509,3 +509,35 @@ impl From<FieldStateFilterView> for FieldStateFilter {
         }
     }
 }
+
+/// Object state view. Used as return type of `getObjectStates`.
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub struct ObjectStateView {
+    pub id: ObjectID,
+    pub owner: RoochAddressView,
+    pub flag: u8,
+    pub object_type: StructTagView,
+    pub state_root: H256View,
+    pub size: u64,
+    pub created_at: u64,
+    pub updated_at: u64,
+    pub value: AnnotatedMoveStructView,
+    pub display_fields: Option<DisplayFieldsView>,
+}
+
+impl ObjectStateView {
+    pub fn new_from_annotated_object(object: AnnotatedObject) -> Self {
+        ObjectStateView {
+            id: object.id,
+            owner: object.owner.into(),
+            flag: object.flag,
+            object_type: object.value.type_.clone().into(),
+            state_root: object.state_root.into(),
+            size: object.size,
+            created_at: object.created_at,
+            updated_at: object.updated_at,
+            value: AnnotatedMoveStructView::from(object.value),
+            display_fields: None,
+        }
+    }
+}

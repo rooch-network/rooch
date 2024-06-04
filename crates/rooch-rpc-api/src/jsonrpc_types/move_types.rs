@@ -64,6 +64,38 @@ impl From<AccountAddressView> for AccountAddress {
     }
 }
 
+pub type ObjectIDView = StrView<Vec<ObjectID>>;
+
+impl std::fmt::Display for ObjectIDView {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        //The ObjectID should display fully hex string with `0x` prefix
+        let concated_str = self
+            .0
+            .iter()
+            .map(|id| format!("{:?}", id))
+            .collect::<Vec<_>>()
+            .join(",");
+        write!(f, "{:?}", concated_str)
+    }
+}
+
+impl FromStr for ObjectIDView {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let ids = s
+            .split(",")
+            .map(|id| ObjectID::from_str(id))
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(StrView(ids))
+    }
+}
+
+impl From<ObjectIDView> for Vec<ObjectID> {
+    fn from(value: ObjectIDView) -> Self {
+        value.0
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq, PartialOrd, Ord)]
 pub struct AnnotatedMoveStructView {
     pub abilities: u8,
