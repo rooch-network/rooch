@@ -17,11 +17,6 @@ module moveos_std::module_store {
     /// Not allow to publish module
     const ErrorNotAllowToPublish: u64 = 1;
 
-    /// Package is immutable and cannot be upgraded.
-    const ErrorPackageImmutable: u64 = 2;
-
-    const REVERSED_KEY_UPGRADE_POLICY: vector<u8> = b"reversed_key_upgrade_policy";
-
     /// Allowlist for module function invocation
     struct Allowlist has key, store {
         /// Allow list for publishing modules
@@ -37,11 +32,6 @@ module moveos_std::module_store {
     /// Used to store modules.
     /// Modules are the Package's dynamic fields, with the module name as the key.
     struct Package has key {}
-
-    /// Describes an upgrade policy
-    struct UpgradePolicy has store, copy, drop {
-        policy: u8
-    }
 
     public fun module_store_id(): ObjectID {
         object::named_object_id<ModuleStore>()
@@ -132,9 +122,6 @@ module moveos_std::module_store {
             is_upgrade = false;
         };
         let package = borrow_mut_package(module_object, package_id);
-        if (is_upgrade) {
-            check_upgradability(package);
-        };
 
         while (i < len) {
             let module_name = vector::pop_back(&mut module_names);
@@ -160,17 +147,7 @@ module moveos_std::module_store {
 
     fun create_package(module_object: &mut Object<ModuleStore>, package_id: address, owner: address) {
         let package = object::add_object_field_with_id(module_object, package_id, Package {});
-
-        // init default upgrade policy
-        // TODO: do we need to support arbitrary upgrade policy on dev/local net.
-        let policy = upgrade_policy_compat();
-        object::add_field(&mut package, REVERSED_KEY_UPGRADE_POLICY, policy);
         object::transfer_extend(package, owner);   
-    }
-
-    fun check_upgradability(old_pack: &Object<Package>) {
-        let upgrade_policy = object::borrow_field<Package, vector<u8>, UpgradePolicy>(old_pack, REVERSED_KEY_UPGRADE_POLICY);
-        assert!(upgrade_policy.policy < upgrade_policy_immutable().policy, ErrorPackageImmutable);
     }
 
     fun borrow_package(module_store: &Object<ModuleStore>, package_id: address): &Object<Package> {
@@ -203,27 +180,8 @@ module moveos_std::module_store {
         object::borrow_mut<Allowlist>(allowlist_obj)
     }
 
-    /*********************** package metadata functions *******************/
-    /// Whether a compatibility check should be performed for upgrades. The check only passes if
-    /// a new module has (a) the same public functions (b) for existing resources, no layout change.
-    public fun upgrade_policy_compat(): UpgradePolicy {
-        UpgradePolicy { policy: 1 }
-    }
-
-    /// Whether the modules in the package are immutable and cannot be upgraded.
-    public fun upgrade_policy_immutable(): UpgradePolicy {
-        UpgradePolicy { policy: 2 }
-    }
-
-    /// Whether the upgrade policy can be changed. In general, the policy can be only
-    /// strengthened but not weakened.
-    public fun can_change_upgrade_policy_to(from: UpgradePolicy, to: UpgradePolicy): bool {
-        from.policy <= to.policy
-    }
-
-    public entry fun freeze_package(package: &mut Object<Package>) {
-        let policy: &mut UpgradePolicy = object::borrow_mut_field(package, REVERSED_KEY_UPGRADE_POLICY);
-        policy.policy = upgrade_policy_immutable().policy;
+    public fun freeze_package(package: Object<Package>) {
+        object::to_frozen(package);
     }
 
     /************************ allowlist functions *************************/
@@ -331,8 +289,8 @@ module moveos_std::module_store {
     }
 
     #[test(account=@0x42)]
-    #[expected_failure(abort_code = ErrorPackageImmutable, location = Self)]
-    fun test_upgrade_policy(account: &signer) {
+    #[expected_failure(abort_code = 9, location = object)]
+    fun test_frozen_package(account: &signer) {
         init_module_store();
         features::init_feature_store_for_test();
         
@@ -343,7 +301,8 @@ module moveos_std::module_store {
         publish_modules(module_object, account, vector::singleton(m));
         publish_modules(module_object, account, vector::singleton(m));
 
-        let package = borrow_mut_package(module_object, signer::address_of(account));
+        let package_obj_id = object::custom_child_object_id<address, Package>(object::id(module_object), signer::address_of(account));
+        let (_, package) = object::take_object_extend< Package>(package_obj_id);
         freeze_package(package);
         publish_modules(module_object, account, vector::singleton(m));
     }

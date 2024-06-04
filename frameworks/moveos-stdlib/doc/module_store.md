@@ -9,7 +9,6 @@
 -  [Resource `Allowlist`](#0x2_module_store_Allowlist)
 -  [Resource `ModuleStore`](#0x2_module_store_ModuleStore)
 -  [Resource `Package`](#0x2_module_store_Package)
--  [Struct `UpgradePolicy`](#0x2_module_store_UpgradePolicy)
 -  [Constants](#@Constants_0)
 -  [Function `module_store_id`](#0x2_module_store_module_store_id)
 -  [Function `init_module_store`](#0x2_module_store_init_module_store)
@@ -20,9 +19,6 @@
 -  [Function `publish_modules`](#0x2_module_store_publish_modules)
 -  [Function `publish_modules_entry`](#0x2_module_store_publish_modules_entry)
 -  [Function `publish_modules_internal`](#0x2_module_store_publish_modules_internal)
--  [Function `upgrade_policy_compat`](#0x2_module_store_upgrade_policy_compat)
--  [Function `upgrade_policy_immutable`](#0x2_module_store_upgrade_policy_immutable)
--  [Function `can_change_upgrade_policy_to`](#0x2_module_store_can_change_upgrade_policy_to)
 -  [Function `freeze_package`](#0x2_module_store_freeze_package)
 -  [Function `add_to_allowlist`](#0x2_module_store_add_to_allowlist)
 -  [Function `remove_from_allowlist`](#0x2_module_store_remove_from_allowlist)
@@ -80,18 +76,6 @@ Modules are the Package's dynamic fields, with the module name as the key.
 
 
 
-<a name="0x2_module_store_UpgradePolicy"></a>
-
-## Struct `UpgradePolicy`
-
-Describes an upgrade policy
-
-
-<pre><code><b>struct</b> <a href="module_store.md#0x2_module_store_UpgradePolicy">UpgradePolicy</a> <b>has</b> <b>copy</b>, drop, store
-</code></pre>
-
-
-
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -103,25 +87,6 @@ Not allow to publish module
 
 
 <pre><code><b>const</b> <a href="module_store.md#0x2_module_store_ErrorNotAllowToPublish">ErrorNotAllowToPublish</a>: u64 = 1;
-</code></pre>
-
-
-
-<a name="0x2_module_store_ErrorPackageImmutable"></a>
-
-Package is immutable and cannot be upgraded.
-
-
-<pre><code><b>const</b> <a href="module_store.md#0x2_module_store_ErrorPackageImmutable">ErrorPackageImmutable</a>: u64 = 2;
-</code></pre>
-
-
-
-<a name="0x2_module_store_REVERSED_KEY_UPGRADE_POLICY"></a>
-
-
-
-<pre><code><b>const</b> <a href="module_store.md#0x2_module_store_REVERSED_KEY_UPGRADE_POLICY">REVERSED_KEY_UPGRADE_POLICY</a>: <a href="">vector</a>&lt;u8&gt; = [114, 101, 118, 101, 114, 115, 101, 100, 95, 107, 101, 121, 95, 117, 112, 103, 114, 97, 100, 101, 95, 112, 111, 108, 105, 99, 121];
 </code></pre>
 
 
@@ -234,51 +199,13 @@ Return true if the modules are upgraded
 
 
 
-<a name="0x2_module_store_upgrade_policy_compat"></a>
-
-## Function `upgrade_policy_compat`
-
-Whether a compatibility check should be performed for upgrades. The check only passes if
-a new module has (a) the same public functions (b) for existing resources, no layout change.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_upgrade_policy_compat">upgrade_policy_compat</a>(): <a href="module_store.md#0x2_module_store_UpgradePolicy">module_store::UpgradePolicy</a>
-</code></pre>
-
-
-
-<a name="0x2_module_store_upgrade_policy_immutable"></a>
-
-## Function `upgrade_policy_immutable`
-
-Whether the modules in the package are immutable and cannot be upgraded.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_upgrade_policy_immutable">upgrade_policy_immutable</a>(): <a href="module_store.md#0x2_module_store_UpgradePolicy">module_store::UpgradePolicy</a>
-</code></pre>
-
-
-
-<a name="0x2_module_store_can_change_upgrade_policy_to"></a>
-
-## Function `can_change_upgrade_policy_to`
-
-Whether the upgrade policy can be changed. In general, the policy can be only
-strengthened but not weakened.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_can_change_upgrade_policy_to">can_change_upgrade_policy_to</a>(from: <a href="module_store.md#0x2_module_store_UpgradePolicy">module_store::UpgradePolicy</a>, <b>to</b>: <a href="module_store.md#0x2_module_store_UpgradePolicy">module_store::UpgradePolicy</a>): bool
-</code></pre>
-
-
-
 <a name="0x2_module_store_freeze_package"></a>
 
 ## Function `freeze_package`
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="module_store.md#0x2_module_store_freeze_package">freeze_package</a>(package: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="module_store.md#0x2_module_store_Package">module_store::Package</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_freeze_package">freeze_package</a>(package: <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="module_store.md#0x2_module_store_Package">module_store::Package</a>&gt;)
 </code></pre>
 
 
