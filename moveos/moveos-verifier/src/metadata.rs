@@ -1102,6 +1102,10 @@ fn check_data_struct_fields_type(
                 return false;
             }
 
+            if !ty_args.is_empty() {
+                return false;
+            }
+
             if !is_data_struct_annotation(&struct_env, module_env) {
                 return false;
             }

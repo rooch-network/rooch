@@ -1335,15 +1335,7 @@ where
                         );
                     }
                 }
-
-                validate_struct(
-                    &struct_full_name,
-                    struct_handle_idx,
-                    current_module,
-                    module_bin_view,
-                    verified_modules,
-                    db,
-                )
+                (false, ErrorCode::INVALID_DATA_STRUCT_NOT_ALLOWED_TYPE)
             }
             _ => (false, ErrorCode::INVALID_DATA_STRUCT_NOT_ALLOWED_TYPE),
         }
