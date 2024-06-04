@@ -239,7 +239,7 @@ fn charge(env: FunctionEnvMut<Env>, amount: i64) -> Result<(), wasmer::RuntimeEr
     Ok(())
 }
 
-pub fn create_wasm_instance(code: &Vec<u8>) -> anyhow::Result<WASMInstance> {
+pub fn create_wasm_instance(code: &[u8]) -> anyhow::Result<WASMInstance> {
     debug!("create_wasm_instance 1");
 
     // Create the GasMeter
