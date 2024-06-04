@@ -169,11 +169,6 @@ fn proc_exit(_env: FunctionEnvMut<Env>, code: i32) {
     eprintln!("program exit with {:}", code)
 }
 
-fn charge(env: FunctionEnvMut<Env>, amount: u64) {
-    let mut gas_meter = env.data().gas_meter.lock().unwrap();
-    let _ = gas_meter.charge(amount);
-}
-
 pub fn put_data_on_stack(instance: &mut WASMInstance, data: &[u8]) -> anyhow::Result<i32> {
     let stack_alloc_func = match instance.instance.exports.get_function("stackAlloc") {
         Ok(v) => v,
@@ -230,6 +225,16 @@ pub fn get_data_from_heap(
     // let rust_str = c_str.to_str().expect("Bad encoding");
     // let owned_str = rust_str.to_owned();
     // owned_str
+}
+
+fn charge(env: FunctionEnvMut<Env>, amount: i64) -> Result<(), wasmer::RuntimeError> {
+    let mut gas_meter = env.data().gas_meter.lock().unwrap();
+
+    if let Err(e) = gas_meter.charge(amount as u64) {
+        return Err(wasmer::RuntimeError::new(e.to_string()));
+    }
+
+    Ok(())
 }
 
 pub fn create_wasm_instance(code: &Vec<u8>) -> anyhow::Result<WASMInstance> {
@@ -291,7 +296,7 @@ pub fn create_wasm_instance(code: &Vec<u8>) -> anyhow::Result<WASMInstance> {
             "proc_exit" => Function::new_typed_with_env(&mut store, &env, proc_exit),
         },
         "env" => {
-            "charge" => Function::new_typed_with_env(&mut store, &env, charge),
+            "charge" => Function::new_typed_with_env(&mut store, &env, charge)
         },
     };
 
@@ -299,7 +304,10 @@ pub fn create_wasm_instance(code: &Vec<u8>) -> anyhow::Result<WASMInstance> {
 
     let instance = match Instance::new(&mut store, &module, &import_object) {
         Ok(v) => v,
-        Err(_) => return Err(anyhow::Error::msg("create wasm instance failed")),
+        Err(e) => {
+            debug!("create_wasm_instance->new_instance_error:{:?}", &e);
+            return Err(anyhow::Error::msg("create wasm instance failed"));
+        }
     };
 
     debug!("create_wasm_instance 9");

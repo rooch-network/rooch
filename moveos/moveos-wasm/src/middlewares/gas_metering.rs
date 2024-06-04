@@ -3,19 +3,21 @@
 
 use std::fmt;
 use std::sync::{Arc, Mutex};
+use tracing::debug;
 use wasmer::wasmparser::Operator;
 use wasmer::{
-    LocalFunctionIndex, MiddlewareError, MiddlewareReaderState, ModuleMiddleware,
-    RuntimeError, Type,
+    LocalFunctionIndex, MiddlewareError, MiddlewareReaderState, ModuleMiddleware, RuntimeError,
+    Type,
 };
-use wasmer_types::{FunctionIndex, ImportKey, ImportIndex, FunctionType};
-use tracing::debug;
+use wasmer_types::{
+    entity::PrimaryMap, ExportIndex, FunctionIndex, FunctionType, ImportIndex, ImportKey,
+};
 
 #[derive(Debug)]
 pub struct GasMeter {
     gas_limit: u64,
     gas_used: u64,
-    charge_function_index: Option<FunctionIndex>
+    charge_function_index: Option<FunctionIndex>,
 }
 
 impl GasMeter {
@@ -28,7 +30,14 @@ impl GasMeter {
     }
 
     pub fn charge(&mut self, amount: u64) -> Result<(), RuntimeError> {
+        debug!(
+            "charge: gas_limit: {:?}, self.gas_used:{:?}, amount:{:?}",
+            &self.gas_limit, &self.gas_used, &amount
+        );
+
         if self.gas_used + amount > self.gas_limit {
+            debug!("charge: GAS limit exceeded");
+
             Err(RuntimeError::new("GAS limit exceeded"))
         } else {
             self.gas_used += amount;
@@ -60,7 +69,10 @@ pub struct GasMiddleware {
 }
 
 impl GasMiddleware {
-    pub fn new(gas_meter: Arc<Mutex<GasMeter>>, cost_function: Option<Arc<dyn Fn(&Operator) -> u64 + Send + Sync>>) -> Self {
+    pub fn new(
+        gas_meter: Arc<Mutex<GasMeter>>,
+        cost_function: Option<Arc<dyn Fn(&Operator) -> u64 + Send + Sync>>,
+    ) -> Self {
         Self {
             gas_meter: gas_meter.clone(),
             cost_function: cost_function.unwrap_or_else(|| Arc::new(default_cost_function)),
@@ -92,34 +104,83 @@ impl ModuleMiddleware for GasMiddleware {
         // Insert the signature for the charge function
         let charge_signature = FunctionType::new(vec![Type::I64], vec![]);
         let charge_signature_index = module_info.signatures.push(charge_signature);
-        debug!("transform_module_info charge_signature_index: {:?}", &charge_signature_index);
+        debug!(
+            "transform_module_info charge_signature_index: {:?}",
+            &charge_signature_index
+        );
 
-        // Insert the charge function
-        let charge_function_index = module_info.functions.push(charge_signature_index);
-        debug!("transform_module_info charge_function_index: {:?}", &charge_function_index);
+        // Insert the charge function after existing imported functions
+        let charge_function_index =
+            FunctionIndex::from_u32(module_info.num_imported_functions as u32);
+        debug!(
+            "transform_module_info charge_function_index: {:?}",
+            &charge_function_index
+        );
 
         // Insert the charge function name
-        module_info.function_names.insert(charge_function_index, "charge".to_string());
+        module_info
+            .function_names
+            .insert(charge_function_index, "charge".to_string());
 
         // Insert the charge function import declaration
         let charge_import_key = ImportKey {
             module: "env".to_string(),
             field: "charge".to_string(),
-            import_idx: charge_signature_index.as_u32(),
+            import_idx: charge_function_index.as_u32(),
         };
-        debug!("transform_module_info charge_import_key: {:?}", &charge_import_key);
+        debug!(
+            "transform_module_info charge_import_key: {:?}",
+            &charge_import_key
+        );
 
-        module_info.imports.insert(charge_import_key, ImportIndex::Function(charge_function_index));
-        module_info.num_imported_functions = module_info.imports.len();
+        // Insert the charge function import declaration at the end
+        module_info.imports.insert(
+            charge_import_key,
+            ImportIndex::Function(charge_function_index),
+        );
+
+        // Adjust the function indices to make room for the charge function after imported functions
+        let mut new_functions = PrimaryMap::with_capacity(module_info.functions.len() + 1);
+        for (index, sig_index) in module_info.functions.iter() {
+            if index.as_u32() == module_info.num_imported_functions as u32 {
+                new_functions.push(charge_signature_index);
+            }
+            new_functions.push(*sig_index);
+        }
+        if module_info.functions.len() == module_info.num_imported_functions {
+            new_functions.push(charge_signature_index);
+        }
+        module_info.functions = new_functions;
+
+        // Update all function references to account for the new function
+        if let Some(start_function) = module_info.start_function {
+            if start_function.as_u32() >= charge_function_index.as_u32() {
+                module_info.start_function =
+                    Some(FunctionIndex::from_u32(start_function.as_u32() + 1));
+            }
+        }
+
+        for (_, elem_indices) in module_info.passive_elements.iter_mut() {
+            for elem_index in elem_indices.iter_mut() {
+                if elem_index.as_u32() >= charge_function_index.as_u32() {
+                    *elem_index = FunctionIndex::from_u32(elem_index.as_u32() + 1);
+                }
+            }
+        }
+        for (_, export_index) in module_info.exports.iter_mut() {
+            if let ExportIndex::Function(func_index) = export_index {
+                if func_index.as_u32() >= charge_function_index.as_u32() {
+                    *func_index = FunctionIndex::from_u32(func_index.as_u32() + 1);
+                }
+            }
+        }
+
+        module_info.num_imported_functions += 1;
 
         let mut gas_meter = self.gas_meter.lock().unwrap();
         gas_meter.charge_function_index = Some(charge_function_index);
- 
 
-        debug!("transform_module_info signatures: {:?}", &module_info.signatures);
-        debug!("transform_module_info functions: {:?}", &module_info.functions);
-        debug!("transform_module_info function_names: {:?}", &module_info.function_names);
-        debug!("transform_module_info imports: {:?}", &module_info.imports);
+        debug!("transform_module_info: {:?}", &module_info);
     }
 }
 
@@ -150,14 +211,11 @@ impl wasmer::FunctionMiddleware for GasFunctionMiddleware {
         self.accumulated_cost += (self.cost_function)(&operator);
         debug!("feed: accumulated_cost: {:?}", &self.accumulated_cost);
 
-        // Perform batch charging at critical points
+        // Perform batch charging before critical points
         match operator {
-            Operator::Loop { .. }
-            | Operator::End
-            | Operator::Else
+            Operator::End
             | Operator::Br { .. }
             | Operator::BrTable { .. }
-            | Operator::BrIf { .. }
             | Operator::Call { .. }
             | Operator::CallIndirect { .. }
             | Operator::Return => {
@@ -167,8 +225,12 @@ impl wasmer::FunctionMiddleware for GasFunctionMiddleware {
                     let gas_meter = self.gas_meter.lock().unwrap();
 
                     state.extend(&[
-                        Operator::I64Const { value: self.accumulated_cost as i64 },
-                        Operator::Call { function_index: gas_meter.charge_function_index.unwrap().as_u32() },
+                        Operator::I64Const {
+                            value: self.accumulated_cost as i64,
+                        },
+                        Operator::Call {
+                            function_index: gas_meter.charge_function_index.unwrap().as_u32(),
+                        },
                     ]);
 
                     self.accumulated_cost = 0;
@@ -178,7 +240,30 @@ impl wasmer::FunctionMiddleware for GasFunctionMiddleware {
         }
 
         debug!("feed: push_operator: {:?}", &operator);
-        state.push_operator(operator);
+        state.push_operator(operator.clone());
+
+        // Perform batch charging after critical points
+        match operator {
+            Operator::Loop { .. } | Operator::BrIf { .. } | Operator::Else => {
+                if self.accumulated_cost > 0 {
+                    debug!("feed: match op: {:?}", &operator);
+
+                    let gas_meter = self.gas_meter.lock().unwrap();
+
+                    state.extend(&[
+                        Operator::I64Const {
+                            value: self.accumulated_cost as i64,
+                        },
+                        Operator::Call {
+                            function_index: gas_meter.charge_function_index.unwrap().as_u32(),
+                        },
+                    ]);
+
+                    self.accumulated_cost = 0;
+                }
+            }
+            _ => {}
+        }
 
         Ok(())
     }

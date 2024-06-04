@@ -113,7 +113,7 @@ module moveos_std::wasm {
 
       debug::print(&string::utf8(b"run_trap 1"));
 
-      let wasm_code: vector<u8> = b"(module(func (export \"div_s\") (param $x i32) (param $y i32) (result i32) (i32.div_s (local.get $x) (local.get $y))))";
+      let wasm_code: vector<u8> = b"(module (func (export \"div_s\") (param $x i32) (param $y i32) (result i32) (i32.div_s (local.get $x) (local.get $y))))";
 
       // 1. create wasm VM instance (required step)
       let wasm_instance = create_wasm_instance(wasm_code);
@@ -125,6 +125,30 @@ module moveos_std::wasm {
       let arg_list = vector::empty<u64>();
       vector::push_back(&mut arg_list, 10u64);
       vector::push_back(&mut arg_list, 0u64);
+      debug::print(&arg_list);
+
+      let ret_val_option = execute_wasm_function_option(&mut wasm_instance, function_name, arg_list);
+      assert!(option::is_none(&ret_val_option), 1);
+
+      // 3. release the wasm VM instance (required step)
+      release_wasm_instance(wasm_instance);
+    }
+
+    #[test]
+    fun run_infinite_loop() {
+      features::init_and_enable_all_features_for_test();
+
+      debug::print(&string::utf8(b"run_infinite_loop 1"));
+      let wasm_code: vector<u8> = b"(module (func $run_forever (loop $loop (br $loop))) (export \"run_forever\" (func $run_forever)))";
+
+      // 1. create wasm VM instance (required step)
+      let wasm_instance = create_wasm_instance(wasm_code);
+      debug::print(&string::utf8(b"run_trap 2"));
+      debug::print(&wasm_instance);
+
+      // 2. run 10/0
+      let function_name = b"run_forever";
+      let arg_list = vector::empty<u64>();
       debug::print(&arg_list);
 
       let ret_val_option = execute_wasm_function_option(&mut wasm_instance, function_name, arg_list);
