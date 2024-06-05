@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 
 use once_cell::sync::Lazy;
 use rand;
-use tracing::debug;
+use tracing::{debug, warn, error};
 use wasmer::Value::I32;
 use wasmer::*;
 
@@ -32,8 +32,6 @@ impl WASMInstance {
     }
 }
 
-pub static mut GLOBAL_MEMORY: Lazy<Arc<Mutex<Option<Memory>>>> =
-    Lazy::new(|| Arc::new(Mutex::new(None)));
 /*
 TODO:
 The WASMInstance must be protected by the locker which owned by the signer
@@ -81,71 +79,100 @@ pub fn remove_instance(instance_id: u64) -> anyhow::Result<()> {
 #[allow(dead_code)]
 #[derive(Clone)]
 struct Env {
-    memory: Arc<Mutex<Option<Memory>>>,
+    memory: Option<Arc<Mutex<Memory>>>,
     gas_meter: Arc<Mutex<GasMeter>>,
 }
 
+fn js_log(env: FunctionEnvMut<Env>, ptr: i32, len: i32) {
+    if let Some(memory_obj) = env.data().memory.clone() {
+        let memory = memory_obj.lock().expect("getting memory mutex failed");
+        let store_ref = env.as_store_ref();
+        let memory_view = memory.view(&store_ref);
+
+        let mut buffer = vec![0u8; len as usize];
+        memory_view
+            .read(ptr as u64, &mut buffer)
+            .expect("read buffer from memory failed");
+
+        let message = String::from_utf8_lossy(&buffer);
+        debug!("js_log_output: {}", message);
+    }
+}
+
 fn fd_write(env: FunctionEnvMut<Env>, _fd: i32, mut iov: i32, iovcnt: i32, pnum: i32) -> i32 {
-    let memory_global = unsafe { GLOBAL_MEMORY.clone() };
+    let mut written_bytes = 0;
 
-    let memory = match memory_global.lock() {
-        Ok(v) => v,
-        Err(_) => return 0,
-    };
-    let store_ref = env.as_store_ref();
-    let memory_obj = match memory.clone() {
-        Some(v) => v,
-        None => return 0,
-    };
-    let memory_view = memory_obj.view(&store_ref);
+    if let Some(memory_obj) = env.data().memory.clone() {
+        debug!("fd_write: fd:{}, iov:{}, iovcnt:{}, pnum:{}", _fd, iov, iovcnt, pnum);
 
-    let mut ptr_buffer: [u8; 4] = [0; 4];
-    let mut len_buffer: [u8; 4] = [0; 4];
-    let mut write_buffer = Vec::new();
-    let mut number = 0;
-    for _ in 0..(iovcnt - 1) {
-        let ptr_index = (iov) >> 2;
-        let len_index = ((iov) + (4)) >> 2;
+        let memory = memory_obj.lock().expect("getting memory mutex failed");
+        let store_ref = env.as_store_ref();
+        let memory_view = memory.view(&store_ref);
 
-        match memory_view.read(ptr_index as u64, ptr_buffer.as_mut_slice()) {
-            Ok(_) => {}
-            Err(_) => return 0,
+        let mut temp_buffer: [u8; 4] = [0; 4];
+
+        for _ in 0..iovcnt {
+            let ptr_index = iov;
+            let len_index = iov + 4;
+
+            memory_view
+                .read(ptr_index as u64, temp_buffer.as_mut_slice())
+                .expect("read data from memory view failed");
+            let _ptr = u32::from_le_bytes(temp_buffer);
+
+            memory_view
+                .read(len_index as u64, temp_buffer.as_mut_slice())
+                .expect("read data from memory view failed");
+            let len = u32::from_le_bytes(temp_buffer);
+
+            debug!("fd_write: _ptr:{}, len:{}", _ptr, len);
+            
+            let mut buffer = vec![0u8; len as usize];
+            memory_view
+                .read(_ptr as u64, &mut buffer)
+                .expect("read buffer from memory failed");
+            
+            match _fd {
+                // stdout
+                1 => {
+                    use std::io::{self, Write};
+                    let stdout = io::stdout();
+                    let mut handle = stdout.lock();
+                    handle.write_all(&buffer).expect("write to stdout failed");
+                    debug!("fd_write_stdout: {}", String::from_utf8_lossy(&buffer));
+                },
+                // stderr
+                2 => {
+                    use std::io::{self, Write};
+                    let stderr = io::stderr();
+                    let mut handle = stderr.lock();
+                    handle.write_all(&buffer).expect("write to stderr failed");
+                    warn!("fd_write_stderr: {}", String::from_utf8_lossy(&buffer));
+                },
+                // Handle other file descriptors...
+                _ => unimplemented!(),
+            }
+
+            iov += 8;
+            written_bytes += len as i32;
         }
-        let ptr = i32::from_be_bytes(ptr_buffer);
 
-        match memory_view.read(len_index as u64, len_buffer.as_mut_slice()) {
-            Ok(_) => {}
-            Err(_) => return 0,
-        }
-        let len = i32::from_be_bytes(len_buffer);
-
-        for i in 0..(len - 1) {
-            let single_char = match memory_view.read_u8((ptr + i) as u64) {
-                Ok(v) => v,
-                Err(_) => return 0,
-            };
-            write_buffer.push(single_char);
-        }
-
-        iov += 8;
-        number += len;
+        let ret_index = pnum;
+        let ret_index_bytes: [u8; 4] = written_bytes.to_le_bytes();
+        memory_view
+            .write(ret_index as u64, ret_index_bytes.as_slice())
+            .expect("write data to memory failed");
     }
 
-    let ret_index = pnum >> 2;
-    let ret_index_bytes: [u8; 4] = number.to_be_bytes();
-    match memory_view.write(ret_index as u64, ret_index_bytes.as_slice()) {
-        Ok(_) => {}
-        Err(_) => return 0,
-    }
-    0
+    written_bytes
 }
 
 fn convert_i32_pair_to_i53_checked(lo: i32, hi: i32) -> i32 {
     let p0 = if lo > 0 { 1 } else { 0 };
-    let p1 = (hi + 0x200000) >> p0 < (0x400001 - p0);
+    let p1 = (hi + 0x200000) >> 0 < (0x400001 - p0);
     if p1 {
         let (e0, _) = (hi as u32).overflowing_add_signed(429496729);
-        let (e1, _) = (lo >> 1).overflowing_add_unsigned(e0);
+        let (e1, _) = (lo >> 0).overflowing_add_unsigned(e0);
         e1
     } else {
         0
@@ -160,7 +187,7 @@ fn fd_seek(
     _whence: i32,
 ) -> i32 {
     let _offset = convert_i32_pair_to_i53_checked(offset_low as i32, offset_high);
-    70
+    return 70;
 }
 
 fn fd_close(_env: FunctionEnvMut<Env>, _fd: i32) -> i32 {
@@ -168,7 +195,7 @@ fn fd_close(_env: FunctionEnvMut<Env>, _fd: i32) -> i32 {
 }
 
 fn proc_exit(_env: FunctionEnvMut<Env>, code: i32) {
-    eprintln!("program exit with {:}", code)
+    error!("program exit with {:}", code)
 }
 
 pub fn put_data_on_stack(instance: &mut WASMInstance, data: &[u8]) -> anyhow::Result<i32> {
@@ -198,35 +225,19 @@ pub fn put_data_on_stack(instance: &mut WASMInstance, data: &[u8]) -> anyhow::Re
     Ok(offset)
 }
 
-pub fn get_data_from_heap(
-    memory: Arc<Mutex<Memory>>,
-    store: &Store,
-    ptr_offset: i32,
-) -> anyhow::Result<Vec<u8>> {
-    let bindings = match memory.lock() {
-        Ok(v) => v,
-        Err(_) => return Err(anyhow::Error::msg("memory lock failed")),
-    };
+pub fn get_data_from_heap(memory: &mut Arc<Mutex<Memory>>, store: &Store, ptr_offset: i32) -> Vec<u8> {
+    let bindings = memory.lock().expect("getting memory mutex failed");
     let memory_view = bindings.view(store);
     let mut length_bytes: [u8; 4] = [0; 4];
-    match memory_view.read(ptr_offset as u64, length_bytes.as_mut_slice()) {
-        Ok(_) => {}
-        Err(_) => return Err(anyhow::Error::msg("read memory failed")),
-    }
+    memory_view
+        .read(ptr_offset as u64, length_bytes.as_mut_slice())
+        .expect("read length_bytes failed");
     let length = u32::from_be_bytes(length_bytes);
     let mut data = vec![0; length as usize];
-    match memory_view.read((ptr_offset + 4) as u64, &mut data) {
-        Ok(_) => {}
-        Err(_) => return Err(anyhow::Error::msg("read memory failed")),
-    }
-    Ok(data)
-
-    // let ptr = memory_view.data_ptr().offset(ptr_offset as isize) as *mut c_char;
-    // let c_str = CStr::from_ptr(ptr);
-    // c_str.to_bytes().to_vec()
-    // let rust_str = c_str.to_str().expect("Bad encoding");
-    // let owned_str = rust_str.to_owned();
-    // owned_str
+    memory_view
+        .read((ptr_offset + 4) as u64, &mut data)
+        .expect("read uninit failed");
+    data
 }
 
 fn charge(env: FunctionEnvMut<Env>, amount: i64) -> Result<(), wasmer::RuntimeError> {
@@ -274,11 +285,10 @@ pub fn create_wasm_instance(code: &[u8]) -> anyhow::Result<WASMInstance> {
 
     debug!("create_wasm_instance 6");
 
-    let global_memory = unsafe { GLOBAL_MEMORY.clone() };
     let env = FunctionEnv::new(
         &mut store,
         Env {
-            memory: global_memory,
+            memory: None,
             gas_meter,
         },
     );
@@ -293,7 +303,8 @@ pub fn create_wasm_instance(code: &[u8]) -> anyhow::Result<WASMInstance> {
             "proc_exit" => Function::new_typed_with_env(&mut store, &env, proc_exit),
         },
         "env" => {
-            "charge" => Function::new_typed_with_env(&mut store, &env, charge)
+            "js_log" => Function::new_typed_with_env(&mut store, &env, js_log),
+            "charge" => Function::new_typed_with_env(&mut store, &env, charge),
         },
     };
 
@@ -310,7 +321,7 @@ pub fn create_wasm_instance(code: &[u8]) -> anyhow::Result<WASMInstance> {
     debug!("create_wasm_instance 9");
 
     if let Ok(memory) = instance.exports.get_memory("memory") {
-        unsafe { *GLOBAL_MEMORY = Arc::new(Mutex::new(Some(memory.clone()))) };
+        env.as_mut(&mut store).memory = Some(Arc::new(Mutex::new(memory.clone())));
     }
 
     Ok(WASMInstance::new(bytecode.to_vec(), instance, store))
