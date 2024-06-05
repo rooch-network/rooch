@@ -1,26 +1,22 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::env;
-use std::fs::create_dir_all;
-use std::sync::Arc;
-use std::{fmt::Debug, path::Path, path::PathBuf};
-
 use anyhow::Result;
 use clap::Parser;
 use moveos_config::{temp_dir, DataDirPath};
 use once_cell::sync::Lazy;
-use rand::Rng;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::rooch_network::{BuiltinChainID, RoochChainID};
 use serde::{Deserialize, Serialize};
+use std::fs::create_dir_all;
+use std::sync::Arc;
+use std::{fmt::Debug, path::Path, path::PathBuf};
 
 use crate::da_config::DAConfig;
 use crate::store_config::StoreConfig;
 
 pub mod config;
 pub mod da_config;
-pub mod indexer_config;
 pub mod server_config;
 pub mod store_config;
 
@@ -127,13 +123,16 @@ pub struct RoochOpt {
     #[clap(long)]
     pub proposer_account: Option<String>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long)]
-    pub da: Option<DAConfig>,
+    #[clap(long, default_value_t)]
+    pub da: DAConfig,
 
     #[clap(long)]
     /// The data import flag. If true, may be ignore the indexer write
     pub data_import_flag: bool,
+
+    #[serde(skip)]
+    #[clap(skip)]
+    base: Option<Arc<BaseConfig>>,
 }
 
 impl std::fmt::Display for RoochOpt {
@@ -147,13 +146,9 @@ impl std::fmt::Display for RoochOpt {
 }
 
 impl RoochOpt {
-    pub fn new_with_temp_store() -> Self {
-        let temp_dir = env::temp_dir();
-        let random_dir_name = format!("random_dir_{}", rand::thread_rng().gen::<u32>());
-        let random_dir = temp_dir.join(random_dir_name);
-
-        RoochOpt {
-            base_data_dir: Some(random_dir),
+    pub fn new_with_temp_store() -> Result<Self> {
+        let mut opt = RoochOpt {
+            base_data_dir: Some("TMP".into()),
             chain_id: Some(BuiltinChainID::Local.into()),
             store: StoreConfig::default(),
             port: None,
@@ -165,20 +160,36 @@ impl RoochOpt {
             btc_sync_block_interval: None,
             sequencer_account: None,
             proposer_account: None,
-            da: None,
+            da: DAConfig::default(),
             data_import_flag: false,
-        }
+            base: None,
+        };
+        opt.init()?;
+        Ok(opt)
     }
 
     pub fn new_with_default(
         base_data_dir: Option<PathBuf>,
         chain_id: Option<RoochChainID>,
-    ) -> Self {
-        RoochOpt {
+    ) -> Result<Self> {
+        let mut opt = RoochOpt {
             base_data_dir,
             chain_id,
             ..Default::default()
+        };
+        opt.init()?;
+        Ok(opt)
+    }
+
+    pub fn init(&mut self) -> Result<()> {
+        if self.base.is_none() {
+            let base = BaseConfig::load_with_opt(self)?;
+            let arc_base = Arc::new(base);
+            self.store.init(Arc::clone(&arc_base))?;
+            self.da.init(Arc::clone(&arc_base))?;
+            self.base = Some(arc_base);
         }
+        Ok(())
     }
 
     pub fn ethereum_relayer_config(&self) -> Option<EthereumRelayerConfig> {
@@ -202,6 +213,18 @@ impl RoochOpt {
 
     pub fn port(&self) -> u16 {
         self.port.unwrap_or(50051)
+    }
+
+    pub fn store_config(&self) -> &StoreConfig {
+        &self.store
+    }
+
+    pub fn base(&self) -> &BaseConfig {
+        self.base.as_ref().expect("Config should init.")
+    }
+
+    pub fn da_config(&self) -> &DAConfig {
+        &self.da
     }
 }
 
@@ -255,13 +278,6 @@ impl BaseConfig {
     }
     pub fn base_data_dir(&self) -> DataDirPath {
         self.base_data_dir.clone()
-    }
-}
-
-pub trait ConfigModule: Sized {
-    /// Init the skip field or overwrite config by global command line option.
-    fn merge_with_opt(&mut self, _opt: &RoochOpt, _base: Arc<BaseConfig>) -> Result<()> {
-        Ok(())
     }
 }
 

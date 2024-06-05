@@ -283,12 +283,12 @@ where
     I: Into<UpdateSet<KeyState, State>>,
 {
     let tree_change_set = moveos_store
-        .statedb
+        .state_store
         .update_fields(pre_state_root, update_set)?;
     Ok(tree_change_set)
 }
 
 pub fn apply_nodes(moveos_store: &MoveOSStore, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
-    moveos_store.statedb.node_store.write_nodes(nodes)?;
+    moveos_store.state_store.node_store.write_nodes(nodes)?;
     Ok(())
 }

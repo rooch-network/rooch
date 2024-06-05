@@ -8840,6 +8840,7 @@ dependencies = [
  "moveos",
  "moveos-common",
  "moveos-compiler",
+ "moveos-config",
  "moveos-object-runtime",
  "moveos-stdlib",
  "moveos-store",
@@ -8995,6 +8996,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "rooch-db"
+version = "0.5.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "hex",
+ "log",
+ "move-core-types",
+ "move-resource-viewer",
+ "moveos-config",
+ "moveos-store",
+ "moveos-types",
+ "once_cell",
+ "parking_lot 0.12.2",
+ "raw-store",
+ "rooch-config",
+ "rooch-indexer",
+ "rooch-store",
+ "rooch-types",
+ "serde 1.0.202",
+ "serde_bytes",
+ "smt",
+]
+
+[[package]]
 name = "rooch-executor"
 version = "0.5.0"
 dependencies = [
@@ -9143,6 +9169,7 @@ dependencies = [
  "moveos-verifier",
  "once_cell",
  "rooch-config",
+ "rooch-db",
  "rooch-executor",
  "rooch-framework",
  "rooch-genesis",
@@ -9191,11 +9218,14 @@ dependencies = [
  "move-vm-test-utils",
  "move-vm-types",
  "moveos",
+ "moveos-config",
  "moveos-stdlib",
  "moveos-store",
  "moveos-types",
  "moveos-verifier",
  "once_cell",
+ "rooch-config",
+ "rooch-db",
  "rooch-framework",
  "rooch-indexer",
  "rooch-store",
@@ -9280,6 +9310,7 @@ dependencies = [
  "move-vm-test-utils",
  "move-vm-types",
  "moveos",
+ "moveos-config",
  "moveos-stdlib",
  "moveos-store",
  "moveos-types",
@@ -9617,6 +9648,7 @@ dependencies = [
  "raw-store",
  "rooch-config",
  "rooch-da",
+ "rooch-db",
  "rooch-executor",
  "rooch-framework",
  "rooch-genesis",

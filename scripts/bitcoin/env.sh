@@ -127,7 +127,7 @@ clean() {
   rm -rf $HOME/regtest/.bitcoin
 
   # clean rooch data
-  cargo run --package rooch --bin rooch server clean -n local
+  cargo run --package rooch --bin rooch server clean -n local -f
 }
 
 reset() {

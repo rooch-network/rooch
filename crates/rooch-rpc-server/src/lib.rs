@@ -13,27 +13,19 @@ use hyper::header::HeaderValue;
 use hyper::Method;
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
-use moveos_store::{MoveOSDB, MoveOSStore};
-use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
 use raw_store::errors::RawStoreError;
-use raw_store::rocks::RocksDB;
-use raw_store::StoreInstance;
-use rooch_config::da_config::DAConfig;
-use rooch_config::indexer_config::IndexerConfig;
 use rooch_config::server_config::ServerConfig;
-use rooch_config::store_config::StoreConfig;
-use rooch_config::{BaseConfig, RoochOpt, ServerOpt};
+use rooch_config::{RoochOpt, ServerOpt};
 use rooch_da::actor::da::DAActor;
 use rooch_da::proxy::DAProxy;
+use rooch_db::RoochDB;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_genesis::RoochGenesis;
 use rooch_indexer::actor::indexer::IndexerActor;
 use rooch_indexer::actor::reader_indexer::IndexerReaderActor;
-use rooch_indexer::indexer_reader::IndexerReader;
 use rooch_indexer::proxy::IndexerProxy;
-use rooch_indexer::IndexerStore;
 use rooch_pipeline_processor::actor::processor::PipelineProcessorActor;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_proposer::actor::messages::ProposeBlock;
@@ -44,7 +36,6 @@ use rooch_relayer::actor::relayer::RelayerActor;
 use rooch_rpc_api::api::RoochRpcModule;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
-use rooch_store::RoochStore;
 use rooch_types::address::{BitcoinAddress, RoochAddress};
 use rooch_types::error::{GenesisError, RoochError};
 use rooch_types::rooch_network::{BuiltinChainID, RoochChainID, RoochNetwork};
@@ -52,7 +43,6 @@ use serde_json::json;
 use std::env;
 use std::fmt::Debug;
 use std::net::SocketAddr;
-use std::sync::Arc;
 use std::time::Duration;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
@@ -67,8 +57,7 @@ static R_EXIT_CODE_NEED_HELP: i32 = 120;
 pub struct ServerHandle {
     handle: jsonrpsee::server::ServerHandle,
     timers: Vec<Timer>,
-    _store_config: StoreConfig,
-    _index_config: IndexerConfig,
+    _opt: RoochOpt,
 }
 
 impl ServerHandle {
@@ -100,7 +89,7 @@ impl Service {
     }
 
     // pub async fn start(&mut self, opt: &RoochOpt, key_keypair: Option<RoochKeyPair>) -> Result<()> {
-    pub async fn start(&mut self, opt: &RoochOpt, server_opt: ServerOpt) -> Result<()> {
+    pub async fn start(&mut self, opt: RoochOpt, server_opt: ServerOpt) -> Result<()> {
         self.handle = Some(start_server(opt, server_opt).await?);
         Ok(())
     }
@@ -136,7 +125,7 @@ impl RpcModuleBuilder {
 }
 
 // Start json-rpc server
-pub async fn start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<ServerHandle> {
+pub async fn start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<ServerHandle> {
     let active_env = server_opt.get_active_env();
     match run_start_server(opt, server_opt).await {
         Ok(server_handle) => Ok(server_handle),
@@ -168,7 +157,7 @@ pub async fn start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<Serve
 }
 
 // run json-rpc server
-pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<ServerHandle> {
+pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<ServerHandle> {
     // We may call `start_server` multiple times in testing scenarios
     // tracing_subscriber can only be inited once.
     let _ = tracing_subscriber::fmt::try_init();
@@ -180,16 +169,16 @@ pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<S
     let actor_system = ActorSystem::global_system();
 
     //Init store
-    let base_config = BaseConfig::load_with_opt(opt)?;
-    let arc_base_config = Arc::new(base_config);
-    let mut store_config = StoreConfig::default();
-    store_config.merge_with_opt_with_init(opt, Arc::clone(&arc_base_config), true)?;
-    let (mut root, mut moveos_store, mut rooch_store) = init_storage(&store_config)?;
+    let store_config = opt.store_config();
 
-    //Init indexer store
-    let mut indexer_config = IndexerConfig::default();
-    indexer_config.merge_with_opt_with_init(opt, Arc::clone(&arc_base_config), true)?;
-    let (mut indexer_store, indexer_reader) = init_indexer(&indexer_config)?;
+    let rooch_db = RoochDB::init(store_config)?;
+    let (mut root, rooch_store, moveos_store, indexer_store, indexer_reader) = (
+        rooch_db.root.clone(),
+        rooch_db.rooch_store.clone(),
+        rooch_db.moveos_store.clone(),
+        rooch_db.indexer_store.clone(),
+        rooch_db.indexer_reader.clone(),
+    );
 
     // Check for key pairs
     if server_opt.sequencer_keypair.is_none() || server_opt.proposer_keypair.is_none() {
@@ -216,7 +205,7 @@ pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<S
         }
         let genesis = RoochGenesis::build(network)?;
         if root.is_genesis() {
-            root = genesis.init_genesis(&mut moveos_store, &mut rooch_store, &mut indexer_store)?;
+            root = genesis.init_genesis(&rooch_db)?;
         } else {
             genesis.check_genesis(moveos_store.get_config_store())?;
         }
@@ -243,8 +232,7 @@ pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<S
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
 
     // Init DA
-    let mut da_config = DAConfig::default();
-    da_config.merge_with_opt_with_init(opt, Arc::clone(&arc_base_config), true)?;
+    let da_config = opt.da_config().clone();
 
     let da_proxy = DAProxy::new(
         DAActor::new(da_config, &actor_system)
@@ -373,8 +361,7 @@ pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<S
     Ok(ServerHandle {
         handle,
         timers,
-        _store_config: store_config,
-        _index_config: indexer_config,
+        _opt: opt,
     })
 }
 
@@ -391,48 +378,4 @@ fn _build_rpc_api<M: Send + Sync + 'static>(mut rpc_module: RpcModule<M>) -> Rpc
         .expect("infallible all other methods have their own address space");
 
     rpc_module
-}
-
-pub fn init_storage(
-    store_config: &StoreConfig,
-) -> Result<(RootObjectEntity, MoveOSStore, RoochStore)> {
-    let (rooch_db_path, moveos_db_path) = (
-        store_config.get_rooch_store_dir(),
-        store_config.get_moveos_store_dir(),
-    );
-
-    //Init store
-    let moveosdb = MoveOSDB::new(StoreInstance::new_db_instance(RocksDB::new(
-        moveos_db_path,
-        moveos_store::StoreMeta::get_column_family_names().to_vec(),
-        store_config.rocksdb_config(true),
-        None,
-    )?))?;
-    let startup_info = moveosdb.config_store.get_startup_info()?;
-
-    if let Some(ref startup_info) = startup_info {
-        info!("Load startup info {:?}", startup_info);
-    }
-    let root = startup_info
-        .map(|s| s.into_root_object())
-        .unwrap_or(ObjectEntity::genesis_root_object());
-
-    let moveos_store = MoveOSStore::new(moveosdb)?;
-
-    let rooch_store = RoochStore::new(StoreInstance::new_db_instance(RocksDB::new(
-        rooch_db_path,
-        rooch_store::StoreMeta::get_column_family_names().to_vec(),
-        store_config.rocksdb_config(false),
-        None,
-    )?))?;
-    Ok((root, moveos_store, rooch_store))
-}
-
-fn init_indexer(indexer_config: &IndexerConfig) -> Result<(IndexerStore, IndexerReader)> {
-    let indexer_db_path = indexer_config.get_indexer_db();
-    let indexer_store = IndexerStore::new(indexer_db_path.clone())?;
-    indexer_store.create_all_tables_if_not_exists()?;
-    let indexer_reader = IndexerReader::new(indexer_db_path)?;
-
-    Ok((indexer_store, indexer_reader))
 }
