@@ -1,26 +1,26 @@
-# 快速入门
+# Counter
 
-本小节将通过一个计数器例子来快速介绍 Rooch 的开发入门。
+This section will quickly introduce the development of Rooch through a counter example.
 
-## 什么是计数器
+## What is counter
 
-计数器是一个计数的小程序，它包含一个初始值，我们可以通过一个递增指令，让它的值递增，从而达到计数的目的。
+The counter is a small counting program. It contains an initial value. We can increment its value through an increment instruction to achieve the purpose of counting.
 
-我们可以使用任何编程语言来实现这个小程序，这篇教程将使用 Move 语言来编写它，并且让它成功运行在 Rooch 上。
+We can use any programming language to implement this small program. This tutorial will use the Move language to write it and let it run successfully on Rooch.
 
-## 创建计数器项目
+## Create counter project
 
-在我们创建计数器合约程序前，我们可以使用 Rooch 提供的 CLI 命令来初始化一个空项目：
+Before we create the counter contract program, we can use the CLI command provided by Rooch to initialize an empty project:
 
 ```shell
 rooch move new quick_start_counter
 ```
 
-详细的方法请参考[创建 Rooch Move 合约](./create-rooch-move-contract.zh-CN.mdx)。
+For detailed methods, please refer to [Creating a Rooch Move Contract](./create-rooch-move-contract.en-US.mdx).
 
-接下来在 `sources` 目录里创建一个 `counter.move` 文件来编写我们的合约代码。
+Next, create a `counter.move` file in the `sources` directory to write our contract code.
 
-## 合约编写
+## Contract writing
 
 ```move
 module quick_start_counter::quick_start_counter {
@@ -41,35 +41,35 @@ module quick_start_counter::quick_start_counter {
 }
 ```
 
-通过简单的 16 行代码，就在 Rooch Move 上实现了简单的计数器功能。
+With a simple 16 lines of code, a simple counter function is implemented on Rooch Move.
 
-接下来将详细介绍代码的每一行功能。
+What follows is a detailed description of what each line of code does.
 
-### 模块声明
+### Module declaration
 
-在 Move 语言中，合约通常编写在一个个模块中，简单的合约通过一个模块就能完成，而复杂的合约可能由多个模块组成。我们的计数器合约非常简单，所以只有一个 `quick_start_counter` 模块。
+In the Move language, contracts are usually written in modules. Simple contracts can be completed through one module, while complex contracts may be composed of multiple modules. Our counter contract is very simple, so there is only one `quick_start_counter` module.
 
-模块中，通常包含实现当前模块功能所需要的数据类型和函数。
+Modules usually contain data types and functions required to implement the current module functions.
 
 ```move
 module quick_start_counter::quick_start_counter {
 ```
 
-在第 1 行中，我们用 `module` 关键字来声明一个 `quick_start_counter` 模块。
+In line 1, we declare a `quick_start_counter` module using the `module` keyword.
 
-在 Move 系的区块链系统中，模块是通过地址来唯一标识的，即一个地址只能拥有一个同名称的模块，无法多次发布同一个名称的模块。同一份合约可以被多个地址发布，为了在区块链系统中识别出合约模块到底是谁发布的，需要通过`地址`来唯一标识。
+In the Move-based blockchain system, modules are uniquely identified by address, that is, an address can only have one module with the same name, and modules with the same name cannot be published multiple times. The same contract can be published by multiple addresses. In order to identify who published the contract module in the blockchain system, it needs to be uniquely identified by the `address`.
 
-所以，声明一个 Move 模块的语法是 `module 地址::模块名`。
+Therefore, the syntax for declaring a Move module is `module address::module_name`.
 
-### 导入模块
+### Import module
 
 ```move
 use moveos_std::account;
 ```
 
-在第 2 行中，`use` 关键字修饰的是导入模块的语句。要在 Rooch 上实现计数器合约，我们需要使用 Rooch 的某些功能库，此合约使用了 MoveOS 标准库提供的 `account` 模块。
+In line 2, the `use` keyword modifies the statement that imports the module. To implement the counter contract on Rooch, we need to use some of Rooch's function libraries. This contract uses the `account` module provided by the MoveOS standard library.
 
-### 定义数据结构
+### Define data structure
 
 ```move
 struct Counter has key {
@@ -77,11 +77,11 @@ struct Counter has key {
 }
 ```
 
-我们定义一个 `Counter` 类型的结构体用来记录计数值，结构体只包含一个 `u64` 类型的字段 `count_value`。
+We define a `Counter` type structure to record the count value. The structure only contains a `u64` type field `count_value`.
 
-我们要将 `Counter` 类型的值记录到 Rooch 的全局存储中，所以需要给这个类型提供一个 `key` 能力，让 Move 能够通过**键**来查找数据。
+We want to record the value of the `Counter` type into Rooch's global storage, so we need to provide a `key` ability for this type so that Move can find the data through the **key**.
 
-### 初始化函数
+### Initialization function
 
 ```move
 fun init(account: &signer) {
@@ -89,15 +89,15 @@ fun init(account: &signer) {
 }
 ```
 
-Move 中提供一个特定的初始化函数 `init` 来自动初始化合约，确保合约发布后一些必需的操作已被执行。
+Move provides a specific initialization function `init` to automatically initialize the contract to ensure that some necessary operations have been performed after the contract is released.
 
-例如，我们希望计数器合约一经发布，合约就自动为我们初始化好计数器，使它的计数值为 `0`。
+For example, we hope that once the counter contract is released, the contract will automatically initialize the counter for us so that its count value is `0`.
 
-第 8 行是 `init` 函数的函数签名，接受一个 `account` 参数。
+Line 8 is the function signature of the `init` function, which accepts an `account` parameter.
 
-### 递增函数
+### Increasing function
 
-接下来，我们要定义一个递增函数，每执行一次，就让计数器的值递增 `1`。
+Next, we need to define an incrementing function that will increment the counter value by `1` every time it is executed.
 
 ```move
 entry fun increase() {
@@ -106,29 +106,29 @@ entry fun increase() {
 }
 ```
 
-第 12 行是 `increase` 函数的签名。
+Line 12 is the signature of the `increase` function.
 
-在第 14 行中，调用 Rooch 提供的账户存储的 `borrow_mut_resource` 指令来获取 `Counter` 类型的可变引用，并将函数的返回值绑定到 `counter` 变量。借用到 `Counter` 的可变引用，我们就可以对他的值进行修改操作。
+In line 14, the `borrow_mut_resource` instruction of the account storage provided by Rooch is called to obtain a mutable reference of type `Counter`, and the return value of the function is bound to the `counter` variable. By borrowing a mutable reference from `Counter`, we can modify its value.
 
-`borrow_mut_resource` 函数一个要借用 `Counter` 资源的地址参数，为了简单起见，我们直接使用发布计数器模块的地址作为借用方。
+The `borrow_mut_resource` function has an address parameter to borrow the `Counter` resource. For simplicity, we directly use the address of the publishing counter module as the borrower.
 
-在第 14 行中，我们通过成员运算获取到 `Counter` 结构的字段值，并进行加一操作。
+In line 14, we obtain the field value of the `Counter` structure through member operations and perform an increment operation.
 
-至此，我们就实现了计数器的递增逻辑。
+At this point, we have implemented the incrementing logic of the counter.
 
-### 入口函数
+### Entry function
 
-入口函数是由 `entry` 关键字修饰的函数。
+The entry function is a function modified by the `entry` keyword.
 
-出于安全考虑，在 Move 虚拟机中禁止了外部（命令行等）直接调用操作模块数据的函数，而是提供一种名为`入口函数`的方式来间接调用逻辑函数，入口函数是合约向外暴露的一种接口。
+For security reasons, the Move virtual machine prohibits external (command line, etc.) direct calls to functions that operate module data. Instead, a method called an `entry function` is provided to indirectly call logical functions. The entry function is the contract exposed to the outside what an interface.
 
-> 注意：本例中演示的计数器合约，我们为了尽可能地精简，我们将逻辑操作和入口函数合并成了一个 `increase` 函数，在实际开发中，建议将逻辑和入口分开封装到不同的函数中。
+> Note: In order to simplify the counter contract demonstrated in this example as much as possible, we merged the logical operation and entry function into one `increase` function. In actual development, it is recommended to encapsulate the logic and entry function separately into different functions.
 
-如你所见，第 12 行的 `increase` 函数被 `entry` 关键字修饰了，因此它便成为了一个入口函数。有了入口函数，我们就可以在命令行或其他客户端中执行计数器的递增操作了。
+As you can see, the `increase` function on line 12 is modified with the `entry` keyword, so it becomes an entry function. With the entry function, we can perform the counter increment operation in the command line or other clients.
 
-## 在 Rooch 的命令行界面中演示计数器程序
+## Demo counter program in Rooch's CLI
 
-1. 首先检查当前 Rooch 默认激活的网络是否为 `dev` 网络：
+1. First check whether the currently activated Rooch network is the `dev` network:
 
 ```shell
 $ rooch env list
@@ -139,9 +139,9 @@ $ rooch env list
           dev            |       https://dev-seed.rooch.network:443/        |                       Null                       |     True
 ```
 
-注意，如果 `Active Env` 的 `dev` 环境不是 `True`，使用 `rooch env switch --alias dev` 命令切换到开发网络。
+Note that if the `dev` environment of `Active Env` is not `True`, use the `rooch env switch --alias dev` command to switch to the development network.
 
-2. 开启另一个终端，并切换到 `counter` 项目的根目录，编译合约：
+2. Open another terminal, switch to the root directory of the `counter` project, and compile the contract:
 
 ```shell
 [joe@mx quick_start_counter]$ rooch move build
@@ -156,7 +156,7 @@ BUILDING quick_start_counter
 Success
 ```
 
-3. 发布计数器合约到 Rooch 上：
+3. Publish the counter contract to Rooch:
 
 ```shell
 [joe@mx quick_start_counter]$ rooch move publish
@@ -192,11 +192,11 @@ Publish modules to address: 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19
 }
 ```
 
-看到输出结果的 `execution_info.status` 中出现 `executed`，说明计数器合约已经成功发布，并且初始化好了计数器。
+When you see `executed` in the `execution_info.status` of the output result, it means that the counter contract has been successfully released and the counter has been initialized.
 
-4. 我们使用 Rooch 提供的资源查找命令来获取 `Counter` 资源的相关信息。
+4. We use the resource search command provided by Rooch to obtain information about `Counter` resources.
 
-语法是 `rooch resource --address 发布资源的地址 --resource 资源的类型`：
+The syntax is `rooch resource --address address_of_published_resource --resource resource_type`:
 
 ```shell
 [joe@mx ~]$ rooch resource --address 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7 --resource 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::quick_start_counter::Counter
@@ -215,13 +215,13 @@ Publish modules to address: 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19
 }
 ```
 
-注意 `value` 属性，可以看到在 `Counter` 资源的输出信息中，`Counter` 的字段值 `count_value` 确实是 `0`。
+Pay attention to the `value` attribute. You can see that in the output information of the `Counter` resource, the field `count_value` of Counter is indeed `0`.
 
-5. 接着我们调用计数器的递增函数：
+5. Then we call the counter’s increment function:
 
-语法是 `rooch move run --function 模块发布的地址::模块名::入口函数名 --sender-account 发送当前交易的地址`。
+The syntax is `rooch move run --function address_published_by_the_module::module_name::entry_function_name --sender-account address_to_send_the_current_transaction`.
 
-> 注意：区块链系统中，执行某些操作通常是通过向区块链系统中发送某个交易来执行相应的操作。
+> Note: In the blockchain system, performing certain operations is usually performed by sending a transaction to the blockchain system to perform the corresponding operation.
 
 ```shell
 [joe@mx ~]$ rooch move run --function 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::quick_start_counter::increase --sender-account 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7
@@ -248,9 +248,9 @@ Publish modules to address: 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19
 }
 ```
 
-如果看到 `status` 中提示了 `executed`，证明 `increase` 函数调用成功了。
+If you see `executed` in the `status`, it proves that the `increase` function call was successful.
 
-6. 再次查看计数器的值是否是我们预期的值：
+6. Check again to see if the counter value is what we expected:
 
 ```shell
 [joe@mx ~]$ rooch resource --address 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7 --resource 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::quick_start_counter::Counter
@@ -268,15 +268,15 @@ Publish modules to address: 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19
 }
 ```
 
-如你所见，`Counter` 的 `value` 字段的值确实已经更新为 `1` 了。
+As you can see, the value of the `Counter`'s `value` field has indeed been updated to `1`.
 
-至此，你已经了解了如何在 Rooch 中编写合约以及如何在命令行中调用合约了。
+At this point, you already know how to write contracts in Rooch and how to call contracts from the command line.
 
-## 快速体验
+## Quick experience
 
-这个例子的源代码存放在 `rooch/examples/quick_start_counter` 目录中，为了更方便测试，我们将 `Move.toml` 文件中的地址修改为通配符 `_`。
+The source code of this example is stored in the `rooch/examples/quick_start_counter` directory. To make testing easier, we change the address in the `Move.toml` file to the wildcard character `_`.
 
-如果直接使用我们提供的例子运行，执行的 Shell 命令会有一点区别：
+If you run it directly using the example we provided, the executed Shell command will be a little different:
 
 ```shell
 $ rooch move build --named-addresses quick_start_counter=default
@@ -291,23 +291,23 @@ $ rooch move run --function 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf476
 $ rooch resource --address 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81 --resource 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter
 ```
 
-> 注意：命令中的 `default` 代表的是 Rooch 配置中的默认地址，如果你想使用其他的地址，也可以直接传递以 `0x` 开头的地址。
+> Note: The `default` in the command represents the default address in the Rooch configuration. If you want to use another address, you can also directly pass the address starting with `0x`.
 
-## 面向对象的存储模型
+## Object-oriented storage model
 
-上面我们使用了账户的**资源存储模型**来简单地实现和使用计数器。接下来我们将介绍另一种存储模型——**对象存储模型**。
+Above we used the account's **resource storage model** to simply implement and use counter. Next we will introduce another storage model -- the object storage model.
 
-我们将重构计数器这个例子，并在 Rooch 的 `dev` 网络进行演示。
+We will refactor the counter example and demonstrate it on Rooch's `dev` network.
 
-### 初始化项目
+### Initialize project
 
-创建一个名为 `quick_start_object_counter` 的 Move 项目：
+Create a Move project named `quick_start_object_counter`:
 
 ```shell
 rooch move new quick_start_object_counter
 ```
 
-下面是重构之后的计数器代码：
+Here is the counter code after refactoring:
 
 ```move
 module quick_start_object_counter::quick_start_object_counter {
@@ -352,25 +352,25 @@ module quick_start_object_counter::quick_start_object_counter {
 }
 ```
 
-### 解释
+### Explain
 
-我们会使用一些 Move 和 MoveOS 提供的一些库，`signer` 模块获取签名交易的地址。`event` 模块处理事件，这里主要用于标记对象创建的事件。
+We will use some libraries provided by Move and MoveOS, and the `signer` module to obtain the address of the signed transaction. The `event` module handles events, which is mainly used to mark events of object creation.
 
-定义两个数据结构，`Counter` 存储计数器的值，`UserCounterCreatedEvent` 存储计数器对象的 ID。
+Define two data structures, `Counter` stores the value of the counter, and `UserCounterCreatedEvent` stores the ID of the counter object.
 
-同样，我们定义 `init` 来调用创建计数器的逻辑函数，可以看到，我们分别调用了两个函数：`create_shared` 和 `create_user`。这个例子中，我们演示 Rooch 的对象存储模型中的两种对象的区别和作用。
+Similarly, we define `init` to call the logical function that creates the counter. You can see that we call two functions: `create_shared` and `create_user` respectively. In this example, we demonstrate the differences and functions of the two types of objects in Rooch's object storage model.
 
-`create_shared` 函数封装了创建**共享计数器**的逻辑，它会创建一个所有用户都能够递增的计数器。首先构造一个初始值为 `0` 的计数器；然后调用 `new_named_object` 函数来创建一个命名对象，这个计数器是全局唯一的，因此我们可以直接通过类型来查询它的相关属性；最后，我们调用 `to_shared` 函数将计数器对象变成共享的，让任意账户都能修改它的值。
+The `create_shared` function encapsulates the logic of creating a **shared counter**. It creates a counter that all users can increment. First construct a counter with an initial value of `0`. Then call the `new_named_object` function to create a named object. This counter is globally unique, so we can query its related properties directly through the type. Finally, we call the `to_shared` function to change the counter object into It is shared so that any account can modify its value.
 
-`create_user` 函数封装了创建普通的计数器的逻辑，这个计数器的值只能由创建者修改。首先，我们构造一个初始值为 `123` 的计数器，然后获取签名交易的地址。使用 `new_object` 函数创建一个计数器对象并获取计数器对象的 ID。接着，调用 `transfer` 函数将计数器对象转移到签名这笔交易的账户地址，即可完成计数器对象的创建。为了在命令行中获取计数器对象的 ID 并用来递增计数器，我们需要借助事件来发送消息。
+The `create_user` function encapsulates the logic of creating an ordinary counter. The value of this counter can only be modified by the creator. First, we construct a counter with an initial value of `123`, and then obtain the address of the signed transaction. Use the `new_object` function to create a counter object and get the ID of the counter object. Then, call the `transfer` function to transfer the counter object to the account address that signed the transaction, thus completing the creation of the counter object. In order to get the ID of a counter object on the command line and use it to increment the counter, we need to send a message with the help of an event.
 
-`increase` 入口函数，封装了我们递增计数器的逻辑。首先，调用 `borrow_mut` 从计数器对象中获取计数器的可变引用，然后进行计数值的 `+1` 操作。
+The `increase` entry function encapsulates our logic for incrementing the counter. First, call `borrow_mut` to obtain a mutable reference to the counter from the counter object, and then perform a `+1` operation on the count value.
 
-### 前提条件
+### Prerequisites
 
-为了演示这个例子，我们需要准备两个 Rooch 账户。
+To demonstrate this example, we need to prepare two Rooch accounts.
 
-可以通过 `rooch account create` 命令来创建账户，通过 `rooch account switch` 命令来切换账户，通过 `rooch account list` 命令来列出当前存在的账户列表。
+You can use the `rooch account create` command to create an account, use the `rooch account switch` command to switch accounts, and use the `rooch account list` command to list the currently existing account list.
 
 ```shell
                      Rooch Address (Ed25519)                       |               Public Key (Base64)                | Auth Validator ID | Active Address
@@ -379,17 +379,17 @@ module quick_start_object_counter::quick_start_object_counter {
 0xd9ba8633a96c91eea2c180e23e8cca8bb8cfd438764143d7ca4753c3e2b7f5fe |   AIF6/NuwAcH3nSgETrAt51ppZyE3RlSKxe5eWqaBNKNG   |        0         |
 ```
 
-接下来，我将使用这两个账户来演示这个例子，`0x94bfa` 开头的地址作为发布计数器合约的账户地址，`0xd9ba8` 开头的账户作为其他用户来操作共享计数器。
+Next, I will use these two accounts to demonstrate this example. The address starting with `0x94bfa` is used as the account address for publishing the counter contract, and the account starting with `0xd9ba8` is used as other users to operate the shared counter.
 
-### 演示
+### Demo
 
-1. 编译部署
+1. Compile and deploy
 
 ```shell
 rooch move publish --named-addresses quick_start_object_counter=default
 ```
 
-2. 获取用户拥有的计数器对象 ID：
+2. Get the counter object ID owned by the user:
 
 ```shell
 curl --location --request POST 'https://dev-seed.rooch.network:443' --header 'Content-Type: application/json' --data-raw '{
@@ -399,11 +399,11 @@ curl --location --request POST 'https://dev-seed.rooch.network:443' --header 'Co
 }'|jq '.result.data[0].decoded_event_data.value.id'
 ```
 
-使用 `curl` 向 Rooch 开发网发送一个请求，获取刚才部署上去的合约中所创建的计数器对象 ID。
+Use `curl` to send a request to the Rooch development network to obtain the counter object ID created in the contract just deployed.
 
-> 注意：参数列表中的地址务必修改为你自己的，我的默认账户地址是 `0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63`。
+> Note: The address in the parameter list must be changed to your own. My default account address is `0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63`.
 
-之后可以在响应信息中看到计数器对象 ID 为 `0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2`，这是创建计数器对象时随机生成的。
+You can later see in the response information that the counter object ID is `0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2`, which is randomly generated when the counter object is created.
 
 ```shell
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
@@ -413,11 +413,11 @@ curl --location --request POST 'https://dev-seed.rooch.network:443' --header 'Co
 "0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2"
 ```
 
-3. 分别检查我们创建并初始化好的两个计数器。
+3. Check the two counters we created and initialized separately.
 
-- 共享计数器：
+- Shared counter:
 
-查看计数器对象的命令是 `rooch object --id 合约地址::模块名::类型名`。因为命名对象是全局唯一的，因此我们可以使用类型名来直接获取共享计数器对象的相关属性。
+The command to view the counter object is `rooch object --id CONTRACT_ADDRESS::MODULE_NAME::TYPE_NAME`. Because named objects are globally unique, we can use the type name to directly obtain the related properties of the shared counter object.
 
 ```shell
 [joe@mx quick_start_object_counter]$ rooch object --id 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter
@@ -444,9 +444,9 @@ curl --location --request POST 'https://dev-seed.rooch.network:443' --header 'Co
 }
 ```
 
-可以看到共享计数器的 `owner` 地址是 `0x0000000000000000000000000000000000000000000000000000000000000000`，代表 `SystemOwnedObject` 类型的对象，它的计数值 `count_value` 也初始化为 `0` 了。
+You can see that the `owner` address of the shared counter is `0x00000000000000000000000000000000000000000000000000000000000000`, which represents an object of `SystemOwnedObject` type, and its count value `count_value` is also initialized to `0`.
 
-- 用户拥有的计数器：
+- Counters owned by user:
 
 ```shell
 [joe@mx quick_start_object_counter]$ rooch object --id 0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2
@@ -472,20 +472,19 @@ curl --location --request POST 'https://dev-seed.rooch.network:443' --header 'Co
   }
 }
 ```
+You can see that the `owner` address of the counter owned by the user is `0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63`, which represents an object of `UserOwnedObject` type, and its count value `count_value` is also initialized to `123`.
 
-可以看到用户拥有的计数器的 `owner` 地址是 `0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63`，代表 `UserOwnedObject` 类型的对象，它的计数值 `count_value` 也初始化为 `123` 了。
+4. Call the `increase` function to increment the counter.
 
-4. 调用 `increase` 函数递增计数器。
+- Shared:
 
-- 共享的：
-
-命令的语法是：`rooch move run --function 合约地址::模块名::函数名 --args object:合约地址::模块名::类型名`： 
+The syntax of the command is: `rooch move run --function CONTRACT_ADDRESS::MODULE-NAME::FUNCTION_NAME --args object:CONTRACT_ADDRESS::MODULE_NAME::TYPE_NAME`:
 
 ```shell
 rooch move run --function 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::increase --args object:0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter
 ```
 
-查看：
+Check:
 
 ```shell
 [joe@mx quick_start_object_counter]$ rooch object --id 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter
@@ -512,15 +511,15 @@ rooch move run --function 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6
 }
 ```
 
-确实如我们所期望的那样，计数值增加了！
+Indeed, as we expected, the count increased!
 
-- 用户拥有的：
+- User owns:
 
 ```shell
 rooch move run --function 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::increase --args object:0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2
 ```
 
-查看：
+Check:
 
 ```shell
 [joe@mx quick_start_object_counter]$ rooch object --id 0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2
@@ -546,24 +545,24 @@ rooch move run --function 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6
 }
 ```
 
-用户拥有的计数器的值从 `123` 更改为 `124` 了。
+The value of the user-owned counter changed from `123` to `124`.
 
-5. 切换账户：
+5. Switch accounts:
 
 ```shell
 [joe@mx ~]$ rooch account switch --address 0xd9ba8633a96c91eea2c180e23e8cca8bb8cfd438764143d7ca4753c3e2b7f5fe
 The active account was successfully switched to `0xd9ba8633a96c91eea2c180e23e8cca8bb8cfd438764143d7ca4753c3e2b7f5fe`
 ```
 
-6. 再次递增计数器。
+6. Increment the counter again.
 
-- 共享的：
+- Shared:
 
 ```shell
 rooch move run --function 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::increase --args object:0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter
 ```
 
-查看：
+Check:
 
 ```shell
 [joe@mx quick_start_object_counter]$ rooch object --id 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter
@@ -590,7 +589,7 @@ rooch move run --function 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6
 }
 ```
 
-- 用户拥有的：
+- User owns:
 
 ```shell
 [joe@mx quick_start_object_counter]$ rooch move run --function 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::increase --args object:0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2
@@ -598,10 +597,10 @@ rooch move run --function 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6
 Transaction error: RPC call failed: ErrorObject { code: ServerError(-32000), message: "VMError with status NO_ACCOUNT_ROLE at location UNDEFINED and message Object owner mismatch, object owner:94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63, sender:d9ba8633a96c91eea2c180e23e8cca8bb8cfd438764143d7ca4753c3e2b7f5fe", data: None }
 ```
 
-可以看到，当我们用其他账户执行 `increase` 函数时，会返回错误信息，告诉我们对象的拥有者不匹配，即其他账户无法另一个账户所拥有的对象。
+As you can see, when we execute the `increase` function with another account, an error message will be returned, telling us that the owner of the object does not match, that is, other accounts cannot own objects owned by another account.
 
-到这里，相信你已经对 Rooch 的对象存储有了一定的了解，在开发过程中可以根据需求合理运用资源存储和对象存储方案，在 [`simple_blog` 例子](../first-blog-system.zh-CN.mdx)中，就结合了两者。
+At this point, I believe you already have a certain understanding of Rooch's object storage. During the development process, you can reasonably use resource storage and object storage solutions according to your needs. In the [`simple_blog` example](../first-blog-system.en-US.mdx), the two are combined.
 
-## 总结
+## Summarize
 
-到这里你已经一步步了解了如何使用 Rooch 进行开发，部署和调用智能合约了。在 Rooch 中，面向对象的编程模型是十分重要的一个内容，想了解更多使用方法，请参阅[对象](../../../learn/core-concepts/objects/object.zh-CN.mdx)。
+At this point you have learned step by step how to use Rooch to develop, deploy and call smart contracts. In Rooch, the object-oriented programming model is a very important content. To learn more about how to use it, please refer to [Objects](../../../learn/core-concepts/objects/object.en-US.mdx).
