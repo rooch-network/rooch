@@ -19,10 +19,9 @@ use moveos_types::{
 };
 use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
-    account_view::BalanceInfoView, FieldStateFilterView, FieldStatePageView, FieldStateView,
-    IndexerEventPageView, IndexerObjectStatePageView, IndexerObjectStateView, KeyStateView,
-    ObjectIDVecView, ObjectStateFilterView, ObjectStateView, QueryOptions, StateKVView,
-    StateOptions, TxOptions,
+    account_view::BalanceInfoView, IndexerEventPageView, IndexerObjectStatePageView,
+    IndexerObjectStateView, KeyStateView, ObjectIDVecView, ObjectStateFilterView, ObjectStateView,
+    QueryOptions, StateKVView, StateOptions, TxOptions,
 };
 use rooch_rpc_api::jsonrpc_types::{
     event_view::{EventFilterView, EventView, IndexerEventView},
@@ -702,55 +701,6 @@ impl RoochAPIServer for RoochServer {
         });
 
         Ok(IndexerObjectStatePageView {
-            data,
-            next_cursor,
-            has_next_page,
-        })
-    }
-
-    async fn query_field_states(
-        &self,
-        filter: FieldStateFilterView,
-        // exclusive cursor if `Some`, otherwise start from the beginning
-        cursor: Option<IndexerStateID>,
-        limit: Option<StrView<usize>>,
-        query_option: Option<QueryOptions>,
-    ) -> RpcResult<FieldStatePageView> {
-        let limit_of = min(
-            limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
-            MAX_RESULT_LIMIT_USIZE,
-        );
-        let query_option = query_option.unwrap_or_default();
-        let descending_order = query_option.descending;
-
-        let states = self
-            .rpc_service
-            .query_field_states(filter.into(), cursor, limit_of + 1, descending_order)
-            .await?;
-
-        let object_ids = states
-            .iter()
-            .map(|m| m.object_id.clone())
-            .collect::<Vec<_>>();
-        let access_path = AccessPath::objects(object_ids.clone());
-        let mut data = self
-            .rpc_service
-            .get_annotated_states(access_path)
-            .await?
-            .into_iter()
-            .zip(states)
-            .map(|(annotated_state, state)| {
-                FieldStateView::new_from_field_state(annotated_state, state)
-            })
-            .collect::<Vec<_>>();
-
-        let has_next_page = data.len() > limit_of;
-        data.truncate(limit_of);
-        let next_cursor = data.last().cloned().map_or(cursor, |t| {
-            Some(IndexerStateID::new(t.tx_order, t.state_index))
-        });
-
-        Ok(FieldStatePageView {
             data,
             next_cursor,
             has_next_page,

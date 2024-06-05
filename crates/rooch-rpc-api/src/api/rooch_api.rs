@@ -7,10 +7,10 @@ use crate::jsonrpc_types::event_view::EventFilterView;
 use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionWithInfoView};
 use crate::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
-    EventPageView, ExecuteTransactionResponseView, FieldStateFilterView, FieldStatePageView,
-    FunctionCallView, H256View, IndexerEventPageView, IndexerObjectStatePageView, ObjectIDVecView,
-    ObjectIDView, ObjectStateFilterView, ObjectStateView, QueryOptions, StateOptions,
-    StatePageView, StateView, StrView, StructTagView, TransactionWithInfoPageView, TxOptions,
+    EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
+    IndexerEventPageView, IndexerObjectStatePageView, ObjectIDVecView, ObjectIDView,
+    ObjectStateFilterView, ObjectStateView, QueryOptions, StateOptions, StatePageView, StateView,
+    StrView, StructTagView, TransactionWithInfoPageView, TxOptions,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -165,15 +165,4 @@ pub trait RoochAPI {
         limit: Option<StrView<usize>>,
         query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerObjectStatePageView>;
-
-    /// Query the Object field states indexer by state filter
-    #[method(name = "queryFieldStates")]
-    async fn query_field_states(
-        &self,
-        filter: FieldStateFilterView,
-        // exclusive cursor if `Some`, otherwise start from the beginning
-        cursor: Option<IndexerStateID>,
-        limit: Option<StrView<usize>>,
-        query_option: Option<QueryOptions>,
-    ) -> RpcResult<IndexerFieldStatePageView>;
 }

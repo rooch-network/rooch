@@ -17,8 +17,7 @@ use moveos_types::{
     state::{AnnotatedState, State, StateChangeSet, TableTypeInfo},
 };
 use rooch_types::indexer::state::{
-    FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateChangeSet,
-    ObjectStateFilter, StateSyncFilter,
+    IndexerObjectState, IndexerStateChangeSet, ObjectStateFilter, StateSyncFilter,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -460,53 +459,6 @@ impl ObjectStateFilterView {
                 ObjectStateFilter::ObjectId(object_ids)
             }
         })
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct FieldStateView {
-    pub object_id: ObjectID,
-    pub key_hex: String,
-    pub value: Option<AnnotatedMoveValueView>,
-    pub key_type: TypeTagView,
-    pub value_type: TypeTagView,
-    pub tx_order: u64,
-    pub state_index: u64,
-    pub created_at: u64,
-    pub updated_at: u64,
-}
-
-impl FieldStateView {
-    pub fn new_from_field_state(
-        annotated_state: Option<AnnotatedState>,
-        state: IndexerFieldState,
-    ) -> FieldStateView {
-        FieldStateView {
-            object_id: state.object_id,
-            key_hex: state.key_hex,
-            value: annotated_state.map(|v| AnnotatedMoveValueView::from(v.decoded_value)),
-            key_type: state.key_type.into(),
-            value_type: state.value_type.into(),
-            tx_order: state.tx_order,
-            state_index: state.state_index,
-            created_at: state.created_at,
-            updated_at: state.updated_at,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum FieldStateFilterView {
-    /// Query by object id.
-    ObjectId(ObjectID),
-}
-
-impl From<FieldStateFilterView> for FieldStateFilter {
-    fn from(state_filter: FieldStateFilterView) -> Self {
-        match state_filter {
-            FieldStateFilterView::ObjectId(object_id) => Self::ObjectId(object_id),
-        }
     }
 }
 
