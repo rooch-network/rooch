@@ -464,7 +464,7 @@ impl ObjectStateFilterView {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct IndexerFieldStateView {
+pub struct FieldStateView {
     pub object_id: ObjectID,
     pub key_hex: String,
     pub value: Option<AnnotatedMoveValueView>,
@@ -476,12 +476,12 @@ pub struct IndexerFieldStateView {
     pub updated_at: u64,
 }
 
-impl IndexerFieldStateView {
+impl FieldStateView {
     pub fn new_from_field_state(
         annotated_state: Option<AnnotatedState>,
         state: IndexerFieldState,
-    ) -> IndexerFieldStateView {
-        IndexerFieldStateView {
+    ) -> FieldStateView {
+        FieldStateView {
             object_id: state.object_id,
             key_hex: state.key_hex,
             value: annotated_state.map(|v| AnnotatedMoveValueView::from(v.decoded_value)),

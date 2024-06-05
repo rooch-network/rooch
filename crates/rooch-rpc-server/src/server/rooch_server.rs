@@ -19,10 +19,10 @@ use moveos_types::{
 };
 use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
-    account_view::BalanceInfoView, FieldStateFilterView, IndexerEventPageView,
-    IndexerFieldStatePageView, IndexerFieldStateView, IndexerObjectStatePageView,
-    IndexerObjectStateView, KeyStateView, ObjectIDView, ObjectStateFilterView, ObjectStateView,
-    QueryOptions, StateKVView, StateOptions, TxOptions,
+    account_view::BalanceInfoView, FieldStateFilterView, FieldStatePageView, FieldStateView,
+    IndexerEventPageView, IndexerObjectStatePageView, IndexerObjectStateView, KeyStateView,
+    ObjectIDVecView, ObjectStateFilterView, ObjectStateView, QueryOptions, StateKVView,
+    StateOptions, TxOptions,
 };
 use rooch_rpc_api::jsonrpc_types::{
     event_view::{EventFilterView, EventView, IndexerEventView},
@@ -292,7 +292,7 @@ impl RoochAPIServer for RoochServer {
 
     async fn get_object_states(
         &self,
-        object_ids: ObjectIDView,
+        object_ids: ObjectIDVecView,
         state_option: Option<StateOptions>,
     ) -> RpcResult<Vec<Option<ObjectStateView>>> {
         let object_ids: Vec<ObjectID> = object_ids.into();
@@ -715,7 +715,7 @@ impl RoochAPIServer for RoochServer {
         cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
         query_option: Option<QueryOptions>,
-    ) -> RpcResult<IndexerFieldStatePageView> {
+    ) -> RpcResult<FieldStatePageView> {
         let limit_of = min(
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
@@ -740,7 +740,7 @@ impl RoochAPIServer for RoochServer {
             .into_iter()
             .zip(states)
             .map(|(annotated_state, state)| {
-                IndexerFieldStateView::new_from_field_state(annotated_state, state)
+                FieldStateView::new_from_field_state(annotated_state, state)
             })
             .collect::<Vec<_>>();
 
@@ -750,7 +750,7 @@ impl RoochAPIServer for RoochServer {
             Some(IndexerStateID::new(t.tx_order, t.state_index))
         });
 
-        Ok(IndexerFieldStatePageView {
+        Ok(FieldStatePageView {
             data,
             next_cursor,
             has_next_page,

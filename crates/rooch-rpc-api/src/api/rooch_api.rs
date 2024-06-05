@@ -7,13 +7,14 @@ use crate::jsonrpc_types::event_view::EventFilterView;
 use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionWithInfoView};
 use crate::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
-    EventPageView, ExecuteTransactionResponseView, FieldStateFilterView, FunctionCallView,
-    H256View, IndexerEventPageView, IndexerFieldStatePageView, IndexerObjectStatePageView,
+    EventPageView, ExecuteTransactionResponseView, FieldStateFilterView, FieldStatePageView,
+    FunctionCallView, H256View, IndexerEventPageView, IndexerObjectStatePageView, ObjectIDVecView,
     ObjectIDView, ObjectStateFilterView, ObjectStateView, QueryOptions, StateOptions,
     StatePageView, StateView, StrView, StructTagView, TransactionWithInfoPageView, TxOptions,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
+use moveos_types::access_path::AccessPath;
 use rooch_open_rpc_macros::open_rpc;
 use rooch_types::indexer::event::IndexerEventID;
 use rooch_types::indexer::state::IndexerStateID;
@@ -71,9 +72,24 @@ pub trait RoochAPI {
     #[method(name = "getObjectStates")]
     async fn get_object_states(
         &self,
-        object_ids: ObjectIDView,
+        object_ids: ObjectIDVecView,
         state_option: Option<StateOptions>,
     ) -> RpcResult<Vec<Option<ObjectStateView>>>;
+
+    /// List Object Fields via ObjectID.
+    #[method(name = "listObjectFields")]
+    async fn list_object_fields(
+        &self,
+        object_id: ObjectIDView,
+        cursor: Option<String>,
+        limit: Option<StrView<usize>>,
+        state_option: Option<StateOptions>,
+    ) -> RpcResult<StatePageView> {
+        let access_path_view =
+            AccessPathView::from(AccessPath::fields_without_keys(object_id.into()));
+        self.list_states(access_path_view, cursor, limit, state_option)
+            .await
+    }
 
     /// Get the events by event handle id
     #[method(name = "getEventsByEventHandle")]
