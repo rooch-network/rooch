@@ -32,6 +32,7 @@ pub struct StartCommand {
 impl CommandAction<()> for StartCommand {
     async fn execute(mut self) -> RoochResult<()> {
         let mut context = self.context_options.build()?;
+        self.opt.init()?;
 
         //Parse key pair from Rooch opt
         let sequencer_account = if self.opt.sequencer_account.is_none() {
@@ -112,7 +113,7 @@ impl CommandAction<()> for StartCommand {
 
         let mut service = Service::new();
         service
-            .start(&self.opt.clone(), server_opt)
+            .start(self.opt.clone(), server_opt)
             .await
             .map_err(RoochError::from)?;
 

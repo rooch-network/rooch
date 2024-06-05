@@ -49,6 +49,7 @@ framework-builder = { workspace = true }
 moveos = { workspace = true }
 moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }
+moveos-config = { workspace = true }
 
 rooch-types ={ workspace = true }
 rooch-framework = { workspace = true }

@@ -4,20 +4,20 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{BaseConfig, ConfigModule, RoochOpt};
+use crate::BaseConfig;
 use anyhow::Result;
 use clap::Parser;
 use moveos_config::store_config::RocksdbConfig;
 use moveos_config::DataDirPath;
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
 
-pub static R_DEFAULT_DB_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("roochdb"));
-static R_DEFAULT_DB_MOVEOS_SUBDIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("moveos_store"));
-static R_DEFAULT_DB_ROOCH_SUBDIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("rooch_store"));
+pub const DEFAULT_DB_DIR: &str = "roochdb";
+pub const DEFAULT_DB_ROOCH_SUBDIR: &str = "rooch_store";
+pub const DEFAULT_DB_MOVEOS_SUBDIR: &str = "moveos_store";
+pub const DEFAULT_DB_INDEXER_SUBDIR: &str = "indexer";
 
 // for Rooch DB instance, doesn't need too much row cache:
 // store ledger tx and several meta. Most of the time, they are always requested for newer data
@@ -92,32 +92,20 @@ pub struct StoreConfig {
 }
 
 impl StoreConfig {
-    pub fn merge_with_opt_with_init(
-        &mut self,
-        opt: &RoochOpt,
-        base: Arc<BaseConfig>,
-        with_init: bool,
-    ) -> Result<()> {
-        self.merge_with_opt(opt, base)?;
-        if with_init {
-            self.init()?;
+    pub(crate) fn init(&mut self, base: Arc<BaseConfig>) -> Result<()> {
+        self.base = Some(base);
+        let rooch_store_dir = self.get_rooch_store_dir();
+        let moveos_store_dir = self.get_moveos_store_dir();
+        let indexer_store_dir = self.get_indexer_store_dir();
+        if !rooch_store_dir.exists() {
+            std::fs::create_dir_all(rooch_store_dir.clone())?;
         }
-        Ok(())
-    }
-
-    pub fn init(&self) -> Result<()> {
-        let rooch_db_dir = self.get_rooch_store_dir();
-        let moveos_db_dir = self.get_moveos_store_dir();
-        if !rooch_db_dir.exists() {
-            std::fs::create_dir_all(rooch_db_dir.clone())?;
+        if !moveos_store_dir.exists() {
+            std::fs::create_dir_all(moveos_store_dir.clone())?;
         }
-        if !moveos_db_dir.exists() {
-            std::fs::create_dir_all(moveos_db_dir.clone())?;
+        if !indexer_store_dir.exists() {
+            std::fs::create_dir_all(indexer_store_dir.clone())?;
         }
-        println!(
-            "StoreConfig init store dir {:?} {:?}",
-            rooch_db_dir, moveos_db_dir
-        );
         Ok(())
     }
 
@@ -129,16 +117,20 @@ impl StoreConfig {
         self.base().data_dir()
     }
 
+    pub fn get_rooch_db_dir(&self) -> PathBuf {
+        self.data_dir().join(DEFAULT_DB_DIR)
+    }
+
     pub fn get_moveos_store_dir(&self) -> PathBuf {
-        self.data_dir()
-            .join(R_DEFAULT_DB_DIR.as_path())
-            .join(R_DEFAULT_DB_MOVEOS_SUBDIR.as_path())
+        self.get_rooch_db_dir().join(DEFAULT_DB_MOVEOS_SUBDIR)
     }
 
     pub fn get_rooch_store_dir(&self) -> PathBuf {
-        self.data_dir()
-            .join(R_DEFAULT_DB_DIR.as_path())
-            .join(R_DEFAULT_DB_ROOCH_SUBDIR.as_path())
+        self.get_rooch_db_dir().join(DEFAULT_DB_ROOCH_SUBDIR)
+    }
+
+    pub fn get_indexer_store_dir(&self) -> PathBuf {
+        self.get_rooch_db_dir().join(DEFAULT_DB_INDEXER_SUBDIR)
     }
 
     pub fn rocksdb_config(&self, is_moveos_db: bool) -> RocksdbConfig {
@@ -174,40 +166,15 @@ impl StoreConfig {
     pub fn get_mock_moveos_store_dir(data_dir: &DataDirPath) -> PathBuf {
         data_dir
             .path()
-            .join(R_DEFAULT_DB_DIR.as_path())
-            .join(R_DEFAULT_DB_MOVEOS_SUBDIR.as_path())
+            .join(DEFAULT_DB_DIR)
+            .join(DEFAULT_DB_MOVEOS_SUBDIR)
     }
 
     pub fn get_mock_rooch_store_dir(data_dir: &DataDirPath) -> PathBuf {
         data_dir
             .path()
-            .join(R_DEFAULT_DB_DIR.as_path())
-            .join(R_DEFAULT_DB_ROOCH_SUBDIR.as_path())
-    }
-}
-
-impl ConfigModule for StoreConfig {
-    fn merge_with_opt(&mut self, opt: &RoochOpt, base: Arc<BaseConfig>) -> Result<()> {
-        self.base = Some(base);
-
-        let store_config = opt.store.clone();
-        if store_config.max_open_files.is_some() {
-            self.max_open_files = store_config.max_open_files;
-        }
-        if store_config.max_total_wal_size.is_some() {
-            self.max_total_wal_size = store_config.max_total_wal_size;
-        }
-        if store_config.row_cache_size.is_some() {
-            self.row_cache_size = store_config.row_cache_size;
-        }
-        if store_config.bytes_per_sync.is_some() {
-            self.bytes_per_sync = store_config.bytes_per_sync;
-        }
-        if store_config.wal_bytes_per_sync.is_some() {
-            self.wal_bytes_per_sync = store_config.wal_bytes_per_sync;
-        }
-
-        Ok(())
+            .join(DEFAULT_DB_DIR)
+            .join(DEFAULT_DB_ROOCH_SUBDIR)
     }
 }
 

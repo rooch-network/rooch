@@ -1,21 +1,18 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::config::Config;
+use crate::config::{parse_hashmap, retrieve_map_config_value, MapConfigValueSource};
+use crate::BaseConfig;
+use clap::Parser;
+use once_cell::sync::Lazy;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
-
-use clap::Parser;
-use once_cell::sync::Lazy;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-
-use crate::config::{parse_hashmap, retrieve_map_config_value, MapConfigValueSource};
-
-use crate::config::Config;
-use crate::{BaseConfig, RoochOpt};
 
 static R_DEFAULT_OPENDA_FS_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("openda_fs"));
 
@@ -71,6 +68,17 @@ pub struct DAConfig {
     // TODO external da server config
 }
 
+impl Display for DAConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self).map_err(|_| std::fmt::Error)?
+        )?;
+        Ok(())
+    }
+}
+
 impl Config for DAConfig {}
 
 impl FromStr for DAConfig {
@@ -83,16 +91,7 @@ impl FromStr for DAConfig {
 }
 
 impl DAConfig {
-    pub fn merge_with_opt_with_init(
-        &mut self,
-        opt: &RoochOpt,
-        base: Arc<BaseConfig>,
-        with_init: bool,
-    ) -> anyhow::Result<()> {
-        if let Some(ref da_config) = opt.da {
-            // TODO merge with field checking
-            *self = da_config.clone();
-        }
+    pub(crate) fn init(&mut self, base: Arc<BaseConfig>) -> anyhow::Result<()> {
         self.base = Some(base);
 
         let default_fs_root = self.get_openda_fs_dir();
@@ -108,9 +107,6 @@ impl DAConfig {
                             default_fs_root.to_str().unwrap(),
                         );
                         if let MapConfigValueSource::Default = var_source {
-                            if !with_init {
-                                continue;
-                            }
                             if !default_fs_root.exists() {
                                 std::fs::create_dir_all(default_fs_root.clone())?;
                             }

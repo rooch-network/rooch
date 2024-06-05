@@ -19,6 +19,7 @@
 -  [Function `publish_modules`](#0x2_module_store_publish_modules)
 -  [Function `publish_modules_entry`](#0x2_module_store_publish_modules_entry)
 -  [Function `publish_modules_internal`](#0x2_module_store_publish_modules_internal)
+-  [Function `freeze_package`](#0x2_module_store_freeze_package)
 -  [Function `add_to_allowlist`](#0x2_module_store_add_to_allowlist)
 -  [Function `remove_from_allowlist`](#0x2_module_store_remove_from_allowlist)
 -  [Function `is_in_allowlist`](#0x2_module_store_is_in_allowlist)
@@ -194,6 +195,17 @@ Return true if the modules are upgraded
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="module_store.md#0x2_module_store_publish_modules_internal">publish_modules_internal</a>(module_object: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="module_store.md#0x2_module_store_ModuleStore">module_store::ModuleStore</a>&gt;, package_id: <b>address</b>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;): bool
+</code></pre>
+
+
+
+<a name="0x2_module_store_freeze_package"></a>
+
+## Function `freeze_package`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_freeze_package">freeze_package</a>(package: <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="module_store.md#0x2_module_store_Package">module_store::Package</a>&gt;)
 </code></pre>
 
 

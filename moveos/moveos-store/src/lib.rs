@@ -13,6 +13,7 @@ use accumulator::inmemory::InMemoryAccumulator;
 use anyhow::{Error, Result};
 use move_core_types::language_storage::StructTag;
 use moveos_config::store_config::RocksdbConfig;
+use moveos_config::DataDirPath;
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{Event, EventID, TransactionEvent};
@@ -68,98 +69,66 @@ impl StoreMeta {
 }
 
 #[derive(Clone)]
-pub struct MoveOSDB {
+pub struct MoveOSStore {
     pub node_store: NodeDBStore,
     pub event_store: EventDBStore,
     pub transaction_store: TransactionDBStore,
     pub config_store: ConfigDBStore,
-}
-
-impl MoveOSDB {
-    pub fn mock_store_instance(data_dir: Option<&Path>) -> StoreInstance {
-        let tmpdir = moveos_config::temp_dir();
-        let db_path = data_dir.unwrap_or(tmpdir.path());
-        StoreInstance::new_db_instance(
-            RocksDB::new(
-                db_path,
-                StoreMeta::get_column_family_names().to_vec(),
-                RocksdbConfig::default(),
-                None,
-            )
-            .unwrap(),
-        )
-    }
-
-    pub fn mock_moveosdb() -> Result<Self> {
-        Self::new(Self::mock_store_instance(None))
-    }
-
-    pub fn mock_moveosdb_with_data_dir(data_dir: &Path) -> Result<Self> {
-        Self::new(Self::mock_store_instance(Some(data_dir)))
-    }
-
-    pub fn new(instance: StoreInstance) -> Result<Self> {
-        let store = Self {
-            node_store: NodeDBStore::new(instance.clone()),
-            event_store: EventDBStore::new(instance.clone()),
-            transaction_store: TransactionDBStore::new(instance.clone()),
-            config_store: ConfigDBStore::new(instance),
-        };
-        Ok(store)
-    }
-}
-
-#[derive(Clone)]
-pub struct MoveOSStore {
-    pub statedb: StateDBStore,
-    pub moveosdb: MoveOSDB,
+    pub state_store: StateDBStore,
 }
 
 impl MoveOSStore {
-    pub fn mock_moveos_store() -> Result<Self> {
-        let moveosdb = MoveOSDB::mock_moveosdb()?;
-        Self::new(moveosdb)
+    pub fn new(db_path: &Path) -> Result<Self> {
+        let instance = StoreInstance::new_db_instance(RocksDB::new(
+            db_path,
+            StoreMeta::get_column_family_names().to_vec(),
+            RocksdbConfig::default(),
+            None,
+        )?);
+        Self::new_with_instance(instance)
     }
 
-    pub fn mock_moveos_store_with_data_dir(data_dir: &Path) -> Result<Self> {
-        let moveosdb = MoveOSDB::mock_moveosdb_with_data_dir(data_dir)?;
-        Self::new(moveosdb)
-    }
-
-    pub fn new(moveosdb: MoveOSDB) -> Result<Self> {
+    pub fn new_with_instance(instance: StoreInstance) -> Result<Self> {
+        let node_store = NodeDBStore::new(instance.clone());
+        let state_store = StateDBStore::new(node_store.clone());
         let store = Self {
-            statedb: StateDBStore::new(moveosdb.node_store.clone()),
-            moveosdb,
+            node_store,
+            event_store: EventDBStore::new(instance.clone()),
+            transaction_store: TransactionDBStore::new(instance.clone()),
+            config_store: ConfigDBStore::new(instance),
+            state_store,
         };
         Ok(store)
     }
 
+    pub fn mock_moveos_store() -> Result<(Self, DataDirPath)> {
+        let tmpdir = moveos_config::temp_dir();
+        //The testcases should hold the tmpdir to prevent the tmpdir from being deleted.
+        Ok((Self::new(tmpdir.path())?, tmpdir))
+    }
+
     pub fn get_event_store(&self) -> &EventDBStore {
-        &self.moveosdb.event_store
+        &self.event_store
     }
 
     pub fn get_transaction_store(&self) -> &TransactionDBStore {
-        &self.moveosdb.transaction_store
+        &self.transaction_store
     }
 
     pub fn get_state_node_store(&self) -> &NodeDBStore {
-        &self.moveosdb.node_store
+        &self.node_store
     }
 
     pub fn get_config_store(&self) -> &ConfigDBStore {
-        &self.moveosdb.config_store
+        &self.config_store
     }
 
     pub fn get_state_store(&self) -> &StateDBStore {
-        &self.statedb
-    }
-
-    pub fn get_state_store_mut(&mut self) -> &mut StateDBStore {
-        &mut self.statedb
+        &self.state_store
     }
 
     pub fn handle_tx_output(
-        &mut self,
+        &self,
         tx_hash: H256,
         state_root: H256,
         size: u64,
@@ -186,8 +155,7 @@ impl MoveOSStore {
             output.gas_used,
             output.status.clone(),
         );
-        self.moveosdb
-            .transaction_store
+        self.transaction_store
             .save_tx_execution_info(transaction_info.clone())
             .map_err(|e| {
                 anyhow::anyhow!(

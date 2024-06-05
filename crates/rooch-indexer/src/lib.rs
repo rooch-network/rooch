@@ -1,21 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::HashMap;
-use std::fmt::{Debug, Display, Formatter};
-use std::path::PathBuf;
-use std::string::ToString;
-use std::time::Duration;
-
-use anyhow::Result;
-use diesel::r2d2::ConnectionManager;
-use diesel::sqlite::SqliteConnection;
-
 use crate::store::sqlite_store::SqliteIndexerStore;
 use crate::store::traits::IndexerStoreTrait;
 use crate::utils::create_all_tables_if_not_exists;
-use rooch_config::indexer_config::ROOCH_INDEXER_DB_DIR;
-
+use anyhow::Result;
+use diesel::r2d2::ConnectionManager;
+use diesel::sqlite::SqliteConnection;
 use errors::IndexerError;
 use once_cell::sync::Lazy;
 use rooch_types::indexer::event::IndexerEvent;
@@ -23,6 +14,11 @@ use rooch_types::indexer::state::{
     IndexerFieldState, IndexerFieldStateChanges, IndexerObjectState, IndexerObjectStateChanges,
 };
 use rooch_types::indexer::transaction::IndexerTransaction;
+use std::collections::HashMap;
+use std::fmt::{Debug, Display, Formatter};
+use std::path::PathBuf;
+use std::string::ToString;
+use std::time::Duration;
 
 pub mod actor;
 pub mod errors;
@@ -97,6 +93,7 @@ impl IndexerStore {
         let store = Self {
             sqlite_store_mapping,
         };
+        store.create_all_tables_if_not_exists()?;
         Ok(store)
     }
 
@@ -108,24 +105,7 @@ impl IndexerStore {
             .clone())
     }
 
-    pub fn mock_db_dir() -> Result<PathBuf> {
-        let tmpdir = moveos_config::temp_dir();
-        let indexer_db_dir = tmpdir.path().join(ROOCH_INDEXER_DB_DIR);
-
-        if !indexer_db_dir.exists() {
-            std::fs::create_dir_all(indexer_db_dir.clone())?;
-        }
-        Ok(indexer_db_dir)
-    }
-
-    pub fn mock_indexer_store() -> Result<Self> {
-        let indexer_db_dir = Self::mock_db_dir()?;
-        let mock_store = Self::new(indexer_db_dir)?;
-        mock_store.create_all_tables_if_not_exists()?;
-        Ok(mock_store)
-    }
-
-    pub fn create_all_tables_if_not_exists(&self) -> Result<()> {
+    fn create_all_tables_if_not_exists(&self) -> Result<()> {
         for (k, v) in &self.sqlite_store_mapping {
             let mut connection = get_sqlite_pool_connection(&v.connection_pool)?;
             create_all_tables_if_not_exists(&mut connection, k.clone())?;
