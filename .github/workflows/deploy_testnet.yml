@@ -31,6 +31,7 @@ jobs:
         with:
           name: docker_tag
           path: .
+          workflow: ${{ github.event.workflow_run.id }}
 
       - name: Determine ref
         id: determine-ref
