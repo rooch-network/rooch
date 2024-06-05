@@ -32,14 +32,7 @@ impl GasMeter {
     }
 
     pub fn charge(&mut self, amount: u64) -> Result<(), RuntimeError> {
-        debug!(
-            "charge: gas_limit: {:?}, self.gas_used:{:?}, amount:{:?}",
-            &self.gas_limit, &self.gas_used, &amount
-        );
-
         if self.gas_used + amount > self.gas_limit {
-            debug!("charge: GAS limit exceeded");
-
             Err(RuntimeError::new("GAS limit exceeded"))
         } else {
             self.gas_used += amount;
@@ -103,18 +96,10 @@ impl ModuleMiddleware for GasMiddleware {
         // Insert the signature for the charge function
         let charge_signature = FunctionType::new(vec![Type::I64], vec![]);
         let charge_signature_index = module_info.signatures.push(charge_signature);
-        debug!(
-            "transform_module_info charge_signature_index: {:?}",
-            &charge_signature_index
-        );
 
         // Insert the charge function after existing imported functions
         let charge_function_index =
             FunctionIndex::from_u32(module_info.num_imported_functions as u32);
-        debug!(
-            "transform_module_info charge_function_index: {:?}",
-            &charge_function_index
-        );
 
         // Insert the charge function name
         module_info
@@ -127,10 +112,6 @@ impl ModuleMiddleware for GasMiddleware {
             field: "charge".to_string(),
             import_idx: charge_function_index.as_u32(),
         };
-        debug!(
-            "transform_module_info charge_import_key: {:?}",
-            &charge_import_key
-        );
 
         // Insert the charge function import declaration at the end
         module_info.imports.insert(
@@ -174,6 +155,14 @@ impl ModuleMiddleware for GasMiddleware {
             }
         }
 
+        for table_initializer in module_info.table_initializers.iter_mut() {
+            for func_index in table_initializer.elements.iter_mut() {
+                if func_index.as_u32() >= charge_function_index.as_u32() {
+                    *func_index = FunctionIndex::from_u32(func_index.as_u32() + 1);
+                }
+            }
+        }
+
         module_info.num_imported_functions += 1;
 
         let mut gas_meter = self.gas_meter.lock().unwrap();
@@ -204,11 +193,8 @@ impl wasmer::FunctionMiddleware for GasFunctionMiddleware {
         operator: Operator<'a>,
         state: &mut MiddlewareReaderState<'a>,
     ) -> Result<(), MiddlewareError> {
-        debug!("feed: op: {:?}", &operator);
-
         // Use cost_function to evaluate the cost of the instruction
         self.accumulated_cost += (self.cost_function)(&operator);
-        debug!("feed: accumulated_cost: {:?}", &self.accumulated_cost);
 
         // Perform batch charging before critical points
         match operator {
@@ -219,8 +205,6 @@ impl wasmer::FunctionMiddleware for GasFunctionMiddleware {
             | Operator::CallIndirect { .. }
             | Operator::Return => {
                 if self.accumulated_cost > 0 {
-                    debug!("feed: match before op: {:?}", &operator);
-
                     let gas_meter = self.gas_meter.lock().unwrap();
 
                     state.extend(&[
@@ -237,8 +221,6 @@ impl wasmer::FunctionMiddleware for GasFunctionMiddleware {
             }
             _ => {}
         }
-
-        debug!("feed: push_operator: {:?}", &operator);
 
         // Update function call indices if necessary
         match operator {
@@ -277,8 +259,6 @@ impl wasmer::FunctionMiddleware for GasFunctionMiddleware {
         match operator {
             Operator::Loop { .. } | Operator::BrIf { .. } | Operator::Else => {
                 if self.accumulated_cost > 0 {
-                    debug!("feed: match after op: {:?}", &operator);
-
                     let gas_meter = self.gas_meter.lock().unwrap();
 
                     state.extend(&[

@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use log::debug;
+use log::{debug, warn};
 use std::collections::VecDeque;
 use std::ffi::CString;
 use std::ops::Deref;
@@ -84,13 +84,13 @@ fn native_create_wasm_instance(
             match insert_wasm_instance(instance) {
                 Ok(id) => (id, 0), // No error
                 Err(e) => {
-                    debug!("insert_wasm_instance_error: {:?}", &e);
+                    warn!("insert_wasm_instance_error: {:?}", &e);
                     (0, E_WASM_INSERT_POOL_FAILED)
                 }
             }
         }
         Err(e) => {
-            debug!("create_wasm_instance_error: {:?}", &e);
+            warn!("create_wasm_instance_error: {:?}", &e);
             (0, E_WASM_INSTANCE_CREATION_FAILED)
         }
     };
@@ -323,7 +323,7 @@ fn native_create_wasm_args_in_memory(
                 let buffer_final_ptr = match put_data_on_stack(instance, arg_buffer.as_slice()) {
                     Ok(v) => v,
                     Err(e) => {
-                        debug!(
+                        warn!(
                             "native_create_wasm_args_in_memory->put_data_on_stack error:{:?}",
                             &e
                         );
@@ -396,7 +396,7 @@ fn native_execute_wasm_function(
             NativeResult::OutOfGas { partial_cost } => Ok(NativeResult::OutOfGas { partial_cost }),
         },
         PartialVMResult::Err(err) => {
-            debug!("execute_wasm_function_inner vm_error: {:?}", err);
+            warn!("execute_wasm_function_inner vm_error: {:?}", err);
 
             Ok(NativeResult::Success {
                 cost: gas_params.base_create_execution,
@@ -427,7 +427,7 @@ fn execute_wasm_function_inner(
     let mut pool_object = match instance_pool.lock() {
         Ok(v) => v,
         Err(e) => {
-            debug!(
+            warn!(
                 "execute_wasm_function_inner->instance_pool_lock_error: {:?}",
                 &e
             );
@@ -464,9 +464,12 @@ fn execute_wasm_function_inner(
                             + Send
                             + Sync
                             + 'static,
-                    > = Box::new(|_signum, _siginfo, _context| {
-                        debug!("Trap handler called!");
-                        false // 返回 true 表示处理了这个陷阱
+                    > = Box::new(|signum, siginfo, ctx| {
+                        warn!(
+                            "Trap handler called, signum:{:?}, siginfo:{:?}, context:{:?}",
+                            signum, siginfo, ctx
+                        );
+                        false // 返回 false 表示不处理这个陷阱
                     });
 
                     // 设置 trap handler
@@ -504,7 +507,7 @@ fn execute_wasm_function_inner(
                             })
                         }
                         Err(err) => {
-                            debug!(
+                            warn!(
                                 "execute_wasm_function_inner->calling_function_error:{:?}",
                                 &err
                             );
@@ -516,10 +519,14 @@ fn execute_wasm_function_inner(
                         }
                     }
                 }
-                Err(_) => Ok(NativeResult::err(
-                    gas_params.base_create_execution,
-                    E_WASM_FUNCTION_NOT_FOUND,
-                )),
+                Err(err) => {
+                    warn!("execute_wasm_function_inner->get_function_error:{:?}", &err);
+
+                    Ok(NativeResult::err(
+                        gas_params.base_create_execution,
+                        E_WASM_FUNCTION_NOT_FOUND,
+                    ))
+                }
             }
         }
     };

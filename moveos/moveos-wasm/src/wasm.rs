@@ -231,12 +231,7 @@ pub fn get_data_from_heap(
 
 fn charge(env: FunctionEnvMut<Env>, amount: i64) -> Result<(), wasmer::RuntimeError> {
     let mut gas_meter = env.data().gas_meter.lock().unwrap();
-
-    if let Err(e) = gas_meter.charge(amount as u64) {
-        return Err(wasmer::RuntimeError::new(e.to_string()));
-    }
-
-    Ok(())
+    gas_meter.charge(amount as u64)
 }
 
 pub fn create_wasm_instance(code: &[u8]) -> anyhow::Result<WASMInstance> {

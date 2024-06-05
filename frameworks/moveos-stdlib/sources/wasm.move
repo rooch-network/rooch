@@ -2,9 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module moveos_std::wasm {
-    use std::debug;
-    use std::vector;
-    use std::string;
     use std::option::{Self,Option};
     use moveos_std::features;
 
@@ -17,21 +14,10 @@ module moveos_std::wasm {
     }
 
     public fun create_wasm_instance(bytecode: vector<u8>): WASMInstance {
-        std::debug::print(&string::utf8(b"create_wasm_instance debug 1"));
         features::ensure_wasm_enabled();
-        std::debug::print(&string::utf8(b"create_wasm_instance debug 2"));
 
         let (instance_id, error_code) = native_create_wasm_instance(bytecode);
-        std::debug::print(&string::utf8(b"create_wasm_instance debug 3"));
-        std::debug::print(&error_code);
-        
-        if (error_code > 0) {
-            std::debug::print(&string::utf8(b"create_wasm_instance_error:"));
-            std::debug::print(&error_code);
-        };
-
         assert!(error_code == 0, error_code);
-        std::debug::print(&string::utf8(b"create_wasm_instance debug 4"));
 
         WASMInstance {id: instance_id }
     }
@@ -106,6 +92,15 @@ module moveos_std::wasm {
     native fun native_read_data_from_heap(instance_id: u64, data_ptr: u32, data_length: u32): vector<u8>;
 
     native fun native_release_wasm_instance(instance: WASMInstance): bool;
+
+    #[test]
+    use std::string;
+
+    #[test]
+    use std::debug;
+
+    #[test]
+    use std::vector;
 
     #[test]
     fun test_trap() {

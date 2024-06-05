@@ -19,9 +19,7 @@
 -  [Function `release_wasm_instance`](#0x2_wasm_release_wasm_instance)
 
 
-<pre><code><b>use</b> <a href="">0x1::debug</a>;
-<b>use</b> <a href="">0x1::option</a>;
-<b>use</b> <a href="">0x1::string</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="features.md#0x2_features">0x2::features</a>;
 </code></pre>
 
