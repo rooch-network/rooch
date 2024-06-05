@@ -145,12 +145,12 @@ impl MoveStructState for InscriptionRecord {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InscriptionStore {
-    /// The latest transaction index has been processed
-    pub latest_tx_index: u64,
-    /// The inscriptions table id
+    /// The inscriptions ids table_vec object id
     pub inscriptions: ObjectID,
-    /// The inscription ids table_vec id
-    pub inscription_ids: ObjectID,
+    /// inscription number generator
+    pub blessed_inscription_count: u32,
+    /// sequence number generator
+    pub next_sequence_number: u32,
 }
 
 impl InscriptionStore {
@@ -168,9 +168,9 @@ impl MoveStructType for InscriptionStore {
 impl MoveStructState for InscriptionStore {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
-            u64::type_layout(),
             ObjectID::type_layout(),
-            ObjectID::type_layout(),
+            u32::type_layout(),
+            u32::type_layout(),
         ])
     }
 }
@@ -282,4 +282,17 @@ impl From<BitcoinInscriptionID> for InscriptionID {
             index: inscription.index,
         }
     }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum Curse {
+    DuplicateField,
+    IncompleteField,
+    NotAtOffsetZero,
+    NotInFirstInput,
+    Pointer,
+    Pushnum,
+    Reinscription,
+    Stutter,
+    UnrecognizedEvenField,
 }

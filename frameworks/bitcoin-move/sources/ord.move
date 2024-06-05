@@ -37,6 +37,52 @@ module bitcoin_move::ord {
     /// How many satoshis are in "one bitcoin".
     const COIN_VALUE: u64 = 100_000_000;
 
+    /// Curse Inscription
+    const CURSE_DUPLICATE_FIELD: String = string::utf8(b"DuplicateField");
+    public fun curse_duplicate_field(): String {
+        CURSE_DUPLICATE_FIELD
+    }
+
+    const CURSE_INCOMPLETE_FIELD: String = string::utf8(b"IncompleteField");
+    public fun curse_incompleted_field(): String {
+        CURSE_INCOMPLETE_FIELD
+    }
+
+    const CURSE_NOT_AT_OFFSET_ZERO: String = string::utf8(b"NotAtOffsetZero");
+    public fun curse_not_at_offset_zero(): String {
+        CURSE_NOT_AT_OFFSET_ZERO
+    }
+
+    const CURSE_NOT_IN_FIRST_INPUT: String = string::utf8(b"NotInFirstInput");
+    public fun curse_not_in_first_input(): String {
+        CURSE_NOT_IN_FIRST_INPUT
+    }
+
+    const CURSE_POINTER: String = string::utf8(b"Pointer");
+    public fun curse_pointer(): String {
+        CURSE_POINTER
+    }
+
+    const CURSE_PUSHNUM: String = string::utf8(b"Pushnum");
+    public fun curse_pushnum(): String {
+        CURSE_PUSHNUM
+    }
+
+    const CURSE_REINSCRIPTION: String = string::utf8(b"Reinscription");
+    public fun curse_reinscription(): String {
+        CURSE_REINSCRIPTION
+    }
+
+    const CURSE_STUTTER: String = string::utf8(b"Stutter");
+    public fun curse_stutter(): String {
+        CURSE_STUTTER
+    }
+
+    const CURSE_UNRECOGNIZED_EVEN_FIELD: String = string::utf8(b"UnrecognizedEvenField");
+    public fun curse_unrecognized_even_field(): String {
+        CURSE_UNRECOGNIZED_EVEN_FIELD
+    }
+
     struct InscriptionID has store, copy, drop {
         txid: address,
         index: u32,
@@ -107,12 +153,16 @@ module bitcoin_move::ord {
 
     struct InscriptionStore has key{
         inscriptions: TableVec<InscriptionID>,
+        blessed_inscription_count: u32,
+        next_sequence_number: u32,
     }
 
     public(friend) fun genesis_init(_genesis_account: &signer){
         let inscriptions = table_vec::new<InscriptionID>();
         let store = InscriptionStore{
             inscriptions,
+            blessed_inscription_count: 0,
+            next_sequence_number: 0,
         };
         let store_obj = object::new_named_object(store);
         object::to_shared(store_obj);
@@ -252,9 +302,6 @@ module bitcoin_move::ord {
                 let to_address = types::txout_object_address(match_output);
                 inscription.offset = new_sat_point.offset;
 
-                // TODO handle curse inscription
-                // https://github.com/rooch-network/rooch/issues/1447
-                
                 // drop the temporary area if inscription is transferred.
                 drop_temp_area(&mut inscription_obj);
                 object::transfer_extend(inscription_obj, to_address);
@@ -296,7 +343,6 @@ module bitcoin_move::ord {
 
             inscription.offset = new_sat_point.offset;
 
-            // TODO handle curse inscription
             object::transfer_extend(inscription_obj, to_address);
             vector::push_back(&mut new_sat_points, new_sat_point);
            
@@ -366,7 +412,6 @@ module bitcoin_move::ord {
 
             idx = idx + 1;
         };
-        // input_utxo_value_accumulator = input_utxo_value_accumulator + offset;
 
         let idx = 0;
         let output_len = vector::length(txoutput);
@@ -601,6 +646,7 @@ module bitcoin_move::ord {
     }
 
     public fun from_transaction(tx: &Transaction, input_utxo_values: Option<vector<u64>>): vector<Inscription>{
+        let inscription_store = borrow_mut_inscription_store();
         let tx_id = types::tx_id(tx);
         let inscriptions = vector::empty();
         let inputs = types::tx_input(tx);
@@ -629,6 +675,17 @@ module bitcoin_move::ord {
                 };
 
                 let offset = next_offset + pointer;
+
+                // After the inscription data is imported, no new curse inscriptions will be
+                // generated (main network height is 824544), so there is no additional logic
+                // for processing new curse inscriptions in the contract.
+                // By default, all inscriptions generated in the contract are non-curse inscriptions
+
+                let is_curse = false;
+                let inscription_number = inscription_store.blessed_inscription_count;
+                let sequence_number = inscription_store.next_sequence_number;
+                inscription_store.blessed_inscription_count = inscription_store.blessed_inscription_count + 1;
+                inscription_store.next_sequence_number = inscription_store.next_sequence_number + 1;
                 let inscription = record_to_inscription(tx_id, (index_counter as u32), (input_idx as u32), offset, *record);
                 vector::push_back(&mut inscriptions, inscription);
                 index_counter = index_counter + 1;
