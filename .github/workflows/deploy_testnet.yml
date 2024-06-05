@@ -35,6 +35,7 @@ jobs:
           name: docker_tag.zip
           path: .
           run-id: 9379332827
+          github-token: ${{ secrets.GIT_PACKAGE_TOKEN }}
 
       # - name: Determine ref
       #   id: determine-ref
