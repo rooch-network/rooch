@@ -1,6 +1,9 @@
 name: Deploy TESTNET Seed
 
 on:
+  push:
+    branches:
+      - test-workflow
   workflow_dispatch:
     inputs:
       ref:
@@ -26,30 +29,33 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Download Docker tag artifact
-        if: github.event_name == 'workflow_run'
+        # if: github.event_name == 'workflow_run'
         uses: actions/download-artifact@v2
         with:
           name: docker_tag
           path: .
-          workflow: ${{ github.event.workflow_run.id }}
+          workflow: 9379332827
 
+      # - name: Determine ref
+      #   id: determine-ref
+      #   run: |
+      #     if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+      #       echo "REF=${{ github.event.inputs.ref }}" >> $GITHUB_ENV
+      #     else
+      #       if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+      #         echo "REF=$(cat docker_tag.txt)" >> $GITHUB_ENV
+      #       else
+      #         if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+      #           REF=${GITHUB_REF#refs/tags/}
+      #         elif [[ "${{ github.ref }}" == refs/heads/* ]]; then
+      #           REF=${GITHUB_REF#refs/heads/}
+      #         fi
+      #         echo "REF=$REF" >> $GITHUB_ENV
+      #       fi
+      #     fi
       - name: Determine ref
         id: determine-ref
-        run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "REF=${{ github.event.inputs.ref }}" >> $GITHUB_ENV
-          else
-            if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
-              echo "REF=$(cat docker_tag.txt)" >> $GITHUB_ENV
-            else
-              if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-                REF=${GITHUB_REF#refs/tags/}
-              elif [[ "${{ github.ref }}" == refs/heads/* ]]; then
-                REF=${GITHUB_REF#refs/heads/}
-              fi
-              echo "REF=$REF" >> $GITHUB_ENV
-            fi
-          fi
+        run: echo "REF=$(cat docker_tag.txt)" >> $GITHUB_ENV
 
       - name: Print ref
         run: echo "The ref is ${{ env.REF }}"
