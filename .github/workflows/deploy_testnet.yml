@@ -30,11 +30,11 @@ jobs:
 
       - name: Download Docker tag artifact
         # if: github.event_name == 'workflow_run'
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: docker_tag
           path: .
-          workflow: 9379332827
+          run-id: 9379332827
 
       # - name: Determine ref
       #   id: determine-ref
