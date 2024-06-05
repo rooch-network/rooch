@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 
 use once_cell::sync::Lazy;
 use rand;
-use tracing::{debug, warn, error};
+use tracing::{debug, error, warn};
 use wasmer::Value::I32;
 use wasmer::*;
 
@@ -103,7 +103,10 @@ fn fd_write(env: FunctionEnvMut<Env>, _fd: i32, mut iov: i32, iovcnt: i32, pnum:
     let mut written_bytes = 0;
 
     if let Some(memory_obj) = env.data().memory.clone() {
-        debug!("fd_write: fd:{}, iov:{}, iovcnt:{}, pnum:{}", _fd, iov, iovcnt, pnum);
+        debug!(
+            "fd_write: fd:{}, iov:{}, iovcnt:{}, pnum:{}",
+            _fd, iov, iovcnt, pnum
+        );
 
         let memory = memory_obj.lock().expect("getting memory mutex failed");
         let store_ref = env.as_store_ref();
@@ -126,12 +129,12 @@ fn fd_write(env: FunctionEnvMut<Env>, _fd: i32, mut iov: i32, iovcnt: i32, pnum:
             let len = u32::from_le_bytes(temp_buffer);
 
             debug!("fd_write: _ptr:{}, len:{}", _ptr, len);
-            
+
             let mut buffer = vec![0u8; len as usize];
             memory_view
                 .read(_ptr as u64, &mut buffer)
                 .expect("read buffer from memory failed");
-            
+
             match _fd {
                 // stdout
                 1 => {
@@ -140,7 +143,7 @@ fn fd_write(env: FunctionEnvMut<Env>, _fd: i32, mut iov: i32, iovcnt: i32, pnum:
                     let mut handle = stdout.lock();
                     handle.write_all(&buffer).expect("write to stdout failed");
                     debug!("fd_write_stdout: {}", String::from_utf8_lossy(&buffer));
-                },
+                }
                 // stderr
                 2 => {
                     use std::io::{self, Write};
@@ -148,7 +151,7 @@ fn fd_write(env: FunctionEnvMut<Env>, _fd: i32, mut iov: i32, iovcnt: i32, pnum:
                     let mut handle = stderr.lock();
                     handle.write_all(&buffer).expect("write to stderr failed");
                     warn!("fd_write_stderr: {}", String::from_utf8_lossy(&buffer));
-                },
+                }
                 // Handle other file descriptors...
                 _ => unimplemented!(),
             }
@@ -225,7 +228,11 @@ pub fn put_data_on_stack(instance: &mut WASMInstance, data: &[u8]) -> anyhow::Re
     Ok(offset)
 }
 
-pub fn get_data_from_heap(memory: &mut Arc<Mutex<Memory>>, store: &Store, ptr_offset: i32) -> Vec<u8> {
+pub fn get_data_from_heap(
+    memory: &mut Arc<Mutex<Memory>>,
+    store: &Store,
+    ptr_offset: i32,
+) -> Vec<u8> {
     let bindings = memory.lock().expect("getting memory mutex failed");
     let memory_view = bindings.view(store);
     let mut length_bytes: [u8; 4] = [0; 4];
