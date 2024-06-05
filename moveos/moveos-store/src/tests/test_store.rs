@@ -76,7 +76,7 @@ fn test_open_read_only() {
 
 #[test]
 fn test_store() {
-    let store = MoveOSStore::mock_moveos_store().unwrap();
+    let (store, _) = MoveOSStore::mock_moveos_store().unwrap();
 
     let transaction_info1 = TransactionExecutionInfo::new(
         H256::random(),
@@ -98,7 +98,7 @@ fn test_store() {
 
 #[test]
 fn test_event_store() {
-    let store = MoveOSStore::mock_moveos_store().unwrap();
+    let (store, _) = MoveOSStore::mock_moveos_store().unwrap();
 
     let test_struct_tag = StructTag {
         address: AccountAddress::random(),
@@ -134,7 +134,7 @@ fn test_event_store() {
 
 #[test]
 fn test_iter() {
-    let store = MoveOSStore::mock_moveos_store().unwrap();
+    let (store, _) = MoveOSStore::mock_moveos_store().unwrap();
     let transaction_info1 = TransactionExecutionInfo::new(
         H256::random(),
         H256::random(),

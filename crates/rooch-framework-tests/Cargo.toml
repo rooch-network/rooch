@@ -63,6 +63,7 @@ rooch-store = { workspace = true }
 rooch-config = { workspace = true }
 rooch-sequencer = { workspace = true }
 rooch-indexer = { workspace = true }
+rooch-db = { workspace = true }
 
 bitcoin-move = { workspace = true }
 

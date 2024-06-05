@@ -40,6 +40,7 @@ members = [
     "crates/rooch-indexer",
     "crates/rooch-benchmarks",
     "crates/rooch-test-transaction-builder",
+    "crates/rooch-db",
     "crates/data_verify",
     "crates/rooch-faucet",
     "frameworks/framework-builder",
@@ -115,6 +116,7 @@ rooch-benchmarks = { path = "crates/rooch-benchmarks" }
 rooch-faucet = { path = "crates/rooch-faucet" }
 rooch-test-transaction-builder = { path = "crates/rooch-test-transaction-builder" }
 data-verify = { path = "crates/data_verify" }
+rooch-db = { path = "crates/rooch-db" }
 
 # frameworks
 framework-types = { path = "frameworks/framework-types" }
