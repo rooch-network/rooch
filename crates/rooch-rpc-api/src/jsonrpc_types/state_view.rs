@@ -540,4 +540,9 @@ impl ObjectStateView {
             display_fields: None,
         }
     }
+
+    pub fn with_display_fields(mut self, display_fields: Option<DisplayFieldsView>) -> Self {
+        self.display_fields = display_fields;
+        self
+    }
 }

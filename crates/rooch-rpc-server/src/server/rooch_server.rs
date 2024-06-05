@@ -85,6 +85,7 @@ impl RoochServer {
                 false
             });
         }
+        println!(">>>>> display_ids: {:?}", display_ids.clone());
         // get display fields
         let path = AccessPath::objects(display_ids);
         let mut display_fields = self
@@ -300,10 +301,18 @@ impl RoochAPIServer for RoochServer {
         let state_option = state_option.unwrap_or_default();
         let show_display = state_option.show_display;
 
-        let objects_view = self
-            .rpc_service
-            .get_annotated_states(access_path)
-            .await?
+        let states = self.rpc_service.get_annotated_states(access_path).await?;
+
+        println!(">>>>> show display: {}", show_display);
+        let mut valid_display_field_views = if show_display {
+            let valid_states = states.iter().filter_map(|s| s.as_ref()).collect::<Vec<_>>();
+            self.get_display_fields_and_render(valid_states, true)
+                .await?
+        } else {
+            vec![]
+        };
+
+        let objects_view = states
             .into_iter()
             .map(|option_annotated_s| {
                 option_annotated_s
@@ -316,6 +325,24 @@ impl RoochAPIServer for RoochServer {
             })
             .collect::<Result<Vec<_>>>()?;
 
+        let objects_view = if show_display {
+            valid_display_field_views.reverse();
+            objects_view
+                .into_iter()
+                .map(|option_state_view| {
+                    option_state_view.map(|sview| {
+                        debug_assert!(
+                            !valid_display_field_views.is_empty(),
+                            "display fields should not be empty"
+                        );
+                        let display_view = valid_display_field_views.pop().unwrap();
+                        sview.with_display_fields(display_view)
+                    })
+                })
+                .collect()
+        } else {
+            objects_view
+        };
         Ok(objects_view)
     }
 
