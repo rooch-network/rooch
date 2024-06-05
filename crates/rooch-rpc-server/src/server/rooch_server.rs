@@ -85,7 +85,6 @@ impl RoochServer {
                 false
             });
         }
-        println!(">>>>> display_ids: {:?}", display_ids.clone());
         // get display fields
         let path = AccessPath::objects(display_ids);
         let mut display_fields = self
@@ -303,7 +302,6 @@ impl RoochAPIServer for RoochServer {
 
         let states = self.rpc_service.get_annotated_states(access_path).await?;
 
-        println!(">>>>> show display: {}", show_display);
         let mut valid_display_field_views = if show_display {
             let valid_states = states.iter().filter_map(|s| s.as_ref()).collect::<Vec<_>>();
             self.get_display_fields_and_render(valid_states, true)

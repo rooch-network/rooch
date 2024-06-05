@@ -252,6 +252,42 @@
       }
     },
     {
+      "name": "rooch_getObjectStates",
+      "description": "Get object states by object id",
+      "params": [
+        {
+          "name": "object_ids",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<moveos_types::moveos_std::object::ObjectID>"
+          }
+        },
+        {
+          "name": "state_option",
+          "schema": {
+            "$ref": "#/components/schemas/StateOptions"
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec<Option<ObjectStateView>>",
+        "required": true,
+        "schema": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObjectStateView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
       "name": "rooch_getStates",
       "description": "Get the states by access_path If the StateOptions.decode is true, the state is decoded and the decoded value is returned in the response.",
       "params": [
@@ -1855,6 +1891,68 @@
           }
         ]
       },
+      "ObjectStateView": {
+        "description": "Object state view. Used as return type of `getObjectStates`.",
+        "type": "object",
+        "required": [
+          "created_at",
+          "flag",
+          "id",
+          "object_type",
+          "owner",
+          "size",
+          "state_root",
+          "updated_at",
+          "value"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "display_fields": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DisplayFieldsView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "flag": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          },
+          "id": {
+            "$ref": "#/components/schemas/ObjectID"
+          },
+          "object_type": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
+          },
+          "size": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "state_root": {
+            "$ref": "#/components/schemas/primitive_types::H256"
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "value": {
+            "$ref": "#/components/schemas/AnnotatedMoveStructView"
+          }
+        }
+      },
       "OpView_for_StateView": {
         "oneOf": [
           {
@@ -2820,6 +2918,9 @@
             "additionalProperties": false
           }
         ]
+      },
+      "alloc::vec::Vec<moveos_types::moveos_std::object::ObjectID>": {
+        "type": "string"
       },
       "alloc::vec::Vec<u8>": {
         "type": "string"
