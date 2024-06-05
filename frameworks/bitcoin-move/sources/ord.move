@@ -252,8 +252,8 @@ module bitcoin_move::ord {
                 let to_address = types::txout_object_address(match_output);
                 inscription.offset = new_sat_point.offset;
 
-                // TODO handle curse inscription
-                // https://github.com/rooch-network/rooch/issues/1447
+                // The curse inscription is processed in the data import processing,
+                // and there is no need to process the curse inscription in the contract
                 
                 // drop the temporary area if inscription is transferred.
                 drop_temp_area(&mut inscription_obj);
