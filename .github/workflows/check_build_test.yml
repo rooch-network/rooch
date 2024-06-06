@@ -27,6 +27,14 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v3
+      - name: Install GitHub CLI
+        run: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
+      - name: Add GitHub CLI repository
+        run: sudo apt-add-repository https://cli.github.com/packages
+      - name: Update package list
+        run: sudo apt-get update
+      - name: Install GitHub CLI
+        run: sudo apt-get install gh -y
       - uses: rooch-network/rooch/.github/actions/rust-setup@main
       # Todo self-hosted install docker fail
       #- name: Set up Docker
