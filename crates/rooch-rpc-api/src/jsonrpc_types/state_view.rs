@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    AnnotatedMoveStructView, AnnotatedMoveValueView, BytesView, H256View, RoochAddressView,
-    RoochOrBitcoinAddressView, StrView, StructTagView, TypeTagView,
+    AnnotatedMoveStructView, AnnotatedMoveValueView, BytesView, H256View, ObjectIDVecView,
+    RoochAddressView, RoochOrBitcoinAddressView, StrView, StructTagView, TypeTagView,
 };
 use anyhow::Result;
 
@@ -428,7 +428,7 @@ pub enum ObjectStateFilterView {
     /// Query by owner.
     Owner(RoochOrBitcoinAddressView),
     /// Query by object ids.
-    ObjectId(String),
+    ObjectId(ObjectIDVecView),
 }
 
 impl ObjectStateFilterView {
@@ -446,17 +446,8 @@ impl ObjectStateFilterView {
                 ObjectStateFilter::ObjectType(object_type.into())
             }
             ObjectStateFilterView::Owner(owner) => ObjectStateFilter::Owner(owner.into()),
-            ObjectStateFilterView::ObjectId(object_ids_str) => {
-                let object_ids = if object_ids_str.trim().is_empty() {
-                    vec![]
-                } else {
-                    object_ids_str
-                        .trim()
-                        .split(',')
-                        .map(ObjectID::from_str)
-                        .collect::<Result<Vec<_>, _>>()?
-                };
-                ObjectStateFilter::ObjectId(object_ids)
+            ObjectStateFilterView::ObjectId(object_id_vec_view) => {
+                ObjectStateFilter::ObjectId(object_id_vec_view.into())
             }
         })
     }
