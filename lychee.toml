@@ -1,4 +1,4 @@
-exclude_path = ["crates", "moveos", "examples", "sdk", "frameworks"]
+exclude_path = ["crates", "moveos", "examples", "sdk", "frameworks", "docs/website/pages/archives"]
 exclude = [
   'dev-seed.rooch.network',
   'https://test-seed.rooch.network',

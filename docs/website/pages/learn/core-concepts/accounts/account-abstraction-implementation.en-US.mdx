@@ -92,8 +92,8 @@ sequenceDiagram
 
 Currently, Rooch includes the following built-in validators:
 
-1. [Native Auth Validator](https://github.com/rooch-network/rooch/blob/main/frameworks/rooch-framework/sources/auth_validator/native_validator.move) : A Validator based on the Ed25519 algorithm. The validator’s `auth_validator_id` is 0, making it the default validator.
-2. [Ethereum Auth Validator](https://github.com/rooch-network/rooch/blob/main/frameworks/rooch-framework/sources/auth_validator/ethereum_validator.move) : A Validator based on the Ethereum signature algorithm, with `auth_validator_id` being 1. 
+1. [Built-in Validator](https://github.com/rooch-network/rooch/blob/main/frameworks/rooch-framework/doc/builtin_validators.md)
+2. [Bitcoin Validator](https://github.com/rooch-network/rooch/blob/main/frameworks/rooch-framework/doc/bitcoin_validator.md)
 
 A Web2 social login validator is currently under development. Please refer [Github issue #769 ](https://github.com/rooch-network/rooch/issues/769) for updates.
 To learn how to develop a custom validator, you can refer to [examples/noop_auth_validator](https://github.com/rooch-network/rooch/blob/main/examples/noop_auth_validator).  
