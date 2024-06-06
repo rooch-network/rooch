@@ -19,8 +19,7 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'release' &&
-      (github.event.release.prerelease == true || github.event.release.prerelease == false)) ||
-      github.event_name == 'workflow_run'
+      (github.event.release.prerelease == true || github.event.release.prerelease == false))
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
