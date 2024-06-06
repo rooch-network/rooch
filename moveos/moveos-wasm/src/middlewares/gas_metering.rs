@@ -31,6 +31,10 @@ impl GasMeter {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.gas_used = 0;
+    }
+
     pub fn charge(&mut self, amount: u64) -> Result<(), RuntimeError> {
         if self.gas_used + amount > self.gas_limit {
             Err(RuntimeError::new("GAS limit exceeded"))
@@ -38,6 +42,10 @@ impl GasMeter {
             self.gas_used += amount;
             Ok(())
         }
+    }
+
+    pub fn used(&mut self) -> u64 {
+        self.gas_used
     }
 }
 
@@ -167,8 +175,6 @@ impl ModuleMiddleware for GasMiddleware {
 
         let mut gas_meter = self.gas_meter.lock().unwrap();
         gas_meter.charge_function_index = Some(charge_function_index);
-
-        debug!("transform_module_info: {:?}", &module_info);
     }
 }
 

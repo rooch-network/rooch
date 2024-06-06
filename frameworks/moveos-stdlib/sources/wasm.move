@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module moveos_std::wasm {
+    use std::string;
+    use std::debug;
+    use std::vector;
     use std::option::{Self,Option};
     use moveos_std::features;
 
@@ -94,25 +97,14 @@ module moveos_std::wasm {
     native fun native_release_wasm_instance(instance: WASMInstance): bool;
 
     #[test]
-    use std::string;
-
-    #[test]
-    use std::debug;
-
-    #[test]
-    use std::vector;
-
-    #[test]
     fun test_trap() {
       features::init_and_enable_all_features_for_test();
-
-      debug::print(&string::utf8(b"run_trap 1"));
 
       let wasm_code: vector<u8> = b"(module (func (export \"div_s\") (param $x i32) (param $y i32) (result i32) (i32.div_s (local.get $x) (local.get $y))))";
 
       // 1. create wasm VM instance (required step)
       let wasm_instance = create_wasm_instance(wasm_code);
-      debug::print(&string::utf8(b"run_trap 2"));
+      debug::print(&string::utf8(b"wasm_instance:"));
       debug::print(&wasm_instance);
 
       // 2. run 10/0
@@ -134,20 +126,18 @@ module moveos_std::wasm {
         // Enable all features for testing
         features::init_and_enable_all_features_for_test();
 
-        // Print debug information
-        debug::print(&string::utf8(b"test_unconditional_jump_loop 1"));
-
         // Define WASM code with an unconditional jump loop
         let wasm_code: vector<u8> = b"(module (func $run_forever (loop $loop (br $loop))) (export \"run_forever\" (func $run_forever)))";
 
         // 1. Create WASM VM instance (required step)
         let wasm_instance = create_wasm_instance(wasm_code);
-        debug::print(&string::utf8(b"test_unconditional_jump_loop 2"));
+        debug::print(&string::utf8(b"wasm_instance:"));
         debug::print(&wasm_instance);
 
         // 2. Execute the function that runs forever
         let function_name = b"run_forever";
         let arg_list = vector::empty<u64>();
+        debug::print(&string::utf8(b"arg_list:"));
         debug::print(&arg_list);
 
         // Execute the function and check if it returns None (indicating an infinite loop)
@@ -163,20 +153,18 @@ module moveos_std::wasm {
         // Enable all features for testing
         features::init_and_enable_all_features_for_test();
 
-        // Print debug information
-        debug::print(&string::utf8(b"test_conditional_jump_loop 1"));
-
         // Define WASM code with a conditional jump loop that always evaluates to true
         let wasm_code: vector<u8> = b"(module (func $run_forever (loop $loop (i32.const 1) (br_if $loop))) (export \"run_forever\" (func $run_forever)))";
 
         // 1. Create WASM VM instance (required step)
         let wasm_instance = create_wasm_instance(wasm_code);
-        debug::print(&string::utf8(b"test_conditional_jump_loop 2"));
+        debug::print(&string::utf8(b"wasm_instance:"));
         debug::print(&wasm_instance);
 
         // 2. Execute the function that runs forever
         let function_name = b"run_forever";
         let arg_list = vector::empty<u64>();
+        debug::print(&string::utf8(b"arg_list:"));
         debug::print(&arg_list);
 
         // Execute the function and check if it returns None (indicating an infinite loop)
@@ -192,20 +180,18 @@ module moveos_std::wasm {
         // Enable all features for testing
         features::init_and_enable_all_features_for_test();
 
-        // Print debug information
-        debug::print(&string::utf8(b"test_recursive_call_loop 1"));
-
         // Define WASM code with a recursive call that never terminates
         let wasm_code: vector<u8> = b"(module (func $run_forever (call $run_forever)) (export \"run_forever\" (func $run_forever)))";
 
         // 1. Create WASM VM instance (required step)
         let wasm_instance = create_wasm_instance(wasm_code);
-        debug::print(&string::utf8(b"test_recursive_call_loop 2"));
+        debug::print(&string::utf8(b"wasm_instance:"));
         debug::print(&wasm_instance);
 
         // 2. Execute the function that runs forever
         let function_name = b"run_forever";
         let arg_list = vector::empty<u64>();
+        debug::print(&string::utf8(b"arg_list:"));
         debug::print(&arg_list);
 
         // Execute the function and check if it returns None (indicating an infinite loop)
@@ -221,20 +207,18 @@ module moveos_std::wasm {
         // Enable all features for testing
         features::init_and_enable_all_features_for_test();
 
-        // Print debug information
-        debug::print(&string::utf8(b"test_counter_overflow_loop 1"));
-
         // Define WASM code with a counter overflow loop
         let wasm_code: vector<u8> = b"(module (func $run_forever (local $i i32) (loop $loop (local.set $i (i32.add (local.get $i) (i32.const 1))) (br_if $loop (i32.ne (local.get $i) (i32.const 0))))) (export \"run_forever\" (func $run_forever)))";
 
         // 1. Create WASM VM instance (required step)
         let wasm_instance = create_wasm_instance(wasm_code);
-        debug::print(&string::utf8(b"test_counter_overflow_loop 2"));
+        debug::print(&string::utf8(b"wasm_instance:"));
         debug::print(&wasm_instance);
 
         // 2. Execute the function that runs forever
         let function_name = b"run_forever";
         let arg_list = vector::empty<u64>();
+        debug::print(&string::utf8(b"arg_list:"));
         debug::print(&arg_list);
 
         // Execute the function and check if it returns None (indicating an infinite loop)
@@ -250,20 +234,18 @@ module moveos_std::wasm {
         // Enable all features for testing
         features::init_and_enable_all_features_for_test();
 
-        // Print debug information
-        debug::print(&string::utf8(b"test_always_true_condition_loop 1"));
-
         // Define WASM code with a loop that always evaluates to true
         let wasm_code: vector<u8> = b"(module (func $run_forever (loop $loop (if (i32.const 1) (then (br $loop))))) (export \"run_forever\" (func $run_forever)))";
 
         // 1. Create WASM VM instance (required step)
         let wasm_instance = create_wasm_instance(wasm_code);
-        debug::print(&string::utf8(b"test_always_true_condition_loop 2"));
+        debug::print(&string::utf8(b"wasm_instance:"));
         debug::print(&wasm_instance);
 
         // 2. Execute the function that runs forever
         let function_name = b"run_forever";
         let arg_list = vector::empty<u64>();
+        debug::print(&string::utf8(b"arg_list:"));
         debug::print(&arg_list);
 
         // Execute the function and check if it returns None (indicating an infinite loop)

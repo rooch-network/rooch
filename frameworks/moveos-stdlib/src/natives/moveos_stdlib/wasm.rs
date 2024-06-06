@@ -77,7 +77,6 @@ fn native_create_wasm_instance(
     }
 
     let wasm_bytes = pop_arg!(args, Vec<u8>);
-    debug!("native_create_wasm_instance 1");
 
     let (instance_id, error_code) = match create_wasm_instance(&wasm_bytes) {
         Ok(instance) => {
@@ -96,7 +95,7 @@ fn native_create_wasm_instance(
     };
 
     debug!(
-        "native_create_wasm_instance 2, instance_id:{:?}, error_code:{:?}",
+        "native_create_wasm_instance result: instance_id:{:?}, error_code:{:?}",
         &instance_id, &error_code
     );
 
@@ -353,14 +352,14 @@ fn native_create_wasm_args_in_memory(
 #[derive(Debug, Clone)]
 pub struct WASMExecuteGasParameters {
     pub base_create_execution: InternalGas,
-    pub per_byte_execution_result: InternalGasPerByte,
+    pub per_execution_point: InternalGasPerByte,
 }
 
 impl WASMExecuteGasParameters {
     pub fn zeros() -> Self {
         Self {
             base_create_execution: 0.into(),
-            per_byte_execution_result: 0.into(),
+            per_execution_point: 0.into(),
         }
     }
 }
@@ -451,6 +450,10 @@ fn execute_wasm_function_inner(
                     .as_str(),
             ) {
                 Ok(calling_function) => {
+                    let mut gas_meter = instance.gas_meter.lock().unwrap();
+                    gas_meter.reset();
+                    drop(gas_meter);
+
                     let mut wasm_func_args = Vec::new();
                     for arg in func_args.iter() {
                         wasm_func_args.push(wasmer::Value::I32(*arg as i32));
@@ -458,7 +461,6 @@ fn execute_wasm_function_inner(
 
                     // TODO: check the length of arguments for the function calling
 
-                    // 定义一个 trap handler
                     let trap_handler: Box<
                         dyn Fn(libc::c_int, *const libc::siginfo_t, *const libc::c_void) -> bool
                             + Send
@@ -469,10 +471,10 @@ fn execute_wasm_function_inner(
                             "Trap handler called, signum:{:?}, siginfo:{:?}, context:{:?}",
                             signum, siginfo, ctx
                         );
-                        false // 返回 false 表示不处理这个陷阱
+                        false
                     });
 
-                    // 设置 trap handler
+                    // Set trap handler
                     instance.store.set_trap_handler(Some(trap_handler));
 
                     match calling_function.call(&mut instance.store, wasm_func_args.as_slice()) {
@@ -497,9 +499,13 @@ fn execute_wasm_function_inner(
                             };
                             let ret_val = Value::u64(offset as u64);
 
+                            let mut gas_meter = instance.gas_meter.lock().unwrap();
+                            let gas_used = gas_meter.used();
+
+                            debug!("execute_wasm_function_inner->gas_used: {:?}", gas_used);
+
                             let mut cost = gas_params.base_create_execution;
-                            cost += gas_params.per_byte_execution_result
-                                * NumBytes::new(instance.bytecode.len() as u64);
+                            cost += gas_params.per_execution_point * NumBytes::new(gas_used);
 
                             Ok(NativeResult::Success {
                                 cost,

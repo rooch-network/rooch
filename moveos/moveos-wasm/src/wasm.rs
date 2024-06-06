@@ -20,14 +20,21 @@ pub struct WASMInstance {
     pub bytecode: Vec<u8>,
     pub instance: Instance,
     pub store: Store,
+    pub gas_meter: Arc<Mutex<GasMeter>>,
 }
 
 impl WASMInstance {
-    pub fn new(bytecode: Vec<u8>, instance: Instance, store: Store) -> Self {
+    pub fn new(
+        bytecode: Vec<u8>,
+        instance: Instance,
+        store: Store,
+        gas_meter: Arc<Mutex<GasMeter>>,
+    ) -> Self {
         Self {
             bytecode,
             instance,
             store,
+            gas_meter,
         }
     }
 }
@@ -253,25 +260,17 @@ fn charge(env: FunctionEnvMut<Env>, amount: i64) -> Result<(), wasmer::RuntimeEr
 }
 
 pub fn create_wasm_instance(code: &[u8]) -> anyhow::Result<WASMInstance> {
-    debug!("create_wasm_instance 1");
-
     // Create the GasMeter
     let gas_meter = Arc::new(Mutex::new(GasMeter::new(GAS_LIMIT)));
-
-    debug!("create_wasm_instance 2");
 
     // Create and configure the compiler
     let mut compiler_config = wasmer::Cranelift::default();
     let gas_middleware = GasMiddleware::new(gas_meter.clone(), None);
     compiler_config.push_middleware(Arc::new(gas_middleware));
 
-    debug!("create_wasm_instance 3");
-
     // Create an store
     let engine = wasmer::sys::EngineBuilder::new(compiler_config).engine();
     let mut store = Store::new(&engine);
-
-    debug!("create_wasm_instance 4");
 
     let bytecode = match wasmer::wat2wasm(code) {
         Ok(m) => m,
@@ -279,8 +278,6 @@ pub fn create_wasm_instance(code: &[u8]) -> anyhow::Result<WASMInstance> {
             return Err(anyhow::Error::msg(e.to_string()));
         }
     };
-
-    debug!("create_wasm_instance 5");
 
     let module = match Module::new(&store, bytecode.clone()) {
         Ok(m) => m,
@@ -290,17 +287,13 @@ pub fn create_wasm_instance(code: &[u8]) -> anyhow::Result<WASMInstance> {
         }
     };
 
-    debug!("create_wasm_instance 6");
-
     let env = FunctionEnv::new(
         &mut store,
         Env {
             memory: None,
-            gas_meter,
+            gas_meter: gas_meter.clone(),
         },
     );
-
-    debug!("create_wasm_instance 7");
 
     let import_object = imports! {
         "wasi_snapshot_preview1" => {
@@ -315,8 +308,6 @@ pub fn create_wasm_instance(code: &[u8]) -> anyhow::Result<WASMInstance> {
         },
     };
 
-    debug!("create_wasm_instance 8");
-
     let instance = match Instance::new(&mut store, &module, &import_object) {
         Ok(v) => v,
         Err(e) => {
@@ -325,11 +316,14 @@ pub fn create_wasm_instance(code: &[u8]) -> anyhow::Result<WASMInstance> {
         }
     };
 
-    debug!("create_wasm_instance 9");
-
     if let Ok(memory) = instance.exports.get_memory("memory") {
         env.as_mut(&mut store).memory = Some(Arc::new(Mutex::new(memory.clone())));
     }
 
-    Ok(WASMInstance::new(bytecode.to_vec(), instance, store))
+    Ok(WASMInstance::new(
+        bytecode.to_vec(),
+        instance,
+        store,
+        gas_meter,
+    ))
 }
