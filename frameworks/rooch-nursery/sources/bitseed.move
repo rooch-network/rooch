@@ -451,6 +451,7 @@ module rooch_nursery::bitseed {
         vector::push_back(&mut arg_list, arg_with_length);
         vector::push_back(&mut arg_list, attributes_output);
         let memory_args_list = wasm::create_memory_wasm_args(&mut wasm_instance, function_name, arg_list);
+
         let ret_val_option = wasm::execute_wasm_function_option(&mut wasm_instance, function_name, memory_args_list);
 
         wasm::release_wasm_instance(wasm_instance);
