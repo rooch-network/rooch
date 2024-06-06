@@ -18,7 +18,7 @@ Rooch Network 是 Bitcoin 的原生应用层，基于堆叠式 L2 解决方案�
 
 ## 为什么需要 Rooch Network？
 
-2023 年 Bitcoin 生态涌现出了各种新型资产协议，这些新型资产的特点是只在 Bitcoin 上登记资产的所有权，有效性在链下验证，可以统称为基于客户端验证（[Client side validation](/learn/core-concepts/client-side-validation)）的资产。而这些新资产协议预示的 Bitcoin 生态的远景是什么？业界存在着不同的看法，我们认为 **Bitcoin 上的新型资产协议预示着一种新的应用生态构建范式**。
+2023 年 Bitcoin 生态涌现出了各种新型资产协议，这些新型资产的特点是只在 Bitcoin 上登记资产的所有权，有效性在链下验证，可以统称为基于客户端验证（[Client side validation](/learn/in-depth-tech/client-side-validation)）的资产。而这些新资产协议预示的 Bitcoin 生态的远景是什么？业界存在着不同的看法，我们认为 **Bitcoin 上的新型资产协议预示着一种新的应用生态构建范式**。
 
 客户端验证资产将资产的有效性放在链下验证，所以可以设计出一种跨层资产迁移协议，真正实现资产从链上到链下的迁移，在数字世界模拟出“现金”效果。这样为资产提供使用场景不再受限于链的可扩展性难题，是一种新的扩容方案，也为应用提供了无限可能。
 
@@ -82,7 +82,7 @@ Rooch 团队经过一年时间的开发，完成了 Move 语言的 VApp 容器�
 
 在智能合约中生成 Bitcoin 的脚本以及交易，通过 L2 构建的约束力（治理或者抵押），来保证用户必须签名这个交易并包含在 L1 的区块中，否则会被惩罚。通过这个特性，可以构建 Bitcoin 上的链上多签钱包，DAO，以及给多签桥提供附加的安全保证。
 
-更多的模式还需要探索，我们把这种模式叫做“**堆叠式**”的应用构建模式，**应用在链的状态之上堆叠一层状态，来实现对已有的数据和资产的复用**。关于“堆叠式”模式的详细方案请参考 [Stackable L2](./stackable-l2.zh-CN.mdx)。关于 Bitcoin 和 Move 的编程文档以及案例请参看 [扩展 Bitcoin](/build/bitcoin)。
+更多的模式还需要探索，我们把这种模式叫做“**堆叠式**”的应用构建模式，**应用在链的状态之上堆叠一层状态，来实现对已有的数据和资产的复用**。关于“堆叠式”模式的详细方案请参考 [Stackable L2](./stackable-l2)。关于 Bitcoin 和 Move 的编程文档以及案例请参看 [扩展 Bitcoin](/build/bitcoin)。
 
 ### 分布式状态树协议（Distributed State Tree Protocol - DSTP）
 
@@ -121,7 +121,7 @@ RGB/Ordinals 这样的基于客户端验证（Client side validation）的资产
 2. 资产可以像“现金”一样在各种网络之间迁移。将资产的存储和资产的应用场景分开，既能解决状态爆炸问题，也能解决新型资产的大规模发行问题。
 3. 这种模式要求钱包扮演重要的角色，而不仅仅是当前这种只信任 RPC 的“笨”钱包，需要更“智能”一些。
 
-为此，Rooch 团队设计了基于 Ordinals 的 SFT 协议 [Bitseed](https://bitseed.pro/)，未来会基于 Bitseed 协议来探索资产的迁移协议，更详细的内容请参看 [客户端验证协议](/learn/core-concepts/client-side-validation/) 的资产跃迁协议部分。
+为此，Rooch 团队设计了基于 Ordinals 的 SFT 协议 [Bitseed](https://bitseed.pro/)，未来会基于 Bitseed 协议来探索资产的迁移协议，更详细的内容请参看 [客户端验证协议](/learn/in-depth-tech/client-side-validation/) 的资产跃迁协议部分。
 
 ### 安全问题
 
