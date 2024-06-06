@@ -1,9 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::fmt;
 use wasmer::RuntimeError;
- 
+
 #[derive(Debug)]
 pub struct GasMeter {
     gas_limit: u64,
@@ -15,7 +14,6 @@ impl GasMeter {
         Self {
             gas_limit,
             gas_used: 0,
-            charge_function_index: None,
         }
     }
 

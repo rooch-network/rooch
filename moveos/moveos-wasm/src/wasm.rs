@@ -11,7 +11,8 @@ use tracing::{debug, error, warn};
 use wasmer::Value::I32;
 use wasmer::*;
 
-use crate::middlewares::gas_metering::{GasMeter, GasMiddleware};
+use crate::gas_meter::GasMeter;
+use crate::middlewares::gas_metering::GasMiddleware;
 
 const GAS_LIMIT: u64 = 10000;
 
@@ -265,7 +266,7 @@ pub fn create_wasm_instance(code: &[u8]) -> anyhow::Result<WASMInstance> {
 
     // Create and configure the compiler
     let mut compiler_config = wasmer::Cranelift::default();
-    let gas_middleware = GasMiddleware::new(gas_meter.clone(), None);
+    let gas_middleware = GasMiddleware::new(None);
     compiler_config.push_middleware(Arc::new(gas_middleware));
 
     // Create an store

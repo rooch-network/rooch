@@ -3,11 +3,9 @@
 
 use std::fmt;
 use std::sync::{Arc, Mutex};
+
 use wasmer::wasmparser::Operator;
-use wasmer::{
-    LocalFunctionIndex, MiddlewareError, MiddlewareReaderState, ModuleMiddleware, RuntimeError,
-    Type,
-};
+use wasmer::{LocalFunctionIndex, MiddlewareError, MiddlewareReaderState, ModuleMiddleware, Type};
 use wasmer_types::{
     entity::PrimaryMap, ExportIndex, FunctionIndex, FunctionType, ImportIndex, ImportKey,
 };
@@ -32,14 +30,14 @@ fn default_cost_function(operator: &Operator) -> u64 {
 }
 
 pub struct GasMiddleware {
-    charge_function_index: Arc<Option<FunctionIndex>>
+    charge_function_index: Arc<Mutex<Option<FunctionIndex>>>,
     cost_function: Arc<CostFunction>,
 }
 
 impl GasMiddleware {
     pub fn new(cost_function: Option<Arc<CostFunction>>) -> Self {
         Self {
-            charge_function_index: Arc::new(None)
+            charge_function_index: Arc::new(Mutex::new(None)),
             cost_function: cost_function.unwrap_or_else(|| Arc::new(default_cost_function)),
         }
     }
@@ -58,8 +56,10 @@ impl ModuleMiddleware for GasMiddleware {
         &self,
         _index: LocalFunctionIndex,
     ) -> Box<dyn wasmer::FunctionMiddleware> {
+        let charge_function_index = self.charge_function_index.lock().unwrap().unwrap();
+
         Box::new(GasFunctionMiddleware {
-            charge_function_index: self.charge_function_index.clone(),
+            charge_function_index: charge_function_index.clone(),
             accumulated_cost: 0,
             cost_function: self.cost_function.clone(),
         })
@@ -138,13 +138,13 @@ impl ModuleMiddleware for GasMiddleware {
 
         module_info.num_imported_functions += 1;
 
-        let mut gas_meter = self.gas_meter.lock().unwrap();
-        gas_meter.charge_function_index = Some(charge_function_index);
+        let mut charge_function_index_lock = self.charge_function_index.lock().unwrap();
+        *charge_function_index_lock = Some(charge_function_index);
     }
 }
 
 struct GasFunctionMiddleware {
-    charge_function_index: Arc<Option<FunctionIndex>>,
+    charge_function_index: FunctionIndex,
     accumulated_cost: u64,
     cost_function: Arc<CostFunction>,
 }
@@ -152,7 +152,7 @@ struct GasFunctionMiddleware {
 impl fmt::Debug for GasFunctionMiddleware {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("GasFunctionMiddleware")
-            .field("gas_meter", &self.gas_meter)
+            .field("charge_function_index", &self.charge_function_index)
             .field("accumulated_cost", &self.accumulated_cost)
             .finish()
     }
@@ -176,14 +176,12 @@ impl wasmer::FunctionMiddleware for GasFunctionMiddleware {
             | Operator::CallIndirect { .. }
             | Operator::Return => {
                 if self.accumulated_cost > 0 {
-                    let gas_meter = self.gas_meter.lock().unwrap();
-
                     state.extend(&[
                         Operator::I64Const {
                             value: self.accumulated_cost as i64,
                         },
                         Operator::Call {
-                            function_index: gas_meter.charge_function_index.unwrap().as_u32(),
+                            function_index: self.charge_function_index.as_u32(),
                         },
                     ]);
 
@@ -196,8 +194,7 @@ impl wasmer::FunctionMiddleware for GasFunctionMiddleware {
         // Update function call indices if necessary
         match operator {
             Operator::Call { function_index } => {
-                let gas_meter = self.gas_meter.lock().unwrap();
-                if function_index >= gas_meter.charge_function_index.unwrap().as_u32() {
+                if function_index >= self.charge_function_index.as_u32() {
                     state.push_operator(Operator::Call {
                         function_index: function_index + 1,
                     });
@@ -210,8 +207,7 @@ impl wasmer::FunctionMiddleware for GasFunctionMiddleware {
                 type_index,
                 table_byte,
             } => {
-                let gas_meter = self.gas_meter.lock().unwrap();
-                if table_index >= gas_meter.charge_function_index.unwrap().as_u32() {
+                if table_index >= self.charge_function_index.as_u32() {
                     state.push_operator(Operator::CallIndirect {
                         table_index: table_index + 1,
                         type_index,
@@ -230,14 +226,12 @@ impl wasmer::FunctionMiddleware for GasFunctionMiddleware {
         match operator {
             Operator::Loop { .. } | Operator::BrIf { .. } | Operator::Else => {
                 if self.accumulated_cost > 0 {
-                    let gas_meter = self.gas_meter.lock().unwrap();
-
                     state.extend(&[
                         Operator::I64Const {
                             value: self.accumulated_cost as i64,
                         },
                         Operator::Call {
-                            function_index: gas_meter.charge_function_index.unwrap().as_u32(),
+                            function_index: self.charge_function_index.as_u32(),
                         },
                     ]);
 
