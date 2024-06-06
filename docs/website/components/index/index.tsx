@@ -349,7 +349,7 @@ const Index = ({
                       <img
                         src={blog.image}
                         alt={blog.title}
-                        className="h-[200px] w-full object-fill rounded-lg"
+                        className="h-full w-full object-cover rounded-lg"
                       />
                     </div>
                     <div className="flex flex-col p-6 md:p-8 w-full justify-between">
