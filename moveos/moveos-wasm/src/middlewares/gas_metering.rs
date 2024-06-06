@@ -3,7 +3,6 @@
 
 use std::fmt;
 use std::sync::{Arc, Mutex};
-use tracing::debug;
 use wasmer::wasmparser::Operator;
 use wasmer::{
     LocalFunctionIndex, MiddlewareError, MiddlewareReaderState, ModuleMiddleware, RuntimeError,
