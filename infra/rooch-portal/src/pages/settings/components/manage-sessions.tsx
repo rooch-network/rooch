@@ -21,21 +21,11 @@ import { AlertCircle, Check, ChevronDown, ChevronUp, Copy } from 'lucide-react'
 import { formatTimestamp } from '@/utils/format.ts'
 
 import { SessionInfoResult } from '@roochnetwork/rooch-sdk'
+import { copyToClipboard } from '@/utils/copyToClipboard.ts'
 
 interface ExpandableRowProps {
   session: SessionInfoResult
   remove: (authKey: string) => void
-}
-
-const copyToClipboard = async (text: string, setCopied: (value: boolean) => void) => {
-  try {
-    await navigator.clipboard.writeText(text)
-    setCopied(true)
-    console.log('Copied to clipboard:', text)
-    setTimeout(() => setCopied(false), 2000) // Reset after 2 seconds
-  } catch (err) {
-    console.error('Could not copy text:', err)
-  }
 }
 
 export const ManageSessions: React.FC = () => {
