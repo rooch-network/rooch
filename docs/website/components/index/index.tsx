@@ -108,6 +108,7 @@ const Index = ({
     highlightColor: string,
   ) => {
     if (containsChinese(title)) {
+      return highlightSpecificPhrases(title, phrasesToHighlightChinese, highlightColor)
     } else {
       const words = title.split(' ')
       return (
