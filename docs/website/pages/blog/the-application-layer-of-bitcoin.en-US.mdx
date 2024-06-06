@@ -14,7 +14,7 @@ import PostHeader from "/components/blog/postHeader";
 
 ## What is Rooch Network?
 
-Rooch Network is the Application Layer of Bitcoin, an Asset-Centric infrastructure that provides indexing, trading, and enables application scenarios for all Bitcoin assets.
+Rooch Network is a native application layer for the Bitcoin ecosystem, based on the Stackable L2 solution, serving as the go-to Bitcoin assets launchpad and Bitcoin application infra for users and devs.
 
 ## Why Rooch Network?
 
@@ -52,7 +52,7 @@ Using this application container, application developers can almost convert most
 
 ### Root to Bitcoin
 
-With the VApp container in place, we need to integrate it with Bitcoin. Rooch's approach involves executing all blocks on the Bitcoin network within the VApp container, verifying UTXOs and extensions built on top of UTXOs, and translating them into Move Object, providing an off-chain smart contract Layer2 solution for Bitcoin.
+Once we have the VApp container in place, we need to integrate it with Bitcoin. Rooch's approach involves directly executing all blocks from the Bitcoin network within the VApp container, validating UTXOs and the protocols extended on top of UTXOs, and converting them into Move Objects. This provides Bitcoin with a L2 solution that includes the L1 state.
 
 This smart contract layer primarily provides three capabilities:
 
@@ -64,7 +64,7 @@ With the complete state of Bitcoin, we stack an L2 state layer on top, allowing 
 
 **Settling with Bitcoin L1 assets**
 
-This includes "[Atomic swap](https://en.bitcoin.it/wiki/Atomic_swap)", "[PSBT](https://github.com/bitcoin/bitcoin/blob/master/doc/psbt.md)," and "on-chain payment triggers off-chain settlement" modes. These modes are suitable for swap or payment scenarios, settling directly on-chain, thus requiring an asynchronous programming model to lower the barrier for developers. The Move community has already experimented with async Move extensions, and we can continue to explore this direction.
+This include "[Atomic swaps](https://en.bitcoin.it/wiki/Atomic_swap)," "[PSBT](https://github.com/bitcoin/bitcoin/blob/master/doc/psbt.md)," and "on-chain payment triggers off-chain settlement." These methods are suitable for exchange or payment scenarios and are settled directly on Bitcoin. Developers can utilize the smart contracts provided by Rooch to implement the display and matching of trade orders, as well as to simplify settlements with Bitcoin.
 
 **Atomic Binding**
 
@@ -78,7 +78,12 @@ Deriving new assets from Bitcoin L1 assets, which is a model based on issuing ne
 
 Using Bitcoin L1 assets as props or identity in applications. For example, a certain Inscription representing game equipment, directly used in games on L2. Or using L1 assets for voting governance.
 
-Further exploration of these models is needed. We refer to this approach as the "**stackable**" application construction mode, where **applications build an additional layer of state on top of the chain's state to repurpose existing data and assets**. For more details on the "stackable" mode, please refer to [Stackable L2](./stackable-l2.en-US.mdx).
+
+**Programming Bitcoin Scripts**
+
+Generate Bitcoin scripts and transactions within smart contracts, and enforce user compliance through constraints built on L2 (such as governance or collateral). Users must sign these transactions and include them in L1 blocks, or they face penalties. This feature allows for the creation of on-chain multisig wallets, DAOs, and provides additional security for multisig bridges on Bitcoin.
+
+Further exploration of these models is needed. We refer to this approach as the "**stackable**" application construction mode, where **applications build an additional layer of state on top of the chain's state to repurpose existing data and assets**. For more details on the "stackable" mode, please refer to [Stackable L2](./stackable-l2).For programming documentation and examples related to Bitcoin and Move, please see [Extending Bitcoin](/build/bitcoin).
 
 ### Distributed State Tree Protocol (DSTP)
 
@@ -155,7 +160,7 @@ On the pre-mainnet, we will first experiment with the design of the cross-layer 
 
 We will also experiment with games based on Bitcoin assets and encourage developers to build games and applications, establishing an application ecosystem under the VApp model. Through games and applications, we will distribute options for Rooch Network mainnet tokens to users, which can be exchanged for mainnet tokens in the future.
 
-Then, we will connect to the P2P network, integrate a data availability layer, and achieve node decentralization. We seek partners to co-develop security solutions based on Bitcoin and upgrade the pre-mainnet to the mainnet.
+Then, we will connect to the P2P network, integrate a data availability layer, and achieve node decentralization. We seek partners to co-develop security solutions based on Bitcoin and upgrade the pre-mainnet to the mainnet. For more details, please refer to the [Rooch Network Roadmap](/learn/miscellaneous/roadmap).
 
 ## Conclusion
 
