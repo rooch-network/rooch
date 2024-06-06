@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 import { TransactionsTable } from './components/transactions-table'
-import {useTranslation} from 'react-i18next';
+import { useTranslation } from 'react-i18next'
 
 export const TransactionsLayout = () => {
   const { t } = useTranslation()

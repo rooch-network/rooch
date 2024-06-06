@@ -1,6 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-import React, { useState, useCallback } from 'react'
+import React, { useCallback, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -16,11 +16,11 @@ import {
   useRemoveSession,
   useRoochClientQuery,
 } from '@roochnetwork/rooch-sdk-kit'
-import { Copy, ChevronDown, ChevronUp, Check, AlertCircle } from 'lucide-react'
+import { AlertCircle, Check, ChevronDown, ChevronUp, Copy } from 'lucide-react'
 
 import { formatTimestamp } from '@/utils/format.ts'
 
-import {SessionInfoResult} from '@roochnetwork/rooch-sdk';
+import { SessionInfoResult } from '@roochnetwork/rooch-sdk'
 
 interface ExpandableRowProps {
   session: SessionInfoResult
@@ -45,7 +45,7 @@ export const ManageSessions: React.FC = () => {
     data: sessionKeys,
     isLoading,
     isError,
-    refetch
+    refetch,
   } = useRoochClientQuery('querySessionKeys', {
     address: sessionKey?.getAddress() || '',
   })
@@ -94,6 +94,10 @@ export const ManageSessions: React.FC = () => {
     )
   }
 
+  const sortedSessionKeys = sessionKeys?.data.sort((a: SessionInfoResult, b: SessionInfoResult) => {
+    return new Date(b.createTime).getTime() - new Date(a.createTime).getTime()
+  })
+
   return (
     <div className="rounded-lg border w-full">
       <Table>
@@ -109,7 +113,7 @@ export const ManageSessions: React.FC = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sessionKeys?.data.map((session) => (
+          {sortedSessionKeys?.map((session) => (
             <ExpandableRow key={session.authenticationKey} session={session} remove={remove} />
           ))}
         </TableBody>
@@ -148,8 +152,12 @@ const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove }) => {
             )}
           </div>
         </TableCell>
-        <TableCell className="text-muted-foreground">{formatTimestamp(session.createTime)}</TableCell>
-        <TableCell className="text-muted-foreground">{formatTimestamp(session.lastActiveTime)}</TableCell>
+        <TableCell className="text-muted-foreground">
+          {formatTimestamp(session.createTime)}
+        </TableCell>
+        <TableCell className="text-muted-foreground">
+          {formatTimestamp(session.lastActiveTime)}
+        </TableCell>
         <TableCell className="text-muted-foreground">{session.maxInactiveInterval}</TableCell>
         <TableCell className="text-center">
           <Button
@@ -158,9 +166,7 @@ const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove }) => {
             onClick={() => remove(session.authenticationKey)}
             className="text-red-500 dark:text-red-400 dark:hover:text-red-300 hover:text-red-600"
           >
-            {
-              session.lastActiveTime > new Date().getSeconds() ? 'Disconnect' : 'Expired (Clear)'
-            }
+            {session.lastActiveTime > new Date().getSeconds() ? 'Disconnect' : 'Expired (Clear)'}
           </Button>
         </TableCell>
       </TableRow>
