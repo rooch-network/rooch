@@ -1,5 +1,3 @@
-// Copyright (c) RoochNetwork
-// SPDX-License-Identifier: Apache-2.0
 import React, { useCallback, useState } from 'react'
 import {
   Table,
@@ -16,7 +14,7 @@ import {
   useRemoveSession,
   useRoochClientQuery,
 } from '@roochnetwork/rooch-sdk-kit'
-import { AlertCircle, Check, ChevronDown, ChevronUp, Copy } from 'lucide-react'
+import { AlertCircle, Check, ChevronDown, ChevronUp, Copy, Loader } from 'lucide-react'
 
 import { formatTimestamp } from '@/utils/format.ts'
 
@@ -26,6 +24,13 @@ import { copyToClipboard } from '@/utils/copyToClipboard.ts'
 interface ExpandableRowProps {
   session: SessionInfoResult
   remove: (authKey: string) => void
+  loading: boolean
+}
+
+const isSessionExpired = (createTime: number, maxInactiveInterval: number) => {
+  const currentTime = Date.now()
+  const expirationTime = createTime + maxInactiveInterval * 1000
+  return currentTime > expirationTime
 }
 
 export const ManageSessions: React.FC = () => {
@@ -40,12 +45,19 @@ export const ManageSessions: React.FC = () => {
     address: sessionKey?.getAddress() || '',
   })
 
+  const [loading, setLoading] = useState<string | null>(null)
+
   const remove = useCallback(
     async (authKey: string) => {
-      await removeSession({
-        authKey: authKey,
-      })
-      await refetch()
+      setLoading(authKey)
+      try {
+        await removeSession({
+          authKey: authKey,
+        })
+        await refetch()
+      } finally {
+        setLoading(null)
+      }
     },
     [removeSession, refetch],
   )
@@ -84,10 +96,6 @@ export const ManageSessions: React.FC = () => {
     )
   }
 
-  const sortedSessionKeys = sessionKeys?.data.sort((a: SessionInfoResult, b: SessionInfoResult) => {
-    return new Date(b.createTime).getTime() - new Date(a.createTime).getTime()
-  })
-
   return (
     <div className="rounded-lg border w-full">
       <Table>
@@ -103,8 +111,13 @@ export const ManageSessions: React.FC = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedSessionKeys?.map((session) => (
-            <ExpandableRow key={session.authenticationKey} session={session} remove={remove} />
+          {sessionKeys?.data.map((session) => (
+            <ExpandableRow
+              key={session.authenticationKey}
+              session={session}
+              remove={remove}
+              loading={loading === session.authenticationKey}
+            />
           ))}
         </TableBody>
       </Table>
@@ -112,7 +125,7 @@ export const ManageSessions: React.FC = () => {
   )
 }
 
-const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove }) => {
+const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove, loading }) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const [copiedKeys, setCopiedKeys] = useState<string[]>([])
 
@@ -125,6 +138,8 @@ const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove }) => {
       }
     })
   }
+
+  const expired = isSessionExpired(Number(session.createTime), session.maxInactiveInterval)
 
   return (
     <>
@@ -150,14 +165,24 @@ const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove }) => {
         </TableCell>
         <TableCell className="text-muted-foreground">{session.maxInactiveInterval}</TableCell>
         <TableCell className="text-center">
-          <Button
-            variant="link"
-            size="sm"
-            onClick={() => remove(session.authenticationKey)}
-            className="text-red-500 dark:text-red-400 dark:hover:text-red-300 hover:text-red-600"
-          >
-            {session.lastActiveTime > new Date().getSeconds() ? 'Disconnect' : 'Expired (Clear)'}
-          </Button>
+          {loading ? (
+            <div className="flex justify-center">
+              <Loader className="w-5 h-5 animate-spin" />
+            </div>
+          ) : (
+            <Button
+              variant="link"
+              size="sm"
+              onClick={() => remove(session.authenticationKey)}
+              className={`${
+                expired
+                  ? 'dark:text-gray-400 dark:hover:text-gray-300 hover:text-gray-600 h-full'
+                  : 'text-red-500 dark:text-red-400 dark:hover:text-red-300 hover:text-red-600 h-full'
+              }`}
+            >
+              {expired ? 'Expired (Clear)' : 'Disconnect'}
+            </Button>
+          )}
         </TableCell>
       </TableRow>
       {isExpanded && (
