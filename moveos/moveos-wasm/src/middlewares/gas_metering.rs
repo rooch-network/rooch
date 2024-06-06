@@ -59,7 +59,7 @@ impl ModuleMiddleware for GasMiddleware {
         let charge_function_index = self.charge_function_index.lock().unwrap().unwrap();
 
         Box::new(GasFunctionMiddleware {
-            charge_function_index: charge_function_index.clone(),
+            charge_function_index: charge_function_index,
             accumulated_cost: 0,
             cost_function: self.cost_function.clone(),
         })
