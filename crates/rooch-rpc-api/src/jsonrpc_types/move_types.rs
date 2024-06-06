@@ -84,8 +84,8 @@ impl FromStr for ObjectIDVecView {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let ids = s
-            .split(",")
-            .map(|id| ObjectID::from_str(id))
+            .split(',')
+            .map(ObjectID::from_str)
             .collect::<Result<Vec<_>, _>>()?;
         Ok(StrView(ids))
     }

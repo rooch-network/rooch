@@ -252,6 +252,52 @@
       }
     },
     {
+      "name": "rooch_getFieldStates",
+      "description": "Get Object Fields via ObjectID and field keys.",
+      "params": [
+        {
+          "name": "object_id",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/ObjectID"
+          }
+        },
+        {
+          "name": "field_key",
+          "required": true,
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimpleKeyStateView"
+            }
+          }
+        },
+        {
+          "name": "state_option",
+          "schema": {
+            "$ref": "#/components/schemas/StateOptions"
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec<Option<StateView>>",
+        "required": true,
+        "schema": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StateView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
       "name": "rooch_getObjectStates",
       "description": "Get object states by object id",
       "params": [
@@ -386,7 +432,7 @@
       }
     },
     {
-      "name": "rooch_listObjectFields",
+      "name": "rooch_listFieldStates",
       "description": "List Object Fields via ObjectID.",
       "params": [
         {
@@ -496,44 +542,6 @@
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/PageView_for_IndexerEventView_and_IndexerEventID"
-        }
-      }
-    },
-    {
-      "name": "rooch_queryFieldStates",
-      "description": "Query the Object field states indexer by state filter",
-      "params": [
-        {
-          "name": "filter",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/FieldStateFilterView"
-          }
-        },
-        {
-          "name": "cursor",
-          "schema": {
-            "$ref": "#/components/schemas/IndexerStateID"
-          }
-        },
-        {
-          "name": "limit",
-          "schema": {
-            "$ref": "#/components/schemas/usize"
-          }
-        },
-        {
-          "name": "query_option",
-          "schema": {
-            "$ref": "#/components/schemas/QueryOptions"
-          }
-        }
-      ],
-      "result": {
-        "name": "FieldStatePageView",
-        "required": true,
-        "schema": {
-          "$ref": "#/components/schemas/PageView_for_FieldStateView_and_IndexerStateID"
         }
       }
     },
@@ -1063,80 +1071,6 @@
             }
           }
         ]
-      },
-      "FieldStateFilterView": {
-        "oneOf": [
-          {
-            "description": "Query by object id.",
-            "type": "object",
-            "required": [
-              "object_id"
-            ],
-            "properties": {
-              "object_id": {
-                "$ref": "#/components/schemas/ObjectID"
-              }
-            },
-            "additionalProperties": false
-          }
-        ]
-      },
-      "FieldStateView": {
-        "type": "object",
-        "required": [
-          "created_at",
-          "key_hex",
-          "key_type",
-          "object_id",
-          "state_index",
-          "tx_order",
-          "updated_at",
-          "value_type"
-        ],
-        "properties": {
-          "created_at": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          },
-          "key_hex": {
-            "type": "string"
-          },
-          "key_type": {
-            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
-          },
-          "object_id": {
-            "$ref": "#/components/schemas/ObjectID"
-          },
-          "state_index": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          },
-          "tx_order": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          },
-          "updated_at": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          },
-          "value": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AnnotatedMoveValueView"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "value_type": {
-            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
-          }
-        }
       },
       "FunctionCallView": {
         "type": "object",
@@ -2149,35 +2083,6 @@
           }
         }
       },
-      "PageView_for_FieldStateView_and_IndexerStateID": {
-        "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
-        "type": "object",
-        "required": [
-          "data",
-          "has_next_page"
-        ],
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FieldStateView"
-            }
-          },
-          "has_next_page": {
-            "type": "boolean"
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/IndexerStateID"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        }
-      },
       "PageView_for_IndexerEventView_and_IndexerEventID": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
@@ -2383,6 +2288,21 @@
             "items": {
               "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
             }
+          }
+        }
+      },
+      "SimpleKeyStateView": {
+        "type": "object",
+        "required": [
+          "key",
+          "key_type"
+        ],
+        "properties": {
+          "key": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          },
+          "key_type": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
           }
         }
       },
