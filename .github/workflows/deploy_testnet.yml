@@ -1,7 +1,6 @@
 name: Deploy TESTNET Seed
+
 on:
-  release:
-    types: [released, prereleased]
   workflow_dispatch:
     inputs:
       ref:
@@ -25,22 +24,36 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Download Docker tag artifact
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: docker_tag
+          path: .
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GIT_PACKAGE_TOKEN }}
+
       - name: Determine ref
         id: determine-ref
         run: |
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             echo "REF=${{ github.event.inputs.ref }}" >> $GITHUB_ENV
           else
-            if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-              REF=${GITHUB_REF#refs/tags/}
-            elif [[ "${{ github.ref }}" == refs/heads/* ]]; then
-              REF=${GITHUB_REF#refs/heads/}
+            if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+              echo "REF=$(cat docker_tag.txt)" >> $GITHUB_ENV
+            else
+              if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+                REF=${GITHUB_REF#refs/tags/}
+              elif [[ "${{ github.ref }}" == refs/heads/* ]]; then
+                REF=${GITHUB_REF#refs/heads/}
+              fi
+              echo "REF=$REF" >> $GITHUB_ENV
             fi
-            echo "REF=$REF" >> $GITHUB_ENV
           fi
 
       - name: Print ref
         run: echo "The ref is ${{ env.REF }}"
+
       - name: Deploy to GCP TESTNET VM
         env:
           PRIVATE_KEY: ${{ secrets.GCP_TESTNET_SSH_PRIVATE_KEY }}
@@ -51,5 +64,4 @@ jobs:
           chmod 600 private_key.pem
           sudo apt update
           sudo apt install -y --no-install-recommends openssh-server
-          ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST bash -c "'sleep 30' && docker image prune -a -f && docker ps | grep rooch | awk '{print \$1}' | xargs -r docker stop && docker ps -a | grep rooch | awk '{print \$1}' | xargs -r docker rm -f && docker pull 'ghcr.io/rooch-network/rooch:${{ env.REF }}' && docker run -d --name rooch --restart unless-stopped -v /data:/root -p 50051:50051 'ghcr.io/rooch-network/rooch:${{ env.REF }}' server start -n test --btc-rpc-url '${{secrets.BTC_TEST_RPC_URL}}' --btc-rpc-username rooch-test --btc-rpc-password '${{secrets.BTC_TEST_RPC_PWD}}' --da '{\"internal-da-server\": {\"servers\": [{\"open-da\": {\"scheme\": \"gcs\", \"config\": {\"bucket\": \"${{secrets.OPENDA_GCP_TESTNET_BUCKET}}\", \"credential\": \"${{secrets.OPENDA_GCP_TESTNET_CREDENTIAL}}\"}}}]}}'"
-
+          ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST bash -c "'sleep 30' && docker image prune -a -f && docker ps | grep rooch | grep -v faucet | awk '{print \$1}' | xargs -r docker stop && docker ps -a | grep rooch | grep -v faucet | awk '{print \$1}' | xargs -r docker rm -f && docker pull 'ghcr.io/rooch-network/rooch:${{ env.REF }}' && docker run -d --name rooch --restart unless-stopped -v /data:/root -p 50051:50051 'ghcr.io/rooch-network/rooch:${{ env.REF }}' server start -n test --btc-rpc-url '${{secrets.BTC_TEST_RPC_URL}}' --btc-rpc-username rooch-test --btc-rpc-password '${{secrets.BTC_TEST_RPC_PWD}}' --da '{\"internal-da-server\": {\"servers\": [{\"open-da\": {\"scheme\": \"gcs\", \"config\": {\"bucket\": \"${{secrets.OPENDA_GCP_TESTNET_BUCKET}}\", \"credential\": \"${{secrets.OPENDA_GCP_TESTNET_CREDENTIAL}}\"}}}]}}'"

@@ -2,6 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::WalletContextOptions;
+use crate::commands::statedb::commands::export::ExportID;
+use crate::commands::statedb::commands::{GLOBAL_STATE_TYPE_PREFIX, GLOBAL_STATE_TYPE_ROOT};
+use anyhow::{Error, Result};
+use chrono::{DateTime, Local};
+use clap::Parser;
+use moveos_store::MoveOSStore;
+use moveos_types::h256::H256;
+use moveos_types::moveos_std::object::{ObjectID, RootObjectEntity, GENESIS_STATE_ROOT};
+use moveos_types::startup_info::StartupInfo;
+use moveos_types::state::{KeyState, State};
+use moveos_types::state_resolver::StatelessResolver;
+use rooch_config::{RoochOpt, R_OPT_NET_HELP};
+use rooch_db::RoochDB;
+use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::rooch_network::RoochChainID;
+use serde::{Deserialize, Serialize};
+use smt::{TreeChangeSet, UpdateSet};
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
@@ -11,27 +28,6 @@ use std::sync::mpsc::{Receiver, SyncSender};
 use std::sync::{mpsc, Arc};
 use std::thread;
 use std::time::SystemTime;
-
-use anyhow::{Error, Result};
-use chrono::{DateTime, Local};
-use clap::Parser;
-use serde::{Deserialize, Serialize};
-
-use moveos_store::MoveOSStore;
-use moveos_types::h256::H256;
-use moveos_types::moveos_std::object::{ObjectID, RootObjectEntity, GENESIS_STATE_ROOT};
-use moveos_types::startup_info::StartupInfo;
-use moveos_types::state::{KeyState, State};
-use moveos_types::state_resolver::StatelessResolver;
-use rooch_config::R_OPT_NET_HELP;
-use rooch_types::error::{RoochError, RoochResult};
-use rooch_types::rooch_network::RoochChainID;
-use smt::{TreeChangeSet, UpdateSet};
-
-use crate::commands::statedb::commands::export::ExportID;
-use crate::commands::statedb::commands::{
-    init_statedb, GLOBAL_STATE_TYPE_PREFIX, GLOBAL_STATE_TYPE_ROOT,
-};
 
 /// Import statedb
 #[derive(Debug, Parser)]
@@ -85,8 +81,9 @@ impl ImportCommand {
         let start_time = SystemTime::now();
         let datetime: DateTime<Local> = start_time.into();
 
-        let (root, moveos_store) =
-            init_statedb(self.base_data_dir.clone(), self.chain_id.clone()).unwrap();
+        let opt = RoochOpt::new_with_default(self.base_data_dir, self.chain_id, None).unwrap();
+        let rooch_db = RoochDB::init(opt.store_config()).unwrap();
+        let (root, moveos_store) = (rooch_db.root, rooch_db.moveos_store);
 
         println!(
             "task progress started at {}, batch_size: {}",
@@ -283,12 +280,12 @@ where
     I: Into<UpdateSet<KeyState, State>>,
 {
     let tree_change_set = moveos_store
-        .statedb
+        .state_store
         .update_fields(pre_state_root, update_set)?;
     Ok(tree_change_set)
 }
 
 pub fn apply_nodes(moveos_store: &MoveOSStore, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
-    moveos_store.statedb.node_store.write_nodes(nodes)?;
+    moveos_store.state_store.node_store.write_nodes(nodes)?;
     Ok(())
 }

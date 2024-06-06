@@ -13,12 +13,11 @@ use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::{FunctionCall, VerifiedMoveOSTransaction};
-use rooch_config::store_config::StoreConfig;
+use rooch_config::RoochOpt;
+use rooch_db::RoochDB;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::actor::{executor::ExecutorActor, messages::ExecuteTransactionResult};
 use rooch_genesis::RoochGenesis;
-use rooch_indexer::IndexerStore;
-use rooch_store::RoochStore;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
 use rooch_types::transaction::{L1BlockWithBody, RoochTransaction};
@@ -39,8 +38,8 @@ pub fn get_data_dir() -> DataDirPath {
 }
 
 pub struct RustBindingTest {
-    //we should keep data_dir to make sure the temp dir is not deleted.
-    data_dir: DataDirPath,
+    //we keep the opt to ensure the temp dir is not be deleted before the test end
+    opt: RoochOpt,
     sequencer: AccountAddress,
     kp: RoochKeyPair,
     pub executor: ExecutorActor,
@@ -51,22 +50,10 @@ pub struct RustBindingTest {
 
 impl RustBindingTest {
     pub fn new() -> Result<Self> {
-        let data_dir = get_data_dir();
-        let (rooch_db_path, moveos_db_path) = (
-            StoreConfig::get_mock_moveos_store_dir(&data_dir),
-            StoreConfig::get_mock_rooch_store_dir(&data_dir),
-        );
-        if !rooch_db_path.exists() {
-            std::fs::create_dir_all(rooch_db_path.clone())?;
-        }
-        if !moveos_db_path.exists() {
-            std::fs::create_dir_all(moveos_db_path.clone())?;
-        }
+        let opt = RoochOpt::new_with_temp_store()?;
+        let store_config = opt.store_config();
+        let rooch_db = RoochDB::init(store_config)?;
 
-        let mut moveos_store =
-            MoveOSStore::mock_moveos_store_with_data_dir(moveos_db_path.as_path())?;
-        let mut rooch_store = RoochStore::mock_rooch_store_with_data_dir(rooch_db_path.as_path())?;
-        let mut indexer_store = IndexerStore::mock_indexer_store()?;
         let mut network: RoochNetwork = BuiltinChainID::Local.into();
 
         let kp = RoochKeyPair::generate_secp256k1();
@@ -75,20 +62,27 @@ impl RustBindingTest {
         network.set_sequencer_account(sequencer.clone());
 
         let genesis = RoochGenesis::build(network)?;
-        let root = genesis.init_genesis(&mut moveos_store, &mut rooch_store, &mut indexer_store)?;
+        let root = genesis.init_genesis(&rooch_db)?;
 
-        let executor = ExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store.clone())?;
+        let executor = ExecutorActor::new(
+            root.clone(),
+            rooch_db.moveos_store.clone(),
+            rooch_db.rooch_store.clone(),
+        )?;
 
-        let reader_executor =
-            ReaderExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store)?;
+        let reader_executor = ReaderExecutorActor::new(
+            root.clone(),
+            rooch_db.moveos_store.clone(),
+            rooch_db.rooch_store,
+        )?;
         Ok(Self {
+            opt,
             root,
-            data_dir,
             sequencer: sequencer.to_rooch_address().into(),
             kp,
             executor,
             reader_executor,
-            moveos_store,
+            moveos_store: rooch_db.moveos_store,
         })
     }
 
@@ -101,7 +95,7 @@ impl RustBindingTest {
     }
 
     pub fn data_dir(&self) -> &Path {
-        self.data_dir.path()
+        self.opt.base().data_dir()
     }
 
     pub fn resolver(&self) -> RootObjectResolver<MoveOSStore> {

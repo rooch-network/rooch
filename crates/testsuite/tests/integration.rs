@@ -61,7 +61,7 @@ async fn start_server(w: &mut World, _scenario: String) {
     tokio::time::sleep(Duration::from_secs(5)).await;
 
     let mut service = Service::new();
-    let mut opt = RoochOpt::new_with_temp_store();
+    let mut opt = RoochOpt::new_with_temp_store().expect("new rooch opt should be ok");
     wait_port_available(opt.port()).await;
 
     match w.bitcoind.take() {
@@ -89,7 +89,7 @@ async fn start_server(w: &mut World, _scenario: String) {
     server_opt.sequencer_keypair = Some(kp.copy());
     server_opt.proposer_keypair = Some(kp.copy());
 
-    service.start(&opt, server_opt).await.unwrap();
+    service.start(opt, server_opt).await.unwrap();
 
     w.service = Some(service);
 }

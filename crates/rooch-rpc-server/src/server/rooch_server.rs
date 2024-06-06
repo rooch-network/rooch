@@ -369,11 +369,7 @@ impl RoochAPIServer for RoochServer {
         limit: Option<StrView<u64>>,
         descending_order: Option<bool>,
     ) -> RpcResult<TransactionWithInfoPageView> {
-        let last_sequencer_order = self
-            .rpc_service
-            .get_sequencer_order()
-            .await?
-            .map_or(0, |v| v.last_order);
+        let last_sequencer_order = self.rpc_service.get_sequencer_order().await?;
 
         let limit_of = min(
             limit

@@ -22,7 +22,7 @@ derive_store!(
     TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME
 );
 pub trait TransactionStore {
-    fn save_transaction(&mut self, transaction: LedgerTransaction) -> Result<()>;
+    fn save_transaction(&self, transaction: LedgerTransaction) -> Result<()>;
     fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<LedgerTransaction>>;
     fn get_transactions_by_hash(
         &self,
@@ -59,7 +59,7 @@ impl TransactionDBStore {
         }
     }
 
-    pub fn save_transaction(&mut self, mut transaction: LedgerTransaction) -> Result<()> {
+    pub fn save_transaction(&self, mut transaction: LedgerTransaction) -> Result<()> {
         let tx_hash = transaction.tx_hash();
         let tx_order = transaction.sequence_info.tx_order;
         self.tx_store.kv_put(tx_hash, transaction)?;

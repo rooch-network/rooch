@@ -1,4 +1,4 @@
-# 快速入门
+# 计数器
 
 本小节将通过一个计数器例子来快速介绍 Rooch 的开发入门。
 
@@ -16,7 +16,7 @@
 rooch move new quick_start_counter
 ```
 
-详细的方法请参考[创建 Rooch Move 合约](./create-rooch-move-contract.zh-CN.mdx)。
+详细的方法请参考[创建 Rooch Move 合约](../getting-started/first-contract.zh-CN.mdx)。
 
 接下来在 `sources` 目录里创建一个 `counter.move` 文件来编写我们的合约代码。
 
@@ -600,8 +600,8 @@ Transaction error: RPC call failed: ErrorObject { code: ServerError(-32000), mes
 
 可以看到，当我们用其他账户执行 `increase` 函数时，会返回错误信息，告诉我们对象的拥有者不匹配，即其他账户无法另一个账户所拥有的对象。
 
-到这里，相信你已经对 Rooch 的对象存储有了一定的了解，在开发过程中可以根据需求合理运用资源存储和对象存储方案，在 [`simple_blog` 例子](../first-blog-system.zh-CN.mdx)中，就结合了两者。
+到这里，相信你已经对 Rooch 的对象存储有了一定的了解，在开发过程中可以根据需求合理运用资源存储和对象存储方案，在 [`simple_blog` 例子](./blog-demo.zh-CN.mdx)中，就结合了两者。
 
 ## 总结
 
-到这里你已经一步步了解了如何使用 Rooch 进行开发，部署和调用智能合约了。在 Rooch 中，面向对象的编程模型是十分重要的一个内容，想了解更多使用方法，请参阅[对象](../../../learn/core-concepts/objects/object.zh-CN.mdx)。
+到这里你已经一步步了解了如何使用 Rooch 进行开发，部署和调用智能合约了。在 Rooch 中，面向对象的编程模型是十分重要的一个内容，想了解更多使用方法，请参阅[对象](../../learn/core-concepts/objects/object.zh-CN.mdx)。

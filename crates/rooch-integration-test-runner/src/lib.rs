@@ -22,6 +22,7 @@ use move_transactional_test_runner::{
 use move_vm_runtime::session::SerializedReturnValues;
 use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos::moveos_test_runner::{CompiledState, MoveOSTestAdapter, TaskInput};
+use moveos_config::DataDirPath;
 use moveos_store::MoveOSStore;
 use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
 use moveos_types::state_resolver::RootObjectResolver;
@@ -48,7 +49,7 @@ pub struct MoveOSTestRunner<'a> {
     compiled_state: CompiledState<'a>,
     // storage: SelectableStateView<ChainStateDB, InMemoryStateCache<RemoteViewer>>,
     default_syntax: SyntaxChoice,
-    //tempdir: TempDir,
+    _temp_dir: DataDirPath,
     //debug: bool,
     moveos: MoveOS,
     root: RootObjectEntity,
@@ -108,8 +109,8 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             }
             None => BTreeMap::new(),
         };
-
-        let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
+        let temp_dir = moveos_config::temp_dir();
+        let moveos_store = MoveOSStore::new(temp_dir.path()).unwrap();
         let genesis_gas_parameter = FrameworksGasParameters::initial();
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_LOCAL_GENESIS;
         let moveos = MoveOS::new(
@@ -142,6 +143,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         let adapter = Self {
             compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps, None),
             default_syntax,
+            _temp_dir: temp_dir,
             moveos,
             root: ObjectEntity::root_object(state_root, size),
         };

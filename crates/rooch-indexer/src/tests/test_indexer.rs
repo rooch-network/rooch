@@ -15,7 +15,7 @@ use moveos_types::state::{KeyState, MoveStructType, State};
 use moveos_types::test_utils::random_bytes;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rand::{random, thread_rng, Rng};
-use rooch_config::indexer_config::ROOCH_INDEXER_DB_DIR;
+use rooch_config::store_config::DEFAULT_DB_INDEXER_SUBDIR;
 use rooch_types::framework::coin_store::CoinStore;
 use rooch_types::framework::gas_coin::GasCoin;
 use rooch_types::indexer::event::{EventFilter, IndexerEvent};
@@ -128,9 +128,8 @@ fn random_remove_field_states() -> Vec<(String, String)> {
 #[test]
 fn test_transaction_store() -> Result<()> {
     let tmpdir = moveos_config::temp_dir();
-    let indexer_db = tmpdir.path().join(ROOCH_INDEXER_DB_DIR);
+    let indexer_db = tmpdir.path().join(DEFAULT_DB_INDEXER_SUBDIR);
     let indexer_store = IndexerStore::new(indexer_db.clone())?;
-    indexer_store.create_all_tables_if_not_exists()?;
     let indexer_reader = IndexerReader::new(indexer_db)?;
 
     let random_transaction = random_ledger_transaction();
@@ -173,9 +172,8 @@ fn test_transaction_store() -> Result<()> {
 #[test]
 fn test_event_store() -> Result<()> {
     let tmpdir = moveos_config::temp_dir();
-    let indexer_db = tmpdir.path().join(ROOCH_INDEXER_DB_DIR);
+    let indexer_db = tmpdir.path().join(DEFAULT_DB_INDEXER_SUBDIR);
     let indexer_store = IndexerStore::new(indexer_db.clone())?;
-    indexer_store.create_all_tables_if_not_exists()?;
     let indexer_reader = IndexerReader::new(indexer_db)?;
 
     let random_event = random_event();
@@ -208,9 +206,8 @@ fn test_event_store() -> Result<()> {
 #[test]
 fn test_state_store() -> Result<()> {
     let tmpdir = moveos_config::temp_dir();
-    let indexer_db = tmpdir.path().join(ROOCH_INDEXER_DB_DIR);
+    let indexer_db = tmpdir.path().join(DEFAULT_DB_INDEXER_SUBDIR);
     let indexer_store = IndexerStore::new(indexer_db.clone())?;
-    indexer_store.create_all_tables_if_not_exists()?;
     let indexer_reader = IndexerReader::new(indexer_db)?;
 
     let mut new_object_states = random_new_object_states()?;
@@ -248,9 +245,8 @@ fn test_state_store() -> Result<()> {
 #[test]
 fn test_object_type_query() -> Result<()> {
     let tmpdir = moveos_config::temp_dir();
-    let indexer_db = tmpdir.path().join(ROOCH_INDEXER_DB_DIR);
+    let indexer_db = tmpdir.path().join(DEFAULT_DB_INDEXER_SUBDIR);
     let indexer_store = IndexerStore::new(indexer_db.clone())?;
-    indexer_store.create_all_tables_if_not_exists()?;
     let indexer_reader = IndexerReader::new(indexer_db)?;
     let object_id = ObjectID::random();
     let owner = AccountAddress::random();

@@ -19,7 +19,7 @@ use std::str::FromStr;
 
 #[test]
 fn test_statedb() {
-    let mut moveos_store = MoveOSStore::mock_moveos_store().unwrap();
+    let (moveos_store, _) = MoveOSStore::mock_moveos_store().unwrap();
 
     let mut state_change_set = StateChangeSet::default();
 
@@ -45,7 +45,7 @@ fn test_statedb() {
         .insert(object_id.clone(), object_change);
 
     let (state_root, _size) = moveos_store
-        .get_state_store_mut()
+        .get_state_store()
         .apply_change_set(state_change_set)
         .unwrap();
 
@@ -63,12 +63,13 @@ fn test_statedb() {
 
 #[test]
 fn test_reopen() {
-    let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
-    let node_store = moveos_store.get_state_node_store();
+    let temp_dir = moveos_config::temp_dir();
 
     let key = H256::random();
     let node = b"testnode".to_vec();
     {
+        let moveos_store = MoveOSStore::new(temp_dir.path()).unwrap();
+        let node_store = moveos_store.get_state_node_store();
         node_store
             .put(key, node.clone())
             .map_err(|e| anyhow::anyhow!("test_state_store test_reopen error: {:?}", e))
@@ -76,19 +77,22 @@ fn test_reopen() {
         assert_eq!(node_store.get(&key).unwrap(), Some(node.clone()));
     }
     {
+        let moveos_store = MoveOSStore::new(temp_dir.path()).unwrap();
+        let node_store = moveos_store.get_state_node_store();
         assert_eq!(node_store.get(&key).unwrap(), Some(node));
     }
 }
 
 #[test]
 fn test_statedb_state_root() -> Result<()> {
-    let mut moveos_store = MoveOSStore::mock_moveos_store().expect("moveos store mock should succ");
+    let (moveos_store, _) =
+        MoveOSStore::mock_moveos_store().expect("moveos store mock should succ");
     let change_set = random_state_change_set();
     let (state_root, _size) = moveos_store
-        .get_state_store_mut()
+        .get_state_store()
         .apply_change_set(change_set)?;
     let (new_state_root, _new_size) = moveos_store
-        .get_state_store_mut()
+        .get_state_store()
         .apply_change_set(random_state_change_set())?;
     assert_ne!(state_root, new_state_root);
     Ok(())

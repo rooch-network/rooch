@@ -21,7 +21,6 @@ use rooch_types::indexer::state::{
     FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateID, ObjectStateFilter,
 };
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
-use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::{ExecuteTransactionResponse, LedgerTransaction, RoochTransaction};
 use std::collections::HashMap;
 
@@ -190,7 +189,7 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn get_sequencer_order(&self) -> Result<Option<SequencerOrder>> {
+    pub async fn get_sequencer_order(&self) -> Result<u64> {
         let resp = self.sequencer.get_sequencer_order().await?;
         Ok(resp)
     }
