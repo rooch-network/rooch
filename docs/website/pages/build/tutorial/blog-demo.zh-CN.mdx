@@ -1,30 +1,30 @@
-# First blog system
+# 博客 Demo
 
-## 1. What is Rooch
+## 1. 什么是 Rooch
 
-[Rooch](https://rooch.network) is a fast, modular, secure, developer-friendly infrastructure solution for building Web3-native applications.
+[Rooch](https://rooch.network) 是一个快速、模块化、安全、开发人员友好的基础架构解决方案，用于构建 Web3 原生应用程序。
 
-Rooch released the first version on June 28, 2023, the version name is **Sprouting**, and the version number is `v0.1`.
+Rooch 于 2023 年 06 月 28 日，发布了第一个版本，版本名为 **萌芽（Sprouting）**，版本号为 `v0.1`。
 
-## 2. Install Rooch
+## 2. 安装 Rooch
 
-### 2.1 Download
+### 2.1 下载
 
-Prebuilt binary tarballs and corresponding source tarballs can be found on [Rooch's GitHub releases page](https://github.com/rooch-network/rooch/releases). If you want to experience the Git version, you can refer to this page to [compile and install Rooch](https://rooch.network/build/getting-started/installation#compile-and-install). The following guides you to install the Release version of Rooch.
+在 [Rooch 的 GitHub 发布页面](https://github.com/rooch-network/rooch/releases)可以找到预构建的二进制文件压缩包和相应版本的源码压缩包。如果想要体验 Git 版本，可以参考这个页面来[编译安装 Rooch](https://rooch.network/build/getting-started/installation#compile-and-install)，下面引导你安装 Rooch 的 Release 版本。
 
 ```shell
 wget https://github.com/rooch-network/rooch/releases/download/v0.1/rooch-ubuntu-latest.zip
 ```
 
-> Note: Please choose the version corresponding to your own system. I will use the Linux version to demonstrate here.
+> 注意：请选择对应自己系统的版本，我这里使用 Linux 的版本来演示。
 
-### 2.2 Decompress
+### 2.2 解压
 
 ```shell
 unzip rooch-ubuntu-latest.zip
 ```
 
-The decompressed files are stored in the `rooch-artifacts` directory, and `rooch` is our precompiled binary program.
+解压文件存放在 `rooch-artifacts` 目录里，`rooch` 是我们预编译好的二进制程序。
 
 ```shell
 rooch-artifacts
@@ -32,16 +32,16 @@ rooch-artifacts
 └── rooch
 ```
 
-### 2.3 Run
+### 2.3 运行
 
-Go to the unzipped folder `rooch-artifacts` and test if the program works.
+进入解压文件夹 `rooch-artifacts` 并测试程序是否正常。
 
 ```shell
 cd rooch-artifacts
 ./rooch
 ```
 
-If you can see the output below, it means everything is working fine.
+如果你能看到下面的输出内容，说明程序一切正常。
 
 ```shell
 [joe@mx rooch]$ rooch
@@ -68,46 +68,46 @@ Options:
   -V, --version  Print version
 ```
 
-#### 2.4 Add to PATH
+### 2.4 加入 PATH
 
-For the convenience of subsequent use, it is recommended to put `rooch` into a path that can be retrieved by the system environment variable `PATH`, or `export` the current decompressed directory to `PATH` through export.
+为了方便后续使用，建议将 `rooch` 放入能被系统环境变量 `PATH` 检索的路径，或者将当前的解压目录通过 `export` 导出到 `PATH` 中。
 
-- Method 1, copy the `rooch` program to the `/usr/local/bin` directory (**recommended**)
+- 方法一，复制 `rooch` 这个程序复制到 `/usr/local/bin` 目录中（**推荐**）
 
 ```shell
 sudo cp rooch /usr/local/bin
 ```
 
-- Method 2, export path (not recommended)
+- 方法二，导出路径（不推荐）
 
-Use the following small script to add `rooch` to the Bash shell's `PATH`.
+使用下面这段小脚本将 `rooch` 添加到 Bash shell 的 `PATH`。
 
 ```shell
 echo "export PATH=\$PATH:$PWD" >> ~/.bashrc
 source ~/.bashrc
 ```
 
-## 3. Initialize Rooch configuration
+## 3. 初始化 Rooch 配置
 
 ```shell
 rooch init
 ```
 
-After running the command to initialize the configuration, a `.rooch` directory will be created in the user's home directory (`$HOME`), and the relevant configuration information of the Rooch account will be generated.
+运行初始化配置的命令后，会在用户的主目录（`$HOME`）创建一个 `.rooch` 目录，并生成 Rooch 账户的相关配置信息。
 
-## 4. Create a new Rooch project
+## 4. 创建新的 Rooch 项目
 
-This part will guide you how to create a blog contract application on Rooch, and realize the basic **CRUD** functions.
+这部分将引导你如何在 Rooch 上创建一个博客的合约应用，并实现基本的**增查改删（CRUD）**功能。
 
-### 4.1 Create a Move project
+### 4.1 创建 Move 项目
 
-Use the `rooch` integration's `move new` command to create a blog application called simple_blog.
+使用 `rooch` 集成的 `move new` 命令来创建一个名为 `simple_blog` 的博客应用。
 
 ```shell
 rooch move new simple_blog
 ```
 
-The generated Move project contains a configuration file `Move.toml` and a `sources` directory for storing Move source code.
+生成的 Move 项目里包含一个配置文件 `Move.toml` 和一个用于存放 Move 源代码的 `sources` 目录。
 
 ```shell
 simple_blog
@@ -115,7 +115,7 @@ simple_blog
 └── sources
 ```
 
-We can take a quick look at what the `Move.toml` file contains.
+我们可以简单看一下 `Move.toml` 文件包含了哪些内容。
 
 ```toml
 [package]
@@ -134,22 +134,22 @@ moveos_std = "0x2"
 rooch_framework = "0x3"
 ```
 
-- There are three tables in the TOML file: `package`, `dependencies` and `addresses`, which store some meta information required by the project.
-- The `package` table is used to store some description information of the project, which contains two key-value pairs `name` and `version` to describe the project name and version number of the project.
-- The `dependencies` table is used to store the metadata that the project depends on.
-- The `addresses` table is used to store the address of the project and the addresses of the modules that the project depends on. The first address is the address generated in `$HOME/.rooch/rooch_config/rooch.yaml` when initializing the Rooch configuration.
+- 在 TOML 文件中包含三个表：`package`、`dependencies` 和 `addresses`，存放项目所需的一些元信息。
+- `package` 表用来存放项目的一些描述信息，这里包含两个键值对 `name` 和 `version` 来描述项目名和项目的版本号。
+- `dependencies` 表用来存放项目所需依赖的元数据。
+- `addresses` 表用来存放项目地址以及项目所依赖模块的地址，第一个地址是初始化 Rooch 配置时，生成在 `$HOME/.rooch/rooch_config/rooch.yaml` 中的地址。
 
-In order to facilitate the deployment of other developers, we replace the address of `simple_blog` with `_`, and then specify it through `--named--addresses` when deploying.
+为了方便其他开发者部署，我们把 `simple_blog` 的地址用 `_` 替代，然后部署的时候通过 `--named--addresses` 来指定。
 
-### 4.2 Quick experience
+### 4.2 快速体验
 
-In this section, I will guide you to write a blog initialization function and run it in Rooch to experience the basic process of `writing -> compiling -> publishing -> calling` the contract.
+这小节里，将引导你编写一个博客的初始化函数，并在 Rooch 中运行起来，体验`编写 -> 编译 -> 发布 -> 调用`合约这样一个基本流程。
 
-We create a new `simple_blog.move` file in the `sources` directory and start writing our blog contract.
+我们在 `sources` 目录里新建一个 `simple_blog.move` 文件，并开始编写我们的博客合约。
 
-#### 4.2.1 Define the structure of the blog
+#### 4.2.1 定义博客的结构
 
-Our blogging system allows everyone to create their own blog and keep their own list of blogs. First, we define a blog structure:
+我们的博客系统允许每个人创建自己的博客，并保存自己的博客列表。首先，我们定义一个博客结构体：
 
 ```move
 struct MyBlog has key, store {
@@ -158,9 +158,9 @@ struct MyBlog has key, store {
 }
 ```
 
-This structure contains two fields, one is the name of the blog, and the other is the list of blog posts. For the article list, we only save the ID of the article Object.
+这个结构体包含两个字段，一个是博客的名字，另一个是博客的文章列表。文章列表我们只保存文章 Object 的 ID。
 
-Then define a function to create a blog:
+然后定义一个创建博客的函数：
 
 ```move
 public fun create_blog(owner: &signer) {
@@ -184,9 +184,9 @@ public entry fun set_blog_name(owner: &signer, blog_name: String) {
 }
 ```
 
-Creating a blog is to initialize the `MyBlog` data structure and save `MyBlog` in the user's storage space. At the same time, an entry function for setting the blog name is provided. If the blog does not exist, the blog will be created first, and then the blog name will be set.
+创建博客就是初始化 `MyBlog` 数据结构，并把 `MyBlog` 保存在用户的存储空间内。同时提供了一个设置博客名称的入口函数，如果博客不存在，则先创建博客，然后设置博客名称。
 
-Then provide a contract initialization function, which will be automatically executed when the contract is published, and the blog will be automatically initialized for the user who publishes the contract.
+然后再提供一个合约初始化函数，合约发布的时候会自动执行这个初始化函数，给发布合约的用户先自动初始化博客。
 
 ```move
 /// This init function is called when the module is published
@@ -197,7 +197,7 @@ fun init(owner: &signer) {
 }
 ```
 
-Then, provide a function to query the blog list and a function to add and delete articles. The whole code is as follows:
+然后，再提供一个查询博客列表的函数和添加删除文章的函数，全部代码如下：
 
 ```move
 module simple_blog::simple_blog {
@@ -297,21 +297,21 @@ module simple_blog::simple_blog {
 }
 ```
 
-- `module simple_blog::simple_blog` is used to declare which module our contract belongs to. Its syntax is `module address::module_name`, and the logic (function) of the contract is written in curly braces `{}`.
-- The `use` statement imports the libraries we need to depend on when writing contracts.
-- `const` defines the constants used in the contract, usually used to define some error codes.
-- `fun` is a keyword used to define a function, usually the function of the function is defined here. For safety, such functions are prohibited from being called directly on the command line, and the calling logic needs to be encapsulated in the entry function.
-- `entry fun` is used to define the entry function, and the function modified by the `entry` modifier can be called directly on the command line like a script.
+- `module simple_blog::simple_blog` 用来声明我们的合约属于哪个模块，它的语法是 `module 地址::模块名`，花括号 `{}` 里编写的就是合约的逻辑（功能）。
+- `use` 语句导入我们编写合约时需要依赖的库。
+- `const` 定义合约中使用的常量，通常用来定义一些错误代码。
+- `fun` 是用来定义函数的关键字，通常在这里定义函数的功能。为了安全，这类函数禁止直接在命令行中调用，需要在入口函数中封装调用逻辑。
+- `entry fun` 用来定义入口函数，`entry` 修饰符修饰的函数可以像脚本一样直接在命令行中调用。
 
-#### 4.2.2 Compile the Move contract
+#### 4.2.2 编译 Move 合约
 
-Before publishing the contract, we need to compile our contract. Here, `--named-addresses` is used to specify the address of the `simple_blog` module as the `default` address on the current device.
+在发布合约前，需要编译我们的合约。这里通过 `--named-addresses` 来指定 `simple_blog` 模块的地址为当前设备上的 `default` 地址。
 
 ```shell
 rooch move build --named-addresses simple_blog=default
 ```
 
-After compiling, if there are no errors, you will see the message of `Success` at the end.
+编译结束后，如果没有错误，会在最后看到 `Success` 的提示信息。
 
 ```shell
 INCLUDING DEPENDENCY MoveStdlib
@@ -321,32 +321,32 @@ BUILDING simple_blog
 Success
 ```
 
-At this time, there will be a `build` directory in the project folder, which stores the contract bytecode file generated by the Move compiler and the **complete** code of the contract.
+此时，项目文件夹会多出一个 `build` 目录，里面存放的就是 Move 编译器生成的合约字节码文件以及合约**完整的**源代码。
 
-#### 4.2.3 Running the Rooch server
+#### 4.2.3 运行 Rooch 服务器
 
-Let's open another terminal and run the following command, the Rooch server will start the Rooch container service locally to process and respond to the relevant behavior of the contract.
+我们再打开另外一个终端，运行下面这条命令，Rooch 服务器会在本地启动 Rooch 容器服务，用于处理并响应合约的相关行为。
 
 ```shell
 rooch server start
 ```
 
-After starting the Rooch service, you will see these two messages at the end, indicating that the Rooch service has been started normally.
+当启动 Rooch 服务后，会在最后看到这两条信息，表明 Rooch 的服务已经正常启动。
 
 ```shell
 2023-07-03T15:44:33.315228Z  INFO rooch_rpc_server: JSON-RPC HTTP Server start listening 0.0.0.0:50051
 2023-07-03T15:44:33.315256Z  INFO rooch_rpc_server: Available JSON-RPC methods : ["wallet_accounts", "eth_blockNumber", "eth_getBalance", "eth_gasPrice", "net_version", "eth_getTransactionCount", "eth_sendTransaction", "rooch_sendRawTransaction", "rooch_getAnnotatedStates", "eth_sendRawTransaction", "rooch_getTransactions", "rooch_executeRawTransaction", "rooch_getEventsByEventHandle", "rooch_getTransactionByHash", "rooch_executeViewFunction", "eth_getBlockByNumber", "rooch_getEvents", "eth_feeHistory", "eth_getTransactionByHash", "eth_getBlockByHash", "eth_getTransactionReceipt", "rooch_getTransactionInfosByOrder", "eth_estimateGas", "eth_chainId", "rooch_getTransactionInfosByHash", "wallet_sign", "rooch_getStates"]
 ```
 
-> Tip: When we operate the contract-related logic (function) in the previous terminal window, we can observe the output of this terminal window.
+> 提示：我们在前一个终端窗口操作合约相关的逻辑（功能）时，可以观察这个终端窗口的输出。
 
-#### 4.2.4 Publish the Move contract
+#### 4.2.4 发布 Move 合约
 
 ```shell
 rooch move publish --named-addresses simple_blog=default
 ```
 
-You can confirm that the publish operation was successfully executed when you see output similar to this (`status` is `executed`):
+当你看到类似这样的输出（`status` 为 `executed`），就可以确认发布操作已经成功执行了：
 
 ```shell
 {
@@ -361,34 +361,34 @@ You can confirm that the publish operation was successfully executed when you se
 }
 ```
 
-You can also see the processing information of the response in the terminal running the Rooch service:
+在运行 Rooch 服务的终端也可以看到响应的处理信息：
 
 ```shell
 2023-07-03T16:02:11.691028Z  INFO connection{remote_addr=127.0.0.1:58770 conn_id=0}: jsonrpsee_server::server: Accepting new connection 1/100
 2023-07-03T16:02:13.690733Z  INFO rooch_proposer::actor::proposer: [ProposeBlock] block_number: 0, batch_size: 1
 ```
 
-#### 4.2.5 Call the Move contract
+#### 4.2.5 调用 Move 合约
 
-At this point, our blog contract has been released to the chain, and the blog has been initialized under the default account. We can use the status query command to check the blog Resource under the account:
+此时，我们的博客合约已经发布到链上了，并且默认账户下已经初始化了博客。我们可以用状态查询命令来查看该账户下的博客 Resource：
 
 ```shell
 rooch state --access-path /resource/{ACCOUNT_ADDRESS}/{RESOURCE_TYPE}
 ```
 
-Among them, `{ACCOUNT_ADDRESS}` is the account address, `{RESOURCE_TYPE}` is the resource type, here is `{MODULE_ADDRESS}::simple_blog::MyBlog`. Here `{ACCOUNT_ADDRESS}` and `{MODULE_ADDRESS}` are the default account addresses of my machine.
+其中，`{ACCOUNT_ADDRESS}` 是账户地址，`{RESOURCE_TYPE}` 是资源类型，这里是 `{MODULE_ADDRESS}::simple_blog::MyBlog`。这里 `{ACCOUNT_ADDRESS}` 和 `{MODULE_ADDRESS}` 都是我本机的默认账户地址。
 
-We can check the value corresponding to the `active_address` key in the `$HOME/.rooch/rooch_config/rooch.yaml` file, which is the default account address of the operation contract.
+我们可以查看 `$HOME/.rooch/rooch_config/rooch.yaml` 文件中的 `active_address` 这个键对应的值，即操作合约的默认账户地址。
 
-My address is `0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081`, and I will continue to use this address to demonstrate related operations.
+我的地址为 `0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081`，后续将继续使用这个地址来演示相关操作。
 
-So the command I actually execute here should be:
+所以我这里实际执行的命令应该是：
 
 ```shell
 [joe@mx simple_blog]$ rooch state --access-path /resource/0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7/0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::simple_blog::MyBlog
 ```
 
-return result:
+返回结果：
 
 ```json
 [
@@ -408,23 +408,23 @@ return result:
 ]
 ```
 
-It can be seen that `MyBlog` Resource already exists, the name is the default `MyBlog`, and the article list is empty.
+可以看到，`MyBlog` Resource 已经存在，名称是默认的 `MyBlog`，文章列表为空。
 
-Then we set the blog name through the `set_blog_name` function. The syntax for calling a contract entry function is:
+然后我们通过 `set_blog_name` 函数来设置博客名。调用合约入口函数的语法是：
 
 ```shell
 rooch move run --function {ACCOUNT_ADDRESS}::{MODULE_NAME}::{FUNCTION_NAME} --sender-account {ACCOUNT_ADDRESS}
 ```
 
-Run a function with the `rooch move run` command. `--function` Specify the function name, you need to pass a complete function name, that is, `the_address_of_the_published_contract::module_name::function_name`, in order to accurately identify the function that needs to be called. `--sender-account` specifies the address of the account that calls this function, that is, which account is used to call this function, and anyone can call the contract on the chain.
+使用 `rooch move run` 命令运行一个函数。`--function` 指定函数名，需要传递一个完整的函数名，即`发布合约的地址::模块名::函数名`，才能够准确识别需要调用的函数。`--sender-account` 指定调用这个函数的账户地址，即使用哪个账户来调用这个函数，任何人都可以调用链上的合约。
 
 ```shell
 [joe@mx simple_blog]$ rooch move run --function 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::simple_blog::set_blog_name --sender-account default --args 'string:Rooch blog'
 ```
 
-When this command is executed, a transaction will be sent to the chain, and the content of the transaction is to call the `set_blog_name` function in the blog contract.
+这条命令执行时，会向链发送一笔交易，交易的内容就是就是调用博客合约中的 `set_blog_name` 函数。
 
-After the execution is successful, run the previous status query command again, and view the blog Resource:
+执行成功后，再次运行前面的状态查询命令，查看博客 Resource：
 
 ```json
 [joe@mx simple_blog]$ rooch state --access-path /resource/0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7/0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::simple_blog::MyBlog
@@ -446,17 +446,17 @@ After the execution is successful, run the previous status query command again, 
 ]
 ```
 
-As you can see, the blog name has been modified successfully. So far, we have experienced the zero-to-one installation in Rooch, initial configuration, project creation, writing contracts, compiling contracts, publishing contracts, and calling contracts.
+可以看到，博客名已经修改成功。至此，我们体验了在 Rooch 中从零到一地安装，初始化配置，创建项目，编写合约，编译合约，发布合约，调用合约。
 
-### 4.3 Improve the blog contract
+### 4.3 完善博客合约
 
-Next, we will continue to improve the blog contract and increase the function of **CRUD** blog posts.
+接下来我们继续完善博客合约，增加博客文章的**增查改删**功能。
 
-#### 4.3.1 Create blog post contract
+#### 4.3.1 创建博客文章合约
 
-We create another `simple_article.move` file in the `sources` directory, which stores the data type of the article and the definition of related events for CRUD operations on the article.
+我们在 `sources` 目录再创建一个 `simple_article.move` 文件，这个文件中存放文章的数据类型以及对文章进行 CRUD 操作的相关事件的定义。
 
-Define the article data type, and the article event type:
+定义文章数据类型，以及文章事件类型：
 
 ```move
 struct Article has key, store {
@@ -480,9 +480,9 @@ struct ArticleDeletedEvent has copy, store, drop {
 }
 ```
 
-The article data structure contains three fields, `version` is used to record the version number of the article, `title` is used to record the title of the article, and `body` is used to record the content of the article.
+文章数据结构包含三个字段，`version` 用来记录文章的版本号，`title` 用来记录文章标题，`body` 用来记录文章内容。
 
-Define a function to create an article:
+定义创建文章的函数：
 
 ```move
 /// Create article
@@ -512,9 +512,9 @@ public fun create_article(
 }
 ```
 
-In this function, first check whether the length of the article title and content exceeds the limit. Then create the article object, add the article object to the object store, and finally send the article creation event and return the ID of the article.
+这个函数中，先检查文章标题和内容的长度是否超过限制。然后创建文章对象，将文章对象添加到对象存储中，最后发送文章创建事件，返回文章的 ID。
 
-Then define the modification function:
+然后定义修改函数：
 
 ```move
 /// Update article
@@ -540,9 +540,9 @@ public fun update_article(
 }
 ```
 
-In this function, first check whether the length of the new article title and content exceeds the limit. Then get the article object from the object store, check if the caller is the owner of the article, and throw an exception if not. Finally, update the version number, title and content of the article object, and send an article update event.
+这个函数中，先检查新的文章标题和内容的长度是否超过限制。然后从对象存储中获取文章对象，检查调用者是否是文章的所有者，如果不是，则抛出异常。最后更新文章对象的版本号，标题和内容，发送文章更新事件。
 
-Then define the delete function:
+然后再定义删除函数：
 
 ```move
 /// Delete article
@@ -561,9 +561,9 @@ public fun delete_article(
 }
 ```
 
-In this function, first delete the article object from the object store, check whether the caller is the owner of the article, and throw an exception if not. Finally send the article delete event and destroy the article object.
+这个函数中，先从对象存储中删除文章对象，检查调用者是否是文章的所有者，如果不是，则抛出异常。最后发送文章删除事件并销毁文章对象。
 
-The complete contract code is as follows:
+完整的合约代码如下：
 
 ```move
 module simple_blog::simple_article {
@@ -687,11 +687,11 @@ module simple_blog::simple_article {
 }
 ```
 
-> The latest code can be found in the [examples/simple_blog/sources/simple_blog.move](https://github.com/rooch-network/rooch/blob/main/examples/simple_blog/sources/simple_blog.move)
+> 最新源码请参考：[examples/simple_blog/sources/simple_blog.move](https://github.com/rooch-network/rooch/blob/main/examples/simple_blog/sources/simple_blog.move)
 
-#### 4.3.2 Blog Contract Integration Article Contract
+#### 4.3.2 博客合约集成文章合约
 
-Next, we integrate the article contract in `simple_blog.move` and provide the entry function:
+接下来，我们在 `simple_blog.move` 中集成文章合约，并提供入口函数：
 
 ```move
 public entry fun create_article(
@@ -721,25 +721,25 @@ public entry fun delete_article(
 }
 ```
 
-When creating and deleting articles, update the list of articles in the blog at the same time.
+创建和删除文章的时候，同时更新博客中的文章列表。
 
-#### 4.3.3 Creating blog posts
+#### 4.3.3 创建博客文章
 
-A test article can be created by submitting a transaction using the Rooch CLI like this:
+可以像下面这样，使用 Rooch CLI 提交一个交易，创建一篇测试文章：
 
 ```shell
 rooch move run --function default::simple_blog::create_article --sender-account default --args 'string:Hello Rooch' --args "string:Unlocking infinite utility for the Bitcoin Economy"
 ```
 
-`--function` specifies to execute the `create_article` function in the `simple_blog`module published at address `0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081`, that is, create a new blog post. `--sender-account` specifies who should submit this transaction. This function requires us to pass two parameters to it, specified by `--args`, the first is the title of the article, I named it `Hello Rooch`; the second is the content of the article, I wrote the slogan of Rooch: `Unlocking infinite utility for the Bitcoin Economy`.
+`--function` 指定执行发布在 `0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081` 地址上的 `simple_blog`模块中的 `create_article` 函数，即新建一篇博客文章。`--sender-account` 指定谁来提交这个交易。这个函数要求我们必须给它传递两个参数，通过 `--args` 来指定，第一个是文章的标题，我取名为 `Hello Rooch`；第二个是文章的内容，我写上 Rooch 的标语（slogan）：`Unlocking infinite utility for the Bitcoin Economy`。
 
-The parameter passed is a string, which needs to be wrapped in quotation marks and specified through `string:`. There are single quotation marks in the content of the second parameter, so use double quotation marks to wrap it, otherwise you must use an escape character (`\`).
+参数传递的是字符串，需要使用引号将内容包裹起来，并且通过 `string:` 来显示指定，在第二个参数的内容中有单引号，所以使用双引号包裹，否则必须使用转义符（`\`）。
 
-You can freely change the content of the first parameter (`title`) and the second parameter (`body`) after `--args` to create more articles.
+你可以随意更换 `--args` 后面的第一个参数（`title`）和第二个参数（`body`）的内容，多创建几篇文章。
 
-#### 4.3.4 Query Articles
+#### 4.3.4 查询文章
 
-Now, you can get the `ObjectID` of the created article by querying the event:
+现在，你可以通过查询事件，得到已创建好的文章的 `ObjectID`：
 
 ```shell
 curl --location --request POST 'http://localhost:50051' \
@@ -752,11 +752,11 @@ curl --location --request POST 'http://localhost:50051' \
 }'
 ```
 
-Since there are many output contents, you can add a pipeline operation (` | jq '.result.data[0].decoded_event_data.value.id'`) at the end of the above command to quickly filter out the `ObjectID` of the first article.
+由于输出的内容比较多，可以在上面的命令最尾添加一个管道操作（` | jq '.result.data[0].decoded_event_data.value.id'`），来快速筛选出第一篇文章的 `ObjectID`。
 
-> Tip: Before using the `jp` command (jq - commandline JSON processor), you may need to install it first.
+> 提示：在使用 `jp` 命令（jq - commandline JSON processor）之前，你可能需要先安装它。
 
-The command after adding `jp` processing looks like this:
+添加 `jp` 处理后的命令像下面这样：
 
 ```shell
 curl --location --request POST 'http://localhost:50051' --header 'Content-Type: application/json' --data-raw '{
@@ -767,13 +767,13 @@ curl --location --request POST 'http://localhost:50051' --header 'Content-Type: 
 }' | jq '.result.data[0].decoded_event_data.value.id'
 ```
 
-The object ID of the blog that is screened through `jp` is:
+通过 `jp` 来筛选出的博客的对象 ID 为：
 
 ```shell
 "0xf3264835925cf7573b0da6a5e8b97d6051b695455b012c1d87482b6652892379"
 ```
 
-Then, you can use the Rooch CLI to query the status of the object, passing `--id` to specify the ID of the article object (replace it with the ObjectID of your article):
+然后，你可以使用 Rooch CLI 来查询对象的状态，通过 `--id` 来指定文章对象的 ID（注意替换为你的文章的 ObjectID）：
 
 ```shell
 rooch state --access-path /object/0x6067b5c1f0a6a9d059ab0e2e4fe5ce12832cc4036aa5ca451611d0dd971192e1
@@ -811,9 +811,9 @@ rooch state --access-path /object/0x6067b5c1f0a6a9d059ab0e2e4fe5ce12832cc4036aa5
 ]
 ```
 
-Pay attention to the two key-value pairs `title` and `body` in the output, and you can see that this object does 'store' the blog post you just wrote.
+注意观察输出中，`title` 和 `body` 这两个键值对，能看到这个对象确实“存储着”刚刚写的那篇博客文章。
 
-We can also use the previous command to query `MyBlog` Resource under the account:
+我们也可以用前面的命令来查询账户下的 `MyBlog` Resource：
 
 ```shell
 [joe@mx simple_blog]$ rooch state --access-path /resource/0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7/0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::simple_blog::MyBlog
@@ -837,21 +837,21 @@ We can also use the previous command to query `MyBlog` Resource under the accoun
 ]
 ```
 
-As you can see, the `articles` field in `MyBlog` stores the object ID of the article we just created.
+可以看到，`MyBlog` 中的 `articles` 字段，存储着我们刚刚创建的那篇文章的对象 ID。
 
-#### 4.3.5 Updating Articles
+#### 4.3.5 更新文章
 
-We try to update the content of an article using the `update_article` function.
+我们尝试使用 `update_article` 函数来更新文章的内容。
 
-`--function` specifies to execute the `update` function in the `simple_blog`module published at address `0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081`, that is, to update a blog post. Also need to use `--sender-account` to specify the account that will send this update article transaction. This function requires us to pass three parameters to it, specified by `--args`, the first parameter is the object ID of the article to be modified, and the latter two parameters correspond to the title and body of the article respectively.
+`--function` 指定执行发布在 `0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081` 地址上的 `simple_blog`模块中的 `update` 函数，即更新一篇博客文章。同样也需要使用 `--sender-account` 来指定发送这个更新文章交易的账户。这个函数要求我们必须给它传递三个参数，通过 `--args` 来指定，第一个参数是要修改文章的对象 ID，后面的两个参数分别对应文章的标题和正文。
 
-Change the title of the article to be `Foo` and the body of the article to be `Bar`:
+将文章的标题修改为 `Foo`，文章正文修改为 `Bar`：
 
 ```shell
 rooch move run --function default::simple_blog::update_article --sender-account default --args 'object_id:0xf3264835925cf7573b0da6a5e8b97d6051b695455b012c1d87482b6652892379' --args 'string:Foo' --args 'string:Bar'
 ```
 
-In addition to using the Rooch CLI, you can also query the state of objects by calling JSON RPC:
+除了使用 Rooch CLI，你还可以通过调用 JSON RPC 来查询对象的状态：
 
 ```shell
 curl --location --request POST 'http://127.0.0.1:50051/' --header 'Content-Type: application/json' --data-raw '{
@@ -862,7 +862,7 @@ curl --location --request POST 'http://127.0.0.1:50051/' --header 'Content-Type:
 }'
 ```
 
-In the output, it can be observed that the title and body of the article are successfully modified:
+在输出中，可以观察到文章的标题和正文已成功修改：
 
 ```json
 {
@@ -894,17 +894,17 @@ In the output, it can be observed that the title and body of the article are suc
 }
 ```
 
-#### 4.3.6 Delete article
+#### 4.3.6 删除文章
 
-A transaction can be submitted like this, calling `simple_blog::delete_article` to delete an article:
+可以这样提交一个交易，调用 `simple_blog::delete_article` 删除文章：
 
 ```shell
 rooch move run --function default::simple_blog::delete_article --sender-account default --args 'object_id:0xf3264835925cf7573b0da6a5e8b97d6051b695455b012c1d87482b6652892379'
 ```
 
-`--function` specifies to execute the `delete_article` function in the `simple_blog`module published at `0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081`, that is, to delete a blog post. Also need to use `--sender-account` to specify the account to send this delete article transaction. This function only needs to pass one parameter to it, which is the object ID corresponding to the article, specified by `--args`.
+`--function` 指定执行发布在 `0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081` 地址上的 `simple_blog`模块中的 `delete_article` 函数，即删除一篇博客文章。同样也需要使用 `--sender-account` 来指定发送这个删除文章交易的账户。这个函数只需给它传递一个参数，即文章对应的对象 ID，通过 `--args` 来指定。
 
-#### 4.3.7 Check whether the article is deleted normally
+#### 4.3.7 检查文章是否正常删除
 
 ```shell
 [joe@mx simple_blog]$ rooch state --access-path /object/0xf3264835925cf7573b0da6a5e8b97d6051b695455b012c1d87482b6652892379
@@ -914,7 +914,7 @@ rooch move run --function default::simple_blog::delete_article --sender-account 
 ]
 ```
 
-As you can see, when querying the object ID of the article, the result returns `null`. The description article has been deleted. Then query `MyBlog` Resource:
+可以看到，查询文章的对象 ID 时，结果反回 `null`。说明文章已经被删除了。再查询 `MyBlog` Resource：
 
 ```shell
 [joe@mx simple_blog]$ rooch state --access-path /resource/0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7/0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::simple_blog::MyBlog
@@ -938,13 +938,13 @@ As you can see, when querying the object ID of the article, the result returns `
 ]
 ```
 
-As you can see, the `articles` array is empty, indicating that the article list has also been updated.
+可以看到，`articles` 数组为空，说明文章列表也已经更新。
 
-## 5. Summary
+## 5. 总结
 
-At this point, I believe you have a basic understanding of how Rooch v0.1 works, how to publish contracts, and how to interact with contracts. To experience more contract examples on Rooch, see [`rooch/examples`](https://github.com/rooch-network/rooch/tree/main/examples).
+到这里，相信你已经对 Rooch v0.1 如何运行，如何发布合约，以及如何跟合约交互有了基本的了解。想要在 Rooch 上体验更多的合约例子，请参见 [`rooch/examples`](https://github.com/rooch-network/rooch/tree/main/examples)。
 
-If you want to directly experience the functions of this blog contract, you can directly [download the blog source code](https://github.com/rooch-network/rooch/archive/refs/heads/main.zip), decompress it, and switch to the root directory of the blog contract project. For the interactive method, please refer to the above.
+如果想直接体验这个博客合约的功能，可以直接[下载博客源码](https://github.com/rooch-network/rooch/archive/refs/heads/main.zip)，解压，并切换到博客合约项目的根目录，交互方式请参照上文。
 
 ```shell
 wget https://github.com/rooch-network/rooch/archive/refs/heads/main.zip

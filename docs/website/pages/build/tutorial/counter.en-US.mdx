@@ -1,4 +1,4 @@
-# Quick start
+# Counter
 
 This section will quickly introduce the development of Rooch through a counter example.
 
@@ -16,7 +16,7 @@ Before we create the counter contract program, we can use the CLI command provid
 rooch move new quick_start_counter
 ```
 
-For detailed methods, please refer to [Creating a Rooch Move Contract](./create-rooch-move-contract.en-US.mdx).
+For detailed methods, please refer to [Creating a Rooch Move Contract](../getting-started/first-contract.en-US.mdx).
 
 Next, create a `counter.move` file in the `sources` directory to write our contract code.
 
@@ -599,8 +599,8 @@ Transaction error: RPC call failed: ErrorObject { code: ServerError(-32000), mes
 
 As you can see, when we execute the `increase` function with another account, an error message will be returned, telling us that the owner of the object does not match, that is, other accounts cannot own objects owned by another account.
 
-At this point, I believe you already have a certain understanding of Rooch's object storage. During the development process, you can reasonably use resource storage and object storage solutions according to your needs. In the [`simple_blog` example](../first-blog-system.en-US.mdx), the two are combined.
+At this point, I believe you already have a certain understanding of Rooch's object storage. During the development process, you can reasonably use resource storage and object storage solutions according to your needs. In the [`simple_blog` example](./blog-demo.en-US.mdx), the two are combined.
 
 ## Summarize
 
-At this point you have learned step by step how to use Rooch to develop, deploy and call smart contracts. In Rooch, the object-oriented programming model is a very important content. To learn more about how to use it, please refer to [Objects](../../../learn/core-concepts/objects/object.en-US.mdx).
+At this point you have learned step by step how to use Rooch to develop, deploy and call smart contracts. In Rooch, the object-oriented programming model is a very important content. To learn more about how to use it, please refer to [Objects](../../learn/core-concepts/objects/object.en-US.mdx).
