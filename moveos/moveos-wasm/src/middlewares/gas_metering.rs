@@ -14,40 +14,6 @@ use wasmer_types::{
 
 type CostFunction = dyn Fn(&Operator) -> u64 + Send + Sync;
 
-#[derive(Debug)]
-pub struct GasMeter {
-    gas_limit: u64,
-    gas_used: u64,
-    charge_function_index: Option<FunctionIndex>,
-}
-
-impl GasMeter {
-    pub fn new(gas_limit: u64) -> Self {
-        Self {
-            gas_limit,
-            gas_used: 0,
-            charge_function_index: None,
-        }
-    }
-
-    pub fn reset(&mut self) {
-        self.gas_used = 0;
-    }
-
-    pub fn charge(&mut self, amount: u64) -> Result<(), RuntimeError> {
-        if self.gas_used + amount > self.gas_limit {
-            Err(RuntimeError::new("GAS limit exceeded"))
-        } else {
-            self.gas_used += amount;
-            Ok(())
-        }
-    }
-
-    pub fn used(&mut self) -> u64 {
-        self.gas_used
-    }
-}
-
 fn default_cost_function(operator: &Operator) -> u64 {
     match operator {
         Operator::LocalGet { .. } => 1,
@@ -66,14 +32,14 @@ fn default_cost_function(operator: &Operator) -> u64 {
 }
 
 pub struct GasMiddleware {
-    gas_meter: Arc<Mutex<GasMeter>>,
+    charge_function_index: Arc<Option<FunctionIndex>>
     cost_function: Arc<CostFunction>,
 }
 
 impl GasMiddleware {
-    pub fn new(gas_meter: Arc<Mutex<GasMeter>>, cost_function: Option<Arc<CostFunction>>) -> Self {
+    pub fn new(cost_function: Option<Arc<CostFunction>>) -> Self {
         Self {
-            gas_meter: gas_meter.clone(),
+            charge_function_index: Arc::new(None)
             cost_function: cost_function.unwrap_or_else(|| Arc::new(default_cost_function)),
         }
     }
@@ -82,7 +48,7 @@ impl GasMiddleware {
 impl fmt::Debug for GasMiddleware {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("GasMiddleware")
-            .field("gas_meter", &self.gas_meter)
+            .field("charge_function_index", &self.charge_function_index)
             .finish()
     }
 }
@@ -93,7 +59,7 @@ impl ModuleMiddleware for GasMiddleware {
         _index: LocalFunctionIndex,
     ) -> Box<dyn wasmer::FunctionMiddleware> {
         Box::new(GasFunctionMiddleware {
-            gas_meter: self.gas_meter.clone(),
+            charge_function_index: self.charge_function_index.clone(),
             accumulated_cost: 0,
             cost_function: self.cost_function.clone(),
         })
@@ -178,7 +144,7 @@ impl ModuleMiddleware for GasMiddleware {
 }
 
 struct GasFunctionMiddleware {
-    gas_meter: Arc<Mutex<GasMeter>>,
+    charge_function_index: Arc<Option<FunctionIndex>>,
     accumulated_cost: u64,
     cost_function: Arc<CostFunction>,
 }
