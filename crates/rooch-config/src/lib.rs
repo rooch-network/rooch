@@ -54,22 +54,20 @@ pub fn get_rooch_config_dir() -> Result<PathBuf, anyhow::Error> {
 }
 
 pub static R_OPT_NET_HELP: &str = r#"Chain Network
-    Builtin network: dev,test,main
-    Custom network format: chain_name:chain_id
+    Builtin network: local,dev,test,main
+    Custom network format: chain_id
     Such as:
-    my_chain:123 will init a new chain with id `123`.
-    Custom network first start should also set the `genesis-config` option.
-    Use rooch_generator command to generate a genesis config."#;
+    The Custom network need to use `rooch genesis init` command to init the genesis config first."#;
 
 #[derive(Clone, Debug, Parser, Default, Serialize, Deserialize)]
 pub struct RoochOpt {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
+    /// If not set, the default data dir is $HOME/.rooch
+    /// If set to `TMP`, the service will start with a temporary data store.
     pub base_data_dir: Option<PathBuf>,
 
-    /// If local chainid, start the service with a temporary data store.
-    /// All data will be deleted when the service is stopped.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
     pub chain_id: Option<RoochChainID>,
@@ -180,10 +178,12 @@ impl RoochOpt {
     pub fn new_with_default(
         base_data_dir: Option<PathBuf>,
         chain_id: Option<RoochChainID>,
+        genesis_config: Option<String>,
     ) -> Result<Self> {
         let mut opt = RoochOpt {
             base_data_dir,
             chain_id,
+            genesis_config,
             ..Default::default()
         };
         opt.init()?;
