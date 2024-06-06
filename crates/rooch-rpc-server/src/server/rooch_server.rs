@@ -21,7 +21,7 @@ use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, IndexerEventPageView, IndexerObjectStatePageView,
     IndexerObjectStateView, KeyStateView, ObjectIDVecView, ObjectStateFilterView, ObjectStateView,
-    QueryOptions, SimpleKeyStateView, StateKVView, StateOptions, TxOptions,
+    QueryOptions, StateKVView, StateOptions, TxOptions,
 };
 use rooch_rpc_api::jsonrpc_types::{
     event_view::{EventFilterView, EventView, IndexerEventView},
@@ -341,17 +341,6 @@ impl RoochAPIServer for RoochServer {
             objects_view
         };
         Ok(objects_view)
-    }
-
-    async fn get_field_states(
-        &self,
-        object_id: ObjectIDView,
-        field_key: Vec<SimpleKeyStateView>,
-        state_option: Option<StateOptions>,
-    ) -> RpcResult<Vec<Option<StateView>>> {
-        let key_states = field_key.into_iter().map(KeyState::from).collect();
-        let access_path_view =
-            AccessPathView::from(AccessPath::fields(object_id.into(), key_states));
     }
 
     async fn get_events_by_event_handle(

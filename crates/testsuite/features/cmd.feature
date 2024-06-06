@@ -20,6 +20,10 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::object::Timestamp>'"
       Then cmd: "rpc request --method rooch_getObjectStates --params '["0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9"]'"
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::Timestamp'"
+      Then cmd: "rpc request --method rooch_getFieldStates --params '["0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb", [{"key": "0x022214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb324e8a3eef828cd1fb6e9dc53244e1dac88da8810cf62583120539add3d907a5", "key_type": "0x2::object::ObjectID"}], {"decode": true, "showDisplay": true}]'"
+      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::module_store::Package>'"
+      Then cmd: "rpc request --method rooch_listFieldStates --params '["0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb", null, "5", {"decode": true, "showDisplay": true}]'"
+      Then assert: "{{$.rpc[-1].has_next_page}} == 'true'"
       Then stop the server 
     
     @serial

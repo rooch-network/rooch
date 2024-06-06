@@ -8,13 +8,13 @@ use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionW
 use crate::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
     EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
-    IndexerEventPageView, IndexerObjectStatePageView, KeyStateView, ObjectIDVecView, ObjectIDView,
+    IndexerEventPageView, IndexerObjectStatePageView, ObjectIDVecView, ObjectIDView,
     ObjectStateFilterView, ObjectStateView, QueryOptions, SimpleKeyStateView, StateOptions,
     StatePageView, StateView, StrView, StructTagView, TransactionWithInfoPageView, TxOptions,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
-use moveos_types::access_path::AccessPath;
+use moveos_types::{access_path::AccessPath, state::KeyState};
 use rooch_open_rpc_macros::open_rpc;
 use rooch_types::indexer::event::IndexerEventID;
 use rooch_types::indexer::state::IndexerStateID;
@@ -83,7 +83,12 @@ pub trait RoochAPI {
         object_id: ObjectIDView,
         field_key: Vec<SimpleKeyStateView>,
         state_option: Option<StateOptions>,
-    ) -> RpcResult<Vec<Option<StateView>>>;
+    ) -> RpcResult<Vec<Option<StateView>>> {
+        let key_states = field_key.into_iter().map(KeyState::from).collect();
+        let access_path_view =
+            AccessPathView::from(AccessPath::fields(object_id.into(), key_states));
+        self.get_states(access_path_view, state_option).await
+    }
 
     /// List Object Fields via ObjectID.
     #[method(name = "listFieldStates")]
