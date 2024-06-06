@@ -3,9 +3,7 @@
 
 use crate::errors::IndexerError;
 use rooch_types::indexer::event::IndexerEvent;
-use rooch_types::indexer::state::{
-    IndexerFieldState, IndexerFieldStateChanges, IndexerObjectState, IndexerObjectStateChanges,
-};
+use rooch_types::indexer::state::{IndexerObjectState, IndexerObjectStateChanges};
 use rooch_types::indexer::transaction::IndexerTransaction;
 
 pub trait IndexerStoreTrait: Send + Sync {
@@ -19,20 +17,6 @@ pub trait IndexerStoreTrait: Send + Sync {
     ) -> Result<(), IndexerError>;
 
     fn delete_object_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError>;
-
-    fn update_field_states(
-        &self,
-        field_state_change: IndexerFieldStateChanges,
-    ) -> Result<(), IndexerError>;
-    fn persist_or_update_field_states(
-        &self,
-        states: Vec<IndexerFieldState>,
-    ) -> Result<(), IndexerError>;
-
-    fn delete_field_states(&self, state_pks: Vec<(String, String)>) -> Result<(), IndexerError>;
-
-    fn delete_field_states_by_object_id(&self, object_ids: Vec<String>)
-        -> Result<(), IndexerError>;
 
     fn persist_transactions(
         &self,

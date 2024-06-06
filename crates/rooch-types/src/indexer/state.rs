@@ -6,12 +6,10 @@ use crate::bitcoin::utxo::UTXO;
 use crate::indexer::Filter;
 use anyhow::Result;
 use move_core_types::effects::Op;
-use move_core_types::language_storage::{StructTag, TypeTag};
+use move_core_types::language_storage::StructTag;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::{ObjectID, RawObject};
-use moveos_types::state::{
-    FieldChange, KeyState, MoveStructType, ObjectChange, State, StateChangeSet,
-};
+use moveos_types::state::{MoveStructType, ObjectChange, StateChangeSet};
 use moveos_types::state_resolver::StateResolver;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -75,52 +73,6 @@ impl IndexerObjectState {
     }
 }
 
-/// Index all Object dynamic field
-#[derive(Debug, Clone)]
-pub struct IndexerFieldState {
-    // The state object id
-    pub object_id: ObjectID,
-    // The hex of the field key state
-    pub key_hex: String,
-    // The type tag of the key
-    pub key_type: TypeTag,
-    // The type tag of the value
-    pub value_type: TypeTag,
-    // The tx order of this transaction
-    pub tx_order: u64,
-    // The state index in the tx
-    pub state_index: u64,
-    // The table item created timestamp on chain
-    pub created_at: u64,
-    // The table item updated timestamp on chain
-    pub updated_at: u64,
-}
-
-impl IndexerFieldState {
-    pub fn new_field_state(
-        key: KeyState,
-        value: State,
-        object_id: ObjectID,
-        tx_order: u64,
-        state_index: u64,
-        tx_timestamp: u64,
-        is_new: bool,
-    ) -> IndexerFieldState {
-        let key_hex = key.to_string();
-        let created_at = if is_new { tx_timestamp } else { 0 };
-        IndexerFieldState {
-            object_id,
-            key_hex,
-            key_type: key.key_type,
-            value_type: value.value_type,
-            tx_order,
-            state_index,
-
-            created_at,
-            updated_at: tx_timestamp,
-        }
-    }
-}
 #[derive(Clone, Debug, Default)]
 pub struct IndexerObjectStateChanges {
     pub new_object_states: Vec<IndexerObjectState>,
@@ -128,27 +80,15 @@ pub struct IndexerObjectStateChanges {
     pub remove_object_states: Vec<String>,
 }
 
-#[derive(Clone, Debug, Default)]
-pub struct IndexerFieldStateChanges {
-    pub new_field_states: Vec<IndexerFieldState>,
-    pub update_field_states: Vec<IndexerFieldState>,
-    // When remove table handle, first delete table handle from global states,
-    // then delete all states which belongs to the object_id from table states
-    pub remove_field_states: Vec<(String, String)>,
-    pub remove_field_states_by_object_id: Vec<String>,
-}
-
 pub fn handle_object_change(
     mut state_index_generator: u64,
     tx_order: u64,
     indexer_object_state_changes: &mut IndexerObjectStateChanges,
-    indexer_field_state_changes: &mut IndexerFieldStateChanges,
     object_id: ObjectID,
     object_change: ObjectChange,
-    tx_timestamp: u64,
     resolver: &dyn StateResolver,
 ) -> Result<u64> {
-    let ObjectChange { op, fields } = object_change;
+    let ObjectChange { op, fields: _ } = object_change;
 
     if let Some(op) = op {
         match op {
@@ -171,9 +111,6 @@ pub fn handle_object_change(
                 indexer_object_state_changes
                     .remove_object_states
                     .push(object_id.to_string());
-                indexer_field_state_changes
-                    .remove_field_states_by_object_id
-                    .push(object_id.to_string());
             }
             Op::New(value) => {
                 debug_assert!(value.is_object());
@@ -192,56 +129,6 @@ pub fn handle_object_change(
     }
 
     state_index_generator += 1;
-    for (key, change) in fields {
-        match change {
-            FieldChange::Normal(normal_change) => {
-                match normal_change.op {
-                    Op::Modify(value) => {
-                        let state = IndexerFieldState::new_field_state(
-                            key,
-                            value,
-                            object_id.clone(),
-                            tx_order,
-                            state_index_generator,
-                            tx_timestamp,
-                            false,
-                        );
-                        indexer_field_state_changes.update_field_states.push(state);
-                    }
-                    Op::Delete => {
-                        indexer_field_state_changes
-                            .remove_field_states
-                            .push((object_id.to_string(), key.to_string()));
-                    }
-                    Op::New(value) => {
-                        let state = IndexerFieldState::new_field_state(
-                            key,
-                            value,
-                            object_id.clone(),
-                            tx_order,
-                            state_index_generator,
-                            tx_timestamp,
-                            true,
-                        );
-                        indexer_field_state_changes.new_field_states.push(state);
-                    }
-                }
-                state_index_generator += 1;
-            }
-            FieldChange::Object(object_change) => {
-                state_index_generator = handle_object_change(
-                    state_index_generator,
-                    tx_order,
-                    indexer_object_state_changes,
-                    indexer_field_state_changes,
-                    key.as_object_id()?,
-                    object_change,
-                    tx_timestamp,
-                    resolver,
-                )?;
-            }
-        }
-    }
     Ok(state_index_generator)
 }
 
@@ -305,27 +192,6 @@ impl ObjectStateFilter {
 
 impl Filter<IndexerObjectState> for ObjectStateFilter {
     fn matches(&self, item: &IndexerObjectState) -> bool {
-        self.try_matches(item).unwrap_or_default()
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum FieldStateFilter {
-    /// Query field by object id.
-    ObjectId(ObjectID),
-}
-
-impl FieldStateFilter {
-    fn try_matches(&self, item: &IndexerFieldState) -> Result<bool> {
-        Ok(match self {
-            FieldStateFilter::ObjectId(object_id) => object_id == &item.object_id,
-        })
-    }
-}
-
-impl Filter<IndexerFieldState> for FieldStateFilter {
-    fn matches(&self, item: &IndexerFieldState) -> bool {
         self.try_matches(item).unwrap_or_default()
     }
 }

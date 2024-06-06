@@ -15,21 +15,19 @@ use anyhow::{Error, Result};
 use chrono::{DateTime, Local};
 use clap::Parser;
 
-use moveos_types::state::{KeyState, State};
+use moveos_types::state::State;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_indexer::indexer_reader::IndexerReader;
 use rooch_indexer::store::traits::IndexerStoreTrait;
 use rooch_indexer::IndexerStore;
 use rooch_types::error::{RoochError, RoochResult};
-use rooch_types::indexer::state::{IndexerFieldState, IndexerObjectState};
+use rooch_types::indexer::state::IndexerObjectState;
 use rooch_types::rooch_network::RoochChainID;
 
 use crate::commands::indexer::commands::init_indexer;
-use crate::commands::statedb::commands::export::ExportID;
 use crate::commands::statedb::commands::import::parse_state_data_from_csv_line;
 use crate::commands::statedb::commands::{
-    GLOBAL_STATE_TYPE_FIELD, GLOBAL_STATE_TYPE_OBJECT, GLOBAL_STATE_TYPE_PREFIX,
-    GLOBAL_STATE_TYPE_ROOT,
+    GLOBAL_STATE_TYPE_OBJECT, GLOBAL_STATE_TYPE_PREFIX, GLOBAL_STATE_TYPE_ROOT,
 };
 
 /// Rebuild indexer
@@ -94,13 +92,11 @@ impl RebuildCommand {
 
 struct BatchUpdates {
     object_states: Vec<IndexerObjectState>,
-    field_states: Vec<IndexerFieldState>,
 }
 
 fn produce_updates(tx: SyncSender<BatchUpdates>, input: PathBuf, batch_size: usize) -> Result<()> {
     let mut csv_reader = BufReader::new(File::open(input).unwrap());
     let mut last_state_type = None;
-    let mut last_export_id = None;
 
     // set genesis tx_order and state_index_generator
     let tx_order: u64 = 0;
@@ -109,31 +105,24 @@ fn produce_updates(tx: SyncSender<BatchUpdates>, input: PathBuf, batch_size: usi
     loop {
         let mut updates = BatchUpdates {
             object_states: vec![],
-            field_states: vec![],
         };
 
         for line in csv_reader.by_ref().lines().take(batch_size) {
             let line = line?;
 
             if line.starts_with(GLOBAL_STATE_TYPE_PREFIX) {
-                let (c1, c2) = parse_state_data_from_csv_line(&line)?;
+                let (c1, _c2) = parse_state_data_from_csv_line(&line)?;
                 let state_type = c1;
-                let export_id = ExportID::from_str(&c2)?;
                 last_state_type = Some(state_type);
-                last_export_id = Some(export_id);
                 continue;
             }
 
-            let (c1, c2) = parse_state_data_from_csv_line(&line)?;
-            let key_state = KeyState::from_str(&c1)?;
+            let (_c1, c2) = parse_state_data_from_csv_line(&line)?;
             let state = State::from_str(&c2)?;
 
             let state_type = last_state_type
                 .clone()
                 .expect("Last state type should have value");
-            let export_id = last_export_id
-                .clone()
-                .expect("Last export id should have value");
 
             if state_type.eq(GLOBAL_STATE_TYPE_OBJECT) || state_type.eq(GLOBAL_STATE_TYPE_ROOT) {
                 let raw_object = state.as_raw_object()?;
@@ -144,21 +133,9 @@ fn produce_updates(tx: SyncSender<BatchUpdates>, input: PathBuf, batch_size: usi
                 )?;
                 state_index_generator += 1;
                 updates.object_states.push(state);
-            } else if state_type.eq(GLOBAL_STATE_TYPE_FIELD) {
-                let state = IndexerFieldState::new_field_state(
-                    key_state,
-                    state,
-                    export_id.object_id.clone(),
-                    tx_order,
-                    state_index_generator,
-                    export_id.timestamp,
-                    true,
-                );
-                state_index_generator += 1;
-                updates.field_states.push(state);
             };
         }
-        if updates.object_states.is_empty() && updates.field_states.is_empty() {
+        if updates.object_states.is_empty() {
             break;
         }
         tx.send(updates).expect("failed to send updates");
@@ -176,7 +153,6 @@ fn apply_updates(
     while let Ok(batch) = rx.recv() {
         let loop_start_time = SystemTime::now();
         indexer_store.persist_or_update_object_states(batch.object_states)?;
-        indexer_store.persist_or_update_field_states(batch.field_states)?;
 
         println!("This bacth cost: {:?}", loop_start_time.elapsed().unwrap());
     }

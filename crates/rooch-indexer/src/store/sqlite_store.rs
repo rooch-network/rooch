@@ -6,14 +6,14 @@ use anyhow::Result;
 use diesel::QueryDsl;
 use diesel::{ExpressionMethods, RunQueryDsl};
 use rooch_types::indexer::event::IndexerEvent;
-use rooch_types::indexer::state::{IndexerFieldState, IndexerObjectState};
+use rooch_types::indexer::state::IndexerObjectState;
 use rooch_types::indexer::transaction::IndexerTransaction;
 use tracing::log;
 
 use crate::models::events::StoredEvent;
-use crate::models::states::{StoredFieldState, StoredObjectState};
+use crate::models::states::StoredObjectState;
 use crate::models::transactions::StoredTransaction;
-use crate::schema::{events, field_states, object_states, transactions};
+use crate::schema::{events, object_states, transactions};
 use crate::utils::escape_sql_string;
 use crate::{get_sqlite_pool_connection, SqliteConnectionPool};
 
@@ -118,124 +118,6 @@ impl SqliteIndexerStore {
         .execute(&mut connection)
         .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
         .context("Failed to delete global states to SQLiteDB")?;
-
-        Ok(())
-    }
-
-    pub fn persist_or_update_field_states(
-        &self,
-        states: Vec<IndexerFieldState>,
-    ) -> Result<(), IndexerError> {
-        if states.is_empty() {
-            return Ok(());
-        }
-
-        let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
-        let states = states
-            .into_iter()
-            .map(StoredFieldState::from)
-            .collect::<Vec<_>>();
-
-        // Diesel for SQLite don't support batch update yet, so implements batch update directly via raw SQL
-        let values_clause = states
-            .into_iter()
-            .map(|state| {
-                format!(
-                    "('{}', '{}', '{}', '{}', {}, {}, {}, {})",
-                    escape_sql_string(state.object_id),
-                    escape_sql_string(state.key_hex),
-                    escape_sql_string(state.key_type),
-                    escape_sql_string(state.value_type),
-                    state.tx_order,
-                    state.state_index,
-                    state.created_at,
-                    state.updated_at,
-                )
-            })
-            .collect::<Vec<_>>()
-            .join(",");
-        let query = format!(
-            "
-                INSERT INTO field_states (object_id, key_hex, key_type, value_type, tx_order, state_index, created_at, updated_at) \
-                VALUES {} \
-                ON CONFLICT (object_id, key_hex) DO UPDATE SET \
-                value_type = excluded.value_type, \
-                tx_order = excluded.tx_order, \
-                state_index = excluded.state_index, \
-                updated_at = excluded.updated_at
-            ",
-            values_clause
-        );
-
-        // Execute the raw SQL query
-        diesel::sql_query(query.clone())
-            .execute(&mut connection)
-            .map_err(|e| {
-                log::error!("Upsert table states Executing Query error: {}", query);
-                IndexerError::SQLiteWriteError(e.to_string())
-            })
-            .context("Failed to write or update table states to SQLiteDB")?;
-
-        Ok(())
-    }
-
-    pub fn delete_field_states(
-        &self,
-        state_pks: Vec<(String, String)>,
-    ) -> Result<(), IndexerError> {
-        if state_pks.is_empty() {
-            return Ok(());
-        }
-
-        let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
-        // Diesel for SQLite don't support batch delete on composite primary key yet, so implements batch delete directly via raw SQL
-        let values_clause = state_pks
-            .into_iter()
-            .map(|pk| {
-                format!(
-                    "('{}', '{}')",
-                    escape_sql_string(pk.0),
-                    escape_sql_string(pk.1),
-                )
-            })
-            .collect::<Vec<_>>()
-            .join(",");
-
-        let query = format!(
-            "
-                DELETE FROM field_states \
-                WHERE (object_id, key_hex) IN ({})
-            ",
-            values_clause
-        );
-
-        // Execute the raw SQL query
-        diesel::sql_query(query.clone())
-            .execute(&mut connection)
-            .map_err(|e| {
-                log::error!("Delete field states Executing Query error: {}", query);
-                IndexerError::SQLiteWriteError(e.to_string())
-            })
-            .context("Failed to delete field states to SQLiteDB")?;
-
-        Ok(())
-    }
-
-    pub fn delete_field_states_by_object_id(
-        &self,
-        object_ids: Vec<String>,
-    ) -> Result<(), IndexerError> {
-        if object_ids.is_empty() {
-            return Ok(());
-        }
-
-        let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
-        diesel::delete(
-            field_states::table.filter(field_states::object_id.eq_any(object_ids.as_slice())),
-        )
-        .execute(&mut connection)
-        .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
-        .context("Failed to delete table states by table handles to SQLiteDB")?;
 
         Ok(())
     }

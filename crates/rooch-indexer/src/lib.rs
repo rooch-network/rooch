@@ -10,9 +10,7 @@ use diesel::sqlite::SqliteConnection;
 use errors::IndexerError;
 use once_cell::sync::Lazy;
 use rooch_types::indexer::event::IndexerEvent;
-use rooch_types::indexer::state::{
-    IndexerFieldState, IndexerFieldStateChanges, IndexerObjectState, IndexerObjectStateChanges,
-};
+use rooch_types::indexer::state::{IndexerObjectState, IndexerObjectStateChanges};
 use rooch_types::indexer::transaction::IndexerTransaction;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
@@ -37,7 +35,6 @@ pub type IndexerTableName = &'static str;
 pub const INDEXER_EVENTS_TABLE_NAME: IndexerTableName = "events";
 pub const INDEXER_OBJECT_STATES_TABLE_NAME: IndexerTableName = "object_states";
 // pub const INDEXER_TABLE_CHANGE_SETS_TABLE_NAME: IndexerTableName = "object_changes";
-pub const INDEXER_FIELD_STATES_TABLE_NAME: IndexerTableName = "field_states";
 pub const INDEXER_TRANSACTIONS_TABLE_NAME: IndexerTableName = "transactions";
 
 /// Please note that adding new indexer table needs to be added in vec simultaneously.
@@ -46,7 +43,6 @@ static INDEXER_VEC_TABLE_NAME: Lazy<Vec<IndexerTableName>> = Lazy::new(|| {
         INDEXER_EVENTS_TABLE_NAME,
         INDEXER_OBJECT_STATES_TABLE_NAME,
         // INDEXER_TABLE_CHANGE_SETS_TABLE_NAME,
-        INDEXER_FIELD_STATES_TABLE_NAME,
         INDEXER_TRANSACTIONS_TABLE_NAME,
     ]
 });
@@ -153,41 +149,6 @@ impl IndexerStoreTrait for IndexerStore {
     fn delete_object_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError> {
         self.get_sqlite_store(INDEXER_OBJECT_STATES_TABLE_NAME)?
             .delete_object_states(state_pks)
-    }
-
-    fn update_field_states(
-        &self,
-        mut field_state_change: IndexerFieldStateChanges,
-    ) -> Result<(), IndexerError> {
-        let mut field_states_new_and_update = field_state_change.new_field_states;
-        field_states_new_and_update.append(&mut field_state_change.update_field_states);
-        self.get_sqlite_store(INDEXER_FIELD_STATES_TABLE_NAME)?
-            .persist_or_update_field_states(field_states_new_and_update)?;
-        self.get_sqlite_store(INDEXER_FIELD_STATES_TABLE_NAME)?
-            .delete_field_states(field_state_change.remove_field_states)?;
-        self.get_sqlite_store(INDEXER_FIELD_STATES_TABLE_NAME)?
-            .delete_field_states_by_object_id(field_state_change.remove_field_states_by_object_id)
-    }
-
-    fn persist_or_update_field_states(
-        &self,
-        states: Vec<IndexerFieldState>,
-    ) -> Result<(), IndexerError> {
-        self.get_sqlite_store(INDEXER_FIELD_STATES_TABLE_NAME)?
-            .persist_or_update_field_states(states)
-    }
-
-    fn delete_field_states(&self, state_pks: Vec<(String, String)>) -> Result<(), IndexerError> {
-        self.get_sqlite_store(INDEXER_FIELD_STATES_TABLE_NAME)?
-            .delete_field_states(state_pks)
-    }
-
-    fn delete_field_states_by_object_id(
-        &self,
-        object_ids: Vec<String>,
-    ) -> Result<(), IndexerError> {
-        self.get_sqlite_store(INDEXER_FIELD_STATES_TABLE_NAME)?
-            .delete_field_states_by_object_id(object_ids)
     }
 
     fn persist_transactions(

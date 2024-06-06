@@ -33,19 +33,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    field_states (object_id, key_hex) {
-        object_id -> Text,
-        key_hex -> Text,
-        key_type -> Text,
-        value_type -> Text,
-        tx_order -> BigInt,
-        state_index -> BigInt,
-        created_at -> BigInt,
-        updated_at -> BigInt,
-    }
-}
-
-diesel::table! {
     transactions (tx_order) {
         tx_order -> BigInt,
         tx_hash -> Text,
@@ -64,4 +51,4 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(events, object_states, field_states, transactions,);
+diesel::allow_tables_to_appear_in_same_query!(events, object_states, transactions,);
