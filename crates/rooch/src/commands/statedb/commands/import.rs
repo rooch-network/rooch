@@ -24,7 +24,10 @@ use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{KeyState, State};
 use moveos_types::state_resolver::StatelessResolver;
 use rooch_config::R_OPT_NET_HELP;
+use rooch_types::bitcoin::ord::InscriptionStore;
+use rooch_types::bitcoin::utxo::BitcoinUTXOStore;
 use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::framework::address_mapping::AddressMappingWrapper;
 use rooch_types::rooch_network::RoochChainID;
 use smt::{TreeChangeSet, UpdateSet};
 
@@ -291,4 +294,28 @@ where
 pub fn apply_nodes(moveos_store: &MoveOSStore, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
     moveos_store.statedb.node_store.write_nodes(nodes)?;
     Ok(())
+}
+
+pub fn init_import_job(
+    base_data_dir: Option<PathBuf>,
+    chain_id: Option<RoochChainID>,
+) -> (RootObjectEntity, MoveOSStore, SystemTime) {
+    let start_time = SystemTime::now();
+    let datetime: DateTime<Local> = start_time.into();
+
+    let (root, moveos_store) = init_statedb(base_data_dir.clone(), chain_id.clone()).unwrap();
+    let utxo_store_id = BitcoinUTXOStore::object_id();
+    let address_mapping_id = AddressMappingWrapper::mapping_object_id();
+    let reverse_mapping_object_id = AddressMappingWrapper::reverse_mapping_object_id();
+    let inscription_store_id = InscriptionStore::object_id();
+
+    println!("task progress started at {}", datetime,);
+    println!("root object: {:?}", root);
+    println!("utxo_store_id: {:?}", utxo_store_id);
+    println!(
+        "address_mapping_id: {:?}, reverse_mapping_object_id {:?}",
+        address_mapping_id, reverse_mapping_object_id
+    );
+    println!("inscription_store_id: {:?}", inscription_store_id);
+    (root, moveos_store, start_time)
 }

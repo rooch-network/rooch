@@ -14,6 +14,7 @@ use std::sync::Arc;
 use tracing::info;
 
 pub mod export;
+pub mod genesis_btc;
 pub mod genesis_utxo;
 pub mod import;
 
