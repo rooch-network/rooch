@@ -1,0 +1,73 @@
+# Rooch StarTrek Q&A
+
+## 概念相关
+
+### Rooch 跟 Bitcoin 是什么关系？
+
+Rooch 是比特币二层（Layer2），扩展比特币的应用生态，借助 Move 语言的资产安全优势，开启比特币经济的无限可能。
+
+### 有测试网吗？
+
+目前 Rooch 已经上线测试网，`devnet` 和 `testnet` 网络，`devnet` 会定期清理数据，`testnet` 将作为永久激励测试网。
+
+关于 Rooch 三种网络的详细使用，请参考[连接 Rooch](../../build/getting-started/connect-to-rooch)。
+
+目前 Rooch 发布的发行版可以在 [GitHub release 页面下载](https://github.com/rooch-network/rooch/releases)
+
+### Rooch 与 Aptos/Sui 的区别？
+
+都使用 Move 语言进行智能合约编程，Rooch 是 BTC L2，属于应用扩展层。Aptos/Sui 是公链更 BTC 属于同一层级。
+
+### 一般用什么钱包？
+
+Rooch 作为 BTC L2 需要使用 Bitcoin 相关的钱包，常用的有 UniSat 和 OKX。
+
+目前 Rooch Portal 仅支持 UniSat，后续将支持更多钱包，详细使用请参考[Rooch Portal](https://rooch.network/zh-CN/learn/miscellaneous/portal)。
+
+### Unisat 怎么切换测试网？
+
+在 `设置 -> Network` 可以切换，`LIVENET` 为比特币主网，`TESTNET` 为比特币测试网。
+
+### 测试网以什么开头，用什么类型的比特币地址？
+
+Rooch 使用 Taproot 类型的比特币地址，以 `tb1p` 开头。
+
+### Bitcoin 主网和测试网地址不一样？
+
+不一样，但是可以转换。
+
+## 技术相关
+
+### Rooch Move 与 Aptos Move / Sui Move 区别？
+
+Rooch 的 Move 是基于 [Core Move](https://github.com/move-language/move) 修改的版本，跟 Aptos、Sui 都有不同，详细的使用可以参考 [Counter quick start](../../build/tutorial/counter) 来详细了解 Rooch Move 的用法。
+
+参考文档：
+
+- [Rooch Object](https://rooch.network/zh-CN/learn/core-concepts/objects/object)
+- [Rooch Framework 源码](https://github.com/rooch-network/rooch/tree/main/frameworks)
+
+### Move 怎么搞比特币二层？
+
+### BTC 资产与 Rooch 资产问题
+
+Q：BTC 资产仓库变成 Rooch 资产之后可以改变他的状态或者内容吗？比如再套一层之类的，如果可以改变，那返回的时候是不是也要考虑需要转换成原始资产模式返回？
+
+A：把 BTC 资产变成 Move 的 Object，可以通过动态字段往里面写状态。
+
+Q：资产的处理，比如 BTC 资产如果过来，我们想对资产进行更多的处理的时候，比如加一些标记，那这个资产回到 BTC 的时候是不是需要有额外的处理？
+
+A：关于这方面，[资产跃迁](https://rooch.network/zh-CN/learn/in-depth-tech/client-side-validation.zh-CN#%E8%B5%84%E4%BA%A7%E8%B7%83%E8%BF%81%E5%8D%8F%E8%AE%AEasset-leap-protocol)的文档有详细介绍。
+
+### 关于 Rooch 的 Bitcoin 扩展方案概述看这两篇博客
+
+1. [Stackable L2 — 一种新的区块链扩容方案](https://rooch.network/zh-CN/blog/stackable-l2)
+2. [Rooch Network - Bitcoin 的应用层](https://rooch.network/zh-CN/blog/the-application-layer-of-bitcoin)
+
+### 如何用 Move 针对 Bitcoin 编程以及例子参看文档
+
+- [扩展 Bitcoin](https://rooch.network/zh-CN/build/bitcoin)
+
+## 相关链接
+
+**[Website](https://rooch.network/) | [Discord](https://discord.com/invite/rooch) | [Twitter](https://x.com/RoochNetwork) | [Telegram](https://t.me/roochnetwork) | [Github](https://github.com/rooch-network/)**
