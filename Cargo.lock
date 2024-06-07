@@ -3769,6 +3769,7 @@ version = "0.5.0"
 dependencies = [
  "anyhow",
  "bcs",
+ "bitcoin-move",
  "clap 4.5.4",
  "framework-builder",
  "framework-types",
@@ -3779,6 +3780,7 @@ dependencies = [
  "moveos-stdlib",
  "moveos-types",
  "once_cell",
+ "rooch-framework",
  "serde 1.0.202",
  "tracing",
  "tracing-subscriber",
@@ -6485,6 +6487,7 @@ dependencies = [
  "fastcrypto",
  "hex",
  "itertools 0.10.5",
+ "libc",
  "linked-hash-map",
  "log",
  "move-binary-format",
@@ -6615,7 +6618,9 @@ dependencies = [
  "rand 0.8.5",
  "serde 1.0.202",
  "serde_json",
+ "tracing",
  "wasmer",
+ "wasmer-types",
 ]
 
 [[package]]

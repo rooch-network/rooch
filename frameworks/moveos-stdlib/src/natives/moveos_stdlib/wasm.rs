@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use log::debug;
+use log::{debug, warn};
 use std::collections::VecDeque;
 use std::ffi::CString;
 use std::ops::Deref;
@@ -41,7 +41,9 @@ pub const E_CBOR_UNMARSHAL_FAILED: u64 = 14;
 pub const E_GET_INSTANCE_POOL_FAILED: u64 = 15;
 pub const E_UNPACK_STRUCT_FAILED: u64 = 16;
 pub const E_WASM_INSTANCE_CREATION_FAILED: u64 = 17;
-pub const E_WASM_REMOVE_INSTANCE_FAILED: u64 = 18;
+pub const E_WASM_INSERT_POOL_FAILED: u64 = 18;
+pub const E_WASM_REMOVE_INSTANCE_FAILED: u64 = 19;
+pub const E_WASM_PUT_DATA_ON_STACK_FAILED: u64 = 20;
 pub const E_VM_ERROR: u64 = 99;
 
 #[derive(Debug, Clone)]
@@ -75,14 +77,27 @@ fn native_create_wasm_instance(
     }
 
     let wasm_bytes = pop_arg!(args, Vec<u8>);
-    let (instance_id, error_code) = create_wasm_instance(&wasm_bytes)
-        .map(|instance| {
+
+    let (instance_id, error_code) = match create_wasm_instance(&wasm_bytes) {
+        Ok(instance) => {
             match insert_wasm_instance(instance) {
                 Ok(id) => (id, 0), // No error
-                Err(_) => (0, E_WASM_INSTANCE_CREATION_FAILED),
+                Err(e) => {
+                    warn!("insert_wasm_instance_error: {:?}", &e);
+                    (0, E_WASM_INSERT_POOL_FAILED)
+                }
             }
-        })
-        .unwrap_or((0, E_WASM_INSTANCE_CREATION_FAILED));
+        }
+        Err(e) => {
+            warn!("create_wasm_instance_error: {:?}", &e);
+            (0, E_WASM_INSTANCE_CREATION_FAILED)
+        }
+    };
+
+    debug!(
+        "native_create_wasm_instance result: instance_id:{:?}, error_code:{:?}",
+        &instance_id, &error_code
+    );
 
     let mut cost = gas_params.base_create_instance;
     cost += gas_params.per_byte_instance * NumBytes::new(wasm_bytes.len() as u64);
@@ -306,8 +321,15 @@ fn native_create_wasm_args_in_memory(
                 arg_buffer.append(&mut c_arg.into_bytes_with_nul());
                 let buffer_final_ptr = match put_data_on_stack(instance, arg_buffer.as_slice()) {
                     Ok(v) => v,
-                    Err(_) => {
-                        return build_err(gas_params.base_create_args, E_WASM_EXECUTION_FAILED)
+                    Err(e) => {
+                        warn!(
+                            "native_create_wasm_args_in_memory->put_data_on_stack error:{:?}",
+                            &e
+                        );
+                        return build_err(
+                            gas_params.base_create_args,
+                            E_WASM_PUT_DATA_ON_STACK_FAILED,
+                        );
                     }
                 };
 
@@ -330,14 +352,14 @@ fn native_create_wasm_args_in_memory(
 #[derive(Debug, Clone)]
 pub struct WASMExecuteGasParameters {
     pub base_create_execution: InternalGas,
-    pub per_byte_execution_result: InternalGasPerByte,
+    pub per_execution_point: InternalGasPerByte,
 }
 
 impl WASMExecuteGasParameters {
     pub fn zeros() -> Self {
         Self {
             base_create_execution: 0.into(),
-            per_byte_execution_result: 0.into(),
+            per_execution_point: 0.into(),
         }
     }
 }
@@ -373,7 +395,7 @@ fn native_execute_wasm_function(
             NativeResult::OutOfGas { partial_cost } => Ok(NativeResult::OutOfGas { partial_cost }),
         },
         PartialVMResult::Err(err) => {
-            debug!("execute_wasm_function_inner vm_error: {:?}", err);
+            warn!("execute_wasm_function_inner vm_error: {:?}", err);
 
             Ok(NativeResult::Success {
                 cost: gas_params.base_create_execution,
@@ -403,13 +425,19 @@ fn execute_wasm_function_inner(
     let instance_pool = get_instance_pool();
     let mut pool_object = match instance_pool.lock() {
         Ok(v) => v,
-        Err(_) => {
+        Err(e) => {
+            warn!(
+                "execute_wasm_function_inner->instance_pool_lock_error: {:?}",
+                &e
+            );
+
             return Ok(NativeResult::err(
                 gas_params.base_create_execution,
                 E_GET_INSTANCE_POOL_FAILED,
-            ))
+            ));
         }
     };
+
     let ret = match pool_object.get_mut(&instance_id) {
         None => Ok(NativeResult::err(
             gas_params.base_create_execution,
@@ -422,12 +450,32 @@ fn execute_wasm_function_inner(
                     .as_str(),
             ) {
                 Ok(calling_function) => {
+                    let mut gas_meter = instance.gas_meter.lock().unwrap();
+                    gas_meter.reset();
+                    drop(gas_meter);
+
                     let mut wasm_func_args = Vec::new();
                     for arg in func_args.iter() {
                         wasm_func_args.push(wasmer::Value::I32(*arg as i32));
                     }
 
                     // TODO: check the length of arguments for the function calling
+
+                    let trap_handler: Box<
+                        dyn Fn(libc::c_int, *const libc::siginfo_t, *const libc::c_void) -> bool
+                            + Send
+                            + Sync
+                            + 'static,
+                    > = Box::new(|signum, siginfo, ctx| {
+                        warn!(
+                            "Trap handler called, signum:{:?}, siginfo:{:?}, context:{:?}",
+                            signum, siginfo, ctx
+                        );
+                        false
+                    });
+
+                    // Set trap handler
+                    instance.store.set_trap_handler(Some(trap_handler));
 
                     match calling_function.call(&mut instance.store, wasm_func_args.as_slice()) {
                         Ok(ret) => {
@@ -451,25 +499,40 @@ fn execute_wasm_function_inner(
                             };
                             let ret_val = Value::u64(offset as u64);
 
+                            let mut gas_meter = instance.gas_meter.lock().unwrap();
+                            let gas_used = gas_meter.used();
+
+                            debug!("execute_wasm_function_inner->gas_used: {:?}", gas_used);
+
                             let mut cost = gas_params.base_create_execution;
-                            cost += gas_params.per_byte_execution_result
-                                * NumBytes::new(instance.bytecode.len() as u64);
+                            cost += gas_params.per_execution_point * NumBytes::new(gas_used);
 
                             Ok(NativeResult::Success {
                                 cost,
                                 ret_vals: smallvec![ret_val],
                             })
                         }
-                        Err(_) => Ok(NativeResult::err(
-                            gas_params.base_create_execution,
-                            E_WASM_EXECUTION_FAILED,
-                        )),
+                        Err(err) => {
+                            warn!(
+                                "execute_wasm_function_inner->calling_function_error:{:?}",
+                                &err
+                            );
+
+                            Ok(NativeResult::err(
+                                gas_params.base_create_execution,
+                                E_WASM_EXECUTION_FAILED,
+                            ))
+                        }
                     }
                 }
-                Err(_) => Ok(NativeResult::err(
-                    gas_params.base_create_execution,
-                    E_WASM_FUNCTION_NOT_FOUND,
-                )),
+                Err(err) => {
+                    warn!("execute_wasm_function_inner->get_function_error:{:?}", &err);
+
+                    Ok(NativeResult::err(
+                        gas_params.base_create_execution,
+                        E_WASM_FUNCTION_NOT_FOUND,
+                    ))
+                }
             }
         }
     };
