@@ -35,16 +35,16 @@ rooch_framework = "0x3"
 
 ```move
 module hello_rooch::hello_rooch {
+    use moveos_std::account;
     use std::string;
-    use moveos_std::context::{Self, Context};
 
     struct HelloMessage has key {
         text: string::String
     }
 
-    entry fun say_hello(ctx: &mut Context, owner: &signer) {
+    entry fun say_hello(owner: &signer) {
         let hello = HelloMessage { text: string::utf8(b"Hello Rooch!") };
-        context::move_resource_to(ctx, owner, hello);
+        account::move_resource_to(owner, hello);
     }
 }
 ```
