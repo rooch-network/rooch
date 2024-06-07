@@ -13,11 +13,11 @@ interface SessionKeyModalProps {
 }
 
 export const SessionKeyModal: React.FC<SessionKeyModalProps> = ({
-                                                                  isOpen,
-                                                                  scopes,
-                                                                  onAuthorize,
-                                                                  error,
-                                                                }) => {
+  isOpen,
+  scopes,
+  onAuthorize,
+  error,
+}) => {
   const [loading, setLoading] = useState(false)
 
   const onAuthorizeWrapper = async () => {
@@ -36,12 +36,11 @@ export const SessionKeyModal: React.FC<SessionKeyModalProps> = ({
       <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg shadow-lg max-w-sm w-full relative">
         <h2 className="text-lg font-bold mb-4">Session Authorize</h2>
         <p className="text-sm text-muted-foreground mb-2">
-          The current session does not exist or has expired. Please authorize the creation of a new session.
+          The current session does not exist or has expired. Please authorize the creation of a new
+          session.
         </p>
         {error && (
-          <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">
-            {error}
-          </div>
+          <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-4 text-sm">{error}</div>
         )}
         <div className="bg-zinc-700 p-4 rounded-lg">
           {/* SCOPE */}

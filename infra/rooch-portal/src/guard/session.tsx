@@ -39,7 +39,7 @@ export const SessionGuard = (props: SessionGuardProps) => {
 
     setOpen(
       sessionKey === null &&
-      navItems().find((item) => s.pathname.startsWith(item.path) && item.auth) !== undefined,
+        navItems().find((item) => s.pathname.startsWith(item.path) && item.auth) !== undefined,
     )
   }, [isConnected, s, sessionKey])
 
@@ -52,7 +52,9 @@ export const SessionGuard = (props: SessionGuardProps) => {
     })
 
     if (result === null) {
-      setError('Authorization failed due to insufficient gas fees. Please ensure you have enough gas fees.')
+      setError(
+        'Authorization failed due to insufficient gas fees. Please ensure you have enough gas fees.',
+      )
     }
   }
 
