@@ -53,7 +53,10 @@ jobs:
           echo "SQLITE3_LIB_DIR=C:\ProgramData\chocolatey\lib\SQLite\tools" >> $GITHUB_ENV
 
       - name: Install Protoc
-        uses: arduino/setup-protoc@v2
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{secrets.GITHUB_TOKEN}}
+
       - name: build for ${{ matrix.platform }}
         uses: actions-rs/cargo@v1
         with:
