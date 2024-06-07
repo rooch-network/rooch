@@ -2,7 +2,10 @@
 
 import { Callout, FileTree } from 'nextra/components'
 
-Rooch 中的 Object 是一种箱子（Box）模式的 Object。创建一个 Object 相当于在 Object Storage 空间中创建了一个箱子，可以将类型 `T` 的实例封装在箱子中，`ObjectID` 是这个箱子的地址。
+
+Rooch 中的 Object 是一种箱子（Box）模式的 Object。创建一个 Object 相当于在状态空间中创建了一个箱子，可以将类型 `T` 的实例封装在箱子中，而 `ObjectID` 是这个箱子的地址。此外，这个箱子还支持动态添加状态，即 Object 的动态字段特性。
+
+如果我们将智能合约的状态空间比作程序的堆内存，Object 类似于一个智能指针，提供了对状态的引用和操作，以及生命周期的管理。
 
 ## Object 的所有权
 

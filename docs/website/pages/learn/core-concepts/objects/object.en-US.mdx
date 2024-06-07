@@ -2,7 +2,9 @@
 
 import { Callout, FileTree } from 'nextra/components'
 
-The Object in Rooch implements a Box (boxing) pattern. Creating an Object is like creating a box in the Object Storage space. You can encapsulate an instance of type `T` in this box, and the `ObjectID` is the address of this box.
+In Rooch, an Object is akin to a box model. Creating an Object is equivalent to creating a box in the state space, encapsulating an instance of type `T` within it, with `ObjectID` serving as the address of this box. Moreover, this box supports the dynamic addition of states, which is the dynamic field feature of an Object.
+
+If we consider the state space of smart contracts as analogous to the heap memory of a program, an Object is similar to a smart pointer, providing references and operations on the state, as well as lifecycle management.
 
 ## Ownership of Object
 

@@ -61,16 +61,17 @@ Move 的全局存储指令都是基于用户的，获取一个资源必须先知
 4. 互操作友好原则。外部系统可以方便地访问到合约定义的数据结构，同时也可以方便地获取到存储证明。
 5. 所有权明确原则。所有的存储数据所有权明确，合约的执行平台、合约开发者和用户三者之间的关系明确。
 
-## 设计方案
+## 方案设计
 
 ![Storage Abstraction](/docs/rooch-design-storage-abstraction.svg)
 
-1. `RawTable` 提供最底层的 Key-Value 存储接口，合约状态变更最终都统一为 `RawTable` 的 Key-Value 变更集。
-2. 基于 `RawTable` 实现 `Table<K,V>`，对 Key 和 Value 的类型进行约束。
-3. 基于 `RawTable` 实现 `TypeTable`，以 Value 的类型为 Key 的存储结构。
-4. 基于 `RawTable` 实现 `StorageContext`，提供 Object 的存储能力。
-5. 基于 `TypeTable` 和 `Table` 实现 `ResourceTable` 和 `ModuleTable`，封装为 `AccountStorage`，提供 Move 的用户空间的存储接口，用于替代 Move 的全局存储指令。同时，`AccountStorage` 也提供了在合约中操作模块（Module）的接口，方便未来在合约中定义合约的升级逻辑。
-6. 开发者可以基于以上存储结构，封装自己应用专用的存储接口。
+前面我们提到，智能合约需要给应用提供状态管理的接口。我们认为智能合约的状态管理应该像堆内存操作一样简单，但有明确的所有权。在 Rooch 中，[Object](./object) 是状态存储的基本单元。Object 类似于一个“智能指针”，保存一个状态空间的地址，同时也代表这块状态空间的所有权。
+
+然后我们通过 Object 以及 Object 提供的动态字段，封装出上层的存储数据结构，`Table`, `TypeTable`, `Bag` 等。在 Rooch 中，`Account` 也是一个 Object，用户的 `Resource` 保存在 `Object<Account>` 的动态字段中。这样，我们可以通过 `account` 模块提供的方法，替代了 Move 的全局存储指令，实现了 Object 模式和 `Account` Resource 模式的统一。
+
+在 Rooch 中，`ModuleStore` 是个特殊的 Object，它保存了所有的用户部署的 `Package`。每个 `Package` 都是 `ModuleStore` 子 Object。而每个 `Package` 包含了多个 `Module`，`Module` 是 `Package` Object 的动态字段。
+
+而基于这样的分层对象模型，应用可以设计出 `AppSpecificStorage`。它可以让应用的状态都保存在同一个 Object 状态空间里，而不同应用的状态空间可以分布在不同的节点上，这是 [DSTP](/learn/in-depth-tech/dstp) 的智能合约状态层的基础。
 
 ### 状态树的设计
 
@@ -81,26 +82,17 @@ Rooch 的状态树使用稀疏默克尔树（[Sparse Merkle Tree](https://github
 1. 通过压缩优化 SMT 的中间节点，性能良好。
 2. 可以同时提供包含证明和不包含证明，这点在 Rollup 场景尤其有用。
 
-Rooch 的 StateDB 状态树整体架构如下图所示：
+Rooch 中的每个 Object 都代表一个 SMT，Object 中的 `state_root` 字段保存了 SMT 的根哈希。Object 的动态字段的 Key 是 SMT 的路径，Value 是 SMT 的叶子节点。 
 
 ![statedb](/docs/rooch-design-statedb.svg)
 
-状态树的第一层是一个以 `ObjectID` 为键的 SMT，值是 Object 的序列化二进制数据，可以理解为一个全局的 `ObjectStore`。其中有三个特殊的 Object：
+在 Rooch 中，第一层的状态树的叶子结点是 Object，而每个 Object 也携带着一个状态子树，子树中可以保存该 Object 的动态字段，或者子 Object。比如 BitcoinStore 是一个 Object，保存了 Bitcoin 链上的所有状态，UTXO 以及 Inscription 都是该 Object 的子 Object。 
 
-1. 以用户的 `Address` 为 Key，保存了 `AccountStorage` Object，后面会详细介绍。
-2. 以 `Hash(Address + 0)` 为 Key，保存了用户的 `ResourceTable` Object。Resource Table 的 Key 为 Resource 类型，Value 为 Resource。
-3. 以 `Hash(Address + 1)` 为 Key，保存了用户的 `ModuleTable` Object。Module Table 的 Key 为 Module Name，Value 为 Module 字节码。
+而这种模式也可以用在应用中，比如有一个游戏，它的状态表达为 Gameworld，游戏中的状态都在这个 Object 中，这样可以实现应用间的交易并行以及状态拆分，Gameworld 的状态可以存在专门的节点上。
 
-在 Rooch 中，Move 中的每个 Table 对应一个 SMT，Table Object 主要存储了 SMT 的 Root。加载 Table 的数据的时候，首先通过 Table Object ID 获取到 SMT 的 Root，然后初始化 SMT，通过 Key 获取 Value。而 Table 也可以成为 Struct 的字段，Struct 中序列化的是 Table 的 Object ID（TableHandle）。这样，Rooch 的状态树就是一个层层嵌套的 SMT。
+但所有的子树，最后会汇总成一个 Root SMT，这个 Root SMT 的根哈希会被写入到 Bitcoin 的交易中，保证了状态的可验证性，应用也通过 Bitcoin 的时间戳来证明，用户的状态在某个时间点之前就已经存在。
 
-### Move 中的类型
-
-1. [Context](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/doc/context.md) 代表当前交易以及存储的上下文，当前封装了和状态存储的主要方法。未来提供 `AppSpecific Storage` 方案的时候，应用可以切换 Context，从而将状态存储到不同的存储空间。
-2. [raw_table](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/doc/raw_table.md) 提供最底层的 Key-Value 存储接口，合约状态变更最终都统一为 `RawTable` 的 Key-Value 变更集。每个 RawTable 对应 StateDB 中的一棵 SMT，Global ObjectStore 的 ObjectID 是所有字节都为 `0` 的一个特殊 ObjectID。
-3. [type_table](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/doc/type_table.md) 是一种特殊的 Table，它以类型为 Key，类型的实例为 Value。
-4. [AccountStorage](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/doc/account_storage.md) 用户存储空间在 Move 中的抽象，它包含两个 Table，Resource Table 和 Module Table，这样可以在 Move 中直接操作 Resource 和 Module，而不需要通过全局存储指令。
-
-#### Object
+### Object
 
 Rooch 的 Object Storage 中，存储数据结构是 `ObjectEntity<T>`，而 `Object<T>` 相当于 `ObjectEntity<T>` 的手柄或者钥匙。
 
@@ -123,31 +115,14 @@ module moveos_std::object{
 
 `ObjectEntity` 没有任何 `ability`，只能被底层的存储接口访问。开发者可以通过 `Object<T>` 访问 `ObjectEntity<T>` 中封装的数据，二者的生命周期也是相同的，开发者只需操作 `Object<T>` 相关的接口，不需要关心 `ObjectEntity<T>`。
 
-关于 Object 的使用，请参看文档 [Object](../objects/object)。
+关于 Object 的使用，请参看文档 [Object](./object)。
 
-### 统一的状态访问路径接口
+### Private Generics
 
-Rooch 的 StateDB 是一个层层嵌套的 SMT，所以我们可以提供一种统一的[访问路径接口](https://github.com/rooch-network/rooch/issues/58)。
-
-`/table/$table_handle/$key1,$key2`: 访问 `$table_handle` 的 Table 下的 `$key1,$key2` 的数据。如果 $table_handle 是 `0x0`，则表明访问的是第一层的 SMT 的数据。
-
-同时还提供几个别名访问方式：
-
-* `/object/$object_id`：访问第一层的 SMT 的快捷方法，等价于 `/table/0x0/$object_id`。
-* `/module/$address/$module_name`：访问某个用户的 AccountStorage 里的某个 Module，等价于 `/table/NamedTable($address,resource)/hex($module_name)`。
-* `/resource/$address/$resource_struct_tag`：访问某个用户的 AccountStorage 里的某个 Resource，等价于 `/table/NamedTable($address,module)/hex($resource_struct_tag)`。
-
-由于 SMT 存储的是 Move 的 Struct 序列化值，外部系统可以直接反序列化成 JSON 或者其他编程语言中的数据结构，对开发者友好。
+Move 的全局存储指令对其泛型参数进行了限制，以确保合约状态的安全。在 Rooch 中，我们引入了 `#[private_generics]` 注解，允许开发者将这些限制附加到自定义函数上。这样，开发者可以在智能合约中定义更丰富的存储数据结构，同时保证这些结构的安全性。
 
 ## 总结
 
-Rooch 将应用对存储的需求抽象为 KV 存储接口，统一了应用状态的处理方式，简化了虚拟机层的状态的存储逻辑，也为扩展新的存储空间提供了扩展能力。然后，基于 KV 接口，在合约中封装出更丰富安全的存储空间接口，满足应用的不同场景的存储需求。
+Rooch 通过结合 Move 的 Object 模型和状态树，实现了智能合约状态的抽象存储。这种设计不仅继承了 Move 的状态所有权明确和类型安全特性，还通过状态树提供了高效的状态证明机制，增强了系统的可验证性和安全性。
 
-而 Rooch 的状态树以及统一访问接口，方便外部系统和 Rooch 的组合，保证了互操作性。
-
-最后，关于执行平台、合约开发者和用户三者之间的关系，Rooch 延续了 Move 的安全约束，状态所有权明确，但对状态的操作需要通过开发者定义的接口约束，同时也在探索用户直接操作自己的状态的方案。
-
-`Storage Abstraction` 是一种新的理念，随着应用场景的丰富，对存储方式也会有新的需求。未来有以下探索方向：
-
-1. 提供更丰富的面向具体应用场景的存储解决方案。
-2. 扩展 SMT 的抽象，理论上任何能提供状态证明的存储结构，都可以映射到 Move 中作为一种 Table，比如各种链的状态树，Offchain 的 Git。
+在执行平台、合约开发者和用户三者的关系上，Rooch 提供了更大的灵活性，使开发者可以自由地设计和实现应用的状态存储结构。这样，开发者不仅可以更好地满足各类应用的需求，还能确保存储的高效性和安全性，促进智能合约生态系统的进一步发展和创新。
