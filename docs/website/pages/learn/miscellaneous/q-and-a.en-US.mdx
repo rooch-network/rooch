@@ -1,0 +1,71 @@
+# Rooch StarTrek Q&A
+
+## Concept related
+
+### What is the relationship between Rooch and Bitcoin?
+
+Rooch is the second layer of Bitcoin (Layer2). It expands the application ecosystem of Bitcoin and uses the asset security advantages of the Move language to open up the infinite possibilities of the Bitcoin economy.
+
+### Is there a testnet?
+
+At present, Rooch has launched test network, `devnet` and `testnet` network. `devnet` will clean data regularly, and `testnet` will serve as a permanent incentive test network.
+
+For detailed usage of the three Rooch networks, please refer to [Connect to Rooch](../../build/getting-started/connect-to-rooch).
+
+The current releases released by Rooch can be downloaded from the [GitHub release page](https://github.com/rooch-network/rooch/releases)
+
+### What is the difference between Rooch and Aptos/Sui?
+
+Both use the Move language for smart contract programming. Rooch is BTC L2 and belongs to the application extension layer. Aptos/Sui is a public chain and belongs to the same level as BTC.
+
+### What kind of wallet do you usually use?
+
+As BTC L2, Rooch needs to use Bitcoin-related wallets, commonly used ones are UniSat and OKX.
+
+Currently Rooch Portal only supports UniSat, and more wallets will be supported in the future. Please refer to [Rooch Portal](https://rooch.network/zh-CN/learn/miscellaneous/portal) for detailed usage.
+
+### How to switch Unisat test network?
+
+You can switch between `Settings -> Network`, `LIVENET` is the Bitcoin main network, and `TESTNET` is the Bitcoin test network.
+
+### What does the testnet start with and what type of Bitcoin address does it use?
+
+Rooch uses a Taproot type of Bitcoin address, starting with `tb1p`.
+
+### Bitcoin mainnet and testnet addresses are different?
+
+Not the same, but convertible.
+
+## Technology related
+
+### What is the difference between Rooch Move and Aptos Move / Sui Move?
+
+Rooch's Move is a modified version based on [Core Move](https://github.com/move-language/move), which is different from Aptos and Sui. For detailed usage, please refer to [Counter quick start](../../build/tutorial/counter) to learn more about the usage of Rooch Move.
+
+Reference documentation:
+
+- [Rooch 对象](https://rooch.network/zh-CN/learn/core-concepts/objects/object)
+- [Rooch Framework source code](https://github.com/rooch-network/rooch/tree/main/frameworks)
+
+### BTC assets and Rooch assets issues
+
+Q: Can the status or content of the BTC asset warehouse be changed after it becomes a Rooch asset? For example, if it can be changed by adding another layer, do we also need to consider converting it into the original asset mode when returning?
+
+A: Turn the BTC asset into a Move Object, and you can write status into it through dynamic fields.
+
+Q: Asset processing, for example, if a BTC asset comes over and we want to do more processing on the asset, such as adding some tags, does it require additional processing when the asset returns to BTC?
+
+A: Regarding this aspect, the documentation on [asset leap](https://rooch.network/learn/in-depth-tech/client-side-validation#asset-leap-protocol) has detailed introduction.
+
+### For an overview of Rooch’s Bitcoin expansion plan, see these two blogs
+
+1. [Stackable L2 — A New Scaling Solution](../../blog/stackable-l2)
+2. [Rooch Network - The Application Layer of Bitcoin](../../blog/the-application-layer-of-bitcoin)
+
+### How to use Move to program Bitcoin and see the documentation for examples
+
+- [Extending Bitcoin](../../build/bitcoin)
+
+## Related Links
+
+**[Website](https://rooch.network/) | [Discord](https://discord.com/invite/rooch) | [Twitter](https://x.com/RoochNetwork) | [Telegram](https://t.me/roochnetwork) | [Github](https://github.com/rooch-network/)**
