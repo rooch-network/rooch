@@ -2,9 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module moveos_std::wasm {
-    use std::string;
-    use std::debug;
-    use std::vector;
+    
     use std::option::{Self,Option};
     use moveos_std::features;
 
@@ -95,6 +93,13 @@ module moveos_std::wasm {
     native fun native_read_data_from_heap(instance_id: u64, data_ptr: u32, data_length: u32): vector<u8>;
 
     native fun native_release_wasm_instance(instance: WASMInstance): bool;
+
+    #[test_only] 
+    use std::string;
+    #[test_only] 
+    use std::debug;
+    #[test_only] 
+    use std::vector;
 
     #[test]
     fun test_trap() {
