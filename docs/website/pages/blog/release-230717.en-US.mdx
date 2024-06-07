@@ -54,7 +54,7 @@ The introduction of these changes serves two main purposes:
 
 To ensure the security of state storage, and to enforce type safety rules similar to Move's global state instructions, Rooch introduces the `#[private_generics(T)]` annotation. This annotation can be added to function and indicates that the generic parameter `T` must be defined in the current contract of the caller, adhering to the constraints of Move's global storage instructions.
 
-For more detailed design on storage abstraction, please refer to the [Storage Abstraction](../learn/core-concepts/objects/storage-abstraction.en-US.mdx) documentation.
+For more detailed design on storage abstraction, please refer to the [Storage Abstraction](../learn/core-concepts/objects/storage-abstraction) documentation.
 
 ### Rooch JSON RPC
 
@@ -64,11 +64,11 @@ Rooch provides a state query API `rooch_getStates` based on a unified access pat
 
 This version includes a demonstration version of the Ethereum RPC Proxy, allowing users to interact with Rooch Container using MetaMask.
 
-For the currently supported API in Rooch, please refer to the [Rooch JSON RPC documentation](../build/reference/rpc/json-rpc.en-US.mdx).
+For the currently supported API in Rooch, please refer to the [Rooch JSON RPC documentation](../build/reference/rpc/json-rpc).
 
 ### Sequencer and Proposer Prototype Implementation
 
-In this version, the Sequencer and Proposer are represented by a prototype implementation. The purpose is to illustrate the transaction execution flow and the instant confirmation feature in Rooch. For more information on the transaction execution flow in Rooch, please refer to the [Transaction Flow](../learn/core-concepts/transaction/transaction-flow.en-US.mdx) documentation.
+In this version, the Sequencer and Proposer are represented by a prototype implementation. The purpose is to illustrate the transaction execution flow and the instant confirmation feature in Rooch. For more information on the transaction execution flow in Rooch, please refer to the [Transaction Flow](../learn/core-concepts/transaction/transaction-flow) documentation.
 
 ### Examples
 
