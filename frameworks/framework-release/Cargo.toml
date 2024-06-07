@@ -29,6 +29,8 @@ move-package = { workspace = true }
 
 moveos-types = { workspace = true }
 moveos-stdlib = { workspace = true }
+rooch-framework = { workspace = true }
+bitcoin-move = { workspace = true }
 
 framework-types = { workspace = true }
 framework-builder = { workspace = true }

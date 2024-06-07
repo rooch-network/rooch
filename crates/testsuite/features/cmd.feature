@@ -309,6 +309,38 @@ Feature: Rooch CLI integration tests
 
       Then stop the server
   
+      @serial
+    Scenario: wasm test
+      # prepare servers
+      Given a server for wasm_test
+
+      # publish wasm execution
+      Then cmd: "move publish -p ../../examples/wasm_execution  --named-addresses rooch_examples=default"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # test wasm trap
+      Then cmd: "move run --function default::wasm_execution::run_trap"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # test wasm forever
+      Then cmd: "move run --function default::wasm_execution::run_infinite_loop"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # test wasm alloc
+      Then cmd: "move run --function default::wasm_execution::run_alloc"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # run wasm cpp generator
+      #Then cmd: "move run --function default::wasm_execution::run_generator_cpp"
+      #Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # run wasm rust generator
+      #Then cmd: "move run --function default::wasm_execution::run_generator_rust"
+      #Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # release servers
+      Then stop the server
+
     @serial
     Scenario: rooch_bitcoin test
       # prepare servers
@@ -394,22 +426,22 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
 
       # mint 
-      #Then cmd bitseed: "mint --fee-rate 1 --deploy-inscription-id {{$.deploy[-1].inscriptions[0].Id}} --user-input hello_bitseed" 
-      #Then assert: "'{{$.mint[-1]}}' not_contains error"
+      Then cmd bitseed: "mint --fee-rate 1 --deploy-inscription-id {{$.deploy[-1].inscriptions[0].Id}} --user-input hello_bitseed" 
+      Then assert: "'{{$.mint[-1]}}' not_contains error"
 
       # mine a block
-      #Then cmd ord: "wallet receive"
-      #Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].address}}"
-      #Then sleep: "10"
+      Then cmd ord: "wallet receive"
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].address}}"
+      Then sleep: "10"
 
       # Sync bitseed
-      #Then cmd: "move run --function default::bitseed_runner::run"
-      #Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      Then cmd: "move run --function default::bitseed_runner::run"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # Check mint bits validity
-      #Then cmd: "move view --function 0xa::bitseed::view_validity --args string:{{$.deploy[-1].inscriptions[0].Id}} "
-      #Then assert: "{{$.move[-1].vm_status}} == Executed"
-      #Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
+      Then cmd: "move view --function 0xa::bitseed::view_validity --args string:{{$.deploy[-1].inscriptions[0].Id}} "
+      Then assert: "{{$.move[-1].vm_status}} == Executed"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
       
       # release servers
       Then stop the server
