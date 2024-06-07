@@ -100,6 +100,6 @@ module test::child_object{
 
 //# run test::child_object::create_child --signers A --args string:alice
 
-//# run test::child_object::update_age --signers A --args object:0x5370106f3bd3bf65af644c293d9568d8e615d589bc5d02c0188276df5af07dbb223858a43c3db3880a0f64ad2c25194ee770bd93f1e6cbceb7de952c2aac0d3c u64:42
+//# run test::child_object::update_age --signers A --args object:0x5370106f3bd3bf65af644c293d9568d8e615d589bc5d02c0188276df5af07dbb76d9137ae47cdec10806ea927e373fd7568dffa36825125f074cf45386d6d30f u64:42
 
-//# run test::child_object::check_age --signers A --args object:0x5370106f3bd3bf65af644c293d9568d8e615d589bc5d02c0188276df5af07dbb223858a43c3db3880a0f64ad2c25194ee770bd93f1e6cbceb7de952c2aac0d3c u64:42
+//# run test::child_object::check_age --signers A --args object:0x5370106f3bd3bf65af644c293d9568d8e615d589bc5d02c0188276df5af07dbb76d9137ae47cdec10806ea927e373fd7568dffa36825125f074cf45386d6d30f u64:42

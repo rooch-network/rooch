@@ -69,7 +69,6 @@ impl Arbitrary for ScriptCall {
 pub struct FunctionCall {
     pub function_id: FunctionId,
     pub ty_args: Vec<TypeTag>,
-    //TOOD custom serialize
     pub args: Vec<Vec<u8>>,
 }
 
@@ -182,6 +181,18 @@ impl From<VerifiedMoveAction> for MoveAction {
     }
 }
 
+impl From<FunctionCall> for MoveAction {
+    fn from(call: FunctionCall) -> Self {
+        MoveAction::Function(call)
+    }
+}
+
+impl From<ScriptCall> for MoveAction {
+    fn from(call: ScriptCall) -> Self {
+        MoveAction::Script(call)
+    }
+}
+
 /// The MoveAction after verifier
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum VerifiedMoveAction {
@@ -258,7 +269,6 @@ impl MoveOSTransaction {
             tx_hash,
             1,
         );
-
         Self::new(root, ctx, sender_and_action.1)
     }
 

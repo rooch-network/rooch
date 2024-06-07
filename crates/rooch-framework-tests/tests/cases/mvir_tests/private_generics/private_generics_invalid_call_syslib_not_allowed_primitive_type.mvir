@@ -1,0 +1,13 @@
+//# publish
+module 0x11.TestModule1 {
+    import 0x2.event;
+
+    public f2() {
+        let s0: u32;
+        label b0:
+            s0 = 123u32;
+            // error code 10011: INVALID_PRIVATE_GENERICS_TYPE
+            event.emit<u32>(move(s0));
+            return;
+    }
+}

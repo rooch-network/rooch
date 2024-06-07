@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Copy, Check, CircleUser } from 'lucide-react'
-import { formatAddress } from '@/utils/format.ts'
+// import { formatAddress } from '@/utils/format.ts'
 import { useCurrentAccount } from '@roochnetwork/rooch-sdk-kit'
 import toast from 'react-hot-toast'
 
@@ -19,7 +19,7 @@ export const RoochAddress = () => {
       return
     }
 
-    const textToCopy = account.getRoochAddress()
+    const textToCopy = account.getBech32RoochAddress()
 
     navigator.clipboard
       .writeText(textToCopy)
@@ -34,7 +34,7 @@ export const RoochAddress = () => {
 
   if (!account) {
     return (
-      <div className="flex flex-col items-center justify-center p-6 border rounded-lg shadow-md bg-white dark:bg-zinc-900">
+      <div className="flex flex-col items-center justify-center p-6 border rounded-lg bg-white dark:bg-zinc-900">
         <CircleUser className="w-12 h-12 mb-4 text-zinc-500" />
         <p className="text-xl text-zinc-500 font-semibold">Could not find your account</p>
         <p className="text-sm text-muted-foreground mt-2">Please connect to wallet.</p>
@@ -43,7 +43,7 @@ export const RoochAddress = () => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center p-6 border rounded-lg shadow-md bg-white dark:bg-zinc-900">
+    <div className="flex flex-col items-center justify-center p-6 border rounded-lg bg-white dark:bg-zinc-900">
       <div className="flex items-center justify-between w-full mb-4">
         <div className="flex flex-col">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">Rooch Network</h3>
@@ -66,7 +66,7 @@ export const RoochAddress = () => {
             alt="rooch logo"
             className="w-4 h-4 rounded-full bg-zinc-900 p-0.5 mr-2"
           />
-          {formatAddress(account.getRoochAddress())}
+          {/*{formatAddress(account.getBech32RoochAddress())}*/}
         </span>
         <span className="text-zinc-900 dark:text-white truncate hidden md:flex items-center justify-start">
           <img
@@ -74,7 +74,7 @@ export const RoochAddress = () => {
             alt="rooch logo"
             className="w-4 h-4 rounded-full bg-zinc-900 p-0.5 mr-2"
           />
-          {account.getRoochAddress()}
+          {account.getBech32RoochAddress()}
         </span>
       </div>
     </div>

@@ -3,13 +3,14 @@
 
 use crate::jsonrpc_types::address::BitcoinAddressView;
 use crate::jsonrpc_types::btc::transaction::{hex_to_txid, TxidView};
-use crate::jsonrpc_types::{AccountAddressView, StructTagView};
+use crate::jsonrpc_types::{H256View, RoochAddressView, StructTagView};
 use anyhow::Result;
 use bitcoin::hashes::Hash;
 use bitcoin::Txid;
-use move_core_types::account_address::AccountAddress;
+
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::MoveStructType;
+use rooch_types::address::RoochAddress;
 use rooch_types::bitcoin::utxo::{self, UTXOState, UTXO};
 use rooch_types::indexer::state::ObjectStateFilter;
 use rooch_types::into_address::IntoAddress;
@@ -44,7 +45,7 @@ pub enum UTXOFilterView {
 impl UTXOFilterView {
     pub fn into_global_state_filter(
         filter_opt: UTXOFilterView,
-        resolve_address: AccountAddress,
+        resolve_address: RoochAddress,
     ) -> Result<ObjectStateFilter> {
         Ok(match filter_opt {
             UTXOFilterView::Owner(_owner) => ObjectStateFilter::ObjectTypeWithOwner {
@@ -67,7 +68,7 @@ impl UTXOFilterView {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct UTXOView {
     /// The txid of the UTXO
-    txid: AccountAddressView,
+    txid: H256View,
     /// The txid of the UTXO
     bitcoin_txid: TxidView,
     /// The vout of the UTXO
@@ -97,7 +98,7 @@ impl UTXOView {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct UTXOStateView {
     pub object_id: ObjectID,
-    pub owner: AccountAddressView,
+    pub owner: RoochAddressView,
     pub owner_bitcoin_address: Option<String>,
     pub flag: u8,
     pub value: Option<UTXOView>,

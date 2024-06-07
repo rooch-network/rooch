@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::move_std::ascii::MoveAsciiString;
 use crate::move_std::string::MoveString;
 use crate::moveos_std::object::{AnnotatedObject, ObjectEntity, RawObject, GENESIS_STATE_ROOT};
 use crate::moveos_std::object::{ObjectID, RootObjectEntity};
@@ -61,6 +60,15 @@ impl KeyState {
         Self { key, key_type }
     }
 
+    pub fn from_string(s: &str) -> Self {
+        let key = bcs::to_bytes(s).expect("bcs to_bytes String must success.");
+        KeyState::new(key, MoveString::type_tag())
+    }
+
+    pub fn from_address(address: AccountAddress) -> Self {
+        KeyState::new(address.to_vec(), AccountAddress::type_tag())
+    }
+
     pub fn from_module_id(module_id: &ModuleId) -> Self {
         // The key is the moduleId string in bcs serialize format, not String::into_bytes.
         // bcs::to_bytes(&String) same as bcs::to_bytes(&MoveString)
@@ -74,7 +82,7 @@ impl KeyState {
         // The resource key is struct_tag to_canonical_string in bcs serialize format string, not String::into_bytes.
         let key = bcs::to_bytes(&struct_tag.to_canonical_string())
             .expect("bcs to_bytes String must success.");
-        KeyState::new(key, MoveAsciiString::type_tag())
+        KeyState::new(key, MoveString::type_tag())
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self>
@@ -529,7 +537,7 @@ pub trait MoveStructState: MoveState + MoveStructType + DeserializeOwned + Seria
             .simple_serialize(&Self::struct_layout())
             .ok_or_else(|| {
                 anyhow::anyhow!(
-                    "Serilaize the MoveState to bytes error: {:?}",
+                    "Serialize the MoveState to bytes error: {:?}",
                     Self::type_tag()
                 )
             })?;

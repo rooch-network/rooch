@@ -4,7 +4,6 @@
 use crate::client_config::{ClientConfig, DEFAULT_EXPIRATION_SECS};
 use crate::Client;
 use anyhow::{anyhow, Result};
-use move_command_line_common::address::ParsedAddress;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::moveos_std::gas_schedule::GasScheduleConfig;
 use moveos_types::transaction::MoveAction;
@@ -15,14 +14,11 @@ use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::file_keystore::FileBasedKeystore;
 use rooch_key::keystore::Keystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView, TxOptions};
+use rooch_types::address::ParsedAddress;
 use rooch_types::address::RoochAddress;
 use rooch_types::addresses;
-use rooch_types::crypto::Signature;
 use rooch_types::error::{RoochError, RoochResult};
-use rooch_types::transaction::{
-    authenticator::Authenticator,
-    rooch::{RoochTransaction, RoochTransactionData},
-};
+use rooch_types::transaction::rooch::{RoochTransaction, RoochTransactionData};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -35,6 +31,7 @@ pub struct WalletContext {
     pub server_config: PersistedConfig<ServerConfig>,
     pub keystore: Keystore,
     pub address_mapping: BTreeMap<String, AccountAddress>,
+    password: Option<String>,
 }
 
 pub type AddressMappingFn = Box<dyn Fn(&str) -> Option<AccountAddress> + Send + Sync>;
@@ -71,7 +68,7 @@ impl WalletContext {
 
         //TODO support account name alias name.
         if let Some(active_address) = client_config.active_address {
-            address_mapping.insert("default".to_string(), AccountAddress::from(active_address));
+            address_mapping.insert("default".to_string(), active_address.into());
         }
 
         Ok(Self {
@@ -80,11 +77,12 @@ impl WalletContext {
             server_config,
             keystore,
             address_mapping,
+            password: None,
         })
     }
 
-    pub fn add_address_mapping(&mut self, name: String, address: AccountAddress) {
-        self.address_mapping.insert(name, address);
+    pub fn add_address_mapping(&mut self, name: String, address: RoochAddress) {
+        self.address_mapping.insert(name, address.into());
     }
 
     pub fn address_mapping(&self) -> AddressMappingFn {
@@ -94,7 +92,7 @@ impl WalletContext {
 
     pub fn resolve_address(&self, parsed_address: ParsedAddress) -> RoochResult<AccountAddress> {
         match parsed_address {
-            ParsedAddress::Numerical(address) => Ok(address.into_inner()),
+            ParsedAddress::Numerical(address) => Ok(address.into()),
             ParsedAddress::Named(name) => {
                 self.address_mapping.get(&name).cloned().ok_or_else(|| {
                     RoochError::CommandArgumentError(format!("Unknown named address: {}", name))
@@ -170,22 +168,9 @@ impl WalletContext {
         password: Option<String>,
         max_gas_amount: Option<u64>,
     ) -> RoochResult<RoochTransaction> {
-        let kp = self
-            .keystore
-            .get_key_pair_with_password(&sender, password)
-            .ok()
-            .ok_or_else(|| {
-                RoochError::SignMessageError(format!(
-                    "Cannot find encryption data for address: [{sender}]"
-                ))
-            })?;
-
         let tx_data = self.build_tx_data(sender, action, max_gas_amount).await?;
-        let signature = Signature::new_hashed(tx_data.tx_hash().as_bytes(), &kp);
-        Ok(RoochTransaction::new(
-            tx_data,
-            Authenticator::rooch(signature),
-        ))
+        let tx = self.keystore.sign_transaction(&sender, tx_data, password)?;
+        Ok(tx)
     }
 
     pub async fn execute(
@@ -223,5 +208,13 @@ impl WalletContext {
         } else {
             Ok(result)
         }
+    }
+
+    pub fn set_password(&mut self, password: Option<String>) {
+        self.password = password;
+    }
+
+    pub fn get_password(&self) -> Option<String> {
+        self.password.clone()
     }
 }

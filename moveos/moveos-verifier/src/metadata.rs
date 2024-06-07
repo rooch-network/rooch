@@ -42,13 +42,15 @@ pub static mut GLOBAL_DATA_STRUCT_FUNC: GlobalVariableWithRWLocker<BTreeMap<Stri
 pub static mut GLOBAL_GAS_FREE_RECORDER: Lazy<BTreeMap<String, Vec<usize>>> =
     Lazy::new(|| BTreeMap::new());
 
-const PRIVATE_GENERICS_ATTRIBUTE: &str = "private_generics";
+pub const PRIVATE_GENERICS_ATTRIBUTE: &str = "private_generics";
 
 const GAS_FREE_ATTRIBUTE: &str = "gas_free";
 const GAS_FREE_VALIDATE: &str = "gas_validate";
 const GAS_FREE_CHARGE_POST: &str = "gas_charge_post";
 
-const DATA_STRUCT_ATTRIBUTE: &str = "data_struct";
+pub const DATA_STRUCT_ATTRIBUTE: &str = "data_struct";
+
+pub const DATA_STRUCT_FUNC_ATTRIBUTE: &str = "data_struct_func";
 
 /// Enumeration of potentially known attributes
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -1097,6 +1099,10 @@ fn check_data_struct_fields_type(
                     return check_data_struct_fields_type(item_type, module_env, valid_structs);
                 }
 
+                return false;
+            }
+
+            if !ty_args.is_empty() {
                 return false;
             }
 

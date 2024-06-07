@@ -1,15 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::errors::IndexerError;
 use crate::models::events::StoredEvent;
 use crate::models::states::{StoredFieldState, StoredObjectState};
 use crate::models::transactions::StoredTransaction;
 use crate::schema::object_states;
 use crate::schema::{events, field_states, transactions};
-use crate::types::IndexerResult;
-use crate::utils::format_struct_tag;
 use crate::{
-    errors::IndexerError, IndexerStoreMeta, SqliteConnectionConfig, SqliteConnectionPoolConfig,
+    IndexerResult, IndexerStoreMeta, SqliteConnectionConfig, SqliteConnectionPoolConfig,
     SqlitePoolConnection, INDEXER_EVENTS_TABLE_NAME, INDEXER_FIELD_STATES_TABLE_NAME,
     INDEXER_OBJECT_STATES_TABLE_NAME, INDEXER_TRANSACTIONS_TABLE_NAME,
 };
@@ -17,12 +16,12 @@ use anyhow::{anyhow, Result};
 use diesel::{
     r2d2::ConnectionManager, Connection, ExpressionMethods, QueryDsl, RunQueryDsl, SqliteConnection,
 };
-use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
+use move_core_types::language_storage::StructTag;
+use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
     FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateID, ObjectStateFilter,
 };
-use rooch_types::indexer::transaction_filter::TransactionFilter;
-use rooch_types::transaction::TransactionWithInfo;
+use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::path::PathBuf;
@@ -137,7 +136,7 @@ impl IndexerReader {
         cursor: Option<u64>,
         limit: usize,
         descending_order: bool,
-    ) -> IndexerResult<Vec<TransactionWithInfo>> {
+    ) -> IndexerResult<Vec<IndexerTransaction>> {
         let tx_order = if let Some(cursor) = cursor {
             cursor as i64
         } else if descending_order {
@@ -217,7 +216,7 @@ impl IndexerReader {
 
         let result = stored_transactions
             .into_iter()
-            .map(|t| t.try_into_transaction_with_info())
+            .map(IndexerTransaction::try_from)
             .collect::<Result<Vec<_>>>()
             .map_err(|e| {
                 IndexerError::SQLiteReadError(format!("Cast indexer transactions failed: {:?}", e))
@@ -360,17 +359,14 @@ impl IndexerReader {
 
         let main_where_clause = match filter {
             ObjectStateFilter::ObjectTypeWithOwner { object_type, owner } => {
-                let object_type_str = format_struct_tag(object_type);
+                let object_query = object_type_query(&object_type);
                 format!(
-                    "{STATE_OBJECT_TYPE_STR} = \"{}\" AND {STATE_OWNER_STR} = \"{}\"",
-                    object_type_str,
+                    "{} AND {STATE_OWNER_STR} = \"{}\"",
+                    object_query,
                     owner.to_hex_literal()
                 )
             }
-            ObjectStateFilter::ObjectType(object_type) => {
-                let object_type_str = format_struct_tag(object_type);
-                format!("{STATE_OBJECT_TYPE_STR} = \"{}\"", object_type_str)
-            }
+            ObjectStateFilter::ObjectType(object_type) => object_type_query(&object_type),
             ObjectStateFilter::Owner(owner) => {
                 format!("{STATE_OWNER_STR} = \"{}\"", owner.to_hex_literal())
             }
@@ -504,5 +500,15 @@ impl IndexerReader {
             })?;
 
         Ok(result)
+    }
+}
+
+fn object_type_query(object_type: &StructTag) -> String {
+    let object_type_str = object_type.to_string();
+    // if the caller does not specify the type parameters, we will use the prefix match
+    if object_type.type_params.is_empty() {
+        format!("{STATE_OBJECT_TYPE_STR} like \"{}%\"", object_type_str)
+    } else {
+        format!("{STATE_OBJECT_TYPE_STR} = \"{}\"", object_type_str)
     }
 }

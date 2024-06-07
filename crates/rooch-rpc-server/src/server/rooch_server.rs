@@ -8,7 +8,6 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     RpcModule,
 };
-use move_core_types::account_address::AccountAddress;
 use moveos_types::{
     access_path::AccessPath,
     h256::H256,
@@ -18,7 +17,6 @@ use moveos_types::{
     },
     state::{AnnotatedKeyState, AnnotatedState, KeyState},
 };
-use rooch_rpc_api::jsonrpc_types::event_view::{EventFilterView, EventView, IndexerEventView};
 use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, FieldStateFilterView, IndexerEventPageView,
@@ -26,9 +24,13 @@ use rooch_rpc_api::jsonrpc_types::{
     IndexerObjectStateView, KeyStateView, ObjectStateFilterView, QueryOptions, StateKVView,
     StateOptions, TxOptions,
 };
+use rooch_rpc_api::jsonrpc_types::{
+    event_view::{EventFilterView, EventView, IndexerEventView},
+    RoochAddressView,
+};
 use rooch_rpc_api::jsonrpc_types::{transaction_view::TransactionWithInfoView, EventOptions};
 use rooch_rpc_api::jsonrpc_types::{
-    AccessPathView, AccountAddressView, BalanceInfoPageView, DisplayFieldsView, EventPageView,
+    AccessPathView, BalanceInfoPageView, DisplayFieldsView, EventPageView,
     ExecuteTransactionResponseView, FunctionCallView, H256View, StatePageView, StateView, StrView,
     StructTagView, TransactionWithInfoPageView,
 };
@@ -41,10 +43,9 @@ use rooch_rpc_api::{
     api::{MAX_RESULT_LIMIT, MAX_RESULT_LIMIT_USIZE},
     jsonrpc_types::BytesView,
 };
-use rooch_types::indexer::event_filter::IndexerEventID;
+use rooch_types::indexer::event::IndexerEventID;
 use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::transaction::rooch::RoochTransaction;
-use rooch_types::{address::MultiChainAddress, multichain_id::RoochMultiChainID};
 use std::cmp::min;
 use std::str::FromStr;
 use tracing::info;
@@ -132,7 +133,7 @@ impl RoochAPIServer for RoochServer {
         info!("send_raw_transaction tx: {:?}", tx);
 
         let hash = tx.tx_hash();
-        self.rpc_service.quene_tx(tx).await?;
+        self.rpc_service.queue_tx(tx).await?;
         Ok(hash.into())
     }
 
@@ -368,11 +369,7 @@ impl RoochAPIServer for RoochServer {
         limit: Option<StrView<u64>>,
         descending_order: Option<bool>,
     ) -> RpcResult<TransactionWithInfoPageView> {
-        let last_sequencer_order = self
-            .rpc_service
-            .get_sequencer_order()
-            .await?
-            .map_or(0, |v| v.last_order);
+        let last_sequencer_order = self.rpc_service.get_sequencer_order().await?;
 
         let limit_of = min(
             limit
@@ -442,7 +439,7 @@ impl RoochAPIServer for RoochServer {
 
     async fn get_balance(
         &self,
-        account_addr: AccountAddressView,
+        account_addr: RoochAddressView,
         coin_type: StructTagView,
     ) -> RpcResult<BalanceInfoView> {
         Ok(self
@@ -452,25 +449,20 @@ impl RoochAPIServer for RoochServer {
             .map(Into::into)?)
     }
 
-    /// get account balances by AccountAddress
+    /// get account balances by RoochAddress
     async fn get_balances(
         &self,
-        account_addr: AccountAddressView,
-        cursor: Option<String>,
+        account_addr: RoochAddressView,
+        cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
     ) -> RpcResult<BalanceInfoPageView> {
         let limit_of = min(
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
         );
-        let cursor_of = match cursor.clone() {
-            Some(key_state_str) => Some(KeyState::from_str(key_state_str.as_str())?),
-            None => None,
-        };
-
         let mut data = self
             .aggregate_service
-            .get_balances(account_addr.into(), cursor_of, limit_of + 1)
+            .get_balances(account_addr.into(), cursor, limit_of + 1)
             .await?;
 
         let has_next_page = data.len() > limit_of;
@@ -479,7 +471,7 @@ impl RoochAPIServer for RoochServer {
         let next_cursor = data
             .last()
             .cloned()
-            .map_or(cursor, |(key, _balance_info)| key.map(|k| k.to_string()));
+            .map_or(cursor, |(key, _balance_info)| key);
 
         Ok(BalanceInfoPageView {
             data: data
@@ -507,23 +499,28 @@ impl RoochAPIServer for RoochServer {
         let query_option = query_option.unwrap_or_default();
         let descending_order = query_option.descending;
 
-        let mut data = self
+        let txs = self
             .rpc_service
             .query_transactions(filter.into(), cursor, limit_of + 1, descending_order)
             .await?;
+
+        let mut data = self
+            .aggregate_service
+            .build_transaction_with_infos(txs)
+            .await?
+            .into_iter()
+            .map(TransactionWithInfoView::from)
+            .collect::<Vec<_>>();
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
         let next_cursor = data
             .last()
             .cloned()
-            .map_or(cursor, |t| Some(t.transaction.sequence_info.tx_order));
+            .map_or(cursor, |t| Some(t.transaction.sequence_info.tx_order.0));
 
         Ok(TransactionWithInfoPageView {
-            data: data
-                .into_iter()
-                .map(TransactionWithInfoView::from)
-                .collect::<Vec<_>>(),
+            data,
             next_cursor,
             has_next_page,
         })
@@ -581,24 +578,7 @@ impl RoochAPIServer for RoochServer {
         let query_option = query_option.unwrap_or_default();
         let descending_order = query_option.descending;
 
-        // resolve multichain address
-        let resolve_address = match filter.clone() {
-            ObjectStateFilterView::MultiChainAddress {
-                multichain_id,
-                address,
-            } => {
-                let multi_chain_address = MultiChainAddress::try_from_str_with_multichain_id(
-                    RoochMultiChainID::try_from(multichain_id)?,
-                    address.as_str(),
-                )?;
-                self.rpc_service
-                    .resolve_address(multi_chain_address)
-                    .await?
-            }
-            _ => AccountAddress::ZERO,
-        };
-        let global_state_filter =
-            ObjectStateFilterView::into_object_state_filter(filter, resolve_address);
+        let global_state_filter = ObjectStateFilterView::try_into_object_state_filter(filter)?;
         let states = self
             .rpc_service
             .query_object_states(global_state_filter, cursor, limit_of + 1, descending_order)
@@ -628,7 +608,11 @@ impl RoochAPIServer for RoochServer {
                             !valid_display_field_views.is_empty(),
                             "display fields should not be empty"
                         );
-                        (Some(s), valid_display_field_views.pop().unwrap())
+                        let annotated_obj = s.into_annotated_object().expect("should be object");
+                        (
+                            Some(annotated_obj),
+                            valid_display_field_views.pop().unwrap(),
+                        )
                     }
                     None => (None, None),
                 })
@@ -636,7 +620,14 @@ impl RoochAPIServer for RoochServer {
         } else {
             annotated_states
                 .into_iter()
-                .map(|s| (s, None))
+                .map(|s| {
+                    let obj = s.map(|annotated_s| {
+                        annotated_s
+                            .into_annotated_object()
+                            .expect("should be object")
+                    });
+                    (obj, None)
+                })
                 .collect::<Vec<_>>()
         };
 

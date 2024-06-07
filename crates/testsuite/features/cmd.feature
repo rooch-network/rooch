@@ -7,17 +7,17 @@ Feature: Rooch CLI integration tests
     @serial
     Scenario: rooch rpc test
       Given a server for rooch_rpc_test
-      Then cmd: "rpc request --method rooch_getStates --params '["/resource/0x3/0x3::account_coin_store::CoinStores",{"decode":true}]'"
-      Then assert: "{{$.rpc[-1][0].value_type}} == '0x3::account_coin_store::CoinStores'"
+      Then cmd: "rpc request --method rooch_getStates --params '["/resource/0x3/0x3::account_coin_store::AutoAcceptCoins",{"decode":true}]'"
+      Then assert: "{{$.rpc[-1][0].value_type}} == '0x3::account_coin_store::AutoAcceptCoins'"
       Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3",{"decode":true}]'"
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::account::Account>'"
       Then cmd: "rpc request --method rooch_listStates --params '["/resource/0x3", null, null, {"decode":true}]"
-      Then assert: "'{{$.rpc[-1]}}' contains '0x3::account_coin_store::CoinStores'"
-      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3",{"decode":true}]'"
-      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::timestamp::Timestamp>'"
+      Then assert: "'{{$.rpc[-1]}}' contains '0x3::account_coin_store::AutoAcceptCoins'"
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9",{"decode":true}]'"
+      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::object::Timestamp>'"
       Then assert: "{{$.rpc[-1][0].decoded_value.value.value.value.milliseconds}} == 0"
-      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3::timestamp::Timestamp",{"decode":true}]'"
-      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::timestamp::Timestamp>'"
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x2::object::Timestamp",{"decode":true}]'"
+      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::object::Timestamp>'"
       Then stop the server 
     
     @serial
@@ -25,7 +25,7 @@ Feature: Rooch CLI integration tests
       Given a server for account
 
       Then cmd: "account create"
-      Then cmd: "account list"
+      Then cmd: "account list --json"
       #Then cmd: "account nullify --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce"
 
       Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::GasCoin"]'"
@@ -36,8 +36,8 @@ Feature: Rooch CLI integration tests
       Then cmd: "move run --function rooch_framework::gas_coin::faucet_entry --args u256:10000000000"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
-      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3",{"decode":true}]'"
-      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::timestamp::Timestamp>'"
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9",{"decode":true}]'"
+      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::object::Timestamp>'"
       # ensure the tx_timestamp update the global timestamp
       Then assert: "{{$.rpc[-1][0].decoded_value.value.value.value.milliseconds}} != 0"
 
@@ -62,14 +62,14 @@ Feature: Rooch CLI integration tests
     Scenario: state
       Given a server for state
       Then cmd: "object --id 0x3" 
-      Then cmd: "object --id 0x3::timestamp::Timestamp"
-      Then cmd: "state --access-path /object/0x3::timestamp::Timestamp"
-      Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::timestamp::Timestamp>'"
+      Then cmd: "object --id 0x2::object::Timestamp"
+      Then cmd: "state --access-path /object/0x2::object::Timestamp"
+      Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::object::Timestamp>'"
       Then cmd: "state --access-path /object/0x3::chain_id::ChainID"
       Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::chain_id::ChainID>'"
       Then assert: "{{$.state[-1][0].decoded_value.value.value.value.id}} == 4"
-      Then cmd: "state --access-path /object/0x3::address_mapping::AddressMapping"
-      Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::address_mapping::AddressMapping>'"
+      Then cmd: "state --access-path /object/0x3::address_mapping::RoochToBitcoinAddressMapping"
+      Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::address_mapping::RoochToBitcoinAddressMapping>'"
       Then cmd: "state --access-path /object/0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>"
       Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>>'"
       Then stop the server
@@ -113,27 +113,27 @@ Feature: Rooch CLI integration tests
     # because the indexer is async update, so sleep 5 seconds to wait indexer update.
     Then sleep: "5"
 
-    #TODO fixme 
-    #Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, null, "1", {"descending": true,"showDisplay":false}]'"
-    #Then assert: "{{$.rpc[-1].data[0].transaction.sequence_info.tx_order}} == 1"
-    #Then assert: "{{$.rpc[-1].next_cursor}} == 1"
-    #Then assert: "{{$.rpc[-1].has_next_page}} == true"
-    #Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, "1", "1", {"descending": true,"showDisplay":false}]'"
-    #Then assert: "{{$.rpc[-1].data[0].transaction.sequence_info.tx_order}} == 0"
-    #Then assert: "{{$.rpc[-1].next_cursor}} == 0"
-    #Then assert: "{{$.rpc[-1].has_next_page}} == false"
-    #Then cmd: "rpc request --method rooch_queryEvents --params '[{"tx_order_range":{"from_order":0, "to_order":2}}, null, "10", {"descending": true,"showDisplay":false}]'"
-    #Then assert: "{{$.rpc[-1].data[0].indexer_event_id.tx_order}} == 1"
-    #Then assert: "{{$.rpc[-1].next_cursor.tx_order}} == 0"
-    #Then assert: "{{$.rpc[-1].has_next_page}} == false"
+    # genesis tx does not write indexer
+    Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, null, "1", {"descending": true,"showDisplay":false}]'"
+    Then assert: "{{$.rpc[-1].data[0].transaction.sequence_info.tx_order}} == 1"
+    Then assert: "{{$.rpc[-1].next_cursor}} == 1"
+    Then assert: "{{$.rpc[-1].has_next_page}} == true"
+    Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, "1", "1", {"descending": true,"showDisplay":false}]'"
+    Then assert: "{{$.rpc[-1].data[0].transaction.sequence_info.tx_order}} == 0"
+    Then assert: "{{$.rpc[-1].next_cursor}} == 0"
+    Then assert: "{{$.rpc[-1].has_next_page}} == false"
+    Then cmd: "rpc request --method rooch_queryEvents --params '[{"tx_order_range":{"from_order":0, "to_order":2}}, null, "20", {"descending": true,"showDisplay":false}]'"
+    Then assert: "{{$.rpc[-1].data[0].indexer_event_id.tx_order}} == 1"
+    Then assert: "{{$.rpc[-1].next_cursor.tx_order}} == 0"
+    Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
     # Sync states
     Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x3::coin::CoinInfo"}, null, "10", {"descending": true,"showDisplay":false}]'"
-    #Then assert: "{{$.rpc[-1].data[0].tx_order}} == 0"
-    Then assert: "{{$.rpc[-1].data[0].object_type}} == 0x3::coin::CoinInfo"
+    Then assert: "{{$.rpc[-1].data[0].tx_order}} == 1"
+    Then assert: "{{$.rpc[-1].data[0].object_type}} == 0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
-    Then cmd: "rpc request --method rooch_queryFieldStates --params '[{"object_id":"0x3"}, null, "10", {"descending": true,"showDisplay":false}]'"
+    Then cmd: "rpc request --method rooch_queryFieldStates --params '[{"object_id":"{{$.address_mapping.default}}"}, null, "10", {"descending": true,"showDisplay":false}]'"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
 #    Then cmd: "rpc request --method rooch_syncStates --params '[null, null, "2", false]'"
@@ -154,9 +154,9 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].vm_status}} == Executed"
       Then assert: "{{$.move[-1].return_values[0].decoded_value}} == value1"
       #the access-path argument do not support named address yet, so, we use `{{$.address_mapping.default}}` template var to repleace it.
-      Then cmd: "state --access-path /resource/{{$.address_mapping.default}}/{{$.address_mapping.default}}::kv_store::KVStore
-      Then cmd: "state --access-path /table/{{$.state[-1][0].decoded_value.value.table.value.handle}}/key1"
-      Then assert: "{{$.state[-1][0].decoded_value}} == "value1""
+      Then cmd: "state --access-path /resource/{{$.address_mapping.default}}/{{$.address_mapping.default}}::kv_store::KVStore"
+      Then cmd: "state --access-path /fields/{{$.state[-1][0].decoded_value.value.table.value.handle.value.id}}/key1"
+      Then assert: "{{$.state[-1][0].decoded_value}} == value1"
 
 
       Then stop the server
@@ -309,12 +309,71 @@ Feature: Rooch CLI integration tests
 
       Then stop the server
   
+      @serial
+    Scenario: wasm test
+      # prepare servers
+      Given a server for wasm_test
+
+      # publish wasm execution
+      Then cmd: "move publish -p ../../examples/wasm_execution  --named-addresses rooch_examples=default"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # test wasm trap
+      Then cmd: "move run --function default::wasm_execution::run_trap"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # test wasm forever
+      Then cmd: "move run --function default::wasm_execution::run_infinite_loop"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # test wasm alloc
+      Then cmd: "move run --function default::wasm_execution::run_alloc"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # run wasm cpp generator
+      #Then cmd: "move run --function default::wasm_execution::run_generator_cpp"
+      #Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # run wasm rust generator
+      #Then cmd: "move run --function default::wasm_execution::run_generator_rust"
+      #Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # release servers
+      Then stop the server
+
     @serial
-    Scenario: rooch bitcoin test
+    Scenario: rooch_bitcoin test
       # prepare servers
       Given a bitcoind server for rooch_bitcoin_test
-      Given a ord server for rooch_bitcoin_test
       Given a server for rooch_bitcoin_test
+
+      Then cmd: "account list --json" 
+      
+      # mint utxos
+      Then cmd bitcoin-cli: "generatetoaddress 101 {{$.account[-1][0].local_account.bitcoin_address}}"
+      Then sleep: "10" # wait rooch sync and index
+
+      # query utxos
+      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type_with_owner":{"object_type":"0x4::utxo::UTXO","owner":"{{$.account[-1][0].local_account.address}}"}},null, null, null]'"
+      Then assert: "{{$.rpc[-1].data[0].owner}} == {{$.account[-1][0].local_account.address}}"
+
+      # release servers
+      Then stop the server
+      Then stop the bitcoind server 
+
+    @serial
+    Scenario: rooch bitseed test
+      Then cmd: "init --skip-password"
+      Then cmd: "env switch --alias local"
+
+      # prepare servers
+      Given a bitcoind server for rooch_bitseed_test
+      Given a ord server for rooch_bitseed_test
+      Given a server for rooch_bitseed_test
+
+      # create rooch account
+      Then cmd: "account create"
+      Then cmd: "account list --json"
 
       # init wallet
       Then cmd ord: "wallet create"
@@ -326,42 +385,65 @@ Feature: Rooch CLI integration tests
       Then cmd ord: "wallet balance"
       Then assert: "{{$.wallet[-1].total}} == 5000000000"
 
-      # query utxos and inscriptions
-      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x4::utxo::UTXO"}, null, "2", {"descending": true,"showDisplay":false}]'"
-      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x4::ord::Inscription"}, null, "2", {"descending": true,"showDisplay":false}]'"
+      # publish bitseed runner
+      Then cmd: "move publish -p ../../examples/bitseed_runner  --named-addresses rooch_examples=default"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
+      # generator
+      Then cmd bitseed: "generator --fee-rate 1 --name random --generator /app/test-data/generator.wasm"
+      Then assert: "'{{$.generator[-1]}}' not_contains error"
+
+      # mine a block
+      Then cmd ord: "wallet receive"
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].address}}"
+      Then sleep: "10"
+
+      # Sync bitseed
+      Then cmd: "move run --function default::bitseed_runner::run"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # Check mint generator validity
+      Then cmd: "move view --function 0xa::bitseed::view_validity --args string:{{$.generator[-1].inscriptions[0].Id}} "
+      Then assert: "{{$.move[-1].vm_status}} == Executed"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
+
+      # deploy
+      Then cmd bitseed: "deploy --fee-rate 1 --generator {{$.generator[-1].inscriptions[0].Id}} --tick bits --amount 210000000000 --deploy-args {"height":{"type":"range","data":{"min":1,"max":1000}}}"
+      Then assert: "'{{$.deploy[-1]}}' not_contains error"
+
+      # mine a block
+      Then cmd ord: "wallet receive"
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].address}}"
+      Then sleep: "10"
+
+      # Sync bitseed
+      Then cmd: "move run --function default::bitseed_runner::run"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # Check mint deploy validity
+      Then cmd: "move view --function 0xa::bitseed::view_validity --args string:{{$.deploy[-1].inscriptions[0].Id}} "
+      Then assert: "{{$.move[-1].vm_status}} == Executed"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
+
+      # mint 
+      Then cmd bitseed: "mint --fee-rate 1 --deploy-inscription-id {{$.deploy[-1].inscriptions[0].Id}} --user-input hello_bitseed" 
+      Then assert: "'{{$.mint[-1]}}' not_contains error"
+
+      # mine a block
+      Then cmd ord: "wallet receive"
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].address}}"
+      Then sleep: "10"
+
+      # Sync bitseed
+      Then cmd: "move run --function default::bitseed_runner::run"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # Check mint bits validity
+      Then cmd: "move view --function 0xa::bitseed::view_validity --args string:{{$.deploy[-1].inscriptions[0].Id}} "
+      Then assert: "{{$.move[-1].vm_status}} == Executed"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
+      
       # release servers
       Then stop the server
       Then stop the ord server 
       Then stop the bitcoind server 
-
-    @serial
-    Scenario: rooch bitseed test
-      # prepare servers
-      #Given a bitcoind server for rooch_bitseed_test
-      #Given a ord server for rooch_bitseed_test
-      #Given a server for rooch_bitseed_test
-
-      # init wallet
-      #Then cmd ord: "wallet create"
-      #Then cmd ord: "wallet receive"
-
-      # mint utxos
-      #Then cmd bitcoin-cli: "generatetoaddress 101 {{$.wallet[-1].address}}"
-      #Then sleep: "10" # wait ord sync and index
-      #Then cmd ord: "wallet balance"
-      #Then assert: "{{$.wallet[-1].total}} == 5000000000"
-
-      # generator
-      #Then cmd bitseed: "generator --fee-rate 1 --name random --generator /app/test-data/generator.wasm"
-      #Then assert: "'{{$.generator[-1]}}' not_contains error"
-
-      # mine a block
-      #Then cmd ord: "wallet receive"
-      #Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].address}}"
-      #Then sleep: "5"
-      
-      # release servers
-      #Then stop the server
-      #Then stop the ord server 
-      #Then stop the bitcoind server 

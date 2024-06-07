@@ -4,12 +4,167 @@ description: Rooch Network is the Application Layer of Bitcoin, an Asset-Centric
 searchable: false
 ---
 
-import TitleHero from '../components/index/titleHero'
+import Index from '../components/index'
 
-<TitleHero
-  title="Unlocking Infinite Utility for the Bitcoin Economy"
-  slogan=""
-  description="Rooch Network is the Application Layer of Bitcoin, an Asset-Centric infrastructure that provides indexing, trading, and enables application scenarios for all Bitcoin assets"
-  button="Join the community"
-  buttonHref="/learn/welcome"
+<Index
+  heroTitle="Unlocking Infinite Utility for the Bitcoin Economy"
+  heroSlogan=""
+  heroDescription="Rooch Network is a native application layer for the Bitcoin ecosystem, based on the Stackable L2 solution, serving as the go-to Bitcoin assets launchpad and Bitcoin application infra for users and devs"
+  heroButton="Build on Bitcoin"
+  heroButtonHref="/build/getting-started/installation"
+  featuresTitle="The Native Application Layer for Bitcoin Ecosystem"
+  featuresButton="Explore Rooch Testnet"
+  features={[
+    {
+      title: 'For Users',
+      description:
+        'If you wanna play with some Rooch-based Bitcoin apps, you can use all your Bitcoin assets directly without bridging',
+      logo: '/logo/features/enable_logo.svg',
+      buttonHref: 'https://portal.rooch.network/',
+      buttonDesc: 'Login Rooch Portal',
+    },
+    {
+      title: 'For Developers',
+      description:
+        'If you wanna build a Bitcoin app, you have access to all Bitcoin assets in your smart contract',
+      logo: '/logo/features/scale_logo.svg',
+      buttonHref: '/#',
+      buttonDesc: 'Start Building',
+    },
+    {
+      title: 'For Communities',
+      description:
+        'If you have eyes on any assets, all Rooch-powered assets are native Bitcoin assets that you can leap back to Bitcoin at any time',
+      logo: '/logo/features/secure_logo.svg',
+      buttonHref: 'https://discord.gg/rooch',
+      buttonDesc: 'Join Discord',
+    },
+  ]}
+  exploreTitle="On-Chain State and Off-Chain App"
+  exploreContent="Rooch introduces a novel Layer2 solution utilizing a stackable state model, enabling off-chain smart contract applications with the on-chain state and data"
+  exploreButtonHref="/learn/welcome"
+  explores={[
+    {
+      title: 'On-Chain State',
+      description:
+        'Rooch enables all applications to access the full on-chain state of the Bitcoin L1 network',
+      logo: '/logo/explore/explore_1.svg',
+    },
+    {
+      title: 'Off-Chain Application',
+      description: 'Build off-chain smart contract based applications that scales',
+      logo: '/logo/explore/explore_2.svg',
+    },
+    {
+      title: 'Cross-Layer Asset Migration Protocol',
+      description:
+        'Migrate your assets between L1 and L2 with Rooch powered assets leaping protocol',
+      logo: '/logo/explore/explore_3.svg',
+    },
+    {
+      title: 'VApp Container with MoveVM',
+      description: 'Build verifiable application with Move language based smart contracts',
+      logo: '/logo/explore/explore_4.svg',
+    },
+  ]}
+  ecosystemTitle="Rooch Ecosystem Partnerships"
+  ecosystemContent="All | Wallet | Bridge | Defi | NFT&Gaming | Infrastructrue"
+  ecosystemBrand={[
+    {
+      brandLogo: 'logo/ecosystem/avail_logo.svg',
+      brandTitle: 'Avail',
+      brandUrl: 'https://www.availproject.org/',
+    },
+    {
+      brandLogo: 'logo/ecosystem/meson_finance_logo.svg',
+      brandTitle: 'Meson Finance',
+      brandUrl: 'https://meson.fi/',
+    },
+    {
+      brandLogo: 'logo/ecosystem/supra_logo.svg',
+      brandTitle: 'Supra',
+      brandUrl: 'https://supra.com/',
+    },
+    {
+      brandLogo: 'logo/ecosystem/obelisk_logo.svg',
+      brandTitle: 'Obelisk',
+      brandUrl: 'https://obelisk.build/',
+    },
+    {
+      brandLogo: 'logo/ecosystem/nervos_logo.svg',
+      brandTitle: 'Nervos',
+      brandUrl: 'https://www.nervos.org/',
+    },
+    {
+      brandLogo: 'logo/ecosystem/block_vision_logo.svg',
+      brandTitle: 'BlockVision',
+      brandUrl: 'https://blockvision.org/',
+    },
+    {
+      brandLogo: 'logo/ecosystem/ankr_logo.svg',
+      brandTitle: 'Ankr',
+      brandUrl: 'https://www.ankr.com/',
+    },
+    {
+      brandLogo: 'logo/ecosystem/ez_swap_logo.svg',
+      brandTitle: 'EzSwap',
+      brandUrl: 'https://linktr.ee/EZswapProtocol',
+    },
+    {
+      brandLogo: 'logo/ecosystem/wisp_swap_logo.svg',
+      brandTitle: 'Wisp Swap',
+      brandUrl: 'https://linktr.ee/wispswap',
+    },
+    {
+      brandLogo: 'logo/ecosystem/okx_wallet_logo.svg',
+      brandTitle: 'OKX Wallet',
+      brandUrl: 'https://www.okx.com/zh-hans/web3',
+    },
+    {
+      brandLogo: 'logo/ecosystem/unisat_logo.svg',
+      brandTitle: 'Unisat',
+      brandUrl: 'https://unisat.io/',
+    },
+    {
+      brandLogo: 'logo/ecosystem/joyid_logo.svg',
+      brandTitle: 'JoyID Passkey',
+      brandUrl: 'https://linktr.ee/joyidpasskey',
+    },
+    {
+      brandLogo: 'logo/ecosystem/surf_wallet_logo.svg',
+      brandTitle: 'Surf Wallet',
+      brandUrl: 'https://linktr.ee/surfwallet',
+    },
+    {
+      brandLogo: 'logo/ecosystem/move_bit_logo.svg',
+      brandTitle: 'Movebit',
+      brandUrl: 'https://www.movebit.xyz/',
+    },
+    {
+      brandLogo: 'logo/ecosystem/donut_logo.svg',
+      brandTitle: 'Donut',
+      brandUrl: 'https://dnt.social/',
+    },
+  ]}
+  blogsTitle="Rooch Blog"
+  blogs={[
+    {
+      title: 'Rooch Network - The Application Layer of Bitcoin',
+      date: 'April 24, 2024',
+      link: 'https://rooch.network/blog/the-application-layer-of-bitcoin',
+      image: '/logo/blogs/blog_1.jpg',
+    },
+    {
+      title: 'Stackable L2 — A New Scaling Solution',
+      date: 'March 5, 2024',
+      link: 'https://rooch.network/blog/stackable-l2',
+      image: '/logo/blogs/blog_2.jpg',
+    },
+    {
+      title: 'RoochBTC - On - Chain Indexer as Bitcoin L2',
+      date: 'January 3, 2024',
+      link: 'https://rooch.network/blog/rooch-btc',
+      image: '/logo/blogs/blog_3.jpg',
+    },
+  ]}
 />

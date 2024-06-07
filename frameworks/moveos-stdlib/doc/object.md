@@ -12,6 +12,7 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Struct `ObjectEntity`](#0x2_object_ObjectEntity)
 -  [Resource `Object`](#0x2_object_Object)
 -  [Resource `FieldValue`](#0x2_object_FieldValue)
+-  [Resource `Timestamp`](#0x2_object_Timestamp)
 -  [Struct `TestStructID`](#0x2_object_TestStructID)
 -  [Constants](#@Constants_0)
 -  [Function `has_parent`](#0x2_object_has_parent)
@@ -81,6 +82,14 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `contains_field_with_type`](#0x2_object_contains_field_with_type)
 -  [Function `contains_object_field`](#0x2_object_contains_object_field)
 -  [Function `field_size`](#0x2_object_field_size)
+-  [Function `genesis_init`](#0x2_object_genesis_init)
+-  [Function `update_global_time`](#0x2_object_update_global_time)
+-  [Function `try_update_global_time_internal`](#0x2_object_try_update_global_time_internal)
+-  [Function `timestamp`](#0x2_object_timestamp)
+-  [Function `milliseconds`](#0x2_object_milliseconds)
+-  [Function `seconds`](#0x2_object_seconds)
+-  [Function `now_milliseconds`](#0x2_object_now_milliseconds)
+-  [Function `now_seconds`](#0x2_object_now_seconds)
 
 
 <pre><code><b>use</b> <a href="">0x1::hash</a>;
@@ -154,6 +163,18 @@ Because the GlobalValue in MoveVM must be a struct.
 
 
 <pre><code><b>struct</b> <a href="object.md#0x2_object_FieldValue">FieldValue</a>&lt;V&gt; <b>has</b> drop, store, key
+</code></pre>
+
+
+
+<a name="0x2_object_Timestamp"></a>
+
+## Resource `Timestamp`
+
+A object holding the current Unix time in milliseconds
+
+
+<pre><code><b>struct</b> <a href="object.md#0x2_object_Timestamp">Timestamp</a> <b>has</b> key
 </code></pre>
 
 
@@ -232,12 +253,31 @@ The dynamic fields is not empty
 
 
 
+<a name="0x2_object_ErrorInvalidTimestamp"></a>
+
+An invalid timestamp was provided
+
+
+<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorInvalidTimestamp">ErrorInvalidTimestamp</a>: u64 = 21;
+</code></pre>
+
+
+
 <a name="0x2_object_ErrorNotFound"></a>
 
 Can not found the Object or dynamic field
 
 
 <pre><code><b>const</b> <a href="object.md#0x2_object_ErrorNotFound">ErrorNotFound</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x2_object_ErrorNotGenesisAddress"></a>
+
+
+
+<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorNotGenesisAddress">ErrorNotGenesisAddress</a>: u64 = 22;
 </code></pre>
 
 
@@ -323,6 +363,16 @@ The object has no parent
 
 
 <pre><code><b>const</b> <a href="object.md#0x2_object_FROZEN_OBJECT_FLAG_MASK">FROZEN_OBJECT_FLAG_MASK</a>: u8 = 2;
+</code></pre>
+
+
+
+<a name="0x2_object_MILLI_CONVERSION_FACTOR"></a>
+
+Conversion factor between seconds and milliseconds
+
+
+<pre><code><b>const</b> <a href="object.md#0x2_object_MILLI_CONVERSION_FACTOR">MILLI_CONVERSION_FACTOR</a>: u64 = 1000;
 </code></pre>
 
 
@@ -907,7 +957,7 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 ## Function `add_field`
 
-Add a dynamic filed to the object. Aborts if an field for this
+Add a dynamic field to the object. Aborts if an field for this
 key already exists. The field itself is not stored in the
 object, and cannot be discovered from it.
 
@@ -1167,4 +1217,95 @@ Returns the size of the object fields, the number of key-value pairs
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_field_size">field_size</a>&lt;T: key&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): u64
+</code></pre>
+
+
+
+<a name="0x2_object_genesis_init"></a>
+
+## Function `genesis_init`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_genesis_init">genesis_init</a>(_genesis_account: &<a href="">signer</a>, initial_time_milliseconds: u64)
+</code></pre>
+
+
+
+<a name="0x2_object_update_global_time"></a>
+
+## Function `update_global_time`
+
+Updates the global clock time, if the new time is smaller than the current time, aborts.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_update_global_time">update_global_time</a>(timestamp_milliseconds: u64)
+</code></pre>
+
+
+
+<a name="0x2_object_try_update_global_time_internal"></a>
+
+## Function `try_update_global_time_internal`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_try_update_global_time_internal">try_update_global_time_internal</a>(timestamp_milliseconds: u64): bool
+</code></pre>
+
+
+
+<a name="0x2_object_timestamp"></a>
+
+## Function `timestamp`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="timestamp.md#0x2_timestamp">timestamp</a>(): &<a href="object.md#0x2_object_Timestamp">object::Timestamp</a>
+</code></pre>
+
+
+
+<a name="0x2_object_milliseconds"></a>
+
+## Function `milliseconds`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_milliseconds">milliseconds</a>(self: &<a href="object.md#0x2_object_Timestamp">object::Timestamp</a>): u64
+</code></pre>
+
+
+
+<a name="0x2_object_seconds"></a>
+
+## Function `seconds`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_seconds">seconds</a>(self: &<a href="object.md#0x2_object_Timestamp">object::Timestamp</a>): u64
+</code></pre>
+
+
+
+<a name="0x2_object_now_milliseconds"></a>
+
+## Function `now_milliseconds`
+
+Gets the current time in milliseconds.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_now_milliseconds">now_milliseconds</a>(): u64
+</code></pre>
+
+
+
+<a name="0x2_object_now_seconds"></a>
+
+## Function `now_seconds`
+
+Gets the current time in seconds.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_now_seconds">now_seconds</a>(): u64
 </code></pre>

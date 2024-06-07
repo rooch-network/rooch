@@ -11,11 +11,12 @@ use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, transaction_view::TransactionWithInfoView,
 };
 use rooch_rpc_api::jsonrpc_types::{
-    AccessPathView, AccountAddressView, AnnotatedFunctionResultView, BalanceInfoPageView,
-    EventOptions, EventPageView, StateOptions, StatePageView, StructTagView,
+    AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, EventOptions, EventPageView,
+    RoochAddressView, StateOptions, StatePageView, StructTagView,
 };
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, StateView};
 use rooch_rpc_api::jsonrpc_types::{TransactionWithInfoPageView, TxOptions};
+use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
 use std::sync::Arc;
 
@@ -182,7 +183,7 @@ impl RoochRpcClient {
 
     pub async fn get_balance(
         &self,
-        account_addr: AccountAddressView,
+        account_addr: RoochAddressView,
         coin_type: StructTagView,
     ) -> Result<BalanceInfoView> {
         Ok(self.http.get_balance(account_addr, coin_type).await?)
@@ -190,8 +191,8 @@ impl RoochRpcClient {
 
     pub async fn get_balances(
         &self,
-        account_addr: AccountAddressView,
-        cursor: Option<String>,
+        account_addr: RoochAddressView,
+        cursor: Option<IndexerStateID>,
         limit: Option<usize>,
     ) -> Result<BalanceInfoPageView> {
         Ok(self

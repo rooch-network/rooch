@@ -4,15 +4,12 @@
 use crate::meta_store::{MetaDBStore, MetaStore};
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
 use anyhow::Result;
-use moveos_config::store_config::RocksdbConfig;
 use moveos_types::h256::H256;
 use once_cell::sync::Lazy;
-use raw_store::rocks::RocksDB;
 use raw_store::{ColumnFamilyName, StoreInstance};
 use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::LedgerTransaction;
 use std::fmt::{Debug, Display, Formatter};
-use std::path::Path;
 
 pub mod meta_store;
 pub mod transaction_store;
@@ -57,16 +54,6 @@ impl RoochStore {
         Ok(store)
     }
 
-    //TODO implement a memory mock store
-    pub fn mock_rooch_store(data_dir: &Path) -> Result<Self> {
-        Self::new(StoreInstance::new_db_instance(RocksDB::new(
-            data_dir,
-            moveos_store::StoreMeta::get_column_family_names().to_vec(),
-            RocksdbConfig::default(),
-            None,
-        )?))
-    }
-
     pub fn get_transaction_store(&self) -> &TransactionDBStore {
         &self.transaction_store
     }
@@ -88,8 +75,10 @@ impl Debug for RoochStore {
 }
 
 impl TransactionStore for RoochStore {
-    fn save_transaction(&mut self, tx: LedgerTransaction) -> Result<()> {
-        self.transaction_store.save_transaction(tx)
+    fn save_transaction(&self, tx: LedgerTransaction) -> Result<()> {
+        let sequencer_order = SequencerOrder::new(tx.sequence_info.tx_order);
+        self.transaction_store.save_transaction(tx)?;
+        self.meta_store.save_sequencer_order(sequencer_order)
     }
 
     fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<LedgerTransaction>> {

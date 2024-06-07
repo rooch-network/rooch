@@ -6,30 +6,24 @@
 
 
 -  [Resource `Account`](#0x2_account_Account)
--  [Resource `ResourceAccount`](#0x2_account_ResourceAccount)
--  [Struct `SignerCapability`](#0x2_account_SignerCapability)
 -  [Constants](#@Constants_0)
 -  [Function `create_account_by_system`](#0x2_account_create_account_by_system)
--  [Function `create_system_reserved_account`](#0x2_account_create_system_reserved_account)
+-  [Function `create_account`](#0x2_account_create_account)
 -  [Function `sequence_number`](#0x2_account_sequence_number)
 -  [Function `increment_sequence_number_for_system`](#0x2_account_increment_sequence_number_for_system)
--  [Function `signer_address`](#0x2_account_signer_address)
--  [Function `is_resource_account`](#0x2_account_is_resource_account)
 -  [Function `exists_at`](#0x2_account_exists_at)
 -  [Function `create_signer_for_system`](#0x2_account_create_signer_for_system)
+-  [Function `create_signer_with_account`](#0x2_account_create_signer_with_account)
 -  [Function `create_signer`](#0x2_account_create_signer)
--  [Function `create_resource_account`](#0x2_account_create_resource_account)
--  [Function `create_signer_with_capability`](#0x2_account_create_signer_with_capability)
--  [Function `get_signer_capability_address`](#0x2_account_get_signer_capability_address)
 -  [Function `account_object_id`](#0x2_account_account_object_id)
--  [Function `create_account_object`](#0x2_account_create_account_object)
 -  [Function `account_borrow_resource`](#0x2_account_account_borrow_resource)
 -  [Function `account_borrow_mut_resource`](#0x2_account_account_borrow_mut_resource)
 -  [Function `account_move_resource_to`](#0x2_account_account_move_resource_to)
 -  [Function `account_move_resource_from`](#0x2_account_account_move_resource_from)
 -  [Function `account_exists_resource`](#0x2_account_account_exists_resource)
--  [Function `transfer`](#0x2_account_transfer)
+-  [Function `destroy_account`](#0x2_account_destroy_account)
 -  [Function `borrow_account`](#0x2_account_borrow_account)
+-  [Function `borrow_mut_account`](#0x2_account_borrow_mut_account)
 -  [Function `borrow_resource`](#0x2_account_borrow_resource)
 -  [Function `borrow_mut_resource`](#0x2_account_borrow_mut_resource)
 -  [Function `move_resource_to`](#0x2_account_move_resource_to)
@@ -37,13 +31,11 @@
 -  [Function `exists_resource`](#0x2_account_exists_resource)
 
 
-<pre><code><b>use</b> <a href="">0x1::ascii</a>;
-<b>use</b> <a href="">0x1::hash</a>;
-<b>use</b> <a href="">0x1::signer</a>;
-<b>use</b> <a href="">0x1::vector</a>;
-<b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
+<pre><code><b>use</b> <a href="">0x1::signer</a>;
+<b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="core_addresses.md#0x2_core_addresses">0x2::core_addresses</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
+<b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 <b>use</b> <a href="type_table.md#0x2_type_table">0x2::type_table</a>;
 </code></pre>
 
@@ -62,31 +54,6 @@ It is also used to store the account's resources
 
 
 
-<a name="0x2_account_ResourceAccount"></a>
-
-## Resource `ResourceAccount`
-
-ResourceAccount can only be stored under address, not in other structs.
-
-
-<pre><code><b>struct</b> <a href="account.md#0x2_account_ResourceAccount">ResourceAccount</a> <b>has</b> key
-</code></pre>
-
-
-
-<a name="0x2_account_SignerCapability"></a>
-
-## Struct `SignerCapability`
-
-SignerCapability can only be stored in other structs, not under address.
-So that the capability is always controlled by contracts, not by some EOA.
-
-
-<pre><code><b>struct</b> <a href="account.md#0x2_account_SignerCapability">SignerCapability</a> <b>has</b> store
-</code></pre>
-
-
-
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -101,15 +68,6 @@ So that the capability is always controlled by contracts, not by some EOA.
 
 
 
-<a name="0x2_account_CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER"></a>
-
-
-
-<pre><code><b>const</b> <a href="account.md#0x2_account_CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER">CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER</a>: <a href="">vector</a>&lt;u8&gt; = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
-</code></pre>
-
-
-
 <a name="0x2_account_ErrorAccountAlreadyExists"></a>
 
 Account already exists
@@ -120,32 +78,12 @@ Account already exists
 
 
 
-<a name="0x2_account_ErrorAccountIsAlreadyResourceAccount"></a>
-
-Resource Account can't derive resource account
-
-
-<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorAccountIsAlreadyResourceAccount">ErrorAccountIsAlreadyResourceAccount</a>: u64 = 6;
-</code></pre>
-
-
-
-<a name="0x2_account_ErrorAccountNotExists"></a>
-
-Account does not exists
-
-
-<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorAccountNotExists">ErrorAccountNotExists</a>: u64 = 2;
-</code></pre>
-
-
-
 <a name="0x2_account_ErrorAddressReserved"></a>
 
 Cannot create account because address is reserved
 
 
-<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorAddressReserved">ErrorAddressReserved</a>: u64 = 4;
+<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorAddressReserved">ErrorAddressReserved</a>: u64 = 3;
 </code></pre>
 
 
@@ -155,17 +93,7 @@ Cannot create account because address is reserved
 Address to create is not a valid reserved address
 
 
-<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorNotValidSystemReservedAddress">ErrorNotValidSystemReservedAddress</a>: u64 = 7;
-</code></pre>
-
-
-
-<a name="0x2_account_ErrorResourceAccountAlreadyUsed"></a>
-
-An attempt to create a resource account on an account that has a committed transaction
-
-
-<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorResourceAccountAlreadyUsed">ErrorResourceAccountAlreadyUsed</a>: u64 = 5;
+<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorNotValidSystemReservedAddress">ErrorNotValidSystemReservedAddress</a>: u64 = 4;
 </code></pre>
 
 
@@ -175,7 +103,7 @@ An attempt to create a resource account on an account that has a committed trans
 The resource with the given type already exists
 
 
-<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorResourceAlreadyExists">ErrorResourceAlreadyExists</a>: u64 = 8;
+<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorResourceAlreadyExists">ErrorResourceAlreadyExists</a>: u64 = 5;
 </code></pre>
 
 
@@ -185,7 +113,7 @@ The resource with the given type already exists
 The resource with the given type not exists
 
 
-<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorResourceNotExists">ErrorResourceNotExists</a>: u64 = 9;
+<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorResourceNotExists">ErrorResourceNotExists</a>: u64 = 6;
 </code></pre>
 
 
@@ -195,30 +123,7 @@ The resource with the given type not exists
 Sequence number exceeds the maximum value for a u64
 
 
-<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorSequenceNumberTooBig">ErrorSequenceNumberTooBig</a>: u64 = 3;
-</code></pre>
-
-
-
-<a name="0x2_account_SCHEME_DERIVE_RESOURCE_ACCOUNT"></a>
-
-Scheme identifier used when hashing an account's address together with a seed to derive the address (not the
-authentication key) of a resource account. This is an abuse of the notion of a scheme identifier which, for now,
-serves to domain separate hashes used to derive resource account addresses from hashes used to derive
-authentication keys. Without such separation, an adversary could create (and get a signer for) a resource account
-whose address matches an existing address of a MultiEd25519 wallet.
-
-
-<pre><code><b>const</b> <a href="account.md#0x2_account_SCHEME_DERIVE_RESOURCE_ACCOUNT">SCHEME_DERIVE_RESOURCE_ACCOUNT</a>: u8 = 255;
-</code></pre>
-
-
-
-<a name="0x2_account_ZERO_AUTH_KEY"></a>
-
-
-
-<pre><code><b>const</b> <a href="account.md#0x2_account_ZERO_AUTH_KEY">ZERO_AUTH_KEY</a>: <a href="">vector</a>&lt;u8&gt; = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorSequenceNumberTooBig">ErrorSequenceNumberTooBig</a>: u64 = 2;
 </code></pre>
 
 
@@ -227,9 +132,7 @@ whose address matches an existing address of a MultiEd25519 wallet.
 
 ## Function `create_account_by_system`
 
-Publishes a new <code><a href="account.md#0x2_account_Account">Account</a></code> resource under <code>new_address</code> via system. A signer representing <code>new_address</code>
-is returned. This way, the caller of this function can publish additional resources under
-<code>new_address</code>.
+Create a new account for the given address, only callable by the system account
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_account_by_system">create_account_by_system</a>(system: &<a href="">signer</a>, new_address: <b>address</b>): <a href="">signer</a>
@@ -237,14 +140,14 @@ is returned. This way, the caller of this function can publish additional resour
 
 
 
-<a name="0x2_account_create_system_reserved_account"></a>
+<a name="0x2_account_create_account"></a>
 
-## Function `create_system_reserved_account`
+## Function `create_account`
 
-create the account for system reserved addresses
+Create an Account Object with a generated address
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_system_reserved_account">create_system_reserved_account</a>(system: &<a href="">signer</a>, addr: <b>address</b>): (<a href="">signer</a>, <a href="account.md#0x2_account_SignerCapability">account::SignerCapability</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_account">create_account</a>(): <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;
 </code></pre>
 
 
@@ -272,28 +175,6 @@ Return the current sequence number at <code>addr</code>
 
 
 
-<a name="0x2_account_signer_address"></a>
-
-## Function `signer_address`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_signer_address">signer_address</a>(cap: &<a href="account.md#0x2_account_SignerCapability">account::SignerCapability</a>): <b>address</b>
-</code></pre>
-
-
-
-<a name="0x2_account_is_resource_account"></a>
-
-## Function `is_resource_account`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_is_resource_account">is_resource_account</a>(addr: <b>address</b>): bool
-</code></pre>
-
-
-
 <a name="0x2_account_exists_at"></a>
 
 ## Function `exists_at`
@@ -316,6 +197,18 @@ Return the current sequence number at <code>addr</code>
 
 
 
+<a name="0x2_account_create_signer_with_account"></a>
+
+## Function `create_signer_with_account`
+
+Create a signer with mutable Object<Account>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_signer_with_account">create_signer_with_account</a>(<a href="account.md#0x2_account">account</a>: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): <a href="">signer</a>
+</code></pre>
+
+
+
 <a name="0x2_account_create_signer"></a>
 
 ## Function `create_signer`
@@ -327,42 +220,6 @@ Return the current sequence number at <code>addr</code>
 
 
 
-<a name="0x2_account_create_resource_account"></a>
-
-## Function `create_resource_account`
-
-A resource account is used to manage resources independent of an account managed by a user.
-In Rooch a resource account is created based upon the sha3 256 of the source's address and additional seed data.
-A resource account can only be created once
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_resource_account">create_resource_account</a>(source: &<a href="">signer</a>): (<a href="">signer</a>, <a href="account.md#0x2_account_SignerCapability">account::SignerCapability</a>)
-</code></pre>
-
-
-
-<a name="0x2_account_create_signer_with_capability"></a>
-
-## Function `create_signer_with_capability`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_signer_with_capability">create_signer_with_capability</a>(capability: &<a href="account.md#0x2_account_SignerCapability">account::SignerCapability</a>): <a href="">signer</a>
-</code></pre>
-
-
-
-<a name="0x2_account_get_signer_capability_address"></a>
-
-## Function `get_signer_capability_address`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_get_signer_capability_address">get_signer_capability_address</a>(capability: &<a href="account.md#0x2_account_SignerCapability">account::SignerCapability</a>): <b>address</b>
-</code></pre>
-
-
-
 <a name="0x2_account_account_object_id"></a>
 
 ## Function `account_object_id`
@@ -370,18 +227,6 @@ A resource account can only be created once
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_object_id">account_object_id</a>(<a href="account.md#0x2_account">account</a>: <b>address</b>): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
-</code></pre>
-
-
-
-<a name="0x2_account_create_account_object"></a>
-
-## Function `create_account_object`
-
-Create a new account object space
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x2_account_create_account_object">create_account_object</a>(<a href="account.md#0x2_account">account</a>: <b>address</b>)
 </code></pre>
 
 
@@ -403,7 +248,8 @@ Create a new account object space
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_borrow_mut_resource">account_borrow_mut_resource</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): &<b>mut</b> T
+<pre><code>#[private_generics(#[T])]
+<b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_borrow_mut_resource">account_borrow_mut_resource</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): &<b>mut</b> T
 </code></pre>
 
 
@@ -414,7 +260,8 @@ Create a new account object space
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_move_resource_to">account_move_resource_to</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;, resource: T)
+<pre><code>#[private_generics(#[T])]
+<b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_move_resource_to">account_move_resource_to</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;, resource: T)
 </code></pre>
 
 
@@ -425,7 +272,8 @@ Create a new account object space
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_move_resource_from">account_move_resource_from</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): T
+<pre><code>#[private_generics(#[T])]
+<b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_move_resource_from">account_move_resource_from</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): T
 </code></pre>
 
 
@@ -441,13 +289,14 @@ Create a new account object space
 
 
 
-<a name="0x2_account_transfer"></a>
+<a name="0x2_account_destroy_account"></a>
 
-## Function `transfer`
+## Function `destroy_account`
+
+Destroy the account object
 
 
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x2_account_transfer">transfer</a>(obj: <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;, <a href="account.md#0x2_account">account</a>: <b>address</b>)
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_destroy_account">destroy_account</a>(account_obj: <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;)
 </code></pre>
 
 
@@ -459,6 +308,17 @@ Create a new account object space
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_borrow_account">borrow_account</a>(<a href="account.md#0x2_account">account</a>: <b>address</b>): &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;
+</code></pre>
+
+
+
+<a name="0x2_account_borrow_mut_account"></a>
+
+## Function `borrow_mut_account`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_borrow_mut_account">borrow_mut_account</a>(<a href="account.md#0x2_account">account</a>: &<a href="">signer</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;
 </code></pre>
 
 

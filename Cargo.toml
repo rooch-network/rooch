@@ -40,6 +40,7 @@ members = [
     "crates/rooch-indexer",
     "crates/rooch-benchmarks",
     "crates/rooch-test-transaction-builder",
+    "crates/rooch-db",
     "crates/data_verify",
     "crates/rooch-faucet",
     "frameworks/framework-builder",
@@ -66,7 +67,7 @@ homepage = "https://rooch.network"
 license = "Apache-2.0"
 publish = false
 repository = "https://github.com/rooch-network/rooch"
-rust-version = "1.70"
+rust-version = "1.77.1"
 
 
 [workspace.dependencies]
@@ -115,6 +116,7 @@ rooch-benchmarks = { path = "crates/rooch-benchmarks" }
 rooch-faucet = { path = "crates/rooch-faucet" }
 rooch-test-transaction-builder = { path = "crates/rooch-test-transaction-builder" }
 data-verify = { path = "crates/data_verify" }
+rooch-db = { path = "crates/rooch-db" }
 
 # frameworks
 framework-types = { path = "frameworks/framework-types" }
@@ -123,7 +125,6 @@ framework-release = { path = "frameworks/framework-release" }
 moveos-stdlib = { path = "frameworks/moveos-stdlib" }
 rooch-framework = { path = "frameworks/rooch-framework" }
 bitcoin-move = { path = "frameworks/bitcoin-move" }
-
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.
@@ -288,6 +289,7 @@ xxhash-rust = "0.8.8"
 base64 = "0.21.3"
 #criterion-cpu-time = "0.1.0"
 wasmer = "4.2.5"
+wasmer-types = "4.2.5"
 ciborium = "0.2.1"
 pprof = { version = "0.13.0", features = ["flamegraph", "criterion", "cpp", "frame-pointer", "protobuf-codec"] }
 celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
@@ -297,6 +299,8 @@ bitcoincore-rpc-json = "0.18.0"
 toml = "0.8.12"
 csv = "1.2.1"
 ord = "0.18.5"
+revm-precompile = "7.0.0"
+revm-primitives = "4.0.0"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES

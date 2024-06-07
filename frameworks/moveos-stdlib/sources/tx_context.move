@@ -22,7 +22,7 @@ module moveos_std::tx_context {
     friend moveos_std::object;
     friend moveos_std::account;
     friend moveos_std::event;
-    friend moveos_std::move_module;
+    friend moveos_std::module_store;
 
     const ErrorInvalidContext: u64 = 1;
  

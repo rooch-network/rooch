@@ -8,7 +8,6 @@ import {
   useRoochClientQuery,
   useTransferCoin,
 } from '@roochnetwork/rooch-sdk-kit'
-
 import { AlertCircle, ArrowLeft, Wallet } from 'lucide-react'
 import {
   Table,
@@ -23,18 +22,23 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-
 import CustomPagination from '@/components/custom-pagination.tsx'
+import { formatCoin } from '@/utils/format.ts'
+import { useToast } from '@/components/ui/use-toast'
+import { ToastAction } from '@/components/ui/toast'
 
 export const AssetsCoin = () => {
   const account = useCurrentAccount()
   const sessionKey = useCurrentSession()
+  const { toast } = useToast()
 
   const { mutateAsync: transferCoin } = useTransferCoin()
 
   const [recipient, setRecipient] = useState('')
-  const [amount, setAmount] = useState('0')
+  const [amount, setAmount] = useState('')
   const [transferLoading, setTransferLoading] = useState(false)
+  const [error, setError] = useState('')
+
   // ** PAGINATION
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 1 })
   const mapPageToNextCursor = useRef<{ [page: number]: string | null }>({})
@@ -48,6 +52,7 @@ export const AssetsCoin = () => {
       pageSize: paginationModel.pageSize,
     })
   }
+
   const queryOptions = useMemo(
     () => ({
       cursor: mapPageToNextCursor.current[paginationModel.page - 1],
@@ -73,6 +78,8 @@ export const AssetsCoin = () => {
 
   const handleClose = () => {
     setModalOpen(false)
+    setTransferLoading(false)
+    setError('')
   }
 
   const handleCloseModal = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
@@ -81,7 +88,6 @@ export const AssetsCoin = () => {
     }
   }
 
-  // ** modal 打开时，禁止父组件 scroll
   useEffect(() => {
     if (modalOpen) {
       document.body.style.overflow = 'hidden'
@@ -94,10 +100,9 @@ export const AssetsCoin = () => {
     }
   }, [modalOpen])
 
-  // ** ESC 关闭 modal
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
-      if (event.keyCode === 27) {
+      if (event.key === 'Escape') {
         setModalOpen(false)
       }
     }
@@ -119,22 +124,65 @@ export const AssetsCoin = () => {
     }
   }, [paginationModel, data])
 
+  const handleAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value
+
+    // Validate the input to ensure it's a valid number with at most one decimal point
+    const validNumberRegex = /^[0-9]*\.?[0-9]*$/
+    if (validNumberRegex.test(value)) {
+      setAmount(value)
+
+      if (selectedCoin) {
+        const amountNumber = Number(value)
+        const balanceNumber = Number(selectedCoin.balance) / 10 ** selectedCoin.decimals
+        if (amountNumber > balanceNumber) {
+          setError('Amount exceeds available balance.')
+        } else {
+          setError('')
+        }
+      }
+    }
+  }
+
+  const handleRecipientChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = event.target.value
+    setRecipient(value)
+  }
+
   const handleTransferCoin = async () => {
-    if (recipient === '' || amount === '0') {
+    if (recipient === '' || amount === '0' || !selectedCoin || error) {
+      setError('Please enter a valid recipient and amount.')
       return
     }
 
+    const amountNumber = Math.floor(Number(amount) * 10 ** selectedCoin.decimals)
+
     setTransferLoading(true)
 
-    await transferCoin({
-      account: sessionKey!,
-      recipient: recipient,
-      amount: Number.parseInt(amount),
-      coinType: selectedCoin!.coin_type,
-    })
-
-    handleClose()
-    setTransferLoading(false)
+    try {
+      await transferCoin({
+        account: sessionKey!,
+        recipient: recipient,
+        amount: amountNumber,
+        coinType: selectedCoin.coin_type,
+      })
+      toast({
+        title: 'Transfer Successful',
+        description: `Transferred ${amount} ${selectedCoin.name} to ${recipient}`,
+        action: <ToastAction altText="Close">Close</ToastAction>,
+      })
+    } catch (error) {
+      console.error('Transfer failed', error)
+      toast({
+        title: 'Transfer Failed',
+        description: 'The transfer could not be completed. Please try again.',
+        action: <ToastAction altText="Close">Close</ToastAction>,
+      })
+    } finally {
+      setTransferLoading(false)
+      handleClose()
+      setError('')
+    }
   }
 
   if (!account) {
@@ -186,7 +234,7 @@ export const AssetsCoin = () => {
             {data?.data.map((coin) => (
               <TableRow key={coin.name}>
                 <TableCell>{coin.name}</TableCell>
-                <TableCell>{coin.balance}</TableCell>
+                <TableCell>{formatCoin(Number(coin.balance), coin.decimals, coin.decimals)}</TableCell>
                 <TableCell className="text-right">
                   <Button
                     variant="link"
@@ -232,9 +280,7 @@ export const AssetsCoin = () => {
                       placeholder="Enter Address..."
                       className="h-14 resize-none overflow-hidden rounded-2xl bg-gray-50 dark:bg-gray-200 text-gray-800 w-96"
                       value={recipient}
-                      onChange={(event) => {
-                        setRecipient(event.target.value)
-                      }}
+                      onChange={handleRecipientChange}
                       disabled={transferLoading}
                       required
                       rows={1}
@@ -244,11 +290,13 @@ export const AssetsCoin = () => {
                   {/* Token + Balance */}
                   <div className="grid w-full max-w-md items-center gap-1.5">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="address">Amount</Label>
+                      <Label htmlFor="amount">Amount</Label>
                       <p className="text-xs text-muted-foreground">
                         <span>Balance: </span>
                         <span className="font-semibold text-blue-600 dark:text-blue-400">
-                          {selectedCoin?.balance}
+                          {selectedCoin
+                            ? formatCoin(Number(selectedCoin.balance), selectedCoin.decimals)
+                            : '0.0'}
                         </span>
                       </p>
                     </div>
@@ -260,20 +308,17 @@ export const AssetsCoin = () => {
                         <p className="text-sm">{selectedCoin?.name}</p>
                       </div>
                       <Input
+                        id="amount"
                         className="h-10 rounded-2xl bg-gray-50 dark:bg-gray-200 text-gray-800 w-48 pr-8 mr-2 overflow-hidden border-none"
                         placeholder="0.0"
                         value={amount}
-                        onChange={(event) => {
-                          setAmount(event.target.value)
-                        }}
+                        onChange={handleAmountChange}
                         disabled={transferLoading}
                         required
+                        pattern="[0-9]*\.?[0-9]*"
                       />
-                      {/*TODO need Calculating gas */}
-                      {/*<button className="text-blue-500 absolute end-4 font-sans text-xs focus:outline-none focus:ring-0 hover:text-blue-300 transition-all bg-gray-50 h-8 w-8 dark:bg-gray-200 rounded-2xl">*/}
-                      {/*  MAX*/}
-                      {/*</button>*/}
                     </div>
+                    {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
                   </div>
 
                   {/* CTA */}
@@ -282,12 +327,21 @@ export const AssetsCoin = () => {
                     size="default"
                     className="w-full mt-6 font-sans gap-1"
                     onClick={handleTransferCoin}
-                    disabled={transferLoading}
+                    disabled={transferLoading || error !== ''}
                   >
-                    <span>Send</span>
-                    <span className="font-semibold text-blue-400 dark:text-blue-600">
-                      {selectedCoin?.name}
-                    </span>
+                    {transferLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
+                        <span>Transferring...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <span>Send</span>
+                        <span className="font-semibold text-blue-400 dark:text-blue-600">
+                          {selectedCoin?.name}
+                        </span>
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>

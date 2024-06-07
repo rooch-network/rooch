@@ -1,6 +1,6 @@
 [package]
 name = "rooch"
-version = "0.4.1"
+version = "0.5.0"
 
 # Workspace inherited keys
 authors = { workspace = true }
@@ -73,6 +73,7 @@ moveos = { workspace = true }
 moveos-verifier = { workspace = true }
 moveos-object-runtime = { workspace = true }
 moveos-compiler = { workspace = true }
+moveos-config ={ workspace = true }
 
 framework-builder = { workspace = true }
 framework-types = { workspace = true }
@@ -90,8 +91,6 @@ rooch-rpc-server = { workspace = true }
 rooch-rpc-client = { workspace = true }
 rooch-integration-test-runner = { workspace = true }
 rooch-indexer = { workspace = true }
+rooch-db = { workspace = true }
 
 framework-release = { workspace = true }
-
-[features]
-dashboard = []

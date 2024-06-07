@@ -1,10 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::address::BitcoinAddress;
 use crate::framework::chain_id::ChainID;
 use crate::genesis_config::{self, GenesisConfig};
 use anyhow::{bail, format_err, Result};
-use move_core_types::account_address::AccountAddress;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -67,7 +67,8 @@ impl FromStr for BuiltinChainID {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
+        let s = s.to_lowercase();
+        match s.as_str() {
             "local" => Ok(BuiltinChainID::Local),
             "dev" => Ok(BuiltinChainID::Dev),
             "test" => Ok(BuiltinChainID::Test),
@@ -302,7 +303,7 @@ impl RoochNetwork {
         Self::builtin(BuiltinChainID::Main)
     }
 
-    pub fn set_sequencer_account(&mut self, account: AccountAddress) {
+    pub fn set_sequencer_account(&mut self, account: BitcoinAddress) {
         self.genesis_config.sequencer_account = account;
     }
 }

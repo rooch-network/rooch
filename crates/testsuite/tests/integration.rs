@@ -12,7 +12,6 @@ use images::ord::Ord;
 use jpst::TemplateContext;
 use rooch::RoochCli;
 use rooch_config::{rooch_config_dir, RoochOpt, ServerOpt};
-use rooch_key::key_derive::{generate_new_key_pair, retrieve_key_pair};
 use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_rpc_server::Service;
 use rooch_types::crypto::RoochKeyPair;
@@ -24,7 +23,7 @@ use testcontainers::{
     core::{Container, ExecCommand, WaitFor},
     RunnableImage,
 };
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, trace};
 use uuid::Uuid;
 
 const RPC_USER: &str = "roochuser";
@@ -62,7 +61,7 @@ async fn start_server(w: &mut World, _scenario: String) {
     tokio::time::sleep(Duration::from_secs(5)).await;
 
     let mut service = Service::new();
-    let mut opt = RoochOpt::new_with_temp_store();
+    let mut opt = RoochOpt::new_with_temp_store().expect("new rooch opt should be ok");
     wait_port_available(opt.port()).await;
 
     match w.bitcoind.take() {
@@ -73,6 +72,8 @@ async fn start_server(w: &mut World, _scenario: String) {
             opt.btc_rpc_username = Some(RPC_USER.to_string());
             opt.btc_rpc_password = Some(RPC_PASS.to_string());
             opt.data_import_flag = false; // Enable data import without writing indexes
+            opt.btc_sync_block_interval = Some(1u64); // Update sync interval as 1s
+
             info!("config btc rpc ok");
 
             w.bitcoind = Some(bitcoind);
@@ -84,13 +85,11 @@ async fn start_server(w: &mut World, _scenario: String) {
 
     let mut server_opt = ServerOpt::new();
 
-    let result = generate_new_key_pair(None, None, None, None).unwrap();
-    let kp: RoochKeyPair =
-        retrieve_key_pair(&result.key_pair_data.private_key_encryption, None).unwrap();
+    let kp: RoochKeyPair = RoochKeyPair::generate_secp256k1();
     server_opt.sequencer_keypair = Some(kp.copy());
     server_opt.proposer_keypair = Some(kp.copy());
 
-    service.start(&opt, server_opt).await.unwrap();
+    service.start(opt, server_opt).await.unwrap();
 
     w.service = Some(service);
 }
@@ -222,23 +221,29 @@ async fn run_cmd(world: &mut World, args: String) {
     args.push(config_dir.to_str().unwrap().to_string());
     let opts: RoochCli = RoochCli::parse_from(args);
     let ret = rooch::run_cli(opts).await;
-    debug!("run_cli result: {:?}", ret);
+
     match ret {
         Ok(output) => {
             let result_json = serde_json::from_str::<Value>(&output);
-
             if result_json.is_ok() {
+                debug!("run_cli {} ok: {:?}", cmd_name, &result_json);
+
                 tpl_ctx
                     .entry(cmd_name)
                     .append::<Value>(result_json.unwrap());
+            } else {
+                debug!("run_cli {} result not json: {:?}", cmd_name, &output);
             }
         }
         Err(err) => {
+            debug!("run_cli cmd: {} output err: {}", cmd_name, err.to_string());
             let err_msg = Value::String(err.to_string());
+            error!("run_cli cmd: {} fail: {:?}", cmd_name, &err_msg);
+            info!("current tpl_ctx: \n {:#}", tpl_ctx.as_value());
             tpl_ctx.entry(cmd_name).append::<Value>(err_msg);
         }
     }
-    debug!("current tpl_ctx: {:?}", tpl_ctx);
+    trace!("current tpl_ctx: {:#}", tpl_ctx.as_value());
 }
 
 #[then(regex = r#"cmd ord bash: "(.*)?""#)]

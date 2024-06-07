@@ -13,9 +13,9 @@ module rooch_framework::genesis {
     use rooch_framework::account_coin_store;
     use rooch_framework::gas_coin;
     use rooch_framework::transaction_fee;
-    use rooch_framework::timestamp;
     use rooch_framework::address_mapping;
     use rooch_framework::onchain_config;
+    use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
 
 
     const ErrorGenesisInit: u64 = 1;
@@ -23,15 +23,12 @@ module rooch_framework::genesis {
     /// GenesisContext is a genesis init parameters in the TxContext.
     struct GenesisContext has copy,store,drop{
         chain_id: u64,
-        /// genesis timestamp in microseconds
-        timestamp: u64,
         /// Sequencer account
-        sequencer: address, 
+        sequencer: BitcoinAddress, 
     }
 
     fun init(){
-        
-        let genesis_account = &account::create_account_internal(@rooch_framework);
+        let genesis_account = &account::create_system_account(@rooch_framework);
         let genesis_context_option = tx_context::get_attribute<GenesisContext>();
         assert!(option::is_some(&genesis_context_option), ErrorGenesisInit);
         let genesis_context = option::extract(&mut genesis_context_option);
@@ -42,16 +39,17 @@ module rooch_framework::genesis {
         account_coin_store::genesis_init(genesis_account);
         gas_coin::genesis_init(genesis_account);
         transaction_fee::genesis_init(genesis_account);
-        timestamp::genesis_init(genesis_account, genesis_context.timestamp);
         address_mapping::genesis_init(genesis_account);
-        onchain_config::genesis_init(genesis_account, genesis_context.sequencer);
+        let sequencer_addr = bitcoin_address::to_rooch_address(&genesis_context.sequencer);
+        onchain_config::genesis_init(genesis_account, sequencer_addr);
 
         // Some test cases use framework account as sequencer, it may already exist
-        if(!moveos_std::account::exists_at(genesis_context.sequencer)){
-            account::create_account_internal(genesis_context.sequencer);
+        if(!moveos_std::account::exists_at(sequencer_addr)){
+            account::create_account(sequencer_addr);
+            address_mapping::bind_bitcoin_address(sequencer_addr, genesis_context.sequencer);
         };
         // give some gas coin to the sequencer
-        gas_coin::faucet(genesis_context.sequencer, 1000000_00000000u256);
+        gas_coin::faucet(sequencer_addr, 1000000_00000000u256);
     }
 
 
@@ -62,7 +60,8 @@ module rooch_framework::genesis {
     /// init the genesis context for test
     public fun init_for_test(){
         let genesis_account = moveos_std::signer::module_signer<GenesisContext>();
-        tx_context::add_attribute_via_system(&genesis_account, GenesisContext{chain_id: 3, timestamp: 0, sequencer: @rooch_framework});
+        let sequencer = bitcoin_address::from_string(&std::string::utf8(b"1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"));
+        tx_context::add_attribute_via_system(&genesis_account, GenesisContext{chain_id: 3, sequencer});
         genesis::init_for_test();
         init();
     }

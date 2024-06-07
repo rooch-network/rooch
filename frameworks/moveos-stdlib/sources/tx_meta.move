@@ -24,18 +24,15 @@ module moveos_std::tx_meta {
     /// The FunctionCall Meta data
     struct FunctionCallMeta has store, copy, drop {
         module_address: address,
-        module_name: std::ascii::String,
-        function_name: std::ascii::String,
-        //TODO should we support ty_args and args?
-        //ty_args: vector<TypeInfo>,
-        //args: vector<vector<u8>>,
+        module_name: std::string::String,
+        function_name: std::string::String,
     }
 
     #[test_only]
     public fun new_function_call_meta(
         module_address: address,
-        module_name: std::ascii::String,
-        function_name: std::ascii::String,
+        module_name: std::string::String,
+        function_name: std::string::String,
     ): FunctionCallMeta {
         FunctionCallMeta {
             module_address,
@@ -68,11 +65,11 @@ module moveos_std::tx_meta {
         &function_meta.module_address
     }
 
-    public fun function_meta_module_name(function_meta: &FunctionCallMeta): &std::ascii::String {
+    public fun function_meta_module_name(function_meta: &FunctionCallMeta): &std::string::String {
         &function_meta.module_name
     }
 
-    public fun function_meta_function_name(function_meta: &FunctionCallMeta): &std::ascii::String {
+    public fun function_meta_function_name(function_meta: &FunctionCallMeta): &std::string::String {
         &function_meta.function_name
     }
 

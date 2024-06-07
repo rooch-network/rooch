@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { AppsItem } from './components/apps-item'
 import { ComingSoon } from '@/components/coming-soon'
+import {useTranslation} from 'react-i18next';
 
 interface App {
   id: number
@@ -72,6 +73,7 @@ const mockApps: App[] = [
 
 export const AppsLayout = () => {
   const [apps] = useState<App[]>(mockApps)
+  const { t } = useTranslation()
 
   const renderContent = () => {
     if (apps.length === 0) {
@@ -98,9 +100,9 @@ export const AppsLayout = () => {
     <div className="h-full flex-1 flex-col space-y-6 flex rounded-lg md:shadow-custom md:p-4 md:dark:shadow-muted">
       <div className="flex items-center justify-between space-y-2">
         <span>
-          <h1 className="text-3xl font-bold tracking-tight">Apps</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t('Apps.title')}</h1>
           <p className="text-muted-foreground text-wrap">
-            Explore a variety of apps supported by Rooch, enhancing your Bitcoin Layer-2 experience.
+            {t('Apps.subTitle')}
           </p>
         </span>
       </div>

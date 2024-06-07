@@ -1,0 +1,9 @@
+//# publish
+module 0x11.TestModule1 {
+    metadata {
+        data_struct_func {
+            // error code 10007: MALFORMED_FUNCTION_NAME
+            invalid_module_function_name -> [0, 1];
+        }
+    }
+}

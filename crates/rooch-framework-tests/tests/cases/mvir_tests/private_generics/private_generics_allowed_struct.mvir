@@ -1,0 +1,32 @@
+//# publish
+module 0x11.TestModule1 {
+    struct S0 has drop { x: u64 }
+
+    metadata {
+        private_generics {
+            0x11::TestModule1::f1 -> [0, 1];
+        }
+    }
+
+    public new(): Self.S0 {
+        label b0:
+            return S0{ x: 123 };
+    }
+
+    public f1<T1: drop, T2: drop>(arg1: T1, arg2: T2) {
+        label b0:
+            _ = move(arg1);
+            _ = move(arg2);
+            return;
+    }
+
+    public f2() {
+        let s0: Self.S0;
+        let s1: Self.S0;
+        label b0:
+            s0 = Self.new();
+            s1 = Self.new();
+            Self.f1<Self.S0, Self.S0>(move(s0), move(s1));
+            return;
+    }
+}

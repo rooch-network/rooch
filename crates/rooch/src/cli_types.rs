@@ -3,11 +3,14 @@
 
 use async_trait::async_trait;
 use clap::Parser;
-use move_command_line_common::address::ParsedAddress;
+use rooch_key::key_derive::verify_password;
+use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_client::wallet_context::WalletContext;
+use rooch_types::address::ParsedAddress;
 use rooch_types::authentication_key::AuthenticationKey;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::authenticator::Authenticator;
+use rpassword::prompt_password;
 use serde::Serialize;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -92,6 +95,9 @@ pub struct TransactionOptions {
 
 #[derive(Debug, Parser)]
 pub struct WalletContextOptions {
+    /// The key store password
+    #[clap(long)]
+    pub password: Option<String>,
     /// rooch config path
     #[clap(long)]
     pub config_dir: Option<PathBuf>,
@@ -100,5 +106,25 @@ pub struct WalletContextOptions {
 impl WalletContextOptions {
     pub fn build(&self) -> RoochResult<WalletContext> {
         WalletContext::new(self.config_dir.clone()).map_err(RoochError::from)
+    }
+
+    pub fn build_require_password(&self) -> RoochResult<WalletContext> {
+        let mut ctx = WalletContext::new(self.config_dir.clone()).map_err(RoochError::from)?;
+        if ctx.keystore.get_if_password_is_empty() {
+            Ok(ctx)
+        } else {
+            let password = self
+                .password
+                .clone()
+                .or_else(|| prompt_password("Enter the keystore password:").ok());
+            let is_verified = verify_password(password.clone(), ctx.keystore.get_password_hash())?;
+            if !is_verified {
+                return Err(RoochError::InvalidPasswordError(
+                    "Password is invalid".to_owned(),
+                ));
+            }
+            ctx.set_password(password);
+            Ok(ctx)
+        }
     }
 }

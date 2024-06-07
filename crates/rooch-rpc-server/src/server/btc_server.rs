@@ -13,9 +13,7 @@ use rooch_rpc_api::api::{RoochRpcModule, DEFAULT_RESULT_LIMIT_USIZE, MAX_RESULT_
 use rooch_rpc_api::jsonrpc_types::btc::ord::{InscriptionFilterView, InscriptionStateView};
 use rooch_rpc_api::jsonrpc_types::btc::utxo::{UTXOFilterView, UTXOStateView};
 use rooch_rpc_api::jsonrpc_types::{InscriptionPageView, StrView, UTXOPageView};
-use rooch_types::address::MultiChainAddress;
 use rooch_types::indexer::state::IndexerStateID;
-use rooch_types::multichain_id::RoochMultiChainID;
 use std::cmp::min;
 
 pub struct BtcServer {
@@ -52,16 +50,8 @@ impl BtcAPIServer for BtcServer {
         let descending_order = descending_order.unwrap_or(true);
 
         let resolve_address = match filter.clone() {
-            UTXOFilterView::Owner(address) => {
-                let multi_chain_address = MultiChainAddress::try_from_str_with_multichain_id(
-                    RoochMultiChainID::Bitcoin,
-                    address.to_string().as_str(),
-                )?;
-                self.rpc_service
-                    .resolve_address(multi_chain_address)
-                    .await?
-            }
-            _ => AccountAddress::ZERO,
+            UTXOFilterView::Owner(address) => address.0.to_rooch_address(),
+            _ => AccountAddress::ZERO.into(),
         };
 
         let global_state_filter =
@@ -73,7 +63,7 @@ impl BtcAPIServer for BtcServer {
 
         let mut data = self
             .aggregate_service
-            .pack_uxtos(states)
+            .build_utxos(states)
             .await?
             .into_iter()
             .map(|v| UTXOStateView::try_new_from_utxo_state(v, self.btc_network))
@@ -107,16 +97,8 @@ impl BtcAPIServer for BtcServer {
         let descending_order = descending_order.unwrap_or(true);
 
         let resolve_address = match filter.clone() {
-            InscriptionFilterView::Owner(address) => {
-                let multi_chain_address = MultiChainAddress::try_from_str_with_multichain_id(
-                    RoochMultiChainID::Bitcoin,
-                    address.to_string().as_str(),
-                )?;
-                self.rpc_service
-                    .resolve_address(multi_chain_address)
-                    .await?
-            }
-            _ => AccountAddress::ZERO,
+            InscriptionFilterView::Owner(address) => address.0.to_rooch_address(),
+            _ => AccountAddress::ZERO.into(),
         };
 
         let global_state_filter =
@@ -128,7 +110,7 @@ impl BtcAPIServer for BtcServer {
 
         let mut data = self
             .aggregate_service
-            .pack_inscriptions(states)
+            .build_inscriptions(states)
             .await?
             .into_iter()
             .map(|v| InscriptionStateView::try_new_from_inscription_state(v, self.btc_network))

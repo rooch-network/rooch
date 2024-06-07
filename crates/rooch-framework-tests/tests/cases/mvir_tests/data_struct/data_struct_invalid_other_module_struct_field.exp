@@ -1,0 +1,7 @@
+processed 2 tasks
+
+task 0 'publish'. lines 1-4:
+status EXECUTED
+
+task 1 'publish'. lines 6-18:
+status ABORTED with code 10015 in 0000000000000000000000000000000000000000000000000000000000000002::move_module

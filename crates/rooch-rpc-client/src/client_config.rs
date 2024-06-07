@@ -7,6 +7,7 @@ use rooch_config::config::Config;
 use rooch_config::server_config::ServerConfig;
 use rooch_types::address::RoochAddress;
 use rooch_types::rooch_network::BuiltinChainID;
+use rooch_types::rooch_network::RoochNetwork;
 use serde::Deserialize;
 use serde::Serialize;
 use std::fmt::{Display, Formatter, Write};
@@ -104,6 +105,17 @@ impl Env {
             alias: BuiltinChainID::Test.chain_name(),
             rpc: ROOCH_TEST_NET_URL.into(),
             ws: None,
+        }
+    }
+
+    /// Guess the network based on the alias for some local use cases, do not want to connec to rpc.
+    /// The right way to determine the network is to call the rpc `chain_id` method
+    pub fn guess_network(&self) -> RoochNetwork {
+        match self.alias.as_str() {
+            "dev" => BuiltinChainID::Dev.into(),
+            "test" => BuiltinChainID::Test.into(),
+            "main" => BuiltinChainID::Main.into(),
+            _ => BuiltinChainID::Local.into(),
         }
     }
 }

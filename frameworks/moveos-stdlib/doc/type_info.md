@@ -66,7 +66,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="type_info.md#0x2_type_info_module_name">module_name</a>(<a href="type_info.md#0x2_type_info">type_info</a>: &<a href="type_info.md#0x2_type_info_TypeInfo">type_info::TypeInfo</a>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="type_info.md#0x2_type_info_module_name">module_name</a>(<a href="type_info.md#0x2_type_info">type_info</a>: &<a href="type_info.md#0x2_type_info_TypeInfo">type_info::TypeInfo</a>): <a href="_String">string::String</a>
 </code></pre>
 
 
@@ -77,7 +77,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="type_info.md#0x2_type_info_struct_name">struct_name</a>(<a href="type_info.md#0x2_type_info">type_info</a>: &<a href="type_info.md#0x2_type_info_TypeInfo">type_info::TypeInfo</a>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="type_info.md#0x2_type_info_struct_name">struct_name</a>(<a href="type_info.md#0x2_type_info">type_info</a>: &<a href="type_info.md#0x2_type_info_TypeInfo">type_info::TypeInfo</a>): <a href="_String">string::String</a>
 </code></pre>
 
 

@@ -18,11 +18,13 @@ use moveos_types::moveos_std::tx_context::TxContext;
 use rooch_config::{BitcoinRelayerConfig, EthereumRelayerConfig};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
+use rooch_types::address::BitcoinAddress;
 use rooch_types::crypto::RoochKeyPair;
 use tracing::{error, info, warn};
 
 pub struct RelayerActor {
-    relayer_address: AccountAddress,
+    sequencer_address: AccountAddress,
+    sequencer_bitcoin_address: BitcoinAddress,
     max_gas_amount: u64,
     relayers: Vec<Box<dyn Relayer>>,
     executor: ExecutorProxy,
@@ -33,11 +35,11 @@ impl RelayerActor {
     pub async fn new(
         executor: ExecutorProxy,
         processor: PipelineProcessorProxy,
-        relayer_key: RoochKeyPair,
+        sequencer_key: RoochKeyPair,
         ethereum_config: Option<EthereumRelayerConfig>,
         bitcoin_config: Option<BitcoinRelayerConfig>,
     ) -> Result<Self> {
-        let relayer_address = relayer_key.public().address().into();
+        let sequencer_address = sequencer_key.public().rooch_address()?.into();
         let mut relayers: Vec<Box<dyn Relayer>> = vec![];
         if let Some(ethereum_config) = ethereum_config {
             let eth_relayer = EthereumRelayer::new(ethereum_config)?;
@@ -56,7 +58,8 @@ impl RelayerActor {
         }
 
         Ok(Self {
-            relayer_address,
+            sequencer_address,
+            sequencer_bitcoin_address: sequencer_key.public().bitcoin_address()?,
             max_gas_amount: GasScheduleConfig::INITIAL_MAX_GAS_AMOUNT * 1000,
             relayers,
             executor,
@@ -72,11 +75,11 @@ impl RelayerActor {
                     Ok(Some(l1_block)) => {
                         let sequence_number = self
                             .executor
-                            .get_sequence_number(self.relayer_address)
+                            .get_sequence_number(self.sequencer_address)
                             .await?;
                         let tx_hash = l1_block.block.tx_hash();
                         let ctx = TxContext::new(
-                            self.relayer_address,
+                            self.sequencer_address,
                             sequence_number,
                             self.max_gas_amount,
                             tx_hash,
@@ -84,7 +87,10 @@ impl RelayerActor {
                         );
                         let block_hash = hex::encode(&l1_block.block.block_hash);
                         let block_height = l1_block.block.block_height;
-                        let result = self.processor.execute_l1_block(ctx, l1_block).await?;
+                        let result = self
+                            .processor
+                            .execute_l1_block(ctx, l1_block, self.sequencer_bitcoin_address.clone())
+                            .await?;
 
                         match result.execution_info.status {
                             KeptVMStatus::Executed => {

@@ -18,12 +18,12 @@ export const Banner: React.FC<BannerProps> = ({ onClose }) => {
             <span className="sr-only">Rooch</span>
           </span>
           <span>
-            Learn more about{' '}
+            Rooch Portal is at the beta testing version. Learn More about {' '}
             <a
-              href="https://rooch.network/"
+              href="https://rooch.network/learn/miscellaneous/portal"
               className="inline font-medium text-blue-600 underline dark:text-blue-500 underline-offset-2 decoration-600 dark:decoration-500 decoration-solid hover:text-blue-500 dark:hover:text-blue-400 transition-all"
             >
-              Rooch
+              Rooch Portal
             </a>
             .
           </span>

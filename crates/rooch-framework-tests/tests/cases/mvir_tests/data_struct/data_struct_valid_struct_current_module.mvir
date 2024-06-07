@@ -1,0 +1,10 @@
+//# publish
+module 0x11.TestModule1 {
+    struct S0 has copy,drop {v: u64}
+
+    metadata {
+        data_struct {
+            0x11::TestModule1::S0 -> true;
+        }
+    }
+}

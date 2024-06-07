@@ -1,10 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::error::RoochError;
+use crate::{address::ParsedAddress, error::RoochError};
 use anyhow::{anyhow, Result};
 use move_command_line_common::{
-    address::ParsedAddress,
     parser::Parser,
     types::ParsedStructType,
     values::{ParsableValue, ValueToken},

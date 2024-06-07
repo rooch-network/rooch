@@ -242,7 +242,7 @@ export class RoochClient {
       params.limit?.toString() || DEFAULT_LIMIT,
       {
         descending: params.descending_order || true,
-        showDisplay: params.showDisplay || true
+        showDisplay: params.showDisplay || true,
       },
     )
   }
@@ -254,7 +254,7 @@ export class RoochClient {
       params.limit?.toString() || DEFAULT_LIMIT,
       {
         descending: params.descending_order || true,
-        showDisplay: params.showDisplay || true
+        showDisplay: params.showDisplay || true,
       },
     )
   }
@@ -284,7 +284,7 @@ export class RoochClient {
       params.limit?.toString() || DEFAULT_LIMIT,
       {
         descending: params.descending_order || true,
-        showDisplay: params.showDisplay || false
+        showDisplay: params.showDisplay || false,
       },
     )
   }
@@ -296,7 +296,7 @@ export class RoochClient {
       params.limit?.toString() || DEFAULT_LIMIT,
       {
         descending: params.descending_order || true,
-        showDisplay: params.showDisplay || false
+        showDisplay: params.showDisplay || false,
       },
     )
   }
@@ -365,7 +365,7 @@ export class RoochClient {
 
       for (const scope of data) {
         const value = scope.value
-        result.push(`${value.module_name}::${value.module_address}::${value.function_name}`)
+        result.push(`${value.module_address}::${value.module_name}::${value.function_name}`)
       }
 
       return result

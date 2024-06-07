@@ -5,17 +5,17 @@ use crate::release_dir;
 use crate::stdlib_configs::build_stdlib;
 use crate::stdlib_version::StdlibVersion;
 use crate::Stdlib;
-use anyhow::{bail, Result};
+use anyhow::{bail, ensure, Result};
 use framework_types::addresses::ROOCH_NURSERY_ADDRESS;
 use itertools::Itertools;
 use move_binary_format::{
     compatibility::Compatibility, errors::PartialVMResult, normalized::Module, CompiledModule,
 };
 use std::collections::HashMap;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn};
 
 pub fn release_latest() -> Result<()> {
-    release(StdlibVersion::Latest, true)
+    release(StdlibVersion::Latest, false)
 }
 
 pub fn release(version: StdlibVersion, check_compatibility: bool) -> Result<()> {
@@ -50,14 +50,34 @@ pub fn release(version: StdlibVersion, check_compatibility: bool) -> Result<()> 
     let curr_stdlib = build_stdlib(!version.is_latest())?;
     // check compatibility
     if let Some(pre_version) = pre_version {
-        if check_compatibility {
-            info!(
-                "Checking compatibility between version {:?} and version {:?}",
-                version.as_string(),
-                pre_version.as_string()
-            );
-            let prev_stdlib = pre_version.load_from_file()?;
-            assert_stdlib_compatibility(&curr_stdlib, &prev_stdlib);
+        info!(
+            "Checking compatibility between version {:?} and version {:?}",
+            version.as_string(),
+            pre_version.as_string()
+        );
+        let prev_stdlib = pre_version.load_from_file()?;
+        match check_stdlib_compatibility(&curr_stdlib, &prev_stdlib) {
+            Ok(_) => {}
+            Err(err) => {
+                // if check_compatibility is true, we should bail out and stop the release
+                // otherwise, we just log the error and continue the release
+                if check_compatibility {
+                    bail!(
+                        "Version {:?} is incompatible with previous version {:?}: {:?}",
+                        version.as_string(),
+                        pre_version.as_string(),
+                        err
+                    );
+                } else {
+                    //TODO collect warn message and return to build.rs, then print it out when build project.
+                    warn!(
+                        "Version {:?} is incompatible with previous version {:?}: {:?}",
+                        version.as_string(),
+                        pre_version.as_string(),
+                        err
+                    );
+                }
+            }
         }
     }
 
@@ -90,7 +110,7 @@ fn current_max_version() -> u64 {
 }
 
 /// Check whether the new stdlib is compatible with the old stdlib
-fn assert_stdlib_compatibility(curr_stdlib: &Stdlib, prev_stdlib: &Stdlib) {
+fn check_stdlib_compatibility(curr_stdlib: &Stdlib, prev_stdlib: &Stdlib) -> Result<()> {
     let new_modules_map = curr_stdlib
         .all_modules()
         .expect("Extract modules from new stdlib failed")
@@ -134,16 +154,14 @@ fn assert_stdlib_compatibility(curr_stdlib: &Stdlib, prev_stdlib: &Stdlib) {
         })
         .collect::<Vec<_>>();
 
-    if !incompatible_module_ids.is_empty() {
-        error!(
-            "Modules {} is incompatible with previous version!",
-            incompatible_module_ids
-                .into_iter()
-                .map(|module_id| module_id.to_string())
-                .join(","),
-        );
-        std::process::exit(1);
-    }
+    ensure!(
+        incompatible_module_ids.is_empty(),
+        "Modules {} is incompatible with previous version!",
+        incompatible_module_ids
+            .into_iter()
+            .map(|module_id| module_id.to_string())
+            .join(","),
+    );
 
     let deleted_module_ids = old_modules_map
         .keys()
@@ -156,16 +174,15 @@ fn assert_stdlib_compatibility(curr_stdlib: &Stdlib, prev_stdlib: &Stdlib) {
         })
         .collect::<Vec<_>>();
 
-    if !deleted_module_ids.is_empty() {
-        error!(
-            "Modules {} is deleted!",
-            deleted_module_ids
-                .into_iter()
-                .map(|module_id| module_id.to_string())
-                .join(","),
-        );
-        std::process::exit(1);
-    }
+    ensure!(
+        deleted_module_ids.is_empty(),
+        "Modules {} is deleted!",
+        deleted_module_ids
+            .into_iter()
+            .map(|module_id| module_id.to_string())
+            .join(",")
+    );
+    Ok(())
 }
 
 /// check module compatibility

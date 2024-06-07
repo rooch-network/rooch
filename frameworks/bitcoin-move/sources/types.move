@@ -5,9 +5,10 @@ module bitcoin_move::types{
     use std::vector;
     use std::option::{Self, Option};
     use moveos_std::address;
+    use moveos_std::bcs;
+    use moveos_std::hash;
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
     use bitcoin_move::script_buf::{Self, ScriptBuf};
-    use rooch_framework::multichain_address;
 
     const LOCK_TIME_THRESHOLD: u32 = 500_000_000;
     const TAPROOT_ANNEX_PREFIX: u8 = 0x50;
@@ -67,6 +68,26 @@ module bitcoin_move::types{
 
     public fun nonce(self: &Header) : u32 {
         self.nonce
+    }
+
+    public fun header_to_bytes(self: Header) : vector<u8> {
+        let output = vector::empty<u8>();
+        vector::append(&mut output, bcs::to_bytes(&self.version));
+        vector::append(&mut output, address::to_bytes(self.prev_blockhash));
+        vector::append(&mut output, address::to_bytes(self.merkle_root));
+        vector::append(&mut output, bcs::to_bytes(&self.time));
+        vector::append(&mut output, bcs::to_bytes(&self.bits));
+        vector::append(&mut output, bcs::to_bytes(&self.nonce));
+        output
+    }
+
+    public fun header_to_hash(self: Header) : address {
+        let header = header_to_bytes(self);
+        let hash1 = hash::sha2_256(header);
+        let hash2 = hash::sha2_256(hash1);
+        vector::reverse(&mut hash2);
+        let block_hash = address::from_bytes(hash2);
+        block_hash
     }
 
     #[data_struct] 
@@ -251,7 +272,7 @@ module bitcoin_move::types{
         if (bitcoin_address::is_empty(&self.recipient_address)) {
             @bitcoin_move
         }else{
-            multichain_address::mapping_to_rooch_address(multichain_address::from_bitcoin(self.recipient_address))
+            bitcoin_address::to_rooch_address(&self.recipient_address)
         }
     }
 

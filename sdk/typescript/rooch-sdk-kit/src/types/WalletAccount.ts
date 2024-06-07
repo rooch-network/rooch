@@ -1,11 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { IAccount, IAuthorizer, RoochClient, RoochMultiChainID } from '@roochnetwork/rooch-sdk'
+import { IAccount, IAuthorizer, RoochClient } from '@roochnetwork/rooch-sdk'
 
-import { MultiChainAddress } from './address'
 import { SupportChain } from '../feature'
 import { chain2MultiChainID } from '../utils/chain2MultiChainID'
+import { bech32m } from 'bech32'
+import { Buffer } from 'buffer'
 
 export class WalletAccount implements IAccount {
   public readonly chain: SupportChain
@@ -15,7 +16,8 @@ export class WalletAccount implements IAccount {
   public readonly publicKey?: string
   public readonly compressedPublicKey?: string
 
-  private roochAddress?: string
+  private roochHexAddress?: string
+  private roochBech32Address?: string
 
   public constructor(
     client: RoochClient,
@@ -37,30 +39,29 @@ export class WalletAccount implements IAccount {
     return {}
   }
 
-  public toMultiChainAddress(): MultiChainAddress | null {
-    if (this.chain !== SupportChain.ETH) {
-      return new MultiChainAddress(RoochMultiChainID.Bitcoin, this.address)
-    }
-
-    return null
-  }
-
   getAddress(): string {
     return this.address
   }
 
   getRoochAddress(): string {
-    return this.roochAddress!
+    return this.roochHexAddress!
+  }
+  getBech32RoochAddress(): string {
+    if (!this.roochBech32Address) {
+      let rad = this.roochHexAddress!.substring(2)
+      return bech32m.encode('rooch', bech32m.toWords(Buffer.from(rad, 'hex')))
+    }
+    return this.roochBech32Address
   }
 
   async resoleRoochAddress(): Promise<string> {
-    if (!this.roochAddress) {
-      this.roochAddress = await this.client.resoleRoochAddress({
+    if (!this.roochHexAddress) {
+      this.roochHexAddress = await this.client.resoleRoochAddress({
         address: this.address,
         multiChainID: chain2MultiChainID(this.chain),
       })
     }
-    return this.roochAddress
+    return this.roochHexAddress
   }
 
   getAuthorizer(): IAuthorizer {

@@ -5,8 +5,7 @@ use crate::SqlitePoolConnection;
 use anyhow::anyhow;
 use diesel::{RunQueryDsl, SqliteConnection};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use move_core_types::language_storage::StructTag;
-use tracing::info;
+use tracing::{debug, info};
 
 const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
@@ -15,7 +14,7 @@ pub fn create_all_tables_if_not_exists(
     conn: &mut SqlitePoolConnection,
     _table_name: String,
 ) -> Result<(), anyhow::Error> {
-    info!("Indexer creates all tables in the db ...");
+    debug!("Indexer creates all tables in the db ...");
     let migration = MIGRATIONS;
 
     // Create the __diesel_schema_migrations table if not exist
@@ -47,7 +46,7 @@ pub fn create_all_tables_if_not_exists(
 
     conn.run_pending_migrations(migration)
         .map_err(|e| anyhow!("Failed to run migrations {e}"))?;
-    info!("Indexer creates all tables complete.");
+    debug!("Indexer creates all tables complete.");
     Ok(())
 }
 
@@ -104,11 +103,4 @@ pub fn drop_all_tables(conn: &mut SqliteConnection) -> Result<(), diesel::result
 pub fn escape_sql_string(value: String) -> String {
     // In SQLite, replace single quotes with two single quotes
     value.replace(['\''], "''")
-}
-
-// For better generate sql index for indexer query
-pub fn format_struct_tag(sturct_tag: StructTag) -> String {
-    // let address = format!("0x{}", sturct_tag.address.to_canonical_string());
-    let address = format!("0x{}", sturct_tag.address.short_str_lossless());
-    format!("{}::{}::{}", address, sturct_tag.module, sturct_tag.name,)
 }

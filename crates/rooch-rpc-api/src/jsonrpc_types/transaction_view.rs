@@ -3,10 +3,10 @@
 
 use super::BytesView;
 use crate::jsonrpc_types::{
-    AccountAddressView, H256View, TransactionExecutionInfoView, TransactionSequenceInfoView,
+    H256View, RoochAddressView, TransactionExecutionInfoView, TransactionSequenceInfoView,
     TransactionView,
 };
-use rooch_types::indexer::transaction_filter::TransactionFilter;
+use rooch_types::indexer::transaction::TransactionFilter;
 use rooch_types::transaction::{L1Block, LedgerTransaction, LedgerTxData, TransactionWithInfo};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -78,7 +78,7 @@ impl From<TransactionWithInfo> for TransactionWithInfoView {
 #[serde(rename_all = "snake_case")]
 pub enum TransactionFilterView {
     /// Query by sender address.
-    Sender(AccountAddressView),
+    Sender(RoochAddressView),
     /// Query by multi chain original address.
     OriginalAddress(String),
     /// Query by the given transaction hash.

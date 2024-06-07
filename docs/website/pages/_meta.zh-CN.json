@@ -13,7 +13,7 @@
     "type": "page"
   },
   "build": {
-    "title": "构建",
+    "title": "开发",
     "type": "page"
   },
   "blog": {
@@ -26,9 +26,9 @@
     }
   },
   "dashboard": {
-    "title": "仪表盘",
+    "title": "Portal 入口",
     "type": "page",
-    "href": "https://dashboard.rooch.network/",
+    "href": "https://portal.rooch.network/",
     "newWindow": true
   },
   "404": {
@@ -55,5 +55,15 @@
       "timestamp": false,
       "typesetting": "article"
     }
+  },
+  "archives": {
+    "type": "page",
+    "display": "hidden",
+    "theme": {
+      "sidebar": false,
+      "timestamp": false,
+      "typesetting": "article"
+    },
+    "title":"Archives"
   }
 }

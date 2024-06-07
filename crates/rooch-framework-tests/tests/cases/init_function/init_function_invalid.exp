@@ -104,7 +104,7 @@ task 11 'publish'. lines 91-98:
 Error: error: module init function only should have one parameter types with signer
    ┌─ /tmp/tempfile:94:5
    │  
-94 │ ╭     fun init(_: ascii::String){
+94 │ ╭     fun init(_: string::String){
 95 │ │     }
    │ ╰─────^
 

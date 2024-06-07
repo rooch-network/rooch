@@ -10,7 +10,6 @@ use move_core_types::{
     u256,
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
-use moveos_types::move_std::string::MoveString;
 use moveos_types::move_types::parse_module_id;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::type_info::TypeInfo;
@@ -21,11 +20,16 @@ use moveos_types::{
     moveos_std::object::AnnotatedObject,
     transaction::{FunctionCall, ScriptCall},
 };
-use moveos_types::{move_std::ascii::MoveAsciiString, state::MoveStructType};
+use moveos_types::{
+    move_std::{ascii::MoveAsciiString, string::MoveString},
+    state::MoveStructType,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::str::FromStr;
+
+use super::{H256View, RoochAddressView};
 
 pub type ModuleIdView = StrView<ModuleId>;
 pub type TypeTagView = StrView<TypeTag>;
@@ -41,7 +45,7 @@ pub type AccountAddressView = StrView<AccountAddress>;
 impl std::fmt::Display for AccountAddressView {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         //Ensure append `0x` before the address, and output full address
-        //The Display implemention of AccountAddress has not `0x` prefix
+        //The Display implementation of AccountAddress has not `0x` prefix
         write!(f, "{:#x}", self.0)
     }
 }
@@ -49,7 +53,7 @@ impl std::fmt::Display for AccountAddressView {
 impl FromStr for AccountAddressView {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // AccountAddress::from_str suppport both 0xADDRESS and ADDRESS
+        // AccountAddress::from_str support both 0xADDRESS and ADDRESS
         Ok(StrView(AccountAddress::from_str(s)?))
     }
 }
@@ -194,9 +198,9 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AnnotatedObjectView {
     pub id: ObjectID,
-    pub owner: AccountAddressView,
+    pub owner: RoochAddressView,
     pub flag: u8,
-    pub state_root: AccountAddressView,
+    pub state_root: H256View,
     pub size: u64,
     pub value: AnnotatedMoveStructView,
 }

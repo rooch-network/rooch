@@ -11,13 +11,11 @@ use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_types::h256::{self, H256};
-use rooch_store::meta_store::MetaStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
 use rooch_types::crypto::{RoochKeyPair, Signature};
-use rooch_types::sequencer::SequencerOrder;
-use rooch_types::transaction::{LedgerTransaction, LedgerTxData, TransactionSequenceInfo};
-use tracing::{debug, info};
+use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
+use tracing::info;
 
 pub struct SequencerActor {
     last_order: u64,
@@ -27,12 +25,12 @@ pub struct SequencerActor {
 
 impl SequencerActor {
     pub fn new(sequencer_key: RoochKeyPair, rooch_store: RoochStore) -> Result<Self> {
-        let last_order_opt = rooch_store
+        // The genesis tx order is 0, so the sequencer order should not be None
+        let last_order = rooch_store
             .get_meta_store()
             .get_sequencer_order()?
-            .map(|order| order.last_order);
-        // Reserve tx_order = 0 for data import transaction and indexer rebuild
-        let last_order = last_order_opt.unwrap_or(1u64);
+            .map(|order| order.last_order)
+            .ok_or_else(|| anyhow::anyhow!("Load sequencer tx order failed"))?;
         info!("Load latest sequencer order {:?}", last_order);
         Ok(Self {
             last_order,
@@ -41,46 +39,33 @@ impl SequencerActor {
         })
     }
 
+    pub fn last_order(&self) -> u64 {
+        self.last_order
+    }
+
     pub fn sequence(&mut self, mut tx_data: LedgerTxData) -> Result<LedgerTransaction> {
         let now = SystemTime::now();
         let tx_timestamp = now.duration_since(SystemTime::UNIX_EPOCH)?.as_millis() as u64;
-        let tx_order = if self.last_order == 1 {
-            let last_order_opt = self
-                .rooch_store
-                .get_meta_store()
-                .get_sequencer_order()?
-                .map(|order| order.last_order);
-            match last_order_opt {
-                Some(last_order) => last_order + 1,
-                None => 1,
-            }
-        } else {
-            self.last_order + 1
-        };
+
+        let tx_order = self.last_order + 1;
+
         let hash = tx_data.tx_hash();
         let mut witness_data = hash.as_ref().to_vec();
         witness_data.extend(tx_order.to_le_bytes().iter());
         let witness_hash = h256::sha3_256_of(&witness_data);
-        let tx_order_signature = Signature::new_hashed(&witness_hash.0, &self.sequencer_key)
+        let tx_order_signature = Signature::sign(&witness_hash.0, &self.sequencer_key)
             .as_ref()
             .to_vec();
-
-        let tx_accumulator_root = H256::random();
-        let tx_sequence_info = TransactionSequenceInfo {
+        let tx = LedgerTransaction::build_ledger_transaction(
+            tx_data,
+            tx_timestamp,
             tx_order,
             tx_order_signature,
-            tx_accumulator_root,
-            tx_timestamp,
-        };
-
-        let tx = LedgerTransaction::new(tx_data, tx_sequence_info);
+        );
 
         self.rooch_store.save_transaction(tx.clone())?;
-        debug!("sequencer tx: {} order: {:?}", hash, tx_order);
+        info!("sequencer tx: {} order: {:?}", hash, tx_order);
         self.last_order = tx_order;
-        self.rooch_store
-            .save_sequencer_order(SequencerOrder::new(self.last_order))?;
-
         Ok(tx)
     }
 }
@@ -136,10 +121,9 @@ impl Handler<GetTxHashsMessage> for SequencerActor {
 impl Handler<GetSequencerOrderMessage> for SequencerActor {
     async fn handle(
         &mut self,
-        msg: GetSequencerOrderMessage,
+        _msg: GetSequencerOrderMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Option<SequencerOrder>> {
-        let GetSequencerOrderMessage {} = msg;
-        self.rooch_store.get_meta_store().get_sequencer_order()
+    ) -> Result<u64> {
+        Ok(self.last_order)
     }
 }

@@ -2,13 +2,16 @@
 # Copyright (c) RoochNetwork
 # SPDX-License-Identifier: Apache-2.0
 
+docker stop bitcoind_regtest
+docker rm bitcoind_regtest
+# The bitcoin data in the host machine is stored in $HOME/.bitcoin/regtest
 docker run -d \
     --name bitcoind_regtest \
     -p 18443:18443 \
     -p 18444:18444 \
     -p 28333:28333 \
     -p 28332:28332 \
-    -v $HOME/./regtest/.bitcoin:/data/.bitcoin \
+    -v $HOME/.bitcoin:/data/.bitcoin \
     lncm/bitcoind:v25.1 \
     -chain=regtest \
     -txindex=1 \

@@ -32,6 +32,7 @@ pub struct StartCommand {
 impl CommandAction<()> for StartCommand {
     async fn execute(mut self) -> RoochResult<()> {
         let mut context = self.context_options.build()?;
+        self.opt.init()?;
 
         //Parse key pair from Rooch opt
         let sequencer_account = if self.opt.sequencer_account.is_none() {
@@ -70,12 +71,12 @@ impl CommandAction<()> for StartCommand {
         let (sequencer_keypair, proposer_keypair) = if context.keystore.get_if_password_is_empty() {
             let sequencer_keypair = context
                 .keystore
-                .get_key_pair_with_password(&sequencer_account, None)
+                .get_key_pair(&sequencer_account, None)
                 .map_err(|e| RoochError::SequencerKeyPairDoesNotExistError(e.to_string()))?;
 
             let proposer_keypair = context
                 .keystore
-                .get_key_pair_with_password(&proposer_account, None)
+                .get_key_pair(&proposer_account, None)
                 .map_err(|e| RoochError::ProposerKeyPairDoesNotExistError(e.to_string()))?;
 
             (sequencer_keypair, proposer_keypair)
@@ -92,12 +93,12 @@ impl CommandAction<()> for StartCommand {
 
             let sequencer_keypair = context
                 .keystore
-                .get_key_pair_with_password(&sequencer_account, Some(password.clone()))
+                .get_key_pair(&sequencer_account, Some(password.clone()))
                 .map_err(|e| RoochError::SequencerKeyPairDoesNotExistError(e.to_string()))?;
 
             let proposer_keypair = context
                 .keystore
-                .get_key_pair_with_password(&proposer_account, Some(password.clone()))
+                .get_key_pair(&proposer_account, Some(password.clone()))
                 .map_err(|e| RoochError::ProposerKeyPairDoesNotExistError(e.to_string()))?;
 
             (sequencer_keypair, proposer_keypair)
@@ -112,7 +113,7 @@ impl CommandAction<()> for StartCommand {
 
         let mut service = Service::new();
         service
-            .start(&self.opt.clone(), server_opt)
+            .start(self.opt.clone(), server_opt)
             .await
             .map_err(RoochError::from)?;
 

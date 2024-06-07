@@ -9,6 +9,7 @@ use move_command_line_common::parser::NumberFormat;
 use move_package::BuildConfig;
 use move_unit_test::extensions::set_extension_hook;
 use move_vm_runtime::native_extensions::NativeContextExtensions;
+use moveos_config::DataDirPath;
 use moveos_object_runtime::runtime::{ObjectRuntime, ObjectRuntimeContext};
 use moveos_stdlib::natives::moveos_stdlib::{
     event::NativeEventContext, move_module::NativeModuleContext,
@@ -102,13 +103,13 @@ impl Test {
     }
 }
 
-static MOVEOSSTORE: Lazy<Box<MoveOSStore>> =
-    Lazy::new(|| Box::new(MoveOSStore::mock_moveos_store().unwrap()));
+static MOVEOSSTORE: Lazy<(MoveOSStore, DataDirPath)> =
+    Lazy::new(|| MoveOSStore::mock_moveos_store().unwrap());
 
 static RESOLVER: Lazy<Box<RootObjectResolver<MoveOSStore>>> = Lazy::new(|| {
     Box::new(RootObjectResolver::new(
         RootObjectEntity::genesis_root_object(),
-        Lazy::force(&MOVEOSSTORE).as_ref(),
+        &MOVEOSSTORE.0,
     ))
 });
 

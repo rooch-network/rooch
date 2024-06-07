@@ -11,7 +11,7 @@ use crate::actor::{
     executor::ExecutorActor,
     messages::{
         AnnotatedStatesMessage, ExecuteViewFunctionMessage, GetAnnotatedEventsByEventHandleMessage,
-        ResolveMessage, StatesMessage, ValidateL2TxMessage,
+        StatesMessage, ValidateL2TxMessage,
     },
 };
 use anyhow::Result;
@@ -35,7 +35,7 @@ use moveos_types::{
     moveos_std::event::AnnotatedEvent,
     state::{AnnotatedState, State},
 };
-use rooch_types::address::MultiChainAddress;
+use rooch_types::address::BitcoinAddress;
 use rooch_types::bitcoin::network::BitcoinNetwork;
 use rooch_types::framework::chain_id::ChainID;
 use rooch_types::transaction::{L1BlockWithBody, RoochTransaction};
@@ -66,9 +66,14 @@ impl ExecutorProxy {
         &self,
         ctx: TxContext,
         l1_block: L1BlockWithBody,
+        sequencer_address: BitcoinAddress,
     ) -> Result<VerifiedMoveOSTransaction> {
         self.actor
-            .send(ValidateL1BlockMessage { ctx, l1_block })
+            .send(ValidateL1BlockMessage {
+                ctx,
+                l1_block,
+                sequencer_address,
+            })
             .await?
     }
 
@@ -97,10 +102,6 @@ impl ExecutorProxy {
         self.reader_actor
             .send(StatesMessage { access_path })
             .await?
-    }
-
-    pub async fn resolve_address(&self, mca: MultiChainAddress) -> Result<AccountAddress> {
-        self.actor.send(ResolveMessage { address: mca }).await?
     }
 
     pub async fn get_annotated_states(

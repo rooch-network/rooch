@@ -1,0 +1,22 @@
+//# publish
+module 0x11.TestModule1 {
+    import 0x2.bcs;
+    import 0x1.vector;
+
+    struct S0 has copy,drop { x: u64 }
+
+    metadata {
+        data_struct {
+            // 0x11::TestModule1::S0 -> true;
+        }
+    }
+
+    public f2() {
+        let s1: vector<u8>;
+        label b0:
+            s1 = vector.empty<u8>();
+            // error code 10008: INVALID_DATA_STRUCT
+            _ = bcs.from_bytes<Self.S0>(move(s1));
+            return;
+    }
+}

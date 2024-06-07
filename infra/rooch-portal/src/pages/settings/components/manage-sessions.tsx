@@ -1,6 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-import { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import {
   Table,
   TableBody,
@@ -18,32 +18,13 @@ import {
 } from '@roochnetwork/rooch-sdk-kit'
 import { Copy, ChevronDown, ChevronUp, Check, AlertCircle } from 'lucide-react'
 
-interface Session {
-  authenticationKey: string
-  appName: string
-  createTime: string
-  lastActiveTime: string
-  maxInactiveInterval: string
-  scopes: string[]
-}
+import { formatTimestamp } from '@/utils/format.ts'
 
-interface SessionInfoResult {
-  authenticationKey: string
-  appName: string
-  createTime: number
-  lastActiveTime: number
-  maxInactiveInterval: number
-  scopes: string[]
-}
+import {SessionInfoResult} from '@roochnetwork/rooch-sdk';
 
 interface ExpandableRowProps {
-  session: Session
+  session: SessionInfoResult
   remove: (authKey: string) => void
-}
-
-const formatTimestamp = (timestamp: number): string => {
-  const date = new Date(timestamp)
-  return date.toLocaleString()
 }
 
 const copyToClipboard = async (text: string, setCopied: (value: boolean) => void) => {
@@ -64,37 +45,20 @@ export const ManageSessions: React.FC = () => {
     data: sessionKeys,
     isLoading,
     isError,
+    refetch
   } = useRoochClientQuery('querySessionKeys', {
     address: sessionKey?.getAddress() || '',
   })
 
-  const remove = async (authKey: string) => {
-    console.log(authKey)
-    await removeSession({
-      authKey: authKey,
-    })
-  }
-
-  const formatSession = (session: SessionInfoResult): Session => ({
-    ...session,
-    createTime: formatTimestamp(session.createTime),
-    lastActiveTime: formatTimestamp(session.lastActiveTime),
-    maxInactiveInterval: session.maxInactiveInterval.toString(),
-  })
-
-  if (!sessionKeys?.data.length) {
-    return (
-      <div className="rounded-lg border w-full flex justify-center items-center h-full p-20">
-        <div className="flex flex-col items-center justify-center text-center text-xl text-muted-foreground">
-          <AlertCircle className="w-12 h-12 mb-4 text-zinc-500" />
-          <p className="mb-2 font-semibold">No Data</p>
-          <p className="text-base text-gray-500">
-            No session keys found. Please check again later.
-          </p>
-        </div>
-      </div>
-    )
-  }
+  const remove = useCallback(
+    async (authKey: string) => {
+      await removeSession({
+        authKey: authKey,
+      })
+      await refetch()
+    },
+    [removeSession, refetch],
+  )
 
   if (isLoading || isError) {
     return (
@@ -116,6 +80,20 @@ export const ManageSessions: React.FC = () => {
     )
   }
 
+  if (sessionKeys && sessionKeys.data.length === 0) {
+    return (
+      <div className="rounded-lg border w-full flex justify-center items-center h-full p-20">
+        <div className="flex flex-col items-center justify-center text-center text-xl text-muted-foreground">
+          <AlertCircle className="w-12 h-12 mb-4 text-zinc-500" />
+          <p className="mb-2 font-semibold">No Data</p>
+          <p className="text-base text-gray-500">
+            No session keys found. Please check again later.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="rounded-lg border w-full">
       <Table>
@@ -123,20 +101,16 @@ export const ManageSessions: React.FC = () => {
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">App</TableHead>
-            <TableHead>Session Key ID</TableHead>
-            <TableHead>Session ID</TableHead>
+            <TableHead>Scope (Show Session Key Scope)</TableHead>
             <TableHead>Granted at</TableHead>
-            <TableHead>Inactive Interval at</TableHead>
+            <TableHead>Last Active at</TableHead>
+            <TableHead>Expiration Interval (seconds)</TableHead>
             <TableHead className="text-center">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sessionKeys.data.map((session: SessionInfoResult) => (
-            <ExpandableRow
-              key={session.authenticationKey}
-              session={formatSession(session)}
-              remove={remove}
-            />
+          {sessionKeys?.data.map((session) => (
+            <ExpandableRow key={session.authenticationKey} session={session} remove={remove} />
           ))}
         </TableBody>
       </Table>
@@ -162,10 +136,10 @@ const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove }) => {
     <>
       <TableRow>
         <TableCell className="font-medium">{session.appName}</TableCell>
-        <TableCell className="cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
-          <div className="flex items-center justify-start gap-1">
+        <TableCell className="cursor-pointer w-64" onClick={() => setIsExpanded(!isExpanded)}>
+          <div className="flex items-center justify-start gap-1 w-full">
             <span className="text-muted-foreground">
-              {isExpanded ? 'Hide Session Keys' : 'Show Session Keys'}
+              {isExpanded ? 'Hide Session Key Scopes' : 'Show Session Key Scopes'}
             </span>
             {isExpanded ? (
               <ChevronUp className="w-4 h-4 text-muted-foreground" />
@@ -174,8 +148,8 @@ const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove }) => {
             )}
           </div>
         </TableCell>
-        <TableCell className="text-muted-foreground">{session.createTime}</TableCell>
-        <TableCell className="text-muted-foreground">{session.lastActiveTime}</TableCell>
+        <TableCell className="text-muted-foreground">{formatTimestamp(session.createTime)}</TableCell>
+        <TableCell className="text-muted-foreground">{formatTimestamp(session.lastActiveTime)}</TableCell>
         <TableCell className="text-muted-foreground">{session.maxInactiveInterval}</TableCell>
         <TableCell className="text-center">
           <Button
@@ -184,7 +158,9 @@ const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove }) => {
             onClick={() => remove(session.authenticationKey)}
             className="text-red-500 dark:text-red-400 dark:hover:text-red-300 hover:text-red-600"
           >
-            Disconnect
+            {
+              session.lastActiveTime > new Date().getSeconds() ? 'Disconnect' : 'Expired (Clear)'
+            }
           </Button>
         </TableCell>
       </TableRow>

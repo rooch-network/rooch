@@ -25,7 +25,7 @@ module bitcoin_plants::plants {
     use std::vector;
     use moveos_std::tx_context;
     use moveos_std::object::{Self, Object};
-    use rooch_framework::timestamp;
+    use moveos_std::timestamp;
     use bitcoin_move::ord::{Self, Inscription};
 
     const ErrorNotSeed: u64 = 0;

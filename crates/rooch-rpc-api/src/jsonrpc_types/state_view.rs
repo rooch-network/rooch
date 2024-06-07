@@ -2,17 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    AccountAddressView, AnnotatedMoveValueView, BytesView, StrView, StructTagView, TypeTagView,
+    AnnotatedMoveStructView, AnnotatedMoveValueView, BytesView, H256View, RoochAddressView,
+    StrView, StructTagView, TypeTagView,
 };
 use anyhow::Result;
-use move_core_types::account_address::AccountAddress;
+
 use move_core_types::effects::Op;
 use moveos_types::state::{
     AnnotatedKeyState, FieldChange, KeyState, NormalFieldChange, ObjectChange,
 };
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
-    moveos_std::object::ObjectID,
+    moveos_std::object::{AnnotatedObject, ObjectID},
     state::{AnnotatedState, State, StateChangeSet, TableTypeInfo},
 };
 use rooch_types::indexer::state::{
@@ -256,7 +257,7 @@ impl From<OpView<StateView>> for Op<State> {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-// To support dynamic filed for json serialize and deserialize
+// To support dynamic field for json serialize and deserialize
 pub struct DynamicFieldView {
     pub k: KeyStateView,
     pub v: OpView<StateView>,
@@ -273,11 +274,13 @@ impl DynamicFieldView {
 pub enum FieldChangeView {
     Object {
         key: KeyStateView,
+        key_state: String,
         #[serde(flatten)]
         change: ObjectChangeView,
     },
-    Nomarl {
+    Normal {
         key: KeyStateView,
+        key_state: String,
         #[serde(flatten)]
         change: NormalFieldChangeView,
     },
@@ -287,11 +290,13 @@ impl From<(KeyState, FieldChange)> for FieldChangeView {
     fn from((key, field_change): (KeyState, FieldChange)) -> Self {
         match field_change {
             FieldChange::Object(object_change) => Self::Object {
-                key: key.into(),
+                key: key.clone().into(),
+                key_state: key.to_string(),
                 change: object_change.into(),
             },
-            FieldChange::Normal(normal_field_change) => Self::Nomarl {
-                key: key.into(),
+            FieldChange::Normal(normal_field_change) => Self::Normal {
+                key: key.clone().into(),
+                key_state: key.to_string(),
                 change: normal_field_change.into(),
             },
         }
@@ -371,11 +376,11 @@ impl From<StateSyncFilterView> for StateSyncFilter {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct IndexerObjectStateView {
     pub object_id: ObjectID,
-    pub owner: AccountAddressView,
+    pub owner: RoochAddressView,
     pub flag: u8,
-    pub value: Option<AnnotatedMoveValueView>,
+    pub value: Option<AnnotatedMoveStructView>,
     pub object_type: StructTagView,
-    pub state_root: AccountAddressView,
+    pub state_root: H256View,
     pub size: u64,
     pub tx_order: u64,
     pub state_index: u64,
@@ -386,14 +391,14 @@ pub struct IndexerObjectStateView {
 
 impl IndexerObjectStateView {
     pub fn new_from_object_state(
-        annotated_state: Option<AnnotatedState>,
+        annotated_state: Option<AnnotatedObject>,
         state: IndexerObjectState,
     ) -> IndexerObjectStateView {
         IndexerObjectStateView {
             object_id: state.object_id,
             owner: state.owner.into(),
             flag: state.flag,
-            value: annotated_state.map(|v| AnnotatedMoveValueView::from(v.decoded_value)),
+            value: annotated_state.map(|v| AnnotatedMoveStructView::from(v.value)),
             object_type: state.object_type.into(),
             state_root: state.state_root.into(),
             size: state.size,
@@ -417,24 +422,21 @@ pub enum ObjectStateFilterView {
     /// Query by object value type and owner.
     ObjectTypeWithOwner {
         object_type: StructTagView,
-        owner: AccountAddressView,
+        owner: RoochAddressView,
     },
     /// Query by object value type.
     ObjectType(StructTagView),
     /// Query by owner.
-    Owner(AccountAddressView),
-    /// Query by object id.
-    ObjectId(Vec<ObjectID>),
-    /// Query by multi chain address
-    MultiChainAddress { multichain_id: u64, address: String },
+    Owner(RoochAddressView),
+    /// Query by object ids.
+    ObjectId(String),
 }
 
 impl ObjectStateFilterView {
-    pub fn into_object_state_filter(
+    pub fn try_into_object_state_filter(
         state_filter: ObjectStateFilterView,
-        resolve_address: AccountAddress,
-    ) -> ObjectStateFilter {
-        match state_filter {
+    ) -> Result<ObjectStateFilter> {
+        Ok(match state_filter {
             ObjectStateFilterView::ObjectTypeWithOwner { object_type, owner } => {
                 ObjectStateFilter::ObjectTypeWithOwner {
                     object_type: object_type.into(),
@@ -445,12 +447,19 @@ impl ObjectStateFilterView {
                 ObjectStateFilter::ObjectType(object_type.into())
             }
             ObjectStateFilterView::Owner(owner) => ObjectStateFilter::Owner(owner.into()),
-            ObjectStateFilterView::ObjectId(object_ids) => ObjectStateFilter::ObjectId(object_ids),
-            ObjectStateFilterView::MultiChainAddress {
-                multichain_id: _,
-                address: _,
-            } => ObjectStateFilter::Owner(resolve_address),
-        }
+            ObjectStateFilterView::ObjectId(object_ids_str) => {
+                let object_ids = if object_ids_str.trim().is_empty() {
+                    vec![]
+                } else {
+                    object_ids_str
+                        .trim()
+                        .split(',')
+                        .map(ObjectID::from_str)
+                        .collect::<Result<Vec<_>, _>>()?
+                };
+                ObjectStateFilter::ObjectId(object_ids)
+            }
+        })
     }
 }
 

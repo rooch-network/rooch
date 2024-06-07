@@ -4,12 +4,12 @@
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use move_command_line_common::address::ParsedAddress;
 use move_command_line_common::types::ParsedStructType;
 use move_core_types::u256::U256;
 use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
+use rooch_types::address::ParsedAddress;
 use rooch_types::address::RoochAddress;
 use rooch_types::framework::transfer::TransferModule;
 use rooch_types::{
@@ -58,7 +58,7 @@ impl CommandAction<ExecuteTransactionResponseView> for TransferCommand {
                 let tx_data = context
                     .build_tx_data(sender, action, max_gas_amount)
                     .await?;
-                //TODO the authenticator usually is associalted with the RoochTransactinData
+                //TODO the authenticator usually is associated with the RoochTransactinData
                 //So we need to find a way to let user generate the authenticator based on the tx_data.
                 let tx = RoochTransaction::new(tx_data, authenticator.into());
                 context.execute(tx).await

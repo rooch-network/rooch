@@ -85,7 +85,7 @@ export class RoochCli {
     const accounts = await this.execute(['account', 'list', '--json'])
     for (const account of accounts) {
       if (account.active) {
-        return account.local_account.address
+        return account.local_account.hex_address
       }
     }
 

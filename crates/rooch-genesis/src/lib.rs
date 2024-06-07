@@ -11,28 +11,41 @@ use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos_store::{config_store::ConfigDBStore, MoveOSStore};
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
-use moveos_types::move_std::ascii::MoveAsciiString;
+use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::gas_schedule::{GasEntry, GasSchedule, GasScheduleConfig};
 use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
+use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use moveos_types::{h256, state_resolver};
 use once_cell::sync::Lazy;
+use rooch_db::RoochDB;
 use rooch_framework::natives::gas_parameter::gas_member::{
     FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule,
 };
 use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
+use rooch_indexer::store::traits::IndexerStoreTrait;
+use rooch_store::transaction_store::TransactionStore;
+use rooch_types::address::BitcoinAddress;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::error::GenesisError;
-use rooch_types::framework::genesis::GenesisContext;
+use rooch_types::indexer::event::IndexerEvent;
+use rooch_types::indexer::state::{
+    handle_object_change, IndexerFieldStateChanges, IndexerObjectStateChanges,
+};
+use rooch_types::indexer::transaction::IndexerTransaction;
 use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
 use rooch_types::transaction::rooch::RoochTransaction;
+use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::str::FromStr;
 use std::{fs::File, io::Write, path::Path};
 
 pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
-    let network: RoochNetwork = BuiltinChainID::Local.into();
+    let mut network: RoochNetwork = BuiltinChainID::Local.into();
+    let sequencer_account = BitcoinAddress::from_str("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
+        .expect("parse bitcoin address should success");
+    network.set_sequencer_account(sequencer_account);
     RoochGenesis::build(network).expect("build rooch genesis failed")
 });
 
@@ -62,8 +75,7 @@ impl FrameworksGasParameters {
             entries: entries
                 .into_iter()
                 .map(|(key, val)| GasEntry {
-                    key: MoveAsciiString::from_str(key.as_str())
-                        .expect("GasEntry key must be ascii"),
+                    key: MoveString::from_str(key.as_str()).expect("GasEntry key must be ascii"),
                     val,
                 })
                 .collect(),
@@ -143,11 +155,12 @@ impl RoochGenesis {
             BuildOption::Release => Self::load_stdlib(genesis_config.stdlib_version)?,
         };
 
-        let genesis_ctx = GenesisContext::new(
+        let genesis_ctx = rooch_types::framework::genesis::GenesisContext::new(
             network.chain_id.id,
-            genesis_config.timestamp,
             genesis_config.sequencer_account,
         );
+        let moveos_genesis_ctx =
+            moveos_types::moveos_std::genesis::GenesisContext::new(genesis_config.timestamp);
         let bitcoin_genesis_ctx = BitcoinGenesisContext::new(
             genesis_config.bitcoin_network,
             genesis_config.bitcoin_block_height,
@@ -174,13 +187,14 @@ impl RoochGenesis {
         let gas_parameter = FrameworksGasParameters::initial();
         let gas_config = gas_parameter.to_gas_schedule_config();
         genesis_moveos_tx.ctx.add(genesis_ctx.clone())?;
+        genesis_moveos_tx.ctx.add(moveos_genesis_ctx.clone())?;
         genesis_moveos_tx.ctx.add(bitcoin_genesis_ctx.clone())?;
         genesis_moveos_tx.ctx.add(gas_config.clone())?;
 
         let vm_config = MoveOSConfig::default();
-
+        let temp_dir = moveos_config::temp_dir();
         let moveos = MoveOS::new(
-            MoveOSStore::mock_moveos_store()?,
+            MoveOSStore::new(temp_dir.path())?,
             gas_parameter.all_natives(),
             vm_config,
             vec![],
@@ -250,14 +264,14 @@ impl RoochGenesis {
         Ok(())
     }
 
-    pub fn init_genesis(&self, moveos_store: &mut MoveOSStore) -> Result<RootObjectEntity> {
+    pub fn init_genesis(&self, rooch_db: &RoochDB) -> Result<RootObjectEntity> {
         //we load the gas parameter from genesis binary, avoid the code change affect the genesis result
         let genesis_gas_parameter = FrameworksGasParameters::load_from_gas_entries(
             self.initial_gas_config.max_gas_amount,
             self.initial_gas_config.entries.clone(),
         )?;
         let moveos = MoveOS::new(
-            moveos_store.clone(),
+            rooch_db.moveos_store.clone(),
             genesis_gas_parameter.all_natives(),
             MoveOSConfig::default(),
             vec![],
@@ -273,12 +287,86 @@ impl RoochGenesis {
             "Genesis state root mismatch"
         );
 
-        //TODO save the genesis txs to sequencer
         let tx_hash = self.genesis_tx().tx_hash();
-        moveos_store.handle_tx_output(tx_hash, genesis_state_root, size, genesis_tx_output)?;
+        let genesis_execution_info = rooch_db.moveos_store.handle_tx_output(
+            tx_hash,
+            genesis_state_root,
+            size,
+            genesis_tx_output.clone(),
+        )?;
+
+        // Save the genesis txs to sequencer
+        let genesis_tx_order: u64 = 0;
+        let moveos_genesis_context = self
+            .genesis_moveos_tx()
+            .ctx
+            .get::<moveos_types::moveos_std::genesis::GenesisContext>()?
+            .expect("Moveos Genesis context should exist");
+        let tx_ledger_data = LedgerTxData::L2Tx(self.genesis_tx());
+        let ledger_tx = LedgerTransaction::build_ledger_transaction(
+            tx_ledger_data,
+            moveos_genesis_context.timestamp,
+            genesis_tx_order,
+            vec![],
+        );
+        rooch_db.rooch_store.save_transaction(ledger_tx.clone())?;
+
+        // Save the genesis to indexer
+        // 1. update indexer transaction
+        let indexer_transaction = IndexerTransaction::new(
+            ledger_tx.clone(),
+            genesis_execution_info.clone(),
+            self.genesis_moveos_tx().action,
+            self.genesis_moveos_tx().ctx,
+        )?;
+        let transactions = vec![indexer_transaction];
+        rooch_db.indexer_store.persist_transactions(transactions)?;
+
+        // 2. update indexer state
+        let events: Vec<_> = genesis_tx_output
+            .events
+            .into_iter()
+            .map(|event| {
+                IndexerEvent::new(
+                    event.clone(),
+                    ledger_tx.clone(),
+                    self.genesis_moveos_tx().ctx,
+                )
+            })
+            .collect();
+        rooch_db.indexer_store.persist_events(events)?;
+
+        // 3. update indexer state
+        // indexer state index generator
+        let mut state_index_generator = 0u64;
+        let mut indexer_object_state_changes = IndexerObjectStateChanges::default();
+        let mut indexer_field_state_changes = IndexerFieldStateChanges::default();
+
+        let resolver = RootObjectResolver::new(inited_root.clone(), &rooch_db.moveos_store);
+        for (object_id, object_change) in genesis_tx_output.changeset.changes {
+            state_index_generator = handle_object_change(
+                state_index_generator,
+                genesis_tx_order,
+                &mut indexer_object_state_changes,
+                &mut indexer_field_state_changes,
+                object_id,
+                object_change,
+                ledger_tx.sequence_info.tx_timestamp,
+                &resolver,
+            )?;
+        }
+        rooch_db
+            .indexer_store
+            .update_object_states(indexer_object_state_changes)?;
+        rooch_db
+            .indexer_store
+            .update_field_states(indexer_field_state_changes)?;
 
         let genesis_info = GenesisInfo::new(self.genesis_hash(), inited_root.clone());
-        moveos_store.get_config_store().save_genesis(genesis_info)?;
+        rooch_db
+            .moveos_store
+            .get_config_store()
+            .save_genesis(genesis_info)?;
         Ok(inited_root)
     }
 
@@ -306,10 +394,15 @@ impl RoochGenesis {
 
 #[cfg(test)]
 mod tests {
-    use crate::FrameworksGasParameters;
-    use moveos_store::MoveOSStore;
-    use moveos_types::moveos_std::move_module::ModuleStore;
+    use crate::{BuildOption, FrameworksGasParameters};
+    use move_core_types::identifier::Identifier;
+    use move_core_types::language_storage::ModuleId;
+    use move_core_types::resolver::ModuleResolver;
+    use moveos_types::moveos_std::module_store::{ModuleStore, Package};
     use moveos_types::state_resolver::{RootObjectResolver, StateResolver};
+    use rooch_config::RoochOpt;
+    use rooch_db::RoochDB;
+    use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
     use rooch_types::bitcoin::network::BitcoinNetwork;
     use rooch_types::rooch_network::RoochNetwork;
     use tracing::info;
@@ -319,14 +412,15 @@ mod tests {
             "genesis init test case for network: {:?}",
             network.chain_id.id
         );
-        let genesis =
-            super::RoochGenesis::build(network.clone()).expect("build rooch genesis failed");
+        let genesis = super::RoochGenesis::build_with_option(network.clone(), BuildOption::Release)
+            .expect("build rooch genesis failed");
 
-        let mut moveos_store = MoveOSStore::mock_moveos_store().unwrap();
+        let opt = RoochOpt::new_with_temp_store().expect("create rooch opt failed");
+        let rooch_db = RoochDB::init(&opt.store_config()).expect("init rooch db failed");
 
-        let root = genesis.init_genesis(&mut moveos_store).unwrap();
+        let root = genesis.init_genesis(&rooch_db).unwrap();
 
-        let resolver = RootObjectResolver::new(root, &moveos_store);
+        let resolver = RootObjectResolver::new(root, &rooch_db.moveos_store);
         let gas_parameter = FrameworksGasParameters::load_from_chain(&resolver)
             .expect("load gas parameter from chain failed");
 
@@ -347,6 +441,25 @@ mod tests {
             module_store_obj.size > 0,
             "module store fields size should > 0"
         );
+
+        let package_object_state = resolver
+            .get_object(&Package::package_id(&ROOCH_FRAMEWORK_ADDRESS))
+            .unwrap();
+        assert!(package_object_state.is_some());
+        let package_obj = package_object_state
+            .unwrap()
+            .into_object::<Package>()
+            .unwrap();
+        assert!(package_obj.size > 0, "package fields size should > 0");
+
+        let module = resolver
+            .get_module(&ModuleId::new(
+                ROOCH_FRAMEWORK_ADDRESS,
+                Identifier::new("genesis").unwrap(),
+            ))
+            .unwrap();
+        assert!(module.is_some(), "genesis module should exist");
+
         let chain_id_state = resolver
             .get_object(&rooch_types::framework::chain_id::ChainID::chain_id_object_id())
             .unwrap();

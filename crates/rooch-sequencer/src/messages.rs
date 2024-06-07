@@ -4,7 +4,6 @@
 use anyhow::Result;
 use coerce::actor::message::Message;
 use moveos_types::h256::H256;
-use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
 use serde::{Deserialize, Serialize};
 
@@ -51,5 +50,5 @@ impl Message for GetTxHashsMessage {
 pub struct GetSequencerOrderMessage {}
 
 impl Message for GetSequencerOrderMessage {
-    type Result = Result<Option<SequencerOrder>>;
+    type Result = Result<u64>;
 }

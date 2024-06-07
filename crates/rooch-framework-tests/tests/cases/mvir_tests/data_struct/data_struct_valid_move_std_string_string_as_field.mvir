@@ -1,0 +1,11 @@
+//# publish
+module 0x11.TestModule1 {
+    import 0x1.string;
+    struct S0 has copy,drop {v: string.String}
+
+    metadata {
+        data_struct {
+            0x11::TestModule1::S0 -> true;
+        }
+    }
+}

@@ -5,17 +5,13 @@ use std::{
     borrow::Cow,
     env,
     net::{IpAddr, Ipv4Addr, SocketAddr},
-    path::PathBuf,
-    str::FromStr,
-    sync::{atomic::AtomicBool, Arc},
     time::Duration,
 };
-use tokio::sync::mpsc::{Receiver, Sender};
 use tower::limit::RateLimitLayer;
 use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 
-use crate::{DiscordConfig, FaucetError, FaucetRequest, FaucetResponse, InfoResponse};
+use crate::{App, FaucetError, FaucetRequest, FaucetResponse, InfoResponse};
 
 use axum::{
     error_handling::HandleErrorLayer,
@@ -26,11 +22,8 @@ use axum::{
 };
 use clap::Parser;
 use http::Method;
-use move_core_types::account_address::AccountAddress;
+
 use prometheus::{Registry, TextEncoder};
-use rooch_rpc_api::jsonrpc_types::{AccountAddressView, StructTagView};
-use rooch_rpc_client::wallet_context::WalletContext;
-use tokio::sync::RwLock;
 
 pub const METRICS_ROUTE: &str = "/metrics";
 
@@ -38,7 +31,7 @@ const CONCURRENCY_LIMIT: usize = 10;
 
 #[derive(Parser, Debug, Clone)]
 #[clap(rename_all = "kebab-case")]
-pub struct AppConfig {
+pub struct WebConfig {
     #[clap(long, default_value_t = 50052)]
     pub port: u16,
 
@@ -49,7 +42,7 @@ pub struct AppConfig {
     pub max_request_per_second: u64,
 }
 
-impl Default for AppConfig {
+impl Default for WebConfig {
     fn default() -> Self {
         Self {
             port: 50052,
@@ -59,65 +52,7 @@ impl Default for AppConfig {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct App {
-    pub faucet_queue: Sender<FaucetRequest>,
-    pub err_receiver: Arc<RwLock<Receiver<FaucetError>>>,
-    pub wallet_config_dir: Option<PathBuf>,
-    pub discord_config: DiscordConfig,
-    pub faucet_funds: u64,
-    pub is_loop_running: Arc<AtomicBool>,
-}
-
-impl App {
-    pub fn new(
-        faucet_queue: Sender<FaucetRequest>,
-        wallet_config_dir: Option<PathBuf>,
-        discord_config: DiscordConfig,
-        err_receiver: Receiver<FaucetError>,
-        faucet_funds: u64,
-    ) -> Self {
-        Self {
-            faucet_queue,
-            wallet_config_dir,
-            discord_config,
-            faucet_funds,
-            is_loop_running: Arc::new(AtomicBool::new(false)),
-            err_receiver: Arc::new(RwLock::new(err_receiver)),
-        }
-    }
-
-    pub async fn request(&self, address: FaucetRequest) -> Result<(), FaucetError> {
-        self.faucet_queue
-            .send(address)
-            .await
-            .map_err(FaucetError::internal)?;
-        Ok(())
-    }
-
-    pub async fn check_gas_balance(&self) -> Result<f64, FaucetError> {
-        let context = WalletContext::new(self.wallet_config_dir.clone())
-            .map_err(|e| FaucetError::Wallet(e.to_string()))?;
-        let client = context.get_client().await.unwrap();
-        let faucet_address: AccountAddress = context.client_config.active_address.unwrap().into();
-
-        let s = client
-            .rooch
-            .get_balance(
-                AccountAddressView::from(faucet_address),
-                StructTagView::from_str("0x3::gas_coin::GasCoin").unwrap(),
-            )
-            .await
-            .map_err(FaucetError::internal)?;
-
-        let divisor: u64 = 10u64.pow(s.coin_info.decimals as u32);
-        let result = s.balance.0.unchecked_as_u64() as f64 / divisor as f64;
-
-        Ok(result)
-    }
-}
-
-pub async fn serve(app: App, app_config: AppConfig) -> Result<(), anyhow::Error> {
+pub async fn serve(app: App, web_config: WebConfig) -> Result<(), anyhow::Error> {
     let max_concurrency = match env::var("MAX_CONCURRENCY") {
         Ok(val) => val.parse::<usize>().unwrap(),
         _ => CONCURRENCY_LIMIT,
@@ -143,9 +78,9 @@ pub async fn serve(app: App, app_config: AppConfig) -> Result<(), anyhow::Error>
                 // .layer(RequestMetricsLayer::new(&registry))
                 .layer(cors)
                 .load_shed()
-                .buffer(app_config.request_buffer_size)
+                .buffer(web_config.request_buffer_size)
                 .layer(RateLimitLayer::new(
-                    app_config.max_request_per_second,
+                    web_config.max_request_per_second,
                     Duration::from_secs(1),
                 ))
                 .concurrency_limit(max_concurrency)
@@ -153,7 +88,7 @@ pub async fn serve(app: App, app_config: AppConfig) -> Result<(), anyhow::Error>
                 .into_inner(),
         );
 
-    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), app_config.port);
+    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), web_config.port);
 
     axum::Server::bind(&addr)
         .serve(router.into_make_service())

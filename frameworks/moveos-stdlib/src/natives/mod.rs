@@ -29,6 +29,7 @@ pub struct GasParameters {
     pub bech32: moveos_stdlib::bech32::GasParameters,
     pub hash: moveos_stdlib::hash::GasParameters,
     pub bls12381: moveos_stdlib::bls12381::GasParameters,
+    pub evm: moveos_stdlib::evm::GasParameters,
 }
 
 impl GasParameters {
@@ -53,6 +54,7 @@ impl GasParameters {
             bech32: moveos_stdlib::bech32::GasParameters::zeros(),
             hash: moveos_stdlib::hash::GasParameters::zeros(),
             bls12381: moveos_stdlib::bls12381::GasParameters::zeros(),
+            evm: moveos_stdlib::evm::GasParameters::zeros(),
         }
     }
 }
@@ -126,6 +128,7 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
         "bls12381",
         moveos_stdlib::bls12381::make_all(gas_params.bls12381)
     );
+    add_natives!("evm", moveos_stdlib::evm::make_all(gas_params.evm));
 
     let moveos_native_fun_table = make_table_from_iter(MOVEOS_STD_ADDRESS, natives);
     native_fun_table.extend(moveos_native_fun_table);

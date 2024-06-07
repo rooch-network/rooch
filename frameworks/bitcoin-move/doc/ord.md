@@ -18,8 +18,10 @@
 -  [Function `new_inscription_id`](#0x4_ord_new_inscription_id)
 -  [Function `derive_inscription_id`](#0x4_ord_derive_inscription_id)
 -  [Function `get_inscription_id_by_index`](#0x4_ord_get_inscription_id_by_index)
+-  [Function `inscription_latest_height`](#0x4_ord_inscription_latest_height)
 -  [Function `exists_inscription`](#0x4_ord_exists_inscription)
 -  [Function `borrow_inscription`](#0x4_ord_borrow_inscription)
+-  [Function `borrow_inscription_by_id`](#0x4_ord_borrow_inscription_by_id)
 -  [Function `spend_utxo`](#0x4_ord_spend_utxo)
 -  [Function `handle_coinbase_tx`](#0x4_ord_handle_coinbase_tx)
 -  [Function `process_transaction`](#0x4_ord_process_transaction)
@@ -47,12 +49,12 @@
 -  [Function `from_transaction`](#0x4_ord_from_transaction)
 -  [Function `from_transaction_bytes`](#0x4_ord_from_transaction_bytes)
 -  [Function `subsidy_by_height`](#0x4_ord_subsidy_by_height)
--  [Function `bind_multichain_address`](#0x4_ord_bind_multichain_address)
 -  [Function `add_permanent_state`](#0x4_ord_add_permanent_state)
 -  [Function `contains_permanent_state`](#0x4_ord_contains_permanent_state)
 -  [Function `borrow_permanent_state`](#0x4_ord_borrow_permanent_state)
 -  [Function `borrow_mut_permanent_state`](#0x4_ord_borrow_mut_permanent_state)
 -  [Function `remove_permanent_state`](#0x4_ord_remove_permanent_state)
+-  [Function `destroy_permanent_area`](#0x4_ord_destroy_permanent_area)
 -  [Function `add_temp_state`](#0x4_ord_add_temp_state)
 -  [Function `contains_temp_state`](#0x4_ord_contains_temp_state)
 -  [Function `borrow_temp_state`](#0x4_ord_borrow_temp_state)
@@ -79,14 +81,10 @@
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::json</a>;
 <b>use</b> <a href="">0x2::object</a>;
-<b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
 <b>use</b> <a href="">0x2::string_utils</a>;
 <b>use</b> <a href="">0x2::table_vec</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
-<b>use</b> <a href="">0x3::address_mapping</a>;
-<b>use</b> <a href="">0x3::bitcoin_address</a>;
-<b>use</b> <a href="">0x3::multichain_address</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 <b>use</b> <a href="utxo.md#0x4_utxo">0x4::utxo</a>;
 </code></pre>
@@ -286,6 +284,17 @@ How may blocks between halvings.
 
 
 
+<a name="0x4_ord_inscription_latest_height"></a>
+
+## Function `inscription_latest_height`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_inscription_latest_height">inscription_latest_height</a>(): u64
+</code></pre>
+
+
+
 <a name="0x4_ord_exists_inscription"></a>
 
 ## Function `exists_inscription`
@@ -304,6 +313,17 @@ How may blocks between halvings.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_borrow_inscription">borrow_inscription</a>(txid: <b>address</b>, index: u32): &<a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_borrow_inscription_by_id"></a>
+
+## Function `borrow_inscription_by_id`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_borrow_inscription_by_id">borrow_inscription_by_id</a>(id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>): &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>
 </code></pre>
 
 
@@ -609,17 +629,6 @@ Block Rewards
 
 
 
-<a name="0x4_ord_bind_multichain_address"></a>
-
-## Function `bind_multichain_address`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_bind_multichain_address">bind_multichain_address</a>(rooch_address: <b>address</b>, bitcoin_address_opt: <a href="_Option">option::Option</a>&lt;<a href="_BitcoinAddress">bitcoin_address::BitcoinAddress</a>&gt;)
-</code></pre>
-
-
-
 <a name="0x4_ord_add_permanent_state"></a>
 
 ## Function `add_permanent_state`
@@ -674,6 +683,18 @@ Block Rewards
 
 <pre><code>#[private_generics(#[S])]
 <b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_remove_permanent_state">remove_permanent_state</a>&lt;S: store&gt;(inscription: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;): S
+</code></pre>
+
+
+
+<a name="0x4_ord_destroy_permanent_area"></a>
+
+## Function `destroy_permanent_area`
+
+Destroy permanent area if it's empty. Aborts if it's not empty.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_destroy_permanent_area">destroy_permanent_area</a>(inscription: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;)
 </code></pre>
 
 

@@ -6,7 +6,7 @@ module rooch_framework::onchain_config {
     use std::vector;
     use moveos_std::object;
     use moveos_std::features;
-    use moveos_std::move_module;
+    use moveos_std::module_store;
     use moveos_std::signer;
     use rooch_framework::chain_id;
 
@@ -63,16 +63,14 @@ module rooch_framework::onchain_config {
     public entry fun add_to_publishing_allowlist(account: &signer, publisher: address) {
         ensure_sequencer(account);
         let system_account = signer::module_signer<OnchainConfig>();
-        let allowlist = move_module::borrow_mut_allowlist();
-        move_module::add_to_allowlist(allowlist, &system_account, publisher);
+        module_store::add_to_allowlist(&system_account, publisher);
     }
 
     /// Remove `publisher` from publishing allowlist.
     public entry fun remove_from_publishing_allowlist(account: &signer, publisher: address) {
         ensure_sequencer(account);
         let system_account = signer::module_signer<OnchainConfig>();
-        let allowlist = move_module::borrow_mut_allowlist();
-        move_module::remove_from_allowlist(allowlist, &system_account, publisher);
+        module_store::remove_from_allowlist(&system_account, publisher);
     }
     /****** End of API for update module publishing allowlist. ******/
 
@@ -97,7 +95,6 @@ module rooch_framework::onchain_config {
     fun set_code_features(framework: &signer) {
         let enables = vector::empty<u64>();
         
-        // TODO: change features
         if (chain_id::is_local()) {
             vector::push_back(&mut enables, features::get_localnet_feature());
             vector::push_back(&mut enables, features::get_devnet_feature());

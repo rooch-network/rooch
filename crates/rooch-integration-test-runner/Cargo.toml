@@ -1,6 +1,6 @@
 [package]
 name = "rooch-integration-test-runner"
-version = "0.4.1"
+version = "0.5.0"
 
 # Workspace inherited keys
 authors = { workspace = true }
@@ -49,6 +49,7 @@ framework-builder = { workspace = true }
 moveos = { workspace = true }
 moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }
+moveos-config = { workspace = true }
 
 rooch-types ={ workspace = true }
 rooch-framework = { workspace = true }

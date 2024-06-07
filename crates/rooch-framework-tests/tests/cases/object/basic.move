@@ -37,15 +37,15 @@ module test::m {
 // Mint
 //# run test::m::mint --signers A
 
-//# view_object --object-id 0x8f684aa792b9b1058aeccd3941849e9662132d81c974b826a9c6bddae8880bd6
+//# view_object --object-id 0x9ed10859576d1e2495243466d727af5e8fc728ee46aef24109692fae5a917ec5
 
 //Update
-//# run test::m::update --signers A --args object:0x8f684aa792b9b1058aeccd3941849e9662132d81c974b826a9c6bddae8880bd6
+//# run test::m::update --signers A --args object:0x9ed10859576d1e2495243466d727af5e8fc728ee46aef24109692fae5a917ec5
 
-//# view_object --object-id 0x8f684aa792b9b1058aeccd3941849e9662132d81c974b826a9c6bddae8880bd6
+//# view_object --object-id 0x9ed10859576d1e2495243466d727af5e8fc728ee46aef24109692fae5a917ec5
 
 //Remove
-//# run test::m::remove --signers A --args object_id:0x8f684aa792b9b1058aeccd3941849e9662132d81c974b826a9c6bddae8880bd6
+//# run test::m::remove --signers A --args object_id:0x9ed10859576d1e2495243466d727af5e8fc728ee46aef24109692fae5a917ec5
 
 // Check if removed
-//# view_object --object-id 0x8f684aa792b9b1058aeccd3941849e9662132d81c974b826a9c6bddae8880bd6
+//# view_object --object-id 0x9ed10859576d1e2495243466d727af5e8fc728ee46aef24109692fae5a917ec5

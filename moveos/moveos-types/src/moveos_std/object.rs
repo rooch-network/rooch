@@ -4,7 +4,8 @@
 use super::table::TablePlaceholder;
 use crate::h256;
 use crate::moveos_std::account::Account;
-use crate::moveos_std::move_module::ModuleStore;
+use crate::moveos_std::module_store::{ModuleStore, Package};
+use crate::moveos_std::timestamp::Timestamp;
 use crate::state::{KeyState, PlaceholderStruct};
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
@@ -349,6 +350,8 @@ impl MoveStructState for Root {
 pub type TableObject = ObjectEntity<TablePlaceholder>;
 pub type AccountObject = ObjectEntity<Account>;
 pub type ModuleStoreObject = ObjectEntity<ModuleStore>;
+pub type PackageObject = ObjectEntity<Package>;
+pub type TimestampObject = ObjectEntity<Timestamp>;
 
 /// The Entity of the Object<T>.
 /// The value must be the last field
@@ -360,6 +363,10 @@ pub struct ObjectEntity<T> {
     /// The state tree root of the object dynamic fields
     pub state_root: AccountAddress,
     pub size: u64,
+    // The object created timestamp on chain
+    pub created_at: u64,
+    // The object updated timestamp on chain
+    pub updated_at: u64,
     pub value: T,
 }
 
@@ -375,6 +382,8 @@ impl ObjectEntity<Root> {
             flag: SHARED_OBJECT_FLAG_MASK,
             state_root: AccountAddress::new(state_root.into()),
             size,
+            created_at: 0,
+            updated_at: 0,
             value: Root {
                 _placeholder: false,
             },
@@ -389,6 +398,8 @@ impl<T> ObjectEntity<T> {
         flag: u8,
         state_root: H256,
         size: u64,
+        created_at: u64,
+        updated_at: u64,
         value: T,
     ) -> ObjectEntity<T> {
         Self {
@@ -397,6 +408,8 @@ impl<T> ObjectEntity<T> {
             flag,
             state_root: AccountAddress::new(state_root.into()),
             size,
+            created_at,
+            updated_at,
             value,
         }
     }
@@ -458,6 +471,8 @@ where
             },
             state_root: self.state_root,
             size: self.size,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
         }
     }
 }
@@ -479,6 +494,8 @@ impl ObjectEntity<TablePlaceholder> {
             0u8,
             state_root,
             size,
+            0,
+            0,
             TablePlaceholder::default(),
         )
     }
@@ -501,7 +518,9 @@ impl ObjectEntity<Account> {
             0u8,
             *GENESIS_STATE_ROOT,
             0,
-            Account::default(),
+            0,
+            0,
+            Account::new(account, 0),
         )
     }
 }
@@ -514,7 +533,39 @@ impl ObjectEntity<ModuleStore> {
             SHARED_OBJECT_FLAG_MASK,
             *GENESIS_STATE_ROOT,
             0,
+            0,
+            0,
             ModuleStore::default(),
+        )
+    }
+}
+
+impl ObjectEntity<Package> {
+    pub fn new_package(address: &AccountAddress, owner: AccountAddress) -> PackageObject {
+        Self::new(
+            Package::package_id(address),
+            owner,
+            0u8,
+            *GENESIS_STATE_ROOT,
+            0,
+            0,
+            0,
+            Package::default(),
+        )
+    }
+}
+
+impl ObjectEntity<Timestamp> {
+    pub fn genesis_timestamp() -> TimestampObject {
+        Self::new(
+            Timestamp::object_id(),
+            MOVEOS_STD_ADDRESS,
+            0u8,
+            *GENESIS_STATE_ROOT,
+            0,
+            0,
+            0,
+            Timestamp::default(),
         )
     }
 }
@@ -552,6 +603,8 @@ where
             MoveTypeLayout::Address,
             MoveTypeLayout::U8,
             MoveTypeLayout::Address,
+            MoveTypeLayout::U64,
+            MoveTypeLayout::U64,
             MoveTypeLayout::U64,
             MoveTypeLayout::Struct(T::struct_layout()),
         ])
@@ -609,7 +662,6 @@ impl RawObject {
     pub fn from_bytes(bytes: &[u8], struct_tag: StructTag) -> Result<Self> {
         let (path_len_bytes, path_len) = Self::parse_length(bytes)?;
         let object_id_len = path_len_bytes + path_len * AccountAddress::LENGTH;
-
         ensure!(
             bytes.len() > object_id_len + AccountAddress::LENGTH + 1 + AccountAddress::LENGTH + 8,
             "Invalid bytes length"
@@ -628,8 +680,16 @@ impl RawObject {
             &bytes[object_id_len + AccountAddress::LENGTH + 1 + AccountAddress::LENGTH
                 ..object_id_len + AccountAddress::LENGTH + 1 + AccountAddress::LENGTH + 8],
         )?;
+        let created_at: u64 = bcs::from_bytes(
+            &bytes[object_id_len + AccountAddress::LENGTH + 1 + AccountAddress::LENGTH + 8
+                ..object_id_len + AccountAddress::LENGTH + 1 + AccountAddress::LENGTH + 8 + 8],
+        )?;
+        let updated_at: u64 = bcs::from_bytes(
+            &bytes[object_id_len + AccountAddress::LENGTH + 1 + AccountAddress::LENGTH + 8 + 8
+                ..object_id_len + AccountAddress::LENGTH + 1 + AccountAddress::LENGTH + 8 + 8 + 8],
+        )?;
         let value = bytes
-            [object_id_len + AccountAddress::LENGTH + 1 + AccountAddress::LENGTH + 8..]
+            [object_id_len + AccountAddress::LENGTH + 1 + AccountAddress::LENGTH + 8 + 8 + 8..]
             .to_vec();
         Ok(RawObject {
             id,
@@ -638,6 +698,8 @@ impl RawObject {
             value: RawData { struct_tag, value },
             state_root,
             size,
+            created_at,
+            updated_at,
         })
     }
 
@@ -648,6 +710,8 @@ impl RawObject {
         bytes.push(self.flag);
         bytes.extend(bcs::to_bytes(&self.state_root).unwrap());
         bytes.extend(bcs::to_bytes(&self.size).unwrap());
+        bytes.extend(bcs::to_bytes(&self.created_at).unwrap());
+        bytes.extend(bcs::to_bytes(&self.updated_at).unwrap());
         bytes.extend_from_slice(&self.value.value);
         bytes
     }
@@ -682,6 +746,8 @@ impl RawObject {
             flag: self.flag,
             state_root: self.state_root,
             size: self.size,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
             value,
         })
     }
@@ -704,6 +770,8 @@ impl AnnotatedObject {
         flag: u8,
         state_root: AccountAddress,
         size: u64,
+        created_at: u64,
+        updated_at: u64,
         value: AnnotatedMoveStruct,
     ) -> Self {
         Self {
@@ -712,6 +780,8 @@ impl AnnotatedObject {
             flag,
             state_root,
             size,
+            created_at,
+            updated_at,
             value,
         }
     }
@@ -725,7 +795,7 @@ impl AnnotatedObject {
             (field_name, AnnotatedMoveValue::Address(field_value)) => {
                 debug_assert!(
                     field_name.as_str() == "owner",
-                    "ObjectEntity owner field name should be owner"
+                    "ObjectEntity field name should be owner"
                 );
                 field_value
             }
@@ -735,7 +805,7 @@ impl AnnotatedObject {
             (field_name, AnnotatedMoveValue::U8(field_value)) => {
                 debug_assert!(
                     field_name.as_str() == "flag",
-                    "ObjectEntity flag field name should be flag"
+                    "ObjectEntity field name should be flag"
                 );
                 field_value
             }
@@ -745,7 +815,7 @@ impl AnnotatedObject {
             (field_name, AnnotatedMoveValue::Address(field_value)) => {
                 debug_assert!(
                     field_name.as_str() == "state_root",
-                    "ObjectEntity state_root field name should be state_root"
+                    "ObjectEntity field name should be state_root"
                 );
                 field_value
             }
@@ -755,24 +825,44 @@ impl AnnotatedObject {
             (field_name, AnnotatedMoveValue::U64(field_value)) => {
                 debug_assert!(
                     field_name.as_str() == "size",
-                    "ObjectEntity size field name should be size"
+                    "ObjectEntity field name should be size"
                 );
                 field_value
             }
             _ => bail!("ObjectEntity size field should be u64"),
         };
+        let created_at = match fields.next().expect("ObjectEntity should have created_at") {
+            (field_name, AnnotatedMoveValue::U64(field_value)) => {
+                debug_assert!(
+                    field_name.as_str() == "created_at",
+                    "ObjectEntity field name should be created_at"
+                );
+                field_value
+            }
+            _ => bail!("ObjectEntity created_at field should be u64"),
+        };
+        let updated_at = match fields.next().expect("ObjectEntity should have updated_at") {
+            (field_name, AnnotatedMoveValue::U64(field_value)) => {
+                debug_assert!(
+                    field_name.as_str() == "updated_at",
+                    "ObjectEntity field name should be updated_at"
+                );
+                field_value
+            }
+            _ => bail!("ObjectEntity updated_at field should be u64"),
+        };
         let value = match fields.next().expect("ObjectEntity should have value") {
             (field_name, AnnotatedMoveValue::Struct(field_value)) => {
                 debug_assert!(
                     field_name.as_str() == "value",
-                    "ObjectEntity value field name should be value"
+                    "ObjectEntity field name should be value"
                 );
                 field_value
             }
             _ => bail!("ObjectEntity value field should be struct"),
         };
         Ok(Self::new_annotated_object(
-            object_id, owner, flag, state_root, size, value,
+            object_id, owner, flag, state_root, size, created_at, updated_at, value,
         ))
     }
 }
@@ -866,6 +956,8 @@ mod tests {
             AccountAddress::random(),
             0u8,
             H256::random(),
+            0,
+            0,
             0,
             object_value,
         );
@@ -970,18 +1062,18 @@ mod tests {
     #[test]
     fn test_named_object_id() {
         let struct_tag = StructTag {
-            address: AccountAddress::from_str("0x3").unwrap(),
-            module: ident_str!("timestamp").to_owned(),
+            address: AccountAddress::from_str("0x2").unwrap(),
+            module: ident_str!("object").to_owned(),
             name: ident_str!("Timestamp").to_owned(),
             type_params: vec![],
         };
         let timestamp_object_id = named_object_id(&struct_tag);
         //The object id generated by crates/rooch-framework-tests/tests/cases/timestamp/timestamp_test.move
         let object_id = ObjectID::from_str(
-            "0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3",
+            "0x05921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9",
         )
         .unwrap();
-        let timestamp_object_id2 = ObjectID::from_str("0x3::timestamp::Timestamp").unwrap();
+        let timestamp_object_id2 = ObjectID::from_str("0x2::object::Timestamp").unwrap();
         assert_eq!(timestamp_object_id, object_id,);
         assert_eq!(timestamp_object_id2, object_id,);
     }

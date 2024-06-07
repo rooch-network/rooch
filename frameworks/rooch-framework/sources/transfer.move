@@ -2,15 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_framework::transfer {
+    
+    use std::option;
+    use std::string::String;
     use moveos_std::object::ObjectID;
     use moveos_std::object;
-    use moveos_std::account;
-    use rooch_framework::account as account_entry;
     use rooch_framework::account_coin_store;
     use rooch_framework::multichain_address;
     use rooch_framework::address_mapping;
+    use rooch_framework::bitcoin_address;
 
-    const ErrorAccountNotExists: u64 = 1;
+    const ErrorAddressMappingNotExists: u64 = 1;
 
     /// Transfer `amount` of coins `CoinType` from `from` to `to`.
     /// This public entry function requires the `CoinType` to have `key` and `store` abilities.
@@ -19,13 +21,18 @@ module rooch_framework::transfer {
         to: address,
         amount: u256,
     ) {
-        //assert!(account::exists_at(to), ErrorAccountNotExists);
-        //We auto create account if not exists temporarily for testing
-        //We can remove auto create account after https://github.com/rooch-network/rooch/issues/1669
-        if(!account::exists_at(to)) {
-            account_entry::create_account(to);
-        };
         account_coin_store::transfer<CoinType>(from, to, amount)
+    }
+
+    /// Transfer `amount` of coins `CoinType` from `from` to a Bitcoin Address.
+    public entry fun transfer_coin_to_bitcoin_address<CoinType: key + store>(
+        from: &signer,
+        to: String,
+        amount: u256,
+    ) {
+        let btc_address = bitcoin_address::from_string(&to);
+        let rooch_address = bitcoin_address::to_rooch_address(&btc_address);
+        account_coin_store::transfer<CoinType>(from, rooch_address, amount)
     }
 
     /// Transfer `amount` of coins `CoinType` from `from` to a MultiChainAddress.
@@ -38,12 +45,9 @@ module rooch_framework::transfer {
         amount: u256,
     ) {
         let maddress = multichain_address::new(multichain_id, raw_address);
-        let to = address_mapping::resolve_or_generate(maddress);
-        //We auto create account if not exists temporarily for testing
-        //We can remove auto create account after https://github.com/rooch-network/rooch/issues/1669
-        if(!account::exists_at(to)) {
-            account_entry::create_account(to);
-        };
+        let to_opt = address_mapping::resolve(maddress);
+        assert!(option::is_some(&to_opt), ErrorAddressMappingNotExists);
+        let to = option::destroy_some(to_opt);
         account_coin_store::transfer<CoinType>(from, to, amount)
     }
 
@@ -53,5 +57,16 @@ module rooch_framework::transfer {
     public entry fun transfer_object<T: key + store>(from: &signer, to: address, object_id: ObjectID) {
         let obj = object::take_object<T>(from, object_id);
         object::transfer(obj, to);
+    }
+
+    /// Transfer `from` owned `Object<T>` to a Bitcoin Address.
+    public entry fun transfer_object_to_bitcoin_address<T: key + store>(
+        from: &signer, 
+        to: String, 
+        object_id: ObjectID) {
+        let btc_address = bitcoin_address::from_string(&to);
+        let rooch_address = bitcoin_address::to_rooch_address(&btc_address);
+        let obj = object::take_object<T>(from, object_id);
+        object::transfer(obj, rooch_address);
     }
 }

@@ -22,9 +22,11 @@ use move_transactional_test_runner::{
 use move_vm_runtime::session::SerializedReturnValues;
 use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos::moveos_test_runner::{CompiledState, MoveOSTestAdapter, TaskInput};
+use moveos_config::DataDirPath;
 use moveos_store::MoveOSStore;
 use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
 use moveos_types::state_resolver::RootObjectResolver;
+use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::{
     addresses::MOVEOS_STD_ADDRESS,
     move_types::FunctionId,
@@ -37,6 +39,7 @@ use moveos_verifier::metadata::run_extended_checks;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use rooch_genesis::{FrameworksGasParameters, RoochGenesis};
+use rooch_types::framework::auth_validator::TxValidateResult;
 use rooch_types::function_arg::FunctionArg;
 use std::path::PathBuf;
 use std::{collections::BTreeMap, path::Path};
@@ -46,10 +49,18 @@ pub struct MoveOSTestRunner<'a> {
     compiled_state: CompiledState<'a>,
     // storage: SelectableStateView<ChainStateDB, InMemoryStateCache<RemoteViewer>>,
     default_syntax: SyntaxChoice,
-    //tempdir: TempDir,
+    _temp_dir: DataDirPath,
     //debug: bool,
     moveos: MoveOS,
     root: RootObjectEntity,
+}
+
+impl MoveOSTestRunner<'_> {
+    pub fn validate_tx(&self, tx: MoveOSTransaction) -> anyhow::Result<VerifiedMoveOSTransaction> {
+        let mut verified_tx = self.moveos.verify(tx)?;
+        verified_tx.ctx.add(TxValidateResult::new_for_test())?;
+        Ok(verified_tx)
+    }
 }
 
 #[derive(Parser, Debug)]
@@ -98,8 +109,8 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             }
             None => BTreeMap::new(),
         };
-
-        let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
+        let temp_dir = moveos_config::temp_dir();
+        let moveos_store = MoveOSStore::new(temp_dir.path()).unwrap();
         let genesis_gas_parameter = FrameworksGasParameters::initial();
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_LOCAL_GENESIS;
         let moveos = MoveOS::new(
@@ -132,6 +143,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         let adapter = Self {
             compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps, None),
             default_syntax,
+            _temp_dir: temp_dir,
             moveos,
             root: ObjectEntity::root_object(state_root, size),
         };
@@ -158,7 +170,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             FunctionId::new(
                 ModuleId::new(
                     MOVEOS_STD_ADDRESS,
-                    Identifier::new("move_module".to_owned()).unwrap(),
+                    Identifier::new("module_store".to_owned()).unwrap(),
                 ),
                 Identifier::new("publish_modules_entry".to_owned()).unwrap(),
             ),
@@ -167,7 +179,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         );
 
         let tx = MoveOSTransaction::new_for_test(self.root.clone(), sender, action);
-        let verified_tx = self.moveos.verify(tx)?;
+        let verified_tx = self.validate_tx(tx)?;
         let (state_root, size, output) = self.moveos.execute_and_apply(verified_tx)?;
         self.root = ObjectEntity::root_object(state_root, size);
         Ok((Some(tx_output_to_str(output)), module))
@@ -205,7 +217,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             signers.pop().unwrap(),
             MoveAction::new_script_call(script_bytes, type_args, args),
         );
-        let verified_tx = self.moveos.verify(tx)?;
+        let verified_tx = self.validate_tx(tx)?;
         let (state_root, size, output) = self.moveos.execute_and_apply(verified_tx)?;
         self.root = ObjectEntity::root_object(state_root, size);
         //TODO return values
@@ -246,7 +258,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             signers.pop().unwrap(),
             MoveAction::new_function_call(function_id, type_args, args),
         );
-        let verified_tx = self.moveos.verify(tx)?;
+        let verified_tx = self.validate_tx(tx)?;
         let (state_root, size, output) = self.moveos.execute_and_apply(verified_tx)?;
         self.root = ObjectEntity::root_object(state_root, size);
         debug_assert!(

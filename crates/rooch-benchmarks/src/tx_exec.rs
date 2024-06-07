@@ -19,6 +19,7 @@ pub fn tx_exec_benchmark(c: &mut Criterion) {
     let mut binding_test = binding_test::RustBindingTest::new().unwrap();
     let keystore = InMemKeystore::new_insecure_for_tests(10);
     let default_account = keystore.addresses()[0];
+    let kp = keystore.get_key_pair(&default_account, None).unwrap();
     let mut test_transaction_builder = TestTransactionBuilder::new(default_account.into());
 
     let tx_type = config.tx_type.unwrap();
@@ -54,7 +55,11 @@ pub fn tx_exec_benchmark(c: &mut Criterion) {
             let ctx = binding_test.create_bt_blk_tx_ctx(cnt as u64, l1_block.clone());
             let move_tx = binding_test
                 .executor
-                .validate_l1_block(ctx, l1_block.clone())
+                .validate_l1_block(
+                    ctx,
+                    l1_block.clone(),
+                    kp.public().bitcoin_address().unwrap(),
+                )
                 .unwrap();
             transactions.push(move_tx);
         }

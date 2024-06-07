@@ -1,0 +1,40 @@
+//# publish
+module 0x11.TestModule1 {
+    import 0x1.ascii;
+    import 0x1.vector;
+    struct S0 has copy,drop { x: u64 }
+
+    metadata {
+        data_struct {
+            0x11::TestModule1::S0 -> true;
+        }
+        data_struct_func {
+            0x11::TestModule1::f1 -> [0, 1];
+        }
+    }
+
+    public new(): Self.S0 {
+        label b0:
+            return S0{ x: 123 };
+    }
+
+    public f1<T1: drop, T2: drop>(arg1: T1, arg2: T2) {
+        label b0:
+            _ = move(arg1);
+            _ = move(arg2);
+            return;
+    }
+
+    public f2() {
+        let s0: Self.S0;
+        let s1: vector<u8>;
+        let s2: ascii.String;
+
+        label b0:
+            s0 = Self.new();
+            s1 = vector.empty<u8>();
+            s2 = ascii.string(move(s1));
+            Self.f1<Self.S0, ascii.String>(move(s0), move(s2));
+            return;
+    }
+}

@@ -7,17 +7,18 @@ use crate::{
     multichain_id::{MultiChainID, RoochMultiChainID},
 };
 use anyhow::{bail, Result};
+use bech32::{Bech32m, Hrp};
 use bitcoin::bech32::segwit::encode_to_fmt_unchecked;
 use bitcoin::script::PushBytesBuf;
 use bitcoin::{
     address::Address, secp256k1::Secp256k1, Network, PrivateKey, Script, WitnessProgram,
     WitnessVersion,
 };
-
 use ethers::types::H160;
 use fastcrypto::hash::Blake2b256;
 use fastcrypto::hash::HashFunction;
 use fastcrypto::secp256k1::Secp256k1PublicKey;
+use hex::FromHex;
 use move_core_types::language_storage::TypeTag;
 use move_core_types::{
     account_address::AccountAddress,
@@ -34,6 +35,7 @@ use moveos_types::{
 };
 use nostr::secp256k1::XOnlyPublicKey;
 use nostr::Keys;
+use once_cell::sync::Lazy;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::{collection::vec, prelude::*};
 use rand::{seq::SliceRandom, thread_rng};
@@ -94,6 +96,10 @@ impl MultiChainAddress {
 
     pub fn is_rooch_address(&self) -> bool {
         self.multichain_id.is_rooch()
+    }
+
+    pub fn is_bitcoin_address(&self) -> bool {
+        self.multichain_id.is_bitcoin()
     }
 
     pub fn to_original_string(&self) -> String {
@@ -205,9 +211,78 @@ impl MoveStructState for MultiChainAddress {
     }
 }
 
+pub static ROOCH_HRP: Lazy<Hrp> = Lazy::new(|| Hrp::parse("rooch").expect("rooch is a valid HRP"));
+
 /// Rooch address type
 #[derive(Copy, Clone, Ord, PartialOrd, PartialEq, Eq, Hash)]
 pub struct RoochAddress(pub H256);
+
+impl RoochAddress {
+    /// RoochAddress length in bytes
+    pub const LENGTH: usize = 32;
+
+    /// RoochAddress length in bech32 string length: 5 hrp + 59 data
+    pub const LENGTH_BECH32: usize = 64;
+
+    /// RoochAddress length in hex string length: 0x + 64 data
+    pub const LENGTH_HEX: usize = 66;
+
+    pub fn from_bech32(bech32: &str) -> Result<Self> {
+        let (hrp, data) = bech32::decode(bech32)?;
+        anyhow::ensure!(hrp == *ROOCH_HRP, "invalid rooch hrp");
+        anyhow::ensure!(data.len() == Self::LENGTH, "invalid rooch address length");
+        let hash = H256::from_slice(data.as_slice());
+        Ok(Self(hash))
+    }
+
+    pub fn to_bech32(&self) -> String {
+        let data = self.0.as_bytes();
+        bech32::encode::<Bech32m>(*ROOCH_HRP, data).expect("bech32 encode should success")
+    }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.as_bytes().to_vec()
+    }
+
+    pub fn into_bytes(self) -> [u8; Self::LENGTH] {
+        self.0.to_fixed_bytes()
+    }
+
+    /// RoochAddress from_hex_literal support short hex string, such as 0x1, 0x2, 0x3
+    pub fn from_hex_literal(literal: &str) -> Result<Self> {
+        anyhow::ensure!(literal.starts_with("0x"), "Hex literal must start with 0x");
+
+        let hex_len = literal.len() - 2;
+
+        // If the string is too short, pad it
+        if hex_len < Self::LENGTH * 2 {
+            let mut hex_str = String::with_capacity(Self::LENGTH * 2);
+            for _ in 0..Self::LENGTH * 2 - hex_len {
+                hex_str.push('0');
+            }
+            hex_str.push_str(&literal[2..]);
+            RoochAddress::from_hex(hex_str)
+        } else {
+            RoochAddress::from_hex(&literal[2..])
+        }
+    }
+
+    /// RoochAddress to_hex_literal always return full hex string
+    pub fn to_hex_literal(&self) -> String {
+        format!("0x{:x}", self.0)
+    }
+
+    pub fn from_hex<T: AsRef<[u8]>>(hex: T) -> Result<Self> {
+        <[u8; Self::LENGTH]>::from_hex(hex)
+            .map_err(|_| anyhow::anyhow!("Invalid address hex string"))
+            .map(H256)
+            .map(Self)
+    }
+
+    pub fn to_hex(&self) -> String {
+        format!("{:x}", self.0)
+    }
+}
 
 impl RoochSupportedAddress for RoochAddress {
     fn random() -> Self {
@@ -218,6 +293,12 @@ impl RoochSupportedAddress for RoochAddress {
 impl From<AccountAddress> for RoochAddress {
     fn from(address: AccountAddress) -> Self {
         Self(H256(address.into()))
+    }
+}
+
+impl From<H256> for RoochAddress {
+    fn from(hash: H256) -> Self {
+        Self(hash)
     }
 }
 
@@ -237,15 +318,13 @@ impl TryFrom<MultiChainAddress> for RoochAddress {
     type Error = anyhow::Error;
 
     fn try_from(value: MultiChainAddress) -> Result<Self, Self::Error> {
-        let address = if value.multichain_id != RoochMultiChainID::Rooch {
-            let mut hasher = Blake2b256::default();
-            hasher.update(&value.raw_address);
-            let g_arr = hasher.finalize();
-            Self(H256(g_arr.digest))
-        } else {
-            Self(H256::from_slice(&value.raw_address))
-        };
-        Ok(address)
+        if value.multichain_id != RoochMultiChainID::Rooch {
+            return Err(anyhow::anyhow!(
+                "multichain_id type {} is invalid",
+                value.multichain_id
+            ));
+        }
+        Ok(Self(H256::from_slice(&value.raw_address)))
     }
 }
 
@@ -253,14 +332,43 @@ impl TryFrom<MultiChainAddress> for RoochAddress {
 
 impl fmt::Display for RoochAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> std::fmt::Result {
-        //Use full address and 0x prefix for address display
-        write!(f, "0x{}", AccountAddress::from(*self))
+        //Use bech32 as default display format
+        write!(f, "{}", self.to_bech32())
+    }
+}
+
+impl fmt::LowerHex for RoochAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if f.alternate() {
+            write!(f, "0x")?;
+        }
+
+        for byte in self.0.as_bytes() {
+            write!(f, "{:02x}", byte)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl fmt::UpperHex for RoochAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if f.alternate() {
+            write!(f, "0x")?;
+        }
+
+        for byte in self.0.as_bytes() {
+            write!(f, "{:02X}", byte)?;
+        }
+
+        Ok(())
     }
 }
 
 impl fmt::Debug for RoochAddress {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", AccountAddress::from(*self).to_hex_literal())
+        // Display the address in bech32 and hex format for debug
+        write!(f, "{}({})", self.to_bech32(), self.to_hex_literal())
     }
 }
 
@@ -268,8 +376,11 @@ impl FromStr for RoochAddress {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let address = AccountAddress::from_str(s)?;
-        Ok(Self::from(address))
+        if s.starts_with("0x") {
+            RoochAddress::from_hex_literal(s)
+        } else {
+            RoochAddress::from_bech32(s)
+        }
     }
 }
 
@@ -296,6 +407,7 @@ impl Serialize for RoochAddress {
         if serializer.is_human_readable() {
             self.to_string().serialize(serializer)
         } else {
+            //Use Move AccountAddress as default binary serialize format
             let account_address: AccountAddress = (*self).into();
             account_address.serialize(serializer)
         }
@@ -317,6 +429,12 @@ prop_compose! {
      bytes in vec(any::<u8>(), h256::LENGTH..(h256::LENGTH+1))
     ) -> RoochAddress {
         RoochAddress(H256::from_slice(&bytes))
+    }
+}
+
+impl From<BitcoinAddress> for RoochAddress {
+    fn from(value: BitcoinAddress) -> Self {
+        value.to_rooch_address()
     }
 }
 
@@ -526,6 +644,14 @@ impl BitcoinAddress {
         self.bytes.is_empty()
     }
 
+    /// Convert the Bitcoin address to Rooch address
+    pub fn to_rooch_address(&self) -> RoochAddress {
+        let mut hasher = Blake2b256::default();
+        hasher.update(&self.bytes);
+        let g_arr = hasher.finalize();
+        RoochAddress(H256(g_arr.digest))
+    }
+
     ///  Format the base58 as a hexadecimal string
     pub fn format(&self, network: u8) -> Result<String, anyhow::Error> {
         let payload_type = BitcoinAddressPayloadType::try_from(self.bytes[0])?;
@@ -699,11 +825,65 @@ impl fmt::Display for NostrAddress {
     }
 }
 
+// Parsed Address, either a name or a numerical address
+#[derive(Eq, PartialEq, Debug, Clone)]
+pub enum ParsedAddress {
+    Named(String),
+    Numerical(RoochAddress),
+}
+
+impl ParsedAddress {
+    pub fn into_rooch_address(
+        self,
+        mapping: &impl Fn(&str) -> Option<AccountAddress>,
+    ) -> anyhow::Result<RoochAddress> {
+        match self {
+            Self::Named(n) => mapping(n.as_str())
+                .map(Into::into)
+                .ok_or_else(|| anyhow::anyhow!("Unbound named address: '{}'", n)),
+            Self::Numerical(a) => Ok(a),
+        }
+    }
+
+    pub fn into_account_address(
+        self,
+        mapping: &impl Fn(&str) -> Option<AccountAddress>,
+    ) -> anyhow::Result<AccountAddress> {
+        self.into_rooch_address(mapping).map(AccountAddress::from)
+    }
+
+    pub fn parse(s: &str) -> anyhow::Result<Self> {
+        if s.starts_with("0x") {
+            Ok(Self::Numerical(RoochAddress::from_hex_literal(s)?))
+        } else if s.starts_with(ROOCH_HRP.as_str()) && s.len() == RoochAddress::LENGTH_BECH32 {
+            Ok(Self::Numerical(RoochAddress::from_bech32(s)?))
+        } else {
+            match BitcoinAddress::from_str(s) {
+                Ok(a) => Ok(Self::Numerical(a.to_rooch_address())),
+                Err(_) => Ok(Self::Named(s.to_string())),
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
     use bitcoin::hex::DisplayHex;
-    use std::fmt::Debug;
+    use std::{fmt::Debug, vec};
+
+    #[test]
+    fn test_bech32() {
+        let address = RoochAddress::random();
+        let hex = address.to_hex_literal();
+        let bech32 = address.to_bech32();
+        println!("bech32: {}, hex: {}", bech32, hex);
+        assert_eq!(bech32.len(), RoochAddress::LENGTH_BECH32);
+        let address2 = RoochAddress::from_bech32(&bech32).unwrap();
+        assert_eq!(address, address2);
+        let address3 = RoochAddress::from_hex_literal(&hex).unwrap();
+        assert_eq!(address, address3);
+    }
 
     fn test_sdk_multi_chain_address(address_str: &str, expect_address_bytes: Vec<u8>) {
         let address = bitcoin::Address::from_str(address_str)
@@ -800,16 +980,21 @@ mod test {
     }
 
     fn test_rooch_address_roundtrip(rooch_address: RoochAddress) {
-        let rooch_str = rooch_address.to_string();
-        //ensure the rooch to string is hex with 0x prefix
+        let rooch_hex_str = rooch_address.to_hex_literal();
+        //ensure the rooch to_hex_literal is hex with 0x prefix
         //and is full 32 bytes output
-        assert!(rooch_str.starts_with("0x"));
-        assert_eq!(rooch_str.len(), 66);
-        let rooch_address_from_str = RoochAddress::from_str(&rooch_str).unwrap();
+        assert!(rooch_hex_str.starts_with("0x"));
+        assert_eq!(rooch_hex_str.len(), RoochAddress::LENGTH_HEX);
+        let rooch_address_from_str = RoochAddress::from_str(&rooch_hex_str).unwrap();
         assert_eq!(rooch_address, rooch_address_from_str);
 
+        let rooch_bech32_str = rooch_address.to_bech32();
+        assert_eq!(rooch_bech32_str.len(), RoochAddress::LENGTH_BECH32);
+        let rooch_address_from_bech32 = RoochAddress::from_bech32(&rooch_bech32_str).unwrap();
+        assert_eq!(rooch_address, rooch_address_from_bech32);
+
         let json_str = serde_json::to_string(&rooch_address).unwrap();
-        assert_eq!(format!("\"{}\"", rooch_str), json_str);
+        assert_eq!(format!("\"{}\"", rooch_bech32_str), json_str);
         let rooch_address_from_json: RoochAddress = serde_json::from_str(&json_str).unwrap();
         assert_eq!(rooch_address, rooch_address_from_json);
 
@@ -923,27 +1108,63 @@ mod test {
 
     #[test]
     pub fn test_bitcoin_address_to_rooch_address() -> Result<()> {
-        // let bitcoin_address_str = "bc1qvz9u76epzm67x0gkxj8l8udzldc0lskspecuf5";
-        // let bitcoin_address_str = "18cBEMRxXHqzWWCxZNtU91F5sbUNKhL5PX";
-        let bitcoin_address_str = "bc1q262qeyyhdakrje5qaux8m2a3r4z8sw8vu5mysh";
+        let bitcoin_address_strs = vec![
+            "18cBEMRxXHqzWWCxZNtU91F5sbUNKhL5PX",
+            "bc1q262qeyyhdakrje5qaux8m2a3r4z8sw8vu5mysh",
+        ];
+        let btc_addresses = bitcoin_address_strs
+            .iter()
+            .map(|s| BitcoinAddress::from_str(s).unwrap())
+            .collect::<Vec<BitcoinAddress>>();
 
-        let maddress = MultiChainAddress::try_from_str_with_multichain_id(
-            RoochMultiChainID::Bitcoin,
-            bitcoin_address_str,
-        )?;
-        // println!(
-        //     "test_bitcoin_address_to_rooch_address {} ",
-        //     hex::encode(maddress.raw_address.clone())
-        // );
+        let origin_btc_addresses = bitcoin_address_strs
+            .iter()
+            .map(|s| {
+                bitcoin::Address::from_str(s)
+                    .unwrap()
+                    .require_network(bitcoin::Network::Bitcoin)
+                    .unwrap()
+            })
+            .collect::<Vec<bitcoin::Address>>();
 
-        let rooch_address = RoochAddress::try_from(maddress)?;
-        println!(
-            "test_bitcoin_address_to_rooch_address rooch_address {} ",
-            rooch_address.to_string()
-        );
+        for (btc_address, origin_btc_address) in
+            btc_addresses.iter().zip(origin_btc_addresses.iter())
+        {
+            assert_eq!(btc_address.to_string(), origin_btc_address.to_string());
+        }
+
+        let rooch_addresses = btc_addresses
+            .iter()
+            .map(|btc_address| btc_address.to_rooch_address())
+            .collect::<Vec<_>>();
+
+        // for rooch_address in rooch_addresses.iter(){
+        //     println!(
+        //         "test_bitcoin_address_to_rooch_address rooch_address bech32:{} hex:{:#x}",
+        //         rooch_address, rooch_address
+        //     );
+        // }
+
         assert_eq!(
-            rooch_address.to_string(),
-            "0x7fe695faf7047ccfbc85f7dccb6c405d4e9b7b44788e71a71c3891a06ce0ca12"
+            rooch_addresses
+                .iter()
+                .map(|a| a.to_string())
+                .collect::<Vec<_>>(),
+            vec![
+                "rooch1gxterelcypsyvh8cc9kg73dtnyct822ykx8pmu383qruzt4r93jshtc9fj".to_owned(),
+                "rooch10lnft7hhq37vl0y97lwvkmzqt48fk76y0z88rfcu8zg6qm8qegfqx0rq2h".to_owned(),
+            ]
+        );
+
+        assert_eq!(
+            rooch_addresses
+                .iter()
+                .map(|a| a.to_hex_literal())
+                .collect::<Vec<_>>(),
+            vec![
+                "0x419791e7f82060465cf8c16c8f45ab9930b3a944b18e1df2278807c12ea32c65".to_owned(),
+                "0x7fe695faf7047ccfbc85f7dccb6c405d4e9b7b44788e71a71c3891a06ce0ca12".to_owned(),
+            ]
         );
 
         Ok(())

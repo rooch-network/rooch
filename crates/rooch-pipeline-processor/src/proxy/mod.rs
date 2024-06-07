@@ -8,8 +8,9 @@ use crate::actor::{
 use anyhow::Result;
 use coerce::actor::ActorRef;
 use moveos_types::moveos_std::tx_context::TxContext;
-use rooch_types::transaction::{
-    rooch::RoochTransaction, ExecuteTransactionResponse, L1BlockWithBody,
+use rooch_types::{
+    address::BitcoinAddress,
+    transaction::{rooch::RoochTransaction, ExecuteTransactionResponse, L1BlockWithBody},
 };
 
 #[derive(Clone)]
@@ -30,8 +31,15 @@ impl PipelineProcessorProxy {
         &self,
         ctx: TxContext,
         tx: L1BlockWithBody,
+        sequencer_address: BitcoinAddress,
     ) -> Result<ExecuteTransactionResponse> {
-        self.actor.send(ExecuteL1BlockMessage { ctx, tx }).await?
+        self.actor
+            .send(ExecuteL1BlockMessage {
+                ctx,
+                tx,
+                sequencer_address,
+            })
+            .await?
     }
 }
 

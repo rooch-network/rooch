@@ -13,9 +13,14 @@ use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::proxy::SequencerProxy;
-use rooch_types::transaction::{
-    ExecuteTransactionResponse, L1BlockWithBody, LedgerTransaction, LedgerTxData, RoochTransaction,
+use rooch_types::{
+    address::BitcoinAddress,
+    transaction::{
+        ExecuteTransactionResponse, L1BlockWithBody, LedgerTransaction, LedgerTxData,
+        RoochTransaction,
+    },
 };
+use tracing::debug;
 
 /// PipelineProcessor aggregates the executor, sequencer, proposer, and indexer to process transactions.
 pub struct PipelineProcessorActor {
@@ -47,10 +52,11 @@ impl PipelineProcessorActor {
         &mut self,
         ctx: TxContext,
         l1_block: L1BlockWithBody,
+        sequencer_address: BitcoinAddress,
     ) -> Result<ExecuteTransactionResponse> {
         let moveos_tx = self
             .executor
-            .validate_l1_block(ctx, l1_block.clone())
+            .validate_l1_block(ctx, l1_block.clone(), sequencer_address)
             .await?;
         let ledger_tx = self
             .sequencer
@@ -61,8 +67,9 @@ impl PipelineProcessorActor {
 
     pub async fn execute_l2_tx(
         &mut self,
-        tx: RoochTransaction,
+        mut tx: RoochTransaction,
     ) -> Result<ExecuteTransactionResponse> {
+        debug!("pipeline execute_l2_tx: {:?}", tx.tx_hash());
         let moveos_tx = self.executor.validate_l2_tx(tx.clone()).await?;
         let ledger_tx = self
             .sequencer
@@ -90,43 +97,26 @@ impl PipelineProcessorActor {
             .await?;
 
         let indexer = self.indexer.clone();
-        let moveos_tx_clone = moveos_tx.clone();
-        let execution_info_clone = execution_info.clone();
         let sequence_info = tx.sequence_info.clone();
+        let execution_info_clone = execution_info.clone();
         let output_clone = output.clone();
 
         // If bitcoin block data import, don't write all indexer
-        // TODO put all indexer data into a single message
         if !self.data_import_flag {
             tokio::spawn(async move {
                 let result = indexer
-                    .indexer_states(
+                    .update_indexer(
                         root,
-                        tx.sequence_info.tx_order,
-                        output_clone.changeset.clone(),
+                        tx,
+                        execution_info_clone,
+                        moveos_tx,
+                        output_clone.events,
+                        output_clone.changeset,
                     )
                     .await;
                 match result {
                     Ok(_) => {}
-                    Err(error) => log::error!("indexer states error: {}", error),
-                };
-                let result = indexer
-                    .indexer_transaction(
-                        tx.clone(),
-                        execution_info_clone.clone(),
-                        moveos_tx_clone.clone(),
-                    )
-                    .await;
-                match result {
-                    Ok(_) => {}
-                    Err(error) => log::error!("indexer transactions error: {}", error),
-                };
-                let result = indexer
-                    .indexer_events(output_clone.events.clone(), tx.clone(), moveos_tx_clone)
-                    .await;
-                match result {
-                    Ok(_) => {}
-                    Err(error) => log::error!("indexer events error: {}", error),
+                    Err(error) => log::error!("Update indexer error: {}", error),
                 };
             });
         };
@@ -159,6 +149,7 @@ impl Handler<ExecuteL1BlockMessage> for PipelineProcessorActor {
         msg: ExecuteL1BlockMessage,
         _ctx: &mut ActorContext,
     ) -> Result<ExecuteTransactionResponse> {
-        self.execute_l1_block(msg.ctx, msg.tx).await
+        self.execute_l1_block(msg.ctx, msg.tx, msg.sequencer_address)
+            .await
     }
 }

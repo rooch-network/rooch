@@ -6,14 +6,11 @@
 
 
 -  [Resource `AutoAcceptCoins`](#0x3_account_coin_store_AutoAcceptCoins)
--  [Resource `CoinStores`](#0x3_account_coin_store_CoinStores)
 -  [Struct `AcceptCoinEvent`](#0x3_account_coin_store_AcceptCoinEvent)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x3_account_coin_store_genesis_init)
--  [Function `init_account_coin_stores`](#0x3_account_coin_store_init_account_coin_stores)
 -  [Function `balance`](#0x3_account_coin_store_balance)
 -  [Function `account_coin_store_id`](#0x3_account_coin_store_account_coin_store_id)
--  [Function `coin_stores_handle`](#0x3_account_coin_store_coin_stores_handle)
 -  [Function `is_accept_coin`](#0x3_account_coin_store_is_accept_coin)
 -  [Function `can_auto_accept_coin`](#0x3_account_coin_store_can_auto_accept_coin)
 -  [Function `do_accept_coin`](#0x3_account_coin_store_do_accept_coin)
@@ -31,14 +28,11 @@
 -  [Function `disable_auto_accept_coin_entry`](#0x3_account_coin_store_disable_auto_accept_coin_entry)
 
 
-<pre><code><b>use</b> <a href="">0x1::option</a>;
-<b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="">0x2::account</a>;
+<pre><code><b>use</b> <a href="">0x2::account</a>;
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::table</a>;
-<b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 <b>use</b> <a href="coin_store.md#0x3_coin_store">0x3::coin_store</a>;
 </code></pre>
@@ -54,19 +48,6 @@ The main scenario is that the user can actively turn off the AutoAcceptCoin sett
 
 
 <pre><code><b>struct</b> <a href="account_coin_store.md#0x3_account_coin_store_AutoAcceptCoins">AutoAcceptCoins</a> <b>has</b> store, key
-</code></pre>
-
-
-
-<a name="0x3_account_coin_store_CoinStores"></a>
-
-## Resource `CoinStores`
-
-A resource that holds all the ids of Object<CoinStore<T>> for account.
-TODO after the indexer is ready, we can use the indexer to list all the CoinStore<T> objects for account
-
-
-<pre><code><b>struct</b> <a href="account_coin_store.md#0x3_account_coin_store_CoinStores">CoinStores</a> <b>has</b> key
 </code></pre>
 
 
@@ -109,17 +90,6 @@ Account hasn't accept <code>CoinType</code>
 
 
 
-<a name="0x3_account_coin_store_init_account_coin_stores"></a>
-
-## Function `init_account_coin_stores`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_init_account_coin_stores">init_account_coin_stores</a>(<a href="">account</a>: &<a href="">signer</a>)
-</code></pre>
-
-
-
 <a name="0x3_account_coin_store_balance"></a>
 
 ## Function `balance`
@@ -141,18 +111,6 @@ the account CoinStore is a account named object, the id is determinate for each 
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_account_coin_store_id">account_coin_store_id</a>&lt;CoinType: key&gt;(addr: <b>address</b>): <a href="_ObjectID">object::ObjectID</a>
-</code></pre>
-
-
-
-<a name="0x3_account_coin_store_coin_stores_handle"></a>
-
-## Function `coin_stores_handle`
-
-Return CoinStores table handle for addr
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_coin_stores_handle">coin_stores_handle</a>(addr: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
 </code></pre>
 
 

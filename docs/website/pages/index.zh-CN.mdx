@@ -4,12 +4,165 @@ description: Rooch Network 是比特币的应用层，一个以资产为中心�
 searchable: false
 ---
 
-import TitleHero from '../components/index/titleHero'
+import Index from '../components/index'
 
-<TitleHero
-  title="开启比特币经济的无限可能"
-  slogan=""
-  description="Rooch Network 是比特币的应用层，一个以资产为中心的基础设施，提供比特币所有资产的索引、交易，并支持各种应用场景。"
-  button="加入我们"
-  buttonHref="/learn/welcome"
+<Index
+  heroTitle="开启比特币经济的无限可能"
+  heroSlogan=""
+  heroDescription="Rooch Network 是比特币生态的原生应用层，基于可堆叠式的二层方案实现，致力于为用户和开发者提供一站式的比特币资产发行平台和比特币应用基础设施"
+  heroButton="动手开发"
+  heroButtonHref="/learn/welcome"
+  featuresTitle="比特币生态的原生应用层"
+  featuresButton="探索 Rooch 测试网"
+  features={[
+    {
+      title: '面向用户',
+      description:
+        '你可以直接用比特币上的任何资产（包括BTC,Ordinals 等）来玩基于 Rooch 的比特币生态应用，无需进行锁仓跨链。',
+      logo: '/logo/features/enable_logo.svg',
+      buttonHref: 'https://portal.rooch.network/',
+      buttonDesc: 'Portal',
+    },
+    {
+      title: '面向开发者',
+      description:
+        '如果你想要开发一个比特币生态的应用，你可以用 Rooch 部署你的智能合约，这个合约里面可以使用所有的比特币资产',
+      logo: '/logo/features/scale_logo.svg',
+      buttonHref: '',
+      buttonDesc: 'Form',
+    },
+    {
+      title: '面向社区',
+      description:
+        '如果你找到了一个你想拥有的资产，相比于其他链上的资产，基于 Rooch 所发布的资产全部都是比特币原生资产，你随时可以把他们 leap 回到比特币上储存。',
+      logo: '/logo/features/secure_logo.svg',
+      buttonHref: 'https://discord.gg/rooch',
+      buttonDesc: 'Discord',
+    },
+  ]}
+  exploreTitle="链上状态结合链下应用"
+  exploreContent="Rooch 采用了全新的比特币二层网络解决方案，通过使用状态可堆叠的模型，使得二层网络能够最大化继承比特币一层网络的数据和功能。"
+  exploreButtonHref="/learn/welcome"
+  explores={[
+    {
+      title: '链上状态',
+      description: '基于 Rooch 的应用可以无缝访问所有的链上状态和资产',
+      logo: '/logo/explore/explore_1.svg',
+    },
+    {
+      title: '链下应用',
+      description: '基于 Rooch 的应用将采用链下智能合约的方式实现，无需担心扩展性问题',
+      logo: '/logo/explore/explore_2.svg',
+    },
+    {
+      title: '链上与链下间的资产迁移协议',
+      description: 'Rooch 提供资产迁移协议来实现资产在链上与链下间的迁移',
+      logo: '/logo/explore/explore_3.svg',
+    },
+    {
+      title: '使用 Move 语言的可验证应用容器',
+      description: 'Rooch 采用了 Move 语言虚拟机实现了可验证的智能合约运行环境',
+      logo: '/logo/explore/explore_4.svg',
+    },
+  ]}
+  ecosystemTitle="Rooch 生态合作伙伴"
+  ecosystemContent="全部 | 基础设施 | DeFi | NFT & 游戏 | 钱包 | 跨链桥"
+  ecosystemBrand={[
+    {
+      brandLogo: 'logo/ecosystem/avail_logo.svg',
+      brandTitle: 'Avail',
+      brandUrl: 'https://www.availproject.org/',
+    },
+    {
+      brandLogo: 'logo/ecosystem/meson_finance_logo.svg',
+      brandTitle: 'Meson Finance',
+      brandUrl: 'https://meson.fi/',
+    },
+    {
+      brandLogo: 'logo/ecosystem/supra_logo.svg',
+      brandTitle: 'Supra',
+      brandUrl: 'https://supra.com/',
+    },
+    {
+      brandLogo: 'logo/ecosystem/obelisk_logo.svg',
+      brandTitle: 'Obelisk',
+      brandUrl: 'https://obelisk.build/',
+    },
+    {
+      brandLogo: 'logo/ecosystem/nervos_logo.svg',
+      brandTitle: 'Nervos',
+      brandUrl: 'https://www.nervos.org/',
+    },
+    {
+      brandLogo: 'logo/ecosystem/block_vision_logo.svg',
+      brandTitle: 'BlockVision',
+      brandUrl: 'https://blockvision.org/',
+    },
+    {
+      brandLogo: 'logo/ecosystem/ankr_logo.svg',
+      brandTitle: 'Ankr',
+      brandUrl: 'https://www.ankr.com/',
+    },
+    {
+      brandLogo: 'logo/ecosystem/ez_swap_logo.svg',
+      brandTitle: 'EzSwap',
+      brandUrl: 'https://linktr.ee/EZswapProtocol',
+    },
+    {
+      brandLogo: 'logo/ecosystem/wisp_swap_logo.svg',
+      brandTitle: 'Wisp Swap',
+      brandUrl: 'https://linktr.ee/wispswap',
+    },
+    {
+      brandLogo: 'logo/ecosystem/okx_wallet_logo.svg',
+      brandTitle: 'OKX Wallet',
+      brandUrl: 'https://www.okx.com/zh-hans/web3',
+    },
+    {
+      brandLogo: 'logo/ecosystem/unisat_logo.svg',
+      brandTitle: 'Unisat',
+      brandUrl: 'https://unisat.io/',
+    },
+    {
+      brandLogo: 'logo/ecosystem/joyid_logo.svg',
+      brandTitle: 'JoyID Passkey',
+      brandUrl: 'https://linktr.ee/joyidpasskey',
+    },
+    {
+      brandLogo: 'logo/ecosystem/surf_wallet_logo.svg',
+      brandTitle: 'Surf Wallet',
+      brandUrl: 'https://linktr.ee/surfwallet',
+    },
+    {
+      brandLogo: 'logo/ecosystem/move_bit_logo.svg',
+      brandTitle: 'Movebit',
+      brandUrl: 'https://www.movebit.xyz/',
+    },
+    {
+      brandLogo: 'logo/ecosystem/donut_logo.svg',
+      brandTitle: 'Donut',
+      brandUrl: 'https://dnt.social/',
+    },
+  ]}
+  blogsTitle="Rooch 博客"
+  blogs={[
+    {
+      title: 'Rooch Network - Bitcoin 的应用层',
+      date: '2024年4月24日',
+      link: 'https://rooch.network/blog/the-application-layer-of-bitcoin',
+      image: '/logo/blogs/blog_1.jpg',
+    },
+    {
+      title: 'Stackable L2 — 一种新的区块链扩容方案',
+      date: '2024年3月5日',
+      link: 'https://rooch.network/blog/stackable-l2',
+      image: '/logo/blogs/blog_2.jpg',
+    },
+    {
+      title: 'RoochBTC - 用链上索引器实现比特币二层',
+      date: '2024年1月3日',
+      link: 'https://rooch.network/blog/rooch-btc',
+      image: '/logo/blogs/blog_3.jpg',
+    },
+  ]}
 />

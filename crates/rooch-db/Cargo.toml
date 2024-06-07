@@ -1,0 +1,37 @@
+[package]
+name = "rooch-db"
+version = "0.5.0"
+
+# Workspace inherited keys
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = { workspace = true }
+bcs = { workspace = true }
+smt = { workspace = true }
+serde = { workspace = true }
+serde_bytes = { workspace = true }
+hex = { workspace = true }
+parking_lot = { workspace = true }
+once_cell = { workspace = true }
+log = { workspace = true }
+
+move-core-types = { workspace = true }
+move-resource-viewer = { workspace = true }
+raw-store = { workspace = true }
+moveos-config = { workspace = true }
+moveos-types = { workspace = true }
+moveos-store = { workspace = true }
+
+rooch-config = { workspace = true }
+rooch-types = { workspace = true }
+rooch-store = { workspace = true }
+rooch-indexer = { workspace = true }

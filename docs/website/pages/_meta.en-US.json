@@ -25,10 +25,10 @@
       "typesetting": "article"
     }
   },
-  "dashboard": {
-    "title": "Dashboard",
+  "portal": {
+    "title": "Portal",
     "type": "page",
-    "href": "https://dashboard.rooch.network/",
+    "href": "https://portal.rooch.network/",
     "newWindow": true
   },
   "404": {
@@ -55,5 +55,15 @@
       "timestamp": false,
       "typesetting": "article"
     }
+  },
+  "archives": {
+    "type": "page",
+    "display": "hidden",
+    "theme": {
+      "sidebar": false,
+      "timestamp": false,
+      "typesetting": "article"
+    },
+    "title":"Archives"
   }
 }

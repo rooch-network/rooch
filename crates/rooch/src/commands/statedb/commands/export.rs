@@ -3,8 +3,7 @@
 
 use crate::cli_types::WalletContextOptions;
 use crate::commands::statedb::commands::{
-    init_statedb, BATCH_SIZE, GLOBAL_STATE_TYPE_FIELD, GLOBAL_STATE_TYPE_OBJECT,
-    GLOBAL_STATE_TYPE_ROOT,
+    BATCH_SIZE, GLOBAL_STATE_TYPE_FIELD, GLOBAL_STATE_TYPE_OBJECT, GLOBAL_STATE_TYPE_ROOT,
 };
 use anyhow::Result;
 use clap::Parser;
@@ -13,11 +12,12 @@ use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state_resolver::StatelessResolver;
-use rooch_config::R_OPT_NET_HELP;
+use rooch_config::{RoochOpt, R_OPT_NET_HELP};
+use rooch_db::RoochDB;
 use rooch_types::bitcoin::ord::InscriptionStore;
 use rooch_types::bitcoin::utxo::BitcoinUTXOStore;
 use rooch_types::error::{RoochError, RoochResult};
-use rooch_types::framework::address_mapping::AddressMappingWrapper;
+use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::rooch_network::RoochChainID;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -30,7 +30,7 @@ use std::time::SystemTime;
 #[repr(u8)]
 #[serde(rename_all = "lowercase")]
 pub enum ExportMode {
-    // dump UTXO, Inscription and relative Objects, including AddressMapping object
+    // dump UTXO, Inscription and relative Objects, including RoochToBitcoinAddressMapping object
     #[default]
     Genesis = 0,
     Full = 1,
@@ -69,14 +69,21 @@ pub struct ExportID {
     pub object_id: ObjectID,
     pub state_root: H256,
     pub parent_state_root: H256,
+    pub timestamp: u64,
 }
 
 impl ExportID {
-    pub fn new(object_id: ObjectID, state_root: H256, parent_state_root: H256) -> Self {
+    pub fn new(
+        object_id: ObjectID,
+        state_root: H256,
+        parent_state_root: H256,
+        timestamp: u64,
+    ) -> Self {
         Self {
             object_id,
             state_root,
             parent_state_root,
+            timestamp,
         }
     }
 }
@@ -87,8 +94,8 @@ impl std::fmt::Display for ExportID {
         let parent_state_root_str = format!("{:?}", self.parent_state_root);
         write!(
             f,
-            "{:?}:{}:{}",
-            self.object_id, state_root_str, parent_state_root_str
+            "{:?}:{}:{}:{}",
+            self.object_id, state_root_str, parent_state_root_str, self.timestamp
         )
     }
 }
@@ -102,8 +109,17 @@ impl FromStr for ExportID {
         let state_root = H256::from_str(parts.next().ok_or(anyhow::anyhow!("invalid export id"))?)?;
         let parent_state_root =
             H256::from_str(parts.next().ok_or(anyhow::anyhow!("invalid export id"))?)?;
+        let timestamp = parts
+            .next()
+            .ok_or(anyhow::anyhow!("invalid export id"))?
+            .parse::<u64>()?;
 
-        Ok(ExportID::new(object_id, state_root, parent_state_root))
+        Ok(ExportID::new(
+            object_id,
+            state_root,
+            parent_state_root,
+            timestamp,
+        ))
     }
 }
 
@@ -141,12 +157,11 @@ pub struct ExportCommand {
 
 impl ExportCommand {
     pub async fn execute(self) -> RoochResult<()> {
-        let mut _context = self.context_options.build()?;
-        // let client = context.get_client().await?;
-
         println!("Start statedb export task, batch_size: {:?}", BATCH_SIZE);
-        let (root, moveos_store) = init_statedb(self.base_data_dir.clone(), self.chain_id.clone())?;
-        println!("root object: {:?}", root);
+        let opt = RoochOpt::new_with_default(self.base_data_dir, self.chain_id, None)?;
+        let rooch_db = RoochDB::init(opt.store_config())?;
+
+        println!("root object: {:?}", rooch_db.root);
 
         let mut _start_time = SystemTime::now();
         let file_name = self.output.display().to_string();
@@ -157,12 +172,12 @@ impl ExportCommand {
         })?;
         let root_state_root = self
             .state_root
-            .unwrap_or(H256::from(root.state_root.into_bytes()));
+            .unwrap_or(H256::from(rooch_db.root.state_root.into_bytes()));
 
         let mode = ExportMode::try_from(self.mode.unwrap_or(ExportMode::Genesis.to_num()))?;
         match mode {
             ExportMode::Genesis => {
-                Self::export_genesis(&moveos_store, root_state_root, &mut writer)?;
+                Self::export_genesis(&rooch_db.moveos_store, root_state_root, &mut writer)?;
             }
             ExportMode::Full => {
                 todo!()
@@ -171,13 +186,13 @@ impl ExportCommand {
                 todo!()
             }
             ExportMode::Indexer => {
-                Self::export_indexer(&moveos_store, root_state_root, &mut writer)?;
+                Self::export_indexer(&rooch_db.moveos_store, root_state_root, &mut writer)?;
             }
             ExportMode::Object => {
                 let obj_id = self
                     .object_id
                     .expect("Object id should exist in object mode");
-                Self::export_object(&moveos_store, root_state_root, obj_id, &mut writer)?;
+                Self::export_object(&rooch_db.moveos_store, root_state_root, obj_id, &mut writer)?;
             }
         }
 
@@ -193,23 +208,21 @@ impl ExportCommand {
     ) -> Result<()> {
         let utxo_store_id = BitcoinUTXOStore::object_id();
         let inscription_store_id = InscriptionStore::object_id();
-        let address_mapping_id = AddressMappingWrapper::mapping_object_id();
-        let reverse_mapping_id = AddressMappingWrapper::reverse_mapping_object_id();
+        let rooch_to_bitcoin_address_mapping_id = RoochToBitcoinAddressMapping::object_id();
         println!("export_genesis utxo_store_id: {:?}", utxo_store_id);
         println!(
             "export_genesis inscription_store_id: {:?}",
             inscription_store_id
         );
         println!(
-            "export_genesis address_mapping_id: {:?}, reverse_mapping_id {:?}",
-            address_mapping_id, reverse_mapping_id
+            "export_genesis rooch_to_bitcoin_address_mapping_id: {:?}",
+            rooch_to_bitcoin_address_mapping_id
         );
 
         let genesis_object_ids = vec![
             utxo_store_id.clone(),
             inscription_store_id.clone(),
-            address_mapping_id,
-            reverse_mapping_id,
+            rooch_to_bitcoin_address_mapping_id,
         ];
 
         let mut genesis_objects = vec![];
@@ -230,13 +243,15 @@ impl ExportCommand {
                 H256::from(obj.state_root.into_bytes()),
                 root_state_root,
                 obj.id,
+                false,
                 writer,
             )?;
         }
 
         // write csv object states.
         {
-            let root_export_id = ExportID::new(ObjectID::root(), root_state_root, root_state_root);
+            let root_export_id =
+                ExportID::new(ObjectID::root(), root_state_root, root_state_root, 0);
             writer.write_field(GLOBAL_STATE_TYPE_ROOT)?;
             writer.write_field(root_export_id.to_string())?;
             writer.write_record(None::<&[u8]>)?;
@@ -268,18 +283,21 @@ impl ExportCommand {
         let obj = state.clone().as_raw_object()?;
 
         let state_root = H256::from(obj.state_root.into_bytes());
+        let timestamp = obj.updated_at;
         // write csv field states
         Self::export_field_states(
             moveos_store,
             state_root,
             root_state_root,
             object_id.clone(),
+            false,
             writer,
         )?;
 
         // write csv object states.
         {
-            let export_id = ExportID::new(object_id.clone(), state_root, root_state_root);
+            let export_id =
+                ExportID::new(object_id.clone(), state_root, root_state_root, timestamp);
             writer.write_field(GLOBAL_STATE_TYPE_OBJECT)?;
             writer.write_field(export_id.to_string())?;
             writer.write_record(None::<&[u8]>)?;
@@ -300,6 +318,8 @@ impl ExportCommand {
         state_root: H256,
         parent_state_root: H256,
         object_id: ObjectID,
+        // export child object as object state under indexer mode
+        is_child_object_as_object_state: bool,
         writer: &mut Writer<W>,
     ) -> Result<()> {
         let starting_key = None;
@@ -320,6 +340,7 @@ impl ExportCommand {
                             H256::from(object.state_root.into_bytes()),
                             state_root,
                             object.id,
+                            false,
                             writer,
                         )?;
                     }
@@ -334,8 +355,13 @@ impl ExportCommand {
 
         // write csv header.
         {
-            let export_id = ExportID::new(object_id.clone(), state_root, parent_state_root);
-            writer.write_field(GLOBAL_STATE_TYPE_FIELD)?;
+            let state_type = if is_child_object_as_object_state {
+                GLOBAL_STATE_TYPE_OBJECT
+            } else {
+                GLOBAL_STATE_TYPE_FIELD
+            };
+            let export_id = ExportID::new(object_id.clone(), state_root, parent_state_root, 0);
+            writer.write_field(state_type)?;
             writer.write_field(export_id.to_string())?;
             writer.write_record(None::<&[u8]>)?;
         }
@@ -389,13 +415,15 @@ impl ExportCommand {
                 H256::from(obj.state_root.into_bytes()),
                 root_state_root,
                 obj.id,
+                true,
                 writer,
             )?;
         }
 
         // write csv object states.
         {
-            let root_export_id = ExportID::new(ObjectID::root(), root_state_root, root_state_root);
+            let root_export_id =
+                ExportID::new(ObjectID::root(), root_state_root, root_state_root, 0);
             writer.write_field(GLOBAL_STATE_TYPE_ROOT)?;
             writer.write_field(root_export_id.to_string())?;
             writer.write_record(None::<&[u8]>)?;

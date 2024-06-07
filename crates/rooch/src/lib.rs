@@ -6,9 +6,9 @@ use crate::commands::indexer::Indexer;
 use crate::commands::statedb::Statedb;
 use cli_types::CommandAction;
 use commands::{
-    abi::ABI, account::Account, env::Env, init::Init, move_cli::MoveCli, object::ObjectCommand,
-    resource::ResourceCommand, rpc::Rpc, server::Server, session_key::SessionKey,
-    state::StateCommand, transaction::Transaction,
+    abi::ABI, account::Account, env::Env, genesis::Genesis, init::Init, move_cli::MoveCli,
+    object::ObjectCommand, resource::ResourceCommand, rpc::Rpc, server::Server,
+    session_key::SessionKey, state::StateCommand, transaction::Transaction,
 };
 use rooch_types::error::RoochResult;
 
@@ -41,6 +41,7 @@ pub enum Command {
     Rpc(Rpc),
     Statedb(Statedb),
     Indexer(Indexer),
+    Genesis(Genesis),
 }
 
 pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
@@ -60,5 +61,6 @@ pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
         Command::Rpc(rpc) => rpc.execute().await,
         Command::Statedb(statedb) => statedb.execute().await,
         Command::Indexer(indexer) => indexer.execute().await,
+        Command::Genesis(genesis) => genesis.execute().await,
     }
 }

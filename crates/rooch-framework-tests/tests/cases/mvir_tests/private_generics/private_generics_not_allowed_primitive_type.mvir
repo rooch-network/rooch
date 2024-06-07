@@ -1,0 +1,26 @@
+//# publish
+module 0x11.TestModule1 {
+    metadata {
+        private_generics {
+            0x11::TestModule1::f1 -> [0, 1];
+        }
+    }
+
+    public f1<T1: copy+drop, T2: copy+drop>(arg1: T1, arg2: T1) {
+        label b0:
+            _ = move(arg1);
+            _ = move(arg2);
+            return;
+    }
+
+    public f2() {
+        let a1: u32;
+        let a2: u32;
+        label b0:
+            a1 = 123u32;
+            a2 = 456u32;
+            // error code 10011: INVALID_PRIVATE_GENERICS_TYPE
+            Self.f1<u32, u32>(copy(a1), copy(a2));
+            return;
+    }
+}

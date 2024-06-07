@@ -81,8 +81,8 @@ module rooch_examples::coin_factory {
    //    let old_decimal = vector::singleton(TEMPLATE_COIN_DECIMALS);
    //    let modules = move_module::replace_constant_u8(modules, old_decimal, new_decimal);
 
-   //    let module_store = move_module::borrow_mut_module_store();
+   //    let module_store = module_store::borrow_mut_module_store();
    //    // publish modules
-   //    move_module::publish_modules(module_store, account, modules);
+   //    module_store::publish_modules(module_store, account, modules);
    // }
 }
