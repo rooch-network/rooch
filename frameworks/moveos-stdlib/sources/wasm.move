@@ -96,6 +96,10 @@ module moveos_std::wasm {
 
     #[test_only] 
     use std::string;
+    #[test_only] 
+    use std::debug;
+    #[test_only] 
+    use std::vector;
 
     #[test]
     fun test_trap() {
