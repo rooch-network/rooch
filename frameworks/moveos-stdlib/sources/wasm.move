@@ -2,9 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module moveos_std::wasm {
-    use std::string;
-    use std::debug;
-    use std::vector;
     use std::option::{Self,Option};
     use moveos_std::features;
 
