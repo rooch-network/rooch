@@ -27,14 +27,12 @@ pub struct Account {
 impl CommandAction<String> for Account {
     async fn execute(self) -> RoochResult<String> {
         match self.cmd {
-            AccountCommand::Create(create) => create.execute().await.map(|resp| {
-                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
-            }),
-            AccountCommand::List(list) => list.execute().await,
-            AccountCommand::Switch(switch) => switch.execute().await.map(|_| "".to_owned()),
-            AccountCommand::Nullify(nullify) => nullify.execute().await.map(|_| "".to_owned()),
-            AccountCommand::Balance(balance) => balance.execute().await.map(|_| "".to_owned()),
-            AccountCommand::Transfer(transfer) => transfer.execute().await.map(|_| "".to_owned()),
+            AccountCommand::Create(create) => create.execute_serialized().await,
+            AccountCommand::List(list) => list.execute_serialized().await,
+            AccountCommand::Switch(switch) => switch.execute_serialized().await,
+            AccountCommand::Nullify(nullify) => nullify.execute_serialized().await,
+            AccountCommand::Balance(balance) => balance.execute_serialized().await,
+            AccountCommand::Transfer(transfer) => transfer.execute_serialized().await,
         }
         .map_err(RoochError::from)
     }

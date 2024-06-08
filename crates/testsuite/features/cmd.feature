@@ -26,7 +26,8 @@ Feature: Rooch CLI integration tests
 
       Then cmd: "account create"
       Then cmd: "account list --json"
-      #Then cmd: "account nullify --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce"
+      # use bitcoin_address
+      Then cmd: "account nullify -a {{$.account[-1].account0.bitcoin_address}}"
 
       Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::GasCoin"]'"
       Then assert: "'{{$.rpc[-1].coin_type}}' == '0x3::gas_coin::GasCoin'"
@@ -238,7 +239,7 @@ Feature: Rooch CLI integration tests
   @serial
   Scenario: coins example
       Given a server for coins
-      Then cmd: "account create"
+      Then cmd: "account create --json"
       Then cmd: "move publish -p ../../examples/coins  --named-addresses coins=default"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function default::fixed_supply_coin::faucet --args object:default::fixed_supply_coin::Treasury"
@@ -248,9 +249,8 @@ Feature: Rooch CLI integration tests
       Then assert: "'{{$.rpc[-1].coin_type}}' == '{{$.address_mapping.default}}::fixed_supply_coin::FSC'"
       Then assert: "'{{$.rpc[-1].balance}}' != '0'"
 
-      #TODO change the argument `0x3` address to a user account
-      Then cmd: "move run --function rooch_framework::transfer::transfer_coin --type-args default::fixed_supply_coin::FSC --args address:0x3  --args 1u256 "
-      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      Then cmd: "account transfer --coin-type default::fixed_supply_coin::FSC --to {{$.account[-1]}} --amount 1"
+      Then assert: "{{$.account[-1].execution_info.status.type}} == executed"
       Then stop the server
 
   @serial
