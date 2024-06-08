@@ -204,38 +204,10 @@ impl wasmer::FunctionMiddleware for GasFunctionMiddleware {
                     state.push_operator(operator.clone());
                 }
             }
-            Operator::CallIndirect {
-                table_index,
-                type_index,
-                table_byte,
-            } => {
-                if table_index >= self.charge_function_index.as_u32() {
-                    state.push_operator(Operator::CallIndirect {
-                        table_index: table_index + 1,
-                        type_index,
-                        table_byte,
-                    });
-                } else {
-                    state.push_operator(operator.clone());
-                }
-            }
             Operator::ReturnCall { function_index } => {
                 if function_index >= self.charge_function_index.as_u32() {
                     state.push_operator(Operator::ReturnCall {
                         function_index: function_index + 1,
-                    });
-                } else {
-                    state.push_operator(operator.clone());
-                }
-            }
-            Operator::ReturnCallIndirect {
-                table_index,
-                type_index,
-            } => {
-                if table_index >= self.charge_function_index.as_u32() {
-                    state.push_operator(Operator::ReturnCallIndirect {
-                        table_index: table_index + 1,
-                        type_index,
                     });
                 } else {
                     state.push_operator(operator.clone());

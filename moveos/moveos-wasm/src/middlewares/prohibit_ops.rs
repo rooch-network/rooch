@@ -2,14 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::fmt;
-use wasmer::{LocalFunctionIndex, MiddlewareError, MiddlewareReaderState, ModuleMiddleware};
 use wasmer::wasmparser::Operator;
+use wasmer::{LocalFunctionIndex, MiddlewareError, MiddlewareReaderState, ModuleMiddleware};
 
 pub struct ProhibitOpsMiddleware;
 
 impl ProhibitOpsMiddleware {
     pub fn new() -> Self {
         Self
+    }
+}
+
+impl Default for ProhibitOpsMiddleware {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -40,14 +46,19 @@ impl wasmer::FunctionMiddleware for ProhibitOpsFunctionMiddleware {
     fn feed<'a>(
         &mut self,
         operator: Operator<'a>,
-        _state: &mut MiddlewareReaderState<'a>,
+        state: &mut MiddlewareReaderState<'a>,
     ) -> Result<(), MiddlewareError> {
         match operator {
             Operator::CallIndirect { .. } | Operator::ReturnCallIndirect { .. } => {
                 // Return an error to prohibit CallIndirect and ReturnCallIndirect
-                return Err(MiddlewareError::new("prohibited", "CallIndirect and ReturnCallIndirect are prohibited"));
+                return Err(MiddlewareError::new(
+                    "prohibited",
+                    "CallIndirect and ReturnCallIndirect are prohibited",
+                ));
             }
-            _ => {}
+            _ => {
+                state.push_operator(operator.clone());
+            }
         }
 
         Ok(())

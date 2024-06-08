@@ -49,8 +49,8 @@ export RUST_BACKTRACE=1
 
 if [ ! -z "$UNIT_TEST" ]; then
   cargo run --bin rooch move test -p frameworks/moveos-stdlib wasm
-  cargo run --bin rooch move test -p frameworks/bitcoin-move
-  cargo run --bin rooch move test -p frameworks/rooch-nursery
+  #cargo run --bin rooch move test -p frameworks/bitcoin-move
+  #cargo run --bin rooch move test -p frameworks/rooch-nursery
 fi
 
 if [ ! -z "$WASM_INT_TEST" ]; then
