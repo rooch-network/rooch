@@ -268,7 +268,7 @@
           "schema": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SimpleKeyStateView"
+              "$ref": "#/components/schemas/KeyStateHexView"
             }
           }
         },
@@ -1021,7 +1021,7 @@
                 }
               },
               "key": {
-                "$ref": "#/components/schemas/KeyStateView"
+                "$ref": "#/components/schemas/KeyStateHexView"
               },
               "key_state": {
                 "type": "string"
@@ -1054,7 +1054,7 @@
             ],
             "properties": {
               "key": {
-                "$ref": "#/components/schemas/KeyStateView"
+                "$ref": "#/components/schemas/KeyStateHexView"
               },
               "key_state": {
                 "type": "string"
@@ -1194,13 +1194,24 @@
           "state_index",
           "state_root",
           "tx_order",
-          "updated_at"
+          "updated_at",
+          "value"
         ],
         "properties": {
           "created_at": {
             "type": "integer",
             "format": "uint64",
             "minimum": 0.0
+          },
+          "decoded_value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnnotatedMoveStructView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "display_fields": {
             "anyOf": [
@@ -1250,12 +1261,10 @@
             "minimum": 0.0
           },
           "value": {
-            "anyOf": [
+            "description": "bcs bytes of the Object.",
+            "allOf": [
               {
-                "$ref": "#/components/schemas/AnnotatedMoveStructView"
-              },
-              {
-                "type": "null"
+                "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
               }
             ]
           }
@@ -1584,30 +1593,8 @@
           }
         ]
       },
-      "KeyStateView": {
-        "type": "object",
-        "required": [
-          "key",
-          "key_type"
-        ],
-        "properties": {
-          "decoded_key": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AnnotatedMoveValueView"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "key": {
-            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
-          },
-          "key_type": {
-            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
-          }
-        }
+      "KeyStateHexView": {
+        "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
       },
       "LedgerTransactionView": {
         "type": "object",
@@ -1856,7 +1843,7 @@
             ],
             "properties": {
               "object_id": {
-                "type": "string"
+                "$ref": "#/components/schemas/alloc::vec::Vec<moveos_types::moveos_std::object::ObjectID>"
               }
             },
             "additionalProperties": false
@@ -1882,6 +1869,16 @@
             "type": "integer",
             "format": "uint64",
             "minimum": 0.0
+          },
+          "decoded_value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnnotatedMoveStructView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "display_fields": {
             "anyOf": [
@@ -1921,7 +1918,7 @@
             "minimum": 0.0
           },
           "value": {
-            "$ref": "#/components/schemas/AnnotatedMoveStructView"
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
           }
         }
       },
@@ -2254,6 +2251,11 @@
       "QueryOptions": {
         "type": "object",
         "properties": {
+          "decode": {
+            "description": "If true, the state is decoded and the decoded value is returned in the response.",
+            "default": false,
+            "type": "boolean"
+          },
           "descending": {
             "description": "If true, return query items in descending order.",
             "default": true,
@@ -2288,21 +2290,6 @@
             "items": {
               "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
             }
-          }
-        }
-      },
-      "SimpleKeyStateView": {
-        "type": "object",
-        "required": [
-          "key",
-          "key_type"
-        ],
-        "properties": {
-          "key": {
-            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
-          },
-          "key_type": {
-            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
           }
         }
       },
@@ -2343,12 +2330,12 @@
       "StateKVView": {
         "type": "object",
         "required": [
-          "key_state",
+          "key_hex",
           "state"
         ],
         "properties": {
-          "key_state": {
-            "$ref": "#/components/schemas/KeyStateView"
+          "key_hex": {
+            "$ref": "#/components/schemas/KeyStateHexView"
           },
           "state": {
             "$ref": "#/components/schemas/StateView"
