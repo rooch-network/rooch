@@ -7,6 +7,7 @@ use super::{
 };
 use anyhow::Result;
 
+use bcs;
 use move_core_types::effects::Op;
 use moveos_types::state::{
     AnnotatedKeyState, FieldChange, KeyState, NormalFieldChange, ObjectChange,
@@ -22,7 +23,6 @@ use rooch_types::indexer::state::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::str::FromStr;
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, JsonSchema)]
 pub struct DisplayFieldsView {
@@ -81,109 +81,107 @@ impl From<StateView> for State {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
-pub struct SimpleKeyStateView {
-    pub key: BytesView,
-    pub key_type: TypeTagView,
-}
-
-impl From<KeyState> for SimpleKeyStateView {
-    fn from(state: KeyState) -> Self {
-        Self {
-            key: StrView(state.key),
-            key_type: state.key_type.into(),
-        }
-    }
-}
-
-impl From<KeyStateView> for SimpleKeyStateView {
-    fn from(state: KeyStateView) -> Self {
-        Self {
-            key: state.key,
-            key_type: state.key_type,
-        }
-    }
-}
-
-impl From<SimpleKeyStateView> for KeyState {
-    fn from(state: SimpleKeyStateView) -> Self {
-        Self {
-            key: state.key.0,
-            key_type: state.key_type.into(),
-        }
-    }
-}
-
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema, Ord, Eq, PartialOrd, PartialEq)]
-pub struct KeyStateView {
-    pub key: BytesView,
-    pub key_type: TypeTagView,
-    pub decoded_key: Option<AnnotatedMoveValueView>,
-}
+pub struct KeyStateHexView(pub BytesView);
 
-impl From<KeyState> for KeyStateView {
+impl From<KeyState> for KeyStateHexView {
     fn from(state: KeyState) -> Self {
-        Self {
-            key: StrView(state.key),
-            key_type: state.key_type.into(),
-            decoded_key: None,
-        }
+        let bytes = bcs::to_bytes(&state).expect("bcs serialization should succeed");
+        Self(bytes.into())
     }
 }
 
-impl From<AnnotatedKeyState> for KeyStateView {
+impl From<AnnotatedKeyState> for KeyStateHexView {
     fn from(state: AnnotatedKeyState) -> Self {
-        Self {
-            key: StrView(state.state.key),
-            key_type: state.state.key_type.into(),
-            decoded_key: Some(state.decoded_key.into()),
-        }
+        state.state.into()
     }
 }
 
-impl From<KeyStateView> for KeyState {
-    fn from(state: KeyStateView) -> Self {
-        Self {
-            key: state.key.0,
-            key_type: state.key_type.into(),
-        }
+impl From<KeyStateHexView> for KeyState {
+    fn from(state: KeyStateHexView) -> Self {
+        let bytes = state.0 .0;
+        bcs::from_bytes(&bytes).expect("bcs deserialization should succeed")
     }
 }
 
-impl std::fmt::Display for KeyStateView {
+impl std::fmt::Display for KeyStateHexView {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let key_state = KeyState::from(self.clone());
-        write!(f, "{}", key_state)
+        write!(f, "0x{}", hex::encode(&self.0 .0))
     }
 }
 
-/// KeyStateView parse from str will ignored decoded_key
-impl FromStr for KeyStateView {
-    type Err = anyhow::Error;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let key_state = KeyState::from_str(s)?;
-        Ok(KeyStateView::from(key_state))
-    }
-}
+// TODO: Do we need to keep KeyStateView for showing key state in detail?
+
+// #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema, Ord, Eq, PartialOrd, PartialEq)]
+// pub struct KeyStateView {
+//     pub key: BytesView,
+//     pub key_type: TypeTagView,
+//     pub decoded_key: Option<AnnotatedMoveValueView>,
+// }
+
+// impl From<KeyState> for KeyStateView {
+//     fn from(state: KeyState) -> Self {
+//         Self {
+//             key: StrView(state.key),
+//             key_type: state.key_type.into(),
+//             decoded_key: None,
+//         }
+//     }
+// }
+
+// impl From<AnnotatedKeyState> for KeyStateView {
+//     fn from(state: AnnotatedKeyState) -> Self {
+//         Self {
+//             key: StrView(state.state.key),
+//             key_type: state.state.key_type.into(),
+//             decoded_key: Some(state.decoded_key.into()),
+//         }
+//     }
+// }
+
+// impl From<KeyStateView> for KeyState {
+//     fn from(state: KeyStateView) -> Self {
+//         Self {
+//             key: state.key.0,
+//             key_type: state.key_type.into(),
+//         }
+//     }
+// }
+
+// impl std::fmt::Display for KeyStateView {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         let key_state = KeyState::from(self.clone());
+//         write!(f, "{}", key_state)
+//     }
+// }
+
+// /// KeyStateView parse from str will ignored decoded_key
+// impl FromStr for KeyStateView {
+//     type Err = anyhow::Error;
+//     fn from_str(s: &str) -> Result<Self, Self::Err> {
+//         let key_state = KeyState::from_str(s)?;
+//         Ok(KeyStateView::from(key_state))
+//     }
+// }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct StateKVView {
-    pub key_state: KeyStateView,
+    pub key_hex: KeyStateHexView,
     pub state: StateView,
 }
 
 impl From<StateKV> for StateKVView {
     fn from(state: StateKV) -> Self {
         Self {
-            key_state: state.0.into(),
+            key_hex: state.0.into(),
             state: state.1.into(),
         }
     }
 }
 
 impl StateKVView {
-    pub fn new(key_state: KeyStateView, state: StateView) -> Self {
-        Self { key_state, state }
+    pub fn new(key_hex: KeyStateHexView, state: StateView) -> Self {
+        Self { key_hex, state }
     }
 }
 
@@ -255,30 +253,17 @@ impl From<OpView<StateView>> for Op<State> {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-// To support dynamic field for json serialize and deserialize
-pub struct DynamicFieldView {
-    pub k: KeyStateView,
-    pub v: OpView<StateView>,
-}
-
-impl DynamicFieldView {
-    pub fn new(k: KeyStateView, v: OpView<StateView>) -> Self {
-        Self { k, v }
-    }
-}
-
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum FieldChangeView {
     Object {
-        key: KeyStateView,
+        key: KeyStateHexView,
         key_state: String,
         #[serde(flatten)]
         change: ObjectChangeView,
     },
     Normal {
-        key: KeyStateView,
+        key: KeyStateHexView,
         key_state: String,
         #[serde(flatten)]
         change: NormalFieldChangeView,
@@ -349,12 +334,6 @@ impl From<IndexerStateChangeSet> for IndexerStateChangeSetView {
             created_at: state_change_set.created_at,
         }
     }
-}
-
-//TODO clean and remove TableChange
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct TableChangeView {
-    pub entries: Vec<DynamicFieldView>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]

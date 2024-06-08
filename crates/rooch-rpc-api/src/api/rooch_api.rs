@@ -8,8 +8,8 @@ use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionW
 use crate::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
     EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
-    IndexerEventPageView, IndexerObjectStatePageView, ObjectIDVecView, ObjectIDView,
-    ObjectStateFilterView, ObjectStateView, QueryOptions, SimpleKeyStateView, StateOptions,
+    IndexerEventPageView, IndexerObjectStatePageView, KeyStateHexView, ObjectIDVecView,
+    ObjectIDView, ObjectStateFilterView, ObjectStateView, QueryOptions, StateOptions,
     StatePageView, StateView, StrView, StructTagView, TransactionWithInfoPageView, TxOptions,
 };
 use jsonrpsee::core::RpcResult;
@@ -81,7 +81,7 @@ pub trait RoochAPI {
     async fn get_field_states(
         &self,
         object_id: ObjectIDView,
-        field_key: Vec<SimpleKeyStateView>,
+        field_key: Vec<KeyStateHexView>,
         state_option: Option<StateOptions>,
     ) -> RpcResult<Vec<Option<StateView>>> {
         let key_states = field_key.into_iter().map(KeyState::from).collect();

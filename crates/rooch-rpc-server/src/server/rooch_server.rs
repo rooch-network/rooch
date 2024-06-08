@@ -20,8 +20,8 @@ use moveos_types::{
 use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, IndexerEventPageView, IndexerObjectStatePageView,
-    IndexerObjectStateView, KeyStateView, ObjectIDVecView, ObjectStateFilterView, ObjectStateView,
-    QueryOptions, StateKVView, StateOptions, TxOptions,
+    IndexerObjectStateView, KeyStateHexView, ObjectIDVecView, ObjectStateFilterView,
+    ObjectStateView, QueryOptions, StateKVView, StateOptions, TxOptions,
 };
 use rooch_rpc_api::jsonrpc_types::{
     event_view::{EventFilterView, EventView, IndexerEventView},
@@ -251,7 +251,7 @@ impl RoochAPIServer for RoochServer {
                     .zip(display_field_views)
                     .map(|((key_state, state), display_field_view)| {
                         StateKVView::new(
-                            KeyStateView::from(key_state),
+                            KeyStateHexView::from(key_state),
                             StateView::from(state).with_display_fields(display_field_view),
                         )
                     })
@@ -261,7 +261,7 @@ impl RoochAPIServer for RoochServer {
                     .into_iter()
                     .zip(states)
                     .map(|(key_state, state)| {
-                        StateKVView::new(KeyStateView::from(key_state), StateView::from(state))
+                        StateKVView::new(KeyStateHexView::from(key_state), StateView::from(state))
                     })
                     .collect::<Vec<_>>()
             }
@@ -271,7 +271,7 @@ impl RoochAPIServer for RoochServer {
                 .await?
                 .into_iter()
                 .map(|(key_state, state)| {
-                    StateKVView::new(KeyStateView::from(key_state), StateView::from(state))
+                    StateKVView::new(KeyStateHexView::from(key_state), StateView::from(state))
                 })
                 .collect::<Vec<_>>()
         };
@@ -279,7 +279,7 @@ impl RoochAPIServer for RoochServer {
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
         let next_cursor = data.last().map_or(cursor, |state_kv| {
-            Some(state_kv.key_state.clone().to_string())
+            Some(state_kv.key_hex.clone().to_string())
         });
 
         Ok(StatePageView {
