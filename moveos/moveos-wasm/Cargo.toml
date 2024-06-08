@@ -9,6 +9,7 @@ serde_json = { workspace = true }
 once_cell = { workspace = true }
 wasmer = { workspace = true }
 wasmer-types = { workspace = true }
+wasmer-compiler-singlepass = { workspace = true }
 ciborium = { workspace = true }
 rand = { workspace = true }
 anyhow = { workspace = true }

@@ -11,8 +11,13 @@ use tracing::{debug, error, warn};
 use wasmer::Value::I32;
 use wasmer::*;
 
+use wasmer_compiler_singlepass::Singlepass;
+
+use crate::cost_function::cost_function;
 use crate::gas_meter::GasMeter;
 use crate::middlewares::gas_metering::GasMiddleware;
+use crate::middlewares::prohibit_ops::ProhibitOpsMiddleware;
+
 
 const GAS_LIMIT: u64 = 10000;
 
@@ -265,13 +270,16 @@ pub fn create_wasm_instance(code: &[u8]) -> anyhow::Result<WASMInstance> {
     let gas_meter = Arc::new(Mutex::new(GasMeter::new(GAS_LIMIT)));
 
     // Create and configure the compiler
-    let mut compiler_config = wasmer::Cranelift::default();
-    let gas_middleware = GasMiddleware::new(None);
-    compiler_config.push_middleware(Arc::new(gas_middleware));
+    let mut compiler = Singlepass::new();
 
-    // Create an store
-    let engine = wasmer::sys::EngineBuilder::new(compiler_config).engine();
-    let mut store = Store::new(&engine);
+    let prohibit_ops = ProhibitOpsMiddleware::new();
+    compiler.push_middleware(Arc::new(prohibit_ops));
+
+    let gas_middleware = GasMiddleware::new(Some(Arc::new(cost_function)));
+    compiler.push_middleware(Arc::new(gas_middleware));
+
+    // Create the store
+    let mut store = Store::new(compiler);
 
     let bytecode = match wasmer::wat2wasm(code) {
         Ok(m) => m,
