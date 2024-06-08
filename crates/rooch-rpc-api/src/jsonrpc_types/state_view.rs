@@ -377,7 +377,9 @@ pub struct IndexerObjectStateView {
     pub object_id: ObjectID,
     pub owner: RoochAddressView,
     pub flag: u8,
-    pub value: Option<AnnotatedMoveStructView>,
+    /// bcs bytes of the Object.
+    pub value: BytesView,
+    pub decoded_value: Option<AnnotatedMoveStructView>,
     pub object_type: StructTagView,
     pub state_root: H256View,
     pub size: u64,
@@ -390,14 +392,17 @@ pub struct IndexerObjectStateView {
 
 impl IndexerObjectStateView {
     pub fn new_from_object_state(
-        annotated_state: Option<AnnotatedObject>,
         state: IndexerObjectState,
+        value: Vec<u8>,
+        decoded_value: Option<AnnotatedMoveStructView>,
+        display_fields: Option<DisplayFieldsView>,
     ) -> IndexerObjectStateView {
         IndexerObjectStateView {
             object_id: state.object_id,
             owner: state.owner.into(),
             flag: state.flag,
-            value: annotated_state.map(|v| AnnotatedMoveStructView::from(v.value)),
+            value: value.into(),
+            decoded_value,
             object_type: state.object_type.into(),
             state_root: state.state_root.into(),
             size: state.size,
@@ -405,13 +410,8 @@ impl IndexerObjectStateView {
             state_index: state.state_index,
             created_at: state.created_at,
             updated_at: state.updated_at,
-            display_fields: None,
+            display_fields,
         }
-    }
-
-    pub fn with_display_fields(mut self, display_fields: Option<DisplayFieldsView>) -> Self {
-        self.display_fields = display_fields;
-        self
     }
 }
 
@@ -464,12 +464,13 @@ pub struct ObjectStateView {
     pub size: u64,
     pub created_at: u64,
     pub updated_at: u64,
-    pub value: AnnotatedMoveStructView,
+    pub value: BytesView,
+    pub decoded_value: Option<AnnotatedMoveStructView>,
     pub display_fields: Option<DisplayFieldsView>,
 }
 
 impl ObjectStateView {
-    pub fn new_from_annotated_object(object: AnnotatedObject) -> Self {
+    pub fn new(value: Vec<u8>, object: AnnotatedObject, decode: bool) -> Self {
         ObjectStateView {
             id: object.id,
             owner: object.owner.into(),
@@ -479,7 +480,12 @@ impl ObjectStateView {
             size: object.size,
             created_at: object.created_at,
             updated_at: object.updated_at,
-            value: AnnotatedMoveStructView::from(object.value),
+            value: value.into(),
+            decoded_value: if decode {
+                Some(AnnotatedMoveStructView::from(object.value))
+            } else {
+                None
+            },
             display_fields: None,
         }
     }

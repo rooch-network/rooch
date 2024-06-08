@@ -29,7 +29,7 @@ use rooch_rpc_api::jsonrpc_types::{
 };
 use rooch_rpc_api::jsonrpc_types::{transaction_view::TransactionWithInfoView, EventOptions};
 use rooch_rpc_api::jsonrpc_types::{
-    AccessPathView, BalanceInfoPageView, DisplayFieldsView, EventPageView,
+    AccessPathView, AnnotatedMoveStructView, BalanceInfoPageView, DisplayFieldsView, EventPageView,
     ExecuteTransactionResponseView, FunctionCallView, H256View, StatePageView, StateView, StrView,
     StructTagView, TransactionWithInfoPageView,
 };
@@ -297,6 +297,7 @@ impl RoochAPIServer for RoochServer {
         let object_ids: Vec<ObjectID> = object_ids.into();
         let access_path = AccessPath::objects(object_ids);
         let state_option = state_option.unwrap_or_default();
+        let decode = state_option.decode;
         let show_display = state_option.show_display;
 
         let states = self.rpc_service.get_annotated_states(access_path).await?;
@@ -314,9 +315,10 @@ impl RoochAPIServer for RoochServer {
             .map(|option_annotated_s| {
                 option_annotated_s
                     .map(|annotated_s| {
+                        let value = annotated_s.state.value.clone();
                         annotated_s
                             .into_annotated_object()
-                            .map(ObjectStateView::new_from_annotated_object)
+                            .map(|obj| ObjectStateView::new(value, obj, decode))
                     })
                     .transpose()
             })
@@ -630,6 +632,7 @@ impl RoochAPIServer for RoochServer {
         );
         let query_option = query_option.unwrap_or_default();
         let descending_order = query_option.descending;
+        let decode = query_option.decode;
 
         let global_state_filter = ObjectStateFilterView::try_into_object_state_filter(filter)?;
         let states = self
@@ -642,44 +645,40 @@ impl RoochAPIServer for RoochServer {
             .map(|m| m.object_id.clone())
             .collect::<Vec<_>>();
         let access_path = AccessPath::objects(object_ids.clone());
-        let annotated_states = self.rpc_service.get_annotated_states(access_path).await?;
+        let annotated_states = self
+            .rpc_service
+            .get_annotated_states(access_path)
+            .await?
+            .into_iter()
+            .map(|s| s.expect("object should exist!")) // TODO: is statedb always synced with indexer?
+            .collect::<Vec<_>>();
 
         let annotated_states_with_display = if query_option.show_display {
-            let valid_states = annotated_states
-                .iter()
-                .filter_map(|s| s.as_ref())
-                .collect::<Vec<_>>();
-            let mut valid_display_field_views = self
+            let valid_states = annotated_states.iter().collect::<Vec<_>>();
+            let valid_display_field_views = self
                 .get_display_fields_and_render(valid_states, true)
                 .await?;
-            valid_display_field_views.reverse();
             annotated_states
                 .into_iter()
-                .map(|option_annotated_s| match option_annotated_s {
-                    Some(s) => {
-                        debug_assert!(
-                            !valid_display_field_views.is_empty(),
-                            "display fields should not be empty"
-                        );
-                        let annotated_obj = s.into_annotated_object().expect("should be object");
-                        (
-                            Some(annotated_obj),
-                            valid_display_field_views.pop().unwrap(),
-                        )
-                    }
-                    None => (None, None),
+                .zip(valid_display_field_views)
+                .map(|(annotated_state, display_field_view)| {
+                    let value = annotated_state.state.value.clone();
+                    (
+                        value,
+                        annotated_state
+                            .into_annotated_object()
+                            .expect("should be object"),
+                        display_field_view,
+                    )
                 })
                 .collect::<Vec<_>>()
         } else {
             annotated_states
                 .into_iter()
                 .map(|s| {
-                    let obj = s.map(|annotated_s| {
-                        annotated_s
-                            .into_annotated_object()
-                            .expect("should be object")
-                    });
-                    (obj, None)
+                    let value = s.state.value.clone();
+                    let obj = s.into_annotated_object().expect("must be object");
+                    (value, obj, None)
                 })
                 .collect::<Vec<_>>()
         };
@@ -687,9 +686,18 @@ impl RoochAPIServer for RoochServer {
         let mut data = annotated_states_with_display
             .into_iter()
             .zip(states)
-            .map(|((annotated_state, display_fields), state)| {
-                IndexerObjectStateView::new_from_object_state(annotated_state, state)
-                    .with_display_fields(display_fields)
+            .map(|((value, annotated_state, display_fields), state)| {
+                let decoded_value = if decode {
+                    Some(AnnotatedMoveStructView::from(annotated_state.value))
+                } else {
+                    None
+                };
+                IndexerObjectStateView::new_from_object_state(
+                    state,
+                    value,
+                    decoded_value,
+                    display_fields,
+                )
             })
             .collect::<Vec<_>>();
 

@@ -70,6 +70,8 @@ impl TxOptions {
 pub struct QueryOptions {
     /// If true, return query items in descending order.
     pub descending: bool,
+    /// If true, the state is decoded and the decoded value is returned in the response.
+    pub decode: bool,
     /// If true, result with display rendered is returned
     pub show_display: bool,
 }
@@ -90,6 +92,7 @@ impl Default for QueryOptions {
     fn default() -> Self {
         Self {
             descending: true,
+            decode: false,
             show_display: false,
         }
     }
