@@ -350,12 +350,12 @@ Feature: Rooch CLI integration tests
       Then cmd: "account list --json" 
       
       # mint utxos
-      Then cmd bitcoin-cli: "generatetoaddress 101 {{$.account[-1][0].local_account.bitcoin_address}}"
+      Then cmd bitcoin-cli: "generatetoaddress 101 {{$.account[-1].default.bitcoin_address}}"
       Then sleep: "10" # wait rooch sync and index
 
       # query utxos
-      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type_with_owner":{"object_type":"0x4::utxo::UTXO","owner":"{{$.account[-1][0].local_account.address}}"}},null, null, null]'"
-      Then assert: "{{$.rpc[-1].data[0].owner}} == {{$.account[-1][0].local_account.address}}"
+      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type_with_owner":{"object_type":"0x4::utxo::UTXO","owner":"{{$.account[-1].default.address}}"}},null, null, null]'"
+      Then assert: "{{$.rpc[-1].data[0].owner}} == {{$.account[-1].default.address}}"
 
       # release servers
       Then stop the server
