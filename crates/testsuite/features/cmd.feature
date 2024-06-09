@@ -23,7 +23,7 @@ Feature: Rooch CLI integration tests
       Then cmd: "rpc request --method rooch_getFieldStates --params '["0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb", ["0x41022214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb8238d4e7553801ebf92b4311e16bbeb26eec676fd5bcbb31dcc59610148d90c8070000000000000000000000000000000000000000000000000000000000000002066f626a656374084f626a656374494400"], {"decode": true, "showDisplay": true}]'"
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::module_store::Package>'"
       Then cmd: "rpc request --method rooch_listFieldStates --params '["0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb", null, "2", {"decode": false, "showDisplay": false}]'"
-      Then assert: "{{$.rpc[-1].has_next_page}} == 'true'"
+      Then assert: "{{$.rpc[-1].has_next_page}} == true"
       Then stop the server 
     
     @serial
@@ -140,7 +140,7 @@ Feature: Rooch CLI integration tests
     Then assert: "{{$.rpc[-1].data[0].object_type}} == 0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
-    Then cmd: "rpc request --method rooch_listFieldStates --params '[{"object_id":"{{$.address_mapping.default}}"}, null, "10", {"descending": true,"showDisplay":false}]'"
+    Then cmd: "rpc request --method rooch_listFieldStates --params '["{{$.address_mapping.default}}", null, "10", {"descending": true,"showDisplay":false}]'"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
 #    Then cmd: "rpc request --method rooch_syncStates --params '[null, null, "2", false]'"
