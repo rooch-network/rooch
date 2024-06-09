@@ -13,6 +13,7 @@ use rooch_types::{
 };
 use rpassword::prompt_password;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fmt::Debug;
 
 /// List all keys by its Rooch address, Base64 encoded public key
@@ -26,7 +27,7 @@ pub struct ListCommand {
     json: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LocalAccountView {
     pub address: String,
     pub hex_address: String,
@@ -50,15 +51,18 @@ impl LocalAccountView {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AccountView {
+    #[serde(flatten)]
     pub local_account: LocalAccountView,
     pub active: bool,
 }
 
+pub type AccountsView = HashMap<String, AccountView>;
+
 #[async_trait]
-impl CommandAction<String> for ListCommand {
-    async fn execute(self) -> RoochResult<String> {
+impl CommandAction<Option<AccountsView>> for ListCommand {
+    async fn execute(self) -> RoochResult<Option<AccountsView>> {
         let context = self.context_options.build()?;
         let active_address = context.client_config.active_address;
 
@@ -91,7 +95,17 @@ impl CommandAction<String> for ListCommand {
             .collect();
 
         if self.json {
-            Ok(serde_json::to_string_pretty(&account_views)?)
+            let mut accounts_view: AccountsView = HashMap::new();
+            let mut i = 0;
+            for account in account_views {
+                if account.active {
+                    accounts_view.insert(String::from("default"), account.clone());
+                } else {
+                    accounts_view.insert(format!("account{}", i), account);
+                    i += 1;
+                }
+            }
+            Ok(Some(accounts_view))
         } else {
             let mut output = String::new();
 
@@ -110,7 +124,8 @@ impl CommandAction<String> for ListCommand {
                     account.active
                 ));
             }
-            Ok(output)
+            println!("{}", output);
+            Ok(None)
         }
     }
 }

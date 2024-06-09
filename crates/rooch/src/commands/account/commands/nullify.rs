@@ -6,36 +6,36 @@ use async_trait::async_trait;
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use rooch_key::keystore::account_keystore::AccountKeystore;
+use rooch_rpc_api::jsonrpc_types::RoochAddressView;
+use rooch_types::address::ParsedAddress;
 use rooch_types::{
     address::RoochAddress,
     error::{RoochError, RoochResult},
 };
 use std::fmt::Debug;
-use std::str::FromStr;
 
 /// Nullify a keypair from a selected coin id with a Rooch address in rooch.keystore
 #[derive(Debug, Parser)]
 pub struct NullifyCommand {
-    /// Rooch address in string format.
-    #[clap(short = 'a', long = "address")]
-    address: String,
+    #[clap(short = 'a', long = "address", value_parser=ParsedAddress::parse)]
+    address: ParsedAddress,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
+
+    /// Return command outputs in json format
+    #[clap(long, default_value = "false")]
+    json: bool,
 }
 
 #[async_trait]
-impl CommandAction<()> for NullifyCommand {
-    async fn execute(self) -> RoochResult<()> {
+impl CommandAction<Option<RoochAddressView>> for NullifyCommand {
+    async fn execute(self) -> RoochResult<Option<RoochAddressView>> {
         let mut context = self.context_options.build()?;
-
-        let existing_address = RoochAddress::from_str(self.address.as_str()).map_err(|e| {
-            RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
-        })?;
-
-        println!(
-            "{}",
-            AccountAddress::from(existing_address).to_hex_literal()
-        );
+        let mapping = context.address_mapping();
+        let existing_address: RoochAddress =
+            self.address.into_rooch_address(&mapping).map_err(|e| {
+                RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
+            })?;
 
         // Remove keypair by coin id from Rooch key store after successfully executing transaction
         context
@@ -43,7 +43,16 @@ impl CommandAction<()> for NullifyCommand {
             .nullify_address(&existing_address)
             .map_err(|e| RoochError::NullifyAccountError(e.to_string()))?;
 
-        println!("Dropped an existing address {:?}", existing_address,);
-        Ok(())
+        if self.json {
+            Ok(Some(existing_address.into()))
+        } else {
+            println!(
+                "{}",
+                AccountAddress::from(existing_address).to_hex_literal()
+            );
+
+            println!("Dropped an existing address {:?}", existing_address,);
+            Ok(None)
+        }
     }
 }
