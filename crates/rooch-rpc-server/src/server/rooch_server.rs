@@ -26,7 +26,7 @@ use rooch_rpc_api::jsonrpc_types::{
 };
 use rooch_rpc_api::jsonrpc_types::{
     event_view::{EventFilterView, EventView, IndexerEventView},
-    RoochAddressView,
+    RoochOrBitcoinAddressView,
 };
 use rooch_rpc_api::jsonrpc_types::{transaction_view::TransactionWithInfoView, EventOptions};
 use rooch_rpc_api::jsonrpc_types::{
@@ -439,7 +439,7 @@ impl RoochAPIServer for RoochServer {
 
     async fn get_balance(
         &self,
-        account_addr: RoochAddressView,
+        account_addr: RoochOrBitcoinAddressView,
         coin_type: StructTagView,
     ) -> RpcResult<BalanceInfoView> {
         Ok(self
@@ -452,7 +452,7 @@ impl RoochAPIServer for RoochServer {
     /// get account balances by RoochAddress
     async fn get_balances(
         &self,
-        account_addr: RoochAddressView,
+        account_addr: RoochOrBitcoinAddressView,
         cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
     ) -> RpcResult<BalanceInfoPageView> {

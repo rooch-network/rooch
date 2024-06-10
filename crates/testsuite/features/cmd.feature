@@ -245,11 +245,12 @@ Feature: Rooch CLI integration tests
       Then cmd: "move run --function default::fixed_supply_coin::faucet --args object:default::fixed_supply_coin::Treasury"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       
-      Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "{{$.address_mapping.default}}::fixed_supply_coin::FSC"]'"
+      Then cmd: "account list --json"
+      Then cmd: "rpc request --method rooch_getBalance --params '["{{$.account[-1].default.bitcoin_address}}", "{{$.account[-1].default.hex_address}}::fixed_supply_coin::FSC"]'"
       Then assert: "'{{$.rpc[-1].coin_type}}' == '{{$.address_mapping.default}}::fixed_supply_coin::FSC'"
       Then assert: "'{{$.rpc[-1].balance}}' != '0'"
 
-      Then cmd: "account transfer --coin-type default::fixed_supply_coin::FSC --to {{$.account[-1]}} --amount 1"
+      Then cmd: "account transfer --coin-type default::fixed_supply_coin::FSC --to {{$.account[-1].account0.bitcoin_address}} --amount 1"
       Then assert: "{{$.account[-1].execution_info.status.type}} == executed"
       Then stop the server
 
@@ -354,7 +355,7 @@ Feature: Rooch CLI integration tests
       Then sleep: "10" # wait rooch sync and index
 
       # query utxos
-      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type_with_owner":{"object_type":"0x4::utxo::UTXO","owner":"{{$.account[-1].default.address}}"}},null, null, null]'"
+      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type_with_owner":{"object_type":"0x4::utxo::UTXO","owner":"{{$.account[-1].default.bitcoin_address}}"}},null, null, null]'"
       Then assert: "{{$.rpc[-1].data[0].owner}} == {{$.account[-1].default.address}}"
 
       # release servers

@@ -186,7 +186,10 @@ impl RoochRpcClient {
         account_addr: RoochAddressView,
         coin_type: StructTagView,
     ) -> Result<BalanceInfoView> {
-        Ok(self.http.get_balance(account_addr, coin_type).await?)
+        Ok(self
+            .http
+            .get_balance(account_addr.into(), coin_type)
+            .await?)
     }
 
     pub async fn get_balances(
@@ -197,7 +200,7 @@ impl RoochRpcClient {
     ) -> Result<BalanceInfoPageView> {
         Ok(self
             .http
-            .get_balances(account_addr, cursor, limit.map(Into::into))
+            .get_balances(account_addr.into(), cursor, limit.map(Into::into))
             .await?)
     }
 }

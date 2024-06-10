@@ -3,7 +3,7 @@
 
 use super::{
     AnnotatedMoveStructView, AnnotatedMoveValueView, BytesView, H256View, RoochAddressView,
-    StrView, StructTagView, TypeTagView,
+    RoochOrBitcoinAddressView, StrView, StructTagView, TypeTagView,
 };
 use anyhow::Result;
 
@@ -422,12 +422,12 @@ pub enum ObjectStateFilterView {
     /// Query by object value type and owner.
     ObjectTypeWithOwner {
         object_type: StructTagView,
-        owner: RoochAddressView,
+        owner: RoochOrBitcoinAddressView,
     },
     /// Query by object value type.
     ObjectType(StructTagView),
     /// Query by owner.
-    Owner(RoochAddressView),
+    Owner(RoochOrBitcoinAddressView),
     /// Query by object ids.
     ObjectId(String),
 }
