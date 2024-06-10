@@ -145,7 +145,7 @@
           "name": "account_addr",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
+            "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress"
           }
         },
         {
@@ -172,7 +172,7 @@
           "name": "account_addr",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
+            "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress"
           }
         },
         {
@@ -745,7 +745,7 @@
             ],
             "properties": {
               "sender": {
-                "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
+                "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress"
               }
             },
             "additionalProperties": false
@@ -1807,7 +1807,7 @@
                     "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
                   },
                   "owner": {
-                    "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
+                    "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress"
                   }
                 }
               }
@@ -1835,7 +1835,7 @@
             ],
             "properties": {
               "owner": {
-                "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
+                "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress"
               }
             },
             "additionalProperties": false
@@ -2388,7 +2388,7 @@
             ],
             "properties": {
               "sender": {
-                "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
+                "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress"
               }
             },
             "additionalProperties": false
@@ -2852,6 +2852,9 @@
         "type": "string"
       },
       "primitive_types::H256": {
+        "type": "string"
+      },
+      "rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress": {
         "type": "string"
       },
       "rooch_types::address::BitcoinAddress": {

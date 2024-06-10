@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::account_view::BalanceInfoView;
-use crate::jsonrpc_types::address::RoochAddressView;
+use crate::jsonrpc_types::address::RoochOrBitcoinAddressView;
 use crate::jsonrpc_types::event_view::EventFilterView;
 use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionWithInfoView};
 use crate::jsonrpc_types::TxOptions;
@@ -97,7 +97,7 @@ pub trait RoochAPI {
     #[method(name = "getBalance")]
     async fn get_balance(
         &self,
-        account_addr: RoochAddressView,
+        account_addr: RoochOrBitcoinAddressView,
         coin_type: StructTagView,
     ) -> RpcResult<BalanceInfoView>;
 
@@ -105,7 +105,7 @@ pub trait RoochAPI {
     #[method(name = "getBalances")]
     async fn get_balances(
         &self,
-        account_addr: RoochAddressView,
+        account_addr: RoochOrBitcoinAddressView,
         cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
     ) -> RpcResult<BalanceInfoPageView>;

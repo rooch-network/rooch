@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::{
-    AnnotatedMoveStructView, H256View, RoochAddressView, StrView, StructTagView,
+    AnnotatedMoveStructView, H256View, RoochAddressView, RoochOrBitcoinAddressView, StrView,
+    StructTagView,
 };
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID, TransactionEvent};
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
@@ -106,7 +107,7 @@ pub enum EventFilterView {
     /// Query by event type.
     EventType(StructTagView),
     /// Query by sender address.
-    Sender(RoochAddressView),
+    Sender(RoochOrBitcoinAddressView),
     /// Return events emitted by the given transaction hash.
     TxHash(H256View),
     /// Return events emitted in [start_time, end_time) interval
