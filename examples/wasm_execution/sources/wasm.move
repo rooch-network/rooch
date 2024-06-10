@@ -113,12 +113,17 @@ module rooch_examples::wasm_execution {
 
       // 2. inscribe_verify
       let function_name = b"inscribe_verify";
-      let deploy_args = x"8178377b22686569676874223a7b2274797065223a2272616e6765222c2264617461223a7b226d696e223a312c226d6178223a313030307d7d7d";
+      let deploy_args = x"81a166686569676874a264747970656572616e67656464617461a2636d696e01636d61781903e8";
       let seed = x"33303765396262353238616132303930343665306230333336316162333461383966633063313233323764393964363239666336396634383232663638376433";
-      let user_input = x"";
-      let attributes_output = x"a26668656967687418c56269646d68656c6c6f5f62697473656564";
+      let user_input = b"123";
+      let attributes_output = x"a26668656967687418c56269646d68656c6c6f5f62697473656565";
 
       let buffer = pack_inscribe_generate_args(deploy_args, seed, user_input);
+      debug::print(&string::utf8(b"buffer length:"));
+      debug::print(&vector::length(&buffer));
+      std::debug::print(&string::utf8(b"cbor buffer:"));
+      std::debug::print(&buffer);
+
       let arg_with_length = wasm::add_length_with_data(buffer);
 
       let arg_list = vector::empty<vector<u8>>();
@@ -150,12 +155,17 @@ module rooch_examples::wasm_execution {
 
       // 2. inscribe_verify
       let function_name = b"inscribe_verify";
-      let deploy_args = x"8178377b22686569676874223a7b2274797065223a2272616e6765222c2264617461223a7b226d696e223a312c226d6178223a313030307d7d7d";
-      let seed = x"33303765396262353238616132303930343665306230333336316162333461383966633063313233323764393964363239666336396634383232663638376433";
+      let deploy_args = x"81a166686569676874a264747970656572616e67656464617461a2636d696e01636d61781903e8";
+      let seed = x"3330376539626235323861613230393034366530623033333631616233346138396663306331323332376439396436323966633639663438323266363837";
       let user_input = x"";
       let attributes_output = x"a26668656967687418c56269646d68656c6c6f5f62697473656564";
 
       let buffer = pack_inscribe_generate_args(deploy_args, seed, user_input);
+      debug::print(&string::utf8(b"buffer length:"));
+      debug::print(&vector::length(&buffer));
+      std::debug::print(&string::utf8(b"cbor buffer:"));
+      std::debug::print(&buffer);
+
       let arg_with_length = wasm::add_length_with_data(buffer);
 
       let arg_list = vector::empty<vector<u8>>();
@@ -178,14 +188,23 @@ module rooch_examples::wasm_execution {
 
    #[data_struct]
    struct InscribeGenerateArgs has copy, drop, store {
-      attrs: vector<u8>,
+      attrs: vector<u16>,
       seed: std::string::String,
       user_input: std::string::String,
    }
 
    fun pack_inscribe_generate_args(deploy_args: vector<u8>, seed: vector<u8>, user_input: vector<u8>): vector<u8>{
+      let attrs = vector::empty();
+
+      let i=0;
+      let len = vector::length(&deploy_args);
+      while (i < len) {
+         vector::push_back(&mut attrs, (*vector::borrow(&deploy_args, i) as u16));
+         i = i + 1;
+      };
+
       let args = InscribeGenerateArgs{
-         attrs: deploy_args,
+         attrs: attrs,
          seed: string::utf8(seed),
          user_input: string::utf8(user_input)
       };
