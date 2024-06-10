@@ -9,7 +9,7 @@ use move_core_types::effects::Op;
 use move_core_types::language_storage::StructTag;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::{ObjectID, RawObject};
-use moveos_types::state::{MoveStructType, ObjectChange, StateChangeSet};
+use moveos_types::state::{FieldChange, MoveStructType, ObjectChange, StateChangeSet};
 use moveos_types::state_resolver::StateResolver;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -88,7 +88,7 @@ pub fn handle_object_change(
     object_change: ObjectChange,
     resolver: &dyn StateResolver,
 ) -> Result<u64> {
-    let ObjectChange { op, fields: _ } = object_change;
+    let ObjectChange { op, fields } = object_change;
 
     if let Some(op) = op {
         match op {
@@ -129,6 +129,23 @@ pub fn handle_object_change(
     }
 
     state_index_generator += 1;
+    for (key, change) in fields {
+        match change {
+            FieldChange::Normal(_normal_change) => {
+                // TODO: we do not save normal fields in indexer db, so we do nothing here.
+            }
+            FieldChange::Object(object_change) => {
+                state_index_generator = handle_object_change(
+                    state_index_generator,
+                    tx_order,
+                    indexer_object_state_changes,
+                    key.as_object_id()?,
+                    object_change,
+                    resolver,
+                )?;
+            }
+        }
+    }
     Ok(state_index_generator)
 }
 
