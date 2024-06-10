@@ -281,7 +281,8 @@ impl MoveOS {
         let system_env = ctx.map.clone();
 
         let cost_table = self.load_cost_table(&root)?;
-        let gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
+        let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
+        gas_meter.charge_tx_size(ctx.tx_size)?;
 
         // Temporary behavior, will enable this in the future.
         // gas_meter.charge_io_write(ctx.tx_size)?;
