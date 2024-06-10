@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import toast from 'react-hot-toast'
 // import { RotateCcw } from 'lucide-react'
-
 import { Button } from '@/components/ui/button'
 import { Avatar } from '@/components/ui/avatar'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,7 +9,6 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { formatAddress } from '@/utils/format'
 import { useCurrentAccount } from '@roochnetwork/rooch-sdk-kit'
 // import { useNavigate } from 'react-router-dom'
-
 import Jazzicon, { jsNumberForAddress } from 'react-jazzicon'
 
 export const ProfileCard = () => {
@@ -82,7 +80,7 @@ export const ProfileCard = () => {
         <div className="absolute">
           <Avatar className="hidden md:inline">
             {account ? (
-              <Jazzicon diameter={80} seed={jsNumberForAddress(account.address)} />
+              <Jazzicon diameter={80} seed={jsNumberForAddress(`0x${account.address}`)} />
             ) : (
               <Jazzicon diameter={80} seed={10000000} />
             )}
