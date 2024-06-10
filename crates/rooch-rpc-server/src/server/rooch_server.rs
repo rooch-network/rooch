@@ -351,7 +351,7 @@ impl RoochAPIServer for RoochServer {
             }
         } else {
             self.rpc_service
-                .get_states(access_path.into())
+                .get_states(access_path)
                 .await?
                 .into_iter()
                 .map(|s| {
