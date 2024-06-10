@@ -151,6 +151,25 @@ export const AssetsCoin = () => {
   }
 
   const handleTransferCoin = async () => {
+    try {
+      if (!sessionKey || (await sessionKey.isExpired())) {
+        toast({
+          title: 'Session Key Expired',
+          description: 'The session key was expired, please authorize the latest one.',
+          action: <ToastAction altText="Close">Close</ToastAction>,
+        })
+        return
+      }
+    } catch (error) {
+      console.error('Failed to check session key expiration', error)
+      toast({
+        title: 'Error',
+        description: 'An error occurred while checking the session key expiration.',
+        action: <ToastAction altText="Close">Close</ToastAction>,
+      })
+      return
+    }
+
     if (recipient === '' || amount === '0' || !selectedCoin || error) {
       setError('Please enter a valid recipient and amount.')
       return
@@ -167,7 +186,7 @@ export const AssetsCoin = () => {
 
     try {
       await transferCoin({
-        account: sessionKey!,
+        account: sessionKey,
         recipient: recipient,
         amount: amountNumber,
         coinType: selectedCoin.coin_type,
