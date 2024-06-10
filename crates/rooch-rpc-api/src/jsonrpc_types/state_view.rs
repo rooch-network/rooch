@@ -14,7 +14,7 @@ use moveos_types::state::{
 };
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
-    moveos_std::object::{AnnotatedObject, ObjectID},
+    moveos_std::object::{AnnotatedObject, ObjectID, RawObject},
     state::{AnnotatedState, State, StateChangeSet, TableTypeInfo},
 };
 use rooch_types::indexer::state::{
@@ -465,6 +465,22 @@ impl ObjectStateView {
             } else {
                 None
             },
+            display_fields: None,
+        }
+    }
+
+    pub fn new_from_raw_object(object: RawObject) -> Self {
+        ObjectStateView {
+            id: object.id,
+            owner: object.owner.into(),
+            flag: object.flag,
+            object_type: object.value.struct_tag.into(),
+            state_root: object.state_root.into(),
+            size: object.size,
+            created_at: object.created_at,
+            updated_at: object.updated_at,
+            value: object.value.value.into(),
+            decoded_value: None,
             display_fields: None,
         }
     }

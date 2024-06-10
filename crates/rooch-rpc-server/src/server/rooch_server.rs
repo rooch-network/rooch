@@ -300,47 +300,67 @@ impl RoochAPIServer for RoochServer {
         let decode = state_option.decode;
         let show_display = state_option.show_display;
 
-        let states = self.rpc_service.get_annotated_states(access_path).await?;
+        let objects_view = if decode || show_display {
+            let states: Vec<Option<AnnotatedState>> =
+                self.rpc_service.get_annotated_states(access_path).await?;
 
-        let mut valid_display_field_views = if show_display {
-            let valid_states = states.iter().filter_map(|s| s.as_ref()).collect::<Vec<_>>();
-            self.get_display_fields_and_render(valid_states, true)
-                .await?
-        } else {
-            vec![]
-        };
+            let mut valid_display_field_views = if show_display {
+                let valid_states = states.iter().filter_map(|s| s.as_ref()).collect::<Vec<_>>();
+                self.get_display_fields_and_render(valid_states, true)
+                    .await?
+            } else {
+                vec![]
+            };
 
-        let objects_view = states
-            .into_iter()
-            .map(|option_annotated_s| {
-                option_annotated_s
-                    .map(|annotated_s| {
-                        let value = annotated_s.state.value.clone();
-                        annotated_s
-                            .into_annotated_object()
-                            .map(|obj| ObjectStateView::new(value, obj, decode))
-                    })
-                    .transpose()
-            })
-            .collect::<Result<Vec<_>>>()?;
-
-        let objects_view = if show_display {
-            valid_display_field_views.reverse();
-            objects_view
+            let objects_view = states
                 .into_iter()
-                .map(|option_state_view| {
-                    option_state_view.map(|sview| {
-                        debug_assert!(
-                            !valid_display_field_views.is_empty(),
-                            "display fields should not be empty"
-                        );
-                        let display_view = valid_display_field_views.pop().unwrap();
-                        sview.with_display_fields(display_view)
+                .map(|option_annotated_s| {
+                    option_annotated_s
+                        .map(|annotated_s| {
+                            let value = annotated_s
+                                .state
+                                .as_raw_object()
+                                .expect("should be object")
+                                .value
+                                .value;
+                            annotated_s
+                                .into_annotated_object()
+                                .map(|obj| ObjectStateView::new(value, obj, decode))
+                        })
+                        .transpose()
+                })
+                .collect::<Result<Vec<_>>>()?;
+
+            if show_display {
+                valid_display_field_views.reverse();
+                objects_view
+                    .into_iter()
+                    .map(|option_state_view| {
+                        option_state_view.map(|sview| {
+                            debug_assert!(
+                                !valid_display_field_views.is_empty(),
+                                "display fields should not be empty"
+                            );
+                            let display_view = valid_display_field_views.pop().unwrap();
+                            sview.with_display_fields(display_view)
+                        })
+                    })
+                    .collect()
+            } else {
+                objects_view
+            }
+        } else {
+            self.rpc_service
+                .get_states(access_path.into())
+                .await?
+                .into_iter()
+                .map(|s| {
+                    s.map(|s| {
+                        let obj = s.as_raw_object().expect("should be object");
+                        ObjectStateView::new_from_raw_object(obj)
                     })
                 })
                 .collect()
-        } else {
-            objects_view
         };
         Ok(objects_view)
     }
