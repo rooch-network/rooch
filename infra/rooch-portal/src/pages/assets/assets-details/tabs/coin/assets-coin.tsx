@@ -26,6 +26,7 @@ import CustomPagination from '@/components/custom-pagination.tsx'
 import { formatCoin } from '@/utils/format.ts'
 import { useToast } from '@/components/ui/use-toast'
 import { ToastAction } from '@/components/ui/toast'
+import { isValidBitcoinAddress } from '@/utils/addressValidation' // Import the validation function
 
 export const AssetsCoin = () => {
   const account = useCurrentAccount()
@@ -152,6 +153,11 @@ export const AssetsCoin = () => {
   const handleTransferCoin = async () => {
     if (recipient === '' || amount === '0' || !selectedCoin || error) {
       setError('Please enter a valid recipient and amount.')
+      return
+    }
+
+    if (!isValidBitcoinAddress(recipient)) {
+      setError('Invalid recipient address.')
       return
     }
 
