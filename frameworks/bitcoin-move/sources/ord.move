@@ -38,48 +38,48 @@ module bitcoin_move::ord {
     const COIN_VALUE: u64 = 100_000_000;
 
     /// Curse Inscription
-    const CURSE_DUPLICATE_FIELD: String = string::utf8(b"DuplicateField");
-    public fun curse_duplicate_field(): String {
+    const CURSE_DUPLICATE_FIELD: vector<u8> = b"DuplicateField";
+    public fun curse_duplicate_field(): vector<u8> {
         CURSE_DUPLICATE_FIELD
     }
 
-    const CURSE_INCOMPLETE_FIELD: String = string::utf8(b"IncompleteField");
-    public fun curse_incompleted_field(): String {
+    const CURSE_INCOMPLETE_FIELD: vector<u8> = b"IncompleteField";
+    public fun curse_incompleted_field(): vector<u8> {
         CURSE_INCOMPLETE_FIELD
     }
 
-    const CURSE_NOT_AT_OFFSET_ZERO: String = string::utf8(b"NotAtOffsetZero");
-    public fun curse_not_at_offset_zero(): String {
+    const CURSE_NOT_AT_OFFSET_ZERO: vector<u8> = b"NotAtOffsetZero";
+    public fun curse_not_at_offset_zero(): vector<u8> {
         CURSE_NOT_AT_OFFSET_ZERO
     }
 
-    const CURSE_NOT_IN_FIRST_INPUT: String = string::utf8(b"NotInFirstInput");
-    public fun curse_not_in_first_input(): String {
+    const CURSE_NOT_IN_FIRST_INPUT: vector<u8> = b"NotInFirstInput";
+    public fun curse_not_in_first_input(): vector<u8> {
         CURSE_NOT_IN_FIRST_INPUT
     }
 
-    const CURSE_POINTER: String = string::utf8(b"Pointer");
-    public fun curse_pointer(): String {
+    const CURSE_POINTER: vector<u8> = b"Pointer";
+    public fun curse_pointer(): vector<u8> {
         CURSE_POINTER
     }
 
-    const CURSE_PUSHNUM: String = string::utf8(b"Pushnum");
-    public fun curse_pushnum(): String {
+    const CURSE_PUSHNUM: vector<u8> = b"Pushnum";
+    public fun curse_pushnum(): vector<u8> {
         CURSE_PUSHNUM
     }
 
-    const CURSE_REINSCRIPTION: String = string::utf8(b"Reinscription");
-    public fun curse_reinscription(): String {
+    const CURSE_REINSCRIPTION: vector<u8> = b"Reinscription";
+    public fun curse_reinscription(): vector<u8> {
         CURSE_REINSCRIPTION
     }
 
-    const CURSE_STUTTER: String = string::utf8(b"Stutter");
-    public fun curse_stutter(): String {
+    const CURSE_STUTTER: vector<u8> = b"Stutter";
+    public fun curse_stutter(): vector<u8> {
         CURSE_STUTTER
     }
 
-    const CURSE_UNRECOGNIZED_EVEN_FIELD: String = string::utf8(b"UnrecognizedEvenField");
-    public fun curse_unrecognized_even_field(): String {
+    const CURSE_UNRECOGNIZED_EVEN_FIELD: vector<u8> = b"UnrecognizedEvenField";
+    public fun curse_unrecognized_even_field(): vector<u8> {
         CURSE_UNRECOGNIZED_EVEN_FIELD
     }
 
@@ -725,7 +725,7 @@ module bitcoin_move::ord {
         }
     }
 
-    fun handle_curse_inscription(inscription: &Envelope<InscriptionRecord>) : option::Option<String> {
+    fun handle_curse_inscription(inscription: &Envelope<InscriptionRecord>) : option::Option<vector<u8>> {
         let curse = if(inscription.payload.unrecognized_even_field) {
             option::some(CURSE_UNRECOGNIZED_EVEN_FIELD)
         } else if(inscription.payload.duplicate_field) {

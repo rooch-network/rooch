@@ -495,7 +495,7 @@ module rooch_nursery::bitseed {
 
         let tx = option::destroy_some(tx_option);
         let input = types::tx_input(&tx);
-        let index = ord::input(inscription);
+        let index = ord::index(inscription);
         let txin = vector::borrow(input, (index as u64));
         let outpoint = types::txin_previous_output(txin);
 
