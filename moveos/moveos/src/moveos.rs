@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use crate::gas::table::{
-    get_gas_schedule_entries, initial_cost_schedule, CostTable, MoveOSGasMeter,
+    get_gas_schedule_entries, initial_cost_schedule, ClassifiedGasMeter, CostTable, MoveOSGasMeter,
 };
 use crate::vm::moveos_vm::{MoveOSSession, MoveOSVM};
 use anyhow::{bail, Result};
@@ -282,7 +282,7 @@ impl MoveOS {
 
         let cost_table = self.load_cost_table(&root)?;
         let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
-        gas_meter.charge_tx_size(ctx.tx_size)?;
+        gas_meter.charge_io_write(ctx.tx_size)?;
 
         // Temporary behavior, will enable this in the future.
         // gas_meter.charge_io_write(ctx.tx_size)?;

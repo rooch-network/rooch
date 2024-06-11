@@ -43,10 +43,10 @@ pub const STACK_SIZE_TIER_DEFAULT: u64 = 1;
 
 pub static ZERO_COST_SCHEDULE: Lazy<CostTable> = Lazy::new(zero_cost_schedule);
 
-#[derive(Clone, Debug, Default, Serialize, PartialEq, Eq, Deserialize)]
+#[derive(Clone, Debug, Serialize, PartialEq, Eq, Deserialize)]
 pub struct StorageGasParameter {
     pub io_read_price: u64,
-    pub storage_fee_per_transaction_byte: u64,
+    pub storage_fee_per_transaction_byte: TxGasParameter,
     pub storage_fee_per_event_byte: u64,
     pub storage_fee_per_op_new_byte: u64,
     pub storage_fee_per_op_modify_byte: u64,
@@ -106,7 +106,7 @@ impl StorageGasParameter {
     pub fn zeros() -> Self {
         Self {
             io_read_price: 0,
-            storage_fee_per_transaction_byte: 0,
+            storage_fee_per_transaction_byte: TxGasParameter::zeros(),
             storage_fee_per_event_byte: 0,
             storage_fee_per_op_new_byte: 0,
             storage_fee_per_op_modify_byte: 0,
@@ -343,7 +343,6 @@ pub struct VMGasParameters {
     pub instruction_gas_parameter: InstructionParameter,
     pub storage_gas_parameter: StorageGasParameter,
     pub abstract_value_parameter: AbstractValueSizeGasParameter,
-    pub tx_gas_parameter: TxGasParameter,
 }
 
 impl VMGasParameters {
@@ -352,7 +351,6 @@ impl VMGasParameters {
             instruction_gas_parameter: InstructionParameter::initial(),
             storage_gas_parameter: StorageGasParameter::initial(),
             abstract_value_parameter: AbstractValueSizeGasParameter::initial(),
-            tx_gas_parameter: TxGasParameter::initial(),
         }
     }
 
@@ -365,13 +363,10 @@ impl VMGasParameters {
         let abstract_value_parameter =
             AbstractValueSizeGasParameter::from_on_chain_gas_schedule(gas_schedule)
                 .expect("restore AbstractValueSizeGasParameter from entries failed");
-        let tx_gas_parameter = TxGasParameter::from_on_chain_gas_schedule(gas_schedule)
-            .expect("restore TxGasParameter from entries failed");
         Some(Self {
             instruction_gas_parameter,
             storage_gas_parameter,
             abstract_value_parameter,
-            tx_gas_parameter,
         })
     }
 
@@ -380,7 +375,6 @@ impl VMGasParameters {
         gas_schedule.extend(self.instruction_gas_parameter.to_on_chain_gas_schedule());
         gas_schedule.extend(self.storage_gas_parameter.to_on_chain_gas_schedule());
         gas_schedule.extend(self.abstract_value_parameter.to_on_chain_gas_schedule());
-        gas_schedule.extend(self.tx_gas_parameter.to_on_chain_gas_schedule());
         gas_schedule
     }
 }
@@ -393,7 +387,6 @@ pub struct CostTable {
     pub storage_gas_parameter: StorageGasParameter,
     pub instruction_gas_parameter: InstructionParameter,
     pub abstract_value_parameter: AbstractValueSizeGasParameter,
-    pub tx_gas_parameter: TxGasParameter,
 }
 
 impl CostTable {
@@ -492,30 +485,23 @@ pub fn initial_cost_schedule(gas_entries: Option<BTreeMap<String, u64>>) -> Cost
     .into_iter()
     .collect();
 
-    let (
-        storage_gas_parameter,
-        instruction_gas_parameter,
-        abstract_value_gas_parameter,
-        tx_gas_parameter,
-    ) = if let Some(entries) = gas_entries {
-        (
-            StorageGasParameter::from_on_chain_gas_schedule(&entries)
-                .expect("restore StorageGasParameter from entries failed"),
-            InstructionParameter::from_on_chain_gas_schedule(&entries)
-                .expect("restore InstructionParameter from entries failed"),
-            AbstractValueSizeGasParameter::from_on_chain_gas_schedule(&entries)
-                .expect("restore AbstractValueSizeGasParameter from entries failed"),
-            TxGasParameter::from_on_chain_gas_schedule(&entries)
-                .expect("restore AbstractValueSizeGasParameter from entries failed"),
-        )
-    } else {
-        (
-            StorageGasParameter::initial(),
-            InstructionParameter::initial(),
-            AbstractValueSizeGasParameter::initial(),
-            TxGasParameter::initial(),
-        )
-    };
+    let (storage_gas_parameter, instruction_gas_parameter, abstract_value_gas_parameter) =
+        if let Some(entries) = gas_entries {
+            (
+                StorageGasParameter::from_on_chain_gas_schedule(&entries)
+                    .expect("restore StorageGasParameter from entries failed"),
+                InstructionParameter::from_on_chain_gas_schedule(&entries)
+                    .expect("restore InstructionParameter from entries failed"),
+                AbstractValueSizeGasParameter::from_on_chain_gas_schedule(&entries)
+                    .expect("restore AbstractValueSizeGasParameter from entries failed"),
+            )
+        } else {
+            (
+                StorageGasParameter::initial(),
+                InstructionParameter::initial(),
+                AbstractValueSizeGasParameter::initial(),
+            )
+        };
 
     CostTable {
         instruction_tiers,
@@ -524,7 +510,6 @@ pub fn initial_cost_schedule(gas_entries: Option<BTreeMap<String, u64>>) -> Cost
         storage_gas_parameter,
         instruction_gas_parameter,
         abstract_value_parameter: abstract_value_gas_parameter,
-        tx_gas_parameter,
     }
 }
 
@@ -535,10 +520,9 @@ pub fn zero_cost_schedule() -> CostTable {
         instruction_tiers: zero_tier.clone(),
         stack_size_tiers: zero_tier.clone(),
         stack_height_tiers: zero_tier,
-        storage_gas_parameter: StorageGasParameter::default(),
+        storage_gas_parameter: StorageGasParameter::zeros(),
         instruction_gas_parameter: InstructionParameter::zeros(),
         abstract_value_parameter: AbstractValueSizeGasParameter::zeros(),
-        tx_gas_parameter: TxGasParameter::zeros(),
     }
 }
 
@@ -753,33 +737,6 @@ impl MoveOSGasMeter {
     pub fn set_metering(&mut self, enabled: bool) {
         self.charge = enabled;
     }
-
-    pub fn charge_tx_size(&mut self, tx_size: u64) -> PartialVMResult<()> {
-        let tx_gas_parameter = self.cost_table.tx_gas_parameter.clone();
-        let tx_gas_factor: u64 = {
-            if tx_size > 0 && tx_size < tx_gas_parameter.tx_size_leve_1.into() {
-                tx_gas_parameter.tx_size_gas_parameter_level_1.into()
-            } else if tx_size >= tx_gas_parameter.tx_size_leve_1.into()
-                && tx_size < tx_gas_parameter.tx_size_leve_2.into()
-            {
-                tx_gas_parameter.tx_size_gas_parameter_level_2.into()
-            } else if tx_size >= tx_gas_parameter.tx_size_leve_2.into()
-                && tx_size < tx_gas_parameter.tx_size_leve_3.into()
-            {
-                tx_gas_parameter.tx_size_gas_parameter_level_3.into()
-            } else {
-                tx_gas_parameter.tx_size_gas_parameter_level_4.into()
-            }
-        };
-
-        match tx_size.checked_mul(tx_gas_factor) {
-            None => {
-                self.gas_left = InternalGas::from(0);
-                Err(PartialVMError::new(StatusCode::OUT_OF_GAS))
-            }
-            Some(final_gas) => self.charge_v1(InternalGas::from(final_gas)),
-        }
-    }
 }
 
 pub trait ClassifiedGasMeter {
@@ -808,19 +765,40 @@ impl ClassifiedGasMeter for MoveOSGasMeter {
 
     // fn charge_io_read(&mut self) {}
 
-    fn charge_io_write(&mut self, data_size: u64) -> PartialVMResult<()> {
+    fn charge_io_write(&mut self, tx_size: u64) -> PartialVMResult<()> {
         if !self.charge {
             return Ok(());
         }
 
-        let fee = self
+        let tx_gas_parameter = self
             .cost_table
             .storage_gas_parameter
             .storage_fee_per_transaction_byte
-            * data_size;
-        let new_value = self.storage_gas_used.borrow().add(InternalGas::from(fee));
-        *self.storage_gas_used.borrow_mut() = new_value;
-        self.deduct_gas(InternalGas::from(fee))
+            .clone();
+
+        let tx_gas_factor: u64 = {
+            if tx_size > 0 && tx_size < tx_gas_parameter.tx_size_leve_1.into() {
+                tx_gas_parameter.tx_size_gas_parameter_level_1.into()
+            } else if tx_size >= tx_gas_parameter.tx_size_leve_1.into()
+                && tx_size < tx_gas_parameter.tx_size_leve_2.into()
+            {
+                tx_gas_parameter.tx_size_gas_parameter_level_2.into()
+            } else if tx_size >= tx_gas_parameter.tx_size_leve_2.into()
+                && tx_size < tx_gas_parameter.tx_size_leve_3.into()
+            {
+                tx_gas_parameter.tx_size_gas_parameter_level_3.into()
+            } else {
+                tx_gas_parameter.tx_size_gas_parameter_level_4.into()
+            }
+        };
+        
+        match tx_size.checked_mul(tx_gas_factor) {
+            None => {
+                self.gas_left = InternalGas::from(0);
+                Err(PartialVMError::new(StatusCode::OUT_OF_GAS))
+            }
+            Some(final_gas) => self.charge_v1(InternalGas::from(final_gas)),
+        }
     }
     //TODO cleanup
     // fn charge_event(&mut self, events: &[TransactionEvent]) -> PartialVMResult<()> {
