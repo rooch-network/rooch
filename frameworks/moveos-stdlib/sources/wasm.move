@@ -260,4 +260,19 @@ module moveos_std::wasm {
         // 3. Release the WASM VM instance (required step)
         release_wasm_instance(wasm_instance);
     }
+
+    #[test]
+    fun test_call_indirect() {
+        // Enable all features for testing
+        features::init_and_enable_all_features_for_test();
+
+        // Define WASM code with a CallIndirect instruction
+        let wasm_code: vector<u8> = b"(module (type $t0 (func (param i32) (result i32))) (table 1 1 funcref) (elem (i32.const 0) $f) (func $f (type $t0) (param $p i32) (result i32) local.get $p) (func (export \"call_indirect_test\") (param i32) (result i32) local.get 0 i32.const 0 call_indirect (type $t0)))";
+
+        // 1. Create WASM VM instance (required step)
+        let wasm_instance_option = create_wasm_instance_option(wasm_code);
+        assert!(option::is_none(&wasm_instance_option), 1);
+        option::destroy_none(wasm_instance_option);
+    }
+
 }
