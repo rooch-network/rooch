@@ -37,8 +37,9 @@ pub type StructTagView = StrView<StructTag>;
 pub type FunctionIdView = StrView<FunctionId>;
 pub type AccessPathView = StrView<AccessPath>;
 pub type IdentifierView = StrView<Identifier>;
+pub type ObjectIDView = StrView<ObjectID>;
 
-impl_str_view_for! {TypeTag StructTag FunctionId AccessPath Identifier}
+impl_str_view_for! {TypeTag StructTag FunctionId AccessPath Identifier ObjectID}
 
 pub type AccountAddressView = StrView<AccountAddress>;
 
@@ -60,6 +61,38 @@ impl FromStr for AccountAddressView {
 
 impl From<AccountAddressView> for AccountAddress {
     fn from(value: AccountAddressView) -> Self {
+        value.0
+    }
+}
+
+pub type ObjectIDVecView = StrView<Vec<ObjectID>>;
+
+impl std::fmt::Display for ObjectIDVecView {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        //The ObjectID should display fully hex string with `0x` prefix
+        let concated_str = self
+            .0
+            .iter()
+            .map(|id| format!("{:?}", id))
+            .collect::<Vec<_>>()
+            .join(",");
+        write!(f, "{:?}", concated_str)
+    }
+}
+
+impl FromStr for ObjectIDVecView {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let ids = s
+            .split(',')
+            .map(ObjectID::from_str)
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(StrView(ids))
+    }
+}
+
+impl From<ObjectIDVecView> for Vec<ObjectID> {
+    fn from(value: ObjectIDVecView) -> Self {
         value.0
     }
 }

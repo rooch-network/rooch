@@ -2,15 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{
-    QueryIndexerEventsMessage, QueryIndexerFieldStatesMessage, QueryIndexerObjectStatesMessage,
-    QueryIndexerTransactionsMessage,
+    QueryIndexerEventsMessage, QueryIndexerObjectStatesMessage, QueryIndexerTransactionsMessage,
 };
 use crate::indexer_reader::IndexerReader;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use rooch_types::indexer::event::IndexerEvent;
-use rooch_types::indexer::state::{IndexerFieldState, IndexerObjectState};
+use rooch_types::indexer::state::IndexerObjectState;
 use rooch_types::indexer::transaction::IndexerTransaction;
 
 pub struct IndexerReaderActor {
@@ -79,24 +78,5 @@ impl Handler<QueryIndexerObjectStatesMessage> for IndexerReaderActor {
         self.indexer_reader
             .query_object_states_with_filter(filter, cursor, limit, descending_order)
             .map_err(|e| anyhow!(format!("Failed to query indexer global states: {:?}", e)))
-    }
-}
-
-#[async_trait]
-impl Handler<QueryIndexerFieldStatesMessage> for IndexerReaderActor {
-    async fn handle(
-        &mut self,
-        msg: QueryIndexerFieldStatesMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<Vec<IndexerFieldState>> {
-        let QueryIndexerFieldStatesMessage {
-            filter,
-            cursor,
-            limit,
-            descending_order,
-        } = msg;
-        self.indexer_reader
-            .query_field_states_with_filter(filter, cursor, limit, descending_order)
-            .map_err(|e| anyhow!(format!("Failed to query indexer table states: {:?}", e)))
     }
 }
