@@ -16,6 +16,7 @@ use move_cli::{
     Move,
 };
 use rooch_types::error::{RoochError, RoochResult};
+use serde_json::json;
 
 use crate::commands::move_cli::commands::explain::Explain;
 use crate::CommandAction;
@@ -54,23 +55,25 @@ pub enum MoveCommand {
 impl CommandAction<String> for MoveCli {
     async fn execute(self) -> RoochResult<String> {
         let move_args = self.move_args;
+        let json_result = json!({ "Result": "Success" });
+        let move_success = serde_json::to_string_pretty(&json_result).unwrap();
         match self.cmd {
             MoveCommand::Build(c) => c
                 .execute(move_args.package_path, move_args.build_config)
                 .await
-                .map(|_| "Success".to_owned())
+                .map(|_| move_success)
                 .map_err(RoochError::from),
             MoveCommand::Coverage(c) => c
                 .execute(move_args.package_path, move_args.build_config)
-                .map(|_| "Success".to_owned())
+                .map(|_| move_success)
                 .map_err(RoochError::from),
             MoveCommand::Disassemble(c) => c
                 .execute(move_args.package_path, move_args.build_config)
-                .map(|_| "Success".to_owned())
+                .map(|_| move_success)
                 .map_err(RoochError::from),
             MoveCommand::Docgen(c) => c
                 .execute(move_args.package_path, move_args.build_config)
-                .map(|_| "Success".to_owned())
+                .map(|_| move_success)
                 .map_err(RoochError::from),
             MoveCommand::Errmap(mut c) => {
                 match c.error_prefix {
@@ -93,26 +96,26 @@ impl CommandAction<String> for MoveCli {
                 }
 
                 c.execute(move_args.package_path, move_args.build_config)
-                    .map(|_| "Success".to_owned())
+                    .map(|_| move_success)
                     .map_err(RoochError::from)
             }
             MoveCommand::Info(c) => c
                 .execute(move_args.package_path, move_args.build_config)
-                .map(|_| "Success".to_owned())
+                .map(|_| move_success)
                 .map_err(RoochError::from),
             MoveCommand::New(c) => c
                 .execute(move_args.package_path)
                 .await
-                .map(|_| "Success".to_owned())
+                .map(|_| move_success)
                 .map_err(RoochError::from),
             MoveCommand::Prove(c) => c
                 .execute(move_args.package_path, move_args.build_config)
-                .map(|_| "Success".to_owned())
+                .map(|_| move_success)
                 .map_err(RoochError::from),
             MoveCommand::Test(c) => c
                 .execute(move_args.package_path, move_args.build_config)
                 .await
-                .map(|_| "Success".to_owned())
+                .map(|_| move_success)
                 .map_err(RoochError::from),
             MoveCommand::Publish(c) => c.execute_serialized().await,
             MoveCommand::Run(c) => c.execute_serialized().await,
@@ -120,12 +123,12 @@ impl CommandAction<String> for MoveCli {
             MoveCommand::IntegrationTest(c) => c
                 .execute(move_args)
                 .await
-                .map(|_| "Success".to_owned())
+                .map(|_| move_success)
                 .map_err(RoochError::from),
             MoveCommand::Explain(c) => c
                 .execute()
                 .await
-                .map(|_| "Success".to_owned())
+                .map(|_| move_success)
                 .map_err(RoochError::from),
             MoveCommand::FrameworkUpgrade(c) => c.execute_serialized().await,
         }
