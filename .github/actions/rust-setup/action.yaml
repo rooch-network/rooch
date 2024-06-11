@@ -14,4 +14,4 @@ runs:
     - name: install protoc and related tools
       working-directory: ./moveos
       shell: bash
-      run: scripts/dev_setup.sh -b -r
+      run: ./scripts/dev_setup.sh -b -r
