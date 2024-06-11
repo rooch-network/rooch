@@ -43,14 +43,14 @@ pub const STACK_SIZE_TIER_DEFAULT: u64 = 1;
 
 pub static ZERO_COST_SCHEDULE: Lazy<CostTable> = Lazy::new(zero_cost_schedule);
 
-#[derive(Clone, Debug, Default, Serialize, PartialEq, Eq, Deserialize)]
+#[derive(Clone, Debug, Serialize, PartialEq, Eq, Deserialize)]
 pub struct StorageGasParameter {
-    pub io_read_price: u64,
-    pub storage_fee_per_transaction_byte: u64,
-    pub storage_fee_per_event_byte: u64,
-    pub storage_fee_per_op_new_byte: u64,
-    pub storage_fee_per_op_modify_byte: u64,
-    pub storage_fee_per_op_delete: u64,
+    pub io_read_price: InternalGas,
+    pub storage_fee_per_transaction_byte: InternalGas,
+    pub storage_fee_per_event_byte: InternalGas,
+    pub storage_fee_per_op_new_byte: InternalGas,
+    pub storage_fee_per_op_modify_byte: InternalGas,
+    pub storage_fee_per_op_delete: InternalGas,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq, Eq, Deserialize)]
@@ -105,12 +105,12 @@ impl AbstractValueSizeGasParameter {
 impl StorageGasParameter {
     pub fn zeros() -> Self {
         Self {
-            io_read_price: 0,
-            storage_fee_per_transaction_byte: 0,
-            storage_fee_per_event_byte: 0,
-            storage_fee_per_op_new_byte: 0,
-            storage_fee_per_op_modify_byte: 0,
-            storage_fee_per_op_delete: 0,
+            io_read_price: 0.into(),
+            storage_fee_per_transaction_byte: 0.into(),
+            storage_fee_per_event_byte: 0.into(),
+            storage_fee_per_op_new_byte: 0.into(),
+            storage_fee_per_op_modify_byte: 0.into(),
+            storage_fee_per_op_delete: 0.into(),
         }
     }
 }
@@ -493,7 +493,7 @@ pub fn zero_cost_schedule() -> CostTable {
         instruction_tiers: zero_tier.clone(),
         stack_size_tiers: zero_tier.clone(),
         stack_height_tiers: zero_tier,
-        storage_gas_parameter: StorageGasParameter::default(),
+        storage_gas_parameter: StorageGasParameter::zeros(),
         instruction_gas_parameter: InstructionParameter::zeros(),
         abstract_value_parameter: AbstractValueSizeGasParameter::zeros(),
     }
@@ -738,19 +738,24 @@ impl ClassifiedGasMeter for MoveOSGasMeter {
 
     // fn charge_io_read(&mut self) {}
 
-    fn charge_io_write(&mut self, data_size: u64) -> PartialVMResult<()> {
+    fn charge_io_write(&mut self, tx_size: u64) -> PartialVMResult<()> {
         if !self.charge {
             return Ok(());
         }
 
-        let fee = self
+        let tx_gas_parameter: u64 = self
             .cost_table
             .storage_gas_parameter
             .storage_fee_per_transaction_byte
-            * data_size;
-        let new_value = self.storage_gas_used.borrow().add(InternalGas::from(fee));
-        *self.storage_gas_used.borrow_mut() = new_value;
-        self.deduct_gas(InternalGas::from(fee))
+            .into();
+
+        match tx_size.checked_mul(tx_gas_parameter) {
+            None => {
+                self.gas_left = InternalGas::from(0);
+                Err(PartialVMError::new(StatusCode::OUT_OF_GAS))
+            }
+            Some(final_gas) => self.charge_v1(InternalGas::from(final_gas)),
+        }
     }
     //TODO cleanup
     // fn charge_event(&mut self, events: &[TransactionEvent]) -> PartialVMResult<()> {
