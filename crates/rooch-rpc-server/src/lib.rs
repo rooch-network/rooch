@@ -126,7 +126,7 @@ impl RpcModuleBuilder {
 
 // Start json-rpc server
 pub async fn start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<ServerHandle> {
-    let active_env = server_opt.get_active_env();
+    let chain_name = opt.chain_id().chain_name();
     match run_start_server(opt, server_opt).await {
         Ok(server_handle) => Ok(server_handle),
         Err(e) => match e.downcast::<GenesisError>() {
@@ -134,7 +134,7 @@ pub async fn start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Server
                 log::error!(
                     "{:?}, please clean your data dir. `rooch server clean -n {}` ",
                     e,
-                    active_env
+                    chain_name
                 );
                 std::process::exit(R_EXIT_CODE_NEED_HELP);
             }
@@ -143,7 +143,7 @@ pub async fn start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Server
                     log::error!(
                         "{:?}, please clean your data dir. `rooch server clean -n {}` ",
                         e,
-                        active_env
+                        chain_name
                     );
                     std::process::exit(R_EXIT_CODE_NEED_HELP);
                 }
