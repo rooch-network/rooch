@@ -119,9 +119,7 @@ module rooch_examples::wasm_execution {
       let attributes_output = x"a26668656967687418c56269646d68656c6c6f5f62697473656565";
 
       let buffer = pack_inscribe_generate_args(deploy_args, seed, user_input);
-      debug::print(&string::utf8(b"buffer length:"));
-      debug::print(&vector::length(&buffer));
-      std::debug::print(&string::utf8(b"cbor buffer:"));
+      std::debug::print(&string::utf8(b"buffer:"));
       std::debug::print(&buffer);
 
       let arg_with_length = wasm::add_length_with_data(buffer);
@@ -161,9 +159,7 @@ module rooch_examples::wasm_execution {
       let attributes_output = x"a26668656967687418c56269646d68656c6c6f5f62697473656564";
 
       let buffer = pack_inscribe_generate_args(deploy_args, seed, user_input);
-      debug::print(&string::utf8(b"buffer length:"));
-      debug::print(&vector::length(&buffer));
-      std::debug::print(&string::utf8(b"cbor buffer:"));
+      std::debug::print(&string::utf8(b"buffer:"));
       std::debug::print(&buffer);
 
       let arg_with_length = wasm::add_length_with_data(buffer);
