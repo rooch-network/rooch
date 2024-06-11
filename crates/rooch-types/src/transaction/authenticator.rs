@@ -121,6 +121,13 @@ impl Authenticator {
         }
     }
 
+    pub fn sign(kp: &RoochKeyPair, tx_data: &RoochTransactionData) -> Self {
+        match kp.public().scheme() {
+            SignatureScheme::Ed25519 => Self::rooch(kp, tx_data),
+            SignatureScheme::Secp256k1 => Self::bitcoin(kp, tx_data),
+        }
+    }
+
     /// Create a rooch authenticator for session key
     pub fn rooch(kp: &RoochKeyPair, tx_data: &RoochTransactionData) -> Self {
         debug_assert_eq!(kp.public().scheme(), SignatureScheme::Ed25519);

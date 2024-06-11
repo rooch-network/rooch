@@ -7,8 +7,6 @@ use bitcoin::hashes::Hash;
 use bitcoin::hex::FromHex;
 use bitcoincore_rpc_json::bitcoin;
 use bitcoincore_rpc_json::bitcoin::Block;
-use rooch_key::keystore::account_keystore::AccountKeystore;
-use rooch_key::keystore::memory_keystore::InMemKeystore;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_store::RoochStore;
 use rooch_test_transaction_builder::TestTransactionBuilder;
@@ -30,21 +28,16 @@ pub fn gen_sequencer(keypair: RoochKeyPair, rooch_store: RoochStore) -> Result<S
 
 pub fn create_publish_transaction(
     test_transaction_builder: &TestTransactionBuilder,
-    keystore: &InMemKeystore,
 ) -> Result<RoochTransaction> {
     let publish_action = test_transaction_builder.new_publish_examples(
         EXAMPLE_SIMPLE_BLOG_PACKAGE_NAME,
         Some(EXAMPLE_SIMPLE_BLOG_NAMED_ADDRESS.to_string()),
     )?;
-    let tx_data = test_transaction_builder.build(publish_action);
-    let rooch_tx =
-        keystore.sign_transaction(&test_transaction_builder.sender.into(), tx_data, None)?;
-    Ok(rooch_tx)
+    test_transaction_builder.build_and_sign(publish_action)
 }
 
 pub fn create_l2_tx(
     test_transaction_builder: &mut TestTransactionBuilder,
-    keystore: &InMemKeystore,
     seq_num: u64,
     tx_type: TxType,
 ) -> Result<RoochTransaction> {
@@ -56,10 +49,7 @@ pub fn create_l2_tx(
         _ => panic!("Unsupported tx type"),
     };
 
-    let tx_data = test_transaction_builder.build(action);
-    let rooch_tx =
-        keystore.sign_transaction(&test_transaction_builder.sender.into(), tx_data, None)?;
-    Ok(rooch_tx)
+    test_transaction_builder.build_and_sign(action)
 }
 
 pub fn find_block_height(dir: String) -> Result<Vec<u64>> {

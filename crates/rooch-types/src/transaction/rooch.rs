@@ -4,6 +4,7 @@
 use super::RawTransaction;
 use super::{authenticator::Authenticator, AuthenticatorInfo};
 use crate::address::RoochAddress;
+use crate::crypto::RoochKeyPair;
 use crate::rooch_network::BuiltinChainID;
 use anyhow::Result;
 use moveos_types::h256::H256;
@@ -62,6 +63,11 @@ impl RoochTransactionData {
 
     pub fn tx_hash(&self) -> H256 {
         moveos_types::h256::sha3_256_of(self.encode().as_slice())
+    }
+
+    pub fn sign(&self, kp: &RoochKeyPair) -> RoochTransaction {
+        let auth = Authenticator::sign(kp, self);
+        RoochTransaction::new(self.clone(), auth)
     }
 }
 
@@ -150,7 +156,7 @@ impl RoochTransaction {
 
     //TODO use protest Arbitrary to generate mock data
     pub fn mock() -> RoochTransaction {
-        use crate::{address::RoochSupportedAddress, crypto::RoochKeyPair};
+        use crate::address::RoochSupportedAddress;
         use move_core_types::{
             account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
         };

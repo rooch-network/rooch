@@ -11,7 +11,7 @@ use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::moveos_std::gas_schedule::GasScheduleConfig;
 use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
 use moveos_types::moveos_std::tx_context::TxContext;
-use moveos_types::state_resolver::RootObjectResolver;
+use moveos_types::state_resolver::{RootObjectResolver, StateReaderExt};
 use moveos_types::transaction::{FunctionCall, VerifiedMoveOSTransaction};
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
@@ -119,8 +119,7 @@ impl RustBindingTest {
     }
 
     pub fn execute_l1_block(&mut self, l1_block: L1BlockWithBody) -> Result<()> {
-        //TODO get the sequence_number from state
-        let sequence_number = 0;
+        let sequence_number = self.get_account_sequence_number(self.sequencer)?;
         let ctx = self.create_bt_blk_tx_ctx(sequence_number, l1_block.clone());
         let verified_tx: VerifiedMoveOSTransaction =
             self.executor
@@ -174,6 +173,14 @@ impl RustBindingTest {
         self.reader_executor.refresh_state(root.clone(), false)?;
         self.root = root;
         Ok(result)
+    }
+
+    pub fn get_account_sequence_number(&self, address: AccountAddress) -> Result<u64> {
+        Ok(self
+            .resolver()
+            .get_account(address)?
+            .map(|account| account.value.sequence_number)
+            .unwrap_or(0))
     }
 }
 

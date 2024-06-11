@@ -3,7 +3,7 @@
 
 use crate::moveos_std::account::Account;
 use crate::moveos_std::module_store::Package;
-use crate::moveos_std::object::{ObjectID, RawObject, RootObjectEntity};
+use crate::moveos_std::object::{ObjectEntity, ObjectID, RawObject, RootObjectEntity};
 use crate::state::{AnnotatedKeyState, KeyState};
 use crate::{
     access_path::AccessPath,
@@ -306,3 +306,14 @@ pub trait AnnotatedStateReader: StateReader + MoveResolver {
 }
 
 impl<T> AnnotatedStateReader for T where T: StateReader + MoveResolver {}
+
+pub trait StateReaderExt: StateReader {
+    fn get_account(&self, address: AccountAddress) -> Result<Option<ObjectEntity<Account>>> {
+        let account_object_id = Account::account_object_id(address);
+        self.get_object(&account_object_id)?
+            .map(|obj| obj.into_object::<Account>())
+            .transpose()
+    }
+}
+
+impl<T> StateReaderExt for T where T: StateReader {}
