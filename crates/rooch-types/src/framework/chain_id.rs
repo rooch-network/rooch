@@ -3,7 +3,7 @@
 
 use std::str::FromStr;
 
-use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
+use crate::{addresses::ROOCH_FRAMEWORK_ADDRESS, rooch_network::BuiltinChainID};
 use anyhow::Result;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use moveos_types::{
@@ -36,6 +36,14 @@ impl ChainID {
 
     pub fn chain_id_object_id() -> ObjectID {
         object::named_object_id(&Self::struct_tag())
+    }
+
+    pub fn is_builtin(&self) -> bool {
+        self.to_builtin().is_some()
+    }
+
+    pub fn to_builtin(&self) -> Option<BuiltinChainID> {
+        BuiltinChainID::try_from(self.id).ok()
     }
 }
 

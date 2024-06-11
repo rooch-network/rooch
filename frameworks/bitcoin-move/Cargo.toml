@@ -1,9 +1,9 @@
 [package]
 #Bitcoin Move framework
 name = "bitcoin-move"
-version = "0.5.0"
 
 # Workspace inherited keys
+version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
