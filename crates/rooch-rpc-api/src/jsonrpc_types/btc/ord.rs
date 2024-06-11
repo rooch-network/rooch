@@ -4,7 +4,7 @@
 use crate::jsonrpc_types::address::BitcoinAddressView;
 use crate::jsonrpc_types::btc::transaction::{hex_to_txid, TxidView};
 use crate::jsonrpc_types::{
-    BytesView, H256View, MoveStringView, RoochAddressView, StrView, StructTagView,
+    BytesView, H256View, MoveStringView, ObjectIDVecView, RoochAddressView, StrView, StructTagView,
 };
 use anyhow::Result;
 use bitcoin::hashes::Hash;
@@ -91,7 +91,7 @@ pub struct InscriptionView {
     pub content_type: Option<MoveStringView>,
     pub metadata: BytesView,
     pub metaprotocol: Option<MoveStringView>,
-    pub parent: Option<ObjectID>,
+    pub parents: ObjectIDVecView,
     pub pointer: Option<u64>,
 }
 
@@ -107,7 +107,7 @@ impl From<Inscription> for InscriptionView {
             content_type: Option::<MoveString>::from(inscription.content_type).map(StrView),
             metadata: StrView(inscription.metadata),
             metaprotocol: Option::<MoveString>::from(inscription.metaprotocol).map(StrView),
-            parent: Option::<ObjectID>::from(inscription.parent),
+            parents: inscription.parents.into(),
             pointer: Option::<u64>::from(inscription.pointer),
         }
     }

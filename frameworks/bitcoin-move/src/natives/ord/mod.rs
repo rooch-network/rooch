@@ -8,6 +8,7 @@ pub mod inscription;
 #[allow(dead_code)]
 pub mod inscription_id;
 pub mod media;
+pub mod tag;
 #[cfg(test)]
 #[allow(dead_code)]
 pub(crate) mod test;
@@ -25,13 +26,13 @@ use move_vm_types::{
 };
 use moveos_stdlib::natives::helpers::{make_module_natives, make_native};
 use moveos_types::state::{MoveState, MoveType};
-use rooch_types::bitcoin::ord::InscriptionRecord;
+use rooch_types::bitcoin::ord::{Envelope, InscriptionRecord};
 use rooch_types::bitcoin::types::Witness;
 use serde::{Deserialize, Serialize};
 use smallvec::smallvec;
 use std::collections::VecDeque;
 use tracing::error;
-use {envelope::ParsedEnvelope, envelope::RawEnvelope, inscription::Inscription};
+use {envelope::ParsedEnvelope, envelope::RawEnvelope};
 
 #[derive(Clone, Debug, Serialize, PartialEq, Eq, Deserialize)]
 pub struct FromWitnessGasParameters {
@@ -78,17 +79,13 @@ pub(crate) fn native_from_witness(
     let bitcoin_witness = bitcoin::Witness::from_slice(witness.witness.as_slice());
     let inscriptions = from_witness(&bitcoin_witness);
     let inscription_vm_type = context
-        // .load_type(&rooch_types::bitcoin::ord::InscriptionRecord::type_tag())
-        .load_type(&rooch_types::bitcoin::ord::Envelope::<InscriptionRecord>::type_tag())
+        .load_type(&Envelope::<InscriptionRecord>::type_tag())
         .map_err(|e| e.to_partial())?;
     let val = Vector::pack(
         &inscription_vm_type,
         inscriptions
             .into_iter()
-            .map(|i| {
-                Into::<rooch_types::bitcoin::ord::Envelope<InscriptionRecord>>::into(i)
-                    .to_runtime_value()
-            })
+            .map(|i| Into::<Envelope<InscriptionRecord>>::into(i).to_runtime_value())
             .collect::<Vec<_>>(),
     )?;
 
@@ -124,7 +121,6 @@ pub fn from_witness(witness: &bitcoin::Witness) -> Vec<ParsedEnvelope> {
             Ok(envelopes) => envelopes
                 .into_iter()
                 .map(ParsedEnvelope::from)
-                // .map(|e| e.payload)
                 .collect::<Vec<_>>(),
             Err(e) => {
                 if tracing::enabled!(tracing::Level::TRACE) {

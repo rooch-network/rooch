@@ -25,11 +25,11 @@ pub(crate) const METAPROTOCOL_TAG: [u8; 1] = [7];
 pub(crate) const CONTENT_ENCODING_TAG: [u8; 1] = [9];
 
 type Result<T> = std::result::Result<T, script::Error>;
-pub(crate) type RawEnvelope = Envelope<Vec<Vec<u8>>>;
-pub(crate) type ParsedEnvelope = Envelope<Inscription>;
+pub type RawEnvelope = Envelope<Vec<Vec<u8>>>;
+pub type ParsedEnvelope = Envelope<Inscription>;
 
 #[derive(Debug, Default, PartialEq, Clone)]
-pub(crate) struct Envelope<T> {
+pub struct Envelope<T> {
     pub(crate) payload: T,
     pub(crate) input: u32,
     pub(crate) offset: u32,

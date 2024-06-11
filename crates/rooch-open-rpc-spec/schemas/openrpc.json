@@ -1420,6 +1420,7 @@
           "index",
           "metadata",
           "offset",
+          "parents",
           "txid"
         ],
         "properties": {
@@ -1472,15 +1473,8 @@
             "format": "uint64",
             "minimum": 0.0
           },
-          "parent": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ObjectID"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "parents": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<moveos_types::moveos_std::object::ObjectID>"
           },
           "pointer": {
             "type": [

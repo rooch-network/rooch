@@ -8,11 +8,9 @@ use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::h256::H256;
-use moveos_types::move_types::random_type_tag;
 use moveos_types::moveos_std::object::{ObjectEntity, ObjectID};
 use moveos_types::moveos_std::tx_context::TxContext;
-use moveos_types::state::{KeyState, MoveStructType, State};
-use moveos_types::test_utils::random_bytes;
+use moveos_types::state::MoveStructType;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rand::{random, thread_rng, Rng};
 use rooch_config::store_config::DEFAULT_DB_INDEXER_SUBDIR;
@@ -22,8 +20,8 @@ use rooch_types::indexer::event::{EventFilter, IndexerEvent};
 use rooch_types::indexer::state::{IndexerObjectState, ObjectStateFilter};
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::test_utils::{
-    random_event, random_function_calls, random_ledger_transaction, random_string,
-    random_table_object, random_verified_move_action,
+    random_event, random_function_calls, random_ledger_transaction, random_table_object,
+    random_verified_move_action,
 };
 
 fn random_update_object_states(states: Vec<IndexerObjectState>) -> Vec<IndexerObjectState> {

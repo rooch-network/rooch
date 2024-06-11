@@ -8,6 +8,7 @@ use crate::indexer::state::IndexerObjectState;
 use crate::into_address::IntoAddress;
 use anyhow::Result;
 use move_core_types::language_storage::{StructTag, TypeTag};
+use move_core_types::value::MoveTypeLayout;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
 };
@@ -20,6 +21,7 @@ use moveos_types::{
         tx_context::TxContext,
     },
 };
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fmt::{Display, Formatter};
@@ -115,7 +117,7 @@ pub struct Envelope<T> {
 
 impl<T> MoveStructType for Envelope<T>
 where
-    T: MoveStructType,
+    T: MoveStructType + DeserializeOwned,
 {
     const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
@@ -137,7 +139,7 @@ where
 
 impl<T> MoveStructState for Envelope<T>
 where
-    T: MoveStructType,
+    T: MoveStructState,
 {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
@@ -145,7 +147,7 @@ where
             u32::type_layout(),
             bool::type_layout(),
             bool::type_layout(),
-            T::type_layout(),
+            MoveTypeLayout::Struct(T::struct_layout()),
         ])
     }
 }
