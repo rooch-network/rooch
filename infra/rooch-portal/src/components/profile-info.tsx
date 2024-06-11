@@ -16,7 +16,7 @@ export const ProfileInfo = () => {
       <div className="flex items-center justify-start gap-x-3 w-full p-2 rounded-lg hover:bg-accent transition-all">
         <Avatar className="">
           {account ? (
-            <Jazzicon diameter={55} seed={jsNumberForAddress(account.address)} />
+            <Jazzicon diameter={55} seed={jsNumberForAddress(`0x${account.address}`)} />
           ) : (
             <Jazzicon diameter={55} seed={10000000} />
           )}
