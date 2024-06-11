@@ -12,5 +12,6 @@ runs:
     - uses: dtolnay/rust-toolchain@1.77.1
 
     - name: install protoc and related tools
+      working-directory: ./moveos
       shell: bash
       run: scripts/dev_setup.sh -b -r
