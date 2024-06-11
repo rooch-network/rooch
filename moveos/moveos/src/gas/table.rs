@@ -45,12 +45,12 @@ pub static ZERO_COST_SCHEDULE: Lazy<CostTable> = Lazy::new(zero_cost_schedule);
 
 #[derive(Clone, Debug, Serialize, PartialEq, Eq, Deserialize)]
 pub struct StorageGasParameter {
-    pub io_read_price: u64,
-    pub storage_fee_per_transaction_byte: TxGasParameter,
-    pub storage_fee_per_event_byte: u64,
-    pub storage_fee_per_op_new_byte: u64,
-    pub storage_fee_per_op_modify_byte: u64,
-    pub storage_fee_per_op_delete: u64,
+    pub io_read_price: InternalGas,
+    pub storage_fee_per_transaction_byte: InternalGas,
+    pub storage_fee_per_event_byte: InternalGas,
+    pub storage_fee_per_op_new_byte: InternalGas,
+    pub storage_fee_per_op_modify_byte: InternalGas,
+    pub storage_fee_per_op_delete: InternalGas,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq, Eq, Deserialize)]
@@ -105,12 +105,12 @@ impl AbstractValueSizeGasParameter {
 impl StorageGasParameter {
     pub fn zeros() -> Self {
         Self {
-            io_read_price: 0,
-            storage_fee_per_transaction_byte: TxGasParameter::zeros(),
-            storage_fee_per_event_byte: 0,
-            storage_fee_per_op_new_byte: 0,
-            storage_fee_per_op_modify_byte: 0,
-            storage_fee_per_op_delete: 0,
+            io_read_price: 0.into(),
+            storage_fee_per_transaction_byte: 0.into(),
+            storage_fee_per_event_byte: 0.into(),
+            storage_fee_per_op_new_byte: 0.into(),
+            storage_fee_per_op_modify_byte: 0.into(),
+            storage_fee_per_op_delete: 0.into(),
         }
     }
 }
@@ -308,33 +308,6 @@ impl InstructionParameter {
             vec_pack_per_elem: 0.into(),
             vec_unpack_base: 0.into(),
             vec_unpack_per_expected_elem: 0.into(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, PartialEq, Eq, Deserialize)]
-pub struct TxGasParameter {
-    pub tx_size_leve_1: InternalGas,
-    pub tx_size_leve_2: InternalGas,
-    pub tx_size_leve_3: InternalGas,
-    pub tx_size_leve_4: InternalGas,
-    pub tx_size_gas_parameter_level_1: InternalGas,
-    pub tx_size_gas_parameter_level_2: InternalGas,
-    pub tx_size_gas_parameter_level_3: InternalGas,
-    pub tx_size_gas_parameter_level_4: InternalGas,
-}
-
-impl TxGasParameter {
-    pub fn zeros() -> Self {
-        Self {
-            tx_size_leve_1: 0.into(),
-            tx_size_leve_2: 0.into(),
-            tx_size_leve_3: 0.into(),
-            tx_size_leve_4: 0.into(),
-            tx_size_gas_parameter_level_1: 0.into(),
-            tx_size_gas_parameter_level_2: 0.into(),
-            tx_size_gas_parameter_level_3: 0.into(),
-            tx_size_gas_parameter_level_4: 0.into(),
         }
     }
 }
@@ -770,29 +743,13 @@ impl ClassifiedGasMeter for MoveOSGasMeter {
             return Ok(());
         }
 
-        let tx_gas_parameter = self
+        let tx_gas_parameter: u64 = self
             .cost_table
             .storage_gas_parameter
             .storage_fee_per_transaction_byte
-            .clone();
+            .into();
 
-        let tx_gas_factor: u64 = {
-            if tx_size > 0 && tx_size < tx_gas_parameter.tx_size_leve_1.into() {
-                tx_gas_parameter.tx_size_gas_parameter_level_1.into()
-            } else if tx_size >= tx_gas_parameter.tx_size_leve_1.into()
-                && tx_size < tx_gas_parameter.tx_size_leve_2.into()
-            {
-                tx_gas_parameter.tx_size_gas_parameter_level_2.into()
-            } else if tx_size >= tx_gas_parameter.tx_size_leve_2.into()
-                && tx_size < tx_gas_parameter.tx_size_leve_3.into()
-            {
-                tx_gas_parameter.tx_size_gas_parameter_level_3.into()
-            } else {
-                tx_gas_parameter.tx_size_gas_parameter_level_4.into()
-            }
-        };
-
-        match tx_size.checked_mul(tx_gas_factor) {
+        match tx_size.checked_mul(tx_gas_parameter) {
             None => {
                 self.gas_left = InternalGas::from(0);
                 Err(PartialVMError::new(StatusCode::OUT_OF_GAS))
