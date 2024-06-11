@@ -33,12 +33,11 @@ impl InitCommand {
         let store_config = opt.store_config();
         let rooch_db = RoochDB::init(store_config)?;
         let network = opt.network();
-        let genesis = RoochGenesis::build(network)?;
-        let root = genesis.init_genesis(&rooch_db)?;
+        let genesis = RoochGenesis::load_or_init(network, &rooch_db)?;
         println!(
             "Genesis statedb initialized at {:?} successfully, state_root: {:?}",
             opt.base().data_dir(),
-            root.state_root()
+            genesis.genesis_root().state_root()
         );
         Ok(())
     }

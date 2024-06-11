@@ -169,8 +169,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let store_config = opt.store_config();
 
     let rooch_db = RoochDB::init(store_config)?;
-    let (mut root, rooch_store, moveos_store, indexer_store, indexer_reader) = (
-        rooch_db.root.clone(),
+    let (rooch_store, moveos_store, indexer_store, indexer_reader) = (
         rooch_db.rooch_store.clone(),
         rooch_db.moveos_store.clone(),
         rooch_db.indexer_store.clone(),
@@ -202,12 +201,17 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         );
     }
 
-    let genesis = RoochGenesis::build(network)?;
-    if root.is_genesis() {
-        root = genesis.init_genesis(&rooch_db)?;
-    } else {
-        genesis.check_genesis(moveos_store.get_config_store())?;
-    }
+    let genesis = RoochGenesis::load_or_init(network, &rooch_db)?;
+
+    let root = match rooch_db.latest_root()? {
+        Some(root) => root,
+        None => genesis.genesis_root().clone(),
+    };
+    info!(
+        "The latest Root object state root: {:?}, size: {}",
+        root.state_root(),
+        root.size
+    );
 
     let executor_actor =
         ExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store.clone())?;

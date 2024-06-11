@@ -13,6 +13,8 @@ pub struct GenesisInfo {
     pub genesis_package_hash: H256,
     /// lastest state root hash
     pub root: RootObjectEntity,
+    /// genesis binary
+    pub genesis_bin: Vec<u8>,
 }
 
 impl fmt::Display for GenesisInfo {
@@ -26,10 +28,11 @@ impl fmt::Display for GenesisInfo {
 }
 
 impl GenesisInfo {
-    pub fn new(genesis_package_hash: H256, root: RootObjectEntity) -> Self {
+    pub fn new(genesis_package_hash: H256, root: RootObjectEntity, genesis_bin: Vec<u8>) -> Self {
         GenesisInfo {
             genesis_package_hash,
             root,
+            genesis_bin,
         }
     }
 }

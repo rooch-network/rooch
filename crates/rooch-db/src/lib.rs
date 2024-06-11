@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use log::info;
 use moveos_store::MoveOSStore;
-use moveos_types::moveos_std::object::{ObjectEntity, Root};
+use moveos_types::moveos_std::object::RootObjectEntity;
 use raw_store::{rocks::RocksDB, StoreInstance};
 use rooch_config::store_config::StoreConfig;
 use rooch_indexer::{indexer_reader::IndexerReader, IndexerStore};
@@ -16,7 +15,6 @@ pub struct RoochDB {
     pub rooch_store: RoochStore,
     pub indexer_store: IndexerStore,
     pub indexer_reader: IndexerReader,
-    pub root: ObjectEntity<Root>,
 }
 
 impl RoochDB {
@@ -46,21 +44,17 @@ impl RoochDB {
         let indexer_store = IndexerStore::new(indexer_store_dir.clone())?;
         let indexer_reader = IndexerReader::new(indexer_store_dir)?;
 
-        let startup_info = moveos_store.config_store.get_startup_info()?;
-
-        if let Some(ref startup_info) = startup_info {
-            info!("Load startup info {:?}", startup_info);
-        }
-        let root = startup_info
-            .map(|s| s.into_root_object())
-            .unwrap_or(ObjectEntity::genesis_root_object());
-
         Ok(Self {
             moveos_store,
             rooch_store,
             indexer_store,
             indexer_reader,
-            root,
         })
+    }
+
+    pub fn latest_root(&self) -> Result<Option<RootObjectEntity>> {
+        let startup_info = self.moveos_store.config_store.get_startup_info()?;
+
+        Ok(startup_info.map(|s| s.into_root_object()))
     }
 }
