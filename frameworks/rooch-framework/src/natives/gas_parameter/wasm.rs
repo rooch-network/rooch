@@ -17,7 +17,7 @@ crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasPar
     [.create_args_gas_parameter.per_byte_args, "create_args_gas_parameter.per_byte_args", 100],
 
     [.function_execution_gas_parameter.base_create_execution, "function_execution_gas_parameter.base_create_execution", 1000],
-    [.function_execution_gas_parameter.per_byte_execution_result, "function_execution_gas_parameter.per_byte_execution_result", 100],
+    [.function_execution_gas_parameter.per_execution_point, "function_execution_gas_parameter.per_execution_point", 1],
 
     [.read_data_length_gas_parameter.base, "read_data_length_gas_parameter.base", 100],
     [.read_data_length_gas_parameter.per_byte, "read_data_length_gas_parameter.per_byte", 10000],

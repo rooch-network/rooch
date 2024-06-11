@@ -72,7 +72,7 @@ When the call is successful, you can see that the prompt on the right has respon
 
 List states by `access_path`. If `StateOptions.decode` is `true`, decode the state and return the decoded value in the response.
 
-> See more about [Access path](./access-path.en-US.mdx).
+> See more about [Access path](./access-path).
 
 ```shell
 curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"rooch_listStates","params":["/resource/0x3", null, null, {"decode":true}],"id":1}' https://dev-seed.rooch.network:443 | jq

@@ -44,3 +44,6 @@ moveos-types = { workspace = true }
 
 rooch-types = { workspace = true }
 rooch-store = { workspace = true }
+rooch-config = { workspace = true }
+rooch-db = { workspace = true }
+rooch-genesis = { workspace = true }

@@ -3,8 +3,7 @@
 
 use crate::cli_types::WalletContextOptions;
 use crate::commands::statedb::commands::{
-    init_statedb, BATCH_SIZE, GLOBAL_STATE_TYPE_FIELD, GLOBAL_STATE_TYPE_OBJECT,
-    GLOBAL_STATE_TYPE_ROOT,
+    BATCH_SIZE, GLOBAL_STATE_TYPE_FIELD, GLOBAL_STATE_TYPE_OBJECT, GLOBAL_STATE_TYPE_ROOT,
 };
 use anyhow::Result;
 use clap::Parser;
@@ -13,7 +12,8 @@ use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state_resolver::StatelessResolver;
-use rooch_config::R_OPT_NET_HELP;
+use rooch_config::{RoochOpt, R_OPT_NET_HELP};
+use rooch_db::RoochDB;
 use rooch_types::bitcoin::ord::InscriptionStore;
 use rooch_types::bitcoin::utxo::BitcoinUTXOStore;
 use rooch_types::error::{RoochError, RoochResult};
@@ -157,12 +157,11 @@ pub struct ExportCommand {
 
 impl ExportCommand {
     pub async fn execute(self) -> RoochResult<()> {
-        let mut _context = self.context_options.build()?;
-        // let client = context.get_client().await?;
-
         println!("Start statedb export task, batch_size: {:?}", BATCH_SIZE);
-        let (root, moveos_store) = init_statedb(self.base_data_dir.clone(), self.chain_id.clone())?;
-        println!("root object: {:?}", root);
+        let opt = RoochOpt::new_with_default(self.base_data_dir, self.chain_id, None)?;
+        let rooch_db = RoochDB::init(opt.store_config())?;
+
+        println!("root object: {:?}", rooch_db.root);
 
         let mut _start_time = SystemTime::now();
         let file_name = self.output.display().to_string();
@@ -173,12 +172,12 @@ impl ExportCommand {
         })?;
         let root_state_root = self
             .state_root
-            .unwrap_or(H256::from(root.state_root.into_bytes()));
+            .unwrap_or(H256::from(rooch_db.root.state_root.into_bytes()));
 
         let mode = ExportMode::try_from(self.mode.unwrap_or(ExportMode::Genesis.to_num()))?;
         match mode {
             ExportMode::Genesis => {
-                Self::export_genesis(&moveos_store, root_state_root, &mut writer)?;
+                Self::export_genesis(&rooch_db.moveos_store, root_state_root, &mut writer)?;
             }
             ExportMode::Full => {
                 todo!()
@@ -187,13 +186,13 @@ impl ExportCommand {
                 todo!()
             }
             ExportMode::Indexer => {
-                Self::export_indexer(&moveos_store, root_state_root, &mut writer)?;
+                Self::export_indexer(&rooch_db.moveos_store, root_state_root, &mut writer)?;
             }
             ExportMode::Object => {
                 let obj_id = self
                     .object_id
                     .expect("Object id should exist in object mode");
-                Self::export_object(&moveos_store, root_state_root, obj_id, &mut writer)?;
+                Self::export_object(&rooch_db.moveos_store, root_state_root, obj_id, &mut writer)?;
             }
         }
 

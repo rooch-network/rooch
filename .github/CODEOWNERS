@@ -41,5 +41,6 @@
 /examples @jolestar @wow-sven @geometryolife
 /examples/blog @wubuku @jolestar
 /sdk @wow-sven @yubing744
-/dashboards @wow-sven @yubing744 @Mine77
+/infra/dashboards @wow-sven @yubing744
+/infra/rooch-portal @wow-sven @TwilightLogic @Mine77
 /docs @wow-sven @geometryolife @Mine77

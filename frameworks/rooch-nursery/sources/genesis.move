@@ -9,8 +9,9 @@ module rooch_nursery::genesis {
     const ErrorInvalidChainId: u64 = 1;
 
     fun init(genesis_account: &signer){
-        // Ensure the nursery is running on a local or dev chain.
-        assert!(chain_id::is_local() || chain_id::is_dev(), ErrorInvalidChainId);
+        // Ensure the nursery is not running on test or main chain.
+        // nursery can running on a local or dev chain or custom chain
+        assert!(!chain_id::is_test() && !chain_id::is_main(), ErrorInvalidChainId);
         ethereum::genesis_init(genesis_account);
         bitseed::genesis_init(genesis_account);
     }

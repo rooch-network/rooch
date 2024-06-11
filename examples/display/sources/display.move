@@ -7,7 +7,7 @@ module display::display{
     use std::string::{Self, String};
     use moveos_std::display;
     
-    use moveos_std::object;
+    use moveos_std::object::{Self, ObjectID};
     use moveos_std::account;
 
     struct ResourceType has key {
@@ -20,6 +20,10 @@ module display::display{
         name: String,
         creator: address,
         description: String,
+    }
+
+    struct NewObjectEvent has copy, drop{
+        id: ObjectID,
     }
 
     fun init(){
@@ -65,9 +69,11 @@ module display::display{
             
             obj_type
         );
+        let id = object::id(&obj);
 
         let sender = moveos_std::tx_context::sender();
         object::transfer(obj, sender);
+        moveos_std::event::emit(NewObjectEvent{id:id});
     }
 
     /// Create a new ResourceType

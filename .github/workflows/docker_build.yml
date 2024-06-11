@@ -41,6 +41,13 @@ jobs:
           tags: |
             ghcr.io/rooch-network/rooch:${{ steps.docker_meta.outputs.version }}
             ghcr.io/rooch-network/rooch:main
+      - name: Save Docker tag as artifact
+        run: echo "${{ steps.docker_meta.outputs.version }}" > docker_tag.txt
+      - name: Upload Docker tag artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: docker_tag
+          path: docker_tag.txt
 
   build-debug-rooch-docker:
     name: Build and Deploy Debug Rooch Docker

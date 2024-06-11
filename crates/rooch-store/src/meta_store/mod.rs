@@ -39,6 +39,12 @@ impl MetaDBStore {
     }
 
     pub fn save_sequencer_order(&self, sequencer_order: SequencerOrder) -> Result<()> {
+        let pre_sequencer_order = self.get_sequencer_order()?;
+        if let Some(pre_sequencer_order) = pre_sequencer_order {
+            if sequencer_order.last_order != pre_sequencer_order.last_order + 1 {
+                return Err(anyhow::anyhow!("Sequencer order is not continuous"));
+            }
+        }
         self.sequencer_order_store
             .put_sync(SEQUENCER_ORDER_KEY.to_string(), sequencer_order)
     }

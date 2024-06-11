@@ -55,5 +55,15 @@
       "timestamp": false,
       "typesetting": "article"
     }
+  },
+  "archives": {
+    "type": "page",
+    "display": "hidden",
+    "theme": {
+      "sidebar": false,
+      "timestamp": false,
+      "typesetting": "article"
+    },
+    "title":"Archives"
   }
 }

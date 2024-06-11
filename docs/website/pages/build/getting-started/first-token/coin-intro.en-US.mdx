@@ -25,30 +25,23 @@ This example will demonstrate the use of having a public type Coin.
 
 ```move
 module coins::fixed_supply_coin {
-
     use std::string;
     use moveos_std::signer;
-    use moveos_std::context::{Self, Context};
     use moveos_std::object::{Self, Object};
     use rooch_framework::coin;
     use rooch_framework::coin_store::{Self, CoinStore};
     use rooch_framework::account_coin_store;
-
     const TOTAL_SUPPLY: u256 = 210_000_000_000u256;
     const DECIMALS: u8 = 1u8;
-
     // The `FSC` CoinType has `key` and `store` ability.
     // So `FSC` coin is public.
     struct FSC has key, store {}
-
     // construct the `FSC` coin and make it a global object that stored in `Treasury`.
     struct Treasury has key {
         coin_store: Object<CoinStore<FSC>>
     }
-
-    fun init(ctx: &mut Context) {
-        let coin_info_obj = coin::register_extend<FSC>(
-            ctx,
+    fun init() {
+        let coin_info_obj = coin::register_extend<FSC>(    
             string::utf8(b"Fixed Supply Coin"),
             string::utf8(b"FSC"),
             DECIMALS,
@@ -57,20 +50,20 @@ module coins::fixed_supply_coin {
         let coin = coin::mint_extend<FSC>(&mut coin_info_obj, TOTAL_SUPPLY);
         // Frozen the CoinInfo object, so that no more coins can be minted
         object::to_frozen(coin_info_obj);
-        let coin_store_obj = coin_store::create_coin_store<FSC>(ctx);
+        let coin_store_obj = coin_store::create_coin_store<FSC>();
         coin_store::deposit(&mut coin_store_obj, coin);
-        let treasury_obj = context::new_named_object(ctx, Treasury { coin_store: coin_store_obj });
+        let treasury_obj = object::new_named_object(Treasury { coin_store: coin_store_obj });
+
         // Make the treasury object to shared, so anyone can get mutable Treasury object
         object::to_shared(treasury_obj);
     }
-
     /// Provide a faucet to give out coins to users
     /// In a real world scenario, the coins should be given out in the application business logic.
-    public entry fun faucet(ctx: &mut Context, account: &signer, treasury_obj: &mut Object<Treasury>) {
+    public entry fun faucet(account: &signer, treasury_obj: &mut Object<Treasury>) {
         let account_addr = signer::address_of(account);
         let treasury = object::borrow_mut(treasury_obj);
         let coin = coin_store::withdraw(&mut treasury.coin_store, 10000);
-        account_coin_store::deposit(ctx, account_addr, coin);
+        account_coin_store::deposit(account_addr, coin);
     }
 }
 ```
@@ -100,7 +93,6 @@ module coins::private_coin {
 
     use std::string;
     use moveos_std::signer;
-    use moveos_std::context::{Self, Context};
     use moveos_std::object::{Self, Object};
     use rooch_framework::coin::{Self, Coin, CoinInfo};
     use rooch_framework::coin_store::{Self, CoinStore};
@@ -116,45 +108,44 @@ module coins::private_coin {
         coin_store: Object<CoinStore<PRC>>
     }
 
-    fun init(ctx: &mut Context) {
+    fun init() {
         let coin_info_obj = coin::register_extend<PRC>(
-            ctx,
             string::utf8(b"Private Coin"),
             string::utf8(b"PRC"),
             1,
         );
         object::transfer(coin_info_obj, @coins);
-        let coin_store = coin_store::create_coin_store_extend<PRC>(ctx);
-        let treasury_obj = context::new_named_object(ctx, Treasury { coin_store });
+        let coin_store = coin_store::create_coin_store_extend<PRC>();
+        let treasury_obj = object::new_named_object(Treasury { coin_store });
         object::transfer_extend(treasury_obj, @coins);
     }
 
     /// Provide a faucet to give out coins to users
     /// In a real world scenario, the coins should be given out in the application business logic.
-    public entry fun faucet(ctx: &mut Context, account: &signer) {
+    public entry fun faucet(account: &signer) {
         let account_addr = signer::address_of(account);
         let coin_signer = signer::module_signer<Treasury>();
-        let coin_info_obj = context::borrow_mut_object<CoinInfo<PRC>>(ctx, &coin_signer, coin::coin_info_id<PRC>());
+        let coin_info_obj = object::borrow_mut_object<CoinInfo<PRC>>(&coin_signer, coin::coin_info_id<PRC>());
         let coin = coin::mint_extend<PRC>(coin_info_obj, 10000);
-        account_coin_store::deposit_extend(ctx, account_addr, coin);
+        account_coin_store::deposit_extend(account_addr, coin);
     }
 
     /// This function shows how to use `coin::transfer_extend` to define a custom transfer logic
     /// This transfer function limits the amount of transfer to 10000, and take 1% of the amount as fee
-    public entry fun transfer(ctx: &mut Context, from: &signer, to_addr: address, amount: u256) {
+    public entry fun transfer(from: &signer, to_addr: address, amount: u256) {
         assert!(amount <= 10000u256, ErrorTransferAmountTooLarge);
         let from_addr = signer::address_of(from);
         let fee_amount = amount / 100u256;
         if (fee_amount > 0u256) {
-            let fee = account_coin_store::withdraw_extend<PRC>(ctx, from_addr, fee_amount);
-            deposit_to_treaury(ctx, fee);
+            let fee = account_coin_store::withdraw_extend<PRC>(from_addr, fee_amount);
+            deposit_to_treaury(fee);
         };
-        account_coin_store::transfer_extend<PRC>(ctx, from_addr, to_addr, amount);
+        account_coin_store::transfer_extend<PRC>(from_addr, to_addr, amount);
     }
 
-    fun deposit_to_treaury(ctx: &mut Context, coin: Coin<PRC>) {
-        let treasury_object_id = object_id::named_object_id<Treasury>();
-        let treasury_obj = context::borrow_mut_object_extend<Treasury>(ctx, treasury_object_id);
+    fun deposit_to_treaury(coin: Coin<PRC>) {
+        let treasury_object_id = object::named_object_id<Treasury>();
+        let treasury_obj = object::borrow_mut_object_extend<Treasury>(treasury_object_id);
         coin_store::deposit_extend(&mut object::borrow_mut(treasury_obj).coin_store, coin);
     }
 }

@@ -12,6 +12,7 @@ interface Card {
 interface Brand {
   brandLogo: string
   brandTitle: string
+  brandUrl: string
 }
 
 interface Blog {
@@ -72,6 +73,21 @@ const Index = ({
   // Function to check if the string contains Chinese characters
   const containsChinese = (text: string) => /[\u4e00-\u9fa5]/.test(text)
 
+  // Define phrases to highlight for Chinese text
+  const phrasesToHighlightForFeaturesChinese = ['比特币生态']
+  const phrasesToHighlightForExploreChinese = ['状态', '应用']
+  const phrasesToHighlightForEcosystemChinese = ['合作伙伴']
+  const phrasesToHighlightForBlogsChinese = ['博客']
+
+  // Define phrases to highlight for English text
+  const phrasesToHighlightForFeaturesEnglish = ['Bitcoin', 'Ecosystem']
+  const phrasesToHighlightForExploreEnglish = ['State', 'App']
+  const phrasesToHighlightForEcosystemEnglish = ['Partnerships']
+  const phrasesToHighlightForBlogsEnglish = ['Blog']
+
+  const highlightColor = '#FF914B'
+  const highlightColorForExplore = '#46977E'
+
   const highlightSpecificPhrases = (
     text: string,
     phrasesToHighlight: string[],
@@ -92,6 +108,7 @@ const Index = ({
     highlightColor: string,
   ) => {
     if (containsChinese(title)) {
+      return highlightSpecificPhrases(title, phrasesToHighlightChinese, highlightColor)
     } else {
       const words = title.split(' ')
       return (
@@ -114,21 +131,6 @@ const Index = ({
     console.log(href)
     window.open(href)
   }
-
-  // Define phrases to highlight for Chinese text
-  const phrasesToHighlightForFeaturesChinese = ['比特币生态']
-  const phrasesToHighlightForExploreChinese = ['状态', '应用']
-  const phrasesToHighlightForEcosystemChinese = ['合作伙伴']
-  const phrasesToHighlightForBlogsChinese = ['博客']
-
-  // Define phrases to highlight for English text
-  const phrasesToHighlightForFeaturesEnglish = ['Bitcoin', 'Ecosystem']
-  const phrasesToHighlightForExploreEnglish = ['State', 'App']
-  const phrasesToHighlightForEcosystemEnglish = ['Partnerships']
-  const phrasesToHighlightForBlogsEnglish = ['Blog']
-
-  const highlightColor = '#FF914B'
-  const highlightColorForExplore = '#46977E'
 
   return (
     <>
@@ -309,7 +311,10 @@ const Index = ({
           <div className="flex items-center justify-center w-full mt-2">
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 justify-items-center">
               {ecosystemBrand.map((brand) => (
-                <button className="relative bg-white dark:bg-inherit rounded-full md:rounded-lg p-4 flex flex-row md:flex-col items-center md:justify-center justify-start border border-1 border-b-[6px] border-black dark:border-white active:border-b-4 active:transform active:translate-y-0.5 transition-all shadow-sm w-full h-14 md:w-52 md:h-32 gap-2 hover:cursor-default hover:shadow-md">
+                <button
+                  className="relative bg-white dark:bg-inherit rounded-full md:rounded-lg p-4 flex flex-row md:flex-col items-center md:justify-center justify-start border border-1 border-b-[6px] border-black dark:border-white active:border-b-4 active:transform active:translate-y-0.5 transition-all shadow-sm w-full h-14 md:w-52 md:h-32 gap-2 hover:cursor-pointer hover:shadow-md"
+                  onClick={() => handleButtonOnClick(brand.brandUrl)}
+                >
                   <Image
                     src={brand.brandLogo}
                     alt={brand.brandTitle}
@@ -345,7 +350,7 @@ const Index = ({
                       <img
                         src={blog.image}
                         alt={blog.title}
-                        className="h-[200px] w-full object-fill rounded-lg"
+                        className="h-full w-full object-cover rounded-lg"
                       />
                     </div>
                     <div className="flex flex-col p-6 md:p-8 w-full justify-between">

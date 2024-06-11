@@ -72,7 +72,7 @@ curl --location 'https://dev-seed.rooch.network/' --header 'Content-Type: applic
 
 按 `access_path` 列出状态。如果 `StateOptions.decode` 为 `true`，则对状态进行解码并在响应中返回解码后的值。
 
-> 参阅更多 [Access path](./access-path.zh-CN.mdx) 的内容。
+> 参阅更多 [Access path](./access-path) 的内容。
 
 ```shell
 curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"rooch_listStates","params":["/resource/0x3", null, null, {"decode":true}],"id":1}' https://dev-seed.rooch.network:443 | jq

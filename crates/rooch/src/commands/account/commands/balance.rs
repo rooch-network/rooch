@@ -9,8 +9,10 @@ use async_trait::async_trait;
 use clap::Parser;
 use move_command_line_common::types::ParsedStructType;
 use rooch_rpc_api::api::MAX_RESULT_LIMIT_USIZE;
+use rooch_rpc_api::jsonrpc_types::account_view::BalanceInfoView;
 use rooch_types::address::ParsedAddress;
 use rooch_types::error::RoochResult;
+use std::collections::HashMap;
 
 /// Show account balance, only the accounts managed by the current node are supported
 #[derive(Debug, Parser)]
@@ -26,11 +28,17 @@ pub struct BalanceCommand {
 
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
+
+    /// Return command outputs in json format
+    #[clap(long, default_value = "false")]
+    json: bool,
 }
 
+pub type BalancesView = HashMap<String, BalanceInfoView>;
+
 #[async_trait]
-impl CommandAction<()> for BalanceCommand {
-    async fn execute(self) -> RoochResult<()> {
+impl CommandAction<Option<BalancesView>> for BalanceCommand {
+    async fn execute(self) -> RoochResult<Option<BalancesView>> {
         let context = self.context_options.build()?;
         let mapping = context.address_mapping();
         let address_addr = self.address.into_account_address(&mapping)?;
@@ -58,22 +66,30 @@ impl CommandAction<()> for BalanceCommand {
             }
         };
 
-        println!(
-            "{0: ^102} | {1: ^16} | {2: ^6} |  {3: ^32} ",
-            "Coin Type", "Symbol", "Decimals", "Balance"
-        );
-        println!("{}", ["-"; 68].join(""));
-
-        for balance_info in balances {
+        if self.json {
+            let mut balances_view: BalancesView = HashMap::new();
+            for balance_info in balances {
+                balances_view.insert(balance_info.coin_info.coin_type.to_string(), balance_info);
+            }
+            Ok(Some(balances_view))
+        } else {
             println!(
-                "{0: ^102} | {1: ^16} | {2: ^6} | {3: ^32} ",
-                balance_info.coin_info.coin_type,
-                balance_info.coin_info.symbol,
-                balance_info.coin_info.decimals,
-                balance_info.balance,
+                "{0: ^102} | {1: ^16} | {2: ^6} |  {3: ^32} ",
+                "Coin Type", "Symbol", "Decimals", "Balance"
             );
-        }
+            println!("{}", ["-"; 68].join(""));
 
-        Ok(())
+            for balance_info in balances {
+                println!(
+                    "{0: ^102} | {1: ^16} | {2: ^6} | {3: ^32} ",
+                    balance_info.coin_info.coin_type,
+                    balance_info.coin_info.symbol,
+                    balance_info.coin_info.decimals,
+                    balance_info.balance,
+                );
+            }
+
+            Ok(None)
+        }
     }
 }

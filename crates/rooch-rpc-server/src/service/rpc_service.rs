@@ -17,11 +17,8 @@ use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::address::{BitcoinAddress, RoochAddress};
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
-use rooch_types::indexer::state::{
-    FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateID, ObjectStateFilter,
-};
+use rooch_types::indexer::state::{IndexerObjectState, IndexerStateID, ObjectStateFilter};
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
-use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::{ExecuteTransactionResponse, LedgerTransaction, RoochTransaction};
 use std::collections::HashMap;
 
@@ -190,7 +187,7 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn get_sequencer_order(&self) -> Result<Option<SequencerOrder>> {
+    pub async fn get_sequencer_order(&self) -> Result<u64> {
         let resp = self.sequencer.get_sequencer_order().await?;
         Ok(resp)
     }
@@ -246,21 +243,6 @@ impl RpcService {
         let resp = self
             .indexer
             .query_object_states(filter, cursor, limit, descending_order)
-            .await?;
-        Ok(resp)
-    }
-
-    pub async fn query_field_states(
-        &self,
-        filter: FieldStateFilter,
-        // exclusive cursor if `Some`, otherwise start from the beginning
-        cursor: Option<IndexerStateID>,
-        limit: usize,
-        descending_order: bool,
-    ) -> Result<Vec<IndexerFieldState>> {
-        let resp = self
-            .indexer
-            .query_field_states(filter, cursor, limit, descending_order)
             .await?;
         Ok(resp)
     }

@@ -1,10 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_types::WalletContextOptions;
+use crate::cli_types::{CommandAction, WalletContextOptions};
+use async_trait::async_trait;
 use clap::Parser;
-use move_core_types::account_address::AccountAddress;
 use rooch_key::keystore::account_keystore::AccountKeystore;
+use rooch_rpc_api::jsonrpc_types::RoochAddressView;
 use rooch_types::error::RoochResult;
 
 /// Create a new account off-chain.
@@ -17,24 +18,32 @@ use rooch_types::error::RoochResult;
 pub struct CreateCommand {
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
+
+    /// Return command outputs in json format
+    #[clap(long, default_value = "false")]
+    json: bool,
 }
 
-impl CreateCommand {
-    pub async fn execute(self) -> RoochResult<String> {
+#[async_trait]
+impl CommandAction<Option<RoochAddressView>> for CreateCommand {
+    async fn execute(self) -> RoochResult<Option<RoochAddressView>> {
         let mut context = self.context_options.build_require_password()?;
         let password = context.get_password();
         let result = context.keystore.generate_and_add_new_key(password)?;
 
-        let address = AccountAddress::from(result.address).to_hex_literal();
-        println!(
-            "Generated new keypair for address with key pair type [{}]",
-            result.address
-        );
-        println!(
-            "Secret Recovery Phrase : [{}]",
-            result.key_pair_data.mnemonic_phrase
-        );
+        if self.json {
+            Ok(Some(result.address.into()))
+        } else {
+            println!(
+                "Generated new keypair for address with key pair type [{}]",
+                result.address
+            );
+            println!(
+                "Secret Recovery Phrase : [{}]",
+                result.key_pair_data.mnemonic_phrase
+            );
 
-        Ok(address)
+            Ok(None)
+        }
     }
 }

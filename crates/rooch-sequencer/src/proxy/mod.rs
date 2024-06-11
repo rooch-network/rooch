@@ -9,7 +9,6 @@ use crate::{actor::sequencer::SequencerActor, messages::TransactionSequenceMessa
 use anyhow::Result;
 use coerce::actor::ActorRef;
 use moveos_types::h256::H256;
-use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
 
 #[derive(Clone)]
@@ -45,7 +44,7 @@ impl SequencerProxy {
         self.actor.send(GetTxHashsMessage { tx_orders }).await?
     }
 
-    pub async fn get_sequencer_order(&self) -> Result<Option<SequencerOrder>> {
+    pub async fn get_sequencer_order(&self) -> Result<u64> {
         self.actor.send(GetSequencerOrderMessage {}).await?
     }
 }

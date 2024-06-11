@@ -1,0 +1,4 @@
+#we keep the `rust-toolchain` and `rust-toolchain.yaml`
+#because some tools dose not support rust-toolchain.yaml yet
+[toolchain]
+channel = "1.77.1"

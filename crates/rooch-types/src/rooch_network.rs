@@ -67,7 +67,8 @@ impl FromStr for BuiltinChainID {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
+        let s = s.to_lowercase();
+        match s.as_str() {
             "local" => Ok(BuiltinChainID::Local),
             "dev" => Ok(BuiltinChainID::Dev),
             "test" => Ok(BuiltinChainID::Test),

@@ -149,7 +149,6 @@ impl RoochTransaction {
     }
 
     //TODO use protest Arbitrary to generate mock data
-    #[cfg(test)]
     pub fn mock() -> RoochTransaction {
         use crate::{address::RoochSupportedAddress, crypto::RoochKeyPair};
         use move_core_types::{

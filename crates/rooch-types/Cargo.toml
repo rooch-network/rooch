@@ -30,6 +30,7 @@ serde = { workspace = true }
 serde_bytes = { workspace = true }
 serde_json = { workspace = true }
 serde_with = { workspace = true }
+serde_yaml = { workspace = true }
 derive_more = { workspace = true }
 eyre = { workspace = true }
 fastcrypto = { workspace = true, features = ["copy_key"] }
