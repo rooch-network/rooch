@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 // Code from https://github.com/ordinals/ord/
 
+use crate::natives::ord::envelope::Envelope;
 use bitcoin::{hashes::Hash, Txid, Witness};
 use moveos_types::move_std::string::MoveString;
+use rooch_types::bitcoin::ord::{InscriptionID, InscriptionRecord};
 use {
     super::envelope,
     super::inscription_id::InscriptionId,
@@ -29,9 +31,21 @@ pub struct Inscription {
     pub incomplete_field: bool,
     pub metadata: Option<Vec<u8>>,
     pub metaprotocol: Option<Vec<u8>>,
-    pub parent: Option<Vec<u8>>,
+    pub parents: Vec<Vec<u8>>,
     pub pointer: Option<Vec<u8>>,
     pub unrecognized_even_field: bool,
+}
+
+impl From<Envelope<Inscription>> for Envelope<InscriptionRecord> {
+    fn from(val: Envelope<Inscription>) -> Self {
+        Self {
+            input: val.input,
+            offset: val.offset,
+            pushnum: val.pushnum,
+            stutter: val.stutter,
+            payload: val.payload.into(),
+        }
+    }
 }
 
 impl From<Inscription> for rooch_types::bitcoin::ord::InscriptionRecord {
@@ -48,7 +62,8 @@ impl From<Inscription> for rooch_types::bitcoin::ord::InscriptionRecord {
             .metaprotocol()
             .map(|s| MoveString::from(s.to_owned()))
             .into();
-        let parent = val.parent().map(Into::into).into();
+        // let parents = val.parents().map(Into::into).into();
+        let parents = val.parents().into_iter().map(InscriptionID::from).collect();
         let pointer = val.pointer().into();
         rooch_types::bitcoin::ord::InscriptionRecord {
             body: val.body.unwrap_or_default(),
@@ -58,7 +73,7 @@ impl From<Inscription> for rooch_types::bitcoin::ord::InscriptionRecord {
             incomplete_field: val.incomplete_field,
             metadata: val.metadata.unwrap_or_default(),
             metaprotocol,
-            parent,
+            parents,
             pointer,
             unrecognized_even_field: val.unrecognized_even_field,
         }
@@ -112,7 +127,7 @@ impl Inscription {
                 .push_slice(PushBytesBuf::try_from(protocol).unwrap());
         }
 
-        if let Some(parent) = self.parent.clone() {
+        if let Some(parent) = self.parents.clone() {
             builder = builder
                 .push_slice(envelope::PARENT_TAG)
                 .push_slice(PushBytesBuf::try_from(parent).unwrap());
@@ -204,8 +219,15 @@ impl Inscription {
         str::from_utf8(self.metaprotocol.as_ref()?).ok()
     }
 
-    pub(crate) fn parent(&self) -> Option<InscriptionId> {
-        let value = self.parent.as_ref()?;
+    pub(crate) fn parents(&self) -> Vec<InscriptionId> {
+        self.parents
+            .iter()
+            .filter_map(|parent| Self::inscription_id_field(Some(parent)))
+            .collect()
+    }
+
+    fn inscription_id_field(field: Option<&[u8]>) -> Option<InscriptionId> {
+        let value = field.as_ref()?;
 
         if value.len() < Txid::LEN {
             return None;
@@ -424,7 +446,7 @@ mod tests {
     #[test]
     fn inscription_with_no_parent_field_has_no_parent() {
         assert!(Inscription {
-            parent: None,
+            parents: vec![],
             ..Default::default()
         }
         .parent()
@@ -434,7 +456,7 @@ mod tests {
     #[test]
     fn inscription_with_parent_field_shorter_than_txid_length_has_no_parent() {
         assert!(Inscription {
-            parent: Some(vec![]),
+            parents: vec![],
             ..Default::default()
         }
         .parent()
@@ -444,7 +466,7 @@ mod tests {
     #[test]
     fn inscription_with_parent_field_longer_than_txid_and_index_has_no_parent() {
         assert!(Inscription {
-            parent: Some(vec![1; 37]),
+            parents: vec![vec![1; 37]],
             ..Default::default()
         }
         .parent()
@@ -458,7 +480,7 @@ mod tests {
         parent[35] = 0;
 
         assert!(Inscription {
-            parent: Some(parent),
+            parents: vec![parent],
             ..Default::default()
         }
         .parent()
@@ -473,7 +495,7 @@ mod tests {
         parent[34] = 0;
 
         assert!(Inscription {
-            parent: Some(parent),
+            parents: vec![parent],
             ..Default::default()
         }
         .parent()
@@ -484,11 +506,11 @@ mod tests {
     fn inscription_parent_txid_is_deserialized_correctly() {
         assert_eq!(
             Inscription {
-                parent: Some(vec![
+                parents: vec![vec![
                     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c,
                     0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19,
                     0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
-                ]),
+                ]],
                 ..Default::default()
             }
             .parent()
@@ -504,7 +526,7 @@ mod tests {
     fn inscription_parent_with_zero_byte_index_field_is_deserialized_correctly() {
         assert_eq!(
             Inscription {
-                parent: Some(vec![1; 32]),
+                parents: vec![vec![1; 32]],
                 ..Default::default()
             }
             .parent()
@@ -518,11 +540,11 @@ mod tests {
     fn inscription_parent_with_one_byte_index_field_is_deserialized_correctly() {
         assert_eq!(
             Inscription {
-                parent: Some(vec![
+                parents: vec![vec![
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01
-                ]),
+                ]],
                 ..Default::default()
             }
             .parent()
@@ -536,11 +558,11 @@ mod tests {
     fn inscription_parent_with_two_byte_index_field_is_deserialized_correctly() {
         assert_eq!(
             Inscription {
-                parent: Some(vec![
+                parents: vec![vec![
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01, 0x02
-                ]),
+                ]],
                 ..Default::default()
             }
             .parent()
@@ -554,11 +576,11 @@ mod tests {
     fn inscription_parent_with_three_byte_index_field_is_deserialized_correctly() {
         assert_eq!(
             Inscription {
-                parent: Some(vec![
+                parents: vec![vec![
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01, 0x02, 0x03
-                ]),
+                ]],
                 ..Default::default()
             }
             .parent()
@@ -572,11 +594,11 @@ mod tests {
     fn inscription_parent_with_four_byte_index_field_is_deserialized_correctly() {
         assert_eq!(
             Inscription {
-                parent: Some(vec![
+                parents: vec![vec![
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01, 0x02, 0x03, 0x04,
-                ]),
+                ]],
                 ..Default::default()
             }
             .parent()

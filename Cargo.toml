@@ -67,7 +67,7 @@ homepage = "https://rooch.network"
 license = "Apache-2.0"
 publish = false
 repository = "https://github.com/rooch-network/rooch"
-rust-version = "1.77.1"
+rust-version = "1.77.2"
 
 
 [workspace.dependencies]

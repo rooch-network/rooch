@@ -25,6 +25,7 @@ use move_vm_types::{
 };
 use moveos_stdlib::natives::helpers::{make_module_natives, make_native};
 use moveos_types::state::{MoveState, MoveType};
+use rooch_types::bitcoin::ord::InscriptionRecord;
 use rooch_types::bitcoin::types::Witness;
 use serde::{Deserialize, Serialize};
 use smallvec::smallvec;
@@ -77,14 +78,16 @@ pub(crate) fn native_from_witness(
     let bitcoin_witness = bitcoin::Witness::from_slice(witness.witness.as_slice());
     let inscriptions = from_witness(&bitcoin_witness);
     let inscription_vm_type = context
-        .load_type(&rooch_types::bitcoin::ord::InscriptionRecord::type_tag())
+        // .load_type(&rooch_types::bitcoin::ord::InscriptionRecord::type_tag())
+        .load_type(&rooch_types::bitcoin::ord::Envelope::<InscriptionRecord>::type_tag())
         .map_err(|e| e.to_partial())?;
     let val = Vector::pack(
         &inscription_vm_type,
         inscriptions
             .into_iter()
             .map(|i| {
-                Into::<rooch_types::bitcoin::ord::InscriptionRecord>::into(i).to_runtime_value()
+                Into::<rooch_types::bitcoin::ord::Envelope<InscriptionRecord>>::into(i)
+                    .to_runtime_value()
             })
             .collect::<Vec<_>>(),
     )?;
@@ -114,14 +117,14 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
     make_module_natives(natives)
 }
 
-pub fn from_witness(witness: &bitcoin::Witness) -> Vec<Inscription> {
+pub fn from_witness(witness: &bitcoin::Witness) -> Vec<ParsedEnvelope> {
     witness
         .tapscript()
         .map(|script| match RawEnvelope::from_tapscript(script, 0usize) {
             Ok(envelopes) => envelopes
                 .into_iter()
                 .map(ParsedEnvelope::from)
-                .map(|e| e.payload)
+                // .map(|e| e.payload)
                 .collect::<Vec<_>>(),
             Err(e) => {
                 if tracing::enabled!(tracing::Level::TRACE) {
@@ -136,7 +139,7 @@ pub fn from_witness(witness: &bitcoin::Witness) -> Vec<Inscription> {
         .unwrap_or_default()
 }
 
-pub fn from_transaction(transaction: &bitcoin::Transaction) -> Vec<Inscription> {
+pub fn from_transaction(transaction: &bitcoin::Transaction) -> Vec<ParsedEnvelope> {
     transaction
         .input
         .iter()
