@@ -7,8 +7,8 @@ export const formatTimestamp = (timestamp: number): string => {
   if (timestamp < 1e10) {
     timestamp *= 1000
   }
-  const date = new Date(timestamp);
-  return date.toLocaleString();
+  const date = new Date(timestamp)
+  return date.toLocaleString()
 }
 
 export const formatCoin = (balance: number, decimals: number, precision = 2) => {

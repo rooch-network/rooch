@@ -9,30 +9,34 @@ There are two ways to obtain Rooch using the command line: automatically create 
 1. Default account
 
 ```bash
-[joe@mx ~]$ rooch init
+[joe@mx sources]$ rooch init
 Rooch server config file generated at /home/joe/.rooch/rooch_config/server.yaml
-Creating client config file ["/home/joe/.rooch/rooch_config/rooch.yaml"] with rooch native validator.
+Creating client config file ["/home/joe/.rooch/rooch_config/rooch.yaml"].
 Enter a password to encrypt the keys. Press enter to leave it an empty password:
-Generated new keypair for address [0xd1d967e18284e5289adccf4df9b9f2c9f60c4ea8872d3027df7a8c3972460a75]
-Secret Recovery Phrase : [trust please grit chief ankle brick bean level infant embark chronic zebra]
+Generated new keypair for address [rooch1hs6dmxs5p2exlz85vmy75l4pg5rmcfu4mn75kmr6c62d60pwrjxsl39uea]
+Secret Recovery Phrase : [eagle warm pull merit hunt visual top pig arctic derive observe village]
 Rooch client config file generated at /home/joe/.rooch/rooch_config/rooch.yaml
 null
 ```
 
-This generates an account `0xd1d967e18284e5289adccf4df9b9f2c9f60c4ea8872d3027df7a8c3972460a75`, along with its recovery phrase (mnemonic).
+Here a `rooch1hs6dmxs5p2exlz85vmy75l4pg5rmcfu4mn75kmr6c62d60pwrjxsl39uea` account is generated, the address is in `bech32` format, and its recovery phrase (mnemonic).
 
 This is the account generated when `rooch init` is used to initialize the Rooch configuration. The account is stored in `$HOME/.rooch/rooch_config/rooch.keystore`.
+
+You can use `rooch account list` to view the corresponding hex type address.
+
+> Tip: Currently, Rooch uses bech32 format addresses uniformly, and the hex address will only be used when writing the Move contract.
 
 ## Create manually
 
 ```bash
-[joe@mx ~]$ rooch account create
-Generated new keypair for address with key pair type [0xaecf8918b5ffc84a4bf4a8710220e70d1ec47beda53534f0c57689f82548048a]
-Secret Recovery Phrase : [trust please grit chief ankle brick bean level infant embark chronic zebra]
-"0xaecf8918b5ffc84a4bf4a8710220e70d1ec47beda53534f0c57689f82548048a"
+[joe@mx sources]$ rooch account create
+Generated new keypair for address with key pair type [rooch1p0ng4kpllwsahrd69ywpv9sfdgpgajtt777vq6f9c9sdu4t2e2es6txz5d]
+Secret Recovery Phrase : [eagle warm pull merit hunt visual top pig arctic derive observe village]
+"0xbe68ad83ffba1db8dba291c1616096a028ec96bf7bcc06925c160de556acab3"
 ```
 
-A new account is manually created here, `0xaecf8918b5ffc84a4bf4a8710220e70d1ec47beda53534f0c57689f82548048a`.
+A new account is manually created here, `rooch1p0ng4kpllwsahrd69ywpv9sfdgpgajtt777vq6f9c9sdu4t2e2es6txz5d`, and the corresponding `hex` type address is `0xbe68ad83ffba1db8dba291c1616096a028ec96bf7bcc06925c160de556acab3`.
 
 This account address is derived from the same set of mnemonic words, so it can also be recovered using the same mnemonic word.
 

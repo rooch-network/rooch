@@ -2,19 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::account_view::BalanceInfoView;
-use crate::jsonrpc_types::address::RoochAddressView;
+use crate::jsonrpc_types::address::RoochOrBitcoinAddressView;
 use crate::jsonrpc_types::event_view::EventFilterView;
 use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionWithInfoView};
-use crate::jsonrpc_types::TxOptions;
 use crate::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
-    EventPageView, ExecuteTransactionResponseView, FieldStateFilterView, FunctionCallView,
-    H256View, IndexerEventPageView, IndexerFieldStatePageView, IndexerObjectStatePageView,
-    ObjectStateFilterView, QueryOptions, StateOptions, StatePageView, StateView, StrView,
-    StructTagView, TransactionWithInfoPageView,
+    EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
+    IndexerEventPageView, IndexerObjectStatePageView, KeyStateHexView, ObjectIDVecView,
+    ObjectIDView, ObjectStateFilterView, ObjectStateView, QueryOptions, StateOptions,
+    StatePageView, StateView, StrView, StructTagView, TransactionWithInfoPageView, TxOptions,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
+use moveos_types::{access_path::AccessPath, state::KeyState};
 use rooch_open_rpc_macros::open_rpc;
 use rooch_types::indexer::event::IndexerEventID;
 use rooch_types::indexer::state::IndexerStateID;
@@ -68,6 +68,43 @@ pub trait RoochAPI {
         state_option: Option<StateOptions>,
     ) -> RpcResult<StatePageView>;
 
+    /// Get object states by object id
+    #[method(name = "getObjectStates")]
+    async fn get_object_states(
+        &self,
+        object_ids: ObjectIDVecView,
+        state_option: Option<StateOptions>,
+    ) -> RpcResult<Vec<Option<ObjectStateView>>>;
+
+    /// Get Object Fields via ObjectID and field keys.
+    #[method(name = "getFieldStates")]
+    async fn get_field_states(
+        &self,
+        object_id: ObjectIDView,
+        field_key: Vec<KeyStateHexView>,
+        state_option: Option<StateOptions>,
+    ) -> RpcResult<Vec<Option<StateView>>> {
+        let key_states = field_key.into_iter().map(KeyState::from).collect();
+        let access_path_view =
+            AccessPathView::from(AccessPath::fields(object_id.into(), key_states));
+        self.get_states(access_path_view, state_option).await
+    }
+
+    /// List Object Fields via ObjectID.
+    #[method(name = "listFieldStates")]
+    async fn list_field_states(
+        &self,
+        object_id: ObjectIDView,
+        cursor: Option<String>,
+        limit: Option<StrView<usize>>,
+        state_option: Option<StateOptions>,
+    ) -> RpcResult<StatePageView> {
+        let access_path_view =
+            AccessPathView::from(AccessPath::fields_without_keys(object_id.into()));
+        self.list_states(access_path_view, cursor, limit, state_option)
+            .await
+    }
+
     /// Get the events by event handle id
     #[method(name = "getEventsByEventHandle")]
     async fn get_events_by_event_handle(
@@ -97,7 +134,7 @@ pub trait RoochAPI {
     #[method(name = "getBalance")]
     async fn get_balance(
         &self,
-        account_addr: RoochAddressView,
+        account_addr: RoochOrBitcoinAddressView,
         coin_type: StructTagView,
     ) -> RpcResult<BalanceInfoView>;
 
@@ -105,7 +142,7 @@ pub trait RoochAPI {
     #[method(name = "getBalances")]
     async fn get_balances(
         &self,
-        account_addr: RoochAddressView,
+        account_addr: RoochOrBitcoinAddressView,
         cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
     ) -> RpcResult<BalanceInfoPageView>;
@@ -142,15 +179,4 @@ pub trait RoochAPI {
         limit: Option<StrView<usize>>,
         query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerObjectStatePageView>;
-
-    /// Query the Object field states indexer by state filter
-    #[method(name = "queryFieldStates")]
-    async fn query_field_states(
-        &self,
-        filter: FieldStateFilterView,
-        // exclusive cursor if `Some`, otherwise start from the beginning
-        cursor: Option<IndexerStateID>,
-        limit: Option<StrView<usize>>,
-        query_option: Option<QueryOptions>,
-    ) -> RpcResult<IndexerFieldStatePageView>;
 }

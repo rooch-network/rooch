@@ -25,7 +25,7 @@ fn default_cost_function(operator: &Operator) -> u64 {
         Operator::If { .. } => 1,
         Operator::Else { .. } => 1,
         Operator::End { .. } => 1,
-        _ => 0,
+        _ => 1,
     }
 }
 
@@ -174,7 +174,9 @@ impl wasmer::FunctionMiddleware for GasFunctionMiddleware {
             | Operator::BrTable { .. }
             | Operator::Call { .. }
             | Operator::CallIndirect { .. }
-            | Operator::Return => {
+            | Operator::Return
+            | Operator::ReturnCall { .. }
+            | Operator::ReturnCallIndirect { .. } => {
                 if self.accumulated_cost > 0 {
                     state.extend(&[
                         Operator::I64Const {
@@ -202,16 +204,10 @@ impl wasmer::FunctionMiddleware for GasFunctionMiddleware {
                     state.push_operator(operator.clone());
                 }
             }
-            Operator::CallIndirect {
-                table_index,
-                type_index,
-                table_byte,
-            } => {
-                if table_index >= self.charge_function_index.as_u32() {
-                    state.push_operator(Operator::CallIndirect {
-                        table_index: table_index + 1,
-                        type_index,
-                        table_byte,
+            Operator::ReturnCall { function_index } => {
+                if function_index >= self.charge_function_index.as_u32() {
+                    state.push_operator(Operator::ReturnCall {
+                        function_index: function_index + 1,
                     });
                 } else {
                     state.push_operator(operator.clone());

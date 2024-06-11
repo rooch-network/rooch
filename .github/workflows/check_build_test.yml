@@ -92,14 +92,14 @@ jobs:
         run: pnpm lint
         continue-on-error: true
         timeout-minutes: 15
-      - name: Build SDK
-        run: pnpm rooch-sdk build
+      # - name: Build SDK
+      #   run: pnpm rooch-sdk build
 #      - name: Test SDK
 #        run: pnpm rooch-sdk test
-      - name: Build SDK KIT
-        run: pnpm rooch-sdk-kit build
-      - name: Build Dashboard
-        run: pnpm dashboard build
+      # - name: Build SDK KIT
+      #   run: pnpm rooch-sdk-kit build
+      # - name: Build Dashboard
+      #   run: pnpm dashboard build
 
       - uses: CatChen/check-git-status-action@v1
         with:

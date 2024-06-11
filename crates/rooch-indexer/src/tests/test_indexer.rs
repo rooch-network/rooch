@@ -19,7 +19,7 @@ use rooch_config::store_config::DEFAULT_DB_INDEXER_SUBDIR;
 use rooch_types::framework::coin_store::CoinStore;
 use rooch_types::framework::gas_coin::GasCoin;
 use rooch_types::indexer::event::{EventFilter, IndexerEvent};
-use rooch_types::indexer::state::{IndexerFieldState, IndexerObjectState, ObjectStateFilter};
+use rooch_types::indexer::state::{IndexerObjectState, ObjectStateFilter};
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::test_utils::{
     random_event, random_function_calls, random_ledger_transaction, random_string,
@@ -73,56 +73,6 @@ fn random_remove_object_states() -> Vec<String> {
     }
 
     remove_object_states
-}
-
-fn random_new_field_states() -> Vec<IndexerFieldState> {
-    let mut field_states = vec![];
-
-    let mut state_index = 0u64;
-    let mut rng = thread_rng();
-    for n in 0..rng.gen_range(1..=10) {
-        let state = IndexerFieldState::new_field_state(
-            KeyState::new(random_bytes(), random_type_tag()),
-            State::new(random_bytes(), random_type_tag()),
-            ObjectID::from(AccountAddress::random()),
-            n as u64,
-            state_index,
-            0,
-            true,
-        );
-        field_states.push(state);
-        state_index = state_index + 1;
-    }
-
-    field_states
-}
-
-fn random_update_field_states(states: Vec<IndexerFieldState>) -> Vec<IndexerFieldState> {
-    states
-        .into_iter()
-        .map(|item| IndexerFieldState {
-            object_id: item.object_id,
-            key_hex: item.key_hex,
-            key_type: random_type_tag(),
-            value_type: random_type_tag(),
-            tx_order: item.tx_order,
-            state_index: item.state_index,
-            created_at: item.created_at,
-            updated_at: item.updated_at + 1,
-        })
-        .collect()
-}
-
-fn random_remove_field_states() -> Vec<(String, String)> {
-    let mut remove_field_states = vec![];
-
-    let mut rng = thread_rng();
-    for _n in 0..rng.gen_range(1..=10) {
-        let object_id = ObjectID::from(AccountAddress::random());
-        remove_field_states.push((object_id.to_string(), random_string()));
-    }
-
-    remove_field_states
 }
 
 #[test]
@@ -218,19 +168,10 @@ fn test_state_store() -> Result<()> {
     let mut update_object_states = random_update_object_states(new_object_states.clone());
     let remove_object_states = random_remove_object_states();
 
-    let mut new_field_states = random_new_field_states();
-    let mut update_field_states = random_update_field_states(new_field_states.clone());
-    let remove_field_states = random_remove_field_states();
-
     //Merge new global states and update global states
     new_object_states.append(&mut update_object_states);
     indexer_store.persist_or_update_object_states(new_object_states.clone())?;
     indexer_store.delete_object_states(remove_object_states)?;
-
-    //Merge new table states and update table states
-    new_field_states.append(&mut update_field_states);
-    indexer_store.persist_or_update_field_states(new_field_states)?;
-    indexer_store.delete_field_states(remove_field_states)?;
 
     // test for querying batch objects with filter ObjectStateFilter::ObjectId
     let num_objs = new_object_ids.len();

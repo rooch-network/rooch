@@ -65,12 +65,13 @@ After analyzing the above solutions, we find that the storage model of a contrac
 
 ![Storage Abstraction](/docs/rooch-design-storage-abstraction.svg)
 
-1. `RawTable` provides the lowest-level Key Value storage interface, where all contract state changes are ultimately uniformly changed as the Key Value change set of `RawTable`.
-2. `Table<K,V>` is implemented based on `RawTable`, constraining the types of Key and Value.
-3. `TypeTable` is implemented based on `RawTable`, using the type of Value as the Key for the storage structure.
-4. `StorageContext` is implemented based on `RawTable`, providing storage capabilities for Objects.
-5. `ResourceTable` and `ModuleTable` are implemented based on `TypeTable` and `Table` respectively, encapsulating them into `AccountStorage`, providing storage interfaces for Move's user space storage to replace Move's global storage instructions. At the same time, `AccountStorage` also provides an interface for operating Modules in the contract, which is convenient for defining the upgrade logic of the contract in the future.
-6. Developers can encapsulate their own application-specific storage interfaces based on the above storage structures.
+Earlier, we mentioned that smart contracts need to provide state management interfaces for applications. We believe that the state management of smart contracts should be as simple as heap memory operations but with clear ownership. In Rooch, [Object](./object) is the basic unit of state storage. An Object is similar to a "smart pointer," holding an address of a state space while also representing ownership of that state space.
+
+We then use Object and its dynamic fields to encapsulate upper-layer storage data structures, such as `Table`, `TypeTable`, and `Bag`. In Rooch, `Account` is also an Object, and the user's `Resource` is stored in the dynamic fields of `Object<Account>`. In this way, methods provided by the `account` module replace Move's global storage instructions, achieving a unified model of Object mode and `Account` Resource mode.
+
+In Rooch, `ModuleStore` is a special Object that holds all the user-deployed `Package`. Each `Package` is a child Object of `ModuleStore`, and each `Package` contains multiple `Module`, with `Module` being the dynamic fields of the `Package` Object.
+
+Based on this hierarchical object model, applications can design `AppSpecificStorage`. This allows the application's state to be stored within the same Object state space, while the state spaces of different applications can be distributed across different nodes. This forms the basis of the [DSTP](/learn/in-depth-tech/dstp) smart contract state layer.
 
 ### Design of State Tree
 
@@ -81,24 +82,17 @@ Rooch's state tree is implemented using a [Sparse Merkle Tree](https://github.co
 1. Performance is excellent because SMT's intermediate nodes are compressed and optimized.
 2. SMT can simultaneously provide inclusion and no-inclusion proofs, especially useful in Rollup scenarios.
 
-The overall architecture of Rooch's StateDB state tree is shown in the following diagram:
 
-![State DB](/docs/rooch-design-statedb.svg)
+In Rooch, each Object represents an SMT (Sparse Merkle Tree), with the `state_root` field in the Object storing the root hash of the SMT. The Key of the dynamic field in an Object is the path of the SMT, and the Value is the leaf node of the SMT.
 
-The first layer of the state tree in Rooch is an SMT with ObjectID as the key and the serialized binary data of the Object as the value. It can be understood as a global ObjectStore. There are three special Objects in it:
+![statedb](/docs/rooch-design-statedb.svg)
 
-1. AccountStorage Object is saved with the user's Address as the key, and will be described in detail later.
-2. Resource Table Object is saved with Hash(Address + 0) as the key. The ResourceTable's key is the resource type, and the value is the Resource.
-3. Module Table Object is saved with Hash(Address + 1) as the key. The ModuleTable's key is the Module Name, and the value is the Module bytecode.
+In Rooch, the leaf nodes of the first layer of the state tree are Objects, and each Object carries a state subtree, which can store the dynamic fields of the Object or child Objects. For instance, BitcoinStore is an Object that stores all the states on the Bitcoin chain, with UTXO and Inscription as its child Objects.
 
-In Rooch, each Table in Move corresponds to an SMT, and the Table Object mainly stores the root of the SMT. When loading data from a Table, the root of the SMT is first obtained through the Table Object ID, and the SMT is then initialized to obtain the value through the key. Tables can also be fields in Struct, with the serialized Table ID (TableHandle) stored in the Struct. In this way, Rooch's state tree is a hierarchy of nested SMTs.
+This model can also be applied in applications. For example, in a game where the state is represented by Gameworld, all the game states are within this Object. This allows for parallel transactions and state partitioning between applications, with the Gameworld state existing on dedicated nodes.
 
-### The types in Move
+However, all the subtrees will eventually be aggregated into a Root SMT. The root hash of this Root SMT will be written into a Bitcoin transaction, ensuring the verifiability of the state. Applications can also use Bitcoin's timestamp to prove that the user's state existed before a certain point in time.
 
-1. [Context](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/doc/context.md) represents the current transaction and storage context. It currently encapsulates the main methods related to state storage. In the future, when the `AppSpecific Storage` solution is provided, apps can switch the Context to store states in different storage spaces.
-2. [raw_table](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/doc/raw_table.md) provides the lowest level Key-Value storage interface. All contract state changes are ultimately unified as the Key-Value change set of `RawTable`. Each RawTable corresponds to a SMT in the StateDB. The ObjectID of the Global ObjectStore is a special ObjectID with all bytes being `0`.
-3. [type_table](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/doc/type_table.md) is a special type of Table that uses types as Keys and instances of types as Values.
-4. [AccountStorage](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/doc/account_storage.md) is the abstraction of user storage space in Move. It contains two Tables, the Resource Table and the Module Table. This allows direct operation on Resources and Modules in Move, without the need to use global storage instructions.
 
 #### Object
 
@@ -125,29 +119,14 @@ module moveos_std::object{
 
 For information on how to use Object, please refer to the [Object](../objects/object) documentation.
 
-### Unified State AccessPath API
 
-Since Rooch's StateDB is a nested SMT, we can provide a unified [access path API](https://github.com/rooch-network/rooch/issues/58).
+### Private Generics
 
-`/table/$table_handle/$key1,$key2`: Accesses the data of `$key1,$key2` in the Table of `$table_handle`. If `$table_handle` is `0x0`, it means that the accessed data is from the first level of the SMT.
+Move's global storage instructions impose restrictions on its generic parameters to ensure the safety of contract states. In Rooch, we introduce the `#[private_generics]` annotation, allowing developers to attach these restrictions to custom functions. This enables developers to define richer storage data structures in smart contracts while ensuring the security of these structures.
 
-In addition, the following aliases are provided for accessing data:
-
-* `/object/$object_id`: A shortcut for accessing the first layer of the SMT, which is equivalent to `/table/0x0/$object_id`.
-* `/module/$address/$module_name`: Accesses a Module in the AccountStorage of a user, which is equivalent to `/table/NamedTable($address,resource)/hex($module_name)`.
-* `/resource/$address/$resource_struct_tag`: Accesses a Resource in the AccountStorage of a user, which is equivalent to `/table/NamedTable($address,module)/hex($resource_struct_tag)`.
-
-Since SMT stores serialized values of Move's Struct, external systems can directly deserialize them into JSON or other data structures in programming languages, which is friendly to developers.
 
 ## Summary
 
-Rooch abstracts application storage needs into a KV storage interface, unifying the way application state is handled while simplifying the storage logic in the VM layer and providing the ability to extend new storage spaces. Based on the KV interface, richer and safer storage space interfaces are encapsulated in Rooch contracts to meet the storage needs of different application scenarios.
+Rooch abstracts smart contract state storage by combining Move's Object model with state trees. This design not only inherits Move's clear state ownership and type safety features but also provides an efficient state proof mechanism through state trees, enhancing the system's verifiability and security.
 
-Rooch's state tree and unified access path API facilitate combinations with external systems and ensure interoperability.
-
-Finally, regarding the relationship between the execution platform, contract developers, and users, Rooch continues the security constraints of Move, with clear ownership of the state, but operations on the state need to be constrained by API defined by developers. Also, Rooch is exploring solutions that allow users to directly operate on their own state.
-
-`Storage Abstraction` is a new concept, and as application scenarios become more diverse, new storage needs will emerge. Future explorations could include:
-
-1. Providing richer storage solutions tailored to specific application scenarios.
-2. Extending the abstraction of SMT, whereby any storage structure that can provide a state proof can theoretically be mapped in Move as a Table, such as the state tree of various chains, or Git in Offchain.
+In terms of the relationship between the execution platform, contract developers, and users, Rooch offers greater flexibility, allowing developers to freely design and implement application state storage structures. This enables developers to better meet the needs of various applications while ensuring the efficiency and security of storage, thereby promoting further development and innovation within the smart contract ecosystem.

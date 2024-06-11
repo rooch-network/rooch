@@ -18,6 +18,14 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.rpc[-1][0].decoded_value.value.value.value.milliseconds}} == 0"
       Then cmd: "rpc request --method rooch_getStates --params '["/object/0x2::object::Timestamp",{"decode":true}]'"
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::object::Timestamp>'"
+      Then cmd: "rpc request --method rooch_getObjectStates --params '["0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9", {"decode":false}]'"
+      Then cmd: "rpc request --method rooch_getObjectStates --params '["0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9", {"decode":true}]'"
+      Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::object::Timestamp'"
+      Then assert: "{{$.rpc[-1][0].value}} == {{$.rpc[-2][0].value}}'
+      Then cmd: "rpc request --method rooch_getFieldStates --params '["0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb", ["0x41022214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb8238d4e7553801ebf92b4311e16bbeb26eec676fd5bcbb31dcc59610148d90c8070000000000000000000000000000000000000000000000000000000000000002066f626a656374084f626a656374494400"], {"decode": true, "showDisplay": true}]'"
+      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::module_store::Package>'"
+      Then cmd: "rpc request --method rooch_listFieldStates --params '["0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb", null, "2", {"decode": false, "showDisplay": false}]'"
+      Then assert: "{{$.rpc[-1].has_next_page}} == true"
       Then stop the server 
     
     @serial
@@ -26,7 +34,8 @@ Feature: Rooch CLI integration tests
 
       Then cmd: "account create"
       Then cmd: "account list --json"
-      #Then cmd: "account nullify --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce"
+      # use bitcoin_address
+      Then cmd: "account nullify -a {{$.account[-1].account0.bitcoin_address}}"
 
       Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::GasCoin"]'"
       Then assert: "'{{$.rpc[-1].coin_type}}' == '0x3::gas_coin::GasCoin'"
@@ -133,7 +142,7 @@ Feature: Rooch CLI integration tests
     Then assert: "{{$.rpc[-1].data[0].object_type}} == 0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
-    Then cmd: "rpc request --method rooch_queryFieldStates --params '[{"object_id":"{{$.address_mapping.default}}"}, null, "10", {"descending": true,"showDisplay":false}]'"
+    Then cmd: "rpc request --method rooch_listFieldStates --params '["{{$.address_mapping.default}}", null, "10", {"descending": true,"showDisplay":false}]'"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
 #    Then cmd: "rpc request --method rooch_syncStates --params '[null, null, "2", false]'"
@@ -238,19 +247,19 @@ Feature: Rooch CLI integration tests
   @serial
   Scenario: coins example
       Given a server for coins
-      Then cmd: "account create"
+      Then cmd: "account create --json"
       Then cmd: "move publish -p ../../examples/coins  --named-addresses coins=default"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function default::fixed_supply_coin::faucet --args object:default::fixed_supply_coin::Treasury"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       
-      Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "{{$.address_mapping.default}}::fixed_supply_coin::FSC"]'"
+      Then cmd: "account list --json"
+      Then cmd: "rpc request --method rooch_getBalance --params '["{{$.account[-1].default.bitcoin_address}}", "{{$.account[-1].default.hex_address}}::fixed_supply_coin::FSC"]'"
       Then assert: "'{{$.rpc[-1].coin_type}}' == '{{$.address_mapping.default}}::fixed_supply_coin::FSC'"
       Then assert: "'{{$.rpc[-1].balance}}' != '0'"
 
-      #TODO change the argument `0x3` address to a user account
-      Then cmd: "move run --function rooch_framework::transfer::transfer_coin --type-args default::fixed_supply_coin::FSC --args address:0x3  --args 1u256 "
-      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      Then cmd: "account transfer --coin-type default::fixed_supply_coin::FSC --to {{$.account[-1].account0.bitcoin_address}} --amount 1"
+      Then assert: "{{$.account[-1].execution_info.status.type}} == executed"
       Then stop the server
 
   @serial
@@ -308,8 +317,37 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       Then stop the server
-  
-      @serial
+
+  @serial
+  Scenario: object display example
+      Given a server for object_display
+      Then cmd: "account create"
+      Then cmd: "move publish -p ../../examples/display  --named-addresses display=default"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      Then cmd: "move run --function default::display::create_object --sender default --args 'string:test_object' --args 'address:default' --args 'string:test object description'"
+      
+      Then cmd: "event get-events-by-event-handle -t default::display::NewObjectEvent"
+      Then cmd: "state --access-path /object/{{$.event[-1].data[0].decoded_event_data.value.id}}"
+      Then assert: "{{$.state[-1][0].decoded_value.value.value.type}} == '{{$.address_mapping.default}}::display::ObjectType'"
+
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/{{$.event[-1].data[0].decoded_event_data.value.id}}", {"decode": false, "showDisplay": true}]'"
+      Then assert: "{{$.rpc[-1][0].display_fields.fields.name}}  == test_object"
+
+      # because the indexer is async update, so sleep 2 seconds to wait indexer update.
+      Then sleep: "2"
+
+      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"{{$.address_mapping.default}}::display::ObjectType"}, null, "10", {"descending": false,"showDisplay":true}]'"
+      Then assert: "{{$.rpc[-1].data[0].object_id}} == {{$.event[-1].data[0].decoded_event_data.value.id}}"
+      Then assert: "{{$.rpc[-1].data[0].display_fields.fields.name}} == test_object"
+
+      Then cmd: "rpc request --method rooch_getObjectStates --params '["{{$.event[-1].data[0].decoded_event_data.value.id}}", {"decode": false, "showDisplay": true}]'"
+      Then assert: "{{$.rpc[-1][0].display_fields.fields.name}} == test_object"
+
+      
+      Then stop the server
+    
+    @serial
     Scenario: wasm test
       # prepare servers
       Given a server for wasm_test
@@ -350,12 +388,12 @@ Feature: Rooch CLI integration tests
       Then cmd: "account list --json" 
       
       # mint utxos
-      Then cmd bitcoin-cli: "generatetoaddress 101 {{$.account[-1][0].local_account.bitcoin_address}}"
+      Then cmd bitcoin-cli: "generatetoaddress 101 {{$.account[-1].default.bitcoin_address}}"
       Then sleep: "10" # wait rooch sync and index
 
       # query utxos
-      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type_with_owner":{"object_type":"0x4::utxo::UTXO","owner":"{{$.account[-1][0].local_account.address}}"}},null, null, null]'"
-      Then assert: "{{$.rpc[-1].data[0].owner}} == {{$.account[-1][0].local_account.address}}"
+      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type_with_owner":{"object_type":"0x4::utxo::UTXO","owner":"{{$.account[-1].default.bitcoin_address}}"}},null, null, null]'"
+      Then assert: "{{$.rpc[-1].data[0].owner}} == {{$.account[-1].default.address}}"
 
       # release servers
       Then stop the server

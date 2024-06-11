@@ -25,7 +25,13 @@ pub trait CommandAction<T: Serialize + Send>: Sized + Send {
     /// Executes the command, and serializes it to the common JSON output type
     async fn execute_serialized(self) -> RoochResult<String> {
         match self.execute().await {
-            Ok(result) => Ok(serde_json::to_string_pretty(&result).unwrap()),
+            Ok(result) => {
+                let output = serde_json::to_string_pretty(&result).unwrap();
+                if output == "null" {
+                    return Ok("".to_string());
+                }
+                Ok(output)
+            }
             Err(e) => Err(e),
         }
     }

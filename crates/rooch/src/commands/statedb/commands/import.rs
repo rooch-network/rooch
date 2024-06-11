@@ -15,6 +15,7 @@ use moveos_types::state::{KeyState, State};
 use moveos_types::state_resolver::StatelessResolver;
 use rooch_config::{RoochOpt, R_OPT_NET_HELP};
 use rooch_db::RoochDB;
+use rooch_genesis::RoochGenesis;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::rooch_network::RoochChainID;
 use serde::{Deserialize, Serialize};
@@ -83,15 +84,15 @@ impl ImportCommand {
 
         let opt = RoochOpt::new_with_default(self.base_data_dir, self.chain_id, None).unwrap();
         let rooch_db = RoochDB::init(opt.store_config()).unwrap();
-        let (root, moveos_store) = (rooch_db.root, rooch_db.moveos_store);
-
+        let genesis = RoochGenesis::load_or_init(opt.network(), &rooch_db).unwrap();
+        let root = genesis.genesis_root().clone();
         println!(
             "task progress started at {}, batch_size: {}",
             datetime,
             self.batch_size.unwrap()
         );
         println!("root object: {:?}", root);
-        (root, moveos_store, start_time)
+        (root, rooch_db.moveos_store, start_time)
     }
 }
 

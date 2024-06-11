@@ -160,8 +160,12 @@ impl ExportCommand {
         println!("Start statedb export task, batch_size: {:?}", BATCH_SIZE);
         let opt = RoochOpt::new_with_default(self.base_data_dir, self.chain_id, None)?;
         let rooch_db = RoochDB::init(opt.store_config())?;
-
-        println!("root object: {:?}", rooch_db.root);
+        let root = rooch_db.latest_root()?.ok_or_else(|| {
+            RoochError::from(anyhow::Error::msg(
+                "The statedb is empty, please init genesis first.",
+            ))
+        })?;
+        println!("root object: {:?}", root);
 
         let mut _start_time = SystemTime::now();
         let file_name = self.output.display().to_string();
@@ -172,7 +176,7 @@ impl ExportCommand {
         })?;
         let root_state_root = self
             .state_root
-            .unwrap_or(H256::from(rooch_db.root.state_root.into_bytes()));
+            .unwrap_or(H256::from(root.state_root.into_bytes()));
 
         let mode = ExportMode::try_from(self.mode.unwrap_or(ExportMode::Genesis.to_num()))?;
         match mode {
