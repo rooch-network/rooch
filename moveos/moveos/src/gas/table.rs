@@ -791,7 +791,7 @@ impl ClassifiedGasMeter for MoveOSGasMeter {
                 tx_gas_parameter.tx_size_gas_parameter_level_4.into()
             }
         };
-        
+
         match tx_size.checked_mul(tx_gas_factor) {
             None => {
                 self.gas_left = InternalGas::from(0);
