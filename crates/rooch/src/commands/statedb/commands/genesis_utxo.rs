@@ -103,7 +103,7 @@ impl GenesisUTXOCommand {
 
         let opt = RoochOpt::new_with_default(self.base_data_dir, self.chain_id, None).unwrap();
         let rooch_db = RoochDB::init(opt.store_config()).unwrap();
-        let (root, moveos_store) = (rooch_db.root, rooch_db.moveos_store);
+        let root = rooch_db.latest_root().unwrap().unwrap();
 
         let utxo_store_id = BitcoinUTXOStore::object_id();
         let address_mapping_id = RoochToBitcoinAddressMapping::object_id();
@@ -119,7 +119,7 @@ impl GenesisUTXOCommand {
             "rooch to bitcoin address_mapping_id: {:?}",
             address_mapping_id
         );
-        (root, moveos_store, start_time)
+        (root, rooch_db.moveos_store, start_time)
     }
 }
 

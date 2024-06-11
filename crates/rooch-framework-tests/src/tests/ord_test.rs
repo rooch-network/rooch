@@ -38,7 +38,7 @@ fn decode_inscription(btx_tx_hex: &str) {
     {
         debug!("{}. inscription: {:?}", i, inscription);
         assert_eq!(
-            inscription.body.unwrap_or_default(),
+            inscription.payload.body.unwrap_or_default(),
             inscription_from_move.body
         );
     }

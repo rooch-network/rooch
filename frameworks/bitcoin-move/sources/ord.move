@@ -742,6 +742,8 @@ module bitcoin_move::ord {
             option::some(CURSE_PUSHNUM)
         } else if(inscription.stutter) {
             option::some(CURSE_STUTTER)
+            // The contract has temporarily skipped the reinscription curse flag processing and
+            // needs to rely on scanning all SatPoint
             // TODO handle reinscription curse and curse vindicated
             // else if  {
             //         option::some(CURSE_REINSCRIPTION)

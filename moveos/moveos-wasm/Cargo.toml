@@ -1,7 +1,15 @@
 [package]
 name = "moveos-wasm"
-version = "0.5.0"
-edition = "2021"
+
+# Workspace inherited keys
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
 
 [dependencies]
 serde = { workspace = true }
@@ -9,6 +17,7 @@ serde_json = { workspace = true }
 once_cell = { workspace = true }
 wasmer = { workspace = true }
 wasmer-types = { workspace = true }
+wasmer-compiler-singlepass = { workspace = true }
 ciborium = { workspace = true }
 rand = { workspace = true }
 anyhow = { workspace = true }

@@ -156,7 +156,7 @@ impl From<serde_json::Error> for RoochError {
 
 #[derive(Debug, Error, Eq, PartialEq)]
 pub enum GenesisError {
-    #[error("Genesis version mismatch: from store({from_store:?}), from binary({from_binary:?}).")]
+    #[error("Genesis version mismatch: from store({from_store}), from binary({from_binary}).")]
     GenesisVersionMismatch {
         from_store: Box<GenesisInfo>,
         from_binary: Box<GenesisInfo>,

@@ -34,6 +34,7 @@
     "@roochnetwork/rooch-sdk-kit": "0.1.8",
     "@tanstack/react-query": "^5.0.0",
     "@tanstack/react-table": "^8.11.8",
+    "bitcoinjs-lib": "^6.1.6",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "cmdk": "^0.2.1",

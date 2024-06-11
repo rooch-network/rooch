@@ -30,11 +30,11 @@ pub type ParsedEnvelope = Envelope<Inscription>;
 
 #[derive(Debug, Default, PartialEq, Clone)]
 pub struct Envelope<T> {
-    pub(crate) payload: T,
-    pub(crate) input: u32,
-    pub(crate) offset: u32,
-    pub(crate) pushnum: bool,
-    pub(crate) stutter: bool,
+    pub payload: T,
+    pub input: u32,
+    pub offset: u32,
+    pub pushnum: bool,
+    pub stutter: bool,
 }
 
 fn remove_field(fields: &mut BTreeMap<&[u8], Vec<&[u8]>>, field: &[u8]) -> Option<Vec<u8>> {
@@ -135,7 +135,7 @@ impl From<RawEnvelope> for ParsedEnvelope {
 }
 
 impl ParsedEnvelope {
-    pub(crate) fn from_transaction(transaction: &Transaction) -> Vec<Self> {
+    pub fn from_transaction(transaction: &Transaction) -> Vec<Self> {
         RawEnvelope::from_transaction(transaction)
             .into_iter()
             .map(|envelope| envelope.into())

@@ -189,7 +189,7 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
         assert_eq!(inscription_object.value.index, index);
         assert_eq!(
             inscription_object.value.body,
-            inscription.body.unwrap_or_default()
+            inscription.payload.body.unwrap_or_default()
         );
     }
 }
