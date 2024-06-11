@@ -57,6 +57,8 @@ export const ManageSessions: React.FC = () => {
           authKey: authKey,
         })
         await refetch()
+      } catch (error) {
+        console.error(error)
       } finally {
         setLoading(null)
       }

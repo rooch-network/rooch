@@ -61,8 +61,8 @@ impl RustBindingTest {
 
         network.set_sequencer_account(sequencer.clone());
 
-        let genesis = RoochGenesis::build(network)?;
-        let root = genesis.init_genesis(&rooch_db)?;
+        let genesis = RoochGenesis::load_or_init(network, &rooch_db)?;
+        let root = genesis.genesis_root().clone();
 
         let executor = ExecutorActor::new(
             root.clone(),
