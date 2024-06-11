@@ -471,14 +471,23 @@ module rooch_nursery::bitseed {
 
     #[data_struct]
     struct InscribeGenerateArgs has copy, drop, store {
-        attrs: vector<u8>,
+        attrs: vector<u16>,
         seed: std::string::String,
         user_input: std::string::String,
     }
 
     fun pack_inscribe_generate_args(deploy_args: vector<u8>, seed: vector<u8>, user_input: vector<u8>): vector<u8>{
+        let attrs = vector::empty();
+
+        let i=0;
+        let len = vector::length(&deploy_args);
+        while (i < len) {
+            vector::push_back(&mut attrs, (*vector::borrow(&deploy_args, i) as u16));
+            i = i + 1;
+        };
+
         let args = InscribeGenerateArgs{
-            attrs: deploy_args,
+            attrs: attrs,
             seed: string::utf8(seed),
             user_input: string::utf8(user_input)
         };

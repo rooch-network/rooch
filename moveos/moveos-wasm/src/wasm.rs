@@ -5,8 +5,8 @@ use std::collections::BTreeMap;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex};
 
-use rand;
 use once_cell::sync::Lazy;
+use rand;
 use tracing::{debug, error, warn};
 use wasmer::Value::I32;
 use wasmer::*;

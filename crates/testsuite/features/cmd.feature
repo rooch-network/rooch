@@ -458,7 +458,7 @@ Feature: Rooch CLI integration tests
       Then cmd: "move run --function default::bitseed_runner::run"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
-      # Check mint deploy validity
+      # Check deploy validity
       Then cmd: "move view --function 0xa::bitseed::view_validity --args string:{{$.deploy[-1].inscriptions[0].Id}} "
       Then assert: "{{$.move[-1].vm_status}} == Executed"
       Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
@@ -477,7 +477,7 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # Check mint bits validity
-      Then cmd: "move view --function 0xa::bitseed::view_validity --args string:{{$.deploy[-1].inscriptions[0].Id}} "
+      Then cmd: "move view --function 0xa::bitseed::view_validity --args string:{{$.mint[-1].inscriptions[0].Id}} "
       Then assert: "{{$.move[-1].vm_status}} == Executed"
       Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
       
