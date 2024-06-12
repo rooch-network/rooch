@@ -3,11 +3,10 @@
 
 # Module `0x2::bcs`
 
-Source from https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framework/aptos-stdlib/sources/from_bcs.move
+Part source from https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framework/aptos-stdlib/sources/from_bcs.move
 This module provides a number of functions to convert _primitive_ types from their representation in <code>std::bcs</code>
-to values. This is the opposite of <code><a href="_to_bytes">bcs::to_bytes</a></code>. Note that it is not safe to define a generic public <code>from_bytes</code>
-function because this can violate implicit struct invariants, therefore only primitive types are offerred. If
-a general conversion back-and-force is needed, consider the <code>moveos_std::Any</code> type which preserves invariants.
+to values. This is the opposite of <code><a href="_to_bytes">bcs::to_bytes</a></code>.
+Note we provie a generic public <code>from_bytes</code> function and protected it with <code>#[data_struct(T)]</code>.
 
 
 -  [Constants](#@Constants_0)
@@ -123,11 +122,11 @@ The request Move type is not match with input Move type.
 ## Function `from_bytes`
 
 Function to deserialize a type T.
-Note the <code>private_generics</code> ensure only the <code>MoveValue</code>'s owner module can call this function
+Note the <code>data_struct</code> ensure the <code>T</code> must be a <code>#[data_struct]</code> type
 
 
-<pre><code>#[data_struct(#[MoveValue])]
-<b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_from_bytes">from_bytes</a>&lt;MoveValue&gt;(bytes: <a href="">vector</a>&lt;u8&gt;): MoveValue
+<pre><code>#[data_struct(#[T])]
+<b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_from_bytes">from_bytes</a>&lt;T&gt;(bytes: <a href="">vector</a>&lt;u8&gt;): T
 </code></pre>
 
 
@@ -137,12 +136,12 @@ Note the <code>private_generics</code> ensure only the <code>MoveValue</code>'s 
 ## Function `from_bytes_option`
 
 Function to deserialize a type T.
-Note the <code>private_generics</code> ensure only the <code>MoveValue</code>'s owner module can call this function
+Note the <code>data_struct</code> ensure the <code>T</code> must be a <code>#[data_struct]</code> type
 If the bytes are invalid, it will return None.
 
 
-<pre><code>#[data_struct(#[MoveValue])]
-<b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_from_bytes_option">from_bytes_option</a>&lt;MoveValue&gt;(bytes: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;MoveValue&gt;
+<pre><code>#[data_struct(#[T])]
+<b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_from_bytes_option">from_bytes_option</a>&lt;T&gt;(bytes: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;T&gt;
 </code></pre>
 
 
@@ -153,5 +152,5 @@ If the bytes are invalid, it will return None.
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bcs.md#0x2_bcs_native_from_bytes">native_from_bytes</a>&lt;MoveValue&gt;(bytes: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;MoveValue&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bcs.md#0x2_bcs_native_from_bytes">native_from_bytes</a>&lt;T&gt;(bytes: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;T&gt;
 </code></pre>

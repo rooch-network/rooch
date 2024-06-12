@@ -1,0 +1,44 @@
+# 数据结构体
+
+import { Callout, FileTree } from 'nextra/components'
+
+`#[data_struct]` 是一个结构体注解，用于标记结构体为纯数据结构体，使其可以在合约中直接反序列化。这个特性旨在方便开发者从外部数据源获取数据。
+
+## 示例
+
+```move
+module my_project::my_module {
+    #[data_struct]
+    struct MyData has copy, drop {
+        value: u64,
+        name: vector<u8>,
+    }
+}
+```
+
+这样，开发者就可以在合约中直接反序列化 `MyData` 结构体：
+
+```move
+let data: MyData = moveos_std::bcs::from_bytes(bytes);
+```
+
+`moveos_std::bcs::from_bytes` 函数也使用了 `#[data_struct(T)]` 注解，确保 `T` 必须是一个 `#[data_struct]` 类型。
+
+```move
+module moveos_std::bcs {
+    #[data_struct(T)]
+    /// 反序列化类型 T 的函数。
+    /// `data_struct` 注解确保 `T` 必须是一个 `#[data_struct]` 类型。
+    public fun from_bytes<T>(bytes: vector<u8>): T;
+}
+```
+
+## 工作原理
+
+`#[data_struct]` 基于 Move 的验证器实现，在编译时检查结构体的定义是否符合 `data_struct` 的要求。同时，在合约部署时也会进行再次验证。
+
+## 数据结构体规范
+
+<Callout>
+  TODO 这部分文档需要改进
+</Callout>

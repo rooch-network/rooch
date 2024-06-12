@@ -6,18 +6,20 @@ import { Callout, FileTree } from 'nextra/components'
 
 这个注解对开发基础合约库非常有用，因为它可以保证添加了该注解的函数不能被用户随意调用，只能通过上层合约封装的函数进行调用。
 
-以 `AccountStorage` 为例，我们希望将用户的`资源(Resource)`都保存在用户的存储空间内，但又要求某个合约只能操作自己定义的资源类型，不能操作其他合约定义的资源类型，这时候就可以使用 `#[private_generics(T)]` 注解来实现。
+以 `Account` 为例，我们希望将用户的`资源(Resource)`都保存在用户的存储空间内，但又要求某个合约只能操作自己定义的资源类型，不能操作其他合约定义的资源类型，这时候就可以使用 `#[private_generics(T)]` 注解来实现。
 
 ```move
-module moveos_std::account_storage{
+module moveos_std::account{
     #[private_generics(T)]
-    public fun borrow_resource<T: key>(ctx: &StorageContext, account: address): &T;
+   /// Borrow a mut resource from the account's storage
+   /// This function equates to `borrow_global_mut<T>(address)` instruction in Move
+   public fun borrow_mut_resource<T: key>(account: address): &mut T;
 }
 ```
 
-在上面的例子中，我们定义了一个 `borrow_resource` 函数，它的泛型 `T` 是私有的，只能在 `T` 所在的模块内使用，其他模块无法使用该函数。
+在上面的例子中，我们定义了一个 `borrow_mut_resource` 函数，它的泛型 `T` 是私有的，只能在 `T` 所在的模块内使用，其他模块无法使用该函数。
 
-### 它是如何工作的
+## 工作原理
 
 `#[private_generics(T)]` 是基于 Move 的 verifier 实现的，它会在编译时检查函数调用的合法性，如果发现错误的调用，就会报错。同时，合约部署的时候也会检查函数调用的合法性。
 
@@ -28,8 +30,7 @@ module moveos_std::account_storage{
 ### 参考链接
 
 1. 以下模块中使用了 `#[private_generics(T)]` 注解，可以作为参考：
-    - [moveos_std::account_storage](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/sources/account_storage.move)
-    - [moveos_std::storage_context](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/sources/storage_context.move)
+    - [moveos_std::account](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/sources/account.move)
     - [moveos_std::signer](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/sources/signer.move)
     - [rooch_framework::coin](https://github.com/rooch-network/rooch/blob/main/frameworks/rooch-framework/sources/coin.move)
 2. [一文读懂私有泛型函数](../../blog/read-private-generics-in-one-article)

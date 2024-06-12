@@ -6,5 +6,6 @@
   "cryptographic-primitives": "密码原语",
   "timestamp": "时间戳",
   "private-generics": "私有泛型",
+  "data-struct": "数据结构体",
   "unit-test": "单元测试"
 }

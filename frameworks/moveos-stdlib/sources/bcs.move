@@ -1,15 +1,17 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-/// Source from https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framework/aptos-stdlib/sources/from_bcs.move
+/// Part source from https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framework/aptos-stdlib/sources/from_bcs.move
 
 /// This module provides a number of functions to convert _primitive_ types from their representation in `std::bcs`
-/// to values. This is the opposite of `bcs::to_bytes`. Note that it is not safe to define a generic public `from_bytes`
-/// function because this can violate implicit struct invariants, therefore only primitive types are offerred. If
-/// a general conversion back-and-force is needed, consider the `moveos_std::Any` type which preserves invariants.
+/// to values. This is the opposite of `bcs::to_bytes`. 
+/// Note we provie a generic public `from_bytes` function and protected it with `#[data_struct(T)]`.
 module moveos_std::bcs{
 
     use std::option::{Self, Option};
+
+    friend moveos_std::any;
+    friend moveos_std::copyable_any;
     
     /// The request Move type is not match with input Move type.
     const ErrorTypeNotMatch: u64 = 1;
@@ -39,26 +41,24 @@ module moveos_std::bcs{
         from_bytes<address>(v)
     }
 
-    #[data_struct(MoveValue)]
+    #[data_struct(T)]
     /// Function to deserialize a type T.
-    /// Note the `private_generics` ensure only the `MoveValue`'s owner module can call this function
-    public fun from_bytes<MoveValue>(bytes: vector<u8>): MoveValue {
+    /// Note the `data_struct` ensure the `T` must be a `#[data_struct]` type
+    public fun from_bytes<T>(bytes: vector<u8>): T {
         let opt_result = native_from_bytes(bytes);
         assert!(option::is_some(&opt_result), ErrorInvalidBytes);
         option::destroy_some(opt_result)
     }
 
-    #[data_struct(MoveValue)]
+    #[data_struct(T)]
     /// Function to deserialize a type T.
-    /// Note the `private_generics` ensure only the `MoveValue`'s owner module can call this function
+    /// Note the `data_struct` ensure the `T` must be a `#[data_struct]` type
     /// If the bytes are invalid, it will return None.
-    public fun from_bytes_option<MoveValue>(bytes: vector<u8>): Option<MoveValue> {
+    public fun from_bytes_option<T>(bytes: vector<u8>): Option<T> {
         native_from_bytes(bytes)
     }
 
-    native public(friend) fun native_from_bytes<MoveValue>(bytes: vector<u8>): Option<MoveValue>;
-    friend moveos_std::any;
-    friend moveos_std::copyable_any;
+    native public(friend) fun native_from_bytes<T>(bytes: vector<u8>): Option<T>;
 
     // TODO: add test cases for this module.
 }
