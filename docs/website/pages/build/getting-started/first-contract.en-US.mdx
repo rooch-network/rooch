@@ -10,7 +10,7 @@ rooch move new hello_rooch
 
 After executing this Rooch CLI command, a Rooch contract project will be created and automatically initialized. The root directory of the project contains a `sources` directory for storing the Move contract code, and a manifest file named `Move.toml` for declaring the current project. The name, version, address alias (named address) and project dependencies.
 
-Contents of the `Move.toml` file of the `hello-rooch` project:
+Contents of the `Move.toml` file of the `hello_rooch` project:
 
 ```toml
 [package]
@@ -23,7 +23,7 @@ MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "f
 RoochFramework = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/rooch-framework", rev = "main" }
 
 [addresses]
-hello_rooch = "0xf5ecfc49f55e283119104978b60995b0ec84a5bd760a0305b24b9a4175deff7b"
+hello_rooch = "0xbc34dd9a140ab26f88f466c9ea7ea14507bc2795dcfd4b6c7ac694dd3c2e1c8d"
 std = "0x1"
 moveos_std = "0x2"
 rooch_framework = "0x3"
