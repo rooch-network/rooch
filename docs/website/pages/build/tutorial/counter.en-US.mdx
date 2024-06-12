@@ -30,8 +30,9 @@ module quick_start_counter::quick_start_counter {
         count_value: u64
     }
 
-    fun init(account: &signer) {
-        account::move_resource_to(account, Counter { count_value: 0 });
+    fun init() {
+        let signer = moveos_std::signer::module_signer<Counter>();
+        account::move_resource_to(&signer, Counter { count_value: 0 });
     }
 
     entry fun increase() {
@@ -41,7 +42,7 @@ module quick_start_counter::quick_start_counter {
 }
 ```
 
-With a simple 16 lines of code, a simple counter function is implemented on Rooch Move.
+With a simple 17 lines of code, a simple counter function is implemented on Rooch Move.
 
 What follows is a detailed description of what each line of code does.
 
@@ -84,8 +85,9 @@ We want to record the value of the `Counter` type into Rooch's global storage, s
 ### Initialization function
 
 ```move
-fun init(account: &signer) {
-    account::move_resource_to(account, Counter { count_value: 0 });
+fun init() {
+    let signer = moveos_std::signer::module_signer<Counter>();
+    account::move_resource_to(&signer, Counter { count_value: 0 });
 }
 ```
 
@@ -137,6 +139,7 @@ $ rooch env list
 ---------------------------------------------------------------------------------------------------------------------------------------------------------
          local           |               http://0.0.0.0:50051               |                       Null                       |
           dev            |       https://dev-seed.rooch.network:443/        |                       Null                       |     True
+          test           |       https://test-seed.rooch.network:443/       |                       Null                       |
 ```
 
 Note that if the `dev` environment of `Active Env` is not `True`, use the `rooch env switch --alias dev` command to switch to the development network.
@@ -169,26 +172,141 @@ INCLUDING DEPENDENCY MoveosStdlib
 INCLUDING DEPENDENCY RoochFramework
 BUILDING quick_start_counter
 
-Publish modules to address: 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7
+Publish modules to address: rooch15veygsvpa5z6vxvym94e333ffhh7m7mq57xwj4h43zvzhly4khksd5ng3u(0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed)
 {
   "sequence_info": {
-    "tx_order": "997",
-    "tx_order_signature": {
-      "auth_validator_id": "0",
-      "payload": "0x00f77ea5b2c79f9d18813d1a355040cd0d7edeed0773cf8ec055c9bb7728b8858b2bb817c7f219544f488a9908ea6be3e5d0b01341920e755766ff1e287a866e03ca2ecf17ab26b7c32ddba10913e6f74d43b5258905bef0f88b6d744d73bc9ce9"
-    },
-    "tx_accumulator_root": "0xebb1ce9e45ad2122a7f6260275c5eec4fb0f8c827e8e3fcdbab3001aa0b66847"
+    "tx_order": "5",
+    "tx_order_signature": "0x013d31eb1b76766a1c03e7088d75cf4b0649efd4db8f86842c2665b5bd6da0ccf56cde9472693711e1b45ecb264971e14edf6ffd6b8e92cfc56246273adefa1e8c026c9e5a00643a706d3826424f766bbbb08adada4dc357c1b279ad4662d2fd1e2e",
+    "tx_accumulator_root": "0xa10aef32590d44f1fc26d4bcd6700dc62d0f97f3698923f2c3950953043e8b19",
+    "tx_timestamp": "1718118147458"
   },
   "execution_info": {
-    "tx_hash": "0x25e0647cf5d7b2824b7b7fa8ba561804869e8f097c18ae00d45da449bd9eaddd",
-    "state_root": "0x5689c932ff3383b4fd6f0bedaf454e0ac6d1c21e2a28b158749bb808c95160ab",
-    "event_root": "0x16bb2251e4ecb63bfa514b21cac7b2fff73a4ddac5174148b19eac4140636da4",
-    "gas_used": 1752492,
+    "tx_hash": "0xa3a166a882635e6a97d066130d02576c317f6f81656e859dfeb385e2f061c493",
+    "state_root": "0xde70ca62e018e9b65190d4c95b57af46cc7da66e0957db3b498d8e4468ba40f5",
+    "event_root": "0x781ba63734efdd52025e1b3882360cb949a495779f0f0d93707d207988b415ef",
+    "gas_used": 5833493,
     "status": {
       "type": "executed"
     }
   },
-  "output": null
+  "output": {
+    "status": {
+      "type": "executed"
+    },
+    "changeset": {
+      "global_size": 33,
+      "changes": {
+        "0x05921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9": {
+          "op": {
+            "type": "modify",
+            "value": "0x0105921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b90000000000000000000000000000000000000000000000000000000000000002005350415253455f4d45524b4c455f504c414345484f4c4445525f4841534800000000000000000000000000000000000000000000000000008265d20790010000",
+            "value_type": "0x2::object::ObjectEntity<0x2::object::Timestamp>",
+            "decoded_value": null,
+            "display_fields": null
+          },
+          "fields": []
+        },
+        "0x174f118fa37af78cd65c70d609e5a51caf374f143fb613be37ec448dbf6b8288": {
+          "op": {
+            "type": "modify",
+            "value": "0x01174f118fa37af78cd65c70d609e5a51caf374f143fb613be37ec448dbf6b82880000000000000000000000000000000000000000000000000000000000000000005350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000000000000000000000000000000000000000000000000000a2e3da000000000000000000000000000000000000000000000000000000000000",
+            "value_type": "0x2::object::ObjectEntity<0x3::coin_store::CoinStore<0x3::gas_coin::GasCoin>>",
+            "decoded_value": null,
+            "display_fields": null
+          },
+          "fields": []
+        },
+        "0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb": {
+          "op": null,
+          "fields": [
+            {
+              "type": "object",
+              "key": "0x41022214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb0171181807b68886deac0a601010fd78f9ba0737d7e2a8e268182af914da2b46070000000000000000000000000000000000000000000000000000000000000002066f626a656374084f626a656374494400",
+              "key_state": "0x41022214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb0171181807b68886deac0a601010fd78f9ba0737d7e2a8e268182af914da2b46070000000000000000000000000000000000000000000000000000000000000002066f626a656374084f626a656374494400",
+              "op": {
+                "type": "modify",
+                "value": "0x022214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb0171181807b68886deac0a601010fd78f9ba0737d7e2a8e268182af914da2b46a332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed007cdaf4f6dd5bf7a1240cf1d7177e469b7138e2db126713566df81b3dbd06243202000000000000004747ee06900100008265d2079001000000",
+                "value_type": "0x2::object::ObjectEntity<0x2::module_store::Package>",
+                "decoded_value": null,
+                "display_fields": null
+              },
+              "fields": [
+                {
+                  "type": "normal",
+                  "key": "0x1413717569636b5f73746172745f636f756e74657207000000000000000000000000000000000000000000000000000000000000000106737472696e6706537472696e6700",
+                  "key_state": "0x1413717569636b5f73746172745f636f756e74657207000000000000000000000000000000000000000000000000000000000000000106737472696e6706537472696e6700",
+                  "op": {
+                    "type": "new",
+                    "value": "0x8d03a11ceb0b060000000b010006020604030a1c042606052c1507417808b9014006f901220a9b02050ca0023b0ddb020200000101010200030800000400000000050000000107030401080208000501000109060001080202030204020001070800010800010501070900010c02060c090013717569636b5f73746172745f636f756e746572076163636f756e74067369676e657207436f756e74657208696e63726561736504696e69740b636f756e745f76616c756513626f72726f775f6d75745f7265736f757263650d6d6f64756c655f7369676e6572106d6f76655f7265736f757263655f746fa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed00000000000000000000000000000000000000000000000000000000000000020520a332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed000201060300000400010c070038000c000a00100014060100000000000000160b000f00150201000000050738010c000e000600000000000000001200380202000000",
+                    "value_type": "0x2::move_module::MoveModule",
+                    "decoded_value": null,
+                    "display_fields": null
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed": {
+          "op": {
+            "type": "modify",
+            "value": "0x01a332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5eda332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed008c3dab7e872ecdb12ec13a98486825a0641cedab8913db8158a46a29b3e23d9002000000000000004737cf06900100008265d20790010000a332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed0400000000000000",
+            "value_type": "0x2::object::ObjectEntity<0x2::account::Account>",
+            "decoded_value": null,
+            "display_fields": null
+          },
+          "fields": [
+            {
+              "type": "normal",
+              "key": "0x5f5e613333323434343138316564303561363139383464393662393863363239346465666564666236306137386365393536663538383938326266633935623565643a3a717569636b5f73746172745f636f756e7465723a3a436f756e74657207000000000000000000000000000000000000000000000000000000000000000106737472696e6706537472696e6700",
+              "key_state": "0x5f5e613333323434343138316564303561363139383464393662393863363239346465666564666236306137386365393536663538383938326266633935623565643a3a717569636b5f73746172745f636f756e7465723a3a436f756e74657207000000000000000000000000000000000000000000000000000000000000000106737472696e6706537472696e6700",
+              "op": {
+                "type": "new",
+                "value": "0x0000000000000000",
+                "value_type": "0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_counter::Counter",
+                "decoded_value": null,
+                "display_fields": null
+              }
+            }
+          ]
+        },
+        "0xd97eb224c44cd666eacab1ac4ce648f47d3d7a0491abfa289e81a29708bb3c2d": {
+          "op": {
+            "type": "modify",
+            "value": "0x01d97eb224c44cd666eacab1ac4ce648f47d3d7a0491abfa289e81a29708bb3c2da332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed005350415253455f4d45524b4c455f504c414345484f4c4445525f48415348000000000000000000004737cf06900100004737cf069001000032011b050000000000000000000000000000000000000000000000000000000000",
+            "value_type": "0x2::object::ObjectEntity<0x3::coin_store::CoinStore<0x3::gas_coin::GasCoin>>",
+            "decoded_value": null,
+            "display_fields": null
+          },
+          "fields": []
+        }
+      }
+    },
+    "events": [
+      {
+        "event_id": {
+          "event_handle_id": "0x8e3089f2c059cc5377a1b6b7c3dcefba8a586697c35de27c2a4b68f81defb69c",
+          "event_seq": 4
+        },
+        "event_type": "0x3::coin_store::WithdrawEvent",
+        "event_data": "0x01d97eb224c44cd666eacab1ac4ce648f47d3d7a0491abfa289e81a29708bb3c2d53303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e1503590000000000000000000000000000000000000000000000000000000000",
+        "event_index": 0,
+        "decoded_event_data": null
+      },
+      {
+        "event_id": {
+          "event_handle_id": "0x6ab771425e05fad096ce70d6ca4903de7cca732ee4c9f6820eb215be288e98dd",
+          "event_seq": 6
+        },
+        "event_type": "0x3::coin_store::DepositEvent",
+        "event_data": "0x01174f118fa37af78cd65c70d609e5a51caf374f143fb613be37ec448dbf6b828853303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e1503590000000000000000000000000000000000000000000000000000000000",
+        "event_index": 1,
+        "decoded_event_data": null
+      }
+    ],
+    "gas_used": 5833493,
+    "is_upgrade": true
+  }
 }
 ```
 
@@ -199,14 +317,14 @@ When you see `executed` in the `execution_info.status` of the output result, it 
 The syntax is `rooch resource --address address_of_published_resource --resource resource_type`:
 
 ```shell
-[joe@mx ~]$ rooch resource --address 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7 --resource 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::quick_start_counter::Counter
+[joe@mx quick_start_counter]$ rooch resource --address 0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed --resource 0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_counter::Counter
 
 {
   "value": "0x0000000000000000",
-  "value_type": "0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::quick_start_counter::Counter",
+  "value_type": "0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_counter::Counter",
   "decoded_value": {
     "abilities": 8,
-    "type": "0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::quick_start_counter::Counter",
+    "type": "0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_counter::Counter",
     "value": {
       "count_value": "0"
     }
@@ -224,27 +342,111 @@ The syntax is `rooch move run --function address_published_by_the_module::module
 > Note: In the blockchain system, performing certain operations is usually performed by sending a transaction to the blockchain system to perform the corresponding operation.
 
 ```shell
-[joe@mx ~]$ rooch move run --function 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::quick_start_counter::increase --sender-account 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7
+[joe@mx quick_start_counter]$ rooch move run --function 0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_counter::increase --sender-account 0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed
 
 {
   "sequence_info": {
-    "tx_order": "1010",
-    "tx_order_signature": {
-      "auth_validator_id": "0",
-      "payload": "0x00e49e8780b71610f7e5160b06b6481612547374a15af6a66e2d7e32a028443e907ab41ab068b4c83ba0253cc84dd9bc170e3ff09eced73b6564089b74a930c500ca2ecf17ab26b7c32ddba10913e6f74d43b5258905bef0f88b6d744d73bc9ce9"
-    },
-    "tx_accumulator_root": "0xfa6ad39423cc3070a46c5db5b20e6cdda3c1070afd9a81401ccaee1e4998b9fd"
+    "tx_order": "6",
+    "tx_order_signature": "0x01e5741c9fbe1ecabcb77fc14b9b0b742e73dca68e67312a4551053fb873c50ebe1b8c888c0a93f4ad3b04250846486243b24069455589504da62ebcdf56a8af5e026c9e5a00643a706d3826424f766bbbb08adada4dc357c1b279ad4662d2fd1e2e",
+    "tx_accumulator_root": "0xc4984b11e1bd7df8f7fe112c81f3bd3d9174a6f3eecf44632c01d53b41b9af50",
+    "tx_timestamp": "1718118671176"
   },
   "execution_info": {
-    "tx_hash": "0x2f5b18d14d31441ab48b683c8e7ea650363bf822f4e8721004884eda29c96440",
-    "state_root": "0x75f3cb5e0c14660db68280c67301adec769f59264f081d06c1ff92d493bbaa74",
-    "event_root": "0xc6b4ac8ed511911965caca540fdedeef87db64d6ae29f58a874161630d219d5e",
-    "gas_used": 670730,
+    "tx_hash": "0xe730b9a9e81811bdb43453b4ac9fd6000719a6150c5a072755498b5bd74d748b",
+    "state_root": "0xa5f71d043d0340225111b75484db1a7fd6cb4f1a21b4ad50c8dbed673b478952",
+    "event_root": "0x0592a0d8bbda61e6c7877b0f7dc524564a65c1cbb82aa908e84717ec41e887e0",
+    "gas_used": 293880,
     "status": {
       "type": "executed"
     }
   },
-  "output": null
+  "output": {
+    "status": {
+      "type": "executed"
+    },
+    "changeset": {
+      "global_size": 33,
+      "changes": {
+        "0x05921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9": {
+          "op": {
+            "type": "modify",
+            "value": "0x0105921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b90000000000000000000000000000000000000000000000000000000000000002005350415253455f4d45524b4c455f504c414345484f4c4445525f4841534800000000000000000000000000000000000000000000000000004863da0790010000",
+            "value_type": "0x2::object::ObjectEntity<0x2::object::Timestamp>",
+            "decoded_value": null,
+            "display_fields": null
+          },
+          "fields": []
+        },
+        "0x174f118fa37af78cd65c70d609e5a51caf374f143fb613be37ec448dbf6b8288": {
+          "op": {
+            "type": "modify",
+            "value": "0x01174f118fa37af78cd65c70d609e5a51caf374f143fb613be37ec448dbf6b82880000000000000000000000000000000000000000000000000000000000000000005350415253455f4d45524b4c455f504c414345484f4c4445525f4841534800000000000000000000000000000000000000000000000000009a5fdf000000000000000000000000000000000000000000000000000000000000",
+            "value_type": "0x2::object::ObjectEntity<0x3::coin_store::CoinStore<0x3::gas_coin::GasCoin>>",
+            "decoded_value": null,
+            "display_fields": null
+          },
+          "fields": []
+        },
+        "0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed": {
+          "op": {
+            "type": "modify",
+            "value": "0x01a332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5eda332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed00cc912704dedace94af2fc032913af9ca8f770189b022b282e0b7720060b8b7c702000000000000004737cf06900100008265d20790010000a332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed0500000000000000",
+            "value_type": "0x2::object::ObjectEntity<0x2::account::Account>",
+            "decoded_value": null,
+            "display_fields": null
+          },
+          "fields": [
+            {
+              "type": "normal",
+              "key": "0x5f5e613333323434343138316564303561363139383464393662393863363239346465666564666236306137386365393536663538383938326266633935623565643a3a717569636b5f73746172745f636f756e7465723a3a436f756e74657207000000000000000000000000000000000000000000000000000000000000000106737472696e6706537472696e6700",
+              "key_state": "0x5f5e613333323434343138316564303561363139383464393662393863363239346465666564666236306137386365393536663538383938326266633935623565643a3a717569636b5f73746172745f636f756e7465723a3a436f756e74657207000000000000000000000000000000000000000000000000000000000000000106737472696e6706537472696e6700",
+              "op": {
+                "type": "modify",
+                "value": "0x0100000000000000",
+                "value_type": "0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_counter::Counter",
+                "decoded_value": null,
+                "display_fields": null
+              }
+            }
+          ]
+        },
+        "0xd97eb224c44cd666eacab1ac4ce648f47d3d7a0491abfa289e81a29708bb3c2d": {
+          "op": {
+            "type": "modify",
+            "value": "0x01d97eb224c44cd666eacab1ac4ce648f47d3d7a0491abfa289e81a29708bb3c2da332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed005350415253455f4d45524b4c455f504c414345484f4c4445525f48415348000000000000000000004737cf06900100004737cf06900100003a8516050000000000000000000000000000000000000000000000000000000000",
+            "value_type": "0x2::object::ObjectEntity<0x3::coin_store::CoinStore<0x3::gas_coin::GasCoin>>",
+            "decoded_value": null,
+            "display_fields": null
+          },
+          "fields": []
+        }
+      }
+    },
+    "events": [
+      {
+        "event_id": {
+          "event_handle_id": "0x8e3089f2c059cc5377a1b6b7c3dcefba8a586697c35de27c2a4b68f81defb69c",
+          "event_seq": 5
+        },
+        "event_type": "0x3::coin_store::WithdrawEvent",
+        "event_data": "0x01d97eb224c44cd666eacab1ac4ce648f47d3d7a0491abfa289e81a29708bb3c2d53303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696ef87b040000000000000000000000000000000000000000000000000000000000",
+        "event_index": 0,
+        "decoded_event_data": null
+      },
+      {
+        "event_id": {
+          "event_handle_id": "0x6ab771425e05fad096ce70d6ca4903de7cca732ee4c9f6820eb215be288e98dd",
+          "event_seq": 7
+        },
+        "event_type": "0x3::coin_store::DepositEvent",
+        "event_data": "0x01174f118fa37af78cd65c70d609e5a51caf374f143fb613be37ec448dbf6b828853303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696ef87b040000000000000000000000000000000000000000000000000000000000",
+        "event_index": 1,
+        "decoded_event_data": null
+      }
+    ],
+    "gas_used": 293880,
+    "is_upgrade": false
+  }
 }
 ```
 
@@ -253,13 +455,14 @@ If you see `executed` in the `status`, it proves that the `increase` function ca
 6. Check again to see if the counter value is what we expected:
 
 ```shell
-[joe@mx ~]$ rooch resource --address 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7 --resource 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::quick_start_counter::Counter
+[joe@mx quick_start_counter]$ rooch resource --address 0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed --resource 0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_counter::Counter
+
 {
   "value": "0x0100000000000000",
-  "value_type": "0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::quick_start_counter::Counter",
+  "value_type": "0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_counter::Counter",
   "decoded_value": {
     "abilities": 8,
-    "type": "0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::quick_start_counter::Counter",
+    "type": "0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_counter::Counter",
     "value": {
       "count_value": "1"
     }
@@ -319,7 +522,7 @@ module quick_start_object_counter::quick_start_object_counter {
         count_value: u64
     }
 
-    struct UserCounterCreatedEvent has drop {
+    struct UserCounterCreatedEvent has drop, copy {
         id: ObjectID
     }
 
@@ -373,13 +576,13 @@ To demonstrate this example, we need to prepare two Rooch accounts.
 You can use the `rooch account create` command to create an account, use the `rooch account switch` command to switch accounts, and use the `rooch account list` command to list the currently existing account list.
 
 ```shell
-                     Rooch Address (Ed25519)                       |               Public Key (Base64)                | Auth Validator ID | Active Address
----------------------------------------------------------------------------------------------------------------------------------------------------------
-0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63 |   AP/7lMzNiiFOSk6AWrYlozVau+5dBukK5nLt9ei6DE4N   |        0         |     True
-0xd9ba8633a96c91eea2c180e23e8cca8bb8cfd438764143d7ca4753c3e2b7f5fe |   AIF6/NuwAcH3nSgETrAt51ppZyE3RlSKxe5eWqaBNKNG   |        0         |
+                             Address                               |                            Hex Address                             |                 Bitcoin Address                  |   Active
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ rooch13z9fpey3h02ehmak3tajnukfwzr9las4ggkvr739ux2dlmaehvjqcn37nn  | 0x888a90e491bbd59befb68afb29f2c970865ff615422cc1fa25e194dfefb9bb24 | bcrt1plzca283s9qu5vtkl72pu5xad70agt5dwa4wynp8rq4uumnhd4jkqgqrp8h |   false
+ rooch15veygsvpa5z6vxvym94e333ffhh7m7mq57xwj4h43zvzhly4khksd5ng3u  | 0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed | bcrt1pfxk46j0awt0k8uamjxdj53d9rjdkk039zr7cpvurwkd52x5d4hmsstkgft |    true
 ```
 
-Next, I will use these two accounts to demonstrate this example. The address starting with `0x94bfa` is used as the account address for publishing the counter contract, and the account starting with `0xd9ba8` is used as other users to operate the shared counter.
+Next, I will use these two accounts to demonstrate this example. The address starting with `0xa3324` is used as the account address for publishing the counter contract, and the account starting with `0x888a9` is used as other users to operate the shared counter.
 
 ### Demo
 
@@ -395,8 +598,8 @@ rooch move publish --named-addresses quick_start_object_counter=default
 curl --location --request POST 'https://dev-seed.rooch.network:443' --header 'Content-Type: application/json' --data-raw '{
  "id":101,
  "jsonrpc":"2.0",
- "method":"rooch_getEventsByEventHandle",                                                                                                                       "params":["0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::UserCounterCreatedEvent", null, "1000", {"decode":true}]
-}'|jq '.result.data[0].decoded_event_data.value.id'
+ "method":"rooch_getEventsByEventHandle",                                                                                                                       "params":["0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::UserCounterCreatedEvent", null, null, true, {"decode":true}]
+}' | jq '.result.data[0].decoded_event_data.value.id'
 ```
 
 Use `curl` to send a request to the Rooch development network to obtain the counter object ID created in the contract just deployed.
@@ -408,9 +611,9 @@ You can later see in the response information that the counter object ID is `0x0
 ```shell
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-100   922  100   683  100   239   2831    990 --:--:-- --:--:-- --:--:--  3841
+100  1045  100   685  100   360    572    301  0:00:01  0:00:01 --:--:--   874
 
-"0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2"
+"0xe716def21bbda10962f7e9e6af296389bb34bdc69cacfc31ace7de55bd257697"
 ```
 
 3. Check the two counters we created and initialized separately.
@@ -420,27 +623,32 @@ You can later see in the response information that the counter object ID is `0x0
 The command to view the counter object is `rooch object --id CONTRACT_ADDRESS::MODULE_NAME::TYPE_NAME`. Because named objects are globally unique, we can use the type name to directly obtain the related properties of the shared counter object.
 
 ```shell
-[joe@mx quick_start_object_counter]$ rooch object --id 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter
+[joe@mx quick_start_object_counter]$ rooch object --id 0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::Counter
 
 {
-  "value": "0x5d6b1f08e259030c7493b7b4b0f78a390cf3eb81b720d5ef123a6f7ba794c3880000000000000000000000000000000000000000000000000000000000000000010000000000000000",
-  "value_type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+  "value": "0x01f5bfb43a8a476bfa0a32f49ae668b87c33367dfdc10599bff4492702b7c9a0ab0000000000000000000000000000000000000000000000000000000000000000015350415253455f4d45524b4c455f504c414345484f4c4445525f48415348000000000000000000008f1de307900100008f1de307900100000000000000000000",
+  "value_type": "0x2::object::ObjectEntity<0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::Counter>",
   "decoded_value": {
     "abilities": 0,
-    "type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+    "type": "0x2::object::ObjectEntity<0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::Counter>",
     "value": {
+      "created_at": "1718119243151",
       "flag": 1,
-      "id": "0x5d6b1f08e259030c7493b7b4b0f78a390cf3eb81b720d5ef123a6f7ba794c388",
-      "owner": "0x0000000000000000000000000000000000000000000000000000000000000000",    <= Note here!
+      "id": "0xf5bfb43a8a476bfa0a32f49ae668b87c33367dfdc10599bff4492702b7c9a0ab",
+      "owner": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "size": "0",
+      "state_root": "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000",
+      "updated_at": "1718119243151",
       "value": {
         "abilities": 12,
-        "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter",
+        "type": "0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::Counter",
         "value": {
-          "count_value": "0"    <= Note here!
+          "count_value": "0"
         }
       }
     }
-  }
+  },
+  "display_fields": null
 }
 ```
 
@@ -449,30 +657,36 @@ You can see that the `owner` address of the shared counter is `0x000000000000000
 - Counters owned by user:
 
 ```shell
-[joe@mx quick_start_object_counter]$ rooch object --id 0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2
+[joe@mx quick_start_object_counter]$ rooch object --id 0xe716def21bbda10962f7e9e6af296389bb34bdc69cacfc31ace7de55bd257697
 
 {
-  "value": "0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c294bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63007b00000000000000",
-  "value_type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+  "value": "0x01e716def21bbda10962f7e9e6af296389bb34bdc69cacfc31ace7de55bd257697a332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed005350415253455f4d45524b4c455f504c414345484f4c4445525f48415348000000000000000000008f1de307900100008f1de307900100007b00000000000000",
+  "value_type": "0x2::object::ObjectEntity<0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::Counter>",
   "decoded_value": {
     "abilities": 0,
-    "type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+    "type": "0x2::object::ObjectEntity<0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::Counter>",
     "value": {
+      "created_at": "1718119243151",
       "flag": 0,
-      "id": "0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2",
-      "owner": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63",    <= Note here!
+      "id": "0xe716def21bbda10962f7e9e6af296389bb34bdc69cacfc31ace7de55bd257697",
+      "owner": "0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed",    <= Note here!
+      "size": "0",
+      "state_root": "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000",
+      "updated_at": "1718119243151",
       "value": {
         "abilities": 12,
-        "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter",
+        "type": "0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::Counter",
         "value": {
           "count_value": "123"    <= Note here!
         }
       }
     }
-  }
+  },
+  "display_fields": null
 }
 ```
-You can see that the `owner` address of the counter owned by the user is `0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63`, which represents an object of `UserOwnedObject` type, and its count value `count_value` is also initialized to `123`.
+
+You can see that the `owner` address of the counter owned by the user is `0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed`, which represents an object of `UserOwnedObject` type, and its count value `count_value` is also initialized to `123`.
 
 4. Call the `increase` function to increment the counter.
 
@@ -487,27 +701,31 @@ rooch move run --function 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6
 Check:
 
 ```shell
-[joe@mx quick_start_object_counter]$ rooch object --id 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter
-
+[joe@mx quick_start_object_counter]$ rooch object --id 0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::Counter
 {
-  "value": "0x5d6b1f08e259030c7493b7b4b0f78a390cf3eb81b720d5ef123a6f7ba794c3880000000000000000000000000000000000000000000000000000000000000000010100000000000000",
-  "value_type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+  "value": "0x01f5bfb43a8a476bfa0a32f49ae668b87c33367dfdc10599bff4492702b7c9a0ab0000000000000000000000000000000000000000000000000000000000000000015350415253455f4d45524b4c455f504c414345484f4c4445525f48415348000000000000000000008f1de307900100008f1de307900100000100000000000000",
+  "value_type": "0x2::object::ObjectEntity<0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::Counter>",
   "decoded_value": {
     "abilities": 0,
-    "type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+    "type": "0x2::object::ObjectEntity<0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::Counter>",
     "value": {
+      "created_at": "1718119243151",
       "flag": 1,
-      "id": "0x5d6b1f08e259030c7493b7b4b0f78a390cf3eb81b720d5ef123a6f7ba794c388",
+      "id": "0xf5bfb43a8a476bfa0a32f49ae668b87c33367dfdc10599bff4492702b7c9a0ab",
       "owner": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "size": "0",
+      "state_root": "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000",
+      "updated_at": "1718119243151",
       "value": {
         "abilities": 12,
-        "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter",
+        "type": "0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::Counter",
         "value": {
-          "count_value": "1"    <= Note here!
+          "count_value": "1"   <= Note here!
         }
       }
     }
-  }
+  },
+  "display_fields": null
 }
 ```
 
@@ -516,32 +734,37 @@ Indeed, as we expected, the count increased!
 - User owns:
 
 ```shell
-rooch move run --function 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::increase --args object:0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2
+rooch move run --function 0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::increase --args object:0xe716def21bbda10962f7e9e6af296389bb34bdc69cacfc31ace7de55bd257697
 ```
 
 Check:
 
 ```shell
-[joe@mx quick_start_object_counter]$ rooch object --id 0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2
+[joe@mx quick_start_object_counter]$ rooch object --id 0xe716def21bbda10962f7e9e6af296389bb34bdc69cacfc31ace7de55bd257697
 {
-  "value": "0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c294bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63007c00000000000000",
-  "value_type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+  "value": "0x01e716def21bbda10962f7e9e6af296389bb34bdc69cacfc31ace7de55bd257697a332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed005350415253455f4d45524b4c455f504c414345484f4c4445525f48415348000000000000000000008f1de307900100008f1de307900100007c00000000000000",
+  "value_type": "0x2::object::ObjectEntity<0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::Counter>",
   "decoded_value": {
     "abilities": 0,
-    "type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+    "type": "0x2::object::ObjectEntity<0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::Counter>",
     "value": {
+      "created_at": "1718119243151",
       "flag": 0,
-      "id": "0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2",
-      "owner": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63",
+      "id": "0xe716def21bbda10962f7e9e6af296389bb34bdc69cacfc31ace7de55bd257697",
+      "owner": "0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed",
+      "size": "0",
+      "state_root": "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000",
+      "updated_at": "1718119243151",
       "value": {
         "abilities": 12,
-        "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter",
+        "type": "0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::Counter",
         "value": {
           "count_value": "124"    <= Note here!
         }
       }
     }
-  }
+  },
+  "display_fields": null
 }
 ```
 
@@ -550,8 +773,8 @@ The value of the user-owned counter changed from `123` to `124`.
 5. Switch accounts:
 
 ```shell
-[joe@mx ~]$ rooch account switch --address 0xd9ba8633a96c91eea2c180e23e8cca8bb8cfd438764143d7ca4753c3e2b7f5fe
-The active account was successfully switched to `0xd9ba8633a96c91eea2c180e23e8cca8bb8cfd438764143d7ca4753c3e2b7f5fe`
+[joe@mx quick_start_object_counter]$ rooch account switch --address 0x888a90e491bbd59befb68afb29f2c970865ff615422cc1fa25e194dfefb9bb24
+The active account was successfully switched to `rooch13z9fpey3h02ehmak3tajnukfwzr9las4ggkvr739ux2dlmaehvjqcn37nn`
 ```
 
 6. Increment the counter again.
@@ -559,42 +782,46 @@ The active account was successfully switched to `0xd9ba8633a96c91eea2c180e23e8cc
 - Shared:
 
 ```shell
-rooch move run --function 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::increase --args object:0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter
+rooch move run --function 0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::increase --args object:0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::Counter
 ```
 
 Check:
 
 ```shell
-[joe@mx quick_start_object_counter]$ rooch object --id 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter
-
+[joe@mx quick_start_object_counter]$ rooch object --id 0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::Counter
 {
-  "value": "0x5d6b1f08e259030c7493b7b4b0f78a390cf3eb81b720d5ef123a6f7ba794c3880000000000000000000000000000000000000000000000000000000000000000010100000000000000",
-  "value_type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+  "value": "0x01f5bfb43a8a476bfa0a32f49ae668b87c33367dfdc10599bff4492702b7c9a0ab0000000000000000000000000000000000000000000000000000000000000000015350415253455f4d45524b4c455f504c414345484f4c4445525f48415348000000000000000000008f1de307900100008f1de307900100000200000000000000",
+  "value_type": "0x2::object::ObjectEntity<0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::Counter>",
   "decoded_value": {
     "abilities": 0,
-    "type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+    "type": "0x2::object::ObjectEntity<0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::Counter>",
     "value": {
+      "created_at": "1718119243151",
       "flag": 1,
-      "id": "0x5d6b1f08e259030c7493b7b4b0f78a390cf3eb81b720d5ef123a6f7ba794c388",
+      "id": "0xf5bfb43a8a476bfa0a32f49ae668b87c33367dfdc10599bff4492702b7c9a0ab",
       "owner": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "size": "0",
+      "state_root": "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000",
+      "updated_at": "1718119243151",
       "value": {
         "abilities": 12,
-        "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter",
+        "type": "0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::Counter",
         "value": {
           "count_value": "2"    <= Note here!
         }
       }
     }
-  }
+  },
+  "display_fields": null
 }
 ```
 
 - User owns:
 
 ```shell
-[joe@mx quick_start_object_counter]$ rooch move run --function 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::increase --args object:0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2
+[joe@mx quick_start_object_counter]$ rooch move run --function 0xa332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed::quick_start_object_counter::increase --args object:0xe716def21bbda10962f7e9e6af296389bb34bdc69cacfc31ace7de55bd257697
 
-Transaction error: RPC call failed: ErrorObject { code: ServerError(-32000), message: "VMError with status NO_ACCOUNT_ROLE at location UNDEFINED and message Object owner mismatch, object owner:94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63, sender:d9ba8633a96c91eea2c180e23e8cca8bb8cfd438764143d7ca4753c3e2b7f5fe", data: None }
+Transaction error: RPC call failed: ErrorObject { code: ServerError(-32000), message: "VMError with status NO_ACCOUNT_ROLE at location Module ModuleId { address: a332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed, name: Identifier(\"quick_start_object_counter\") } and message Object owner mismatch, object owner:a332444181ed05a61984d96b98c6294defedfb60a78ce956f588982bfc95b5ed, sender:888a90e491bbd59befb68afb29f2c970865ff615422cc1fa25e194dfefb9bb24", data: None }
 ```
 
 As you can see, when we execute the `increase` function with another account, an error message will be returned, telling us that the owner of the object does not match, that is, other accounts cannot own objects owned by another account.
