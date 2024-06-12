@@ -1,0 +1,11 @@
+//# publish
+module 0x11.TestModule1 {
+    // error code 10016: INVALID_DATA_STRUCT_WITH_TYPE_PARAMETER
+    struct S1<T> has drop,copy {v: u32}
+
+    metadata {
+        data_struct {
+            0x11::TestModule1::S1 -> true;
+        }
+    }
+}
