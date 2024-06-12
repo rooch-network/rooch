@@ -23,6 +23,7 @@ pub(crate) const PARENT_TAG: [u8; 1] = [3];
 pub(crate) const METADATA_TAG: [u8; 1] = [5];
 pub(crate) const METAPROTOCOL_TAG: [u8; 1] = [7];
 pub(crate) const CONTENT_ENCODING_TAG: [u8; 1] = [9];
+pub(crate) const RUNE_TAG: [u8; 1] = [13];
 
 type Result<T> = std::result::Result<T, script::Error>;
 pub type RawEnvelope = Envelope<Vec<Vec<u8>>>;
@@ -102,6 +103,7 @@ impl From<RawEnvelope> for ParsedEnvelope {
         let metaprotocol = remove_field(&mut fields, &METAPROTOCOL_TAG);
         let parents = remove_array_field(&mut fields, &PARENT_TAG);
         let pointer = remove_field(&mut fields, &POINTER_TAG);
+        let rune = remove_field(&mut fields, &RUNE_TAG);
 
         let unrecognized_even_field = fields
             .keys()
@@ -125,6 +127,7 @@ impl From<RawEnvelope> for ParsedEnvelope {
                 parents,
                 pointer,
                 unrecognized_even_field,
+                rune,
             },
             input: envelope.input,
             offset: envelope.offset,

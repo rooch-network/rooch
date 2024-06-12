@@ -122,6 +122,8 @@ module bitcoin_move::ord {
         metaprotocol: Option<String>,
         parents: vector<ObjectID>,
         pointer: Option<u64>,
+        // Reserved for extending the Rune protocol
+        rune: Option<u128>,
     }
 
     struct Envelope<T> has store, copy, drop {
@@ -143,6 +145,7 @@ module bitcoin_move::ord {
         parents: vector<InscriptionID>,
         pointer: Option<u64>,
         unrecognized_even_field: bool,
+        rune: Option<u128>,
     }
 
     struct InvalidInscriptionEvent has store, copy, drop {
@@ -238,6 +241,7 @@ module bitcoin_move::ord {
             metaprotocol: record.metaprotocol,
             parents,
             pointer: record.pointer,
+            rune: option::none(),
         }
     }
 
@@ -576,6 +580,7 @@ module bitcoin_move::ord {
             metaprotocol: _,
             parents: _,
             pointer: _,
+            rune: _,
         } = self;
     }
 
@@ -648,6 +653,7 @@ module bitcoin_move::ord {
             parents,
             pointer,
             unrecognized_even_field: _,
+            rune: _,
         } = record;
         (body, content_encoding, content_type, metadata, metaprotocol, parents, pointer)
     }
@@ -670,7 +676,7 @@ module bitcoin_move::ord {
                 0
             };
 
-            let inscription_records_from_witness = from_witness(witness);
+            let inscription_records_from_witness = parse_inscription_from_witness(witness);
             let inscription_records_len = vector::length(&inscription_records_from_witness);
             let j = 0;
 
@@ -713,7 +719,7 @@ module bitcoin_move::ord {
         from_transaction(&transaction, option::none())
     }
 
-    native fun from_witness(witness: &Witness): vector<Envelope<InscriptionRecord>>;
+    native fun parse_inscription_from_witness(witness: &Witness): vector<Envelope<InscriptionRecord>>;
 
     /// Block Rewards
     public fun subsidy_by_height(height: u64): u64 {
@@ -735,7 +741,7 @@ module bitcoin_move::ord {
         } else if(inscription.input != 0) {
             option::some(CURSE_NOT_IN_FIRST_INPUT)
         } else if(inscription.offset != 0) {
-            option::some(curse_not_at_offset_zero())
+            option::some(CURSE_NOT_AT_OFFSET_ZERO)
         } else if(option::is_some(&inscription.payload.pointer)) {
             option::some(CURSE_POINTER)
         } else if(inscription.pushnum) {
@@ -967,6 +973,7 @@ module bitcoin_move::ord {
             metaprotocol,
             parents,
             pointer,
+            rune: option::none(),
         };
 
         object::new(inscription)
@@ -989,6 +996,7 @@ module bitcoin_move::ord {
             metaprotocol: _,
             parents: _,
             pointer: _,
+            rune: _,
         } = inscription;
     }
 
@@ -1121,7 +1129,6 @@ module bitcoin_move::ord {
     public fun new_inscription_for_test(
         txid: address,
         index: u32,
-        input: u32,
         offset: u64,
         body: vector<u8>,
         content_encoding: Option<String>,
@@ -1145,6 +1152,7 @@ module bitcoin_move::ord {
             metaprotocol,
             parents,
             pointer,
+            rune: option::none(),
         }
     }
 
@@ -1162,7 +1170,6 @@ module bitcoin_move::ord {
 
         let test_inscription = new_inscription_for_test(
             test_txid,
-            0,
             0,
             0,
             body,

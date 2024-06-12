@@ -36,6 +36,7 @@ pub struct Inscription {
     pub parents: Vec<Vec<u8>>,
     pub pointer: Option<Vec<u8>>,
     pub unrecognized_even_field: bool,
+    pub rune: Option<Vec<u8>>,
 }
 
 impl From<Envelope<Inscription>>
@@ -66,7 +67,6 @@ impl From<Inscription> for rooch_types::bitcoin::ord::InscriptionRecord {
             .metaprotocol()
             .map(|s| MoveString::from(s.to_owned()))
             .into();
-        // let parents = val.parents().map(Into::into).into();
         let parents = val.parents().into_iter().map(InscriptionID::from).collect();
         let pointer = val.pointer().into();
         rooch_types::bitcoin::ord::InscriptionRecord {
@@ -80,6 +80,7 @@ impl From<Inscription> for rooch_types::bitcoin::ord::InscriptionRecord {
             parents,
             pointer,
             unrecognized_even_field: val.unrecognized_even_field,
+            rune: None,
         }
     }
 }

@@ -70,6 +70,7 @@ pub struct Inscription {
     pub metaprotocol: MoveOption<MoveString>,
     pub parents: Vec<ObjectID>,
     pub pointer: MoveOption<u64>,
+    pub rune: Option<u128>,
 }
 
 impl MoveStructType for Inscription {
@@ -94,6 +95,7 @@ impl MoveStructState for Inscription {
             MoveOption::<MoveString>::type_layout(),
             Vec::<ObjectID>::type_layout(),
             MoveOption::<u64>::type_layout(),
+            MoveOption::<u128>::type_layout(),
         ])
     }
 }
@@ -164,6 +166,7 @@ pub struct InscriptionRecord {
     pub parents: Vec<InscriptionID>,
     pub pointer: MoveOption<u64>,
     pub unrecognized_even_field: bool,
+    pub rune: Option<u128>,
 }
 
 impl MoveStructType for InscriptionRecord {
@@ -185,6 +188,7 @@ impl MoveStructState for InscriptionRecord {
             Vec::<InscriptionID>::type_layout(),
             MoveOption::<u64>::type_layout(),
             bool::type_layout(),
+            MoveOption::<u128>::type_layout(),
         ])
     }
 }
