@@ -1,7 +1,7 @@
 {
+  "account-address": "Accounts and Addresses",
   "account-abstraction": "Account abstraction",
   "account-abstraction-implementation": "Design and implementation of account abstraction",
-  "address-space": "Address space",
   "multi-chain-account": {
     "title": "Multi-chain account",
     "display": "hidden"
