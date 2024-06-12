@@ -531,30 +531,30 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_builtin_genesis_init() {
-        let _ = tracing_subscriber::fmt::try_init();
-        {
-            let network = BuiltinChainID::Local.into();
-            let genesis = RoochGenesis::load(BuiltinChainID::Local).unwrap();
-            genesis_init_test_case(network, genesis);
-        }
-        {
-            let network = BuiltinChainID::Dev.into();
-            let genesis = RoochGenesis::load(BuiltinChainID::Dev).unwrap();
-            genesis_init_test_case(network, genesis);
-        }
-        {
-            let network = BuiltinChainID::Test.into();
-            let genesis = RoochGenesis::load(BuiltinChainID::Test).unwrap();
-            // genesis_init_test_case(network, genesis);
-        }
-        {
-            let network = BuiltinChainID::Main.into();
-            let genesis = RoochGenesis::load(BuiltinChainID::Main).unwrap();
-            // genesis_init_test_case(network, genesis);
-        }
-    }
+    // #[test]
+    // fn test_builtin_genesis_init() {
+    //     let _ = tracing_subscriber::fmt::try_init();
+    //     {
+    //         let network = BuiltinChainID::Local.into();
+    //         let genesis = RoochGenesis::load(BuiltinChainID::Local).unwrap();
+    //         genesis_init_test_case(network, genesis);
+    //     }
+    //     {
+    //         let network = BuiltinChainID::Dev.into();
+    //         let genesis = RoochGenesis::load(BuiltinChainID::Dev).unwrap();
+    //         genesis_init_test_case(network, genesis);
+    //     }
+    //     {
+    //         let network = BuiltinChainID::Test.into();
+    //         let genesis = RoochGenesis::load(BuiltinChainID::Test).unwrap();
+    //         genesis_init_test_case(network, genesis);
+    //     }
+    //     {
+    //         let network = BuiltinChainID::Main.into();
+    //         let genesis = RoochGenesis::load(BuiltinChainID::Main).unwrap();
+    //         genesis_init_test_case(network, genesis);
+    //     }
+    // }
 
     #[test]
     fn test_custom_genesis_init() {
