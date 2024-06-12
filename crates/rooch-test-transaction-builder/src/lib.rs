@@ -12,26 +12,31 @@ use moveos_types::move_types::FunctionId;
 use moveos_types::state::MoveStructType;
 use moveos_types::transaction::{FunctionCall, MoveAction};
 use moveos_verifier::build::run_verifier;
+use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::RoochError;
 use rooch_types::framework::empty::Empty;
 use rooch_types::framework::gas_coin::GasCoin;
 use rooch_types::framework::transfer::TransferModule;
 use rooch_types::test_utils::{random_string, random_string_with_size};
 use rooch_types::transaction::rooch::RoochTransactionData;
+use rooch_types::transaction::RoochTransaction;
 use std::collections::BTreeMap;
 use std::io::stderr;
 use std::path::PathBuf;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct TestTransactionBuilder {
+    pub kp: RoochKeyPair,
     pub sender: AccountAddress,
     pub sequence_number: u64,
 }
 
 impl TestTransactionBuilder {
-    pub fn new(sender: AccountAddress) -> Self {
+    pub fn new(kp: RoochKeyPair) -> Self {
+        let sender = kp.public().rooch_address().unwrap();
         Self {
-            sender,
+            kp,
+            sender: sender.into(),
             sequence_number: 0,
         }
     }
@@ -183,5 +188,10 @@ impl TestTransactionBuilder {
 
     pub fn build(&self, action: MoveAction) -> RoochTransactionData {
         RoochTransactionData::new_for_test(self.sender.into(), self.sequence_number, action)
+    }
+
+    pub fn build_and_sign(&self, action: MoveAction) -> Result<RoochTransaction> {
+        let tx_data = self.build(action);
+        Ok(tx_data.sign(&self.kp))
     }
 }
