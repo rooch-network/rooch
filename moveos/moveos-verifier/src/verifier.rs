@@ -775,7 +775,16 @@ where
                 }
             }
 
-            for (full_func_name, _) in data_structs_func_map.iter() {
+            for (full_func_name, type_param_list) in data_structs_func_map.iter() {
+                if type_param_list.is_empty() {
+                    return generate_vm_error(
+                        ErrorCode::INVALID_DATA_STRUCT_FUNC_WITH_EMPTY_PARAM_LIST,
+                        format!("Function {} with empty type param list", full_func_name,),
+                        None,
+                        caller_module,
+                    );
+                }
+
                 check_module_owner(full_func_name, caller_module)?;
                 let (exists, _) = check_if_function_exist_in_module(caller_module, full_func_name);
                 if !exists {
@@ -1260,6 +1269,12 @@ where
 
     if !abilities_set.has_copy() {
         return (false, ErrorCode::INVALID_DATA_STRUCT_WITHOUT_COPY_ABILITY);
+    }
+
+    // We don't allow the type parameter for the struct definition.
+    let struct_type_parameters = struct_handle.type_parameters.clone();
+    if !struct_type_parameters.is_empty() {
+        return (false, ErrorCode::INVALID_DATA_STRUCT_WITH_TYPE_PARAMETER);
     }
 
     let field_count = struct_def.declared_field_count().unwrap();
