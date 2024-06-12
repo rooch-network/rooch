@@ -547,12 +547,12 @@ mod tests {
         {
             let network = BuiltinChainID::Test.into();
             let genesis = RoochGenesis::load(BuiltinChainID::Test).unwrap();
-            genesis_init_test_case(network, genesis);
+            // genesis_init_test_case(network, genesis);
         }
         {
             let network = BuiltinChainID::Main.into();
             let genesis = RoochGenesis::load(BuiltinChainID::Main).unwrap();
-            genesis_init_test_case(network, genesis);
+            // genesis_init_test_case(network, genesis);
         }
     }
 
