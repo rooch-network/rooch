@@ -447,13 +447,11 @@ mod tests {
     use rooch_types::rooch_network::RoochNetwork;
     use tracing::info;
 
-    fn genesis_init_test_case(network: RoochNetwork) {
+    fn genesis_init_test_case(network: RoochNetwork, genesis: RoochGenesis) {
         info!(
             "genesis init test case for network: {:?}",
             network.chain_id.id
         );
-        let genesis =
-            super::RoochGenesis::build(network.clone()).expect("build rooch genesis failed");
 
         let opt = RoochOpt::new_with_temp_store().expect("create rooch opt failed");
         let rooch_db = RoochDB::init(&opt.store_config()).expect("init rooch db failed");
@@ -465,8 +463,18 @@ mod tests {
             .expect("load gas parameter from chain failed");
 
         assert_eq!(
-            FrameworksGasParameters::initial().to_gas_schedule_config(),
-            gas_parameter.to_gas_schedule_config()
+            genesis
+                .initial_gas_config
+                .entries
+                .into_iter()
+                .map(|entry| (entry.key, entry.val))
+                .collect::<BTreeMap<_, _>>(),
+            gas_parameter
+                .to_gas_schedule_config()
+                .entries
+                .into_iter()
+                .map(|entry| (entry.key, entry.val))
+                .collect::<BTreeMap<_, _>>(),
         );
 
         let module_store_state = resolver
@@ -524,12 +532,35 @@ mod tests {
     }
 
     #[test]
-    fn test_genesis_init() {
+    fn test_builtin_genesis_init() {
         let _ = tracing_subscriber::fmt::try_init();
-        genesis_init_test_case(RoochNetwork::local());
-        genesis_init_test_case(RoochNetwork::dev());
-        genesis_init_test_case(RoochNetwork::test());
-        genesis_init_test_case(RoochNetwork::main());
+        {
+            let network = BuiltinChainID::Local.into();
+            let genesis = RoochGenesis::load(BuiltinChainID::Local).unwrap();
+            genesis_init_test_case(network, genesis);
+        }
+        {
+            let network = BuiltinChainID::Dev.into();
+            let genesis = RoochGenesis::load(BuiltinChainID::Dev).unwrap();
+            genesis_init_test_case(network, genesis);
+        }
+        {
+            let network = BuiltinChainID::Test.into();
+            let genesis = RoochGenesis::load(BuiltinChainID::Test).unwrap();
+            genesis_init_test_case(network, genesis);
+        }
+        {
+            let network = BuiltinChainID::Main.into();
+            let genesis = RoochGenesis::load(BuiltinChainID::Main).unwrap();
+            genesis_init_test_case(network, genesis);
+        }
+    }
+
+    #[test]
+    fn test_custom_genesis_init() {
+        let network = RoochNetwork::new(100.into(), BuiltinChainID::Local.genesis_config().clone());
+        let genesis = RoochGenesis::build(network.clone()).unwrap();
+        genesis_init_test_case(network, genesis);
     }
 
     #[test]
