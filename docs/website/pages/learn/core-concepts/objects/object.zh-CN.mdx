@@ -108,7 +108,7 @@ module moveos_std::object {
 ```
 
 * 注意，Rooch 中的所有 Object 都是读公开的，任何人都可以通过 `ObjectID` 获取到任意的 `&Object<T>`。
-* Object 的所有者可以通过 `context::borrow_mut_object` 获取 `&mut Object<T>` 引用。
+* Object 的所有者可以通过 `object::borrow_mut_object` 获取 `&mut Object<T>` 引用。
 
 给开发者的扩展方法：
 
@@ -244,7 +244,7 @@ https://dev-seed.rooch.network
 
 ### Object 相关的方法列表
 
-`context` 和 `object` 模块提供以下函数，可以对 `Object` 进行操作：
+`object` 模块提供以下函数，可以对 `Object` 进行操作：
 
 | Object 函数                                                                            | `#[private_generics<T>]`   | 说明                                                                          |
 | -------------------------------------------------------------------------------------- | -------------------------- | ----------------------------------------------                                |

@@ -1,0 +1,44 @@
+# Data Struct
+
+import { Callout, FileTree } from 'nextra/components'
+
+`#[data_struct]` is a struct annotation used to mark a struct as a pure data struct, allowing it to be directly deserialized within a contract. This feature is designed to facilitate developers in retrieving data from external data sources.
+
+## Example
+
+```move
+module my_project::my_module {
+    #[data_struct]
+    struct MyData has copy, drop {
+        value: u64,
+        name: vector<u8>,
+    }
+}
+```
+
+With this annotation, developers can directly deserialize the `MyData` struct within a contract:
+
+```move
+let data: MyData = moveos_std::bcs::from_bytes(bytes);
+```
+
+The `moveos_std::bcs::from_bytes` function also uses the `#[data_struct(T)]` annotation to ensure that `T` must be a `#[data_struct]` type.
+
+```move
+module moveos_std::bcs {
+    #[data_struct(T)]
+    /// Function to deserialize a type T.
+    /// The `data_struct` annotation ensures that `T` must be a `#[data_struct]` type.
+    public fun from_bytes<T>(bytes: vector<u8>): T;
+}
+```
+
+## How It Works
+
+The `#[data_struct]` annotation is implemented based on the Move verifier, which checks the struct definition at compile time to ensure it meets the `data_struct` requirements. Additionally, the contract is re-verified during deployment.
+
+## Data Struct Specification
+
+<Callout>
+TODO: This part of the document needs improvement.
+</Callout>

@@ -6,5 +6,6 @@
   "cryptographic-primitives": "Cryptographic primitives",
   "timestamp": "Timestamp",
   "private-generics": "Private generics",
+  "data-struct": "Data Struct",
   "unit-test": "Unit test"
 }
