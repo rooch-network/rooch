@@ -196,13 +196,12 @@ module bitcoin_plants::plants {
             @0x3232423,
             0,
             0,
-            0,
             vector[],
             option::none(),
             option::none(),
             vector[],
             option::none(),
-            option::none(),
+            vector[],
             option::none(),
         );
 
