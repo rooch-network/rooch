@@ -294,7 +294,7 @@ ciborium = "0.2.1"
 pprof = { version = "0.13.0", features = ["flamegraph", "criterion", "cpp", "frame-pointer", "protobuf-codec"] }
 celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
 celestia-types = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
-opendal = "0.44.1"
+opendal = { version = "0.47.0", features = ["services-fs", "services-gcs"] }
 bitcoincore-rpc-json = "0.18.0"
 toml = "0.8.12"
 csv = "1.2.1"
