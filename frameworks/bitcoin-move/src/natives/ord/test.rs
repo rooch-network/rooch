@@ -113,13 +113,13 @@ pub(crate) fn tx_out(value: u64, address: Address) -> TxOut {
 }
 
 pub(crate) struct InscriptionTemplate {
-    pub(crate) parent: Option<InscriptionId>,
+    pub(crate) parents: Vec<InscriptionId>,
 }
 
 impl From<InscriptionTemplate> for Inscription {
     fn from(template: InscriptionTemplate) -> Self {
         Self {
-            parent: template.parent.map(|id| id.parent_value()),
+            parents: template.parents.iter().map(|v| v.parent_value()).collect(),
             ..Default::default()
         }
     }

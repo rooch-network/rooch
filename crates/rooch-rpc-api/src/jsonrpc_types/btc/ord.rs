@@ -4,7 +4,7 @@
 use crate::jsonrpc_types::address::BitcoinAddressView;
 use crate::jsonrpc_types::btc::transaction::{hex_to_txid, TxidView};
 use crate::jsonrpc_types::{
-    BytesView, H256View, MoveStringView, RoochAddressView, StrView, StructTagView,
+    BytesView, H256View, MoveStringView, ObjectIDVecView, RoochAddressView, StrView, StructTagView,
 };
 use anyhow::Result;
 use bitcoin::hashes::Hash;
@@ -86,12 +86,15 @@ pub struct InscriptionView {
     pub bitcoin_txid: TxidView,
     pub index: u32,
     pub offset: u64,
+    pub sequence_number: u32,
+    pub inscription_number: u32,
+    pub is_curse: bool,
     pub body: BytesView,
     pub content_encoding: Option<MoveStringView>,
     pub content_type: Option<MoveStringView>,
     pub metadata: BytesView,
     pub metaprotocol: Option<MoveStringView>,
-    pub parent: Option<ObjectID>,
+    pub parents: ObjectIDVecView,
     pub pointer: Option<u64>,
 }
 
@@ -102,12 +105,15 @@ impl From<Inscription> for InscriptionView {
             bitcoin_txid: StrView(Txid::from_byte_array(inscription.txid.into_bytes())),
             index: inscription.index,
             offset: inscription.offset,
+            sequence_number: inscription.sequence_number,
+            inscription_number: inscription.inscription_number,
+            is_curse: inscription.is_curse,
             body: StrView(inscription.body),
             content_encoding: Option::<MoveString>::from(inscription.content_encoding).map(StrView),
             content_type: Option::<MoveString>::from(inscription.content_type).map(StrView),
             metadata: StrView(inscription.metadata),
             metaprotocol: Option::<MoveString>::from(inscription.metaprotocol).map(StrView),
-            parent: Option::<ObjectID>::from(inscription.parent),
+            parents: inscription.parents.into(),
             pointer: Option::<u64>::from(inscription.pointer),
         }
     }

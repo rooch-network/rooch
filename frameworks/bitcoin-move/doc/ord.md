@@ -9,11 +9,21 @@
 -  [Struct `Flotsam`](#0x4_ord_Flotsam)
 -  [Struct `SatPoint`](#0x4_ord_SatPoint)
 -  [Resource `Inscription`](#0x4_ord_Inscription)
+-  [Struct `Envelope`](#0x4_ord_Envelope)
 -  [Struct `InscriptionRecord`](#0x4_ord_InscriptionRecord)
 -  [Struct `InvalidInscriptionEvent`](#0x4_ord_InvalidInscriptionEvent)
 -  [Struct `MetaprotocolValidity`](#0x4_ord_MetaprotocolValidity)
 -  [Resource `InscriptionStore`](#0x4_ord_InscriptionStore)
 -  [Constants](#@Constants_0)
+-  [Function `curse_duplicate_field`](#0x4_ord_curse_duplicate_field)
+-  [Function `curse_incompleted_field`](#0x4_ord_curse_incompleted_field)
+-  [Function `curse_not_at_offset_zero`](#0x4_ord_curse_not_at_offset_zero)
+-  [Function `curse_not_in_first_input`](#0x4_ord_curse_not_in_first_input)
+-  [Function `curse_pointer`](#0x4_ord_curse_pointer)
+-  [Function `curse_pushnum`](#0x4_ord_curse_pushnum)
+-  [Function `curse_reinscription`](#0x4_ord_curse_reinscription)
+-  [Function `curse_stutter`](#0x4_ord_curse_stutter)
+-  [Function `curse_unrecognized_even_field`](#0x4_ord_curse_unrecognized_even_field)
 -  [Function `genesis_init`](#0x4_ord_genesis_init)
 -  [Function `new_inscription_id`](#0x4_ord_new_inscription_id)
 -  [Function `derive_inscription_id`](#0x4_ord_derive_inscription_id)
@@ -27,14 +37,13 @@
 -  [Function `process_transaction`](#0x4_ord_process_transaction)
 -  [Function `txid`](#0x4_ord_txid)
 -  [Function `index`](#0x4_ord_index)
--  [Function `input`](#0x4_ord_input)
 -  [Function `offset`](#0x4_ord_offset)
 -  [Function `body`](#0x4_ord_body)
 -  [Function `content_encoding`](#0x4_ord_content_encoding)
 -  [Function `content_type`](#0x4_ord_content_type)
 -  [Function `metadata`](#0x4_ord_metadata)
 -  [Function `metaprotocol`](#0x4_ord_metaprotocol)
--  [Function `parent`](#0x4_ord_parent)
+-  [Function `parents`](#0x4_ord_parents)
 -  [Function `pointer`](#0x4_ord_pointer)
 -  [Function `inscription_id_txid`](#0x4_ord_inscription_id_txid)
 -  [Function `inscription_id_index`](#0x4_ord_inscription_id_index)
@@ -135,6 +144,17 @@
 
 
 
+<a name="0x4_ord_Envelope"></a>
+
+## Struct `Envelope`
+
+
+
+<pre><code><b>struct</b> <a href="ord.md#0x4_ord_Envelope">Envelope</a>&lt;T&gt; <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
 <a name="0x4_ord_InscriptionRecord"></a>
 
 ## Struct `InscriptionRecord`
@@ -203,6 +223,88 @@ How many satoshis are in "one bitcoin".
 
 
 
+<a name="0x4_ord_CURSE_DUPLICATE_FIELD"></a>
+
+Curse Inscription
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_CURSE_DUPLICATE_FIELD">CURSE_DUPLICATE_FIELD</a>: <a href="">vector</a>&lt;u8&gt; = [68, 117, 112, 108, 105, 99, 97, 116, 101, 70, 105, 101, 108, 100];
+</code></pre>
+
+
+
+<a name="0x4_ord_CURSE_INCOMPLETE_FIELD"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_CURSE_INCOMPLETE_FIELD">CURSE_INCOMPLETE_FIELD</a>: <a href="">vector</a>&lt;u8&gt; = [73, 110, 99, 111, 109, 112, 108, 101, 116, 101, 70, 105, 101, 108, 100];
+</code></pre>
+
+
+
+<a name="0x4_ord_CURSE_NOT_AT_OFFSET_ZERO"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_CURSE_NOT_AT_OFFSET_ZERO">CURSE_NOT_AT_OFFSET_ZERO</a>: <a href="">vector</a>&lt;u8&gt; = [78, 111, 116, 65, 116, 79, 102, 102, 115, 101, 116, 90, 101, 114, 111];
+</code></pre>
+
+
+
+<a name="0x4_ord_CURSE_NOT_IN_FIRST_INPUT"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_CURSE_NOT_IN_FIRST_INPUT">CURSE_NOT_IN_FIRST_INPUT</a>: <a href="">vector</a>&lt;u8&gt; = [78, 111, 116, 73, 110, 70, 105, 114, 115, 116, 73, 110, 112, 117, 116];
+</code></pre>
+
+
+
+<a name="0x4_ord_CURSE_POINTER"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_CURSE_POINTER">CURSE_POINTER</a>: <a href="">vector</a>&lt;u8&gt; = [80, 111, 105, 110, 116, 101, 114];
+</code></pre>
+
+
+
+<a name="0x4_ord_CURSE_PUSHNUM"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_CURSE_PUSHNUM">CURSE_PUSHNUM</a>: <a href="">vector</a>&lt;u8&gt; = [80, 117, 115, 104, 110, 117, 109];
+</code></pre>
+
+
+
+<a name="0x4_ord_CURSE_REINSCRIPTION"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_CURSE_REINSCRIPTION">CURSE_REINSCRIPTION</a>: <a href="">vector</a>&lt;u8&gt; = [82, 101, 105, 110, 115, 99, 114, 105, 112, 116, 105, 111, 110];
+</code></pre>
+
+
+
+<a name="0x4_ord_CURSE_STUTTER"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_CURSE_STUTTER">CURSE_STUTTER</a>: <a href="">vector</a>&lt;u8&gt; = [83, 116, 117, 116, 116, 101, 114];
+</code></pre>
+
+
+
+<a name="0x4_ord_CURSE_UNRECOGNIZED_EVEN_FIELD"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_CURSE_UNRECOGNIZED_EVEN_FIELD">CURSE_UNRECOGNIZED_EVEN_FIELD</a>: <a href="">vector</a>&lt;u8&gt; = [85, 110, 114, 101, 99, 111, 103, 110, 105, 122, 101, 100, 69, 118, 101, 110, 70, 105, 101, 108, 100];
+</code></pre>
+
+
+
 <a name="0x4_ord_FIRST_POST_SUBSIDY_EPOCH"></a>
 
 
@@ -236,6 +338,105 @@ How may blocks between halvings.
 
 
 <pre><code><b>const</b> <a href="ord.md#0x4_ord_SUBSIDY_HALVING_INTERVAL">SUBSIDY_HALVING_INTERVAL</a>: u32 = 210000;
+</code></pre>
+
+
+
+<a name="0x4_ord_curse_duplicate_field"></a>
+
+## Function `curse_duplicate_field`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_curse_duplicate_field">curse_duplicate_field</a>(): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_curse_incompleted_field"></a>
+
+## Function `curse_incompleted_field`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_curse_incompleted_field">curse_incompleted_field</a>(): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_curse_not_at_offset_zero"></a>
+
+## Function `curse_not_at_offset_zero`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_curse_not_at_offset_zero">curse_not_at_offset_zero</a>(): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_curse_not_in_first_input"></a>
+
+## Function `curse_not_in_first_input`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_curse_not_in_first_input">curse_not_in_first_input</a>(): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_curse_pointer"></a>
+
+## Function `curse_pointer`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_curse_pointer">curse_pointer</a>(): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_curse_pushnum"></a>
+
+## Function `curse_pushnum`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_curse_pushnum">curse_pushnum</a>(): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_curse_reinscription"></a>
+
+## Function `curse_reinscription`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_curse_reinscription">curse_reinscription</a>(): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_curse_stutter"></a>
+
+## Function `curse_stutter`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_curse_stutter">curse_stutter</a>(): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_curse_unrecognized_even_field"></a>
+
+## Function `curse_unrecognized_even_field`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_curse_unrecognized_even_field">curse_unrecognized_even_field</a>(): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -383,17 +584,6 @@ How may blocks between halvings.
 
 
 
-<a name="0x4_ord_input"></a>
-
-## Function `input`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_input">input</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): u32
-</code></pre>
-
-
-
 <a name="0x4_ord_offset"></a>
 
 ## Function `offset`
@@ -460,13 +650,13 @@ How may blocks between halvings.
 
 
 
-<a name="0x4_ord_parent"></a>
+<a name="0x4_ord_parents"></a>
 
-## Function `parent`
+## Function `parents`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_parent">parent</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="_Option">option::Option</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_parents">parents</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="">vector</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
 </code></pre>
 
 
@@ -590,7 +780,7 @@ Get the SatPoint's output_index
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_unpack_record">unpack_record</a>(record: <a href="ord.md#0x4_ord_InscriptionRecord">ord::InscriptionRecord</a>): (<a href="">vector</a>&lt;u8&gt;, <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, <a href="">vector</a>&lt;u8&gt;, <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, <a href="_Option">option::Option</a>&lt;<a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>&gt;, <a href="_Option">option::Option</a>&lt;u64&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_unpack_record">unpack_record</a>(record: <a href="ord.md#0x4_ord_InscriptionRecord">ord::InscriptionRecord</a>): (<a href="">vector</a>&lt;u8&gt;, <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, <a href="">vector</a>&lt;u8&gt;, <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>&gt;, <a href="_Option">option::Option</a>&lt;u64&gt;)
 </code></pre>
 
 

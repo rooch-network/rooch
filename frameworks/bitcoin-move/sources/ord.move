@@ -37,6 +37,52 @@ module bitcoin_move::ord {
     /// How many satoshis are in "one bitcoin".
     const COIN_VALUE: u64 = 100_000_000;
 
+    /// Curse Inscription
+    const CURSE_DUPLICATE_FIELD: vector<u8> = b"DuplicateField";
+    public fun curse_duplicate_field(): vector<u8> {
+        CURSE_DUPLICATE_FIELD
+    }
+
+    const CURSE_INCOMPLETE_FIELD: vector<u8> = b"IncompleteField";
+    public fun curse_incompleted_field(): vector<u8> {
+        CURSE_INCOMPLETE_FIELD
+    }
+
+    const CURSE_NOT_AT_OFFSET_ZERO: vector<u8> = b"NotAtOffsetZero";
+    public fun curse_not_at_offset_zero(): vector<u8> {
+        CURSE_NOT_AT_OFFSET_ZERO
+    }
+
+    const CURSE_NOT_IN_FIRST_INPUT: vector<u8> = b"NotInFirstInput";
+    public fun curse_not_in_first_input(): vector<u8> {
+        CURSE_NOT_IN_FIRST_INPUT
+    }
+
+    const CURSE_POINTER: vector<u8> = b"Pointer";
+    public fun curse_pointer(): vector<u8> {
+        CURSE_POINTER
+    }
+
+    const CURSE_PUSHNUM: vector<u8> = b"Pushnum";
+    public fun curse_pushnum(): vector<u8> {
+        CURSE_PUSHNUM
+    }
+
+    const CURSE_REINSCRIPTION: vector<u8> = b"Reinscription";
+    public fun curse_reinscription(): vector<u8> {
+        CURSE_REINSCRIPTION
+    }
+
+    const CURSE_STUTTER: vector<u8> = b"Stutter";
+    public fun curse_stutter(): vector<u8> {
+        CURSE_STUTTER
+    }
+
+    const CURSE_UNRECOGNIZED_EVEN_FIELD: vector<u8> = b"UnrecognizedEvenField";
+    public fun curse_unrecognized_even_field(): vector<u8> {
+        CURSE_UNRECOGNIZED_EVEN_FIELD
+    }
+
     struct InscriptionID has store, copy, drop {
         txid: address,
         index: u32,
@@ -60,8 +106,6 @@ module bitcoin_move::ord {
     struct Inscription has key {
         txid: address,
         index: u32,
-        /// Transaction input index
-        input: u32,
         /// inscription offset
         offset: u64,
         /// monotonically increasing
@@ -76,8 +120,18 @@ module bitcoin_move::ord {
         content_type: Option<String>,
         metadata: vector<u8>,
         metaprotocol: Option<String>,
-        parent: Option<ObjectID>,
+        parents: vector<ObjectID>,
         pointer: Option<u64>,
+        // Reserved for extending the Rune protocol
+        rune: Option<u128>,
+    }
+
+    struct Envelope<T> has store, copy, drop {
+        input: u32,
+        offset: u32,
+        pushnum: bool,
+        stutter: bool,
+        payload: T,
     }
 
     struct InscriptionRecord has store, copy, drop {
@@ -88,9 +142,10 @@ module bitcoin_move::ord {
         incomplete_field: bool,
         metadata: vector<u8>,
         metaprotocol: Option<String>,
-        parent: Option<InscriptionID>,
+        parents: vector<InscriptionID>,
         pointer: Option<u64>,
         unrecognized_even_field: bool,
+        rune: Option<u128>,
     }
 
     struct InvalidInscriptionEvent has store, copy, drop {
@@ -107,12 +162,18 @@ module bitcoin_move::ord {
 
     struct InscriptionStore has key{
         inscriptions: TableVec<InscriptionID>,
+        cursed_inscription_count: u32,
+        blessed_inscription_count: u32,
+        next_sequence_number: u32,
     }
 
     public(friend) fun genesis_init(_genesis_account: &signer){
         let inscriptions = table_vec::new<InscriptionID>();
         let store = InscriptionStore{
             inscriptions,
+            cursed_inscription_count: 0,
+            blessed_inscription_count: 0,
+            next_sequence_number: 0,
         };
         let store_obj = object::new_named_object(store);
         object::to_shared(store_obj);
@@ -159,23 +220,28 @@ module bitcoin_move::ord {
         table_vec::length(& store.inscriptions)
     }
 
-    fun record_to_inscription(txid: address, index: u32, input: u32, offset: u64, record: InscriptionRecord): Inscription{
-        let parent = option::map(record.parent, |e| derive_inscription_id(e));
+    fun record_to_inscription(txid: address, index: u32, offset: u64, record: InscriptionRecord, is_curse: bool, inscription_number: u32, sequence_number: u32): Inscription{
+        let parents = vector::empty();
+        vector::for_each(record.parents, |f| {
+            let parent_id = derive_inscription_id(f);
+            vector::push_back(&mut parents, parent_id);
+        });
+
         Inscription{
             txid,
             index,
-            input,
             offset,
-            sequence_number: 0,
-            inscription_number: 0,
-            is_curse: false,
+            sequence_number,
+            inscription_number,
+            is_curse,
             body: record.body,
             content_encoding: record.content_encoding,
             content_type: record.content_type,
             metadata: record.metadata,
             metaprotocol: record.metaprotocol,
-            parent,
+            parents,
             pointer: record.pointer,
+            rune: option::none(),
         }
     }
 
@@ -252,9 +318,6 @@ module bitcoin_move::ord {
                 let to_address = types::txout_object_address(match_output);
                 inscription.offset = new_sat_point.offset;
 
-                // TODO handle curse inscription
-                // https://github.com/rooch-network/rooch/issues/1447
-                
                 // drop the temporary area if inscription is transferred.
                 drop_temp_area(&mut inscription_obj);
                 object::transfer_extend(inscription_obj, to_address);
@@ -296,7 +359,6 @@ module bitcoin_move::ord {
 
             inscription.offset = new_sat_point.offset;
 
-            // TODO handle curse inscription
             object::transfer_extend(inscription_obj, to_address);
             vector::push_back(&mut new_sat_points, new_sat_point);
            
@@ -366,7 +428,6 @@ module bitcoin_move::ord {
 
             idx = idx + 1;
         };
-        // input_utxo_value_accumulator = input_utxo_value_accumulator + offset;
 
         let idx = 0;
         let output_len = vector::length(txoutput);
@@ -457,7 +518,7 @@ module bitcoin_move::ord {
                    txid: tx_id,
                    input_index,
                    record,
-               }); 
+               });
             };
             idx = idx + 1;
         };
@@ -470,10 +531,6 @@ module bitcoin_move::ord {
 
     public fun index(self: &Inscription): u32{
         self.index
-    }
-
-    public fun input(self: &Inscription): u32{
-        self.input
     }
 
     public fun offset(self: &Inscription): u64{
@@ -500,8 +557,8 @@ module bitcoin_move::ord {
         self.metaprotocol
     }
 
-    public fun parent(self: &Inscription): Option<ObjectID>{
-        self.parent
+    public fun parents(self: &Inscription): vector<ObjectID>{
+        self.parents
     }
 
     public fun pointer(self: &Inscription): Option<u64>{
@@ -512,7 +569,6 @@ module bitcoin_move::ord {
         let Inscription{
             txid: _,
             index: _,
-            input: _,
             offset: _,
             sequence_number: _,
             inscription_number: _,
@@ -522,8 +578,9 @@ module bitcoin_move::ord {
             content_type: _,
             metadata: _,
             metaprotocol: _,
-            parent: _,
+            parents: _,
             pointer: _,
+            rune: _,
         } = self;
     }
 
@@ -584,7 +641,7 @@ module bitcoin_move::ord {
     // ==== InscriptionRecord ==== //
 
     public fun unpack_record(record: InscriptionRecord): 
-    (vector<u8>, Option<String>, Option<String>, vector<u8>, Option<String>, Option<InscriptionID>, Option<u64>){
+    (vector<u8>, Option<String>, Option<String>, vector<u8>, Option<String>, vector<InscriptionID>, Option<u64>){
         let InscriptionRecord{
             body,
             content_encoding,
@@ -593,14 +650,16 @@ module bitcoin_move::ord {
             incomplete_field: _,
             metadata,
             metaprotocol,
-            parent,
+            parents,
             pointer,
             unrecognized_even_field: _,
+            rune: _,
         } = record;
-        (body, content_encoding, content_type, metadata, metaprotocol, parent, pointer)
+        (body, content_encoding, content_type, metadata, metaprotocol, parents, pointer)
     }
 
     public fun from_transaction(tx: &Transaction, input_utxo_values: Option<vector<u64>>): vector<Inscription>{
+        let inscription_store = borrow_mut_inscription_store();
         let tx_id = types::tx_id(tx);
         let inscriptions = vector::empty();
         let inputs = types::tx_input(tx);
@@ -617,19 +676,34 @@ module bitcoin_move::ord {
                 0
             };
 
-            let inscription_records_from_witness = from_witness(witness);
+            let inscription_records_from_witness = parse_inscription_from_witness(witness);
             let inscription_records_len = vector::length(&inscription_records_from_witness);
             let j = 0;
 
             while(j < inscription_records_len){
-                let record = vector::borrow(&inscription_records_from_witness, j);
+                let inscription = vector::borrow(&inscription_records_from_witness, j);
+                let record = inscription.payload;
                 let pointer = *option::borrow_with_default(&record.pointer, &0u64);
                 if(pointer >= input_value) {
                     pointer = 0;
                 };
-
                 let offset = next_offset + pointer;
-                let inscription = record_to_inscription(tx_id, (index_counter as u32), (input_idx as u32), offset, *record);
+
+                // Handle curse inscription
+                let curse = handle_curse_inscription(inscription);
+                let is_curse = if(option::is_some(&curse)) {true} else {false};
+                let inscription_number = if(is_curse) {
+                    let number: u32 = inscription_store.cursed_inscription_count;
+                    inscription_store.cursed_inscription_count = inscription_store.cursed_inscription_count + 1;
+                    (number + 1)
+                } else {
+                    let number: u32 = inscription_store.blessed_inscription_count;
+                    inscription_store.blessed_inscription_count = inscription_store.blessed_inscription_count + 1;
+                    number
+                };
+                let sequence_number = inscription_store.next_sequence_number;
+                inscription_store.next_sequence_number = inscription_store.next_sequence_number + 1;
+                let inscription = record_to_inscription(tx_id, (index_counter as u32), offset, record, is_curse, inscription_number, sequence_number);
                 vector::push_back(&mut inscriptions, inscription);
                 index_counter = index_counter + 1;
                 j = j + 1;
@@ -645,7 +719,7 @@ module bitcoin_move::ord {
         from_transaction(&transaction, option::none())
     }
 
-    native fun from_witness(witness: &Witness): vector<InscriptionRecord>;
+    native fun parse_inscription_from_witness(witness: &Witness): vector<Envelope<InscriptionRecord>>;
 
     /// Block Rewards
     public fun subsidy_by_height(height: u64): u64 {
@@ -655,6 +729,35 @@ module bitcoin_move::ord {
         } else {
             0
         }
+    }
+
+    fun handle_curse_inscription(inscription: &Envelope<InscriptionRecord>) : option::Option<vector<u8>> {
+        let curse = if(inscription.payload.unrecognized_even_field) {
+            option::some(CURSE_UNRECOGNIZED_EVEN_FIELD)
+        } else if(inscription.payload.duplicate_field) {
+            option::some(CURSE_DUPLICATE_FIELD)
+        } else if(inscription.payload.incomplete_field) {
+            option::some(CURSE_INCOMPLETE_FIELD)
+        } else if(inscription.input != 0) {
+            option::some(CURSE_NOT_IN_FIRST_INPUT)
+        } else if(inscription.offset != 0) {
+            option::some(CURSE_NOT_AT_OFFSET_ZERO)
+        } else if(option::is_some(&inscription.payload.pointer)) {
+            option::some(CURSE_POINTER)
+        } else if(inscription.pushnum) {
+            option::some(CURSE_PUSHNUM)
+        } else if(inscription.stutter) {
+            option::some(CURSE_STUTTER)
+            // The contract has temporarily skipped the reinscription curse flag processing and
+            // needs to rely on scanning all SatPoint
+            // TODO handle reinscription curse and curse vindicated
+            // else if  {
+            //         option::some(CURSE_REINSCRIPTION)
+            //     }
+        }else {
+            option::none()
+        };
+        curse
     }
 
     // ===== permenent area ========== //
@@ -847,20 +950,18 @@ module bitcoin_move::ord {
     public fun new_inscription_object_for_test(
         txid: address,
         index: u32,
-        input: u32,
         offset: u64,
         body: vector<u8>,
         content_encoding: Option<String>,
         content_type: Option<String>,
         metadata: vector<u8>,
         metaprotocol: Option<String>,
-        parent: Option<ObjectID>,
+        parents: vector<ObjectID>,
         pointer: Option<u64>,
     ): Object<Inscription> {
         let inscription = Inscription {
             txid,
             index,
-            input,
             offset,
             sequence_number: 0,
             inscription_number: 0,
@@ -870,8 +971,9 @@ module bitcoin_move::ord {
             content_type,
             metadata,
             metaprotocol,
-            parent,
+            parents,
             pointer,
+            rune: option::none(),
         };
 
         object::new(inscription)
@@ -883,7 +985,6 @@ module bitcoin_move::ord {
         let Inscription { 
             txid: _, 
             index: _,
-            input: _,
             offset: _,
             sequence_number: _,
             inscription_number: _,
@@ -893,8 +994,9 @@ module bitcoin_move::ord {
             content_type: _,
             metadata: _,
             metaprotocol: _,
-            parent: _,
+            parents: _,
             pointer: _,
+            rune: _,
         } = inscription;
     }
 
@@ -911,13 +1013,12 @@ module bitcoin_move::ord {
             txid,
             0,
             0,
-            0,
             vector[],
             option::none(),
             option::none(),
             vector[],
             option::none(),
-            option::none(),
+            vector[],
             option::none(),
         );
         add_permanent_state(&mut inscription_obj, PermanentState{value: 10});
@@ -949,13 +1050,12 @@ module bitcoin_move::ord {
             txid,
             0,
             0,
-            0,
             vector[],
             option::none(),
             option::none(),
             vector[],
             option::none(),
-            option::none(),
+            vector[],
             option::none(),
         );
         add_temp_state(&mut inscription_obj, TempState{value: 10});
@@ -987,13 +1087,12 @@ module bitcoin_move::ord {
             txid,
             0,
             0,
-            0,
             vector[],
             option::none(),
             option::none(),
             vector[],
             option::none(),
-            option::none(),
+            vector[],
             option::none(),
         );
 
@@ -1030,20 +1129,18 @@ module bitcoin_move::ord {
     public fun new_inscription_for_test(
         txid: address,
         index: u32,
-        input: u32,
         offset: u64,
         body: vector<u8>,
         content_encoding: Option<String>,
         content_type: Option<String>,
         metadata: vector<u8>,
         metaprotocol: Option<String>,
-        parent: Option<ObjectID>,
+        parents: vector<ObjectID>,
         pointer: Option<u64>,
     ): Inscription {
         Inscription {
             txid,
             index,
-            input,
             offset,
             sequence_number: 0,
             inscription_number: 0,
@@ -1053,8 +1150,9 @@ module bitcoin_move::ord {
             content_type,
             metadata,
             metaprotocol,
-            parent,
+            parents,
             pointer,
+            rune: option::none(),
         }
     }
 
@@ -1074,13 +1172,12 @@ module bitcoin_move::ord {
             test_txid,
             0,
             0,
-            0,
             body,
             option::none(),
             option::some(string::utf8(content_type)),
             vector[],
             option::none(),
-            option::none(),
+            vector[],
             option::none(),
         );
 

@@ -2,8 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 // Code from https://github.com/ordinals/ord/
 
+use crate::natives::ord::envelope::Envelope;
+use crate::natives::ord::tag::Tag;
+use bitcoin::constants::MAX_SCRIPT_ELEMENT_SIZE;
 use bitcoin::{hashes::Hash, Txid, Witness};
 use moveos_types::move_std::string::MoveString;
+use rooch_types::bitcoin::ord::InscriptionID;
 use {
     super::envelope,
     super::inscription_id::InscriptionId,
@@ -11,7 +15,7 @@ use {
     bitcoin::{
         blockdata::{
             opcodes,
-            script::{self, PushBytesBuf},
+            script::{self},
         },
         ScriptBuf,
     },
@@ -29,9 +33,24 @@ pub struct Inscription {
     pub incomplete_field: bool,
     pub metadata: Option<Vec<u8>>,
     pub metaprotocol: Option<Vec<u8>>,
-    pub parent: Option<Vec<u8>>,
+    pub parents: Vec<Vec<u8>>,
     pub pointer: Option<Vec<u8>>,
     pub unrecognized_even_field: bool,
+    pub rune: Option<Vec<u8>>,
+}
+
+impl From<Envelope<Inscription>>
+    for rooch_types::bitcoin::ord::Envelope<rooch_types::bitcoin::ord::InscriptionRecord>
+{
+    fn from(val: Envelope<Inscription>) -> Self {
+        Self {
+            input: val.input,
+            offset: val.offset,
+            pushnum: val.pushnum,
+            stutter: val.stutter,
+            payload: val.payload.into(),
+        }
+    }
 }
 
 impl From<Inscription> for rooch_types::bitcoin::ord::InscriptionRecord {
@@ -48,7 +67,7 @@ impl From<Inscription> for rooch_types::bitcoin::ord::InscriptionRecord {
             .metaprotocol()
             .map(|s| MoveString::from(s.to_owned()))
             .into();
-        let parent = val.parent().map(Into::into).into();
+        let parents = val.parents().into_iter().map(InscriptionID::from).collect();
         let pointer = val.pointer().into();
         rooch_types::bitcoin::ord::InscriptionRecord {
             body: val.body.unwrap_or_default(),
@@ -58,9 +77,10 @@ impl From<Inscription> for rooch_types::bitcoin::ord::InscriptionRecord {
             incomplete_field: val.incomplete_field,
             metadata: val.metadata.unwrap_or_default(),
             metaprotocol,
-            parent,
+            parents,
             pointer,
             unrecognized_even_field: val.unrecognized_even_field,
+            rune: None,
         }
     }
 }
@@ -94,47 +114,17 @@ impl Inscription {
             .push_opcode(opcodes::all::OP_IF)
             .push_slice(envelope::PROTOCOL_ID);
 
-        if let Some(content_type) = self.content_type.clone() {
-            builder = builder
-                .push_slice(envelope::CONTENT_TYPE_TAG)
-                .push_slice(PushBytesBuf::try_from(content_type).unwrap());
-        }
-
-        if let Some(content_encoding) = self.content_encoding.clone() {
-            builder = builder
-                .push_slice(envelope::CONTENT_ENCODING_TAG)
-                .push_slice(PushBytesBuf::try_from(content_encoding).unwrap());
-        }
-
-        if let Some(protocol) = self.metaprotocol.clone() {
-            builder = builder
-                .push_slice(envelope::METAPROTOCOL_TAG)
-                .push_slice(PushBytesBuf::try_from(protocol).unwrap());
-        }
-
-        if let Some(parent) = self.parent.clone() {
-            builder = builder
-                .push_slice(envelope::PARENT_TAG)
-                .push_slice(PushBytesBuf::try_from(parent).unwrap());
-        }
-
-        if let Some(pointer) = self.pointer.clone() {
-            builder = builder
-                .push_slice(envelope::POINTER_TAG)
-                .push_slice(PushBytesBuf::try_from(pointer).unwrap());
-        }
-
-        if let Some(metadata) = &self.metadata {
-            for chunk in metadata.chunks(520) {
-                builder = builder.push_slice(envelope::METADATA_TAG);
-                builder = builder.push_slice(PushBytesBuf::try_from(chunk.to_vec()).unwrap());
-            }
-        }
+        Tag::ContentType.append(&mut builder, &self.content_type);
+        Tag::ContentEncoding.append(&mut builder, &self.content_encoding);
+        Tag::Metaprotocol.append(&mut builder, &self.metaprotocol);
+        Tag::Parent.append_array(&mut builder, &self.parents);
+        Tag::Pointer.append(&mut builder, &self.pointer);
+        Tag::Metadata.append(&mut builder, &self.metadata);
 
         if let Some(body) = &self.body {
             builder = builder.push_slice(envelope::BODY_TAG);
-            for chunk in body.chunks(520) {
-                builder = builder.push_slice(PushBytesBuf::try_from(chunk.to_vec()).unwrap());
+            for chunk in body.chunks(MAX_SCRIPT_ELEMENT_SIZE) {
+                builder = builder.push_slice::<&script::PushBytes>(chunk.try_into().unwrap());
             }
         }
 
@@ -204,8 +194,15 @@ impl Inscription {
         str::from_utf8(self.metaprotocol.as_ref()?).ok()
     }
 
-    pub(crate) fn parent(&self) -> Option<InscriptionId> {
-        let value = self.parent.as_ref()?;
+    pub(crate) fn parents(&self) -> Vec<InscriptionId> {
+        self.parents
+            .iter()
+            .filter_map(|parent| Self::inscription_id_field(Some(parent)))
+            .collect()
+    }
+
+    fn inscription_id_field(field: Option<&[u8]>) -> Option<InscriptionId> {
+        let value = field.as_ref()?;
 
         if value.len() < Txid::LEN {
             return None;
@@ -424,79 +421,81 @@ mod tests {
     #[test]
     fn inscription_with_no_parent_field_has_no_parent() {
         assert!(Inscription {
-            parent: None,
+            parents: vec![],
             ..Default::default()
         }
-        .parent()
-        .is_none());
+        .parents()
+        .is_empty());
     }
 
     #[test]
-    fn inscription_with_parent_field_shorter_than_txid_length_has_no_parent() {
+    fn inscription_with_parent_field_shorter_than_txid_length_has_no_parents() {
         assert!(Inscription {
-            parent: Some(vec![]),
+            parents: vec![],
             ..Default::default()
         }
-        .parent()
-        .is_none());
+        .parents()
+        .is_empty());
     }
 
     #[test]
-    fn inscription_with_parent_field_longer_than_txid_and_index_has_no_parent() {
+    fn inscription_with_parent_field_longer_than_txid_and_index_has_no_parents() {
         assert!(Inscription {
-            parent: Some(vec![1; 37]),
+            parents: vec![vec![1; 37]],
             ..Default::default()
         }
-        .parent()
-        .is_none());
+        .parents()
+        .is_empty());
     }
 
     #[test]
-    fn inscription_with_parent_field_index_with_trailing_zeroes_and_fixed_length_has_parent() {
+    fn inscription_with_parent_field_index_with_trailing_zeroes_and_fixed_length_has_parents() {
         let mut parent = vec![1; 36];
 
         parent[35] = 0;
 
-        assert!(Inscription {
-            parent: Some(parent),
-            ..Default::default()
-        }
-        .parent()
-        .is_some());
+        assert!(
+            !(Inscription {
+                parents: vec![parent],
+                ..Default::default()
+            }
+            .parents()
+            .is_empty())
+        );
     }
 
     #[test]
-    fn inscription_with_parent_field_index_with_trailing_zeroes_and_variable_length_has_no_parent()
+    fn inscription_with_parent_field_index_with_trailing_zeroes_and_variable_length_has_no_parents()
     {
         let mut parent = vec![1; 35];
 
         parent[34] = 0;
 
         assert!(Inscription {
-            parent: Some(parent),
+            parents: vec![parent],
             ..Default::default()
         }
-        .parent()
-        .is_none());
+        .parents()
+        .is_empty());
     }
 
     #[test]
     fn inscription_parent_txid_is_deserialized_correctly() {
         assert_eq!(
             Inscription {
-                parent: Some(vec![
+                parents: vec![vec![
                     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c,
                     0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19,
                     0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
-                ]),
+                ]],
                 ..Default::default()
             }
-            .parent()
-            .unwrap()
-            .txid,
-            "1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100"
-                .parse()
-                .unwrap()
+            .parents(),
+            [
+                "1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100i0"
+                    .parse()
+                    .unwrap()
+            ],
         );
     }
 
@@ -504,13 +503,15 @@ mod tests {
     fn inscription_parent_with_zero_byte_index_field_is_deserialized_correctly() {
         assert_eq!(
             Inscription {
-                parent: Some(vec![1; 32]),
+                parents: vec![vec![1; 32]],
                 ..Default::default()
             }
-            .parent()
-            .unwrap()
-            .index,
-            0
+            .parents(),
+            [
+                "0101010101010101010101010101010101010101010101010101010101010101i0"
+                    .parse()
+                    .unwrap()
+            ],
         );
     }
 
@@ -518,17 +519,19 @@ mod tests {
     fn inscription_parent_with_one_byte_index_field_is_deserialized_correctly() {
         assert_eq!(
             Inscription {
-                parent: Some(vec![
+                parents: vec![vec![
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01
-                ]),
+                ]],
                 ..Default::default()
             }
-            .parent()
-            .unwrap()
-            .index,
-            1
+            .parents(),
+            [
+                "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffi1"
+                    .parse()
+                    .unwrap()
+            ],
         );
     }
 
@@ -536,17 +539,19 @@ mod tests {
     fn inscription_parent_with_two_byte_index_field_is_deserialized_correctly() {
         assert_eq!(
             Inscription {
-                parent: Some(vec![
+                parents: vec![vec![
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01, 0x02
-                ]),
+                ]],
                 ..Default::default()
             }
-            .parent()
-            .unwrap()
-            .index,
-            0x0201,
+            .parents(),
+            [
+                "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffi513"
+                    .parse()
+                    .unwrap()
+            ],
         );
     }
 
@@ -554,17 +559,19 @@ mod tests {
     fn inscription_parent_with_three_byte_index_field_is_deserialized_correctly() {
         assert_eq!(
             Inscription {
-                parent: Some(vec![
+                parents: vec![vec![
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01, 0x02, 0x03
-                ]),
+                ]],
                 ..Default::default()
             }
-            .parent()
-            .unwrap()
-            .index,
-            0x030201,
+            .parents(),
+            [
+                "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffi197121"
+                    .parse()
+                    .unwrap()
+            ],
         );
     }
 
@@ -572,17 +579,19 @@ mod tests {
     fn inscription_parent_with_four_byte_index_field_is_deserialized_correctly() {
         assert_eq!(
             Inscription {
-                parent: Some(vec![
+                parents: vec![vec![
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
                     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01, 0x02, 0x03, 0x04,
-                ]),
+                ]],
                 ..Default::default()
             }
-            .parent()
-            .unwrap()
-            .index,
-            0x04030201,
+            .parents(),
+            [
+                "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffi67305985"
+                    .parse()
+                    .unwrap()
+            ],
         );
     }
 

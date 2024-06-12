@@ -1418,8 +1418,12 @@
           "bitcoin_txid",
           "body",
           "index",
+          "inscription_number",
+          "is_curse",
           "metadata",
           "offset",
+          "parents",
+          "sequence_number",
           "txid"
         ],
         "properties": {
@@ -1454,6 +1458,14 @@
             "format": "uint32",
             "minimum": 0.0
           },
+          "inscription_number": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0.0
+          },
+          "is_curse": {
+            "type": "boolean"
+          },
           "metadata": {
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
           },
@@ -1472,15 +1484,8 @@
             "format": "uint64",
             "minimum": 0.0
           },
-          "parent": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ObjectID"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "parents": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<moveos_types::moveos_std::object::ObjectID>"
           },
           "pointer": {
             "type": [
@@ -1488,6 +1493,11 @@
               "null"
             ],
             "format": "uint64",
+            "minimum": 0.0
+          },
+          "sequence_number": {
+            "type": "integer",
+            "format": "uint32",
             "minimum": 0.0
           },
           "txid": {

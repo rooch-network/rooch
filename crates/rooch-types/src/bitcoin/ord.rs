@@ -7,10 +7,12 @@ use crate::addresses::BITCOIN_MOVE_ADDRESS;
 use crate::indexer::state::IndexerObjectState;
 use crate::into_address::IntoAddress;
 use anyhow::Result;
-use move_core_types::language_storage::StructTag;
+use move_core_types::language_storage::{StructTag, TypeTag};
+use move_core_types::value::MoveTypeLayout;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
 };
+use moveos_types::state::{MoveState, MoveStructState, MoveStructType};
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::{option::MoveOption, string::MoveString},
@@ -18,8 +20,8 @@ use moveos_types::{
         object::{self, ObjectID},
         tx_context::TxContext,
     },
-    state::{MoveState, MoveStructState, MoveStructType},
 };
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fmt::{Display, Formatter};
@@ -57,7 +59,6 @@ impl MoveStructState for InscriptionID {
 pub struct Inscription {
     pub txid: AccountAddress,
     pub index: u32,
-    pub input: u32,
     pub offset: u64,
     pub sequence_number: u32,
     pub inscription_number: u32,
@@ -67,8 +68,9 @@ pub struct Inscription {
     pub content_type: MoveOption<MoveString>,
     pub metadata: Vec<u8>,
     pub metaprotocol: MoveOption<MoveString>,
-    pub parent: MoveOption<ObjectID>,
+    pub parents: Vec<ObjectID>,
     pub pointer: MoveOption<u64>,
+    pub rune: Option<u128>,
 }
 
 impl MoveStructType for Inscription {
@@ -82,7 +84,6 @@ impl MoveStructState for Inscription {
         move_core_types::value::MoveStructLayout::new(vec![
             AccountAddress::type_layout(),
             u32::type_layout(),
-            u32::type_layout(),
             u64::type_layout(),
             u32::type_layout(),
             u32::type_layout(),
@@ -92,8 +93,9 @@ impl MoveStructState for Inscription {
             MoveOption::<MoveString>::type_layout(),
             Vec::<u8>::type_layout(),
             MoveOption::<MoveString>::type_layout(),
-            MoveOption::<ObjectID>::type_layout(),
+            Vec::<ObjectID>::type_layout(),
             MoveOption::<u64>::type_layout(),
+            MoveOption::<u128>::type_layout(),
         ])
     }
 }
@@ -106,6 +108,52 @@ pub fn derive_inscription_id(inscription_id: &InscriptionID) -> ObjectID {
     )
 }
 
+#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
+pub struct Envelope<T> {
+    pub input: u32,
+    pub offset: u32,
+    pub pushnum: bool,
+    pub stutter: bool,
+    pub payload: T,
+}
+
+impl<T> MoveStructType for Envelope<T>
+where
+    T: MoveStructType + DeserializeOwned,
+{
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Envelope");
+
+    fn type_params() -> Vec<TypeTag> {
+        vec![TypeTag::Struct(Box::new(T::struct_tag()))]
+    }
+
+    fn struct_tag() -> StructTag {
+        StructTag {
+            address: Self::ADDRESS,
+            module: Self::MODULE_NAME.to_owned(),
+            name: Self::STRUCT_NAME.to_owned(),
+            type_params: vec![T::struct_tag().into()],
+        }
+    }
+}
+
+impl<T> MoveStructState for Envelope<T>
+where
+    T: MoveStructState,
+{
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![
+            u32::type_layout(),
+            u32::type_layout(),
+            bool::type_layout(),
+            bool::type_layout(),
+            MoveTypeLayout::Struct(T::struct_layout()),
+        ])
+    }
+}
+
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Default)]
 pub struct InscriptionRecord {
     pub body: Vec<u8>,
@@ -115,9 +163,10 @@ pub struct InscriptionRecord {
     pub incomplete_field: bool,
     pub metadata: Vec<u8>,
     pub metaprotocol: MoveOption<MoveString>,
-    pub parent: MoveOption<InscriptionID>,
+    pub parents: Vec<InscriptionID>,
     pub pointer: MoveOption<u64>,
     pub unrecognized_even_field: bool,
+    pub rune: Option<u128>,
 }
 
 impl MoveStructType for InscriptionRecord {
@@ -136,21 +185,24 @@ impl MoveStructState for InscriptionRecord {
             bool::type_layout(),
             Vec::<u8>::type_layout(),
             MoveOption::<MoveString>::type_layout(),
-            MoveOption::<InscriptionID>::type_layout(),
+            Vec::<InscriptionID>::type_layout(),
             MoveOption::<u64>::type_layout(),
             bool::type_layout(),
+            MoveOption::<u128>::type_layout(),
         ])
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InscriptionStore {
-    /// The latest transaction index has been processed
-    pub latest_tx_index: u64,
-    /// The inscriptions table id
+    /// The inscriptions ids table_vec object id
     pub inscriptions: ObjectID,
-    /// The inscription ids table_vec id
-    pub inscription_ids: ObjectID,
+    /// cursed inscription number generator
+    pub cursed_inscription_count: u32,
+    /// blessed inscription number generator
+    pub blessed_inscription_count: u32,
+    /// sequence number generator
+    pub next_sequence_number: u32,
 }
 
 impl InscriptionStore {
@@ -168,9 +220,10 @@ impl MoveStructType for InscriptionStore {
 impl MoveStructState for InscriptionStore {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
-            u64::type_layout(),
             ObjectID::type_layout(),
-            ObjectID::type_layout(),
+            u32::type_layout(),
+            u32::type_layout(),
+            u32::type_layout(),
         ])
     }
 }
@@ -282,4 +335,17 @@ impl From<BitcoinInscriptionID> for InscriptionID {
             index: inscription.index,
         }
     }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum Curse {
+    DuplicateField,
+    IncompleteField,
+    NotAtOffsetZero,
+    NotInFirstInput,
+    Pointer,
+    Pushnum,
+    Reinscription,
+    Stutter,
+    UnrecognizedEvenField,
 }
