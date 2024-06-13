@@ -76,7 +76,7 @@ Aborts if the hex string does not have an even number of characters (as each hex
 Aborts if the hex string contains non-valid hex characters (valid characters are 0 - 9, a - f, A - F)
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="hex.md#0x2_hex_decode">decode</a>(<a href="hex.md#0x2_hex">hex</a>: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="hex.md#0x2_hex_decode">decode</a>(<a href="hex.md#0x2_hex">hex</a>: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -91,7 +91,7 @@ It returns an <code>Option&lt;<a href="">vector</a>&lt;u8&gt;&gt;</code> which w
 or <code>None</code> if the input string is not a valid hexadecimal string or has an odd length.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="hex.md#0x2_hex_decode_option">decode_option</a>(<a href="hex.md#0x2_hex">hex</a>: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="hex.md#0x2_hex_decode_option">decode_option</a>(<a href="hex.md#0x2_hex">hex</a>: &<a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
 </code></pre>
 
 

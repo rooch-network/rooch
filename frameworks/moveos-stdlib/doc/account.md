@@ -14,7 +14,6 @@
 -  [Function `exists_at`](#0x2_account_exists_at)
 -  [Function `create_signer_for_system`](#0x2_account_create_signer_for_system)
 -  [Function `create_signer_with_account`](#0x2_account_create_signer_with_account)
--  [Function `create_signer`](#0x2_account_create_signer)
 -  [Function `account_object_id`](#0x2_account_account_object_id)
 -  [Function `account_borrow_resource`](#0x2_account_account_borrow_resource)
 -  [Function `account_borrow_mut_resource`](#0x2_account_account_borrow_mut_resource)
@@ -205,17 +204,6 @@ Create a signer with mutable Object<Account>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_signer_with_account">create_signer_with_account</a>(<a href="account.md#0x2_account">account</a>: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): <a href="">signer</a>
-</code></pre>
-
-
-
-<a name="0x2_account_create_signer"></a>
-
-## Function `create_signer`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x2_account_create_signer">create_signer</a>(addr: <b>address</b>): <a href="">signer</a>
 </code></pre>
 
 
