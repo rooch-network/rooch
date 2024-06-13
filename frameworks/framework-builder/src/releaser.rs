@@ -14,11 +14,12 @@ use move_binary_format::{
 use std::collections::HashMap;
 use tracing::{debug, info, warn};
 
-pub fn release_latest() -> Result<()> {
+pub fn release_latest() -> Result<Vec<String>> {
     release(StdlibVersion::Latest, false)
 }
 
-pub fn release(version: StdlibVersion, check_compatibility: bool) -> Result<()> {
+pub fn release(version: StdlibVersion, check_compatibility: bool) -> Result<Vec<String>> {
+    let mut warnings = vec![];
     let pre_version = match version {
         StdlibVersion::Version(version_num) => {
             if version_num > 1 {
@@ -69,13 +70,11 @@ pub fn release(version: StdlibVersion, check_compatibility: bool) -> Result<()> 
                         err
                     );
                 } else {
-                    //TODO collect warn message and return to build.rs, then print it out when build project.
-                    warn!(
-                        "Version {:?} is incompatible with previous version {:?}: {:?}",
+                    let msg = format!("Version {:?} is incompatible with previous version {:?}: {:?}",
                         version.as_string(),
                         pre_version.as_string(),
-                        err
-                    );
+                        err);
+                    warnings.push(msg);
                 }
             }
         }
@@ -86,7 +85,7 @@ pub fn release(version: StdlibVersion, check_compatibility: bool) -> Result<()> 
         "Release stdlib version {:?} successfully.",
         version.as_string()
     );
-    Ok(())
+    Ok(warnings)
 }
 
 /// Read max version number except `latest` from stdlib release dir
