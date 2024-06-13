@@ -6,9 +6,9 @@ module bitcoin_move::types{
     use std::option::{Self, Option};
     use moveos_std::address;
     use moveos_std::bcs;
-    use moveos_std::hash;
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
     use bitcoin_move::script_buf::{Self, ScriptBuf};
+    use bitcoin_move::bitcoin_hash;
 
     const LOCK_TIME_THRESHOLD: u32 = 500_000_000;
     const TAPROOT_ANNEX_PREFIX: u8 = 0x50;
@@ -70,24 +70,20 @@ module bitcoin_move::types{
         self.nonce
     }
 
-    public fun header_to_bytes(self: Header) : vector<u8> {
+    public fun header_to_bytes(self: &Header) : vector<u8> {
         let output = vector::empty<u8>();
         vector::append(&mut output, bcs::to_bytes(&self.version));
-        vector::append(&mut output, address::to_bytes(self.prev_blockhash));
-        vector::append(&mut output, address::to_bytes(self.merkle_root));
+        vector::append(&mut output, address::to_bytes(&self.prev_blockhash));
+        vector::append(&mut output, address::to_bytes(&self.merkle_root));
         vector::append(&mut output, bcs::to_bytes(&self.time));
         vector::append(&mut output, bcs::to_bytes(&self.bits));
         vector::append(&mut output, bcs::to_bytes(&self.nonce));
         output
     }
 
-    public fun header_to_hash(self: Header) : address {
+    public fun header_to_hash(self: &Header) : address {
         let header = header_to_bytes(self);
-        let hash1 = hash::sha2_256(header);
-        let hash2 = hash::sha2_256(hash1);
-        vector::reverse(&mut hash2);
-        let block_hash = address::from_bytes(hash2);
-        block_hash
+        bitcoin_hash::sha256d(header)
     }
 
     #[data_struct] 
@@ -278,6 +274,16 @@ module bitcoin_move::types{
 
     public fun unpack_txout(self: TxOut) : (u64, ScriptBuf) {
         (self.value, self.script_pubkey)
+    }
+
+    public fun is_coinbase_tx(tx: &Transaction): bool {
+        let is_coinbase = if(vector::length(&tx.input) == 1) {
+            let first_input = vector::borrow(&tx.input, 0);
+            is_null_outpoint(&first_input.previous_output)
+        } else {
+            false
+        };
+        is_coinbase
     }      
 
     #[test_only]
@@ -290,5 +296,55 @@ module bitcoin_move::types{
             bits,
             nonce,
         }
+    }
+
+    #[test_only]
+    public fun new_coinbase_tx_for_test(id: address, version: u32, lock_time: u32, input: vector<TxIn>, output: vector<TxOut>) : Transaction {
+        Transaction{
+            id,
+            version,
+            lock_time,
+            input,
+            output,
+        }
+    }
+
+    #[test_only]
+    public fun new_block_for_test(header: Header, txdata: vector<Transaction>) : Block {
+        Block{
+            header,
+            txdata,
+        }
+    }
+
+    #[test]
+    fun test_block_decode(){
+        //https://mempool.space/block/00000000b0c5a240b2a61d2e75692224efd4cbecdf6eaf4cc2cf477ca7c270e7
+        let block_bytes = x"010000004ddccd549d28f385ab457e98d1b11ce80bfea2c5ab93015ade4973e400000000bf4473e53794beae34e64fccc471dace6ae544180816f89591894e0f417a914cd74d6e49ffff001d323b3a7b0221da2ae8cc773b020b4873f597369416cf961a1896c24106b0198459fec2df770100000000000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0804ffff001d026e04ffffffff000100f2052a0100000043410446ef0102d1ec5240f0d061a4246c1bdef63fc3dbab7733052fbbf0ecd8f41fc26bf049ebb4f9527f374280259e7cfa99c48b0e3f39c51347a19a5819651503a5ac00339d9a371e2b5a26147ddfd87228b900ff75762a18a40f2778bedbcde7e9b0a301000000000000000321f75f3139a013f50f315b23b0c9a2b6eac31e2bec98e5891c924664889942260000000049483045022100cb2c6b346a978ab8c61b18b5e9397755cbd17d6eb2fe0083ef32e067fa6c785a02206ce44e613f31d9a6b0517e46f3db1576e9812cc98d159bfdaf759a5014081b5c01ffffffff0079cda0945903627c3da1f85fc95d0b8ee3e76ae0cfdc9a65d09744b1f8fc85430000000049483045022047957cdd957cfd0becd642f6b84d82f49b6cb4c51a91f49246908af7c3cfdf4a022100e96b46621f1bffcf5ea5982f88cef651e9354f5791602369bf5a82a6cd61a62501ffffffff00fe09f5fe3ffbf5ee97a54eb5e5069e9da6b4856ee86fc52938c2f979b0f38e82000000004847304402204165be9a4cbab8049e1af9723b96199bfd3e85f44c6b4c0177e3962686b26073022028f638da23fc003760861ad481ead4099312c60030d4cb57820ce4d33812a5ce01ffffffff0001009d966b01000000434104ea1feff861b51fe3f5f8a3b12d0f4712db80e919548a80839fc47c6a21e66d957e9c5d8cd108c7a2d2324bad71f9904ac0ae7336507d785b17a2c115e427a32fac00";
+        let block: Block = bcs::from_bytes(block_bytes);
+        //std::debug::print(&block.header.prev_blockhash);
+        let expected_prev_hash = bitcoin_hash::from_ascii_bytes(&b"00000000e47349de5a0193abc5a2fe0be81cb1d1987e45ab85f3289d54cddc4d");
+        //std::debug::print(&expected_prev_hash);
+        assert!(block.header.prev_blockhash == expected_prev_hash, 1);
+        let expected_hash = bitcoin_hash::from_ascii_bytes(&b"00000000b0c5a240b2a61d2e75692224efd4cbecdf6eaf4cc2cf477ca7c270e7");
+        assert!(header_to_hash(&block.header) == expected_hash, 2);
+        assert!(is_coinbase_tx(vector::borrow(&block.txdata, 0)), 3);
+    }
+
+    #[test]
+    fun test_block_header_hash() {
+        //https://mempool.space/block/00000000000000000002b73f69e81b8b5e98dff0f2b7632fcb83c050c3b099a1
+        let version = 536879108;
+        let prev_blockhash =  bitcoin_hash::from_ascii_bytes(&b"00000000000000000009d54a110cc122960d31567d3ee84a1f18a98f50591046");
+        let merkle_root = bitcoin_hash::from_ascii_bytes(&b"e1e0573e6098d8128ee859e7540f56b01fe0a33e56694df6d2fab0f96c4954b3");
+
+        let time = 1644403033;
+        let bits = 0x170a8bb4;
+        let nonce =  1693537958;
+
+        let block_header = new_header_for_test(version, prev_blockhash, merkle_root, time, bits, nonce);
+        let block_hash = header_to_hash(&block_header);
+        std::debug::print(&block_hash);
+        assert!(block_hash == bitcoin_hash::from_ascii_bytes(&b"00000000000000000002b73f69e81b8b5e98dff0f2b7632fcb83c050c3b099a1"), 1);
     }
 }

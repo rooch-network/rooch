@@ -16,10 +16,10 @@ module bitcoin_move::ord {
     use moveos_std::type_info;
     use moveos_std::bag;
     use moveos_std::string_utils;
-    use moveos_std::address;
 
     use bitcoin_move::types::{Self, Witness, Transaction};
     use bitcoin_move::utxo::{Self, UTXO};
+    use bitcoin_move::bitcoin_hash;
     
     friend bitcoin_move::genesis;
     friend bitcoin_move::bitcoin;
@@ -214,13 +214,9 @@ module bitcoin_move::ord {
         };
 
         let txid_str = string::sub_string(inscription_id, 0, offset);
-        let ascii_txid_option = std::ascii::try_string(string::into_bytes(txid_str));
-        if (option::is_none(&ascii_txid_option)) {
-            return option::none()
-        };
 
-        let txid_hex_ascii = option::extract(&mut ascii_txid_option);
-        let txid_option = address::from_ascii_string(txid_hex_ascii);
+        // Bitcoin tx id hex string is reversed
+        let txid_option = bitcoin_hash::from_ascii_bytes_option(string::bytes(&txid_str));
         if (option::is_none(&txid_option)) {
             return option::none()
         };
@@ -235,6 +231,14 @@ module bitcoin_move::ord {
             txid: option::extract<address>(&mut txid_option),
             index: (option::extract<u64>(&mut index_option) as u32),
         })
+    }
+
+    public fun inscription_id_to_string(inscription_id: &InscriptionID) : String {
+        let txid_str = bitcoin_hash::to_string(inscription_id.txid);
+        let index_str = string_utils::to_string_u32(inscription_id.index);
+        string::append(&mut txid_str, std::string::utf8(b"i"));
+        string::append(&mut txid_str, index_str);
+        txid_str
     }
 
     // ==== Inscription ==== //
@@ -1251,6 +1255,8 @@ module bitcoin_move::ord {
         let inscription_id_str = std::string::utf8(b"6f55475ce65054aa8371d618d217da8c9a764cecdaf4debcbce8d6312fe6b4d8i0");
         let inscription_id_option = parse_inscription_id(&inscription_id_str);
         assert!(option::is_some(&inscription_id_option), 1);
+        let inscription_id = option::destroy_some(inscription_id_option);
+        assert!(inscription_id_str == inscription_id_to_string(&inscription_id), 2);
     }
 
     #[test]

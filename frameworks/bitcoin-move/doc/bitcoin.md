@@ -17,7 +17,7 @@
 -  [Function `get_genesis_block_height`](#0x4_bitcoin_get_genesis_block_height)
 -  [Function `get_latest_block_height`](#0x4_bitcoin_get_latest_block_height)
 -  [Function `get_bitcoin_time`](#0x4_bitcoin_get_bitcoin_time)
--  [Function `verify_header`](#0x4_bitcoin_verify_header)
+-  [Function `contains_header`](#0x4_bitcoin_contains_header)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -201,11 +201,11 @@ Get the bitcoin time, if the latest block is not exist, return 0
 
 
 
-<a name="0x4_bitcoin_verify_header"></a>
+<a name="0x4_bitcoin_contains_header"></a>
 
-## Function `verify_header`
+## Function `contains_header`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_verify_header">verify_header</a>(block_header: <a href="types.md#0x4_types_Header">types::Header</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_contains_header">contains_header</a>(block_header: &<a href="types.md#0x4_types_Header">types::Header</a>): bool
 </code></pre>
