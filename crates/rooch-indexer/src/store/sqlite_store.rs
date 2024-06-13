@@ -91,16 +91,16 @@ impl SqliteIndexerStore {
         //     ))
         //     .execute(&mut connection)
         //     .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
-        //     .context("Failed to write or update global states to SQLiteDB");
+        //     .context("Failed to write or update object states to SQLiteDB");
 
         // Execute the raw SQL query
         diesel::sql_query(query.clone())
             .execute(&mut connection)
             .map_err(|e| {
-                log::error!("Upsert global states Executing Query error: {}", query);
+                log::error!("Upsert object states Executing Query error: {}", query);
                 IndexerError::SQLiteWriteError(e.to_string())
             })
-            .context("Failed to write or update global states to SQLiteDB")?;
+            .context("Failed to write or update object states to SQLiteDB")?;
 
         Ok(())
     }
@@ -117,7 +117,7 @@ impl SqliteIndexerStore {
         )
         .execute(&mut connection)
         .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
-        .context("Failed to delete global states to SQLiteDB")?;
+        .context("Failed to delete object states to SQLiteDB")?;
 
         Ok(())
     }

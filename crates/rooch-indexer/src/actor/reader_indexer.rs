@@ -77,6 +77,6 @@ impl Handler<QueryIndexerObjectStatesMessage> for IndexerReaderActor {
         } = msg;
         self.indexer_reader
             .query_object_states_with_filter(filter, cursor, limit, descending_order)
-            .map_err(|e| anyhow!(format!("Failed to query indexer global states: {:?}", e)))
+            .map_err(|e| anyhow!(format!("Failed to query indexer object states: {:?}", e)))
     }
 }

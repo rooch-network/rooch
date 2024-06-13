@@ -405,7 +405,7 @@ impl IndexerReader {
             main_where_clause, cursor_clause, order_clause, limit,
         );
 
-        tracing::debug!("query global states: {}", query);
+        tracing::debug!("query object states: {}", query);
         let stored_states = self
             .get_inner_indexer_reader(INDEXER_OBJECT_STATES_TABLE_NAME)?
             .run_query(|conn| diesel::sql_query(query).load::<StoredObjectState>(conn))?;
@@ -415,10 +415,35 @@ impl IndexerReader {
             .map(|v| v.try_into_indexer_global_state())
             .collect::<Result<Vec<_>>>()
             .map_err(|e| {
-                IndexerError::SQLiteReadError(format!("Cast indexer global states failed: {:?}", e))
+                IndexerError::SQLiteReadError(format!("Cast indexer object states failed: {:?}", e))
             })?;
 
         Ok(result)
+    }
+
+    pub fn query_last_state_index_by_tx_order(&self, tx_order: u64) -> IndexerResult<u64> {
+        let where_clause = format!("{TX_ORDER_STR} = \"{}\"", tx_order as i64);
+        let order_clause = format!("{TX_ORDER_STR} DESC, {STATE_INDEX_STR} DESC");
+        let query = format!(
+            "
+                SELECT * FROM object_states \
+                WHERE {} \
+                ORDER BY {} \
+                LIMIT 1
+            ",
+            where_clause, order_clause,
+        );
+
+        tracing::debug!("query last state index by tx order: {}", query);
+        let stored_states = self
+            .get_inner_indexer_reader(INDEXER_OBJECT_STATES_TABLE_NAME)?
+            .run_query(|conn| diesel::sql_query(query).load::<StoredObjectState>(conn))?;
+        let last_state_index = if stored_states.is_empty() {
+            0
+        } else {
+            stored_states[0].state_index as u64 + 1
+        };
+        Ok(last_state_index)
     }
 }
 

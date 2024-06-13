@@ -166,7 +166,7 @@ fn test_state_store() -> Result<()> {
     let mut update_object_states = random_update_object_states(new_object_states.clone());
     let remove_object_states = random_remove_object_states();
 
-    //Merge new global states and update global states
+    //Merge new object states and update object states
     new_object_states.append(&mut update_object_states);
     indexer_store.persist_or_update_object_states(new_object_states.clone())?;
     indexer_store.delete_object_states(remove_object_states)?;
