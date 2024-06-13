@@ -12,6 +12,7 @@
   "dependencies": {
     "@emotion/cache": "11.10.5",
     "@emotion/react": "11.10.6",
+    "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
     "@radix-ui/react-aspect-ratio": "^1.0.3",
     "@radix-ui/react-avatar": "^1.0.4",
     "@radix-ui/react-checkbox": "^1.0.4",
@@ -70,5 +71,8 @@
     "tailwindcss": "^3.4.1",
     "typescript": "^5.2.2",
     "vite": "^5.0.8"
+  },
+  "resolutions": {
+    "esbuild": "^0.17.19"
   }
 }
