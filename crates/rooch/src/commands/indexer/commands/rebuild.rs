@@ -57,11 +57,11 @@ impl RebuildCommand {
     pub async fn execute(self) -> RoochResult<()> {
         let input_path = self.input.clone();
         let batch_size = self.batch_size.unwrap();
-        let (indexer_store, _indexer_reader, start_time) = self.init();
+        let (indexer_store, indexer_reader, start_time) = self.init();
         let (tx, rx) = mpsc::sync_channel(2);
 
         let produce_updates_thread =
-            thread::spawn(move || produce_updates(tx, input_path, batch_size));
+            thread::spawn(move || produce_updates(tx, indexer_reader, input_path, batch_size));
         let apply_updates_thread =
             thread::spawn(move || apply_updates(rx, indexer_store, start_time));
         let _ = produce_updates_thread
@@ -94,13 +94,22 @@ struct BatchUpdates {
     object_states: Vec<IndexerObjectState>,
 }
 
-fn produce_updates(tx: SyncSender<BatchUpdates>, input: PathBuf, batch_size: usize) -> Result<()> {
+fn produce_updates(
+    tx: SyncSender<BatchUpdates>,
+    indexer_reader: IndexerReader,
+    input: PathBuf,
+    batch_size: usize,
+) -> Result<()> {
     let mut csv_reader = BufReader::new(File::open(input).unwrap());
     let mut last_state_type = None;
 
-    // set genesis tx_order and state_index_generator
+    // set genesis tx_order and state_index_generator for indexer rebuild
     let tx_order: u64 = 0;
-    let mut state_index_generator: u64 = 0;
+    let mut state_index_generator = indexer_reader.query_last_state_index_by_tx_order(tx_order)?;
+    println!(
+        "Indexer rebuild produce_updates state_index_generator start from: {}",
+        state_index_generator
+    );
 
     loop {
         let mut updates = BatchUpdates {
