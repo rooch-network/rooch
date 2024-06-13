@@ -362,6 +362,31 @@ impl RoochAPIServer for RoochServer {
                 })
                 .collect()
         };
+
+        // Get owner_bitcoin_address
+        let addresses = objects_view
+            .iter()
+            .filter_map(|o| o.as_ref().map(|s| s.owner.into()))
+            .collect::<Vec<_>>();
+        let btc_network = self.rpc_service.get_bitcoin_network().await?;
+        let address_mapping = self.rpc_service.get_bitcoin_addresses(addresses).await?;
+
+        let objects_view = objects_view
+            .into_iter()
+            .map(|o| {
+                o.map(|s| {
+                    let rooch_address = s.owner.into();
+                    let bitcoin_address = address_mapping
+                        .get(&rooch_address)
+                        .expect("should exist.")
+                        .clone()
+                        .map(|a| a.format(btc_network))
+                        .transpose()?;
+                    Ok(s.with_owner_bitcoin_address(bitcoin_address))
+                })
+                .transpose()
+            })
+            .collect::<Result<Vec<_>>>()?;
         Ok(objects_view)
     }
 
@@ -703,22 +728,36 @@ impl RoochAPIServer for RoochServer {
                 .collect::<Vec<_>>()
         };
 
+        let network = self.rpc_service.get_bitcoin_network().await?;
+        let rooch_addresses = states.iter().map(|s| s.owner.clone()).collect::<Vec<_>>();
+        let bitcoin_addresses = self
+            .rpc_service
+            .get_bitcoin_addresses(rooch_addresses)
+            .await?
+            .into_iter()
+            .map(|(_, btc_addr)| btc_addr.map(|addr| addr.format(network)).transpose())
+            .collect::<Result<Vec<Option<String>>>>()?;
+
         let mut data = annotated_states_with_display
             .into_iter()
             .zip(states)
-            .map(|((value, annotated_state, display_fields), state)| {
-                let decoded_value = if decode {
-                    Some(AnnotatedMoveStructView::from(annotated_state.value))
-                } else {
-                    None
-                };
-                IndexerObjectStateView::new_from_object_state(
-                    state,
-                    value,
-                    decoded_value,
-                    display_fields,
-                )
-            })
+            .zip(bitcoin_addresses)
+            .map(
+                |(((value, annotated_state, display_fields), state), bitcoin_address)| {
+                    let decoded_value = if decode {
+                        Some(AnnotatedMoveStructView::from(annotated_state.value))
+                    } else {
+                        None
+                    };
+                    IndexerObjectStateView::new_from_object_state(
+                        state,
+                        value,
+                        bitcoin_address,
+                        decoded_value,
+                        display_fields,
+                    )
+                },
+            )
             .collect::<Vec<_>>();
 
         let has_next_page = data.len() > limit_of;
