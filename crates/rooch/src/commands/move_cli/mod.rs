@@ -4,29 +4,22 @@
 use async_trait::async_trait;
 use clap::{Parser, Subcommand};
 use commands::{
-    build::Build, framework_upgrade::FrameworkUpgrade, integration_test::IntegrationTest, new::New,
-    publish::Publish, run_function::RunFunction, run_view_function::RunViewFunction,
-    unit_test::Test,
+    build::BuildCommand, coverage::CoverageCommand, disassemble::DisassembleCommand,
+    docgen::DocgenCommand, errmap::ErrmapCommand, framework_upgrade::FrameworkUpgrade,
+    info::InfoCommand, integration_test::IntegrationTestCommand, new::NewCommand,
+    prove::ProveCommand, publish::Publish, run_function::RunFunction,
+    run_view_function::RunViewFunction, unit_test::TestCommand,
 };
-use move_cli::{
-    base::{
-        coverage::Coverage, disassemble::Disassemble, docgen::Docgen, errmap::Errmap, info::Info,
-        prove::Prove,
-    },
-    Move,
-};
-use rooch_types::error::{RoochError, RoochResult};
-use serde_json::json;
+use rooch_types::error::RoochResult;
+use serde_json::{json, Value};
 
-use crate::commands::move_cli::commands::explain::Explain;
+use crate::commands::move_cli::commands::explain::ExplainCommand;
 use crate::CommandAction;
 
 pub mod commands;
 
 #[derive(Parser)]
 pub struct MoveCli {
-    #[clap(flatten)]
-    move_args: Move,
     #[clap(subcommand)]
     cmd: MoveCommand,
 }
@@ -34,103 +27,61 @@ pub struct MoveCli {
 #[derive(Subcommand)]
 #[clap(name = "move")]
 pub enum MoveCommand {
-    Build(Build),
-    Coverage(Coverage),
-    Disassemble(Disassemble),
-    Docgen(Docgen),
-    Errmap(Errmap),
-    Info(Info),
-    New(New),
-    Prove(Prove),
-    Test(Test),
+    Build(BuildCommand),
+    Coverage(CoverageCommand),
+    Disassemble(DisassembleCommand),
+    Docgen(DocgenCommand),
+    Errmap(ErrmapCommand),
+    Info(InfoCommand),
+    New(NewCommand),
+    Prove(ProveCommand),
+    Test(TestCommand),
     Publish(Publish),
     Run(RunFunction),
     View(RunViewFunction),
-    IntegrationTest(IntegrationTest),
-    Explain(Explain),
+    IntegrationTest(IntegrationTestCommand),
+    Explain(ExplainCommand),
     FrameworkUpgrade(FrameworkUpgrade),
 }
 
 #[async_trait]
 impl CommandAction<String> for MoveCli {
     async fn execute(self) -> RoochResult<String> {
-        let move_args = self.move_args;
-        let json_result = json!({ "Result": "Success" });
-        let move_success = serde_json::to_string_pretty(&json_result).unwrap();
         match self.cmd {
-            MoveCommand::Build(c) => c
-                .execute(move_args.package_path, move_args.build_config)
-                .await
-                .map(|_| move_success)
-                .map_err(RoochError::from),
-            MoveCommand::Coverage(c) => c
-                .execute(move_args.package_path, move_args.build_config)
-                .map(|_| move_success)
-                .map_err(RoochError::from),
-            MoveCommand::Disassemble(c) => c
-                .execute(move_args.package_path, move_args.build_config)
-                .map(|_| move_success)
-                .map_err(RoochError::from),
-            MoveCommand::Docgen(c) => c
-                .execute(move_args.package_path, move_args.build_config)
-                .map(|_| move_success)
-                .map_err(RoochError::from),
-            MoveCommand::Errmap(mut c) => {
-                match c.error_prefix {
-                    Some(prefix) => {
-                        if prefix == "Error" {
-                            c.error_prefix = Some("Error".to_owned());
-                        } else if prefix == "E" {
-                            c.error_prefix = Some("E".to_owned());
-                        } else {
-                            return Err(RoochError::CommandArgumentError(
-                                "Invalid error prefix. Use --error-prefix \"E\" for move-stdlib, --error-prefix \"Error\" for moveos-stdlib and rooch-framework, etc.".to_owned(),
-                            ));
-                        }
-                    }
-                    None => {
-                        return Err(RoochError::CommandArgumentError(
-                            "Error prefix not provided. Use --error-prefix \"E\" for move-stdlib, --error-prefix \"Error\" for moveos-stdlib and rooch-framework, etc.".to_owned(),
-                        ));
-                    }
-                }
-
-                c.execute(move_args.package_path, move_args.build_config)
-                    .map(|_| move_success)
-                    .map_err(RoochError::from)
-            }
-            MoveCommand::Info(c) => c
-                .execute(move_args.package_path, move_args.build_config)
-                .map(|_| move_success)
-                .map_err(RoochError::from),
-            MoveCommand::New(c) => c
-                .execute(move_args.package_path)
-                .await
-                .map(|_| move_success)
-                .map_err(RoochError::from),
-            MoveCommand::Prove(c) => c
-                .execute(move_args.package_path, move_args.build_config)
-                .map(|_| move_success)
-                .map_err(RoochError::from),
-            MoveCommand::Test(c) => c
-                .execute(move_args.package_path, move_args.build_config)
-                .await
-                .map(|_| move_success)
-                .map_err(RoochError::from),
+            MoveCommand::Build(c) => c.execute_serialized().await,
+            MoveCommand::Coverage(c) => c.execute_serialized().await,
+            MoveCommand::Disassemble(c) => c.execute_serialized().await,
+            MoveCommand::Docgen(c) => c.execute_serialized().await,
+            MoveCommand::Errmap(c) => c.execute_serialized().await,
+            MoveCommand::Info(c) => c.execute_serialized().await,
+            MoveCommand::New(c) => c.execute_serialized().await,
+            MoveCommand::Prove(c) => c.execute_serialized().await,
+            MoveCommand::Test(c) => c.execute_serialized().await,
             MoveCommand::Publish(c) => c.execute_serialized().await,
             MoveCommand::Run(c) => c.execute_serialized().await,
             MoveCommand::View(c) => c.execute_serialized().await,
-            MoveCommand::IntegrationTest(c) => c
-                .execute(move_args)
-                .await
-                .map(|_| move_success)
-                .map_err(RoochError::from),
-            MoveCommand::Explain(c) => c
-                .execute()
-                .await
-                .map(|_| move_success)
-                .map_err(RoochError::from),
+            MoveCommand::IntegrationTest(c) => c.execute_serialized().await,
+            MoveCommand::Explain(c) => c.execute_serialized().await,
             MoveCommand::FrameworkUpgrade(c) => c.execute_serialized().await,
         }
+    }
+}
+
+pub fn serialized_success(json: bool) -> RoochResult<Option<Value>> {
+    if json {
+        let json_result = json!({ "Result": "Success" });
+        Ok(Some(json_result))
+    } else {
+        Ok(None)
+    }
+}
+
+pub fn print_serialized_success(json: bool) -> RoochResult<Option<Value>> {
+    if json {
+        let json_result = json!({ "Result": "Success" });
+        Ok(Some(json_result))
+    } else {
+        println!("Success");
+        Ok(None)
     }
 }
