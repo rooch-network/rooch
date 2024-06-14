@@ -1,6 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::cli_types::{CommandAction, WalletContextOptions};
+use crate::commands::move_cli::serialized_success;
+use async_trait::async_trait;
 use clap::{Args, Parser};
 use move_cli::Move;
 use move_command_line_common::address::NumericalAddress;
@@ -17,13 +20,13 @@ use move_package::source_package::layout::SourcePackageLayout;
 use moveos_types::addresses::MOVEOS_NAMED_ADDRESS_MAPPING;
 use once_cell::sync::Lazy;
 use rooch_integration_test_runner;
+use rooch_types::error::{RoochError, RoochResult};
+use serde_json::Value;
 use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::num::NonZeroUsize;
 use std::str::FromStr;
 use std::sync::Mutex;
-
-use crate::cli_types::WalletContextOptions;
 
 pub const INTEGRATION_TESTS_DIR: &str = "integration-tests";
 
@@ -104,7 +107,7 @@ pub struct TestOpts {
 
 /// Integration test
 #[derive(Parser)]
-pub struct IntegrationTest {
+pub struct IntegrationTestCommand {
     #[clap(flatten)]
     context_options: WalletContextOptions,
 
@@ -129,13 +132,21 @@ pub struct IntegrationTest {
     /// Note: This will fail if there are duplicates in the Move.toml file remove those first.
     #[clap(long, value_parser = crate::utils::parse_map::<String, String>, default_value = "")]
     pub(crate) named_addresses: BTreeMap<String, String>,
+
+    #[clap(flatten)]
+    move_args: Move,
+
+    /// Return command outputs in json format
+    #[clap(long, default_value = "false")]
+    json: bool,
 }
 
-impl IntegrationTest {
-    pub async fn execute(self, move_arg: Move) -> anyhow::Result<()> {
+#[async_trait]
+impl CommandAction<Option<Value>> for IntegrationTestCommand {
+    async fn execute(self) -> RoochResult<Option<Value>> {
         let rerooted_path = {
-            let path = match move_arg.package_path {
-                Some(_) => move_arg.package_path,
+            let path = match self.move_args.package_path {
+                Some(_) => self.move_args.package_path,
                 None => Some(std::env::current_dir()?),
             };
             // Always root ourselves to the package root, and then compile relative to that.
@@ -145,7 +156,7 @@ impl IntegrationTest {
         let context = self.context_options.build()?;
 
         // force move to rebuild all packages, so that we can use compile_driver to generate the full compiled program.
-        let mut build_config = move_arg.build_config;
+        let mut build_config = self.move_args.build_config;
         build_config
             .additional_named_addresses
             .extend(context.parse_and_resolve_addresses(self.named_addresses)?);
@@ -293,7 +304,7 @@ impl IntegrationTest {
 
         if !tests_dir.exists() || !tests_dir.is_dir() {
             eprintln!("No integration tests file in the dir `integration-tests`.");
-            return Ok(());
+            return serialized_success(self.json);
         }
 
         let mut named_address_string_map = BTreeMap::new();
@@ -342,9 +353,18 @@ impl IntegrationTest {
             test_args.push(filter);
         }
 
-        let test_opts = datatest_stable::TestOpts::try_parse_from(test_args.as_slice())?;
-        datatest_stable::runner_with_opts(&[requirements], test_opts);
+        let test_opts = datatest_stable::TestOpts::try_parse_from(test_args.as_slice());
+        match test_opts {
+            Ok(test_opts) => {
+                datatest_stable::runner_with_opts(&[requirements], test_opts);
+            }
+            Err(_) => {
+                return Err(RoochError::CommandArgumentError(
+                    "Failed to parse test arguments.".to_string(),
+                ));
+            }
+        }
 
-        Ok(())
+        serialized_success(self.json)
     }
 }

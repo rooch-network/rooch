@@ -8,7 +8,7 @@ use commands::{
     create::CreateCommand, list::ListCommand, nullify::NullifyCommand, switch::SwitchCommand,
     transfer::TransferCommand,
 };
-use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::error::RoochResult;
 use std::path::PathBuf;
 
 pub mod commands;
@@ -34,7 +34,6 @@ impl CommandAction<String> for Account {
             AccountCommand::Balance(balance) => balance.execute_serialized().await,
             AccountCommand::Transfer(transfer) => transfer.execute_serialized().await,
         }
-        .map_err(RoochError::from)
     }
 }
 

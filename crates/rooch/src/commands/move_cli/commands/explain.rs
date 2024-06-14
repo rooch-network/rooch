@@ -1,19 +1,24 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_types::WalletContextOptions;
-use clap::*;
+use crate::cli_types::{CommandAction, WalletContextOptions};
+use crate::commands::move_cli::serialized_success;
+use async_trait::async_trait;
+use clap::Parser;
+use move_cli::Move;
 use move_core_types::errmap::{ErrorDescription, ErrorMapping};
 use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::AbortLocation;
+use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::function_arg::ParsedModuleId;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 ///Explain Move abort codes. Errors are defined as
 ///a global category + module-specific reason for the error.
 #[derive(Parser)]
 #[clap(name = "explain")]
-pub struct Explain {
+pub struct ExplainCommand {
     #[clap(flatten)]
     context_options: WalletContextOptions,
 
@@ -23,10 +28,18 @@ pub struct Explain {
     /// The abort code returned with a `MoveAbort` error
     #[clap(long = "abort-code", short = 'a')]
     abort_code: u64,
+
+    #[clap(flatten)]
+    move_args: Move,
+
+    /// Return command outputs in json format
+    #[clap(long, default_value = "false")]
+    json: bool,
 }
 
-impl Explain {
-    pub async fn execute(self) -> anyhow::Result<()> {
+#[async_trait]
+impl CommandAction<Option<Value>> for ExplainCommand {
+    async fn execute(self) -> RoochResult<Option<Value>> {
         let context = self.context_options.build()?;
         let address_mapping = context.address_mapping();
         let module_id = self.location.into_module_id(&address_mapping)?;
@@ -43,11 +56,13 @@ impl Explain {
                 println!("{}", explain_result)
             }
             None => {
-                return Err(anyhow::Error::msg("Error map data not found."));
+                return Err(RoochError::from(anyhow::Error::msg(
+                    "Error map data not found.",
+                )));
             }
         }
 
-        Ok(())
+        serialized_success(self.json)
     }
 }
 
