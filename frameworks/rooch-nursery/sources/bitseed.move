@@ -421,9 +421,9 @@ module rooch_nursery::bitseed {
         let inscrption = object::borrow(inscription_obj);
         let wasm_bytes = ord::body(inscrption);
 
-        let attributes_bytes = simple_map::borrow(metadata, &string::utf8(b"attributes"));
+        
 
-        let (is_valid, reason) = inscribe_verify(wasm_bytes, deploy_args, seed, user_input, *attributes_bytes);
+        let (is_valid, reason) = inscribe_verify(wasm_bytes, deploy_args, seed, user_input, metadata);
         if (!is_valid) {
             simple_map::drop(attributes);
             return (false, reason)
@@ -434,7 +434,7 @@ module rooch_nursery::bitseed {
     }
 
     public fun inscribe_verify(wasm_bytes: vector<u8>, deploy_args: vector<u8>,
-                               seed: vector<u8>, user_input: vector<u8>, attributes_output: vector<u8>): (bool, Option<String>) {
+                               seed: vector<u8>, user_input: vector<u8>, metadata: &SimpleMap<String,vector<u8>>, body: &vector<u8>): (bool, Option<String>) {
         let wasm_instance_option = wasm::create_wasm_instance_option(wasm_bytes);
         if (option::is_none(&wasm_instance_option)) {
             option::destroy_none(wasm_instance_option);
@@ -450,6 +450,12 @@ module rooch_nursery::bitseed {
         let arg_list = vector::empty<vector<u8>>();
         vector::push_back(&mut arg_list, arg_with_length);
         vector::push_back(&mut arg_list, attributes_output);
+
+        let amount = simple_map::borrow(metadata, &string::utf8(b"amount"));
+        let attributes_bytes = simple_map::borrow(metadata, &string::utf8(b"attributes"));
+        let content_type_bytes = simple_map::borrow(metadata, &string::utf8(b"content_type"));
+        let output_bytes = make_output(amount, attributes_bytes, content_type_bytes, body);
+
         let memory_args_list = wasm::create_memory_wasm_args(&mut wasm_instance, function_name, arg_list);
 
         let ret_val_option = wasm::execute_wasm_function_option(&mut wasm_instance, function_name, memory_args_list);
