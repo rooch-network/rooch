@@ -70,10 +70,12 @@ pub fn release(version: StdlibVersion, check_compatibility: bool) -> Result<Vec<
                         err
                     );
                 } else {
-                    let msg = format!("Version {:?} is incompatible with previous version {:?}: {:?}",
+                    let msg = format!(
+                        "Version {:?} is incompatible with previous version {:?}: {:?}",
                         version.as_string(),
                         pre_version.as_string(),
-                        err);
+                        err
+                    );
                     warnings.push(msg);
                 }
             }
