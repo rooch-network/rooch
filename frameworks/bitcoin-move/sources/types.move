@@ -244,7 +244,6 @@ module bitcoin_move::types{
         /// The script which must be satisfied for the output to be spent.
         script_pubkey: ScriptBuf,
         /// The address of the output, if known. Otherwise, the Address bytes will be empty.
-        /// We can not use Option<BitcoinAddress> here, because Option is not a #[data_struct]
         recipient_address: BitcoinAddress,
     }
 
@@ -299,11 +298,25 @@ module bitcoin_move::types{
     }
 
     #[test_only]
-    public fun new_coinbase_tx_for_test(id: address, version: u32, lock_time: u32, input: vector<TxIn>, output: vector<TxOut>) : Transaction {
+    public fun new_coinbase_tx_for_test(miner: BitcoinAddress) : Transaction {
+        //TODO calculate txid via Bitcoin transaction data
+        let id = moveos_std::tx_context::fresh_address_for_testing();
+        let input = vector::singleton(TxIn{
+            previous_output: null_outpoint(),
+            script_sig: vector::empty(),
+            sequence: U32_MAX,
+            witness: Witness{witness: vector::empty()},
+        });
+        let output = vector::singleton(TxOut{
+            value: 0,
+            //TODO construct script_pubkey
+            script_pubkey: script_buf::new(vector::empty()),
+            recipient_address: miner,
+        });
         Transaction{
             id,
-            version,
-            lock_time,
+            version: 2u32,
+            lock_time: 0u32,
             input,
             output,
         }
@@ -315,6 +328,18 @@ module bitcoin_move::types{
             header,
             txdata,
         }
+    }
+
+    #[test_only]
+    public fun fake_block_for_test(time: u32, miner: BitcoinAddress): Block{
+        let prev_blockhash = moveos_std::tx_context::fresh_address_for_testing();
+        let merkle_root = moveos_std::tx_context::fresh_address_for_testing();
+        let bits = 0x1d00ffff;
+        let nonce = 0x00000000;
+        let header = new_header_for_test(0x2000_0000, prev_blockhash, merkle_root, time, bits, nonce);
+        let coinbase_tx = new_coinbase_tx_for_test(miner);
+        let txdata = vector::singleton(coinbase_tx);
+        new_block_for_test(header, txdata) 
     }
 
     #[test]

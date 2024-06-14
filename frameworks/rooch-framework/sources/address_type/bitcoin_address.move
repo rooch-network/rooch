@@ -109,6 +109,12 @@ module rooch_framework::bitcoin_address {
     native fun parse(raw_addr: &vector<u8>): BitcoinAddress;
     native fun verify_with_pk (addr: &vector<u8>, pk: &vector<u8>): bool;
 
+    #[test_only]
+    public fun random_address_for_testing(): BitcoinAddress {
+        let bytes = moveos_std::bcs::to_bytes(&moveos_std::tx_context::fresh_address_for_testing());
+        new_witness_program(bytes)
+    }
+
     #[test]
     fun test_verify_with_pk_success() {
         // p2tr

@@ -168,15 +168,16 @@ module btc_blind_box::blind_box {
         let status_obj_id = object::named_object_id<SaleStatus>();
         let status_obj = object::borrow_mut_object_shared<SaleStatus>(status_obj_id);
 
+        let miner = rooch_framework::bitcoin_address::random_address_for_testing();
         // request box
-        let header = types::new_header_for_test(1, @0x123, @0xabcdef123, 50000, 8, 1);
-        bitcoin::submit_block_for_test(5, @0x1234, &header);
+        let block = types::fake_block_for_test(5000, miner);
+        bitcoin::submit_new_block_for_test(5, block);
         request_box(sender, status_obj);
         assert!(object::borrow(status_obj).sold_amount == 1, 101);
 
         // claim box
-        let header = types::new_header_for_test(1, @0x2345, @0xabcdef234, 100000, 8, 10);
-        bitcoin::submit_block_for_test(10, @0x2345, &header);
+        let block = types::fake_block_for_test(100000, miner);
+        bitcoin::submit_new_block_for_test(10, block);
         claim_box(sender, status_obj);
         assert!(object::borrow(status_obj).claimed_amount == 1, 102);
     }
