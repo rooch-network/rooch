@@ -112,7 +112,7 @@ module bitcoin_move::bitcoin{
         while(idx < tx_len){
             let tx = vector::borrow(txdata, idx);
 
-            let is_coinbase = is_coinbase_tx(tx);
+            let is_coinbase = types::is_coinbase_tx(tx);
             if(is_coinbase) {
                 coinbase_tx_idx = idx;
             } else {
@@ -125,18 +125,6 @@ module bitcoin_move::bitcoin{
         // handle coinbase tx
         let coinbase_tx = vector::borrow(txdata, coinbase_tx_idx);
         process_coinbase_tx(btc_block_store, coinbase_tx, flotsams, block_height)
-    }
-
-    fun is_coinbase_tx(tx: &Transaction): bool {
-        let txinput = types::tx_input(tx);
-        let is_coinbase = if(vector::length(txinput) > 0) {
-            let first_input = vector::borrow(txinput, 0);
-            let previous_output = types::txin_previous_output(first_input);
-            types::is_null_outpoint(previous_output)
-        } else {
-            false
-        };
-        is_coinbase
     }
 
     fun process_tx(btc_block_store: &mut BitcoinBlockStore, tx: &Transaction, block_height: u64): vector<Flotsam>{
@@ -292,7 +280,7 @@ module bitcoin_move::bitcoin{
     }
 
 
-    /// The relay server submit a new Bitcoin block to the light client.
+    /// The the sequencer submit a new Bitcoin block
     fun submit_new_block(block_height: u64, block_hash: address, block_bytes: vector<u8>){
         let btc_block_store_obj = borrow_block_store_mut();
         let time = process_block(btc_block_store_obj, block_height, block_hash, block_bytes);
@@ -400,57 +388,17 @@ module bitcoin_move::bitcoin{
         };
     }
 
-    public fun verify_header(block_header : Header) : bool {
+    public fun contains_header(block_header : &Header) : bool {
         let block_hash = types::header_to_hash(block_header);
-        let btc_block_store_obj = borrow_block_store();
-        let btc_block_store = object::borrow(btc_block_store_obj);
-        if(table::contains(&btc_block_store.blocks, block_hash)){
-            true
-        }else{
-            false
-        }
+        let block = get_block(block_hash);
+        option::is_some(&block)
     }
 
     #[test_only]
-    public fun submit_block_for_test(block_height: u64, block_hash: address, block_header: &Header){
-        let btc_block_store_obj = borrow_block_store_mut();
-        let btc_block_store = object::borrow_mut(btc_block_store_obj);
-        let time = types::time(block_header);
-        table::add(&mut btc_block_store.height_to_hash, block_height, block_hash);
-        table::add(&mut btc_block_store.hash_to_height, block_hash, block_height);
-        table::add(&mut btc_block_store.blocks, block_hash, *block_header);
-
-        let curr_latest_height = option::get_with_default(&btc_block_store.latest_block_height, 0);
-        if (block_height > curr_latest_height) {
-            btc_block_store.latest_block_height = option::some(block_height);
-        };
-
-        let timestamp_seconds = (time as u64);
-        let module_signer = signer::module_signer<BitcoinBlockStore>();
-        timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));    
+    public fun submit_new_block_for_test(block_height: u64, block: Block){
+        let block_hash = types::header_to_hash(types::header(&block));
+        let block_bytes = bcs::to_bytes(&block);
+        submit_new_block(block_height, block_hash, block_bytes);   
     }
 
-    #[test_only]
-    use moveos_std::address;
-    #[test_only]
-    use std::ascii;
-
-    #[test]
-    fun verify_header_test() {
-        let version = 536879108;
-        let prev_blockhash =  option::destroy_some(address::from_ascii_string(ascii::string(b"00000000000000000009d54a110cc122960d31567d3ee84a1f18a98f50591046")));
-        let merkle_root = option::destroy_some(address::from_ascii_string(ascii::string(b"e1e0573e6098d8128ee859e7540f56b01fe0a33e56694df6d2fab0f96c4954b3")));
-        let time = 1644403033;
-        let bits = 0x170a8bb4;
-        let nonce =  1693537958;
-
-        let block_header = types::new_header_for_test(version, prev_blockhash, merkle_root, time, bits, nonce);
-        let block_hash = types::header_to_hash(block_header);
-        assert!(block_hash == address::from_bytes(x"00000000000000000002b73f69e81b8b5e98dff0f2b7632fcb83c050c3b099a1"), 1);
-
-        let module_signer = signer::module_signer<BitcoinBlockStore>();
-        genesis_init(&module_signer, 0);
-        submit_block_for_test(1, block_hash, &block_header);
-        assert!(verify_header(block_header), 2);
-    }
 }

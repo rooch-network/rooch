@@ -13,6 +13,7 @@ This is the reference documentation of the Bitcoin Move Framework.
 
 
 -  [`0x4::bitcoin`](bitcoin.md#0x4_bitcoin)
+-  [`0x4::bitcoin_hash`](bitcoin_hash.md#0x4_bitcoin_hash)
 -  [`0x4::genesis`](genesis.md#0x4_genesis)
 -  [`0x4::network`](network.md#0x4_network)
 -  [`0x4::opcode`](opcode.md#0x4_opcode)

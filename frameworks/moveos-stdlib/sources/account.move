@@ -108,7 +108,7 @@ module moveos_std::account {
    }
 
 
-   native public(friend) fun create_signer(addr: address): signer;
+   native fun create_signer(addr: address): signer;
 
 
    public fun account_object_id(account: address): ObjectID {
@@ -155,8 +155,7 @@ module moveos_std::account {
    public fun account_exists_resource<T: key>(self: &Object<Account>) : bool {
       object::contains_field_internal(object::id(self), key<T>())
    }
-
-   ///TODO should support Account transfer   
+   
    fun transfer(obj: Object<Account>, account: address) {
       object::transfer_extend(obj, account);
    }

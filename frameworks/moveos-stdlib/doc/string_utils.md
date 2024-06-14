@@ -18,10 +18,14 @@
 -  [Function `parse_decimal`](#0x2_string_utils_parse_decimal)
 -  [Function `to_lower_case`](#0x2_string_utils_to_lower_case)
 -  [Function `to_upper_case`](#0x2_string_utils_to_upper_case)
+-  [Function `to_string_u256`](#0x2_string_utils_to_string_u256)
+-  [Function `to_string_u64`](#0x2_string_utils_to_string_u64)
+-  [Function `to_string_u32`](#0x2_string_utils_to_string_u32)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x1::vector</a>;
 </code></pre>
 
 
@@ -168,4 +172,37 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_to_upper_case">to_upper_case</a>(s: &<a href="_String">string::String</a>): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x2_string_utils_to_string_u256"></a>
+
+## Function `to_string_u256`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_to_string_u256">to_string_u256</a>(n: u256): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x2_string_utils_to_string_u64"></a>
+
+## Function `to_string_u64`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_to_string_u64">to_string_u64</a>(n: u64): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x2_string_utils_to_string_u32"></a>
+
+## Function `to_string_u32`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_to_string_u32">to_string_u32</a>(n: u32): <a href="_String">string::String</a>
 </code></pre>

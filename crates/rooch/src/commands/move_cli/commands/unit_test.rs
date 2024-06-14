@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::cli_types::WalletContextOptions;
 use clap::Parser;
 use codespan_reporting::diagnostic::Severity;
 use move_cli::base::test;
@@ -23,11 +24,9 @@ use moveos_verifier::build::build_model_with_test_attr;
 use moveos_verifier::metadata::run_extended_checks;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
-use rooch_framework::natives::{all_natives, NativeGasParameters};
+use rooch_genesis::FrameworksGasParameters;
 use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 use termcolor::Buffer;
-
-use crate::cli_types::WalletContextOptions;
 
 #[derive(Parser)]
 #[group(skip)]
@@ -96,7 +95,8 @@ impl Test {
 
         //TODO define gas metering
         let cost_table = move_vm_test_utils::gas_schedule::INITIAL_COST_SCHEDULE.clone();
-        let natives = all_natives(NativeGasParameters::zeros());
+        let gas_parameter = FrameworksGasParameters::initial();
+        let natives = gas_parameter.all_natives();
         set_extension_hook(Box::new(new_moveos_natives_runtime));
         self.test
             .execute(path, build_config, natives, Some(cost_table))
