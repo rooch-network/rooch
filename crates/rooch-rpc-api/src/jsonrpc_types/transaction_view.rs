@@ -36,10 +36,15 @@ pub enum LedgerTxDataView {
 }
 
 impl LedgerTxDataView {
-    pub fn new_from_ledger_txdata(data: LedgerTxData, sender_bitcoin_address: Option<String>) -> Self {
+    pub fn new_from_ledger_txdata(
+        data: LedgerTxData,
+        sender_bitcoin_address: Option<String>,
+    ) -> Self {
         match data {
             LedgerTxData::L1Block(block) => LedgerTxDataView::L1Block(block.into()),
-            LedgerTxData::L2Tx(tx) => LedgerTxDataView::L2Tx(TransactionView::new_from_rooch_transaction(tx, sender_bitcoin_address)),
+            LedgerTxData::L2Tx(tx) => LedgerTxDataView::L2Tx(
+                TransactionView::new_from_rooch_transaction(tx, sender_bitcoin_address),
+            ),
         }
     }
 }
@@ -51,7 +56,10 @@ pub struct LedgerTransactionView {
 }
 
 impl LedgerTransactionView {
-    pub fn new_from_ledger_transaction(tx: LedgerTransaction, sender_bitcoin_address: Option<String>) -> Self {
+    pub fn new_from_ledger_transaction(
+        tx: LedgerTransaction,
+        sender_bitcoin_address: Option<String>,
+    ) -> Self {
         Self {
             data: LedgerTxDataView::new_from_ledger_txdata(tx.data, sender_bitcoin_address),
             sequence_info: tx.sequence_info.into(),
@@ -66,9 +74,15 @@ pub struct TransactionWithInfoView {
 }
 
 impl TransactionWithInfoView {
-    pub fn new_from_transaction_with_info(tx: TransactionWithInfo, sender_bitcoin_address: Option<String>) -> Self {
+    pub fn new_from_transaction_with_info(
+        tx: TransactionWithInfo,
+        sender_bitcoin_address: Option<String>,
+    ) -> Self {
         Self {
-            transaction: LedgerTransactionView::new_from_ledger_transaction(tx.transaction, sender_bitcoin_address),
+            transaction: LedgerTransactionView::new_from_ledger_transaction(
+                tx.transaction,
+                sender_bitcoin_address,
+            ),
             execution_info: tx.execution_info.into(),
         }
     }

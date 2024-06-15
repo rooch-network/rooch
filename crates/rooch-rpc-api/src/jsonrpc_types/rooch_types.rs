@@ -51,7 +51,10 @@ pub struct TransactionView {
 }
 
 impl TransactionView {
-    pub fn new_from_rooch_transaction(transaction: RoochTransaction, sender_bitcoin_address: Option<String>) -> Self {
+    pub fn new_from_rooch_transaction(
+        transaction: RoochTransaction,
+        sender_bitcoin_address: Option<String>,
+    ) -> Self {
         Self {
             sequence_number: transaction.sequence_number(),
             sender: transaction.sender().to_string(),
