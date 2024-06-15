@@ -234,4 +234,36 @@ module moveos_std::cbor {
         let obj = from_cbor_option<Test>(invalid_bytes);
         assert!(option::is_none(&obj), 1);
     }
+
+    #[test]
+    fun test_simple_map_to_cbor() {
+        // Create a SimpleMap<String, vector<u8>>
+        let map = simple_map::create<String, vector<u8>>();
+        simple_map::add(&mut map, std::string::utf8(b"key1"), vector<u8>[1u8, 2u8, 3u8]);
+        simple_map::add(&mut map, std::string::utf8(b"key2"), vector<u8>[4u8, 5u8, 6u8]);
+
+        // Serialize the SimpleMap to CBOR bytes
+        let cbor_bytes = to_cbor(&map);
+        simple_map::drop(map);
+
+        // Deserialize the CBOR bytes back to SimpleMap
+        let deserialized_map = to_map(cbor_bytes);
+
+        // Verify that the deserialized SimpleMap is the same as the original SimpleMap
+        assert!(simple_map::length(&deserialized_map) == 2, 1);
+
+        let value1 = simple_map::borrow(&deserialized_map, &std::string::utf8(b"key1"));
+        assert!(vector::length(value1) == 3, 2);
+        assert!(vector::borrow(value1, 0) == &1u8, 3);
+        assert!(vector::borrow(value1, 1) == &2u8, 4);
+        assert!(vector::borrow(value1, 2) == &3u8, 5);
+
+        let value2 = simple_map::borrow(&deserialized_map, &std::string::utf8(b"key2"));
+        assert!(vector::length(value2) == 3, 6);
+        assert!(vector::borrow(value2, 0) == &4u8, 7);
+        assert!(vector::borrow(value2, 1) == &5u8, 8);
+        assert!(vector::borrow(value2, 2) == &6u8, 9);
+
+        simple_map::drop(deserialized_map);
+    }
 }

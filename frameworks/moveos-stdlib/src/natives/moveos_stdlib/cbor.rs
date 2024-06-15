@@ -467,6 +467,67 @@ fn serialize_move_struct_to_cbor_value(
                     }
                     _ => return Err(anyhow::anyhow!("Invalid std option")),
                 }
+            } else if struct_type == &SimpleMap::<MoveString, Vec<u8>>::struct_tag() {
+                let data_field = value_fields
+                    .iter()
+                    .find(|(name, _)| name.as_str() == "data")
+                    .ok_or_else(|| anyhow::anyhow!("Missing data field in SimpleMap"))?;
+
+                let data_vector = match &data_field.1 {
+                    MoveValue::Vector(vec) => vec,
+                    _ => return Err(anyhow::anyhow!("Invalid data field in SimpleMap")),
+                };
+
+                let key_value_pairs = data_vector
+                    .iter()
+                    .map(|element| {
+                        let struct_ = match element {
+                            MoveValue::Struct(s) => s,
+                            _ => return Err(anyhow::anyhow!("Invalid element in SimpleMap data")),
+                        };
+
+                        let fields = match struct_ {
+                            MoveStruct::WithTypes {type_: _, fields: value_fields,} => value_fields,
+                            _ => return Err(anyhow::anyhow!("Invalid element in SimpleMap data")),
+                        };
+
+                        let key = match &fields[0].1 {
+                            MoveValue::Struct(struct_) => {
+                                let value_fields = match struct_ {
+                                    MoveStruct::WithTypes {type_: _, fields: value_fields,} => value_fields,
+                                    _ => return Err(anyhow::anyhow!("Invalid element in SimpleMap data")),
+                                };
+
+                                let bytes_field = value_fields
+                                    .first()
+                                    .ok_or_else(|| anyhow::anyhow!("Invalid bytes field"))?;
+
+                                match bytes_field.1.clone() {
+                                    MoveValue::Vector(vec) => {
+                                        let cbor_bytes = MoveValue::vec_to_vec_u8(vec)?;
+                                        let cbor_text = String::from_utf8(cbor_bytes)
+                                            .ok()
+                                            .ok_or_else(|| anyhow::anyhow!("Invalid utf8 String"))?;
+                                        cbor_text
+                                    }
+                                    _ => return Err(anyhow::anyhow!("Invalid std string")),
+                                }
+                            },
+                            _ => return Err(anyhow::anyhow!("Invalid key in SimpleMap")),
+                        };
+
+                        let value = match &fields[1].1 {
+                            MoveValue::Vector(vec) => {
+                                MoveValue::vec_to_vec_u8(vec.clone())?
+                            },
+                            _ => return Err(anyhow::anyhow!("Invalid value in SimpleMap")),
+                        };
+
+                        Ok((CborValue::Text(key), CborValue::Bytes(value)))
+                    })
+                    .collect::<Result<Vec<_>>>()?;
+
+                CborValue::Map(key_value_pairs)
             } else {
                 serialize_move_fields_to_cbor_value(layout_fields, value_fields)?
             }
