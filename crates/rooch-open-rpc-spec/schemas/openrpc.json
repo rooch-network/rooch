@@ -1237,6 +1237,12 @@
           "owner": {
             "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
           },
+          "owner_bitcoin_address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "size": {
             "type": "integer",
             "format": "uint64",
@@ -1676,6 +1682,12 @@
               "sender": {
                 "type": "string"
               },
+              "sender_bitcoin_address": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "sequence_number": {
                 "type": "integer",
                 "format": "uint64",
@@ -1913,6 +1925,12 @@
           },
           "owner": {
             "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
+          },
+          "owner_bitcoin_address": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "size": {
             "type": "integer",
