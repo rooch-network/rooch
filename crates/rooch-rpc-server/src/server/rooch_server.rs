@@ -123,8 +123,7 @@ impl RoochServer {
     ) -> Result<Vec<TransactionWithInfoView>> {
         let rooch_addresses = data
             .iter()
-            .map(|tx| tx.transaction.sender())
-            .flatten()
+            .filter_map(|tx| tx.transaction.sender())
             .collect::<Vec<_>>();
         let address_mapping = self
             .rpc_service
@@ -494,7 +493,7 @@ impl RoochAPIServer for RoochServer {
 
         let rooch_addresses = data
             .iter()
-            .filter_map(|tx| tx.as_ref().map(|tx| tx.transaction.sender()).flatten())
+            .filter_map(|tx| tx.as_ref().and_then(|tx| tx.transaction.sender()))
             .collect::<Vec<_>>();
         let address_mapping = self
             .rpc_service
@@ -792,13 +791,13 @@ impl RoochAPIServer for RoochServer {
         };
 
         let network = self.rpc_service.get_bitcoin_network().await?;
-        let rooch_addresses = states.iter().map(|s| s.owner.clone()).collect::<Vec<_>>();
+        let rooch_addresses = states.iter().map(|s| s.owner).collect::<Vec<_>>();
         let bitcoin_addresses = self
             .rpc_service
             .get_bitcoin_addresses(rooch_addresses)
             .await?
-            .into_iter()
-            .map(|(_, btc_addr)| btc_addr.map(|addr| addr.format(network)).transpose())
+            .into_values()
+            .map(|btc_addr| btc_addr.map(|addr| addr.format(network)).transpose())
             .collect::<Result<Vec<Option<String>>>>()?;
 
         let mut data = annotated_states_with_display
