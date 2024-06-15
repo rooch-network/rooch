@@ -37,9 +37,8 @@ module moveos_std::cbor {
         option::destroy_some(opt_result)
     }
 
-    #[data_struct(T)]
     /// Serialize a value of type T to CBOR bytes.
-    public fun to_cbor<T: drop>(value: &T): vector<u8> {
+    public fun to_cbor<T>(value: &T): vector<u8> {
         native_to_cbor(value)
     }
 

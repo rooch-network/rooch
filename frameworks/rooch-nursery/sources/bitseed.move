@@ -361,7 +361,7 @@ module rooch_nursery::bitseed {
         (true, option::none<String>())
     }
     
-    fun is_valid_bitseed_mint(metadata: &SimpleMap<String,vector<u8>>, seed: vector<u8>) : (bool, Option<String>) {
+    fun is_valid_bitseed_mint(metadata: &SimpleMap<String,vector<u8>>, seed: vector<u8>, content_type: Option<String>, body: vector<u8>) : (bool, Option<String>) {
         let (is_valid, reason) = is_valid_bitseed(metadata);
         if (!is_valid) {
             return (false, reason)
@@ -423,7 +423,7 @@ module rooch_nursery::bitseed {
 
         
 
-        let (is_valid, reason) = inscribe_verify(wasm_bytes, deploy_args, seed, user_input, metadata);
+        let (is_valid, reason) = inscribe_verify(wasm_bytes, deploy_args, seed, user_input, metadata, content_type, body);
         if (!is_valid) {
             simple_map::drop(attributes);
             return (false, reason)
@@ -434,7 +434,8 @@ module rooch_nursery::bitseed {
     }
 
     public fun inscribe_verify(wasm_bytes: vector<u8>, deploy_args: vector<u8>,
-                               seed: vector<u8>, user_input: vector<u8>, metadata: &SimpleMap<String,vector<u8>>, body: &vector<u8>): (bool, Option<String>) {
+            seed: vector<u8>, user_input: vector<u8>, metadata: &SimpleMap<String,vector<u8>>, 
+            content_type: Option<String>, body: vector<u8>): (bool, Option<String>) {
         let wasm_instance_option = wasm::create_wasm_instance_option(wasm_bytes);
         if (option::is_none(&wasm_instance_option)) {
             option::destroy_none(wasm_instance_option);
@@ -447,14 +448,12 @@ module rooch_nursery::bitseed {
         let buffer = pack_inscribe_generate_args(deploy_args, seed, user_input);
         let arg_with_length = wasm::add_length_with_data(buffer);
 
+        let output_buffer = pack_inscribe_output_args(metadata, content_type, body);
+
         let arg_list = vector::empty<vector<u8>>();
         vector::push_back(&mut arg_list, arg_with_length);
-        vector::push_back(&mut arg_list, attributes_output);
+        vector::push_back(&mut arg_list, output_buffer);
 
-        let amount = simple_map::borrow(metadata, &string::utf8(b"amount"));
-        let attributes_bytes = simple_map::borrow(metadata, &string::utf8(b"attributes"));
-        let content_type_bytes = simple_map::borrow(metadata, &string::utf8(b"content_type"));
-        let output_bytes = make_output(amount, attributes_bytes, content_type_bytes, body);
 
         let memory_args_list = wasm::create_memory_wasm_args(&mut wasm_instance, function_name, arg_list);
 
@@ -499,6 +498,40 @@ module rooch_nursery::bitseed {
         };
 
         cbor::to_cbor(&args)
+    }
+
+    struct InscribeContent has copy, drop, store {
+        content_type: Option<String>,
+        body: vector<u8>,
+    }
+
+    struct InscribeGenerateOutput has store {
+        amount: u64,
+        attributes: SimpleMap<String,vector<u8>>,
+        content: InscribeContent,
+    }
+
+    fun pack_inscribe_output_args(metadata: &SimpleMap<String,vector<u8>>, content_type: Option<String>, body: vector<u8>): vector<u8>{
+        let amount = get_SFT_amount(metadata);
+        let attributes = get_SFT_attributes(metadata);
+
+        let content = InscribeContent{
+            content_type: content_type,
+            body: body,
+        };
+
+        let output = InscribeGenerateOutput{
+            amount: amount,
+            attributes: attributes,
+            content: content,
+        };
+
+        let output_bytes = cbor::to_cbor(&output);
+
+        let InscribeGenerateOutput{amount:_, attributes, content:_}=output;
+        simple_map::drop(attributes);
+
+        output_bytes
     }
 
     fun generate_seed_from_inscription(inscription: &Inscription): vector<u8> {
@@ -576,7 +609,10 @@ module rooch_nursery::bitseed {
                     ord::seal_metaprotocol_validity<Bitseed>(inscription_id, true, option::none());
                 } else if (option::borrow(&op) == &string::utf8(b"mint")) {
                     let seed = generate_seed_from_inscription(inscription);
-                    let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed);
+                    let content_type = ord::content_type(inscription);
+                    let body = ord::body(inscription);
+
+                    let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed, content_type, body);
                     ord::seal_metaprotocol_validity<Bitseed>(inscription_id, is_valid, reason);
                 } else if (option::borrow(&op) == &string::utf8(b"split")) {
                     ord::seal_metaprotocol_validity<Bitseed>(inscription_id, true, option::none());
@@ -824,7 +860,9 @@ module rooch_nursery::bitseed {
         let metadata_bytes = x"a4626f70666465706c6f79647469636b646d6f766566616d6f756e74016a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f373764666332666535393834313962303036343163323936313831613936636631363934333639376635373334383062303233623737636365383261646132316930";
         let metadata = cbor::to_map(metadata_bytes);
         let seed = vector::empty();
-        let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed);
+        let content_type = option::none();
+        let body = vector::empty();
+        let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed, content_type, body);
         simple_map::drop(metadata);
 
         assert!(!is_valid, 1);
@@ -854,7 +892,9 @@ module rooch_nursery::bitseed {
         let metadata_bytes = x"a4626f70646d696e74647469636b646d6f766566616d6f756e7418646a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f377864666332666535393834313962303036343163323936313831613936636631363934333639376635373334383062303233623737636365383261646132316930";
         let metadata = cbor::to_map(metadata_bytes);
         let seed = vector::empty();
-        let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed);
+        let content_type = option::none();
+        let body = vector::empty();
+        let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed, content_type, body);
         simple_map::drop(metadata);
 
         assert!(!is_valid, 1);
@@ -884,7 +924,9 @@ module rooch_nursery::bitseed {
         let metadata_bytes = x"a4626f70646d696e74647469636b646d6f766566616d6f756e7418646a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f377864666332666535393834313962303036343163323936313831613936636631363934333639376635373334383062303233623737636365383261646132316930";
         let metadata = cbor::to_map(metadata_bytes);
         let seed = vector::empty();
-        let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed);
+        let content_type = option::none();
+        let body = vector::empty();
+        let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed, content_type, body);
         simple_map::drop(metadata);
 
         assert!(!is_valid, 1);
@@ -916,7 +958,9 @@ module rooch_nursery::bitseed {
         let metadata_bytes = x"a4626f70646d696e74647469636b646d6f766566616d6f756e74016a61747472696275746573a16a757365725f696e70757463787878";
         let metadata = cbor::to_map(metadata_bytes);
         let seed = vector::empty();
-        let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed);
+        let content_type = option::none();
+        let body = vector::empty();
+        let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed, content_type, body);
         simple_map::drop(metadata);
 
         assert!(!is_valid, 1);
