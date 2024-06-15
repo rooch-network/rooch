@@ -44,16 +44,21 @@ pub struct PageView<T, C> {
 pub struct TransactionView {
     pub sequence_number: u64,
     pub sender: String,
+    pub sender_bitcoin_address: Option<String>,
     pub action_type: MoveActionTypeView,
     pub action: MoveActionView,
     pub raw: BytesView,
 }
 
-impl From<RoochTransaction> for TransactionView {
-    fn from(transaction: RoochTransaction) -> Self {
+impl TransactionView {
+    pub fn new_from_rooch_transaction(
+        transaction: RoochTransaction,
+        sender_bitcoin_address: Option<String>,
+    ) -> Self {
         Self {
             sequence_number: transaction.sequence_number(),
             sender: transaction.sender().to_string(),
+            sender_bitcoin_address,
             action: transaction.action().clone().into(),
             action_type: transaction.action().clone().into(),
             raw: transaction.encode().into(),

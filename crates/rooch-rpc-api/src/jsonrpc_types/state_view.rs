@@ -355,6 +355,7 @@ impl From<StateSyncFilterView> for StateSyncFilter {
 pub struct IndexerObjectStateView {
     pub object_id: ObjectID,
     pub owner: RoochAddressView,
+    pub owner_bitcoin_address: Option<String>,
     pub flag: u8,
     /// bcs bytes of the Object.
     pub value: BytesView,
@@ -373,12 +374,14 @@ impl IndexerObjectStateView {
     pub fn new_from_object_state(
         state: IndexerObjectState,
         value: Vec<u8>,
+        owner_bitcoin_address: Option<String>,
         decoded_value: Option<AnnotatedMoveStructView>,
         display_fields: Option<DisplayFieldsView>,
     ) -> IndexerObjectStateView {
         IndexerObjectStateView {
             object_id: state.object_id,
             owner: state.owner.into(),
+            owner_bitcoin_address,
             flag: state.flag,
             value: value.into(),
             decoded_value,
@@ -437,6 +440,7 @@ impl ObjectStateFilterView {
 pub struct ObjectStateView {
     pub id: ObjectID,
     pub owner: RoochAddressView,
+    pub owner_bitcoin_address: Option<String>,
     pub flag: u8,
     pub object_type: StructTagView,
     pub state_root: H256View,
@@ -453,6 +457,7 @@ impl ObjectStateView {
         ObjectStateView {
             id: object.id,
             owner: object.owner.into(),
+            owner_bitcoin_address: None,
             flag: object.flag,
             object_type: object.value.type_.clone().into(),
             state_root: object.state_root.into(),
@@ -473,6 +478,7 @@ impl ObjectStateView {
         ObjectStateView {
             id: object.id,
             owner: object.owner.into(),
+            owner_bitcoin_address: None,
             flag: object.flag,
             object_type: object.value.struct_tag.into(),
             state_root: object.state_root.into(),
@@ -487,6 +493,11 @@ impl ObjectStateView {
 
     pub fn with_display_fields(mut self, display_fields: Option<DisplayFieldsView>) -> Self {
         self.display_fields = display_fields;
+        self
+    }
+
+    pub fn with_owner_bitcoin_address(mut self, owner_bitcoin_address: Option<String>) -> Self {
+        self.owner_bitcoin_address = owner_bitcoin_address;
         self
     }
 }
