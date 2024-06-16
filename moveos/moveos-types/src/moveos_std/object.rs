@@ -41,9 +41,25 @@ pub const SYSTEM_OWNER_ADDRESS: AccountAddress = AccountAddress::ZERO;
 
 pub const SHARED_OBJECT_FLAG_MASK: u8 = 1;
 pub const FROZEN_OBJECT_FLAG_MASK: u8 = 1 << 1;
+pub const BOUND_OBJECT_FLAG_MASK: u8 = 1 << 2;
 
 // New table's state_root should be the place holder hash.
 pub static GENESIS_STATE_ROOT: Lazy<H256> = Lazy::new(|| *SPARSE_MERKLE_PLACEHOLDER_HASH);
+
+pub fn human_readable_flag(flag: u8) -> String {
+    let mut status = vec![];
+    if flag & SHARED_OBJECT_FLAG_MASK == SHARED_OBJECT_FLAG_MASK {
+        status.push(format!("{}", "SHARED"));
+    }
+    if flag & FROZEN_OBJECT_FLAG_MASK == FROZEN_OBJECT_FLAG_MASK {
+        status.push(format!("{}", "FROZEN"));
+    }
+    if flag & BOUND_OBJECT_FLAG_MASK == BOUND_OBJECT_FLAG_MASK {
+        status.push(format!("{}", "BOUND"));
+    }
+
+    status.join(",")
+}
 
 #[derive(Eq, PartialEq, Clone, PartialOrd, Ord, Hash, JsonSchema)]
 pub struct ObjectID(#[schemars(with = "Hex")] Vec<AccountAddress>);
