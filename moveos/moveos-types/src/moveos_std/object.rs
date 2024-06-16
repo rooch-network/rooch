@@ -49,13 +49,13 @@ pub static GENESIS_STATE_ROOT: Lazy<H256> = Lazy::new(|| *SPARSE_MERKLE_PLACEHOL
 pub fn human_readable_flag(flag: u8) -> String {
     let mut status = vec![];
     if flag & SHARED_OBJECT_FLAG_MASK == SHARED_OBJECT_FLAG_MASK {
-        status.push(format!("{}", "SHARED"));
+        status.push("SHARED".to_string());
     }
     if flag & FROZEN_OBJECT_FLAG_MASK == FROZEN_OBJECT_FLAG_MASK {
-        status.push(format!("{}", "FROZEN"));
+        status.push("FROZEN".to_string());
     }
     if flag & BOUND_OBJECT_FLAG_MASK == BOUND_OBJECT_FLAG_MASK {
-        status.push(format!("{}", "BOUND"));
+        status.push("BOUND".to_string());
     }
 
     status.join(",")

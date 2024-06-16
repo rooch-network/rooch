@@ -412,7 +412,7 @@ impl HumanReadableDisplay for IndexerObjectStateView {
   tx_order       | {}
   state_index    | {}
 {}"#,
-            std::iter::repeat('-').take(100).collect::<String>(),
+            "-".repeat(100),
             self.object_id,
             self.object_type,
             self.owner,
@@ -420,7 +420,7 @@ impl HumanReadableDisplay for IndexerObjectStateView {
             human_readable_flag(self.flag),
             self.tx_order,
             self.state_index,
-            std::iter::repeat('-').take(100).collect::<String>(),
+            "-".repeat(100),
         )
     }
 }
@@ -542,13 +542,13 @@ impl HumanReadableDisplay for ObjectStateView {
   owner(bitcoin) | {:?}
   status         | {}
 {}"#,
-            std::iter::repeat('-').take(100).collect::<String>(),
+            "-".repeat(100),
             self.id,
             self.object_type,
             self.owner,
             self.owner_bitcoin_address,
             human_readable_flag(self.flag),
-            std::iter::repeat('-').take(100).collect::<String>(),
+            "-".repeat(100),
         )
     }
 }
