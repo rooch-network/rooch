@@ -154,6 +154,9 @@ export const AssetsCoin: React.FC = () => {
   }
 
   const handleTransferCoin = async () => {
+    setTransferLoading(true)
+
+    // Is Session Key expired
     try {
       if (!sessionKey || (await sessionKey.isExpired())) {
         toast({
@@ -171,6 +174,8 @@ export const AssetsCoin: React.FC = () => {
         action: <ToastAction altText="Close">Close</ToastAction>,
       })
       return
+    } finally {
+      setTransferLoading(false)
     }
 
     if (recipient === '' || amount === '0' || !selectedCoin || error) {
@@ -184,13 +189,6 @@ export const AssetsCoin: React.FC = () => {
     }
 
     const amountNumber = Math.floor(Number(amount) * 10 ** selectedCoin.decimals)
-
-    setTransferLoading(true)
-    toast({
-      title: 'Transfer In Progress',
-      description: `Transferring ${amount} ${selectedCoin.name} to ${recipient}. Please wait...`,
-      action: <ToastAction altText="Close">Close</ToastAction>,
-    })
 
     try {
       await transferCoin({
