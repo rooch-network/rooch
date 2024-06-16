@@ -57,30 +57,33 @@ impl CommandAction<serde_json::Value> for RequestCommand {
     /// Executes the command, and serializes it to the common JSON output type
     async fn execute_serialized(self) -> RoochResult<String> {
         let method = self.method.clone();
-        match self.execute().await {
-            Ok(result) => {
-                if method == "rooch_getObjectStates" {
-                    let view =
-                        serde_json::from_value::<Vec<Option<ObjectStateView>>>(result.clone())?
-                            .into_iter()
-                            .flatten()
-                            .collect::<Vec<_>>();
-                    return Ok(view.to_human_readable_string(false));
-                } else if method == "rooch_queryObjectStates" {
-                    Ok(
-                        serde_json::from_value::<IndexerObjectStatePageView>(result.clone())?
-                            .to_human_readable_string(false),
-                    )
-                } else {
-                    // TODO: handle other rpc methods.
-                    let output = serde_json::to_string_pretty(&result).unwrap();
-                    if output == "null" {
-                        return Ok("".to_string());
-                    }
-                    Ok(output)
-                }
+        let json = self.json;
+        let result = self.execute().await?;
+
+        if json {
+            let output = serde_json::to_string_pretty(&result).unwrap();
+            if output == "null" {
+                return Ok("".to_string());
             }
-            Err(e) => Err(e),
+            Ok(output)
+        } else if method == "rooch_getObjectStates" {
+            let view = serde_json::from_value::<Vec<Option<ObjectStateView>>>(result.clone())?
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>();
+            Ok(view.to_human_readable_string(false))
+        } else if method == "rooch_queryObjectStates" {
+            Ok(
+                serde_json::from_value::<IndexerObjectStatePageView>(result.clone())?
+                    .to_human_readable_string(false),
+            )
+        } else {
+            // TODO: handle other rpc methods.
+            let output = serde_json::to_string_pretty(&result).unwrap();
+            if output == "null" {
+                return Ok("".to_string());
+            }
+            Ok(output)
         }
     }
 }

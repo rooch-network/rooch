@@ -47,15 +47,19 @@ pub const BOUND_OBJECT_FLAG_MASK: u8 = 1 << 2;
 pub static GENESIS_STATE_ROOT: Lazy<H256> = Lazy::new(|| *SPARSE_MERKLE_PLACEHOLDER_HASH);
 
 pub fn human_readable_flag(flag: u8) -> String {
+    if flag == 0 {
+        return "UserOwned".to_string();
+    };
+
     let mut status = vec![];
     if flag & SHARED_OBJECT_FLAG_MASK == SHARED_OBJECT_FLAG_MASK {
-        status.push("SHARED".to_string());
+        status.push("Shared".to_string());
     }
     if flag & FROZEN_OBJECT_FLAG_MASK == FROZEN_OBJECT_FLAG_MASK {
-        status.push("FROZEN".to_string());
+        status.push("Frozen".to_string());
     }
     if flag & BOUND_OBJECT_FLAG_MASK == BOUND_OBJECT_FLAG_MASK {
-        status.push("BOUND".to_string());
+        status.push("Bound".to_string());
     }
 
     status.join(",")
