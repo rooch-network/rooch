@@ -62,7 +62,7 @@ export const AssetsCoin: React.FC = () => {
     [paginationModel],
   )
 
-  const { data, isLoading, isError } = useRoochClientQuery('getBalances', {
+  const { data, isLoading, isError, refetch } = useRoochClientQuery('getBalances', {
     address: sessionKey?.getAddress() || '',
     cursor: queryOptions.cursor,
     limit: queryOptions.pageSize,
@@ -204,6 +204,7 @@ export const AssetsCoin: React.FC = () => {
         description: `Successfully transferred ${amount} ${selectedCoin.name} to ${recipient}`,
         action: <ToastAction altText="Close">Close</ToastAction>,
       })
+      refetch()
     } catch (error) {
       console.error('Transfer failed', error)
       toast({
@@ -292,7 +293,7 @@ export const AssetsCoin: React.FC = () => {
               className="fixed inset-0 bg-opacity-70 dark:bg-opacity-75 flex justify-center items-center z-50 bg-black"
               onClick={handleCloseModal}
             >
-              <div className="bg-background dark:bg-zinc-900 rounded-none md:rounded-lg flex flex-col items-start justify-center p-6 w-full h-full md:w-auto md:h-auto overflow-auto">
+              <div className="bg-background dark:bg-zinc-900 rounded-none md:rounded-lg flex flex-col items-start justify-center p-6 w-full h-full md:w-auto md:h-auto overflow-auto max-w-lg mx-auto">
                 {/* Back */}
                 <div className="mb-4">
                   <Button
@@ -306,7 +307,7 @@ export const AssetsCoin: React.FC = () => {
                 </div>
 
                 {/* Content */}
-                <div className="flex flex-col h-full items-center justify-start gap-6">
+                <div className="flex flex-col h-full items-center justify-start gap-6 w-full">
                   {/* Address */}
                   <Suspense fallback={<div>Loading...</div>}>
                     <RecipientInput
