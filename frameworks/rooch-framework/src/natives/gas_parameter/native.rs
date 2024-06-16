@@ -6,10 +6,17 @@
 pub const MUL: u64 = 1;
 
 #[macro_export]
+macro_rules! set_first_segment {
+    ($params: ident . $first:ident . $($rest:ident).*, $val: ident, $param_ty: ty) => {
+        $params .$first.$($rest)* = Some((*$val).into());
+    };
+}
+
+#[macro_export]
 macro_rules! expand_get_impl_for_native_gas_params {
     ($params: ident $(.$field: ident)+, $map: ident, $prefix: literal, optional $key: literal) => {
         if let Some(val) = $map.get(&format!("{}.{}", $prefix, $key)) {
-            $params $(.$field)+ = (*val).into();
+            $params $(.$field)+ = Some((*val).into());
         }
     };
     ($params: ident $(.$field: ident)+, $map: ident, $prefix: literal, $key: literal) => {
@@ -58,8 +65,18 @@ macro_rules! expand_set_for_native_gas_params {
             assign(&mut $params);
         }
     };
-    ($(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr, $param_ty: ty, $package_name: literal, $params: ident) => {
+    ($(.$field: ident)+, $key: literal, $initial_val: expr, $param_ty: ty, $package_name: literal, $params: ident) => {
         $params $(.$field)+ = $initial_val.into()
+    };
+    ($(.$field: ident)+, optional $key: literal, $initial_val: expr, $param_ty: ty, $package_name: literal, $params: ident) => {
+        $params $(.$field)+ = Some($initial_val.into())
+    };
+}
+
+#[macro_export]
+macro_rules! get_self_key_value {
+    (.$first:ident . $($rest:ident).*, $initial_val: expr, $self: ident, $key: literal) => {
+        ($key, u64::from($self .$first.$($rest)*.unwrap_or(0.into())))
     };
 }
 
@@ -69,9 +86,12 @@ macro_rules! expand_kv_for_native_gas_params {
         #[cfg(feature = "testing")]
         ($key, u64::from($self $(.$field)+))
     };
-    ($(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr, $self: ident) => {
+    ($(.$field: ident)+, $key: literal, $initial_val: expr, $self: ident) => {
         ($key, u64::from($self $(.$field)+))
-    }
+    };
+    ($(.$field: ident)+, optional $key: literal, $initial_val: expr, $self: ident) => {
+        $crate::natives::gas_parameter::native::get_self_key_value!($(.$field)+, $initial_val, $self, $key)
+    };
 }
 
 #[macro_export]
@@ -92,7 +112,7 @@ macro_rules! define_gas_parameters_for_natives {
         impl $crate::natives::gas_parameter::gas_member::ToOnChainGasSchedule for $param_ty {
             fn to_on_chain_gas_schedule(&self) -> Vec<(String, u64)> {
                 [$($crate::natives::gas_parameter::native::expand_kv_for_native_gas_params!($($t)*, self)),*]
-                    .into_iter().map(|(key, val)| (format!("{}.{}", $package_name, key), val)).collect()
+                    .into_iter().filter(|(_, val)| *val > 0).map(|(key, val)| (format!("{}.{}", $package_name, key), val)).collect()
             }
         }
 
@@ -128,3 +148,5 @@ pub use expand_get_for_native_gas_params;
 pub use expand_get_impl_for_native_gas_params;
 pub use expand_kv_for_native_gas_params;
 pub use expand_set_for_native_gas_params;
+pub use get_self_key_value;
+pub use set_first_segment;
