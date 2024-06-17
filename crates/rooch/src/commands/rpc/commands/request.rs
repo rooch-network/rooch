@@ -6,6 +6,10 @@ use async_trait::async_trait;
 use clap::Parser;
 use rooch_types::error::RoochResult;
 
+use rooch_rpc_api::jsonrpc_types::{
+    HumanReadableDisplay, IndexerObjectStatePageView, ObjectStateView,
+};
+
 /// Send a RPC request
 #[derive(Debug, Parser)]
 pub struct RequestCommand {
@@ -23,6 +27,10 @@ pub struct RequestCommand {
 
     #[clap(flatten)]
     pub(crate) context_options: WalletContextOptions,
+
+    /// Return command outputs in json format
+    #[clap(long, default_value = "false")]
+    json: bool,
 }
 
 #[async_trait]
@@ -44,5 +52,38 @@ impl CommandAction<serde_json::Value> for RequestCommand {
             None => vec![],
         };
         Ok(client.request(self.method.as_str(), params).await?)
+    }
+
+    /// Executes the command, and serializes it to the common JSON output type
+    async fn execute_serialized(self) -> RoochResult<String> {
+        let method = self.method.clone();
+        let json = self.json;
+        let result = self.execute().await?;
+
+        if json {
+            let output = serde_json::to_string_pretty(&result).unwrap();
+            if output == "null" {
+                return Ok("".to_string());
+            }
+            Ok(output)
+        } else if method == "rooch_getObjectStates" {
+            let view = serde_json::from_value::<Vec<Option<ObjectStateView>>>(result.clone())?
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>();
+            Ok(view.to_human_readable_string(false))
+        } else if method == "rooch_queryObjectStates" {
+            Ok(
+                serde_json::from_value::<IndexerObjectStatePageView>(result.clone())?
+                    .to_human_readable_string(false),
+            )
+        } else {
+            // TODO: handle other rpc methods.
+            let output = serde_json::to_string_pretty(&result).unwrap();
+            if output == "null" {
+                return Ok("".to_string());
+            }
+            Ok(output)
+        }
     }
 }

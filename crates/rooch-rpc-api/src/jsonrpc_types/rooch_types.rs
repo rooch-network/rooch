@@ -19,6 +19,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::string::String;
 
+use super::HumanReadableDisplay;
+
 pub type EventPageView = PageView<EventView, u64>;
 pub type TransactionWithInfoPageView = PageView<TransactionWithInfoView, u64>;
 pub type StatePageView = PageView<StateKVView, String>;
@@ -38,6 +40,30 @@ pub struct PageView<T, C> {
     pub data: Vec<T>,
     pub next_cursor: Option<C>,
     pub has_next_page: bool,
+}
+
+impl<T, C> HumanReadableDisplay for PageView<T, C>
+where
+    T: HumanReadableDisplay,
+    C: std::fmt::Display,
+{
+    fn to_human_readable_string(&self, verbose: bool) -> String {
+        let _ = verbose;
+        format!(
+            r#"Data: 
+{}
+    
+Next cursor: 
+    {}
+    
+Has next page: {:?}"#,
+            self.data.to_human_readable_string(verbose),
+            self.next_cursor
+                .as_ref()
+                .map_or("None".to_string(), |c| c.to_string()),
+            self.has_next_page
+        )
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]

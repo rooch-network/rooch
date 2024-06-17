@@ -7,24 +7,24 @@ Feature: Rooch CLI integration tests
     @serial
     Scenario: rooch rpc test
       Given a server for rooch_rpc_test
-      Then cmd: "rpc request --method rooch_getStates --params '["/resource/0x3/0x3::account_coin_store::AutoAcceptCoins",{"decode":true}]'"
+      Then cmd: "rpc request --method rooch_getStates --params '["/resource/0x3/0x3::account_coin_store::AutoAcceptCoins",{"decode":true}]' --json"
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x3::account_coin_store::AutoAcceptCoins'"
-      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3",{"decode":true}]'"
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3",{"decode":true}]' --json"
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::account::Account>'"
-      Then cmd: "rpc request --method rooch_listStates --params '["/resource/0x3", null, null, {"decode":true}]"
+      Then cmd: "rpc request --method rooch_listStates --params '["/resource/0x3", null, null, {"decode":true}]' --json"
       Then assert: "'{{$.rpc[-1]}}' contains '0x3::account_coin_store::AutoAcceptCoins'"
-      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9",{"decode":true}]'"
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9",{"decode":true}]' --json"
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::object::Timestamp>'"
       Then assert: "{{$.rpc[-1][0].decoded_value.value.value.value.milliseconds}} == 0"
-      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x2::object::Timestamp",{"decode":true}]'"
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x2::object::Timestamp",{"decode":true}]' --json"
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::object::Timestamp>'"
-      Then cmd: "rpc request --method rooch_getObjectStates --params '["0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9", {"decode":false}]'"
-      Then cmd: "rpc request --method rooch_getObjectStates --params '["0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9", {"decode":true}]'"
+      Then cmd: "rpc request --method rooch_getObjectStates --params '["0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9", {"decode":false}]' --json"
+      Then cmd: "rpc request --method rooch_getObjectStates --params '["0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9", {"decode":true}]' --json"
       Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::object::Timestamp'"
       Then assert: "{{$.rpc[-1][0].value}} == {{$.rpc[-2][0].value}}'
-      Then cmd: "rpc request --method rooch_getFieldStates --params '["0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb", ["0x41022214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb8238d4e7553801ebf92b4311e16bbeb26eec676fd5bcbb31dcc59610148d90c8070000000000000000000000000000000000000000000000000000000000000002066f626a656374084f626a656374494400"], {"decode": true, "showDisplay": true}]'"
+      Then cmd: "rpc request --method rooch_getFieldStates --params '["0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb", ["0x41022214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb8238d4e7553801ebf92b4311e16bbeb26eec676fd5bcbb31dcc59610148d90c8070000000000000000000000000000000000000000000000000000000000000002066f626a656374084f626a656374494400"], {"decode": true, "showDisplay": true}]' --json"
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::module_store::Package>'"
-      Then cmd: "rpc request --method rooch_listFieldStates --params '["0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb", null, "2", {"decode": false, "showDisplay": false}]'"
+      Then cmd: "rpc request --method rooch_listFieldStates --params '["0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb", null, "2", {"decode": false, "showDisplay": false}]' --json"
       Then assert: "{{$.rpc[-1].has_next_page}} == true"
       Then stop the server 
     
@@ -37,7 +37,7 @@ Feature: Rooch CLI integration tests
       # use bitcoin_address
       Then cmd: "account nullify -a {{$.account[-1].account0.bitcoin_address}}"
 
-      Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::GasCoin"]'"
+      Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::GasCoin"]' --json"
       Then assert: "'{{$.rpc[-1].coin_type}}' == '0x3::gas_coin::GasCoin'"
       Then assert: "'{{$.rpc[-1].balance}}' == '0'"
 
@@ -45,7 +45,7 @@ Feature: Rooch CLI integration tests
       Then cmd: "move run --function rooch_framework::gas_coin::faucet_entry --args u256:10000000000"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
-      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9",{"decode":true}]'"
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9",{"decode":true}]' --json"
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::object::Timestamp>'"
       # ensure the tx_timestamp update the global timestamp
       Then assert: "{{$.rpc[-1][0].decoded_value.value.value.value.milliseconds}} != 0"
@@ -62,7 +62,7 @@ Feature: Rooch CLI integration tests
       # account balance
       Then cmd: "account balance"
       Then cmd: "account balance --coin-type rooch_framework::gas_coin::GasCoin"
-      Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::GasCoin"]'"
+      Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::GasCoin"]' --json"
       Then assert: "'{{$.rpc[-1].balance}}' != '0'"
 
       Then stop the server
@@ -123,29 +123,29 @@ Feature: Rooch CLI integration tests
     Then sleep: "5"
 
     # genesis tx does not write indexer
-    Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, null, "1", {"descending": true,"showDisplay":false}]'"
+    Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, null, "1", {"descending": true,"showDisplay":false}]' --json"
     Then assert: "{{$.rpc[-1].data[0].transaction.sequence_info.tx_order}} == 1"
     Then assert: "{{$.rpc[-1].next_cursor}} == 1"
     Then assert: "{{$.rpc[-1].has_next_page}} == true"
-    Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, "1", "1", {"descending": true,"showDisplay":false}]'"
+    Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, "1", "1", {"descending": true,"showDisplay":false}]' --json"
     Then assert: "{{$.rpc[-1].data[0].transaction.sequence_info.tx_order}} == 0"
     Then assert: "{{$.rpc[-1].next_cursor}} == 0"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
-    Then cmd: "rpc request --method rooch_queryEvents --params '[{"tx_order_range":{"from_order":0, "to_order":2}}, null, "20", {"descending": true,"showDisplay":false}]'"
+    Then cmd: "rpc request --method rooch_queryEvents --params '[{"tx_order_range":{"from_order":0, "to_order":2}}, null, "20", {"descending": true,"showDisplay":false}]' --json"
     Then assert: "{{$.rpc[-1].data[0].indexer_event_id.tx_order}} == 1"
     Then assert: "{{$.rpc[-1].next_cursor.tx_order}} == 0"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
     # Sync states
-    Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x3::coin::CoinInfo"}, null, "10", {"descending": true,"showDisplay":false}]'"
+    Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x3::coin::CoinInfo"}, null, "10", {"descending": true,"showDisplay":false}]' --json"
     Then assert: "{{$.rpc[-1].data[0].tx_order}} == 1"
     Then assert: "{{$.rpc[-1].data[0].object_type}} == 0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
-    Then cmd: "rpc request --method rooch_listFieldStates --params '["{{$.address_mapping.default}}", null, "10", {"descending": true,"showDisplay":false}]'"
+    Then cmd: "rpc request --method rooch_listFieldStates --params '["{{$.address_mapping.default}}", null, "10", {"descending": true,"showDisplay":false}]' --json"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
-#    Then cmd: "rpc request --method rooch_syncStates --params '[null, null, "2", false]'"
+#    Then cmd: "rpc request --method rooch_syncStates --params '[null, null, "2", false]' --json"
 #    Then assert: "{{$.rpc[-1].data[0].tx_order}} == 0"
 #    Then assert: "{{$.rpc[-1].next_cursor.state_index}} == 1"
 #    Then assert: "{{$.rpc[-1].has_next_page}} == true"
@@ -254,7 +254,7 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       
       Then cmd: "account list --json"
-      Then cmd: "rpc request --method rooch_getBalance --params '["{{$.account[-1].default.bitcoin_address}}", "{{$.account[-1].default.hex_address}}::fixed_supply_coin::FSC"]'"
+      Then cmd: "rpc request --method rooch_getBalance --params '["{{$.account[-1].default.bitcoin_address}}", "{{$.account[-1].default.hex_address}}::fixed_supply_coin::FSC"]' --json"
       Then assert: "'{{$.rpc[-1].coin_type}}' == '{{$.address_mapping.default}}::fixed_supply_coin::FSC'"
       Then assert: "'{{$.rpc[-1].balance}}' != '0'"
 
@@ -276,7 +276,7 @@ Feature: Rooch CLI integration tests
     #Then cmd: "move run --function default::my_coin::faucet --args object:default::my_coin::Treasury"
     #Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
-    #Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "{{$.address_mapping.default}}::my_coin::MyCoin"]'"
+    #Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "{{$.address_mapping.default}}::my_coin::MyCoin"]' --json"
     #Then assert: "'{{$.rpc[-1].coin_type}}' == '{{$.address_mapping.default}}::my_coin::MyCoin'"
     #Then assert: "'{{$.rpc[-1].balance}}' != '0'"
     Then stop the server
@@ -303,7 +303,7 @@ Feature: Rooch CLI integration tests
       # because the indexer is async update, so sleep 2 seconds to wait indexer update.
       Then sleep: "2"
 
-      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"{{$.address_mapping.default}}::child_object::Child"}, null, "10", {"descending": true,"showDisplay":false}]'"
+      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"{{$.address_mapping.default}}::child_object::Child"}, null, "10", {"descending": true,"showDisplay":false}]' --json"
       Then assert: "{{$.rpc[-1].data[0].object_id}} == {{$.event[-1].data[0].decoded_event_data.value.id}}"
 
       Then cmd: "move run --function default::third_party_module_for_child_object::update_child_age --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --args u64:10"
@@ -331,17 +331,17 @@ Feature: Rooch CLI integration tests
       Then cmd: "state --access-path /object/{{$.event[-1].data[0].decoded_event_data.value.id}}"
       Then assert: "{{$.state[-1][0].decoded_value.value.value.type}} == '{{$.address_mapping.default}}::display::ObjectType'"
 
-      Then cmd: "rpc request --method rooch_getStates --params '["/object/{{$.event[-1].data[0].decoded_event_data.value.id}}", {"decode": false, "showDisplay": true}]'"
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/{{$.event[-1].data[0].decoded_event_data.value.id}}", {"decode": false, "showDisplay": true}]' --json"
       Then assert: "{{$.rpc[-1][0].display_fields.fields.name}}  == test_object"
 
       # because the indexer is async update, so sleep 2 seconds to wait indexer update.
       Then sleep: "2"
 
-      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"{{$.address_mapping.default}}::display::ObjectType"}, null, "10", {"descending": false,"showDisplay":true}]'"
+      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"{{$.address_mapping.default}}::display::ObjectType"}, null, "10", {"descending": false,"showDisplay":true}]' --json"
       Then assert: "{{$.rpc[-1].data[0].object_id}} == {{$.event[-1].data[0].decoded_event_data.value.id}}"
       Then assert: "{{$.rpc[-1].data[0].display_fields.fields.name}} == test_object"
 
-      Then cmd: "rpc request --method rooch_getObjectStates --params '["{{$.event[-1].data[0].decoded_event_data.value.id}}", {"decode": false, "showDisplay": true}]'"
+      Then cmd: "rpc request --method rooch_getObjectStates --params '["{{$.event[-1].data[0].decoded_event_data.value.id}}", {"decode": false, "showDisplay": true}]' --json"
       Then assert: "{{$.rpc[-1][0].display_fields.fields.name}} == test_object"
 
       
@@ -392,7 +392,7 @@ Feature: Rooch CLI integration tests
       Then sleep: "10" # wait rooch sync and index
 
       # query utxos
-      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type_with_owner":{"object_type":"0x4::utxo::UTXO","owner":"{{$.account[-1].default.bitcoin_address}}"}},null, null, null]'"
+      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type_with_owner":{"object_type":"0x4::utxo::UTXO","owner":"{{$.account[-1].default.bitcoin_address}}"}},null, null, null]' --json"
       Then assert: "{{$.rpc[-1].data[0].owner}} == {{$.account[-1].default.address}}"
 
       # release servers
