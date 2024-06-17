@@ -1,40 +1,36 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-import { useMemo, useRef, useState } from 'react'
-import {
-  useCurrentAccount,
-  // useCurrentAccount,
-  useRoochClientQuery,
-} from '@roochnetwork/rooch-sdk-kit'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { useCurrentAccount, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 import { NoData } from '@/components/no-data'
 import { Card, CardHeader } from '@/components/ui/card'
 import CustomPagination from '@/components/custom-pagination.tsx'
-
 import { hexToString } from '@/utils/format.ts'
 import { AlertCircle, Wallet } from 'lucide-react'
 
-// test address
-// const testAddress = ''
+import type { IndexerStateID } from '@roochnetwork/rooch-sdk'
 
-// TODO: 1, loading, 2 pagination, 3 目前只处理了json 铭文，其他类型还需添加ui
-export const BitcoinAssetsOrdi = () => {
+type CursorType = IndexerStateID | null
+
+export const BitcoinAssetsOrdi: React.FC = () => {
   const account = useCurrentAccount()
 
   // ** PAGINATION
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 1 })
-  const mapPageToNextCursor = useRef<{ [page: number]: string | null }>({})
+  const mapPageToNextCursor = useRef<{ [page: number]: CursorType }>({})
+
   const handlePageChange = (selectedPage: number) => {
-    if (selectedPage < 0) {
-      return
-    }
+    if (selectedPage < 0) return
+
     setPaginationModel({
       page: selectedPage,
       pageSize: paginationModel.pageSize,
     })
   }
+
   const queryOptions = useMemo(
     () => ({
-      cursor: mapPageToNextCursor.current[paginationModel.page - 1],
+      cursor: mapPageToNextCursor.current[paginationModel.page - 1] || null,
       pageSize: paginationModel.pageSize,
     }),
     [paginationModel],
@@ -46,13 +42,17 @@ export const BitcoinAssetsOrdi = () => {
     isError,
   } = useRoochClientQuery('queryInscriptions', {
     filter: {
-      owner: 'bcrt1p79ruqzh9hmmhvaz7x3up3t6pdrmz5hmhz3pfkddxqnfzg0md7upq3jjjev',
+      owner: 'tb1pr6mdxnc348lua02c32ad4uyyaw3kavjz4c8jzkh5ffvuq4ryvxhs70g2gm',
     },
-    // TODO: 待解决的类型问题
-    // @ts-ignore
-    cursor: queryOptions.cursor,
+    cursor: queryOptions.cursor as IndexerStateID | null,
     limit: queryOptions.pageSize,
   })
+
+  useEffect(() => {
+    if (result && result.has_next_page) {
+      mapPageToNextCursor.current[paginationModel.page] = (result.next_cursor as CursorType) || null
+    }
+  }, [result, paginationModel.page])
 
   if (!account) {
     return (
@@ -66,29 +66,39 @@ export const BitcoinAssetsOrdi = () => {
     )
   }
 
-  if (isLoading || isError) {
+  if (isLoading) {
     return (
       <div className="relative p-24">
         <div className="absolute inset-0 bg-inherit bg-opacity-50 flex justify-center items-center">
-          {isLoading ? (
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-          ) : (
-            <div className="flex flex-col items-center justify-center text-center">
-              <AlertCircle className="w-12 h-12 mb-4 text-red-500" />
-              <p className="text-xl text-red-500 font-semibold">Error loading data</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Something went wrong while fetching the data. Please try again later.
-              </p>
-            </div>
-          )}
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       </div>
     )
   }
 
-  return !result || result.data.length === 0 ? (
-    <NoData />
-  ) : (
+  if (isError) {
+    return (
+      <div className="relative p-24">
+        <div className="absolute inset-0 bg-inherit bg-opacity-50 flex justify-center items-center">
+          <div className="flex flex-col items-center justify-center text-center">
+            <AlertCircle className="w-12 h-12 mb-4 text-red-500" />
+            <p className="text-xl text-red-500 font-semibold">Error loading data</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Something went wrong while fetching the data. Please try again later.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  console.log(result)
+
+  if (!result || result.data.length === 0) {
+    return <NoData />
+  }
+
+  return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {result.data.map((item) => (

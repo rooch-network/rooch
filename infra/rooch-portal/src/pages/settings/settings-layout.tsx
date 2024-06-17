@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-import ManageSessions from '@/pages/settings/components/manage-sessions'
 import { RoochAddress } from '@/pages/settings/components/rooch-address'
-import {useTranslation} from 'react-i18next';
+import { useTranslation } from 'react-i18next'
+import { ManageSessions } from '@/pages/settings/components/manage-sessions.tsx'
 
 export const SettingsLayout = () => {
   const { t } = useTranslation()
@@ -13,9 +13,7 @@ export const SettingsLayout = () => {
         <div className="flex items-center justify-between space-y-2 mb-4">
           <span>
             <h1 className="text-3xl font-bold tracking-tight">{t('Settings.address')}</h1>
-            <p className="text-muted-foreground">
-              {t('Settings.addressSubTitle')}
-            </p>
+            <p className="text-muted-foreground">{t('Settings.addressSubTitle')}</p>
           </span>
         </div>
         <RoochAddress />

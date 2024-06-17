@@ -1,6 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-import { useEffect, useMemo, useRef, useState } from 'react'
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { BalanceInfoView } from '@roochnetwork/rooch-sdk'
 import {
   useCurrentAccount,
@@ -18,27 +18,27 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { NoData } from '@/components/no-data'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import CustomPagination from '@/components/custom-pagination.tsx'
-import { formatCoin } from '@/utils/format.ts'
+import CustomPagination from '@/components/custom-pagination'
+import { formatCoin } from '@/utils/format'
 import { useToast } from '@/components/ui/use-toast'
 import { ToastAction } from '@/components/ui/toast'
-import { isValidBitcoinAddress } from '@/utils/addressValidation' // Import the validation function
+import { isValidBitcoinAddress } from '@/utils/addressValidation'
 
-export const AssetsCoin = () => {
+const RecipientInput = React.lazy(() => import('@/components/recipient-input'))
+const AmountInput = React.lazy(() => import('@/components/amount-input'))
+
+export const AssetsCoin: React.FC = () => {
   const account = useCurrentAccount()
   const sessionKey = useCurrentSession()
   const { toast } = useToast()
 
   const { mutateAsync: transferCoin } = useTransferCoin()
 
-  const [recipient, setRecipient] = useState('')
-  const [amount, setAmount] = useState('')
-  const [transferLoading, setTransferLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [recipient, setRecipient] = useState<string>('')
+  const [amount, setAmount] = useState<string>('')
+  const [transferLoading, setTransferLoading] = useState<boolean>(false)
+  const [error, setError] = useState<string>('')
 
   // ** PAGINATION
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 1 })
@@ -62,14 +62,14 @@ export const AssetsCoin = () => {
     [paginationModel],
   )
 
-  const { data, isLoading, isError } = useRoochClientQuery('getBalances', {
+  const { data, isLoading, isError, refetch } = useRoochClientQuery('getBalances', {
     address: sessionKey?.getAddress() || '',
     cursor: queryOptions.cursor,
     limit: queryOptions.pageSize,
   })
 
   // ** MODAL
-  const [modalOpen, setModalOpen] = useState(false)
+  const [modalOpen, setModalOpen] = useState<boolean>(false)
   const [selectedCoin, setSelectedCoin] = useState<BalanceInfoView | null>(null)
 
   const handleTransferClick = (coin: BalanceInfoView) => {
@@ -127,9 +127,8 @@ export const AssetsCoin = () => {
 
   const handleAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value
-
-    // Validate the input to ensure it's a valid number with at most one decimal point
     const validNumberRegex = /^[0-9]*\.?[0-9]*$/
+
     if (validNumberRegex.test(value)) {
       setAmount(value)
 
@@ -138,10 +137,14 @@ export const AssetsCoin = () => {
         const balanceNumber = Number(selectedCoin.balance) / 10 ** selectedCoin.decimals
         if (amountNumber > balanceNumber) {
           setError('Amount exceeds available balance.')
+        } else if (amountNumber <= 0) {
+          setError('Amount must be greater than zero.')
         } else {
           setError('')
         }
       }
+    } else {
+      setError('Please enter a valid number.')
     }
   }
 
@@ -151,11 +154,14 @@ export const AssetsCoin = () => {
   }
 
   const handleTransferCoin = async () => {
+    setTransferLoading(true)
+
+    // Is Session Key expired
     try {
       if (!sessionKey || (await sessionKey.isExpired())) {
         toast({
           title: 'Session Key Expired',
-          description: 'The session key was expired, please authorize the latest one.',
+          description: 'The session key has expired, please authorize a new one.',
           action: <ToastAction altText="Close">Close</ToastAction>,
         })
         return
@@ -168,6 +174,8 @@ export const AssetsCoin = () => {
         action: <ToastAction altText="Close">Close</ToastAction>,
       })
       return
+    } finally {
+      setTransferLoading(false)
     }
 
     if (recipient === '' || amount === '0' || !selectedCoin || error) {
@@ -176,13 +184,11 @@ export const AssetsCoin = () => {
     }
 
     if (!isValidBitcoinAddress(recipient)) {
-      setError('Invalid recipient address.')
+      setError('Please enter a valid Bitcoin address.')
       return
     }
 
     const amountNumber = Math.floor(Number(amount) * 10 ** selectedCoin.decimals)
-
-    setTransferLoading(true)
 
     try {
       await transferCoin({
@@ -193,14 +199,15 @@ export const AssetsCoin = () => {
       })
       toast({
         title: 'Transfer Successful',
-        description: `Transferred ${amount} ${selectedCoin.name} to ${recipient}`,
+        description: `Successfully transferred ${amount} ${selectedCoin.name} to ${recipient}`,
         action: <ToastAction altText="Close">Close</ToastAction>,
       })
+      refetch()
     } catch (error) {
       console.error('Transfer failed', error)
       toast({
         title: 'Transfer Failed',
-        description: 'The transfer could not be completed. Please try again.',
+        description: 'The transfer could not be completed. Please try again later.',
         action: <ToastAction altText="Close">Close</ToastAction>,
       })
     } finally {
@@ -284,7 +291,7 @@ export const AssetsCoin = () => {
               className="fixed inset-0 bg-opacity-70 dark:bg-opacity-75 flex justify-center items-center z-50 bg-black"
               onClick={handleCloseModal}
             >
-              <div className="bg-background dark:bg-zinc-900 rounded-none md:rounded-lg flex flex-col items-start justify-center p-6 w-full h-full md:w-auto md:h-auto overflow-auto">
+              <div className="bg-background dark:bg-zinc-900 rounded-none md:rounded-lg flex flex-col items-start justify-center p-6 w-full h-full md:w-auto md:h-auto overflow-auto max-w-lg mx-auto">
                 {/* Back */}
                 <div className="mb-4">
                   <Button
@@ -298,55 +305,23 @@ export const AssetsCoin = () => {
                 </div>
 
                 {/* Content */}
-                <div className="flex flex-col h-full items-center justify-start gap-6">
+                <div className="flex flex-col h-full items-center justify-start gap-6 w-full">
                   {/* Address */}
-                  <div className="grid w-full max-w-md items-center gap-1.5">
-                    <Label htmlFor="address">Send to</Label>
-                    <Textarea
-                      id="address"
-                      placeholder="Enter Address..."
-                      className="h-14 resize-none overflow-hidden rounded-2xl bg-gray-50 dark:bg-gray-200 text-gray-800 w-96"
-                      value={recipient}
+                  <Suspense fallback={<div>Loading...</div>}>
+                    <RecipientInput
+                      recipient={recipient}
                       onChange={handleRecipientChange}
                       disabled={transferLoading}
-                      required
-                      rows={1}
                     />
-                  </div>
-
-                  {/* Token + Balance */}
-                  <div className="grid w-full max-w-md items-center gap-1.5">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="amount">Amount</Label>
-                      <p className="text-xs text-muted-foreground">
-                        <span>Balance: </span>
-                        <span className="font-semibold text-blue-600 dark:text-blue-400">
-                          {selectedCoin
-                            ? formatCoin(Number(selectedCoin.balance), selectedCoin.decimals)
-                            : '0.0'}
-                        </span>
-                      </p>
-                    </div>
-                    <div className="h-14 rounded-2xl bg-zinc-200 dark:bg-zinc-700 w-96 pl-6 flex items-center justify-between relative">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <span className="bg-white rounded-full p-0.5">
-                          <img src="/rooch_black_logo.svg" alt="rooch" className="w-4 h-4" />
-                        </span>
-                        <p className="text-sm">{selectedCoin?.name}</p>
-                      </div>
-                      <Input
-                        id="amount"
-                        className="h-10 rounded-2xl bg-gray-50 dark:bg-gray-200 text-gray-800 w-48 pr-8 mr-2 overflow-hidden border-none"
-                        placeholder="0.0"
-                        value={amount}
-                        onChange={handleAmountChange}
-                        disabled={transferLoading}
-                        required
-                        pattern="[0-9]*\.?[0-9]*"
-                      />
-                    </div>
-                    {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
-                  </div>
+                    {/* Token + Balance */}
+                    <AmountInput
+                      amount={amount}
+                      onChange={handleAmountChange}
+                      selectedCoin={selectedCoin}
+                      error={error}
+                      disabled={transferLoading}
+                    />
+                  </Suspense>
 
                   {/* CTA */}
                   <Button

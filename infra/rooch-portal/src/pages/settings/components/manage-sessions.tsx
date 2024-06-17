@@ -17,11 +17,9 @@ import {
   useRoochClientQuery,
 } from '@roochnetwork/rooch-sdk-kit'
 import { AlertCircle, Check, ChevronDown, ChevronUp, Copy, Loader } from 'lucide-react'
-
-import { formatTimestamp } from '@/utils/format.ts'
-
 import { SessionInfoResult } from '@roochnetwork/rooch-sdk'
-import { copyToClipboard } from '@/utils/copyToClipboard.ts'
+import { copyToClipboard } from '@/utils/copyToClipboard'
+import { formatTimestamp } from '@/utils/format.ts'
 
 interface ExpandableRowProps {
   session: SessionInfoResult
@@ -100,6 +98,8 @@ export const ManageSessions: React.FC = () => {
     )
   }
 
+  console.log(sessionKeys)
+
   return (
     <div className="rounded-lg border w-full">
       <Table>
@@ -163,9 +163,11 @@ const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove, loading 
         </TableCell>
         <TableCell className="text-muted-foreground">
           {formatTimestamp(session.createTime)}
+          {/*{session.createTime}*/}
         </TableCell>
         <TableCell className="text-muted-foreground">
           {formatTimestamp(session.lastActiveTime)}
+          {/*{session.lastActiveTime}*/}
         </TableCell>
         <TableCell className="text-muted-foreground">{session.maxInactiveInterval}</TableCell>
         <TableCell className="text-center">
@@ -219,5 +221,3 @@ const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove, loading 
     </>
   )
 }
-
-export default ManageSessions

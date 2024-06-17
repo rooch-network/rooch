@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { PaymentTypes } from '@/common/interface'
+import dayjs from 'dayjs'
 
-export const formatTimestamp = (timestamp: number): string => {
-  if (timestamp < 1e10) {
-    timestamp *= 1000
-  }
-  const date = new Date(timestamp)
-  return date.toLocaleString()
+export const formatTimestamp = (timestamp: number) => {
+  console.log('Raw Timestamp:', timestamp)
+  const formatted = dayjs(timestamp).format('YYYY-MM-DD HH:mm:ss')
+  console.log('Formatted Timestamp:', formatted)
+  return formatted
 }
 
 export const formatCoin = (balance: number, decimals: number, precision = 2) => {
