@@ -86,16 +86,22 @@ pub(crate) fn native_from_witness(
 
 #[derive(Clone, Debug, Serialize, PartialEq, Eq, Deserialize)]
 pub struct ParseInscriptionFromWitnessGasParameters {
-    pub base: InternalGas,
-    pub per_byte: InternalGasPerByte,
+    pub base: Option<InternalGas>,
+    pub per_byte: Option<InternalGasPerByte>,
 }
 
 impl ParseInscriptionFromWitnessGasParameters {
     pub fn zeros() -> Self {
         Self {
-            base: 0.into(),
-            per_byte: 0.into(),
+            base: None,
+            per_byte: None,
         }
+    }
+}
+
+impl ParseInscriptionFromWitnessGasParameters {
+    pub fn is_empty(&self) -> bool {
+        self.base.is_none() || self.per_byte.is_none()
     }
 }
 
@@ -110,7 +116,7 @@ pub(crate) fn native_parse_inscription_from_witness(
     debug_assert_eq!(ty_args.len(), 0);
     debug_assert_eq!(args.len(), 1);
 
-    let mut cost = gas_params.base;
+    let mut cost = gas_params.base.unwrap();
 
     let witness_ref = pop_arg!(args, StructRef);
     let wintness_value = witness_ref.read_ref()?;
@@ -118,7 +124,8 @@ pub(crate) fn native_parse_inscription_from_witness(
         PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
             .with_message(format!("Failed to parse witness: {}", e))
     })?;
-    cost += gas_params.per_byte
+    let per_byte = gas_params.per_byte.unwrap();
+    cost += per_byte
         * NumBytes::new(
             witness
                 .witness
@@ -158,19 +165,21 @@ impl GasParameters {
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
-    let natives = [
-        (
-            "from_witness",
-            make_native(gas_params.from_witness, native_from_witness),
-        ),
-        (
+    let mut natives = [(
+        "from_witness",
+        make_native(gas_params.from_witness, native_from_witness),
+    )]
+    .to_vec();
+
+    if !gas_params.parse_inscription_from_witness.is_empty() {
+        natives.push((
             "parse_inscription_from_witness",
             make_native(
                 gas_params.parse_inscription_from_witness,
                 native_parse_inscription_from_witness,
             ),
-        ),
-    ];
+        ));
+    }
 
     make_module_natives(natives)
 }
