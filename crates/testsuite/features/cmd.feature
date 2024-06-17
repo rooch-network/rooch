@@ -11,7 +11,7 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x3::account_coin_store::AutoAcceptCoins'"
       Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3",{"decode":true}]' --json"
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::account::Account>'"
-      Then cmd: "rpc request --method rooch_listStates --params '["/resource/0x3", null, null, {"decode":true}] --json"
+      Then cmd: "rpc request --method rooch_listStates --params '["/resource/0x3", null, null, {"decode":true}]' --json"
       Then assert: "'{{$.rpc[-1]}}' contains '0x3::account_coin_store::AutoAcceptCoins'"
       Then cmd: "rpc request --method rooch_getStates --params '["/object/0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9",{"decode":true}]' --json"
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::object::Timestamp>'"
