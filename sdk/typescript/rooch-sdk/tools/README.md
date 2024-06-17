@@ -1,4 +1,0 @@
-# tools
-
-** generator
-** serdegen
