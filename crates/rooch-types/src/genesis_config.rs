@@ -91,8 +91,8 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     //curl -sSL https://mempool.space/testnet/api/block/$(curl -sSL https://mempool.space/testnet/api/blocks/tip/hash)
     GenesisConfig {
         bitcoin_network: crate::bitcoin::network::Network::Testnet.to_num(),
-        bitcoin_block_height: 2820883,
-        timestamp: 17180946540000,
+        bitcoin_block_height: 2821523,
+        timestamp: 1718592994000,
         sequencer_account: BitcoinAddress::from_str(
             "bcrt1p56tdhxkcpc5xvdurfnufn9lkkywsh0gxttv5ktkvlezj0t23nasqawwrla",
         )
