@@ -25,12 +25,15 @@ module bitcoin_move::bitcoin{
     use bitcoin_move::types::{Self, Block, Header, Transaction};
     use bitcoin_move::ord::{Self, Inscription,Flotsam, SatPoint};
     use bitcoin_move::utxo::{Self, UTXOSeal};
+    use bitcoin_move::pending_block;
 
     friend bitcoin_move::genesis;
 
     /// If the process block failed, we need to stop the system and fix the issue
     const ErrorBlockProcessError:u64 = 1;
     const ErrorBlockAlreadyProcessed:u64 = 2;
+    /// The reorg is too deep, we need to stop the system and fix the issue
+    const ErrorReorgTooDeep:u64 = 3;
 
     const ORDINAL_GENESIS_HEIGHT:u64 = 767430;
 
@@ -82,49 +85,18 @@ module bitcoin_move::bitcoin{
         object::borrow_mut_object_shared(object_id)
     }
 
-    fun process_block(btc_block_store_obj: &mut Object<BitcoinBlockStore>, block_height: u64, block_hash: address, block_bytes: vector<u8>):u32{
-        let btc_block_store = object::borrow_mut(btc_block_store_obj);
+    fun process_block_header(btc_block_store: &mut BitcoinBlockStore, block_height: u64, block_hash: address, block_header: Header){
         //already processed
         assert!(!table::contains(&btc_block_store.hash_to_height, block_hash), ErrorBlockAlreadyProcessed);
 
-        let block = bcs::from_bytes<Block>(block_bytes);
-        process_txs(btc_block_store, &block, block_height);
-        let block_header = types::header(&block);
+        //We have pending block to handle the reorg, this should not happen. 
+        //But if it happens, we need to stop the system and fix the issue
+        assert!(!table::contains(&btc_block_store.height_to_hash, block_height), ErrorReorgTooDeep);
 
-        if(table::contains(&btc_block_store.height_to_hash, block_height)){
-            //https://github.com/rooch-network/rooch/issues/1685
-            //TODO handle reorg
-        };
-        let time = types::time(block_header);
         table::add(&mut btc_block_store.height_to_hash, block_height, block_hash);
         table::add(&mut btc_block_store.hash_to_height, block_hash, block_height);
-        table::add(&mut btc_block_store.blocks, block_hash, *block_header);
-        btc_block_store.latest_block_height = option::some(block_height);
-        time 
-    }
- 
-    fun process_txs(btc_block_store: &mut BitcoinBlockStore, block:&Block, block_height: u64){
-        let txdata = types::txdata(block);
-        let idx = 0;
-        let coinbase_tx_idx = 0;
-        let flotsams = vector::empty();
-        let tx_len = vector::length(txdata);
-        while(idx < tx_len){
-            let tx = vector::borrow(txdata, idx);
-
-            let is_coinbase = types::is_coinbase_tx(tx);
-            if(is_coinbase) {
-                coinbase_tx_idx = idx;
-            } else {
-                let tx_flotsams = process_tx(btc_block_store, tx, block_height);
-                vector::append(&mut flotsams, tx_flotsams);
-            };
-            idx = idx + 1;
-        };
-
-        // handle coinbase tx
-        let coinbase_tx = vector::borrow(txdata, coinbase_tx_idx);
-        process_coinbase_tx(btc_block_store, coinbase_tx, flotsams, block_height)
+        table::add(&mut btc_block_store.blocks, block_hash, block_header);
+        btc_block_store.latest_block_height = option::some(block_height); 
     }
 
     fun process_tx(btc_block_store: &mut BitcoinBlockStore, tx: &Transaction, block_height: u64): vector<Flotsam>{
@@ -281,13 +253,46 @@ module bitcoin_move::bitcoin{
 
 
     /// The the sequencer submit a new Bitcoin block
+    /// This function is a system function, only the sequencer can call it
     fun submit_new_block(block_height: u64, block_hash: address, block_bytes: vector<u8>){
-        let btc_block_store_obj = borrow_block_store_mut();
-        let time = process_block(btc_block_store_obj, block_height, block_hash, block_bytes);
-
+        let block = bcs::from_bytes<Block>(block_bytes);
+        let block_header = types::header(&block);
+        let time = types::time(block_header);
+        pending_block::add_pending_block(block_height, block_hash, block);    
+        //We directly update the global time do not wait the pending block to be confirmed
+        //The reorg do not affect the global time
         let timestamp_seconds = (time as u64);
         let module_signer = signer::module_signer<BitcoinBlockStore>();
         timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));      
+
+        // We temporarily conform the txs here, we will remove this after refator the relayer
+        let (_, txs) = types::unpack_block(block);
+        let coinbase_tx = vector::remove(&mut txs, 0);
+        vector::for_each(txs, |tx| {
+            let txid = types::tx_id(&tx);
+            conform_tx(block_hash, txid);
+        });
+        //process coinbase tx last
+        conform_tx(block_hash, types::tx_id(&coinbase_tx));
+    }
+
+    fun conform_tx(block_hash: address, txid: address){
+        let btc_block_store_obj = borrow_block_store_mut();
+        let btc_block_store = object::borrow_mut(btc_block_store_obj);
+        let inprocess_block = pending_block::process_pending_tx(block_hash, txid);
+        let block_height = pending_block::inprocess_block_height(&inprocess_block);
+        let tx = pending_block::inprocess_block_tx(&inprocess_block);
+        if(types::is_coinbase_tx(tx)){
+            let flotsams = pending_block::inprocess_block_flotsams(&inprocess_block);
+            process_coinbase_tx(btc_block_store, tx, flotsams, block_height);
+            let header = pending_block::finish_pending_block(inprocess_block);
+            process_block_header(btc_block_store, block_height, block_hash, header);
+        }else{
+            let tx_flotsams = process_tx(btc_block_store, tx, block_height);
+            let flotsams = pending_block::inprocess_block_flotsams_mut(&mut inprocess_block);
+            vector::append(flotsams, tx_flotsams);
+            pending_block::finish_pending_tx(inprocess_block);
+        };
     } 
 
     public fun get_tx(txid: address): Option<Transaction>{
@@ -398,7 +403,7 @@ module bitcoin_move::bitcoin{
     public fun submit_new_block_for_test(block_height: u64, block: Block){
         let block_hash = types::header_to_hash(types::header(&block));
         let block_bytes = bcs::to_bytes(&block);
-        submit_new_block(block_height, block_hash, block_bytes);   
+        submit_new_block(block_height, block_hash, block_bytes);  
     }
 
 }

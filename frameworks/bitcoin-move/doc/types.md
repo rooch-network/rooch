@@ -15,6 +15,7 @@
 -  [Constants](#@Constants_0)
 -  [Function `header`](#0x4_types_header)
 -  [Function `txdata`](#0x4_types_txdata)
+-  [Function `unpack_block`](#0x4_types_unpack_block)
 -  [Function `version`](#0x4_types_version)
 -  [Function `prev_blockhash`](#0x4_types_prev_blockhash)
 -  [Function `merkle_root`](#0x4_types_merkle_root)
@@ -194,6 +195,17 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_txdata">txdata</a>(self: &<a href="types.md#0x4_types_Block">types::Block</a>): &<a href="">vector</a>&lt;<a href="types.md#0x4_types_Transaction">types::Transaction</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_types_unpack_block"></a>
+
+## Function `unpack_block`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_unpack_block">unpack_block</a>(self: <a href="types.md#0x4_types_Block">types::Block</a>): (<a href="types.md#0x4_types_Header">types::Header</a>, <a href="">vector</a>&lt;<a href="types.md#0x4_types_Transaction">types::Transaction</a>&gt;)
 </code></pre>
 
 
