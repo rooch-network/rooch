@@ -28,9 +28,8 @@ interface ExpandableRowProps {
 }
 
 const isSessionExpired = (createTime: number, maxInactiveInterval: number) => {
-  const currentTime = Date.now()
-  const expirationTime = createTime + maxInactiveInterval * 1000
-  return currentTime > expirationTime
+  const expirationTime = new Date(createTime).getTime() + maxInactiveInterval * 1000
+  return Date.now() > expirationTime
 }
 
 export const ManageSessions: React.FC = () => {
@@ -51,9 +50,7 @@ export const ManageSessions: React.FC = () => {
     async (authKey: string) => {
       setLoading(authKey)
       try {
-        await removeSession({
-          authKey: authKey,
-        })
+        await removeSession({ authKey })
         await refetch()
       } catch (error) {
         console.error(error)
@@ -98,8 +95,6 @@ export const ManageSessions: React.FC = () => {
     )
   }
 
-  console.log(sessionKeys)
-
   return (
     <div className="rounded-lg border w-full">
       <Table>
@@ -135,11 +130,7 @@ const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove, loading 
 
   const handleCopy = (key: string) => {
     copyToClipboard(key, (value) => {
-      if (value) {
-        setCopiedKeys((prev) => [...prev, key])
-      } else {
-        setCopiedKeys((prev) => prev.filter((item) => item !== key))
-      }
+      setCopiedKeys((prev) => (value ? [...prev, key] : prev.filter((item) => item !== key)))
     })
   }
 
@@ -163,11 +154,9 @@ const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove, loading 
         </TableCell>
         <TableCell className="text-muted-foreground">
           {formatTimestamp(session.createTime)}
-          {/*{session.createTime}*/}
         </TableCell>
         <TableCell className="text-muted-foreground">
           {formatTimestamp(session.lastActiveTime)}
-          {/*{session.lastActiveTime}*/}
         </TableCell>
         <TableCell className="text-muted-foreground">{session.maxInactiveInterval}</TableCell>
         <TableCell className="text-center">
@@ -221,3 +210,5 @@ const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove, loading 
     </>
   )
 }
+
+export default ManageSessions
