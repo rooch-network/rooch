@@ -20,7 +20,7 @@ module bitcoin_move::ord {
     use bitcoin_move::types::{Self, Witness, Transaction};
     use bitcoin_move::utxo::{Self, UTXO};
     use bitcoin_move::bitcoin_hash;
-    
+
     friend bitcoin_move::genesis;
     friend bitcoin_move::bitcoin;
 
@@ -31,7 +31,7 @@ module bitcoin_move::ord {
 
     const PERMANENT_AREA: vector<u8> = b"permanent_area";
     const TEMPORARY_AREA: vector<u8> = b"temporary_area";
-    
+
     const METAPROTOCOL_VALIDITY: vector<u8> = b"metaprotocol_validity";
 
     /// How many satoshis are in "one bitcoin".
@@ -293,7 +293,7 @@ module bitcoin_move::ord {
         let object = object::add_object_field_with_id(store_obj, id, inscription);
         object
     }
-    
+
     fun parse_json_body(record: &InscriptionRecord) : SimpleMap<String,String> {
         if (vector::is_empty(&record.body) || option::is_none(&record.content_type)) {
             return simple_map::new()
@@ -344,7 +344,7 @@ module bitcoin_move::ord {
             let seal_object_id = *vector::borrow(&mut seals, j);
             let (origin_owner, inscription_obj) = object::take_object_extend<Inscription>(seal_object_id);
             let inscription = object::borrow_mut(&mut inscription_obj);
-            
+
 
             let (is_match, new_sat_point) = match_utxo_and_generate_sat_point(inscription.offset, seal_object_id, tx, input_utxo_values, input_index);
             if(is_match){
@@ -358,7 +358,7 @@ module bitcoin_move::ord {
                 drop_temp_area(&mut inscription_obj);
                 object::transfer_extend(inscription_obj, to_address);
                 vector::push_back(&mut new_sat_points, new_sat_point);
-               
+
             } else {
                 let flotsam = new_flotsam(new_sat_point.output_index, new_sat_point.offset, new_sat_point.object_id);
                 vector::push_back(&mut flotsams, flotsam);
@@ -397,7 +397,7 @@ module bitcoin_move::ord {
 
             object::transfer_extend(inscription_obj, to_address);
             vector::push_back(&mut new_sat_points, new_sat_point);
-           
+
             j = j + 1;
         };
 
@@ -407,7 +407,7 @@ module bitcoin_move::ord {
     /// Match UTXO, via SatPoint offset, generate new SatPoint, UTXO spent follows "First in First out"
     fun match_utxo_and_generate_sat_point(offset: u64, seal_object_id: ObjectID, tx: &Transaction, input_utxo_values: vector<u64>, input_index: u64): (bool, SatPoint){
         let txoutput = types::tx_output(tx);
-        
+
         let idx = 0;
         let input_utxo_value_accumulator = 0;
         while(idx < input_index){
@@ -516,7 +516,7 @@ module bitcoin_move::ord {
             let output_index = if(is_separate_outputs){
                 idx
             }else{
-                0  
+                0
             };
 
             let output = vector::borrow(tx_outputs, output_index);
@@ -541,7 +541,7 @@ module bitcoin_move::ord {
         vector::destroy_empty(inscriptions);
         sat_points
     }
- 
+
     fun validate_inscription_records(tx_id: address, input_index: u64, record: vector<InscriptionRecord>): vector<InscriptionRecord>{
         let len = vector::length(&record);
         let idx = 0;
@@ -551,16 +551,16 @@ module bitcoin_move::ord {
             if(!record.duplicate_field && !record.incomplete_field && !record.unrecognized_even_field){
                 vector::push_back(&mut valid_records, record);
             }else{
-               event::emit(InvalidInscriptionEvent{
-                   txid: tx_id,
-                   input_index,
-                   record,
-               });
+                event::emit(InvalidInscriptionEvent{
+                    txid: tx_id,
+                    input_index,
+                    record,
+                });
             };
             idx = idx + 1;
         };
         valid_records
-    } 
+    }
 
     public fun txid(self: &Inscription): address{
         self.txid
@@ -677,7 +677,7 @@ module bitcoin_move::ord {
 
     // ==== InscriptionRecord ==== //
 
-    fun unpack_record(record: InscriptionRecord): 
+    fun unpack_record(record: InscriptionRecord):
     (vector<u8>, Option<String>, Option<String>, vector<u8>, Option<String>, vector<InscriptionID>, Option<u64>){
         let InscriptionRecord{
             body,
@@ -1019,8 +1019,8 @@ module bitcoin_move::ord {
     #[test_only]
     public fun drop_inscription_object_for_test(inscription: Object<Inscription>) {
         let inscription = object::remove(inscription);
-        let Inscription { 
-            txid: _, 
+        let Inscription {
+            txid: _,
             index: _,
             offset: _,
             sequence_number: _,
@@ -1146,7 +1146,7 @@ module bitcoin_move::ord {
         assert!(!contains_temp_state<TempState>(inscription_obj), 1);
         assert!(contains_permanent_state<PermanentState>(inscription_obj), 2);
     }
- 
+
 
     #[test_only]
     struct TestProtocol has key {}
