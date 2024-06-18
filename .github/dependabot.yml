@@ -8,3 +8,5 @@ updates:
     # Use UTC +08:00
     timezone: "Asia/Shanghai"
   open-pull-requests-limit: 10
+  # Disable auto rebase
+  rebase-strategy: "disabled"
