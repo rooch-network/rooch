@@ -6485,7 +6485,7 @@ dependencies = [
  "move-core-types",
  "move-resource-viewer",
  "move-vm-types",
- "petgraph 0.5.1",
+ "petgraph 0.6.5",
  "serde 1.0.202",
 ]
 
@@ -6533,7 +6533,7 @@ dependencies = [
  "moveos-verifier",
  "once_cell",
  "parking_lot 0.12.2",
- "petgraph 0.5.1",
+ "petgraph 0.6.5",
  "serde 1.0.202",
  "serde_bytes",
  "serde_json",
@@ -6576,7 +6576,7 @@ dependencies = [
  "moveos-wasm",
  "once_cell",
  "parking_lot 0.12.2",
- "petgraph 0.5.1",
+ "petgraph 0.6.5",
  "primitive-types 0.12.2",
  "revm-precompile",
  "revm-primitives",
