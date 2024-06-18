@@ -9194,6 +9194,7 @@ dependencies = [
  "ethers",
  "fastcrypto",
  "hex",
+ "include_dir",
  "lazy_static 1.4.0",
  "linked-hash-map",
  "move-binary-format",
