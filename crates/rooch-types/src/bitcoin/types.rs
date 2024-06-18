@@ -400,7 +400,7 @@ mod tests {
     use super::*;
     use bitcoin::{
         block::Version,
-        consensus::{deserialize, serialize, Decodable},
+        consensus::{deserialize, serialize},
         CompactTarget,
     };
     use hex::FromHex;

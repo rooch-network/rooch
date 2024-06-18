@@ -27,6 +27,7 @@ use rooch_framework::natives::gas_parameter::gas_member::{
 };
 use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
 use rooch_indexer::store::traits::IndexerStoreTrait;
+use rooch_store::meta_store::MetaStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_types::address::BitcoinAddress;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
@@ -35,6 +36,7 @@ use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::indexer::state::{handle_object_change, IndexerObjectStateChanges};
 use rooch_types::indexer::transaction::IndexerTransaction;
 use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
+use rooch_types::sequencer::SequencerInfo;
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
 use serde::{Deserialize, Serialize};
@@ -335,13 +337,13 @@ impl RoochGenesis {
         let tx_ledger_data = LedgerTxData::L2Tx(self.genesis_tx());
 
         // Init tx accumulator
-        let accumulator = MerkleAccumulator::new_with_info(
+        let genesis_tx_accumulator = MerkleAccumulator::new_with_info(
             AccumulatorInfo::default(),
             rooch_db.rooch_store.get_transaction_accumulator_store(),
         );
         let genesis_accumulator_root =
-            accumulator.append(vec![tx_ledger_data.clone().tx_hash()].as_slice())?;
-        accumulator.flush()?;
+            genesis_tx_accumulator.append(vec![tx_ledger_data.clone().tx_hash()].as_slice())?;
+        genesis_tx_accumulator.flush()?;
 
         let ledger_tx = LedgerTransaction::build_ledger_transaction(
             tx_ledger_data,
@@ -350,6 +352,9 @@ impl RoochGenesis {
             vec![],
             genesis_accumulator_root,
         );
+        let sequencer_info =
+            SequencerInfo::new(genesis_tx_order, genesis_tx_accumulator.get_info());
+        rooch_db.rooch_store.save_sequencer_info(sequencer_info)?;
         rooch_db.rooch_store.save_transaction(ledger_tx.clone())?;
 
         // Save the genesis to indexer
