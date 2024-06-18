@@ -206,7 +206,7 @@ codespan = "0.11.1"
 termcolor = "1.1.2"
 versions = "4.1.0"
 pretty_assertions = "1.2.0"
-syn = { version = "1.0.104", features = ["full", "extra-traits"] }
+syn = { version = "2.0.65", features = ["full", "extra-traits"] }
 quote = "1.0"
 proc-macro2 = "1.0.47"
 derive-syn-parse = "0.1.5"
