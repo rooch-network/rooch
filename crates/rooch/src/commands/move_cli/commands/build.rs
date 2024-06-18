@@ -8,12 +8,15 @@ use crate::cli_types::CommandAction;
 use crate::cli_types::WalletContextOptions;
 use crate::commands::move_cli::print_serialized_success;
 use async_trait::async_trait;
+use bcs;
 use clap::Parser;
 use move_cli::{base::reroot_path, Move};
 use moveos_verifier::build::run_verifier;
 use rooch_types::error::RoochResult;
 use serde_json::Value;
 use std::collections::BTreeMap;
+use std::fs::File;
+use std::io::{BufWriter, Write};
 
 /// Build the package at `path`. If no path is provided defaults to current directory.
 #[derive(Parser)]
@@ -32,6 +35,10 @@ pub struct BuildCommand {
 
     #[clap(flatten)]
     move_args: Move,
+
+    /// If true, export package binary to the output directory with name `package.blob`
+    #[clap(long, default_value = "false")]
+    export: bool,
 
     /// Return command outputs in json format
     #[clap(long, default_value = "false")]
@@ -64,7 +71,25 @@ impl CommandAction<Option<Value>> for BuildCommand {
 
         let mut package = config.compile_package_no_exit(&rerooted_path, &mut std::io::stdout())?;
 
-        run_verifier(rerooted_path, config_cloned, &mut package)?;
+        run_verifier(rerooted_path.clone(), config_cloned, &mut package)?;
+
+        if self.export {
+            let export_path = rerooted_path
+                .join("build")
+                .join(package.compiled_package_info.package_name.as_str())
+                .join("package.blob");
+            let blob = package
+                .root_compiled_units
+                .iter()
+                .map(|unit| unit.unit.serialize(None))
+                .collect::<Vec<_>>();
+
+            let mut file = BufWriter::new(File::create(export_path.clone())?);
+            bcs::serialize_into(&mut file, &blob)?;
+            file.flush()?;
+
+            println!("Exported package to {}", export_path.display());
+        }
 
         print_serialized_success(self.json)
     }
