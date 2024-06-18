@@ -30,6 +30,10 @@ module bitcoin_move::types{
         &self.txdata
     }
 
+    public fun unpack_block(self: Block) : (Header, vector<Transaction>) {
+        (self.header, self.txdata)
+    }
+
     #[data_struct]
     struct Header has store, copy, drop {
         /// Block version, now repurposed for soft fork signalling.
