@@ -9419,7 +9419,7 @@ dependencies = [
  "serde 1.0.202",
  "serde_json",
  "serde_with 2.3.3",
- "signature 1.6.4",
+ "signature 2.2.0",
  "slip10_ed25519",
  "strum 0.24.1",
  "strum_macros 0.24.3",
