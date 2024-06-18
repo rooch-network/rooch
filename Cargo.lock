@@ -633,7 +633,7 @@ dependencies = [
  "headers",
  "http 0.2.12",
  "http-body 0.4.6",
- "hyper 0.14.28",
+ "hyper 0.14.29",
  "itoa",
  "matchit",
  "memchr",
@@ -4455,9 +4455,9 @@ checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "hyper"
-version = "0.14.28"
+version = "0.14.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf96e135eb83a2a8ddf766e426a841d8ddd7449d5f00d34ea02b41d2f19eef80"
+checksum = "f361cde2f109281a220d4307746cdfd5ee3f410da58a70377762396775634b33"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -4490,6 +4490,7 @@ dependencies = [
  "http 1.1.0",
  "http-body 1.0.0",
  "httparse",
+ "httpdate",
  "itoa",
  "pin-project-lite",
  "smallvec",
@@ -4505,7 +4506,7 @@ checksum = "ec3efd23720e2049821a693cbc7e65ea87c72f1c58ff2f9522ff332b1491e590"
 dependencies = [
  "futures-util",
  "http 0.2.12",
- "hyper 0.14.28",
+ "hyper 0.14.29",
  "log",
  "rustls 0.21.12",
  "rustls-native-certs",
@@ -4537,7 +4538,7 @@ version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbb958482e8c7be4bc3cf272a766a2b0bf1a6755e7a6ae777f017a31d11b13b1"
 dependencies = [
- "hyper 0.14.28",
+ "hyper 0.14.29",
  "pin-project-lite",
  "tokio",
  "tokio-io-timeout",
@@ -4550,7 +4551,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6183ddfa99b85da61a140bea0efc93fdf56ceaa041b37d553518030827f9905"
 dependencies = [
  "bytes",
- "hyper 0.14.28",
+ "hyper 0.14.29",
  "native-tls",
  "tokio",
  "tokio-native-tls",
@@ -5053,7 +5054,7 @@ dependencies = [
  "futures-timer",
  "futures-util",
  "globset",
- "hyper 0.14.28",
+ "hyper 0.14.29",
  "jsonrpsee-types 0.16.3",
  "parking_lot 0.12.2",
  "rand 0.8.5",
@@ -5079,7 +5080,7 @@ dependencies = [
  "beef",
  "futures-timer",
  "futures-util",
- "hyper 0.14.28",
+ "hyper 0.14.29",
  "jsonrpsee-types 0.20.3",
  "rustc-hash",
  "serde 1.0.202",
@@ -5096,7 +5097,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7e5f9fabdd5d79344728521bb65e3106b49ec405a78b66fbff073b72b389fa43"
 dependencies = [
  "async-trait",
- "hyper 0.14.28",
+ "hyper 0.14.29",
  "hyper-rustls 0.24.2",
  "jsonrpsee-core 0.16.3",
  "jsonrpsee-types 0.16.3",
@@ -5115,7 +5116,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f80c17f62c7653ce767e3d7288b793dfec920f97067ceb189ebdd3570f2bc20"
 dependencies = [
  "async-trait",
- "hyper 0.14.28",
+ "hyper 0.14.29",
  "hyper-rustls 0.24.2",
  "jsonrpsee-core 0.20.3",
  "jsonrpsee-types 0.20.3",
@@ -5163,7 +5164,7 @@ dependencies = [
  "futures-channel",
  "futures-util",
  "http 0.2.12",
- "hyper 0.14.28",
+ "hyper 0.14.29",
  "jsonrpsee-core 0.16.3",
  "jsonrpsee-types 0.16.3",
  "serde 1.0.202",
@@ -5653,7 +5654,7 @@ version = "0.5.5"
 dependencies = [
  "anyhow",
  "futures",
- "hyper 0.14.28",
+ "hyper 1.3.1",
  "log",
  "prometheus",
  "psutil",
@@ -8600,7 +8601,7 @@ dependencies = [
  "h2 0.3.26",
  "http 0.2.12",
  "http-body 0.4.6",
- "hyper 0.14.28",
+ "hyper 0.14.29",
  "hyper-rustls 0.24.2",
  "hyper-tls 0.5.0",
  "ipnet",
@@ -8950,7 +8951,7 @@ dependencies = [
  "fastcrypto",
  "futures",
  "hex",
- "hyper 0.14.28",
+ "hyper 1.3.1",
  "lazy_static 1.4.0",
  "log",
  "move-binary-format",
@@ -9691,7 +9692,7 @@ dependencies = [
  "fastcrypto",
  "futures",
  "hex",
- "hyper 0.14.28",
+ "hyper 1.3.1",
  "jsonrpsee 0.16.3",
  "lazy_static 1.4.0",
  "log",
@@ -11930,7 +11931,7 @@ dependencies = [
  "h2 0.3.26",
  "http 0.2.12",
  "http-body 0.4.6",
- "hyper 0.14.28",
+ "hyper 0.14.29",
  "hyper-timeout",
  "percent-encoding",
  "pin-project",
