@@ -336,7 +336,25 @@ function install_toolchain {
 
 function install_rustup_components_and_nightly {
     echo "Updating rustup and installing rustfmt & clippy"
-    rustup update
+    # retry rustup
+    MAX_RETRIES=5
+    RETRY_COUNT=0
+    SUCCESS=false
+
+    while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+        rustup update && SUCCESS=true && break
+        RETRY_COUNT=$((RETRY_COUNT+1))
+        echo "Attempt $RETRY_COUNT failed. Retrying in 10 seconds..."
+        sleep 10
+    done
+
+    if [ $SUCCESS = false ]; then
+        echo "Failed to update Rustup after $MAX_RETRIES attempts."
+        exit 1
+    else
+        echo "Rustup updated successfully."
+    fi
+
     rustup component add rustfmt
     rustup component add clippy
 
