@@ -54,7 +54,8 @@ module bitcoin_move::pending_block{
 
     struct ReorgEvent has copy, drop{
         block_height: u64,
-        block_hashs: vector<address>,
+        block_hash: address,
+        success: bool,
     }
 
     public(friend) fun genesis_init(reorg_pending_blocks: u64){
@@ -132,21 +133,27 @@ module bitcoin_move::pending_block{
     fun handle_reog(store: &mut PendingStore, block_height: u64){
         // if the reorg happen, the latest block height should not be none.
         let current_height = *option::borrow(&store.latest_block_height);
-        let block_hashs = vector::empty<address>();
-        while(current_height > block_height){
-            let (_, prev_hash) = simple_map::remove(&mut store.pending_blocks, &block_height);
+        while(current_height >= block_height){
+            let (_, prev_hash) = simple_map::remove(&mut store.pending_blocks, &current_height);
             let obj = take_pending_block(prev_hash);
             // If the block already processed, we can't remove it, and reorg failed
-            assert!(object::borrow(&obj).processed_tx == 0, ErrorReorgFailed);
+            if(object::borrow(&obj).processed_tx > 0){
+                event::emit(ReorgEvent{
+                    block_height: current_height,
+                    block_hash: prev_hash,
+                    success: false,
+                });
+                abort ErrorReorgFailed
+            };
             remove_pending_block(obj, false);
             current_height = current_height - 1;
-            vector::push_back(&mut block_hashs, prev_hash);
+            event::emit(ReorgEvent{
+                block_height: current_height,
+                block_hash: prev_hash,
+                success: true,
+            });
         };
         store.latest_block_height = option::some(block_height);
-        event::emit(ReorgEvent{
-            block_height: block_height,
-            block_hashs,
-        });
     }
 
     fun remove_pending_block(obj: Object<PendingBlock>, processed: bool): Header{
