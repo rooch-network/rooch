@@ -104,8 +104,8 @@ impl LedgerTransaction {
         tx_timestamp: u64,
         tx_order: u64,
         tx_order_signature: Vec<u8>,
+        tx_accumulator_root: H256,
     ) -> LedgerTransaction {
-        let tx_accumulator_root = H256::random();
         let tx_sequence_info = TransactionSequenceInfo {
             tx_order,
             tx_order_signature,

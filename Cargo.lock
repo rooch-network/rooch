@@ -9240,6 +9240,7 @@ dependencies = [
 name = "rooch-genesis"
 version = "0.5.4"
 dependencies = [
+ "accumulator",
  "anyhow",
  "bcs",
  "better_any",
@@ -9670,6 +9671,7 @@ dependencies = [
 name = "rooch-rpc-server"
 version = "0.5.4"
 dependencies = [
+ "accumulator",
  "anyhow",
  "async-trait",
  "bcs",
@@ -9729,6 +9731,7 @@ dependencies = [
 name = "rooch-sequencer"
 version = "0.5.4"
 dependencies = [
+ "accumulator",
  "anyhow",
  "async-trait",
  "bcs",
@@ -9767,6 +9770,7 @@ dependencies = [
 name = "rooch-store"
 version = "0.5.4"
 dependencies = [
+ "accumulator",
  "anyhow",
  "bcs",
  "hex",
@@ -9825,6 +9829,7 @@ dependencies = [
 name = "rooch-types"
 version = "0.5.4"
 dependencies = [
+ "accumulator",
  "anyhow",
  "argon2",
  "async-trait",

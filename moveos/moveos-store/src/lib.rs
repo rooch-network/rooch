@@ -30,7 +30,6 @@ use std::fmt::{Debug, Display, Formatter};
 use std::path::Path;
 use std::sync::Arc;
 
-pub mod accumulator_store;
 pub mod config_store;
 pub mod event_store;
 pub mod state_store;
@@ -46,7 +45,7 @@ pub const EVENT_HANDLE_PREFIX_NAME: ColumnFamilyName = "event_handle";
 pub const CONFIG_STARTUP_INFO_PREFIX_NAME: ColumnFamilyName = "config_startup_info";
 pub const CONFIG_GENESIS_PREFIX_NAME: ColumnFamilyName = "config_genesis";
 
-///db store use prefix_name vec to init
+/// db store use prefix_name vec to init
 /// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
 static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     vec![

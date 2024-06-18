@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use accumulator::accumulator_info::AccumulatorInfo;
+use accumulator::{Accumulator, MerkleAccumulator};
 use anyhow::{ensure, Result};
 use framework_builder::stdlib_version::StdlibVersion;
 use framework_builder::Stdlib;
@@ -331,11 +333,22 @@ impl RoochGenesis {
             .get::<moveos_types::moveos_std::genesis::GenesisContext>()?
             .expect("Moveos Genesis context should exist");
         let tx_ledger_data = LedgerTxData::L2Tx(self.genesis_tx());
+
+        // Init tx accumulator
+        let accumulator = MerkleAccumulator::new_with_info(
+            AccumulatorInfo::default(),
+            rooch_db.rooch_store.get_transaction_accumulator_store(),
+        );
+        let genesis_accumulator_root =
+            accumulator.append(vec![tx_ledger_data.clone().tx_hash()].as_slice())?;
+        accumulator.flush()?;
+
         let ledger_tx = LedgerTransaction::build_ledger_transaction(
             tx_ledger_data,
             moveos_genesis_context.timestamp,
             genesis_tx_order,
             vec![],
+            genesis_accumulator_root,
         );
         rooch_db.rooch_store.save_transaction(ledger_tx.clone())?;
 
