@@ -4,7 +4,7 @@
 use crate::actor::messages::{
     GetAnnotatedStatesByStateMessage, GetEventsByEventHandleMessage, GetEventsByEventIDsMessage,
     GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage, ListStatesMessage,
-    RefreshStateMessage, ValidateL1BlockMessage,
+    RefreshStateMessage, ValidateL1BlockMessage, ValidateL1TxMessage,
 };
 use crate::actor::reader_executor::ReaderExecutorActor;
 use crate::actor::{
@@ -38,7 +38,7 @@ use moveos_types::{
 use rooch_types::address::BitcoinAddress;
 use rooch_types::bitcoin::network::BitcoinNetwork;
 use rooch_types::framework::chain_id::ChainID;
-use rooch_types::transaction::{L1BlockWithBody, RoochTransaction};
+use rooch_types::transaction::{L1BlockWithBody, L1Transaction, RoochTransaction};
 use tokio::runtime::Handle;
 
 #[derive(Clone)]
@@ -72,6 +72,21 @@ impl ExecutorProxy {
             .send(ValidateL1BlockMessage {
                 ctx,
                 l1_block,
+                sequencer_address,
+            })
+            .await?
+    }
+
+    pub async fn validate_l1_tx(
+        &self,
+        ctx: TxContext,
+        l1_tx: L1Transaction,
+        sequencer_address: BitcoinAddress,
+    ) -> Result<VerifiedMoveOSTransaction> {
+        self.actor
+            .send(ValidateL1TxMessage {
+                ctx,
+                l1_tx,
                 sequencer_address,
             })
             .await?

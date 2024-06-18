@@ -73,10 +73,23 @@ module bitcoin_move::pending_block{
         }
     }
 
+    fun borrow_store(): &PendingStore {
+        let obj_id = object::named_object_id<PendingStore>();
+        let store_obj = object::borrow_object(obj_id);
+        object::borrow(store_obj)
+    }
+
     fun borrow_mut_store(): &mut PendingStore {
         let obj_id = object::named_object_id<PendingStore>();
         let store_obj = object::borrow_mut_object_extend(obj_id);
         object::borrow_mut(store_obj)
+    }
+
+    fun borrow_pending_block(block_hash: address): &Object<PendingBlock>{
+        let block_id = new_pending_block_id(block_hash);
+        let block_obj_id = object::custom_object_id<PendingBlockID, PendingBlock>(block_id);
+        assert!(object::exists_object(block_obj_id), ErrorPendingBlockNotFound);
+        object::borrow_object(block_obj_id)
     }
 
     fun borrow_mut_pending_block(block_hash: address): &mut Object<PendingBlock>{
@@ -234,4 +247,40 @@ module bitcoin_move::pending_block{
         let block_obj = object::borrow(&inprocess_block.block_obj);
         block_obj.block_height
     }
+
+    // ============== Pending Block Query ==============
+
+    struct PendingTxs has copy, drop, store{
+        block_hash: address,
+        txs: vector<address>,
+    }
+
+    /// Get the pending txs which are ready to be processed
+    public fun get_ready_pending_txs(): Option<PendingTxs>{
+        let store = borrow_store();
+        if(option::is_none(&store.latest_block_height)){
+            return option::none()
+        };
+        let latest_block_height = *option::borrow(&store.latest_block_height);
+        let ready_block_height = latest_block_height - store.reorg_pending_blocks;
+        if(!simple_map::contains_key(&store.pending_blocks, &ready_block_height)){
+            return option::none()
+        };
+        let block_hash = *simple_map::borrow(&store.pending_blocks, &ready_block_height);
+        let block_obj = borrow_pending_block(block_hash);
+        let tx_ids: vector<address> = *object::borrow_field(block_obj, TX_IDS_KEY);
+        let unprocessed_tx_ids : vector<address> = vector::filter(tx_ids, |txid| {
+            object::contains_field(block_obj, *txid)
+        });
+        let pending_txs = PendingTxs{
+            block_hash: block_hash,
+            txs: unprocessed_tx_ids,
+        };
+        option::some(pending_txs)
+    }
+
+    public fun get_latest_block_height(): Option<u64>{
+        let store = borrow_store();
+        store.latest_block_height
+    } 
 }
