@@ -3662,7 +3662,7 @@ checksum = "cfcf0ed7fe52a17a03854ec54a9f76d6d84508d1c0e66bc1793301c73fc8493c"
 dependencies = [
  "byteorder",
  "rand 0.8.5",
- "rustc-hex 2.1.0",
+ "rustc-hex",
  "static_assertions",
 ]
 
@@ -3675,7 +3675,7 @@ dependencies = [
  "arbitrary",
  "byteorder",
  "rand 0.8.5",
- "rustc-hex 2.1.0",
+ "rustc-hex",
  "static_assertions",
 ]
 
@@ -8839,7 +8839,7 @@ checksum = "bb919243f34364b6bd2fc10ef797edbfa75f33c252e7998527479c6d6b47e1ec"
 dependencies = [
  "bytes",
  "rlp-derive",
- "rustc-hex 2.1.0",
+ "rustc-hex",
 ]
 
 [[package]]
@@ -8996,7 +8996,7 @@ dependencies = [
  "rooch-test-transaction-builder",
  "rooch-types",
  "rpassword",
- "rustc-hex 1.0.0",
+ "rustc-hex",
  "schemars",
  "serde 1.0.202",
  "serde_json",
@@ -9643,7 +9643,7 @@ dependencies = [
  "rooch-open-rpc",
  "rooch-open-rpc-macros",
  "rooch-types",
- "rustc-hex 1.0.0",
+ "rustc-hex",
  "schemars",
  "serde 1.0.202",
  "serde_json",
@@ -9729,7 +9729,7 @@ dependencies = [
  "rooch-store",
  "rooch-types",
  "rpassword",
- "rustc-hex 1.0.0",
+ "rustc-hex",
  "schemars",
  "serde 1.0.202",
  "serde_json",
@@ -9999,12 +9999,6 @@ name = "rustc-hash"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
-
-[[package]]
-name = "rustc-hex"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ceb8ce7a5e520de349e1fa172baeba4a9e8d5ef06c47471863530bc4972ee1e"
 
 [[package]]
 name = "rustc-hex"
@@ -11188,7 +11182,7 @@ dependencies = [
  "crunchy",
  "lazy_static 1.4.0",
  "rand 0.8.5",
- "rustc-hex 2.1.0",
+ "rustc-hex",
 ]
 
 [[package]]
