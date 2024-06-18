@@ -274,7 +274,7 @@ serenity = { version = "0.12.1", default-features = false, features = [
     "model",
 ] }
 diesel-derive-enum = { version = "2.0.1", features = ["sqlite"] }
-diesel_migrations = { version = "2.0.0" }
+diesel_migrations = { version = "2.2.0" }
 tap = "1.0.1"
 dotenvy = "0.15"
 sized-chunks = { version = "0.6" }
