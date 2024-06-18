@@ -3339,7 +3339,7 @@ dependencies = [
  "rlp",
  "serde 1.0.202",
  "serde_json",
- "strum 0.26.2",
+ "strum",
  "syn 2.0.65",
  "tempfile",
  "thiserror",
@@ -9414,7 +9414,7 @@ dependencies = [
  "serde_with 2.3.3",
  "signature 2.2.0",
  "slip10_ed25519",
- "strum 0.24.1",
+ "strum",
  "strum_macros",
  "tiny-bip39",
 ]
@@ -9881,7 +9881,7 @@ dependencies = [
  "serde_yaml 0.9.34+deprecated",
  "sha3 0.9.1",
  "smt",
- "strum 0.24.1",
+ "strum",
  "strum_macros",
  "thiserror",
 ]
@@ -11127,12 +11127,6 @@ name = "strsim"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
-
-[[package]]
-name = "strum"
-version = "0.24.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"
 
 [[package]]
 name = "strum"
