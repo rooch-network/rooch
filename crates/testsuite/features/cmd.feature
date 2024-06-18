@@ -21,7 +21,7 @@ Feature: Rooch CLI integration tests
       Then cmd: "rpc request --method rooch_getObjectStates --params '["0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9", {"decode":false}]' --json"
       Then cmd: "rpc request --method rooch_getObjectStates --params '["0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9", {"decode":true}]' --json"
       Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::object::Timestamp'"
-      Then assert: "{{$.rpc[-1][0].value}} == {{$.rpc[-2][0].value}}'
+      Then assert: "{{$.rpc[-1][0].value}} == {{$.rpc[-2][0].value}}"
       Then cmd: "rpc request --method rooch_getFieldStates --params '["0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb", ["0x41022214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb8238d4e7553801ebf92b4311e16bbeb26eec676fd5bcbb31dcc59610148d90c8070000000000000000000000000000000000000000000000000000000000000002066f626a656374084f626a656374494400"], {"decode": true, "showDisplay": true}]' --json"
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::module_store::Package>'"
       Then cmd: "rpc request --method rooch_listFieldStates --params '["0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb", null, "2", {"decode": false, "showDisplay": false}]' --json"
