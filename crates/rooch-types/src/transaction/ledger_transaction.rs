@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{RoochTransaction, TransactionSequenceInfo};
-use crate::multichain_id::MultiChainID;
+use crate::{address::RoochAddress, multichain_id::MultiChainID};
 use anyhow::Result;
 use moveos_types::h256::H256;
 use serde::{Deserialize, Serialize};
@@ -47,6 +47,13 @@ impl LedgerTxData {
             LedgerTxData::L2Tx(tx) => tx.tx_hash(),
         }
     }
+
+    pub fn sender(&self) -> Option<RoochAddress> {
+        match self {
+            LedgerTxData::L1Block(_) => None,
+            LedgerTxData::L2Tx(tx) => Some(tx.sender()),
+        }
+    }
 }
 
 /// The transaction which is recorded in the L2 DA ledger.
@@ -89,6 +96,10 @@ impl LedgerTransaction {
 
     pub fn tx_hash(&mut self) -> H256 {
         self.data.tx_hash()
+    }
+
+    pub fn sender(&self) -> Option<RoochAddress> {
+        self.data.sender()
     }
 
     pub fn encode(&self) -> Vec<u8> {

@@ -14,7 +14,7 @@ dependencies = [
 
 [[package]]
 name = "accumulator"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -930,7 +930,7 @@ dependencies = [
 
 [[package]]
 name = "bitcoin-move"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "bcs",
@@ -2294,12 +2294,11 @@ dependencies = [
 
 [[package]]
 name = "cucumber"
-version = "0.20.2"
+version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e5063d8cf24f4998ad01cac265da468a15ca682a8f4f826d50e661964e8d9b8"
+checksum = "6cd12917efc3a8b069a4975ef3cb2f2d835d42d04b3814d90838488f9dd9bf69"
 dependencies = [
  "anyhow",
- "async-trait",
  "clap 4.5.4",
  "console",
  "cucumber-codegen",
@@ -2309,10 +2308,10 @@ dependencies = [
  "either",
  "futures",
  "gherkin",
- "globwalk",
+ "globwalk 0.9.1",
  "humantime",
  "inventory",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "lazy-regex",
  "linked-hash-map",
  "once_cell",
@@ -2324,13 +2323,13 @@ dependencies = [
 
 [[package]]
 name = "cucumber-codegen"
-version = "0.20.2"
+version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01091e28d1f566c8b31b67948399d2efd6c0a8f6228a9785519ed7b73f7f0aef"
+checksum = "9e19cd9e8e7cfd79fbf844eb6a7334117973c01f6bad35571262b00891e60f1c"
 dependencies = [
  "cucumber-expressions",
  "inflections",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "proc-macro2 1.0.83",
  "quote 1.0.36",
  "regex",
@@ -2533,7 +2532,7 @@ dependencies = [
 
 [[package]]
 name = "data-verify"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "bcs",
@@ -2798,15 +2797,6 @@ name = "directories"
 version = "4.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f51c5d4ddabd36886dd3e1438cb358cdcb0d7c499cb99cb4ac2e38e18b5cb210"
-dependencies = [
- "dirs-sys 0.3.7",
-]
-
-[[package]]
-name = "dirs"
-version = "4.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca3aa72a6f96ea37bbc5aa912f6788242832f75369bdfdadcb0e38423f100059"
 dependencies = [
  "dirs-sys 0.3.7",
 ]
@@ -3307,7 +3297,7 @@ dependencies = [
  "serde 1.0.202",
  "serde_json",
  "syn 2.0.65",
- "toml 0.8.13",
+ "toml 0.8.14",
  "walkdir",
 ]
 
@@ -3464,7 +3454,7 @@ checksum = "66244a771d9163282646dbeffe0e6eca4dda4146b6498644e678ac6089b11edd"
 dependencies = [
  "cfg-if",
  "const-hex",
- "dirs 5.0.1",
+ "dirs",
  "dunce",
  "ethers-core",
  "glob",
@@ -3663,7 +3653,7 @@ checksum = "cfcf0ed7fe52a17a03854ec54a9f76d6d84508d1c0e66bc1793301c73fc8493c"
 dependencies = [
  "byteorder",
  "rand 0.8.5",
- "rustc-hex 2.1.0",
+ "rustc-hex",
  "static_assertions",
 ]
 
@@ -3676,7 +3666,7 @@ dependencies = [
  "arbitrary",
  "byteorder",
  "rand 0.8.5",
- "rustc-hex 2.1.0",
+ "rustc-hex",
  "static_assertions",
 ]
 
@@ -3750,7 +3740,7 @@ dependencies = [
 
 [[package]]
 name = "framework-builder"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "bcs",
@@ -3792,7 +3782,7 @@ dependencies = [
 
 [[package]]
 name = "framework-release"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "bcs",
@@ -3815,7 +3805,7 @@ dependencies = [
 
 [[package]]
 name = "framework-types"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "clap 4.5.4",
@@ -4074,6 +4064,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "93e3af942408868f6934a7b85134a3230832b9977cf66125df2f9edcfce4ddcc"
 dependencies = [
  "bitflags 1.3.2",
+ "ignore",
+ "walkdir",
+]
+
+[[package]]
+name = "globwalk"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0bf760ebf69878d9fd8f110c89703d90ce35095324d1f1edcb595c63945ee757"
+dependencies = [
+ "bitflags 2.5.0",
  "ignore",
  "walkdir",
 ]
@@ -4893,6 +4894,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5639,7 +5649,7 @@ dependencies = [
 
 [[package]]
 name = "metrics"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "futures",
@@ -6402,7 +6412,7 @@ dependencies = [
 
 [[package]]
 name = "moveos"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -6455,7 +6465,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-common"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6467,7 +6477,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-compiler"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -6481,12 +6491,12 @@ dependencies = [
 
 [[package]]
 name = "moveos-config"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "clap 4.5.4",
  "coerce",
- "dirs 4.0.0",
+ "dirs",
  "once_cell",
  "serde 1.0.202",
  "serde_with 2.3.3",
@@ -6498,7 +6508,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-object-runtime"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "better_any",
@@ -6534,7 +6544,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-stdlib"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "bech32 0.11.0",
@@ -6582,7 +6592,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-store"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -6611,7 +6621,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-types"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6640,7 +6650,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-verifier"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6667,7 +6677,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-wasm"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "ciborium",
@@ -8356,7 +8366,7 @@ dependencies = [
 
 [[package]]
 name = "raw-store"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8820,7 +8830,7 @@ checksum = "bb919243f34364b6bd2fc10ef797edbfa75f33c252e7998527479c6d6b47e1ec"
 dependencies = [
  "bytes",
  "rlp-derive",
- "rustc-hex 2.1.0",
+ "rustc-hex",
 ]
 
 [[package]]
@@ -8846,7 +8856,7 @@ dependencies = [
 
 [[package]]
 name = "rooch"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8858,7 +8868,7 @@ dependencies = [
  "codespan-reporting",
  "csv",
  "datatest-stable 0.1.1",
- "dirs 4.0.0",
+ "dirs",
  "fastcrypto",
  "framework-builder",
  "framework-release",
@@ -8924,7 +8934,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-benchmarks"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8977,7 +8987,7 @@ dependencies = [
  "rooch-test-transaction-builder",
  "rooch-types",
  "rpassword",
- "rustc-hex 1.0.0",
+ "rustc-hex",
  "schemars",
  "serde 1.0.202",
  "serde_json",
@@ -8986,7 +8996,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tokio",
- "toml 0.8.13",
+ "toml 0.8.14",
  "tonic",
  "tower",
  "tower-http",
@@ -8996,12 +9006,12 @@ dependencies = [
 
 [[package]]
 name = "rooch-config"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "clap 4.5.4",
  "coerce",
- "dirs 4.0.0",
+ "dirs",
  "dirs-next",
  "jsonrpsee 0.16.3",
  "moveos-config",
@@ -9022,7 +9032,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-da"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9043,7 +9053,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-db"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9068,7 +9078,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-executor"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9110,7 +9120,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-faucet"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9144,7 +9154,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-framework"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9182,7 +9192,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-framework-tests"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9238,7 +9248,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-genesis"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9290,7 +9300,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-indexer"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9336,7 +9346,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-integration-test-runner"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9378,7 +9388,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-key"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "argon2",
@@ -9401,7 +9411,7 @@ dependencies = [
  "serde 1.0.202",
  "serde_json",
  "serde_with 2.3.3",
- "signature 1.6.4",
+ "signature 2.2.0",
  "slip10_ed25519",
  "strum 0.24.1",
  "strum_macros 0.24.3",
@@ -9410,7 +9420,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9427,7 +9437,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-macros"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "derive-syn-parse",
  "itertools 0.10.5",
@@ -9439,7 +9449,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-spec"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9460,7 +9470,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-spec-builder"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9480,7 +9490,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-pipeline-processor"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9518,7 +9528,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-proposer"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9551,7 +9561,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-relayer"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9595,7 +9605,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-api"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9625,7 +9635,7 @@ dependencies = [
  "rooch-open-rpc",
  "rooch-open-rpc-macros",
  "rooch-types",
- "rustc-hex 1.0.0",
+ "rustc-hex",
  "schemars",
  "serde 1.0.202",
  "serde_json",
@@ -9639,12 +9649,12 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-client"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "bcs",
  "clap 4.5.4",
- "dirs 4.0.0",
+ "dirs",
  "ethers",
  "fastcrypto",
  "futures",
@@ -9669,7 +9679,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-server"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9712,7 +9722,7 @@ dependencies = [
  "rooch-store",
  "rooch-types",
  "rpassword",
- "rustc-hex 1.0.0",
+ "rustc-hex",
  "schemars",
  "serde 1.0.202",
  "serde_json",
@@ -9729,7 +9739,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-sequencer"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9768,7 +9778,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-store"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9791,7 +9801,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-test-transaction-builder"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9827,7 +9837,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-types"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9985,12 +9995,6 @@ name = "rustc-hash"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
-
-[[package]]
-name = "rustc-hex"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ceb8ce7a5e520de349e1fa172baeba4a9e8d5ef06c47471863530bc4972ee1e"
 
 [[package]]
 name = "rustc-hex"
@@ -10978,7 +10982,7 @@ checksum = "b7c388c1b5e93756d0c740965c41e8822f866621d41acbdf6336a6a168f8840c"
 
 [[package]]
 name = "smt"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -11174,7 +11178,7 @@ dependencies = [
  "crunchy",
  "lazy_static 1.4.0",
  "rand 0.8.5",
- "rustc-hex 2.1.0",
+ "rustc-hex",
 ]
 
 [[package]]
@@ -11204,7 +11208,7 @@ version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "11297baafe5fa0c99d5722458eac6a5e25c01eb1b8e5cd137f54079093daa7a4"
 dependencies = [
- "dirs 5.0.1",
+ "dirs",
  "fs2",
  "hex",
  "once_cell",
@@ -11422,7 +11426,7 @@ checksum = "970dff17c11e884a4a09bc76e3a17ef71e01bb13447a11e85226e254fe6d10b8"
 dependencies = [
  "chrono",
  "chrono-tz",
- "globwalk",
+ "globwalk 0.8.1",
  "humansize",
  "lazy_static 1.4.0",
  "percent-encoding",
@@ -11490,7 +11494,7 @@ dependencies = [
 
 [[package]]
 name = "testsuite"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -11613,7 +11617,7 @@ dependencies = [
 
 [[package]]
 name = "timeout-join-handler"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "thiserror",
@@ -11683,9 +11687,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.37.0"
+version = "1.38.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1adbebffeca75fcfd058afa480fb6c0b81e165a0323f9c9d39c9697e37c46787"
+checksum = "ba4f4a02a7a80d6f274636f0aa95c7e383b912d41fe721a31f29e29698585a4a"
 dependencies = [
  "backtrace",
  "bytes",
@@ -11712,9 +11716,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-macros"
-version = "2.2.0"
+version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b8a1e28f2deaa14e508979454cb3a223b10b938b45af148bc0986de36f1923b"
+checksum = "5f5ae998a069d4b5aba8ee9dad856af7d520c3699e6159b185c2acd48155d39a"
 dependencies = [
  "proc-macro2 1.0.83",
  "quote 1.0.36",
@@ -11846,14 +11850,14 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.8.13"
+version = "0.8.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4e43f8cc456c9704c851ae29c67e17ef65d2c30017c17a9765b89c382dc8bba"
+checksum = "6f49eb2ab21d2f26bd6db7bf383edc527a7ebaee412d17af4d40fdccd442f335"
 dependencies = [
  "serde 1.0.202",
  "serde_spanned",
  "toml_datetime",
- "toml_edit 0.22.13",
+ "toml_edit 0.22.14",
 ]
 
 [[package]]
@@ -11903,9 +11907,9 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.22.13"
+version = "0.22.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c127785850e8c20836d49732ae6abfa47616e60bf9d9f57c43c250361a9db96c"
+checksum = "f21c7aaf97f1bd9ca9d4f9e73b0a6c74bd5afef56f2bc931943a6e1c37e04e38"
 dependencies = [
  "indexmap 2.2.6",
  "serde 1.0.202",
@@ -12733,7 +12737,7 @@ dependencies = [
  "serde_json",
  "serde_yaml 0.9.34+deprecated",
  "thiserror",
- "toml 0.8.13",
+ "toml 0.8.14",
  "url",
 ]
 

@@ -92,7 +92,11 @@ fn main() {
         );
 
         match framework_builder::releaser::release_latest() {
-            Ok(_) => {}
+            Ok(msgs) => {
+                for msg in msgs {
+                    println!("cargo::warning=\"{}\"", msg);
+                }
+            }
             Err(e) => {
                 println!(
                     "cargo::warning=\"Failed to release latest framework: {:?}\"",

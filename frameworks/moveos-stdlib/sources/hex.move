@@ -38,12 +38,12 @@ module moveos_std::hex {
     /// Hex string can be case insensitive (e.g. b"0F3A" and b"0f3a" both return x"0f3a")
     /// Aborts if the hex string does not have an even number of characters (as each hex character is 2 characters long)
     /// Aborts if the hex string contains non-valid hex characters (valid characters are 0 - 9, a - f, A - F)
-    public fun decode(hex: vector<u8>): vector<u8> {
-        let (i, r, l) = (0, vector[], vector::length(&hex));
-        assert!(vector::length(&hex) % 2 == 0, ErrorInvalidHexLength); 
+    public fun decode(hex: &vector<u8>): vector<u8> {
+        let (i, r, l) = (0, vector[], vector::length(hex));
+        assert!(vector::length(hex) % 2 == 0, ErrorInvalidHexLength); 
         while (i < l) {
-            let decimal = (decode_byte(*vector::borrow(&hex, i)) * 16) + 
-                          decode_byte(*vector::borrow(&hex, i + 1));
+            let decimal = (decode_byte(*vector::borrow(hex, i)) * 16) + 
+                          decode_byte(*vector::borrow(hex, i + 1));
             vector::push_back(&mut r, decimal);
             i = i + 2;
         };
@@ -54,17 +54,17 @@ module moveos_std::hex {
     /// This function takes a hexadecimal string (no 0x prefix) and attempts to decode it into a byte vector.
     /// It returns an `Option<vector<u8>>` which will contain the decoded bytes if the decoding is successful,
     /// or `None` if the input string is not a valid hexadecimal string or has an odd length.
-    public fun decode_option(hex: vector<u8>): Option<vector<u8>> {
+    public fun decode_option(hex: &vector<u8>): Option<vector<u8>> {
         let bytes = vector::empty();
-        let len = vector::length(&hex);
+        let len = vector::length(hex);
         if (len % 2 != 0) {
             return option::none()
         };
 
         let i = 0;
         while (i < len) {
-            let high_byte = vector::borrow(&hex, i);
-            let low_byte = vector::borrow(&hex, i + 1);
+            let high_byte = vector::borrow(hex, i);
+            let low_byte = vector::borrow(hex, i + 1);
 
             // Check if both bytes are valid hex characters
             if (!is_valid_hex_char(*high_byte) || !is_valid_hex_char(*low_byte)) {
@@ -116,46 +116,46 @@ module moveos_std::hex {
 
     #[test]
     fun test_hex_decode_string_literal() {
-        assert!(x"ff" == decode(b"ff"), 0);
-        assert!(x"fe" == decode(b"fe"), 0);
-        assert!(x"00" == decode(b"00"), 0);
+        assert!(x"ff" == decode(&b"ff"), 0);
+        assert!(x"fe" == decode(&b"fe"), 0);
+        assert!(x"00" == decode(&b"00"), 0);
     }
 
     #[test]
     fun test_hex_decode_string_literal__lowercase_and_uppercase() {
-        assert!(x"ff" == decode(b"Ff"), 0);
-        assert!(x"ff" == decode(b"fF"), 0);
-        assert!(x"ff" == decode(b"FF"), 0);
+        assert!(x"ff" == decode(&b"Ff"), 0);
+        assert!(x"ff" == decode(&b"fF"), 0);
+        assert!(x"ff" == decode(&b"FF"), 0);
     }
 
     #[test]
     fun test_hex_decode_string_literal__long_hex() {
-        assert!(x"036d2416252ae1db8aedad59e14b007bee6ab94a3e77a3549a81137871604456f3" == decode(b"036d2416252ae1Db8aedAd59e14b007bee6aB94a3e77a3549a81137871604456f3"), 0);
+        assert!(x"036d2416252ae1db8aedad59e14b007bee6ab94a3e77a3549a81137871604456f3" == decode(&b"036d2416252ae1Db8aedAd59e14b007bee6aB94a3e77a3549a81137871604456f3"), 0);
     }
 
     #[test]
     #[expected_failure(abort_code = ErrorInvalidHexLength)]
     fun test_hex_decode__invalid_length() {
-        decode(b"0");
+        decode(&b"0");
     }
 
     #[test]
     #[expected_failure(abort_code = ErrorNotValidHexCharacter)]
     fun test_hex_decode__hex_literal() {
-        decode(x"ffff");
+        decode(&x"ffff");
     }
 
     #[test]
     #[expected_failure(abort_code = ErrorNotValidHexCharacter)]
     fun test_hex_decode__invalid_string_literal() {
-        decode(b"0g");
+        decode(&b"0g");
     }
 
     #[test]
     public fun test_decode_option_valid_hex() {
         let hex_string = b"0f3a";
         let expected_bytes = vector[15, 58];
-        let decoded_bytes = decode_option(hex_string);
+        let decoded_bytes = decode_option(&hex_string);
         assert!(option::is_some(&decoded_bytes), 1);
         assert!(option::borrow(&decoded_bytes) == &expected_bytes, 2);
     }
@@ -163,21 +163,21 @@ module moveos_std::hex {
     #[test]
     public fun test_decode_option_invalid_hex_length() {
         let hex_string = b"0f3"; // Length is not even
-        let decoded_bytes = decode_option(hex_string);
+        let decoded_bytes = decode_option(&hex_string);
         assert!(option::is_none(&decoded_bytes), 1);
     }
 
     #[test]
     public fun test_decode_option_invalid_hex_chars() {
         let hex_string = b"0f3g"; // 'g' is not a valid hex character
-        let decoded_bytes = decode_option(hex_string);
+        let decoded_bytes = decode_option(&hex_string);
         assert!(option::is_none(&decoded_bytes), 1);
     }
 
     #[test]
     public fun test_decode_option_empty_string() {
         let hex_string = b"";
-        let decoded_bytes_opt = decode_option(hex_string);
+        let decoded_bytes_opt = decode_option(&hex_string);
         assert!(option::is_some(&decoded_bytes_opt), 1);
         let decoded_bytes = option::destroy_some(decoded_bytes_opt); 
         assert!(vector::length(&decoded_bytes) == 0, 2);
@@ -186,7 +186,7 @@ module moveos_std::hex {
     #[test]
     public fun test_decode_option_single_char_string() {
         let hex_string = b"f"; // Single character string
-        let decoded_bytes = decode_option(hex_string);
+        let decoded_bytes = decode_option(&hex_string);
         assert!(option::is_none(&decoded_bytes), 1);
     }
 }

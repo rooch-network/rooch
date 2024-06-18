@@ -19,7 +19,6 @@
 -  [Function `from_str`](#0x4_network_from_str)
 -  [Function `network_name`](#0x4_network_network_name)
 -  [Function `bech32_hrp`](#0x4_network_bech32_hrp)
--  [Function `network_magic`](#0x4_network_network_magic)
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
@@ -224,15 +223,4 @@ Get the current network from the onchain configuration.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="network.md#0x4_network_bech32_hrp">bech32_hrp</a>(<a href="network.md#0x4_network">network</a>: u8): <a href="_String">string::String</a>
-</code></pre>
-
-
-
-<a name="0x4_network_network_magic"></a>
-
-## Function `network_magic`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="network.md#0x4_network_network_magic">network_magic</a>(<a href="network.md#0x4_network">network</a>: u8): <a href="">vector</a>&lt;u8&gt;
 </code></pre>

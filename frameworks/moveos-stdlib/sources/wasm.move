@@ -95,10 +95,6 @@ module moveos_std::wasm {
     native fun native_release_wasm_instance(instance: WASMInstance): bool;
 
     #[test_only] 
-    use std::string;
-    #[test_only] 
-    use std::debug;
-    #[test_only] 
     use std::vector;
 
     #[test]
@@ -109,15 +105,15 @@ module moveos_std::wasm {
 
       // 1. create wasm VM instance (required step)
       let wasm_instance = create_wasm_instance(wasm_code);
-      debug::print(&string::utf8(b"wasm_instance:"));
-      debug::print(&wasm_instance);
+    //   std::debug::print(&std::std::string::utf8(b"wasm_instance:"));
+    //   std::debug::print(&wasm_instance);
 
       // 2. run 10/0
       let function_name = b"div_s";
       let arg_list = vector::empty<u64>();
       vector::push_back(&mut arg_list, 10u64);
       vector::push_back(&mut arg_list, 0u64);
-      debug::print(&arg_list);
+    //   std::debug::print(&arg_list);
 
       let ret_val_option = execute_wasm_function_option(&mut wasm_instance, function_name, arg_list);
       assert!(option::is_none(&ret_val_option), 1);
@@ -136,14 +132,14 @@ module moveos_std::wasm {
 
         // 1. Create WASM VM instance (required step)
         let wasm_instance = create_wasm_instance(wasm_code);
-        debug::print(&string::utf8(b"wasm_instance:"));
-        debug::print(&wasm_instance);
+        // std::debug::print(&std::string::utf8(b"wasm_instance:"));
+        // std::debug::print(&wasm_instance);
 
         // 2. Execute the function that runs forever
         let function_name = b"run_forever";
         let arg_list = vector::empty<u64>();
-        debug::print(&string::utf8(b"arg_list:"));
-        debug::print(&arg_list);
+        // std::debug::print(&std::string::utf8(b"arg_list:"));
+        // std::debug::print(&arg_list);
 
         // Execute the function and check if it returns None (indicating an infinite loop)
         let ret_val_option = execute_wasm_function_option(&mut wasm_instance, function_name, arg_list);
@@ -163,14 +159,14 @@ module moveos_std::wasm {
 
         // 1. Create WASM VM instance (required step)
         let wasm_instance = create_wasm_instance(wasm_code);
-        debug::print(&string::utf8(b"wasm_instance:"));
-        debug::print(&wasm_instance);
+        // std::debug::print(&std::string::utf8(b"wasm_instance:"));
+        // std::debug::print(&wasm_instance);
 
         // 2. Execute the function that runs forever
         let function_name = b"run_forever";
         let arg_list = vector::empty<u64>();
-        debug::print(&string::utf8(b"arg_list:"));
-        debug::print(&arg_list);
+        // std::debug::print(&std::string::utf8(b"arg_list:"));
+        // std::debug::print(&arg_list);
 
         // Execute the function and check if it returns None (indicating an infinite loop)
         let ret_val_option = execute_wasm_function_option(&mut wasm_instance, function_name, arg_list);
@@ -190,14 +186,14 @@ module moveos_std::wasm {
 
         // 1. Create WASM VM instance (required step)
         let wasm_instance = create_wasm_instance(wasm_code);
-        debug::print(&string::utf8(b"wasm_instance:"));
-        debug::print(&wasm_instance);
+        // std::debug::print(&std::string::utf8(b"wasm_instance:"));
+        // std::debug::print(&wasm_instance);
 
         // 2. Execute the function that runs forever
         let function_name = b"run_forever";
         let arg_list = vector::empty<u64>();
-        debug::print(&string::utf8(b"arg_list:"));
-        debug::print(&arg_list);
+        // std::debug::print(&std::string::utf8(b"arg_list:"));
+        // std::debug::print(&arg_list);
 
         // Execute the function and check if it returns None (indicating an infinite loop)
         let ret_val_option = execute_wasm_function_option(&mut wasm_instance, function_name, arg_list);
@@ -217,14 +213,14 @@ module moveos_std::wasm {
 
         // 1. Create WASM VM instance (required step)
         let wasm_instance = create_wasm_instance(wasm_code);
-        debug::print(&string::utf8(b"wasm_instance:"));
-        debug::print(&wasm_instance);
+        // std::debug::print(&std::string::utf8(b"wasm_instance:"));
+        // std::debug::print(&wasm_instance);
 
         // 2. Execute the function that runs forever
         let function_name = b"run_forever";
         let arg_list = vector::empty<u64>();
-        debug::print(&string::utf8(b"arg_list:"));
-        debug::print(&arg_list);
+        // std::debug::print(&std::string::utf8(b"arg_list:"));
+        // std::debug::print(&arg_list);
 
         // Execute the function and check if it returns None (indicating an infinite loop)
         let ret_val_option = execute_wasm_function_option(&mut wasm_instance, function_name, arg_list);
@@ -244,14 +240,14 @@ module moveos_std::wasm {
 
         // 1. Create WASM VM instance (required step)
         let wasm_instance = create_wasm_instance(wasm_code);
-        debug::print(&string::utf8(b"wasm_instance:"));
-        debug::print(&wasm_instance);
+        // std::debug::print(&std::string::utf8(b"wasm_instance:"));
+        // std::debug::print(&wasm_instance);
 
         // 2. Execute the function that runs forever
         let function_name = b"run_forever";
         let arg_list = vector::empty<u64>();
-        debug::print(&string::utf8(b"arg_list:"));
-        debug::print(&arg_list);
+        // std::debug::print(&std::string::utf8(b"arg_list:"));
+        // std::debug::print(&arg_list);
 
         // Execute the function and check if it returns None (indicating an infinite loop)
         let ret_val_option = execute_wasm_function_option(&mut wasm_instance, function_name, arg_list);

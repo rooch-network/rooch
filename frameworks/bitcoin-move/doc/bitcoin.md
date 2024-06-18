@@ -17,7 +17,7 @@
 -  [Function `get_genesis_block_height`](#0x4_bitcoin_get_genesis_block_height)
 -  [Function `get_latest_block_height`](#0x4_bitcoin_get_latest_block_height)
 -  [Function `get_bitcoin_time`](#0x4_bitcoin_get_bitcoin_time)
--  [Function `verify_header`](#0x4_bitcoin_verify_header)
+-  [Function `contains_header`](#0x4_bitcoin_contains_header)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -37,6 +37,7 @@
 <b>use</b> <a href="">0x3::chain_id</a>;
 <b>use</b> <a href="network.md#0x4_network">0x4::network</a>;
 <b>use</b> <a href="ord.md#0x4_ord">0x4::ord</a>;
+<b>use</b> <a href="pending_block.md#0x4_pending_block">0x4::pending_block</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 <b>use</b> <a href="utxo.md#0x4_utxo">0x4::utxo</a>;
 </code></pre>
@@ -85,6 +86,16 @@ If the process block failed, we need to stop the system and fix the issue
 
 
 <pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ErrorBlockProcessError">ErrorBlockProcessError</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x4_bitcoin_ErrorReorgTooDeep"></a>
+
+The reorg is too deep, we need to stop the system and fix the issue
+
+
+<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ErrorReorgTooDeep">ErrorReorgTooDeep</a>: u64 = 3;
 </code></pre>
 
 
@@ -201,11 +212,11 @@ Get the bitcoin time, if the latest block is not exist, return 0
 
 
 
-<a name="0x4_bitcoin_verify_header"></a>
+<a name="0x4_bitcoin_contains_header"></a>
 
-## Function `verify_header`
+## Function `contains_header`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_verify_header">verify_header</a>(block_header: <a href="types.md#0x4_types_Header">types::Header</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_contains_header">contains_header</a>(block_header: &<a href="types.md#0x4_types_Header">types::Header</a>): bool
 </code></pre>

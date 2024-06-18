@@ -167,6 +167,28 @@ module moveos_std::string_utils {
         });
         string::utf8(result)
     }
+
+    public fun to_string_u256(n: u256): String {
+        let result = vector::empty();
+        if(n == 0) {
+            vector::push_back(&mut result, 48);
+        } else {
+            while(n > 0) {
+                vector::push_back(&mut result, ((n % 10) as u8) + 48);
+                n = n / 10;
+            };
+        };
+        vector::reverse(&mut result);
+        string::utf8(result)
+    }
+
+    public fun to_string_u64(n: u64): String {
+        to_string_u256((n as u256))
+    }
+
+     public fun to_string_u32(n: u32): String {
+        to_string_u256((n as u256))
+    }
     
     #[test]
     fun test_to_lower_case() {
@@ -267,15 +289,27 @@ module moveos_std::string_utils {
     #[expected_failure(abort_code=ErrorInvalidStringNumber, location=moveos_std::string_utils)]
     fun test_parse_decimal_failed_invalid_char(){
         let s = string::utf8(b"1a.1");
-        let result = parse_decimal(&s, 18);
-        std::debug::print(&result);
+        let _result = parse_decimal(&s, 18);
     }
 
     #[test]
     #[expected_failure(abort_code=ErrorInvalidStringNumber, location=moveos_std::string_utils)]
     fun test_parse_decimal_failed_float_overflow(){
         let s = string::utf8(b"1.01");
-        let result = parse_decimal(&s, 1);
-        std::debug::print(&result);
+        let _result = parse_decimal(&s, 1);
+    }
+
+    #[test]
+    fun test_to_string(){
+        let n = 123u256;
+        let s = to_string_u256(n);
+        assert!(s == string::utf8(b"123"), 1);
+    }
+
+    #[test]
+    fun test_to_string_max(){
+        let n = 115792089237316195423570985008687907853269984665640564039457584007913129639935u256;
+        let s = to_string_u256(n);
+        assert!(s == string::utf8(b"115792089237316195423570985008687907853269984665640564039457584007913129639935"), 1);
     }
 }

@@ -17,10 +17,10 @@ crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasPar
 
     [.signer.borrow_address.base, "signer.borrow_address.base", (353 + 1) * MUL],
 
-    [.string.check_utf8.per_byte, optional "string.check_utf8.per_byte", (4 + 1) *  MUL],
-    [.string.is_char_boundary.base, optional "string.is_char_boundary.base", (4 + 1) * MUL],
-    [.string.sub_string.per_byte, optional "string.sub_string.per_byte", (4 + 1) *  MUL],
-    [.string.index_of.per_byte_searched, optional "string.index_of.per_byte_searched", (4 + 1)  * MUL],
+    [.string.check_utf8.per_byte, "string.check_utf8.per_byte", (4 + 1) *  MUL],
+    [.string.is_char_boundary.base, "string.is_char_boundary.base", (4 + 1) * MUL],
+    [.string.sub_string.per_byte, "string.sub_string.per_byte", (4 + 1) *  MUL],
+    [.string.index_of.per_byte_searched, "string.index_of.per_byte_searched", (4 + 1)  * MUL],
 
     [.vector.length.base, "vector.length.base", (98 + 1) * MUL],
     [.vector.empty.base, "vector.empty.base", (84 + 1) * MUL],

@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    AnnotatedMoveStructView, AnnotatedMoveValueView, BytesView, H256View, ObjectIDVecView,
-    RoochAddressView, RoochOrBitcoinAddressView, StrView, StructTagView, TypeTagView,
+    AnnotatedMoveStructView, AnnotatedMoveValueView, BytesView, H256View, HumanReadableDisplay,
+    ObjectIDVecView, RoochAddressView, RoochOrBitcoinAddressView, StrView, StructTagView,
+    TypeTagView,
 };
 use anyhow::Result;
 
@@ -14,7 +15,7 @@ use moveos_types::state::{
 };
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
-    moveos_std::object::{AnnotatedObject, ObjectID, RawObject},
+    moveos_std::object::{human_readable_flag, AnnotatedObject, ObjectID, RawObject},
     state::{AnnotatedState, State, StateChangeSet, TableTypeInfo},
 };
 use rooch_types::indexer::state::{
@@ -355,6 +356,7 @@ impl From<StateSyncFilterView> for StateSyncFilter {
 pub struct IndexerObjectStateView {
     pub object_id: ObjectID,
     pub owner: RoochAddressView,
+    pub owner_bitcoin_address: Option<String>,
     pub flag: u8,
     /// bcs bytes of the Object.
     pub value: BytesView,
@@ -373,12 +375,14 @@ impl IndexerObjectStateView {
     pub fn new_from_object_state(
         state: IndexerObjectState,
         value: Vec<u8>,
+        owner_bitcoin_address: Option<String>,
         decoded_value: Option<AnnotatedMoveStructView>,
         display_fields: Option<DisplayFieldsView>,
     ) -> IndexerObjectStateView {
         IndexerObjectStateView {
             object_id: state.object_id,
             owner: state.owner.into(),
+            owner_bitcoin_address,
             flag: state.flag,
             value: value.into(),
             decoded_value,
@@ -391,6 +395,33 @@ impl IndexerObjectStateView {
             updated_at: state.updated_at,
             display_fields,
         }
+    }
+}
+
+impl HumanReadableDisplay for IndexerObjectStateView {
+    fn to_human_readable_string(&self, verbose: bool) -> String {
+        let _ = verbose; // TODO: implement verbose string
+
+        format!(
+            r#"{}
+  objectId       | {}
+  type           | {}
+  owner          | {}
+  owner(bitcoin) | {:?}
+  status         | {}
+  tx_order       | {}
+  state_index    | {}
+{}"#,
+            "-".repeat(100),
+            self.object_id,
+            self.object_type,
+            self.owner,
+            self.owner_bitcoin_address,
+            human_readable_flag(self.flag),
+            self.tx_order,
+            self.state_index,
+            "-".repeat(100),
+        )
     }
 }
 
@@ -437,6 +468,7 @@ impl ObjectStateFilterView {
 pub struct ObjectStateView {
     pub id: ObjectID,
     pub owner: RoochAddressView,
+    pub owner_bitcoin_address: Option<String>,
     pub flag: u8,
     pub object_type: StructTagView,
     pub state_root: H256View,
@@ -453,6 +485,7 @@ impl ObjectStateView {
         ObjectStateView {
             id: object.id,
             owner: object.owner.into(),
+            owner_bitcoin_address: None,
             flag: object.flag,
             object_type: object.value.type_.clone().into(),
             state_root: object.state_root.into(),
@@ -473,6 +506,7 @@ impl ObjectStateView {
         ObjectStateView {
             id: object.id,
             owner: object.owner.into(),
+            owner_bitcoin_address: None,
             flag: object.flag,
             object_type: object.value.struct_tag.into(),
             state_root: object.state_root.into(),
@@ -488,5 +522,46 @@ impl ObjectStateView {
     pub fn with_display_fields(mut self, display_fields: Option<DisplayFieldsView>) -> Self {
         self.display_fields = display_fields;
         self
+    }
+
+    pub fn with_owner_bitcoin_address(mut self, owner_bitcoin_address: Option<String>) -> Self {
+        self.owner_bitcoin_address = owner_bitcoin_address;
+        self
+    }
+}
+
+impl HumanReadableDisplay for ObjectStateView {
+    fn to_human_readable_string(&self, verbose: bool) -> String {
+        let _ = verbose; // TODO: implement verbose string
+
+        format!(
+            r#"{}
+  objectId       | {}
+  type           | {}
+  owner          | {}
+  owner(bitcoin) | {:?}
+  status         | {}
+{}"#,
+            "-".repeat(100),
+            self.id,
+            self.object_type,
+            self.owner,
+            self.owner_bitcoin_address,
+            human_readable_flag(self.flag),
+            "-".repeat(100),
+        )
+    }
+}
+
+impl<T> HumanReadableDisplay for Vec<T>
+where
+    T: HumanReadableDisplay,
+{
+    fn to_human_readable_string(&self, verbose: bool) -> String {
+        let _ = verbose;
+        self.iter()
+            .map(|s| s.to_human_readable_string(verbose))
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 }

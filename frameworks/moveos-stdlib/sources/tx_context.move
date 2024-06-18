@@ -217,6 +217,11 @@ module moveos_std::tx_context {
         ctx.sequence_number = sequence_number;
     }
 
+    #[test_only]
+    public fun fresh_address_for_testing(): address {
+        fresh_address()
+    }
+
 
     #[test_only]
     struct TestValue has store, drop, copy{

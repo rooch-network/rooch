@@ -17,11 +17,9 @@ import {
   useRoochClientQuery,
 } from '@roochnetwork/rooch-sdk-kit'
 import { AlertCircle, Check, ChevronDown, ChevronUp, Copy, Loader } from 'lucide-react'
-
-import { formatTimestamp } from '@/utils/format.ts'
-
 import { SessionInfoResult } from '@roochnetwork/rooch-sdk'
-import { copyToClipboard } from '@/utils/copyToClipboard.ts'
+import { copyToClipboard } from '@/utils/copyToClipboard'
+import { formatTimestamp } from '@/utils/format.ts'
 
 interface ExpandableRowProps {
   session: SessionInfoResult
@@ -30,9 +28,8 @@ interface ExpandableRowProps {
 }
 
 const isSessionExpired = (createTime: number, maxInactiveInterval: number) => {
-  const currentTime = Date.now()
-  const expirationTime = createTime + maxInactiveInterval * 1000
-  return currentTime > expirationTime
+  const expirationTime = new Date(createTime).getTime() + maxInactiveInterval * 1000
+  return Date.now() > expirationTime
 }
 
 export const ManageSessions: React.FC = () => {
@@ -53,9 +50,7 @@ export const ManageSessions: React.FC = () => {
     async (authKey: string) => {
       setLoading(authKey)
       try {
-        await removeSession({
-          authKey: authKey,
-        })
+        await removeSession({ authKey })
         await refetch()
       } catch (error) {
         console.error(error)
@@ -135,11 +130,7 @@ const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove, loading 
 
   const handleCopy = (key: string) => {
     copyToClipboard(key, (value) => {
-      if (value) {
-        setCopiedKeys((prev) => [...prev, key])
-      } else {
-        setCopiedKeys((prev) => prev.filter((item) => item !== key))
-      }
+      setCopiedKeys((prev) => (value ? [...prev, key] : prev.filter((item) => item !== key)))
     })
   }
 
