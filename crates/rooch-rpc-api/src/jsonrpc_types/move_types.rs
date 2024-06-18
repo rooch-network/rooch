@@ -38,6 +38,7 @@ pub type FunctionIdView = StrView<FunctionId>;
 pub type AccessPathView = StrView<AccessPath>;
 pub type IdentifierView = StrView<Identifier>;
 pub type ObjectIDView = StrView<ObjectID>;
+pub type ObjectIDViewVector = Vec<ObjectIDView>;
 
 impl_str_view_for! {TypeTag StructTag FunctionId AccessPath Identifier ObjectID}
 

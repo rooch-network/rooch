@@ -12,10 +12,10 @@ use move_cli::{base::prove::Prove, Move};
 use rooch_types::error::RoochResult;
 use serde_json::Value;
 
-/// Inspect test coverage for this package. A previous test run with the `--coverage` flag must
-/// have previously been run.
+/// Run the Move Prover on the package at `path`. If no path is provided defaults to current
+/// directory. Use `.. prove .. -- <options>` to pass on options to the prover.
 #[derive(Parser)]
-#[clap(name = "coverage")]
+#[clap(name = "prove")]
 pub struct ProveCommand {
     #[clap(flatten)]
     pub prove: Prove,
