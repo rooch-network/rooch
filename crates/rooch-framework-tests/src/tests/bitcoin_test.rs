@@ -1,16 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::HashMap;
-
 use crate::binding_test;
 use bitcoin::consensus::deserialize;
 use bitcoin::hashes::Hash;
 use bitcoin::{Block, OutPoint, Transaction, TxOut};
 use hex::FromHex;
+use include_dir::{include_dir, Dir};
 use moveos_types::access_path::AccessPath;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::state_resolver::StateReader;
+use rooch_types::bitcoin::network::Network;
 use rooch_types::bitcoin::ord;
 use rooch_types::bitcoin::ord::{Inscription, InscriptionID};
 use rooch_types::bitcoin::types::{self, Header};
@@ -18,7 +18,9 @@ use rooch_types::bitcoin::utxo::{self, UTXO};
 use rooch_types::into_address::IntoAddress;
 use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::L1BlockWithBody;
-use tracing::debug;
+use std::collections::HashMap;
+use std::path::PathBuf;
+use tracing::{debug, info};
 
 #[test]
 fn test_submit_block() {
@@ -60,7 +62,7 @@ fn test_submit_block() {
         bitcoin_module.get_latest_block_height().unwrap().unwrap(),
         height
     );
-    println!("txdata len: {}", bitcoin_txdata.len());
+    info!("txdata len: {}", bitcoin_txdata.len());
 
     check_utxo(bitcoin_txdata, &binding_test);
 
@@ -69,28 +71,16 @@ fn test_submit_block() {
 
     let now_milliseconds = timestamp_module.now_milliseconds().unwrap();
     let duration = std::time::Duration::from_secs(block_header.time as u64);
-    println!(
+    info!(
         "now_milliseconds: {}, header_timestamp: {}",
         now_milliseconds, block_header.time as u64
     );
     assert_eq!(now_milliseconds, duration.as_millis() as u64);
 }
 
-//this test takes too long time in debug mod run it in release mod, use command:
-//RUST_LOG=debug cargo test --release --package rooch-framework-tests --lib -- --include-ignored tests::bitcoin_test::test_utxo_progress
-#[test]
-fn test_utxo_progress() {
-    if cfg!(debug_assertions) {
-        println!("test_utxo_progress is ignored in debug mode, please run it in release mode");
-        return;
-    }
-    let _ = tracing_subscriber::fmt::try_init();
+fn test_block_process(height: u64, block: Block) {
     let mut binding_test = binding_test::RustBindingTest::new().unwrap();
 
-    let btc_block_hex = include_str!("../blocks/818677.txt");
-    let btc_block_bytes = Vec::<u8>::from_hex(btc_block_hex).unwrap();
-    let height = 818677u64;
-    let block: Block = deserialize(&btc_block_bytes).unwrap();
     let block_hash = block.header.block_hash();
     let move_block = rooch_types::bitcoin::types::Block::from(block.clone());
 
@@ -192,4 +182,41 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
             inscription.payload.body.unwrap_or_default()
         );
     }
+}
+
+//this test takes too long time in debug mod run it in release mod, use command:
+//RUST_LOG=debug cargo test --release --package rooch-framework-tests --lib -- --include-ignored tests::bitcoin_test::test_real_bocks
+#[test]
+fn test_real_bocks() {
+    let _ = tracing_subscriber::fmt::try_init();
+    if cfg!(debug_assertions) {
+        info!("test_real_bocks is ignored in debug mode, please run it in release mode");
+        return;
+    }
+    let cases = vec![
+        (Network::Bitcoin, 818677u64),
+        (Network::Testnet, 2821527u64),
+    ];
+    for (network, height) in cases {
+        info!(
+            "test_real_bocks: network: {:?}, height: {}",
+            network, height
+        );
+        let block = load_block(network, height);
+        test_block_process(height, block);
+    }
+}
+// Download the bitcoin block via the following command:
+// curl -sSL "https://mempool.space/api/block/000000000000000000020750f322f4e72e99c2f0b9738fb4f46607860bd18c13/raw" > crates/rooch-framework-tests/blocks/bitcoin/818677.blob
+// curl -sSL "https://mempool.space/testnet/api/block/0000000016412abe1778a347da773ff8bc087ad1a91ae5daad349bc268285c2d/raw" > crates/rooch-framework-tests/blocks/testnet/2821527.blob
+pub(crate) const STATIC_BLOCK_DIR: Dir = include_dir!("blocks");
+
+fn load_block(network: Network, height: u64) -> Block {
+    let block_file = PathBuf::from(network.to_string()).join(format!("{}.blob", height));
+    let btc_block_bytes = STATIC_BLOCK_DIR
+        .get_file(block_file.as_path())
+        .unwrap()
+        .contents();
+    let block: Block = deserialize(btc_block_bytes).unwrap();
+    block
 }
