@@ -4,10 +4,18 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::TX_ACCUMULATOR_NODE_PREFIX_NAME;
 use accumulator::{AccumulatorNode, AccumulatorTreeStore};
 use anyhow::Result;
 use moveos_types::h256::H256;
-use raw_store::CodecKVStore;
+use raw_store::{derive_store, CodecKVStore, StoreInstance};
+
+derive_store!(
+    TransactionAccumulatorStore,
+    H256,
+    AccumulatorNode,
+    TX_ACCUMULATOR_NODE_PREFIX_NAME
+);
 
 #[derive(Clone)]
 pub struct AccumulatorStore<S>
@@ -15,6 +23,16 @@ where
     S: CodecKVStore<H256, AccumulatorNode>,
 {
     store: S,
+}
+
+impl AccumulatorStore<TransactionAccumulatorStore> {
+    pub fn new_transaction_accumulator_store(
+        instance: StoreInstance,
+    ) -> AccumulatorStore<TransactionAccumulatorStore> {
+        Self {
+            store: TransactionAccumulatorStore::new(instance),
+        }
+    }
 }
 
 impl<S> AccumulatorTreeStore for AccumulatorStore<S>

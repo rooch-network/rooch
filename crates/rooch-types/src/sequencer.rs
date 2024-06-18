@@ -1,23 +1,31 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use accumulator::accumulator_info::AccumulatorInfo;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use std::fmt::Debug;
 
-#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
-pub struct SequencerOrder {
+#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone)]
+pub struct SequencerInfo {
     pub last_order: u64,
+    pub last_accumulator_info: AccumulatorInfo,
 }
 
-impl fmt::Display for SequencerOrder {
+impl fmt::Display for SequencerInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "SequencerOrder {{ last_order: {} }}", self.last_order)
+        write!(
+            f,
+            "SequencerInfo {{ last_order: {}, last_accumulator_info: {:?} }}",
+            self.last_order, self.last_accumulator_info
+        )
     }
 }
 
-impl SequencerOrder {
-    pub fn new(last_order: u64) -> Self {
-        SequencerOrder { last_order }
+impl SequencerInfo {
+    pub fn new(last_order: u64, last_accumulator_info: AccumulatorInfo) -> Self {
+        SequencerInfo {
+            last_order,
+            last_accumulator_info,
+        }
     }
 }

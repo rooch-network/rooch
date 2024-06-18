@@ -30,5 +30,6 @@ raw-store = { workspace = true }
 moveos-config = { workspace = true }
 moveos-types = { workspace = true }
 moveos-store = { workspace = true }
+accumulator = { workspace = true }
 
 rooch-types = { workspace = true }

@@ -52,6 +52,7 @@ moveos-types = { workspace = true }
 move-bytecode-utils = { workspace = true }
 raw-store = { workspace = true }
 moveos-config = { workspace = true }
+accumulator = { workspace = true }
 
 rooch-config = { workspace = true }
 rooch-types = { workspace = true }

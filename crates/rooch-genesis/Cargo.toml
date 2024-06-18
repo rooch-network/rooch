@@ -54,6 +54,7 @@ moveos-stdlib = { workspace = true }
 moveos = { workspace = true }
 moveos-store = { workspace = true }
 moveos-config = { workspace = true }
+accumulator = { workspace = true }
 
 rooch-framework = { workspace = true }
 rooch-types = { workspace = true }

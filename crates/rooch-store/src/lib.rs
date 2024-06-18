@@ -1,24 +1,28 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::accumulator_store::{AccumulatorStore, TransactionAccumulatorStore};
 use crate::meta_store::{MetaDBStore, MetaStore};
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
+use accumulator::AccumulatorTreeStore;
 use anyhow::Result;
 use moveos_types::h256::H256;
 use once_cell::sync::Lazy;
 use raw_store::{ColumnFamilyName, StoreInstance};
-use rooch_types::sequencer::SequencerOrder;
+use rooch_types::sequencer::SequencerInfo;
 use rooch_types::transaction::LedgerTransaction;
 use std::fmt::{Debug, Display, Formatter};
+use std::sync::Arc;
 
+pub mod accumulator_store;
 pub mod meta_store;
 pub mod transaction_store;
 
 // pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
 pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction";
 pub const TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME: ColumnFamilyName = "tx_sequence_info_mapping";
-
-pub const META_SEQUENCER_ORDER_PREFIX_NAME: ColumnFamilyName = "meta_sequencer_order";
+pub const META_SEQUENCER_INFO_PREFIX_NAME: ColumnFamilyName = "meta_sequencer_info";
+pub const TX_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "transaction_acc_node";
 
 ///db store use prefix_name vec to init
 /// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
@@ -26,7 +30,8 @@ static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     vec![
         TRANSACTION_PREFIX_NAME,
         TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME,
-        META_SEQUENCER_ORDER_PREFIX_NAME,
+        META_SEQUENCER_INFO_PREFIX_NAME,
+        TX_ACCUMULATOR_NODE_PREFIX_NAME,
     ]
 });
 
@@ -43,13 +48,17 @@ impl StoreMeta {
 pub struct RoochStore {
     pub transaction_store: TransactionDBStore,
     pub meta_store: MetaDBStore,
+    pub transaction_accumulator_store: AccumulatorStore<TransactionAccumulatorStore>,
 }
 
 impl RoochStore {
     pub fn new(instance: StoreInstance) -> Result<Self> {
         let store = Self {
             transaction_store: TransactionDBStore::new(instance.clone()),
-            meta_store: MetaDBStore::new(instance),
+            meta_store: MetaDBStore::new(instance.clone()),
+            transaction_accumulator_store: AccumulatorStore::new_transaction_accumulator_store(
+                instance,
+            ),
         };
         Ok(store)
     }
@@ -60,6 +69,10 @@ impl RoochStore {
 
     pub fn get_meta_store(&self) -> &MetaDBStore {
         &self.meta_store
+    }
+
+    pub fn get_transaction_accumulator_store(&self) -> Arc<dyn AccumulatorTreeStore> {
+        Arc::new(self.transaction_accumulator_store.clone())
     }
 }
 
@@ -76,9 +89,7 @@ impl Debug for RoochStore {
 
 impl TransactionStore for RoochStore {
     fn save_transaction(&self, tx: LedgerTransaction) -> Result<()> {
-        let sequencer_order = SequencerOrder::new(tx.sequence_info.tx_order);
-        self.transaction_store.save_transaction(tx)?;
-        self.meta_store.save_sequencer_order(sequencer_order)
+        self.transaction_store.save_transaction(tx)
     }
 
     fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<LedgerTransaction>> {
@@ -98,11 +109,11 @@ impl TransactionStore for RoochStore {
 }
 
 impl MetaStore for RoochStore {
-    fn get_sequencer_order(&self) -> Result<Option<SequencerOrder>> {
-        self.get_meta_store().get_sequencer_order()
+    fn get_sequencer_info(&self) -> Result<Option<SequencerInfo>> {
+        self.get_meta_store().get_sequencer_info()
     }
 
-    fn save_sequencer_order(&self, sequencer_order: SequencerOrder) -> Result<()> {
-        self.get_meta_store().save_sequencer_order(sequencer_order)
+    fn save_sequencer_info(&self, sequencer_info: SequencerInfo) -> Result<()> {
+        self.get_meta_store().save_sequencer_info(sequencer_info)
     }
 }
