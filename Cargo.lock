@@ -2803,15 +2803,6 @@ dependencies = [
 
 [[package]]
 name = "dirs"
-version = "4.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca3aa72a6f96ea37bbc5aa912f6788242832f75369bdfdadcb0e38423f100059"
-dependencies = [
- "dirs-sys 0.3.7",
-]
-
-[[package]]
-name = "dirs"
 version = "5.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "44c45a9d03d6676652bcb5e724c7e988de1acad23a711b5217ab9cbecbec2225"
@@ -3463,7 +3454,7 @@ checksum = "66244a771d9163282646dbeffe0e6eca4dda4146b6498644e678ac6089b11edd"
 dependencies = [
  "cfg-if",
  "const-hex",
- "dirs 5.0.1",
+ "dirs",
  "dunce",
  "ethers-core",
  "glob",
@@ -6505,7 +6496,7 @@ dependencies = [
  "anyhow",
  "clap 4.5.4",
  "coerce",
- "dirs 4.0.0",
+ "dirs",
  "once_cell",
  "serde 1.0.202",
  "serde_with 2.3.3",
@@ -8877,7 +8868,7 @@ dependencies = [
  "codespan-reporting",
  "csv",
  "datatest-stable 0.1.1",
- "dirs 4.0.0",
+ "dirs",
  "fastcrypto",
  "framework-builder",
  "framework-release",
@@ -9020,7 +9011,7 @@ dependencies = [
  "anyhow",
  "clap 4.5.4",
  "coerce",
- "dirs 4.0.0",
+ "dirs",
  "dirs-next",
  "jsonrpsee 0.16.3",
  "moveos-config",
@@ -9662,7 +9653,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "clap 4.5.4",
- "dirs 4.0.0",
+ "dirs",
  "ethers",
  "fastcrypto",
  "futures",
@@ -11212,7 +11203,7 @@ version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "11297baafe5fa0c99d5722458eac6a5e25c01eb1b8e5cd137f54079093daa7a4"
 dependencies = [
- "dirs 5.0.1",
+ "dirs",
  "fs2",
  "hex",
  "once_cell",
