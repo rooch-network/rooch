@@ -60,15 +60,7 @@ export const RoochAddress = () => {
         </Button>
       </div>
       <div className="w-full bg-zinc-100 dark:bg-zinc-700 rounded-lg p-4 flex items-center justify-between">
-        <span className="text-zinc-900 dark:text-white truncate md:hidden flex items-center justify-start">
-          <img
-            src="/rooch_white_logo.svg"
-            alt="rooch logo"
-            className="w-4 h-4 rounded-full bg-zinc-900 p-0.5 mr-2"
-          />
-          {/*{formatAddress(account.getBech32RoochAddress())}*/}
-        </span>
-        <span className="text-zinc-900 dark:text-white truncate hidden md:flex items-center justify-start">
+        <span className="text-zinc-900 dark:text-white truncate flex items-center justify-start">
           <img
             src="/rooch_white_logo.svg"
             alt="rooch logo"
