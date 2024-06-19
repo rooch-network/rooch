@@ -8,9 +8,8 @@ import CustomPagination from '@/components/custom-pagination.tsx'
 import { hexToString } from '@/utils/format.ts'
 import { AlertCircle, Wallet } from 'lucide-react'
 
+import { CursorType } from '@/common/interface'
 import type { IndexerStateID } from '@roochnetwork/rooch-sdk'
-
-type CursorType = IndexerStateID | null
 
 export const BitcoinAssetsOrdi: React.FC = () => {
   const account = useCurrentAccount()
