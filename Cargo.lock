@@ -10523,6 +10523,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_cow"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64e84ce5596a72f0c4c60759a10ff8c22d5eaf227b0dc2789c8746193309058b"
+dependencies = [
+ "serde 1.0.203",
+]
+
+[[package]]
 name = "serde_derive"
 version = "1.0.203"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10675,13 +10684,13 @@ dependencies = [
 
 [[package]]
 name = "serenity"
-version = "0.12.1"
+version = "0.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c64da29158bb55d70677cacd4f4f8eab1acef005fb830d9c3bea411b090e96a9"
+checksum = "880a04106592d0a8f5bdacb1d935889bfbccb4a14f7074984d9cd857235d34ac"
 dependencies = [
  "arrayvec 0.7.4",
  "async-trait",
- "base64 0.21.7",
+ "base64 0.22.1",
  "bitflags 2.5.0",
  "bytes",
  "dashmap",
@@ -10694,6 +10703,7 @@ dependencies = [
  "reqwest 0.11.27",
  "secrecy",
  "serde 1.0.203",
+ "serde_cow",
  "serde_json",
  "time",
  "tokio",
