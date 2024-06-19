@@ -29,6 +29,8 @@ use crate::metadata::{
     is_std_option_type,
 };
 
+const MAX_DATA_STRUCT_TYPE_DEPTH: u64 = 16;
+
 pub static INIT_FN_NAME_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("init").unwrap());
 
@@ -1285,7 +1287,12 @@ where
             None => return (false, ErrorCode::INVALID_DATA_STRUCT),
             Some(struct_fields_def) => {
                 let field_type = struct_fields_def.signature.0.clone();
-                match check_depth_of_type(current_module, &field_type, 16, 1) {
+                match check_depth_of_type(
+                    current_module,
+                    &field_type,
+                    MAX_DATA_STRUCT_TYPE_DEPTH,
+                    1,
+                ) {
                     Ok(_) => {}
                     Err(_) => return (false, ErrorCode::INVALID_DATA_STRUCT_OVER_MAX_TYPE_DEPTH),
                 }
@@ -1824,7 +1831,6 @@ fn calculate_depth_of_struct(
     let bin_view = BinaryIndexedView::Module(caller_module);
     let struct_handle = bin_view.struct_handle_at(struct_idx);
     let struct_name_ident = bin_view.identifier_at(struct_handle.name).to_string();
-    // println!("11111111111111111 caller_module {:?} struct_name_ident {:?}", caller_module.self_id().short_str_lossless(), struct_name_ident);
 
     let mut struct_fields = Vec::new();
     if let Some(struct_defs) = bin_view.struct_defs() {
@@ -1833,7 +1839,7 @@ fn calculate_depth_of_struct(
             let struct_handle = bin_view.struct_handle_at(struct_hand_idx);
             let struct_def_name = bin_view.identifier_at(struct_handle.name).to_string();
             if struct_def_name == struct_name_ident {
-                let field_count = struct_def.declared_field_count().unwrap() as u16;
+                let field_count = struct_def.declared_field_count().unwrap();
                 for field_idx in 0..field_count {
                     let field_def = struct_def.field(field_idx as usize).unwrap();
                     struct_fields.push(field_def);
@@ -1891,7 +1897,7 @@ fn calculate_depth_of_type(
             subst_struct_formula.scale(1);
             subst_struct_formula
         }
-        SignatureToken::TypeParameter(ty_idx) => TypeDepthFormula::type_parameter(*ty_idx as u16),
+        SignatureToken::TypeParameter(ty_idx) => TypeDepthFormula::type_parameter(*ty_idx),
         _ => {
             return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH).finish(Location::Undefined));
         }
