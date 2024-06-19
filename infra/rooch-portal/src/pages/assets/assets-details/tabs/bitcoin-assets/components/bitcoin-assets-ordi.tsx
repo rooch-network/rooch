@@ -40,12 +40,12 @@ export const BitcoinAssetsOrdi: React.FC = () => {
     isLoading,
     isError,
   } = useRoochClientQuery('queryInscriptions', {
-    filter: {
-      owner: 'tb1pr6mdxnc348lua02c32ad4uyyaw3kavjz4c8jzkh5ffvuq4ryvxhs70g2gm',
-    },
+    filter: 'all',
     cursor: queryOptions.cursor as IndexerStateID | null,
     limit: queryOptions.pageSize,
   })
+
+  console.log(result)
 
   useEffect(() => {
     if (result && result.has_next_page) {
