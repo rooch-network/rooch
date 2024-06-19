@@ -6,16 +6,21 @@ use crate::meta_store::{MetaDBStore, MetaStore};
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
 use accumulator::AccumulatorTreeStore;
 use anyhow::Result;
+use moveos_config::store_config::RocksdbConfig;
+use moveos_config::DataDirPath;
 use moveos_types::h256::H256;
 use once_cell::sync::Lazy;
+use raw_store::rocks::RocksDB;
 use raw_store::{ColumnFamilyName, StoreInstance};
 use rooch_types::sequencer::SequencerInfo;
 use rooch_types::transaction::LedgerTransaction;
 use std::fmt::{Debug, Display, Formatter};
+use std::path::Path;
 use std::sync::Arc;
 
 pub mod accumulator_store;
 pub mod meta_store;
+pub mod tests;
 pub mod transaction_store;
 
 // pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
@@ -52,7 +57,17 @@ pub struct RoochStore {
 }
 
 impl RoochStore {
-    pub fn new(instance: StoreInstance) -> Result<Self> {
+    pub fn new(db_path: &Path) -> Result<Self> {
+        let instance = StoreInstance::new_db_instance(RocksDB::new(
+            db_path,
+            StoreMeta::get_column_family_names().to_vec(),
+            RocksdbConfig::default(),
+            None,
+        )?);
+        Self::new_with_instance(instance)
+    }
+
+    pub fn new_with_instance(instance: StoreInstance) -> Result<Self> {
         let store = Self {
             transaction_store: TransactionDBStore::new(instance.clone()),
             meta_store: MetaDBStore::new(instance.clone()),
@@ -61,6 +76,12 @@ impl RoochStore {
             ),
         };
         Ok(store)
+    }
+
+    pub fn mock_rooch_store() -> Result<(Self, DataDirPath)> {
+        let tmpdir = moveos_config::temp_dir();
+        //The testcases should hold the tmpdir to prevent the tmpdir from being deleted.
+        Ok((Self::new(tmpdir.path())?, tmpdir))
     }
 
     pub fn get_transaction_store(&self) -> &TransactionDBStore {
