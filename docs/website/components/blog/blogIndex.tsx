@@ -1,101 +1,95 @@
-import { getPagesUnderRoute,} from "nextra/context";
-import Link from "next/link";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/router";
-import { FilterButton } from "./filterButton";
-import ROOCH_TEAM from "../../data/team";
-import Image from "next/image";
+import { getPagesUnderRoute } from 'nextra/context'
+import Link from 'next/link'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/router'
+import { FilterButton } from './filterButton'
+import ROOCH_TEAM from '../../data/team'
+import Image from 'next/image'
 
 export default function BlogIndex({
-  textAllCategories = "All Categories",
-  textAllAuthors = "All Authors",
-  textMore = "Read more",
+  textAllCategories = 'All Categories',
+  textAllAuthors = 'All Authors',
+  textMore = 'Read more',
 }) {
-  const { locale } = useRouter();
-  const [selectedCategory, setSelectedCategory] = useState(textAllCategories);
-  const [selectedAuthor, setSelectedAuthor] = useState(textAllAuthors);
+  const { locale } = useRouter()
+  const [selectedCategory, setSelectedCategory] = useState(textAllCategories)
+  const [selectedAuthor, setSelectedAuthor] = useState(textAllAuthors)
 
-  const rawPages = getPagesUnderRoute("/blog");
-  const [pages, SetPages] = useState(rawPages);
-  const [pagesFiltered, setPagesFiltered] = useState(pages);
+  const rawPages = getPagesUnderRoute('/blog')
+  const [pages, SetPages] = useState(rawPages)
+  const [pagesFiltered, setPagesFiltered] = useState(pages)
 
   // get all the authors
   const [authors, __] = useState(() => {
-    let _authors = [textAllAuthors];
+    let _authors = [textAllAuthors]
 
     pages.forEach((page) => {
-      _authors = _authors.concat(page.frontMatter.author);
-    });
+      _authors = _authors.concat(page.frontMatter.author)
+    })
 
-    return Array.from(new Set(_authors));
-  });
+    return Array.from(new Set(_authors))
+  })
 
   // get all the categories
   const [categories, ___] = useState(() => {
-    let _categories = [textAllCategories];
+    let _categories = [textAllCategories]
 
     pages.forEach((page) => {
       if (page.frontMatter.category) {
-        _categories = _categories.concat(page.frontMatter.category);
+        _categories = _categories.concat(page.frontMatter.category)
       }
-    });
+    })
 
-    return Array.from(new Set(_categories));
-  });
+    return Array.from(new Set(_categories))
+  })
 
   // process date
   useEffect(() => {
-    let _pages = [];
+    let _pages = []
     _pages = pages.map((page: any) => {
-      let _page = page;
+      let _page = page
 
       const options: Intl.DateTimeFormatOptions = {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      };
-      let dateObject = new Date(page.frontMatter?.date);
-      _page.dateNumber = dateObject.getTime();
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }
+      let dateObject = new Date(page.frontMatter?.date)
+      _page.dateNumber = dateObject.getTime()
 
-      const formmatedDate = dateObject.toLocaleDateString(page.locale, options);
+      const formmatedDate = dateObject.toLocaleDateString(page.locale, options)
 
       _page.frontMatter.date =
-        formmatedDate != "Invalid Date"
-          ? formmatedDate
-          : _page.frontMatter.date;
+        formmatedDate != 'Invalid Date' ? formmatedDate : _page.frontMatter.date
 
-      return _page;
-    });
-    SetPages(_pages);
-  }, []);
+      return _page
+    })
+    SetPages(_pages)
+  }, [])
 
   // filter pages
   useEffect(() => {
-    let _pages = [];
+    let _pages = []
 
     // filter based on locale
-    _pages = pages.filter((page: any) => page.locale === locale);
+    _pages = pages.filter((page: any) => page.locale === locale)
 
     // filter based on selected author and category
-    if (
-      selectedAuthor === textAllAuthors &&
-      selectedCategory == textAllCategories
-    ) {
-      _pages = _pages;
+    if (selectedAuthor === textAllAuthors && selectedCategory == textAllCategories) {
+      _pages = _pages
     } else {
       _pages = _pages.filter((page) => {
-        const _author = String(page.frontMatter.author);
-        const _category = String(page.frontMatter.category);
+        const _author = String(page.frontMatter.author)
+        const _category = String(page.frontMatter.category)
         return (
           (_author == selectedAuthor && _category == selectedCategory) ||
-          (_author == selectedAuthor &&
-            selectedCategory == textAllCategories) ||
+          (_author == selectedAuthor && selectedCategory == textAllCategories) ||
           (selectedAuthor == textAllAuthors && _category == selectedCategory)
-        );
-      });
+        )
+      })
     }
-    setPagesFiltered(_pages);
-  }, [selectedCategory, selectedAuthor]);
+    setPagesFiltered(_pages)
+  }, [selectedCategory, selectedAuthor])
 
   return (
     <div className="mt-10">
@@ -107,7 +101,7 @@ export default function BlogIndex({
             avatar: undefined,
           }))}
           onClick={(tag) => {
-            setSelectedCategory(tag);
+            setSelectedCategory(tag)
           }}
         />
         <FilterButton
@@ -117,26 +111,22 @@ export default function BlogIndex({
             avatar: ROOCH_TEAM[author] ? ROOCH_TEAM[author].avatar : undefined,
           }))}
           onClick={(author) => {
-            setSelectedAuthor(author);
+            setSelectedAuthor(author)
           }}
         />
       </div>
 
       {pagesFiltered
         .sort((p1, p2) =>
-          p1.dateNumber < p2.dateNumber
-            ? 1
-            : p1.dateNumber > p2.dateNumber
-              ? -1
-              : 0
+          p1.dateNumber < p2.dateNumber ? 1 : p1.dateNumber > p2.dateNumber ? -1 : 0,
         )
         .map((page) => {
           return (
             <div key={page.route}>
               <Link href={page.route}>
-                <button className="mb-10 w-full text-left postbox focus:bg-gray-100 dark:focus:bg-gray-800 pl-4 py-6 rounded-2xl ">
+                <button className="mb-10 w-full text-left postbox focus:bg-zinc-100 dark:focus:bg-zinc-800 pl-4 py-6 rounded-2xl ">
                   {/* Post Category */}
-                  <p className="-mb-1 text-sm uppercase inline-block text-gray-500 ">
+                  <p className="-mb-1 text-sm uppercase inline-block text-zinc-500 ">
                     {page.frontMatter.category}
                   </p>
 
@@ -167,23 +157,18 @@ export default function BlogIndex({
 
                   {/* Post Description */}
                   {page.frontMatter.description ? (
-                    <p className="opacity-80 mt-2 leading-7">
-                      {page.frontMatter.description}
-                    </p>
-                  ) : null
-                  }
+                    <p className="opacity-80 mt-2 leading-7">{page.frontMatter.description}</p>
+                  ) : null}
 
                   {/* Post Date */}
                   {page.frontMatter.date ? (
-                    <p className="opacity-50 text-sm leading-7">
-                      {page.frontMatter.date}
-                    </p>
+                    <p className="opacity-50 text-sm leading-7">{page.frontMatter.date}</p>
                   ) : null}
                 </button>
               </Link>
             </div>
-          );
+          )
         })}
     </div>
-  );
+  )
 }
