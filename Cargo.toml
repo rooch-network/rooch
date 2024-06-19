@@ -167,7 +167,7 @@ more-asserts = "0.3.0"
 num-derive = "0.3.3"
 num-traits = "0.2.15"
 once_cell = "1.10.0"
-parking_lot = "0.12.1"
+parking_lot = "0.12.3"
 pathdiff = "0.2.1"
 petgraph = "0.6.5"
 primitive-types = { version = "0.12.1", features = ["serde", "arbitrary"] }
