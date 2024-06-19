@@ -28,9 +28,9 @@ module bitcoin_move::genesis{
         utxo::genesis_init();
         ord::genesis_init(&genesis_account);
         bitcoin::genesis_init(&genesis_account, genesis_context.genesis_block_height);
-        //TODO put the reorg_pending_blocks in the genesis context when reset the genesis
-        let reorg_pending_blocks = 0;
-        pending_block::genesis_init(reorg_pending_blocks);
+        //TODO put the reorg_pending_block_count in the genesis context when reset the genesis
+        let reorg_pending_block_count = 0;
+        pending_block::genesis_init(reorg_pending_block_count);
     }
 
     #[test_only]

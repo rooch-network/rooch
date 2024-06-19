@@ -41,7 +41,7 @@ module bitcoin_move::pending_block{
         /// The latest pending block height
         latest_block_height: Option<u64>,
         /// How many blocks we should pending for reorg
-        reorg_pending_blocks: u64,
+        reorg_pending_block_count: u64,
     }
 
     /// InprocessBlock is used to store the block and txs that are being processed
@@ -58,11 +58,11 @@ module bitcoin_move::pending_block{
         success: bool,
     }
 
-    public(friend) fun genesis_init(reorg_pending_blocks: u64){
+    public(friend) fun genesis_init(reorg_pending_block_count: u64){
         let store_obj = object::new_named_object(PendingStore{
             pending_blocks: simple_map::new(),
             latest_block_height: option::none(),
-            reorg_pending_blocks,
+            reorg_pending_block_count,
         });
         object::transfer_extend(store_obj, @bitcoin_move);
     }
@@ -197,7 +197,7 @@ module bitcoin_move::pending_block{
         let store = borrow_mut_store();
         let block_obj = take_pending_block(block_hash);
         let latest_block_height = *option::borrow(&store.latest_block_height);
-        assert!(object::borrow(&block_obj).block_height + store.reorg_pending_blocks >= latest_block_height, ErrorNeedToWaitMoreBlocks);
+        assert!(object::borrow(&block_obj).block_height + store.reorg_pending_block_count >= latest_block_height, ErrorNeedToWaitMoreBlocks);
         assert!(object::contains_field(&block_obj, txid), ErrorPendingTxNotFound);
         let tx = object::remove_field(&mut block_obj, txid);
         let inprocess_block = InprocessBlock{
@@ -222,7 +222,11 @@ module bitcoin_move::pending_block{
         assert!(types::is_coinbase_tx(&tx), ErrorPendingBlockNotFinished);
         let pending_block = object::borrow_mut(&mut block_obj);
         pending_block.processed_tx = pending_block.processed_tx + 1;
-        remove_pending_block(block_obj, true)
+        let block_height = pending_block.block_height;
+        let header = remove_pending_block(block_obj, true);
+        let store = borrow_mut_store();
+        simple_map::remove(&mut store.pending_blocks, &block_height);
+        header
     }
 
     public(friend) fun inprocess_block_flotsams_mut(inprocess_block: &mut InprocessBlock): &mut vector<Flotsam>{
@@ -262,7 +266,7 @@ module bitcoin_move::pending_block{
             return option::none()
         };
         let latest_block_height = *option::borrow(&store.latest_block_height);
-        let ready_block_height = latest_block_height - store.reorg_pending_blocks;
+        let ready_block_height = latest_block_height - store.reorg_pending_block_count;
         if(!simple_map::contains_key(&store.pending_blocks, &ready_block_height)){
             return option::none()
         };
@@ -282,5 +286,10 @@ module bitcoin_move::pending_block{
     public fun get_latest_block_height(): Option<u64>{
         let store = borrow_store();
         store.latest_block_height
+    }
+
+    public fun get_reorg_pending_block_count(): u64{
+        let store = borrow_store();
+        store.reorg_pending_block_count
     } 
 }

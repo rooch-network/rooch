@@ -26,6 +26,7 @@ PendingStore is used to store the pending blocks and txs, and handle the reorg
 -  [Function `inprocess_block_height`](#0x4_pending_block_inprocess_block_height)
 -  [Function `get_ready_pending_txs`](#0x4_pending_block_get_ready_pending_txs)
 -  [Function `get_latest_block_height`](#0x4_pending_block_get_latest_block_height)
+-  [Function `get_reorg_pending_block_count`](#0x4_pending_block_get_reorg_pending_block_count)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -190,7 +191,7 @@ This is a hot potato struct, can not be store and drop
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_genesis_init">genesis_init</a>(reorg_pending_blocks: u64)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_genesis_init">genesis_init</a>(reorg_pending_block_count: u64)
 </code></pre>
 
 
@@ -324,4 +325,15 @@ Get the pending txs which are ready to be processed
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="pending_block.md#0x4_pending_block_get_latest_block_height">get_latest_block_height</a>(): <a href="_Option">option::Option</a>&lt;u64&gt;
+</code></pre>
+
+
+
+<a name="0x4_pending_block_get_reorg_pending_block_count"></a>
+
+## Function `get_reorg_pending_block_count`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="pending_block.md#0x4_pending_block_get_reorg_pending_block_count">get_reorg_pending_block_count</a>(): u64
 </code></pre>
