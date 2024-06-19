@@ -92,7 +92,6 @@ impl SequencerActor {
             .save_sequencer_info(sequencer_info.clone())?;
         self.rooch_store.save_transaction(tx.clone())?;
         info!("sequencer tx: {} order: {:?}", hash, tx_order);
-        self.last_sequencer_info.last_order = tx_order;
         self.last_sequencer_info = sequencer_info;
         Ok(tx)
     }
