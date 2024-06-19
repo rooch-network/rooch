@@ -7,7 +7,9 @@ use crate::jsonrpc_types::{
     TransactionView,
 };
 use rooch_types::indexer::transaction::TransactionFilter;
-use rooch_types::transaction::{L1Block, LedgerTransaction, LedgerTxData, TransactionWithInfo};
+use rooch_types::transaction::{
+    L1Block, L1Transaction, LedgerTransaction, LedgerTxData, TransactionWithInfo,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -29,9 +31,27 @@ impl From<L1Block> for L1BlockView {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct L1TransactionView {
+    pub chain_id: u64,
+    pub block_hash: BytesView,
+    pub txid: BytesView,
+}
+
+impl From<L1Transaction> for L1TransactionView {
+    fn from(tx: L1Transaction) -> Self {
+        Self {
+            chain_id: tx.chain_id.id(),
+            block_hash: tx.block_hash.into(),
+            txid: tx.txid.into(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum LedgerTxDataView {
     L1Block(L1BlockView),
+    L1Tx(L1TransactionView),
     L2Tx(TransactionView),
 }
 
@@ -42,6 +62,7 @@ impl LedgerTxDataView {
     ) -> Self {
         match data {
             LedgerTxData::L1Block(block) => LedgerTxDataView::L1Block(block.into()),
+            LedgerTxData::L1Tx(tx) => LedgerTxDataView::L1Tx(tx.into()),
             LedgerTxData::L2Tx(tx) => LedgerTxDataView::L2Tx(
                 TransactionView::new_from_rooch_transaction(tx, sender_bitcoin_address),
             ),

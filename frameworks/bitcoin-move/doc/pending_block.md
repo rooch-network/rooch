@@ -11,6 +11,7 @@ PendingStore is used to store the pending blocks and txs, and handle the reorg
 -  [Resource `PendingStore`](#0x4_pending_block_PendingStore)
 -  [Struct `InprocessBlock`](#0x4_pending_block_InprocessBlock)
 -  [Struct `ReorgEvent`](#0x4_pending_block_ReorgEvent)
+-  [Struct `PendingTxs`](#0x4_pending_block_PendingTxs)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_pending_block_genesis_init)
 -  [Function `new_pending_block_id`](#0x4_pending_block_new_pending_block_id)
@@ -23,6 +24,8 @@ PendingStore is used to store the pending blocks and txs, and handle the reorg
 -  [Function `inprocess_block_tx`](#0x4_pending_block_inprocess_block_tx)
 -  [Function `inprocess_block_header`](#0x4_pending_block_inprocess_block_header)
 -  [Function `inprocess_block_height`](#0x4_pending_block_inprocess_block_height)
+-  [Function `get_ready_pending_txs`](#0x4_pending_block_get_ready_pending_txs)
+-  [Function `get_latest_block_height`](#0x4_pending_block_get_latest_block_height)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -89,6 +92,17 @@ This is a hot potato struct, can not be store and drop
 
 
 <pre><code><b>struct</b> <a href="pending_block.md#0x4_pending_block_ReorgEvent">ReorgEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<a name="0x4_pending_block_PendingTxs"></a>
+
+## Struct `PendingTxs`
+
+
+
+<pre><code><b>struct</b> <a href="pending_block.md#0x4_pending_block_PendingTxs">PendingTxs</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -287,4 +301,27 @@ This is a hot potato struct, can not be store and drop
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_inprocess_block_height">inprocess_block_height</a>(inprocess_block: &<a href="pending_block.md#0x4_pending_block_InprocessBlock">pending_block::InprocessBlock</a>): u64
+</code></pre>
+
+
+
+<a name="0x4_pending_block_get_ready_pending_txs"></a>
+
+## Function `get_ready_pending_txs`
+
+Get the pending txs which are ready to be processed
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="pending_block.md#0x4_pending_block_get_ready_pending_txs">get_ready_pending_txs</a>(): <a href="_Option">option::Option</a>&lt;<a href="pending_block.md#0x4_pending_block_PendingTxs">pending_block::PendingTxs</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_pending_block_get_latest_block_height"></a>
+
+## Function `get_latest_block_height`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="pending_block.md#0x4_pending_block_get_latest_block_height">get_latest_block_height</a>(): <a href="_Option">option::Option</a>&lt;u64&gt;
 </code></pre>

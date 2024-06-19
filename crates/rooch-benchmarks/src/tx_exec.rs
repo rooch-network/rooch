@@ -71,6 +71,7 @@ pub fn tx_exec_benchmark(c: &mut Criterion) {
                         .execute_l1_block(l1_block_with_body.clone())
                         .unwrap()
                 }
+                LedgerTxData::L1Tx(tx) => binding_test.execute_l1_tx(tx).unwrap(),
                 LedgerTxData::L2Tx(tx) => binding_test.execute(tx).unwrap(),
             }
         });

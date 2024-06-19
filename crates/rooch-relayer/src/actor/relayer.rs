@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::VecDeque;
+
 use super::bitcoin_relayer::BitcoinRelayer;
 use super::ethereum_relayer::EthereumRelayer;
 use super::messages::RelayTick;
@@ -20,6 +22,7 @@ use rooch_executor::proxy::ExecutorProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_types::address::BitcoinAddress;
 use rooch_types::crypto::RoochKeyPair;
+use rooch_types::transaction::L1Transaction;
 use tracing::{error, info, warn};
 
 pub struct RelayerActor {
@@ -89,7 +92,11 @@ impl RelayerActor {
                         let block_height = l1_block.block.block_height;
                         let result = self
                             .processor
-                            .execute_l1_block(ctx, l1_block, self.sequencer_bitcoin_address.clone())
+                            .execute_l1_block(
+                                ctx,
+                                l1_block.clone(),
+                                self.sequencer_bitcoin_address.clone(),
+                            )
                             .await?;
 
                         match result.execution_info.status {
@@ -98,6 +105,70 @@ impl RelayerActor {
                                     "Relayer execute relay block(hash: {}, height: {}) success",
                                     block_hash, block_height
                                 );
+                                //TODO lazy execute txs to handle reorg, currently we directly execute txs
+                                if l1_block.block.chain_id.is_bitcoin() {
+                                    let block =
+                                        bcs::from_bytes::<rooch_types::bitcoin::types::Block>(
+                                            &l1_block.block_body,
+                                        )?;
+                                    let block_hash = l1_block.block.block_hash.clone();
+                                    let mut l1_txs = block
+                                        .txdata
+                                        .iter()
+                                        .map(|tx| {
+                                            L1Transaction::new(
+                                                l1_block.block.chain_id,
+                                                block_hash.clone(),
+                                                tx.id.to_vec(),
+                                            )
+                                        })
+                                        .collect::<VecDeque<_>>();
+
+                                    //move coinbase tx to the last
+                                    let coinbase_tx =
+                                        l1_txs.pop_front().expect("coinbase tx should exist");
+                                    l1_txs.push_back(coinbase_tx);
+
+                                    for l1_tx in l1_txs {
+                                        let sequence_number = self
+                                            .executor
+                                            .get_sequence_number(self.sequencer_address)
+                                            .await?;
+                                        let tx_hash = l1_tx.tx_hash();
+                                        let txid = hex::encode(&l1_tx.txid);
+                                        let ctx = TxContext::new(
+                                            self.sequencer_address,
+                                            sequence_number,
+                                            self.max_gas_amount,
+                                            tx_hash,
+                                            l1_tx.tx_size(),
+                                        );
+                                        let result = self
+                                            .processor
+                                            .execute_l1_tx(
+                                                ctx,
+                                                l1_tx,
+                                                self.sequencer_bitcoin_address.clone(),
+                                            )
+                                            .await?;
+
+                                        match result.execution_info.status {
+                                            KeptVMStatus::Executed => {
+                                                info!(
+                                                    "Relayer execute relay tx(txid: {}) success",
+                                                    txid
+                                                );
+                                            }
+                                            _ => {
+                                                error!(
+                        "Relayer execute relay tx(txid: {}) failed, status: {:?}",
+                        txid, result.execution_info.status
+                    );
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
                             }
                             _ => {
                                 //TODO should we stop the service if the relayer failed
