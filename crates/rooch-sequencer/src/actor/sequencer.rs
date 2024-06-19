@@ -88,10 +88,12 @@ impl SequencerActor {
 
         let sequencer_info =
             SequencerInfo::new(tx.sequence_info.tx_order, self.tx_accumulator.get_info());
-        self.rooch_store.save_sequencer_info(sequencer_info)?;
+        self.rooch_store
+            .save_sequencer_info(sequencer_info.clone())?;
         self.rooch_store.save_transaction(tx.clone())?;
         info!("sequencer tx: {} order: {:?}", hash, tx_order);
         self.last_sequencer_info.last_order = tx_order;
+        self.last_sequencer_info = sequencer_info;
         Ok(tx)
     }
 }
