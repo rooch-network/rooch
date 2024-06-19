@@ -20,7 +20,8 @@ use std::sync::Arc;
 
 pub mod accumulator_store;
 pub mod meta_store;
-pub mod tests;
+#[cfg(test)]
+mod tests;
 pub mod transaction_store;
 
 // pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
