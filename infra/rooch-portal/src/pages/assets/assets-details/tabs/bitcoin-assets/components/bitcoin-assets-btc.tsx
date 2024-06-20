@@ -1,58 +1,53 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 import { useMemo, useRef, useState } from 'react'
-import {
-  useCurrentAccount,
-  // useCurrentAccount,
-  useRoochClientQuery,
-} from '@roochnetwork/rooch-sdk-kit'
+import { useCurrentAccount, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
+
+import { AlertCircle, Wallet } from 'lucide-react'
+import { CursorType } from '@/common/interface'
+import type { IndexerStateID } from '@roochnetwork/rooch-sdk'
 
 import { NoData } from '@/components/no-data.tsx'
 import CustomPagination from '@/components/custom-pagination.tsx'
-
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { AlertCircle, Wallet } from 'lucide-react'
 
-// test address
-// const testAddress = ''
-
-export const BitcoinAssetsBtc = () => {
+export const BitcoinAssetsBtc: React.FC = () => {
   const account = useCurrentAccount()
 
   // ** PAGINATION
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 1 })
-  const mapPageToNextCursor = useRef<{ [page: number]: string | null }>({})
+  const mapPageToNextCursor = useRef<{ [page: number]: CursorType }>({})
+
   const handlePageChange = (selectedPage: number) => {
-    if (selectedPage < 0) {
-      return
-    }
+    if (selectedPage < 0) return
+
     setPaginationModel({
       page: selectedPage,
       pageSize: paginationModel.pageSize,
     })
   }
+
   const queryOptions = useMemo(
     () => ({
-      cursor: mapPageToNextCursor.current[paginationModel.page - 1],
+      cursor: mapPageToNextCursor.current[paginationModel.page - 1] || null,
       pageSize: paginationModel.pageSize,
     }),
     [paginationModel],
   )
 
-  // TODO: 1, loading, 2 pagination
   const {
     data: result,
     isLoading,
     isError,
   } = useRoochClientQuery('queryUTXOs', {
     filter: {
-      owner: 'bcrt1p79ruqzh9hmmhvaz7x3up3t6pdrmz5hmhz3pfkddxqnfzg0md7upq3jjjev',
+      owner: account?.address || '',
     },
-    // TODO: 待解决的类型问题
-    // @ts-ignore
-    cursor: queryOptions.cursor,
+    cursor: queryOptions.cursor as IndexerStateID | null,
     limit: queryOptions.pageSize,
   })
+
+  console.log('result of UTXOs', result)
 
   if (!account) {
     return (

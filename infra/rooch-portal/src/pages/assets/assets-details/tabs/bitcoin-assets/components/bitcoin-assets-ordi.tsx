@@ -8,9 +8,8 @@ import CustomPagination from '@/components/custom-pagination.tsx'
 import { hexToString } from '@/utils/format.ts'
 import { AlertCircle, Wallet } from 'lucide-react'
 
+import { CursorType } from '@/common/interface'
 import type { IndexerStateID } from '@roochnetwork/rooch-sdk'
-
-type CursorType = IndexerStateID | null
 
 export const BitcoinAssetsOrdi: React.FC = () => {
   const account = useCurrentAccount()
@@ -42,7 +41,7 @@ export const BitcoinAssetsOrdi: React.FC = () => {
     isError,
   } = useRoochClientQuery('queryInscriptions', {
     filter: {
-      owner: 'tb1pr6mdxnc348lua02c32ad4uyyaw3kavjz4c8jzkh5ffvuq4ryvxhs70g2gm',
+      owner: account?.address || '',
     },
     cursor: queryOptions.cursor as IndexerStateID | null,
     limit: queryOptions.pageSize,
