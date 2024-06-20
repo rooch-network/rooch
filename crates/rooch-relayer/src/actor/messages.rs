@@ -4,6 +4,7 @@
 use anyhow::Result;
 use bitcoincore_rpc::json;
 use coerce::actor::{message::Message, scheduler::timer::TimerTick};
+use rooch_types::transaction::{L1BlockWithBody, L1Transaction};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone)]
@@ -47,4 +48,23 @@ pub struct GetBlockHeaderInfoMessage {
 
 impl Message for GetBlockHeaderInfoMessage {
     type Result = Result<json::GetBlockHeaderResult>;
+}
+
+pub struct GetReadyL1BlockMessage {}
+
+impl Message for GetReadyL1BlockMessage {
+    type Result = Result<Option<L1BlockWithBody>>;
+}
+
+pub struct GetReadyL1TxsMessage {}
+
+impl Message for GetReadyL1TxsMessage {
+    type Result = Result<Vec<L1Transaction>>;
+}
+
+#[derive(Clone)]
+pub struct SyncTick {}
+
+impl Message for SyncTick {
+    type Result = ();
 }

@@ -44,6 +44,7 @@ impl IndexerTransaction {
         let status = serde_json::to_string(&execution_info.status)?;
         let (auth_validator_id, authenticator_payload) = match &transaction.data {
             LedgerTxData::L1Block(_block) => (0, vec![]),
+            LedgerTxData::L1Tx(_tx) => (0, vec![]),
             LedgerTxData::L2Tx(tx) => (
                 tx.authenticator().auth_validator_id,
                 tx.authenticator().payload.clone(),

@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::messages::{ExecuteL1BlockMessage, ExecuteL2TxMessage};
+use super::messages::{ExecuteL1BlockMessage, ExecuteL1TxMessage, ExecuteL2TxMessage};
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
@@ -16,8 +16,8 @@ use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::{
     address::BitcoinAddress,
     transaction::{
-        ExecuteTransactionResponse, L1BlockWithBody, LedgerTransaction, LedgerTxData,
-        RoochTransaction,
+        ExecuteTransactionResponse, L1BlockWithBody, L1Transaction, LedgerTransaction,
+        LedgerTxData, RoochTransaction,
     },
 };
 use tracing::debug;
@@ -61,6 +61,23 @@ impl PipelineProcessorActor {
         let ledger_tx = self
             .sequencer
             .sequence_transaction(LedgerTxData::L1Block(l1_block.block))
+            .await?;
+        self.execute_tx(ledger_tx, moveos_tx).await
+    }
+
+    pub async fn execute_l1_tx(
+        &mut self,
+        ctx: TxContext,
+        l1_tx: L1Transaction,
+        sequencer_address: BitcoinAddress,
+    ) -> Result<ExecuteTransactionResponse> {
+        let moveos_tx = self
+            .executor
+            .validate_l1_tx(ctx, l1_tx.clone(), sequencer_address)
+            .await?;
+        let ledger_tx = self
+            .sequencer
+            .sequence_transaction(LedgerTxData::L1Tx(l1_tx))
             .await?;
         self.execute_tx(ledger_tx, moveos_tx).await
     }
@@ -150,6 +167,18 @@ impl Handler<ExecuteL1BlockMessage> for PipelineProcessorActor {
         _ctx: &mut ActorContext,
     ) -> Result<ExecuteTransactionResponse> {
         self.execute_l1_block(msg.ctx, msg.tx, msg.sequencer_address)
+            .await
+    }
+}
+
+#[async_trait]
+impl Handler<ExecuteL1TxMessage> for PipelineProcessorActor {
+    async fn handle(
+        &mut self,
+        msg: ExecuteL1TxMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<ExecuteTransactionResponse> {
+        self.execute_l1_tx(msg.ctx, msg.tx, msg.sequencer_address)
             .await
     }
 }

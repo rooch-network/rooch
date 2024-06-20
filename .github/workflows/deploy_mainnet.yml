@@ -6,10 +6,10 @@ on:
         description: 'Tag Name to Checkout'
         required: true
         default: 'latest'
-  workflow_run:
-    workflows: ["Build Docker And Deploy Seed"]
-    types:
-      - completed
+  # workflow_run:
+  #   workflows: ["Build Docker And Deploy Seed"]
+  #   types:
+  #     - completed
 
 jobs:
   deploy-rooch-mainnet:

@@ -1,18 +1,20 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::Relayer;
 use anyhow::Result;
 use async_trait::async_trait;
+use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use ethers::prelude::*;
 use rooch_config::EthereumRelayerConfig;
 use rooch_types::{
     framework::ethereum::BlockHeader,
     multichain_id::RoochMultiChainID,
-    transaction::{L1Block, L1BlockWithBody},
+    transaction::{L1Block, L1BlockWithBody, L1Transaction},
 };
 use std::collections::HashSet;
 use tracing::info;
+
+use super::messages::{GetReadyL1BlockMessage, GetReadyL1TxsMessage, SyncTick};
 
 pub struct EthereumRelayer {
     rpc_client: Provider<Http>,
@@ -69,8 +71,36 @@ impl EthereumRelayer {
 }
 
 #[async_trait]
-impl Relayer for EthereumRelayer {
-    async fn relay(&mut self) -> Result<Option<L1BlockWithBody>> {
+impl Actor for EthereumRelayer {
+    async fn started(&mut self, _ctx: &mut ActorContext) {}
+}
+
+#[async_trait]
+impl Handler<SyncTick> for EthereumRelayer {
+    async fn handle(&mut self, _message: SyncTick, _ctx: &mut ActorContext) {
+        //TODO support buffer block
+    }
+}
+
+#[async_trait]
+impl Handler<GetReadyL1BlockMessage> for EthereumRelayer {
+    async fn handle(
+        &mut self,
+        _message: GetReadyL1BlockMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Option<L1BlockWithBody>> {
         self.relay_ethereum().await
+    }
+}
+
+#[async_trait]
+impl Handler<GetReadyL1TxsMessage> for EthereumRelayer {
+    async fn handle(
+        &mut self,
+        _message: GetReadyL1TxsMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<L1Transaction>> {
+        //TODO
+        Ok(vec![])
     }
 }

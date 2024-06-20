@@ -35,8 +35,39 @@ pub struct L1BlockWithBody {
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+pub struct L1Transaction {
+    pub chain_id: MultiChainID,
+    pub block_hash: Vec<u8>,
+    /// The original L1 transaction id, usually the hash of the transaction
+    pub txid: Vec<u8>,
+}
+
+impl L1Transaction {
+    pub fn new(chain_id: MultiChainID, block_hash: Vec<u8>, txid: Vec<u8>) -> Self {
+        Self {
+            chain_id,
+            block_hash,
+            txid,
+        }
+    }
+
+    pub fn tx_hash(&self) -> H256 {
+        moveos_types::h256::sha3_256_of(self.encode().as_slice())
+    }
+
+    pub fn encode(&self) -> Vec<u8> {
+        bcs::to_bytes(self).expect("encode transaction should success")
+    }
+
+    pub fn tx_size(&self) -> u64 {
+        bcs::serialized_size(self).expect("serialize transaction size should success") as u64
+    }
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub enum LedgerTxData {
     L1Block(L1Block),
+    L1Tx(L1Transaction),
     L2Tx(RoochTransaction),
 }
 
@@ -45,6 +76,7 @@ impl LedgerTxData {
         match self {
             LedgerTxData::L1Block(block) => block.tx_hash(),
             LedgerTxData::L2Tx(tx) => tx.tx_hash(),
+            LedgerTxData::L1Tx(tx) => tx.tx_hash(),
         }
     }
 
@@ -52,6 +84,7 @@ impl LedgerTxData {
         match self {
             LedgerTxData::L1Block(_) => None,
             LedgerTxData::L2Tx(tx) => Some(tx.sender()),
+            LedgerTxData::L1Tx(_) => None,
         }
     }
 }

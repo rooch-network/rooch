@@ -3,7 +3,7 @@
 
 use super::messages::{
     ExecuteTransactionMessage, ExecuteTransactionResult, GetRootMessage, ValidateL1BlockMessage,
-    ValidateL2TxMessage,
+    ValidateL1TxMessage, ValidateL2TxMessage,
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -28,7 +28,9 @@ use rooch_types::framework::ethereum::EthereumModule;
 use rooch_types::framework::transaction_validator::TransactionValidator;
 use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
 use rooch_types::multichain_id::RoochMultiChainID;
-use rooch_types::transaction::{AuthenticatorInfo, L1Block, L1BlockWithBody, RoochTransaction};
+use rooch_types::transaction::{
+    AuthenticatorInfo, L1Block, L1BlockWithBody, L1Transaction, RoochTransaction,
+};
 use tracing::{debug, warn};
 
 pub struct ExecutorActor {
@@ -98,7 +100,7 @@ impl ExecutorActor {
         l1_block: L1BlockWithBody,
         sequencer_address: BitcoinAddress,
     ) -> Result<VerifiedMoveOSTransaction> {
-        ctx.add(TxValidateResult::new_l1_block(sequencer_address))?;
+        ctx.add(TxValidateResult::new_l1_block_or_tx(sequencer_address))?;
         //In the future, we should verify the block PoW difficulty or PoS validator signature before the sequencer decentralized
         let L1BlockWithBody {
             block:
@@ -128,6 +130,30 @@ impl ExecutorActor {
             RoochMultiChainID::Ether => {
                 let action = VerifiedMoveAction::Function {
                     call: EthereumModule::create_submit_new_block_call_bytes(block_body),
+                    bypass_visibility: true,
+                };
+                Ok(VerifiedMoveOSTransaction::new(
+                    self.root.clone(),
+                    ctx,
+                    action,
+                ))
+            }
+            id => Err(anyhow::anyhow!("Chain {} not supported yet", id)),
+        }
+    }
+
+    pub fn validate_l1_tx(
+        &self,
+        mut ctx: TxContext,
+        l1_tx: L1Transaction,
+        sequencer_address: BitcoinAddress,
+    ) -> Result<VerifiedMoveOSTransaction> {
+        ctx.add(TxValidateResult::new_l1_block_or_tx(sequencer_address))?;
+
+        match RoochMultiChainID::try_from(l1_tx.chain_id.id())? {
+            RoochMultiChainID::Bitcoin => {
+                let action = VerifiedMoveAction::Function {
+                    call: BitcoinModule::create_execute_l1_tx_call(l1_tx.block_hash, l1_tx.txid)?,
                     bypass_visibility: true,
                 };
                 Ok(VerifiedMoveOSTransaction::new(
@@ -270,6 +296,17 @@ impl Handler<ValidateL1BlockMessage> for ExecutorActor {
         _ctx: &mut ActorContext,
     ) -> Result<VerifiedMoveOSTransaction> {
         self.validate_l1_block(msg.ctx, msg.l1_block, msg.sequencer_address)
+    }
+}
+
+#[async_trait]
+impl Handler<ValidateL1TxMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: ValidateL1TxMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<VerifiedMoveOSTransaction> {
+        self.validate_l1_tx(msg.ctx, msg.l1_tx, msg.sequencer_address)
     }
 }
 

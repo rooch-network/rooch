@@ -254,6 +254,7 @@ module bitcoin_move::bitcoin{
 
     /// The the sequencer submit a new Bitcoin block
     /// This function is a system function, only the sequencer can call it
+    /// TODO rename to execute_l1_block
     fun submit_new_block(block_height: u64, block_hash: address, block_bytes: vector<u8>){
         let block = bcs::from_bytes<Block>(block_bytes);
         let block_header = types::header(&block);
@@ -264,19 +265,10 @@ module bitcoin_move::bitcoin{
         let timestamp_seconds = (time as u64);
         let module_signer = signer::module_signer<BitcoinBlockStore>();
         timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));      
-
-        // We temporarily conform the txs here, we will remove this after refator the relayer
-        let (_, txs) = types::unpack_block(block);
-        let coinbase_tx = vector::remove(&mut txs, 0);
-        vector::for_each(txs, |tx| {
-            let txid = types::tx_id(&tx);
-            conform_tx(block_hash, txid);
-        });
-        //process coinbase tx last
-        conform_tx(block_hash, types::tx_id(&coinbase_tx));
     }
 
-    fun conform_tx(block_hash: address, txid: address){
+    /// This is the execute_l1_tx entry point
+    fun execute_l1_tx(block_hash: address, txid: address){
         let btc_block_store_obj = borrow_block_store_mut();
         let btc_block_store = object::borrow_mut(btc_block_store_obj);
         let inprocess_block = pending_block::process_pending_tx(block_hash, txid);
@@ -403,7 +395,16 @@ module bitcoin_move::bitcoin{
     public fun submit_new_block_for_test(block_height: u64, block: Block){
         let block_hash = types::header_to_hash(types::header(&block));
         let block_bytes = bcs::to_bytes(&block);
-        submit_new_block(block_height, block_hash, block_bytes);  
+        submit_new_block(block_height, block_hash, block_bytes);
+        // We directly conform the txs for convenience test
+        let (_, txs) = types::unpack_block(block);
+        let coinbase_tx = vector::remove(&mut txs, 0);
+        vector::for_each(txs, |tx| {
+            let txid = types::tx_id(&tx);
+            execute_l1_tx(block_hash, txid);
+        });
+        //process coinbase tx last
+        execute_l1_tx(block_hash, types::tx_id(&coinbase_tx));
     }
 
 }
