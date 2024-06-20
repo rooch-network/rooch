@@ -4,7 +4,7 @@
 import { bech32, bech32m, createBase58check } from '@scure/base'
 
 import { bcs } from '@/bcs'
-import { address, Bytes } from '@/types'
+import { Bytes } from '@/types'
 import { blake2b, bytes, sha256, validateWitness } from '@/utils'
 
 import { Address, ROOCH_ADDRESS_LENGTH } from './address'
@@ -32,7 +32,7 @@ enum BitcoinAddressType {
 }
 
 export class BitcoinAddress implements Address {
-  private readonly rawAddress: address
+  private readonly rawAddress: string
   private readonly bytes: Bytes
   private roochAddress: RoochAddress | undefined
 

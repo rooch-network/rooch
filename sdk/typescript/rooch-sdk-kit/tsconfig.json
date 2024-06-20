@@ -6,7 +6,10 @@
     "outDir": "dist/cjs",
     "isolatedModules": true,
     "jsx": "react-jsx",
-    "rootDir": "src"
+    "rootDir": "src",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "references": [{ "path": "../rooch-sdk" }]
 }

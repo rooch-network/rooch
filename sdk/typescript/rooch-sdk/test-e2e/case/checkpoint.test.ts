@@ -7,6 +7,7 @@ import { Args, bcs } from '@/bcs'
 import { Transaction } from '@/transactions'
 import { fromHEX, toHEX } from '@/utils'
 import { BitcoinAddress } from '@/address'
+import { Ed25519Keypair, Secp256k1Keypair } from '@/keypairs'
 
 describe('Checkpoints Reading API', () => {
   let testBox: TestBox
@@ -47,14 +48,15 @@ describe('Checkpoints Reading API', () => {
   })
 
   it('Resolve rooch address should be success', async () => {
-    const testAddr = 'bcrt1pwflflg6dz72e8f96f93yzve88yac3nekjl66g52stqauxc5lff6s0peuke'
+
+    const account = Secp256k1Keypair.generate()
 
     const result = await testBox.client.executeViewFunction({
       target: '0x3::address_mapping::resolve_or_generate',
-      arguments: [Args.struct(new BitcoinAddress(testAddr).genMultiChainAddress())],
+      arguments: [Args.struct(account.getBitcoinAddress().genMultiChainAddress())],
     })
 
-    const expectAddr = '0x57330c8bc64a6068df6a84d3c459e46450b7a15fafae57fe85cb4f95c2ed0198'
+    const expectAddr = account.getRoochAddress().toHexAddress()
     expect(result.return_values![0].decoded_value).eq(expectAddr)
   })
 })

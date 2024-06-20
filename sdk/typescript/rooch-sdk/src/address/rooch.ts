@@ -3,11 +3,11 @@
 
 import { bech32m } from '@scure/base'
 
-import { Bytes } from '@/types'
-import { fromHEX, isHex, toHEX } from '@/utils'
+import { Bytes } from '@/types/bytes.js'
+import { fromHEX, isHex, toHEX } from '@/utils/hex.js'
 
-import { Address } from './address'
-import { normalizeRoochAddress } from './util'
+import { Address, ROOCH_BECH32_PREFIX } from './address.js'
+import { normalizeRoochAddress } from './util.js'
 
 export class RoochAddress implements Address {
   private readonly address: Bytes
@@ -37,6 +37,6 @@ export class RoochAddress implements Address {
   }
 
   toBech32Address(): string {
-    return bech32m.encode('rooch', bech32m.toWords(this.address))
+    return bech32m.encode(ROOCH_BECH32_PREFIX, bech32m.toWords(this.address))
   }
 }

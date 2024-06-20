@@ -3,11 +3,10 @@
 
 import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-query'
 import { useMutation } from '@tanstack/react-query'
-import { Network } from '@roochnetwork/rooch-sdk'
 import { roochMutationKeys } from '../../constants/roochMutationKeys'
 import { useRoochContextStore } from './index'
 
-type UseSwitchNetworkArgs = Network
+type UseSwitchNetworkArgs = string
 
 type UseSwitchNetworkResult = void
 

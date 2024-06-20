@@ -14,22 +14,23 @@ export type ScriptCall = {
   typeArgs: TypeTag[]
 }
 
-export type CallFunctionArgs =
+export type ModuleArgs =
   | {
-      address: address
+      address: string
       module: string
       function: string
-      arguments?: Args[]
-      typeArguments?: TypeTag[]
     }
   | {
       target: string
-      arguments?: Args[]
-      typeArguments?: TypeTag[]
     }
 
+export type CallFunctionArgs = {
+  arguments?: Args[]
+  typeArguments?: TypeTag[]
+} & ModuleArgs
+
 export class CallFunction {
-  address: address
+  address: string
   module: identifier
   function: identifier
   arguments: Args[]

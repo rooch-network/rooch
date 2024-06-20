@@ -3,3 +3,4 @@
 
 export * from './transaction'
 export * from './transactionData'
+export * from './util'

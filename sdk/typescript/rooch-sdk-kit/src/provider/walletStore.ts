@@ -5,21 +5,22 @@ import { createStore } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { StateStorage } from 'zustand/middleware'
 
-import { BaseWallet, WalletAccount } from './types'
-import { SupportChain } from './feature'
+import { SupportChain } from '@/feature'
+import { BitcoinAddress } from '@roochnetwork/rooch-sdk'
+import { Wallet } from '@/wellet'
 
 type WalletConnectionStatus = 'disconnected' | 'connecting' | 'connected'
 
 export type WalletActions = {
   setChain: (chain: SupportChain) => void
-  setAccountSwitched: (selectedAccount: WalletAccount) => void
+  setAddressSwitched: (selectedAccount: BitcoinAddress) => void
   setConnectionStatus: (connectionStatus: WalletConnectionStatus) => void
   setWalletConnected: (
-    wallet: BaseWallet,
-    connectedAccounts: readonly WalletAccount[],
-    selectedAccount: WalletAccount | null,
+    wallet: Wallet,
+    connectedAddress: readonly BitcoinAddress[],
+    selectedAddress: BitcoinAddress | null,
   ) => void
-  updateWalletAccounts: (accounts: readonly WalletAccount[]) => void
+  updateWalletAddresses: (accounts: readonly BitcoinAddress[]) => void
   setWalletDisconnected: () => void
 }
 
@@ -28,20 +29,20 @@ export type WalletStore = ReturnType<typeof createWalletStore>
 export type WalletStoreState = {
   autoConnectEnabled: boolean
   currentChain: SupportChain
-  currentWallet: BaseWallet
-  wallets: BaseWallet[]
-  accounts: readonly WalletAccount[]
-  currentAccount: WalletAccount | null
-  lastConnectedAccountAddress: string | null
-  lastConnectedWalletName: string | null
+  currentWallet: Wallet | undefined
+  wallets: Wallet[]
+  addresses: readonly BitcoinAddress[]
+  currentAddress: BitcoinAddress | undefined
+  lastConnectedAddress: string | undefined
+  lastConnectedWalletName: string | undefined
   connectionStatus: WalletConnectionStatus
 } & WalletActions
 
 type WalletConfiguration = {
   autoConnectEnabled: boolean
   chain: SupportChain
-  currentWallet: BaseWallet
-  wallets: BaseWallet[]
+  currentWallet: Wallet | undefined
+  wallets: Wallet[]
   storage: StateStorage
   storageKey: string
 }
@@ -61,10 +62,10 @@ export function createWalletStore({
         autoConnectEnabled,
         currentWallet,
         wallets,
-        accounts: [],
-        currentAccount: null,
-        lastConnectedAccountAddress: null,
-        lastConnectedWalletName: null,
+        addresses: [],
+        currentAddress: undefined,
+        lastConnectedAddress: undefined,
+        lastConnectedWalletName: undefined,
         connectionStatus: 'disconnected',
         setChain(chain) {
           const currentChain = get().currentChain
@@ -90,42 +91,41 @@ export function createWalletStore({
             currentWallet: wallet,
             accounts: connectedAccounts,
             currentAccount: selectedAccount,
-            lastConnectedWalletName: wallet.name ?? '',
-            lastConnectedAccountAddress: selectedAccount?.address ?? '',
+            lastConnectedWalletName: wallet.getName(),
+            lastConnectedAccountAddress: selectedAccount?.toStr(),
             connectionStatus: 'connected',
           }))
         },
         setWalletDisconnected() {
           set(() => ({
             accounts: [],
-            currentAccount: null,
-            lastConnectedWalletName: null,
-            lastConnectedAccountAddress: null,
+            currentAddress: undefined,
+            lastConnectedWalletName: undefined,
+            lastConnectedAddress: undefined,
             connectionStatus: 'disconnected',
           }))
         },
-        setAccountSwitched(selectedAccount) {
+        setAddressSwitched(selected) {
           set(() => ({
-            currentAccount: selectedAccount,
-            lastConnectedAccountAddress: selectedAccount.address ?? '',
+            currentAddress: selected,
+            lastConnectedAddress: selected.toStr() ?? '',
           }))
         },
-        updateWalletAccounts(accounts) {
-          const currentAccount = get().currentAccount
+        updateWalletAddresses(addresses) {
+          const currentAddr = get().currentAddress
           set(() => ({
-            currentAccount:
-              (currentAccount &&
-                accounts.find((account) => account.address === currentAccount.address)) ||
-              accounts[0],
+            currentAddress:
+              (currentAddr && addresses.find((addr) => addr.toStr() === currentAddr.toStr())) ||
+              addresses[0],
           }))
         },
       }),
       {
         name: storageKey,
         storage: createJSONStorage(() => storage),
-        partialize: ({ lastConnectedWalletName, lastConnectedAccountAddress }) => ({
+        partialize: ({ lastConnectedWalletName, lastConnectedAddress }) => ({
           lastConnectedWalletName,
-          lastConnectedAccountAddress,
+          lastConnectedAddress,
         }),
       },
     ),

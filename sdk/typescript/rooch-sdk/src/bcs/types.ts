@@ -23,7 +23,7 @@ export type TypeTag =
  * Kind of a TypeTag which is represented by a Move type identifier.
  */
 export interface StructTag {
-  address: address
+  address: string
   module: string
   name: string
   typeParams?: TypeTag[]

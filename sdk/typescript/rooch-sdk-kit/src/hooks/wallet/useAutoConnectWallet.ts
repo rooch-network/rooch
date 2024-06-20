@@ -4,18 +4,20 @@
 import { useQuery } from '@tanstack/react-query'
 import { useLayoutEffect, useState } from 'react'
 
-import { useWalletStore } from './useWalletStore'
-import { useConnectWallet } from './useConnectWallet'
-import { useWallets } from '../../hooks/wallet/useWallets'
-import { useCurrentWallet } from '../../hooks/wallet/useCurrentWallet'
-import { useCurrentAccount } from '../../hooks/wallet/useCurrentAccount'
-import { SupportChain } from '../../feature'
+import {
+  useWalletStore,
+  useConnectWallet,
+  useWallets,
+  useCurrentWallet,
+  useCurrentAccount,
+} from '@/hooks'
+import { SupportChain } from '@/feature'
 
 export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
   const { mutateAsync: connectWallet } = useConnectWallet()
   const autoConnectEnabled = useWalletStore((state) => state.autoConnectEnabled)
   const lastConnectedWalletName = useWalletStore((state) => state.lastConnectedWalletName)
-  const lastConnectedAccountAddress = useWalletStore((state) => state.lastConnectedAccountAddress)
+  const lastConnectedAccountAddress = useWalletStore((state) => state.lastConnectedAddress)
   const { isConnected } = useCurrentWallet()
   const wallets = useWallets()
   const [clientOnly, setClientOnly] = useState(false)
@@ -45,7 +47,7 @@ export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
         return 'attempted'
       }
 
-      let wallet = wallets.find((wallet) => wallet.name === lastConnectedWalletName)
+      let wallet = wallets.find((wallet) => wallet.getName() === lastConnectedWalletName)
 
       if (wallet) {
         await connectWallet({ wallet })

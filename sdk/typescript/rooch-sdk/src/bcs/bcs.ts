@@ -3,9 +3,14 @@
 
 import { bcs, BcsType, BcsTypeOptions } from '@mysten/bcs'
 
-import { Bytes } from '@/types'
+import { address, Bytes } from '@/types'
 import { bytes, CoderType, fromHEX, toHEX } from '@/utils'
-import { isValidRoochAddress, normalizeRoochAddress, ROOCH_ADDRESS_LENGTH } from '@/address'
+import {
+  isValidRoochAddress,
+  normalizeRoochAddress,
+  ROOCH_ADDRESS_LENGTH,
+  convertToRoochAddressBytes,
+} from '@/address'
 
 import { Serializer } from './serializer'
 import type { TypeTagA as TypeTagType } from './types'
@@ -74,13 +79,12 @@ export const Vector = (coder: CoderType = 'hex') => {
 
 export const Address = bcs.bytes(ROOCH_ADDRESS_LENGTH).transform({
   validate: (input) => {
-    const address = typeof input === 'string' ? input : toHEX(input)
-    if (!address || !isValidRoochAddress(normalizeRoochAddress(address))) {
-      throw new Error(`Invalid Rooch address ${address}`)
+    if (!isValidRoochAddress(input)) {
+      throw new Error(`Invalid address ${input}`)
     }
   },
-  input: (input: string | Bytes) =>
-    typeof input === 'string' ? fromHEX(normalizeRoochAddress(input)) : input,
+  input: (input: address) => convertToRoochAddressBytes(input),
+
   output: (val) => normalizeRoochAddress(toHEX(val)),
 })
 

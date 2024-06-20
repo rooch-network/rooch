@@ -5,10 +5,10 @@ import { Bytes } from 'micro-packed'
 
 import { Args } from '@/bcs'
 import { Signer } from '@/crypto'
-import { Transaction } from '@/transactions'
+import { ModuleArgs, normalizeModuleArgs, Transaction } from '@/transactions'
 import { CreateSessionArgs, Session } from '@/session'
-import { isValidRoochAddress, normalizeRoochAddress } from '@/address'
-import { CallFunction, CallFunctionArgs } from '@/transactions/transactionData.ts'
+import { isValidRoochAddress } from '@/address'
+import { CallFunction, CallFunctionArgs } from '@/transactions'
 import { address, u64 } from '@/types'
 import { fromHEX, str } from '@/utils'
 
@@ -162,12 +162,41 @@ export class RoochClient {
    * Get the total coin balance for one coin type, owned by the address owner.
    */
   async getBalance(input: GetBalanceParams): Promise<BalanceInfoView> {
-    if (!input.owner || !isValidRoochAddress(normalizeRoochAddress(input.owner))) {
+    if (!input.owner || !isValidRoochAddress(input.owner)) {
       throw new Error('Invalid rooch address')
     }
     return await this.transport.request({
       method: 'rooch_getBalance',
       params: [input.owner, input.coinType],
+    })
+  }
+
+  async transfer(input: {
+    signer: Signer
+    recipient: address
+    amount: number | bigint
+    coinType: ModuleArgs
+  }) {
+    const [addr, mod, fn] = normalizeModuleArgs(input.coinType)
+
+    const tx = new Transaction()
+    tx.callFunction({
+      target: '0x3::transfer::transfer_coin',
+      arguments: [Args.address(input.recipient), Args.u256(BigInt(input.amount))],
+      typeArguments: [
+        {
+          Struct: {
+            address: addr,
+            module: mod,
+            name: fn,
+          },
+        },
+      ],
+    })
+
+    return await this.signAndExecuteTransaction({
+      transaction: tx,
+      signer: input.signer,
     })
   }
 
@@ -191,7 +220,7 @@ export class RoochClient {
     authKey,
   }: {
     address: address
-    authKey: address
+    authKey: string
   }): Promise<boolean> {
     const result = await this.executeViewFunction({
       target: '0x3::session_key::is_expired_session_key',
