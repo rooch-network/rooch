@@ -10,7 +10,7 @@ use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMEr
 use move_binary_format::file_format::{
     Bytecode, FunctionDefinition, FunctionDefinitionIndex, FunctionHandleIndex,
     FunctionInstantiation, FunctionInstantiationIndex, Signature, SignatureToken, StructDefinition,
-    StructHandleIndex, Visibility,
+    StructFieldInformation, StructHandleIndex, Visibility,
 };
 use move_binary_format::{access::ModuleAccess, CompiledModule};
 use move_core_types::identifier::Identifier;
@@ -1264,6 +1264,10 @@ fn validate_struct_fields<Resolver>(
 where
     Resolver: ModuleResolver,
 {
+    if struct_def.field_information == StructFieldInformation::Native {
+        return (false, ErrorCode::INVALID_DATA_STRUCT_WITH_NATIVE_STRUCT);
+    }
+
     let struct_handle = module_bin_view.struct_handle_at(struct_def.struct_handle);
     let abilities_set = struct_handle.abilities;
     if !abilities_set.has_drop() {
