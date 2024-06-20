@@ -40,7 +40,9 @@ export const BitcoinAssetsBtc: React.FC = () => {
     isLoading,
     isError,
   } = useRoochClientQuery('queryUTXOs', {
-    filter: 'all',
+    filter: {
+      owner: account?.address || '',
+    },
     cursor: queryOptions.cursor as IndexerStateID | null,
     limit: queryOptions.pageSize,
   })

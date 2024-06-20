@@ -40,7 +40,9 @@ export const BitcoinAssetsOrdi: React.FC = () => {
     isLoading,
     isError,
   } = useRoochClientQuery('queryInscriptions', {
-    filter: 'all',
+    filter: {
+      owner: account?.address || '',
+    },
     cursor: queryOptions.cursor as IndexerStateID | null,
     limit: queryOptions.pageSize,
   })
