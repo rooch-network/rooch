@@ -45,8 +45,6 @@ export const BitcoinAssetsOrdi: React.FC = () => {
     limit: queryOptions.pageSize,
   })
 
-  console.log(result)
-
   useEffect(() => {
     if (result && result.has_next_page) {
       mapPageToNextCursor.current[paginationModel.page] = (result.next_cursor as CursorType) || null
