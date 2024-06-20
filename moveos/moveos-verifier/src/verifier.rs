@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::cmp::max;
 use std::collections::BTreeMap;
 use std::ops::Deref;
 
@@ -9,7 +10,7 @@ use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMEr
 use move_binary_format::file_format::{
     Bytecode, FunctionDefinition, FunctionDefinitionIndex, FunctionHandleIndex,
     FunctionInstantiation, FunctionInstantiationIndex, Signature, SignatureToken, StructDefinition,
-    StructHandleIndex, Visibility,
+    StructFieldInformation, StructHandleIndex, Visibility,
 };
 use move_binary_format::{access::ModuleAccess, CompiledModule};
 use move_core_types::identifier::Identifier;
@@ -27,6 +28,8 @@ use crate::metadata::{
     is_allowed_data_struct_type, is_allowed_input_struct, is_defined_or_allowed_in_current_module,
     is_std_option_type,
 };
+
+const MAX_DATA_STRUCT_TYPE_DEPTH: u64 = 16;
 
 pub static INIT_FN_NAME_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("init").unwrap());
@@ -1261,6 +1264,10 @@ fn validate_struct_fields<Resolver>(
 where
     Resolver: ModuleResolver,
 {
+    if struct_def.field_information == StructFieldInformation::Native {
+        return (false, ErrorCode::INVALID_DATA_STRUCT_WITH_NATIVE_STRUCT);
+    }
+
     let struct_handle = module_bin_view.struct_handle_at(struct_def.struct_handle);
     let abilities_set = struct_handle.abilities;
     if !abilities_set.has_drop() {
@@ -1284,6 +1291,17 @@ where
             None => return (false, ErrorCode::INVALID_DATA_STRUCT),
             Some(struct_fields_def) => {
                 let field_type = struct_fields_def.signature.0.clone();
+                match check_depth_of_type(
+                    current_module,
+                    verified_modules,
+                    db,
+                    &field_type,
+                    MAX_DATA_STRUCT_TYPE_DEPTH,
+                    1,
+                ) {
+                    Ok(_) => {}
+                    Err(_) => return (false, ErrorCode::INVALID_DATA_STRUCT_OVER_MAX_TYPE_DEPTH),
+                }
                 let (is_valid_struct_field, error_code) = validate_fields_type(
                     &field_type,
                     current_module,
@@ -1759,4 +1777,258 @@ pub fn verify_global_storage_access(module: &CompiledModule) -> VMResult<bool> {
         }
     }
     Ok(true)
+}
+
+pub fn check_depth_of_type<Resolver>(
+    caller_module: &CompiledModule,
+    verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
+    db: &Resolver,
+    ty: &SignatureToken,
+    max_depth: u64,
+    depth: u64,
+) -> VMResult<u64>
+where
+    Resolver: ModuleResolver,
+{
+    macro_rules! check_depth {
+        ($additional_depth:expr) => {{
+            let new_depth = depth.saturating_add($additional_depth);
+            if new_depth > max_depth {
+                return Err(PartialVMError::new(StatusCode::VM_MAX_VALUE_DEPTH_REACHED)
+                    .finish(Location::Undefined));
+            } else {
+                new_depth
+            }
+        }};
+    }
+
+    let ty_depth = match ty {
+        SignatureToken::Bool
+        | SignatureToken::U8
+        | SignatureToken::U16
+        | SignatureToken::U32
+        | SignatureToken::U64
+        | SignatureToken::U128
+        | SignatureToken::U256
+        | SignatureToken::Address
+        | SignatureToken::Signer => check_depth!(0),
+        SignatureToken::Vector(ty) => check_depth_of_type(
+            caller_module,
+            verified_modules,
+            db,
+            ty.deref(),
+            max_depth,
+            check_depth!(1),
+        )?,
+        SignatureToken::Struct(struc_handle_idx) => {
+            let formula =
+                calculate_depth_of_struct(caller_module, verified_modules, db, *struc_handle_idx)?;
+            check_depth!(formula.resolve(&[]))
+        }
+        SignatureToken::StructInstantiation(idx, type_args) => {
+            let ty_arg_depths = type_args
+                .iter()
+                .map(|ty| {
+                    check_depth_of_type(caller_module, verified_modules, db, ty, max_depth, depth)
+                })
+                .collect::<VMResult<Vec<_>>>()?;
+            let formula = calculate_depth_of_struct(caller_module, verified_modules, db, *idx)?;
+            check_depth!(formula.resolve(ty_arg_depths.as_slice()))
+        }
+        _ => {
+            return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH).finish(Location::Undefined));
+        }
+    };
+
+    Ok(ty_depth)
+}
+
+fn calculate_depth_of_struct<Resolver>(
+    caller_module: &CompiledModule,
+    verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
+    db: &Resolver,
+    struct_idx: StructHandleIndex,
+) -> VMResult<TypeDepthFormula>
+where
+    Resolver: ModuleResolver,
+{
+    let bin_view = BinaryIndexedView::Module(caller_module);
+
+    let struct_full_name = struct_full_name_from_sid(&struct_idx, &bin_view);
+    let struct_def_opt = struct_def_from_struct_handle(
+        caller_module,
+        &struct_idx,
+        verified_modules,
+        struct_full_name.as_str(),
+        db,
+    );
+
+    let mut struct_fields = Vec::new();
+    if let Some(struct_def) = struct_def_opt {
+        let field_count = struct_def.declared_field_count().unwrap();
+        for field_idx in 0..field_count {
+            let field_def = struct_def.field(field_idx as usize).unwrap().clone();
+            struct_fields.push(field_def);
+        }
+    }
+
+    let formulas = struct_fields
+        .iter()
+        .map(|field_def| {
+            calculate_depth_of_type(
+                caller_module,
+                verified_modules,
+                db,
+                &field_def.signature.0.clone(),
+            )
+        })
+        .collect::<VMResult<Vec<_>>>()?;
+
+    let formula = TypeDepthFormula::normalize(formulas);
+
+    Ok(formula)
+}
+
+fn calculate_depth_of_type<Resolver>(
+    caller_module: &CompiledModule,
+    verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
+    db: &Resolver,
+    field_type: &SignatureToken,
+) -> VMResult<TypeDepthFormula>
+where
+    Resolver: ModuleResolver,
+{
+    Ok(match field_type {
+        SignatureToken::Bool
+        | SignatureToken::U8
+        | SignatureToken::U16
+        | SignatureToken::U32
+        | SignatureToken::U64
+        | SignatureToken::U128
+        | SignatureToken::U256
+        | SignatureToken::Address
+        | SignatureToken::Signer => TypeDepthFormula::constant(1),
+        SignatureToken::Vector(ty) => {
+            let mut inner =
+                calculate_depth_of_type(caller_module, verified_modules, db, ty.deref())?;
+            inner.scale(1);
+            inner
+        }
+        SignatureToken::Struct(idx) => {
+            let mut struct_formula =
+                calculate_depth_of_struct(caller_module, verified_modules, db, *idx)?;
+            debug_assert!(struct_formula.terms.is_empty());
+            struct_formula.scale(1);
+            struct_formula
+        }
+        SignatureToken::StructInstantiation(idx, type_args) => {
+            let ty_arg_map = {
+                let mut map = BTreeMap::new();
+                for (idx, ty) in type_args.iter().enumerate() {
+                    let var = idx as u16;
+                    map.insert(
+                        var,
+                        calculate_depth_of_type(caller_module, verified_modules, db, ty)?,
+                    );
+                }
+                map
+            };
+            let struct_formula =
+                calculate_depth_of_struct(caller_module, verified_modules, db, *idx)?;
+            let mut subst_struct_formula = struct_formula.subst(ty_arg_map)?;
+            subst_struct_formula.scale(1);
+            subst_struct_formula
+        }
+        SignatureToken::TypeParameter(ty_idx) => TypeDepthFormula::type_parameter(*ty_idx),
+        _ => {
+            return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH).finish(Location::Undefined));
+        }
+    })
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Debug)]
+pub struct TypeDepthFormula {
+    pub terms: Vec<(u16, u64)>,
+    pub constant: Option<u64>,
+}
+
+impl TypeDepthFormula {
+    fn constant(constant: u64) -> Self {
+        Self {
+            terms: vec![],
+            constant: Some(constant),
+        }
+    }
+
+    fn type_parameter(tparam: u16) -> Self {
+        Self {
+            terms: vec![(tparam, 0)],
+            constant: None,
+        }
+    }
+
+    fn normalize(formulas: Vec<Self>) -> Self {
+        let mut var_map = BTreeMap::new();
+        let mut constant_acc = None;
+        for formula in formulas {
+            let Self { terms, constant } = formula;
+            for (var, cur_factor) in terms {
+                var_map
+                    .entry(var)
+                    .and_modify(|prev_factor| *prev_factor = max(cur_factor, *prev_factor))
+                    .or_insert(cur_factor);
+            }
+            match (constant_acc, constant) {
+                (_, None) => (),
+                (None, Some(_)) => constant_acc = constant,
+                (Some(c1), Some(c2)) => constant_acc = Some(max(c1, c2)),
+            }
+        }
+
+        Self {
+            terms: var_map.into_iter().collect(),
+            constant: constant_acc,
+        }
+    }
+
+    fn resolve(&self, tparam_depths: &[u64]) -> u64 {
+        let Self { terms, constant } = self;
+        let mut depth = constant.as_ref().copied().unwrap_or(0);
+        for (t_i, c_i) in terms {
+            depth = max(depth, tparam_depths[*t_i as usize].saturating_add(*c_i))
+        }
+        depth
+    }
+
+    fn scale(&mut self, c: u64) {
+        let Self { terms, constant } = self;
+        for (_t_i, c_i) in terms {
+            *c_i = (*c_i).saturating_add(c);
+        }
+        if let Some(cbase) = constant.as_mut() {
+            *cbase = (*cbase).saturating_add(c);
+        }
+    }
+
+    fn subst(&self, mut map: BTreeMap<u16, TypeDepthFormula>) -> VMResult<TypeDepthFormula> {
+        let Self { terms, constant } = self;
+        let mut formulas = vec![];
+        if let Some(constant) = constant {
+            formulas.push(TypeDepthFormula::constant(*constant))
+        }
+
+        for (t_i, c_i) in terms {
+            let Some(mut u_form) = map.remove(t_i) else {
+                return Err(
+                    PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+                        .with_message(format!("{t_i:?} missing mapping"))
+                        .finish(Location::Undefined),
+                );
+            };
+            u_form.scale(*c_i);
+            formulas.push(u_form)
+        }
+
+        Ok(TypeDepthFormula::normalize(formulas))
+    }
 }

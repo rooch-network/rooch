@@ -1,0 +1,13 @@
+//# publish
+module 0x11.TestModule0 {
+    // error code 10019: INVALID_DATA_STRUCT_OVER_MAX_TYPE_DEPTH
+    struct S1 has copy,drop {v: u32}
+    struct S0 has copy,drop {v: vector<vector<vector<vector<vector<vector<vector<vector<vector<vector<vector<vector<vector<vector<vector<vector<vector<vector<Self.S1>>>>>>>>>>>>>>>>>>}
+
+    metadata {
+        data_struct {
+            0x11::TestModule0::S0 -> true;
+        }
+    }
+}
+
