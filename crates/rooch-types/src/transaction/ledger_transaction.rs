@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{RoochTransaction, TransactionSequenceInfo};
-use crate::multichain_id::MultiChainID;
+use crate::{address::RoochAddress, multichain_id::MultiChainID};
 use anyhow::Result;
 use moveos_types::h256::H256;
 use serde::{Deserialize, Serialize};
@@ -35,8 +35,39 @@ pub struct L1BlockWithBody {
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+pub struct L1Transaction {
+    pub chain_id: MultiChainID,
+    pub block_hash: Vec<u8>,
+    /// The original L1 transaction id, usually the hash of the transaction
+    pub txid: Vec<u8>,
+}
+
+impl L1Transaction {
+    pub fn new(chain_id: MultiChainID, block_hash: Vec<u8>, txid: Vec<u8>) -> Self {
+        Self {
+            chain_id,
+            block_hash,
+            txid,
+        }
+    }
+
+    pub fn tx_hash(&self) -> H256 {
+        moveos_types::h256::sha3_256_of(self.encode().as_slice())
+    }
+
+    pub fn encode(&self) -> Vec<u8> {
+        bcs::to_bytes(self).expect("encode transaction should success")
+    }
+
+    pub fn tx_size(&self) -> u64 {
+        bcs::serialized_size(self).expect("serialize transaction size should success") as u64
+    }
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub enum LedgerTxData {
     L1Block(L1Block),
+    L1Tx(L1Transaction),
     L2Tx(RoochTransaction),
 }
 
@@ -45,6 +76,15 @@ impl LedgerTxData {
         match self {
             LedgerTxData::L1Block(block) => block.tx_hash(),
             LedgerTxData::L2Tx(tx) => tx.tx_hash(),
+            LedgerTxData::L1Tx(tx) => tx.tx_hash(),
+        }
+    }
+
+    pub fn sender(&self) -> Option<RoochAddress> {
+        match self {
+            LedgerTxData::L1Block(_) => None,
+            LedgerTxData::L2Tx(tx) => Some(tx.sender()),
+            LedgerTxData::L1Tx(_) => None,
         }
     }
 }
@@ -91,6 +131,10 @@ impl LedgerTransaction {
         self.data.tx_hash()
     }
 
+    pub fn sender(&self) -> Option<RoochAddress> {
+        self.data.sender()
+    }
+
     pub fn encode(&self) -> Vec<u8> {
         bcs::to_bytes(self).expect("encode transaction should success")
     }
@@ -104,8 +148,8 @@ impl LedgerTransaction {
         tx_timestamp: u64,
         tx_order: u64,
         tx_order_signature: Vec<u8>,
+        tx_accumulator_root: H256,
     ) -> LedgerTransaction {
-        let tx_accumulator_root = H256::random();
         let tx_sequence_info = TransactionSequenceInfo {
             tx_order,
             tx_order_signature,

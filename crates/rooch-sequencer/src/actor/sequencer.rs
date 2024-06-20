@@ -7,47 +7,64 @@ use crate::messages::{
     GetSequencerOrderMessage, GetTransactionByHashMessage, GetTransactionsByHashMessage,
     GetTxHashsMessage, TransactionSequenceMessage,
 };
+use accumulator::{Accumulator, MerkleAccumulator};
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_types::h256::{self, H256};
+use rooch_store::meta_store::MetaStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
 use rooch_types::crypto::{RoochKeyPair, Signature};
+use rooch_types::sequencer::SequencerInfo;
 use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
 use tracing::info;
 
 pub struct SequencerActor {
-    last_order: u64,
+    last_sequencer_info: SequencerInfo,
+    tx_accumulator: MerkleAccumulator,
     sequencer_key: RoochKeyPair,
     rooch_store: RoochStore,
 }
 
 impl SequencerActor {
     pub fn new(sequencer_key: RoochKeyPair, rooch_store: RoochStore) -> Result<Self> {
-        // The genesis tx order is 0, so the sequencer order should not be None
-        let last_order = rooch_store
+        // The sequencer info would be inited when genesis, so the sequencer info should not be None
+        let last_sequencer_info = rooch_store
             .get_meta_store()
-            .get_sequencer_order()?
-            .map(|order| order.last_order)
-            .ok_or_else(|| anyhow::anyhow!("Load sequencer tx order failed"))?;
+            .get_sequencer_info()?
+            .ok_or_else(|| anyhow::anyhow!("Load sequencer info failed"))?;
+        let (last_order, last_accumulator_info) = (
+            last_sequencer_info.last_order,
+            last_sequencer_info.last_accumulator_info.clone(),
+        );
         info!("Load latest sequencer order {:?}", last_order);
+        info!(
+            "Load latest sequencer accumulator info {:?}",
+            last_accumulator_info
+        );
+        let tx_accumulator = MerkleAccumulator::new_with_info(
+            last_accumulator_info,
+            rooch_store.get_transaction_accumulator_store(),
+        );
+
         Ok(Self {
-            last_order,
+            last_sequencer_info,
+            tx_accumulator,
             sequencer_key,
             rooch_store,
         })
     }
 
     pub fn last_order(&self) -> u64 {
-        self.last_order
+        self.last_sequencer_info.last_order
     }
 
     pub fn sequence(&mut self, mut tx_data: LedgerTxData) -> Result<LedgerTransaction> {
         let now = SystemTime::now();
         let tx_timestamp = now.duration_since(SystemTime::UNIX_EPOCH)?.as_millis() as u64;
 
-        let tx_order = self.last_order + 1;
+        let tx_order = self.last_sequencer_info.last_order + 1;
 
         let hash = tx_data.tx_hash();
         let mut witness_data = hash.as_ref().to_vec();
@@ -56,16 +73,26 @@ impl SequencerActor {
         let tx_order_signature = Signature::sign(&witness_hash.0, &self.sequencer_key)
             .as_ref()
             .to_vec();
+
+        // Calc transaction accumulator
+        let tx_accumulator_root = self.tx_accumulator.append(vec![hash].as_slice())?;
+        self.tx_accumulator.flush()?;
+
         let tx = LedgerTransaction::build_ledger_transaction(
             tx_data,
             tx_timestamp,
             tx_order,
             tx_order_signature,
+            tx_accumulator_root,
         );
 
+        let sequencer_info =
+            SequencerInfo::new(tx.sequence_info.tx_order, self.tx_accumulator.get_info());
+        self.rooch_store
+            .save_sequencer_info(sequencer_info.clone())?;
         self.rooch_store.save_transaction(tx.clone())?;
         info!("sequencer tx: {} order: {:?}", hash, tx_order);
-        self.last_order = tx_order;
+        self.last_sequencer_info = sequencer_info;
         Ok(tx)
     }
 }
@@ -124,6 +151,6 @@ impl Handler<GetSequencerOrderMessage> for SequencerActor {
         _msg: GetSequencerOrderMessage,
         _ctx: &mut ActorContext,
     ) -> Result<u64> {
-        Ok(self.last_order)
+        Ok(self.last_sequencer_info.last_order)
     }
 }

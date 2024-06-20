@@ -18,7 +18,9 @@ pub mod rooch;
 
 use crate::indexer::transaction::IndexerTransaction;
 pub use authenticator::Authenticator;
-pub use ledger_transaction::{L1Block, L1BlockWithBody, LedgerTransaction, LedgerTxData};
+pub use ledger_transaction::{
+    L1Block, L1BlockWithBody, L1Transaction, LedgerTransaction, LedgerTxData,
+};
 pub use rooch::{RoochTransaction, RoochTransactionData};
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]

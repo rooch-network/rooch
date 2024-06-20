@@ -55,6 +55,7 @@ move-resource-viewer = { workspace = true }
 moveos-types = { workspace = true }
 moveos-stdlib = { workspace = true }
 moveos = { workspace = true }
+accumulator = { workspace = true }
 
 framework-builder = { workspace = true }
 framework-types = { workspace = true }

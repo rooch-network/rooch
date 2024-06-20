@@ -175,7 +175,7 @@ impl MoveStructState for TxValidateResult {
 }
 
 impl TxValidateResult {
-    pub fn new_l1_block(sequencer_address: BitcoinAddress) -> Self {
+    pub fn new_l1_block_or_tx(sequencer_address: BitcoinAddress) -> Self {
         Self {
             auth_validator_id: BuiltinAuthValidator::Bitcoin.flag().into(),
             auth_validator: MoveOption::none(),

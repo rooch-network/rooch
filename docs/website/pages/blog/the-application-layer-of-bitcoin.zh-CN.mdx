@@ -1,12 +1,13 @@
 ---
 title: Rooch Network - Bitcoin 的应用层
-description: "给 Bitcoin 上的所有资产提供索引，交易以及应用场景的以资产为中心的基础设施"
+description: '给 Bitcoin 上的所有资产提供索引，交易以及应用场景的以资产为中心的基础设施'
 author: jolestar
 category: Technology
 date: 2024/04/24
+image: '/blog/bitcoin-application-layer/bitcoin-application-layer-cover.en.jpg'
 ---
 
-import PostHeader from "/components/blog/postHeader";
+import PostHeader from '/components/blog/postHeader'
 
 <PostHeader />
 
@@ -134,7 +135,7 @@ RGB/Ordinals 这样的基于客户端验证（Client side validation）的资产
 
 1. 基于 Bitcoin 的时间片轮换节点 + 数据可用层 + 欺诈证明：通过时间片轮换来实现多节点切换，保证应用的高可用以及去中心化，欺诈证明用于惩罚作恶的节点。这是 Rooch Network 会采用的方案，我们会尝试和合作伙伴一起探索如何利用 Bitcoin 来作为安全源。
 2. PoA 节点 + 数据可用层：该类型的应用可以保证数据的可验证性，任何人都可以运行一个独立的节点对数据进行校验。
-3. PoA 节点：该类型的应用可以对外提供状态证明，用户钱包可以校验自己的数据，但由于没有数据可用层保证交易的可用性，存在数据隐藏风险。它可以作为 Web2 应用到 Web3 应用的中间过渡。 
+3. PoA 节点：该类型的应用可以对外提供状态证明，用户钱包可以校验自己的数据，但由于没有数据可用层保证交易的可用性，存在数据隐藏风险。它可以作为 Web2 应用到 Web3 应用的中间过渡。
 4. 所有参与者多签：适合状态通道类的应用。
 
 客户端验证资产要求钱包不再完全信任 RPC 节点，而是要求钱包具备一定的校验能力，可以称为智能钱包。

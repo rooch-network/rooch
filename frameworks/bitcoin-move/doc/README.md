@@ -13,10 +13,12 @@ This is the reference documentation of the Bitcoin Move Framework.
 
 
 -  [`0x4::bitcoin`](bitcoin.md#0x4_bitcoin)
+-  [`0x4::bitcoin_hash`](bitcoin_hash.md#0x4_bitcoin_hash)
 -  [`0x4::genesis`](genesis.md#0x4_genesis)
 -  [`0x4::network`](network.md#0x4_network)
 -  [`0x4::opcode`](opcode.md#0x4_opcode)
 -  [`0x4::ord`](ord.md#0x4_ord)
+-  [`0x4::pending_block`](pending_block.md#0x4_pending_block)
 -  [`0x4::script_buf`](script_buf.md#0x4_script_buf)
 -  [`0x4::types`](types.md#0x4_types)
 -  [`0x4::utxo`](utxo.md#0x4_utxo)

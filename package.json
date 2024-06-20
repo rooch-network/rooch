@@ -42,5 +42,8 @@
     "rimraf": "^3.0.2",
     "eslint-config-next": "13.2.4",
     "eslint-import-resolver-alias": "1.1.2"
+  },
+  "resolutions": {
+    "esbuild": "^0.17.19"
   }
 }

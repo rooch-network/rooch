@@ -43,7 +43,7 @@ rooch statedb export --output {your file} -d {your rooch data dir} -n main -m {e
 3. rooch statedb import
 
 ```shell
-rooch statedb statedb --input {your file} -d {your rooch data dir} -n main
+rooch statedb import --input {your file} -d {your rooch data dir} -n main
 ```
 
 ### Config

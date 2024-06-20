@@ -1,0 +1,28 @@
+//# publish
+module 0x11.TestModule0 {
+    // error code 10019: INVALID_DATA_STRUCT_OVER_MAX_TYPE_DEPTH
+    struct S16 has copy,drop {v: u64}
+    struct S15 has copy,drop {v: Self.S16}
+    struct S14 has copy,drop {v: Self.S15}
+    struct S13 has copy,drop {v: Self.S14}
+    struct S12 has copy,drop {v: Self.S13}
+    struct S11 has copy,drop {v: Self.S12}
+    struct S10 has copy,drop {v: Self.S11}
+    struct S9 has copy,drop {v: Self.S10}
+    struct S8 has copy,drop {v: Self.S9}
+    struct S7 has copy,drop {v: Self.S8}
+    struct S6 has copy,drop {v: Self.S7}
+    struct S5 has copy,drop {v: Self.S6}
+    struct S4 has copy,drop {v: Self.S5}
+    struct S3 has copy,drop {v: Self.S4}
+    struct S2 has copy,drop {v: Self.S3}
+    struct S1 has copy,drop {v: Self.S2}
+    struct S0 has copy,drop {v: Self.S1}
+
+    metadata {
+        data_struct {
+            0x11::TestModule0::S0 -> true;
+        }
+    }
+}
+

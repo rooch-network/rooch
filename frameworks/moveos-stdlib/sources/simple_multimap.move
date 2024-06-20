@@ -277,7 +277,7 @@ module moveos_std::simple_multimap {
         add(&mut map, 3, 2);
         add(&mut map, 3, 3);
         let (keys, values) = to_vec_pair(map);
-        std::debug::print(&keys);
+        //std::debug::print(&keys);
         assert!(keys == vector[3, 2], 0);
         assert!(values == vector[vector[2,3], vector[1]], 1);
     }

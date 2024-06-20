@@ -336,7 +336,25 @@ function install_toolchain {
 
 function install_rustup_components_and_nightly {
     echo "Updating rustup and installing rustfmt & clippy"
-    rustup update
+    # retry rustup
+    MAX_RETRIES=5
+    RETRY_COUNT=0
+    SUCCESS=false
+
+    while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+        rustup update && SUCCESS=true && break
+        RETRY_COUNT=$((RETRY_COUNT+1))
+        echo "Attempt $RETRY_COUNT failed. Retrying in 10 seconds..."
+        sleep 10
+    done
+
+    if [ $SUCCESS = false ]; then
+        echo "Failed to update Rustup after $MAX_RETRIES attempts."
+        exit 1
+    else
+        echo "Rustup updated successfully."
+    fi
+
     rustup component add rustfmt
     rustup component add clippy
 
@@ -753,7 +771,7 @@ if [[ "$INSTALL_BUILD_TOOLS" == "false" ]] && \
    INSTALL_BUILD_TOOLS="true"
 fi
 
-if [ ! -f rust-toolchain ]; then
+if [ ! -f rust-toolchain.toml ]; then
 	echo "Unknown location. Please run this from the RoochNetwork moveos repository. Abort."
 	exit 1
 fi
@@ -837,7 +855,7 @@ if [[ "$INSTALL_BUILD_TOOLS" == "true" ]]; then
   install_lld
 
   install_rustup "$BATCH_MODE"
-  install_toolchain "$(cat ./rust-toolchain)"
+  install_toolchain "$(awk -F ' = ' '/^channel/ {gsub(/"/, "", $2); print $2}' ./rust-toolchain.toml | tr -d '\n')"
   install_rustup_components_and_nightly
 
   install_cargo_sort

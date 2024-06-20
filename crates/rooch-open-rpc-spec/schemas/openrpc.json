@@ -12,7 +12,7 @@
       "name": "Apache-2.0",
       "url": "https://raw.githubusercontent.com/rooch-network/rooch/main/LICENSE"
     },
-    "version": "0.5.4"
+    "version": "0.5.5"
   },
   "methods": [
     {
@@ -1237,6 +1237,12 @@
           "owner": {
             "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
           },
+          "owner_bitcoin_address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "size": {
             "type": "integer",
             "format": "uint64",
@@ -1656,6 +1662,34 @@
           {
             "type": "object",
             "required": [
+              "block_hash",
+              "chain_id",
+              "txid",
+              "type"
+            ],
+            "properties": {
+              "block_hash": {
+                "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+              },
+              "chain_id": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "txid": {
+                "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "l1_tx"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
               "action",
               "action_type",
               "raw",
@@ -1675,6 +1709,12 @@
               },
               "sender": {
                 "type": "string"
+              },
+              "sender_bitcoin_address": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "sequence_number": {
                 "type": "integer",
@@ -1913,6 +1953,12 @@
           },
           "owner": {
             "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
+          },
+          "owner_bitcoin_address": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "size": {
             "type": "integer",

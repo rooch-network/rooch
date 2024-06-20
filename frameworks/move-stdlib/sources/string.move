@@ -2,6 +2,7 @@
 module std::string {
     use std::vector;
     use std::option::{Self, Option};
+    use std::ascii;
 
     /// An invalid UTF8 encoding.
     const EINVALID_UTF8: u64 = 1;
@@ -18,6 +19,18 @@ module std::string {
     public fun utf8(bytes: vector<u8>): String {
         assert!(internal_check_utf8(&bytes), EINVALID_UTF8);
         String{bytes}
+    }
+
+    /// Convert an ASCII string to a UTF8 string
+    public fun from_ascii(s: ascii::String): String {
+        String { bytes: ascii::into_bytes(s) }
+    }
+
+    /// Convert an UTF8 string to an ASCII string.
+    /// Aborts if `s` is not valid ASCII
+    public fun to_ascii(s: String): ascii::String {
+        let String { bytes } = s;
+        ascii::string(bytes)
     }
 
     /// Tries to create a new string from a sequence of bytes.

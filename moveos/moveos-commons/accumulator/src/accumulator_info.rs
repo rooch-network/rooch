@@ -7,6 +7,7 @@
 use bcs_ext::Sample;
 use moveos_types::h256::{ACCUMULATOR_PLACEHOLDER_HASH, H256};
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 /// `AccumulatorInfo` is the object we store in the storage. It consists of the
 /// info that we can create MerkleAccumulator.
@@ -68,5 +69,18 @@ impl Default for AccumulatorInfo {
 impl Sample for AccumulatorInfo {
     fn sample() -> Self {
         Self::default()
+    }
+}
+
+impl fmt::Display for AccumulatorInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "AccumulatorInfo[accumulator_root: {:?}, frozen_subtree_roots: {:?}, num_leaves: {}, num_nodes: {}]",
+            self.accumulator_root,
+            self.frozen_subtree_roots,
+            self.num_leaves,
+            self.num_nodes
+        )
     }
 }

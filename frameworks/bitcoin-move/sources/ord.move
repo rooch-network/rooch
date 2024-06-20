@@ -16,10 +16,10 @@ module bitcoin_move::ord {
     use moveos_std::type_info;
     use moveos_std::bag;
     use moveos_std::string_utils;
-    use moveos_std::address;
 
     use bitcoin_move::types::{Self, Witness, Transaction};
     use bitcoin_move::utxo::{Self, UTXO};
+    use bitcoin_move::bitcoin_hash;
     
     friend bitcoin_move::genesis;
     friend bitcoin_move::bitcoin;
@@ -192,6 +192,7 @@ module bitcoin_move::ord {
         object::borrow(inscription_store_obj)
     }
 
+    //===== InscriptionID =====//
 
     public fun new_inscription_id(txid: address, index: u32) : InscriptionID {
         InscriptionID{
@@ -203,6 +204,41 @@ module bitcoin_move::ord {
     public fun derive_inscription_id(inscription_id: InscriptionID) : ObjectID {
         let parent_id = object::named_object_id<InscriptionStore>();
         object::custom_child_object_id<InscriptionID, Inscription>(parent_id, inscription_id)
+    }
+
+    /// Prase InscriptionID from String
+    public fun parse_inscription_id(inscription_id: &String) : Option<InscriptionID> {
+        let offset = string::index_of(inscription_id, &std::string::utf8(b"i"));
+        if (offset == string::length(inscription_id)) {
+            return option::none()
+        };
+
+        let txid_str = string::sub_string(inscription_id, 0, offset);
+
+        // Bitcoin tx id hex string is reversed
+        let txid_option = bitcoin_hash::from_ascii_bytes_option(string::bytes(&txid_str));
+        if (option::is_none(&txid_option)) {
+            return option::none()
+        };
+
+        let index_str = string::sub_string(inscription_id, offset+1, string::length(inscription_id));
+        let index_option = string_utils::parse_u64_option(&index_str);
+        if (option::is_none(&index_option)) {
+            return option::none()
+        };
+
+        option::some(InscriptionID{
+            txid: option::extract<address>(&mut txid_option),
+            index: (option::extract<u64>(&mut index_option) as u32),
+        })
+    }
+
+    public fun inscription_id_to_string(inscription_id: &InscriptionID) : String {
+        let txid_str = bitcoin_hash::to_string(inscription_id.txid);
+        let index_str = string_utils::to_string_u32(inscription_id.index);
+        string::append(&mut txid_str, std::string::utf8(b"i"));
+        string::append(&mut txid_str, index_str);
+        txid_str
     }
 
     // ==== Inscription ==== //
@@ -290,7 +326,7 @@ module bitcoin_move::ord {
         object::borrow(inscription_obj)
     }
 
-    public fun spend_utxo(utxo_obj: &mut Object<UTXO>, tx: &Transaction, input_utxo_values: vector<u64>, input_index: u64): (vector<SatPoint>, vector<Flotsam>){
+    public(friend) fun spend_utxo(utxo_obj: &mut Object<UTXO>, tx: &Transaction, input_utxo_values: vector<u64>, input_index: u64): (vector<SatPoint>, vector<Flotsam>){
         let utxo = object::borrow_mut(utxo_obj);
 
         let seals = utxo::remove_seals<Inscription>(utxo);
@@ -336,7 +372,7 @@ module bitcoin_move::ord {
         (new_sat_points, flotsams)
     }
 
-    public fun handle_coinbase_tx(tx: &Transaction, flotsams: vector<Flotsam>, block_height: u64): vector<SatPoint>{
+    public(friend) fun handle_coinbase_tx(tx: &Transaction, flotsams: vector<Flotsam>, block_height: u64): vector<SatPoint>{
         let new_sat_points = vector::empty();
         if(vector::is_empty(&flotsams)){
             return new_sat_points
@@ -454,7 +490,8 @@ module bitcoin_move::ord {
         new_sat_point
     }
 
-    public fun process_transaction(tx: &Transaction, input_utxo_values: vector<u64>): vector<SatPoint>{
+
+    public(friend) fun process_transaction(tx: &Transaction, input_utxo_values: vector<u64>): vector<SatPoint>{
         let sat_points = vector::empty();
 
         let inscriptions = from_transaction(tx, option::some(input_utxo_values));
@@ -640,7 +677,7 @@ module bitcoin_move::ord {
 
     // ==== InscriptionRecord ==== //
 
-    public fun unpack_record(record: InscriptionRecord): 
+    fun unpack_record(record: InscriptionRecord): 
     (vector<u8>, Option<String>, Option<String>, vector<u8>, Option<String>, vector<InscriptionID>, Option<u64>){
         let InscriptionRecord{
             body,
@@ -658,7 +695,7 @@ module bitcoin_move::ord {
         (body, content_encoding, content_type, metadata, metaprotocol, parents, pointer)
     }
 
-    public fun from_transaction(tx: &Transaction, input_utxo_values: Option<vector<u64>>): vector<Inscription>{
+    fun from_transaction(tx: &Transaction, input_utxo_values: Option<vector<u64>>): vector<Inscription>{
         let inscription_store = borrow_mut_inscription_store();
         let tx_id = types::tx_id(tx);
         let inscriptions = vector::empty();
@@ -714,7 +751,7 @@ module bitcoin_move::ord {
         inscriptions
     }
 
-    public fun from_transaction_bytes(transaction_bytes: vector<u8>): vector<Inscription>{
+    fun from_transaction_bytes(transaction_bytes: vector<u8>): vector<Inscription>{
         let transaction = bcs::from_bytes<Transaction>(transaction_bytes);
         from_transaction(&transaction, option::none())
     }
@@ -1114,16 +1151,6 @@ module bitcoin_move::ord {
     #[test_only]
     struct TestProtocol has key {}
 
-    #[test_only]
-    public fun new_inscription_id_for_test(        
-        txid: address,
-        index: u32,
-    ) : InscriptionID {
-        InscriptionID {
-            txid,
-            index,
-        }
-    }
 
     #[test_only]
     public fun new_inscription_for_test(
@@ -1163,7 +1190,7 @@ module bitcoin_move::ord {
         // prepare test inscription
         let test_address = @0x5416690eaaf671031dc609ff8d36766d2eb91ca44f04c85c27628db330f40fd1;
         let test_txid = @0x21da2ae8cc773b020b4873f597369416cf961a1896c24106b0198459fec2df77;
-        let test_inscription_id = new_inscription_id_for_test(test_txid, 0);
+        let test_inscription_id = new_inscription_id(test_txid, 0);
 
         let content_type = b"application/wasm";
         let body = x"0061736d0100000001080260017f00600000020f0107636f6e736f6c65036c6f670000030201010503010001071702066d656d6f727902000a68656c6c6f576f726c6400010a08010600410010000b0b14010041000b0e48656c6c6f2c20576f726c642100";
@@ -1223,42 +1250,13 @@ module bitcoin_move::ord {
         assert!(invalid_reason == &test_invalid_reason, 4);
     }
 
-    // ==== Prase InscriptionID ==== //
-    public fun parse_inscription_id(inscription_id: &String) : Option<InscriptionID> {
-        let offset = string::index_of(inscription_id, &std::string::utf8(b"i"));
-        if (offset == string::length(inscription_id)) {
-            return option::none()
-        };
-
-        let txid_str = string::sub_string(inscription_id, 0, offset);
-        let ascii_txid_option = std::ascii::try_string(string::into_bytes(txid_str));
-        if (option::is_none(&ascii_txid_option)) {
-            return option::none()
-        };
-
-        let txid_hex_ascii = option::extract(&mut ascii_txid_option);
-        let txid_option = address::from_ascii_string(txid_hex_ascii);
-        if (option::is_none(&txid_option)) {
-            return option::none()
-        };
-
-        let index_str = string::sub_string(inscription_id, offset+1, string::length(inscription_id));
-        let index_option = string_utils::parse_u64_option(&index_str);
-        if (option::is_none(&index_option)) {
-            return option::none()
-        };
-
-        option::some(InscriptionID{
-            txid: option::extract<address>(&mut txid_option),
-            index: (option::extract<u64>(&mut index_option) as u32),
-        })
-    }
-
     #[test]
     fun test_parse_inscription_id_ok(){
         let inscription_id_str = std::string::utf8(b"6f55475ce65054aa8371d618d217da8c9a764cecdaf4debcbce8d6312fe6b4d8i0");
         let inscription_id_option = parse_inscription_id(&inscription_id_str);
         assert!(option::is_some(&inscription_id_option), 1);
+        let inscription_id = option::destroy_some(inscription_id_option);
+        assert!(inscription_id_str == inscription_id_to_string(&inscription_id), 2);
     }
 
     #[test]

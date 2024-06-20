@@ -140,11 +140,7 @@ export const TransactionsTable = () => {
                 <TableCell>
                   <div className="flex flex-col md:flex-row items-start md:items-center justify-start gap-1">
                     <span className="hover:no-underline text-blue-400 hover:text-blue-500 dark:text-blue-300 dark:hover:text-blue-200 transition-all cursor-pointer">
-                      <p>
-                        {formatAddress(
-                          (tx.transaction.data as LedgerTxDataView1).sender.toUpperCase(),
-                        )}
-                      </p>
+                      <p>{formatAddress((tx.transaction.data as LedgerTxDataView1).sender)}</p>
                     </span>
                   </div>
                 </TableCell>

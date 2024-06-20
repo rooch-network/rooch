@@ -1,12 +1,13 @@
 ---
 title: Rooch Network - The Application Layer of Bitcoin
-description: "an Asset-Centric infrastructure that provides indexing, trading, and enables application scenarios for all Bitcoin assets."
+description: 'an Asset-Centric infrastructure that provides indexing, trading, and enables application scenarios for all Bitcoin assets.'
 author: jolestar
 category: Technology
 date: 2024/04/24
+image: '/blog/bitcoin-application-layer/bitcoin-application-layer-cover.en.jpg'
 ---
 
-import PostHeader from "/components/blog/postHeader";
+import PostHeader from '/components/blog/postHeader'
 
 <PostHeader />
 
@@ -78,7 +79,6 @@ Deriving new assets from Bitcoin L1 assets, which is a model based on issuing ne
 
 Using Bitcoin L1 assets as props or identity in applications. For example, a certain Inscription representing game equipment, directly used in games on L2. Or using L1 assets for voting governance.
 
-
 **Programming Bitcoin Scripts**
 
 Generate Bitcoin scripts and transactions within smart contracts, and enforce user compliance through constraints built on L2 (such as governance or collateral). Users must sign these transactions and include them in L1 blocks, or they face penalties. This feature allows for the creation of on-chain multisig wallets, DAOs, and provides additional security for multisig bridges on Bitcoin.
@@ -93,8 +93,8 @@ The idea behind the DSTP is to distribute different sub-trees of the stackable s
 
 In the "stackable" state model, each VApp node contains the state of both Bitcoin and Rooch, which are the global state. The state of individual applications is a sub-tree of the global state tree and can only exist on specific nodes. If a transaction only modifies the state of an application without altering the global state, it does not need to be broadcast to the network; the application only needs to periodically sync its state root to the global state, essentially acting as application-specific sharding.
 
-This creates a distributed state tree whose **Root on Bitcoin, with data spread across various application nodes in the P2P network**. 
-This forms a distributed state tree with **Root on Bitcoin and data scattered on each application node. Assets within applications can move between state trees and also interact with Bitcoin assets.
+This creates a distributed state tree whose **Root on Bitcoin, with data spread across various application nodes in the P2P network**.
+This forms a distributed state tree with \*\*Root on Bitcoin and data scattered on each application node. Assets within applications can move between state trees and also interact with Bitcoin assets.
 
 ![Distributed State Tree Protocol](/blog/bitcoin-application-layer/dstp.svg)
 
@@ -110,11 +110,11 @@ Settling directly on Bitcoin L1 still faces issues with high transaction costs a
 1. Custodial bridge models are widely used. How to use Bitcoin to ensure the bridge's safety and decentralization is still an area of exploration. Rooch will collaborate with dedicated cross-chain bridge projects to implement asset bridging and enhance the bridge's security through Rooch's programming capabilities.
 2. Non-custodial models: This is the main direction Rooch is exploring, such as the [statechains](https://bitcoinops.org/en/topics/statechains/).
 
-For the Client-side validation assets, we will try to design a asset leap protocol. 
+For the Client-side validation assets, we will try to design a asset leap protocol.
 
 If a large number of new assets are issued on Bitcoin in the future, a protocol to facilitate asset migration between the Bitcoin network and L2 is needed to reduce the state storage pressure on Bitcoin. Also, new assets issued on L2 should be able to migrate to Bitcoin, thereby gaining higher security and broader circulation capabilities.
 
-**The core idea of the asset leap protocol is as follows**: 
+**The core idea of the asset leap protocol is as follows**:
 
 Assets like RGB/Ordinals that are based on client-side validation use Bitcoin to register ownership, but their validity is verified by the client.
 

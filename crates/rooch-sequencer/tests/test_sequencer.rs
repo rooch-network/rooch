@@ -15,7 +15,7 @@ use rooch_types::{
 fn init_rooch_db(opt: &RoochOpt) -> Result<RoochDB> {
     let rooch_db = RoochDB::init(opt.store_config())?;
     let network = opt.network();
-    let genesis = RoochGenesis::load_or_init(network, &rooch_db)?;
+    let _genesis = RoochGenesis::load_or_init(network, &rooch_db)?;
     Ok(rooch_db)
 }
 

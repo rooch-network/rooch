@@ -44,7 +44,7 @@ use rooch_rpc_api::{
 };
 use rooch_types::indexer::event::IndexerEventID;
 use rooch_types::indexer::state::IndexerStateID;
-use rooch_types::transaction::rooch::RoochTransaction;
+use rooch_types::transaction::{RoochTransaction, TransactionWithInfo};
 use std::cmp::min;
 use std::str::FromStr;
 use tracing::info;
@@ -115,6 +115,39 @@ impl RoochServer {
             });
         }
         Ok(display_field_views)
+    }
+
+    async fn transactions_to_view(
+        &self,
+        data: Vec<TransactionWithInfo>,
+    ) -> Result<Vec<TransactionWithInfoView>> {
+        let rooch_addresses = data
+            .iter()
+            .filter_map(|tx| tx.transaction.sender())
+            .collect::<Vec<_>>();
+        let address_mapping = self
+            .rpc_service
+            .get_bitcoin_addresses(rooch_addresses)
+            .await?;
+        let bitcoin_network = self.rpc_service.get_bitcoin_network().await?;
+        let data = data
+            .into_iter()
+            .map(|tx| {
+                let sender_bitcoin_address = match tx.transaction.sender() {
+                    Some(rooch_address) => address_mapping
+                        .get(&rooch_address)
+                        .map(|addr| addr.clone().map(|a| a.format(bitcoin_network))),
+                    None => None,
+                }
+                .flatten()
+                .transpose()?;
+                Ok(TransactionWithInfoView::new_from_transaction_with_info(
+                    tx,
+                    sender_bitcoin_address,
+                ))
+            })
+            .collect::<Result<Vec<_>>>()?;
+        Ok(data)
     }
 }
 
@@ -362,6 +395,31 @@ impl RoochAPIServer for RoochServer {
                 })
                 .collect()
         };
+
+        // Get owner_bitcoin_address
+        let addresses = objects_view
+            .iter()
+            .filter_map(|o| o.as_ref().map(|s| s.owner.into()))
+            .collect::<Vec<_>>();
+        let btc_network = self.rpc_service.get_bitcoin_network().await?;
+        let address_mapping = self.rpc_service.get_bitcoin_addresses(addresses).await?;
+
+        let objects_view = objects_view
+            .into_iter()
+            .map(|o| {
+                o.map(|s| {
+                    let rooch_address = s.owner.into();
+                    let bitcoin_address = address_mapping
+                        .get(&rooch_address)
+                        .expect("should exist.")
+                        .clone()
+                        .map(|a| a.format(btc_network))
+                        .transpose()?;
+                    Ok(s.with_owner_bitcoin_address(bitcoin_address))
+                })
+                .transpose()
+            })
+            .collect::<Result<Vec<_>>>()?;
         Ok(objects_view)
     }
 
@@ -427,13 +485,41 @@ impl RoochAPIServer for RoochServer {
     ) -> RpcResult<Vec<Option<TransactionWithInfoView>>> {
         let tx_hashes: Vec<H256> = tx_hashes.iter().map(|m| (*m).into()).collect::<Vec<_>>();
 
+        let bitcoin_network = self.rpc_service.get_bitcoin_network().await?;
         let data = self
             .aggregate_service
             .get_transaction_with_info(tx_hashes)
-            .await?
-            .into_iter()
-            .map(|item| item.map(TransactionWithInfoView::from))
+            .await?;
+
+        let rooch_addresses = data
+            .iter()
+            .filter_map(|tx| tx.as_ref().and_then(|tx| tx.transaction.sender()))
             .collect::<Vec<_>>();
+        let address_mapping = self
+            .rpc_service
+            .get_bitcoin_addresses(rooch_addresses)
+            .await?;
+
+        let data = data
+            .into_iter()
+            .map(|item| {
+                item.map(|tx| {
+                    let sender_bitcoin_address = match tx.transaction.sender() {
+                        Some(rooch_address) => address_mapping
+                            .get(&rooch_address)
+                            .map(|addr| addr.clone().map(|a| a.format(bitcoin_network))),
+                        None => None,
+                    }
+                    .flatten()
+                    .transpose()?;
+                    Ok(TransactionWithInfoView::new_from_transaction_with_info(
+                        tx,
+                        sender_bitcoin_address,
+                    ))
+                })
+                .transpose()
+            })
+            .collect::<Result<Vec<_>>>()?;
 
         Ok(data)
     }
@@ -502,8 +588,9 @@ impl RoochAPIServer for RoochServer {
             .await?
             .into_iter()
             .flatten()
-            .map(TransactionWithInfoView::from)
             .collect::<Vec<_>>();
+
+        let data = self.transactions_to_view(data).await?;
 
         Ok(TransactionWithInfoPageView {
             data,
@@ -582,13 +669,13 @@ impl RoochAPIServer for RoochServer {
         let mut data = self
             .aggregate_service
             .build_transaction_with_infos(txs)
-            .await?
-            .into_iter()
-            .map(TransactionWithInfoView::from)
-            .collect::<Vec<_>>();
+            .await?;
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
+
+        let data = self.transactions_to_view(data).await?;
+
         let next_cursor = data
             .last()
             .cloned()
@@ -703,22 +790,36 @@ impl RoochAPIServer for RoochServer {
                 .collect::<Vec<_>>()
         };
 
+        let network = self.rpc_service.get_bitcoin_network().await?;
+        let rooch_addresses = states.iter().map(|s| s.owner).collect::<Vec<_>>();
+        let bitcoin_addresses = self
+            .rpc_service
+            .get_bitcoin_addresses(rooch_addresses)
+            .await?
+            .into_values()
+            .map(|btc_addr| btc_addr.map(|addr| addr.format(network)).transpose())
+            .collect::<Result<Vec<Option<String>>>>()?;
+
         let mut data = annotated_states_with_display
             .into_iter()
             .zip(states)
-            .map(|((value, annotated_state, display_fields), state)| {
-                let decoded_value = if decode {
-                    Some(AnnotatedMoveStructView::from(annotated_state.value))
-                } else {
-                    None
-                };
-                IndexerObjectStateView::new_from_object_state(
-                    state,
-                    value,
-                    decoded_value,
-                    display_fields,
-                )
-            })
+            .zip(bitcoin_addresses)
+            .map(
+                |(((value, annotated_state, display_fields), state), bitcoin_address)| {
+                    let decoded_value = if decode {
+                        Some(AnnotatedMoveStructView::from(annotated_state.value))
+                    } else {
+                        None
+                    };
+                    IndexerObjectStateView::new_from_object_state(
+                        state,
+                        value,
+                        bitcoin_address,
+                        decoded_value,
+                        display_fields,
+                    )
+                },
+            )
             .collect::<Vec<_>>();
 
         let has_next_page = data.len() > limit_of;

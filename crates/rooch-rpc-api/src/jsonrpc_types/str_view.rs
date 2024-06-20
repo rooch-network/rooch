@@ -264,3 +264,18 @@ impl std::fmt::Display for MoveStringView {
         // write!(f, "0x{}", hex::encode(&self.0))
     }
 }
+
+/// This trait is used to convert a struct to a human readable string
+/// `verbose`: if true, the human readable string will be more detailed
+pub trait HumanReadableDisplay {
+    fn to_human_readable_string(&self, verbose: bool) -> String;
+}
+
+impl<T> HumanReadableDisplay for StrView<T>
+where
+    T: HumanReadableDisplay,
+{
+    fn to_human_readable_string(&self, verbose: bool) -> String {
+        self.0.to_human_readable_string(verbose)
+    }
+}

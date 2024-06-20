@@ -15,6 +15,7 @@
 -  [Constants](#@Constants_0)
 -  [Function `header`](#0x4_types_header)
 -  [Function `txdata`](#0x4_types_txdata)
+-  [Function `unpack_block`](#0x4_types_unpack_block)
 -  [Function `version`](#0x4_types_version)
 -  [Function `prev_blockhash`](#0x4_types_prev_blockhash)
 -  [Function `merkle_root`](#0x4_types_merkle_root)
@@ -46,14 +47,15 @@
 -  [Function `txout_address`](#0x4_types_txout_address)
 -  [Function `txout_object_address`](#0x4_types_txout_object_address)
 -  [Function `unpack_txout`](#0x4_types_unpack_txout)
+-  [Function `is_coinbase_tx`](#0x4_types_is_coinbase_tx)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::address</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
-<b>use</b> <a href="">0x2::hash</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
+<b>use</b> <a href="bitcoin_hash.md#0x4_bitcoin_hash">0x4::bitcoin_hash</a>;
 <b>use</b> <a href="script_buf.md#0x4_script_buf">0x4::script_buf</a>;
 </code></pre>
 
@@ -197,6 +199,17 @@
 
 
 
+<a name="0x4_types_unpack_block"></a>
+
+## Function `unpack_block`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_unpack_block">unpack_block</a>(self: <a href="types.md#0x4_types_Block">types::Block</a>): (<a href="types.md#0x4_types_Header">types::Header</a>, <a href="">vector</a>&lt;<a href="types.md#0x4_types_Transaction">types::Transaction</a>&gt;)
+</code></pre>
+
+
+
 <a name="0x4_types_version"></a>
 
 ## Function `version`
@@ -269,7 +282,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_header_to_bytes">header_to_bytes</a>(self: <a href="types.md#0x4_types_Header">types::Header</a>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_header_to_bytes">header_to_bytes</a>(self: &<a href="types.md#0x4_types_Header">types::Header</a>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -280,7 +293,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_header_to_hash">header_to_hash</a>(self: <a href="types.md#0x4_types_Header">types::Header</a>): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_header_to_hash">header_to_hash</a>(self: &<a href="types.md#0x4_types_Header">types::Header</a>): <b>address</b>
 </code></pre>
 
 
@@ -542,4 +555,15 @@ This value is used for coinbase transactions because they don't have any previou
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_unpack_txout">unpack_txout</a>(self: <a href="types.md#0x4_types_TxOut">types::TxOut</a>): (u64, <a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>)
+</code></pre>
+
+
+
+<a name="0x4_types_is_coinbase_tx"></a>
+
+## Function `is_coinbase_tx`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_is_coinbase_tx">is_coinbase_tx</a>(tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>): bool
 </code></pre>

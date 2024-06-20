@@ -1,12 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::cli_types::{CommandAction, WalletContextOptions};
+use crate::commands::move_cli::serialized_success;
+use async_trait::async_trait;
 use clap::Parser;
 use codespan_reporting::diagnostic::Severity;
-use move_cli::base::test;
+use move_cli::{base::test, Move};
 use move_command_line_common::address::NumericalAddress;
 use move_command_line_common::parser::NumberFormat;
-use move_package::BuildConfig;
 use move_unit_test::extensions::set_extension_hook;
 use move_vm_runtime::native_extensions::NativeContextExtensions;
 use moveos_config::DataDirPath;
@@ -23,15 +25,15 @@ use moveos_verifier::build::build_model_with_test_attr;
 use moveos_verifier::metadata::run_extended_checks;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
-use rooch_framework::natives::{all_natives, NativeGasParameters};
+use rooch_genesis::FrameworksGasParameters;
+use rooch_types::error::{RoochError, RoochResult};
+use serde_json::Value;
 use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 use termcolor::Buffer;
 
-use crate::cli_types::WalletContextOptions;
-
 #[derive(Parser)]
 #[group(skip)]
-pub struct Test {
+pub struct TestCommand {
     #[clap(flatten)]
     pub test: test::Test,
 
@@ -45,22 +47,30 @@ pub struct Test {
 
     #[clap(flatten)]
     config_options: WalletContextOptions,
+
+    #[clap(flatten)]
+    move_args: Move,
+
+    /// Return command outputs in json format
+    #[clap(long, default_value = "false")]
+    json: bool,
 }
 
-impl Test {
-    pub async fn execute(
-        self,
-        path: Option<PathBuf>,
-        build_config: BuildConfig,
-    ) -> anyhow::Result<()> {
+#[async_trait]
+impl CommandAction<Option<Value>> for TestCommand {
+    async fn execute(self) -> RoochResult<Option<Value>> {
         let context = self.config_options.build()?;
 
-        let mut build_config = build_config;
+        let mut build_config = self.move_args.build_config;
         build_config
             .additional_named_addresses
             .extend(context.parse_and_resolve_addresses(self.named_addresses)?);
 
-        let root_path = path.clone().unwrap_or_else(|| PathBuf::from("."));
+        let root_path = self
+            .move_args
+            .package_path
+            .clone()
+            .unwrap_or_else(|| PathBuf::from("."));
 
         build_config.dev_mode = true;
 
@@ -90,16 +100,25 @@ impl Test {
             let buffer_output = String::from_utf8_lossy(buffer.as_slice()).to_string();
             eprintln!("{}", buffer_output);
             if global_env.has_errors() {
-                return Err(anyhow::Error::msg("extended checks failed"));
+                return Err(RoochError::from(anyhow::Error::msg(
+                    "extended checks failed",
+                )));
             }
         }
 
         //TODO define gas metering
         let cost_table = move_vm_test_utils::gas_schedule::INITIAL_COST_SCHEDULE.clone();
-        let natives = all_natives(NativeGasParameters::zeros());
+        let gas_parameter = FrameworksGasParameters::initial();
+        let natives = gas_parameter.all_natives();
         set_extension_hook(Box::new(new_moveos_natives_runtime));
-        self.test
-            .execute(path, build_config, natives, Some(cost_table))
+        self.test.execute(
+            self.move_args.package_path,
+            build_config,
+            natives,
+            Some(cost_table),
+        )?;
+
+        serialized_success(self.json)
     }
 }
 

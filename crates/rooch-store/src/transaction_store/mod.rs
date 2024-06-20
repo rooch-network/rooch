@@ -21,6 +21,7 @@ derive_store!(
     H256,
     TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME
 );
+
 pub trait TransactionStore {
     fn save_transaction(&self, transaction: LedgerTransaction) -> Result<()>;
     fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<LedgerTransaction>>;

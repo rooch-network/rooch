@@ -2,11 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use log::{debug, warn};
-use std::collections::VecDeque;
-use std::ffi::CString;
-use std::ops::Deref;
-use std::vec;
-
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_core_types::vm_status::StatusCode;
@@ -17,6 +12,10 @@ use move_vm_types::pop_arg;
 use move_vm_types::values::{Struct, Value};
 use serde_json::Value as JSONValue;
 use smallvec::{smallvec, SmallVec};
+use std::collections::VecDeque;
+use std::ffi::CString;
+use std::ops::Deref;
+use std::vec;
 
 use moveos_wasm::wasm::{
     create_wasm_instance, get_instance_pool, insert_wasm_instance, put_data_on_stack,
@@ -514,10 +513,12 @@ fn execute_wasm_function_inner(
                         }
                         Err(err) => {
                             warn!(
-                                "execute_wasm_function_inner->calling_function_error:{:?}",
-                                &err
+                                "execute_wasm_function_inner->calling_function_error:{}",
+                                err.message()
                             );
-
+                            if log::log_enabled!(log::Level::Debug) {
+                                debug!("trace:{:?}", err.trace());
+                            }
                             Ok(NativeResult::err(
                                 gas_params.base_create_execution,
                                 E_WASM_EXECUTION_FAILED,

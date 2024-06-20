@@ -1,19 +1,19 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::anyhow;
+use crate::cli_types::{CommandAction, WalletContextOptions};
+use crate::commands::move_cli::print_serialized_success;
+use async_trait::async_trait;
 use clap::Parser;
-use move_cli::base::new;
+use move_cli::{base::new, Move};
 use move_core_types::account_address::AccountAddress;
 use moveos_types::addresses::{
     MOVEOS_STD_ADDRESS, MOVEOS_STD_ADDRESS_NAME, MOVE_STD_ADDRESS, MOVE_STD_ADDRESS_NAME,
 };
 use rooch_config::ROOCH_CLIENT_CONFIG;
 use rooch_framework::{ROOCH_FRAMEWORK_ADDRESS, ROOCH_FRAMEWORK_ADDRESS_NAME};
-use rooch_types::error::RoochError;
-use std::path::PathBuf;
-
-use crate::cli_types::WalletContextOptions;
+use rooch_types::error::{RoochError, RoochResult};
+use serde_json::Value;
 
 const MOVE_STDLIB_PKG_NAME: &str = "MoveStdlib";
 const MOVE_STDLIB_PKG_PATH: &str = "{ git = \"https://github.com/rooch-network/rooch.git\", subdir = \"frameworks/move-stdlib\", rev = \"main\" }";
@@ -25,7 +25,7 @@ const ROOCH_FRAMEWORK_PKG_NAME: &str = "RoochFramework";
 const ROOCH_FRAMEWORK_PKG_PATH: &str = "{ git = \"https://github.com/rooch-network/rooch.git\", subdir = \"frameworks/rooch-framework\", rev = \"main\" }";
 
 #[derive(Parser)]
-pub struct New {
+pub struct NewCommand {
     /// Existing account address from Rooch
     #[clap(long = "address", short = 'a')]
     account_address: Option<AccountAddress>,
@@ -35,9 +35,16 @@ pub struct New {
 
     #[clap(flatten)]
     wallet_context_options: WalletContextOptions,
+
+    #[clap(flatten)]
+    move_args: Move,
+
+    /// Return command outputs in json format
+    #[clap(long, default_value = "false")]
+    json: bool,
 }
 
-impl New {
+impl NewCommand {
     async fn get_active_account_address_from_config(&self) -> Result<String, RoochError> {
         // build wallet context options
         let context = self.wallet_context_options.build()?;
@@ -53,8 +60,13 @@ impl New {
             )),
         }
     }
+}
 
-    pub async fn execute(self, path: Option<PathBuf>) -> anyhow::Result<()> {
+#[async_trait]
+impl CommandAction<Option<Value>> for NewCommand {
+    async fn execute(self) -> RoochResult<Option<Value>> {
+        let path = self.move_args.package_path.clone();
+
         let name = &self.name.to_lowercase();
         let address = if let Some(account_address) = &self.account_address {
             // Existing account address is available
@@ -63,7 +75,7 @@ impl New {
             // Existing account address is not available, use the active address from config file generated from the command `rooch init`
             match self.get_active_account_address_from_config().await {
                 Ok(active_account_address) => active_account_address,
-                Err(err) => return Err(anyhow!("{}", err)),
+                Err(err) => return Err(err),
             }
         };
 
@@ -94,6 +106,8 @@ impl New {
                 ),
             ],
             "",
-        )
+        )?;
+
+        print_serialized_success(self.json)
     }
 }
