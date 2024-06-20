@@ -13,23 +13,27 @@ export default function PostHeader() {
     setPage(getPagesUnderRoute('/blog').find((page) => page.route === pathname))
   }, [pathname])
 
+  const ogImage = page
+    ? `https://rooch.network${page.frontMatter.image}`
+    : 'https://rooch.network/logo/rooch-banner.png'
+
   return page ? (
     <>
       <Head>
         <title>{page.frontMatter.title}</title>
         <meta property="og:title" content={page.frontMatter.title} />
         <meta property="og:description" content={page.frontMatter.description} />
-        <meta property="og:image" content={page.frontMatter.image} />
+        <meta property="og:image" content={ogImage} />
         <meta property="og:type" content="article" />
-        <meta property="og:url" content={`https://rooch.network/${pathname}`} />
+        <meta property="og:url" content={`https://rooch.network${pathname}`} />
         <meta property="twitter:card" content="summary_large_image" />
         <meta property="twitter:title" content={page.frontMatter.title} />
         <meta property="twitter:description" content={page.frontMatter.description} />
-        <meta property="twitter:image" content={page.frontMatter.image} />
+        <meta property="twitter:image" content={ogImage} />
       </Head>
       <div className="text-center inline-block mx-auto w-full">
         <h1 className="font-bold text-5xl mt-6">{page.frontMatter.title}</h1>
-        <h2 className=" my-3 text-sm inline-flex gap-2 uppercase text-gray-500 dark:text-gray-300">
+        <h2 className="my-3 text-sm inline-flex gap-2 uppercase text-gray-500 dark:text-gray-300">
           {page.frontMatter.category}
           {' | '}
           <Image
