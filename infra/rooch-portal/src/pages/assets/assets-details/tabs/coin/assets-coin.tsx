@@ -4,9 +4,8 @@ import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { BalanceInfoView } from '@roochnetwork/rooch-sdk'
 import {
   useCurrentAccount,
-  useCurrentSession,
+  useCurrentSession, useRoochClient,
   useRoochClientQuery,
-  useTransferCoin,
 } from '@roochnetwork/rooch-sdk-kit'
 import { AlertCircle, ArrowLeft, Wallet } from 'lucide-react'
 import {
@@ -33,8 +32,9 @@ export const AssetsCoin: React.FC = () => {
   const sessionKey = useCurrentSession()
   const { toast } = useToast()
 
-  const { mutateAsync: transferCoin } = useTransferCoin()
+  // const { mutateAsync: transferCoin } = useTransferCoin()
 
+  const client = useRoochClient()
   const [recipient, setRecipient] = useState<string>('')
   const [amount, setAmount] = useState<string>('')
   const [transferLoading, setTransferLoading] = useState<boolean>(false)
@@ -191,25 +191,50 @@ export const AssetsCoin: React.FC = () => {
     const amountNumber = Math.floor(Number(amount) * 10 ** selectedCoin.decimals)
 
     try {
-      await transferCoin({
-        account: sessionKey,
-        recipient: recipient,
-        amount: amountNumber,
-        coinType: selectedCoin.coin_type,
+
+      const result = await client.executeTransaction({
+        address: sessionKey.getAddress(),
+        authorizer: sessionKey.getAuthorizer(),
+        funcId: '0x3::transfer::transfer_coin',
+        args: [
+          {
+            type: 'Address',
+            value: recipient,
+          },
+          {
+            type: 'U256',
+            value: BigInt(amountNumber),
+          },
+        ],
+        tyArgs: [
+          {
+            Struct: {
+              address: '0x3',
+              module: 'gas_coin',
+              name: 'GasCoin',
+            },
+          },
+        ],
+        opts: {
+          maxGasAmount: 50000000,
+        },
       })
-      toast({
-        title: 'Transfer Successful',
-        description: `Successfully transferred ${amount} ${selectedCoin.name} to ${recipient}`,
-        action: <ToastAction altText="Close">Close</ToastAction>,
-      })
-      refetch()
-    } catch (error) {
-      console.error('Transfer failed', error)
-      toast({
-        title: 'Transfer Failed',
-        description: 'The transfer could not be completed. Please try again later.',
-        action: <ToastAction altText="Close">Close</ToastAction>,
-      })
+
+      if (result.execution_info.status.type !== 'executed') {
+        toast({
+          title: 'Transfer Failed',
+          description: 'The transfer could not be completed. Please try again later.',
+          action: <ToastAction altText="Close">Close</ToastAction>,
+        })
+      } else {
+        await refetch()
+        toast({
+          title: 'Transfer Successful',
+          description: `Successfully transferred ${amount} ${selectedCoin.name} to ${recipient}`,
+          action: <ToastAction altText="Close">Close</ToastAction>,
+        })
+      }
+
     } finally {
       setTransferLoading(false)
       handleClose()
@@ -291,7 +316,8 @@ export const AssetsCoin: React.FC = () => {
               className="fixed inset-0 bg-opacity-70 dark:bg-opacity-75 flex justify-center items-center z-50 bg-black"
               onClick={handleCloseModal}
             >
-              <div className="bg-background dark:bg-zinc-900 rounded-none md:rounded-lg flex flex-col items-start justify-center p-6 w-full h-full md:w-auto md:h-auto overflow-auto max-w-lg mx-auto">
+              <div
+                className="bg-background dark:bg-zinc-900 rounded-none md:rounded-lg flex flex-col items-start justify-center p-6 w-full h-full md:w-auto md:h-auto overflow-auto max-w-lg mx-auto">
                 {/* Back */}
                 <div className="mb-4">
                   <Button
