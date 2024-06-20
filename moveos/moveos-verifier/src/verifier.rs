@@ -1289,6 +1289,8 @@ where
                 let field_type = struct_fields_def.signature.0.clone();
                 match check_depth_of_type(
                     current_module,
+                    verified_modules,
+                    db,
                     &field_type,
                     MAX_DATA_STRUCT_TYPE_DEPTH,
                     1,
@@ -1773,12 +1775,17 @@ pub fn verify_global_storage_access(module: &CompiledModule) -> VMResult<bool> {
     Ok(true)
 }
 
-pub fn check_depth_of_type(
+pub fn check_depth_of_type<Resolver>(
     caller_module: &CompiledModule,
+    verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
+    db: &Resolver,
     ty: &SignatureToken,
     max_depth: u64,
     depth: u64,
-) -> VMResult<u64> {
+) -> VMResult<u64>
+where
+    Resolver: ModuleResolver,
+{
     macro_rules! check_depth {
         ($additional_depth:expr) => {{
             let new_depth = depth.saturating_add($additional_depth);
@@ -1801,19 +1808,27 @@ pub fn check_depth_of_type(
         | SignatureToken::U256
         | SignatureToken::Address
         | SignatureToken::Signer => check_depth!(0),
-        SignatureToken::Vector(ty) => {
-            check_depth_of_type(caller_module, ty.deref(), max_depth, depth)?
-        }
+        SignatureToken::Vector(ty) => check_depth_of_type(
+            caller_module,
+            verified_modules,
+            db,
+            ty.deref(),
+            max_depth,
+            check_depth!(1),
+        )?,
         SignatureToken::Struct(struc_handle_idx) => {
-            let formula = calculate_depth_of_struct(caller_module, *struc_handle_idx)?;
+            let formula =
+                calculate_depth_of_struct(caller_module, verified_modules, db, *struc_handle_idx)?;
             check_depth!(formula.resolve(&[]))
         }
         SignatureToken::StructInstantiation(idx, type_args) => {
             let ty_arg_depths = type_args
                 .iter()
-                .map(|ty| check_depth_of_type(caller_module, ty, max_depth, depth))
+                .map(|ty| {
+                    check_depth_of_type(caller_module, verified_modules, db, ty, max_depth, depth)
+                })
                 .collect::<VMResult<Vec<_>>>()?;
-            let formula = calculate_depth_of_struct(caller_module, *idx)?;
+            let formula = calculate_depth_of_struct(caller_module, verified_modules, db, *idx)?;
             check_depth!(formula.resolve(ty_arg_depths.as_slice()))
         }
         _ => {
@@ -1824,33 +1839,45 @@ pub fn check_depth_of_type(
     Ok(ty_depth)
 }
 
-fn calculate_depth_of_struct(
+fn calculate_depth_of_struct<Resolver>(
     caller_module: &CompiledModule,
+    verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
+    db: &Resolver,
     struct_idx: StructHandleIndex,
-) -> VMResult<TypeDepthFormula> {
+) -> VMResult<TypeDepthFormula>
+where
+    Resolver: ModuleResolver,
+{
     let bin_view = BinaryIndexedView::Module(caller_module);
-    let struct_handle = bin_view.struct_handle_at(struct_idx);
-    let struct_name_ident = bin_view.identifier_at(struct_handle.name).to_string();
+
+    let struct_full_name = struct_full_name_from_sid(&struct_idx, &bin_view);
+    let struct_def_opt = struct_def_from_struct_handle(
+        caller_module,
+        &struct_idx,
+        verified_modules,
+        struct_full_name.as_str(),
+        db,
+    );
 
     let mut struct_fields = Vec::new();
-    if let Some(struct_defs) = bin_view.struct_defs() {
-        for struct_def in struct_defs.iter() {
-            let struct_hand_idx = struct_def.struct_handle;
-            let struct_handle = bin_view.struct_handle_at(struct_hand_idx);
-            let struct_def_name = bin_view.identifier_at(struct_handle.name).to_string();
-            if struct_def_name == struct_name_ident {
-                let field_count = struct_def.declared_field_count().unwrap();
-                for field_idx in 0..field_count {
-                    let field_def = struct_def.field(field_idx as usize).unwrap();
-                    struct_fields.push(field_def);
-                }
-            }
+    if let Some(struct_def) = struct_def_opt {
+        let field_count = struct_def.declared_field_count().unwrap();
+        for field_idx in 0..field_count {
+            let field_def = struct_def.field(field_idx as usize).unwrap().clone();
+            struct_fields.push(field_def);
         }
     }
 
     let formulas = struct_fields
         .iter()
-        .map(|field_def| calculate_depth_of_type(caller_module, &field_def.signature.0.clone()))
+        .map(|field_def| {
+            calculate_depth_of_type(
+                caller_module,
+                verified_modules,
+                db,
+                &field_def.signature.0.clone(),
+            )
+        })
         .collect::<VMResult<Vec<_>>>()?;
 
     let formula = TypeDepthFormula::normalize(formulas);
@@ -1858,10 +1885,15 @@ fn calculate_depth_of_struct(
     Ok(formula)
 }
 
-fn calculate_depth_of_type(
+fn calculate_depth_of_type<Resolver>(
     caller_module: &CompiledModule,
+    verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
+    db: &Resolver,
     field_type: &SignatureToken,
-) -> VMResult<TypeDepthFormula> {
+) -> VMResult<TypeDepthFormula>
+where
+    Resolver: ModuleResolver,
+{
     Ok(match field_type {
         SignatureToken::Bool
         | SignatureToken::U8
@@ -1873,12 +1905,14 @@ fn calculate_depth_of_type(
         | SignatureToken::Address
         | SignatureToken::Signer => TypeDepthFormula::constant(1),
         SignatureToken::Vector(ty) => {
-            let mut inner = calculate_depth_of_type(caller_module, ty.deref())?;
+            let mut inner =
+                calculate_depth_of_type(caller_module, verified_modules, db, ty.deref())?;
             inner.scale(1);
             inner
         }
         SignatureToken::Struct(idx) => {
-            let mut struct_formula = calculate_depth_of_struct(caller_module, *idx)?;
+            let mut struct_formula =
+                calculate_depth_of_struct(caller_module, verified_modules, db, *idx)?;
             debug_assert!(struct_formula.terms.is_empty());
             struct_formula.scale(1);
             struct_formula
@@ -1888,11 +1922,15 @@ fn calculate_depth_of_type(
                 let mut map = BTreeMap::new();
                 for (idx, ty) in type_args.iter().enumerate() {
                     let var = idx as u16;
-                    map.insert(var, calculate_depth_of_type(caller_module, ty)?);
+                    map.insert(
+                        var,
+                        calculate_depth_of_type(caller_module, verified_modules, db, ty)?,
+                    );
                 }
                 map
             };
-            let struct_formula = calculate_depth_of_struct(caller_module, *idx)?;
+            let struct_formula =
+                calculate_depth_of_struct(caller_module, verified_modules, db, *idx)?;
             let mut subst_struct_formula = struct_formula.subst(ty_arg_map)?;
             subst_struct_formula.scale(1);
             subst_struct_formula

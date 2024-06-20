@@ -1,4 +1,4 @@
 processed 1 task
 
-task 0 'publish'. lines 1-26:
+task 0 'publish'. lines 1-27:
 status ABORTED with code 10019 in 0000000000000000000000000000000000000000000000000000000000000002::move_module
