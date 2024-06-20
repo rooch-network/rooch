@@ -1,12 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+
+// REACT
+import React, { Suspense, useEffect, useState } from 'react'
+
+// SDK
 import { BalanceInfoView } from '@roochnetwork/rooch-sdk'
-import {
-  useCurrentAccount,
-  useCurrentSession, useRoochClient,
-  useRoochClientQuery,
-} from '@roochnetwork/rooch-sdk-kit'
+import { useCurrentAccount, useCurrentSession, useRoochClient } from '@roochnetwork/rooch-sdk-kit'
+
+// UI
 import { AlertCircle, ArrowLeft, Wallet } from 'lucide-react'
 import {
   Table,
@@ -19,10 +21,12 @@ import {
 import { NoData } from '@/components/no-data'
 import { Button } from '@/components/ui/button'
 import CustomPagination from '@/components/custom-pagination'
+
+// UTIL
 import { formatCoin } from '@/utils/format'
-import { useToast } from '@/components/ui/use-toast'
-import { ToastAction } from '@/components/ui/toast'
-import { isValidBitcoinAddress } from '@/utils/addressValidation'
+
+// HOOKS
+import { useAssetsCoinLogic } from '@/hooks/useAssetsCoinLogic'
 
 const RecipientInput = React.lazy(() => import('@/components/recipient-input'))
 const AmountInput = React.lazy(() => import('@/components/amount-input'))
@@ -30,57 +34,34 @@ const AmountInput = React.lazy(() => import('@/components/amount-input'))
 export const AssetsCoin: React.FC = () => {
   const account = useCurrentAccount()
   const sessionKey = useCurrentSession()
-  const { toast } = useToast()
-
-  // const { mutateAsync: transferCoin } = useTransferCoin()
-
   const client = useRoochClient()
-  const [recipient, setRecipient] = useState<string>('')
-  const [amount, setAmount] = useState<string>('')
-  const [transferLoading, setTransferLoading] = useState<boolean>(false)
-  const [error, setError] = useState<string>('')
 
-  // ** PAGINATION
-  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 1 })
-  const mapPageToNextCursor = useRef<{ [page: number]: string | null }>({})
+  const [modalOpen, setModalOpen] = useState<boolean>(false)
 
-  const handlePageChange = (selectedPage: number) => {
-    if (selectedPage < 0) {
-      return
-    }
-    setPaginationModel({
-      page: selectedPage,
-      pageSize: paginationModel.pageSize,
-    })
+  const handleClose = () => {
+    setModalOpen(false)
   }
 
-  const queryOptions = useMemo(
-    () => ({
-      cursor: mapPageToNextCursor.current[paginationModel.page - 1],
-      pageSize: paginationModel.pageSize,
-    }),
-    [paginationModel],
-  )
-
-  const { data, isLoading, isError, refetch } = useRoochClientQuery('getBalances', {
-    address: sessionKey?.getAddress() || '',
-    cursor: queryOptions.cursor,
-    limit: queryOptions.pageSize,
-  })
-
-  // ** MODAL
-  const [modalOpen, setModalOpen] = useState<boolean>(false)
-  const [selectedCoin, setSelectedCoin] = useState<BalanceInfoView | null>(null)
+  const {
+    error,
+    amount,
+    recipient,
+    transferLoading,
+    data,
+    isLoading,
+    isError,
+    paginationModel,
+    handlePageChange,
+    handleAmountChange,
+    handleRecipientChange,
+    handleTransferCoin,
+    setSelectedCoin,
+    selectedCoin,
+  } = useAssetsCoinLogic(sessionKey, handleClose)
 
   const handleTransferClick = (coin: BalanceInfoView) => {
     setSelectedCoin(coin)
     setModalOpen(true)
-  }
-
-  const handleClose = () => {
-    setModalOpen(false)
-    setTransferLoading(false)
-    setError('')
   }
 
   const handleCloseModal = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
@@ -115,133 +96,6 @@ export const AssetsCoin: React.FC = () => {
     }
   }, [])
 
-  useEffect(() => {
-    if (!data) {
-      return
-    }
-
-    if (data.has_next_page) {
-      mapPageToNextCursor.current[paginationModel.page] = data.next_cursor ?? null
-    }
-  }, [paginationModel, data])
-
-  const handleAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value
-    const validNumberRegex = /^[0-9]*\.?[0-9]*$/
-
-    if (validNumberRegex.test(value)) {
-      setAmount(value)
-
-      if (selectedCoin) {
-        const amountNumber = Number(value)
-        const balanceNumber = Number(selectedCoin.balance) / 10 ** selectedCoin.decimals
-        if (amountNumber > balanceNumber) {
-          setError('Amount exceeds available balance.')
-        } else if (amountNumber <= 0) {
-          setError('Amount must be greater than zero.')
-        } else {
-          setError('')
-        }
-      }
-    } else {
-      setError('Please enter a valid number.')
-    }
-  }
-
-  const handleRecipientChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = event.target.value
-    setRecipient(value)
-  }
-
-  const handleTransferCoin = async () => {
-    setTransferLoading(true)
-
-    // Is Session Key expired
-    try {
-      if (!sessionKey || (await sessionKey.isExpired())) {
-        toast({
-          title: 'Session Key Expired',
-          description: 'The session key has expired, please authorize a new one.',
-          action: <ToastAction altText="Close">Close</ToastAction>,
-        })
-        return
-      }
-    } catch (error) {
-      console.error('Failed to check session key expiration', error)
-      toast({
-        title: 'Error',
-        description: 'An error occurred while checking the session key expiration.',
-        action: <ToastAction altText="Close">Close</ToastAction>,
-      })
-      return
-    } finally {
-      setTransferLoading(false)
-    }
-
-    if (recipient === '' || amount === '0' || !selectedCoin || error) {
-      setError('Please enter a valid recipient and amount.')
-      return
-    }
-
-    if (!isValidBitcoinAddress(recipient)) {
-      setError('Please enter a valid Bitcoin address.')
-      return
-    }
-
-    const amountNumber = Math.floor(Number(amount) * 10 ** selectedCoin.decimals)
-
-    try {
-
-      const result = await client.executeTransaction({
-        address: sessionKey.getAddress(),
-        authorizer: sessionKey.getAuthorizer(),
-        funcId: '0x3::transfer::transfer_coin',
-        args: [
-          {
-            type: 'Address',
-            value: recipient,
-          },
-          {
-            type: 'U256',
-            value: BigInt(amountNumber),
-          },
-        ],
-        tyArgs: [
-          {
-            Struct: {
-              address: '0x3',
-              module: 'gas_coin',
-              name: 'GasCoin',
-            },
-          },
-        ],
-        opts: {
-          maxGasAmount: 50000000,
-        },
-      })
-
-      if (result.execution_info.status.type !== 'executed') {
-        toast({
-          title: 'Transfer Failed',
-          description: 'The transfer could not be completed. Please try again later.',
-          action: <ToastAction altText="Close">Close</ToastAction>,
-        })
-      } else {
-        await refetch()
-        toast({
-          title: 'Transfer Successful',
-          description: `Successfully transferred ${amount} ${selectedCoin.name} to ${recipient}`,
-          action: <ToastAction altText="Close">Close</ToastAction>,
-        })
-      }
-
-    } finally {
-      setTransferLoading(false)
-      handleClose()
-      setError('')
-    }
-  }
-
   if (!account) {
     return (
       <div className="flex flex-col items-center justify-center text-center p-40">
@@ -257,7 +111,7 @@ export const AssetsCoin: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-40">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500" />
       </div>
     )
   }
@@ -316,8 +170,7 @@ export const AssetsCoin: React.FC = () => {
               className="fixed inset-0 bg-opacity-70 dark:bg-opacity-75 flex justify-center items-center z-50 bg-black"
               onClick={handleCloseModal}
             >
-              <div
-                className="bg-background dark:bg-zinc-900 rounded-none md:rounded-lg flex flex-col items-start justify-center p-6 w-full h-full md:w-auto md:h-auto overflow-auto max-w-lg mx-auto">
+              <div className="bg-background dark:bg-zinc-900 rounded-none md:rounded-lg flex flex-col items-start justify-center p-6 w-full h-full md:w-auto md:h-auto overflow-auto max-w-lg mx-auto">
                 {/* Back */}
                 <div className="mb-4">
                   <Button
@@ -354,7 +207,7 @@ export const AssetsCoin: React.FC = () => {
                     variant="default"
                     size="default"
                     className="w-full mt-6 font-sans gap-1"
-                    onClick={handleTransferCoin}
+                    onClick={() => handleTransferCoin(client, selectedCoin)}
                     disabled={transferLoading || error !== ''}
                   >
                     {transferLoading ? (
