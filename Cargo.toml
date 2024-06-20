@@ -212,7 +212,7 @@ proc-macro2 = "1.0.85"
 derive-syn-parse = "0.1.5"
 unescape = "0.1.0"
 tempfile = "3.2.0"
-regex = "1.8.4"
+regex = "1.10.5"
 walkdir = "2.3.3"
 rocksdb = { version = "0.22.0", features = ["snappy", "lz4", "zstd", "zlib"], default-features = false }
 prometheus = "0.13.3"
