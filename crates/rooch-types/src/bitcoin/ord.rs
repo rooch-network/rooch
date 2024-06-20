@@ -70,7 +70,7 @@ pub struct Inscription {
     pub metaprotocol: MoveOption<MoveString>,
     pub parents: Vec<ObjectID>,
     pub pointer: MoveOption<u64>,
-    pub rune: Option<u128>,
+    pub rune: MoveOption<u128>,
 }
 
 impl MoveStructType for Inscription {
