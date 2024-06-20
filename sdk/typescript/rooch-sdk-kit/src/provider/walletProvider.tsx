@@ -1,23 +1,24 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { createContext, useEffect, useRef, useState, ReactElement } from 'react'
+import { ReactNode, useCallback } from 'react'
+import { createContext, useEffect, useRef, useState } from 'react'
 import type { StateStorage } from 'zustand/middleware'
 
-import { createWalletStore, WalletStore } from '../walletStore'
+import { createWalletStore, WalletStore } from './walletStore'
 import {
   useAutoConnectWallet,
   useCurrentSession,
-  useRoochClient,
   useRoochSessionStore,
   useSession,
   useWalletStore,
-} from '../hooks'
-import { checkWallets } from '../utils/walletUtils'
-import { BaseWallet, UniSatWallet, WalletAccount } from '../types'
-import { SupportChain } from '../feature'
-import { useCurrentNetwork } from '../hooks'
-import { getDefaultStorage, StorageType } from '../utils/stateStorage'
+  useCurrentNetwork,
+} from '@/hooks'
+import { checkWallets } from '@/utils/walletUtils'
+import { SupportChain } from '@/feature'
+import { getDefaultStorage, StorageType } from '@/utils/stateStorage'
+import { Wallet } from '@/wellet'
+import { BitcoinAddress } from '@roochnetwork/rooch-sdk'
 
 type WalletProviderProps = {
   chain?: SupportChain
@@ -31,9 +32,9 @@ type WalletProviderProps = {
   /** The key to use to store the most recently connected wallet account. */
   storageKey?: string
 
-  children: ReactElement
+  children: ReactNode
 
-  fallback?: ReactElement
+  fallback?: ReactNode
 }
 
 const DEFAULT_STORAGE_KEY = 'rooch-sdk-kit:wallet-connect-info'
@@ -45,32 +46,31 @@ export function WalletProvider({
   storage,
   storageKey = DEFAULT_STORAGE_KEY,
   autoConnect = false,
-  children,
   fallback,
+  children,
 }: WalletProviderProps) {
-  const [wallets, setWallets] = useState<BaseWallet[]>()
+  const [wallets, setWallets] = useState<Wallet[]>()
   const [loading, setLoading] = useState(true)
   const storeRef = useRef<ReturnType<typeof createWalletStore>>()
-  const client = useRoochClient()
   const network = useCurrentNetwork()
 
   useEffect(() => {
-    checkWallets(client).then((v) => setWallets(v))
-  }, [chain, client])
+    checkWallets().then((v) => setWallets(v))
+  }, [chain])
 
   useEffect(() => {
     if (wallets && wallets.length !== 0) {
       storeRef.current = createWalletStore({
         chain,
         wallets: wallets,
-        currentWallet: wallets.find((v) => v.getChain() === chain) ?? new UniSatWallet(client), // default use unisat
+        currentWallet: wallets.find((v) => v.getChain() === chain),
         autoConnectEnabled: autoConnect,
         storage: storage || getDefaultStorage(StorageType.Local),
-        storageKey: storageKey + network.id + chain?.toString(),
+        storageKey: storageKey + network + chain?.toString(),
       })
       setLoading(false)
     }
-  }, [network, client, wallets, autoConnect, storageKey, storage, chain])
+  }, [network, wallets, autoConnect, storageKey, storage, chain])
 
   return !loading ? (
     <WalletContext.Provider value={storeRef.current!}>
@@ -90,46 +90,55 @@ function WalletConnectionManager({ children }: WalletConnectionManagerProps) {
   const currentWallet = useWalletStore((store) => store.currentWallet)
   const setWalletDisconnected = useWalletStore((store) => store.setWalletDisconnected)
   const setConnectionStatus = useWalletStore((state) => state.setConnectionStatus)
-  const setAccountSwitched = useWalletStore((store) => store.setAccountSwitched)
-  const currentAccount = useWalletStore((state) => state.currentAccount)
+  const setAddressSwitched = useWalletStore((store) => store.setAddressSwitched)
+  const currentAddress = useWalletStore((state) => state.currentAddress)
   const sessions = useSession()
   const curSession = useCurrentSession()
-  const setSessionAccount = useRoochSessionStore((state) => state.setCurrentSession)
+  const setCurrentSession = useRoochSessionStore((state) => state.setCurrentSession)
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const accountsChangedHandler = async (accounts: WalletAccount[]) => {
-    if (accounts.length === 0) {
-      setWalletDisconnected()
-    } else {
-      setConnectionStatus('connecting')
-      const selectedAccount = accounts[0]
-      if (selectedAccount.address !== currentAccount?.address) {
-        setAccountSwitched(selectedAccount)
-        await selectedAccount.resoleRoochAddress()
-        setSessionAccount(undefined)
+  const accountsChangedHandler = useCallback(
+    async (address: string[]) => {
+      if (address.length === 0) {
+        setWalletDisconnected()
+      } else {
+        setConnectionStatus('connecting')
+        const selectedAddress = address[0]
+        if (selectedAddress !== currentAddress?.toStr()) {
+          setAddressSwitched(new BitcoinAddress(selectedAddress))
+          setCurrentSession(undefined)
+        }
       }
-    }
-  }
+    },
+    [
+      currentAddress,
+      setAddressSwitched,
+      setConnectionStatus,
+      setCurrentSession,
+      setWalletDisconnected,
+    ],
+  )
 
   // handle Listener
   useEffect(() => {
     if (connectionStatus === 'connected') {
-      currentWallet.onAccountsChanged(accountsChangedHandler)
+      currentWallet?.onAccountsChanged(accountsChangedHandler)
     }
 
     return () => {
       if (connectionStatus === 'connected') {
-        currentWallet.removeAccountsChanged(accountsChangedHandler)
+        currentWallet?.removeAccountsChanged(accountsChangedHandler)
       }
     }
   }, [accountsChangedHandler, connectionStatus, currentWallet])
 
   // handle session
   useEffect(() => {
-    const cur = sessions.find((item) => item.getAddress() === currentAccount?.getRoochAddress())
+    const cur = sessions.find(
+      (item) => item.getRoochAddress().toStr() === currentAddress?.genRoochAddress().toStr(),
+    )
     if (cur && cur.getAuthKey() !== curSession?.getAuthKey()) {
-      setSessionAccount(cur)
+      setCurrentSession(cur)
     }
-  }, [sessions, currentAccount, curSession, setSessionAccount])
+  }, [sessions, currentAddress, curSession, setCurrentSession])
   return children
 }

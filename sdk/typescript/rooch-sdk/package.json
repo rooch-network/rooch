@@ -40,7 +40,7 @@
     "url": "https://github.com/rooch-network/rooch/issues"
   },
   "files": ["dist", "src"],
-  "type": "commonjs",
+  "type": "module",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/cjs/index.d.ts",
@@ -48,15 +48,11 @@
   "devDependencies": {
     "@roochnetwork/build-scripts": "workspace:*",
     "@iarna/toml": "^2.2.5",
-    "@size-limit/preset-small-lib": "^8.2.4",
-    "@types/isomorphic-fetch": "^0.0.36",
-    "@types/node": "^18.15.11",
-    "msw": "^1.2.1",
+    "@types/node": "^20.4.2",
     "ts-retry-promise": "^0.7.0",
-    "tsx": "^3.12.7",
-    "typescript": "^5.0.4",
-    "vite": "^4.2.3",
-    "vitest": "^0.34.1",
+    "typescript": "^5.3.3",
+    "vite": "^4.4.4",
+    "vitest": "^1.6.0",
     "wait-on": "^7.0.1"
   },
   "dependencies": {

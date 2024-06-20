@@ -3,11 +3,11 @@
 import { execSync } from 'child_process'
 
 import { RoochAddress } from '@/address'
-import { getRoochNodeUrl, RoochClient, RoochHTTPTransport } from '@/client'
+import { getRoochNodeUrl, RoochClient } from '@/client'
 import { Secp256k1Keypair } from '@/keypairs'
 import { Transaction } from '@/transactions'
 
-const DEFAULT_NODE_URL = import.meta.env.VITE_FULLNODE_URL ?? getRoochNodeUrl('localnet')
+export const DEFAULT_NODE_URL = import.meta.env.VITE_FULLNODE_URL ?? getRoochNodeUrl('localnet')
 
 let _defaultCmdAddress = ''
 
@@ -24,6 +24,10 @@ export class TestBox {
     return this.keypair.getRoochAddress()
   }
 
+  delay(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+  }
+
   async signAndExecuteTransaction(tx: Transaction) {
     const result = await this.client.signAndExecuteTransaction({
       transaction: tx,
@@ -36,9 +40,7 @@ export class TestBox {
 
 export function getClient(url = DEFAULT_NODE_URL): RoochClient {
   return new RoochClient({
-    transport: new RoochHTTPTransport({
-      url,
-    }),
+    url,
   })
 }
 

@@ -3,15 +3,15 @@
 
 import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-query'
 import { useMutation } from '@tanstack/react-query'
-import { IAccount } from '@roochnetwork/rooch-sdk'
-import { roochMutationKeys } from '../../constants/roochMutationKeys'
+import { address, ModuleArgs, Signer } from '@roochnetwork/rooch-sdk'
+import { roochMutationKeys } from '@/constants'
 import { useRoochClient } from './index'
 
 type UseTransferCoinArgs = {
-  account: IAccount
-  recipient: string
-  amount: number
-  coinType: string
+  signer: Signer
+  recipient: address
+  amount: number | bigint
+  coinType: ModuleArgs
 }
 
 type UseTransferCoinResult = void
@@ -35,36 +35,8 @@ export function useTransferCoin({
   return useMutation({
     mutationKey: roochMutationKeys.transferCoin(mutationKey),
     mutationFn: async (args) => {
-      const struct = args.coinType.split('::')
-
-      if (struct.length !== 3) {
-        console.log('type args is error')
-        return
-      }
-
-      const result = await client.executeTransaction({
-        address: args.account.getAddress(),
-        authorizer: args.account.getAuthorizer(),
-        funcId: '0x3::transfer::transfer_coin',
-        args: [
-          {
-            type: 'Address',
-            value: args.recipient,
-          },
-          {
-            type: 'U256',
-            value: BigInt(args.amount),
-          },
-        ],
-        tyArgs: [
-          {
-            Struct: {
-              address: '0x3',
-              module: 'gas_coin',
-              name: 'GasCoin',
-            },
-          },
-        ],
+      const result = await client.transfer({
+        ...args,
       })
 
       if (result.execution_info.status.type !== 'executed') {

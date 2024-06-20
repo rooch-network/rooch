@@ -8,15 +8,14 @@ import type { StateStorage } from 'zustand/middleware'
 import { createSessionStore, SessionStore } from '../sessionStore'
 import { useRoochClient } from '../hooks'
 import { useCurrentNetwork } from '../hooks'
-import { Network } from '@roochnetwork/rooch-sdk'
 import { getDefaultStorage, StorageType } from '../utils/stateStorage'
 
-const DEFAULT_SESSION_STORAGE_KEY = function (key: string | undefined, network: Network) {
+const DEFAULT_SESSION_STORAGE_KEY = function (key: string | undefined, network: string) {
   if (key) {
     return key
   }
 
-  return 'rooch-sdk-kit:rooch-session-info' + network.id
+  return 'rooch-sdk-kit:rooch-session-info' + network
 }
 
 export const RoochSessionContext = createContext<SessionStore | null>(null)

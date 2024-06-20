@@ -3,18 +3,18 @@
 
 import { createStore } from 'zustand'
 import { createJSONStorage, persist, StateStorage } from 'zustand/middleware'
-import { RoochClient, RoochSessionAccount } from '@roochnetwork/rooch-sdk'
+import { RoochClient, Session } from '@roochnetwork/rooch-sdk'
 import { WalletRoochSessionAccount } from './types'
 
 export type SessionActions = {
-  addSession: (session: RoochSessionAccount) => void
-  setCurrentSession: (session?: RoochSessionAccount) => void
-  removeSession: (session: RoochSessionAccount) => void
+  addSession: (session: Session) => void
+  setCurrentSession: (session?: Session) => void
+  removeSession: (session: Session) => void
 }
 
 export type SessionStoreState = {
-  sessions: RoochSessionAccount[]
-  currentSession: RoochSessionAccount | null
+  sessions: Session[]
+  currentSession: Session | null
 } & SessionActions
 
 export type SessionStore = ReturnType<typeof createSessionStore>
@@ -59,7 +59,7 @@ export function createSessionStore({ client, storage, storageKey }: ClientConfig
           set(() => ({
             currentSession:
               cacheCurSession?.getAuthKey() === session.getAuthKey() ? null : cacheCurSession,
-            sessions: cacheSessions.filter((c) => c.getAddress() !== session.getAddress()),
+            sessions: cacheSessions.filter((c) => c.getAuthKey() !== session.getAuthKey()),
           }))
         },
       }),

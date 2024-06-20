@@ -1,7 +1,12 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "module": "ESNext",
-    "outDir": "dist/esm"
+    "target": "ESNext",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "outDir": "dist/esm",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   }
 }

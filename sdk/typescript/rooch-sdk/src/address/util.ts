@@ -3,21 +3,55 @@
 
 import { bech32m } from '@scure/base'
 
-import { getHexByteLength, isHex } from '@/utils'
+import { fromHEX, getHexByteLength, isBytes, isHex } from '@/utils'
 
-import { ROOCH_ADDRESS_LENGTH } from './address'
+import { ROOCH_ADDRESS_LENGTH, ROOCH_BECH32_PREFIX } from './address'
+import { address, Bytes } from '@/types'
+import { BitcoinAddress } from '@/address/bitcoin'
 
-export const ROOCH_BECH32_PREFIX = 'rooch'
+export function convertToRoochAddressBytes(input: address): Bytes {
+  if (typeof input === 'string') {
+    const normalizeAddress = normalizeRoochAddress(input)
+    if (isHex(normalizeAddress) && getHexByteLength(normalizeAddress) === ROOCH_ADDRESS_LENGTH) {
+      return fromHEX(normalizeAddress)
+    }
 
-export function isValidRoochAddress(input: string): input is string {
-  if (isHex(input) && getHexByteLength(input) === ROOCH_ADDRESS_LENGTH) {
+    if (input.startsWith(ROOCH_BECH32_PREFIX)) {
+      const decode = bech32m.decode(input)
+      const bytes = bech32m.fromWords(decode.words)
+
+      if (decode.prefix === ROOCH_BECH32_PREFIX && bytes.length === ROOCH_ADDRESS_LENGTH) {
+        return bytes
+      }
+      throw new Error('invalid address')
+    }
+
+    return new BitcoinAddress(input).genRoochAddress().toBytes()
+  }
+
+  return isBytes(input) ? input : convertToRoochAddressBytes(input.toStr())
+}
+
+export function isValidRoochAddress(input: address): input is string {
+  if (typeof input === 'string') {
+    const normalizeAddress = normalizeRoochAddress(input)
+    if (isHex(normalizeAddress) && getHexByteLength(normalizeAddress) === ROOCH_ADDRESS_LENGTH) {
+      return true
+    }
+
+    if (input.startsWith(ROOCH_BECH32_PREFIX)) {
+      const decode = bech32m.decode(input)
+      const bytes = bech32m.fromWords(decode.words)
+
+      return decode.prefix === ROOCH_BECH32_PREFIX && bytes.length === ROOCH_ADDRESS_LENGTH
+    }
+
+    // btc addr deafault is ok
+
     return true
   }
 
-  const decode = bech32m.decode(input)
-  const bytes = bech32m.fromWords(decode.words)
-
-  return decode.prefix === ROOCH_BECH32_PREFIX && bytes.length === ROOCH_ADDRESS_LENGTH
+  return isBytes(input) ? input.length === ROOCH_ADDRESS_LENGTH : isValidRoochAddress(input.toStr())
 }
 
 /**

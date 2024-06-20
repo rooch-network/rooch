@@ -1,15 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { SerializedBcs } from '@mysten/bcs'
+import { bcs, SerializedBcs } from '@mysten/bcs'
 
-import { bcs } from '@/bcs'
-import { Bytes, u16, u32, u8, u64, u128, u256, bool, address, objectId } from '@/types'
-import { isBytes, toHEX } from '@/utils'
+import { Bytes } from '@/types/bytes.js'
+import { isBytes } from '@/utils/bytes.js'
+import { toHEX } from '@/utils/hex.js'
+import { u16, u32, u8, u64, u128, u256, bool, address, objectId } from '@/types/rooch.js'
 
-import { Address, ObjectId } from './bcs'
-import { Serializer } from './serializer'
-import { StructTag } from './types'
+import { Address, ObjectId } from './bcs.js'
+import { Serializer } from './serializer.js'
+import { StructTag } from './types.js'
 
 export type ArgType =
   | 'u8'

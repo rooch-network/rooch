@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { address } from '@/types'
 import { Ed25519Keypair } from '@/keypairs'
 
 export type CreateSessionArgs = {
@@ -13,7 +12,7 @@ export type CreateSessionArgs = {
 }
 
 export type Scope = {
-  address: address
+  address: string
   module: string
   function: string
 }

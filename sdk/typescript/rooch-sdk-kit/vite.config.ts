@@ -5,15 +5,20 @@
 
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin'
 import { defineConfig } from 'vite'
-// import { configDefaults } from 'vitest/config'
+import { configDefaults } from 'vitest/config'
 
 export default defineConfig({
   plugins: [vanillaExtractPlugin()],
-  // test: {
-  //   exclude: [...configDefaults.exclude, 'tests/**'],
-  //   environment: 'jsdom',
-  //   restoreMocks: true,
-  //   globals: true,
-  //   setupFiles: ['./test/setup.ts'],
-  // },
+  test: {
+    exclude: [...configDefaults.exclude, 'tests/**'],
+    environment: 'jsdom',
+    restoreMocks: true,
+    globals: true,
+    setupFiles: ['./test/setup.ts'],
+  },
+  resolve: {
+    alias: {
+      '@roochnetwork/rooch-sdk': new URL('../rooch-sdk', import.meta.url).pathname,
+    },
+  },
 })
