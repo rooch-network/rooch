@@ -71,12 +71,13 @@ const theme: DocsThemeConfig = {
   },
   head: function useHead() {
     const { title, frontMatter } = useConfig()
-    const { asPath } = useRouter()
-    const router = useRouter()
-    const currentLang = router.locale
+    const { asPath, locale, defaultLocale } = useRouter()
+    const currentLang = locale
     let pageTitle = title || 'Rooch Network'
-    let pageDescription = frontMatter.description || ''
+    let pageDescription =
+      frontMatter.description || 'Unlocking infinite utility for the Bitcoin Economy'
     let ogImage = 'https://rooch.network/logo/rooch-banner.png'
+    const url = `https://rooch.network${defaultLocale === locale ? asPath : `/${locale}${asPath}`}`
 
     if (asPath.includes('/blog/')) {
       const contents = getPagesUnderRoute('/blog') as Content[]
@@ -84,14 +85,10 @@ const theme: DocsThemeConfig = {
         (content): content is Page => isPage(content) && content.route === asPath,
       )
       if (currentPage) {
-        if (currentPage.frontMatter.title) {
-          pageTitle = currentPage.frontMatter.title + ' – Rooch Network'
-        }
-        if (currentPage.frontMatter.description) {
-          pageDescription = currentPage.frontMatter.description
-        }
+        pageTitle = currentPage.frontMatter.title + ' – Rooch Network'
+        pageDescription = currentPage.frontMatter.description || pageDescription
         if (currentPage.frontMatter.image) {
-          ogImage = currentPage.frontMatter.image
+          ogImage = `https://rooch.network${currentPage.frontMatter.image}`
         }
       }
     } else {
@@ -106,18 +103,17 @@ const theme: DocsThemeConfig = {
         <meta name="msapplication-TileColor" content="#ffffff" />
         <meta name="theme-color" content="#ffffff" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        {/* MULTI-LANGUAGES */}
-        <link rel="alternate" href={`https://rooch.network${asPath}`} hrefLang="x-default" />
-        <link rel="alternate" href={`https://rooch.network${asPath}`} hrefLang="en-us" />
-        <link rel="alternate" href={`https://rooch.network${asPath}`} hrefLang="en" />
+        <link rel="alternate" href={url} hrefLang="x-default" />
+        <link rel="alternate" href={url} hrefLang="en-us" />
+        <link rel="alternate" href={url} hrefLang="en" />
         <link rel="alternate" href={`https://rooch.network/zh-CN${asPath}`} hrefLang="zh-cn" />
         <link rel="alternate" href={`https://rooch.network/zh-CN${asPath}`} hrefLang="zh" />
-        {/* WEBSITE */}
         <meta name="description" content={pageDescription} />
         <meta property="og:description" content={pageDescription} />
         <meta property="og:image" content={ogImage} />
         <meta name="apple-mobile-web-app-title" content="Rooch Network" />
-        {/* TWITTER */}
+        <meta property="og:url" content={url} />
+        <meta property="og:title" content={pageTitle} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:site" content="https://rooch.network" />
         <meta name="twitter:creator" content="https://rooch.network" />
@@ -125,7 +121,6 @@ const theme: DocsThemeConfig = {
         <meta name="twitter:description" content={pageDescription} />
         <meta name="twitter:image" content={ogImage} />
         <meta name="twitter:image:alt" content="Rooch Network" />
-        {/* FAVICON */}
         <link rel="icon" href="/logo/rooch_black_logo.svg" type="image/svg+xml" />
         <link rel="icon" href="/logo/rooch_black_logo.png" type="image/png" />
         <link
