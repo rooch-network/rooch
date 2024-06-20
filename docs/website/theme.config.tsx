@@ -98,8 +98,6 @@ const theme: DocsThemeConfig = {
           : '开启比特币经济的无限可能'
     }
 
-    console.log({ pageTitle, pageDescription, ogImage, url })
-
     return (
       <>
         <meta name="msapplication-TileColor" content="#ffffff" />
