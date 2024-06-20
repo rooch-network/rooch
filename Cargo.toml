@@ -167,7 +167,7 @@ more-asserts = "0.3.0"
 num-derive = "0.3.3"
 num-traits = "0.2.15"
 once_cell = "1.10.0"
-parking_lot = "0.12.1"
+parking_lot = "0.12.3"
 pathdiff = "0.2.1"
 petgraph = "0.6.5"
 primitive-types = { version = "0.12.1", features = ["serde", "arbitrary"] }
@@ -189,7 +189,7 @@ serde-name = "0.2"
 serde_with = { version = "2.1.0", features = ["hex"] }
 signature = "2.2.0"
 slip10_ed25519 = "0.1.3"
-strum = "^0.24"
+strum = "^0.26"
 strum_macros = "^0.26"
 sha2 = "0.10.2"
 sha3 = "0.10.8"
@@ -208,11 +208,11 @@ versions = "4.1.0"
 pretty_assertions = "1.2.0"
 syn = { version = "1.0.104", features = ["full", "extra-traits"] }
 quote = "1.0"
-proc-macro2 = "1.0.47"
+proc-macro2 = "1.0.85"
 derive-syn-parse = "0.1.5"
 unescape = "0.1.0"
 tempfile = "3.2.0"
-regex = "1.8.4"
+regex = "1.10.5"
 walkdir = "2.3.3"
 rocksdb = { version = "0.22.0", features = ["snappy", "lz4", "zstd", "zlib"], default-features = false }
 prometheus = "0.13.3"
@@ -241,7 +241,7 @@ rpassword = "7.2.0"
 fixed-hash = "0.8.0"
 uint = "0.9.5"
 rlp = "0.5.2"
-const-hex = "1.6.2"
+const-hex = "1.12.0"
 cached = "0.43.0"
 diesel = { version = "2.1.0", features = [
     "chrono",
@@ -266,7 +266,7 @@ axum-extra = "0.4.2"
 axum-server = { version = "0.5.1", default-features = false, features = [
     "tls-rustls",
 ] }
-serenity = { version = "0.12.1", default-features = false, features = [
+serenity = { version = "0.12.2", default-features = false, features = [
     "client",
     "gateway",
     "cache",

@@ -29,6 +29,7 @@ pub mod brc20;
 pub mod genesis;
 pub mod network;
 pub mod ord;
+pub mod pending_block;
 pub mod types;
 pub mod utxo;
 
@@ -41,6 +42,12 @@ pub struct BitcoinBlockStore {
     pub height_to_hash: ObjectID,
     /// block hash -> block height table id
     pub hash_to_height: ObjectID,
+    /// tx id -> tx table id
+    pub txs: ObjectID,
+    /// tx id -> tx table id
+    pub tx_to_height: ObjectID,
+    /// tx id list table id
+    pub tx_ids: ObjectID,
 }
 
 impl BitcoinBlockStore {
@@ -59,6 +66,9 @@ impl MoveStructState for BitcoinBlockStore {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
             MoveOption::<u64>::type_layout(),
+            ObjectID::type_layout(),
+            ObjectID::type_layout(),
+            ObjectID::type_layout(),
             ObjectID::type_layout(),
             ObjectID::type_layout(),
             ObjectID::type_layout(),
@@ -83,7 +93,7 @@ impl<'a> BitcoinModule<'a> {
         ident_str!("submit_new_block");
     pub const GET_GENESIS_BLOCK_HEIGHT_FUNCTION_NAME: &'static IdentStr =
         ident_str!("get_genesis_block_height");
-    // pub const PROCESS_UTXOS_ENTRY_FUNCTION_NAME: &'static IdentStr = ident_str!("process_utxos");
+    pub const EXECUTE_L1_TX_FUNCTION_NAME: &'static IdentStr = ident_str!("execute_l1_tx");
 
     pub fn get_block(&self, block_hash: BlockHash) -> Result<Option<Header>> {
         let call = Self::create_function_call(
@@ -99,7 +109,7 @@ impl<'a> BitcoinModule<'a> {
                 .map(|mut values| {
                     let value = values.pop().expect("should have one return value");
                     bcs::from_bytes::<MoveOption<Header>>(&value.value)
-                        .expect("should be a valid MoveOption<BlockHeader>")
+                        .expect("should be a valid MoveOption<Header>")
                 })?;
         Ok(block_header.into())
     }
@@ -118,7 +128,7 @@ impl<'a> BitcoinModule<'a> {
                 .map(|mut values| {
                     let value = values.pop().expect("should have one return value");
                     bcs::from_bytes::<MoveOption<Header>>(&value.value)
-                        .expect("should be a valid MoveOption<BlockHeader>")
+                        .expect("should be a valid MoveOption<Header>")
                 })?;
         Ok(block_header.into())
     }
@@ -206,6 +216,16 @@ impl<'a> BitcoinModule<'a> {
                 MoveValue::Address(block_hash),
                 MoveValue::vector_u8(block_body),
             ],
+        ))
+    }
+
+    pub fn create_execute_l1_tx_call(block_hash: Vec<u8>, txid: Vec<u8>) -> Result<FunctionCall> {
+        let block_hash = AccountAddress::from_bytes(block_hash)?;
+        let txid = AccountAddress::from_bytes(txid)?;
+        Ok(Self::create_function_call(
+            Self::EXECUTE_L1_TX_FUNCTION_NAME,
+            vec![],
+            vec![MoveValue::Address(block_hash), MoveValue::Address(txid)],
         ))
     }
 }

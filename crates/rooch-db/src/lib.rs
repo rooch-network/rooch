@@ -34,12 +34,13 @@ impl RoochDB {
                 None,
             )?))?;
 
-        let rooch_store = RoochStore::new(StoreInstance::new_db_instance(RocksDB::new(
-            rooch_store_dir,
-            rooch_store::StoreMeta::get_column_family_names().to_vec(),
-            config.rocksdb_config(false),
-            None,
-        )?))?;
+        let rooch_store =
+            RoochStore::new_with_instance(StoreInstance::new_db_instance(RocksDB::new(
+                rooch_store_dir,
+                rooch_store::StoreMeta::get_column_family_names().to_vec(),
+                config.rocksdb_config(false),
+                None,
+            )?))?;
 
         let indexer_store = IndexerStore::new(indexer_store_dir.clone())?;
         let indexer_reader = IndexerReader::new(indexer_store_dir)?;
