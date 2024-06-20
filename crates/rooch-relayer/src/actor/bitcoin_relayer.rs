@@ -1,22 +1,23 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::messages::{GetReadyL1BlockMessage, GetReadyL1TxsMessage, SyncTick};
 use crate::actor::bitcoin_client_proxy::BitcoinClientProxy;
-use crate::Relayer;
 use anyhow::Result;
 use async_trait::async_trait;
 use bitcoin::hashes::Hash;
 use bitcoin::Block;
 use bitcoincore_rpc::bitcoincore_rpc_json::GetBlockHeaderResult;
+use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_types::module_binding::MoveFunctionCaller;
 use rooch_config::BitcoinRelayerConfig;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_types::{
-    bitcoin::BitcoinModule,
+    bitcoin::{pending_block::PendingBlockModule, BitcoinModule},
     multichain_id::RoochMultiChainID,
-    transaction::{L1Block, L1BlockWithBody},
+    transaction::{L1Block, L1BlockWithBody, L1Transaction},
 };
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 pub struct BitcoinRelayer {
     genesis_block_height: u64,
@@ -70,8 +71,8 @@ impl BitcoinRelayer {
         }
 
         self.latest_sync_timestamp = chrono::Utc::now().timestamp() as u64;
-        let bitcoin_module = self.move_caller.as_module_binding::<BitcoinModule>();
-        let latest_block_height_in_rooch = bitcoin_module.get_latest_block_height()?;
+        let pending_block_module = self.move_caller.as_module_binding::<PendingBlockModule>();
+        let latest_block_height_in_rooch = pending_block_module.get_latest_block_height()?;
         let latest_block_hash_in_bitcoin = self.rpc_client.get_best_block_hash().await?;
         let latest_block_header_info = self
             .rpc_client
@@ -167,12 +168,68 @@ impl BitcoinRelayer {
             }))
         }
     }
+
+    fn get_ready_l1_txs(&mut self) -> Result<Vec<L1Transaction>> {
+        let pending_block_module = self.move_caller.as_module_binding::<PendingBlockModule>();
+        let pending_txs = pending_block_module.get_ready_pending_txs()?;
+        match pending_txs {
+            Some(pending_txs) => {
+                let block_hash = pending_txs.block_hash;
+                let mut txs = pending_txs.txs;
+                if txs.len() > 1 {
+                    // move coinbase tx to the end
+                    let coinbase_tx = txs.remove(0);
+                    txs.push(coinbase_tx);
+                }
+                let l1_txs = txs
+                    .into_iter()
+                    .map(|txid| {
+                        L1Transaction::new(
+                            RoochMultiChainID::Bitcoin.multichain_id(),
+                            block_hash.to_vec(),
+                            txid.to_vec(),
+                        )
+                    })
+                    .collect();
+                Ok(l1_txs)
+            }
+            None => Ok(vec![]),
+        }
+    }
 }
 
 #[async_trait]
-impl Relayer for BitcoinRelayer {
-    async fn relay(&mut self) -> Result<Option<L1BlockWithBody>> {
-        self.sync_block().await?;
+impl Actor for BitcoinRelayer {
+    async fn started(&mut self, _ctx: &mut ActorContext) {}
+}
+
+#[async_trait]
+impl Handler<SyncTick> for BitcoinRelayer {
+    async fn handle(&mut self, _message: SyncTick, _ctx: &mut ActorContext) {
+        if let Err(e) = self.sync_block().await {
+            error!("BitcoinRelayer sync block error: {:?}", e);
+        }
+    }
+}
+
+#[async_trait]
+impl Handler<GetReadyL1BlockMessage> for BitcoinRelayer {
+    async fn handle(
+        &mut self,
+        _message: GetReadyL1BlockMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Option<L1BlockWithBody>> {
         self.pop_buffer()
+    }
+}
+
+#[async_trait]
+impl Handler<GetReadyL1TxsMessage> for BitcoinRelayer {
+    async fn handle(
+        &mut self,
+        _message: GetReadyL1TxsMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<L1Transaction>> {
+        self.get_ready_l1_txs()
     }
 }
