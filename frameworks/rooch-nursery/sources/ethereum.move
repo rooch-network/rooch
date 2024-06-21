@@ -76,7 +76,7 @@ module rooch_nursery::ethereum{
     }
 
     /// The relay server submit a new Ethereum block to the light client.
-    public entry fun submit_new_block(block_header_bytes: vector<u8>){
+    public entry fun execute_l1_block(block_header_bytes: vector<u8>){
         features::ensure_localnet_enabled();
         process_block(block_header_bytes);
     }

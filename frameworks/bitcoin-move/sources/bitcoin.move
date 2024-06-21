@@ -252,10 +252,9 @@ module bitcoin_move::bitcoin{
     }
 
 
-    /// The the sequencer submit a new Bitcoin block
-    /// This function is a system function, only the sequencer can call it
-    /// TODO rename to execute_l1_block
-    fun submit_new_block(block_height: u64, block_hash: address, block_bytes: vector<u8>){
+    /// The the sequencer submit a new Bitcoin block to execute
+    /// This function is a system function, is the execute_l1_block entry point
+    fun execute_l1_block(block_height: u64, block_hash: address, block_bytes: vector<u8>){
         let block = bcs::from_bytes<Block>(block_bytes);
         let block_header = types::header(&block);
         let time = types::time(block_header);
@@ -393,10 +392,10 @@ module bitcoin_move::bitcoin{
     }
 
     #[test_only]
-    public fun submit_new_block_for_test(block_height: u64, block: Block){
+    public fun execute_l1_block_for_test(block_height: u64, block: Block){
         let block_hash = types::header_to_hash(types::header(&block));
         let block_bytes = bcs::to_bytes(&block);
-        submit_new_block(block_height, block_hash, block_bytes);
+        execute_l1_block(block_height, block_hash, block_bytes);
         // We directly conform the txs for convenience test
         let (_, txs) = types::unpack_block(block);
         let coinbase_tx = vector::remove(&mut txs, 0);

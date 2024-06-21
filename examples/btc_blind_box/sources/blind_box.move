@@ -171,13 +171,13 @@ module btc_blind_box::blind_box {
         let miner = rooch_framework::bitcoin_address::random_address_for_testing();
         // request box
         let block = types::fake_block_for_test(5000, miner);
-        bitcoin::submit_new_block_for_test(5, block);
+        bitcoin::execute_l1_block_for_test(5, block);
         request_box(sender, status_obj);
         assert!(object::borrow(status_obj).sold_amount == 1, 101);
 
         // claim box
         let block = types::fake_block_for_test(100000, miner);
-        bitcoin::submit_new_block_for_test(10, block);
+        bitcoin::execute_l1_block_for_test(10, block);
         claim_box(sender, status_obj);
         assert!(object::borrow(status_obj).claimed_amount == 1, 102);
     }

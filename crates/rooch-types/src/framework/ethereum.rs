@@ -100,8 +100,7 @@ pub struct EthereumModule<'a> {
 
 impl<'a> EthereumModule<'a> {
     pub const GET_BLOCK_FUNCTION_NAME: &'static IdentStr = ident_str!("get_block");
-    pub const SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("submit_new_block");
+    pub const EXECUTE_L1_BLOCK_FUNCTION_NAME: &'static IdentStr = ident_str!("execute_l1_block");
 
     pub fn get_block(&self, block_number: u64) -> Result<BlockHeader> {
         let call = FunctionCall::new(
@@ -122,9 +121,9 @@ impl<'a> EthereumModule<'a> {
         Ok(block_header)
     }
 
-    pub fn create_submit_new_block_call(block_header: &BlockHeader) -> FunctionCall {
+    pub fn create_execute_l1_block_call(block_header: &BlockHeader) -> FunctionCall {
         Self::create_function_call(
-            Self::SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME,
+            Self::EXECUTE_L1_BLOCK_FUNCTION_NAME,
             vec![],
             vec![MoveValue::vector_u8(
                 bcs::to_bytes(&block_header).expect("Serialize BlockHeader should success."),
@@ -132,9 +131,9 @@ impl<'a> EthereumModule<'a> {
         )
     }
 
-    pub fn create_submit_new_block_call_bytes(block_header: Vec<u8>) -> FunctionCall {
+    pub fn create_execute_l1_block_call_bytes(block_header: Vec<u8>) -> FunctionCall {
         Self::create_function_call(
-            Self::SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME,
+            Self::EXECUTE_L1_BLOCK_FUNCTION_NAME,
             vec![],
             vec![MoveValue::vector_u8(block_header)],
         )

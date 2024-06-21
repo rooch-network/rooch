@@ -15,7 +15,7 @@ module bitcoin_move::bitcoin_test{
         let block: Block = bcs::from_bytes(block_bytes);
     
         let header = *types::header(&block);
-        bitcoin::submit_new_block_for_test(1, block);
+        bitcoin::execute_l1_block_for_test(1, block);
         assert!(bitcoin::contains_header(&header), 1);
     }
 }
