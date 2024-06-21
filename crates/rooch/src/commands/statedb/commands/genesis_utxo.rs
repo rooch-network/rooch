@@ -3,6 +3,7 @@
 
 use crate::cli_types::WalletContextOptions;
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
+use crate::commands::statedb::commands::UTXO_SEAL_INSCRIPTION_PROTOCOL;
 use anyhow::{Error, Result};
 use bitcoin::{OutPoint, PublicKey, Txid};
 use chrono::{DateTime, Local};
@@ -10,7 +11,11 @@ use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
-use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS, ObjectID};
+use moveos_types::move_std::string::MoveString;
+use moveos_types::moveos_std::object::{
+    ObjectEntity, ObjectID, RootObjectEntity, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK,
+    SYSTEM_OWNER_ADDRESS,
+};
 use moveos_types::moveos_std::simple_multimap::{Element, SimpleMultiMap};
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{KeyState, MoveState, State};
@@ -36,8 +41,6 @@ use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, SyncSender};
 use std::thread;
 use std::time::SystemTime;
-use moveos_types::move_std::string::MoveString;
-use crate::commands::statedb::commands::UTXO_SEAL_INSCRIPTION_PROTOCOL;
 
 pub const SCRIPT_TYPE_P2MS: &str = "p2ms";
 pub const SCRIPT_TYPE_P2PK: &str = "p2pk";
@@ -212,14 +215,14 @@ pub fn apply_utxo_updates_to_state(
     root_size: u64,
     root_state_root: H256,
 
-    startup_update_set: Option<&mut UpdateSet<KeyState, State>>,
+    startup_update_set: Option<UpdateSet<KeyState, State>>,
 
     task_start_time: SystemTime,
 ) {
     let mut utxo_count = 0;
     let mut address_mapping_count = 0;
 
-    let mut utxo_store_state_root= *GENESIS_STATE_ROOT;
+    let mut utxo_store_state_root = *GENESIS_STATE_ROOT;
     let mut rooch_to_bitcoin_address_mapping_state_root = *GENESIS_STATE_ROOT;
 
     let mut last_utxo_store_state_root = utxo_store_state_root;
@@ -302,13 +305,13 @@ fn finish_task(
     rooch_to_bitcoin_address_mapping_state_root: H256,
 
     task_start_time: SystemTime,
-    startup_update_set: Option<&mut UpdateSet<KeyState, State>>,
+    startup_update_set: Option<UpdateSet<KeyState, State>>,
 ) {
     // Update UTXOStore Object
     let mut genesis_utxostore_object = create_genesis_utxostore_object().unwrap();
     genesis_utxostore_object.size += utxo_count;
     genesis_utxostore_object.state_root = utxo_store_state_root.into_address();
-    let mut update_set = startup_update_set.unwrap_or_else(|| &mut UpdateSet::new());
+    let mut update_set = startup_update_set.unwrap_or_else(|| UpdateSet::new());
     let parent_id = BitcoinUTXOStore::object_id();
     update_set.put(parent_id.to_key(), genesis_utxostore_object.into_state());
 
@@ -386,7 +389,12 @@ struct BatchUpdates {
     rooch_to_bitcoin_mapping_updates: UpdateSet<KeyState, State>,
 }
 
-pub fn produce_utxo_updates(tx: SyncSender<BatchUpdates>, input: PathBuf, batch_size: usize, utxo_ord_map: Option<&sled::Db>) {
+pub fn produce_utxo_updates(
+    tx: SyncSender<BatchUpdates>,
+    input: PathBuf,
+    batch_size: usize,
+    utxo_ord_map: Option<&sled::Db>,
+) {
     let mut csv_reader = BufReader::new(File::open(input).unwrap());
     let mut is_title_line = true;
     let mut address_mapping_checker = HashMap::new();
@@ -406,7 +414,8 @@ pub fn produce_utxo_updates(tx: SyncSender<BatchUpdates>, input: PathBuf, batch_
             }
 
             let utxo_data = gen_utxo_data_from_csv_line(&line).unwrap();
-            let (key, state, address_mapping_data) = gen_utxo_update(utxo_data, utxo_ord_map).unwrap();
+            let (key, state, address_mapping_data) =
+                gen_utxo_update(utxo_data, utxo_ord_map).unwrap();
             updates.utxo_updates.put(key, state);
 
             if let Some(address_mapping_data) = address_mapping_data {
@@ -459,12 +468,7 @@ fn gen_utxo_update(
 
     let ids_in_seal = get_ord_by_outpoint(utxo_ord_map, OutPoint::new(raw_txid, utxo_data.vout));
     let seals = inscription_object_ids_to_utxo_seal(ids_in_seal);
-    let utxo = UTXO::new(
-        txid,
-        utxo_data.vout,
-        utxo_data.value,
-        seals,
-    );
+    let utxo = UTXO::new(txid, utxo_data.vout, utxo_data.value, seals);
     let out_point = types::OutPoint::new(txid, utxo_data.vout);
     let utxo_id = utxo::derive_utxo_id(&out_point);
     let utxo_object = ObjectEntity::new(utxo_id, address, 0u8, *GENESIS_STATE_ROOT, 0, 0, 0, utxo);
@@ -478,8 +482,7 @@ fn gen_utxo_update(
 fn get_ord_by_outpoint(
     utxo_ord_map: Option<&sled::Db>,
     outpoint: OutPoint,
-) ->  Option<Vec<ObjectID>> {
-
+) -> Option<Vec<ObjectID>> {
     if let Some(db) = utxo_ord_map {
         let key = bcs::to_bytes(&outpoint).unwrap();
         let value = db.get(&key).unwrap();
@@ -493,14 +496,18 @@ fn get_ord_by_outpoint(
     }
 }
 
-fn inscription_object_ids_to_utxo_seal(obj_ids: Option<Vec<ObjectID>>) -> SimpleMultiMap<MoveString, ObjectID> {
+fn inscription_object_ids_to_utxo_seal(
+    obj_ids: Option<Vec<ObjectID>>,
+) -> SimpleMultiMap<MoveString, ObjectID> {
     if let Some(obj_ids) = obj_ids {
-        SimpleMultiMap{
-            data: vec![Element{key: UTXO_SEAL_INSCRIPTION_PROTOCOL.into(), value: obj_ids}]
+        SimpleMultiMap {
+            data: vec![Element {
+                key: MoveString::from_str(UTXO_SEAL_INSCRIPTION_PROTOCOL).unwrap(),
+                value: obj_ids,
+            }],
         }
     } else {
         SimpleMultiMap::create()
-
     }
 }
 
