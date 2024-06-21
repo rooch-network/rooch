@@ -155,9 +155,6 @@ module btc_blind_box::blind_box {
     #[test_only]
     use rooch_framework::account;
 
-    #[test_only]
-    use bitcoin_move::types; 
-
     #[test(sender=@0x42)]
     fun test_request_and_claim(sender: &signer) {
         rooch_framework::genesis::init_for_test();
