@@ -521,7 +521,7 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "db8b7511298d5b7784b40b092d9e9dcd3a627a5707e4b5e507931ab0d44eeebf"
 dependencies = [
- "proc-macro2 1.0.83",
+ "proc-macro2 1.0.85",
  "quote 1.0.36",
  "syn 1.0.109",
  "synstructure",
@@ -533,7 +533,7 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2777730b2039ac0f95f093556e61b6d26cebed5393ca6f152717777cec3a42ed"
 dependencies = [
- "proc-macro2 1.0.83",
+ "proc-macro2 1.0.85",
  "quote 1.0.36",
  "syn 1.0.109",
 ]
@@ -1114,7 +1114,7 @@ dependencies = [
  "bitcoin_hashes 0.12.0",
  "hex_lit",
  "secp256k1 0.27.0",
- "serde 1.0.202",
+ "serde 1.0.203",
 ]
 
 [[package]]
@@ -1180,7 +1180,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "sha3 0.10.8",
- "smallvec",
+ "smallvec 1.13.2",
  "tracing",
 ]
 
@@ -1388,7 +1388,7 @@ dependencies = [
  "darling 0.20.9",
  "mime",
  "new_mime_guess",
- "proc-macro2 1.0.83",
+ "proc-macro2 1.0.85",
  "quote 1.0.36",
  "syn 2.0.65",
 ]
@@ -2983,7 +2983,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d48cda787f839151732d396ac69e3473923d54312c070ee21e9effcaa8ca0b1d"
 dependencies = [
  "darling 0.20.9",
- "proc-macro2 1.0.83",
+ "proc-macro2 1.0.85",
  "quote 1.0.36",
  "syn 2.0.65",
 ]
@@ -3201,7 +3201,7 @@ version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "487585f4d0c6655fe74905e2504d8ad6908e4db67f744eb140876906c2f3175d"
 dependencies = [
- "proc-macro2 1.0.83",
+ "proc-macro2 1.0.85",
  "quote 1.0.36",
  "syn 2.0.65",
 ]
@@ -3691,7 +3691,7 @@ dependencies = [
  "rlp",
  "serde 1.0.203",
  "serde_json",
- "strum",
+ "strum 0.26.2",
  "syn 2.0.65",
  "tempfile",
  "thiserror",
@@ -4158,7 +4158,7 @@ dependencies = [
  "serde 1.0.203",
  "serde_bytes",
  "sha3 0.10.8",
- "smallvec",
+ "smallvec 1.13.2",
  "tracing",
 ]
 
@@ -6895,7 +6895,7 @@ dependencies = [
  "move-core-types",
  "once_cell",
  "serde 1.0.203",
- "smallvec",
+ "smallvec 1.13.2",
 ]
 
 [[package]]
@@ -7026,7 +7026,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "sha3 0.10.8",
- "smallvec",
+ "smallvec 1.13.2",
  "smt",
 ]
 
@@ -7073,7 +7073,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "sha3 0.10.8",
- "smallvec",
+ "smallvec 1.13.2",
  "smt",
  "wasmer",
 ]
@@ -7188,7 +7188,7 @@ dependencies = [
  "byteorder",
  "bytes",
  "num-rational",
- "serde 1.0.202",
+ "serde 1.0.203",
  "serde_json",
  "thiserror",
 ]
@@ -7523,7 +7523,7 @@ dependencies = [
  "num-bigint",
  "num-integer",
  "num-traits 0.2.19",
- "serde 1.0.202",
+ "serde 1.0.203",
 ]
 
 [[package]]
@@ -7740,10 +7740,10 @@ dependencies = [
  "brotli 5.0.0",
  "chrono",
  "ciborium",
- "clap 4.5.4",
+ "clap 4.5.7",
  "colored",
  "ctrlc",
- "dirs 5.0.1",
+ "dirs",
  "env_logger",
  "futures",
  "hex",
@@ -7768,7 +7768,7 @@ dependencies = [
  "rust-embed",
  "rustls 0.22.4",
  "rustls-acme",
- "serde 1.0.202",
+ "serde 1.0.203",
  "serde-hex",
  "serde_json",
  "serde_with 3.8.1",
@@ -7793,7 +7793,7 @@ dependencies = [
  "jsonrpc",
  "log",
  "ord-bitcoincore-rpc-json",
- "serde 1.0.202",
+ "serde 1.0.203",
  "serde_json",
 ]
 
@@ -7805,7 +7805,7 @@ checksum = "5bb35088f918c775bc27fa79e372d034892b216fb7900aeedd6e06654879ad33"
 dependencies = [
  "bitcoin 0.30.2",
  "bitcoin-private",
- "serde 1.0.202",
+ "serde 1.0.203",
  "serde_json",
 ]
 
@@ -7826,7 +7826,7 @@ checksum = "f69dc8f090e996b63e1f96972f0d619f497c9545464c7bddf65e42d38576b3f3"
 dependencies = [
  "bitcoin 0.30.2",
  "derive_more",
- "serde 1.0.202",
+ "serde 1.0.203",
  "serde_with 3.8.1",
  "thiserror",
 ]
@@ -9904,7 +9904,7 @@ dependencies = [
  "serde 1.0.203",
  "serde_bytes",
  "sha3 0.10.8",
- "smallvec",
+ "smallvec 1.13.2",
  "tracing",
 ]
 
@@ -9958,7 +9958,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "sha3 0.10.8",
- "smallvec",
+ "smallvec 1.13.2",
  "tempfile",
  "tokio",
  "tracing",
@@ -10011,7 +10011,7 @@ dependencies = [
  "serde 1.0.203",
  "serde_bytes",
  "sha3 0.10.8",
- "smallvec",
+ "smallvec 1.13.2",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -10132,8 +10132,8 @@ dependencies = [
  "serde_with 2.3.3",
  "signature 2.2.0",
  "slip10_ed25519",
- "strum",
- "strum_macros",
+ "strum 0.26.2",
+ "strum_macros 0.26.4",
  "tiny-bip39",
 ]
 
@@ -10599,8 +10599,8 @@ dependencies = [
  "serde_yaml 0.9.34+deprecated",
  "sha3 0.10.8",
  "smt",
- "strum",
- "strum_macros",
+ "strum 0.26.2",
+ "strum_macros 0.26.4",
  "thiserror",
 ]
 
@@ -10726,7 +10726,7 @@ version = "8.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb9f96e283ec64401f30d3df8ee2aaeb2561f34c824381efa24a35f79bf40ee4"
 dependencies = [
- "proc-macro2 1.0.83",
+ "proc-macro2 1.0.85",
  "quote 1.0.36",
  "rust-embed-utils",
  "syn 2.0.65",
@@ -10867,7 +10867,7 @@ dependencies = [
  "pem 1.1.1",
  "rcgen",
  "ring 0.16.20",
- "serde 1.0.202",
+ "serde 1.0.203",
  "serde_json",
  "thiserror",
  "tokio",
@@ -11303,7 +11303,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ca37e3e4d1b39afd7ff11ee4e947efae85adfddf4841787bfa47c470e96dc26d"
 dependencies = [
  "array-init",
- "serde 1.0.202",
+ "serde 1.0.203",
  "smallvec 0.6.14",
 ]
 
@@ -11492,7 +11492,7 @@ dependencies = [
  "hex",
  "indexmap 1.9.3",
  "indexmap 2.2.6",
- "serde 1.0.202",
+ "serde 1.0.203",
  "serde_derive",
  "serde_json",
  "serde_with_macros 3.8.1",
@@ -11530,7 +11530,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "65569b702f41443e8bc8bbb1c5779bd0450bbe723b56198980e80ec45780bce2"
 dependencies = [
  "darling 0.20.9",
- "proc-macro2 1.0.83",
+ "proc-macro2 1.0.85",
  "quote 1.0.36",
  "syn 2.0.65",
 ]
@@ -12032,11 +12032,33 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "strum"
+version = "0.24.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"
+dependencies = [
+ "strum_macros 0.24.3",
+]
+
+[[package]]
+name = "strum"
 version = "0.26.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d8cec3501a5194c432b2b7976db6b7d10ec95c253208b45f83f7136aa985e29"
 dependencies = [
- "strum_macros",
+ "strum_macros 0.26.4",
+]
+
+[[package]]
+name = "strum_macros"
+version = "0.24.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e385be0d24f186b4ce2f9982191e7101bb737312ad61c1f2f984f34bcf85d59"
+dependencies = [
+ "heck 0.4.1",
+ "proc-macro2 1.0.85",
+ "quote 1.0.36",
+ "rustversion",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -12174,7 +12196,7 @@ version = "0.12.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f36bdaa60a83aca3921b5259d5400cbf5e90fc51931376a9bd4a0eb79aa7210f"
 dependencies = [
- "proc-macro2 1.0.83",
+ "proc-macro2 1.0.85",
  "quote 1.0.36",
  "syn 1.0.109",
  "unicode-xid 0.2.4",

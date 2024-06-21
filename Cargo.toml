@@ -302,7 +302,6 @@ revm-precompile = "7.0.0"
 revm-primitives = "4.0.0"
 ord = "0.18.5"
 sled = { version = "0.34.7" }
-bitcoin_hashes = "0.12.0"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES
