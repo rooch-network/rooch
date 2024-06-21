@@ -508,7 +508,10 @@ fn bitcoincli_run_cmd(w: &mut World, input_tpl: String) {
         debug!("cmd bitcoincli: {} output: {}", cmd_name, json_value);
         tpl_ctx.entry(cmd_name).append::<Value>(json_value);
     } else {
-        debug!("result_json not ok!");
+        debug!("result_json not ok, output as string");
+        tpl_ctx
+            .entry(cmd_name)
+            .append::<Value>(Value::String(stdout_string));
     }
 
     debug!("current tpl_ctx: {:?}", tpl_ctx);
@@ -659,7 +662,5 @@ fn extract_json(output: &String) -> Result<Value> {
 
 #[tokio::main]
 async fn main() {
-    World::cucumber()
-        .run_and_exit("./features/cmd.feature")
-        .await;
+    World::cucumber().run_and_exit("./features/").await;
 }

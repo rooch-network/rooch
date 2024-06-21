@@ -13,6 +13,8 @@ pub struct BitcoinGenesisContext {
     /// The bitcoin network
     pub network: u8,
     pub genesis_block_height: u64,
+    pub genesis_block_hash: AccountAddress,
+    pub reorg_block_count: u64,
 }
 
 impl MoveStructType for BitcoinGenesisContext {
@@ -26,15 +28,24 @@ impl MoveStructState for BitcoinGenesisContext {
         move_core_types::value::MoveStructLayout::new(vec![
             move_core_types::value::MoveTypeLayout::U8,
             move_core_types::value::MoveTypeLayout::U64,
+            move_core_types::value::MoveTypeLayout::Address,
+            move_core_types::value::MoveTypeLayout::U64,
         ])
     }
 }
 
 impl BitcoinGenesisContext {
-    pub fn new(network: u8, genesis_block_height: u64) -> Self {
+    pub fn new(
+        network: u8,
+        genesis_block_height: u64,
+        genesis_block_hash: AccountAddress,
+        reorg_block_count: u64,
+    ) -> Self {
         Self {
             network,
             genesis_block_height,
+            genesis_block_hash,
+            reorg_block_count,
         }
     }
 }

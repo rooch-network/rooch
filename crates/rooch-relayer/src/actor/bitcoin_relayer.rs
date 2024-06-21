@@ -6,12 +6,14 @@ use crate::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use anyhow::Result;
 use async_trait::async_trait;
 use bitcoin::hashes::Hash;
-use bitcoin::Block;
+use bitcoin::{Block, BlockHash};
 use bitcoincore_rpc::bitcoincore_rpc_json::GetBlockHeaderResult;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_types::module_binding::MoveFunctionCaller;
 use rooch_config::BitcoinRelayerConfig;
 use rooch_executor::proxy::ExecutorProxy;
+use rooch_types::bitcoin::types::BlockHeightHash;
+use rooch_types::into_address::{FromAddress, IntoAddress};
 use rooch_types::{
     bitcoin::{pending_block::PendingBlockModule, BitcoinModule},
     multichain_id::RoochMultiChainID,
@@ -20,7 +22,7 @@ use rooch_types::{
 use tracing::{debug, error, info};
 
 pub struct BitcoinRelayer {
-    genesis_block_height: u64,
+    genesis_block: BlockHeightHash,
     // only for data import
     end_block_height: Option<u64>,
     rpc_client: BitcoinClientProxy,
@@ -29,6 +31,7 @@ pub struct BitcoinRelayer {
     sync_block_interval: u64,
     latest_sync_timestamp: u64,
     sync_to_latest: bool,
+    batch_size: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -44,11 +47,11 @@ impl BitcoinRelayer {
         executor: ExecutorProxy,
     ) -> Result<Self> {
         let bitcoin_module = executor.as_module_binding::<BitcoinModule>();
-        let genesis_block_height = bitcoin_module.get_genesis_block_height()?;
+        let genesis_block = bitcoin_module.get_genesis_block()?;
         let sync_block_interval = config.btc_sync_block_interval.unwrap_or(60u64);
 
         Ok(Self {
-            genesis_block_height,
+            genesis_block,
             end_block_height: config.btc_end_block_height,
             rpc_client,
             move_caller: executor,
@@ -56,6 +59,7 @@ impl BitcoinRelayer {
             sync_block_interval,
             latest_sync_timestamp: 0u64,
             sync_to_latest: false,
+            batch_size: 10,
         })
     }
 
@@ -71,69 +75,83 @@ impl BitcoinRelayer {
         }
 
         self.latest_sync_timestamp = chrono::Utc::now().timestamp() as u64;
+
         let pending_block_module = self.move_caller.as_module_binding::<PendingBlockModule>();
-        let latest_block_height_in_rooch = pending_block_module.get_latest_block_height()?;
-        let latest_block_hash_in_bitcoin = self.rpc_client.get_best_block_hash().await?;
-        let latest_block_header_info = self
-            .rpc_client
-            .get_block_header_info(latest_block_hash_in_bitcoin)
-            .await?;
-        let latest_block_height_in_bitcoin = latest_block_header_info.height as u64;
-        let start_block_height: u64 = match latest_block_height_in_rooch {
-            Some(latest_block_height_in_rooch) => latest_block_height_in_rooch + 1,
+        let best_block_in_rooch = pending_block_module.get_best_block()?;
+        let best_block_hash_in_bitcoin = self.rpc_client.get_best_block_hash().await?;
+
+        // let best_block_header_info_in_bitcoin = self
+        //     .rpc_client
+        //     .get_block_header_info(best_block_hash_in_bitcoin)
+        //     .await?;
+
+        //The start block is included
+        let start_block_hash = match best_block_in_rooch {
+            Some(best_block_in_rooch) => {
+                if best_block_in_rooch.block_hash == best_block_hash_in_bitcoin.into_address() {
+                    self.sync_to_latest = true;
+                    return Ok(());
+                }
+                //We need to find the next block of the best block in rooch
+                let mut best_block_header_info = self
+                    .rpc_client
+                    .get_block_header_info(BlockHash::from_address(best_block_in_rooch.block_hash))
+                    .await?;
+
+                // if the best block in rooch is not in the main chain, we need to find the common ancestor
+                while best_block_header_info.confirmations < 0 {
+                    let previous_block_hash =
+                        best_block_header_info.previous_block_hash.ok_or_else(|| {
+                            anyhow::anyhow!(
+                                "The previous block of {:?} should exist",
+                                best_block_header_info.hash
+                            )
+                        })?;
+                    best_block_header_info = self
+                        .rpc_client
+                        .get_block_header_info(previous_block_hash)
+                        .await?;
+                }
+                best_block_header_info.next_block_hash
+            }
             None => {
-                // if the latest block height in rooch is None, then the genesis block height should be used
-                self.genesis_block_height
+                // if the latest block in rooch is None, we start from the genesis block
+                Some(BlockHash::from_address(self.genesis_block.block_hash))
             }
         };
-        let start_block_height_usize = start_block_height as usize;
-        let end_block_height = self.end_block_height.unwrap_or(0) as usize;
 
-        if start_block_height > latest_block_height_in_bitcoin {
-            self.sync_to_latest = true;
-            return Ok(());
-        }
+        // let Some(start_block_hash) = start_block_hash else {
+        //     self.sync_to_latest = true;
+        //     return Ok(());
+        // };
 
-        let start_block_header_info = if start_block_height == latest_block_height_in_bitcoin {
-            latest_block_header_info
-        } else {
-            let start_block_hash = self.rpc_client.get_block_hash(start_block_height).await?;
-            self.rpc_client
-                .get_block_header_info(start_block_hash)
-                .await?
-        };
+        // let start_block_height = start_block_header_info.height as u64;
 
-        let start_block = self
-            .rpc_client
-            .get_block(start_block_header_info.hash)
-            .await?;
+        let end_block_height = self.end_block_height.unwrap_or(0);
 
-        let batch_size: usize = 10;
-        let mut next_block_hash = start_block_header_info.next_block_hash;
-        // only for bitcoin block data import
-        if !(end_block_height > 0 && start_block_height_usize > end_block_height) {
-            self.buffer.push(BlockResult {
-                header_info: start_block_header_info,
-                block: start_block,
-            });
-        };
+        // let start_block = self
+        //     .rpc_client
+        //     .get_block(start_block_header_info.hash)
+        //     .await?;
+
+        let mut next_block_hash = start_block_hash;
+
         while let Some(next_hash) = next_block_hash {
             let header_info = self.rpc_client.get_block_header_info(next_hash).await?;
             let block = self.rpc_client.get_block(next_hash).await?;
             next_block_hash = header_info.next_block_hash;
-            let next_block_height = header_info.height;
+            let next_block_height = header_info.height as u64;
 
             // only for bitcoin block data import
-            if (end_block_height > 0 && next_block_height > end_block_height)
-                || next_block_height < start_block_height_usize
-            {
-                if end_block_height > 0 && start_block_height_usize <= end_block_height {
-                    info!("BitcoinRelayer process should exit at height {} and start_block_height is {}, end_block_height is {} ", next_block_height, start_block_height_usize, end_block_height);
-                };
+            if end_block_height > 0 && next_block_height > end_block_height {
+                info!(
+                    "BitcoinRelayer process should exit at height {}, end_block_height is {} ",
+                    next_block_height, end_block_height
+                );
                 break;
             }
             self.buffer.push(BlockResult { header_info, block });
-            if self.buffer.len() > batch_size {
+            if self.buffer.len() > self.batch_size {
                 break;
             }
         }

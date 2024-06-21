@@ -9,7 +9,7 @@ module bitcoin_move::pending_block{
     use moveos_std::object::{Self, Object};
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::event;
-    use bitcoin_move::types::{Self, Transaction, Header, Block};
+    use bitcoin_move::types::{Self, Transaction, Header, Block, BlockHeightHash};
     use bitcoin_move::ord::{Flotsam};
 
     friend bitcoin_move::genesis;
@@ -21,14 +21,17 @@ module bitcoin_move::pending_block{
     const ErrorReorgFailed:u64 = 4;
     const ErrorNeedToWaitMoreBlocks:u64 = 5;
     const ErrorPendingBlockNotFinished:u64 = 6;
+    const ErrorUnsupportedChain:u64 = 7;
 
     const TX_IDS_KEY: vector<u8> = b"tx_ids";
     const BLOCK_FLOTSAM_KEY: vector<u8> = b"block_flotsam";
 
     struct PendingBlock has key{
         block_height: u64,
+        block_hash: address,
         header: Header,
         processed_tx: u64,
+        next_block_hash: Option<address>,
     }
 
     struct PendingBlockID has copy, store, drop{
@@ -38,10 +41,10 @@ module bitcoin_move::pending_block{
     struct PendingStore has key{
         /// block_height -> block_hash
         pending_blocks: SimpleMap<u64, address>,
-        /// The latest pending block height
-        latest_block_height: Option<u64>,
+        /// The best block height and hash
+        best_block: Option<BlockHeightHash>,
         /// How many blocks we should pending for reorg
-        reorg_pending_block_count: u64,
+        reorg_block_count: u64,
     }
 
     /// InprocessBlock is used to store the block and txs that are being processed
@@ -58,11 +61,11 @@ module bitcoin_move::pending_block{
         success: bool,
     }
 
-    public(friend) fun genesis_init(reorg_pending_block_count: u64){
+    public(friend) fun genesis_init(reorg_block_count: u64){
         let store_obj = object::new_named_object(PendingStore{
             pending_blocks: simple_map::new(),
-            latest_block_height: option::none(),
-            reorg_pending_block_count,
+            best_block: option::none(),
+            reorg_block_count,
         });
         object::transfer_extend(store_obj, @bitcoin_move);
     }
@@ -83,6 +86,12 @@ module bitcoin_move::pending_block{
         let obj_id = object::named_object_id<PendingStore>();
         let store_obj = object::borrow_mut_object_extend(obj_id);
         object::borrow_mut(store_obj)
+    }
+    
+    fun exists_pending_block(block_hash: address): bool{
+        let block_id = new_pending_block_id(block_hash);
+        let block_obj_id = object::custom_object_id<PendingBlockID, PendingBlock>(block_id);
+        object::exists_object(block_obj_id)
     }
 
     fun borrow_pending_block(block_hash: address): &Object<PendingBlock>{
@@ -118,11 +127,13 @@ module bitcoin_move::pending_block{
             handle_reog(store, block_height);
         };
         let (header, txs) = types::unpack_block(block);
-        
+        let prev_block_hash = types::prev_blockhash(&header);
         let block_obj = object::new_with_id(block_id, PendingBlock{
             block_height: block_height,
+            block_hash: block_hash,
             header: header,
             processed_tx: 0,
+            next_block_hash: option::none(),
         });
         let tx_ids = vector::empty<address>(); 
         vector::for_each(txs, |tx| {
@@ -131,42 +142,56 @@ module bitcoin_move::pending_block{
             vector::push_back(&mut tx_ids, txid);
         });
         object::add_field(&mut block_obj, TX_IDS_KEY, tx_ids);
+        
         object::transfer_extend(block_obj, @bitcoin_move);
+        
+        if(exists_pending_block(prev_block_hash)){
+            let prev_block_obj = borrow_mut_pending_block(prev_block_hash);
+            let prev_block = object::borrow_mut(prev_block_obj);
+            prev_block.next_block_hash = option::some(block_hash);
+        };
+
         simple_map::add(&mut store.pending_blocks, block_height, block_hash);
-        if(option::is_none(&store.latest_block_height)){
-            store.latest_block_height = option::some(block_height);
-        }else{
-            let current_height = *option::borrow(&store.latest_block_height);
-            if(block_height > current_height){
-                store.latest_block_height = option::some(block_height);
-            };
-        }
+        //The relayer should ensure the new block is the best block
+        //Maybe we should calculate the difficulty here in the future
+        store.best_block = option::some(types::new_block_height_hash(block_height, block_hash));
     }
 
-    fun handle_reog(store: &mut PendingStore, block_height: u64){
-        // if the reorg happen, the latest block height should not be none.
-        let current_height = *option::borrow(&store.latest_block_height);
-        while(current_height >= block_height){
-            let (_, prev_hash) = simple_map::remove(&mut store.pending_blocks, &current_height);
-            let obj = take_pending_block(prev_hash);
-            // If the block already processed, we can't remove it, and reorg failed
-            if(object::borrow(&obj).processed_tx > 0){
-                event::emit(ReorgEvent{
-                    block_height: current_height,
-                    block_hash: prev_hash,
-                    success: false,
-                });
-                abort ErrorReorgFailed
-            };
-            remove_pending_block(obj, false);
-            current_height = current_height - 1;
-            event::emit(ReorgEvent{
-                block_height: current_height,
-                block_hash: prev_hash,
-                success: true,
-            });
+    fun handle_reog(store: &mut PendingStore, reorg_block_height: u64){
+        let (_, reorg_block_hash) = simple_map::remove(&mut store.pending_blocks, &reorg_block_height);
+        let reorg_block = take_pending_block(reorg_block_hash);
+        let next_block_hash_option = object::borrow(&reorg_block).next_block_hash;
+        handle_reorg_block(reorg_block);
+        while(option::is_some(&next_block_hash_option)){
+            let next_block_hash = option::destroy_some(next_block_hash_option);
+            let next_block = take_pending_block(next_block_hash);
+            let next_block_height = object::borrow(&next_block).block_height;
+            
+            next_block_hash_option = object::borrow(&next_block).next_block_hash;
+
+            handle_reorg_block(next_block);
+            simple_map::remove(&mut store.pending_blocks, &next_block_height);
         };
-        store.latest_block_height = option::some(block_height);
+    }
+
+    fun handle_reorg_block(obj: Object<PendingBlock>){
+        let block_height = object::borrow(&obj).block_height;
+        let block_hash = object::borrow(&obj).block_hash;
+        // If the block already processed, we can't remove it, and reorg failed
+        if(object::borrow(&obj).processed_tx > 0){
+            event::emit(ReorgEvent{
+                block_height,
+                block_hash,
+                success: false,
+            });
+            abort ErrorReorgFailed
+        };
+        remove_pending_block(obj, false);
+        event::emit(ReorgEvent{
+            block_height,
+            block_hash,
+            success: true,
+        });
     }
 
     fun remove_pending_block(obj: Object<PendingBlock>, processed: bool): Header{
@@ -187,7 +212,7 @@ module bitcoin_move::pending_block{
             let _flotsam: vector<Flotsam> = object::remove_field(&mut obj, BLOCK_FLOTSAM_KEY);
         };
         let pending_block = object::remove(obj);
-        let PendingBlock{block_height:_, header, processed_tx:_} = pending_block;
+        let PendingBlock{block_height:_, block_hash:_, header, processed_tx:_, next_block_hash:_} = pending_block;
         header
     }
 
@@ -196,8 +221,8 @@ module bitcoin_move::pending_block{
     public(friend) fun process_pending_tx(block_hash: address, txid: address): InprocessBlock{
         let store = borrow_mut_store();
         let block_obj = take_pending_block(block_hash);
-        let latest_block_height = *option::borrow(&store.latest_block_height);
-        assert!(object::borrow(&block_obj).block_height + store.reorg_pending_block_count >= latest_block_height, ErrorNeedToWaitMoreBlocks);
+        let (best_block_height, _best_block_hash) = types::unpack_block_height_hash(*option::borrow(&store.best_block));
+        assert!(object::borrow(&block_obj).block_height + store.reorg_block_count >= best_block_height, ErrorNeedToWaitMoreBlocks);
         assert!(object::contains_field(&block_obj, txid), ErrorPendingTxNotFound);
         let tx = object::remove_field(&mut block_obj, txid);
         let inprocess_block = InprocessBlock{
@@ -262,11 +287,14 @@ module bitcoin_move::pending_block{
     /// Get the pending txs which are ready to be processed
     public fun get_ready_pending_txs(): Option<PendingTxs>{
         let store = borrow_store();
-        if(option::is_none(&store.latest_block_height)){
+        if(option::is_none(&store.best_block)){
             return option::none()
         };
-        let latest_block_height = *option::borrow(&store.latest_block_height);
-        let ready_block_height = latest_block_height - store.reorg_pending_block_count;
+        let (best_block_height, _best_block_hash) = types::unpack_block_height_hash(*option::borrow(&store.best_block));
+        if(best_block_height < store.reorg_block_count){
+            return option::none()
+        };
+        let ready_block_height = best_block_height - store.reorg_block_count;
         if(!simple_map::contains_key(&store.pending_blocks, &ready_block_height)){
             return option::none()
         };
@@ -283,13 +311,22 @@ module bitcoin_move::pending_block{
         option::some(pending_txs)
     }
 
-    public fun get_latest_block_height(): Option<u64>{
+    public fun get_best_block(): Option<BlockHeightHash>{
         let store = borrow_store();
-        store.latest_block_height
+        *&store.best_block
     }
 
-    public fun get_reorg_pending_block_count(): u64{
+    public fun get_reorg_block_count(): u64{
         let store = borrow_store();
-        store.reorg_pending_block_count
+        store.reorg_block_count
+    }
+
+    //====== Update functions ======
+
+    /// Update the `reorg_block_count` config for local env to testing
+    public entry fun update_reorg_block_count_for_local(count: u64){
+        assert!(rooch_framework::chain_id::is_local(), ErrorUnsupportedChain);
+        let store = borrow_mut_store();
+        store.reorg_block_count = count;
     } 
 }

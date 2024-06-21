@@ -279,6 +279,20 @@ module bitcoin_move::types{
         (self.value, self.script_pubkey)
     }
 
+    #[data_struct]
+    struct BlockHeightHash has copy, store, drop{
+        block_height: u64,
+        block_hash: address,
+    }
+
+    public fun new_block_height_hash(block_height: u64, block_hash: address) : BlockHeightHash {
+        BlockHeightHash{block_height, block_hash}
+    }
+
+    public fun unpack_block_height_hash(self: BlockHeightHash) : (u64, address) {
+        (self.block_height, self.block_hash)
+    }
+
     public fun is_coinbase_tx(tx: &Transaction): bool {
         let is_coinbase = if(vector::length(&tx.input) == 1) {
             let first_input = vector::borrow(&tx.input, 0);

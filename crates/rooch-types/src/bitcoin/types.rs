@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::into_address::FromAddress;
 use crate::{address::BitcoinAddress, addresses::BITCOIN_MOVE_ADDRESS, into_address::IntoAddress};
 use anyhow::Result;
 use bitcoin::{hashes::Hash, BlockHash};
@@ -392,6 +393,37 @@ impl MoveStructState for TxOut {
             ScriptBuf::type_layout(),
             BitcoinAddress::type_layout(),
         ])
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlockHeightHash {
+    pub block_height: u64,
+    pub block_hash: AccountAddress,
+}
+
+impl MoveStructType for BlockHeightHash {
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("BlockHeightHash");
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
+}
+
+impl MoveStructState for BlockHeightHash {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![
+            move_core_types::value::MoveTypeLayout::U64,
+            move_core_types::value::MoveTypeLayout::Address,
+        ])
+    }
+}
+
+impl BlockHeightHash {
+    pub fn unpack(self) -> (u64, BlockHash) {
+        let BlockHeightHash {
+            block_height,
+            block_hash,
+        } = self;
+        (block_height, BlockHash::from_address(block_hash))
     }
 }
 

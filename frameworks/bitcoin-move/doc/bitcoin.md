@@ -14,8 +14,8 @@
 -  [Function `get_block`](#0x4_bitcoin_get_block)
 -  [Function `get_block_height`](#0x4_bitcoin_get_block_height)
 -  [Function `get_block_by_height`](#0x4_bitcoin_get_block_by_height)
--  [Function `get_genesis_block_height`](#0x4_bitcoin_get_genesis_block_height)
--  [Function `get_latest_block_height`](#0x4_bitcoin_get_latest_block_height)
+-  [Function `get_genesis_block`](#0x4_bitcoin_get_genesis_block)
+-  [Function `get_latest_block`](#0x4_bitcoin_get_latest_block)
 -  [Function `get_bitcoin_time`](#0x4_bitcoin_get_bitcoin_time)
 -  [Function `contains_header`](#0x4_bitcoin_contains_header)
 
@@ -115,7 +115,7 @@ The reorg is too deep, we need to stop the system and fix the issue
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_genesis_init">genesis_init</a>(_genesis_account: &<a href="">signer</a>, genesis_block_height: u64)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_genesis_init">genesis_init</a>(_genesis_account: &<a href="">signer</a>, genesis_block_height: u64, genesis_block_hash: <b>address</b>)
 </code></pre>
 
 
@@ -177,25 +177,25 @@ Get block via block_height
 
 
 
-<a name="0x4_bitcoin_get_genesis_block_height"></a>
+<a name="0x4_bitcoin_get_genesis_block"></a>
 
-## Function `get_genesis_block_height`
+## Function `get_genesis_block`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_get_genesis_block_height">get_genesis_block_height</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_get_genesis_block">get_genesis_block</a>(): <a href="types.md#0x4_types_BlockHeightHash">types::BlockHeightHash</a>
 </code></pre>
 
 
 
-<a name="0x4_bitcoin_get_latest_block_height"></a>
+<a name="0x4_bitcoin_get_latest_block"></a>
 
-## Function `get_latest_block_height`
+## Function `get_latest_block`
 
 Get latest block height
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_get_latest_block_height">get_latest_block_height</a>(): <a href="_Option">option::Option</a>&lt;u64&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_get_latest_block">get_latest_block</a>(): <a href="_Option">option::Option</a>&lt;<a href="types.md#0x4_types_BlockHeightHash">types::BlockHeightHash</a>&gt;
 </code></pre>
 
 
@@ -204,7 +204,7 @@ Get latest block height
 
 ## Function `get_bitcoin_time`
 
-Get the bitcoin time, if the latest block is not exist, return 0
+Get the bitcoin time in seconds
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_get_bitcoin_time">get_bitcoin_time</a>(): u32

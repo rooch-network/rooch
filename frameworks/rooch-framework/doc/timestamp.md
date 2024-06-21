@@ -34,12 +34,11 @@ Just using to get module signer
 ## Constants
 
 
-<a name="0x3_timestamp_ErrorInvalidTimestamp"></a>
-
-An invalid timestamp was provided
+<a name="0x3_timestamp_ErrorUnsupportedChain"></a>
 
 
-<pre><code><b>const</b> <a href="timestamp.md#0x3_timestamp_ErrorInvalidTimestamp">ErrorInvalidTimestamp</a>: u64 = 1;
+
+<pre><code><b>const</b> <a href="timestamp.md#0x3_timestamp_ErrorUnsupportedChain">ErrorUnsupportedChain</a>: u64 = 1;
 </code></pre>
 
 
