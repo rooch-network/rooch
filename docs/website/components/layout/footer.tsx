@@ -12,28 +12,30 @@ export function Footer() {
 
   const config = useConfig()
 
-  const [SwitchDisplay, SetSwitchDisplay] = useState(false)
+  const [showFooter, setShowFooter] = useState(true)
 
   useEffect(() => {
-    if (pathname.includes('/docs')) {
-      SetSwitchDisplay(false)
+    if (pathname.includes('/build') || pathname.includes('/learn')) {
+      setShowFooter(false)
     } else {
-      SetSwitchDisplay(true)
+      setShowFooter(true)
     }
   }, [pathname])
+
+  if (!showFooter) {
+    return null
+  }
 
   return (
     <footer className="mt-auto w-full max-w-[85rem] py-10 px-4 sm:px-6 lg:px-8 mx-auto">
       {/* Theme Buttons */}
-      {SwitchDisplay ? (
-        <div className="text-left pb-4 flex items-center justify-between">
-          <div className="flex items-center justify-start">
-            <LocaleSwitch options={config.i18n} />
-            <ThemeSwitch />
-          </div>
-          <About />
+      <div className="text-left pb-4 flex items-center justify-between">
+        <div className="flex items-center justify-start">
+          <LocaleSwitch options={config.i18n} />
+          <ThemeSwitch />
         </div>
-      ) : null}
+        <About />
+      </div>
       {/* End of Theme Buttons */}
       <hr />
       <div className="text-center grid grid-cols-2 content-between">
