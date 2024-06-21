@@ -80,11 +80,6 @@ impl BitcoinRelayer {
         let best_block_in_rooch = pending_block_module.get_best_block()?;
         let best_block_hash_in_bitcoin = self.rpc_client.get_best_block_hash().await?;
 
-        // let best_block_header_info_in_bitcoin = self
-        //     .rpc_client
-        //     .get_block_header_info(best_block_hash_in_bitcoin)
-        //     .await?;
-
         //The start block is included
         let start_block_hash = match best_block_in_rooch {
             Some(best_block_in_rooch) => {
@@ -120,19 +115,7 @@ impl BitcoinRelayer {
             }
         };
 
-        // let Some(start_block_hash) = start_block_hash else {
-        //     self.sync_to_latest = true;
-        //     return Ok(());
-        // };
-
-        // let start_block_height = start_block_header_info.height as u64;
-
         let end_block_height = self.end_block_height.unwrap_or(0);
-
-        // let start_block = self
-        //     .rpc_client
-        //     .get_block(start_block_header_info.hash)
-        //     .await?;
 
         let mut next_block_hash = start_block_hash;
 
