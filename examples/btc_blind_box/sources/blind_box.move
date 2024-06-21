@@ -24,7 +24,7 @@ module btc_blind_box::blind_box {
     use moveos_std::account as moveos_account;
     use moveos_std::timestamp;
     use bitcoin_move::bitcoin;
-    use bitcoin_move::types::Header;
+    use bitcoin_move::types::{Self, Header};
 
     const ErrorNoPermission: u64 = 1;
     const ErrorSoldOut: u64 = 2;
@@ -95,9 +95,10 @@ module btc_blind_box::blind_box {
     }
 
     fun latest_block_height(): u64 {
-        let height = bitcoin::get_latest_block_height();
-        assert!(option::is_some<u64>(&height), ErrorBitcoinClientError);
-        option::extract<u64>(&mut height)
+        let height_hash = bitcoin::get_latest_block();
+        assert!(option::is_some(&height_hash), ErrorBitcoinClientError);
+        let (height,_hash) = types::unpack_block_height_hash(option::destroy_some(height_hash));
+        height
     }
 
     fun generate_magic_number(): u128 {
