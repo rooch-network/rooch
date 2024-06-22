@@ -5,17 +5,42 @@ import ROOCH_TEAM from '../../data/team'
 import { useState, useEffect } from 'react'
 import Head from 'next/head'
 
+interface FrontMatter {
+  title: string
+  description: string
+  image?: string
+  category: string
+  author: string
+}
+
+interface CustomPage {
+  route: string
+  frontMatter: FrontMatter
+}
+
+function isCustomPage(page: any): page is CustomPage {
+  return page && page.frontMatter && typeof page.frontMatter.title === 'string'
+}
+
 export default function PostHeader() {
   const pathname = usePathname()
-  const [page, setPage] = useState(null)
+  const [page, setPage] = useState<CustomPage | null>(null)
+  const [ogImage, setOgImage] = useState('https://rooch.network/logo/rooch-banner.png')
 
   useEffect(() => {
-    setPage(getPagesUnderRoute('/blog').find((page) => page.route === pathname))
+    async function fetchPage() {
+      const pages = (await getPagesUnderRoute('/blog')) as unknown as any[]
+      const customPages = pages.filter(isCustomPage) as CustomPage[]
+      const currentPage = customPages.find((page) => page.route === pathname)
+      if (currentPage) {
+        setPage(currentPage)
+        if (currentPage.frontMatter.image) {
+          setOgImage(`https://rooch.network${currentPage.frontMatter.image}`)
+        }
+      }
+    }
+    fetchPage()
   }, [pathname])
-
-  const ogImage = page
-    ? `https://rooch.network${page.frontMatter.image}`
-    : 'https://rooch.network/logo/rooch-banner.png'
 
   return page ? (
     <>
@@ -47,6 +72,7 @@ export default function PostHeader() {
             <a
               href={'https://twitter.com/' + ROOCH_TEAM[page.frontMatter.author].twitterUsername}
               target="_blank"
+              rel="noopener noreferrer"
             >
               {ROOCH_TEAM[page.frontMatter.author].name}
             </a>
