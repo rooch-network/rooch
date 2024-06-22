@@ -1,8 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { Address, BitcoinAddress, Bytes } from '@roochnetwork/rooch-sdk'
-import { BitcoinWallet } from '@/wellet/bitcoin'
+import { BitcoinAddress, Bytes, ThirdPartyAddress, str, bytes } from '@roochnetwork/rooch-sdk'
+
+import { BitcoinWallet } from '../wellet/index.js'
+import { sha256 } from '@roochnetwork/rooch-sdk'
 
 const UNISAT_SUPPORT_NETWORKS = ['livenet', 'testnet']
 
@@ -15,15 +17,21 @@ export class UniSatWallet extends BitcoinWallet {
     return (window as any).unisat
   }
 
-  async connect(): Promise<Address[]> {
-    let accounts: string[] = await this.getTarget().getAccounts()
+  async connect(): Promise<ThirdPartyAddress[]> {
+    let addresses: string[] = await this.getTarget().getAccounts()
 
-    if (!accounts || accounts.length === 0) {
+    if (!addresses || addresses.length === 0) {
       await this.getTarget().requestAccounts()
       return this.connect()
     }
 
-    return accounts.map((item) => new BitcoinAddress(item))
+    let publicKey = await this.getTarget().getPublicKey()
+
+    this.address = addresses.map((item) => new BitcoinAddress(item))
+    this.currentAddress = this.address[0]
+    this.publicKey = publicKey
+
+    return this.address
   }
 
   switchNetwork(network: string): void {
@@ -54,6 +62,10 @@ export class UniSatWallet extends BitcoinWallet {
   }
 
   async sign(msg: Bytes): Promise<Bytes> {
-    return await this.getTarget().signMessage(msg)
+    const msgStr = str('utf8', msg)
+    console.log('msg hash', sha256('\u0018Bitcoin Signed Message:\n' + msgStr))
+    const sign = await this.getTarget().signMessage(msgStr)
+
+    return bytes('base64', sign).subarray(1) // remove recover id
   }
 }

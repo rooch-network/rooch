@@ -1,12 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import type { RoochClient } from '@roochnetwork/rooch-sdk'
-import type { UseQueryOptions, UseQueryResult } from '@tanstack/react-query'
 import { useQuery } from '@tanstack/react-query'
+import type { UseQueryOptions, UseQueryResult } from '@tanstack/react-query'
 
-import type { PartialBy } from '../../types'
-import { useRoochClient, useCurrentNetwork } from './index'
+import type { RoochClient } from '@roochnetwork/rooch-sdk'
+
+import type { PartialBy } from '../../types/index.js'
+import { useRoochClient, useCurrentNetwork } from './index.js'
 
 export type RpcMethodName = {
   [K in keyof RoochClient]: RoochClient[K] extends

@@ -1,18 +1,29 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { bcs } from '@/bcs'
-import { Authenticator } from '@/crypto'
-import { address, Bytes, u64 } from '@/types'
+import { bcs } from '../bcs/index.js'
+import { Authenticator } from '../crypto/index.js'
+import { address, Bytes, u64 } from '../types/index.js'
 
-import { CallFunctionArgs, MoveAction, TransactionData } from './transactionData'
+import { MoveAction, TransactionData } from './transactionData.js'
+import { CallFunctionArgs } from './types.js'
 
 export class Transaction {
   private data: TransactionData | undefined
   private auth: Authenticator | undefined
+  private info: string | undefined
 
-  callFunction(input: CallFunctionArgs) {
-    this.data = new TransactionData(MoveAction.newCallFunction(input))
+  callFunction(
+    input: {
+      info?: string
+    } & CallFunctionArgs,
+  ) {
+    this.info = input.info
+    this.data = new TransactionData(MoveAction.newCallFunction(input),)
+  }
+
+  getInfo() {
+    return this.info
   }
 
   setSender(input: address) {

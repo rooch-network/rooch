@@ -1,30 +1,34 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { Wallet } from '@/wellet/wallet'
 import {
   Address,
   Authenticator,
   BitcoinAddress,
   BitcoinSignMessage,
-  Bytes,
   PublicKey,
   RoochAddress,
   Secp256k1PublicKey,
   SignatureScheme,
+  fromHEX,
+  Transaction,
 } from '@roochnetwork/rooch-sdk'
-import { SupportChain } from '@/feature'
+
+import { SupportChain } from '../feature/index.js'
+import { Wallet } from '../wellet/index.js'
 
 export abstract class BitcoinWallet extends Wallet {
-  protected async signTransactionImp(input: Bytes): Promise<Authenticator> {
-    return await Authenticator.bitcoin(new BitcoinSignMessage(input, 'sdk'), this)
+  async signTransaction(input: Transaction): Promise<Authenticator> {
+    const message = new BitcoinSignMessage(input.hashData(), input.getInfo() || '')
+    return Authenticator.bitcoin(message, this, 'raw')
   }
 
   getPublicKey(): PublicKey<Address> {
     if (!this.publicKey) {
       throw Error('Please connect your wallet first')
     }
-    return new Secp256k1PublicKey(this.publicKey)
+
+    return new Secp256k1PublicKey(fromHEX(this.publicKey))
   }
 
   getRoochAddress(): RoochAddress {

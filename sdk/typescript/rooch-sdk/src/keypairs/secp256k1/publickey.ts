@@ -1,13 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { schnorr, secp256k1 } from '@noble/curves/secp256k1'
 import { bech32m } from '@scure/base'
+import { schnorr, secp256k1 } from '@noble/curves/secp256k1'
 
-import { BitcoinAddress } from '@/address'
-import { PublicKey, PublicKeyInitData, SIGNATURE_SCHEME_TO_FLAG } from '@/crypto'
-import { Bytes, EmptyBytes } from '@/types'
-import { fromB64, sha256 } from '@/utils'
+import { BitcoinAddress } from '../../address/index.js'
+import { PublicKey, PublicKeyInitData, SIGNATURE_SCHEME_TO_FLAG } from '../../crypto/index.js'
+import { Bytes, EmptyBytes } from '../../types/index.js'
+import { fromB64, sha256, toHEX } from '../../utils/index.js'
 
 const SCHNORR_PUBLIC_KEY_SIZE = 32
 
@@ -53,6 +53,10 @@ export class Secp256k1PublicKey extends PublicKey<BitcoinAddress> {
    */
   toBytes(): Uint8Array {
     return this.data
+  }
+
+  toString(): string {
+    return toHEX(this.data)
   }
 
   /**

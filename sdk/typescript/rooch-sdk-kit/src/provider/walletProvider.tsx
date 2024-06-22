@@ -1,11 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { ReactNode, useCallback } from 'react'
-import { createContext, useEffect, useRef, useState } from 'react'
+import { ReactNode, useCallback, createContext, useEffect, useRef } from 'react'
 import type { StateStorage } from 'zustand/middleware'
+import { BitcoinAddress } from '@roochnetwork/rooch-sdk'
 
-import { createWalletStore, WalletStore } from './walletStore'
+import { createWalletStore, WalletStore } from './walletStore.js'
 import {
   useAutoConnectWallet,
   useCurrentSession,
@@ -13,12 +13,10 @@ import {
   useSession,
   useWalletStore,
   useCurrentNetwork,
-} from '@/hooks'
-import { checkWallets } from '@/utils/walletUtils'
-import { SupportChain } from '@/feature'
-import { getDefaultStorage, StorageType } from '@/utils/stateStorage'
-import { Wallet } from '@/wellet'
-import { BitcoinAddress } from '@roochnetwork/rooch-sdk'
+} from '../hooks/index.js'
+import { getDefaultStorage, StorageType } from '../utils/index.js'
+import { SupportChain } from '../feature/index.js'
+import { AllWallet } from '../wellet/util.js'
 
 type WalletProviderProps = {
   chain?: SupportChain
@@ -33,8 +31,6 @@ type WalletProviderProps = {
   storageKey?: string
 
   children: ReactNode
-
-  fallback?: ReactNode
 }
 
 const DEFAULT_STORAGE_KEY = 'rooch-sdk-kit:wallet-connect-info'
@@ -46,39 +42,25 @@ export function WalletProvider({
   storage,
   storageKey = DEFAULT_STORAGE_KEY,
   autoConnect = false,
-  fallback,
   children,
 }: WalletProviderProps) {
-  const [wallets, setWallets] = useState<Wallet[]>()
-  const [loading, setLoading] = useState(true)
-  const storeRef = useRef<ReturnType<typeof createWalletStore>>()
   const network = useCurrentNetwork()
 
-  useEffect(() => {
-    checkWallets().then((v) => setWallets(v))
-  }, [chain])
-
-  useEffect(() => {
-    if (wallets && wallets.length !== 0) {
-      storeRef.current = createWalletStore({
-        chain,
-        wallets: wallets,
-        currentWallet: wallets.find((v) => v.getChain() === chain),
-        autoConnectEnabled: autoConnect,
-        storage: storage || getDefaultStorage(StorageType.Local),
-        storageKey: storageKey + network + chain?.toString(),
-      })
-      setLoading(false)
-    }
-  }, [network, wallets, autoConnect, storageKey, storage, chain])
-
-  return !loading ? (
-    <WalletContext.Provider value={storeRef.current!}>
+  const storeRef = useRef(
+    createWalletStore({
+      chain,
+      wallets: AllWallet,
+      currentWallet: undefined,
+      autoConnectEnabled: autoConnect,
+      storage: storage || getDefaultStorage(StorageType.Local),
+      storageKey: storageKey + network + chain?.toString(),
+    }),
+  )
+  return (
+    <WalletContext.Provider value={storeRef.current}>
       <WalletConnectionManager>{children}</WalletConnectionManager>
     </WalletContext.Provider>
-  ) : fallback ? (
-    fallback
-  ) : null
+  )
 }
 
 type WalletConnectionManagerProps = Required<Pick<WalletProviderProps, 'children'>>

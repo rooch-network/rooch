@@ -9,19 +9,19 @@ import {
   useConnectWallet,
   useWallets,
   useCurrentWallet,
-  useCurrentAccount,
-} from '@/hooks'
-import { SupportChain } from '@/feature'
+  useCurrentAddress,
+} from './index.js'
+import { SupportChain } from '../../feature/index.js'
 
 export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
   const { mutateAsync: connectWallet } = useConnectWallet()
   const autoConnectEnabled = useWalletStore((state) => state.autoConnectEnabled)
   const lastConnectedWalletName = useWalletStore((state) => state.lastConnectedWalletName)
-  const lastConnectedAccountAddress = useWalletStore((state) => state.lastConnectedAddress)
+  const lastConnectedAddress = useWalletStore((state) => state.lastConnectedAddress)
   const { isConnected } = useCurrentWallet()
   const wallets = useWallets()
   const [clientOnly, setClientOnly] = useState(false)
-  const currentAccount = useCurrentAccount()
+  const currentAddress = useCurrentAddress()
 
   useLayoutEffect(() => {
     setClientOnly(true)
@@ -35,7 +35,7 @@ export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
         isConnected,
         autoConnectEnabled,
         lastConnectedWalletName,
-        lastConnectedAccountAddress,
+        lastConnectedAddress,
       },
     ],
     queryFn: async () => {
@@ -43,7 +43,7 @@ export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
         return 'disabled'
       }
 
-      if (!lastConnectedWalletName || !lastConnectedAccountAddress || isConnected) {
+      if (!lastConnectedWalletName || !lastConnectedAddress || isConnected) {
         return 'attempted'
       }
 
@@ -56,9 +56,9 @@ export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
       // bitcoin wallet is not support switch account
       if (
         wallet!.getChain() !== SupportChain.BITCOIN &&
-        currentAccount?.address !== lastConnectedAccountAddress
+        currentAddress?.toStr() !== lastConnectedAddress
       ) {
-        wallet!.switchAccount(lastConnectedAccountAddress)
+        wallet!.switchAccount(lastConnectedAddress)
       }
 
       return 'attempted'

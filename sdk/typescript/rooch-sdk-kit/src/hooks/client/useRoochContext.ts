@@ -3,7 +3,7 @@
 
 import { useContext } from 'react'
 
-import { RoochClientContext, RoochClientProviderContext } from '@/provider/clientProvider'
+import { RoochClientContext, RoochClientProviderContext } from '../../provider/index.js'
 
 export function useRoochContext(): RoochClientProviderContext {
   const context = useContext(RoochClientContext)

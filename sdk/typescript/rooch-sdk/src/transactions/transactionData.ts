@@ -1,40 +1,20 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { sha3_256 } from '@/utils'
-import { normalizeRoochAddress } from '@/address'
-import { Args, bcs, Serializer, TypeTag } from '@/bcs'
-import { address, Bytes, identifier, u8, u64 } from '@/types'
+import { sha3_256 } from '../utils/index.js'
+import { normalizeRoochAddress } from '../address/index.js'
+import { Args, bcs, Serializer } from '../bcs/index.js'
+import { address, Bytes, identifier, u8, u64 } from '../types/index.js'
+import { CallFunctionArgs, CallScript } from './types.js'
 
 const DEFAULT_GAS = BigInt(50000000)
-
-export type ScriptCall = {
-  code: string
-  args: Args[]
-  typeArgs: TypeTag[]
-}
-
-export type ModuleArgs =
-  | {
-      address: string
-      module: string
-      function: string
-    }
-  | {
-      target: string
-    }
-
-export type CallFunctionArgs = {
-  arguments?: Args[]
-  typeArguments?: TypeTag[]
-} & ModuleArgs
 
 export class CallFunction {
   address: string
   module: identifier
   function: identifier
-  arguments: Args[]
-  typeArguments: TypeTag[]
+  args: Args[]
+  typeArgs: string[]
 
   constructor(input: CallFunctionArgs) {
     const [pkg, mod, fn] =
@@ -44,8 +24,8 @@ export class CallFunction {
     this.module = mod
     this.function = fn
 
-    this.arguments = input.arguments || []
-    this.typeArguments = input.typeArguments || []
+    this.args = input.args || []
+    this.typeArgs = input.typeArgs?.map((item) => Serializer.typeTagToString(item)) || []
   }
 
   functionId(): string {
@@ -53,23 +33,15 @@ export class CallFunction {
   }
 
   encodeArgs(): string[] {
-    return this.arguments?.map((item) => item.encodeWithHex())
+    return this.args?.map((item) => item.encodeWithHex())
   }
 
-  serializerTypeArgs(): string[] {
-    return this.typeArguments?.map((item) => Serializer.typeTagToString(item))
-  }
-
-  encodeTypeArgs(): string[] {
-    return this.typeArguments?.map((item) => Serializer.typeTagToString(item))
-  }
-
-  encode(): u8[][] {
-    return this.arguments.map((item) => item.encode()).map((item) => Array.from(item))
+  encodeArgsToByteArrays(): u8[][] {
+    return this.args.map((item) => item.encode()).map((item) => Array.from(item))
   }
 }
 
-type MoveActionType = CallFunction | ScriptCall
+type MoveActionType = CallFunction | CallScript
 
 export class MoveAction {
   scheme: number
@@ -84,7 +56,7 @@ export class MoveAction {
     return new MoveAction(1, new CallFunction(input))
   }
 
-  static newScriptCall(input: { code: string; args: Args[]; typeArgs: TypeTag[] }) {
+  static newCallScript(input: CallScript) {
     return new MoveAction(2, input)
   }
 }
@@ -127,8 +99,8 @@ export class TransactionData {
           },
           name: call.function,
         },
-        args: Array.from(call.encode()),
-        typeArgs: call.serializerTypeArgs(),
+        args: Array.from(call.encodeArgsToByteArrays()),
+        typeArgs: call.typeArgs,
       },
     }).toBytes()
   }

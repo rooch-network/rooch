@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { RoochClientOptions } from '@roochnetwork/rooch-sdk'
-import { useRoochContext } from '@/hooks'
+
+import { useRoochContext } from './useRoochContext.js'
 
 export type NetworkConfig<T extends object = object> = RoochClientOptions & {
   variables?: T

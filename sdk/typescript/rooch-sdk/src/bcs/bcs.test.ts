@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { describe, it, expect } from 'vitest'
-import { Ed25519Keypair, Secp256k1Keypair } from '@/keypairs'
-import {bcs} from '@/bcs'
-import { bytesEqual } from '@/utils'
+
+import { Ed25519Keypair, Secp256k1Keypair } from '../keypairs/index.js'
+import { bytesEqual } from '../utils/index.js'
+
+import {bcs} from './index.js'
 
 describe('BCS', () => {
   it('Address', () => {

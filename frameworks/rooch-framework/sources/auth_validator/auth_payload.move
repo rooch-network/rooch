@@ -54,6 +54,7 @@ module rooch_framework::auth_payload {
         assert!(starts_with(&self.message_info, &MessgaeInfoPrefix), ErrorInvalidSignature);
 
         let tx_hex = hex::encode(tx_hash);
+        std::debug::print(&tx_hex);
         let message_prefix_len = (vector::length(&self.message_prefix) as u8);
 
         let full_message = vector<u8>[];

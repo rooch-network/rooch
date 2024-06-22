@@ -16,9 +16,4 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./test/setup.ts'],
   },
-  resolve: {
-    alias: {
-      '@roochnetwork/rooch-sdk': new URL('../rooch-sdk', import.meta.url).pathname,
-    },
-  },
 })

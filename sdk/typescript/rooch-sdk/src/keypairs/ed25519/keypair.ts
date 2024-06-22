@@ -3,8 +3,8 @@
 
 import nacl from 'tweetnacl'
 
-import { BitcoinAddress, RoochAddress } from '@/address'
-import { decodeRoochSercetKey, SignatureScheme } from '@/crypto'
+import { BitcoinAddress, RoochAddress } from '../../address/index.js'
+import { Bytes } from '../../types/index.js'
 import {
   Authenticator,
   encodeRoochSercetKey,
@@ -12,11 +12,13 @@ import {
   Keypair,
   mnemonicToSeedHex,
   PRIVATE_KEY_SIZE,
-} from '@/crypto'
-import { Bytes } from '@/types'
+  decodeRoochSercetKey,
+  SignatureScheme,
+} from '../../crypto/index.js'
 
-import { derivePath } from './ed25519-hd-key'
-import { Ed25519PublicKey } from './publickey'
+import { derivePath } from './ed25519-hd-key.js'
+import { Ed25519PublicKey } from './publickey.js'
+import { Transaction } from '../../transactions/index.js'
 
 export const DEFAULT_ED25519_DERIVATION_PATH = `m/44'/784'/0'/0'/0'`
 
@@ -133,12 +135,12 @@ export class Ed25519Keypair extends Keypair {
   /**
    * Return the signature for the provided data using Ed25519.
    */
-  async sign(data: Uint8Array) {
-    return nacl.sign.detached(data, this.keypair.secretKey)
+  async sign(input: Bytes) {
+    return nacl.sign.detached(input, this.keypair.secretKey)
   }
 
-  protected signTransactionImp(input: Bytes): Promise<Authenticator> {
-    return Authenticator.rooch(input, this)
+  signTransaction(input: Transaction): Promise<Authenticator> {
+    return Authenticator.rooch(input.hashData(), this)
   }
 
   /**

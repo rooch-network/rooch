@@ -3,7 +3,7 @@
 
 import { createWalletProviderContextWrapper } from '../utils.js'
 import { renderHook } from '@testing-library/react'
-import { useAutoConnectWallet } from '../../src/hooks/wallet/useAutoConnectWallet.js'
+import { useAutoConnectWallet } from '../../src/index.js'
 
 describe('useAutoConnectWallet', () => {
   test('returns "disabled" when the auto-connect functionality is disabled', async () => {

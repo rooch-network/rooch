@@ -3,13 +3,14 @@
 
 import { bech32, bech32m, createBase58check } from '@scure/base'
 
-import { bcs } from '@/bcs'
-import { Bytes } from '@/types'
-import { blake2b, bytes, sha256, validateWitness } from '@/utils'
+import { bcs } from '../bcs/index.js'
+import { Bytes } from '../types/index.js'
+import { blake2b, bytes, sha256, validateWitness } from '../utils/index.js'
 
-import { Address, ROOCH_ADDRESS_LENGTH } from './address'
-import { RoochAddress } from './rooch'
-import { MultiChainID } from './types'
+import { Address, ROOCH_ADDRESS_LENGTH } from './address.js'
+import { RoochAddress } from './rooch.js'
+import { MultiChainID } from './types.js'
+import { ThirdPartyAddress } from './thirdparty-address.js'
 
 const base58check = createBase58check(sha256)
 
@@ -31,19 +32,14 @@ enum BitcoinAddressType {
   tr = 2,
 }
 
-export class BitcoinAddress implements Address {
-  private readonly rawAddress: string
+export class BitcoinAddress extends ThirdPartyAddress implements Address {
   private readonly bytes: Bytes
   private roochAddress: RoochAddress | undefined
 
   constructor(input: string) {
-    let info = this.decode(input)
-    this.rawAddress = input
+    super(input)
+    let info = this.decode()
     this.bytes = this.wrapAddress(info.type, info.bytes, info.version)
-  }
-
-  toStr(): string {
-    return this.rawAddress
   }
 
   toBytes(): Bytes {
@@ -65,7 +61,8 @@ export class BitcoinAddress implements Address {
     return this.roochAddress
   }
 
-  private decode(input: string) {
+  decode() {
+    let input = this.rawAddress
     if (input.length < 14 || input.length > 74) throw new Error('Invalid address length')
 
     const bech32_network = (() => {
@@ -84,7 +81,7 @@ export class BitcoinAddress implements Address {
       }
     })()
 
-    if (bech32_network) {
+    if (bech32_network !== undefined) {
       let res
       try {
         res = bech32.decode(input)
@@ -135,7 +132,7 @@ export class BitcoinAddress implements Address {
   private wrapAddress(type: BitcoinAddressType, bytes: Uint8Array, version?: number): Uint8Array {
     const addr = new Uint8Array(bytes.length + 1 + (version !== undefined ? 1 : 0))
     addr.set([type])
-    if (version) {
+    if (version !== undefined) {
       addr.set([version], 1)
       addr.set(bytes, 2)
     } else {

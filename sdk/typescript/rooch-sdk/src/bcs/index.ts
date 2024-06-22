@@ -17,13 +17,12 @@ import {
   RoochTransaction,
   RoochTransactionData,
   ScriptCall,
-  TypeTag,
-} from './bcs'
+} from './bcs.js'
 
 export { BcsType, type BcsTypeOptions } from '@mysten/bcs'
-export { Args, type ArgType } from './args'
-export { Serializer } from './serializer'
-export { type StructTag, type TypeTag } from './types'
+export { Args, type ArgType } from './args.js'
+export { Serializer } from './serializer.js'
+export { type StructTag, type TypeTag } from './types.js'
 
 export const RoochBcs = {
   U8: bcs.u8(),
@@ -47,7 +46,6 @@ export const RoochBcs = {
   RoochTransactionData,
   Authenticator,
   RoochTransaction,
-  TypeTag,
   ...bcs,
 }
 

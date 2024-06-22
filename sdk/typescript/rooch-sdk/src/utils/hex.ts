@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { Bytes } from '@/types'
+import { Bytes } from '../types/bytes.js'
 
 export function isHex(input: string | Bytes): boolean {
   if (typeof input === 'string') {

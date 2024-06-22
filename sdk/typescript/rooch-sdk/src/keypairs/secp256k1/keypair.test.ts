@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { describe, it, expect } from 'vitest'
-import { Secp256k1Keypair } from './keypair'
-import { decodeRoochSercetKey, ROOCH_SECRET_KEY_PREFIX } from '@/crypto'
+import { Secp256k1Keypair } from './keypair.js'
+import { decodeRoochSercetKey, ROOCH_SECRET_KEY_PREFIX } from '../../crypto/index.js'
 
 const TEST_CASES: [{ pk: string; sk: string }] = [
   {

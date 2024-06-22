@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { SubStatus } from '@/utils'
+import { SubStatus } from '../utils/index.js'
 
 const CODE_TO_ERROR_TYPE: Record<number, string> = {
   // 0x1: 'INVALID_ARGUMENT', // Caller specified an invalid argument (http: 400)

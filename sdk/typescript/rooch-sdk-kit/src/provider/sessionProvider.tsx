@@ -1,14 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { createContext, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import { createContext, useRef } from 'react'
 
 import type { StateStorage } from 'zustand/middleware'
-import { createSessionStore, SessionStore } from '../sessionStore'
-import { useRoochClient } from '../hooks'
-import { useCurrentNetwork } from '../hooks'
-import { getDefaultStorage, StorageType } from '../utils/stateStorage'
+
+import { createSessionStore, SessionStore } from '../sessionStore.js'
+
+import { useCurrentNetwork } from '../hooks/index.js'
+import { getDefaultStorage, StorageType } from '../utils/index.js'
 
 const DEFAULT_SESSION_STORAGE_KEY = function (key: string | undefined, network: string) {
   if (key) {
@@ -34,31 +35,17 @@ export function RoochSessionProvider(props: RoochSessionProviderProps) {
   // ** Props **
   const { storage, storageKey, children } = props
 
-  // ** State **
-  const [init, setInit] = useState(true)
-
   // ** Hooks **
-  const client = useRoochClient()
   const network = useCurrentNetwork()
-  const sessionStoreRef = useRef<SessionStore>()
 
-  // init
-  useEffect(() => {
-    const init = async () => {
-      sessionStoreRef.current = createSessionStore({
-        client: client,
-        storage: storage || getDefaultStorage(StorageType.Session),
-        storageKey: DEFAULT_SESSION_STORAGE_KEY(storageKey, network),
-      })
-    }
-
-    init().finally(() => setInit(false))
-  }, [client, network, storage, storageKey])
-
-  return init ? (
-    <></>
-  ) : (
-    <RoochSessionContext.Provider value={sessionStoreRef.current!}>
+  const storeRef = useRef(
+    createSessionStore({
+      storage: storage || getDefaultStorage(StorageType.Session),
+      storageKey: DEFAULT_SESSION_STORAGE_KEY(storageKey, network),
+    }),
+  )
+  return (
+    <RoochSessionContext.Provider value={storeRef.current}>
       {children}
     </RoochSessionContext.Provider>
   )

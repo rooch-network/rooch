@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { execSync } from 'child_process'
 
-import { RoochAddress } from '@/address'
-import { getRoochNodeUrl, RoochClient } from '@/client'
-import { Secp256k1Keypair } from '@/keypairs'
-import { Transaction } from '@/transactions'
+import { RoochAddress } from '../src/address/index.js'
+import { getRoochNodeUrl, RoochClient } from '../src/client/index.js'
+import { Secp256k1Keypair } from '../src/keypairs/index.js'
+import { Transaction } from '../src/transactions/index.js'
 
 export const DEFAULT_NODE_URL = import.meta.env.VITE_FULLNODE_URL ?? getRoochNodeUrl('localnet')
 
@@ -87,10 +87,15 @@ export async function defaultCmdAddress(): Promise<string> {
   if (!_defaultCmdAddress) {
     const accounts = JSON.parse(await cmd(['account', 'list', '--json']))
 
-    for (const account of accounts) {
-      if (account.active) {
-        _defaultCmdAddress = account.local_account.hex_address
+    if (Array.isArray(accounts)) {
+      for (const account of accounts) {
+        if (account.active) {
+          _defaultCmdAddress = account.local_account.hex_address
+        }
       }
+    } else {
+      const defaultAddr = accounts['default']
+      _defaultCmdAddress = defaultAddr.hex_address
     }
 
     if (!_defaultCmdAddress) {

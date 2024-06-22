@@ -1,9 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-export * from './mnemonics'
-export * from './signatureScheme'
-export { PublicKey, type PublicKeyInitData } from './publickey'
+export * from './mnemonics.js'
+export * from './signatureScheme.js'
+export { PublicKey, type PublicKeyInitData } from './publickey.js'
 export {
   PRIVATE_KEY_SIZE,
   LEGACY_PRIVATE_KEY_SIZE,
@@ -12,7 +12,7 @@ export {
   type ParsedKeypair,
   decodeRoochSercetKey,
   encodeRoochSercetKey,
-} from './keypair'
-export { Signer } from './signer'
+} from './keypair.js'
+export { Signer } from './signer.js'
 
-export { Authenticator, BuiltinAuthValidator, BitcoinSignMessage } from './authenticator'
+export { Authenticator, BuiltinAuthValidator, BitcoinSignMessage } from './authenticator.js'

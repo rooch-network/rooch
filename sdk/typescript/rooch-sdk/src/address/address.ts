@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { Bytes } from '@/types/bytes.js'
+import { Bytes } from '../types/index.js'
 
 export const ROOCH_BECH32_PREFIX = 'rooch'
 
