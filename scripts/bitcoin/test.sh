@@ -44,7 +44,7 @@ EOF
 done
 
 export CARGO_BUILD_JOBS=8
-export RUST_LOG=debug 
+export RUST_LOG=info 
 export RUST_BACKTRACE=1
 
 if [ ! -z "$UNIT_TEST" ]; then

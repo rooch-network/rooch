@@ -9,7 +9,6 @@
 -  [Struct `BitseedCoinInfo`](#0xa_bitseed_BitseedCoinInfo)
 -  [Resource `BitseedStore`](#0xa_bitseed_BitseedStore)
 -  [Struct `InscribeGenerateArgs`](#0xa_bitseed_InscribeGenerateArgs)
--  [Struct `InscribeContent`](#0xa_bitseed_InscribeContent)
 -  [Struct `InscribeGenerateOutput`](#0xa_bitseed_InscribeGenerateOutput)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0xa_bitseed_genesis_init)
@@ -91,17 +90,6 @@
 
 <pre><code>#[data_struct]
 <b>struct</b> <a href="bitseed.md#0xa_bitseed_InscribeGenerateArgs">InscribeGenerateArgs</a> <b>has</b> <b>copy</b>, drop, store
-</code></pre>
-
-
-
-<a name="0xa_bitseed_InscribeContent"></a>
-
-## Struct `InscribeContent`
-
-
-
-<pre><code><b>struct</b> <a href="bitseed.md#0xa_bitseed_InscribeContent">InscribeContent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -287,7 +275,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_inscribe_verify">inscribe_verify</a>(wasm_bytes: <a href="">vector</a>&lt;u8&gt;, deploy_args: <a href="">vector</a>&lt;u8&gt;, seed: <a href="">vector</a>&lt;u8&gt;, user_input: <a href="">vector</a>&lt;u8&gt;, metadata: &<a href="_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="">vector</a>&lt;u8&gt;&gt;, content_type: <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, body: <a href="">vector</a>&lt;u8&gt;): (bool, <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_inscribe_verify">inscribe_verify</a>(wasm_bytes: <a href="">vector</a>&lt;u8&gt;, deploy_args: <a href="">vector</a>&lt;u8&gt;, seed: <a href="">vector</a>&lt;u8&gt;, user_input: <a href="_String">string::String</a>, metadata: &<a href="_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="">vector</a>&lt;u8&gt;&gt;, content_type: <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, body: <a href="">vector</a>&lt;u8&gt;): (bool, <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;)
 </code></pre>
 
 
