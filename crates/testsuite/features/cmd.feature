@@ -70,8 +70,8 @@ Feature: Rooch CLI integration tests
     @serial
     Scenario: state
       Given a server for state
-      Then cmd: "object get --id 0x3" 
-      Then cmd: "object get --id 0x2::object::Timestamp"
+      Then cmd: "object -i 0x3" 
+      Then cmd: "object -i 0x2::object::Timestamp"
       Then cmd: "state --access-path /object/0x2::object::Timestamp"
       Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::object::Timestamp>'"
       Then cmd: "state --access-path /object/0x3::chain_id::ChainID"
@@ -137,7 +137,7 @@ Feature: Rooch CLI integration tests
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
     # Sync states
-    Then cmd: "object query type -t 0x3::coin::CoinInfo --limit 10 -d"
+    Then cmd: "object -t 0x3::coin::CoinInfo --limit 10 -d"
     Then assert: "{{$.object[-1].data[0].tx_order}} == 1"
     Then assert: "{{$.object[-1].data[0].object_type}} == 0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>"
     Then assert: "{{$.object[-1].has_next_page}} == false"
@@ -303,7 +303,7 @@ Feature: Rooch CLI integration tests
       # because the indexer is async update, so sleep 2 seconds to wait indexer update.
       Then sleep: "2"
 
-      Then cmd: "object query type -t {{$.address_mapping.default}}::child_object::Child --limit 10 -d"
+      Then cmd: "object -t {{$.address_mapping.default}}::child_object::Child --limit 10 -d"
       Then assert: "{{$.object[-1].data[0].object_id}} == {{$.event[-1].data[0].decoded_event_data.value.id}}"
 
       Then cmd: "move run --function default::third_party_module_for_child_object::update_child_age --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --args u64:10"
@@ -392,7 +392,7 @@ Feature: Rooch CLI integration tests
       Then sleep: "10" # wait rooch sync and index
 
       # query utxos
-      Then cmd: "object query type-owner -t 0x4::utxo::UTXO -o {{$.account[-1].default.bitcoin_address}}"
+      Then cmd: "object -t 0x4::utxo::UTXO -o {{$.account[-1].default.bitcoin_address}}"
       Then assert: "{{$.object[-1].data[0].owner}} == {{$.account[-1].default.address}}"
 
       # release servers

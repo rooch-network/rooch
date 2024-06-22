@@ -38,7 +38,6 @@ pub type FunctionIdView = StrView<FunctionId>;
 pub type AccessPathView = StrView<AccessPath>;
 pub type IdentifierView = StrView<Identifier>;
 pub type ObjectIDView = StrView<ObjectID>;
-pub type ObjectIDViewVector = Vec<ObjectIDView>;
 
 impl_str_view_for! {TypeTag StructTag FunctionId AccessPath Identifier ObjectID}
 
@@ -77,7 +76,7 @@ impl std::fmt::Display for ObjectIDVecView {
             .map(|id| format!("{:?}", id))
             .collect::<Vec<_>>()
             .join(",");
-        write!(f, "{:?}", concated_str)
+        write!(f, "{}", concated_str)
     }
 }
 

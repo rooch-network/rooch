@@ -3,7 +3,7 @@
 
 use super::{
     AnnotatedMoveStructView, AnnotatedMoveValueView, BytesView, H256View, HumanReadableDisplay,
-    ObjectIDViewVector, RoochAddressView, RoochOrBitcoinAddressView, StrView, StructTagView,
+    ObjectIDVecView, RoochAddressView, RoochOrBitcoinAddressView, StrView, StructTagView,
     TypeTagView,
 };
 use anyhow::Result;
@@ -438,7 +438,7 @@ pub enum ObjectStateFilterView {
     /// Query by owner.
     Owner(RoochOrBitcoinAddressView),
     /// Query by object ids.
-    ObjectId(ObjectIDViewVector),
+    ObjectId(ObjectIDVecView),
 }
 
 impl ObjectStateFilterView {
@@ -456,9 +456,9 @@ impl ObjectStateFilterView {
                 ObjectStateFilter::ObjectType(object_type.into())
             }
             ObjectStateFilterView::Owner(owner) => ObjectStateFilter::Owner(owner.into()),
-            ObjectStateFilterView::ObjectId(object_id_vec_view) => ObjectStateFilter::ObjectId(
-                object_id_vec_view.into_iter().map(|id| id.into()).collect(),
-            ),
+            ObjectStateFilterView::ObjectId(object_id_vec_view) => {
+                ObjectStateFilter::ObjectId(object_id_vec_view.into())
+            }
         })
     }
 }

@@ -1893,10 +1893,7 @@
             ],
             "properties": {
               "object_id": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/ObjectID"
-                }
+                "$ref": "#/components/schemas/alloc::vec::Vec<moveos_types::moveos_std::object::ObjectID>"
               }
             },
             "additionalProperties": false
