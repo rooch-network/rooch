@@ -1,0 +1,67 @@
+name: Homebrew formula
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to Bump'
+        required: true
+  workflow_run:
+    workflows: ["Build Docker And Deploy Seed"]
+    types:
+      - completed
+
+jobs:
+  homebrew:
+    name: Bump Homebrew formula
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'release' &&
+      (github.event.release.prerelease == true || github.event.release.prerelease == false))
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Download Docker tag artifact
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: docker_tag
+          path: .
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GIT_PACKAGE_TOKEN }}
+
+      - name: Determine ref
+        id: determine-ref
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "REF=${{ github.event.inputs.ref }}" >> $GITHUB_ENV
+          else
+            if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+              echo "REF=$(cat docker_tag.txt)" >> $GITHUB_ENV
+            else
+              if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+                REF=${GITHUB_REF#refs/tags/}
+              elif [[ "${{ github.ref }}" == refs/heads/* ]]; then
+                REF=${GITHUB_REF#refs/heads/}
+              fi
+              echo "REF=$REF" >> $GITHUB_ENV
+            fi
+          fi
+
+      - name: Print ref
+        run: echo "The ref is ${{ env.REF }}"
+      - uses: mislav/bump-homebrew-formula-action@v2
+        with:
+          formula-name: rooch
+          formula-path: Formula/rooch.rb
+          homebrew-tap: rooch-network/rooch
+          base-branch: master
+          download-url: https://github.com/rooch-network/rooch/releases/download/${{ env.REF }}/rooch-macos-latest.zip
+          commit-message: |
+            {{formulaName}} {{version}}
+
+            Created by https://github.com/mislav/bump-homebrew-formula-action
+        env:
+          COMMITTER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
