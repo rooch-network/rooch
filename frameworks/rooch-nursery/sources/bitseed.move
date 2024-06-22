@@ -421,8 +421,6 @@ module rooch_nursery::bitseed {
         let inscrption = object::borrow(inscription_obj);
         let wasm_bytes = ord::body(inscrption);
 
-        
-
         let (is_valid, reason) = inscribe_verify(wasm_bytes, deploy_args, seed, user_input, metadata, content_type, body);
         if (!is_valid) {
             simple_map::drop(attributes);
@@ -448,7 +446,11 @@ module rooch_nursery::bitseed {
         let buffer = pack_inscribe_generate_args(deploy_args, seed, user_input);
         let arg_with_length = wasm::add_length_with_data(buffer);
 
-        let output_buffer = pack_inscribe_output_args(metadata, content_type, body);
+        let amount = get_SFT_amount(metadata);
+        let attributes = get_SFT_attributes(metadata);
+        let output_buffer = pack_inscribe_output_args(amount, attributes, content_type, body);
+        std::debug::print(&string::utf8(b"pack_inscribe_output_args->output_buffer:"));
+        std::debug::print(&output_buffer);
 
         let arg_list = vector::empty<vector<u8>>();
         vector::push_back(&mut arg_list, arg_with_length);
@@ -508,23 +510,25 @@ module rooch_nursery::bitseed {
     struct InscribeGenerateOutput has store {
         amount: u64,
         attributes: SimpleMap<String,vector<u8>>,
-        content: InscribeContent,
+        content: Option<InscribeContent>,
     }
 
-    fun pack_inscribe_output_args(metadata: &SimpleMap<String,vector<u8>>, content_type: Option<String>, body: vector<u8>): vector<u8>{
-        let amount = get_SFT_amount(metadata);
-        let attributes = get_SFT_attributes(metadata);
-
-        let content = InscribeContent{
-            content_type: content_type,
-            body: body,
-        };
-
+    fun pack_inscribe_output_args(amount: u64, attributes: SimpleMap<String,vector<u8>>, content_type: Option<String>, body: vector<u8>): vector<u8>{
         let output = InscribeGenerateOutput{
             amount: amount,
             attributes: attributes,
-            content: content,
+            content: option::none(),
         };
+
+        if (vector::length(&body) > 0) {
+            output.content = option::some(InscribeContent{
+                content_type: content_type,
+                body: body,
+            });
+        };
+        
+        std::debug::print(&string::utf8(b"pack_inscribe_output:"));
+        std::debug::print(&output);
 
         let output_bytes = cbor::to_cbor(&output);
 
@@ -570,6 +574,10 @@ module rooch_nursery::bitseed {
         let block_header = option::borrow(&block_header_option);
         let block_hash = types::merkle_root(block_header);
 
+        generate_seed_from_inscription_inner(block_hash, txid, vout)
+    }
+
+    fun generate_seed_from_inscription_inner(block_hash: address, txid: address, vout: u32) : vector<u8> {
         let buf = vector::empty();
         vector::append(&mut buf, address::to_bytes(&block_hash));
         vector::append(&mut buf, address::to_bytes(&txid));
@@ -975,4 +983,28 @@ module rooch_nursery::bitseed {
 
         pack_inscribe_generate_args(deploy_args, seed, user_input);
     }
+
+    #[test]
+    fun test_generate_seed_from_inscription_inner() {
+        let block_hash = address::from_bytes(x"000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f");
+        let txid = address::from_bytes(x"4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b");
+        let vout = 0;
+
+        let hex_seed = generate_seed_from_inscription_inner(block_hash, txid, vout);
+        assert!(hex_seed == b"70dd1d3cb67edd1873bb1d1b171497f7313668c27ba9f59d37142bb173eb6811", 1);
+    }
+
+    /*
+    #[test]
+    fun test_pack_inscribe_output_args() {
+        let amount = 1u64;
+        let attributes = simple_map::empty();
+        simple_map::add(&mut attributes, string::utf8(b"height"), 444u64);
+        simple_map::add(&mut attributes, string::utf8(b"height"), 444u64);
+        let content_type = b"text";
+        let body =x"111";
+
+        pack_inscribe_output_args(amount, attributes, content_type, body);
+    }
+    */
 }

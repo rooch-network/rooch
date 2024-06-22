@@ -171,7 +171,6 @@ fn cbor_obj_to_key_value_pairs(cbor_value: &CborValue) -> Result<Vec<(String, Ve
                 let cbor_field = value;
 
                 let bytes = match cbor_field {
-                    CborValue::Bytes(t) => t.clone(),
                     _ => {
                         let mut writer = Vec::new();
                         into_writer(&cbor_field, &mut writer)?;
@@ -516,14 +515,17 @@ fn serialize_move_struct_to_cbor_value(
                             _ => return Err(anyhow::anyhow!("Invalid key in SimpleMap")),
                         };
 
-                        let value = match &fields[1].1 {
+                        let cbor_value = match &fields[1].1 {
                             MoveValue::Vector(vec) => {
-                                MoveValue::vec_to_vec_u8(vec.clone())?
+                                let cbor_bytes = MoveValue::vec_to_vec_u8(vec.clone())?;
+                                let cursor = Cursor::new(cbor_bytes);
+                                let cbor_value: CborValue = from_reader(cursor)?;
+                                cbor_value
                             },
                             _ => return Err(anyhow::anyhow!("Invalid value in SimpleMap")),
                         };
 
-                        Ok((CborValue::Text(key), CborValue::Bytes(value)))
+                        Ok((CborValue::Text(key), cbor_value))
                     })
                     .collect::<Result<Vec<_>>>()?;
 

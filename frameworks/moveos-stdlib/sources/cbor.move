@@ -183,7 +183,7 @@ module moveos_std::cbor {
 
         // check address
         let account_bytes = simple_map::borrow(&map, &std::string::utf8(b"account"));
-        let account = moveos_std::address::from_bytes(*account_bytes);
+        let account = from_cbor<address>(*account_bytes);
         assert!(account == @0x42, 7);
 
         // check inner struct
@@ -192,12 +192,13 @@ module moveos_std::cbor {
         assert!(inner.value == 100u64, 8);
 
         // check bytes
-        let bytes = simple_map::borrow(&map, &std::string::utf8(b"bytes"));
-        assert!(vector::length(bytes) == 4, 9);
-        assert!(vector::borrow(bytes, 0) == &3u8, 10);
-        assert!(vector::borrow(bytes, 1) == &2u8, 11);
-        assert!(vector::borrow(bytes, 2) == &1u8, 12);
-        assert!(vector::borrow(bytes, 3) == &0u8, 13);
+        let bytes_cbor = simple_map::borrow(&map, &std::string::utf8(b"bytes"));
+        let bytes = from_cbor<vector<u8>>(*bytes_cbor);
+        assert!(vector::length(&bytes) == 4, 9);
+        assert!(vector::borrow(&bytes, 0) == &3u8, 10);
+        assert!(vector::borrow(&bytes, 1) == &2u8, 11);
+        assert!(vector::borrow(&bytes, 2) == &1u8, 12);
+        assert!(vector::borrow(&bytes, 3) == &0u8, 13);
 
         // check inner array
         let inner_array_bytes = simple_map::borrow(&map, &std::string::utf8(b"inner_array"));
@@ -236,34 +237,77 @@ module moveos_std::cbor {
     }
 
     #[test]
-    fun test_simple_map_to_cbor() {
-        // Create a SimpleMap<String, vector<u8>>
-        let map = simple_map::create<String, vector<u8>>();
-        simple_map::add(&mut map, std::string::utf8(b"key1"), vector<u8>[1u8, 2u8, 3u8]);
-        simple_map::add(&mut map, std::string::utf8(b"key2"), vector<u8>[4u8, 5u8, 6u8]);
+    fun test_struct_to_map_and_map_to_struct() {
+        let test = Test { 
+            bool_value: true,
+            age: 30u8,
+            balance: 170141183460469231731687303715884105728u128,
+            sig: 1701411834604692317316873037158841057281687303715884105728u256,
+            ascii_string: std::ascii::string(b"rooch.network"),
+            utf8_string: std::string::utf8(b"rooch.network"),
+            null_value: option::none(),
+            option_string: option::some(std::string::utf8(b"rooch.network")),
+            inner: Inner {
+                value: 100u64,
+            },
+            inner_option: option::some(Inner {
+                value: 102u64,
+            }),
+            inner_array: std::vector::singleton(Inner {
+                value: 101u64,
+            }),
+            account: @0x42,
+            bytes: vector<u8>[3u8, 2u8, 1u8, 0u8],
+        };
 
-        // Serialize the SimpleMap to CBOR bytes
-        let cbor_bytes = to_cbor(&map);
-        simple_map::drop(map);
+        let cbor_bytes = to_cbor(&test);
 
-        // Deserialize the CBOR bytes back to SimpleMap
-        let deserialized_map = to_map(cbor_bytes);
+        // cbor to map
+        let test_map = to_map(cbor_bytes);
+        // map to cbor
+        let cbor2_bytes = to_cbor(&test_map);
+        simple_map::drop(test_map);
 
-        // Verify that the deserialized SimpleMap is the same as the original SimpleMap
-        assert!(simple_map::length(&deserialized_map) == 2, 1);
+        let obj = from_cbor<Test>(cbor2_bytes);
+        assert!(obj.balance == 170141183460469231731687303715884105728u128, 1);
+        assert!(obj.age == 30u8, 2);
+        assert!(obj.inner.value == 100u64, 3);
 
-        let value1 = simple_map::borrow(&deserialized_map, &std::string::utf8(b"key1"));
-        assert!(vector::length(value1) == 3, 2);
-        assert!(vector::borrow(value1, 0) == &1u8, 3);
-        assert!(vector::borrow(value1, 1) == &2u8, 4);
-        assert!(vector::borrow(value1, 2) == &3u8, 5);
+        // check bytes
+        assert!(vector::length(&obj.bytes) == 4, 4);
+        assert!(vector::borrow(&obj.bytes, 0) == &3u8, 5);
+        assert!(vector::borrow(&obj.bytes, 1) == &2u8, 6);
+        assert!(vector::borrow(&obj.bytes, 2) == &1u8, 7);
+        assert!(vector::borrow(&obj.bytes, 3) == &0u8, 8);
 
-        let value2 = simple_map::borrow(&deserialized_map, &std::string::utf8(b"key2"));
-        assert!(vector::length(value2) == 3, 6);
-        assert!(vector::borrow(value2, 0) == &4u8, 7);
-        assert!(vector::borrow(value2, 1) == &5u8, 8);
-        assert!(vector::borrow(value2, 2) == &6u8, 9);
+        // check inner array
+        assert!(vector::length(&obj.inner_array) == 1, 9);
+        assert!(vector::borrow(&obj.inner_array, 0).value == 101u64, 10);
 
-        simple_map::drop(deserialized_map);
+        // check account
+        assert!(obj.account == @0x42, 11);
+
+        // check ascii string
+        assert!(obj.ascii_string == std::ascii::string(b"rooch.network"), 12);
+
+        // check utf8 string
+        assert!(obj.utf8_string == std::string::utf8(b"rooch.network"), 13);
+
+        // check bool
+        assert!(obj.bool_value, 14);
+
+        // check null
+        assert!(option::is_none<Inner>(&obj.null_value), 15);
+
+        // check inner_option
+        assert!(option::is_some(&obj.inner_option), 16);
+        assert!(option::borrow(&obj.inner_option).value == 102u64, 17);
+
+        // check u256
+        assert!(obj.sig == 1701411834604692317316873037158841057281687303715884105728u256, 18);
+
+        // check option string
+        assert!(option::is_some(&obj.option_string), 19);
+        assert!(option::borrow(&obj.option_string) == &std::string::utf8(b"rooch.network"), 20);
     }
 }
