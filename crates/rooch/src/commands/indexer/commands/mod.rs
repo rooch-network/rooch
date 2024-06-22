@@ -20,7 +20,7 @@ fn init_indexer(
 
     let store_config = opt.store_config();
 
-    let indexer_db_path = store_config.get_indexer_store_dir();
+    let indexer_db_path = store_config.get_indexer_dir();
     let indexer_store = IndexerStore::new(indexer_db_path.clone())?;
     let indexer_reader = IndexerReader::new(indexer_db_path)?;
 

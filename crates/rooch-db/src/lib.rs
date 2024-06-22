@@ -21,8 +21,7 @@ pub struct RoochDB {
 
 impl RoochDB {
     pub fn init(config: &StoreConfig) -> Result<Self> {
-        let (rocks_store_dir, indexer_store_dir) =
-            (config.get_rocks_store_dir(), config.get_indexer_store_dir());
+        let (store_dir, indexer_dir) = (config.get_store_dir(), config.get_indexer_dir());
 
         let mut column_families = moveos_store::StoreMeta::get_column_family_names().to_vec();
         column_families.append(&mut rooch_store::StoreMeta::get_column_family_names().to_vec());
@@ -37,7 +36,7 @@ impl RoochDB {
         }
 
         let instance = StoreInstance::new_db_instance(RocksDB::new(
-            rocks_store_dir,
+            store_dir,
             column_families,
             config.rocksdb_config(),
             //TODO collect metrics
@@ -48,8 +47,8 @@ impl RoochDB {
 
         let rooch_store = RoochStore::new_with_instance(instance)?;
 
-        let indexer_store = IndexerStore::new(indexer_store_dir.clone())?;
-        let indexer_reader = IndexerReader::new(indexer_store_dir)?;
+        let indexer_store = IndexerStore::new(indexer_dir.clone())?;
+        let indexer_reader = IndexerReader::new(indexer_dir)?;
 
         Ok(Self {
             moveos_store,

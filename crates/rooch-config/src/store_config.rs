@@ -15,7 +15,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 pub const DEFAULT_DB_DIR: &str = "roochdb";
-pub const DEFAULT_DB_ROCKS_SUBDIR: &str = "rocks";
+pub const DEFAULT_DB_STORE_SUBDIR: &str = "store";
 pub const DEFAULT_DB_INDEXER_SUBDIR: &str = "indexer";
 
 // for Rooch DB instance, doesn't need too much row cache:
@@ -93,10 +93,10 @@ pub struct StoreConfig {
 impl StoreConfig {
     pub(crate) fn init(&mut self, base: Arc<BaseConfig>) -> Result<()> {
         self.base = Some(base);
-        let rocks_store_dir = self.get_rocks_store_dir();
-        let indexer_store_dir = self.get_indexer_store_dir();
-        if !rocks_store_dir.exists() {
-            std::fs::create_dir_all(rocks_store_dir.clone())?;
+        let store_dir = self.get_store_dir();
+        let indexer_store_dir = self.get_indexer_dir();
+        if !store_dir.exists() {
+            std::fs::create_dir_all(store_dir.clone())?;
         }
         if !indexer_store_dir.exists() {
             std::fs::create_dir_all(indexer_store_dir.clone())?;
@@ -116,11 +116,11 @@ impl StoreConfig {
         self.data_dir().join(DEFAULT_DB_DIR)
     }
 
-    pub fn get_rocks_store_dir(&self) -> PathBuf {
-        self.get_rooch_db_dir().join(DEFAULT_DB_ROCKS_SUBDIR)
+    pub fn get_store_dir(&self) -> PathBuf {
+        self.get_rooch_db_dir().join(DEFAULT_DB_STORE_SUBDIR)
     }
 
-    pub fn get_indexer_store_dir(&self) -> PathBuf {
+    pub fn get_indexer_dir(&self) -> PathBuf {
         self.get_rooch_db_dir().join(DEFAULT_DB_INDEXER_SUBDIR)
     }
 
@@ -150,11 +150,11 @@ impl StoreConfig {
         }
     }
 
-    pub fn get_mock_rocks_store_dir(data_dir: &DataDirPath) -> PathBuf {
+    pub fn get_mock_store_dir(data_dir: &DataDirPath) -> PathBuf {
         data_dir
             .path()
             .join(DEFAULT_DB_DIR)
-            .join(DEFAULT_DB_ROCKS_SUBDIR)
+            .join(DEFAULT_DB_STORE_SUBDIR)
     }
 }
 
