@@ -76,7 +76,7 @@ impl std::fmt::Display for ObjectIDVecView {
             .map(|id| format!("{:?}", id))
             .collect::<Vec<_>>()
             .join(",");
-        write!(f, "{:?}", concated_str)
+        write!(f, "{}", concated_str)
     }
 }
 
