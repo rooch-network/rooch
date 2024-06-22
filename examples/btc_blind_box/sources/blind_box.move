@@ -24,7 +24,7 @@ module btc_blind_box::blind_box {
     use moveos_std::account as moveos_account;
     use moveos_std::timestamp;
     use bitcoin_move::bitcoin;
-    use bitcoin_move::types::Header;
+    use bitcoin_move::types::{Self, Header};
 
     const ErrorNoPermission: u64 = 1;
     const ErrorSoldOut: u64 = 2;
@@ -95,9 +95,10 @@ module btc_blind_box::blind_box {
     }
 
     fun latest_block_height(): u64 {
-        let height = bitcoin::get_latest_block_height();
-        assert!(option::is_some<u64>(&height), ErrorBitcoinClientError);
-        option::extract<u64>(&mut height)
+        let height_hash = bitcoin::get_latest_block();
+        assert!(option::is_some(&height_hash), ErrorBitcoinClientError);
+        let (height,_hash) = types::unpack_block_height_hash(option::destroy_some(height_hash));
+        height
     }
 
     fun generate_magic_number(): u128 {
@@ -154,9 +155,6 @@ module btc_blind_box::blind_box {
     #[test_only]
     use rooch_framework::account;
 
-    #[test_only]
-    use bitcoin_move::types; 
-
     #[test(sender=@0x42)]
     fun test_request_and_claim(sender: &signer) {
         rooch_framework::genesis::init_for_test();
@@ -171,13 +169,13 @@ module btc_blind_box::blind_box {
         let miner = rooch_framework::bitcoin_address::random_address_for_testing();
         // request box
         let block = types::fake_block_for_test(5000, miner);
-        bitcoin::submit_new_block_for_test(5, block);
+        bitcoin::execute_l1_block_for_test(5, block);
         request_box(sender, status_obj);
         assert!(object::borrow(status_obj).sold_amount == 1, 101);
 
         // claim box
         let block = types::fake_block_for_test(100000, miner);
-        bitcoin::submit_new_block_for_test(10, block);
+        bitcoin::execute_l1_block_for_test(10, block);
         claim_box(sender, status_obj);
         assert!(object::borrow(status_obj).claimed_amount == 1, 102);
     }

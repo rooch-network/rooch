@@ -10,6 +10,8 @@ use bitcoincore_rpc::{json, Auth, Client, RpcApi};
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use rooch_config::BitcoinRelayerConfig;
 
+use super::messages::GetChainTipsMessage;
+
 pub struct BitcoinClientActor {
     rpc_client: Client,
 }
@@ -75,5 +77,16 @@ impl Handler<GetBlockHeaderInfoMessage> for BitcoinClientActor {
         let GetBlockHeaderInfoMessage { hash } = msg;
 
         Ok(self.rpc_client.get_block_header_info(&hash)?)
+    }
+}
+
+#[async_trait]
+impl Handler<GetChainTipsMessage> for BitcoinClientActor {
+    async fn handle(
+        &mut self,
+        _msg: GetChainTipsMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<json::GetChainTipsResult> {
+        Ok(self.rpc_client.get_chain_tips()?)
     }
 }

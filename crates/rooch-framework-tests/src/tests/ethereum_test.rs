@@ -54,7 +54,7 @@ fn test_submit_block() {
 
     let block_header = BlockHeader::try_from(&ethereum_block).unwrap();
     let action = MoveAction::Function(
-        rooch_types::framework::ethereum::EthereumModule::create_submit_new_block_call(
+        rooch_types::framework::ethereum::EthereumModule::create_execute_l1_block_call(
             &block_header,
         ),
     );

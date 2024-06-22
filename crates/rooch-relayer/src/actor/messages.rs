@@ -50,6 +50,13 @@ impl Message for GetBlockHeaderInfoMessage {
     type Result = Result<json::GetBlockHeaderResult>;
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetChainTipsMessage {}
+
+impl Message for GetChainTipsMessage {
+    type Result = Result<json::GetChainTipsResult>;
+}
+
 pub struct GetReadyL1BlockMessage {}
 
 impl Message for GetReadyL1BlockMessage {

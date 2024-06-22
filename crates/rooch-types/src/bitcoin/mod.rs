@@ -20,6 +20,7 @@ use moveos_types::{
     transaction::FunctionCall,
 };
 use serde::{Deserialize, Serialize};
+use types::BlockHeightHash;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("bitcoin");
 
@@ -89,10 +90,8 @@ impl<'a> BitcoinModule<'a> {
     pub const GET_LATEST_BLOCK_HEIGHT_FUNCTION_NAME: &'static IdentStr =
         ident_str!("get_latest_block_height");
     pub const GET_UTXO_FUNCTION_NAME: &'static IdentStr = ident_str!("get_utxo");
-    pub const SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("submit_new_block");
-    pub const GET_GENESIS_BLOCK_HEIGHT_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("get_genesis_block_height");
+    pub const EXECUTE_L1_BLOCK_FUNCTION_NAME: &'static IdentStr = ident_str!("execute_l1_block");
+    pub const GET_GENESIS_BLOCK_FUNCTION_NAME: &'static IdentStr = ident_str!("get_genesis_block");
     pub const EXECUTE_L1_TX_FUNCTION_NAME: &'static IdentStr = ident_str!("execute_l1_tx");
 
     pub fn get_block(&self, block_hash: BlockHash) -> Result<Option<Header>> {
@@ -168,29 +167,26 @@ impl<'a> BitcoinModule<'a> {
         Ok(height.into())
     }
 
-    pub fn get_genesis_block_height(&self) -> Result<u64> {
-        let call = Self::create_function_call(
-            Self::GET_GENESIS_BLOCK_HEIGHT_FUNCTION_NAME,
-            vec![],
-            vec![],
-        );
+    pub fn get_genesis_block(&self) -> Result<BlockHeightHash> {
+        let call =
+            Self::create_function_call(Self::GET_GENESIS_BLOCK_FUNCTION_NAME, vec![], vec![]);
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
-        let height = self
-            .caller
-            .call_function(&ctx, call)?
-            .into_result()
-            .map(|mut values| {
-                let value = values.pop().expect("should have one return value");
-                bcs::from_bytes::<u64>(&value.value).expect("should be a valid u64")
-            })?;
-        Ok(height)
+        let height_hash =
+            self.caller
+                .call_function(&ctx, call)?
+                .into_result()
+                .map(|mut values| {
+                    let value = values.pop().expect("should have one return value");
+                    bcs::from_bytes::<BlockHeightHash>(&value.value).expect("should be a valid u64")
+                })?;
+        Ok(height_hash)
     }
 
-    pub fn create_submit_new_block_call(block_height: u64, block: bitcoin::Block) -> FunctionCall {
+    pub fn create_execute_l1_block_call(block_height: u64, block: bitcoin::Block) -> FunctionCall {
         let block_hash = block.block_hash();
         let block = crate::bitcoin::types::Block::from(block);
         Self::create_function_call(
-            Self::SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME,
+            Self::EXECUTE_L1_BLOCK_FUNCTION_NAME,
             vec![],
             vec![
                 MoveValue::U64(block_height),
@@ -202,14 +198,14 @@ impl<'a> BitcoinModule<'a> {
         )
     }
 
-    pub fn create_submit_new_block_call_bytes(
+    pub fn create_execute_l1_block_call_bytes(
         block_height: u64,
         block_hash: Vec<u8>,
         block_body: Vec<u8>,
     ) -> Result<FunctionCall> {
         let block_hash = AccountAddress::from_bytes(block_hash)?;
         Ok(Self::create_function_call(
-            Self::SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME,
+            Self::EXECUTE_L1_BLOCK_FUNCTION_NAME,
             vec![],
             vec![
                 MoveValue::U64(block_height),

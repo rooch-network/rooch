@@ -12,6 +12,7 @@
 -  [Struct `Witness`](#0x4_types_Witness)
 -  [Struct `OutPoint`](#0x4_types_OutPoint)
 -  [Struct `TxOut`](#0x4_types_TxOut)
+-  [Struct `BlockHeightHash`](#0x4_types_BlockHeightHash)
 -  [Constants](#@Constants_0)
 -  [Function `header`](#0x4_types_header)
 -  [Function `txdata`](#0x4_types_txdata)
@@ -47,6 +48,8 @@
 -  [Function `txout_address`](#0x4_types_txout_address)
 -  [Function `txout_object_address`](#0x4_types_txout_object_address)
 -  [Function `unpack_txout`](#0x4_types_unpack_txout)
+-  [Function `new_block_height_hash`](#0x4_types_new_block_height_hash)
+-  [Function `unpack_block_height_hash`](#0x4_types_unpack_block_height_hash)
 -  [Function `is_coinbase_tx`](#0x4_types_is_coinbase_tx)
 
 
@@ -141,6 +144,18 @@
 
 <pre><code>#[data_struct]
 <b>struct</b> <a href="types.md#0x4_types_TxOut">TxOut</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_types_BlockHeightHash"></a>
+
+## Struct `BlockHeightHash`
+
+
+
+<pre><code>#[data_struct]
+<b>struct</b> <a href="types.md#0x4_types_BlockHeightHash">BlockHeightHash</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -555,6 +570,28 @@ This value is used for coinbase transactions because they don't have any previou
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_unpack_txout">unpack_txout</a>(self: <a href="types.md#0x4_types_TxOut">types::TxOut</a>): (u64, <a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>)
+</code></pre>
+
+
+
+<a name="0x4_types_new_block_height_hash"></a>
+
+## Function `new_block_height_hash`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_new_block_height_hash">new_block_height_hash</a>(block_height: u64, block_hash: <b>address</b>): <a href="types.md#0x4_types_BlockHeightHash">types::BlockHeightHash</a>
+</code></pre>
+
+
+
+<a name="0x4_types_unpack_block_height_hash"></a>
+
+## Function `unpack_block_height_hash`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_unpack_block_height_hash">unpack_block_height_hash</a>(self: <a href="types.md#0x4_types_BlockHeightHash">types::BlockHeightHash</a>): (u64, <b>address</b>)
 </code></pre>
 
 

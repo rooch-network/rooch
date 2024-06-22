@@ -22,7 +22,7 @@ module bitcoin_move::bitcoin{
     use rooch_framework::bitcoin_address::BitcoinAddress;
     
     use bitcoin_move::network;
-    use bitcoin_move::types::{Self, Block, Header, Transaction};
+    use bitcoin_move::types::{Self, Block, Header, Transaction, BlockHeightHash};
     use bitcoin_move::ord::{Self, Inscription,Flotsam, SatPoint};
     use bitcoin_move::utxo::{Self, UTXOSeal};
     use bitcoin_move::pending_block;
@@ -43,9 +43,9 @@ module bitcoin_move::bitcoin{
     }
 
     struct BitcoinBlockStore has key{
-        /// The genesis start block height
-        genesis_block_height: u64,
-        latest_block_height: Option<u64>,
+        /// The genesis start block
+        genesis_block: BlockHeightHash,
+        latest_block: Option<BlockHeightHash>,
         /// block hash -> block header
         blocks: Table<address, Header>,
         /// block height -> block hash
@@ -60,10 +60,10 @@ module bitcoin_move::bitcoin{
         tx_ids: TableVec<address>,
     }
 
-    public(friend) fun genesis_init(_genesis_account: &signer, genesis_block_height: u64){
+    public(friend) fun genesis_init(_genesis_account: &signer, genesis_block_height: u64, genesis_block_hash: address){
         let btc_block_store = BitcoinBlockStore{
-            genesis_block_height,
-            latest_block_height: option::none(),
+            genesis_block: types::new_block_height_hash(genesis_block_height, genesis_block_hash),
+            latest_block: option::none(),
             blocks: table::new(),
             height_to_hash: table::new(),
             hash_to_height: table::new(),
@@ -96,7 +96,7 @@ module bitcoin_move::bitcoin{
         table::add(&mut btc_block_store.height_to_hash, block_height, block_hash);
         table::add(&mut btc_block_store.hash_to_height, block_hash, block_height);
         table::add(&mut btc_block_store.blocks, block_hash, block_header);
-        btc_block_store.latest_block_height = option::some(block_height); 
+        btc_block_store.latest_block = option::some(types::new_block_height_hash(block_height, block_hash)); 
     }
 
     fun process_tx(btc_block_store: &mut BitcoinBlockStore, tx: &Transaction, block_height: u64): vector<Flotsam>{
@@ -252,10 +252,9 @@ module bitcoin_move::bitcoin{
     }
 
 
-    /// The the sequencer submit a new Bitcoin block
-    /// This function is a system function, only the sequencer can call it
-    /// TODO rename to execute_l1_block
-    fun submit_new_block(block_height: u64, block_hash: address, block_bytes: vector<u8>){
+    /// The the sequencer submit a new Bitcoin block to execute
+    /// This function is a system function, is the execute_l1_block entry point
+    fun execute_l1_block(block_height: u64, block_hash: address, block_bytes: vector<u8>){
         let block = bcs::from_bytes<Block>(block_bytes);
         let block_header = types::header(&block);
         let time = types::time(block_header);
@@ -340,31 +339,32 @@ module bitcoin_move::bitcoin{
         }
     }
 
-    public fun get_genesis_block_height(): u64 {
+    public fun get_genesis_block(): BlockHeightHash {
         let btc_block_store_obj = borrow_block_store();
         let btc_block_store = object::borrow(btc_block_store_obj);
-        btc_block_store.genesis_block_height
+        btc_block_store.genesis_block
     }
 
     /// Get latest block height
-    public fun get_latest_block_height(): Option<u64> {
+    public fun get_latest_block(): Option<BlockHeightHash> {
         let btc_block_store_obj = borrow_block_store();
         let btc_block_store = object::borrow(btc_block_store_obj);
-        btc_block_store.latest_block_height
+        btc_block_store.latest_block
     }
 
-    /// Get the bitcoin time, if the latest block is not exist, return 0 
+    /// Get the bitcoin time in seconds
     public fun get_bitcoin_time(): u32 {
         let btc_block_store_obj = borrow_block_store();
         let btc_block_store = object::borrow(btc_block_store_obj);
-        let latest_block_height = btc_block_store.latest_block_height;
-        if(option::is_some(&latest_block_height)){
-            let latest_block_height = option::destroy_some(latest_block_height);
-            let block_hash = *table::borrow(&btc_block_store.height_to_hash, latest_block_height);
+        let latest_block = *&btc_block_store.latest_block;
+        if(option::is_some(&latest_block)){
+            let latest_block = option::destroy_some(latest_block);
+            let (_block_height, block_hash) = types::unpack_block_height_hash(latest_block);
             let header = table::borrow(&btc_block_store.blocks, block_hash);
             types::time(header)
         }else{
-            0u32
+            // Get the genesis block time
+            (timestamp::now_seconds() as u32)
         }
     }
 
@@ -392,10 +392,10 @@ module bitcoin_move::bitcoin{
     }
 
     #[test_only]
-    public fun submit_new_block_for_test(block_height: u64, block: Block){
+    public fun execute_l1_block_for_test(block_height: u64, block: Block){
         let block_hash = types::header_to_hash(types::header(&block));
         let block_bytes = bcs::to_bytes(&block);
-        submit_new_block(block_height, block_hash, block_bytes);
+        execute_l1_block(block_height, block_hash, block_bytes);
         // We directly conform the txs for convenience test
         let (_, txs) = types::unpack_block(block);
         let coinbase_tx = vector::remove(&mut txs, 0);

@@ -9,6 +9,8 @@ use anyhow::Result;
 use bitcoincore_rpc::json;
 use coerce::actor::ActorRef;
 
+use super::messages::GetChainTipsMessage;
+
 #[derive(Clone)]
 pub struct BitcoinClientProxy {
     pub actor: ActorRef<BitcoinClientActor>,
@@ -36,5 +38,9 @@ impl BitcoinClientProxy {
         hash: bitcoin::BlockHash,
     ) -> Result<json::GetBlockHeaderResult> {
         self.actor.send(GetBlockHeaderInfoMessage { hash }).await?
+    }
+
+    pub async fn get_chain_tips(&self) -> Result<json::GetChainTipsResult> {
+        self.actor.send(GetChainTipsMessage {}).await?
     }
 }

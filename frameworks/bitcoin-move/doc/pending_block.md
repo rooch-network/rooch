@@ -25,8 +25,9 @@ PendingStore is used to store the pending blocks and txs, and handle the reorg
 -  [Function `inprocess_block_header`](#0x4_pending_block_inprocess_block_header)
 -  [Function `inprocess_block_height`](#0x4_pending_block_inprocess_block_height)
 -  [Function `get_ready_pending_txs`](#0x4_pending_block_get_ready_pending_txs)
--  [Function `get_latest_block_height`](#0x4_pending_block_get_latest_block_height)
--  [Function `get_reorg_pending_block_count`](#0x4_pending_block_get_reorg_pending_block_count)
+-  [Function `get_best_block`](#0x4_pending_block_get_best_block)
+-  [Function `get_reorg_block_count`](#0x4_pending_block_get_reorg_block_count)
+-  [Function `update_reorg_block_count_for_local`](#0x4_pending_block_update_reorg_block_count_for_local)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -34,6 +35,7 @@ PendingStore is used to store the pending blocks and txs, and handle the reorg
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
+<b>use</b> <a href="">0x3::chain_id</a>;
 <b>use</b> <a href="ord.md#0x4_ord">0x4::ord</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 </code></pre>
@@ -176,6 +178,15 @@ This is a hot potato struct, can not be store and drop
 
 
 
+<a name="0x4_pending_block_ErrorUnsupportedChain"></a>
+
+
+
+<pre><code><b>const</b> <a href="pending_block.md#0x4_pending_block_ErrorUnsupportedChain">ErrorUnsupportedChain</a>: u64 = 7;
+</code></pre>
+
+
+
 <a name="0x4_pending_block_TX_IDS_KEY"></a>
 
 
@@ -191,7 +202,7 @@ This is a hot potato struct, can not be store and drop
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_genesis_init">genesis_init</a>(reorg_pending_block_count: u64)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_genesis_init">genesis_init</a>(reorg_block_count: u64)
 </code></pre>
 
 
@@ -318,22 +329,34 @@ Get the pending txs which are ready to be processed
 
 
 
-<a name="0x4_pending_block_get_latest_block_height"></a>
+<a name="0x4_pending_block_get_best_block"></a>
 
-## Function `get_latest_block_height`
+## Function `get_best_block`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="pending_block.md#0x4_pending_block_get_latest_block_height">get_latest_block_height</a>(): <a href="_Option">option::Option</a>&lt;u64&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="pending_block.md#0x4_pending_block_get_best_block">get_best_block</a>(): <a href="_Option">option::Option</a>&lt;<a href="types.md#0x4_types_BlockHeightHash">types::BlockHeightHash</a>&gt;
 </code></pre>
 
 
 
-<a name="0x4_pending_block_get_reorg_pending_block_count"></a>
+<a name="0x4_pending_block_get_reorg_block_count"></a>
 
-## Function `get_reorg_pending_block_count`
+## Function `get_reorg_block_count`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="pending_block.md#0x4_pending_block_get_reorg_pending_block_count">get_reorg_pending_block_count</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="pending_block.md#0x4_pending_block_get_reorg_block_count">get_reorg_block_count</a>(): u64
+</code></pre>
+
+
+
+<a name="0x4_pending_block_update_reorg_block_count_for_local"></a>
+
+## Function `update_reorg_block_count_for_local`
+
+Update the <code>reorg_block_count</code> config for local env to testing
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="pending_block.md#0x4_pending_block_update_reorg_block_count_for_local">update_reorg_block_count_for_local</a>(count: u64)
 </code></pre>

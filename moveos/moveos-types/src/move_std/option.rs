@@ -34,6 +34,17 @@ impl<E> MoveOption<E> {
     pub fn none() -> Self {
         Self { vec: vec![] }
     }
+
+    pub fn map<F, T>(mut self, f: F) -> MoveOption<T>
+    where
+        F: FnOnce(E) -> T,
+    {
+        if self.vec.is_empty() {
+            MoveOption::none()
+        } else {
+            MoveOption::some(f(self.vec.pop().expect("MoveOption is not empty")))
+        }
+    }
 }
 
 impl<E> MoveStructType for MoveOption<E>

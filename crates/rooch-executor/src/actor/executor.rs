@@ -114,7 +114,7 @@ impl ExecutorActor {
         match RoochMultiChainID::try_from(chain_id.id())? {
             RoochMultiChainID::Bitcoin => {
                 let action = VerifiedMoveAction::Function {
-                    call: BitcoinModule::create_submit_new_block_call_bytes(
+                    call: BitcoinModule::create_execute_l1_block_call_bytes(
                         block_height,
                         block_hash,
                         block_body,
@@ -129,7 +129,7 @@ impl ExecutorActor {
             }
             RoochMultiChainID::Ether => {
                 let action = VerifiedMoveAction::Function {
-                    call: EthereumModule::create_submit_new_block_call_bytes(block_body),
+                    call: EthereumModule::create_execute_l1_block_call_bytes(block_body),
                     bypass_visibility: true,
                 };
                 Ok(VerifiedMoveOSTransaction::new(

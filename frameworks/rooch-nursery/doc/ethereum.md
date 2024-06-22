@@ -9,7 +9,7 @@
 -  [Resource `BlockStore`](#0xa_ethereum_BlockStore)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0xa_ethereum_genesis_init)
--  [Function `submit_new_block`](#0xa_ethereum_submit_new_block)
+-  [Function `execute_l1_block`](#0xa_ethereum_execute_l1_block)
 -  [Function `get_block`](#0xa_ethereum_get_block)
 
 
@@ -72,14 +72,14 @@
 
 
 
-<a name="0xa_ethereum_submit_new_block"></a>
+<a name="0xa_ethereum_execute_l1_block"></a>
 
-## Function `submit_new_block`
+## Function `execute_l1_block`
 
 The relay server submit a new Ethereum block to the light client.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum.md#0xa_ethereum_submit_new_block">submit_new_block</a>(block_header_bytes: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum.md#0xa_ethereum_execute_l1_block">execute_l1_block</a>(block_header_bytes: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 

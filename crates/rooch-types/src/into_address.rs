@@ -9,6 +9,10 @@ pub trait IntoAddress {
     fn into_address(self) -> AccountAddress;
 }
 
+pub trait FromAddress {
+    fn from_address(addr: AccountAddress) -> Self;
+}
+
 impl IntoAddress for AccountAddress {
     fn into_address(self) -> AccountAddress {
         self
@@ -42,6 +46,12 @@ impl IntoAddress for bitcoin::hashes::sha256d::Hash {
 impl IntoAddress for bitcoin::BlockHash {
     fn into_address(self) -> AccountAddress {
         AccountAddress::new(self.to_byte_array())
+    }
+}
+
+impl FromAddress for bitcoin::BlockHash {
+    fn from_address(addr: AccountAddress) -> Self {
+        bitcoin::BlockHash::from_byte_array(addr.into())
     }
 }
 

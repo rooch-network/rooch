@@ -35,6 +35,7 @@ use rooch_types::error::GenesisError;
 use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::indexer::state::{handle_object_change, IndexerObjectStateChanges};
 use rooch_types::indexer::transaction::IndexerTransaction;
+use rooch_types::into_address::IntoAddress;
 use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
 use rooch_types::sequencer::SequencerInfo;
 use rooch_types::transaction::rooch::RoochTransaction;
@@ -176,6 +177,8 @@ impl RoochGenesis {
         let bitcoin_genesis_ctx = BitcoinGenesisContext::new(
             genesis_config.bitcoin_network,
             genesis_config.bitcoin_block_height,
+            genesis_config.bitcoin_block_hash.into_address(),
+            genesis_config.bitcoin_reorg_block_count,
         );
 
         let bundles = stdlib.all_module_bundles()?;

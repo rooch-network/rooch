@@ -8,12 +8,11 @@ module rooch_framework::timestamp {
     /// Just using to get module signer
     struct TimestampPlaceholder has key {}
 
-    /// An invalid timestamp was provided
-    const ErrorInvalidTimestamp: u64 = 1;
+    const ErrorUnsupportedChain:u64 = 1;
 
     /// Fast forwards the clock by the given number of seconds, but only if the chain is in local mode.
     public entry fun fast_forward_seconds_for_local(timestamp_seconds: u64) {
-        assert!(rooch_framework::chain_id::is_local(), ErrorInvalidTimestamp);
+        assert!(rooch_framework::chain_id::is_local(), ErrorUnsupportedChain);
         let module_signer = module_signer<TimestampPlaceholder>();
         fast_forward_seconds_by_system(&module_signer, timestamp_seconds);
     }
