@@ -72,27 +72,23 @@ const theme: DocsThemeConfig = {
   head: function useHead() {
     const { title, frontMatter } = useConfig()
     const { asPath } = useRouter()
-    const router = useRouter()
-    const currentLang = router.locale
+    const currentLang = useRouter().locale
     let pageTitle = title || 'Rooch Network'
     let pageDescription = frontMatter.description || ''
     let ogImage = 'https://rooch.network/logo/rooch-banner.png'
 
+    // 获取 blog 的元数据
     if (asPath.includes('/blog/')) {
       const contents = getPagesUnderRoute('/blog') as Content[]
       const currentPage = contents.find(
         (content): content is Page => isPage(content) && content.route === asPath,
       )
       if (currentPage) {
-        if (currentPage.frontMatter.title) {
-          pageTitle = currentPage.frontMatter.title + ' – Rooch Network'
-        }
-        if (currentPage.frontMatter.description) {
-          pageDescription = currentPage.frontMatter.description
-        }
-        if (currentPage.frontMatter.image) {
-          ogImage = `https://rooch.network${currentPage.frontMatter.image}`
-        }
+        pageTitle = `${currentPage.frontMatter.title} – Rooch Network`
+        pageDescription = currentPage.frontMatter.description || pageDescription
+        ogImage = currentPage.frontMatter.image
+          ? `https://rooch.network${currentPage.frontMatter.image}`
+          : ogImage
       }
     } else {
       pageDescription =
@@ -103,29 +99,36 @@ const theme: DocsThemeConfig = {
 
     return (
       <>
-        <meta name="msapplication-TileColor" content="#ffffff" />
-        <meta name="theme-color" content="#ffffff" />
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        {/* MULTI-LANGUAGES */}
+        <meta name="theme-color" content="#ffffff" />
+        <meta name="msapplication-TileColor" content="#ffffff" />
+
+        {/* Open Graph 元标签 */}
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={`https://rooch.network${asPath}`} />
+
+        {/* Twitter 元标签 */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:site" content="@RoochNetwork" />
+        <meta name="twitter:creator" content="@RoochNetwork" />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDescription} />
+        <meta name="twitter:image" content={ogImage} />
+        <meta name="twitter:image:alt" content="Rooch Network" />
+
+        {/* 多语言链接 */}
         <link rel="alternate" href={`https://rooch.network${asPath}`} hrefLang="x-default" />
         <link rel="alternate" href={`https://rooch.network${asPath}`} hrefLang="en-us" />
         <link rel="alternate" href={`https://rooch.network${asPath}`} hrefLang="en" />
         <link rel="alternate" href={`https://rooch.network/zh-CN${asPath}`} hrefLang="zh-cn" />
         <link rel="alternate" href={`https://rooch.network/zh-CN${asPath}`} hrefLang="zh" />
-        {/* WEBSITE */}
-        <meta name="description" content={pageDescription} />
-        <meta property="og:description" content={pageDescription} />
-        <meta property="og:image" content={ogImage} />
-        <meta name="apple-mobile-web-app-title" content="Rooch Network" />
-        {/* TWITTER */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:site" content="https://rooch.network" />
-        <meta name="twitter:creator" content="https://rooch.network" />
-        <meta name="twitter:title" content={pageTitle} />
-        <meta name="twitter:description" content={pageDescription} />
-        <meta name="twitter:image" content={ogImage} />
-        <meta name="twitter:image:alt" content="Rooch Network" />
-        {/* FAVICON */}
+
+        {/* 网站图标 */}
         <link rel="icon" href="/logo/rooch_black_logo.svg" type="image/svg+xml" />
         <link rel="icon" href="/logo/rooch_black_logo.png" type="image/png" />
         <link
