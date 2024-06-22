@@ -588,8 +588,8 @@ module rooch_nursery::bitseed {
         let buf = vector::empty();
         vector::append(&mut buf, address::to_bytes(&block_hash));
         vector::append(&mut buf, address::to_bytes(&txid));
-        vector::append(&mut buf, bcs::to_bytes(&vout)); //TODO vout to le_bytes
-        hex::encode(hash::sha3_256(buf))
+        vector::append(&mut buf, bcs::to_bytes(&vout));
+        hash::sha3_256(buf)
     }
 
     // ==== Process Bitseed Entry ==== //
