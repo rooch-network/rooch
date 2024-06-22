@@ -51,7 +51,7 @@ jobs:
           docker --version
           sleep 6
           docker images
-          docker pull bitseed/bitseed:0.1.4
+          docker pull bitseed/bitseed:0.1.5
 
       - name: Check code format
         run: cargo fmt -- --check

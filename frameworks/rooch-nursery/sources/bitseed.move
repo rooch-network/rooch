@@ -440,35 +440,16 @@ module rooch_nursery::bitseed {
             return (false, option::some(std::string::utf8(b"create wasm instance fail")))
         };
 
-        std::debug::print(&string::utf8(b"inscribe_verify->deploy_args:"));
-        std::debug::print(&deploy_args);
-
-        std::debug::print(&string::utf8(b"inscribe_verify->seed:"));
-        std::debug::print(&seed);
-
-        std::debug::print(&string::utf8(b"inscribe_verify->user_input:"));
-        std::debug::print(&user_input);
-
-        std::debug::print(&string::utf8(b"inscribe_verify->metadata:"));
-        std::debug::print(metadata);
-
-        std::debug::print(&string::utf8(b"inscribe_verify->content_type:"));
-        std::debug::print(&content_type);
-
         let wasm_instance = option::destroy_some(wasm_instance_option);
         let function_name = b"inscribe_verify";
 
         let buffer = pack_inscribe_generate_args(deploy_args, seed, user_input);
-        std::debug::print(&string::utf8(b"pack_inscribe_generate_args->buffer:"));
-        std::debug::print(&buffer);
 
         let arg_with_length = wasm::add_length_with_data(buffer);
 
         let amount = get_SFT_amount(metadata);
         let attributes = get_SFT_attributes(metadata);
         let output_buffer = pack_inscribe_output_args(amount, attributes, content_type, body);
-        std::debug::print(&string::utf8(b"pack_inscribe_output_args->output_buffer:"));
-        std::debug::print(&output_buffer);
 
         let arg_list = vector::empty<vector<u8>>();
         vector::push_back(&mut arg_list, arg_with_length);
@@ -544,9 +525,6 @@ module rooch_nursery::bitseed {
             content: content,
         };
 
-        std::debug::print(&string::utf8(b"pack_inscribe_output:"));
-        std::debug::print(&output);
-
         let output_bytes = cbor::to_cbor(&output);
 
         let InscribeGenerateOutput{amount:_, attributes, content}=output;
@@ -601,10 +579,7 @@ module rooch_nursery::bitseed {
         };
 
         let seed_block_hash = *option::borrow(&seed_block_hash_option);
-
         let seed_hex = generate_seed_from_inscription_inner(seed_block_hash, seed_txid, seed_vout);
-        std::debug::print(&std::string::utf8(b"seed_hex:"));
-        std::debug::print(&seed_hex);
 
         seed_hex
     }
@@ -1067,5 +1042,4 @@ module rooch_nursery::bitseed {
         let output_hex = hex::encode(output_bytes);
         assert!(output_hex == b"a366616d6f756e74016a61747472696275746573a2666865696768741901bc6269646f74657374207573657220696e70757467636f6e74656e74a0", 1);
     }
-
 }
