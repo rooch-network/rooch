@@ -29,8 +29,10 @@ module rooch_framework::bitcoin_validator {
 
         let message = auth_payload::encode_full_message(&payload, tx_hash);
 
+        std::debug::print(&message);
         // The Bitcoin wallet uses sha2_256 twice, the `ecdsa_k1::verify` function also does sha2_256 once
         let message_hash = hash::sha2_256(message);
+        std::debug::print(&message_hash);
         assert!(
             ecdsa_k1::verify(
                 &auth_payload::signature(payload),
@@ -49,11 +51,14 @@ module rooch_framework::bitcoin_validator {
         let tx_hash = tx_context::tx_hash();
         let payload = auth_payload::from_bytes(authenticator_payload);
 
+        std::debug::print(&tx_hash);
+        std::debug::print(&payload);
+
         validate_signature(payload, tx_hash);
 
         let from_address_in_payload = auth_payload::from_address(payload);
         let bitcoin_addr = bitcoin_address::from_string(&from_address_in_payload);
-        
+
         // Check if the address and public key are related
         assert!(
             bitcoin_address::verify_with_public_key(&from_address_in_payload, &auth_payload::public_key(payload)),
@@ -62,6 +67,9 @@ module rooch_framework::bitcoin_validator {
 
         let rooch_addr = bitcoin_address::to_rooch_address(&bitcoin_addr);
 
+        std::debug::print(&sender);
+        std::debug::print(&bitcoin_addr);
+        std::debug::print(&rooch_addr);
         // Check if the sender is related to the Rooch address
         assert!(
             sender == rooch_addr,

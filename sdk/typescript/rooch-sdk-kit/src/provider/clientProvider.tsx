@@ -11,8 +11,8 @@ import {
   RoochClient,
   RoochClientOptions,
 } from '@roochnetwork/rooch-sdk'
-import type { NetworkConfig } from '@/hooks'
-import { RoochSessionProvider } from './sessionProvider'
+import type { NetworkConfig } from '@/hooks/index.js'
+import { RoochSessionProvider } from './sessionProvider.js'
 
 type NetworkConfigs<T extends NetworkConfig | RoochClient = NetworkConfig | RoochClient> = Record<
   string,

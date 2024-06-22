@@ -9,8 +9,5 @@
     "emitDeclarationOnly": false,
     "resolveJsonModule": true,
     "types": ["vitest/globals"],
-    "paths": {
-      "@/*": ["../src/*"]
-    }
   }
 }

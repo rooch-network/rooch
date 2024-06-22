@@ -4,23 +4,24 @@
 import { createStore } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { StateStorage } from 'zustand/middleware'
+import { ThirdPartyAddress } from '@roochnetwork/rooch-sdk'
 
-import { SupportChain } from '@/feature'
-import { BitcoinAddress } from '@roochnetwork/rooch-sdk'
-import { Wallet } from '@/wellet'
+import { SupportChain } from '../feature/index.js'
+
+import { Wallet } from '../wellet/index.js'
 
 type WalletConnectionStatus = 'disconnected' | 'connecting' | 'connected'
 
 export type WalletActions = {
   setChain: (chain: SupportChain) => void
-  setAddressSwitched: (selectedAccount: BitcoinAddress) => void
+  setAddressSwitched: (selectedAccount: ThirdPartyAddress) => void
   setConnectionStatus: (connectionStatus: WalletConnectionStatus) => void
   setWalletConnected: (
     wallet: Wallet,
-    connectedAddress: readonly BitcoinAddress[],
-    selectedAddress: BitcoinAddress | null,
+    connectedAddress: readonly ThirdPartyAddress[],
+    selectedAddress: ThirdPartyAddress | null,
   ) => void
-  updateWalletAddresses: (accounts: readonly BitcoinAddress[]) => void
+  updateWalletAddresses: (accounts: readonly ThirdPartyAddress[]) => void
   setWalletDisconnected: () => void
 }
 
@@ -31,8 +32,8 @@ export type WalletStoreState = {
   currentChain: SupportChain
   currentWallet: Wallet | undefined
   wallets: Wallet[]
-  addresses: readonly BitcoinAddress[]
-  currentAddress: BitcoinAddress | undefined
+  addresses: readonly ThirdPartyAddress[]
+  currentAddress: ThirdPartyAddress | undefined
   lastConnectedAddress: string | undefined
   lastConnectedWalletName: string | undefined
   connectionStatus: WalletConnectionStatus
@@ -86,13 +87,13 @@ export function createWalletStore({
             connectionStatus,
           }))
         },
-        setWalletConnected(wallet, connectedAccounts, selectedAccount) {
+        setWalletConnected(wallet, connectedAddresses, selectedAddress) {
           set(() => ({
             currentWallet: wallet,
-            accounts: connectedAccounts,
-            currentAccount: selectedAccount,
+            accounts: connectedAddresses,
+            currentAddress: selectedAddress || undefined,
             lastConnectedWalletName: wallet.getName(),
-            lastConnectedAccountAddress: selectedAccount?.toStr(),
+            lastConnectedAddress: selectedAddress?.toStr(),
             connectionStatus: 'connected',
           }))
         },

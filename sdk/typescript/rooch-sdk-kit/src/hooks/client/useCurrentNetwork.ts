@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { useRoochContextStore } from './index'
+import { useRoochContext } from './index.js'
 
 export function useCurrentNetwork(): string {
-  return useRoochContextStore((state) => state.currentNetwork)
+  return useRoochContext().network
 }

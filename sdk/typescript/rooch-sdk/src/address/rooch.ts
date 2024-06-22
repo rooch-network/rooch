@@ -3,11 +3,11 @@
 
 import { bech32m } from '@scure/base'
 
-import { Bytes } from '@/types/bytes.js'
-import { fromHEX, isHex, toHEX } from '@/utils/hex.js'
+import { Bytes } from '../types/index.js'
+import { fromHEX, isHex, toHEX } from '../utils/index.js'
 
-import { Address, ROOCH_BECH32_PREFIX } from './address.js'
 import { normalizeRoochAddress } from './util.js'
+import { Address, ROOCH_BECH32_PREFIX } from './address.js'
 
 export class RoochAddress implements Address {
   private readonly address: Bytes

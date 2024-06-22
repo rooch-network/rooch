@@ -3,17 +3,17 @@
 
 import { bcs, BcsType, BcsTypeOptions } from '@mysten/bcs'
 
-import { address, Bytes } from '@/types'
-import { bytes, CoderType, fromHEX, toHEX } from '@/utils'
+import { address, Bytes } from '../types/index.js'
+import { bytes, CoderType, fromHEX, toHEX } from '../utils/index.js'
 import {
   isValidRoochAddress,
   normalizeRoochAddress,
   ROOCH_ADDRESS_LENGTH,
   convertToRoochAddressBytes,
-} from '@/address'
+} from '../address/index.js'
 
-import { Serializer } from './serializer'
-import type { TypeTagA as TypeTagType } from './types'
+import { Serializer } from './serializer.js'
+import type { BcsTypeTag as TypeTagType } from './types.js'
 
 type Merge<T> = T extends infer U ? { [K in keyof U]: U[K] } : never
 type EnumKindTransform<T> = T extends infer U
@@ -25,7 +25,7 @@ function enumKind<T extends object, Input extends object>(type: BcsType<T, Input
     input: ({ kind, ...val }: EnumKindTransform<Input>) =>
       ({
         [kind]: val,
-      } as Input),
+      }) as Input,
     output: (val) => {
       const key = Object.keys(val)[0] as keyof T
 
@@ -151,7 +151,7 @@ export const BitcoinAuthPayload = bcs.struct('AuthPayload', {
   messagePrefix: Vector('utf8'),
   messageInfo: Vector('utf8'),
   publicKey: Vector('hex'),
-  fromAddress: Vector('base64'),
+  fromAddress: Vector('utf8'),
 })
 
 export const ModuleId = bcs.struct('ModuleId', {

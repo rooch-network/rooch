@@ -1,11 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { schnorr, secp256k1 } from '@noble/curves/secp256k1'
 import { HDKey } from '@scure/bip32'
 
-import { BitcoinAddress, RoochAddress } from '@/address'
-import { decodeRoochSercetKey, SignatureScheme } from '@/crypto'
+import { schnorr, secp256k1 } from '@noble/curves/secp256k1'
+import { BitcoinAddress, RoochAddress } from '../../address/index.js'
 import {
   Authenticator,
   BitcoinSignMessage,
@@ -13,11 +12,13 @@ import {
   isValidBIP32Path,
   Keypair,
   mnemonicToSeed,
-} from '@/crypto'
-import { Bytes } from '@/types'
-import { blake2b, sha256, toHEX } from '@/utils'
-
-import { Secp256k1PublicKey } from './publickey'
+  decodeRoochSercetKey,
+  SignatureScheme,
+} from '../../crypto/index.js'
+import { Bytes } from '../../types/index.js'
+import { blake2b, sha256, toHEX } from '../../utils/index.js'
+import { Secp256k1PublicKey } from './publickey.js'
+import { Transaction } from '../../transactions/index.js'
 
 export const DEFAULT_SECP256K1_DERIVATION_PATH = "m/54'/784'/0'/0/0"
 
@@ -144,7 +145,7 @@ export class Secp256k1Keypair extends Keypair {
   /**
    * Return the signature for the provided data.
    */
-  async sign(input: Uint8Array) {
+  async sign(input: Bytes) {
     const msgHash = sha256(input)
     const sig = secp256k1.sign(msgHash, this.keypair.secretKey, {
       lowS: true,
@@ -153,8 +154,8 @@ export class Secp256k1Keypair extends Keypair {
     return sig.toCompactRawBytes()
   }
 
-  async signTransactionImp(input: Bytes): Promise<Authenticator> {
-    return await Authenticator.bitcoin(new BitcoinSignMessage(input, 'sdk'), this)
+  async signTransaction(input: Transaction): Promise<Authenticator> {
+    return await Authenticator.bitcoin(new BitcoinSignMessage(input.hashData(), 'sdk'), this)
   }
 
   /**

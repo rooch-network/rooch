@@ -7,8 +7,8 @@
 import nacl from 'tweetnacl'
 import { hmac } from '@noble/hashes/hmac'
 
-import { Bytes } from '@/types'
-import { fromHEX, sha512 } from '@/utils'
+import { Bytes } from '../../types/index.js'
+import { fromHEX, sha512 } from '../../utils/index.js'
 
 type Hex = string
 type Path = string

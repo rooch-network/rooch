@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { describe, it, expect } from 'vitest'
-import { Transaction } from '@/transactions/transaction'
-import { Secp256k1Keypair } from '@/keypairs'
-import { bcs } from '@/bcs'
-import { BitcoinSignMessage } from '@/crypto/authenticator'
-import { str } from '@/utils'
+
+import { bcs } from '../bcs/index.js'
+import { str } from '../utils/index.js'
+import { BitcoinSignMessage } from '../crypto/index.js'
+import { Secp256k1Keypair } from '../keypairs/index.js'
+import { Transaction } from '../transactions/index.js'
 
 describe('Transactions', () => {
   it('verify transaction', async () => {

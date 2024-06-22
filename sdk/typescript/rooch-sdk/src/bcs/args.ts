@@ -3,10 +3,9 @@
 
 import { bcs, SerializedBcs } from '@mysten/bcs'
 
-import { Bytes } from '@/types/bytes.js'
-import { isBytes } from '@/utils/bytes.js'
-import { toHEX } from '@/utils/hex.js'
-import { u16, u32, u8, u64, u128, u256, bool, address, objectId } from '@/types/rooch.js'
+import { Bytes } from '../types/bytes.js'
+import { isBytes, toHEX } from '../utils/index.js'
+import { u16, u32, u8, u64, u128, u256, bool, address, objectId } from '../types/index.js'
 
 import { Address, ObjectId } from './bcs.js'
 import { Serializer } from './serializer.js'

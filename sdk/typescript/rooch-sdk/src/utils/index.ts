@@ -1,9 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-export * from './error'
-export * from './hex'
-export * from './hash'
-export * from './bitcoin'
-export * from './b64'
-export * from './bytes'
+export * from './error.js'
+export * from './hex.js'
+export * from './hash.js'
+export * from './bitcoin.js'
+export * from './b64.js'
+export * from './bytes.js'

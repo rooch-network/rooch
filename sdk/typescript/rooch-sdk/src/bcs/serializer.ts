@@ -3,10 +3,10 @@
 
 import { splitGenericParameters } from '@mysten/bcs'
 
-import { sha3_256, toHEX } from '@/utils'
-import { canonicalRoochAddress, normalizeRoochAddress } from '@/address'
+import { sha3_256, toHEX } from '../utils/index.js'
+import { canonicalRoochAddress, normalizeRoochAddress } from '../address/index.js'
 
-import { StructTag, TypeTag, TypeTagA } from './types'
+import { StructTag, TypeTag, BcsTypeTag } from './types.js'
 
 const VECTOR_REGEX = /^vector<(.+)>$/
 const STRUCT_REGEX = /^([^:]+)::([^:]+)::([^<]+)(<(.+)>)?/
@@ -43,7 +43,7 @@ export class Serializer {
     throw new Error('Invalid TypeTag')
   }
 
-  static typeTagParseFromStr(str: string, normalizeAddress = false): TypeTagA {
+  static typeTagParseFromStr(str: string, normalizeAddress = false): BcsTypeTag {
     if (str === 'address') {
       return { address: null }
     } else if (str === 'bool') {
@@ -90,13 +90,13 @@ export class Serializer {
     throw new Error(`Encountered unexpected token when parsing type args for ${str}`)
   }
 
-  static parseStructTypeArgs(str: string, normalizeAddress = false): TypeTagA[] {
+  static parseStructTypeArgs(str: string, normalizeAddress = false): BcsTypeTag[] {
     return splitGenericParameters(str).map((tok) =>
       Serializer.typeTagParseFromStr(tok, normalizeAddress),
     )
   }
 
-  static tagToString(tag: TypeTagA): string {
+  static tagToString(tag: BcsTypeTag): string {
     if ('bool' in tag) {
       return 'bool'
     }

@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { beforeAll, describe, expect, it } from 'vitest'
-import { setup, TestBox } from '../setup'
-import { Transaction } from '@/transactions'
-import { Secp256k1Keypair } from '@/keypairs'
-import { Args } from '@/bcs'
+import { setup, TestBox } from '../setup.js'
+import { Transaction } from '../../src/transactions/index.js'
+import { Secp256k1Keypair } from '../../src/keypairs/index.js'
+import { Args } from '../../src/bcs/index.js'
 
 describe('Checkpoints Transfer API', () => {
   let testBox: TestBox
@@ -24,7 +24,7 @@ describe('Checkpoints Transfer API', () => {
     const tx = new Transaction()
     tx.callFunction({
       target: '0x3::gas_coin::faucet_entry',
-      arguments: [Args.u256(BigInt(10000000000))]
+      args: [Args.u256(BigInt(10000000000))]
     })
 
     expect(await testBox.signAndExecuteTransaction(tx)).toBeTruthy()

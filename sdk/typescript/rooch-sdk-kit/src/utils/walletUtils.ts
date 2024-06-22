@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { SupportChain, SupportChains } from '@/feature'
-import { UniSatWallet, Wallet } from '@/wellet'
+import { SupportChain, SupportChains } from '../feature/index.js'
+import { UniSatWallet, Wallet } from '../wellet/index.js'
 
 export async function checkWallets(filter?: SupportChain) {
   const wallets: Wallet[] = []

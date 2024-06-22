@@ -3,11 +3,13 @@
 
 import { bech32m } from '@scure/base'
 
-import { fromHEX, getHexByteLength, isBytes, isHex } from '@/utils'
+import { isBytes } from '../utils/bytes.js'
+import { fromHEX, getHexByteLength, isHex } from '../utils/hex.js'
+import { address } from '../types/rooch.js'
+import { Bytes } from '../types/bytes.js'
 
-import { ROOCH_ADDRESS_LENGTH, ROOCH_BECH32_PREFIX } from './address'
-import { address, Bytes } from '@/types'
-import { BitcoinAddress } from '@/address/bitcoin'
+import { BitcoinAddress } from './bitcoin.js'
+import { ROOCH_ADDRESS_LENGTH, ROOCH_BECH32_PREFIX } from './address.js'
 
 export function convertToRoochAddressBytes(input: address): Bytes {
   if (typeof input === 'string') {

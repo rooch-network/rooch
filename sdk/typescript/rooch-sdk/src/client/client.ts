@@ -1,19 +1,20 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { Bytes } from 'micro-packed'
-
-import { Args } from '@/bcs'
-import { Signer } from '@/crypto'
-import { ModuleArgs, normalizeModuleArgs, Transaction } from '@/transactions'
-import { CreateSessionArgs, Session } from '@/session'
-import { isValidRoochAddress } from '@/address'
-import { CallFunction, CallFunctionArgs } from '@/transactions'
-import { address, u64 } from '@/types'
-import { fromHEX, str } from '@/utils'
-
-import { RoochHTTPTransport, RoochTransport } from './httpTransport'
-
+import { Args } from '../bcs/index.js'
+import { Signer } from '../crypto/index.js'
+import { CreateSessionArgs, Session } from '../session/index.js'
+import { isValidRoochAddress } from '../address/index.js'
+import { address, Bytes, u64 } from '../types/index.js'
+import { fromHEX, str } from '../utils/index.js'
+import { RoochHTTPTransport, RoochTransport } from './httpTransport.js'
+import {
+  CallFunction,
+  CallFunctionArgs,
+  TypeArgs,
+  Transaction,
+  normalizeTypeArgsToStr,
+} from '../transactions/index.js'
 import {
   AnnotatedFunctionResultView,
   AnnotatedMoveStructView,
@@ -27,7 +28,7 @@ import {
   PaginationResult,
   SessionInfoView,
   StateView,
-} from './types'
+} from './types/index.js'
 
 /**
  * Configuration options for the RoochClient
@@ -92,7 +93,7 @@ export class RoochClient {
         {
           function_id: callFunction.functionId(),
           args: callFunction.encodeArgs(),
-          ty_args: callFunction.encodeTypeArgs(),
+          ty_args: callFunction.typeArgs,
         },
       ],
     })
@@ -132,14 +133,6 @@ export class RoochClient {
     })
   }
 
-  async createSession({ session, signer }: { session: CreateSessionArgs; signer: Signer }) {
-    return Session.CREATE({
-      ...session,
-      client: this,
-      signer: signer,
-    })
-  }
-
   // Get the states by access_path
   async getStates(params: GetStatesParams): Promise<StateView[]> {
     const result = await this.transport.request({
@@ -156,6 +149,21 @@ export class RoochClient {
       method: 'rooch_listStates',
       params: [params.accessPath, params.cursor, params.limit, params.stateOption],
     })
+  }
+
+  // helper fn
+
+  async getSequenceNumber(address: string): Promise<u64> {
+    const resp = await this.executeViewFunction({
+      target: '0x2::account::sequence_number',
+      args: [Args.address(address)],
+    })
+
+    if (resp && resp.return_values) {
+      return BigInt(resp.return_values[0].decoded_value as number)
+    }
+
+    return BigInt(0)
   }
 
   /**
@@ -175,23 +183,13 @@ export class RoochClient {
     signer: Signer
     recipient: address
     amount: number | bigint
-    coinType: ModuleArgs
+    coinType: TypeArgs
   }) {
-    const [addr, mod, fn] = normalizeModuleArgs(input.coinType)
-
     const tx = new Transaction()
     tx.callFunction({
       target: '0x3::transfer::transfer_coin',
-      arguments: [Args.address(input.recipient), Args.u256(BigInt(input.amount))],
-      typeArguments: [
-        {
-          Struct: {
-            address: addr,
-            module: mod,
-            name: fn,
-          },
-        },
-      ],
+      args: [Args.address(input.recipient), Args.u256(BigInt(input.amount))],
+      typeArgs: [normalizeTypeArgsToStr(input.coinType)],
     })
 
     return await this.signAndExecuteTransaction({
@@ -200,19 +198,48 @@ export class RoochClient {
     })
   }
 
-  // helper move fn
-
-  async getSequenceNumber(address: string): Promise<u64> {
-    const resp = await this.executeViewFunction({
-      target: '0x2::account::sequence_number',
-      arguments: [Args.address(address)],
+  async transferObject(input: {
+    signer: Signer
+    recipient: string
+    objectId: string
+    objectType: TypeArgs
+  }) {
+    const tx = new Transaction()
+    tx.callFunction({
+      target: '0x3::transfer::transfer_object',
+      args: [Args.address(input.recipient), Args.objectId(input.objectId)],
+      typeArgs: [normalizeTypeArgsToStr(input.objectType)],
     })
 
-    if (resp && resp.return_values) {
-      return BigInt(resp.return_values[0].decoded_value as number)
-    }
+    return await this.signAndExecuteTransaction({
+      transaction: tx,
+      signer: input.signer,
+    })
+  }
 
-    return BigInt(0)
+  async createSession({ sessionArgs, signer }: { sessionArgs: CreateSessionArgs; signer: Signer }) {
+    return Session.CREATE({
+      ...sessionArgs,
+      client: this,
+      signer: signer,
+    })
+  }
+
+  async removeSession({ authKey, signer }: { authKey: string; signer: Signer }): Promise<boolean> {
+    const tx = new Transaction()
+    tx.callFunction({
+      target: '0x3::session_key::remove_session_key_entry',
+      args: [Args.vec('u8', Array.from(fromHEX(authKey)))],
+    })
+
+    return (
+      (
+        await this.signAndExecuteTransaction({
+          transaction: tx,
+          signer,
+        })
+      ).execution_info.status.type === 'executed'
+    )
   }
 
   async sessionIsExpired({
@@ -224,7 +251,7 @@ export class RoochClient {
   }): Promise<boolean> {
     const result = await this.executeViewFunction({
       target: '0x3::session_key::is_expired_session_key',
-      arguments: [Args.address(address), Args.vec('u8', Array.from(fromHEX(authKey)))],
+      args: [Args.address(address), Args.vec('u8', Array.from(fromHEX(authKey)))],
     })
 
     if (result.vm_status !== 'Executed') {

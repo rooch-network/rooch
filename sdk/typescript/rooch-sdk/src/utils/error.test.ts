@@ -7,7 +7,7 @@ import {
   parseRoochErrorSubStatus,
   ErrorCategory,
   getErrorCategoryName,
-} from './error'
+} from './error.js'
 
 describe('err', () => {
   describe('parseRoochErrorCode', () => {

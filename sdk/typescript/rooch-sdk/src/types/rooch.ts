@@ -1,8 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { Address } from '@/address'
-import { Bytes } from './bytes'
+import { Address } from '../address/address.js'
+
+import { Bytes } from './bytes.js'
 
 export type u8 = number
 export type u16 = number

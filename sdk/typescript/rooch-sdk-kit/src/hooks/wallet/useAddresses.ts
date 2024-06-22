@@ -6,6 +6,6 @@ import { useWalletStore } from './useWalletStore.js'
 /**
  * Retrieves all wallets
  */
-export function useWallets() {
-  return useWalletStore((state) => state.wallets)
+export function useAddresses() {
+  return useWalletStore((state) => state.addresses)
 }

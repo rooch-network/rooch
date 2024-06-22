@@ -1,9 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { PACKAGE_VERSION, TARGETED_RPC_VERSION } from '@/version'
+// import { PACKAGE_VERSION, TARGETED_RPC_VERSION } from '../version.js'
 
-import { JsonRpcError, RoochHTTPStatusError } from './error'
+import { JsonRpcError, RoochHTTPStatusError } from './error.js'
 
 export type HttpHeaders = { [header: string]: string }
 
@@ -52,9 +52,6 @@ export class RoochHTTPTransport implements RoochTransport {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Client-Sdk-Type': 'typescript',
-        'Client-Sdk-Version': PACKAGE_VERSION,
-        'Client-Target-Api-Version': TARGETED_RPC_VERSION,
         ...this.#options.rpc?.headers,
       },
       body: JSON.stringify({

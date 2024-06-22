@@ -3,7 +3,7 @@
 
 import { base16, base32, base58, base58xmr, base64, base64url, hex, utf8 } from '@scure/base'
 
-import { Bytes } from '@/types'
+import { Bytes } from '../types/bytes.js'
 
 const CODERS = {
   utf8,
@@ -52,6 +52,22 @@ export const str = bytesToString // as in python, but for bytes only
 export const stringToBytes = (type: CoderType, str: string): Bytes => {
   if (!CODERS.hasOwnProperty(type)) throw new TypeError(coderTypeError)
   return CODERS[type].decode(str)
+}
+
+export function concatBytes(...arrays: Uint8Array[]): Uint8Array {
+  let sum = 0
+  for (let i = 0; i < arrays.length; i++) {
+    const a = arrays[i]
+    if (!isBytes(a)) throw new Error('Uint8Array expected')
+    sum += a.length
+  }
+  const res = new Uint8Array(sum)
+  for (let i = 0, pad = 0; i < arrays.length; i++) {
+    const a = arrays[i]
+    res.set(a, pad)
+    pad += a.length
+  }
+  return res
 }
 
 export const bytes = stringToBytes

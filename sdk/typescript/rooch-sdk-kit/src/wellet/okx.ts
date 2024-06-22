@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { BitcoinWallet } from '@/wellet/bitcoin'
-import { Address, BitcoinAddress, Bytes } from '@roochnetwork/rooch-sdk'
+import { BitcoinAddress, Bytes, ThirdPartyAddress } from '@roochnetwork/rooch-sdk'
+import { BitcoinWallet } from '../wellet/index.js'
 
 export class OkxWallet extends BitcoinWallet {
   getName(): string {
@@ -19,7 +19,7 @@ export class OkxWallet extends BitcoinWallet {
     return (window as any).okxwallet.bitcoin
   }
 
-  async connect(): Promise<Address[]> {
+  async connect(): Promise<ThirdPartyAddress[]> {
     const addr = await this.getTarget().connect()
     this.currentAddress = new BitcoinAddress(addr)
     this.address = [this.currentAddress]

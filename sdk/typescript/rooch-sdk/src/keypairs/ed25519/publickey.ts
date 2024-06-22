@@ -1,13 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { fromB64 } from '@mysten/bcs'
 import nacl from 'tweetnacl'
 
-import { ROOCH_ADDRESS_LENGTH, RoochAddress } from '@/address'
-import type { PublicKeyInitData } from '@/crypto'
-import { PublicKey, SIGNATURE_SCHEME_TO_FLAG } from '@/crypto'
-import { blake2b } from '@/utils'
+import { ROOCH_ADDRESS_LENGTH, RoochAddress } from '../../address/index.js'
+import type { PublicKeyInitData } from '../../crypto/index.js'
+import { PublicKey, SIGNATURE_SCHEME_TO_FLAG } from '../../crypto/index.js'
+import { blake2b, fromB64 } from '../../utils/index.js'
 
 const PUBLIC_KEY_SIZE = 32
 

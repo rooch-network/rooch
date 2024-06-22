@@ -3,8 +3,7 @@
 
 import { createStore } from 'zustand'
 import { createJSONStorage, persist, StateStorage } from 'zustand/middleware'
-import { RoochClient, Session } from '@roochnetwork/rooch-sdk'
-import { WalletRoochSessionAccount } from './types'
+import { Session } from '@roochnetwork/rooch-sdk'
 
 export type SessionActions = {
   addSession: (session: Session) => void
@@ -20,12 +19,11 @@ export type SessionStoreState = {
 export type SessionStore = ReturnType<typeof createSessionStore>
 
 type ClientConfiguration = {
-  client: RoochClient
   storage: StateStorage
   storageKey: string
 }
 
-export function createSessionStore({ client, storage, storageKey }: ClientConfiguration) {
+export function createSessionStore({ storage, storageKey }: ClientConfiguration) {
   return createStore<SessionStoreState>()(
     persist(
       (set, get) => ({
@@ -68,11 +66,8 @@ export function createSessionStore({ client, storage, storageKey }: ClientConfig
         storage: createJSONStorage(() => storage, {
           reviver: (key, value) => {
             if (key === 'sessions') {
-              return (value as any[]).map((session: any) =>
-                WalletRoochSessionAccount.formJson(session, client),
-              )
+              return (value as any[]).map((session: any) => Session.fromJson(session))
             }
-
             return value
           },
         }),

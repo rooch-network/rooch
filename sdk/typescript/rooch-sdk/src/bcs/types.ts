@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { address } from '@/types'
+import { address } from '../types/index.js'
 
 /**
  * TypeTag object. A decoupled `0x...::module::Type<???>` parameter.
@@ -18,6 +18,7 @@ export type TypeTag =
   | 'signer'
   | { Vector: TypeTag }
   | { Struct: StructTag }
+  | string
 
 /**
  * Kind of a TypeTag which is represented by a Move type identifier.
@@ -29,22 +30,22 @@ export interface StructTag {
   typeParams?: TypeTag[]
 }
 
-export interface StructTagA {
+export interface BcsStructTag {
   address: address
   module: string
   name: string
-  typeParams: TypeTagA[]
+  typeParams: BcsTypeTag[]
 }
 
-export type TypeTagA =
+export type BcsTypeTag =
   | { bool: null | true }
   | { u8: null | true }
   | { u64: null | true }
   | { u128: null | true }
   | { address: null | true }
   | { signer: null | true }
-  | { vector: TypeTagA }
-  | { struct: StructTagA }
+  | { vector: BcsTypeTag }
+  | { struct: BcsStructTag }
   | { u16: null | true }
   | { u32: null | true }
   | { u256: null | true }

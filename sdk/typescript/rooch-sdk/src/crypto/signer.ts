@@ -1,26 +1,18 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { sha3_256 } from '@noble/hashes/sha3'
+import { Address, BitcoinAddress, RoochAddress } from '../address/index.js'
+import { Authenticator } from '../crypto/index.js'
+import { Transaction } from '../transactions/index.js'
+import { Bytes } from '../types/index.js'
 
-import { Address, BitcoinAddress, RoochAddress } from '@/address'
-import { Authenticator } from '@/crypto'
-import { Transaction } from '@/transactions'
-import { Bytes } from '@/types'
-import { isBytes } from '@/utils'
-
-import type { PublicKey } from './publickey'
-import type { SignatureScheme } from './signatureScheme'
+import type { PublicKey } from './publickey.js'
+import type { SignatureScheme } from './signatureScheme.js'
 
 export abstract class Signer {
   abstract sign(input: Bytes): Promise<Bytes>
 
-  async signTransaction(input: Bytes | Transaction): Promise<Authenticator> {
-    const digest = isBytes(input) ? sha3_256(input as Bytes) : (input as Transaction).hashData()
-
-    return this.signTransactionImp(digest)
-  }
-
+  abstract signTransaction(input: Transaction): Promise<Authenticator>
   abstract getBitcoinAddress(): BitcoinAddress
 
   abstract getRoochAddress(): RoochAddress
@@ -34,6 +26,4 @@ export abstract class Signer {
    * The public key for this keypair
    */
   abstract getPublicKey(): PublicKey<Address>
-
-  protected abstract signTransactionImp(input: Bytes): Promise<Authenticator>
 }

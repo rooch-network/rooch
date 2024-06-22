@@ -2,10 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { beforeAll, describe, expect, it } from 'vitest'
-import { setup, TestBox } from '../setup'
-import { Transaction } from '@/transactions'
-import { Args } from '@/bcs'
-
+import { setup, TestBox } from '../setup.js'
+import { Transaction } from '../../src/transactions/index.js'
 
 describe('Checkpoints Transaction API', () => {
   let testBox: TestBox

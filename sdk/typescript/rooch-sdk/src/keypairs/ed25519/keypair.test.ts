@@ -3,9 +3,9 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { decodeRoochSercetKey, ROOCH_SECRET_KEY_PREFIX } from '@/crypto'
+import { decodeRoochSercetKey, ROOCH_SECRET_KEY_PREFIX } from '../../crypto/index.js'
 
-import { Ed25519Keypair } from './keypair'
+import { Ed25519Keypair } from './keypair.js'
 
 const TEST_CASES: [{ pk: string; sk: string }] = [
   {

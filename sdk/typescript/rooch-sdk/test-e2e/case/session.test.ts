@@ -2,10 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { beforeAll, describe, expect, it } from 'vitest'
-import { setup, TestBox } from '../setup'
-import { Transaction } from '@/transactions'
-import { Args } from '@/bcs'
-import { fromHEX, toHEX } from '@/utils'
+import { setup, TestBox } from '../setup.js'
+import { Transaction } from '../../src/transactions/index.js'
 
 describe('Checkpoints Transaction API', () => {
   let testBox: TestBox
@@ -16,7 +14,7 @@ describe('Checkpoints Transaction API', () => {
 
   it('Create session should be success', async () => {
     const session = await testBox.client.createSession({
-      session: {
+      sessionArgs: {
         appName: 'sdk-e2e-test',
         appUrl: 'https://sdk-e2e.com',
         scopes: ['0x3::empty::empty_with_signer'],
@@ -28,7 +26,7 @@ describe('Checkpoints Transaction API', () => {
       address: testBox.address().toHexAddress(),
     })
     const createdSessionExists = sessions.data.find(
-      (item) => item.authenticationKey === session.getAuthKey().toHexAddress(),
+      (item) => item.authenticationKey === session.getAuthKey(),
     )
 
     expect(createdSessionExists).toBeTruthy()
@@ -36,7 +34,7 @@ describe('Checkpoints Transaction API', () => {
 
   it('Check session is expired should be false', async () => {
     const session = await testBox.client.createSession({
-      session: {
+      sessionArgs: {
         appName: 'sdk-e2e-test',
         appUrl: 'https://sdk-e2e.com',
         scopes: ['0x3::empty::empty_with_signer'],
@@ -46,7 +44,7 @@ describe('Checkpoints Transaction API', () => {
 
     const result = await testBox.client.sessionIsExpired({
       address: session.getRoochAddress().toHexAddress(),
-      authKey: session.getAuthKey().toHexAddress(),
+      authKey: session.getAuthKey(),
     })
 
     expect(result).toBeFalsy()
@@ -54,7 +52,7 @@ describe('Checkpoints Transaction API', () => {
 
   it('Call function with session auth should be success', async () => {
     const session = await testBox.client.createSession({
-      session: {
+      sessionArgs: {
         appName: 'sdk-e2e-test',
         appUrl: 'https://sdk-e2e.com',
         scopes: ['0x3::empty::empty_with_signer'],

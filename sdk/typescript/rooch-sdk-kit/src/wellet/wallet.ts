@@ -1,14 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { Address, Bytes, Signer } from '@roochnetwork/rooch-sdk'
-import { SupportChain } from '@/feature'
+import { ThirdPartyAddress, Bytes, Signer } from '@roochnetwork/rooch-sdk'
+
+import { SupportChain } from '../feature/index.js'
 
 export abstract class Wallet extends Signer {
   public readonly installed: boolean
-  protected address: Address[] | undefined
+  protected address: ThirdPartyAddress[] | undefined
   protected publicKey: string | undefined
-  protected currentAddress: Address | undefined
+  protected currentAddress: ThirdPartyAddress | undefined
 
   constructor(installed: boolean) {
     super()
@@ -19,7 +20,7 @@ export abstract class Wallet extends Signer {
    * Connects the wallet.
    * @returns A promise that resolves to an array of wallet accounts.
    */
-  abstract connect(): Promise<Address[]>
+  abstract connect(): Promise<ThirdPartyAddress[]>
 
   abstract getName(): string
   /**

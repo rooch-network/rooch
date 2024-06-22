@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { describe, it, expect } from 'vitest'
-import { Ed25519Keypair, Secp256k1Keypair } from '@/keypairs'
-import { isValidRoochAddress } from '@/address/util'
+import { Ed25519Keypair, Secp256k1Keypair } from '../keypairs/index.js'
+import { isValidRoochAddress } from './util.js'
 
 describe('Address util', () => {
   it('Valid Rooch Address', () => {

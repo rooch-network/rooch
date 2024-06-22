@@ -3,8 +3,8 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { StructTag, TypeTag } from './types'
-import { Serializer } from './serializer'
+import { StructTag, TypeTag } from './types.js'
+import { Serializer } from './serializer.js'
 
 describe('Serializer', () => {
   it('struct tag to string with no type params', () => {

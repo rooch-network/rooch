@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { Ed25519Keypair } from '@/keypairs'
+import { Ed25519Keypair } from '../keypairs/index.js'
 
 export type CreateSessionArgs = {
   appName: string

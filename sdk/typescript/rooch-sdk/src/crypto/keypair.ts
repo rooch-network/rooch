@@ -3,9 +3,9 @@
 
 import { bech32 } from 'bech32'
 
-import { Signer } from './signer'
-import type { SignatureScheme } from './signatureScheme'
-import { SIGNATURE_FLAG_TO_SCHEME, SIGNATURE_SCHEME_TO_FLAG } from './signatureScheme'
+import { Signer } from './signer.js'
+import type { SignatureScheme } from './signatureScheme.js'
+import { SIGNATURE_FLAG_TO_SCHEME, SIGNATURE_SCHEME_TO_FLAG } from './signatureScheme.js'
 
 export const PRIVATE_KEY_SIZE = 32
 export const LEGACY_PRIVATE_KEY_SIZE = 64

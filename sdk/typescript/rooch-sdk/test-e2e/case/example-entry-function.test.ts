@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { beforeAll, describe, expect, it } from 'vitest'
-import { setup, TestBox, defaultCmdAddress, cmdPublishPackage, cmd } from '../setup'
-import { Args, bcs } from '@/bcs'
-import { Transaction } from '@/transactions'
-import { fromHEX } from '@/utils'
+import { setup, TestBox, defaultCmdAddress, cmdPublishPackage } from '../setup.js'
+import { Args } from '../../src/bcs/index.js'
+import { Transaction } from '../../src/transactions/index.js'
+import { fromHEX } from '../../src/utils/index.js'
 
 describe('Checkpoints Example Entry Function', () => {
   let testBox: TestBox
@@ -25,12 +25,7 @@ describe('Checkpoints Example Entry Function', () => {
     const tx = new Transaction()
     tx.callFunction({
       target: `${await defaultCmdAddress()}::entry_function::emit_object_id`,
-      arguments: [Args.objectId('0x3134')],
-    })
-
-    const result = await testBox.client.signAndExecuteTransaction({
-      transaction: tx,
-      signer: testBox.keypair,
+      args: [Args.objectId('0x3134')],
     })
 
     expect(await testBox.signAndExecuteTransaction(tx)).toBeTruthy()
@@ -40,7 +35,7 @@ describe('Checkpoints Example Entry Function', () => {
     const tx = new Transaction()
     tx.callFunction({
       target: `${await defaultCmdAddress()}::entry_function::emit_object`,
-      arguments: [
+      args: [
         Args.object({
           address: await defaultCmdAddress(),
           module: 'entry_function',
@@ -56,7 +51,7 @@ describe('Checkpoints Example Entry Function', () => {
     const tx = new Transaction()
     tx.callFunction({
       target: `${await defaultCmdAddress()}::entry_function::emit_vec_u8`,
-      arguments: [Args.vec('u8', Array.from(fromHEX('0xffff')))],
+      args: [Args.vec('u8', Array.from(fromHEX('0xffff')))],
     })
 
     expect(await testBox.signAndExecuteTransaction(tx)).toBeTruthy()

@@ -1,5 +1,5 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-export * from './roochMutationKeys'
-export * from './walletMutationKeys'
+export * from './roochMutationKeys.js'
+export * from './walletMutationKeys.js'

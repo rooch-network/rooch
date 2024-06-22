@@ -3,15 +3,16 @@
 
 import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-query'
 import { useMutation } from '@tanstack/react-query'
-import { address, ModuleArgs, Signer } from '@roochnetwork/rooch-sdk'
-import { roochMutationKeys } from '@/constants'
-import { useRoochClient } from './index'
+import { address, TypeArgs, Signer } from '@roochnetwork/rooch-sdk'
+
+import { roochMutationKeys } from '../../constants/index.js'
+import { useRoochClient } from './index.js'
 
 type UseTransferCoinArgs = {
   signer: Signer
   recipient: address
   amount: number | bigint
-  coinType: ModuleArgs
+  coinType: TypeArgs
 }
 
 type UseTransferCoinResult = void
@@ -35,9 +36,7 @@ export function useTransferCoin({
   return useMutation({
     mutationKey: roochMutationKeys.transferCoin(mutationKey),
     mutationFn: async (args) => {
-      const result = await client.transfer({
-        ...args,
-      })
+      const result = await client.transfer(args)
 
       if (result.execution_info.status.type !== 'executed') {
         Error('transfer failed' + result.execution_info.status.type)

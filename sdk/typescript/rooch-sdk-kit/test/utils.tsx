@@ -3,10 +3,9 @@
 
 import type { ComponentProps } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-
 import { RoochClient, getRoochNodeUrl } from '@roochnetwork/rooch-sdk'
-import { RoochClientProvider } from '../src/provider/clientProvider.js'
-import { WalletProvider } from '../src/provider/walletProvider.js'
+
+import { RoochClientProvider, WalletProvider } from '../src/provider/index.js'
 
 export function createRoochClientContextWrapper(client: RoochClient) {
   return function RoochClientContextWrapper({ children }: { children: React.ReactNode }) {
@@ -16,12 +15,12 @@ export function createRoochClientContextWrapper(client: RoochClient) {
 
 export function createWalletProviderContextWrapper(
   providerProps: Omit<ComponentProps<typeof WalletProvider>, 'children'> = {},
-  suiClient: RoochClient = new RoochClient({ url: getRoochNodeUrl('localnet') }),
+  roochClient: RoochClient = new RoochClient({ url: getRoochNodeUrl('localnet') }),
 ) {
   const queryClient = new QueryClient()
   return function WalletProviderContextWrapper({ children }: { children: React.ReactNode }) {
     return (
-      <RoochClientProvider networks={{ test: suiClient }}>
+      <RoochClientProvider networks={{ test: roochClient }}>
         <QueryClientProvider client={queryClient}>
           <WalletProvider {...providerProps}>{children}</WalletProvider>;
         </QueryClientProvider>
