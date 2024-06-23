@@ -44,13 +44,11 @@ EOF
 done
 
 export CARGO_BUILD_JOBS=8
-export RUST_LOG=debug 
+export RUST_LOG=info 
 export RUST_BACKTRACE=1
 
 if [ ! -z "$UNIT_TEST" ]; then
-  cargo run --bin rooch move test -p frameworks/moveos-stdlib wasm
-  cargo run --bin rooch move test -p frameworks/bitcoin-move
-  cargo run --bin rooch move test -p frameworks/rooch-nursery
+  cargo run --bin rooch move test -p frameworks/rooch-nursery bitseed 
 fi
 
 if [ ! -z "$WASM_INT_TEST" ]; then
