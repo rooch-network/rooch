@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RoochClient, getRoochNodeUrl } from '@roochnetwork/rooch-sdk'
 
 import { RoochClientProvider, WalletProvider } from '../src/provider/index.js'
+import { MockBitcoinWallet } from './mocks/mock-wallet.js'
+import { registerMock } from '../src/wellet/util.js'
 
 export function createRoochClientContextWrapper(client: RoochClient) {
   return function RoochClientContextWrapper({ children }: { children: React.ReactNode }) {
@@ -26,5 +28,13 @@ export function createWalletProviderContextWrapper(
         </QueryClientProvider>
       </RoochClientProvider>
     )
+  }
+}
+
+export function registerMockWallet() {
+  const mockWallet = new MockBitcoinWallet()
+  registerMock(mockWallet)
+  return {
+    mockWallet,
   }
 }

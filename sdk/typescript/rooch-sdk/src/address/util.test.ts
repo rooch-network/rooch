@@ -7,7 +7,6 @@ import { isValidRoochAddress } from './util.js'
 
 describe('Address util', () => {
   it('Valid Rooch Address', () => {
-
     const ed25519RoochAddr = new Ed25519Keypair().getRoochAddress()
 
     expect(isValidRoochAddress(ed25519RoochAddr)).toBeTruthy()

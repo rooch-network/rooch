@@ -18,7 +18,7 @@
     "test:unit": "vitest run src",
     "test:e2e": "pnpm prepare:e2e && wait-on tcp:0.0.0.0:50051 -l --timeout 180000 && vitest run e2e; pnpm stop:e2e",
     "test:e2e:nowait": "vitest run e2e",
-    "prepare:e2e": "nohup cargo run --bin rooch server start -n local -d TMP --port 50051 > server.log 2>&1 &",
+    "prepare:e2e": "nohup cargo run --bin rooch server start -n local -d TMP --port 50051 > /dev/null 2>&1 &",
     "stop:e2e": "lsof -ti:50051 | xargs kill",
     "prepublishOnly": "pnpm build",
     "size": "size-limit",

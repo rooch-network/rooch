@@ -4,6 +4,7 @@
 import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-query'
 import { useMutation } from '@tanstack/react-query'
 
+import { Session } from '@roochnetwork/rooch-sdk'
 import { roochMutationKeys } from '../constants/index.js'
 import { useCurrentSession, useRoochClient, useRoochSessionStore, useSession } from './index.js'
 
@@ -47,7 +48,9 @@ export function useRemoveSession({
 
         if (result) {
           // clean cache
-          let cacheSession = sessionsKeys.find((item) => item.getAuthKey() === args.authKey)
+          let cacheSession = sessionsKeys.find(
+            (item: Session) => item.getAuthKey() === args.authKey,
+          )
 
           if (cacheSession) {
             removeSession(cacheSession)

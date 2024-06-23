@@ -15,16 +15,15 @@ describe('Checkpoints Transfer API', () => {
   })
 
   it('Transfer gas coin should be success', async () => {
-
     const amount = BigInt(10000000)
     const coinType = '0x3::gas_coin::GasCoin'
-    const [sender, recipient ] = [testBox.keypair, Secp256k1Keypair.generate()]
+    const [sender, recipient] = [testBox.keypair, Secp256k1Keypair.generate()]
 
     // get gas
     const tx = new Transaction()
     tx.callFunction({
       target: '0x3::gas_coin::faucet_entry',
-      args: [Args.u256(BigInt(10000000000))]
+      args: [Args.u256(BigInt(10000000000))],
     })
 
     expect(await testBox.signAndExecuteTransaction(tx)).toBeTruthy()
@@ -33,20 +32,20 @@ describe('Checkpoints Transfer API', () => {
     const transferResult = await testBox.client.transfer({
       signer: sender,
       recipient: recipient.getRoochAddress(),
-      amount : amount,
+      amount: amount,
       coinType: {
-        target: coinType
-      }
+        target: coinType,
+      },
     })
 
     expect(transferResult.execution_info.status.type === 'executed').toBeTruthy()
 
-    await testBox.delay(3000);
+    await testBox.delay(3000)
 
     // check balance
     const recipientBalance = await testBox.client.getBalance({
       owner: recipient.getRoochAddress().toHexAddress(),
-      coinType
+      coinType,
     })
 
     expect(BigInt(recipientBalance.balance)).eq(amount)

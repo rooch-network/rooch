@@ -19,7 +19,7 @@ export class Transaction {
     } & CallFunctionArgs,
   ) {
     this.info = input.info
-    this.data = new TransactionData(MoveAction.newCallFunction(input),)
+    this.data = new TransactionData(MoveAction.newCallFunction(input))
   }
 
   getInfo() {

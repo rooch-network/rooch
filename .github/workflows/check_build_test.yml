@@ -75,7 +75,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '18.x'
+          node-version: '20.x'
       - name: Cache Node.js modules
         uses: actions/cache@v2
         with:
@@ -85,21 +85,21 @@ jobs:
             ${{ runner.OS }}-pnpm-
             ## Build and test app start
       - name: Install pnpm dependencies
-        run: npm install pnpm@8.6.6 -g && pnpm install
+        run: npm install pnpm@9.4.0 -g && pnpm install
       - name: Gen SDK dependencie Code
         run: pnpm rooch-sdk gen
       - name: Lint
         run: pnpm lint
         continue-on-error: true
         timeout-minutes: 15
-      # - name: Build SDK
-      #   run: pnpm rooch-sdk build
-#      - name: Test SDK
-#        run: pnpm rooch-sdk test
-      # - name: Build SDK KIT
-      #   run: pnpm rooch-sdk-kit build
-      # - name: Build Dashboard
-      #   run: pnpm dashboard build
+      - name: Build SDK
+        run: pnpm rooch-sdk build
+      - name: Test SDK
+        run: pnpm rooch-sdk test
+      - name: Build SDK KIT
+        run: pnpm rooch-sdk-kit build
+      - name: Test SDK KIT
+        run: pnpm rooch-sdk-kit test
 
       - uses: CatChen/check-git-status-action@v1
         with:

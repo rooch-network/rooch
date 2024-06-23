@@ -6,11 +6,10 @@ import { describe, it, expect } from 'vitest'
 import { Ed25519Keypair, Secp256k1Keypair } from '../keypairs/index.js'
 import { bytesEqual } from '../utils/index.js'
 
-import {bcs} from './index.js'
+import { bcs } from './index.js'
 
 describe('BCS', () => {
   it('Address', () => {
-
     const roochAddress = new Ed25519Keypair().getRoochAddress()
 
     const bcs1 = bcs.Address.serialize(roochAddress).toBytes()
