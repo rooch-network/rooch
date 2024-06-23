@@ -37,8 +37,8 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, SyncSender};
+use std::sync::{mpsc, Arc};
 use std::thread;
 use std::time::SystemTime;
 
@@ -79,13 +79,13 @@ impl GenesisUTXOCommand {
         let (root, moveos_store, start_time) = self.init();
         let pre_root_state_root = H256::from(root.state_root.into_bytes());
         let (tx, rx) = mpsc::sync_channel(2);
-
+        let moveos_store = Arc::new(moveos_store);
         let produce_updates_thread =
             thread::spawn(move || produce_utxo_updates(tx, input_path, batch_size, None));
         let apply_updates_thread = thread::spawn(move || {
             apply_utxo_updates_to_state(
                 rx,
-                &moveos_store,
+                moveos_store,
                 root.size,
                 pre_root_state_root,
                 None,
@@ -210,7 +210,7 @@ fn gen_utxo_data_from_csv_line(line: &str) -> Result<UTXOData> {
 
 pub fn apply_utxo_updates_to_state(
     rx: Receiver<BatchUpdates>,
-    moveos_store: &MoveOSStore,
+    moveos_store: Arc<MoveOSStore>,
 
     root_size: u64,
     root_state_root: H256,
@@ -219,6 +219,7 @@ pub fn apply_utxo_updates_to_state(
 
     task_start_time: SystemTime,
 ) {
+    let moveos_store = &moveos_store.clone();
     let mut utxo_count = 0;
     let mut address_mapping_count = 0;
 
@@ -311,7 +312,7 @@ fn finish_task(
     let mut genesis_utxostore_object = create_genesis_utxostore_object().unwrap();
     genesis_utxostore_object.size += utxo_count;
     genesis_utxostore_object.state_root = utxo_store_state_root.into_address();
-    let mut update_set = startup_update_set.unwrap_or_else(|| UpdateSet::new());
+    let mut update_set = startup_update_set.unwrap_or_default();
     let parent_id = BitcoinUTXOStore::object_id();
     update_set.put(parent_id.to_key(), genesis_utxostore_object.into_state());
 
@@ -384,7 +385,7 @@ struct AddressMappingUpdate {
     state: State,
 }
 
-struct BatchUpdates {
+pub struct BatchUpdates {
     utxo_updates: UpdateSet<KeyState, State>,
     rooch_to_bitcoin_mapping_updates: UpdateSet<KeyState, State>,
 }
@@ -393,7 +394,7 @@ pub fn produce_utxo_updates(
     tx: SyncSender<BatchUpdates>,
     input: PathBuf,
     batch_size: usize,
-    utxo_ord_map: Option<&sled::Db>,
+    utxo_ord_map: Option<Arc<sled::Db>>,
 ) {
     let mut csv_reader = BufReader::new(File::open(input).unwrap());
     let mut is_title_line = true;
@@ -415,7 +416,7 @@ pub fn produce_utxo_updates(
 
             let utxo_data = gen_utxo_data_from_csv_line(&line).unwrap();
             let (key, state, address_mapping_data) =
-                gen_utxo_update(utxo_data, utxo_ord_map).unwrap();
+                gen_utxo_update(utxo_data, utxo_ord_map.clone()).unwrap();
             updates.utxo_updates.put(key, state);
 
             if let Some(address_mapping_data) = address_mapping_data {
@@ -439,7 +440,7 @@ pub fn produce_utxo_updates(
 
 fn gen_utxo_update(
     mut utxo_data: UTXOData,
-    utxo_ord_map: Option<&sled::Db>,
+    utxo_ord_map: Option<Arc<sled::Db>>,
 ) -> Result<(KeyState, State, Option<AddressMappingData>)> {
     let raw_txid = Txid::from_str(utxo_data.txid.as_str())?;
     let txid = raw_txid.into_address();
@@ -480,17 +481,13 @@ fn gen_utxo_update(
 }
 
 fn get_ord_by_outpoint(
-    utxo_ord_map: Option<&sled::Db>,
+    utxo_ord_map: Option<Arc<sled::Db>>,
     outpoint: OutPoint,
 ) -> Option<Vec<ObjectID>> {
     if let Some(db) = utxo_ord_map {
         let key = bcs::to_bytes(&outpoint).unwrap();
-        let value = db.get(&key).unwrap();
-        if let Some(value) = value {
-            Some(bcs::from_bytes(&value).unwrap())
-        } else {
-            None
-        }
+        let value = db.get(key).unwrap();
+        value.map(|value| bcs::from_bytes(&value).unwrap())
     } else {
         None
     }
