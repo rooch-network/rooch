@@ -45,7 +45,7 @@ impl Default for ServerConfig {
     fn default() -> Self {
         Self {
             host: "0.0.0.0".to_string(),
-            port: 50051,
+            port: 6767,
             block_propose_duration_in_seconds: 5,
         }
     }

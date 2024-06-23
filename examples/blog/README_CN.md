@@ -255,7 +255,7 @@ rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::create --sender-
 现在，你可以通过查询事件，得到已创建好的文章的 `ObjectID`：
 
 ```shell
-curl --location --request POST 'http://localhost:50051' \
+curl --location --request POST 'http://localhost:6767' \
 --header 'Content-Type: application/json' \
 --data-raw '{
  "id":101,
@@ -274,7 +274,7 @@ curl --location --request POST 'http://localhost:50051' \
 添加 `jp` 处理后的命令像下面这样：
 
 ```shell
-curl --location --request POST 'http://localhost:50051' \
+curl --location --request POST 'http://localhost:6767' \
 --header 'Content-Type: application/json' \
 --data-raw '{
  "id":101,
@@ -301,7 +301,7 @@ rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::update --sender-
 除了使用 Rooch CLI，你还可以通过调用 JSON RPC 来查询对象的状态：
 
 ```shell
-curl --location --request POST 'http://127.0.0.1:50051/' \
+curl --location --request POST 'http://127.0.0.1:6767/' \
 --header 'Content-Type: application/json' \
 --data-raw '{
  "id":101,
@@ -326,7 +326,7 @@ rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::delete --sender-
 让我们再获取另一篇文章的 ObjectID（注意下面 `jq` 命令的路径参数 `.result.data[1]`，我们打算获取的是“第二个” `ArticleCreated` 事件的信息）：
 
 ```shell
-curl --location --request POST 'http://localhost:50051' \
+curl --location --request POST 'http://localhost:6767' \
 --header 'Content-Type: application/json' \
 --data-raw '{
  "id":101,
@@ -355,7 +355,7 @@ rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::add_comment --se
 所以，通过查询事件，我们知道一篇文章有那些评论：
 
 ```shell
-curl --location --request POST 'http://localhost:50051' \
+curl --location --request POST 'http://localhost:6767' \
 --header 'Content-Type: application/json' \
 --data-raw '{
  "id":101,
@@ -372,7 +372,7 @@ curl --location --request POST 'http://localhost:50051' \
 首先，我们要取得一篇文章的评论表的 handle：
 
 ```shell
-curl --location --request POST 'http://127.0.0.1:50051/' \
+curl --location --request POST 'http://127.0.0.1:6767/' \
 --header 'Content-Type: application/json' \
 --data-raw '{
  "id":101,
@@ -387,7 +387,7 @@ curl --location --request POST 'http://127.0.0.1:50051/' \
 那么，我们可以通过下面的方式获取的评论的具体信息（注意替换下面的占位符 `{COMMENT_TABLE_HANDLE}` 为上面获取到的“评论表”的 handle）：
 
 ```shell
-curl --location --request POST 'http://127.0.0.1:50051/' \
+curl --location --request POST 'http://127.0.0.1:6767/' \
 --header 'Content-Type: application/json' \
 --data-raw '{
  "id":101,
@@ -412,7 +412,7 @@ rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::update_comment -
 然后我们可以再次查询评论的状态，看看评论内容是否已经更新：
 
 ```shell
-curl --location --request POST 'http://127.0.0.1:50051/' \
+curl --location --request POST 'http://127.0.0.1:6767/' \
 --header 'Content-Type: application/json' \
 --data-raw '{
  "id":101,
@@ -467,7 +467,7 @@ rooch:
   contract:
     address: "{ACCOUNT_ADDRESS}"
     jsonrpc:
-      url: "http://127.0.0.1:50051"
+      url: "http://127.0.0.1:6767"
 ```
 
 这是链下服务唯一必需配置的地方，就是这么简单。

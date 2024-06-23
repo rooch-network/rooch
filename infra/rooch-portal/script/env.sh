@@ -9,7 +9,7 @@ rooch() {
 default_address=$(rooch account list | awk '/0x[0-9a-fA-F]+/{addr=$1} END{print addr}')
 
 reset () {
-  lsof -ti:50051 | xargs kill
+  lsof -ti:6767 | xargs kill
 
   rooch server clean -n local -f
 

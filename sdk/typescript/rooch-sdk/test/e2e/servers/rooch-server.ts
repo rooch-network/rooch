@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { spawn, ChildProcess } from 'child_process'
 
-export const DefaultPort = 50051
+export const DefaultPort = 6767
 
 export class RoochServer {
   private child: ChildProcess | undefined

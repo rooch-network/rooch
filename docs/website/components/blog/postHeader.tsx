@@ -27,18 +27,18 @@ export default function PostHeader() {
   const [page, setPage] = useState<CustomPage | null>(null)
   const [ogImage, setOgImage] = useState('https://rooch.network/logo/rooch-banner.png')
 
-  useEffect(() => {
-    async function fetchPage() {
-      const pages = (await getPagesUnderRoute('/blog')) as unknown as any[]
-      const customPages = pages.filter(isCustomPage) as CustomPage[]
-      const currentPage = customPages.find((page) => page.route === pathname)
-      if (currentPage) {
-        setPage(currentPage)
-        if (currentPage.frontMatter.image) {
-          setOgImage(`https://rooch.network${currentPage.frontMatter.image}`)
-        }
+  const fetchPage = () => {
+    const pages = getPagesUnderRoute('/blog') as unknown as any[]
+    const customPages = pages.filter(isCustomPage) as CustomPage[]
+    const currentPage = customPages.find((page) => page.route === pathname)
+    if (currentPage) {
+      setPage(currentPage)
+      if (currentPage.frontMatter.image) {
+        setOgImage(`https://rooch.network${currentPage.frontMatter.image}`)
       }
     }
+  }
+  useEffect(() => {
     fetchPage()
   }, [pathname])
 

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { DocsThemeConfig } from 'nextra-theme-docs'
 import { Footer } from './components/layout/footer'
 import Image from 'next/image'
@@ -54,19 +55,10 @@ const theme: DocsThemeConfig = {
   ),
   useNextSeoProps() {
     const { asPath } = useRouter()
-    if (asPath !== '/') {
-      if (asPath.includes('/docs/')) {
-        return {
-          titleTemplate: '%s – Rooch Network Documentation',
-        }
-      }
-      return {
-        titleTemplate: '%s – Rooch Network',
-      }
-    } else {
-      return {
-        titleTemplate: '%s',
-      }
+    return {
+      titleTemplate: asPath.includes('/docs/')
+        ? '%s – Rooch Network Documentation'
+        : '%s – Rooch Network',
     }
   },
   head: function useHead() {
@@ -74,32 +66,42 @@ const theme: DocsThemeConfig = {
     const { asPath } = useRouter()
     const router = useRouter()
     const currentLang = router.locale
-    let pageTitle = title || 'Rooch Network'
-    let pageDescription = frontMatter.description || ''
-    let ogImage = 'https://rooch.network/logo/rooch-banner.png'
 
-    if (asPath.includes('/blog/')) {
-      const contents = getPagesUnderRoute('/blog') as Content[]
-      const currentPage = contents.find(
-        (content): content is Page => isPage(content) && content.route === asPath,
-      )
-      if (currentPage) {
-        if (currentPage.frontMatter.title) {
-          pageTitle = currentPage.frontMatter.title + ' – Rooch Network'
+    const defaultDescription =
+      currentLang === 'en-US'
+        ? 'Unlocking infinite utility for the Bitcoin Economy'
+        : '开启比特币经济的无限可能'
+
+    const [pageTitle, setPageTitle] = useState(title || 'Rooch Network')
+    const [pageDescription, setPageDescription] = useState(frontMatter.description || '')
+    const [ogImage, setOgImage] = useState('https://rooch.network/logo/rooch-banner.png')
+
+    useEffect(() => {
+      if (asPath.includes('/blog/')) {
+        const contents = getPagesUnderRoute('/blog') as Content[]
+        const currentPage = contents.find(
+          (content): content is Page => isPage(content) && content.route === asPath,
+        )
+        if (currentPage) {
+          setPageTitle(
+            currentPage.frontMatter.title
+              ? `${currentPage.frontMatter.title} – Rooch Network`
+              : 'Rooch Network',
+          )
+          setPageDescription(currentPage.frontMatter.description || '')
+          setOgImage(
+            currentPage.frontMatter.image
+              ? `https://rooch.network${currentPage.frontMatter.image}`
+              : 'https://rooch.network/logo/rooch-banner.png',
+          )
+          return
         }
-        if (currentPage.frontMatter.description) {
-          pageDescription = currentPage.frontMatter.description
-        }
-        if (currentPage.frontMatter.image) {
-          ogImage = `https://rooch.network${currentPage.frontMatter.image}`
-        }
+      } else {
+        setPageTitle(title || 'Rooch Network')
+        setPageDescription(frontMatter.description || defaultDescription)
+        setOgImage('https://rooch.network/logo/rooch-banner.png')
       }
-    } else {
-      pageDescription =
-        currentLang === 'en-US'
-          ? 'Unlocking infinite utility for the Bitcoin Economy'
-          : '开启比特币经济的无限可能'
-    }
+    }, [asPath, title, frontMatter, defaultDescription])
 
     return (
       <>
