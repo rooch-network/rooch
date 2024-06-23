@@ -71,14 +71,15 @@ const theme: DocsThemeConfig = {
   },
   head: function useHead() {
     const { title, frontMatter } = useConfig()
-    const { asPath } = useRouter()
-    const currentLang = useRouter().locale
+    const router = useRouter()
+    const { asPath } = router
+    const currentLang = router.locale
     let pageTitle = title || 'Rooch Network'
     let pageDescription = frontMatter.description || ''
     let ogImage = 'https://rooch.network/logo/rooch-banner.png'
 
     // 获取 blog 的元数据
-    if (asPath.includes('/blog/')) {
+    if (asPath.startsWith('/blog/')) {
       const contents = getPagesUnderRoute('/blog') as Content[]
       const currentPage = contents.find(
         (content): content is Page => isPage(content) && content.route === asPath,
@@ -96,10 +97,6 @@ const theme: DocsThemeConfig = {
           ? 'Unlocking infinite utility for the Bitcoin Economy'
           : '开启比特币经济的无限可能'
     }
-
-    console.log('Page Title:', pageTitle)
-    console.log('Page Description:', pageDescription)
-    console.log('OG Image:', ogImage)
 
     return (
       <>
