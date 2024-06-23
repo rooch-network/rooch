@@ -6,10 +6,10 @@ on:
       ref:
         description: 'Tag or branch to deploy'
         default: 'main'
-  workflow_run:
-    workflows: ["Build Docker And Deploy Seed"]
-    types:
-      - completed
+  # workflow_run:
+  #   workflows: ["Build Docker And Deploy Seed"]
+  #   types:
+  #     - completed
 
 jobs:
   deploy-rooch-testnet:
