@@ -21,7 +21,7 @@
     "lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix"
   },
   "engines": {
-    "pnpm": ">=9.4.0",
+    "pnpm": ">=9.0.0",
     "node": ">=20.0.0"
   },
   "devDependencies": {
