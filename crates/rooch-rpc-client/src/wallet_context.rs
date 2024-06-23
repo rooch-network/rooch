@@ -8,8 +8,7 @@ use move_core_types::account_address::AccountAddress;
 use moveos_types::moveos_std::gas_schedule::GasScheduleConfig;
 use moveos_types::transaction::MoveAction;
 use rooch_config::config::{Config, PersistedConfig};
-use rooch_config::server_config::ServerConfig;
-use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_SERVER_CONFIG};
+use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG};
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::file_keystore::FileBasedKeystore;
 use rooch_key::keystore::Keystore;
@@ -28,7 +27,6 @@ use tokio::sync::RwLock;
 pub struct WalletContext {
     client: Arc<RwLock<Option<Client>>>,
     pub client_config: PersistedConfig<ClientConfig>,
-    pub server_config: PersistedConfig<ServerConfig>,
     pub keystore: Keystore,
     pub address_mapping: BTreeMap<String, AccountAddress>,
     password: Option<String>,
@@ -40,22 +38,14 @@ impl WalletContext {
     pub fn new(config_path: Option<PathBuf>) -> Result<Self, anyhow::Error> {
         let config_dir = config_path.unwrap_or(rooch_config_dir()?);
         let client_config_path = config_dir.join(ROOCH_CLIENT_CONFIG);
-        let server_config_path = config_dir.join(ROOCH_SERVER_CONFIG);
         let client_config: ClientConfig = PersistedConfig::read(&client_config_path).map_err(|err| {
             anyhow!(
                 "Cannot open wallet config file at {:?}. Err: {err}, Use `rooch init` to configuration",
                 client_config_path
             )
         })?;
-        let server_config: ServerConfig = PersistedConfig::read(&server_config_path).map_err(|err| {
-            anyhow!(
-                "Cannot open server config file at {:?}. Err: {err}, Use `rooch init` to configuration",
-                server_config_path
-            )
-        })?;
 
         let client_config = client_config.persisted(&client_config_path);
-        let server_config = server_config.persisted(&server_config_path);
 
         let keystore_result = FileBasedKeystore::load(&client_config.keystore_path);
         let keystore = match keystore_result {
@@ -74,7 +64,6 @@ impl WalletContext {
         Ok(Self {
             client: Default::default(),
             client_config,
-            server_config,
             keystore,
             address_mapping,
             password: None,

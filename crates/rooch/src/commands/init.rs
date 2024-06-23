@@ -8,10 +8,7 @@ use clap::Parser;
 use fastcrypto::encoding::{Base64, Encoding};
 use regex::Regex;
 use rooch_config::config::Config;
-use rooch_config::server_config::ServerConfig;
-use rooch_config::{
-    rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAME, ROOCH_SERVER_CONFIG,
-};
+use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAME};
 use rooch_key::key_derive::hash_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::file_keystore::FileBasedKeystore;
@@ -66,26 +63,6 @@ impl CommandAction<()> for Init {
             Err(error) => return Err(RoochError::GenerateKeyError(error.to_string())),
         };
 
-        // Rooch server config init
-        let server_config_path = config_path.join(ROOCH_SERVER_CONFIG);
-        if !server_config_path.exists() {
-            let server_config = ServerConfig::default();
-
-            server_config
-                .persisted(server_config_path.as_path())
-                .save()?;
-
-            println!(
-                "Rooch server config file generated at {}",
-                server_config_path.display()
-            );
-        } else {
-            println!(
-                "Rooch server config file already exists at {}",
-                server_config_path.display()
-            );
-        }
-
         // Prompt user for connect to devnet fullnode if config does not exist.
         if !client_config_path.exists() {
             let env = match std::env::var_os("ROOCH_CONFIG_WITH_RPC_URL") {
@@ -117,7 +94,7 @@ impl CommandAction<()> for Init {
                         if address_and_port_regex.is_match(&url) {
                             url
                         } else {
-                            return Err(RoochError::CommandArgumentError("Invalid input format. Please provide a valid URL (e.g., http://0.0.0.0:50051).".to_owned()));
+                            return Err(RoochError::CommandArgumentError("Invalid input format. Please provide a valid URL (e.g., http://0.0.0.0:6767).".to_owned()));
                         }
                     };
                     Some(if url.trim().is_empty() {

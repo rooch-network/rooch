@@ -334,7 +334,7 @@ rooch server start
 当启动 Rooch 服务后，会在最后看到这两条信息，表明 Rooch 的服务已经正常启动。
 
 ```shell
-2023-07-03T15:44:33.315228Z  INFO rooch_rpc_server: JSON-RPC HTTP Server start listening 0.0.0.0:50051
+2023-07-03T15:44:33.315228Z  INFO rooch_rpc_server: JSON-RPC HTTP Server start listening 0.0.0.0:6767
 2023-07-03T15:44:33.315256Z  INFO rooch_rpc_server: Available JSON-RPC methods : ["wallet_accounts", "eth_blockNumber", "eth_getBalance", "eth_gasPrice", "net_version", "eth_getTransactionCount", "eth_sendTransaction", "rooch_sendRawTransaction", "rooch_getAnnotatedStates", "eth_sendRawTransaction", "rooch_getTransactions", "rooch_executeRawTransaction", "rooch_getEventsByEventHandle", "rooch_getTransactionByHash", "rooch_executeViewFunction", "eth_getBlockByNumber", "rooch_getEvents", "eth_feeHistory", "eth_getTransactionByHash", "eth_getBlockByHash", "eth_getTransactionReceipt", "rooch_getTransactionInfosByOrder", "eth_estimateGas", "eth_chainId", "rooch_getTransactionInfosByHash", "wallet_sign", "rooch_getStates"]
 ```
 
@@ -742,7 +742,7 @@ rooch move run --function default::simple_blog::create_article --sender-account 
 现在，你可以通过查询事件，得到已创建好的文章的 `ObjectID`：
 
 ```shell
-curl --location --request POST 'http://localhost:50051' \
+curl --location --request POST 'http://localhost:6767' \
 --header 'Content-Type: application/json' \
 --data-raw '{
  "id":101,
@@ -759,7 +759,7 @@ curl --location --request POST 'http://localhost:50051' \
 添加 `jp` 处理后的命令像下面这样：
 
 ```shell
-curl --location --request POST 'http://localhost:50051' --header 'Content-Type: application/json' --data-raw '{
+curl --location --request POST 'http://localhost:6767' --header 'Content-Type: application/json' --data-raw '{
  "id":101,
  "jsonrpc":"2.0",
  "method":"rooch_getEventsByEventHandle",
@@ -854,7 +854,7 @@ rooch move run --function default::simple_blog::update_article --sender-account 
 除了使用 Rooch CLI，你还可以通过调用 JSON RPC 来查询对象的状态：
 
 ```shell
-curl --location --request POST 'http://127.0.0.1:50051/' --header 'Content-Type: application/json' --data-raw '{
+curl --location --request POST 'http://127.0.0.1:6767/' --header 'Content-Type: application/json' --data-raw '{
  "id":101,
  "jsonrpc":"2.0",
  "method":"rooch_getStates",

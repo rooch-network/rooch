@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-const LocalNetworkURL = 'http://127.0.0.1:50051'
+const LocalNetworkURL = 'http://127.0.0.1:6767'
 const DevNetworkURL = 'https://dev-seed.rooch.network:443'
 const TestNetworkURL = 'https://test-seed.rooch.network'
 

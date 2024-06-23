@@ -112,7 +112,7 @@ clean() {
   # stop ord server
   lsof -ti:80 | xargs kill
 
-  lsof -ti:50051 | xargs kill
+  lsof -ti:6767 | xargs kill
 
   echo b
   # clean bitcoin docker

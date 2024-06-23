@@ -25,7 +25,6 @@ pub mod store_config;
 pub const ROOCH_DIR: &str = ".rooch";
 pub const ROOCH_CONFIR_DIR: &str = "rooch_config";
 pub const ROOCH_CLIENT_CONFIG: &str = "rooch.yaml";
-pub const ROOCH_SERVER_CONFIG: &str = "server.yaml";
 pub const ROOCH_KEYSTORE_FILENAME: &str = "rooch.keystore";
 
 pub static R_DEFAULT_BASE_DATA_DIR: Lazy<PathBuf> = Lazy::new(|| {
@@ -82,7 +81,7 @@ pub struct RoochOpt {
     pub store: StoreConfig,
 
     /// Optional custom port, which the rooch server should listen on.
-    /// The port on which the server should listen defaults to `50051`
+    /// The port on which the server should listen defaults to `6767`
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long, short = 'p')]
     pub port: Option<u16>,
@@ -221,7 +220,7 @@ impl RoochOpt {
     }
 
     pub fn port(&self) -> u16 {
-        self.port.unwrap_or(50051)
+        self.port.unwrap_or(6767)
     }
 
     pub fn chain_id(&self) -> RoochChainID {
