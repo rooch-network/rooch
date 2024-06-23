@@ -160,7 +160,7 @@ rustc-hex = "2.1"
 itertools = "0.13.0"
 jsonrpsee = { version = "0.16.3", features = ["full"] }
 jpst = "0.1.1"
-lazy_static = "1.4.0"
+lazy_static = "1.5.0"
 linked-hash-map = "0.5.6"
 log = "0.4.16"
 more-asserts = "0.3.0"
