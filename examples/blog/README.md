@@ -255,7 +255,7 @@ Then you can change the content of the first parameter (title) and the second pa
 Now, you can query events and get the `ObjectID` of the created article:
 
 ```shell
-curl --location --request POST 'http://localhost:50051' \
+curl --location --request POST 'http://localhost:6767' \
 --header 'Content-Type: application/json' \
 --data-raw '{
  "id":101,
@@ -274,7 +274,7 @@ You can add a pipe operation (` | jq '.result.data[0].parsed_event_data.value.id
 The command with `jp` processing looks like this:
 
 ```shell
-curl --location --request POST 'http://localhost:50051' \
+curl --location --request POST 'http://localhost:6767' \
 --header 'Content-Type: application/json' \
 --data-raw '{
  "id":101,
@@ -301,7 +301,7 @@ rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::update --sender-
 In addition to using Rooch CLI, you can also query the object state by calling JSON RPC:
 
 ```shell
-curl --location --request POST 'http://127.0.0.1:50051/' \
+curl --location --request POST 'http://127.0.0.1:6767/' \
 --header 'Content-Type: application/json' \
 --data-raw '{
  "id":101,
@@ -326,7 +326,7 @@ rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::delete --sender-
 Let's get the ObjectID of another article (note the path parameter `.result.data[1]` in the `jq` command below, we intend to get the information of the "second" ArticleCreated event):
 
 ```shell
-curl --location --request POST 'http://localhost:50051' \
+curl --location --request POST 'http://localhost:6767' \
 --header 'Content-Type: application/json' \
 --data-raw '{
  "id":101,
@@ -355,7 +355,7 @@ In our contract code, when a comment is added to an article, a `CommentTableItem
 So, by querying events, we know which comments an article has:
 
 ```shell
-curl --location --request POST 'http://localhost:50051' \
+curl --location --request POST 'http://localhost:6767' \
 --header 'Content-Type: application/json' \
 --data-raw '{
  "id":101,
@@ -372,7 +372,7 @@ We can query the specific information of a comment through JSON RPC. To get an i
 First, we need to get the handle of an article's comment table:
 
 ```shell
-curl --location --request POST 'http://127.0.0.1:50051/' \
+curl --location --request POST 'http://127.0.0.1:6767/' \
 --header 'Content-Type: application/json' \
 --data-raw '{
  "id":101,
@@ -387,7 +387,7 @@ We already know that the `comment_seq_id` (i.e. the table item key) of the comme
 Then, we can get the specific information of the comment by the following way (note to replace the placeholder `{COMMENT_TABLE_HANDLE}` with the handle of the "comment table" obtained above):
 
 ```shell
-curl --location --request POST 'http://127.0.0.1:50051/' \
+curl --location --request POST 'http://127.0.0.1:6767/' \
 --header 'Content-Type: application/json' \
 --data-raw '{
  "id":101,
@@ -412,7 +412,7 @@ rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::update_comment -
 Then we can query the comment state again to see if the comment content has been updated:
 
 ```shell
-curl --location --request POST 'http://127.0.0.1:50051/' \
+curl --location --request POST 'http://127.0.0.1:6767/' \
 --header 'Content-Type: application/json' \
 --data-raw '{
  "id":101,
@@ -467,7 +467,7 @@ rooch:
   contract:
     address: "{ACCOUNT_ADDRESS}"
     jsonrpc:
-      url: "http://127.0.0.1:50051"
+      url: "http://127.0.0.1:6767"
 ```
 
 This is the only place where the off-chain service needs to be configured, and it's that simple.
