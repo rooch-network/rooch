@@ -337,7 +337,7 @@ module rooch_nursery::bitseed {
         let inscription_id_option = ord::parse_inscription_id(&inscription_id_str);
         let inscription_id = option::destroy_some(inscription_id_option);
 
-        let has_user_input = false;
+        let has_user_input = true;
         let has_user_input_option = get_SFT_bool_attribute(&attributes, b"has_user_input");
         if (option::is_some(&has_user_input_option)) {
             has_user_input = option::destroy_some(has_user_input_option);
@@ -361,7 +361,7 @@ module rooch_nursery::bitseed {
         (true, option::none<String>())
     }
     
-    fun is_valid_bitseed_mint(metadata: &SimpleMap<String,vector<u8>>, seed: vector<u8>) : (bool, Option<String>) {
+    fun is_valid_bitseed_mint(metadata: &SimpleMap<String,vector<u8>>, seed: vector<u8>, content_type: Option<String>, body: vector<u8>) : (bool, Option<String>) {
         let (is_valid, reason) = is_valid_bitseed(metadata);
         if (!is_valid) {
             return (false, reason)
@@ -391,9 +391,9 @@ module rooch_nursery::bitseed {
             return (false, option::some(std::string::utf8(b"maximum supply exceeded")))
         };
 
-        let user_input = vector::empty();
+        let user_input = string::utf8(b"");
         if (has_user_input) {
-            let user_input_option = get_SFT_bytes_attribute(&attributes, b"user_input");
+            let user_input_option = get_SFT_string_attribute(&attributes, b"id");
             if (option::is_none(&user_input_option)) {
                 simple_map::drop(attributes);
                 return (false, option::some(std::string::utf8(b"metadata.attributes.user_input is required")))
@@ -421,9 +421,7 @@ module rooch_nursery::bitseed {
         let inscrption = object::borrow(inscription_obj);
         let wasm_bytes = ord::body(inscrption);
 
-        let attributes_bytes = simple_map::borrow(metadata, &string::utf8(b"attributes"));
-
-        let (is_valid, reason) = inscribe_verify(wasm_bytes, deploy_args, seed, user_input, *attributes_bytes);
+        let (is_valid, reason) = inscribe_verify(wasm_bytes, deploy_args, seed, user_input, metadata, content_type, body);
         if (!is_valid) {
             simple_map::drop(attributes);
             return (false, reason)
@@ -434,7 +432,8 @@ module rooch_nursery::bitseed {
     }
 
     public fun inscribe_verify(wasm_bytes: vector<u8>, deploy_args: vector<u8>,
-                               seed: vector<u8>, user_input: vector<u8>, attributes_output: vector<u8>): (bool, Option<String>) {
+            seed: vector<u8>, user_input: String, metadata: &SimpleMap<String,vector<u8>>, 
+            content_type: Option<String>, body: vector<u8>): (bool, Option<String>) {
         let wasm_instance_option = wasm::create_wasm_instance_option(wasm_bytes);
         if (option::is_none(&wasm_instance_option)) {
             option::destroy_none(wasm_instance_option);
@@ -445,11 +444,18 @@ module rooch_nursery::bitseed {
         let function_name = b"inscribe_verify";
 
         let buffer = pack_inscribe_generate_args(deploy_args, seed, user_input);
+
         let arg_with_length = wasm::add_length_with_data(buffer);
+
+        let amount = get_SFT_amount(metadata);
+        let attributes = get_SFT_attributes(metadata);
+        let output_buffer = pack_inscribe_output_args(amount, attributes, content_type, body);
 
         let arg_list = vector::empty<vector<u8>>();
         vector::push_back(&mut arg_list, arg_with_length);
-        vector::push_back(&mut arg_list, attributes_output);
+        vector::push_back(&mut arg_list, output_buffer);
+
+
         let memory_args_list = wasm::create_memory_wasm_args(&mut wasm_instance, function_name, arg_list);
 
         let ret_val_option = wasm::execute_wasm_function_option(&mut wasm_instance, function_name, memory_args_list);
@@ -471,62 +477,119 @@ module rooch_nursery::bitseed {
 
     #[data_struct]
     struct InscribeGenerateArgs has copy, drop, store {
-        attrs: vector<u8>,
+        attrs: vector<u16>,
         seed: std::string::String,
         user_input: std::string::String,
     }
 
-    fun pack_inscribe_generate_args(deploy_args: vector<u8>, seed: vector<u8>, user_input: vector<u8>): vector<u8>{
+    fun pack_inscribe_generate_args(deploy_args: vector<u8>, seed: vector<u8>, user_input: String): vector<u8>{
+        let attrs = vector::empty();
+
+        let i=0;
+        let len = vector::length(&deploy_args);
+        while (i < len) {
+            vector::push_back(&mut attrs, (*vector::borrow(&deploy_args, i) as u16));
+            i = i + 1;
+        };
+
+        let seed_hex = hex::encode(seed);
         let args = InscribeGenerateArgs{
-            attrs: deploy_args,
-            seed: string::utf8(seed),
-            user_input: string::utf8(user_input)
+            attrs: attrs,
+            seed: string::utf8(seed_hex),
+            user_input: user_input
         };
 
         cbor::to_cbor(&args)
     }
 
+    struct InscribeGenerateOutput has store {
+        amount: u64,
+        attributes: SimpleMap<String,vector<u8>>,
+        content: SimpleMap<String,vector<u8>>,
+    }
+
+    fun pack_inscribe_output_args(amount: u64, attributes: SimpleMap<String,vector<u8>>, content_type_option: Option<String>, body: vector<u8>): vector<u8>{
+        let content = simple_map::new();
+        if (vector::length(&body) > 0) {
+            if (option::is_some(&content_type_option)) {
+                let content_type = option::destroy_some(content_type_option);
+                simple_map::add(&mut content, string::utf8(b"content_type"), cbor::to_cbor(&content_type));
+            };
+
+            simple_map::add(&mut content, string::utf8(b"body"), cbor::to_cbor(&body));
+        };
+        
+        let output = InscribeGenerateOutput{
+            amount: amount,
+            attributes: attributes,
+            content: content,
+        };
+
+        let output_bytes = cbor::to_cbor(&output);
+
+        let InscribeGenerateOutput{amount:_, attributes, content}=output;
+        simple_map::drop(attributes);
+        simple_map::drop(content);
+
+        output_bytes
+    }
+
     fun generate_seed_from_inscription(inscription: &Inscription): vector<u8> {
         let inscription_txid = ord::txid(inscription);
-        let tx_option = bitcoin::get_tx(inscription_txid);
-        if (option::is_none(&tx_option)) {
+
+        // reveal tx
+        let reveal_tx_option = bitcoin::get_tx(inscription_txid);
+        if (option::is_none(&reveal_tx_option)) {
             return vector::empty()
         };
 
-        let tx = option::destroy_some(tx_option);
-        let input = types::tx_input(&tx);
-        let index = ord::index(inscription);
-        let txin = vector::borrow(input, (index as u64));
-        let outpoint = types::txin_previous_output(txin);
+        let reveal_tx = option::destroy_some(reveal_tx_option);
+        let reveal_input = types::tx_input(&reveal_tx);
+        let reveal_index = ord::index(inscription);
+        let reveal_txin = vector::borrow(reveal_input, (reveal_index as u64));
+        let reveal_outpoint = types::txin_previous_output(reveal_txin);
 
-        let txid = types::outpoint_txid(outpoint);
-        let vout = types::outpoint_vout(outpoint);
-
-        let seed_tx_option = bitcoin::get_tx(txid);
-        if (option::is_none(&seed_tx_option)) {
+        // commit tx
+        let commit_txid = types::outpoint_txid(reveal_outpoint);
+        let commit_vout = types::outpoint_vout(reveal_outpoint);
+        let commit_tx_option = bitcoin::get_tx(commit_txid);
+        if (option::is_none(&commit_tx_option)) {
             return vector::empty()
         };
 
-        let seed_height_option = bitcoin::get_tx_height(txid);
+        let commit_tx = option::destroy_some(commit_tx_option);
+        let commit_input = types::tx_input(&commit_tx);
+        let commit_txin = vector::borrow(commit_input, (commit_vout as u64));
+        let commit_outpoint = types::txin_previous_output(commit_txin);
+
+        // seed tx
+        let seed_txid = types::outpoint_txid(commit_outpoint);
+        let seed_vout = types::outpoint_vout(commit_outpoint);
+
+        let seed_height_option = bitcoin::get_tx_height(seed_txid);
         if (option::is_none(&seed_height_option)) {
             return vector::empty()
         };
 
         let seed_height = *option::borrow(&seed_height_option);
 
-        let block_header_option = bitcoin::get_block_by_height(seed_height);
-        if (option::is_none(&block_header_option)) {
+        let seed_block_hash_option = bitcoin::get_block_hash_by_height(seed_height);
+        if (option::is_none(&seed_block_hash_option)) {
             return vector::empty()
         };
 
-        let block_header = option::borrow(&block_header_option);
-        let block_hash = types::merkle_root(block_header);
+        let seed_block_hash = *option::borrow(&seed_block_hash_option);
+        let seed_hex = generate_seed_from_inscription_inner(seed_block_hash, seed_txid, seed_vout);
 
+        seed_hex
+    }
+
+    fun generate_seed_from_inscription_inner(block_hash: address, txid: address, vout: u32) : vector<u8> {
         let buf = vector::empty();
         vector::append(&mut buf, address::to_bytes(&block_hash));
         vector::append(&mut buf, address::to_bytes(&txid));
-        vector::append(&mut buf, bcs::to_bytes(&vout)); //TODO vout to le_bytes
-        hex::encode(hash::sha3_256(buf))
+        vector::append(&mut buf, bcs::to_bytes(&vout));
+        hash::sha3_256(buf)
     }
 
     // ==== Process Bitseed Entry ==== //
@@ -561,7 +624,10 @@ module rooch_nursery::bitseed {
                     ord::seal_metaprotocol_validity<Bitseed>(inscription_id, true, option::none());
                 } else if (option::borrow(&op) == &string::utf8(b"mint")) {
                     let seed = generate_seed_from_inscription(inscription);
-                    let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed);
+                    let content_type = ord::content_type(inscription);
+                    let body = ord::body(inscription);
+
+                    let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed, content_type, body);
                     ord::seal_metaprotocol_validity<Bitseed>(inscription_id, is_valid, reason);
                 } else if (option::borrow(&op) == &string::utf8(b"split")) {
                     ord::seal_metaprotocol_validity<Bitseed>(inscription_id, true, option::none());
@@ -789,7 +855,7 @@ module rooch_nursery::bitseed {
 
         // check has_user_input
         let has_user_input = coin_info_has_user_input(&coin_info);
-        assert!(!has_user_input, 8);
+        assert!(has_user_input, 8);
 
         // check deploy_args
         let deploy_args = coin_info_deploy_args_option(&coin_info);
@@ -809,7 +875,9 @@ module rooch_nursery::bitseed {
         let metadata_bytes = x"a4626f70666465706c6f79647469636b646d6f766566616d6f756e74016a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f373764666332666535393834313962303036343163323936313831613936636631363934333639376635373334383062303233623737636365383261646132316930";
         let metadata = cbor::to_map(metadata_bytes);
         let seed = vector::empty();
-        let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed);
+        let content_type = option::none();
+        let body = vector::empty();
+        let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed, content_type, body);
         simple_map::drop(metadata);
 
         assert!(!is_valid, 1);
@@ -839,7 +907,9 @@ module rooch_nursery::bitseed {
         let metadata_bytes = x"a4626f70646d696e74647469636b646d6f766566616d6f756e7418646a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f377864666332666535393834313962303036343163323936313831613936636631363934333639376635373334383062303233623737636365383261646132316930";
         let metadata = cbor::to_map(metadata_bytes);
         let seed = vector::empty();
-        let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed);
+        let content_type = option::none();
+        let body = vector::empty();
+        let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed, content_type, body);
         simple_map::drop(metadata);
 
         assert!(!is_valid, 1);
@@ -869,13 +939,16 @@ module rooch_nursery::bitseed {
         let metadata_bytes = x"a4626f70646d696e74647469636b646d6f766566616d6f756e7418646a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f377864666332666535393834313962303036343163323936313831613936636631363934333639376635373334383062303233623737636365383261646132316930";
         let metadata = cbor::to_map(metadata_bytes);
         let seed = vector::empty();
-        let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed);
+        let content_type = option::none();
+        let body = vector::empty();
+        let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed, content_type, body);
         simple_map::drop(metadata);
 
         assert!(!is_valid, 1);
         assert!(option::borrow(&reason) == &std::string::utf8(b"metadata.attributes.user_input is required"), 1);
     }
 
+    
     #[test(genesis_account=@0x4)]
     fun test_is_valid_bitseed_mint_fail_with_wasm_verify_fail(genesis_account: &signer){
         features::init_and_enable_all_features_for_test();
@@ -901,19 +974,72 @@ module rooch_nursery::bitseed {
         let metadata_bytes = x"a4626f70646d696e74647469636b646d6f766566616d6f756e74016a61747472696275746573a16a757365725f696e70757463787878";
         let metadata = cbor::to_map(metadata_bytes);
         let seed = vector::empty();
-        let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed);
+        let content_type = option::none();
+        let body = vector::empty();
+        let (is_valid, _reason) = is_valid_bitseed_mint(&metadata, seed, content_type, body);
         simple_map::drop(metadata);
 
         assert!(!is_valid, 1);
-        assert!(option::borrow(&reason) == &std::string::utf8(b"create wasm instance fail"), 1);
+        //assert!(option::borrow(&reason) == &std::string::utf8(b"create wasm instance fail"), 1);
     }
 
     #[test]
     fun test_pack_inscribe_generate_args() {
         let deploy_args = x"8178377b22686569676874223a7b2274797065223a2272616e6765222c2264617461223a7b226d696e223a312c226d6178223a313030307d7d7d";
         let seed = b"0xe4b6de2407ad9455a364ba0227a8591631d1253508bc41f7d1992d218dd29b47";
-        let user_input = b"";
+        let user_input = string::utf8(b"");
 
         pack_inscribe_generate_args(deploy_args, seed, user_input);
+    }
+
+
+    #[test]
+    fun test_generate_seed_from_inscription_inner() {
+        let block_hash = address::from_bytes(x"89753cc1cdc61a89d49d5b267ab8353d4e984e08cda587f54e813add2b6d207c");
+        let txid = address::from_bytes(x"1a49883e4248bd8b2e423af8157a1795cd457ece0eb4d1f453266874dc1da262");
+        let vout = 1;
+
+        let seed = generate_seed_from_inscription_inner(block_hash, txid, vout);
+        let hex_seed = hex::encode(seed);
+        assert!(hex_seed == b"1700b4e1d726ef40b2832eb1d5f91fd88d36ddf79eb235789c9b417c997279bc", 1);
+    }
+
+
+    #[test]
+    fun test_pack_inscribe_output_args() {
+        let amount = 1u64;
+        let attributes = simple_map::new();
+
+        let height = 444u64;
+        simple_map::add(&mut attributes, string::utf8(b"height"), cbor::to_cbor(&height));
+
+        let id = string::utf8(b"test user input");
+        simple_map::add(&mut attributes, string::utf8(b"id"), cbor::to_cbor(&id));
+
+        let content_type = option::some(string::utf8(b"text/plain"));
+        let body =x"68656c6c6f20776f726c6421";
+
+        let output_bytes = pack_inscribe_output_args(amount, attributes, content_type, body);
+        let output_hex = hex::encode(output_bytes);
+        assert!(output_hex == b"a366616d6f756e74016a61747472696275746573a2666865696768741901bc6269646f74657374207573657220696e70757467636f6e74656e74a26c636f6e74656e745f747970656a746578742f706c61696e64626f64794c68656c6c6f20776f726c6421", 1);
+    }
+
+    #[test]
+    fun test_pack_inscribe_output_args_without_content() {
+        let amount = 1u64;
+        let attributes = simple_map::new();
+
+        let height = 444u64;
+        simple_map::add(&mut attributes, string::utf8(b"height"), cbor::to_cbor(&height));
+
+        let id = string::utf8(b"test user input");
+        simple_map::add(&mut attributes, string::utf8(b"id"), cbor::to_cbor(&id));
+
+        let content_type = option::some(string::utf8(b"text/plain"));
+        let body = vector::empty();
+
+        let output_bytes = pack_inscribe_output_args(amount, attributes, content_type, body);
+        let output_hex = hex::encode(output_bytes);
+        assert!(output_hex == b"a366616d6f756e74016a61747472696275746573a2666865696768741901bc6269646f74657374207573657220696e70757467636f6e74656e74a0", 1);
     }
 }

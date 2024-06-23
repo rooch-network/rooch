@@ -54,7 +54,7 @@ module bitcoin_move::bitcoin{
         hash_to_height: Table<address, u64>,
         /// tx id -> tx
         txs: Table<address, Transaction>,
-        /// tx id -> tx
+        /// tx id -> block height
         tx_to_height: Table<address, u64>,
         /// tx id list, we can use this to scan txs
         tx_ids: TableVec<address>,
@@ -112,6 +112,7 @@ module bitcoin_move::bitcoin{
         process_coinbase_utxo(tx, flotsams, block_height);
         let txid = types::tx_id(tx);
         table::add(&mut btc_block_store.txs, txid, *tx);
+        table::add(&mut btc_block_store.tx_to_height, txid, block_height);
         table_vec::push_back(&mut btc_block_store.tx_ids, txid);
     }
 
@@ -299,7 +300,7 @@ module bitcoin_move::bitcoin{
     public fun get_tx_height(txid: address): Option<u64>{
         let btc_block_store_obj = borrow_block_store();
         let btc_block_store = object::borrow(btc_block_store_obj);
-        if(table::contains(&btc_block_store.txs, txid)){
+        if(table::contains(&btc_block_store.tx_to_height, txid)){
             option::some(*table::borrow(&btc_block_store.tx_to_height, txid))
         }else{
             option::none()
@@ -322,6 +323,18 @@ module bitcoin_move::bitcoin{
         let btc_block_store = object::borrow(btc_block_store_obj);
         if(table::contains(&btc_block_store.hash_to_height, block_hash)){
             option::some(*table::borrow(&btc_block_store.hash_to_height, block_hash))
+        }else{
+            option::none()
+        }
+    }
+
+    /// Get block hash via block_height
+    public fun get_block_hash_by_height(block_height: u64): Option<address>{
+        let btc_block_store_obj = borrow_block_store();
+        let btc_block_store = object::borrow(btc_block_store_obj);
+        if(table::contains(&btc_block_store.height_to_hash, block_height)){
+            let block_hash = *table::borrow(&btc_block_store.height_to_hash, block_height);
+            option::some(block_hash)
         }else{
             option::none()
         }

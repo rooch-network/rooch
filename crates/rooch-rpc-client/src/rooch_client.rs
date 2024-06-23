@@ -15,6 +15,9 @@ use rooch_rpc_api::jsonrpc_types::{
     RoochAddressView, StateOptions, StatePageView, StructTagView,
 };
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, StateView};
+use rooch_rpc_api::jsonrpc_types::{
+    IndexerObjectStatePageView, ObjectStateFilterView, QueryOptions,
+};
 use rooch_rpc_api::jsonrpc_types::{TransactionWithInfoPageView, TxOptions};
 use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
@@ -201,6 +204,19 @@ impl RoochRpcClient {
         Ok(self
             .http
             .get_balances(account_addr.into(), cursor, limit.map(Into::into))
+            .await?)
+    }
+
+    pub async fn query_object_states(
+        &self,
+        filter: ObjectStateFilterView,
+        cursor: Option<IndexerStateID>,
+        limit: Option<usize>,
+        query_options: Option<QueryOptions>,
+    ) -> Result<IndexerObjectStatePageView> {
+        Ok(self
+            .http
+            .query_object_states(filter, cursor, limit.map(Into::into), query_options)
             .await?)
     }
 }

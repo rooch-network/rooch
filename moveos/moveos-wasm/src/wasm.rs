@@ -16,11 +16,9 @@ use wasmer_compiler_singlepass::Singlepass;
 use crate::cost_function::cost_function;
 use crate::gas_meter::GasMeter;
 use crate::middlewares::gas_metering::GasMiddleware;
-use crate::middlewares::prohibit_ops::ProhibitOpsMiddleware;
 
-const GAS_LIMIT: u64 = 10000;
+const GAS_LIMIT: u64 = 500000;
 
-//#[derive(Clone)]
 pub struct WASMInstance {
     pub bytecode: Vec<u8>,
     pub instance: Instance,
@@ -270,10 +268,6 @@ pub fn create_wasm_instance(code: &[u8]) -> anyhow::Result<WASMInstance> {
 
     // Create and configure the compiler
     let mut compiler = Singlepass::new();
-
-    // Add prohibit middleware
-    let prohibit_ops = ProhibitOpsMiddleware::new();
-    compiler.push_middleware(Arc::new(prohibit_ops));
 
     // Add gas meter middleware
     let gas_middleware = GasMiddleware::new(Some(Arc::new(cost_function)));

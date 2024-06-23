@@ -15,8 +15,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 pub const DEFAULT_DB_DIR: &str = "roochdb";
-pub const DEFAULT_DB_ROOCH_SUBDIR: &str = "rooch_store";
-pub const DEFAULT_DB_MOVEOS_SUBDIR: &str = "moveos_store";
+pub const DEFAULT_DB_STORE_SUBDIR: &str = "store";
 pub const DEFAULT_DB_INDEXER_SUBDIR: &str = "indexer";
 
 // for Rooch DB instance, doesn't need too much row cache:
@@ -94,14 +93,10 @@ pub struct StoreConfig {
 impl StoreConfig {
     pub(crate) fn init(&mut self, base: Arc<BaseConfig>) -> Result<()> {
         self.base = Some(base);
-        let rooch_store_dir = self.get_rooch_store_dir();
-        let moveos_store_dir = self.get_moveos_store_dir();
-        let indexer_store_dir = self.get_indexer_store_dir();
-        if !rooch_store_dir.exists() {
-            std::fs::create_dir_all(rooch_store_dir.clone())?;
-        }
-        if !moveos_store_dir.exists() {
-            std::fs::create_dir_all(moveos_store_dir.clone())?;
+        let store_dir = self.get_store_dir();
+        let indexer_store_dir = self.get_indexer_dir();
+        if !store_dir.exists() {
+            std::fs::create_dir_all(store_dir.clone())?;
         }
         if !indexer_store_dir.exists() {
             std::fs::create_dir_all(indexer_store_dir.clone())?;
@@ -121,26 +116,18 @@ impl StoreConfig {
         self.data_dir().join(DEFAULT_DB_DIR)
     }
 
-    pub fn get_moveos_store_dir(&self) -> PathBuf {
-        self.get_rooch_db_dir().join(DEFAULT_DB_MOVEOS_SUBDIR)
+    pub fn get_store_dir(&self) -> PathBuf {
+        self.get_rooch_db_dir().join(DEFAULT_DB_STORE_SUBDIR)
     }
 
-    pub fn get_rooch_store_dir(&self) -> PathBuf {
-        self.get_rooch_db_dir().join(DEFAULT_DB_ROOCH_SUBDIR)
-    }
-
-    pub fn get_indexer_store_dir(&self) -> PathBuf {
+    pub fn get_indexer_dir(&self) -> PathBuf {
         self.get_rooch_db_dir().join(DEFAULT_DB_INDEXER_SUBDIR)
     }
 
-    pub fn rocksdb_config(&self, is_moveos_db: bool) -> RocksdbConfig {
+    pub fn rocksdb_config(&self) -> RocksdbConfig {
         let default = RocksdbConfig::default();
-        let mut block_cache_size = default.block_cache_size;
-        let mut row_cache_size = default.row_cache_size;
-        if !is_moveos_db {
-            block_cache_size = DEFAULT_ROCKSDB_BLOCK_CACHE_SIZE;
-            row_cache_size = DEFAULT_ROCKSDB_ROW_CACHE_SIZE;
-        }
+        let block_cache_size = default.block_cache_size;
+        let row_cache_size = default.row_cache_size;
 
         RocksdbConfig {
             max_open_files: self.max_open_files.unwrap_or(default.max_open_files),
@@ -163,18 +150,11 @@ impl StoreConfig {
         }
     }
 
-    pub fn get_mock_moveos_store_dir(data_dir: &DataDirPath) -> PathBuf {
+    pub fn get_mock_store_dir(data_dir: &DataDirPath) -> PathBuf {
         data_dir
             .path()
             .join(DEFAULT_DB_DIR)
-            .join(DEFAULT_DB_MOVEOS_SUBDIR)
-    }
-
-    pub fn get_mock_rooch_store_dir(data_dir: &DataDirPath) -> PathBuf {
-        data_dir
-            .path()
-            .join(DEFAULT_DB_DIR)
-            .join(DEFAULT_DB_ROOCH_SUBDIR)
+            .join(DEFAULT_DB_STORE_SUBDIR)
     }
 }
 

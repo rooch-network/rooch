@@ -13,6 +13,7 @@
 -  [Function `get_tx_height`](#0x4_bitcoin_get_tx_height)
 -  [Function `get_block`](#0x4_bitcoin_get_block)
 -  [Function `get_block_height`](#0x4_bitcoin_get_block_height)
+-  [Function `get_block_hash_by_height`](#0x4_bitcoin_get_block_hash_by_height)
 -  [Function `get_block_by_height`](#0x4_bitcoin_get_block_by_height)
 -  [Function `get_genesis_block`](#0x4_bitcoin_get_genesis_block)
 -  [Function `get_latest_block`](#0x4_bitcoin_get_latest_block)
@@ -161,6 +162,18 @@ Get block via block_hash
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_get_block_height">get_block_height</a>(block_hash: <b>address</b>): <a href="_Option">option::Option</a>&lt;u64&gt;
+</code></pre>
+
+
+
+<a name="0x4_bitcoin_get_block_hash_by_height"></a>
+
+## Function `get_block_hash_by_height`
+
+Get block hash via block_height
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_get_block_hash_by_height">get_block_hash_by_height</a>(block_height: u64): <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;
 </code></pre>
 
 
