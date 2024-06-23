@@ -3,7 +3,7 @@
 
 import { ReactNode, useCallback, createContext, useEffect, useRef } from 'react'
 import type { StateStorage } from 'zustand/middleware'
-import { BitcoinAddress } from '@roochnetwork/rooch-sdk'
+import { BitcoinAddress, Session } from '@roochnetwork/rooch-sdk'
 
 import { createWalletStore, WalletStore } from './walletStore.js'
 import {
@@ -16,7 +16,7 @@ import {
 } from '../hooks/index.js'
 import { getDefaultStorage, StorageType } from '../utils/index.js'
 import { SupportChain } from '../feature/index.js'
-import { AllWallet } from '../wellet/util.js'
+import { getWallets } from '../wellet/util.js'
 
 type WalletProviderProps = {
   chain?: SupportChain
@@ -49,7 +49,7 @@ export function WalletProvider({
   const storeRef = useRef(
     createWalletStore({
       chain,
-      wallets: AllWallet,
+      wallets: getWallets(),
       currentWallet: undefined,
       autoConnectEnabled: autoConnect,
       storage: storage || getDefaultStorage(StorageType.Local),
@@ -116,7 +116,8 @@ function WalletConnectionManager({ children }: WalletConnectionManagerProps) {
   // handle session
   useEffect(() => {
     const cur = sessions.find(
-      (item) => item.getRoochAddress().toStr() === currentAddress?.genRoochAddress().toStr(),
+      (item: Session) =>
+        item.getRoochAddress().toStr() === currentAddress?.genRoochAddress().toStr(),
     )
     if (cur && cur.getAuthKey() !== curSession?.getAuthKey()) {
       setCurrentSession(cur)

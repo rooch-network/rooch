@@ -6,7 +6,7 @@ import { createContext, useRef } from 'react'
 
 import type { StateStorage } from 'zustand/middleware'
 
-import { createSessionStore, SessionStore } from '../sessionStore.js'
+import { createSessionStore, SessionStore } from './sessionStore.js'
 
 import { useCurrentNetwork } from '../hooks/index.js'
 import { getDefaultStorage, StorageType } from '../utils/index.js'
@@ -45,8 +45,6 @@ export function RoochSessionProvider(props: RoochSessionProviderProps) {
     }),
   )
   return (
-    <RoochSessionContext.Provider value={storeRef.current}>
-      {children}
-    </RoochSessionContext.Provider>
+    <RoochSessionContext.Provider value={storeRef.current}>{children}</RoochSessionContext.Provider>
   )
 }

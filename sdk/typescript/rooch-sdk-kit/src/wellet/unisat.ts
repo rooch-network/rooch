@@ -4,7 +4,6 @@
 import { BitcoinAddress, Bytes, ThirdPartyAddress, str, bytes } from '@roochnetwork/rooch-sdk'
 
 import { BitcoinWallet } from '../wellet/index.js'
-import { sha256 } from '@roochnetwork/rooch-sdk'
 
 const UNISAT_SUPPORT_NETWORKS = ['livenet', 'testnet']
 
@@ -63,9 +62,7 @@ export class UniSatWallet extends BitcoinWallet {
 
   async sign(msg: Bytes): Promise<Bytes> {
     const msgStr = str('utf8', msg)
-    console.log('msg hash', sha256('\u0018Bitcoin Signed Message:\n' + msgStr))
     const sign = await this.getTarget().signMessage(msgStr)
-
     return bytes('base64', sign).subarray(1) // remove recover id
   }
 }

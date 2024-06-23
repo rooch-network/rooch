@@ -25,12 +25,12 @@ export type RpcMethods = {
         params: P
       }
     : RoochClient[K] extends () => Promise<infer R>
-    ? {
-        name: K
-        result: R
-        params: undefined | object
-      }
-    : never
+      ? {
+          name: K
+          result: R
+          params: undefined | object
+        }
+      : never
 }
 
 export type UseRoochClientQueryOptions<T extends keyof RpcMethods, TData> = PartialBy<
