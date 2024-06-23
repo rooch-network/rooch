@@ -173,7 +173,7 @@ petgraph = "0.6.5"
 primitive-types = { version = "0.12.1", features = ["serde", "arbitrary"] }
 prost = "0.12"
 prost-types = "0.11"
-proptest = "1.0.0"
+proptest = "1.5.0"
 proptest-derive = "0.3.0"
 rayon = "1.5.2"
 rand = "0.8.5"
