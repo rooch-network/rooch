@@ -87,7 +87,7 @@ const theme: DocsThemeConfig = {
         pageTitle = `${currentPage.frontMatter.title} – Rooch Network`
         pageDescription = currentPage.frontMatter.description || pageDescription
         ogImage = currentPage.frontMatter.image
-          ? `https://rooch.network${currentPage.frontMatter.image}`
+          ? `https://rooch-git-website-240622-rooch.vercel.app${currentPage.frontMatter.image}`
           : ogImage
       }
     } else {
@@ -96,6 +96,10 @@ const theme: DocsThemeConfig = {
           ? 'Unlocking infinite utility for the Bitcoin Economy'
           : '开启比特币经济的无限可能'
     }
+
+    console.log('Page Title:', pageTitle)
+    console.log('Page Description:', pageDescription)
+    console.log('OG Image:', ogImage)
 
     return (
       <>
@@ -110,7 +114,10 @@ const theme: DocsThemeConfig = {
         <meta property="og:description" content={pageDescription} />
         <meta property="og:image" content={ogImage} />
         <meta property="og:type" content="article" />
-        <meta property="og:url" content={`https://rooch.network${asPath}`} />
+        <meta
+          property="og:url"
+          content={`https://rooch-git-website-240622-rooch.vercel.app${asPath}`}
+        />
 
         {/* Twitter 元标签 */}
         <meta name="twitter:card" content="summary_large_image" />
@@ -122,11 +129,31 @@ const theme: DocsThemeConfig = {
         <meta name="twitter:image:alt" content="Rooch Network" />
 
         {/* 多语言链接 */}
-        <link rel="alternate" href={`https://rooch.network${asPath}`} hrefLang="x-default" />
-        <link rel="alternate" href={`https://rooch.network${asPath}`} hrefLang="en-us" />
-        <link rel="alternate" href={`https://rooch.network${asPath}`} hrefLang="en" />
-        <link rel="alternate" href={`https://rooch.network/zh-CN${asPath}`} hrefLang="zh-cn" />
-        <link rel="alternate" href={`https://rooch.network/zh-CN${asPath}`} hrefLang="zh" />
+        <link
+          rel="alternate"
+          href={`https://rooch-git-website-240622-rooch.vercel.app${asPath}`}
+          hrefLang="x-default"
+        />
+        <link
+          rel="alternate"
+          href={`https://rooch-git-website-240622-rooch.vercel.app${asPath}`}
+          hrefLang="en-us"
+        />
+        <link
+          rel="alternate"
+          href={`https://rooch-git-website-240622-rooch.vercel.app${asPath}`}
+          hrefLang="en"
+        />
+        <link
+          rel="alternate"
+          href={`https://rooch-git-website-240622-rooch.vercel.app/zh-CN${asPath}`}
+          hrefLang="zh-cn"
+        />
+        <link
+          rel="alternate"
+          href={`https://rooch-git-website-240622-rooch.vercel.app/zh-CN${asPath}`}
+          hrefLang="zh"
+        />
 
         {/* 网站图标 */}
         <link rel="icon" href="/logo/rooch_black_logo.svg" type="image/svg+xml" />
