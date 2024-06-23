@@ -2,7 +2,7 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { getPagesUnderRoute } from 'nextra/context'
 import ROOCH_TEAM from '../../data/team'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Head from 'next/head'
 
 interface FrontMatter {
@@ -11,6 +11,11 @@ interface FrontMatter {
   image?: string
   category: string
   author: string
+  meta?: {
+    title?: string
+    description?: string
+    image?: string
+  }
 }
 
 interface CustomPage {
@@ -27,34 +32,48 @@ export default function PostHeader() {
   const [page, setPage] = useState<CustomPage | null>(null)
   const [ogImage, setOgImage] = useState('https://rooch.network/logo/rooch-banner.png')
 
-  useEffect(() => {
-    async function fetchPage() {
-      const pages = (await getPagesUnderRoute('/blog')) as unknown as any[]
+  const fetchPage = useCallback(() => {
+    try {
+      const pages = getPagesUnderRoute('/blog') as any[]
       const customPages = pages.filter(isCustomPage) as CustomPage[]
       const currentPage = customPages.find((page) => page.route === pathname)
+      console.log('currentPage', currentPage)
       if (currentPage) {
         setPage(currentPage)
-        if (currentPage.frontMatter.image) {
-          setOgImage(`https://rooch.network${currentPage.frontMatter.image}`)
+        const metaImage = currentPage.frontMatter.meta?.image || currentPage.frontMatter.image
+        if (metaImage) {
+          setOgImage(metaImage.startsWith('http') ? metaImage : `https://rooch.network${metaImage}`)
         }
       }
+    } catch (error) {
+      console.error('Failed to fetch page:', error)
     }
-    fetchPage()
   }, [pathname])
+
+  useEffect(() => {
+    fetchPage()
+  }, [fetchPage])
+
+  const frontMatterMeta = page?.frontMatter.meta || {}
+  const title = frontMatterMeta.title || page?.frontMatter.title
+  const description = frontMatterMeta.description || page?.frontMatter.description
+  const image = frontMatterMeta.image || ogImage
+
+  console.log(frontMatterMeta)
 
   return page ? (
     <>
       <Head>
-        <title>{page.frontMatter.title}</title>
-        <meta property="og:title" content={page.frontMatter.title} />
-        <meta property="og:description" content={page.frontMatter.description} />
-        <meta property="og:image" content={ogImage} />
+        <title>{title}</title>
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:image" content={image} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={`https://rooch.network${pathname}`} />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={page.frontMatter.title} />
-        <meta name="twitter:description" content={page.frontMatter.description} />
-        <meta name="twitter:image" content={ogImage} />
+        <meta name="twitter:title" content={title} />
+        <meta name="twitter:description" content={description} />
+        <meta name="twitter:image" content={image} />
       </Head>
       <div className="text-center inline-block mx-auto w-full">
         <h1 className="font-bold text-5xl mt-6">{page.frontMatter.title}</h1>
