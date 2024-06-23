@@ -35,6 +35,7 @@ export default function PostHeader() {
   const fetchPage = useCallback(() => {
     try {
       const pages = getPagesUnderRoute('/blog') as any[]
+      console.log('pages', pages)
       const customPages = pages.filter(isCustomPage) as CustomPage[]
       const currentPage = customPages.find((page) => page.route === pathname)
       console.log('currentPage', currentPage)
