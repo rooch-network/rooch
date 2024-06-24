@@ -122,7 +122,15 @@ impl RustBindingTest {
         Ok(())
     }
 
-    pub fn execute_l1_block(&mut self, l1_block: L1BlockWithBody) -> Result<()> {
+    pub fn execute_l1_block_and_tx(&mut self, l1_block: L1BlockWithBody) -> Result<()> {
+        let l1_txs = self.execute_l1_block(l1_block.clone())?;
+        for l1_tx in l1_txs {
+            self.execute_l1_tx(l1_tx)?;
+        }
+        Ok(())
+    }
+
+    pub fn execute_l1_block(&mut self, l1_block: L1BlockWithBody) -> Result<Vec<L1Transaction>> {
         let ctx = self.create_l1_block_ctx(&l1_block)?;
         let verified_tx: VerifiedMoveOSTransaction = self.executor.validate_l1_block(
             ctx,
@@ -145,24 +153,13 @@ impl RustBindingTest {
                     )
                 })
                 .collect::<VecDeque<_>>();
+            // Move coinbase tx to the end
             let coinbase_tx = l1_txs.pop_front().expect("coinbase tx should exist");
             l1_txs.push_back(coinbase_tx);
-            for tx in &block.txdata[1..] {
-                let l1_tx = L1Transaction::new(
-                    l1_block.block.chain_id,
-                    l1_block.block.block_hash.clone(),
-                    tx.id.to_vec(),
-                );
-                self.execute_l1_tx(l1_tx)?;
-            }
-            let coinbase_tx = L1Transaction::new(
-                l1_block.block.chain_id,
-                l1_block.block.block_hash.clone(),
-                block.txdata[0].id.to_vec(),
-            );
-            self.execute_l1_tx(coinbase_tx)?;
+            Ok(l1_txs.into_iter().collect::<Vec<_>>())
+        } else {
+            Ok(vec![])
         }
-        Ok(())
     }
 
     pub fn execute_l1_tx(&mut self, l1_tx: L1Transaction) -> Result<()> {

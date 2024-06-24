@@ -1,10 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::config::TxType;
+use crate::tx::TxType::{Empty, Transfer};
 use anyhow::Result;
 use bitcoin::consensus::deserialize;
 use bitcoin::hashes::Hash;
 use bitcoin::hex::FromHex;
+use bitcoincore_rpc::RpcApi;
 use bitcoincore_rpc_json::bitcoin;
 use bitcoincore_rpc_json::bitcoin::Block;
 use rooch_sequencer::actor::sequencer::SequencerActor;
@@ -15,9 +18,8 @@ use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::L1BlockWithBody;
 use std::fs;
-
-use crate::config::TxType;
-use crate::tx::TxType::{Empty, Transfer};
+use std::path::Path;
+use tracing::info;
 
 pub const EXAMPLE_SIMPLE_BLOG_PACKAGE_NAME: &str = "simple_blog";
 pub const EXAMPLE_SIMPLE_BLOG_NAMED_ADDRESS: &str = "simple_blog";
@@ -52,7 +54,7 @@ pub fn create_l2_tx(
     test_transaction_builder.build_and_sign(action)
 }
 
-pub fn find_block_height(dir: String) -> Result<Vec<u64>> {
+pub fn find_block_height(dir: &Path) -> Result<Vec<u64>> {
     let mut block_heights = Vec::new();
 
     for entry in fs::read_dir(dir)? {
@@ -71,7 +73,7 @@ pub fn find_block_height(dir: String) -> Result<Vec<u64>> {
     Ok(block_heights)
 }
 
-pub fn create_btc_blk_tx(height: u64, block_file: String) -> Result<L1BlockWithBody> {
+pub fn create_btc_blk_tx(height: u64, block_file: &Path) -> Result<L1BlockWithBody> {
     let block_hex_str = fs::read_to_string(block_file).unwrap();
     let block_hex = Vec::<u8>::from_hex(&block_hex_str).unwrap();
     let origin_block: Block = deserialize(&block_hex).unwrap();
@@ -86,4 +88,39 @@ pub fn create_btc_blk_tx(height: u64, block_file: String) -> Result<L1BlockWithB
         },
         block_body: move_block.encode(),
     })
+}
+
+// Download btc block data via bitcoin client
+pub fn prepare_btc_block(
+    btc_block_dir: &Path,
+    btc_rpc_url: String,
+    btc_rpc_username: String,
+    btc_rpc_password: String,
+    btc_block_start_height: u64,
+    btc_block_count: u64,
+) {
+    if !btc_block_dir.exists() {
+        fs::create_dir_all(&btc_block_dir).unwrap();
+    }
+
+    let client = bitcoincore_rpc::Client::new(
+        btc_rpc_url.as_str(),
+        bitcoincore_rpc::Auth::UserPass(btc_rpc_username, btc_rpc_password),
+    )
+    .unwrap();
+
+    for i in 0..btc_block_count {
+        let height = btc_block_start_height + i;
+        let filename = format!("{}.hex", height);
+        let file_path = btc_block_dir.join(filename);
+
+        if file_path.exists() {
+            continue;
+        }
+
+        let block_hash = client.get_block_hash(height).unwrap();
+        let block_hex = client.get_block_hex(&block_hash).unwrap();
+        info!("Downloaded block {} to {}", height, file_path.display());
+        fs::write(file_path, block_hex).unwrap();
+    }
 }
