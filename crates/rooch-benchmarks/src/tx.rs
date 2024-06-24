@@ -100,7 +100,7 @@ pub fn prepare_btc_block(
     btc_block_count: u64,
 ) {
     if !btc_block_dir.exists() {
-        fs::create_dir_all(&btc_block_dir).unwrap();
+        fs::create_dir_all(btc_block_dir).unwrap();
     }
 
     let client = bitcoincore_rpc::Client::new(
