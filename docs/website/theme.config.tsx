@@ -126,7 +126,6 @@ const theme: DocsThemeConfig = {
         <meta name="twitter:site" content="https://rooch.network" />
         <meta name="twitter:creator" content="https://rooch.network" />
         <meta name="twitter:title" content={pageTitle} />
-        // ---
         {/* FAVICON */}
         <link rel="icon" href="/logo/rooch_black_logo.svg" type="image/svg+xml" />
         <link rel="icon" href="/logo/rooch_black_logo.png" type="image/png" />
