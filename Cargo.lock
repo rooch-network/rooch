@@ -2039,7 +2039,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tracing",
- "uuid 1.8.0",
+ "uuid 1.9.0",
  "valuable",
 ]
 
@@ -2852,7 +2852,7 @@ version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef552e6f588e446098f6ba40d89ac146c8c7b64aade83c051ee00bb5d2bc18d"
 dependencies = [
- "uuid 1.8.0",
+ "uuid 1.9.0",
 ]
 
 [[package]]
@@ -7658,7 +7658,7 @@ dependencies = [
  "serde 1.0.203",
  "serde_json",
  "tokio",
- "uuid 1.8.0",
+ "uuid 1.9.0",
 ]
 
 [[package]]
@@ -9511,7 +9511,7 @@ dependencies = [
  "rkyv_derive",
  "seahash",
  "tinyvec",
- "uuid 1.8.0",
+ "uuid 1.9.0",
 ]
 
 [[package]]
@@ -12126,7 +12126,7 @@ dependencies = [
  "debugid",
  "memmap2 0.9.4",
  "stable_deref_trait",
- "uuid 1.8.0",
+ "uuid 1.9.0",
 ]
 
 [[package]]
@@ -12443,7 +12443,7 @@ dependencies = [
  "testcontainers",
  "tokio",
  "tracing",
- "uuid 1.8.0",
+ "uuid 1.9.0",
 ]
 
 [[package]]
@@ -12921,7 +12921,7 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
- "uuid 1.8.0",
+ "uuid 1.9.0",
 ]
 
 [[package]]
@@ -13336,9 +13336,9 @@ dependencies = [
 
 [[package]]
 name = "uuid"
-version = "1.8.0"
+version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a183cf7feeba97b4dd1c0d46788634f6221d87fa961b305bed08c851829efcc0"
+checksum = "3ea73390fe27785838dcbf75b91b1d84799e28f1ce71e6f372a5dc2200c80de5"
 dependencies = [
  "getrandom 0.2.15",
  "rand 0.8.5",
@@ -13348,9 +13348,9 @@ dependencies = [
 
 [[package]]
 name = "uuid-macro-internal"
-version = "1.8.0"
+version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9881bea7cbe687e36c9ab3b778c36cd0487402e270304e8b1296d5085303c1a2"
+checksum = "cdb394c528d1cb434c2f0522027e50c0705305caf6d20405c07a6f7e4cf9543c"
 dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
