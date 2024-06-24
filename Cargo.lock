@@ -8,7 +8,7 @@ version = "0.11.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
 dependencies = [
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "regex",
 ]
 
@@ -1049,7 +1049,7 @@ dependencies = [
  "cexpr",
  "clang-sys",
  "itertools 0.12.1",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "lazycell",
  "proc-macro2 1.0.86",
  "quote 1.0.36",
@@ -1624,7 +1624,7 @@ dependencies = [
  "futures",
  "hashbrown 0.13.2",
  "instant",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "once_cell",
  "thiserror",
  "tokio",
@@ -2044,7 +2044,7 @@ checksum = "3311405ed7a9b541faddd4e2de71cfa908e5558658d504f7954d2aee684b96a6"
 dependencies = [
  "async-trait",
  "futures",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "rand 0.8.5",
  "serde 1.0.203",
  "serde_json",
@@ -2119,7 +2119,7 @@ version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cbf2150cce219b664a8a70df7a1f933836724b503f8a413af9365b4dcc4d90b8"
 dependencies = [
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "windows-sys 0.48.0",
 ]
 
@@ -2148,7 +2148,7 @@ version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b1b9d958c2b1368a663f05538fc1b5975adce1e19f435acceae987aceeeb369"
 dependencies = [
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "nom 5.1.3",
  "rust-ini",
  "serde 1.0.203",
@@ -2165,7 +2165,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e1f83fc076bd6dd27517eacdf25fef6c4dfe5f1d7448bafaaf3a26f13b5e4eb"
 dependencies = [
  "encode_unicode",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "libc",
  "unicode-width",
  "windows-sys 0.52.0",
@@ -3253,7 +3253,7 @@ checksum = "add9a102807b524ec050363f09e06f1504214b0e1c7797f64261c891022dce8b"
 dependencies = [
  "bitflags 1.3.2",
  "byteorder",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "proc-macro-error",
  "proc-macro2 1.0.86",
  "quote 1.0.36",
@@ -3879,7 +3879,7 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3be3c61c59fdc91f5dbc3ea31ee8623122ce80057058be560654c5d410d181a6"
 dependencies = [
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "log",
  "rand 0.7.3",
 ]
@@ -3922,7 +3922,7 @@ dependencies = [
  "generic-array",
  "hex",
  "hkdf",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "merlin",
  "once_cell",
  "p256",
@@ -4022,7 +4022,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40b9e59cd0f7e0806cca4be089683ecb6434e602038df21fe6bf6711b2f07f64"
 dependencies = [
  "cc",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "libc",
  "winapi",
 ]
@@ -5842,11 +5842,11 @@ checksum = "76f033c7ad61445c5b347c7382dd1237847eb1bce590fe50365dcb33d546be73"
 
 [[package]]
 name = "lazy_static"
-version = "1.4.0"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
+checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 dependencies = [
- "spin 0.5.2",
+ "spin 0.9.8",
 ]
 
 [[package]]
@@ -7259,7 +7259,7 @@ version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07226173c32f2926027b63cce4bcd8076c3552846cbe7925f3aaffeac0a3b92e"
 dependencies = [
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "libc",
  "log",
  "openssl",
@@ -7448,7 +7448,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc84195820f291c7697304f3cbdadd1cb7199c0efc917ff5eafd71225c136151"
 dependencies = [
  "byteorder",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "libm",
  "num-integer",
  "num-iter",
@@ -8687,7 +8687,7 @@ checksum = "3d33c28a30771f7f96db69893f78b857f7450d7e0237e9c8fc6427a81bae7ed1"
 dependencies = [
  "cfg-if",
  "fnv",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "libc",
  "memchr",
  "parking_lot 0.12.3",
@@ -8705,7 +8705,7 @@ dependencies = [
  "bit-set",
  "bit-vec",
  "bitflags 2.5.0",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "num-traits 0.2.19",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
@@ -9669,7 +9669,7 @@ dependencies = [
  "futures",
  "hex",
  "hyper 0.14.28",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "log",
  "move-binary-format",
  "move-bytecode-utils",
@@ -9923,7 +9923,7 @@ dependencies = [
  "fastcrypto",
  "hex",
  "include_dir",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "linked-hash-map",
  "move-binary-format",
  "move-bytecode-utils",
@@ -10414,7 +10414,7 @@ dependencies = [
  "hex",
  "hyper 0.14.28",
  "jsonrpsee 0.16.3",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "log",
  "move-binary-format",
  "move-bytecode-utils",
@@ -11313,7 +11313,7 @@ version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a3a4e0ea8a88553209f6cc6cfe8724ecad22e1acf372793c27d995290fe74f8"
 dependencies = [
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "num-traits 0.1.43",
  "regex",
  "serde 0.8.23",
@@ -11677,7 +11677,7 @@ version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f40ca3c46823713e0d4209592e8d6e826aa57e928f09752619fc696c499637f6"
 dependencies = [
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
 ]
 
 [[package]]
@@ -11884,7 +11884,7 @@ dependencies = [
  "bytes",
  "hex",
  "itertools 0.13.0",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "log",
  "more-asserts 0.3.1",
  "num-derive",
@@ -12082,7 +12082,7 @@ checksum = "72b5bbfa79abbae15dd642ea8176a21a635ff3c00059961d1ea27ad04e5b441c"
 dependencies = [
  "byteorder",
  "crunchy",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "rand 0.8.5",
  "rustc-hex",
 ]
@@ -12361,7 +12361,7 @@ dependencies = [
  "chrono-tz",
  "globwalk 0.8.1",
  "humansize",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "percent-encoding",
  "pest",
  "pest_derive",
@@ -13632,7 +13632,7 @@ dependencies = [
  "cfg-if",
  "enum-iterator",
  "enumset",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "leb128",
  "memmap2 0.5.10",
  "more-asserts 0.2.2",
@@ -13679,7 +13679,7 @@ dependencies = [
  "dynasmrt",
  "enumset",
  "gimli 0.26.2",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "more-asserts 0.2.2",
  "rayon",
  "smallvec 1.13.2",
@@ -13758,7 +13758,7 @@ dependencies = [
  "enum-iterator",
  "fnv",
  "indexmap 1.9.3",
- "lazy_static 1.4.0",
+ "lazy_static 1.5.0",
  "libc",
  "mach",
  "memoffset",
