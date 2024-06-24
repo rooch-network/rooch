@@ -50,11 +50,8 @@ export default function PostHeader() {
         <meta property="og:description" content={page.frontMatter.description} />
         <meta property="og:image" content={ogImage} />
         <meta property="og:type" content="article" />
-        <meta property="og:url" content={`https://rooch.network${pathname}`} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={page.frontMatter.title} />
-        <meta name="twitter:description" content={page.frontMatter.description} />
-        <meta name="twitter:image" content={ogImage} />
       </Head>
       <div className="text-center inline-block mx-auto w-full">
         <h1 className="font-bold text-5xl mt-6">{page.frontMatter.title}</h1>

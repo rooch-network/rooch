@@ -79,9 +79,11 @@ const theme: DocsThemeConfig = {
     useEffect(() => {
       if (asPath.includes('/blog/')) {
         const contents = getPagesUnderRoute('/blog') as Content[]
+        console.log('contents', contents)
         const currentPage = contents.find(
           (content): content is Page => isPage(content) && content.route === asPath,
         )
+        console.log('currentPage', currentPage)
         if (currentPage) {
           setPageTitle(
             currentPage.frontMatter.title
@@ -115,18 +117,16 @@ const theme: DocsThemeConfig = {
         <link rel="alternate" href={`https://rooch.network/zh-CN${asPath}`} hrefLang="zh-cn" />
         <link rel="alternate" href={`https://rooch.network/zh-CN${asPath}`} hrefLang="zh" />
         {/* WEBSITE */}
-        <meta name="description" content={pageDescription} />
-        <meta property="og:description" content={pageDescription} />
+        <meta property="og:type" content="website" />
         <meta property="og:image" content={ogImage} />
+        <meta property="og:description" content={pageDescription} />
         <meta name="apple-mobile-web-app-title" content="Rooch Network" />
         {/* TWITTER */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:site" content="https://rooch.network" />
         <meta name="twitter:creator" content="https://rooch.network" />
         <meta name="twitter:title" content={pageTitle} />
-        <meta name="twitter:description" content={pageDescription} />
-        <meta name="twitter:image" content={ogImage} />
-        <meta name="twitter:image:alt" content="Rooch Network" />
+        // ---
         {/* FAVICON */}
         <link rel="icon" href="/logo/rooch_black_logo.svg" type="image/svg+xml" />
         <link rel="icon" href="/logo/rooch_black_logo.png" type="image/png" />
