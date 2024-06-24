@@ -9647,6 +9647,7 @@ dependencies = [
  "async-trait",
  "bcs",
  "bitcoin 0.31.2",
+ "bitcoincore-rpc",
  "bitcoincore-rpc-json",
  "chrono",
  "clap 4.5.7",

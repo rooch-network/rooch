@@ -50,6 +50,7 @@ pub enum TxType {
     Empty,
     Transfer,
     BtcBlock,
+    BtcTx,
 }
 
 impl FromStr for TxType {
@@ -58,6 +59,7 @@ impl FromStr for TxType {
         match s {
             "transfer" => Ok(TxType::Transfer),
             "btc_block" => Ok(TxType::BtcBlock),
+            "btc_tx" => Ok(TxType::BtcTx),
             "empty" => Ok(TxType::Empty),
             _ => Err(format!("invalid tx type: {}", s)),
         }
@@ -69,7 +71,8 @@ impl Display for TxType {
         let str = match self {
             TxType::Empty => "empty".to_string(),
             TxType::Transfer => "transfer".to_string(),
-            TxType::BtcBlock => "btc_blk".to_string(),
+            TxType::BtcBlock => "btc_block".to_string(),
+            TxType::BtcTx => "btc_tx".to_string(),
         };
         write!(f, "{}", str)
     }
@@ -77,9 +80,12 @@ impl Display for TxType {
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize, Parser, Eq)]
 pub struct BenchTxConfig {
-    pub tx_type: Option<TxType>, // empty(default)/transfer/btc-block
-    pub data_import_flag: bool,
+    pub tx_type: Option<TxType>,       // empty(default)/transfer/btc-block
     pub btc_block_dir: Option<String>, // btc block dir, file name: <height>.hex
+    pub btc_block_start_height: Option<u64>, // btc block start height
+    pub btc_rpc_url: Option<String>,
+    pub btc_rpc_username: Option<String>,
+    pub btc_rpc_password: Option<String>,
     pub pprof_output: Option<PProfOutput>, // flamegraph(default)/proto
 }
 
@@ -87,24 +93,39 @@ impl Default for BenchTxConfig {
     fn default() -> Self {
         Self {
             tx_type: Some(TxType::Empty),
-            data_import_flag: false,
-            btc_block_dir: None,
+            btc_block_dir: Some("target/btc_blocks".to_string()),
+            btc_block_start_height: Some(820000),
+            btc_rpc_url: None,
+            btc_rpc_username: None,
+            btc_rpc_password: None,
             pprof_output: Some(PProfOutput::Flamegraph),
         }
     }
 }
 
 impl BenchTxConfig {
-    pub fn adjust(&mut self) {
-        self.tx_type.get_or_insert(TxType::Empty);
-        self.data_import_flag = false;
-        // if tx_type is btc_block, btc_block_dir must be existed, if not, panic
-        if self.tx_type == Some(TxType::BtcBlock) {
-            self.btc_block_dir
-                .as_ref()
-                .expect("btc_block_dir must be existed");
+    pub fn merge(&mut self, config: BenchTxConfig) {
+        if config.tx_type.is_some() {
+            self.tx_type = config.tx_type;
         }
-        self.pprof_output.get_or_insert(PProfOutput::Flamegraph);
+        if config.btc_block_dir.is_some() {
+            self.btc_block_dir = config.btc_block_dir;
+        }
+        if config.btc_block_start_height.is_some() {
+            self.btc_block_start_height = config.btc_block_start_height;
+        }
+        if config.btc_rpc_url.is_some() {
+            self.btc_rpc_url = config.btc_rpc_url;
+        }
+        if config.btc_rpc_username.is_some() {
+            self.btc_rpc_username = config.btc_rpc_username;
+        }
+        if config.btc_rpc_password.is_some() {
+            self.btc_rpc_password = config.btc_rpc_password;
+        }
+        if config.pprof_output.is_some() {
+            self.pprof_output = config.pprof_output;
+        }
     }
 
     pub fn load() -> Self {
@@ -112,10 +133,7 @@ impl BenchTxConfig {
         let mut config = BenchTxConfig::default();
         match std::fs::read_to_string(path) {
             Ok(config_data) => match toml::from_str::<BenchTxConfig>(&config_data) {
-                Ok(mut parsed_config) => {
-                    parsed_config.adjust();
-                    config = parsed_config;
-                }
+                Ok(parsed_config) => config.merge(parsed_config),
                 Err(e) => {
                     log::error!("Failed to parse config file: {}", e);
                 }
@@ -124,6 +142,28 @@ impl BenchTxConfig {
                 log::error!("Failed to read config file: {}", e);
             }
         };
+        // Override config with env variables
+        if let Ok(tx_type) = std::env::var("ROOCH_BENCH_TX_TYPE") {
+            config.tx_type = Some(tx_type.parse().unwrap());
+        }
+        if let Ok(btc_block_dir) = std::env::var("ROOCH_BENCH_BTC_BLOCK_DIR") {
+            config.btc_block_dir = Some(btc_block_dir);
+        }
+        if let Ok(btc_block_start_height) = std::env::var("ROOCH_BENCH_BTC_BLOCK_START_HEIGHT") {
+            config.btc_block_start_height = Some(btc_block_start_height.parse().unwrap());
+        }
+        if let Ok(btc_rpc_url) = std::env::var("ROOCH_BENCH_BTC_RPC_URL") {
+            config.btc_rpc_url = Some(btc_rpc_url);
+        }
+        if let Ok(btc_rpc_username) = std::env::var("ROOCH_BENCH_BTC_RPC_USERNAME") {
+            config.btc_rpc_username = Some(btc_rpc_username);
+        }
+        if let Ok(btc_rpc_password) = std::env::var("ROOCH_BENCH_BTC_RPC_PASSWORD") {
+            config.btc_rpc_password = Some(btc_rpc_password);
+        }
+        if let Ok(pprof_output) = std::env::var("ROOCH_BENCH_PPROF_OUTPUT") {
+            config.pprof_output = Some(pprof_output.parse().unwrap());
+        }
         config
     }
 }

@@ -43,11 +43,24 @@ is `rooch-benchmarks/config/bench_tx.toml`.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize, Parser, Eq)]
 pub struct BenchTxConfig {
     pub tx_type: Option<TxType>,    // empty(default)/transfer/btc-block
-    pub data_import_flag: bool,
-    pub btc_block_dir: Option<String>, // btc block dir, file name: <height>.hex
+    pub btc_block_dir: Option<String>, // btc block dir, default: target/btc_blocks, file name: <height>.hex
+    pub btc_block_start_height: Option<u64>, // btc block start height, default: 820000
+    pub btc_rpc_url: Option<String>,
+    pub btc_rpc_username: Option<String>,
+    pub btc_rpc_password: Option<String>,
     pub pprof_output: Option<PProfOutput>, // flamegraph(default)/proto
 }
 ```
+
+The env var has higher priority than the config file.
+
+* `ROOCH_BENCH_TX_TYPE`: override `tx_type` in config file.
+* `ROOCH_BENCH_BTC_BLOCK_DIR`: override `btc_block_dir` in config file.
+* `ROOCH_BENCH_BTC_BLOCK_START_HEIGHT`: override `btc_block_start_height` in config file.
+* `ROOCH_BENCH_BTC_RPC_URL`: override `btc_rpc_url` in config file.
+* `ROOCH_BENCH_BTC_RPC_USERNAME`: override `btc_rpc_username` in config file.
+* `ROOCH_BENCH_BTC_RPC_PASSWORD`: override `btc_rpc_password` in config file.
+* `ROOCH_BENCH_PPROF_OUTPUT`: override `pprof_output` in config file.
 
 ## Profiling
 
@@ -69,6 +82,7 @@ for PPROF_OUT output location:
 
 1. `l2_tx_<transfer/empty>`
 2. `btc_block`
+3. `btc_tx`
 
 for proto, run these to get svg:
 
@@ -81,3 +95,11 @@ pprof -svg profile.pb
 ### Why not run in CI pipeline?
 
 Coming soon...
+
+### How to prepare the Bitcoin blocks
+
+Run the benchmark with Bitcoin RPC config, it will download the blocks from Bitcoin network and save them in `target/btc_blocks` dir.
+
+```shell
+ROOCH_BENCH_TX_TYPE=btc_tx ROOCH_BENCH_BTC_RPC_URL=http://localhost:8332 ROOCH_BENCH_BTC_RPC_USERNAME=YourBTCUser ROOCH_BENCH_BTC_RPC_PASSWORD=YourBTCPass cargo bench -p rooch-benchmarks --bench bench_tx_exec
+```

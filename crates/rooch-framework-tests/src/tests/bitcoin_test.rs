@@ -37,7 +37,7 @@ fn test_submit_block() {
     let move_block = rooch_types::bitcoin::types::Block::from(block.clone());
 
     binding_test
-        .execute_l1_block(L1BlockWithBody {
+        .execute_l1_block_and_tx(L1BlockWithBody {
             block: rooch_types::transaction::L1Block {
                 chain_id: RoochMultiChainID::Bitcoin.multichain_id(),
                 block_height: height,
@@ -85,7 +85,7 @@ fn test_block_process(height: u64, block: Block) {
     let move_block = rooch_types::bitcoin::types::Block::from(block.clone());
 
     binding_test
-        .execute_l1_block(L1BlockWithBody {
+        .execute_l1_block_and_tx(L1BlockWithBody {
             block: rooch_types::transaction::L1Block {
                 chain_id: RoochMultiChainID::Bitcoin.multichain_id(),
                 block_height: height,
