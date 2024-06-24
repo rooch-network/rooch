@@ -499,6 +499,24 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].vm_status}} == Executed"
       Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
       
+      # split 
+      Then cmd bitseed: "split --fee-rate 1 --sft-inscription-id {{$.mint[-1].inscriptions[0].Id}} --amounts 500 --amounts 300" 
+      Then assert: "'{{$.split[-1]}}' not_contains error"
+
+      # mine a block
+      Then cmd ord: "wallet receive"
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].address}}"
+      Then sleep: "10"
+
+      # Sync bitseed
+      Then cmd: "move run --function default::bitseed_runner::run"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # Mint bits should not be validity, because it was destroyed during the split process
+      Then cmd: "move view --function 0xa::bitseed::view_validity --args string:{{$.mint[-1].inscriptions[0].Id}} "
+      Then assert: "{{$.move[-1].vm_status}} == Executed"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == false"
+
       # release servers
       Then stop the server
       Then stop the ord server 
