@@ -223,3 +223,50 @@ fn test_object_type_query() -> Result<()> {
     assert_eq!(query_object_states.len(), 1);
     Ok(())
 }
+
+#[test]
+fn test_escape_transaction() -> Result<()> {
+    let tmpdir = moveos_config::temp_dir();
+    let indexer_db = tmpdir.path().join(DEFAULT_DB_INDEXER_SUBDIR);
+    let indexer_store = IndexerStore::new(indexer_db.clone())?;
+    let indexer_reader = IndexerReader::new(indexer_db)?;
+
+    let random_transaction = random_ledger_transaction();
+
+    let random_execution_info = TransactionExecutionInfo::new(
+        H256::random(),
+        H256::random(),
+        random(),
+        H256::random(),
+        rand::random(),
+        KeptVMStatus::Executed,
+    );
+
+    let tx_context = TxContext::new_readonly_ctx(AccountAddress::random());
+    let move_action = random_verified_move_action();
+    let random_moveos_tx = VerifiedMoveOSTransaction {
+        root: ObjectEntity::genesis_root_object(),
+        ctx: tx_context,
+        action: move_action,
+        pre_execute_functions: random_function_calls(),
+        post_execute_functions: random_function_calls(),
+    };
+
+    let mut indexer_transaction = IndexerTransaction::new(
+        random_transaction,
+        random_execution_info,
+        random_moveos_tx.action.into(),
+        random_moveos_tx.ctx.clone(),
+    )?;
+    // construct escape field
+    let quotes = "Executed: ''There is no escape'";
+    indexer_transaction.status = quotes.to_string();
+    let transactions = vec![indexer_transaction];
+    let _ = indexer_store.persist_transactions(transactions)?;
+
+    let filter = TransactionFilter::Sender(random_moveos_tx.ctx.sender.into());
+    let query_transactions =
+        indexer_reader.query_transactions_with_filter(filter, None, 1, true)?;
+    assert_eq!(query_transactions.len(), 1);
+    Ok(())
+}

@@ -9,8 +9,8 @@ use crate::schema::object_states;
 use crate::schema::{events, transactions};
 use crate::{
     IndexerResult, IndexerStoreMeta, SqliteConnectionConfig, SqliteConnectionPoolConfig,
-    SqlitePoolConnection, INDEXER_EVENTS_TABLE_NAME, INDEXER_OBJECT_STATES_TABLE_NAME,
-    INDEXER_TRANSACTIONS_TABLE_NAME,
+    SqlitePoolConnection, DEFAULT_BUSY_TIMEOUT, INDEXER_EVENTS_TABLE_NAME,
+    INDEXER_OBJECT_STATES_TABLE_NAME, INDEXER_TRANSACTIONS_TABLE_NAME,
 };
 use anyhow::{anyhow, Result};
 use diesel::{
@@ -43,8 +43,8 @@ pub const STATE_OBJECT_TYPE_STR: &str = "object_type";
 pub const STATE_OWNER_STR: &str = "owner";
 
 #[derive(Clone)]
-pub(crate) struct InnerIndexerReader {
-    pool: crate::SqliteConnectionPool,
+pub struct InnerIndexerReader {
+    pub(crate) pool: crate::SqliteConnectionPool,
 }
 
 impl InnerIndexerReader {
@@ -54,7 +54,11 @@ impl InnerIndexerReader {
     ) -> Result<Self> {
         let manager = ConnectionManager::<SqliteConnection>::new(db_url);
 
-        let connection_config = SqliteConnectionConfig { read_only: true };
+        let connection_config = SqliteConnectionConfig {
+            read_only: true,
+            enable_wal: true,
+            busy_timeout: DEFAULT_BUSY_TIMEOUT,
+        };
 
         let pool = diesel::r2d2::Pool::builder()
             .max_size(config.pool_size)
@@ -120,7 +124,7 @@ impl IndexerReader {
         })
     }
 
-    fn get_inner_indexer_reader(&self, table_name: &str) -> Result<InnerIndexerReader> {
+    pub fn get_inner_indexer_reader(&self, table_name: &str) -> Result<InnerIndexerReader> {
         Ok(self
             .inner_indexer_reader_mapping
             .get(table_name)
