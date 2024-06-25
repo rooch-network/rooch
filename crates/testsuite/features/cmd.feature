@@ -1,9 +1,5 @@
 Feature: Rooch CLI integration tests
-    @serial
-    Scenario: Init
-      Then cmd: "init --skip-password"
-      Then cmd: "env switch --alias local"
- 
+
     @serial
     Scenario: rooch rpc test
       Given a server for rooch_rpc_test

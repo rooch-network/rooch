@@ -309,7 +309,7 @@ impl MoveOS {
             Ok(status) => {
                 if log::log_enabled!(log::Level::Debug) {
                     log::debug!(
-                        "execute_user_action ok tx(hash:{}) vm_status:{:?}",
+                        "execute_action ok tx(hash:{}) vm_status:{:?}",
                         tx_hash,
                         status
                     );
@@ -319,7 +319,7 @@ impl MoveOS {
             Err((vm_err, need_respawn)) => {
                 if log::log_enabled!(log::Level::Warn) {
                     log::warn!(
-                        "execute_user_action error tx(hash:{}) vm_err:{:?} need_respawn:{}",
+                        "execute_action error tx(hash:{}) vm_err:{:?} need_respawn:{}",
                         tx_hash,
                         vm_err,
                         need_respawn
