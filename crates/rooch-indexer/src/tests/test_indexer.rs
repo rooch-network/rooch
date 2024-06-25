@@ -270,20 +270,3 @@ fn test_escape_transaction() -> Result<()> {
     assert_eq!(query_transactions.len(), 1);
     Ok(())
 }
-
-// #[test]
-// fn test_default_busy() -> Result<()> {
-//     // let temp_dir = tempfile::tempdir().unwrap();
-//     // let temp_dir = moveos_config::temp_dir();
-//     let path = moveos_config::temp_dir.path().join("test.sqlite");
-//
-//     let mut db1 = Connection::open(&path)?;
-//     let tx1 = db1.transaction_with_behavior(TransactionBehavior::Exclusive)?;
-//     let db2 = Connection::open(&path)?;
-//     let r: Result<()> = db2.query_row("PRAGMA schema_version", [], |_| unreachable!());
-//     assert_eq!(
-//         r.unwrap_err().sqlite_error_code(),
-//         Some(ErrorCode::DatabaseBusy)
-//     );
-//     tx1.rollback()
-// }
