@@ -1,0 +1,12 @@
+[package]
+name = "view_function_loop"
+version = "0.0.1"
+
+[dependencies]
+MoveosStdlib = { local = "../../frameworks/moveos-stdlib" }
+
+[addresses]
+rooch_examples =  "_"
+
+[dev-addresses]
+rooch_examples = "0x42"
