@@ -14,6 +14,7 @@
 -  [Function `p2pkh_pubkey_hash`](#0x4_script_buf_p2pkh_pubkey_hash)
 -  [Function `is_witness_program`](#0x4_script_buf_is_witness_program)
 -  [Function `witness_program`](#0x4_script_buf_witness_program)
+-  [Function `is_op_return`](#0x4_script_buf_is_op_return)
 -  [Function `get_address`](#0x4_script_buf_get_address)
 -  [Function `is_op_return`](#0x4_script_buf_is_op_return)
 
@@ -128,6 +129,18 @@ Get the witness program from a witness program script.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_witness_program">witness_program</a>(self: &<a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_script_buf_is_op_return"></a>
+
+## Function `is_op_return`
+
+Checks if the given script is an OP_RETURN script.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_is_op_return">is_op_return</a>(self: &<a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>): bool
 </code></pre>
 
 
