@@ -71,6 +71,11 @@ impl TxContext {
         }
     }
 
+    /// Create a new TxContext for system call cases
+    pub fn new_system_call_ctx(tx_hash: H256, tx_size: u64) -> Self {
+        Self::new(AccountAddress::ZERO, 0, u64::MAX, tx_hash, tx_size)
+    }
+
     /// Create a new TxContext with a zero tx_hash for read-only function call cases
     pub fn new_readonly_ctx(sender: AccountAddress) -> Self {
         //TODO define read-only function gas limit
@@ -81,6 +86,11 @@ impl TxContext {
             H256::zero(),
             0,
         )
+    }
+
+    /// Check if the current TxContext is a system call
+    pub fn is_system_call(&self) -> bool {
+        self.sender == AccountAddress::ZERO
     }
 
     /// Spawn a new TxContext with a new `ids_created` counter and empty map

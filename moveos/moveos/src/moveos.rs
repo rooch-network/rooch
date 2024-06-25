@@ -274,6 +274,7 @@ impl MoveOS {
                 action
             );
         }
+        let is_system_call = ctx.is_system_call();
 
         // When a session is respawned, all the variables in TxContext kv store will be cleaned.
         // The variables in TxContext kv store before this executions should not be cleaned,
@@ -284,19 +285,22 @@ impl MoveOS {
         let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
         gas_meter.charge_io_write(ctx.tx_size)?;
 
-        // Temporary behavior, will enable this in the future.
-        // gas_meter.charge_io_write(ctx.tx_size)?;
-
         let resolver = RootObjectResolver::new(root, &self.db);
         let mut session = self.vm.new_session(&resolver, ctx, gas_meter);
 
-        // system pre_execute
-        // we do not charge gas for system_pre_execute function
-        session
-            .execute_function_call(self.system_pre_execute_functions.clone(), false)
-            .expect("system_pre_execute should not fail.");
+        //We do not execute pre_execute and post_execute functions for system call
+        if !is_system_call {
+            // system pre_execute
+            // we do not charge gas for system_pre_execute function
+            session
+                .execute_function_call(self.system_pre_execute_functions.clone(), false)
+                .expect("system_pre_execute should not fail.");
+        } else {
+            debug_assert!(pre_execute_functions.is_empty());
+            debug_assert!(post_execute_functions.is_empty());
+        }
 
-        match self.execute_user_action(
+        match self.execute_action(
             &mut session,
             action.clone(),
             pre_execute_functions.clone(),
@@ -310,7 +314,7 @@ impl MoveOS {
                         status
                     );
                 }
-                self.execution_cleanup(session, status, Some(action))
+                self.execution_cleanup(is_system_call, session, status)
             }
             Err((vm_err, need_respawn)) => {
                 if log::log_enabled!(log::Level::Warn) {
@@ -332,12 +336,12 @@ impl MoveOS {
                         post_execute_functions,
                     );
                     // when respawn session, VM error occurs in user move action or post execution.
-                    // We just cleanup with the VM error return by `execute_user_action`, ignore
+                    // We just cleanup with the VM error return by `execute_action`, ignore
                     // the result of `execute_pre_and_post`
                     // TODO: do we need to handle the result of `execute_pre_and_post` after respawn?
-                    self.execution_cleanup(s, vm_err.into_vm_status(), None)
+                    self.execution_cleanup(is_system_call, s, vm_err.into_vm_status())
                 } else {
-                    self.execution_cleanup(session, vm_err.into_vm_status(), None)
+                    self.execution_cleanup(is_system_call, session, vm_err.into_vm_status())
                 }
             }
         }
@@ -442,10 +446,10 @@ impl MoveOS {
         }
     }
 
-    // Execute use action with pre_execute and post_execute.
-    // Return the user action execution status if success,
+    // Execute action with pre_execute and post_execute.
+    // Return the action execution status if success,
     // else return VMError and a bool which indicate if we should respawn the session.
-    fn execute_user_action(
+    fn execute_action(
         &self,
         session: &mut MoveOSSession<'_, '_, RootObjectResolver<MoveOSStore>, MoveOSGasMeter>,
         action: VerifiedMoveAction,
@@ -501,12 +505,19 @@ impl MoveOS {
 
     fn execution_cleanup(
         &self,
+        is_system_call: bool,
         mut session: MoveOSSession<'_, '_, RootObjectResolver<MoveOSStore>, MoveOSGasMeter>,
         status: VMStatus,
-        _action_opt: Option<VerifiedMoveAction>,
     ) -> Result<RawTransactionOutput> {
         let kept_status = match status.keep_or_discard() {
-            Ok(kept_status) => kept_status,
+            Ok(kept_status) => {
+                if is_system_call && kept_status != KeptVMStatus::Executed {
+                    // system call should always success
+                    let backtrace = Backtrace::new();
+                    panic!("System call failed: {:?}\n{:?}", kept_status, backtrace);
+                }
+                kept_status
+            }
             Err(discard_status) => {
                 //This should not happen, if it happens, it means that the VM or verifer has a bug
                 let backtrace = Backtrace::new();
@@ -514,17 +525,8 @@ impl MoveOS {
             }
         };
 
-        //TODO gas_free
-        // let mut pay_gas = false;
-        // let gas_payment_account_opt = session.tx_context().get::<GasPaymentAccount>()?;
-
-        // if let Some(gas_payment_account) = gas_payment_account_opt {
-        //     pay_gas = gas_payment_account.pay_gas_by_module_account;
-        // }
-
         // update txn result to TxContext
         let gas_used = session.query_gas_used();
-        //TODO is it a good approach to add tx_result to TxContext?
         let tx_result = TxResult::new(&kept_status, gas_used);
         session
             .object_runtime
@@ -532,16 +534,14 @@ impl MoveOS {
             .add_to_tx_context(tx_result)
             .expect("Add tx_result to TxContext should always success");
 
-        // system post_execute
-        // we do not charge gas for system_post_execute function
-        session
-            .execute_function_call(self.system_post_execute_functions.clone(), false)
-            .expect("system_post_execute should not fail.");
-
-        //TODO gas_free
-        // if pay_gas {
-        //     self.execute_gas_charge_post(&mut session, &action_opt.unwrap())?;
-        // }
+        // We do not execute post_execute function for system call
+        if !is_system_call {
+            // system post_execute
+            // we do not charge gas for system_post_execute function
+            session
+                .execute_function_call(self.system_post_execute_functions.clone(), false)
+                .expect("system_post_execute should not fail.");
+        }
 
         let gas_schedule_updated = session.tx_context().get::<GasScheduleUpdated>()?;
         if let Some(_updated) = gas_schedule_updated {

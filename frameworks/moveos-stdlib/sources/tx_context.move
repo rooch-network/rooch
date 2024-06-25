@@ -162,6 +162,13 @@ module moveos_std::tx_context {
         option::extract(&mut result)
     }
 
+    /// Check if the current transaction is a system call
+    /// The system call is a special transaction initiated by the system.
+    public fun is_system_call(): bool {
+        let sender = sender();
+        moveos_std::core_addresses::is_vm_address(sender)
+    }
+
     public(friend) fun set_module_upgrade_flag(is_upgrade: bool) {
         let ctx = borrow_mut();
         if(!contains<ModuleUpgradeFlag>(ctx)){

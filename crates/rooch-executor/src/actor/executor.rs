@@ -21,7 +21,6 @@ use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::transaction::{FunctionCall, MoveOSTransaction, VerifiedMoveAction};
 use rooch_genesis::FrameworksGasParameters;
 use rooch_store::RoochStore;
-use rooch_types::address::BitcoinAddress;
 use rooch_types::bitcoin::BitcoinModule;
 use rooch_types::framework::auth_validator::{AuthValidatorCaller, TxValidateResult};
 use rooch_types::framework::ethereum::EthereumModule;
@@ -96,11 +95,12 @@ impl ExecutorActor {
 
     pub fn validate_l1_block(
         &self,
-        mut ctx: TxContext,
         l1_block: L1BlockWithBody,
-        sequencer_address: BitcoinAddress,
     ) -> Result<VerifiedMoveOSTransaction> {
-        ctx.add(TxValidateResult::new_l1_block_or_tx(sequencer_address))?;
+        let tx_hash = l1_block.block.tx_hash();
+        let tx_size = l1_block.block.tx_size();
+        let ctx = TxContext::new_system_call_ctx(tx_hash, tx_size);
+        //TODO we should call the contract to validate the l1 block has been executed
         //In the future, we should verify the block PoW difficulty or PoS validator signature before the sequencer decentralized
         let L1BlockWithBody {
             block:
@@ -142,14 +142,11 @@ impl ExecutorActor {
         }
     }
 
-    pub fn validate_l1_tx(
-        &self,
-        mut ctx: TxContext,
-        l1_tx: L1Transaction,
-        sequencer_address: BitcoinAddress,
-    ) -> Result<VerifiedMoveOSTransaction> {
-        ctx.add(TxValidateResult::new_l1_block_or_tx(sequencer_address))?;
-
+    pub fn validate_l1_tx(&self, l1_tx: L1Transaction) -> Result<VerifiedMoveOSTransaction> {
+        let tx_hash = l1_tx.tx_hash();
+        let tx_size = l1_tx.tx_size();
+        let ctx = TxContext::new_system_call_ctx(tx_hash, tx_size);
+        //TODO we should call the contract to validate the l1 tx has been executed
         match RoochMultiChainID::try_from(l1_tx.chain_id.id())? {
             RoochMultiChainID::Bitcoin => {
                 let action = VerifiedMoveAction::Function {
@@ -295,7 +292,7 @@ impl Handler<ValidateL1BlockMessage> for ExecutorActor {
         msg: ValidateL1BlockMessage,
         _ctx: &mut ActorContext,
     ) -> Result<VerifiedMoveOSTransaction> {
-        self.validate_l1_block(msg.ctx, msg.l1_block, msg.sequencer_address)
+        self.validate_l1_block(msg.l1_block)
     }
 }
 
@@ -306,7 +303,7 @@ impl Handler<ValidateL1TxMessage> for ExecutorActor {
         msg: ValidateL1TxMessage,
         _ctx: &mut ActorContext,
     ) -> Result<VerifiedMoveOSTransaction> {
-        self.validate_l1_tx(msg.ctx, msg.l1_tx, msg.sequencer_address)
+        self.validate_l1_tx(msg.l1_tx)
     }
 }
 
