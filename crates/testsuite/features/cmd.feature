@@ -484,4 +484,13 @@ Feature: Rooch CLI integration tests
       # release servers
       Then stop the server
       Then stop the ord server 
-      Then stop the bitcoind server 
+      Then stop the bitcoind server
+
+  @serial
+    Scenario: view_function_loop example
+      Given a server for view_function_loop
+      Then cmd: "account create"
+      Then cmd: "move publish -p ../../examples/view_function_loop  --named-addresses rooch_examples=default"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      Then cmd: "move view --function default::out_of_gas_loop::out_of_gas"
+      Then assert: "{{$.move[-1].vm_status.ExecutionFailure.status_code}} == 4002"

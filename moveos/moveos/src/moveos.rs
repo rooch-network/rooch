@@ -418,7 +418,7 @@ impl MoveOS {
             }
         };
         let mut gas_meter = MoveOSGasMeter::new(cost_table, tx_context.max_gas_amount);
-        gas_meter.set_metering(false);
+        gas_meter.set_metering(true);
         let resolver = RootObjectResolver::new(root, &self.db);
         let mut session = self
             .vm

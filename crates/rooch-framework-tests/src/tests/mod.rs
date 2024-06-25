@@ -9,3 +9,4 @@ mod empty_tests;
 mod ethereum_test;
 mod ord_test;
 mod session_validator_tests;
+mod view_function_gas;
