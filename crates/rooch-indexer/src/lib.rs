@@ -34,7 +34,6 @@ pub type IndexerResult<T> = Result<T, IndexerError>;
 pub type IndexerTableName = &'static str;
 pub const INDEXER_EVENTS_TABLE_NAME: IndexerTableName = "events";
 pub const INDEXER_OBJECT_STATES_TABLE_NAME: IndexerTableName = "object_states";
-// pub const INDEXER_TABLE_CHANGE_SETS_TABLE_NAME: IndexerTableName = "object_changes";
 pub const INDEXER_TRANSACTIONS_TABLE_NAME: IndexerTableName = "transactions";
 
 /// Please note that adding new indexer table needs to be added in vec simultaneously.
@@ -42,7 +41,6 @@ static INDEXER_VEC_TABLE_NAME: Lazy<Vec<IndexerTableName>> = Lazy::new(|| {
     vec![
         INDEXER_EVENTS_TABLE_NAME,
         INDEXER_OBJECT_STATES_TABLE_NAME,
-        // INDEXER_TABLE_CHANGE_SETS_TABLE_NAME,
         INDEXER_TRANSACTIONS_TABLE_NAME,
     ]
 });
@@ -193,8 +191,8 @@ pub struct SqliteConnectionPoolConfig {
 }
 
 impl SqliteConnectionPoolConfig {
-    const DEFAULT_POOL_SIZE: u32 = 30;
-    const DEFAULT_CONNECTION_TIMEOUT: u64 = 30;
+    const DEFAULT_POOL_SIZE: u32 = 64;
+    const DEFAULT_CONNECTION_TIMEOUT: u64 = 120;
 
     fn connection_config(&self) -> SqliteConnectionConfig {
         SqliteConnectionConfig { read_only: false }

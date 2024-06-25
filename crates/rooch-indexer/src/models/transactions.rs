@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::schema::transactions;
+use crate::utils::escape_sql_string;
 use diesel::prelude::*;
 use moveos_types::h256::H256;
 use rooch_types::address::RoochAddress;
@@ -97,4 +98,10 @@ impl TryFrom<StoredTransaction> for IndexerTransaction {
         };
         Ok(indexer_transaction)
     }
+}
+
+pub fn escape_transaction(mut transaction: StoredTransaction) -> StoredTransaction {
+    transaction.sender = escape_sql_string(transaction.sender.clone());
+    transaction.status = escape_sql_string(transaction.status.clone());
+    transaction
 }

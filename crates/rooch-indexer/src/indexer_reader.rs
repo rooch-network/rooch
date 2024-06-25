@@ -43,8 +43,8 @@ pub const STATE_OBJECT_TYPE_STR: &str = "object_type";
 pub const STATE_OWNER_STR: &str = "owner";
 
 #[derive(Clone)]
-pub(crate) struct InnerIndexerReader {
-    pool: crate::SqliteConnectionPool,
+pub struct InnerIndexerReader {
+    pub(crate) pool: crate::SqliteConnectionPool,
 }
 
 impl InnerIndexerReader {
@@ -120,7 +120,7 @@ impl IndexerReader {
         })
     }
 
-    fn get_inner_indexer_reader(&self, table_name: &str) -> Result<InnerIndexerReader> {
+    pub fn get_inner_indexer_reader(&self, table_name: &str) -> Result<InnerIndexerReader> {
         Ok(self
             .inner_indexer_reader_mapping
             .get(table_name)

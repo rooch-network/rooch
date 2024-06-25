@@ -12,7 +12,7 @@ use tracing::log;
 
 use crate::models::events::StoredEvent;
 use crate::models::states::StoredObjectState;
-use crate::models::transactions::StoredTransaction;
+use crate::models::transactions::{escape_transaction, StoredTransaction};
 use crate::schema::{events, object_states, transactions};
 use crate::utils::escape_sql_string;
 use crate::{get_sqlite_pool_connection, SqliteConnectionPool};
@@ -133,7 +133,7 @@ impl SqliteIndexerStore {
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
         let transactions = transactions
             .into_iter()
-            .map(StoredTransaction::from)
+            .map(|v| escape_transaction(StoredTransaction::from(v)))
             .collect::<Vec<_>>();
 
         diesel::insert_into(transactions::table)
