@@ -592,6 +592,22 @@ module rooch_nursery::bitseed {
         hash::sha3_256(buf)
     }
 
+    fun is_valid_bitseed_split(metadata: &SimpleMap<String,vector<u8>>) : (bool, Option<String>) {
+        std::debug::print(&string::utf8(b"split inscription metadata:"));
+        std::debug::print(metadata);
+
+        let amount = get_SFT_amount(metadata);
+        std::debug::print(&string::utf8(b"split inscription metadata amount:"));
+        std::debug::print(&amount);
+
+        let attributes = get_SFT_attributes(metadata);
+        std::debug::print(&string::utf8(b"split inscription metadata attributes:"));
+        std::debug::print(&attributes);
+
+        simple_map::drop(attributes);
+        (true, option::none<String>())
+    }
+
     // ==== Process Bitseed Entry ==== //
     public fun process_inscription(inscription: &Inscription) {
         let txid = ord::txid(inscription);
@@ -630,7 +646,11 @@ module rooch_nursery::bitseed {
                     let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed, content_type, body);
                     ord::seal_metaprotocol_validity<Bitseed>(inscription_id, is_valid, reason);
                 } else if (option::borrow(&op) == &string::utf8(b"split")) {
-                    ord::seal_metaprotocol_validity<Bitseed>(inscription_id, true, option::none());
+                    std::debug::print(&string::utf8(b"split inscription:"));
+                    std::debug::print(inscription);
+
+                    let (is_valid, reason) = is_valid_bitseed_split(&metadata);
+                    ord::seal_metaprotocol_validity<Bitseed>(inscription_id, is_valid, reason);
                 } else if (option::borrow(&op) == &string::utf8(b"merge")) {
                     ord::seal_metaprotocol_validity<Bitseed>(inscription_id, true, option::none());
                 } else {
