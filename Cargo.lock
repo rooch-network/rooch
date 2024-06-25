@@ -2039,7 +2039,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tracing",
- "uuid 1.9.0",
+ "uuid 1.9.1",
  "valuable",
 ]
 
@@ -2852,7 +2852,7 @@ version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef552e6f588e446098f6ba40d89ac146c8c7b64aade83c051ee00bb5d2bc18d"
 dependencies = [
- "uuid 1.9.0",
+ "uuid 1.9.1",
 ]
 
 [[package]]
@@ -4900,7 +4900,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.4.10",
+ "socket2 0.5.7",
  "tokio",
  "tower-service",
  "tracing",
@@ -7658,7 +7658,7 @@ dependencies = [
  "serde 1.0.203",
  "serde_json",
  "tokio",
- "uuid 1.9.0",
+ "uuid 1.9.1",
 ]
 
 [[package]]
@@ -8743,7 +8743,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "22505a5c94da8e3b7c2996394d1c933236c4d743e81a410bcca4e6989fc066a4"
 dependencies = [
  "bytes",
- "heck 0.4.1",
+ "heck 0.5.0",
  "itertools 0.12.1",
  "log",
  "multimap",
@@ -9511,7 +9511,7 @@ dependencies = [
  "rkyv_derive",
  "seahash",
  "tinyvec",
- "uuid 1.9.0",
+ "uuid 1.9.1",
 ]
 
 [[package]]
@@ -12127,7 +12127,7 @@ dependencies = [
  "debugid",
  "memmap2 0.9.4",
  "stable_deref_trait",
- "uuid 1.9.0",
+ "uuid 1.9.1",
 ]
 
 [[package]]
@@ -12444,7 +12444,7 @@ dependencies = [
  "testcontainers",
  "tokio",
  "tracing",
- "uuid 1.9.0",
+ "uuid 1.9.1",
 ]
 
 [[package]]
@@ -12922,7 +12922,7 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
- "uuid 1.9.0",
+ "uuid 1.9.1",
 ]
 
 [[package]]
@@ -13337,9 +13337,9 @@ dependencies = [
 
 [[package]]
 name = "uuid"
-version = "1.9.0"
+version = "1.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ea73390fe27785838dcbf75b91b1d84799e28f1ce71e6f372a5dc2200c80de5"
+checksum = "5de17fd2f7da591098415cff336e12965a28061ddace43b59cb3c430179c9439"
 dependencies = [
  "getrandom 0.2.15",
  "rand 0.8.5",
@@ -13349,9 +13349,9 @@ dependencies = [
 
 [[package]]
 name = "uuid-macro-internal"
-version = "1.9.0"
+version = "1.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cdb394c528d1cb434c2f0522027e50c0705305caf6d20405c07a6f7e4cf9543c"
+checksum = "a3ff64d5cde1e2cb5268bdb497235b6bd255ba8244f910dbc3574e59593de68c"
 dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
