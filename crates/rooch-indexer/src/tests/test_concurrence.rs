@@ -27,7 +27,6 @@ mod tests {
 
     fn get_row_count() -> i64 {
         1000
-        // 10000
     }
     fn get_sleep_duration() -> Duration {
         Duration::from_millis(1)
@@ -100,11 +99,8 @@ mod tests {
                     result[0].tx_order
                 };
 
-                if count % 100 == 0 {
-                    println!("SQLite tx_order : {}", count);
-                };
-                if count >= get_row_count() {
-                    return count;
+                if count + 1 >= get_row_count() {
+                    return count + 1;
                 };
                 thread::sleep(sleep_duration);
             }

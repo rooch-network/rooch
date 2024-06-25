@@ -5,6 +5,7 @@ use crate::store::sqlite_store::SqliteIndexerStore;
 use crate::store::traits::IndexerStoreTrait;
 use crate::utils::create_all_tables_if_not_exists;
 use anyhow::Result;
+use diesel::connection::SimpleConnection;
 use diesel::r2d2::ConnectionManager;
 use diesel::sqlite::SqliteConnection;
 use errors::IndexerError;
@@ -31,6 +32,8 @@ pub mod utils;
 
 /// Type alias to improve readability.
 pub type IndexerResult<T> = Result<T, IndexerError>;
+
+pub const DEFAULT_BUSY_TIMEOUT: u64 = 5000; // millsecond
 pub type IndexerTableName = &'static str;
 pub const INDEXER_EVENTS_TABLE_NAME: IndexerTableName = "events";
 pub const INDEXER_OBJECT_STATES_TABLE_NAME: IndexerTableName = "object_states";
@@ -192,10 +195,14 @@ pub struct SqliteConnectionPoolConfig {
 
 impl SqliteConnectionPoolConfig {
     const DEFAULT_POOL_SIZE: u32 = 64;
-    const DEFAULT_CONNECTION_TIMEOUT: u64 = 120;
+    const DEFAULT_CONNECTION_TIMEOUT: u64 = 120; // second
 
     fn connection_config(&self) -> SqliteConnectionConfig {
-        SqliteConnectionConfig { read_only: false }
+        SqliteConnectionConfig {
+            read_only: false,
+            enable_wal: true,
+            busy_timeout: DEFAULT_BUSY_TIMEOUT,
+        }
     }
 
     pub fn set_pool_size(&mut self, size: u32) {
@@ -229,6 +236,9 @@ impl Default for SqliteConnectionPoolConfig {
 struct SqliteConnectionConfig {
     // SQLite does not support the statement_timeout parameter
     read_only: bool,
+
+    enable_wal: bool,
+    busy_timeout: u64,
 }
 
 impl diesel::r2d2::CustomizeConnection<SqliteConnection, diesel::r2d2::Error>
@@ -238,14 +248,16 @@ impl diesel::r2d2::CustomizeConnection<SqliteConnection, diesel::r2d2::Error>
         &self,
         conn: &mut SqliteConnection,
     ) -> std::result::Result<(), diesel::r2d2::Error> {
-        use diesel::{sql_query, RunQueryDsl};
-
-        // This will disable uncommitted reads, putting the connection into read-only mode
         if self.read_only {
-            sql_query("PRAGMA read_uncommitted = 0")
-                .execute(conn)
+            conn.batch_execute("PRAGMA read_uncommitted = 0;")
                 .map_err(diesel::r2d2::Error::QueryError)?;
         }
+        if self.enable_wal {
+            conn.batch_execute("PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL;")
+                .map_err(diesel::r2d2::Error::QueryError)?;
+        }
+        conn.batch_execute(&format!("PRAGMA busy_timeout = {};", self.busy_timeout))
+            .map_err(diesel::r2d2::Error::QueryError)?;
 
         Ok(())
     }
