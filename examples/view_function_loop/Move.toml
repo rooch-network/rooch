@@ -7,6 +7,7 @@ MoveosStdlib = { local = "../../frameworks/moveos-stdlib" }
 
 [addresses]
 rooch_examples =  "_"
+moveos_std = "0x2"
 
 [dev-addresses]
 rooch_examples = "0x42"

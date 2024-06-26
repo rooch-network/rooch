@@ -94,6 +94,8 @@ module moveos_std::wasm {
 
     native fun native_release_wasm_instance(instance: WASMInstance): bool;
 
+    public native fun native_wasm_test(arg1: u64, arg2: u64): (u64, u64);
+
     #[test_only] 
     use std::vector;
 

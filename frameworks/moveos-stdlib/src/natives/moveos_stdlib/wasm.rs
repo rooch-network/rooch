@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use log::{debug, warn};
+use log::{debug, info, warn};
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_core_types::vm_status::StatusCode;
@@ -784,6 +784,24 @@ fn native_release_wasm_instance(
     })
 }
 
+fn native_wast_test(
+    gas_params: &WASMReleaseInstance,
+    context: &mut NativeContext,
+    _ty_args: Vec<Type>,
+    _args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    info!(
+        "native_wast_test get_balance {:?} gas_parameter {:?}",
+        context.gas_balance(),
+        gas_params.base
+    );
+
+    Ok(NativeResult::Success {
+        cost: InternalGas::zero(),
+        ret_vals: smallvec![Value::u64(1234), Value::u64(5678)],
+    })
+}
+
 /***************************************************************************************************
  * module
  **************************************************************************************************/
@@ -863,9 +881,13 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         (
             "native_release_wasm_instance",
             make_native(
-                gas_params.release_wasm_instance,
+                gas_params.release_wasm_instance.clone(),
                 native_release_wasm_instance,
             ),
+        ),
+        (
+            "native_wasm_test",
+            make_native(gas_params.release_wasm_instance, native_wast_test),
         ),
     ];
 

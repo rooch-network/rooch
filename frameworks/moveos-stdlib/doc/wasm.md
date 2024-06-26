@@ -17,6 +17,7 @@
 -  [Function `read_data_length`](#0x2_wasm_read_data_length)
 -  [Function `read_data_from_heap`](#0x2_wasm_read_data_from_heap)
 -  [Function `release_wasm_instance`](#0x2_wasm_release_wasm_instance)
+-  [Function `native_wasm_test`](#0x2_wasm_native_wasm_test)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -153,4 +154,15 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_release_wasm_instance">release_wasm_instance</a>(instance: <a href="wasm.md#0x2_wasm_WASMInstance">wasm::WASMInstance</a>): bool
+</code></pre>
+
+
+
+<a name="0x2_wasm_native_wasm_test"></a>
+
+## Function `native_wasm_test`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_native_wasm_test">native_wasm_test</a>(arg1: u64, arg2: u64): (u64, u64)
 </code></pre>

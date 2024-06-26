@@ -71,7 +71,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         let config_cloned = config.clone();
 
         // Compile the package and run the verifier
-        let mut package = config.compile_package_no_exit(&package_path, &mut stderr())?;
+        let mut package = compile_with_filter(&package_path, config_cloned.clone())?;
         run_verifier(package_path, config_cloned, &mut package)?;
 
         // Get the modules from the package
@@ -199,4 +199,257 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         //Caller need to check the `execution_info.status` field.
         Ok(tx_result)
     }
+}
+
+use log::info;
+use move_command_line_common::address::NumericalAddress;
+use move_compiler::expansion::ast::Address;
+use move_compiler::parser::ast as P;
+use move_compiler::parser::ast::Exp_::Call;
+use move_compiler::parser::ast::ModuleName;
+use move_compiler::parser::ast::NameAccessChain_::Three;
+use move_compiler::parser::ast::SequenceItem_::Bind;
+use move_compiler::parser::ast::{Bind_, ModuleIdent_, Var};
+use move_compiler::parser::ast::{
+    Definition, Exp_, Function, LeadingNameAccess_, ModuleIdent, SequenceItem_, Use,
+};
+use move_compiler::parser::ast::{FunctionBody_, UseDecl};
+use move_compiler::shared::Name;
+use move_compiler::{diagnostics, parser, Compiler};
+use move_ir_types::location::{sp, Loc};
+use move_package::compilation::build_plan::BuildPlan;
+use move_package::compilation::compiled_package::CompiledPackage;
+use move_package::BuildConfig;
+use move_symbol_pool::symbol::Symbol;
+use rooch_types::function_arg;
+use std::path::PathBuf;
+use P::ModuleMember as PM;
+
+fn filter_module_member(module_member: P::ModuleMember) -> Option<P::ModuleMember> {
+    use move_compiler::parser::ast::Sequence;
+    use move_compiler::parser::ast::Value_ as ASTValue;
+    use move_compiler::parser::ast::Var as ASTVar;
+    use move_ir_types::location::sp;
+    use move_ir_types::sp;
+
+    match module_member {
+        PM::Function(func_def) => {
+            let Function {
+                attributes,
+                loc: _loc,
+                visibility,
+                entry,
+                signature,
+                acquires,
+                inline,
+                name,
+                body,
+            } = func_def.clone();
+
+            let module_addr = sp(
+                func_def.loc,
+                LeadingNameAccess_::AnonymousAddress(NumericalAddress::parse_str("0x2").unwrap()),
+            );
+
+            let module_name: Name = Name::new(func_def.loc, Symbol::from("wasm"));
+            let func_name: Name = Name::new(func_def.loc, Symbol::from("native_wasm_test"));
+
+            let start_stmt = {
+                let module_address_name = sp(func_def.loc, (module_addr, module_name));
+                let mut arg_list = Vec::new();
+                arg_list.push(sp(
+                    func_def.loc,
+                    Exp_::Value(sp(func_def.loc, ASTValue::Num(Symbol::from("123")))),
+                ));
+                arg_list.push(sp(
+                    func_def.loc,
+                    Exp_::Value(sp(func_def.loc, ASTValue::Num(Symbol::from("456")))),
+                ));
+                let args = sp(func_def.loc, arg_list);
+                let call_expr = sp(
+                    func_def.loc,
+                    Call(
+                        sp(func_def.loc, Three(module_address_name, func_name)),
+                        false,
+                        None,
+                        args,
+                    ),
+                );
+                let left_var_1: Name = Name::new(func_def.loc, Symbol::from("axxxx111"));
+                let left_var_2: Name = Name::new(func_def.loc, Symbol::from("bxxxx111"));
+                let mut left_var_list = Vec::new();
+                left_var_list.push(sp(func_def.loc, Bind_::Var(Var(left_var_1))));
+                left_var_list.push(sp(func_def.loc, Bind_::Var(Var(left_var_2))));
+                Bind(sp(func_def.loc, left_var_list), None, Box::from(call_expr))
+            };
+
+            let second_stmt = {
+                let module_address_name = sp(func_def.loc, (module_addr, module_name));
+                let mut arg_list = Vec::new();
+
+                let first_arg_name: Name = Name::new(func_def.loc, Symbol::from("axxxx111"));
+                let second_arg_name: Name = Name::new(func_def.loc, Symbol::from("bxxxx111"));
+
+                arg_list.push(sp(func_def.loc, Exp_::Copy(Var(first_arg_name))));
+                arg_list.push(sp(func_def.loc, Exp_::Copy(Var(second_arg_name))));
+                let args = sp(func_def.loc, arg_list);
+                let call_expr = sp(
+                    func_def.loc,
+                    Call(
+                        sp(func_def.loc, Three(module_address_name, func_name)),
+                        false,
+                        None,
+                        args,
+                    ),
+                );
+                sp(func_def.loc, SequenceItem_::Seq(Box::from(call_expr)))
+            };
+
+            let func_name = func_def.name.0.to_string();
+            //let new_body_sequence = if func_name == "test_counter".to_string() {
+                let new_body_sequence = if let FunctionBody_::Defined(sequence) = body.clone().value {
+                    let (a, mut sequence_item, c, d) = sequence;
+
+                    info!("11111111 a {:?},", a);
+                    info!("33333333 c {:?},", c);
+                    info!("44444444 d {:?},", d);
+                    sequence_item.insert(0, sp(func_def.loc, start_stmt));
+                    sequence_item.push(second_stmt);
+                    info!("22222222 b {:?},", sequence_item);
+                    let v = (a, sequence_item, c, d);
+
+                    Some(v)
+                } else {
+                    None
+                };
+            //} else {
+            //    None
+            //};
+            if new_body_sequence.is_some() {
+                let new_body = sp(
+                    func_def.loc,
+                    FunctionBody_::Defined(new_body_sequence.unwrap()),
+                );
+
+                let new_func_def = Function {
+                    attributes,
+                    loc: _loc,
+                    visibility,
+                    entry,
+                    signature,
+                    acquires,
+                    inline,
+                    name,
+                    body: new_body,
+                };
+                Some(PM::Function(new_func_def))
+            } else {
+                Some(PM::Function(func_def))
+            }
+        }
+        PM::Struct(struct_def) => Some(PM::Struct(struct_def)),
+        PM::Spec(sp!(spec_loc, spec)) => Some(PM::Spec(sp(spec_loc, spec))),
+        PM::Use(use_decl) => Some(PM::Use(use_decl)),
+        PM::Friend(friend_decl) => Some(PM::Friend(friend_decl)),
+        PM::Constant(constant) => Some(PM::Constant(constant)),
+    }
+}
+
+fn filter_program(program: &mut parser::ast::Program) {
+    for source_def in program.source_definitions.iter_mut() {
+        let def_cloned = source_def.def.clone();
+
+        let modified_def = {
+            match def_cloned {
+                Definition::Module(mut module_def) => {
+                    let parser::ast::ModuleDefinition {
+                        attributes,
+                        loc,
+                        address,
+                        name,
+                        is_spec_module,
+                        members,
+                    } = module_def;
+
+                    let new_members: Vec<_> = members
+                        .into_iter()
+                        .filter_map(|member| filter_module_member(member))
+                        .collect();
+
+                    /*
+                    let module_name = Name::new(loc, Symbol::from("wasm"));
+                    let mut function_name_path: Vec<(Name, Option<Name>)> = Vec::new();
+                    function_name_path
+                        .push((Name::new(loc, Symbol::from("native_wasm_test")), None));
+
+                    let addr = sp(
+                        loc,
+                        LeadingNameAccess_::AnonymousAddress(
+                            NumericalAddress::parse_str("0x2").unwrap(),
+                        ),
+                    );
+                    let module_ident = ModuleIdent_ {
+                        address: addr,
+                        module: ModuleName(module_name),
+                    };
+                    let module_import_path = ModuleIdent::new(loc, module_ident);
+
+                    let module_import = UseDecl {
+                        attributes: vec![],
+                        use_: Use::Members(module_import_path, function_name_path),
+                    };
+
+                     */
+
+                    //new_members.push(PM::Use(module_import));
+
+                    Definition::Module(parser::ast::ModuleDefinition {
+                        attributes,
+                        loc,
+                        address,
+                        name,
+                        is_spec_module,
+                        members: new_members,
+                    })
+                }
+                Definition::Address(address) => Definition::Address(address.clone()),
+                Definition::Script(script) => Definition::Script(script.clone()),
+            }
+        };
+
+        source_def.def = modified_def;
+    }
+}
+
+pub fn compile_with_filter(
+    path: &PathBuf,
+    build_config: BuildConfig,
+) -> anyhow::Result<CompiledPackage> {
+    let resolved_graph =
+        build_config.resolution_graph_for_package(&path, &mut std::io::stdout())?;
+
+    let compiled = BuildPlan::create(resolved_graph)?.compile_with_driver(
+        &mut std::io::stdout(),
+        Some(6),
+        |compiler: Compiler| {
+            use move_compiler::PASS_PARSER;
+            let (files, pprog_and_comments_res) = compiler.run::<PASS_PARSER>()?;
+
+            let (_comments, stepped) = match pprog_and_comments_res {
+                Err(errors) => panic!("compile_with_filter build failed {:?}!", errors),
+                Ok(res) => res,
+            };
+
+            let (empty_compiler, mut program) = stepped.into_ast();
+            filter_program(&mut program);
+
+            let step1_compiler = empty_compiler.at_parser(program);
+            let compilation_result = step1_compiler.build();
+            let (units, _) = diagnostics::unwrap_or_report_diagnostics(&files, compilation_result);
+
+            Ok((files, units))
+        },
+    )?;
+
+    Ok(compiled)
 }
