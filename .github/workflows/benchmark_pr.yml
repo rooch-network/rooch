@@ -1,0 +1,29 @@
+on: [pull_request]
+
+name: benchmark pull requests
+jobs:
+  runBenchmark:
+    name: run benchmark
+    runs-on: self-hosted
+    steps:
+      - name: checkout
+        uses: actions/checkout@v1
+        with:
+          submodules: recursive
+      - name: run flamegraph
+        run: bash ./scripts/flamegraph.sh ${{ github.event.pull_request.number }}
+        env:
+          RUST_LOG: error
+          RUST_BACKTRACE: full
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: use criterion
+        uses: boa-dev/criterion-compare-action@master
+        env:
+          RUST_LOG: error
+          RUST_BACKTRACE: full
+        with:
+          cwd: "benchmarks"
+          branchName: ${{ github.base_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
