@@ -1,22 +1,22 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { createContext, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import { createContext, useRef } from 'react'
 
 import type { StateStorage } from 'zustand/middleware'
-import { createSessionStore, SessionStore } from '../sessionStore'
-import { useRoochClient } from '../hooks'
-import { useCurrentNetwork } from '../hooks'
-import { Network } from '@roochnetwork/rooch-sdk'
-import { getDefaultStorage, StorageType } from '../utils/stateStorage'
 
-const DEFAULT_SESSION_STORAGE_KEY = function (key: string | undefined, network: Network) {
+import { createSessionStore, SessionStore } from './sessionStore.js'
+
+import { useCurrentNetwork } from '../hooks/index.js'
+import { getDefaultStorage, StorageType } from '../utils/index.js'
+
+const DEFAULT_SESSION_STORAGE_KEY = function (key: string | undefined, network: string) {
   if (key) {
     return key
   }
 
-  return 'rooch-sdk-kit:rooch-session-info' + network.id
+  return 'rooch-sdk-kit:rooch-session-info' + network
 }
 
 export const RoochSessionContext = createContext<SessionStore | null>(null)
@@ -35,32 +35,16 @@ export function RoochSessionProvider(props: RoochSessionProviderProps) {
   // ** Props **
   const { storage, storageKey, children } = props
 
-  // ** State **
-  const [init, setInit] = useState(true)
-
   // ** Hooks **
-  const client = useRoochClient()
   const network = useCurrentNetwork()
-  const sessionStoreRef = useRef<SessionStore>()
 
-  // init
-  useEffect(() => {
-    const init = async () => {
-      sessionStoreRef.current = createSessionStore({
-        client: client,
-        storage: storage || getDefaultStorage(StorageType.Session),
-        storageKey: DEFAULT_SESSION_STORAGE_KEY(storageKey, network),
-      })
-    }
-
-    init().finally(() => setInit(false))
-  }, [client, network, storage, storageKey])
-
-  return init ? (
-    <></>
-  ) : (
-    <RoochSessionContext.Provider value={sessionStoreRef.current!}>
-      {children}
-    </RoochSessionContext.Provider>
+  const storeRef = useRef(
+    createSessionStore({
+      storage: storage || getDefaultStorage(StorageType.Session),
+      storageKey: DEFAULT_SESSION_STORAGE_KEY(storageKey, network),
+    }),
+  )
+  return (
+    <RoochSessionContext.Provider value={storeRef.current}>{children}</RoochSessionContext.Provider>
   )
 }

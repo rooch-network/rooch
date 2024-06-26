@@ -3,9 +3,10 @@
 
 import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-query'
 import { useMutation } from '@tanstack/react-query'
-import { roochMutationKeys } from '../constants/roochMutationKeys'
-import { useCurrentSession, useRoochClient, useRoochSessionStore, useSession } from './index'
-import { addressToSeqNumber } from '@roochnetwork/rooch-sdk'
+
+import { Session } from '@roochnetwork/rooch-sdk'
+import { roochMutationKeys } from '../constants/index.js'
+import { useCurrentSession, useRoochClient, useRoochSessionStore, useSession } from './index.js'
 
 type UseRemoveSessionArgs = {
   authKey: string
@@ -40,22 +41,16 @@ export function useRemoveSession({
           return
         }
 
-        const result = await client.executeTransaction({
-          funcId: '0x3::session_key::remove_session_key_entry',
-          args: [
-            {
-              type: { Vector: 'U8' },
-              value: addressToSeqNumber(args.authKey),
-            },
-          ],
-          tyArgs: [],
-          address: curSessionKey.getAddress(),
-          authorizer: curSessionKey.getAuthorizer(),
+        const result = await client.removeSession({
+          authKey: curSessionKey.getAuthKey(),
+          signer: curSessionKey,
         })
 
-        if (result.execution_info.status.type === 'executed') {
+        if (result) {
           // clean cache
-          let cacheSession = sessionsKeys.find((item) => item.getAuthKey() === args.authKey)
+          let cacheSession = sessionsKeys.find(
+            (item: Session) => item.getAuthKey() === args.authKey,
+          )
 
           if (cacheSession) {
             removeSession(cacheSession)

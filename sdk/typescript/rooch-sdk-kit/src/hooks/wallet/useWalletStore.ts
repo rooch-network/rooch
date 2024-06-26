@@ -4,8 +4,8 @@
 import { useContext } from 'react'
 import { useStore } from 'zustand'
 
-import { WalletContext } from '../../provider/walletProvider'
-import type { WalletStoreState } from '../../walletStore'
+import { WalletContext } from '../../provider/index.js'
+import type { WalletStoreState } from '../../provider/walletStore.js'
 
 export function useWalletStore<T>(selector: (state: WalletStoreState) => T): T {
   const store = useContext(WalletContext)

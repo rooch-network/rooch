@@ -3,16 +3,16 @@
 
 import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-query'
 import { useMutation } from '@tanstack/react-query'
+import { ThirdPartyAddress } from '@roochnetwork/rooch-sdk'
 
-import { useWalletStore } from './useWalletStore'
-import { BaseWallet, WalletAccount } from '../../types'
-import { walletMutationKeys } from '../../constants/walletMutationKeys'
-import { Buffer } from 'buffer'
+import { useWalletStore } from './useWalletStore.js'
+import { walletMutationKeys } from '../../constants/index.js'
+import { Wallet } from '../../wellet/index.js'
 
 type ConnectWalletArgs = {
-  wallet: BaseWallet
+  wallet: Wallet
 }
-type ConnectWalletResult = WalletAccount[]
+type ConnectWalletResult = ThirdPartyAddress[]
 
 type UseConnectWalletMutationOptions = Omit<
   UseMutationOptions<ConnectWalletResult, Error, ConnectWalletArgs, unknown>,
@@ -41,16 +41,12 @@ export function useConnectWallet({
       try {
         setConnectionStatus('connecting')
 
-        const connectAccounts = await wallet.connect()
-        const selectedAccount = connectAccounts[0]
-        await selectedAccount.resoleRoochAddress()
+        const connectAddress = await wallet.connect()
+        const selectedAddress = connectAddress[0]
 
-        setWalletConnected(wallet, connectAccounts, selectedAccount)
+        setWalletConnected(wallet, connectAddress, selectedAddress)
 
-        console.log(selectedAccount)
-        console.log(Buffer.from(selectedAccount.address).toString('hex'))
-
-        return connectAccounts
+        return connectAddress
       } catch (error) {
         setConnectionStatus('disconnected')
         throw error
