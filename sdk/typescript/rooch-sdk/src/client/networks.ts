@@ -8,7 +8,7 @@ export function getRoochNodeUrl(network: 'testnet' | 'devnet' | 'localnet') {
     case 'devnet':
       return 'https://dev-seed.rooch.network:443'
     case 'localnet':
-      return 'http://127.0.0.1:50051'
+      return 'http://127.0.0.1:6767'
     default:
       throw new Error(`Unknown network: ${network}`)
   }
