@@ -111,6 +111,7 @@ module rooch_framework::transaction_validator {
     /// Transaction pre_execute function.
     /// Execute before the transaction is executed, automatically called by the MoveOS VM.
     /// This function is for Rooch to auto create account and address maping.
+    /// The system call transaction do not execute the pre_execute and post_execute function.
     fun pre_execute(
     ) {
         let sender = tx_context::sender();

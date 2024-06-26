@@ -222,7 +222,7 @@ module bitcoin_move::pending_block{
         let store = borrow_mut_store();
         let block_obj = take_pending_block(block_hash);
         let (best_block_height, _best_block_hash) = types::unpack_block_height_hash(*option::borrow(&store.best_block));
-        assert!(best_block_height > store.reorg_block_count && best_block_height - store.reorg_block_count >= object::borrow(&block_obj).block_height, ErrorNeedToWaitMoreBlocks);
+        assert!(best_block_height >= store.reorg_block_count && best_block_height - store.reorg_block_count >= object::borrow(&block_obj).block_height, ErrorNeedToWaitMoreBlocks);
         assert!(object::contains_field(&block_obj, txid), ErrorPendingTxNotFound);
         let tx = object::remove_field(&mut block_obj, txid);
         let inprocess_block = InprocessBlock{

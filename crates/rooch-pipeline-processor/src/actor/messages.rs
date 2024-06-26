@@ -3,10 +3,8 @@
 
 use anyhow::Result;
 use coerce::actor::message::Message;
-use moveos_types::moveos_std::tx_context::TxContext;
-use rooch_types::{
-    address::BitcoinAddress,
-    transaction::{ExecuteTransactionResponse, L1BlockWithBody, L1Transaction, RoochTransaction},
+use rooch_types::transaction::{
+    ExecuteTransactionResponse, L1BlockWithBody, L1Transaction, RoochTransaction,
 };
 
 #[derive(Clone)]
@@ -20,9 +18,7 @@ impl Message for ExecuteL2TxMessage {
 
 #[derive(Clone)]
 pub struct ExecuteL1BlockMessage {
-    pub ctx: TxContext,
     pub tx: L1BlockWithBody,
-    pub sequencer_address: BitcoinAddress,
 }
 
 impl Message for ExecuteL1BlockMessage {
@@ -31,9 +27,7 @@ impl Message for ExecuteL1BlockMessage {
 
 #[derive(Clone)]
 pub struct ExecuteL1TxMessage {
-    pub ctx: TxContext,
     pub tx: L1Transaction,
-    pub sequencer_address: BitcoinAddress,
 }
 
 impl Message for ExecuteL1TxMessage {

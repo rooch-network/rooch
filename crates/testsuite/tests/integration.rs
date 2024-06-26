@@ -11,13 +11,13 @@ use images::bitseed::Bitseed;
 use images::ord::Ord;
 use jpst::TemplateContext;
 use rooch::RoochCli;
-use rooch_config::{rooch_config_dir, RoochOpt, ServerOpt};
+use rooch_config::{RoochOpt, ServerOpt, ROOCH_CONFIR_DIR};
 use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_rpc_server::Service;
 use rooch_types::crypto::RoochKeyPair;
 use serde_json::Value;
-use std::path::Path;
 use std::time::Duration;
+use std::{path::Path, vec};
 use testcontainers::{
     clients::Cli,
     core::{Container, ExecCommand, WaitFor},
@@ -33,6 +33,7 @@ const ORD_RPC_PORT: u16 = 80;
 
 #[derive(cucumber::World, Debug)]
 struct World {
+    opt: RoochOpt,
     docker: Cli,
     container_network: String,
     service: Option<Service>,
@@ -46,6 +47,7 @@ impl Default for World {
         let network_uuid = Uuid::new_v4();
 
         World {
+            opt: RoochOpt::new_with_temp_store().expect("new rooch opt should be ok"),
             docker: Cli::default(),
             container_network: format!("test_network_{}", network_uuid),
             service: None,
@@ -61,18 +63,17 @@ async fn start_server(w: &mut World, _scenario: String) {
     tokio::time::sleep(Duration::from_secs(5)).await;
 
     let mut service = Service::new();
-    let mut opt = RoochOpt::new_with_temp_store().expect("new rooch opt should be ok");
-    wait_port_available(opt.port()).await;
+    wait_port_available(w.opt.port()).await;
 
     match w.bitcoind.take() {
         Some(bitcoind) => {
             let bitcoin_rpc_url =
                 format!("http://127.0.0.1:{}", bitcoind.get_host_port_ipv4(RPC_PORT));
-            opt.btc_rpc_url = Some(bitcoin_rpc_url);
-            opt.btc_rpc_username = Some(RPC_USER.to_string());
-            opt.btc_rpc_password = Some(RPC_PASS.to_string());
-            opt.data_import_flag = false; // Enable data import without writing indexes
-            opt.btc_sync_block_interval = Some(1u64); // Update sync interval as 1s
+            w.opt.btc_rpc_url = Some(bitcoin_rpc_url);
+            w.opt.btc_rpc_username = Some(RPC_USER.to_string());
+            w.opt.btc_rpc_password = Some(RPC_PASS.to_string());
+            w.opt.data_import_flag = false; // Enable data import without writing indexes
+            w.opt.btc_sync_block_interval = Some(1u64); // Update sync interval as 1s
 
             info!("config btc rpc ok");
 
@@ -84,12 +85,12 @@ async fn start_server(w: &mut World, _scenario: String) {
     }
 
     let mut server_opt = ServerOpt::new();
-
+    //TODO we should load keypair from cli config
     let kp: RoochKeyPair = RoochKeyPair::generate_secp256k1();
     server_opt.sequencer_keypair = Some(kp.copy());
     server_opt.proposer_keypair = Some(kp.copy());
 
-    service.start(opt, server_opt).await.unwrap();
+    service.start(w.opt.clone(), server_opt).await.unwrap();
 
     w.service = Some(service);
 }
@@ -190,31 +191,51 @@ async fn sleep(_world: &mut World, args: String) {
 
 #[then(regex = r#"cmd: "(.*)?""#)]
 async fn run_cmd(world: &mut World, args: String) {
-    let config_dir = rooch_config_dir()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .join("rooch_test");
+    let config_dir = world.opt.base().base_data_dir().join(ROOCH_CONFIR_DIR);
     debug!("config_dir: {:?}", config_dir);
     if world.tpl_ctx.is_none() {
         let mut tpl_ctx = TemplateContext::new();
-        if config_dir.exists() {
-            let context = WalletContext::new(Some(config_dir.clone())).unwrap();
-            let address_mapping = serde_json::Value::Object(
-                context
-                    .address_mapping
-                    .iter()
-                    .map(|(k, v)| (k.to_string(), Value::String(v.to_hex_literal())))
+        if !config_dir.exists() {
+            run_cli_cmd(
+                config_dir.as_path(),
+                &mut tpl_ctx,
+                "init --skip-password"
+                    .split_whitespace()
+                    .map(|s| s.to_owned())
                     .collect(),
-            );
-            tpl_ctx.entry("address_mapping").set(address_mapping);
+            )
+            .await;
+            run_cli_cmd(
+                config_dir.as_path(),
+                &mut tpl_ctx,
+                "env switch --alias local"
+                    .split_whitespace()
+                    .map(|s| s.to_owned())
+                    .collect(),
+            )
+            .await;
         }
+
+        let context = WalletContext::new(Some(config_dir.clone())).unwrap();
+        let address_mapping = serde_json::Value::Object(
+            context
+                .address_mapping
+                .iter()
+                .map(|(k, v)| (k.to_string(), Value::String(v.to_hex_literal())))
+                .collect(),
+        );
+        tpl_ctx.entry("address_mapping").set(address_mapping);
+
         world.tpl_ctx = Some(tpl_ctx);
     }
     let tpl_ctx = world.tpl_ctx.as_mut().unwrap();
     let args = eval_command_args(tpl_ctx, args);
 
-    let mut args = split_string_with_quotes(&args).expect("Invalid commands");
+    let args = split_string_with_quotes(&args).expect("Invalid commands");
+    run_cli_cmd(config_dir.as_path(), tpl_ctx, args).await;
+}
+
+async fn run_cli_cmd(config_dir: &Path, tpl_ctx: &mut TemplateContext, mut args: Vec<String>) {
     let cmd_name = args[0].clone();
     args.insert(0, "rooch".to_owned());
     args.push("--config-dir".to_owned());

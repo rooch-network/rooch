@@ -1,14 +1,7 @@
 Feature: Rooch Bitcoin Reorg tests
-    @serial
-    Scenario: Init
-      Then cmd: "init --skip-password"
-      Then cmd: "env switch --alias local"
 
     @serial
     Scenario: rooch bitcoin reorg test
-      Then cmd: "init --skip-password"
-      Then cmd: "env switch --alias local"
-
       # prepare servers
       Given a bitcoind server for bitcoin_reorg_test
       Given a server for bitcoin_reorg_test

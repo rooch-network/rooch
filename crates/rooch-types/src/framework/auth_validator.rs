@@ -175,15 +175,6 @@ impl MoveStructState for TxValidateResult {
 }
 
 impl TxValidateResult {
-    pub fn new_l1_block_or_tx(sequencer_address: BitcoinAddress) -> Self {
-        Self {
-            auth_validator_id: BuiltinAuthValidator::Bitcoin.flag().into(),
-            auth_validator: MoveOption::none(),
-            session_key: MoveOption::none(),
-            bitcoin_address: sequencer_address,
-        }
-    }
-
     pub fn new_for_test() -> Self {
         // generate a random bitcoin address for testing
         let bitcoin_address = BitcoinAddress::random();

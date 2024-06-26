@@ -35,7 +35,6 @@ use moveos_types::{
     moveos_std::event::AnnotatedEvent,
     state::{AnnotatedState, State},
 };
-use rooch_types::address::BitcoinAddress;
 use rooch_types::bitcoin::network::BitcoinNetwork;
 use rooch_types::framework::chain_id::ChainID;
 use rooch_types::transaction::{L1BlockWithBody, L1Transaction, RoochTransaction};
@@ -64,32 +63,13 @@ impl ExecutorProxy {
 
     pub async fn validate_l1_block(
         &self,
-        ctx: TxContext,
         l1_block: L1BlockWithBody,
-        sequencer_address: BitcoinAddress,
     ) -> Result<VerifiedMoveOSTransaction> {
-        self.actor
-            .send(ValidateL1BlockMessage {
-                ctx,
-                l1_block,
-                sequencer_address,
-            })
-            .await?
+        self.actor.send(ValidateL1BlockMessage { l1_block }).await?
     }
 
-    pub async fn validate_l1_tx(
-        &self,
-        ctx: TxContext,
-        l1_tx: L1Transaction,
-        sequencer_address: BitcoinAddress,
-    ) -> Result<VerifiedMoveOSTransaction> {
-        self.actor
-            .send(ValidateL1TxMessage {
-                ctx,
-                l1_tx,
-                sequencer_address,
-            })
-            .await?
+    pub async fn validate_l1_tx(&self, l1_tx: L1Transaction) -> Result<VerifiedMoveOSTransaction> {
+        self.actor.send(ValidateL1TxMessage { l1_tx }).await?
     }
 
     //TODO ensure the execute result

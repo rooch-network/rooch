@@ -10,14 +10,13 @@ use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
 use moveos_types::moveos_std::object::RootObjectEntity;
-use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::{AnnotatedState, KeyState, State};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
-use rooch_types::address::{BitcoinAddress, MultiChainAddress};
+use rooch_types::address::MultiChainAddress;
 use rooch_types::transaction::{L1BlockWithBody, L1Transaction, RoochTransaction};
 use serde::{Deserialize, Serialize};
 
@@ -32,9 +31,7 @@ impl Message for ValidateL2TxMessage {
 
 #[derive(Debug)]
 pub struct ValidateL1BlockMessage {
-    pub ctx: TxContext,
     pub l1_block: L1BlockWithBody,
-    pub sequencer_address: BitcoinAddress,
 }
 
 impl Message for ValidateL1BlockMessage {
@@ -43,9 +40,7 @@ impl Message for ValidateL1BlockMessage {
 
 #[derive(Debug)]
 pub struct ValidateL1TxMessage {
-    pub ctx: TxContext,
     pub l1_tx: L1Transaction,
-    pub sequencer_address: BitcoinAddress,
 }
 
 impl Message for ValidateL1TxMessage {
