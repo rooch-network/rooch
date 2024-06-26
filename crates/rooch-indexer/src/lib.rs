@@ -17,6 +17,7 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::path::PathBuf;
 use std::string::ToString;
+use std::thread;
 use std::time::Duration;
 
 pub mod actor;
@@ -33,7 +34,7 @@ pub mod utils;
 /// Type alias to improve readability.
 pub type IndexerResult<T> = Result<T, IndexerError>;
 
-pub const DEFAULT_BUSY_TIMEOUT: u64 = 5000; // millsecond
+pub const DEFAULT_BUSY_TIMEOUT: u64 = 2000; // millsecond
 pub type IndexerTableName = &'static str;
 pub const INDEXER_EVENTS_TABLE_NAME: IndexerTableName = "events";
 pub const INDEXER_OBJECT_STATES_TABLE_NAME: IndexerTableName = "object_states";
@@ -194,7 +195,7 @@ pub struct SqliteConnectionPoolConfig {
 }
 
 impl SqliteConnectionPoolConfig {
-    const DEFAULT_POOL_SIZE: u32 = 64;
+    const DEFAULT_POOL_SIZE: u32 = 16;
     const DEFAULT_CONNECTION_TIMEOUT: u64 = 120; // second
 
     fn connection_config(&self) -> SqliteConnectionConfig {
@@ -236,7 +237,6 @@ impl Default for SqliteConnectionPoolConfig {
 struct SqliteConnectionConfig {
     // SQLite does not support the statement_timeout parameter
     read_only: bool,
-
     enable_wal: bool,
     busy_timeout: u64,
 }
@@ -248,16 +248,20 @@ impl diesel::r2d2::CustomizeConnection<SqliteConnection, diesel::r2d2::Error>
         &self,
         conn: &mut SqliteConnection,
     ) -> std::result::Result<(), diesel::r2d2::Error> {
+        let mut pragma_builder = String::new();
         if self.read_only {
-            conn.batch_execute("PRAGMA read_uncommitted = 0;")
-                .map_err(diesel::r2d2::Error::QueryError)?;
+            pragma_builder.push_str("PRAGMA query_only = true;");
         }
+        // WAL mode has better write-concurrency. When synchronous is NORMAL it will fsync only in critical moments
         if self.enable_wal {
-            conn.batch_execute("PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL;")
-                .map_err(diesel::r2d2::Error::QueryError)?;
+            pragma_builder.push_str("PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL;");
         }
-        conn.batch_execute(&format!("PRAGMA busy_timeout = {};", self.busy_timeout))
+        pragma_builder.push_str(&format!("PRAGMA busy_timeout = {};", self.busy_timeout));
+
+        conn.batch_execute(&pragma_builder)
             .map_err(diesel::r2d2::Error::QueryError)?;
+
+        thread::sleep(Duration::from_millis(10));
 
         Ok(())
     }
