@@ -62,13 +62,15 @@ module rooch_examples::module1 {
 
 ```shell
 $ rooch move test
+
 INCLUDING DEPENDENCY MoveStdlib
 INCLUDING DEPENDENCY MoveosStdlib
+INCLUDING DEPENDENCY RoochFramework
 BUILDING private_generics
 Running Move unit tests
-[ PASS    ] 0x42::module1::test1
+2024-06-26T15:35:02.835842Z  INFO moveos_common::utils: set max open fds 8192
+[ PASS    ] 0xfc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::module1::test1
 Test result: OK. Total tests: 1; passed: 1; failed: 0
-Success
 ```
 
 接下来我们对泛型函数 `new_box` 进行**私有泛型约束**，在函数的上一行添加 `#[private_generics(T)]` 属性标注，其他地方保持不变：
@@ -84,7 +86,8 @@ public fun new_box<T, U>(value: T): Box<T> {
 
 ```shell
 $ rooch move test
-error: resource type "U32" in function "0x42::module1::new_box" not defined in current module or not allowed
+
+error: resource type "U32" in function "0xfc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::module1::new_box" not defined in current module or not allowed
    ┌─ ./sources/module1.move:17:19
    │
 17 │         let box = new_box<u32, u64>(123);
@@ -136,13 +139,15 @@ module rooch_examples::module1 {
 
 ```shell
 $ rooch move test
+
 INCLUDING DEPENDENCY MoveStdlib
 INCLUDING DEPENDENCY MoveosStdlib
+INCLUDING DEPENDENCY RoochFramework
 BUILDING private_generics
 Running Move unit tests
-[ PASS    ] 0x42::module1::test1
+2024-06-26T15:38:13.522724Z  INFO moveos_common::utils: set max open fds 8192
+[ PASS    ] 0xfc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::module1::test1
 Test result: OK. Total tests: 1; passed: 1; failed: 0
-Success
 ```
 
 私有泛型函数是在 `module1` 调用的，自定义类型 `Data` 也是在**当前**模块内定义的，因此 `Data` 能通过函数的私有泛型约束。
@@ -219,11 +224,12 @@ module rooch_examples::module1 {
 
 ```shell
 $ rooch move test
-error: resource type "Data2" in function "0x42::module1::new_box" not defined in current module or not allowed
+
+error: resource type "Data2" in function "0xfc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::module1::new_box" not defined in current module or not allowed
    ┌─ ./sources/module1.move:32:20
    │
-32 │         let box2 = new_box<Data2, u64>(data2);
-   │                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+32 │         let box2 = new_box<Data2, Data2>(data2);
+   │                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 Error: extended checks failed
@@ -259,14 +265,16 @@ module rooch_examples::module3 {
 
 ```shell
 $ rooch move test
+
 INCLUDING DEPENDENCY MoveStdlib
 INCLUDING DEPENDENCY MoveosStdlib
+INCLUDING DEPENDENCY RoochFramework
 BUILDING private_generics
 Running Move unit tests
-[ PASS    ] 0x42::module1::test1
-[ PASS    ] 0x42::module3::test3
+2024-06-26T15:59:25.520858Z  INFO moveos_common::utils: set max open fds 8192
+[ PASS    ] 0xfc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::module3::test3
+[ PASS    ] 0xfc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::module1::test1
 Test result: OK. Total tests: 2; passed: 2; failed: 0
-Success
 ```
 
 ## 应用
@@ -275,39 +283,50 @@ Success
 
 ```move
 #[private_generics(T)]
-/// Move a resource to the account's storage
-/// This function equates to `move_to<T>(&signer, resource)` instruction in Move
-public fun global_move_to<T: key>(ctx: &mut Context, account: &signer, resource: T){
-    let account_address = signer::address_of(account);
-    //Auto create the account storage when move resource to the account
-    ensure_account_storage(ctx, account_address);
-    let account_storage = borrow_account_storage_mut(ctx, account_address);
-    add_resource_to_account_storage(account_storage, resource);
+/// Borrow a mut resource from the account's storage
+/// This function equates to `borrow_global_mut<T>(address)` instruction in Move
+public fun borrow_mut_resource<T: key>(account: address): &mut T {
+    let account_obj = borrow_mut_account_internal(account);
+    account_borrow_mut_resource_interal<T>(account_obj)
 }
 ```
 
-函数 `global_move_to` 是一个私有泛型函数，被私有泛型约束的类型 `T` 是一种资源类型。调用函数需要传递三个参数（存储上下文，signer，资源）。
-
-首先获取调用当前函数的地址并存到 `account_address` 中，`ensure_account_storage` 确保账户存储存在，接着调用 `borrow_account_storage_mut` 获取账户中的可变借用，最后调用 `add_resource_to_account_storage` 将 `resource` 添加到账户存储中。
+函数 `borrow_mut_resource` 是一个私有泛型函数，被私有泛型约束的类型 `T` 是一种资源类型。
 
 像这类私有泛型函数，调用的它的模块必定定义了私有泛型约束的类型，那么接下来看一看在 Rooch Framework 中使用的一个例子：
 
 ```move
-public(friend) fun init_authentication_keys(ctx: &mut Context, account: &signer) {
-  let authentication_keys = AuthenticationKeys {
-     authentication_keys: type_table::new(ctx),
-  };
-  context::move_resource_to<AuthenticationKeys>(ctx, account, authentication_keys);
+public fun install_auth_validator<ValidatorType: store>(account_signer: &signer) {
+    features::ensure_testnet_enabled();
+
+    let validator = auth_validator_registry::borrow_validator_by_type<ValidatorType>();
+    let validator_id = auth_validator::validator_id(validator);
+    let account_addr = signer::address_of(account_signer);
+
+    assert!(
+        !is_auth_validator_installed(account_addr, validator_id),
+        ErrorAuthValidatorAlreadyInstalled);
+
+
+    if (!account::exists_resource<InstalledAuthValidator>(account_addr)) {
+        let installed_auth_validator = InstalledAuthValidator {
+            validators: vector::empty(),
+        };
+        account::move_resource_to<InstalledAuthValidator>(account_signer, installed_auth_validator);
+    };
+    let installed_auth_validator = account::borrow_mut_resource<InstalledAuthValidator>(account_addr);
+    vector::push_back(&mut installed_auth_validator.validators, validator_id);
 }
 ```
 
-`account_authentication.move` 中的 `init_authentication_keys` 函数用到了 `global_move_to` 私有泛型函数，那么意味者 `AuthenticationKeys` 也必须在当前模块定义。
+`account_authentication.move` 中的 `install_auth_validator` 函数用到了 `account::borrow_mut_resource` 私有泛型函数，那么意味者 `InstalledAuthValidator` 也必须在当前模块定义。
 
-我们可以在当前模块开头找到 `AuthenticationKeys` 类型的定义：
+我们可以在当前模块开头找到 `InstalledAuthValidator` 类型的定义：
 
 ```move
-struct AuthenticationKeys has key{
-  authentication_keys: TypeTable,
+/// A resource that holds the auth validator ids for this account has installed.
+struct InstalledAuthValidator has key {
+    validators: vector<u64>,
 }
 ```
 
