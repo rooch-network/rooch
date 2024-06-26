@@ -5,8 +5,9 @@ use crate::natives::gas_parameter::native::MUL;
 use moveos_stdlib::natives::moveos_stdlib::object::GasParameters;
 
 crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasParameters, "object", [
-    [.as_ref_inner.base, "as_ref_inner.base", 500 * MUL],
-    [.as_mut_ref_inner.base, "as_mut_ref_inner.base", 1000 * MUL],
+    [.native_borrow_object_pointer.base, "native_borrow_object_pointer.base", 500 * MUL],
+    [.native_take_object_pointer.base, "native_take_object_pointer.base", 500 * MUL],
+    [.native_return_object_pointer.base, "native_return_object_pointer.base", 500 * MUL],
     [.common.load_base, "common.load_base", 1000 * MUL],
     [.common.load_per_byte, "common.load_per_byte", 10 * MUL],
     [.common.load_failure, "common.load_failure", 5 * MUL],

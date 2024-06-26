@@ -6,7 +6,7 @@
 use crate::resolved_arg::ResolvedArg;
 use better_any::{Tid, TidAble};
 use log::debug;
-use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
+use move_binary_format::errors::{PartialVMError, PartialVMResult, VMResult};
 use move_core_types::{
     account_address::AccountAddress,
     effects::Op,
@@ -58,6 +58,7 @@ pub const ERROR_NOT_FOUND: u64 = 2;
 pub const ERROR_OBJECT_ALREADY_BORROWED: u64 = 7;
 pub const ERROR_TYPE_MISMATCH: u64 = 10;
 pub const ERROR_OBJECT_RUNTIME_ERROR: u64 = 14;
+pub const ERROR_OBJECT_ALREADY_TAKEN_OUT: u64 = 15;
 
 const FIELD_VALUE_STRUCT_NAME: &IdentStr = ident_str!("FieldValue");
 
@@ -115,9 +116,36 @@ pub struct RuntimeObject {
     value_type: TypeTag,
     /// This is the ObjectEntity<T> value in MoveVM memory
     value: GlobalValue,
+    /// This is the ObjectEntity<T> pointer in MoveVM memory
+    pointer: ObjectPointer,
     /// The state root of the fields
     state_root: H256,
     fields: BTreeMap<KeyState, RuntimeField>,
+}
+
+/// A structure representing the `Object<T>` in Move.
+/// `Object<T>` is pointer type of `ObjectEntity<T>`.
+pub struct ObjectPointer {
+    /// This is the Object<T> value in MoveVM memory
+    value: GlobalValue,
+}
+
+impl ObjectPointer {
+    pub fn cached(object_id: ObjectID) -> Self {
+        let object_id_value = object_id.to_runtime_value();
+        let value = GlobalValue::cached(Value::struct_(Struct::pack(vec![object_id_value])))
+            .expect("Failed to cache the Struct");
+        Self { value }
+    }
+
+    pub fn fresh(object_id: ObjectID) -> Self {
+        let object_id_value = object_id.to_runtime_value();
+        let mut value = GlobalValue::none();
+        value
+            .move_to(Value::struct_(Struct::pack(vec![object_id_value])))
+            .expect("Failed to move value to GlobalValue none");
+        Self { value }
+    }
 }
 
 pub trait TypeLayoutLoader {
@@ -624,47 +652,65 @@ impl ObjectRuntime {
         self.get_loaded_module(module_id).map(|m| m.is_some())
     }
 
-    pub fn load_object_reference(&mut self, object_id: &ObjectID) -> VMResult<()> {
-        self.object_reference
-            .entry(object_id.clone())
-            .or_insert_with(|| {
-                //TODO we should load the ObjectEntity<T> from the resolver
-                //Then cache the Object<T>
-                let object_id_value = object_id.to_runtime_value();
-                GlobalValue::cached(Value::struct_(Struct::pack(vec![object_id_value])))
-                    .expect("Failed to cache the Struct")
-            });
-        Ok(())
-    }
+    // pub fn load_object_reference(&mut self, object_id: &ObjectID) -> VMResult<()> {
+    //     self.object_reference
+    //         .entry(object_id.clone())
+    //         .or_insert_with(|| {
+    //             //TODO we should load the ObjectEntity<T> from the resolver
+    //             //Then cache the Object<T>
+    //             let object_id_value = object_id.to_runtime_value();
+    //             GlobalValue::cached(Value::struct_(Struct::pack(vec![object_id_value])))
+    //                 .expect("Failed to cache the Struct")
+    //         });
+    //     Ok(())
+    // }
 
     /// Borrow &Object<T> or &mut Object<T>
-    pub fn borrow_object_reference(&mut self, object_id: &ObjectID) -> VMResult<Value> {
-        let gv = self.object_reference.get(object_id).ok_or_else(|| {
-            PartialVMError::new(StatusCode::STORAGE_ERROR).finish(Location::Undefined)
-        })?;
+    // pub fn borrow_object_pointer(&mut self,
+    //     layout_loader: &dyn TypeLayoutLoader,
+    //     resolver: &dyn StatelessResolver,
+    //     object_id: &ObjectID) -> VMResult<Value> {
 
-        if gv.reference_count() >= 2 {
-            // We raise an error if the object is already borrowed
-            // Use the error code in object.move for easy debugging
-            return Err(PartialVMError::new(StatusCode::ABORTED)
-                .with_sub_status(ERROR_OBJECT_ALREADY_BORROWED)
-                .with_message(format!("Object {} already borrowed", object_id))
-                .finish(Location::Module(object::MODULE_ID.clone())));
-        }
+    //     let (obj,) = self.load_object(layout_loader, resolver, object_id)?;
 
-        gv.borrow_global()
-            .map_err(|e| e.finish(Location::Undefined))
-    }
+    //     if gv.reference_count() >= 2 {
+    //         // We raise an error if the object is already borrowed
+    //         // Use the error code in object.move for easy debugging
+    //         return Err(PartialVMError::new(StatusCode::ABORTED)
+    //             .with_sub_status(ERROR_OBJECT_ALREADY_BORROWED)
+    //             .with_message(format!("Object {} already borrowed", object_id))
+    //             .finish(Location::Module(object::MODULE_ID.clone())));
+    //     }
 
-    pub fn load_arguments(&mut self, resolved_args: &[ResolvedArg]) -> VMResult<()> {
+    //     gv.borrow_global()
+    //         .map_err(|e| e.finish(Location::Undefined))
+    // }
+
+    pub fn load_arguments(&mut self, layout_loader: &dyn TypeLayoutLoader, resolver: &dyn StatelessResolver, resolved_args: &[ResolvedArg]) -> VMResult<()> {
         for resolved_arg in resolved_args {
             if let ResolvedArg::Object(object_arg) = resolved_arg {
                 let object_id = object_arg.object_id();
-                self.load_object_reference(object_id)?;
-                let ref_value = self.borrow_object_reference(object_id)?;
+                let (rt_obj,_) = self.load_object(layout_loader, resolver, object_id)?;
+                match object_arg {
+                    ObjectArg::Ref(_) | ObjectArg::Mutref(_) => {
+                        let pointer_value = rt_obj.borrow_pointer(expect_value_type)?;
+                        //We cache the object reference in the object_ref_in_args
+                        //Ensure the reference count and the object can not be borrowed in Move
+                        let _ = &self.object_ref_in_args;
+                        //self.object_ref_in_args.insert(object_id.clone(), ref_value);
+                    }
+                }
+                // match object_arg{
+                //     ObjectArg::Ref(_)|ObjectArg::Mutref(_)=> {
+                //         self.load_object_reference(object_id)?;
+                //     }
+                // }
+                //self.load_object_reference(object_id)?;
+                //let ref_value = self.borrow_object_pointer(object_id)?;
                 //We cache the object reference in the object_ref_in_args
                 //Ensure the reference count and the object can not be borrowed in Move
-                self.object_ref_in_args.insert(object_id.clone(), ref_value);
+                let _ = &self.object_ref_in_args;
+                //self.object_ref_in_args.insert(object_id.clone(), ref_value);
             }
         }
         Ok(())
@@ -1018,10 +1064,11 @@ impl RuntimeObject {
             .map_err(|e| partial_extension_error(format!("expect raw object, but got {:?}", e)))?;
         let value = deserialize(&value_layout, state.value.as_slice())?;
         Ok(Self {
-            id,
+            id: id.clone(),
             value_layout,
             value_type: state.value_type,
             value: GlobalValue::cached(value)?,
+            pointer: ObjectPointer::cached(id),
             state_root: raw_obj.state_root(),
             fields: Default::default(),
         })
@@ -1035,10 +1082,11 @@ impl RuntimeObject {
         state_root: H256,
     ) -> PartialVMResult<Self> {
         Ok(Self {
-            id,
+            id: id.clone(),
             value_layout,
             value_type,
             value,
+            pointer: ObjectPointer::cached(id),
             state_root,
             fields: Default::default(),
         })
@@ -1066,6 +1114,40 @@ impl RuntimeObject {
     pub fn move_from(&mut self, expect_value_type: TypeTag) -> PartialVMResult<Value> {
         check_type(&self.value_type, &expect_value_type)?;
         self.value.move_from()
+    }
+
+    pub fn borrow_pointer(&self, _expect_value_type: &TypeTag) -> PartialVMResult<Value> {
+        //check_type(&self.value_type, &expect_value_type)?;
+        //If the object pointer does not exist, it means the object is taken out
+        if !self.pointer.value.exists()? {
+            return Err(PartialVMError::new(StatusCode::ABORTED)
+                .with_sub_status(ERROR_OBJECT_ALREADY_TAKEN_OUT)
+                .with_message(format!("Object {} already taken out", self.id)));
+        }
+        //We can not distinguish between `&` and `&mut`
+        //Because the GlobalValue do not distinguish between `&` and `&mut`
+        //If we record a bool value to distinguish between `&` and `&mut`
+        //When the `&mut` is dropped, we can not reset the bool value
+        if self.pointer.value.reference_count() >= 2 {
+            // We raise an error if the object is already borrowed
+            // Use the error code in object.move for easy debugging
+            return Err(PartialVMError::new(StatusCode::ABORTED)
+                .with_sub_status(ERROR_OBJECT_ALREADY_BORROWED)
+                .with_message(format!("Object {} already borrowed", self.id)));
+        }
+        self.pointer.value.borrow_global()
+    }
+
+    pub fn take_pointer(&mut self, _expect_value_type: &TypeTag) -> PartialVMResult<Value> {
+        self.pointer.value.move_from()
+    }
+
+    pub fn return_pointer(
+        &mut self,
+        pointer: Value,
+        _expect_value_type: &TypeTag,
+    ) -> PartialVMResult<()> {
+        self.pointer.value.move_to(pointer).map_err(|(e, _)| e)
     }
 
     /// Load a field from the object. If the field not exists, init a None field.

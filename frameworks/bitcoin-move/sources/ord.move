@@ -914,7 +914,7 @@ module bitcoin_move::ord {
         let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
 
         let inscription_object_id = derive_inscription_id(inscription_id);
-        let inscription_obj = object::borrow_mut_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
+        let inscription_obj = object::borrow_mut_object_extend<Inscription>(inscription_object_id);
 
         let protocol_type = type_info::type_name<T>();
         let validity = MetaprotocolValidity {
@@ -932,12 +932,12 @@ module bitcoin_move::ord {
         let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
 
         let inscription_object_id = derive_inscription_id(inscription_id);
-        let exists = object::contains_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
+        let exists = object::exists_object_with_type<Inscription>(inscription_object_id);
         if (!exists) {
             return false
         };
 
-        let inscription_obj = object::borrow_mut_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
+        let inscription_obj = object::borrow_mut_object_extend<Inscription>(inscription_object_id);
         object::contains_field(inscription_obj, METAPROTOCOL_VALIDITY)
     }
 
@@ -947,7 +947,7 @@ module bitcoin_move::ord {
         let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
 
         let inscription_object_id = derive_inscription_id(inscription_id);
-        let inscription_obj = object::borrow_mut_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
+        let inscription_obj = object::borrow_mut_object_extend<Inscription>(inscription_object_id);
 
         object::borrow_field(inscription_obj, METAPROTOCOL_VALIDITY)
     }

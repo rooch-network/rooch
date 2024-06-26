@@ -9,6 +9,7 @@ use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
 use move_vm_types::loaded_data::runtime_types::{StructType, Type};
 use moveos_object_runtime::resolved_arg::ResolvedArg;
+use moveos_object_runtime::runtime::TypeLayoutLoader;
 use moveos_types::{
     move_std::{ascii::MoveAsciiString, string::MoveString},
     moveos_std::object::{is_object_struct, ObjectID},
@@ -64,6 +65,9 @@ where
                             .with_message(format!("Invalid object id: {:?}", e))
                             .finish(location.clone())
                     })?;
+                    //let mut object_runtime = self.object_runtime.write();
+                    //let (rt_obj,_) = object_runtime.load_object(&self.session, self.remote, &object_id).map_err(|e|e.finish(location.clone()))?;
+
                     let object = self
                         .remote
                         .get_object(&object_id)
@@ -185,6 +189,24 @@ where
             .into_iter()
             .map(|arg| arg.into_serialized_arg())
             .collect())
+    }
+}
+
+impl<'r, 'l, S, G> TypeLayoutLoader for MoveOSSession<'r, 'l, S, G>
+where
+    S: MoveOSResolver,
+    G: SwitchableGasMeter + ClassifiedGasMeter,
+{
+    fn get_type_layout(&self, type_tag: &TypeTag) -> move_binary_format::errors::PartialVMResult<move_core_types::value::MoveTypeLayout> {
+        self.get_type_layout(type_tag)
+    }
+
+    fn type_to_type_layout(&self, ty: &Type) -> move_binary_format::errors::PartialVMResult<move_core_types::value::MoveTypeLayout> {
+        self.type_to_type_layout(ty)
+    }
+
+    fn type_to_type_tag(&self, ty: &Type) -> move_binary_format::errors::PartialVMResult<TypeTag> {
+        self.type_to_type_tag(ty)
     }
 }
 
