@@ -446,22 +446,7 @@ module moveos_std::object {
         owner(self) != SYSTEM_OWNER_ADDRESS
     }
 
-    // === Object Ref ===
-
-    // public(friend) fun as_ref<T: key>(object_entity: &ObjectEntity<T>): &Object<T> {
-    //     as_ref_inner<Object<T>>(object_entity.id)
-    // }
-
-    // public(friend) fun as_mut_ref<T: key>(object_entity: &mut ObjectEntity<T>): &mut Object<T> {
-    //     as_mut_ref_inner<Object<T>>(object_entity.id)
-    // }
-
-    // public(friend) fun mut_entity_as_object<T: key>(object_entity: &mut ObjectEntity<T>): Object<T> {
-    //     Object { id: object_entity.id }
-    // }
-
     // === Object Storage ===
-
 
     /// The global root object id is `[]`
     fun root_object_id(): ObjectID {
@@ -534,12 +519,6 @@ module moveos_std::object {
         borrow_field_internal<K, V>(obj.id, key)
     }
 
-    /// Borrow the child object by `key`
-    // public fun borrow_object_field<T: key, V: key>(obj: &Object<T>, key: ObjectID): &Object<V> {
-    //     let object_entity = borrow_object_field_internal<V>(obj.id, key);
-    //     as_ref(object_entity)
-    // }
-
     fun borrow_object_field_internal<V: key>(parent_id: ObjectID, key: ObjectID): &ObjectEntity<V> {
         assert!(is_parent(&parent_id, &key), ErrorParentNotMatch);
         native_borrow_field<ObjectID, ObjectEntity<V>>(parent_id, key)
@@ -600,13 +579,6 @@ module moveos_std::object {
         };
         borrow_mut_field_internal(obj_id, key)
     }
-
-    /// Borrow the child object by `key`
-    /// Because the parent object must be a shared object, so we do not require the #[private_generics(T)] here
-    // public fun borrow_mut_object_field<T: key, V: key>(obj: &mut Object<T>, key: ObjectID): &mut Object<V> {
-    //     let object_entity = borrow_mut_object_field_internal<V>(obj.id, key);
-    //     as_mut_ref(object_entity)
-    // }
 
     fun borrow_mut_object_field_internal<V: key>(parent_id: ObjectID, key: ObjectID): &mut ObjectEntity<V> {
         assert!(is_parent(&parent_id, &key), ErrorParentNotMatch);
@@ -720,11 +692,6 @@ module moveos_std::object {
     fun contains_field_with_value_type_internal<K: copy + drop, V>(obj_id: ObjectID, key: K): bool {
         native_contains_field_with_value_type<K, FieldValue<V>>(obj_id, key)
     }
-
-    /// Returns true if `object` contains an Object field for `key` and the value type is `V`.
-    // public fun contains_object_field<T: key, V: key>(obj: &Object<T>, key: ObjectID): bool {
-    //     contains_object_field_internal<V>(obj.id, key)
-    // }
 
     fun contains_object_field_internal<V: key>(parent: ObjectID, key: ObjectID): bool {
         if (is_parent(&parent, &key)) {

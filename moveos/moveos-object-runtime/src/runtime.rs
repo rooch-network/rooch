@@ -1212,6 +1212,11 @@ impl RuntimeObject {
     }
 
     pub fn into_change(self) -> PartialVMResult<Option<ObjectChange>> {
+        //TODO we should process the object pointer here
+        //If the object pointer is deleted, there are two case:
+        //1. the object is deleted
+        //2. the object pointer is taken out and not returned, tt should be embeded in other struct, we need to change the Object owener to system.
+
         let op = self.value.into_effect();
         let change = match op {
             Some(op) => {
@@ -1224,6 +1229,7 @@ impl RuntimeObject {
             }
             None => None,
         };
+        
         let mut fields_change = BTreeMap::new();
         for (key, field) in self.fields.into_iter() {
             let field_change = field.into_change()?;

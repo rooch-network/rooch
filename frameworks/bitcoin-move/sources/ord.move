@@ -910,9 +910,6 @@ module bitcoin_move::ord {
     #[private_generics(T)]
     /// Seal the metaprotocol validity for the given inscription_id.
     public fun seal_metaprotocol_validity<T>(inscription_id: InscriptionID, is_valid: bool, invalid_reason: Option<String>) {
-        let store_obj_id = object::named_object_id<InscriptionStore>();
-        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
-
         let inscription_object_id = derive_inscription_id(inscription_id);
         let inscription_obj = object::borrow_mut_object_extend<Inscription>(inscription_object_id);
 
@@ -928,9 +925,6 @@ module bitcoin_move::ord {
 
     /// Returns true if Inscription `object` contains metaprotocol validity
     public fun exists_metaprotocol_validity(inscription_id: InscriptionID): bool{
-        let store_obj_id = object::named_object_id<InscriptionStore>();
-        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
-
         let inscription_object_id = derive_inscription_id(inscription_id);
         let exists = object::exists_object_with_type<Inscription>(inscription_object_id);
         if (!exists) {
@@ -943,9 +937,6 @@ module bitcoin_move::ord {
 
     /// Borrow the metaprotocol validity for the given inscription_id.
     public fun borrow_metaprotocol_validity(inscription_id: InscriptionID): &MetaprotocolValidity {
-        let store_obj_id = object::named_object_id<InscriptionStore>();
-        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
-
         let inscription_object_id = derive_inscription_id(inscription_id);
         let inscription_obj = object::borrow_mut_object_extend<Inscription>(inscription_object_id);
 
