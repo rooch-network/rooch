@@ -8,8 +8,8 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::mpsc::{Receiver, SyncSender};
 use std::sync::{mpsc, Arc};
+use std::thread;
 use std::time::SystemTime;
-use std::{fs, thread};
 
 use anyhow::Result;
 use bitcoin::hashes::Hash;
@@ -18,7 +18,6 @@ use bitcoin_move::natives::ord::inscription_id::InscriptionId;
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use serde::{Deserialize, Serialize};
-use sled::Db;
 use tempfile::TempDir;
 
 use moveos_store::MoveOSStore;
@@ -127,15 +126,16 @@ impl GenesisOrdCommand {
     // 5. print job stats, clean env
     pub async fn execute(self) -> RoochResult<()> {
         // 1. init import job
-        let utxo_ord_map_db_path = TempDir::new().unwrap().into_path();
-        let id_ord_map_db_path = TempDir::new().unwrap().into_path();
         let (root, moveos_store, start_time) =
             init_genesis_job(self.base_data_dir.clone(), self.chain_id.clone());
         let pre_root_state_root = H256::from(root.state_root.into_bytes());
-        let utxo_ord_map = Arc::new(sled::open(utxo_ord_map_db_path.clone()).unwrap());
-        utxo_ord_map
-            .clone()
-            .set_merge_operator(concatenate_object_id_merge);
+        let db_config = sled::Config::new()
+            .temporary(true)
+            .path(TempDir::new().unwrap());
+        let utxo_ord_map_db = db_config.open().unwrap();
+        utxo_ord_map_db.set_merge_operator(concatenate_object_id_merge);
+        let utxo_ord_map = Arc::new(utxo_ord_map_db);
+
         let moveos_store = Arc::new(moveos_store);
         let startup_update_set = UpdateSet::new();
 
@@ -146,7 +146,6 @@ impl GenesisOrdCommand {
         self.import_ord(
             utxo_ord_map.clone(),
             moveos_store.clone(),
-            id_ord_map_db_path.clone(),
             startup_update_set.clone(),
         );
 
@@ -161,11 +160,6 @@ impl GenesisOrdCommand {
             pre_root_state_root,
             start_time,
         );
-        let utxo_ord_map_db = utxo_ord_map.clone();
-        drop(utxo_ord_map_db);
-
-        fs::remove_dir_all(utxo_ord_map_db_path.clone())?;
-        fs::remove_dir_all(id_ord_map_db_path.clone())?;
 
         Ok(())
     }
@@ -174,22 +168,14 @@ impl GenesisOrdCommand {
         self,
         utxo_ord_map: Arc<sled::Db>,
         moveos_store: Arc<MoveOSStore>,
-        id_ord_map_db_path: PathBuf,
         startup_update_set: UpdateSet<KeyState, State>,
     ) {
         let input_path = self.ord_source.clone();
         let batch_size = self.ord_batch_size.unwrap();
 
         let (tx, rx) = mpsc::sync_channel(2);
-        let produce_updates_thread = thread::spawn(move || {
-            produce_ord_updates(
-                tx,
-                input_path,
-                batch_size,
-                utxo_ord_map,
-                id_ord_map_db_path.clone(),
-            )
-        });
+        let produce_updates_thread =
+            thread::spawn(move || produce_ord_updates(tx, input_path, batch_size, utxo_ord_map));
         let apply_updates_thread = thread::spawn(move || {
             apply_ord_updates_to_state(rx, moveos_store, startup_update_set);
         });
@@ -319,9 +305,12 @@ fn produce_ord_updates(
     input: PathBuf,
     batch_size: usize,
     utxo_ord_map: Arc<sled::Db>,
-    id_ord_map_db_path: PathBuf,
 ) {
-    let id_ord_map: Db = sled::open(id_ord_map_db_path).unwrap();
+    let db_config = sled::Config::new()
+        .temporary(true)
+        .path(TempDir::new().unwrap());
+    let id_ord_map = db_config.open().unwrap();
+
     let mut reader = BufReader::new(File::open(input).unwrap());
     let mut is_title_line = true;
     loop {
@@ -461,20 +450,19 @@ fn update_ord_map(
     outpoint: OutPoint,
     obj_id: ObjectID,
 ) -> bool {
+    let obj_id_bytes = bcs::to_bytes(&obj_id).unwrap();
+    // update inscription_id:ord
     let id_key = bcs::to_bytes(&id).unwrap();
-    id_ord_map
-        .insert(id_key, bcs::to_bytes(&obj_id).unwrap())
-        .unwrap();
+    id_ord_map.insert(id_key, obj_id_bytes.clone()).unwrap();
 
     let is_unbound = outpoint.txid == Hash::all_zeros() && outpoint.vout == 0;
     if is_unbound {
         return is_unbound; // unbound has no outpoint
     }
 
+    // update outpoint:ord
     let key = bcs::to_bytes(&outpoint).unwrap();
-    utxo_ord_map
-        .merge(key, bcs::to_bytes(&obj_id).unwrap())
-        .unwrap();
+    utxo_ord_map.merge(key, obj_id_bytes).unwrap();
 
     is_unbound
 }
