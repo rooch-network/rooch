@@ -14,8 +14,7 @@ pub fn create_all_tables_if_not_exists(
     conn: &mut SqlitePoolConnection,
     _table_name: String,
 ) -> Result<(), anyhow::Error> {
-    // debug!("Indexer creates all tables in the db ...");
-    println!("Indexer creates all tables in the db ...");
+    debug!("Indexer creates all tables in the db ...");
     let migration = MIGRATIONS;
 
     // Create the __diesel_schema_migrations table if not exist
