@@ -719,10 +719,6 @@ where
         self.session.load_type(type_tag)
     }
 
-    pub fn get_type_layout(&self, type_tag: &TypeTag) -> VMResult<MoveTypeLayout> {
-        self.session.get_type_layout(type_tag)
-    }
-
     pub fn get_fully_annotated_type_layout(&self, type_tag: &TypeTag) -> VMResult<MoveTypeLayout> {
         self.session.get_fully_annotated_type_layout(type_tag)
     }

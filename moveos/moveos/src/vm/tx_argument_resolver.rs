@@ -65,9 +65,7 @@ where
                             .with_message(format!("Invalid object id: {:?}", e))
                             .finish(location.clone())
                     })?;
-                    //let mut object_runtime = self.object_runtime.write();
-                    //let (rt_obj,_) = object_runtime.load_object(&self.session, self.remote, &object_id).map_err(|e|e.finish(location.clone()))?;
-
+                    //TODO we can directly resolve args via ObjectRuntime, and remove the load_arguments functions.
                     let object = self
                         .remote
                         .get_object(&object_id)
@@ -101,11 +99,11 @@ where
                     }
                     match parameter {
                         Type::Reference(_r) => {
-                            // Any one can get any &Object<T>
+                            // Any one can pass any &Object<T>
                             resolved_args.push(ResolvedArg::object_by_ref(object));
                         }
                         Type::MutableReference(_r) => {
-                            // Only the owner can get &mut Object<T>
+                            // Only the owner can pass &mut Object<T>
                             if object.is_frozen() {
                                 return Err(PartialVMError::new(StatusCode::NO_ACCOUNT_ROLE)
                                     .with_message(format!(
@@ -125,11 +123,31 @@ where
                             }
                             resolved_args.push(ResolvedArg::object_by_mutref(object));
                         }
+                        Type::StructInstantiation(_, _) => {
+                            // Only the owner can pass `Object<T>`
+                            if object.is_frozen() {
+                                return Err(PartialVMError::new(StatusCode::NO_ACCOUNT_ROLE)
+                                    .with_message(format!(
+                                        "Object is frozen, object id:{:?}",
+                                        object_id
+                                    ))
+                                    .finish(location.clone()));
+                            }
+                            let sender = self.tx_context().sender();
+                            if !object.is_shared() && object.owner != sender {
+                                return Err(PartialVMError::new(StatusCode::NO_ACCOUNT_ROLE)
+                                    .with_message(format!(
+                                        "Object owner mismatch, object owner:{:?}, sender:{:?}",
+                                        object.owner, sender
+                                    ))
+                                    .finish(location.clone()));
+                            }
+                            resolved_args.push(ResolvedArg::object_by_value(object));
+                        }
                         _ => {
-                            //TODO support Object<T> as argument
                             return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
                                 .with_message(
-                                    "Object type only support `&Object<T>` and `&mut Object<T>`, do not support `Object<T>`".to_string())
+                                    "Object type only support `&Object<T>`, `&mut Object<T>`, and `Object<T>`".to_string())
                                 .finish(location.clone()));
                         }
                     }
@@ -184,7 +202,7 @@ where
 
     pub fn load_arguments(&mut self, resolved_args: Vec<ResolvedArg>) -> VMResult<Vec<Vec<u8>>> {
         let mut object_runtime = self.object_runtime.write();
-        object_runtime.load_arguments(&resolved_args)?;
+        object_runtime.load_arguments(self, self.remote, &resolved_args)?;
         Ok(resolved_args
             .into_iter()
             .map(|arg| arg.into_serialized_arg())
@@ -197,16 +215,25 @@ where
     S: MoveOSResolver,
     G: SwitchableGasMeter + ClassifiedGasMeter,
 {
-    fn get_type_layout(&self, type_tag: &TypeTag) -> move_binary_format::errors::PartialVMResult<move_core_types::value::MoveTypeLayout> {
-        self.get_type_layout(type_tag)
+    fn get_type_layout(
+        &self,
+        type_tag: &TypeTag,
+    ) -> move_binary_format::errors::PartialVMResult<move_core_types::value::MoveTypeLayout> {
+        self.session
+            .get_type_layout(type_tag)
+            .map_err(|e| e.to_partial())
     }
 
-    fn type_to_type_layout(&self, ty: &Type) -> move_binary_format::errors::PartialVMResult<move_core_types::value::MoveTypeLayout> {
-        self.type_to_type_layout(ty)
+    fn type_to_type_layout(
+        &self,
+        ty: &Type,
+    ) -> move_binary_format::errors::PartialVMResult<move_core_types::value::MoveTypeLayout> {
+        let type_tag = self.type_to_type_tag(ty)?;
+        self.get_type_layout(&type_tag)
     }
 
     fn type_to_type_tag(&self, ty: &Type) -> move_binary_format::errors::PartialVMResult<TypeTag> {
-        self.type_to_type_tag(ty)
+        self.session.get_type_tag(ty).map_err(|e| e.to_partial())
     }
 }
 

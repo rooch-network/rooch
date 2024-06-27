@@ -737,7 +737,7 @@ impl RawObject {
         bytes
     }
 
-    fn struct_tag(&self) -> StructTag {
+    pub fn struct_tag(&self) -> StructTag {
         StructTag {
             address: Self::ADDRESS,
             module: Self::MODULE_NAME.to_owned(),

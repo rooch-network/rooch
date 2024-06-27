@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::natives::helpers::make_module_natives;
-use move_binary_format::errors::{PartialVMError, PartialVMResult};
+use move_binary_format::errors::{Location, PartialVMError, PartialVMResult};
 use move_core_types::{
     gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
     language_storage::TypeTag,
@@ -207,8 +207,17 @@ fn object_pointer_fn_dispatch(
     let (object, object_load_gas) =
         object_runtime.load_object(context, object_context.resolver(), &object_id)?;
     let gas_cost = base + common_gas_params.calculate_load_cost(object_load_gas);
-    f(object, &type_tag)
-        .map(|v| NativeResult::ok(gas_cost, v.map(|v| smallvec![v]).unwrap_or(smallvec![])))
+    let result = f(object, &type_tag);
+    match result {
+        Ok(ret) => Ok(NativeResult::ok(
+            gas_cost,
+            ret.map(|v| smallvec![v]).unwrap_or(smallvec![]),
+        )),
+        Err(err) => {
+            let abort_code = error_to_abort_code(err);
+            Ok(NativeResult::err(gas_cost, abort_code))
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -259,21 +268,7 @@ fn native_fn_dispatch(
             ret.map(|v| smallvec![v]).unwrap_or(smallvec![]),
         )),
         Err(err) => {
-            let abort_code = match err.major_status() {
-                StatusCode::MISSING_DATA => ERROR_NOT_FOUND,
-                StatusCode::TYPE_MISMATCH => ERROR_TYPE_MISMATCH,
-                StatusCode::RESOURCE_ALREADY_EXISTS => ERROR_ALREADY_EXISTS,
-                _ => ERROR_OBJECT_RUNTIME_ERROR,
-            };
-            if log::log_enabled!(log::Level::Debug) {
-                log::warn!(
-                    "[ObjectRuntime] native_function error: object_id: {:?}, key:{:?}, err: {:?}, abort: {}",
-                    object_id,
-                    field_key,
-                    err,
-                    abort_code
-                );
-            };
+            let abort_code = error_to_abort_code(err);
             Ok(NativeResult::err(gas_cost, abort_code))
         }
     }
@@ -567,6 +562,27 @@ fn serialize_key(
     let key_type_tag = context.type_to_type_tag(key_type)?;
     let key_bytes = moveos_object_runtime::runtime::serialize(&key_layout, &key)?;
     Ok(KeyState::new(key_bytes, key_type_tag))
+}
+
+fn error_to_abort_code(err: PartialVMError) -> u64 {
+    //Because the PartialVMError do not provide function to get sub status code, we convert the error to VMError.
+    let err = err.finish(Location::Undefined);
+
+    let abort_code = match err.major_status() {
+        StatusCode::MISSING_DATA => ERROR_NOT_FOUND,
+        StatusCode::TYPE_MISMATCH => ERROR_TYPE_MISMATCH,
+        StatusCode::RESOURCE_ALREADY_EXISTS => ERROR_ALREADY_EXISTS,
+        StatusCode::ABORTED => err.sub_status().unwrap_or(ERROR_OBJECT_RUNTIME_ERROR),
+        _ => ERROR_OBJECT_RUNTIME_ERROR,
+    };
+    if log::log_enabled!(log::Level::Debug) {
+        log::warn!(
+            "[ObjectRuntime] error err: {:?}, abort: {}",
+            err,
+            abort_code
+        );
+    };
+    abort_code
 }
 
 #[derive(Debug, Clone)]

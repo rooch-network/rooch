@@ -3,10 +3,10 @@
 // Copyright (c) The Move Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::resolved_arg::ResolvedArg;
+use crate::resolved_arg::{ObjectArg, ResolvedArg};
 use better_any::{Tid, TidAble};
 use log::debug;
-use move_binary_format::errors::{PartialVMError, PartialVMResult, VMResult};
+use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use move_core_types::{
     account_address::AccountAddress,
     effects::Op,
@@ -80,8 +80,7 @@ pub struct TxContextValue {
 pub struct ObjectRuntime {
     pub(crate) tx_context: TxContextValue,
     root: RuntimeObject,
-    object_ref_in_args: BTreeMap<ObjectID, Value>,
-    object_reference: BTreeMap<ObjectID, GlobalValue>,
+    object_pointer_in_args: BTreeMap<ObjectID, Value>,
 }
 
 /// A wrapper of Object dynamic field value, mirroring `FieldValue<V>` in `object.move`.
@@ -295,8 +294,7 @@ impl ObjectRuntime {
                 root.into_state(),
             )
             .expect("Load root object should success"),
-            object_reference: Default::default(),
-            object_ref_in_args: Default::default(),
+            object_pointer_in_args: Default::default(),
         }
     }
 
@@ -652,65 +650,38 @@ impl ObjectRuntime {
         self.get_loaded_module(module_id).map(|m| m.is_some())
     }
 
-    // pub fn load_object_reference(&mut self, object_id: &ObjectID) -> VMResult<()> {
-    //     self.object_reference
-    //         .entry(object_id.clone())
-    //         .or_insert_with(|| {
-    //             //TODO we should load the ObjectEntity<T> from the resolver
-    //             //Then cache the Object<T>
-    //             let object_id_value = object_id.to_runtime_value();
-    //             GlobalValue::cached(Value::struct_(Struct::pack(vec![object_id_value])))
-    //                 .expect("Failed to cache the Struct")
-    //         });
-    //     Ok(())
-    // }
-
-    /// Borrow &Object<T> or &mut Object<T>
-    // pub fn borrow_object_pointer(&mut self,
-    //     layout_loader: &dyn TypeLayoutLoader,
-    //     resolver: &dyn StatelessResolver,
-    //     object_id: &ObjectID) -> VMResult<Value> {
-
-    //     let (obj,) = self.load_object(layout_loader, resolver, object_id)?;
-
-    //     if gv.reference_count() >= 2 {
-    //         // We raise an error if the object is already borrowed
-    //         // Use the error code in object.move for easy debugging
-    //         return Err(PartialVMError::new(StatusCode::ABORTED)
-    //             .with_sub_status(ERROR_OBJECT_ALREADY_BORROWED)
-    //             .with_message(format!("Object {} already borrowed", object_id))
-    //             .finish(Location::Module(object::MODULE_ID.clone())));
-    //     }
-
-    //     gv.borrow_global()
-    //         .map_err(|e| e.finish(Location::Undefined))
-    // }
-
-    pub fn load_arguments(&mut self, layout_loader: &dyn TypeLayoutLoader, resolver: &dyn StatelessResolver, resolved_args: &[ResolvedArg]) -> VMResult<()> {
+    pub fn load_arguments(
+        &mut self,
+        layout_loader: &dyn TypeLayoutLoader,
+        resolver: &dyn StatelessResolver,
+        resolved_args: &[ResolvedArg],
+    ) -> VMResult<()> {
         for resolved_arg in resolved_args {
             if let ResolvedArg::Object(object_arg) = resolved_arg {
                 let object_id = object_arg.object_id();
-                let (rt_obj,_) = self.load_object(layout_loader, resolver, object_id)?;
+                let (rt_obj, _) = self
+                    .load_object(layout_loader, resolver, object_id)
+                    .map_err(|e| e.finish(Location::Module(object::MODULE_ID.clone())))?;
                 match object_arg {
-                    ObjectArg::Ref(_) | ObjectArg::Mutref(_) => {
-                        let pointer_value = rt_obj.borrow_pointer(expect_value_type)?;
-                        //We cache the object reference in the object_ref_in_args
+                    ObjectArg::Ref(obj) | ObjectArg::Mutref(obj) => {
+                        let pointer_value = rt_obj
+                            .borrow_pointer(&TypeTag::Struct(Box::new(obj.struct_tag())))
+                            .map_err(|e| e.finish(Location::Module(object::MODULE_ID.clone())))?;
+                        //We cache the object pointer value in the object_pointer_in_args
                         //Ensure the reference count and the object can not be borrowed in Move
-                        let _ = &self.object_ref_in_args;
-                        //self.object_ref_in_args.insert(object_id.clone(), ref_value);
+                        self.object_pointer_in_args
+                            .insert(object_id.clone(), pointer_value);
+                    }
+                    ObjectArg::Value(obj) => {
+                        let pointer_value = rt_obj
+                            .take_pointer(&TypeTag::Struct(Box::new(obj.struct_tag())))
+                            .map_err(|e| e.finish(Location::Module(object::MODULE_ID.clone())))?;
+                        //We cache the object pointer value in the object_pointer_in_args
+                        //Ensure the reference count and the object can not be borrowed in Move
+                        self.object_pointer_in_args
+                            .insert(object_id.clone(), pointer_value);
                     }
                 }
-                // match object_arg{
-                //     ObjectArg::Ref(_)|ObjectArg::Mutref(_)=> {
-                //         self.load_object_reference(object_id)?;
-                //     }
-                // }
-                //self.load_object_reference(object_id)?;
-                //let ref_value = self.borrow_object_pointer(object_id)?;
-                //We cache the object reference in the object_ref_in_args
-                //Ensure the reference count and the object can not be borrowed in Move
-                let _ = &self.object_ref_in_args;
-                //self.object_ref_in_args.insert(object_id.clone(), ref_value);
             }
         }
         Ok(())
@@ -721,8 +692,7 @@ impl ObjectRuntime {
         let ObjectRuntime {
             tx_context,
             root,
-            object_reference: _,
-            object_ref_in_args: _,
+            object_pointer_in_args: _,
         } = self;
         (tx_context.into_inner(), root)
     }
