@@ -56,6 +56,16 @@ script {
     }
 }
 
+// test one value with type args: expect success
+//# run --signers test --type-args 0x42::m::TestStruct --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
+script {
+    use moveos_std::object::{Self, Object};
+
+    fun main<T:key+store>(obj_from_arg: Object<T>) {
+        object::transfer(obj_from_arg, moveos_std::tx_context::sender());
+    }
+}
+
 // test mut ref and ref both: expect failure
 //# run --signers test --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
 script {

@@ -131,7 +131,8 @@ module rooch_framework::transfer_test{
         let object_id = object::id(&obj);
         object::transfer(obj, from_addr);
 
-        transfer::transfer_object<TestStruct>(&from, to_addr, object_id);
+        let obj = object::take_object<TestStruct>(&from, object_id);
+        transfer::transfer_object<TestStruct>(to_addr, obj);
         
         let obj = object::borrow_object<TestStruct>(object_id);
         assert!(object::owner(obj)== to_addr, 1001);
