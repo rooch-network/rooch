@@ -33,7 +33,7 @@ pub mod utils;
 /// Type alias to improve readability.
 pub type IndexerResult<T> = Result<T, IndexerError>;
 
-pub const DEFAULT_BUSY_TIMEOUT: u64 = 2000; // millsecond
+pub const DEFAULT_BUSY_TIMEOUT: u64 = 10000; // millsecond
 pub type IndexerTableName = &'static str;
 pub const INDEXER_EVENTS_TABLE_NAME: IndexerTableName = "events";
 pub const INDEXER_OBJECT_STATES_TABLE_NAME: IndexerTableName = "object_states";
@@ -247,6 +247,9 @@ impl diesel::r2d2::CustomizeConnection<SqliteConnection, diesel::r2d2::Error>
         &self,
         conn: &mut SqliteConnection,
     ) -> std::result::Result<(), diesel::r2d2::Error> {
+        conn.batch_execute(&format!("PRAGMA busy_timeout = {};", self.busy_timeout))
+            .map_err(diesel::r2d2::Error::QueryError)?;
+
         let mut pragma_builder = String::new();
         if self.read_only {
             pragma_builder.push_str("PRAGMA query_only = true;");
@@ -255,32 +258,11 @@ impl diesel::r2d2::CustomizeConnection<SqliteConnection, diesel::r2d2::Error>
         if self.enable_wal {
             pragma_builder.push_str("PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL;");
         }
-        pragma_builder.push_str(&format!("PRAGMA busy_timeout = {};", self.busy_timeout));
-
         conn.batch_execute(&pragma_builder)
             .map_err(diesel::r2d2::Error::QueryError)?;
 
         Ok(())
     }
-
-    // fn on_acquire(&self, conn: &mut SqliteConnection) -> Result<(), diesel::r2d2::Error> {
-    //     (|| {
-    //         let mut pragma_builder = String::new();
-    //         if self.read_only {
-    //             pragma_builder.push_str("PRAGMA query_only = true;");
-    //         }
-    //         // WAL mode has better write-concurrency. When synchronous is NORMAL it will fsync only in critical moments
-    //         if self.enable_wal {
-    //             pragma_builder.push_str("PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL;");
-    //         }
-    //         pragma_builder.push_str(&format!("PRAGMA busy_timeout = {};", self.busy_timeout));
-    //
-    //         conn.batch_execute(&pragma_builder)?;
-    //
-    //         Ok(())
-    //     })()
-    //     .map_err(diesel::r2d2::Error::QueryError)
-    // }
 }
 
 pub fn get_sqlite_pool_connection(
