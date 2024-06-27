@@ -309,7 +309,7 @@ impl Default for RpcModuleDocBuilder {
     fn default() -> Self {
         let schema_generator = SchemaSettings::default()
             .with(|s| {
-                s.definitions_path = "#/components/schemas/".to_owned();
+                "#/components/schemas/".clone_into(&mut s.definitions_path);
             })
             .into_generator();
 

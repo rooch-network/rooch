@@ -835,8 +835,9 @@ impl<'a> ExtendedChecker<'a> {
                                                             error_msg.as_str(),
                                                         );
                                                     }
-                                                    gas_free_function_info.gas_validate =
-                                                        full_function_name.clone();
+                                                    gas_free_function_info
+                                                        .gas_validate
+                                                        .clone_from(&full_function_name)
                                                 }
 
                                                 if attribute_key == GAS_FREE_CHARGE_POST {
@@ -899,12 +900,14 @@ impl<'a> ExtendedChecker<'a> {
                                                 .or_default();
 
                                             if attribute_key == GAS_FREE_VALIDATE {
-                                                gas_free_function_info.gas_validate =
-                                                    full_function_name.clone();
+                                                gas_free_function_info
+                                                    .gas_validate
+                                                    .clone_from(&full_function_name)
                                             }
                                             if attribute_key == GAS_FREE_CHARGE_POST {
-                                                gas_free_function_info.gas_charge_post =
-                                                    full_function_name.clone();
+                                                gas_free_function_info
+                                                    .gas_charge_post
+                                                    .clone_from(&full_function_name)
                                             }
                                         }
                                     }

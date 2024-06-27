@@ -88,6 +88,7 @@ moveos-config = { path = "moveos/moveos-config" }
 moveos-wasm = { path = "moveos/moveos-wasm" }
 moveos-object-runtime = { path = "moveos/moveos-object-runtime" }
 moveos-compiler = { path = "moveos/moveos-compiler" }
+accumulator = { path = "moveos/moveos-commons/accumulator" }
 
 # crates for Rooch
 rooch = { path = "crates/rooch" }
@@ -230,7 +231,6 @@ tower = { version = "0.4.12", features = ["full", "util", "timeout", "load-shed"
 tower-http = { version = "0.4.4", features = ["cors", "full", "trace", "set-header", "propagate-header"] }
 mirai-annotations = "1.12.0"
 lru = "0.11.0"
-accumulator = { path = "moveos/moveos-commons/accumulator" }
 bs58 = "0.5.1"
 dirs-next = "2.0.0"
 anstream = { version = "0.3" }
@@ -250,6 +250,8 @@ diesel = { version = "2.2.1", features = [
     "serde_json",
     "64-column-tables",
 ] }
+diesel-derive-enum = { version = "2.1.0", features = ["sqlite"] }
+diesel_migrations = { version = "2.2.0" }
 axum = { version = "0.6.6", default-features = false, features = [
     "headers",
     "tokio",
@@ -273,8 +275,6 @@ serenity = { version = "0.12.2", default-features = false, features = [
     "rustls_backend",
     "model",
 ] }
-diesel-derive-enum = { version = "2.0.1", features = ["sqlite"] }
-diesel_migrations = { version = "2.0.0" }
 tap = "1.0.1"
 dotenvy = "0.15"
 sized-chunks = { version = "0.6" }
