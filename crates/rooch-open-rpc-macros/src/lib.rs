@@ -122,6 +122,7 @@ pub fn open_rpc(attr: TokenStream, item: TokenStream) -> TokenStream {
 trait OptionalQuote {
     fn to_quote(&self) -> TokenStream2;
 
+    #[allow(dead_code)]
     fn unwrap_quote<F>(&self, quote: F) -> TokenStream2
     where
         F: FnOnce(LitStr) -> TokenStream2;
