@@ -11,6 +11,7 @@ pub mod event;
 pub mod evm;
 pub mod hash;
 pub mod json;
+pub mod measurement;
 pub mod move_module;
 pub mod object;
 pub mod rlp;
