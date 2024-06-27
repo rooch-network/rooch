@@ -1,44 +1,51 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-export function toHexString(byteArray: Iterable<number>): string {
-  const hexArray = Array.from(byteArray).map((byte) => {
-    const roundedByte = Math.floor(byte)
-    return (roundedByte < 0 ? 256 + roundedByte : roundedByte).toString(16).padStart(2, '0')
-  })
-  return `0x${hexArray.join('')}`
-}
+import { Bytes } from '../types/bytes.js'
 
-export function fromHexString(hex: string, padding?: number): Uint8Array {
-  let hexWithoutPrefix = hex.startsWith('0x') ? hex.substring(2) : hex
-
-  if (padding && hexWithoutPrefix.length < padding) {
-    hexWithoutPrefix = padLeft(hexWithoutPrefix, padding)
-  } else if (!padding && hexWithoutPrefix.length % 2 !== 0) {
-    hexWithoutPrefix = `0${hexWithoutPrefix}`
+export function isHex(input: string | Bytes): boolean {
+  if (typeof input === 'string') {
+    return /^(0x|0X)?[a-fA-F0-9]+$/.test(input) && input.length % 2 === 0
+  } else {
+    for (let i = 0; i < input.length; i++) {
+      const byte = input[i]
+      // Check if the byte is a valid hex character (0-9, A-F, a-f)
+      if (
+        !((byte >= 48 && byte <= 57) || (byte >= 65 && byte <= 70) || (byte >= 97 && byte <= 102))
+      ) {
+        return false
+      }
+    }
+    return true
   }
+}
 
-  const byteArray = new Uint8Array(hexWithoutPrefix.length / 2)
+export function getHexByteLength(input: string): number {
+  return /^(0x|0X)/.test(input) ? (input.length - 2) / 2 : input.length / 2
+}
 
-  for (let i = 0; i < hexWithoutPrefix.length; i += 2) {
-    byteArray[i / 2] = parseInt(hexWithoutPrefix.substring(i, i + 2), 16)
+export function normalizeHex(input: string): string {
+  return input.startsWith('0x') ? input.slice(2) : input
+}
+
+export function fromHEX(input: string): Bytes {
+  const normalized = normalizeHex(input)
+  const padded = normalized.length % 2 === 0 ? normalized : `0${normalized}}`
+  const intArr = padded.match(/.{2}/g)?.map((byte) => parseInt(byte, 16)) ?? []
+
+  return Uint8Array.from(intArr)
+}
+
+const u8a = (a: any): a is Uint8Array => a instanceof Uint8Array
+
+const hexes = Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'))
+
+export function toHEX(input: Bytes): string {
+  if (!u8a(input)) throw new Error('Uint8Array expected')
+  // pre-caching improves the speed 6x
+  let hex = ''
+  for (let i = 0; i < input.length; i++) {
+    hex += hexes[input[i]]
   }
-
-  return byteArray
-}
-
-/**
- * @public
- * Should be called to pad string to expected length
- */
-export function padLeft(str: string, chars: number, sign: string = '0') {
-  return new Array(chars - str.length + 1).join(sign) + str
-}
-
-/**
- * @public
- * Should be called to pad string to expected length
- */
-export function padRight(str: string, chars: number, sign: string = '0') {
-  return str + new Array(chars - str.length + 1).join(sign)
+  return hex
 }

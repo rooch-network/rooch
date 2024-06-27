@@ -20,6 +20,7 @@
 -  [Function `tx_meta`](#0x2_tx_context_tx_meta)
 -  [Function `tx_gas_payment_account`](#0x2_tx_context_tx_gas_payment_account)
 -  [Function `tx_result`](#0x2_tx_context_tx_result)
+-  [Function `is_system_call`](#0x2_tx_context_is_system_call)
 -  [Function `set_module_upgrade_flag`](#0x2_tx_context_set_module_upgrade_flag)
 -  [Function `drop`](#0x2_tx_context_drop)
 
@@ -219,6 +220,19 @@ The result is only available in the <code>post_execute</code> function.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="tx_result.md#0x2_tx_result">tx_result</a>(): <a href="tx_result.md#0x2_tx_result_TxResult">tx_result::TxResult</a>
+</code></pre>
+
+
+
+<a name="0x2_tx_context_is_system_call"></a>
+
+## Function `is_system_call`
+
+Check if the current transaction is a system call
+The system call is a special transaction initiated by the system.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_is_system_call">is_system_call</a>(): bool
 </code></pre>
 
 

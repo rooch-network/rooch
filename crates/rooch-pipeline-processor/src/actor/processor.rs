@@ -5,20 +5,14 @@ use super::messages::{ExecuteL1BlockMessage, ExecuteL1TxMessage, ExecuteL2TxMess
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
-use moveos_types::{
-    moveos_std::{object::ObjectEntity, tx_context::TxContext},
-    transaction::VerifiedMoveOSTransaction,
-};
+use moveos_types::{moveos_std::object::ObjectEntity, transaction::VerifiedMoveOSTransaction};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::proxy::SequencerProxy;
-use rooch_types::{
-    address::BitcoinAddress,
-    transaction::{
-        ExecuteTransactionResponse, L1BlockWithBody, L1Transaction, LedgerTransaction,
-        LedgerTxData, RoochTransaction,
-    },
+use rooch_types::transaction::{
+    ExecuteTransactionResponse, L1BlockWithBody, L1Transaction, LedgerTransaction, LedgerTxData,
+    RoochTransaction,
 };
 use tracing::debug;
 
@@ -50,14 +44,9 @@ impl PipelineProcessorActor {
 
     pub async fn execute_l1_block(
         &mut self,
-        ctx: TxContext,
         l1_block: L1BlockWithBody,
-        sequencer_address: BitcoinAddress,
     ) -> Result<ExecuteTransactionResponse> {
-        let moveos_tx = self
-            .executor
-            .validate_l1_block(ctx, l1_block.clone(), sequencer_address)
-            .await?;
+        let moveos_tx = self.executor.validate_l1_block(l1_block.clone()).await?;
         let ledger_tx = self
             .sequencer
             .sequence_transaction(LedgerTxData::L1Block(l1_block.block))
@@ -67,14 +56,9 @@ impl PipelineProcessorActor {
 
     pub async fn execute_l1_tx(
         &mut self,
-        ctx: TxContext,
         l1_tx: L1Transaction,
-        sequencer_address: BitcoinAddress,
     ) -> Result<ExecuteTransactionResponse> {
-        let moveos_tx = self
-            .executor
-            .validate_l1_tx(ctx, l1_tx.clone(), sequencer_address)
-            .await?;
+        let moveos_tx = self.executor.validate_l1_tx(l1_tx.clone()).await?;
         let ledger_tx = self
             .sequencer
             .sequence_transaction(LedgerTxData::L1Tx(l1_tx))
@@ -166,8 +150,7 @@ impl Handler<ExecuteL1BlockMessage> for PipelineProcessorActor {
         msg: ExecuteL1BlockMessage,
         _ctx: &mut ActorContext,
     ) -> Result<ExecuteTransactionResponse> {
-        self.execute_l1_block(msg.ctx, msg.tx, msg.sequencer_address)
-            .await
+        self.execute_l1_block(msg.tx).await
     }
 }
 
@@ -178,7 +161,6 @@ impl Handler<ExecuteL1TxMessage> for PipelineProcessorActor {
         msg: ExecuteL1TxMessage,
         _ctx: &mut ActorContext,
     ) -> Result<ExecuteTransactionResponse> {
-        self.execute_l1_tx(msg.ctx, msg.tx, msg.sequencer_address)
-            .await
+        self.execute_l1_tx(msg.tx).await
     }
 }

@@ -8,7 +8,6 @@ use moveos_config::DataDirPath;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
-use moveos_types::moveos_std::gas_schedule::GasScheduleConfig;
 use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state_resolver::{RootObjectResolver, StateReaderExt};
@@ -42,8 +41,8 @@ pub fn get_data_dir() -> DataDirPath {
 pub struct RustBindingTest {
     //we keep the opt to ensure the temp dir is not be deleted before the test end
     opt: RoochOpt,
-    sequencer: AccountAddress,
-    sequencer_bitcoin_address: BitcoinAddress,
+    pub sequencer: AccountAddress,
+    pub sequencer_bitcoin_address: BitcoinAddress,
     kp: RoochKeyPair,
     pub executor: ExecutorActor,
     pub reader_executor: ReaderExecutorActor,
@@ -131,12 +130,8 @@ impl RustBindingTest {
     }
 
     pub fn execute_l1_block(&mut self, l1_block: L1BlockWithBody) -> Result<Vec<L1Transaction>> {
-        let ctx = self.create_l1_block_ctx(&l1_block)?;
-        let verified_tx: VerifiedMoveOSTransaction = self.executor.validate_l1_block(
-            ctx,
-            l1_block.clone(),
-            self.sequencer_bitcoin_address.clone(),
-        )?;
+        let verified_tx: VerifiedMoveOSTransaction =
+            self.executor.validate_l1_block(l1_block.clone())?;
         self.execute_verified_tx(verified_tx)?;
 
         if l1_block.block.chain_id.is_bitcoin() {
@@ -163,41 +158,8 @@ impl RustBindingTest {
     }
 
     pub fn execute_l1_tx(&mut self, l1_tx: L1Transaction) -> Result<()> {
-        let ctx = self.create_l1_tx_ctx(l1_tx.clone())?;
-        let verified_tx =
-            self.executor
-                .validate_l1_tx(ctx, l1_tx, self.sequencer_bitcoin_address.clone())?;
+        let verified_tx = self.executor.validate_l1_tx(l1_tx)?;
         self.execute_verified_tx(verified_tx)
-    }
-
-    pub fn create_l1_block_ctx(&self, l1_block: &L1BlockWithBody) -> Result<TxContext> {
-        let sequence_number = self.get_account_sequence_number(self.sequencer)?;
-        let max_gas_amount = GasScheduleConfig::INITIAL_MAX_GAS_AMOUNT * 1000;
-        let tx_hash = l1_block.block.tx_hash();
-        let tx_size = l1_block.block.tx_size();
-
-        Ok(TxContext::new(
-            self.sequencer,
-            sequence_number,
-            max_gas_amount,
-            tx_hash,
-            tx_size,
-        ))
-    }
-
-    pub fn create_l1_tx_ctx(&self, l1_tx: L1Transaction) -> Result<TxContext> {
-        let sequence_number = self.get_account_sequence_number(self.sequencer)?;
-        let max_gas_amount = GasScheduleConfig::INITIAL_MAX_GAS_AMOUNT * 1000;
-        let tx_hash = l1_tx.tx_hash();
-        let tx_size = l1_tx.tx_size();
-
-        Ok(TxContext::new(
-            self.sequencer,
-            sequence_number,
-            max_gas_amount,
-            tx_hash,
-            tx_size,
-        ))
     }
 
     pub fn execute_as_result(&mut self, tx: RoochTransaction) -> Result<ExecuteTransactionResult> {

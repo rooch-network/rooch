@@ -1,7 +1,17 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-export * from './interface'
-export * from './roochClient'
-export * from './filteredClient'
-export * from './roochClientTypes'
+export * from './types/index.js'
+
+export { type RoochClientOptions, isRoochClient, RoochClient } from './client.js'
+
+export {
+  type RoochTransport,
+  type RoochHTTPTransportOptions,
+  type HttpHeaders,
+  RoochHTTPTransport,
+} from './httpTransport.js'
+
+export { getRoochNodeUrl } from './networks.js'
+
+export * from './error.js'

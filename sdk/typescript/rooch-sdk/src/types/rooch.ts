@@ -1,74 +1,17 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { Serializable } from './bcs/serializable'
+import { Address } from '../address/address.js'
 
-export type Identifier = string
-export type AccountAddress = string
-export type HashValue = string
-export type Bool = boolean
-export type U8 = number
-export type U16 = number
-export type U32 = number
-export type U64 = bigint
-export type U128 = bigint
-export type U256 = bigint
-export type BlockNumber = number
-export type AuthenticationKey = string
-export type MultiEd25519PublicKey = string
-export type MultiEd25519Signature = string
-export type EventKey = string
-export type ObjectID = string
+import { Bytes } from './bytes.js'
 
-export type ModuleId = string | { address: AccountAddress; name: Identifier }
-export type FunctionId =
-  | string
-  | { address: AccountAddress; module: Identifier; functionName: Identifier }
-
-export interface StructTag {
-  address: AccountAddress
-  module: Identifier
-  name: Identifier
-  // eslint-disable-next-line no-use-before-define
-  type_params?: TypeTag[]
-}
-
-export type TypeTag =
-  | 'Bool'
-  | 'U8'
-  | 'U16'
-  | 'U32'
-  | 'U64'
-  | 'U128'
-  | 'U256'
-  | 'Address'
-  | 'Signer'
-  | 'Ascii'
-  | 'String'
-  | 'Object'
-  | 'ObjectID'
-  | 'Raw'
-  | { Vector: TypeTag }
-  | { Struct: StructTag }
-
-export type ParsedObjectID = AccountAddress | StructTag
-
-export type ArgType =
-  | Bool
-  | U8
-  | U16
-  | U32
-  | U64
-  | U128
-  | U256
-  | string
-  | Uint8Array
-  | AccountAddress
-  | Serializable
-  | ParsedObjectID
-  | ArgType[]
-
-export type Arg = {
-  type: TypeTag
-  value: ArgType
-}
+export type u8 = number
+export type u16 = number
+export type u32 = number
+export type u64 = bigint
+export type u128 = bigint
+export type u256 = bigint
+export type bool = boolean
+export type objectId = string
+export type address = string | Address | Bytes
+export type identifier = string

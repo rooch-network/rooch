@@ -316,10 +316,8 @@ where
                 let resolved_args = self.resolve_argument(&loaded_function, call.args, location)?;
                 let serialized_args = self.load_arguments(resolved_args)?;
                 if bypass_visibility {
-                    // bypass visibility call is system call, we do not charge gas for it, like L1 block transaction
-                    self.gas_meter.stop_metering();
-                    let result = self
-                        .session
+                    // bypass visibility call is system call, such as execute L1 block transaction
+                    self.session
                         .execute_function_bypass_visibility(
                             &call.function_id.module_id,
                             &call.function_id.function_name,
@@ -332,9 +330,7 @@ where
                                 ret.return_values.is_empty(),
                                 "Function should not return values"
                             );
-                        });
-                    self.gas_meter.start_metering();
-                    result
+                        })
                 } else {
                     self.session
                         .execute_entry_function(

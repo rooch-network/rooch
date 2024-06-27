@@ -108,7 +108,7 @@ fn get_value_from_move_struct(move_value: &AnnotatedMoveValue, var_name: &str) -
                 for (key, value) in move_struct.value.iter() {
                     fields.insert(key.to_string(), value);
                 }
-                if let Some(value) = fields.get(&part.to_owned()) {
+                if let Some(value) = fields.get(part) {
                     current_value = value;
                 } else {
                     anyhow::bail!("Field value {} cannot be found in struct", var_name);

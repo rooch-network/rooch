@@ -1448,7 +1448,7 @@ where
             None => {}
             Some(metadata) => {
                 let data_struct_maps = metadata.data_struct_map;
-                if data_struct_maps.get(struct_name).is_some() {
+                if data_struct_maps.contains_key(struct_name) {
                     return (true, ErrorCode::UNKNOWN_CODE);
                 }
             }
@@ -1461,7 +1461,7 @@ where
             None => {}
             Some(metadata) => {
                 let data_struct_maps = metadata.data_struct_map;
-                if data_struct_maps.get(struct_name).is_some() {
+                if data_struct_maps.contains_key(struct_name) {
                     return (true, ErrorCode::UNKNOWN_CODE);
                 }
             }

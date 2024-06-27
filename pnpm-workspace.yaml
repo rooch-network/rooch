@@ -1,7 +1,7 @@
 packages:
-  - 'infra/dashboard/**'
+#  - 'infra/dashboard/**'
   - 'infra/rooch-portal/**'
-  - 'grow-rooch/**'
+#  - 'grow-rooch/**'
   - 'sdk/typescript/build-scripts'
   - 'sdk/typescript/rooch-sdk'
   - 'sdk/typescript/rooch-sdk-kit'
