@@ -123,19 +123,18 @@ Test result: OK. Total tests: 1; passed: 1; failed: 0
 接下来，我们修改一下，看看断言失败的情形：
 
 ```move
-let counter = account::borrow_resource<Counter>(account_addr);
-assert!(counter.count_value == 2, 999);
+increase(account);
+assert!(counter.count_value == 2, 1000);
 ```
 
 ```shell
-$ rooch move test
-
+[joe@mx unit_test]$ rooch move test
 INCLUDING DEPENDENCY MoveStdlib
 INCLUDING DEPENDENCY MoveosStdlib
 INCLUDING DEPENDENCY RoochFramework
 BUILDING unit_test
 Running Move unit tests
-2024-06-28T01:40:52.481931Z  INFO moveos_common::utils: set max open fds 8192
+2024-06-28T01:55:09.601009Z  INFO moveos_common::utils: set max open fds 8192
 [ FAIL    ] 0xfc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::unit_test::test_counter
 
 Test failures:
@@ -144,13 +143,13 @@ Failures in 0xfc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::
 
 ┌── test_counter ──────
 │ error[E11001]: test failure
-│    ┌─ ./sources/unit.move:26:9
+│    ┌─ ./sources/unit.move:29:9
 │    │
 │ 21 │     fun test_counter(account: &signer) {
 │    │         ------------ In this function in 0xfc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::unit_test
 │    ·
-│ 26 │         assert!(counter.count_value == 2, 999);
-│    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Test was not expected to error, but it aborted with code 999 originating in the module fc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::unit_test rooted here
+│ 29 │         assert!(counter.count_value == 2, 1000);
+│    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Test was not expected to error, but it aborted with code 1000 originating in the module fc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::unit_test rooted here
 │
 │
 └──────────────────
