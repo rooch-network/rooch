@@ -1,4 +1,4 @@
-processed 6 tasks
+processed 11 tasks
 
 task 1 'publish'. lines 3-28:
 status EXECUTED
@@ -6,11 +6,26 @@ status EXECUTED
 task 2 'run'. lines 29-38:
 status EXECUTED
 
-task 3 'run'. lines 39-49:
+task 3 'run'. lines 39-48:
+status EXECUTED
+
+task 4 'run'. lines 49-59:
+status EXECUTED
+
+task 5 'run'. lines 60-69:
+status EXECUTED
+
+task 6 'run'. lines 70-80:
 status ABORTED with code 7 in 0000000000000000000000000000000000000000000000000000000000000002::object
 
-task 4 'run'. lines 50-61:
+task 7 'run'. lines 81-92:
 status ABORTED with code 7 in 0000000000000000000000000000000000000000000000000000000000000002::object
 
-task 5 'run'. lines 62-69:
+task 8 'run'. lines 93-102:
 status ABORTED with code 7 in 0000000000000000000000000000000000000000000000000000000000000002::object
+
+task 9 'run'. lines 103-113:
+status ABORTED with code 15 in 0000000000000000000000000000000000000000000000000000000000000002::object
+
+task 10 'run'. lines 114-122:
+status ABORTED with code 15 in 0000000000000000000000000000000000000000000000000000000000000002::object

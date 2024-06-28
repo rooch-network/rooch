@@ -1,10 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::natives::{helpers::make_module_natives, helpers::make_native};
-use move_binary_format::errors::{PartialVMError, PartialVMResult};
+use crate::natives::helpers::make_module_natives;
+use move_binary_format::errors::{Location, PartialVMError, PartialVMResult};
 use move_core_types::{
     gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
+    language_storage::TypeTag,
     value::MoveTypeLayout,
     vm_status::StatusCode,
 };
@@ -12,7 +13,9 @@ use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, values::Value,
 };
-use moveos_object_runtime::runtime::{ObjectRuntimeContext, RuntimeField, TypeLayoutLoader};
+use moveos_object_runtime::runtime::{
+    ObjectRuntimeContext, RuntimeField, RuntimeObject, TypeLayoutLoader,
+};
 use moveos_types::{
     moveos_std::object::{Object, ObjectID},
     state::{KeyState, MoveState, PlaceholderStruct},
@@ -25,12 +28,19 @@ pub use moveos_object_runtime::runtime::{
     ERROR_OBJECT_RUNTIME_ERROR, ERROR_TYPE_MISMATCH,
 };
 
+/***************************************************************************************************
+ * native fun borrow_object_pointer
+ *
+ *   gas cost: base_cost
+ *
+ **************************************************************************************************/
+
 #[derive(Debug, Clone)]
-pub struct AsRefGasParameters {
+pub struct BorrowObjectPointerGasParameters {
     pub base: InternalGas,
 }
 
-impl AsRefGasParameters {
+impl BorrowObjectPointerGasParameters {
     pub fn zeros() -> Self {
         Self {
             base: InternalGas::zero(),
@@ -38,15 +48,10 @@ impl AsRefGasParameters {
     }
 }
 
-/***************************************************************************************************
- * native fun as_ref_inner
- *
- *   gas cost: base_cost
- *
- **************************************************************************************************/
 #[inline]
-fn native_as_ref_inner(
-    gas_params: &AsRefGasParameters,
+fn native_borrow_object_pointer(
+    common_gas_params: &CommonGasParameters,
+    gas_params: &BorrowObjectPointerGasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut arguments: VecDeque<Value>,
@@ -54,83 +59,165 @@ fn native_as_ref_inner(
     debug_assert!(ty_args.len() == 1);
     debug_assert!(arguments.len() == 1);
 
-    let object_id = arguments.pop_back().unwrap();
-    let object_ref = borrow_object_reference(context, object_id, &ty_args[0])?;
-    Ok(NativeResult::ok(gas_params.base, smallvec![object_ref]))
+    let object_id = pop_object_id(&mut arguments)?;
+    object_pointer_fn_dispatch(
+        common_gas_params,
+        gas_params.base,
+        context,
+        object_id,
+        &ty_args[0],
+        |obj, ty| obj.borrow_pointer(ty).map(Some),
+    )
 }
 
-pub fn make_native_as_ref_inner(gas_params: AsRefGasParameters) -> NativeFunction {
-    Arc::new(move |context, ty_args, args| native_as_ref_inner(&gas_params, context, ty_args, args))
-}
-
-#[derive(Debug, Clone)]
-pub struct AsMutRefGasParameters {
-    pub base: InternalGas,
-}
-
-impl AsMutRefGasParameters {
-    pub fn zeros() -> Self {
-        Self {
-            base: InternalGas::zero(),
-        }
-    }
-}
-
-/***************************************************************************************************
- * native fun as_mut_ref_inner
- *
- *   gas cost: base_cost
- *
- **************************************************************************************************/
-#[inline]
-fn native_as_mut_ref_inner(
-    gas_params: &AsMutRefGasParameters,
-    context: &mut NativeContext,
-    ty_args: Vec<Type>,
-    mut arguments: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    debug_assert!(ty_args.len() == 1);
-    debug_assert!(arguments.len() == 1);
-
-    let object_id = arguments.pop_back().unwrap();
-    let object_ref = borrow_object_reference(context, object_id, &ty_args[0])?;
-    Ok(NativeResult::ok(gas_params.base, smallvec![object_ref]))
-}
-
-pub fn make_native_as_mut_ref_inner(gas_params: AsMutRefGasParameters) -> NativeFunction {
+pub fn make_native_borrow_object_pointer(
+    common_gas_params: CommonGasParameters,
+    gas_params: BorrowObjectPointerGasParameters,
+) -> NativeFunction {
     Arc::new(move |context, ty_args, args| {
-        native_as_mut_ref_inner(&gas_params, context, ty_args, args)
+        native_borrow_object_pointer(&common_gas_params, &gas_params, context, ty_args, args)
     })
 }
 
-fn borrow_object_reference(
+/***************************************************************************************************
+ * native fun take_object_pointer
+ *
+ *   gas cost: base_cost
+ *
+ **************************************************************************************************/
+
+#[derive(Debug, Clone)]
+pub struct TakeObjectPointerGasParameters {
+    pub base: InternalGas,
+}
+
+impl TakeObjectPointerGasParameters {
+    pub fn zeros() -> Self {
+        Self {
+            base: InternalGas::zero(),
+        }
+    }
+}
+
+#[inline]
+fn native_take_object_pointer(
+    common_gas_params: &CommonGasParameters,
+    gas_params: &TakeObjectPointerGasParameters,
     context: &mut NativeContext,
-    object_id_value: Value,
+    ty_args: Vec<Type>,
+    mut arguments: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert!(ty_args.len() == 1);
+    debug_assert!(arguments.len() == 1);
+
+    let object_id = pop_object_id(&mut arguments)?;
+    object_pointer_fn_dispatch(
+        common_gas_params,
+        gas_params.base,
+        context,
+        object_id,
+        &ty_args[0],
+        |obj, ty| obj.take_pointer(ty).map(Some),
+    )
+}
+
+pub fn make_native_take_object_pointer(
+    common_gas_params: CommonGasParameters,
+    gas_params: TakeObjectPointerGasParameters,
+) -> NativeFunction {
+    Arc::new(move |context, ty_args, args| {
+        native_take_object_pointer(&common_gas_params, &gas_params, context, ty_args, args)
+    })
+}
+
+/***************************************************************************************************
+ * native fun return_object_pointer
+ *
+ *   gas cost: base_cost
+ *
+ **************************************************************************************************/
+
+#[derive(Debug, Clone)]
+pub struct ReturnObjectPointerGasParameters {
+    pub base: InternalGas,
+}
+
+impl ReturnObjectPointerGasParameters {
+    pub fn zeros() -> Self {
+        Self {
+            base: InternalGas::zero(),
+        }
+    }
+}
+
+#[inline]
+fn native_return_object_pointer(
+    common_gas_params: &CommonGasParameters,
+    gas_params: &ReturnObjectPointerGasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut arguments: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert!(ty_args.len() == 1);
+    debug_assert!(arguments.len() == 1);
+
+    let object_pointer_value = arguments.pop_back().unwrap();
+    let obj = Object::<PlaceholderStruct>::from_runtime_value(object_pointer_value.copy_value()?)
+        .map_err(|e| partial_extension_error(format!("Invalid object argument: {:?}", e)))?;
+    object_pointer_fn_dispatch(
+        common_gas_params,
+        gas_params.base,
+        context,
+        obj.id,
+        &ty_args[0],
+        |obj, ty| obj.return_pointer(object_pointer_value, ty).map(|_| None),
+    )
+}
+
+pub fn make_native_return_object_pointer(
+    common_gas_params: CommonGasParameters,
+    gas_params: ReturnObjectPointerGasParameters,
+) -> NativeFunction {
+    Arc::new(move |context, ty_args, args| {
+        native_return_object_pointer(&common_gas_params, &gas_params, context, ty_args, args)
+    })
+}
+
+fn object_pointer_fn_dispatch(
+    common_gas_params: &CommonGasParameters,
+    base: InternalGas,
+    context: &mut NativeContext,
+    object_id: ObjectID,
     ref_type: &Type,
-) -> PartialVMResult<Value> {
+    f: impl FnOnce(&mut RuntimeObject, &TypeTag) -> PartialVMResult<Option<Value>>,
+) -> PartialVMResult<NativeResult> {
     let type_tag = context.type_to_type_tag(ref_type)?;
-    let type_layout = context
-        .get_type_layout(&type_tag)
-        .map_err(|e| e.to_partial())?;
+    // let type_layout = context
+    //     .get_type_layout(&type_tag)
+    //     .map_err(|e| e.to_partial())?;
 
-    debug_assert!(
-        Object::<PlaceholderStruct>::type_layout_match(&type_layout),
-        "Expected a struct type with layout same as Object<T>"
-    );
+    // debug_assert!(
+    //     Object::<PlaceholderStruct>::type_layout_match(&type_layout),
+    //     "Expected a struct type with layout same as Object<T>"
+    // );
 
-    let object_id = ObjectID::from_runtime_value(object_id_value)
-        .map_err(|_e| partial_extension_error("Invalid object id argument"))?;
-    let object_context = context.extensions_mut().get_mut::<ObjectRuntimeContext>();
-
-    let data = object_context.object_runtime();
-    let mut object_runtime = data.write();
-    //TODO remove load_object, the object should loaded when load ObjectEntity
-    object_runtime
-        .load_object_reference(&object_id)
-        .map_err(|e| e.to_partial())?;
-    object_runtime
-        .borrow_object_reference(&object_id)
-        .map_err(|e| e.to_partial())
+    let object_context = context.extensions().get::<ObjectRuntimeContext>();
+    let binding = object_context.object_runtime();
+    let mut object_runtime = binding.write();
+    let (object, object_load_gas) =
+        object_runtime.load_object(context, object_context.resolver(), &object_id)?;
+    let gas_cost = base + common_gas_params.calculate_load_cost(object_load_gas);
+    let result = f(object, &type_tag);
+    match result {
+        Ok(ret) => Ok(NativeResult::ok(
+            gas_cost,
+            ret.map(|v| smallvec![v]).unwrap_or(smallvec![]),
+        )),
+        Err(err) => {
+            let abort_code = error_to_abort_code(err);
+            Ok(NativeResult::err(gas_cost, abort_code))
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -181,21 +268,7 @@ fn native_fn_dispatch(
             ret.map(|v| smallvec![v]).unwrap_or(smallvec![]),
         )),
         Err(err) => {
-            let abort_code = match err.major_status() {
-                StatusCode::MISSING_DATA => ERROR_NOT_FOUND,
-                StatusCode::TYPE_MISMATCH => ERROR_TYPE_MISMATCH,
-                StatusCode::RESOURCE_ALREADY_EXISTS => ERROR_ALREADY_EXISTS,
-                _ => ERROR_OBJECT_RUNTIME_ERROR,
-            };
-            if log::log_enabled!(log::Level::Debug) {
-                log::warn!(
-                    "[ObjectRuntime] native_function error: object_id: {:?}, key:{:?}, err: {:?}, abort: {}",
-                    object_id,
-                    field_key,
-                    err,
-                    abort_code
-                );
-            };
+            let abort_code = error_to_abort_code(err);
             Ok(NativeResult::err(gas_cost, abort_code))
         }
     }
@@ -491,11 +564,33 @@ fn serialize_key(
     Ok(KeyState::new(key_bytes, key_type_tag))
 }
 
+fn error_to_abort_code(err: PartialVMError) -> u64 {
+    //Because the PartialVMError do not provide function to get sub status code, we convert the error to VMError.
+    let err = err.finish(Location::Undefined);
+
+    let abort_code = match err.major_status() {
+        StatusCode::MISSING_DATA => ERROR_NOT_FOUND,
+        StatusCode::TYPE_MISMATCH => ERROR_TYPE_MISMATCH,
+        StatusCode::RESOURCE_ALREADY_EXISTS => ERROR_ALREADY_EXISTS,
+        StatusCode::ABORTED => err.sub_status().unwrap_or(ERROR_OBJECT_RUNTIME_ERROR),
+        _ => ERROR_OBJECT_RUNTIME_ERROR,
+    };
+    if log::log_enabled!(log::Level::Debug) {
+        log::warn!(
+            "[ObjectRuntime] error err: {:?}, abort: {}",
+            err,
+            abort_code
+        );
+    };
+    abort_code
+}
+
 #[derive(Debug, Clone)]
 pub struct GasParameters {
     pub common: CommonGasParameters,
-    pub as_ref_inner: AsRefGasParameters,
-    pub as_mut_ref_inner: AsMutRefGasParameters,
+    pub native_borrow_object_pointer: BorrowObjectPointerGasParameters,
+    pub native_take_object_pointer: TakeObjectPointerGasParameters,
+    pub native_return_object_pointer: ReturnObjectPointerGasParameters,
     pub native_add_field: AddFieldGasParameters,
     pub native_borrow_field: BorrowFieldGasParameters,
     pub native_contains_field: ContainsFieldGasParameters,
@@ -511,8 +606,9 @@ impl GasParameters {
                 load_per_byte: 0.into(),
                 load_failure: 0.into(),
             },
-            as_ref_inner: AsRefGasParameters::zeros(),
-            as_mut_ref_inner: AsMutRefGasParameters::zeros(),
+            native_borrow_object_pointer: BorrowObjectPointerGasParameters::zeros(),
+            native_take_object_pointer: TakeObjectPointerGasParameters::zeros(),
+            native_return_object_pointer: ReturnObjectPointerGasParameters::zeros(),
             native_add_field: AddFieldGasParameters {
                 base: 0.into(),
                 per_byte_serialized: 0.into(),
@@ -540,12 +636,32 @@ impl GasParameters {
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [
         (
-            "as_ref_inner",
-            make_native(gas_params.as_ref_inner, native_as_ref_inner),
+            "native_borrow_object_pointer",
+            make_native_borrow_object_pointer(
+                gas_params.common.clone(),
+                gas_params.native_borrow_object_pointer.clone(),
+            ),
         ),
         (
-            "as_mut_ref_inner",
-            make_native(gas_params.as_mut_ref_inner, native_as_mut_ref_inner),
+            "native_borrow_mut_object_pointer",
+            make_native_borrow_object_pointer(
+                gas_params.common.clone(),
+                gas_params.native_borrow_object_pointer,
+            ),
+        ),
+        (
+            "native_take_object_pointer",
+            make_native_take_object_pointer(
+                gas_params.common.clone(),
+                gas_params.native_take_object_pointer,
+            ),
+        ),
+        (
+            "native_return_object_pointer",
+            make_native_return_object_pointer(
+                gas_params.common.clone(),
+                gas_params.native_return_object_pointer,
+            ),
         ),
         (
             "native_borrow_root",

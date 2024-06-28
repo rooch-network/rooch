@@ -281,8 +281,20 @@ Feature: Rooch CLI integration tests
   Scenario: basic_object example
       Given a server for basic_object
       Then cmd: "account create"
+      Then cmd: "account list --json"
       Then cmd: "move publish -p ../../examples/basic_object  --named-addresses basic_object=default"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      
+      #object pub transfer
+      Then cmd: "move run --function default::third_party_module::create_and_pub_transfer --args u64:1"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      Then cmd: "event get-events-by-event-handle -t default::pub_transfer::NewPubEvent"
+      Then cmd: "move run --function 0x3::transfer::transfer_object --type-args default::pub_transfer::Pub --args address:{{$.account[-1].account0.hex_address}} --args object:{{$.event[-1].data[0].decoded_event_data.value.id}}"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      Then cmd: "object -t default::pub_transfer::Pub -o {{$.account[-1].account0.address}}"
+      Then assert: "{{$.object[-1].data[0].owner}} == {{$.account[-1].account0.address}}"
+      
+      #child object
       Then cmd: "move run --function default::third_party_module_for_child_object::create_child --args string:alice"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       
@@ -309,7 +321,7 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].vm_status}} == Executed"
       Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 10" 
        
-      Then cmd: "move run --function default::third_party_module_for_child_object::remove_child_via_id --args object_id:{{$.event[-1].data[0].decoded_event_data.value.id}}"
+      Then cmd: "move run --function default::third_party_module_for_child_object::remove_child --args object:{{$.event[-1].data[0].decoded_event_data.value.id}}"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       Then stop the server
