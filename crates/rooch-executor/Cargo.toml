@@ -11,6 +11,12 @@ publish = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }
 
+
+[features]
+default = ["jemalloc"]
+jemalloc = ["rooch-alloc/jemalloc"]
+
+
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
@@ -50,4 +56,5 @@ rooch-framework = { workspace = true }
 rooch-genesis = { workspace = true }
 rooch-store = { workspace = true }
 rooch-config = { workspace = true }
+rooch-alloc = { workspace = true }
 accumulator = { workspace = true }
