@@ -408,11 +408,6 @@ impl RuntimeObject {
         })
     }
 
-    pub fn into_effect(self) -> (MoveTypeLayout, TypeTag, Option<Op<Value>>) {
-        let op = self.value.into_effect();
-        (self.value_layout, self.value_type, op)
-    }
-
     pub fn into_change(self) -> PartialVMResult<Option<ObjectChange>> {
         //TODO we should process the object pointer here
         //If the object pointer is deleted, there are two case:
@@ -589,20 +584,6 @@ impl RuntimeField {
             RuntimeField::None(_) => Ok(None),
             _ => Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
                 .with_message("Not Module Field".to_string())),
-        }
-    }
-
-    pub fn into_effect(self) -> Option<(MoveTypeLayout, TypeTag, Op<Value>)> {
-        match self {
-            RuntimeField::None(_) => None,
-            RuntimeField::Object(obj) => {
-                let (layout, value_type, op) = obj.into_effect();
-                op.map(|op| (layout, value_type, op))
-            }
-            RuntimeField::Normal(normal) => {
-                let (layout, value_type, op) = normal.into_effect();
-                op.map(|op| (layout, value_type, op))
-            }
         }
     }
 
