@@ -1229,7 +1229,7 @@ impl RuntimeObject {
             }
             None => None,
         };
-        
+
         let mut fields_change = BTreeMap::new();
         for (key, field) in self.fields.into_iter() {
             let field_change = field.into_change()?;
