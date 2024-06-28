@@ -29,14 +29,13 @@ use moveos_types::moveos_std::object::{
 };
 use moveos_types::state::{KeyState, MoveState, MoveType, State};
 use rooch_config::R_OPT_NET_HELP;
-use rooch_types::address::{BitcoinAddress, MultiChainAddress, RoochAddress};
+use rooch_types::address::BitcoinAddress;
 use rooch_types::addresses::BITCOIN_MOVE_ADDRESS;
 use rooch_types::bitcoin::ord::{
     derive_inscription_id, Inscription, InscriptionID, InscriptionStore,
 };
 use rooch_types::error::RoochResult;
 use rooch_types::into_address::IntoAddress;
-use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
@@ -424,12 +423,9 @@ impl InscriptionSource {
             let bitcoin_address = BitcoinAddress::new_p2pkh(&pubkey_hash);
             self.address = bitcoin_address.to_string();
         }
-
-        let maddress = MultiChainAddress::try_from_str_with_multichain_id(
-            RoochMultiChainID::Bitcoin,
-            self.address.as_str(),
-        )?;
-        Ok(AccountAddress::from(RoochAddress::try_from(maddress)?))
+        let bitcoin_address = BitcoinAddress::from_str(self.address.as_str())?;
+        let address = AccountAddress::from(bitcoin_address.to_rooch_address());
+        Ok(address)
     }
 
     pub fn to_inscription(self, id_ord_map: &sled::Db) -> (Inscription, InscriptionId) {
