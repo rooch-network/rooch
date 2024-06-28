@@ -3,7 +3,7 @@
 
 use super::moveos_vm::MoveOSSession;
 use crate::gas::{table::ClassifiedGasMeter, SwitchableGasMeter};
-use move_binary_format::errors::{Location, PartialVMError, VMResult};
+use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use move_core_types::{language_storage::TypeTag, vm_status::StatusCode};
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
@@ -21,6 +21,7 @@ use moveos_types::{
     state_resolver::MoveOSResolver,
 };
 use std::sync::Arc;
+use tracing::debug;
 
 impl<'r, 'l, S, G> MoveOSSession<'r, 'l, S, G>
 where
@@ -36,19 +37,26 @@ where
         let mut resolved_args = Vec::with_capacity(args.len());
 
         let mut args = args.into_iter();
+        let parameters = func.parameters.clone();
+
+        //fill the type arguments to parameter type
+        let parameters = parameters
+            .into_iter()
+            .map(|ty| ty.subst(&func.type_arguments))
+            .collect::<PartialVMResult<Vec<_>>>()
+            .map_err(|err| err.finish(location.clone()))?;
 
         //check object id
-        for parameter in func.parameters.iter() {
+        for parameter in parameters.iter() {
             if is_signer(parameter) {
                 resolved_args.push(ResolvedArg::signer(self.tx_context().sender()));
             } else if let Some(struct_arg_type) = as_struct_no_panic(&self.session, parameter) {
                 if is_object(&struct_arg_type) {
-                    let object_type_tag =
-                        get_type_tag(&self.session, parameter)?.ok_or_else(|| {
-                            PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
-                                .with_message("Resolve parameter type failed".to_string())
-                                .finish(location.clone())
-                        })?;
+                    let object_type_tag = self.get_type_tag_option(parameter).ok_or_else(|| {
+                        PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
+                            .with_message("Resolve parameter type failed".to_string())
+                            .finish(location.clone())
+                    })?;
                     //The Object<T>'s T type
                     let object_type = get_object_type(&object_type_tag).ok_or_else(|| {
                         PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
@@ -250,18 +258,6 @@ where
         Type::Reference(r) => as_struct_no_panic(session, r),
         Type::MutableReference(r) => as_struct_no_panic(session, r),
         _ => None,
-    }
-}
-
-pub fn get_type_tag<T>(session: &Session<T>, t: &Type) -> VMResult<Option<TypeTag>>
-where
-    T: TransactionCache,
-{
-    match t {
-        Type::Struct(_) | Type::StructInstantiation(_, _) => Ok(Some(session.get_type_tag(t)?)),
-        Type::Reference(r) => get_type_tag(session, r),
-        Type::MutableReference(r) => get_type_tag(session, r),
-        _ => Ok(None),
     }
 }
 

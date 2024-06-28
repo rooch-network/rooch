@@ -13,14 +13,7 @@ task 4 'run'. lines 49-59:
 status EXECUTED
 
 task 5 'run'. lines 60-69:
-Error: VMError with status UNKNOWN_INVARIANT_VIOLATION_ERROR at location UNDEFINED and message no type tag for TyParam(0) @Unknown invariant violation generated:
-In function backtrace::backtrace::libunwind::trace::h687eb4a6f15d1ee3 at /home/jolestar/.cargo/registry/src/index.crates.io-6f17d22bba15001f/backtrace-0.3.73/src/backtrace/libunwind.rs:116
-In function backtrace::backtrace::trace_unsynchronized::hdc827ea2511b50bf at /home/jolestar/.cargo/registry/src/index.crates.io-6f17d22bba15001f/backtrace-0.3.73/src/backtrace/mod.rs:66
-In function backtrace::backtrace::trace::hf292e749b04d906b at /home/jolestar/.cargo/registry/src/index.crates.io-6f17d22bba15001f/backtrace-0.3.73/src/backtrace/mod.rs:53
-In function move_binary_format::errors::PartialVMError::new::hafaaad75e2a9b63a at /home/jolestar/.cargo/git/checkouts/move-d59e49550a684528/c8c5dbd/language/move-binary-format/src/errors.rs:337
-In function move_vm_runtime::loader::Loader::type_to_type_tag_impl::he3fda44c7e1f45d6 at /home/jolestar/.cargo/git/checkouts/move-d59e49550a684528/c8c5dbd/language/move-vm/runtime/src/loader.rs:2796
-In function move_vm_runtime::loader::Loader::type_to_type_tag::he32fa66e1e0a01a6 at /home/jolestar/.cargo/git/checkouts/move-d59e49550a684528/c8c5dbd/language/move-vm/runtime/src/loader.rs:3042
-
+status EXECUTED
 
 task 6 'run'. lines 70-80:
 status ABORTED with code 7 in 0000000000000000000000000000000000000000000000000000000000000002::object
