@@ -45,39 +45,34 @@ public fun this_other_test_will_abort_and_pass() { abort 1 }
 
 ```move
 module unit_test::unit_test {
+    use moveos_std::account;
     use moveos_std::signer;
-    use moveos_std::context::{Self, Context};
-    #[test_only]
-    use moveos_std::context::drop_test_context;
 
     struct Counter has key {
         count_value: u64
     }
 
-    fun init(ctx: &mut Context, account: &signer) {
-        context::move_resource_to(ctx, account, Counter { count_value: 0 });
+    fun init() {
+        let signer = signer::module_signer<Counter>();
+        account::move_resource_to(&signer, Counter { count_value: 0});
     }
 
-    entry fun increase(ctx: &mut Context, account: &signer) {
+    entry fun increase(account: &signer) {
         let account_addr = signer::address_of(account);
-        let counter = context::borrow_mut_resource<Counter>(ctx, account_addr);
+        let counter = account::borrow_mut_resource<Counter>(account_addr);
         counter.count_value = counter.count_value + 1;
     }
 
     #[test(account = @0x42)]
     fun test_counter(account: &signer) {
         let account_addr = signer::address_of(account);
-        let ctx = context::new_test_context(account_addr);
-        context::move_resource_to(&mut ctx, account, Counter { count_value: 0 });
+        account::move_resource_to(account, Counter { count_value: 0});
 
-        let counter = context::borrow_resource<Counter>(&ctx, account_addr);
+        let counter = account::borrow_resource<Counter>(account_addr);
         assert!(counter.count_value == 0, 999);
 
-        increase(&mut ctx, account);
-        let counter = context::borrow_resource<Counter>(&ctx, account_addr);
+        increase(account);
         assert!(counter.count_value == 1, 1000);
-
-        drop_test_context(ctx);
     }
 }
 ```
@@ -86,28 +81,23 @@ module unit_test::unit_test {
 
 函数 `test_counter` 就是当前这个程序的单元测试函数。使用了 `#[test]` 标注，并传递了一个 `account` 参数。
 
-测试的时候，我们不经过命令行调用，不会产生正常情况下的上下文，因此我们需要为这个测试创建一个上下文。
+首先构建一个 `Counter` 结构，其字段初始化为 `0`。通过 `account::borrow_resource` 函数获取账户下的 `Counter` 资源，并检验资源中的初始值是否为 `0`，如果不是，则断言失败并返回 `999`。
 
-当地址和上下文都有了之后，我们就可以构建计数器了，构建好并将计数器资源移到 `0x42` 地址。
+接着执行 `increase` 函数，使 `Counter` 的计数值增加 `1`，再次检查账户的 `Counter` 资源中的值是否变成了 `1`，如果不是，则断言失败并返回 `1000`。
 
 1. 测试计数器是否正常创建出来：
 
 ```move
-let counter = context::borrow_resource<Counter>(&ctx, account_addr);
+let counter = account::borrow_resource<Counter>(account_addr);
 assert!(counter.count_value == 0, 999);
 ```
 
 2. 检查 `increase` 函数的执行逻辑，并判断是否能正常递增：
 
 ```move
-increase(&mut ctx, account);
-let counter = context::borrow_resource<Counter>(&ctx, account_addr);
+increase(account);
 assert!(counter.count_value == 1, 1000);
 ```
-
-3. 测试用的上下文使用完后，需要释放掉。
-
-> 由于上下文是测试创建的，不能将 `init` 和 `increase` 放在两个单测里，因此在单元测试中需要在一个函数作用域内完成测试。
 
 ## 运行单元测试
 
@@ -116,17 +106,16 @@ rooch move test
 ```
 
 ```shell
-[joe@mx unit_test]$ rooch move test
+$ rooch move test
 
 INCLUDING DEPENDENCY MoveStdlib
 INCLUDING DEPENDENCY MoveosStdlib
 INCLUDING DEPENDENCY RoochFramework
 BUILDING unit_test
 Running Move unit tests
-2023-12-21T13:57:07.014787Z  INFO moveos_common::utils: set max open fds 45056
-[ PASS    ] 0x42::unit_test::test_counter
+2024-06-28T01:35:08.397013Z  INFO moveos_common::utils: set max open fds 8192
+[ PASS    ] 0xfc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::unit_test::test_counter
 Test result: OK. Total tests: 1; passed: 1; failed: 0
-Success
 ```
 
 可以看到，我们编写的单元测试通过了！证明我们的计数器逻辑是正确的。
@@ -134,34 +123,34 @@ Success
 接下来，我们修改一下，看看断言失败的情形：
 
 ```move
-let counter = context::borrow_resource<Counter>(&ctx, account_addr);
+let counter = account::borrow_resource<Counter>(account_addr);
 assert!(counter.count_value == 2, 999);
 ```
 
 ```shell
-[joe@mx unit_test]$ rooch move test
+$ rooch move test
 
 INCLUDING DEPENDENCY MoveStdlib
 INCLUDING DEPENDENCY MoveosStdlib
 INCLUDING DEPENDENCY RoochFramework
 BUILDING unit_test
 Running Move unit tests
-2023-12-21T14:10:07.413084Z  INFO moveos_common::utils: set max open fds 45056
-[ FAIL    ] 0x42::unit_test::test_counter
+2024-06-28T01:40:52.481931Z  INFO moveos_common::utils: set max open fds 8192
+[ FAIL    ] 0xfc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::unit_test::test_counter
 
 Test failures:
 
-Failures in 0x42::unit_test:
+Failures in 0xfc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::unit_test:
 
 ┌── test_counter ──────
 │ error[E11001]: test failure
-│    ┌─ ./sources/counter.move:28:9
+│    ┌─ ./sources/unit.move:26:9
 │    │
-│ 22 │     fun test_counter(account: &signer) {
-│    │         ------------ In this function in 0x42::unit_test
+│ 21 │     fun test_counter(account: &signer) {
+│    │         ------------ In this function in 0xfc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::unit_test
 │    ·
-│ 28 │         assert!(counter.count_value == 2, 999);
-│    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Test was not expected to error, but it aborted with code 999 originating in the module 0000000000000000000000000000000000000000000000000000000000000042::unit_test rooted here
+│ 26 │         assert!(counter.count_value == 2, 999);
+│    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Test was not expected to error, but it aborted with code 999 originating in the module fc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::unit_test rooted here
 │
 │
 └──────────────────
