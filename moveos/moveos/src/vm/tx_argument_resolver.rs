@@ -21,7 +21,6 @@ use moveos_types::{
     state_resolver::MoveOSResolver,
 };
 use std::sync::Arc;
-use tracing::debug;
 
 impl<'r, 'l, S, G> MoveOSSession<'r, 'l, S, G>
 where

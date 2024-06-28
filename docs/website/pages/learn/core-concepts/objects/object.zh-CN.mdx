@@ -305,10 +305,7 @@ Rooch object 的提供了两种类型的动态字段：常规类型和Object类�
 |---|---
 | `add_object_field<T: key, V: key>(obj: &mut Object<T>, v: V): Object<V>` | 向对象添加一个新的子对象字段，返回新添加的子对象。只有共享对象可以添加子对象字段。
 | `add_object_field_with_id<T: key, ID:drop, V: key>(obj: &mut Object<T>, id: ID, v: V): Object<V>` | 使用自定义ID向对象添加一个新的子对象字段，返回新添加的子对象。只有共享对象可以添加子对象字段。
-| `borrow_object_field<T: key, V: key>(obj: &Object<T>, key: ObjectID): &Object<V>` | 借用对象中指定子对象字段的不可变引用。如果子对象字段不存在，此操作将失败。
-| `borrow_mut_object_field<T: key, V: key>(obj: &mut Object<T>, key: ObjectID): &mut Object<V>` | 借用对象中指定子对象字段的可变引用。如果子对象字段不存在，此操作将失败。
 | `remove_object_field<T: key, V: key>(obj: &mut Object<T>, child: Object<V>): V` | 从对象中移除指定的子对象字段并返回其值。如果子对象字段不存在，此操作将失败。
-| `contains_object_field<T: key, V: key>(obj: &Object<T>, key: ObjectID): bool` | 检查对象中是否存在指定的子对象字段。
 
 ## Rooch Object, Sui Object, Aptos Object 的比较
 
