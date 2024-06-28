@@ -27,7 +27,7 @@ use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::{
     ObjectEntity, ObjectID, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
 };
-use moveos_types::state::{KeyState, MoveState, State};
+use moveos_types::state::{KeyState, MoveState, MoveType, State};
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::address::{BitcoinAddress, MultiChainAddress, RoochAddress};
 use rooch_types::addresses::BITCOIN_MOVE_ADDRESS;
@@ -213,15 +213,17 @@ fn import_utxo(
 
 fn apply_ord_updates_to_state(
     rx: Receiver<BatchUpdatesOrd>,
-    moveos_store: Arc<MoveOSStore>,
+    moveos_store_arc: Arc<MoveOSStore>,
     startup_update_set: UpdateSet<KeyState, State>,
 ) {
     let mut inscription_store_state_root = *GENESIS_STATE_ROOT;
     let mut last_inscription_store_state_root = inscription_store_state_root;
+    let mut inscription_ids_state_root = *GENESIS_STATE_ROOT;
+    let mut last_inscription_ids_state_root = inscription_ids_state_root;
     let mut ord_count = 0u32;
     let mut cursed_inscription_count = 0u32;
     let mut blessed_inscription_count = 0u32;
-    let moveos_store = moveos_store.as_ref();
+    let moveos_store = moveos_store_arc.as_ref();
     while let Ok(batch) = rx.recv() {
         let loop_start_time = SystemTime::now();
 
@@ -234,38 +236,52 @@ fn apply_ord_updates_to_state(
             batch.ord_updates,
         )
         .unwrap();
+        let mut inscription_ids_tree_change_set = apply_fields(
+            moveos_store,
+            inscription_ids_state_root,
+            batch.inscription_ids_updates,
+        )
+        .unwrap();
         nodes.append(&mut ord_tree_change_set.nodes);
+        nodes.append(&mut inscription_ids_tree_change_set.nodes);
+
         inscription_store_state_root = ord_tree_change_set.state_root;
+        inscription_ids_state_root = inscription_ids_tree_change_set.state_root;
         ord_count += cnt as u32;
         cursed_inscription_count += batch.cursed_inscription_count;
         blessed_inscription_count += batch.blessed_inscription_count;
-        // TODO update inscriptions table_vec by batch.inscription_ids
 
         apply_nodes(moveos_store, nodes).expect("failed to apply ord nodes");
 
         println!(
-            "{} ord applied ({} cursed, {} blessed). This bacth cost: {:?}",
+            "{} ord applied ({} cursed, {} blessed, new inscription_store_state_root: {:?}, new inscription_ids_state_root: {:?}). This bacth cost: {:?}",
             // e.g. batch_size = 8192:
             // 8192 ord applied in: 1.000000000s
-            // 16384 ord applied in: 1.000000000s
+            // 16384 ord applied in: 2.000000000s
             ord_count,
             cursed_inscription_count,
             blessed_inscription_count,
+            inscription_store_state_root,
+            inscription_ids_state_root,
             loop_start_time.elapsed().unwrap()
         );
 
         log::debug!(
-            "last inscription_store_state_root: {:?}, new inscription_store_state_root: {:?}",
+            "last inscription_store_state_root: {:?}, new inscription_store_state_root: {:?}, last inscription_ids_state_root: {:?}, new inscription_ids_state_root: {:?}",
             last_inscription_store_state_root,
             inscription_store_state_root,
+            last_inscription_ids_state_root,
+            inscription_ids_state_root,
         );
 
         last_inscription_store_state_root = inscription_store_state_root;
+        last_inscription_ids_state_root = inscription_ids_state_root;
     }
 
     update_startup_ord(
         startup_update_set,
         inscription_store_state_root,
+        inscription_ids_state_root,
         ord_count,
         cursed_inscription_count,
         blessed_inscription_count,
@@ -275,11 +291,41 @@ fn apply_ord_updates_to_state(
 fn update_startup_ord(
     mut startup_update_set: UpdateSet<KeyState, State>,
     ord_store_state_root: H256,
+    inscription_ids_state_root: H256,
     ord_count: u32,
     cursed_inscription_count: u32,
     blessed_inscription_count: u32,
 ) {
+    let mut inscriptions_update_set = UpdateSet::new();
+
+    let inscription_ids_content_table = ObjectEntity::new_table_object(
+        ObjectID::random(),
+        inscription_ids_state_root,
+        (cursed_inscription_count + blessed_inscription_count) as u64,
+    );
+    inscriptions_update_set.put(
+        inscription_ids_content_table.clone().id.to_key(),
+        inscription_ids_content_table.clone().into_state(),
+    );
+
+    let inscription_ids_table_vec_obj_id = ObjectID::random();
+    let inscription_ids_table_vec = ObjectEntity::new(
+        inscription_ids_table_vec_obj_id.clone(),
+        SYSTEM_OWNER_ADDRESS,
+        SHARED_OBJECT_FLAG_MASK,
+        *GENESIS_STATE_ROOT,
+        0,
+        0,
+        0,
+        inscription_ids_content_table.id,
+    );
+    startup_update_set.put(
+        inscription_ids_table_vec.id.to_key(),
+        inscription_ids_table_vec.into_state(),
+    );
+
     let mut genesis_inscription_store_object = create_genesis_inscription_store_object(
+        inscription_ids_table_vec_obj_id,
         cursed_inscription_count,
         blessed_inscription_count,
         ord_count,
@@ -295,7 +341,7 @@ fn update_startup_ord(
 
 struct BatchUpdatesOrd {
     ord_updates: UpdateSet<KeyState, State>,
-    inscription_ids: Vec<InscriptionID>,
+    inscription_ids_updates: UpdateSet<KeyState, State>,
     cursed_inscription_count: u32,
     blessed_inscription_count: u32,
 }
@@ -313,10 +359,11 @@ fn produce_ord_updates(
 
     let mut reader = BufReader::new(File::open(input).unwrap());
     let mut is_title_line = true;
+    let mut index: u64 = 0;
     loop {
         let mut updates = BatchUpdatesOrd {
             ord_updates: UpdateSet::new(),
-            inscription_ids: Vec::with_capacity(batch_size),
+            inscription_ids_updates: UpdateSet::new(),
             cursed_inscription_count: 0,
             blessed_inscription_count: 0,
         };
@@ -340,7 +387,9 @@ fn produce_ord_updates(
             let (key, state, inscription_id) =
                 gen_ord_update(source, utxo_ord_map.clone(), &id_ord_map).unwrap();
             updates.ord_updates.put(key, state);
-            updates.inscription_ids.push(inscription_id);
+            let (key2, state2) = gen_inscription_ids_update(index, inscription_id);
+            updates.inscription_ids_updates.put(key2, state2);
+            index += 1
         }
         if updates.ord_updates.is_empty() {
             break;
@@ -350,6 +399,15 @@ fn produce_ord_updates(
 
     drop(tx);
     drop(id_ord_map);
+}
+
+fn gen_inscription_ids_update(index: u64, inscription_id: InscriptionID) -> (KeyState, State) {
+    let key = bcs::to_bytes(&index).expect("bcs to_bytes u64 must success.");
+    let key_state = KeyState::new(key, u64::type_tag());
+
+    let state = inscription_id.into_state();
+
+    (key_state, state)
 }
 
 impl InscriptionSource {
@@ -503,12 +561,13 @@ fn get_ord_by_id(id_ord_map: &sled::Db, id: InscriptionId) -> ObjectID {
 }
 
 fn create_genesis_inscription_store_object(
+    inscriptions_object_id: ObjectID,
     cursed_inscription_count: u32,
     blessed_inscription_count: u32,
     next_sequence_number: u32,
 ) -> ObjectEntity<InscriptionStore> {
     let inscription_store = InscriptionStore {
-        inscriptions: ObjectID::from(AccountAddress::random()),
+        inscriptions: inscriptions_object_id,
         cursed_inscription_count,
         blessed_inscription_count,
         next_sequence_number,
