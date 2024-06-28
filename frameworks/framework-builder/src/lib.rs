@@ -19,7 +19,6 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
 };
-use std::io::stderr;
 
 pub mod releaser;
 pub mod stdlib_configs;
@@ -92,11 +91,11 @@ impl StdlibBuildConfig {
         let project_path = self.path.clone();
         let project_path = reroot_path(Some(project_path))?;
 
-        let mut compiled_package = self
-            .build_config
-            .clone()
-            .compile_package_no_exit(&self.path, &mut stderr())?;
-        //let mut compiled_package = compile_with_filter(&self.path, self.build_config.clone())?;
+        //let mut compiled_package = self
+        //    .build_config
+        //    .clone()
+        //    .compile_package_no_exit(&self.path, &mut stderr())?;
+        let mut compiled_package = compile_with_filter(&self.path, self.build_config.clone())?;
 
         run_verifier(
             &project_path,

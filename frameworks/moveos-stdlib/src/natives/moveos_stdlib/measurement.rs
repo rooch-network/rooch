@@ -40,21 +40,22 @@ fn inject_parameter(
     let timestamp = pop_arg!(args, u64);
     let gas_balance = pop_arg!(args, u64);
 
-    info!("0000000000 {:?} {:?} {:?}", full_func_name, gas_balance, timestamp);
-
     let current_gas_balance = context.gas_balance();
     let current_timestamp_millis = since_the_epoch.as_millis() as u64;
     if timestamp > 0 && gas_balance > 0 {
-        let gas_used = InternalGas::from(gas_balance)
+        let gas_used_p1 = InternalGas::from(gas_balance)
             .checked_sub(current_gas_balance)
-            .unwrap()
-            .checked_sub(14620.into())
             .unwrap();
-        let time_used: u64 = current_timestamp_millis - timestamp;
-        info!(
-            "3333333 full_func_name {:?} gas_used: {:}, time_used {:?}",
-            full_func_name, gas_used, time_used
-        );
+
+        if !gas_used_p1.is_zero() {
+            if let Some(gas_used_p2) = gas_used_p1.checked_sub(14620.into()) {
+                let time_used: u64 = current_timestamp_millis - timestamp;
+                info!(
+                    "gas_used: {:}, time_used {:?} -> {:?}",
+                    gas_used_p2, time_used, full_func_name
+                );
+            }
+        }
         Ok(NativeResult::Success {
             cost: InternalGas::zero(),
             ret_vals: smallvec![Value::u64(0), Value::u64(0)],

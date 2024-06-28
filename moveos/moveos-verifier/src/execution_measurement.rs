@@ -1,15 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use log::info;
 use move_command_line_common::address::NumericalAddress;
 use move_compiler::parser::ast as P;
 use move_compiler::parser::ast::Exp_::Call;
-use move_compiler::parser::ast::FunctionBody_;
 use move_compiler::parser::ast::NameAccessChain_::Three;
 use move_compiler::parser::ast::SequenceItem_::Bind;
-use move_compiler::parser::ast::{Bind_, Var};
-use move_compiler::parser::ast::{Definition, Exp_, Function, LeadingNameAccess_, SequenceItem_};
+use move_compiler::parser::ast::{Bind_, Type_, Var};
+use move_compiler::parser::ast::{Definition, Exp_, Function, LeadingNameAccess_};
+use move_compiler::parser::ast::{FunctionBody_, NameAccessChain_};
 use move_compiler::shared::Name;
 use move_compiler::{diagnostics, parser, Compiler};
 use move_ir_types::location::sp;
@@ -18,6 +17,7 @@ use move_package::compilation::build_plan::BuildPlan;
 use move_package::compilation::compiled_package::CompiledPackage;
 use move_package::BuildConfig;
 use move_symbol_pool::symbol::Symbol;
+use std::ops::Deref;
 use std::path::Path;
 use P::ModuleMember as PM;
 
@@ -125,13 +125,55 @@ fn filter_module_member(
             };
 
             let new_body_sequence = if let FunctionBody_::Defined(sequence) = body.clone().value {
-                let (decl_list, mut sequence_item, loc, return_exp) = sequence;
+                let (decl_list, mut sequence_item, loc, return_exp_opt) = sequence;
 
-                sequence_item.insert(0, sp(func_def.loc, start_stmt));
-                sequence_item.push(sp(func_def.loc, second_stmt));
-                info!("222222222 {:?}\n{:?}", full_func_name, sequence_item);
-                println!("333333333 {:?}", return_exp);
-                Some((decl_list, sequence_item, loc, return_exp))
+                let func_return_type = func_def.clone().signature.return_type.value;
+                match func_return_type {
+                    Type_::Apply(_, _) | Type_::Ref(_, _) => {
+                        if let Some(return_exp) = return_exp_opt.deref() {
+                            let left_var_list = vec![sp(
+                                func_def.loc,
+                                Bind_::Var(Var(Name::new(
+                                    func_def.loc,
+                                    Symbol::from("return__val____"),
+                                ))),
+                            )];
+                            let new_var_bind = Bind(
+                                sp(func_def.loc, left_var_list),
+                                None,
+                                Box::from(return_exp.clone()),
+                            );
+                            let mut new_seqence_item = sequence_item.clone();
+                            new_seqence_item.push(sp(func_def.loc, new_var_bind));
+
+                            let new_return_var =
+                                Name::new(func_def.loc, Symbol::from("return__val____"));
+                            let new_return_expr = Box::from(Some(sp(
+                                func_def.loc,
+                                Exp_::Name(
+                                    sp(func_def.loc, NameAccessChain_::One(new_return_var)),
+                                    None,
+                                ),
+                            )));
+
+                            new_seqence_item.insert(0, sp(func_def.loc, start_stmt.clone()));
+                            new_seqence_item.push(sp(func_def.loc, second_stmt.clone()));
+
+                            Some((decl_list, new_seqence_item, loc, new_return_expr))
+                        } else {
+                            sequence_item.insert(0, sp(func_def.loc, start_stmt.clone()));
+                            sequence_item.push(sp(func_def.loc, second_stmt.clone()));
+                            Some((decl_list, sequence_item, loc, return_exp_opt))
+                        }
+                    }
+                    Type_::Fun(_, _) => Some((decl_list, sequence_item, loc, return_exp_opt)),
+                    Type_::Unit => {
+                        sequence_item.insert(0, sp(func_def.loc, start_stmt.clone()));
+                        sequence_item.push(sp(func_def.loc, second_stmt.clone()));
+                        Some((decl_list, sequence_item, loc, return_exp_opt))
+                    }
+                    Type_::Multiple(_) => Some((decl_list, sequence_item, loc, return_exp_opt)),
+                }
             } else {
                 None
             };
@@ -181,7 +223,6 @@ fn filter_program(program: &mut parser::ast::Program) {
                         is_spec_module,
                         members,
                     } = module_def;
-
 
                     if let Some(sp!(_loc, LeadingNameAccess_::AnonymousAddress(address))) = address
                     {
