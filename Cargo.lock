@@ -1134,6 +1134,7 @@ name = "bitcoin-move"
 version = "0.5.7"
 dependencies = [
  "anyhow",
+ "axum",
  "bcs",
  "better_any",
  "bitcoin 0.31.2",
@@ -1143,7 +1144,6 @@ dependencies = [
  "fastcrypto",
  "framework-builder",
  "hex",
- "http 0.2.12",
  "linked-hash-map",
  "move-binary-format",
  "move-bytecode-utils",
@@ -9851,7 +9851,6 @@ dependencies = [
  "clap 4.5.7",
  "eyre",
  "futures",
- "http 0.2.12",
  "move-core-types",
  "moveos-types",
  "prometheus",
@@ -9886,7 +9885,6 @@ dependencies = [
  "brotli 3.5.0",
  "fastcrypto",
  "hex",
- "http 0.2.12",
  "linked-hash-map",
  "move-binary-format",
  "move-bytecode-utils",

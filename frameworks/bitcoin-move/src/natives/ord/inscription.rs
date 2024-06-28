@@ -19,7 +19,7 @@ use {
         },
         ScriptBuf,
     },
-    http::header::HeaderValue,
+    axum::http::header::HeaderValue,
     serde::{Deserialize, Serialize},
     std::str,
 };
