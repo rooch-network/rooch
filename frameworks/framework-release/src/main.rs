@@ -16,13 +16,18 @@ struct StdlibOpts {
     /// don't check compatibility between the old and new standard library
     #[clap(short = 'n', long)]
     no_check_compatibility: bool,
+
+    /// Inject gas profiling codes to measure gas use
+    #[clap(short = 'g', long)]
+    gas_profile: bool,
 }
 
 fn main() {
     let _ = tracing_subscriber::fmt::try_init();
     let opts: StdlibOpts = StdlibOpts::parse();
     let version = StdlibVersion::new(opts.version.unwrap_or(0));
-    let msgs = releaser::release(version, !opts.no_check_compatibility).expect("release failed");
+    let msgs = releaser::release(version, !opts.no_check_compatibility, opts.gas_profile)
+        .expect("release failed");
     for msg in msgs {
         warn!("{}", msg);
     }

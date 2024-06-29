@@ -21,6 +21,7 @@ use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::rooch::RoochTransaction;
 use rpassword::prompt_password;
 use std::collections::BTreeMap;
+use std::io::stderr;
 
 #[derive(Parser)]
 pub struct Publish {
@@ -49,6 +50,10 @@ pub struct Publish {
     /// For now, the option is kept for test only.
     #[clap(long)]
     pub by_move_action: bool,
+
+    /// Inject gas profiling codes to measure gas use
+    #[clap(long)]
+    pub gas_profile: bool,
 }
 
 #[async_trait]
@@ -71,7 +76,11 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         let config_cloned = config.clone();
 
         // Compile the package and run the verifier
-        let mut package = compile_with_filter(&package_path, config_cloned.clone())?;
+        let mut package = if self.gas_profile {
+            compile_with_filter(&package_path, config_cloned.clone())?
+        } else {
+            config.compile_package_no_exit(&package_path, &mut stderr())?
+        };
         run_verifier(package_path, config_cloned, &mut package)?;
 
         // Get the modules from the package

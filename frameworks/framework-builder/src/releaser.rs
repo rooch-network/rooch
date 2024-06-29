@@ -15,10 +15,14 @@ use std::collections::HashMap;
 use tracing::{debug, info, warn};
 
 pub fn release_latest() -> Result<Vec<String>> {
-    release(StdlibVersion::Latest, false)
+    release(StdlibVersion::Latest, false, false)
 }
 
-pub fn release(version: StdlibVersion, check_compatibility: bool) -> Result<Vec<String>> {
+pub fn release(
+    version: StdlibVersion,
+    check_compatibility: bool,
+    gas_profile: bool,
+) -> Result<Vec<String>> {
     let mut warnings = vec![];
     let pre_version = match version {
         StdlibVersion::Version(version_num) => {
@@ -48,7 +52,7 @@ pub fn release(version: StdlibVersion, check_compatibility: bool) -> Result<Vec<
         }
     }
     version.create_dir()?;
-    let curr_stdlib = build_stdlib(!version.is_latest())?;
+    let curr_stdlib = build_stdlib(!version.is_latest(), gas_profile)?;
     // check compatibility
     if let Some(pre_version) = pre_version {
         info!(
