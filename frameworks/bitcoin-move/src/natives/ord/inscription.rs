@@ -12,6 +12,7 @@ use {
     super::envelope,
     super::inscription_id::InscriptionId,
     super::media::Media,
+    axum::http::header::HeaderValue,
     bitcoin::{
         blockdata::{
             opcodes,
@@ -19,7 +20,6 @@ use {
         },
         ScriptBuf,
     },
-    axum::http::header::HeaderValue,
     serde::{Deserialize, Serialize},
     std::str,
 };
