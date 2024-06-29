@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::natives::helpers::{make_module_natives, make_native};
 use log::info;
 use move_binary_format::errors::PartialVMResult;
