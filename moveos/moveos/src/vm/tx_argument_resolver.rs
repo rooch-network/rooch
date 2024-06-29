@@ -9,7 +9,7 @@ use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
 use move_vm_types::loaded_data::runtime_types::{StructType, Type};
 use moveos_object_runtime::resolved_arg::ResolvedArg;
-use moveos_object_runtime::runtime::TypeLayoutLoader;
+use moveos_object_runtime::TypeLayoutLoader;
 use moveos_types::{
     move_std::{ascii::MoveAsciiString, string::MoveString},
     moveos_std::object::{is_object_struct, ObjectID},

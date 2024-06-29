@@ -13,8 +13,10 @@ use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, values::Value,
 };
-use moveos_object_runtime::runtime::{
-    ObjectRuntimeContext, RuntimeField, RuntimeObject, TypeLayoutLoader,
+use moveos_object_runtime::{
+    runtime::ObjectRuntimeContext,
+    runtime_object::{RuntimeField, RuntimeObject},
+    TypeLayoutLoader,
 };
 use moveos_types::{
     moveos_std::object::{Object, ObjectID},
