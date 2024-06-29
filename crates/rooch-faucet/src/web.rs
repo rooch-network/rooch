@@ -15,13 +15,13 @@ use crate::{App, FaucetError, FaucetRequest, FaucetResponse, InfoResponse};
 
 use axum::{
     error_handling::HandleErrorLayer,
+    http::Method,
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
     BoxError, Extension, Json, Router,
 };
 use clap::Parser;
-use http::Method;
 
 use prometheus::{Registry, TextEncoder};
 
