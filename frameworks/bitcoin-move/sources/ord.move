@@ -931,14 +931,14 @@ module bitcoin_move::ord {
             return false
         };
 
-        let inscription_obj = object::borrow_mut_object_extend<Inscription>(inscription_object_id);
+        let inscription_obj = object::borrow_object<Inscription>(inscription_object_id);
         object::contains_field(inscription_obj, METAPROTOCOL_VALIDITY)
     }
 
     /// Borrow the metaprotocol validity for the given inscription_id.
     public fun borrow_metaprotocol_validity(inscription_id: InscriptionID): &MetaprotocolValidity {
         let inscription_object_id = derive_inscription_id(inscription_id);
-        let inscription_obj = object::borrow_mut_object_extend<Inscription>(inscription_object_id);
+        let inscription_obj = object::borrow_object<Inscription>(inscription_object_id);
 
         object::borrow_field(inscription_obj, METAPROTOCOL_VALIDITY)
     }
