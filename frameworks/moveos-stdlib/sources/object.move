@@ -328,7 +328,7 @@ module moveos_std::object {
     }
 
     /// Make the Object shared, Any one can get the &mut Object<T> from shared object
-    /// The shared object also can be removed from the object storage.
+    /// Because no one can take out the shared object, so the shared object can not be removed.
     public fun to_shared<T: key>(self: Object<T>) {
         let obj_entity = borrow_mut_from_global<T>(self.id);
         to_shared_internal(obj_entity);
@@ -1126,5 +1126,34 @@ module moveos_std::object {
         let obj_ref1 = borrow_mut_object_shared<TestStruct>(obj_id);
         let obj_ref2 = borrow_mut_object_shared<TestStruct>(obj_id);
         assert!(obj_ref1.id == obj_ref2.id, 1000);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ErrorObjectOwnerNotMatch, location = Self)]
+    fun test_take_shared_object_fail(){
+        let obj = new(TestStruct { count: 1 });
+        let obj_id = id(&obj);
+        to_shared(obj);
+        let(_,obj) = take_object_extend<TestStruct>(obj_id);
+        let TestStruct{count:_} = remove(obj);
+    }
+
+    #[test_only]
+    struct TestContainer has key {
+        inner_obj: Object<TestStruct>,
+    }
+
+    #[test]
+    fun test_embed_object_unpack_and_transfer(){
+        let obj = new(TestStruct { count: 1 });
+        let container = TestContainer {
+            inner_obj: obj,
+        };
+        let container_obj = new(container);
+        let container_obj_id = id(&container_obj);
+        transfer_extend(container_obj, @moveos_std);
+        let (_,container_obj) = take_object_extend<TestContainer>(container_obj_id);
+        let TestContainer{inner_obj} = remove(container_obj);
+        transfer_extend(inner_obj, @moveos_std);
     }
 }

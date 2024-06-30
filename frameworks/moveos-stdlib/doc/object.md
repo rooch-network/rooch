@@ -720,7 +720,7 @@ Do not check if the dynamic fields are empty
 ## Function `to_shared`
 
 Make the Object shared, Any one can get the &mut Object<T> from shared object
-The shared object also can be removed from the object storage.
+Because no one can take out the shared object, so the shared object can not be removed.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_to_shared">to_shared</a>&lt;T: key&gt;(self: <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;)
