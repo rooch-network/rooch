@@ -28,7 +28,7 @@ interface ExpandableRowProps {
 }
 
 const isSessionExpired = (createTime: number, maxInactiveInterval: number) => {
-  const expirationTime = new Date(createTime).getTime() + maxInactiveInterval * 1000
+  const expirationTime = new Date(createTime).getTime() + maxInactiveInterval
   return Date.now() > expirationTime
 }
 
