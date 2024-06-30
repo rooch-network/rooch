@@ -163,7 +163,7 @@ jsonrpsee = { version = "0.16.3", features = ["full"] }
 jpst = "0.1.1"
 lazy_static = "1.5.0"
 linked-hash-map = "0.5.6"
-log = "0.4.16"
+log = "0.4.22"
 more-asserts = "0.3.0"
 num-derive = "0.3.3"
 num-traits = "0.2.15"
