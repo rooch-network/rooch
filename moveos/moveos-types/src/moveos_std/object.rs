@@ -458,6 +458,10 @@ impl<T> ObjectEntity<T> {
     pub fn is_genesis(&self) -> bool {
         self.state_root() == *GENESIS_STATE_ROOT
     }
+
+    pub fn is_system_owned(&self) -> bool {
+        self.owner == SYSTEM_OWNER_ADDRESS
+    }
 }
 
 impl<T> ObjectEntity<T>

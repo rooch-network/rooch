@@ -47,6 +47,8 @@ module moveos_std::object {
     const ErrorObjectRuntimeError: u64 = 14;
     /// The object or field is already taken out
     const ErrorObjectAlreadyTakenOut: u64 = 15;
+    /// The object is embedded in other struct, so it can not be borrowed or taken out
+    const ErrorObjectIsEmbeddedInOtherStruct: u64 = 16;
 
     const SYSTEM_OWNER_ADDRESS: address = @0x0;
 
@@ -248,7 +250,10 @@ module moveos_std::object {
 
     /// Borrow Object from object store by object_id
     /// Any one can borrow an `&Object<T>` from the global object storage
+    /// Except the object is embedded in other struct
     public fun borrow_object<T: key>(object_id: ObjectID): &Object<T> {
+        let object_entity = borrow_from_global<T>(object_id);
+        assert!(is_shared_internal(object_entity)||is_frozen_internal(object_entity)||is_user_owned_internal(object_entity), ErrorObjectIsEmbeddedInOtherStruct);
         native_borrow_object_pointer<Object<T>>(object_id)
     }
 
@@ -262,10 +267,10 @@ module moveos_std::object {
 
     #[private_generics(T)]
     /// Borrow mut Object by `object_id`, Only the module of `T` can borrow the `Object<T>` with object_id.
-    /// The Object must be a `UserOwned` Object
+    /// The Object must be a `Shared` or `UserOwned` Object
     public fun borrow_mut_object_extend<T: key>(object_id: ObjectID): &mut Object<T> {
         let object_entity = borrow_mut_from_global<T>(object_id);
-        assert!(is_user_owned_internal(object_entity), ErrorObjectOwnerNotMatch);
+        assert!(is_shared_internal(object_entity) || is_user_owned_internal(object_entity), ErrorObjectIsEmbeddedInOtherStruct);
         native_borrow_mut_object_pointer<Object<T>>(object_id)
     }
 
@@ -281,11 +286,11 @@ module moveos_std::object {
     }
 
     #[private_generics(T)]
-    /// Take out the UserOwnedObject by `object_id`, return the owner and Object
-    /// This function is for developer to extend, Only the module of `T` can take out the `UserOwnedObject` with object_id.
+    /// Take out the Shared or UserOwned Object by `object_id`, return the owner and Object
+    /// This function is for developer to extend, Only the module of `T` can call this function.
     public fun take_object_extend<T: key>(object_id: ObjectID): (address, Object<T>) {
         let object_entity = borrow_mut_from_global<T>(object_id);
-        assert!(is_user_owned_internal(object_entity), ErrorObjectOwnerNotMatch);
+        assert!(is_shared_internal(object_entity) || is_user_owned_internal(object_entity), ErrorObjectIsEmbeddedInOtherStruct);
         let owner = owner_internal(object_entity);
         to_system_owned_internal(object_entity);
         (owner, native_take_object_pointer<Object<T>>(object_id))
@@ -328,7 +333,7 @@ module moveos_std::object {
     }
 
     /// Make the Object shared, Any one can get the &mut Object<T> from shared object
-    /// Because no one can take out the shared object, so the shared object can not be removed.
+    /// The module of `T` can call `take_object_extend` to take out the shared object, then remove the shared object.
     public fun to_shared<T: key>(self: Object<T>) {
         let obj_entity = borrow_mut_from_global<T>(self.id);
         to_shared_internal(obj_entity);
@@ -1129,8 +1134,7 @@ module moveos_std::object {
     }
 
     #[test]
-    #[expected_failure(abort_code = ErrorObjectOwnerNotMatch, location = Self)]
-    fun test_take_shared_object_fail(){
+    fun test_take_shared_object_and_remove(){
         let obj = new(TestStruct { count: 1 });
         let obj_id = id(&obj);
         to_shared(obj);

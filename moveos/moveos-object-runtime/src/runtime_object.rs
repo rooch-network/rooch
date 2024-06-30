@@ -89,6 +89,11 @@ impl ObjectPointer {
             .expect("Failed to move value to GlobalValue none");
         Self { value }
     }
+
+    pub fn none() -> Self {
+        let value = GlobalValue::none();
+        Self { value }
+    }
 }
 
 impl RuntimeNormalField {
@@ -235,12 +240,21 @@ impl RuntimeObject {
             .as_raw_object()
             .map_err(|e| partial_extension_error(format!("expect raw object, but got {:?}", e)))?;
         let value = deserialize(&value_layout, state.value.as_slice())?;
+
+        //If the object is system owned and not frozen or shared, it should be embeded in other struct
+        //So we should make the object pointer to none, ensure no one can borrow the object pointer
+        let pointer = if raw_obj.is_system_owned() && !(raw_obj.is_frozen() || raw_obj.is_shared())
+        {
+            ObjectPointer::none()
+        } else {
+            ObjectPointer::cached(id.clone())
+        };
         Ok(Self {
             id: id.clone(),
             value_layout,
             value_type: state.value_type,
             value: GlobalValue::cached(value)?,
-            pointer: ObjectPointer::cached(id),
+            pointer,
             state_root: raw_obj.state_root(),
             fields: Default::default(),
         })
