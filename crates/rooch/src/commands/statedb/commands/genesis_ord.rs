@@ -13,7 +13,7 @@ use std::time::SystemTime;
 
 use anyhow::Result;
 use bitcoin::hashes::Hash;
-use bitcoin::{OutPoint, PublicKey};
+use bitcoin::{OutPoint, PublicKey, ScriptBuf};
 use bitcoin_move::natives::ord::inscription_id::InscriptionId;
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
@@ -418,7 +418,13 @@ impl InscriptionSource {
         }
 
         if self.is_p2pk {
-            let pubkey = PublicKey::from_str(self.address.as_str())?;
+            let pubkey = match PublicKey::from_str(self.address.as_str()) {
+                Ok(pubkey) => pubkey,
+                Err(_) => {
+                    let script_buf = ScriptBuf::from_hex(self.address.as_str()).unwrap();
+                    script_buf.p2pk_public_key().unwrap()
+                }
+            };
             let pubkey_hash = pubkey.pubkey_hash();
             let bitcoin_address = BitcoinAddress::new_p2pkh(&pubkey_hash);
             self.address = bitcoin_address.to_string();
