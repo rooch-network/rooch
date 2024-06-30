@@ -103,6 +103,8 @@ pub struct GenesisOrdCommand {
         help = "batch size submited to state db, default 1M. Set it smaller if memory is limited."
     )] // ord may have large body, so set a smaller batch
     pub ord_batch_size: Option<usize>,
+    #[clap(long = "tmp-dir", help="tmp dir for store temp data")]
+    pub tmp_dir: Option<PathBuf>,
 
     #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
@@ -128,9 +130,12 @@ impl GenesisOrdCommand {
         let (root, moveos_store, start_time) =
             init_genesis_job(self.base_data_dir.clone(), self.chain_id.clone());
         let pre_root_state_root = H256::from(root.state_root.into_bytes());
+
+        let tmp_dir = self.tmp_dir.clone().unwrap_or_else(|| TempDir::new().unwrap().into_path());
+
         let db_config = sled::Config::new()
             .temporary(true)
-            .path(TempDir::new().unwrap());
+            .path(TempDir::new_in(tmp_dir.clone()).unwrap());
         let utxo_ord_map_db = db_config.open().unwrap();
         utxo_ord_map_db.set_merge_operator(concatenate_object_id_merge);
         let utxo_ord_map = Arc::new(utxo_ord_map_db);
@@ -143,6 +148,7 @@ impl GenesisOrdCommand {
 
         // 2. import od
         self.import_ord(
+            tmp_dir,
             utxo_ord_map.clone(),
             moveos_store.clone(),
             startup_update_set.clone(),
@@ -165,6 +171,7 @@ impl GenesisOrdCommand {
 
     fn import_ord(
         self,
+        tmp_dir: PathBuf,
         utxo_ord_map: Arc<sled::Db>,
         moveos_store: Arc<MoveOSStore>,
         startup_update_set: UpdateSet<KeyState, State>,
@@ -174,7 +181,7 @@ impl GenesisOrdCommand {
 
         let (tx, rx) = mpsc::sync_channel(2);
         let produce_updates_thread =
-            thread::spawn(move || produce_ord_updates(tx, input_path, batch_size, utxo_ord_map));
+            thread::spawn(move || produce_ord_updates(tmp_dir, tx, input_path, batch_size, utxo_ord_map));
         let apply_updates_thread = thread::spawn(move || {
             apply_ord_updates_to_state(rx, moveos_store, startup_update_set);
         });
@@ -346,14 +353,16 @@ struct BatchUpdatesOrd {
 }
 
 fn produce_ord_updates(
+    tmp_dir: PathBuf,
     tx: SyncSender<BatchUpdatesOrd>,
     input: PathBuf,
     batch_size: usize,
     utxo_ord_map: Arc<sled::Db>,
 ) {
+
     let db_config = sled::Config::new()
         .temporary(true)
-        .path(TempDir::new().unwrap());
+        .path(TempDir::new_in(tmp_dir).unwrap());
     let id_ord_map = db_config.open().unwrap();
 
     let mut reader = BufReader::new(File::open(input).unwrap());
@@ -585,4 +594,14 @@ fn create_genesis_inscription_store_object(
         0,
         inscription_store,
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_tmp_dir() {
+        let dir = TempDir::new().unwrap();
+        println!("{:?}", dir);
+    }
 }
