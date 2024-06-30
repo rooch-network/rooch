@@ -17,4 +17,5 @@ export const roochMutationKeys = {
   removeSession: formMutationKeyFn('remove-session'),
   transferObject: formMutationKeyFn('transfer-object'),
   transferCoin: formMutationKeyFn('transfer-coin'),
+  signAndExecuteTransaction: formMutationKeyFn('sign-and-execute-transaction'),
 }

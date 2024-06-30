@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react'
 import { Separator } from '@/components/ui/separator'
 import { Copy } from 'lucide-react'
-import { LedgerTxDataView1, TransactionWithInfoView } from '@roochnetwork/rooch-sdk'
+import { TransactionWithInfoView } from '@roochnetwork/rooch-sdk'
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
+import { formatTimestamp } from '@/utils/format.ts'
 
 type OverviewProps = {
   txData: TransactionWithInfoView | null
@@ -13,6 +14,37 @@ type OverviewProps = {
 
 export const Overview: React.FC<OverviewProps> = ({ txData }) => {
   const [loading, setLoading] = useState(true)
+
+  const paresL1Block = () => {
+    if (txData && 'block_height' in txData?.transaction.data) {
+      return {
+        ...txData?.transaction.data,
+      }
+    }
+
+    return null
+  }
+
+  const paresL1TX = () => {
+    if (txData && 'txid' in txData?.transaction.data) {
+      return {
+        ...txData?.transaction.data,
+      }
+    }
+
+    return null
+  }
+
+  const paresL2TX = () => {
+    if (txData && 'sender' in txData?.transaction.data) {
+      return {
+        ...txData.transaction.data,
+      }
+    }
+
+    return null
+  }
+
 
   useEffect(() => {
     if (txData) {
@@ -27,25 +59,30 @@ export const Overview: React.FC<OverviewProps> = ({ txData }) => {
           {/* Block--1 */}
           <div className="flex flex-col items-start justify-start gap-5 font-medium">
             {/* Checkpoint */}
-            <div className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
+            <div
+              className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
               <div className="w-36">
                 <span>Order:</span>
               </div>
-              <span className="border border-accent dark:border-none dark:bg-zinc-800 py-0.5 px-2 rounded-lg text-gray-800 dark:text-gray-50 tracking-tight ">
+              <span
+                className="border border-accent dark:border-none dark:bg-zinc-800 py-0.5 px-2 rounded-lg text-gray-800 dark:text-gray-50 tracking-tight ">
                 {loading ? <Skeleton width={100} /> : txData?.transaction.sequence_info.tx_order}
               </span>
             </div>
-            <div className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
+            <div
+              className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
               <div className="w-36">
                 <span>Type:</span>
               </div>
-              <span className="border border-accent dark:border-none dark:bg-zinc-800 py-0.5 px-2 rounded-lg text-gray-800 dark:text-gray-50 tracking-tight ">
+              <span
+                className="border border-accent dark:border-none dark:bg-zinc-800 py-0.5 px-2 rounded-lg text-gray-800 dark:text-gray-50 tracking-tight ">
                 {loading ? <Skeleton width={100} /> : txData?.transaction.data.type.toUpperCase()}
               </span>
             </div>
 
             {/* Timestamp */}
-            <div className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
+            <div
+              className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
               <div className="w-36">
                 <span>Timestamp:</span>
               </div>
@@ -54,9 +91,8 @@ export const Overview: React.FC<OverviewProps> = ({ txData }) => {
                   <Skeleton width={150} />
                 ) : (
                   <>
-                    <span>None </span>
                     <span className="text-muted-foreground/65 font-normal">
-                      {/*(Jan 16, 2024 08:16:42 +UTC)*/}
+                      {formatTimestamp(Number(txData?.transaction.sequence_info.tx_timestamp))}
                     </span>
                   </>
                 )}
@@ -70,24 +106,48 @@ export const Overview: React.FC<OverviewProps> = ({ txData }) => {
           </div>
 
           {/* Block--2 */}
-          <div className="flex flex-col items-start justify-start gap-5 font-medium">
-            {/* Transaction Action */}
-            <div className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
-              <div className="w-36">
-                <span>Transaction Action:</span>
-              </div>
-              <div className="text-gray-800 dark:text-gray-50 tracking-tight flex items-center justify-start gap-1.5">
+          {
+            paresL2TX() ?
+              <div className="flex flex-col items-start justify-start gap-5 font-medium">
+                {/* Transaction Action */}
+                <div
+                  className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
+                  <div className="w-36">
+                    <span>Transaction Action:</span>
+                  </div>
+                  <div
+                    className="text-gray-800 dark:text-gray-50 tracking-tight flex items-center justify-start gap-1.5">
                 <span>
                   {loading ? (
                     <Skeleton width={150} />
                   ) : (
-                    (txData?.transaction.data as LedgerTxDataView1).action_type.toUpperCase()
+                    paresL2TX()?.action_type.toUpperCase()
                   )}
                 </span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-
+              :
+              <div className="flex flex-col items-start justify-start gap-5 font-medium">
+                {/* Transaction Action */}
+                <div
+                  className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
+                  <div className="w-36">
+                    <span>{paresL1Block() ? 'Block Height:' : 'Chain ID:'}</span>
+                  </div>
+                  <div
+                    className="text-gray-800 dark:text-gray-50 tracking-tight flex items-center justify-start gap-1.5">
+                <span>
+                  {loading ? (
+                    <Skeleton width={150} />
+                  ) : (
+                    paresL1Block() ? paresL1Block()?.block_height : paresL1TX()?.chain_id.toUpperCase()
+                  )}
+                </span>
+                  </div>
+                </div>
+              </div>
+          }
           {/* Separator */}
           <div className="w-full">
             <Separator className="bg-accent dark:bg-accent/75" />
@@ -96,17 +156,19 @@ export const Overview: React.FC<OverviewProps> = ({ txData }) => {
           {/* Block--3 */}
           <div className="flex flex-col items-start justify-start gap-5 font-medium">
             {/* Sender */}
-            <div className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
+            <div
+              className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
               <div className="w-36">
-                <span>Sender:</span>
+                <span>{paresL2TX() ? 'Sender:' : paresL1TX() ? 'Transaction ID' : 'Block Hash'}</span>
               </div>
               <div className="text-gray-800 dark:text-gray-50 flex items-center justify-start gap-1.5">
                 {loading ? (
                   <Skeleton width={200} />
                 ) : (
-                  <div className="border border-accent dark:border-muted-foreground/15 dark:bg-blue-950 py-0.5 px-2 rounded-lg text-blue-500 dark:text-blue-300 hover:underline cursor-pointer font-mono tracking-tight">
+                  <div
+                    className="border border-accent dark:border-muted-foreground/15 dark:bg-blue-950 py-0.5 px-2 rounded-lg text-blue-500 dark:text-blue-300 hover:underline cursor-pointer font-mono tracking-tight">
                     <span className="flex items-center justify-start gap-1">
-                      <p>{(txData?.transaction.data as LedgerTxDataView1).sender}</p>
+                      <p>{paresL2TX() ? paresL2TX()?.sender : paresL1TX() ? paresL1TX()?.txid : paresL1Block()?.block_hash}</p>
                       <Copy className="w-3 h-3 text-muted-foreground" />
                     </span>
                   </div>
@@ -115,7 +177,8 @@ export const Overview: React.FC<OverviewProps> = ({ txData }) => {
             </div>
 
             {/* Status */}
-            <div className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
+            <div
+              className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
               <div className="w-36">
                 <span>Status:</span>
               </div>
@@ -134,7 +197,8 @@ export const Overview: React.FC<OverviewProps> = ({ txData }) => {
             </div>
 
             {/* Event Root */}
-            <div className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
+            <div
+              className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
               <div className="w-36">
                 <span>Event Root:</span>
               </div>
@@ -142,7 +206,8 @@ export const Overview: React.FC<OverviewProps> = ({ txData }) => {
                 {loading ? (
                   <Skeleton width={200} />
                 ) : (
-                  <div className="border border-accent dark:border-muted-foreground/15 dark:bg-blue-950 py-0.5 px-2 rounded-lg text-blue-500 dark:text-blue-300 hover:underline cursor-pointer font-mono tracking-tight">
+                  <div
+                    className="border border-accent dark:border-muted-foreground/15 dark:bg-blue-950 py-0.5 px-2 rounded-lg text-blue-500 dark:text-blue-300 hover:underline cursor-pointer font-mono tracking-tight">
                     <span className="flex items-center justify-start gap-1">
                       <p>{txData?.execution_info.event_root}</p>
                       <Copy className="w-3 h-3 text-muted-foreground" />
@@ -153,7 +218,8 @@ export const Overview: React.FC<OverviewProps> = ({ txData }) => {
             </div>
 
             {/* State Root */}
-            <div className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
+            <div
+              className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
               <div className="w-36">
                 <span>State Root:</span>
               </div>
@@ -161,7 +227,8 @@ export const Overview: React.FC<OverviewProps> = ({ txData }) => {
                 {loading ? (
                   <Skeleton width={200} />
                 ) : (
-                  <div className="border border-accent dark:border-muted-foreground/15 dark:bg-blue-950 py-0.5 px-2 rounded-lg text-blue-500 dark:text-blue-300 hover:underline cursor-pointer font-mono tracking-tight">
+                  <div
+                    className="border border-accent dark:border-muted-foreground/15 dark:bg-blue-950 py-0.5 px-2 rounded-lg text-blue-500 dark:text-blue-300 hover:underline cursor-pointer font-mono tracking-tight">
                     <span className="flex items-center justify-start gap-1">
                       <p>{txData?.execution_info.state_root}</p>
                       <Copy className="w-3 h-3 text-muted-foreground" />
@@ -180,7 +247,8 @@ export const Overview: React.FC<OverviewProps> = ({ txData }) => {
           {/* Block--4 */}
           <div className="flex flex-col items-start justify-start gap-5 font-medium">
             {/* Total Gas Fee */}
-            <div className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
+            <div
+              className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
               <div className="w-36">
                 <span>Total Gas Fee:</span>
               </div>

@@ -30,6 +30,8 @@ export function useRemoveSession({
 > {
   const sessionsKeys = useSession()
   const removeSession = useRoochSessionStore((state) => state.removeSession)
+  const setCurrentSession = useRoochSessionStore((state) => state.setCurrentSession)
+  const currentSession = useCurrentSession()
   const client = useRoochClient()
   const curSessionKey = useCurrentSession()
 
@@ -42,7 +44,7 @@ export function useRemoveSession({
         }
 
         const result = await client.removeSession({
-          authKey: curSessionKey.getAuthKey(),
+          authKey: args.authKey,
           signer: curSessionKey,
         })
 
@@ -54,6 +56,9 @@ export function useRemoveSession({
 
           if (cacheSession) {
             removeSession(cacheSession)
+            if (cacheSession.getAuthKey() === currentSession?.getAuthKey()) {
+              setCurrentSession(undefined)
+            }
           }
         }
       } catch (e) {

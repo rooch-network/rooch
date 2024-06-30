@@ -3,11 +3,13 @@
 
 import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-query'
 import { useMutation } from '@tanstack/react-query'
-import { ThirdPartyAddress } from '@roochnetwork/rooch-sdk'
+import { ThirdPartyAddress, Session } from '@roochnetwork/rooch-sdk'
 
 import { useWalletStore } from './useWalletStore.js'
 import { walletMutationKeys } from '../../constants/index.js'
 import { Wallet } from '../../wellet/index.js'
+import { useRoochSessionStore } from '../useSessionsStore.js'
+import { useSession } from '../useSessions.js'
 
 type ConnectWalletArgs = {
   wallet: Wallet
@@ -32,6 +34,8 @@ export function useConnectWallet({
   ConnectWalletArgs,
   unknown
 > {
+  const sessions = useSession()
+  const setCurrentSession = useRoochSessionStore((state) => state.setCurrentSession)
   const setWalletConnected = useWalletStore((state) => state.setWalletConnected)
   const setConnectionStatus = useWalletStore((state) => state.setConnectionStatus)
 
@@ -45,6 +49,13 @@ export function useConnectWallet({
         const selectedAddress = connectAddress[0]
 
         setWalletConnected(wallet, connectAddress, selectedAddress)
+
+        const cur = sessions.find(
+          (item: Session) =>
+            item.getRoochAddress().toStr() === selectedAddress?.genRoochAddress().toStr(),
+        )
+
+        setCurrentSession(cur)
 
         return connectAddress
       } catch (error) {

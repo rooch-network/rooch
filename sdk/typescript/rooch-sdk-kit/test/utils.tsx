@@ -5,13 +5,13 @@ import type { ComponentProps } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RoochClient, getRoochNodeUrl } from '@roochnetwork/rooch-sdk'
 
-import { RoochClientProvider, WalletProvider } from '../src/provider/index.js'
+import { RoochProvider, WalletProvider } from '../src/provider/index.js'
 import { MockBitcoinWallet } from './mocks/mock-wallet.js'
 import { registerMock } from '../src/wellet/util.js'
 
 export function createRoochClientContextWrapper(client: RoochClient) {
   return function RoochClientContextWrapper({ children }: { children: React.ReactNode }) {
-    return <RoochClientProvider networks={{ test: client }}>{children}</RoochClientProvider>
+    return <RoochProvider networks={{ test: client }}>{children}</RoochProvider>
   }
 }
 
@@ -22,11 +22,11 @@ export function createWalletProviderContextWrapper(
   const queryClient = new QueryClient()
   return function WalletProviderContextWrapper({ children }: { children: React.ReactNode }) {
     return (
-      <RoochClientProvider networks={{ test: roochClient }}>
-        <QueryClientProvider client={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <RoochProvider networks={{ test: roochClient }}>
           <WalletProvider {...providerProps}>{children}</WalletProvider>;
-        </QueryClientProvider>
-      </RoochClientProvider>
+        </RoochProvider>
+      </QueryClientProvider>
     )
   }
 }

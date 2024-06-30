@@ -4,47 +4,46 @@
 import type { ReactNode } from 'react'
 import { createContext, useRef } from 'react'
 
-import type { StateStorage } from 'zustand/middleware'
-
+import { NetworkConfigs, RoochClientProvider } from './clientProvider.js'
 import { createSessionStore, SessionStore } from './sessionStore.js'
-
-import { useCurrentNetwork } from '../hooks/index.js'
 import { getDefaultStorage, StorageType } from '../utils/index.js'
 
-const DEFAULT_SESSION_STORAGE_KEY = function (key: string | undefined, network: string) {
-  if (key) {
-    return key
-  }
-
-  return 'rooch-sdk-kit:rooch-session-info' + network
+const DEFAULT_SESSION_STORAGE_KEY = function (_?: string) {
+  return 'rooch-sdk-kit:rooch-session-info'
 }
 
-export const RoochSessionContext = createContext<SessionStore | null>(null)
+export const RoochContext = createContext<SessionStore | null>(null)
 
-export type RoochSessionProviderProps = {
-  /** Configures how the most recently connected to wallet account is stored. Defaults to using sessionStorage. */
-  storage?: StateStorage
-
-  /** The key to use to store the most recently connected wallet account. */
-  storageKey?: string
-
+export type RoochProviderProps<T extends NetworkConfigs> = {
+  networks?: NetworkConfigs
+  onNetworkChange?: (network: keyof T & string) => void
   children: ReactNode
-}
+} & (
+  | {
+      defaultNetwork?: keyof T & string
+      network?: never
+    }
+  | {
+      defaultNetwork?: never
+      network?: keyof T & string
+    }
+)
 
-export function RoochSessionProvider(props: RoochSessionProviderProps) {
+export function RoochProvider<T extends NetworkConfigs>(props: RoochProviderProps<T>) {
   // ** Props **
-  const { storage, storageKey, children } = props
-
-  // ** Hooks **
-  const network = useCurrentNetwork()
+  const { children, networks, defaultNetwork } = props
 
   const storeRef = useRef(
     createSessionStore({
-      storage: storage || getDefaultStorage(StorageType.Session),
-      storageKey: DEFAULT_SESSION_STORAGE_KEY(storageKey, network),
+      storage: getDefaultStorage(StorageType.Local),
+      storageKey: DEFAULT_SESSION_STORAGE_KEY(),
     }),
   )
   return (
-    <RoochSessionContext.Provider value={storeRef.current}>{children}</RoochSessionContext.Provider>
+    <RoochContext.Provider value={storeRef.current}>
+      <RoochClientProvider networks={networks} defaultNetwork={defaultNetwork}>
+        {children}
+      </RoochClientProvider>
+    </RoochContext.Provider>
   )
 }

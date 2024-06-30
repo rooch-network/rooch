@@ -1,8 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { Wallet } from 'lucide-react'
+import { Wallet as WalletIcon } from 'lucide-react'
 
 import {
   Dialog,
@@ -20,39 +21,30 @@ import { capitalizeFirstLetter, cn } from '@/lib/utils'
 import { walletsMaterialMap } from '../common/constant'
 
 import {
-  BaseWallet,
   SupportChain,
   useConnectWallet,
   useCurrentWallet,
   useWallets,
-  useWalletStore,
+  Wallet,
 } from '@roochnetwork/rooch-sdk-kit'
 import { LoadingSpinner } from './loading-spinner'
 
 export const WalletConnect = () => {
-  const [isLoading, setIsLoading] = useState(false)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [selectWalletDialog, setSelectWalletDialog] = useState(false)
   const { mutateAsync: connectWallet } = useConnectWallet()
-  const account = useWalletStore((state) => state.currentAccount)
   const wallets = useWallets().filter((wallet) => wallet.getChain() === SupportChain.BITCOIN)
-  const currentWallet = useCurrentWallet()
-  // ** Connect wallet
-  const handleConnectWallet = () => {
-    setIsDialogOpen(true)
-  }
+  const {isConnecting, wallet} = useCurrentWallet()
 
   // ** Connect specific wallet
-  const handleConnectSpecificWallet = async (wallet: BaseWallet) => {
+  const handleConnectSpecificWallet = async (wallet: Wallet) => {
     try {
-      setIsLoading(true)
-      await connectWallet({ wallet: wallet })
+      await connectWallet({ wallet })
 
-      toast.success(`${wallet?.name} wallet connected`)
+      toast.success(`${wallet?.getName()} wallet connected`)
     } catch (error) {
       toast.error('Connection failed')
     } finally {
-      setIsLoading(false)
-      setIsDialogOpen(false)
+      setSelectWalletDialog(false)
     }
   }
 
@@ -62,25 +54,25 @@ export const WalletConnect = () => {
         variant="default"
         size="default"
         className="rounded-lg ml-2 h-auto shadow-custom bg-white hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-800/75 dark:shadow-muted/80"
-        onClick={handleConnectWallet}
+        onClick={() => setSelectWalletDialog(true)}
       >
         <div className="flex items-center justify-center gap-x-2">
-          <Wallet className="h-[1rem] w-[1rem] md:h-[1.2rem] md:w-[1.2rem] rotate-0 scale-100 transition-all text-teal-600 dark:text-teal-400" />
+          <WalletIcon className="h-[1rem] w-[1rem] md:h-[1.2rem] md:w-[1.2rem] rotate-0 scale-100 transition-all text-teal-600 dark:text-teal-400" />
           <div className="flex items-center justify-center gap-x-1 bg-gradient-to-r bg-clip-text font-black text-transparent from-teal-600 via-purple-600 to-orange-600 dark:from-teal-400 dark:via-purple-400 dark:to-orange-400">
-            {account === null ? 'Connect Wallet' : formatAddress(account?.address)}
+            {wallet ? formatAddress(wallet.getBitcoinAddress().toStr()) : 'Connect Wallet'}
           </div>
         </div>
       </Button>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={selectWalletDialog} onOpenChange={setSelectWalletDialog}>
         <DialogTrigger asChild />
         <DialogContent
           className={cn(
             'sm:max-w-[425px] overflow-hidden',
-            isLoading ? 'border-zinc-500 dark:border-zinc-600' : '',
+            isConnecting ? 'border-zinc-500 dark:border-zinc-600' : '',
           )}
         >
-          {isLoading && (
+          {isConnecting && (
             <div className="absolute inset-0 flex items-center justify-center bg-zinc-500 bg-opacity-70 z-10">
               <LoadingSpinner />
             </div>
@@ -90,7 +82,7 @@ export const WalletConnect = () => {
           </DialogHeader>
           {wallets.map((wallet) => (
             <Card
-              key={wallet.name}
+              key={wallet.getName()}
               onClick={() => handleConnectSpecificWallet(wallet)}
               className="bg-secondary cursor-pointer hover:border-primary/20 transition-all"
             >
@@ -98,15 +90,15 @@ export const WalletConnect = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center justify-start">
                     <img
-                      src={walletsMaterialMap.get(wallet.name!)!.icon}
-                      alt={walletsMaterialMap.get(wallet.name!)!.description}
+                      src={walletsMaterialMap.get(wallet.getName())!.icon}
+                      alt={walletsMaterialMap.get(wallet.getName())!.description}
                       className="h-[2rem] w-[2rem] rotate-0 scale-100 mr-4 object-cover"
                     />
                     <div>
                       <CardTitle>
                         <span className="flex items-center justify-start">
-                          <p>{capitalizeFirstLetter(wallet.name!)} Wallet</p>
-                          {currentWallet?.wallet.name === wallet.name && (
+                          <p>{capitalizeFirstLetter(wallet.getName())} Wallet</p>
+                          {wallet?.getName() === wallet.getName() && (
                             <Badge
                               variant="outline"
                               className="ml-2 border-teal-400 text-teal-400 hover:bg-teal-400/10 py-0 px-0.5 rounded-md"
@@ -116,11 +108,11 @@ export const WalletConnect = () => {
                           )}
                         </span>
                       </CardTitle>
-                      <CardDescription>Connecting using {wallet.name} Wallet</CardDescription>
+                      <CardDescription>Connecting using {wallet.getName()} Wallet</CardDescription>
                     </div>
                   </div>
                   <div className="flex items-center justify-center gap-1">
-                    {walletsMaterialMap.get(wallet.name!)!.types.map((type) => (
+                    {walletsMaterialMap.get(wallet.getName())!.types.map((type) => (
                       <img
                         key={type}
                         src={`/icon-${type}.svg`}

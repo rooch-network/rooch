@@ -8,6 +8,6 @@
     "module": "CommonJS",
     "outDir": "dist/cjs",
     "rootDir": "src",
-    "isolatedModules": true,
+    "isolatedModules": true
   }
 }

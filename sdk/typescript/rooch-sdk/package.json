@@ -1,7 +1,7 @@
 {
   "name": "@roochnetwork/rooch-sdk",
   "author": "Rooch.network <opensource@rooch.network>",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "description": "Rooch SDK",
   "license": "Apache-2.0",
   "engines": {
@@ -16,10 +16,10 @@
     "vitest": "vitest",
     "test": "pnpm test:unit && pnpm test:e2e",
     "test:unit": "vitest run src",
-    "test:e2e": "pnpm prepare:e2e && wait-on tcp:0.0.0.0:50051 -l --timeout 180000 && vitest run e2e; pnpm stop:e2e",
+    "test:e2e": "pnpm prepare:e2e && wait-on tcp:0.0.0.0:6767 -l --timeout 180000 && vitest run e2e; pnpm stop:e2e",
     "test:e2e:nowait": "vitest run e2e",
-    "prepare:e2e": "nohup cargo run --bin rooch server start -n local -d TMP --port 50051 > /dev/null 2>&1 &",
-    "stop:e2e": "lsof -ti:50051 | xargs kill",
+    "prepare:e2e": "nohup cargo run --bin rooch server start -n local -d TMP --port 6767 > /dev/null 2>&1 &",
+    "stop:e2e": "lsof -ti:6767 | xargs kill",
     "prepublishOnly": "pnpm build",
     "size": "size-limit",
     "analyze": "size-limit --why",
@@ -29,7 +29,7 @@
     "prettier:fix": "prettier -w --ignore-unknown .",
     "lint": "pnpm eslint:check && pnpm prettier:check",
     "lint:fix": "pnpm eslint:fix && pnpm prettier:fix",
-    "gen": "pnpm exec tsx ./scripts/gen.ts"
+    "gen": "pnpm exec tsx ./scripts/gen.ts && pnpm lint:fix"
   },
   "repository": {
     "type": "git",
@@ -58,7 +58,6 @@
   "dependencies": {
     "@noble/hashes": "~1.4.0",
     "@noble/curves": "~1.4.0",
-    "micro-packed": "~0.6.2",
     "@scure/base": "~1.1.6",
     "@scure/bip32": "^1.3.1",
     "@scure/bip39": "^1.2.1",
