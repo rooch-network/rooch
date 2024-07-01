@@ -6,26 +6,26 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::{Arc, mpsc};
 use std::sync::mpsc::{Receiver, SyncSender};
-use std::sync::{mpsc, Arc};
 use std::thread;
 use std::time::SystemTime;
 
 use anyhow::Result;
-use bitcoin::hashes::Hash;
 use bitcoin::{OutPoint, PublicKey, ScriptBuf};
-use bitcoin_move::natives::ord::inscription_id::InscriptionId;
+use bitcoin::hashes::Hash;
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use serde::{Deserialize, Serialize};
 use tempfile::TempDir;
 
+use bitcoin_move::natives::ord::inscription_id::InscriptionId;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::move_std::option::MoveOption;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::{
-    ObjectEntity, ObjectID, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
+    GENESIS_STATE_ROOT, ObjectEntity, ObjectID, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
 };
 use moveos_types::state::{KeyState, MoveState, MoveType, State};
 use rooch_config::R_OPT_NET_HELP;
@@ -103,7 +103,7 @@ pub struct GenesisOrdCommand {
         help = "batch size submited to state db, default 1M. Set it smaller if memory is limited."
     )] // ord may have large body, so set a smaller batch
     pub ord_batch_size: Option<usize>,
-    #[clap(long = "tmp-dir", help="tmp dir for store temp data")]
+    #[clap(long = "tmp-dir", help = "tmp dir for store temp data")]
     pub tmp_dir: Option<PathBuf>,
 
     #[clap(long = "data-dir", short = 'd')]
@@ -131,7 +131,10 @@ impl GenesisOrdCommand {
             init_genesis_job(self.base_data_dir.clone(), self.chain_id.clone());
         let pre_root_state_root = H256::from(root.state_root.into_bytes());
 
-        let tmp_dir = self.tmp_dir.clone().unwrap_or_else(|| TempDir::new().unwrap().into_path());
+        let tmp_dir = self
+            .tmp_dir
+            .clone()
+            .unwrap_or_else(|| TempDir::new().unwrap().into_path());
 
         let db_config = sled::Config::new()
             .temporary(true)
@@ -180,8 +183,9 @@ impl GenesisOrdCommand {
         let batch_size = self.ord_batch_size.unwrap();
 
         let (tx, rx) = mpsc::sync_channel(2);
-        let produce_updates_thread =
-            thread::spawn(move || produce_ord_updates(tmp_dir, tx, input_path, batch_size, utxo_ord_map));
+        let produce_updates_thread = thread::spawn(move || {
+            produce_ord_updates(tmp_dir, tx, input_path, batch_size, utxo_ord_map)
+        });
         let apply_updates_thread = thread::spawn(move || {
             apply_ord_updates_to_state(rx, moveos_store, startup_update_set);
         });
@@ -359,7 +363,6 @@ fn produce_ord_updates(
     batch_size: usize,
     utxo_ord_map: Arc<sled::Db>,
 ) {
-
     let db_config = sled::Config::new()
         .temporary(true)
         .path(TempDir::new_in(tmp_dir).unwrap());
@@ -594,14 +597,4 @@ fn create_genesis_inscription_store_object(
         0,
         inscription_store,
     )
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn test_tmp_dir() {
-        let dir = TempDir::new().unwrap();
-        println!("{:?}", dir);
-    }
 }
