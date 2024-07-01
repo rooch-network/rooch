@@ -3,10 +3,10 @@
 
 import { useContext } from 'react'
 
-import { RoochClientContext, RoochClientProviderContext } from '../../provider/index.js'
+import { ClientContext, ClientProviderContext } from '../../provider/clientProvider.js'
 
-export function useRoochContext(): RoochClientProviderContext {
-  const context = useContext(RoochClientContext)
+export function useRoochContext(): ClientProviderContext {
+  const context = useContext(ClientContext)
   if (!context) {
     throw new Error(
       'Could not find RoochClientContext. Ensure that you have set up the RoochClientProvider.',

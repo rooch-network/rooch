@@ -4,10 +4,10 @@
 import { useContext } from 'react'
 import { useStore } from 'zustand'
 
-import { SessionStoreState } from '../provider/roochStore.js'
+import { SessionStoreState } from '../provider/sessionStore.js'
 import { RoochContext } from '../provider/index.js'
 
-export function useRoochSessionStore<T>(selector: (state: SessionStoreState) => T): T {
+export function useSessionStore<T>(selector: (state: SessionStoreState) => T): T {
   const store = useContext(RoochContext)
   if (!store) {
     throw new Error(

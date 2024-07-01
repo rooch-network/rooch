@@ -12,13 +12,14 @@ import {
   RoochClientOptions,
 } from '@roochnetwork/rooch-sdk'
 
-import { NetworkConfig, useRoochSessionStore } from '../hooks/index.js'
+import { NetworkConfig } from '../hooks/index.js'
+import { useSessionStore } from '../hooks/useSessionsStore.js'
 import { HTTPTransport } from '../http/httpTransport.js'
 
 export type NetworkConfigs<T extends NetworkConfig | RoochClient = NetworkConfig | RoochClient> =
   Record<string, T>
 
-export interface RoochClientProviderContext {
+export interface ClientProviderContext {
   client: RoochClient
   networks: NetworkConfigs
   network: string
@@ -26,7 +27,7 @@ export interface RoochClientProviderContext {
   selectNetwork: (network: string) => void
 }
 
-export const RoochClientContext = createContext<RoochClientProviderContext | null>(null)
+export const ClientContext = createContext<ClientProviderContext | null>(null)
 
 export type RoochClientProviderProps<T extends NetworkConfigs> = {
   networks?: NetworkConfigs
@@ -68,7 +69,7 @@ const DEFAULT_CREATE_CLIENT = function createClient(
 
 export function RoochClientProvider<T extends NetworkConfigs>(props: RoochClientProviderProps<T>) {
   const { onNetworkChange, network, children } = props
-  const setCurrentSession = useRoochSessionStore((state) => state.setCurrentSession)
+  const setCurrentSession = useSessionStore((state) => state.setCurrentSession)
   const networks = (props.networks ?? DEFAULT_NETWORKS) as T
   const [selectedNetwork, setSelectedNetwork] = useState<keyof T & string>(
     props.network ?? props.defaultNetwork ?? (Object.keys(networks)[0] as keyof T & string),
@@ -89,7 +90,7 @@ export function RoochClientProvider<T extends NetworkConfigs>(props: RoochClient
     })
   }, [currentNetwork, networks, clearSession])
 
-  const ctx = useMemo((): RoochClientProviderContext => {
+  const ctx = useMemo((): ClientProviderContext => {
     return {
       client,
       network: currentNetwork,
@@ -112,5 +113,5 @@ export function RoochClientProvider<T extends NetworkConfigs>(props: RoochClient
     }
   }, [client, currentNetwork, networks, network, selectedNetwork, onNetworkChange])
 
-  return <RoochClientContext.Provider value={ctx}>{children}</RoochClientContext.Provider>
+  return <ClientContext.Provider value={ctx}>{children}</ClientContext.Provider>
 }
