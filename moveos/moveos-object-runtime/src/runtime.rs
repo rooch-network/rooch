@@ -57,6 +57,7 @@ pub const ERROR_WITHOUT_PARENT: u64 = 12;
 pub const ERROR_PARENT_NOT_MATCH: u64 = 13;
 pub const ERROR_OBJECT_RUNTIME_ERROR: u64 = 14;
 pub const ERROR_OBJECT_ALREADY_TAKEN_OUT: u64 = 15;
+pub const ERROR_OBJECT_IS_EMBEDDED_IN_OTHER_STRUCT: u64 = 16;
 
 /// The native Object runtime context extension. This needs to be attached to the NativeContextExtensions
 /// value which is passed into session functions, so its accessible from natives of this
