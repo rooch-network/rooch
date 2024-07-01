@@ -7,9 +7,10 @@ import { address, TypeArgs, Signer } from '@roochnetwork/rooch-sdk'
 
 import { roochMutationKeys } from '../../constants/index.js'
 import { useRoochClient } from './index.js'
+import { useCurrentSession } from '../useCurrentSession.js'
 
 type UseTransferCoinArgs = {
-  signer: Signer
+  signer?: Signer
   recipient: address
   amount: number | bigint
   coinType: TypeArgs
@@ -32,11 +33,21 @@ export function useTransferCoin({
   unknown
 > {
   const client = useRoochClient()
+  const curSession = useCurrentSession()
 
   return useMutation({
     mutationKey: roochMutationKeys.transferCoin(mutationKey),
     mutationFn: async (args) => {
-      const result = await client.transfer(args)
+      const signer = args.signer || curSession
+
+      if (signer === null) {
+        throw Error('')
+      }
+
+      const result = await client.transfer({
+        ...args,
+        signer: args.signer || curSession!,
+      })
 
       if (result.execution_info.status.type !== 'executed') {
         Error('transfer failed' + result.execution_info.status.type)

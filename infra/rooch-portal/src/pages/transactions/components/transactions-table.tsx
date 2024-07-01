@@ -27,35 +27,36 @@ import {
 import { NoData } from '@/components/no-data'
 
 // ** ROOCH SDK
-import { useCurrentAccount, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
+import { useCurrentAddress, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 
 // ** ICONS
 import { MenuSquare, ExternalLink, Wallet } from 'lucide-react'
-import { LedgerTxDataView1 } from '@roochnetwork/rooch-sdk'
+// import { LedgerTxDataView } from '@roochnetwork/rooch-sdk'
 import { SkeletonList } from '@/components/skeleton-list'
-import { formatAddress } from '@/utils/format'
+import { formatAddress, formatTimestamp } from '@/utils/format.ts'
+// import { formatAddress } from '@/utils/format'
 
 export const TransactionsTable = () => {
   const navigate = useNavigate()
-  const account = useCurrentAccount()
+  const account = useCurrentAddress()
 
   const [paginationModel, setPaginationModel] = useState({ index: 0, limit: 10 })
-  const mapPageToNextCursor = useRef<{ [page: number]: number | null }>({})
+  const mapPageToNextCursor = useRef<{ [page: number]: string | null }>({})
 
   const queryOptions = useMemo(
     () => ({
-      cursor: mapPageToNextCursor.current[paginationModel.index - 1],
-      limit: paginationModel.limit,
+      cursor: mapPageToNextCursor.current[paginationModel.index - 1]?.toString(),
+      limit: paginationModel.limit.toString(),
     }),
     [paginationModel],
   )
 
   const { data: transactionsResult, isPending } = useRoochClientQuery('queryTransactions', {
     filter: {
-      sender: account?.getRoochAddress() || '',
+      sender: account?.genRoochAddress().toHexAddress() || '',
     },
     cursor: queryOptions.cursor,
-    limit: paginationModel.limit,
+    limit: queryOptions.limit,
   })
 
   useEffect(() => {
@@ -107,7 +108,8 @@ export const TransactionsTable = () => {
           <TableHeader>
             <TableRow>
               <TableHead className="w-[100px]">TXs</TableHead>
-              <TableHead>TX Hash</TableHead>
+              <TableHead>Transaction Hash</TableHead>
+              <TableHead>Timestamp</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Sender</TableHead>
               <TableHead>Gas</TableHead>
@@ -134,13 +136,18 @@ export const TransactionsTable = () => {
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline" className="text-muted-foreground">
-                    {(tx.transaction.data as LedgerTxDataView1).action_type.toUpperCase()}
+                    {formatTimestamp(Number(tx.transaction.sequence_info.tx_timestamp))}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="text-muted-foreground">
+                    {tx.transaction.data.type.toUpperCase()}
                   </Badge>
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col md:flex-row items-start md:items-center justify-start gap-1">
                     <span className="hover:no-underline text-blue-400 hover:text-blue-500 dark:text-blue-300 dark:hover:text-blue-200 transition-all cursor-pointer">
-                      <p>{formatAddress((tx.transaction.data as LedgerTxDataView1).sender)}</p>
+                      {'sender' in tx.transaction.data ? formatAddress(tx.transaction.data.sender) : ''}
                     </span>
                   </div>
                 </TableCell>

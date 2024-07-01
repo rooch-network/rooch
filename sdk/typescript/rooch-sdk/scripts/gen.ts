@@ -193,21 +193,6 @@ methodGenerator.imports.push(
     ),
     ts.factory.createStringLiteral('./generated.js'),
   ),
-  // ts.factory.createImportDeclaration(
-  //     undefined,
-  //     ts.factory.createImportClause(
-  //         true,
-  //         undefined,
-  //         ts.factory.createNamedImports([
-  //             ts.factory.createImportSpecifier(
-  //                 false,
-  //                 undefined,
-  //                 ts.factory.createIdentifier('TransactionBlock'),
-  //             ),
-  //         ]),
-  //     ),
-  //     ts.factory.createStringLiteral('../../transactions/index.js'),
-  // ),
 )
 
 methodGenerator.statements.push(
@@ -471,7 +456,6 @@ async function generateUnionType(
       type: 'object' as const,
       properties: {} as Record<string, OpenRpcTypeRef>,
     }
-
     const required = new Set<string>((types[0] as { required?: string[] }).required ?? [])
 
     for (const type of types) {
@@ -514,7 +498,6 @@ async function generateUnionType(
       }),
     )
   }
-
   let refs
   if (base && (base.properties || base.additionalProperties || base.required)) {
     refs = await Promise.all(

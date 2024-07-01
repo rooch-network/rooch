@@ -2,5 +2,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
 export * from './clientProvider.js'
-export * from './sessionProvider.js'
+export * from './roochProvider.js'
 export * from './walletProvider.js'

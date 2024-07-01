@@ -31,8 +31,9 @@ export function createSessionStore({ storage, storageKey }: ClientConfiguration)
         currentSession: null,
         addSession(session) {
           const cache = get().sessions
+          cache.push(session)
           set(() => ({
-            sessions: cache.concat(session),
+            sessions: cache,
           }))
         },
         setCurrentSession(session) {
@@ -40,16 +41,16 @@ export function createSessionStore({ storage, storageKey }: ClientConfiguration)
             set(() => ({
               currentSession: null,
             }))
-            return
+          } else {
+            const cache = get().sessions
+            if (!cache.find((item) => item.getAuthKey() === session.getAuthKey())) {
+              cache.push(session)
+            }
+            set(() => ({
+              currentSession: session,
+              sessions: cache,
+            }))
           }
-          const cache = get().sessions
-          if (!cache.find((item) => item.getAuthKey() === session.getAuthKey())) {
-            cache.push(session)
-          }
-          set(() => ({
-            currentSession: session,
-            sessions: cache,
-          }))
         },
         removeSession(session) {
           const cacheSessions = get().sessions

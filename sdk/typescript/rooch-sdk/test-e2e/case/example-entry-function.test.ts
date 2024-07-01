@@ -15,7 +15,6 @@ describe('Checkpoints Example Entry Function', () => {
   })
 
   it('Cmd publish package should be success', async () => {
-    console.log('publish entry_function_arguments package')
     const result = await cmdPublishPackage('../../../examples/entry_function_arguments/')
 
     expect(result).toBeTruthy()

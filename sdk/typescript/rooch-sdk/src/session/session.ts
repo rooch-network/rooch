@@ -28,6 +28,7 @@ export class Session extends Signer {
   protected readonly maxInactiveInterval: number
   protected readonly bitcoinAddress: BitcoinAddress
   protected readonly roochAddress: RoochAddress
+  protected lastActiveTime: number
 
   protected constructor(
     appName: string,
@@ -38,6 +39,7 @@ export class Session extends Signer {
     keypair?: Ed25519Keypair,
     maxInactiveInterval?: number,
     localCreateSessionTime?: number,
+    lastActiveTime?: number,
   ) {
     super()
     this.appName = appName
@@ -47,7 +49,8 @@ export class Session extends Signer {
     this.bitcoinAddress = bitcoinAddress
     this.keypair = keypair ?? Ed25519Keypair.generate()
     this.maxInactiveInterval = maxInactiveInterval ?? DEFAULT_MAX_INACTIVE_INTERVAL
-    this.localCreateSessionTime = localCreateSessionTime ?? Date.now() / 1000
+    this.localCreateSessionTime = localCreateSessionTime ?? Date.now()
+    this.lastActiveTime = lastActiveTime || this.localCreateSessionTime
   }
 
   protected readonly localCreateSessionTime: number
@@ -87,6 +90,7 @@ export class Session extends Signer {
       bitcoinAddress,
       roochAddress,
       localCreateSessionTime,
+      lastActiveTime,
     } = jsonObj
 
     return new Session(
@@ -98,10 +102,15 @@ export class Session extends Signer {
       Ed25519Keypair.fromSecretKey(secretKey),
       maxInactiveInterval,
       localCreateSessionTime,
+      lastActiveTime,
     )
   }
 
   sign(input: Bytes): Promise<Bytes> {
+    // if (this.lastActiveTime + this.maxInactiveInterval < Date.now() / 1000) {
+    //   throw Error('Session is Expired')
+    // }
+    this.lastActiveTime = Date.now()
     return this.keypair.sign(input)
   }
 
@@ -123,6 +132,10 @@ export class Session extends Signer {
 
   getPublicKey(): PublicKey<RoochAddress> {
     return this.keypair.getPublicKey()
+  }
+
+  getCreateTime(): number {
+    return this.localCreateSessionTime
   }
 
   getAuthKey(): string {
@@ -190,6 +203,7 @@ export class Session extends Signer {
       bitcoinAddress: this.bitcoinAddress.toStr(),
       roochAddress: this.roochAddress.toStr(),
       localCreateSessionTime: this.localCreateSessionTime,
+      lastActiveTime: this.lastActiveTime,
     }
   }
 }
