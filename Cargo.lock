@@ -6275,7 +6275,7 @@ version = "0.5.7"
 dependencies = [
  "anyhow",
  "futures",
- "hyper 1.3.1",
+ "hyper 0.14.28",
  "log",
  "prometheus",
  "psutil",
@@ -9813,7 +9813,7 @@ dependencies = [
  "fastcrypto",
  "futures",
  "hex",
- "hyper 1.3.1",
+ "hyper 0.14.28",
  "lazy_static 1.5.0",
  "log",
  "move-binary-format",
