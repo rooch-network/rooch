@@ -58,3 +58,9 @@ where
         })
     }
 }
+
+pub(crate) fn is_field_value_type(tag: &StructTag) -> bool {
+    tag.address == MOVEOS_STD_ADDRESS
+        && tag.module == object::MODULE_NAME
+        && tag.name == FIELD_VALUE_STRUCT_NAME
+}

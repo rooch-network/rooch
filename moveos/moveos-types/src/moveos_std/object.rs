@@ -370,6 +370,73 @@ pub type ModuleStoreObject = ObjectEntity<ModuleStore>;
 pub type PackageObject = ObjectEntity<Package>;
 pub type TimestampObject = ObjectEntity<Timestamp>;
 
+#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
+pub struct ObjectMeta {
+    pub id: ObjectID,
+    pub owner: AccountAddress,
+    pub flag: u8,
+    pub state_root: Option<AccountAddress>,
+    pub size: u64,
+    pub created_at: u64,
+    pub updated_at: u64,
+}
+
+impl ObjectMeta {
+    pub fn new(
+        id: ObjectID,
+        owner: AccountAddress,
+        flag: u8,
+        state_root: Option<AccountAddress>,
+        size: u64,
+        created_at: u64,
+        updated_at: u64,
+    ) -> Self {
+        Self {
+            id,
+            owner,
+            flag,
+            state_root,
+            size,
+            created_at,
+            updated_at,
+        }
+    }
+
+    pub fn genesis_meta(id: ObjectID) -> Self {
+        Self {
+            id,
+            owner: MOVEOS_STD_ADDRESS,
+            flag: SHARED_OBJECT_FLAG_MASK,
+            state_root: Some(AccountAddress::new(*GENESIS_STATE_ROOT)),
+            size: 0,
+            created_at: 0,
+            updated_at: 0,
+        }
+    }
+
+    pub fn is_shared(&self) -> bool {
+        self.flag & SHARED_OBJECT_FLAG_MASK == SHARED_OBJECT_FLAG_MASK
+    }
+
+    pub fn to_shared(&mut self) {
+        self.flag |= SHARED_OBJECT_FLAG_MASK;
+    }
+
+    pub fn is_frozen(&self) -> bool {
+        self.flag & FROZEN_OBJECT_FLAG_MASK == FROZEN_OBJECT_FLAG_MASK
+    }
+
+    pub fn is_genesis(&self) -> bool {
+        self.state_root() == *GENESIS_STATE_ROOT
+    }
+
+    pub fn state_root(&self) -> H256 {
+        self.state_root
+            .map(|addr| addr.into_bytes().into())
+            .unwrap_or_else(|| *GENESIS_STATE_ROOT)
+    }
+}
+
 /// The Entity of the Object<T>.
 /// The value must be the last field
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
@@ -457,6 +524,18 @@ impl<T> ObjectEntity<T> {
 
     pub fn is_genesis(&self) -> bool {
         self.state_root() == *GENESIS_STATE_ROOT
+    }
+
+    pub fn metadata(&self) -> ObjectMeta {
+        ObjectMeta {
+            id: self.id.clone(),
+            owner: self.owner,
+            flag: self.flag,
+            state_root: Some(self.state_root),
+            size: self.size,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+        }
     }
 
     pub fn is_system_owned(&self) -> bool {

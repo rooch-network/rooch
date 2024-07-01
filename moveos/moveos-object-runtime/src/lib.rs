@@ -31,3 +31,28 @@ impl<'a, 'b> TypeLayoutLoader for NativeContext<'a, 'b> {
         self.type_to_type_tag(ty)
     }
 }
+
+/// Asserts that a condition is true, otherwise returns an MoveVM abort with a message.
+#[macro_export]
+macro_rules! assert_abort {
+    ($cond:expr, $abort:expr $(,)?) => {
+        if !$cond {
+            return Err(move_binary_format::errors::PartialVMError::new(StatusCode::ABORTED)
+                .with_sub_status($abort));
+        }
+    };
+    ($cond:expr, $abort:expr, $msg:literal $(,)?) => {
+        if !$cond {
+            return Err(move_binary_format::errors::PartialVMError::new(StatusCode::ABORTED)
+                .with_sub_status($abort)
+                .with_message($msg:literal));
+        }
+    };
+    ($cond:expr, $abort:expr, $fmt:expr, $($arg:tt)*) => {
+        if !$cond {
+            return Err(move_binary_format::errors::PartialVMError::new(StatusCode::ABORTED)
+                .with_sub_status($abort)
+                .with_message(format!($fmt, $($arg)*)));
+        }
+    };
+}

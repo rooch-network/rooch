@@ -2,20 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    field_value::{FieldValue, FIELD_VALUE_STRUCT_NAME},
-    runtime::{
+    assert_abort, field_value::{self, FieldValue, FIELD_VALUE_STRUCT_NAME}, runtime::{
         check_type, deserialize, partial_extension_error, serialize, ERROR_OBJECT_ALREADY_BORROWED,
-        ERROR_OBJECT_ALREADY_TAKEN_OUT,
-    },
-    TypeLayoutLoader,
+        ERROR_OBJECT_ALREADY_TAKEN_OUT,ERROR_OBJECT_FROZEN,
+    }, TypeLayoutLoader
 };
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{
-    effects::Op,
-    gas_algebra::NumBytes,
-    language_storage::{StructTag, TypeTag},
-    value::{MoveStructLayout, MoveTypeLayout},
-    vm_status::StatusCode,
+    account_address::AccountAddress, effects::Op, gas_algebra::NumBytes, language_storage::{StructTag, TypeTag}, value::{MoveStructLayout, MoveTypeLayout}, vm_status::StatusCode
 };
 use move_vm_types::values::{GlobalValue, Reference, Struct, StructRef, Value};
 use moveos_types::{
@@ -23,7 +17,7 @@ use moveos_types::{
     h256::H256,
     moveos_std::{
         move_module::MoveModule,
-        object::{self, ObjectEntity, ObjectID, GENESIS_STATE_ROOT},
+        object::{self, ObjectEntity, ObjectID, ObjectMeta, RawData, GENESIS_STATE_ROOT},
     },
     state::{
         FieldChange, KeyState, MoveState, MoveStructState, MoveType, NormalFieldChange,
@@ -31,7 +25,7 @@ use moveos_types::{
     },
     state_resolver::StatelessResolver,
 };
-use std::collections::{btree_map::Entry, BTreeMap};
+use std::{collections::{btree_map::Entry, BTreeMap}, io::Read};
 
 /// A structure representing runtime field.
 pub enum RuntimeField {
@@ -43,16 +37,16 @@ pub enum RuntimeField {
 /// A structure representing a single runtime object.
 pub struct RuntimeObject {
     pub(crate) id: ObjectID,
-    /// This is the Layout of ObjectEntity<T>
+    /// This is the Layout of T
     pub(crate) value_layout: MoveTypeLayout,
-    /// This is the TypeTag of ObjectEntity<T>
+    /// This is the TypeTag of T
     pub(crate) value_type: TypeTag,
-    /// This is the ObjectEntity<T> value in MoveVM memory
+    /// This is the T value in MoveVM memory
     pub(crate) value: GlobalValue,
-    /// This is the ObjectEntity<T> pointer in MoveVM memory
+    /// This is the Object<T> pointer in MoveVM memory
     pub(crate) pointer: ObjectPointer,
-    /// The state root of the fields
-    pub(crate) state_root: H256,
+    /// The metadata of the object
+    pub(crate) metadata: ObjectMeta,
     pub(crate) fields: BTreeMap<KeyState, RuntimeField>,
 }
 
@@ -239,7 +233,7 @@ impl RuntimeObject {
         let raw_obj = state
             .as_raw_object()
             .map_err(|e| partial_extension_error(format!("expect raw object, but got {:?}", e)))?;
-        let value = deserialize(&value_layout, state.value.as_slice())?;
+        let value = deserialize(&value_layout, &raw_obj.value.value)?;
 
         //If the object is system owned and not frozen or shared, it should be embeded in other struct
         //So we should make the object pointer to none, ensure no one can borrow the object pointer
@@ -255,7 +249,7 @@ impl RuntimeObject {
             value_type: state.value_type,
             value: GlobalValue::cached(value)?,
             pointer,
-            state_root: raw_obj.state_root(),
+            metadata: raw_obj.metadata(),
             fields: Default::default(),
         })
     }
@@ -265,7 +259,7 @@ impl RuntimeObject {
         value_layout: MoveTypeLayout,
         value_type: TypeTag,
         value: GlobalValue,
-        state_root: H256,
+        metadata: ObjectMeta,
     ) -> PartialVMResult<Self> {
         Ok(Self {
             id: id.clone(),
@@ -273,7 +267,7 @@ impl RuntimeObject {
             value_type,
             value,
             pointer: ObjectPointer::cached(id),
-            state_root,
+            metadata,
             fields: Default::default(),
         })
     }
@@ -324,7 +318,23 @@ impl RuntimeObject {
         self.pointer.value.borrow_global()
     }
 
+    pub fn borrow_mut_pointer(&self, sender: AccountAddress, by_pass_owner_check: bool, expect_value_type: &TypeTag) -> PartialVMResult<Value> {
+        let pointer = self.borrow_pointer(expect_value_type)?;
+        assert_abort!(!self.metadata.is_frozen(), ERROR_OBJECT_FROZEN, "Object {} is frozen", self.id);
+        assert_abort!(self.metadata.owner == sender || by_pass_owner_check, ERROR_OBJECT_NOT_OWNER, "Object {} is not owned by {}", self.id, sender);
+        Ok(pointer)
+    }
+
+    pub fn borrow_mut_shared_pointer(&self, expect_value_type: &TypeTag) -> PartialVMResult<Value> {
+        let pointer = self.borrow_pointer(expect_value_type)?;
+        assert_abort!(!self.metadata.is_frozen(), ERROR_OBJECT_FROZEN, "Object {} is frozen", self.id);
+        assert_abort!(self.metadata.is_shared(), ERROR_OBJECT_NOT_SHARED, "Object {} is not shared", self.id);
+        Ok(pointer)
+    }
+
     pub fn take_pointer(&mut self, _expect_value_type: &TypeTag) -> PartialVMResult<Value> {
+        //check_type(&self.value_type, &expect_value_type)?;
+        
         self.pointer.value.move_from()
     }
 
@@ -509,22 +519,23 @@ impl RuntimeField {
             .move_to(value)
             .expect("Move value to GlobalValue none should success");
 
-        Ok(if object::is_object_entity_type(&value_type) {
+        Ok(if field_value::is_field_value_type(&value_type) {
+            let normal = RuntimeNormalField::init(key, value_layout, value_type, global_value)?;
+            RuntimeField::Normal(normal)
+        } else {
             //The object field is new, so the state_root is the genesis state root
-            let state_root = *GENESIS_STATE_ROOT;
+            let object_id = key.as_object_id().map_err(|e| {
+                partial_extension_error(format!("expect object id, but got {:?}, {:?}", key, e))
+            })?;
+            let metadata = ObjectMeta::genesis_meta(object_id);
             let object = RuntimeObject::init(
-                key.as_object_id().map_err(|e| {
-                    partial_extension_error(format!("expect object id, but got {:?}, {:?}", key, e))
-                })?,
+                object_id,
                 value_layout,
                 value_type,
                 global_value,
-                state_root,
+                metadata,
             )?;
             RuntimeField::Object(object)
-        } else {
-            let normal = RuntimeNormalField::init(key, value_layout, value_type, global_value)?;
-            RuntimeField::Normal(normal)
         })
     }
 

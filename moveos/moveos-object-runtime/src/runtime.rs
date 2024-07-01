@@ -21,7 +21,7 @@ use move_core_types::{
     vm_status::StatusCode,
 };
 use move_vm_types::values::{GlobalValue, Value};
-use moveos_types::moveos_std::object::TimestampObject;
+use moveos_types::moveos_std::{object::TimestampObject, timestamp};
 use moveos_types::moveos_std::timestamp::Timestamp;
 use moveos_types::{
     moveos_std::{
@@ -44,8 +44,17 @@ use std::{collections::BTreeMap, sync::Arc};
 /// Ensure the error codes in this file is consistent with the error code in object.move
 pub const ERROR_ALREADY_EXISTS: u64 = 1;
 pub const ERROR_NOT_FOUND: u64 = 2;
+pub const ERROR_INVALID_OWNER_ADDRESS: u64 = 3;
+pub const ERROR_OBJECT_OWNER_NOT_MATCH: u64 = 4;
+pub const ERROR_OBJECT_NOT_SHARED: u64 = 5;
+pub const ERROR_OBJECT_IS_BOUND: u64 = 6;
 pub const ERROR_OBJECT_ALREADY_BORROWED: u64 = 7;
+pub const ERROR_FIELDS_NOT_EMPTY: u64 = 8;
+pub const ERROR_OBJECT_FROZEN: u64 = 9;
 pub const ERROR_TYPE_MISMATCH: u64 = 10;
+pub const ERROR_CHILD_OBJECT_TOO_DEEP: u64 = 11;
+pub const ERROR_WITHOUT_PARENT: u64 = 12;
+pub const ERROR_PARENT_NOT_MATCH: u64 = 13;
 pub const ERROR_OBJECT_RUNTIME_ERROR: u64 = 14;
 pub const ERROR_OBJECT_ALREADY_TAKEN_OUT: u64 = 15;
 
@@ -132,44 +141,34 @@ impl ObjectRuntime {
                     e
                 ))
             })?;
-        let (state_root, global_value) = match state {
+        let (metadata,global_value) = match state {
             Some(state) => {
-                let obj = state.into_object::<ModuleStore>().map_err(|e| {
-                    partial_extension_error(format!(
-                        "Failed to resolve module store object: {:?}",
-                        e
-                    ))
-                })?;
-                let state_root = obj.state_root();
-                let value = obj.to_runtime_value();
-                // If we load the module store object, we should cache it
-                (
-                    state_root,
-                    GlobalValue::cached(value)
-                        .expect("Cache the ModuleStore Object should success"),
-                )
+                let module_store = ModuleStore::from_bytes(&state.value.value)?;
+                let value = module_store.to_runtime_value();
+                (state.metadata(), GlobalValue::cached(value)
+                        .expect("Cache the ModuleStore Object should success"))
             }
             None => {
                 // If the module store object is not found, we should create a new one(before genesis).
                 // Init none GlobalValue and move value to it, make the data status is dirty
                 // The change will apart of the state change set
                 let obj = ModuleStoreObject::genesis_module_store();
-                let state_root = obj.state_root();
-                let value = obj.to_runtime_value();
+                
+                let value = obj.value.to_runtime_value();
                 let mut global_value = GlobalValue::none();
                 global_value
                     .move_to(value)
                     .expect("Move value to GlobalValue none should success");
-                (state_root, global_value)
+                (obj.metadata(), global_value)
             }
         };
-        debug!("Init module store object with state_root: {}", state_root);
+        debug!("Init module store object with state_root: {}", metadata.state_root());
         let module_store_runtime = RuntimeObject::init(
             module_store_id.clone(),
-            ObjectEntity::<ModuleStore>::type_layout(),
-            ObjectEntity::<ModuleStore>::type_tag(),
+            ModuleStore::type_layout(),
+            ModuleStore::type_tag(),
             global_value,
-            state_root,
+            metadata,
         )?;
         self.root.fields.insert(
             module_store_id.to_key(),
@@ -194,16 +193,13 @@ impl ObjectRuntime {
                     e
                 ))
             })?;
-        let (state_root, global_value) = match state {
+        let (metadata, global_value) = match state {
             Some(state) => {
-                let obj = state.into_object::<Timestamp>().map_err(|e| {
-                    partial_extension_error(format!("Failed to resolve timestamp object: {:?}", e))
-                })?;
-                let state_root = obj.state_root();
-                let value = obj.to_runtime_value();
+                let timestamp = Timestamp::from_bytes(&state.value.value)?;
+                let value = timestamp.to_runtime_value();
                 // If we load the timestamp object, we should cache it
                 (
-                    state_root,
+                    state.metadata(),
                     GlobalValue::cached(value).expect("Cache the Timestamp Object should success"),
                 )
             }
@@ -212,22 +208,22 @@ impl ObjectRuntime {
                 // Init none GlobalValue and move value to it, make the data status is dirty
                 // The change will apart of the state change set
                 let obj = TimestampObject::genesis_timestamp();
-                let state_root = obj.state_root();
-                let value = obj.to_runtime_value();
+                
+                let value = obj.value.to_runtime_value();
                 let mut global_value = GlobalValue::none();
                 global_value
                     .move_to(value)
                     .expect("Move value to GlobalValue none should success");
-                (state_root, global_value)
+                (obj.metadata(), global_value)
             }
         };
-        debug!("Init timestamp object with state_root: {}", state_root);
+        debug!("Init timestamp object with state_root: {}", metadata.state_root());
         let timestamp_runtime = RuntimeObject::init(
             timestamp_id.clone(),
-            ObjectEntity::<Timestamp>::type_layout(),
-            ObjectEntity::<Timestamp>::type_tag(),
+            Timestamp::type_layout(),
+            Timestamp::type_tag(),
             global_value,
-            state_root,
+            metadata,
         )?;
         self.root.fields.insert(
             timestamp_id.to_key(),
@@ -259,38 +255,24 @@ impl ObjectRuntime {
 
         if !package_obj_exists {
             let obj = PackageObject::new_package(address, package_owner);
-            let state_root = obj.state_root();
-            let value = obj.to_runtime_value();
+            let value = obj.value.to_runtime_value();
             let mut global_value = GlobalValue::none();
             global_value
                 .move_to(value)
                 .expect("Move value to GlobalValue none should success");
             let package_runtime = RuntimeObject::init(
                 package_obj_id.clone(),
-                ObjectEntity::<Package>::type_layout(),
-                ObjectEntity::<Package>::type_tag(),
+                Package::type_layout(),
+                Package::type_tag(),
                 global_value,
-                state_root,
+                obj.metadata(),
             )?;
             module_store_obj.fields.insert(
                 package_obj_id.to_key(),
                 RuntimeField::Object(package_runtime),
             );
             // Increase the size of module store, as we create a new package.
-            let module_store_obj_value = module_store_obj.value.move_from()?;
-            let mut module_store_obj_entity = ObjectEntity::<ModuleStore>::from_runtime_value(
-                module_store_obj_value,
-            )
-            .map_err(|e| {
-                PartialVMError::new(StatusCode::TYPE_MISMATCH)
-                    .with_message(format!("expect ObjectEntity<ModuleStore>, but got {:?}", e))
-            })?;
-            module_store_obj_entity.size += 1;
-            let module_store_obj_value = module_store_obj_entity.to_runtime_value();
-            module_store_obj
-                .value
-                .move_to(module_store_obj_value)
-                .map_err(|(e, _)| e)?;
+            module_store_obj.metadata.size += 1;
         };
         let (package_obj, _) =
             module_store_obj.load_object_field(layout_loader, resolver, &package_obj_id)?;
