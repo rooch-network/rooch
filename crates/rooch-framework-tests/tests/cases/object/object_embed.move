@@ -24,7 +24,10 @@ module test::m {
     public fun unpack_and_tranfer(){
         let (_,obj) = object::take_object_extend<TestContainer>(object::named_object_id<TestContainer>());
         let TestContainer{inner_obj} = object::remove(obj);
+        let inner_obj_id = object::id(&inner_obj);
         object::transfer(inner_obj, moveos_std::tx_context::sender());
+        //borrow the obj again
+        let _obj_mut = object::borrow_mut_object_extend<TestStruct>(inner_obj_id);
     }
 
 }

@@ -1160,4 +1160,16 @@ module moveos_std::object {
         let TestContainer{inner_obj} = remove(container_obj);
         transfer_extend(inner_obj, @moveos_std);
     }
+
+    #[test]
+    #[expected_failure(abort_code = ErrorObjectAlreadyTakenOut, location = Self)]
+    fun test_borrow_embed_object_failed(){
+        let obj = new(TestStruct { count: 1 });
+        let id = id(&obj);
+        let container = TestContainer {
+            inner_obj: obj,
+        };
+        transfer_extend(new(container), @moveos_std);
+        let _obj_ref = borrow_object<TestStruct>(id);
+    }
 }
