@@ -48,8 +48,8 @@ fn random_new_object_states() -> Result<Vec<IndexerObjectState>> {
     let mut state_index = 0u64;
     let mut rng = thread_rng();
     for n in 0..rng.gen_range(1..=10) {
-        let state = IndexerObjectState::new_from_raw_object(
-            random_table_object()?.to_raw(),
+        let state = IndexerObjectState::new_from_object_state(
+            random_table_object()?.into_state(),
             n as u64,
             state_index,
         );
@@ -193,14 +193,14 @@ fn test_object_type_query() -> Result<()> {
         object_id.clone(),
         owner,
         0,
-        H256::random(),
+        Some(H256::random()),
         0,
         0,
         0,
         CoinStore::<GasCoin>::new(100u64.into(), false),
     );
-    let raw_obj = coin_store_obj.to_raw();
-    let state = IndexerObjectState::new_from_raw_object(raw_obj, 1, 0);
+    let raw_obj = coin_store_obj.into_state();
+    let state = IndexerObjectState::new_from_object_state(raw_obj, 1, 0);
     let object_states = vec![state];
     indexer_store.persist_or_update_object_states(object_states.clone())?;
     // filter by exact object type

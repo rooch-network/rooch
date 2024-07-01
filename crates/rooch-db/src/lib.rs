@@ -5,7 +5,7 @@ use std::collections::HashSet;
 
 use anyhow::Result;
 use moveos_store::MoveOSStore;
-use moveos_types::moveos_std::object::RootObjectEntity;
+use moveos_types::state::ObjectState;
 use raw_store::{rocks::RocksDB, StoreInstance};
 use rooch_config::store_config::StoreConfig;
 use rooch_indexer::{indexer_reader::IndexerReader, IndexerStore};
@@ -58,7 +58,7 @@ impl RoochDB {
         })
     }
 
-    pub fn latest_root(&self) -> Result<Option<RootObjectEntity>> {
+    pub fn latest_root(&self) -> Result<Option<ObjectState>> {
         let startup_info = self.moveos_store.config_store.get_startup_info()?;
 
         Ok(startup_info.map(|s| s.into_root_object()))

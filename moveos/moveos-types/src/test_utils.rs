@@ -5,10 +5,10 @@ use crate::{
     move_types::{random_identity, random_struct_tag, random_type_tag, FunctionId},
     moveos_std::{
         event::{Event, EventID},
-        object::{ObjectEntity, ObjectID, RawData, RawObject, GENESIS_STATE_ROOT},
+        object::{ObjectEntity, ObjectID, ObjectMeta, GENESIS_STATE_ROOT},
         table::TablePlaceholder,
     },
-    state::{FieldChange, KeyState, NormalFieldChange, ObjectChange, State, StateChangeSet},
+    state::{FieldKey, ObjectChange, ObjectState, StateChangeSet},
     transaction::{FunctionCall, MoveAction, ScriptCall, VerifiedMoveAction},
 };
 use anyhow::Result;
@@ -232,69 +232,38 @@ pub fn random_event() -> Event {
     }
 }
 
-pub fn random_op(value_type: TypeTag) -> Op<State> {
-    let mut rng = thread_rng();
-    let n = rng.gen_range(1..=100);
-    if n % 3 == 0 {
-        Op::New(State::new(random_bytes(), value_type))
-    } else if n % 2 == 0 {
-        Op::Modify(State::new(random_bytes(), value_type))
-    } else {
-        Op::Delete
-    }
+pub fn random_field_change(level: usize) -> (FieldKey, ObjectChange) {
+    let (object_id, change) = random_object_change(level + 1);
+    (object_id.field_key(), change)
 }
 
-pub fn random_normal_field_change() -> (KeyState, NormalFieldChange) {
-    (
-        KeyState::new(random_bytes(), random_type_tag()),
-        NormalFieldChange {
-            op: random_op(random_type_tag()),
-        },
-    )
-}
-
-pub fn random_field_change(level: usize) -> (KeyState, FieldChange) {
-    let mut rng = thread_rng();
-    let n = rng.gen_range(1..=100);
-    //ensure do not generate too deep nested object
-    if level > 2 || n % 2 == 0 {
-        let (key, change) = random_normal_field_change();
-        (key, FieldChange::Normal(change))
-    } else {
-        let (id, change) = random_object_change(level + 1);
-        (id.to_key(), FieldChange::Object(change))
-    }
-}
-
-pub fn random_raw_object() -> RawObject {
+pub fn random_raw_object() -> ObjectState {
     let id = ObjectID::from(AccountAddress::random());
-    internal_random_raw_object(id)
+    internal_random_object_state(id)
 }
 
-pub fn random_raw_object_with_object_id(object_id: ObjectID) -> RawObject {
-    internal_random_raw_object(object_id)
+pub fn random_raw_object_with_object_id(object_id: ObjectID) -> ObjectState {
+    internal_random_object_state(object_id)
 }
 
-pub fn random_raw_object_for_child_object(parent_id: ObjectID) -> RawObject {
-    let id = ObjectID::new_with_child(parent_id, AccountAddress::random());
-    internal_random_raw_object(id)
+pub fn random_raw_object_for_child_object(parent_id: ObjectID) -> ObjectState {
+    let id = parent_id.child_id(FieldKey::random());
+    internal_random_object_state(id)
 }
 
-fn internal_random_raw_object(id: ObjectID) -> RawObject {
+fn internal_random_object_state(id: ObjectID) -> ObjectState {
     let owner = AccountAddress::random();
     let flag = 0u8;
-    let state_root = *GENESIS_STATE_ROOT;
+    let state_root = Some(*GENESIS_STATE_ROOT);
     let size = 0;
     let value = random_bytes();
     let created_at = 0;
     let updated_at = 0;
-    let raw_data = RawData {
-        struct_tag: random_struct_tag(),
-        value,
-    };
-    RawObject::new(
-        id, owner, flag, state_root, size, created_at, updated_at, raw_data,
-    )
+    let value_type = TypeTag::Struct(Box::new(random_struct_tag()));
+    let metadata = ObjectMeta::new(
+        id, owner, flag, state_root, size, created_at, updated_at, value_type,
+    );
+    ObjectState::new(metadata, value)
 }
 
 pub fn random_object_change(level: usize) -> (ObjectID, ObjectChange) {
@@ -318,17 +287,19 @@ pub fn random_object_change_for_child_object(
     internal_random_object_change(raw_object, level)
 }
 
-fn internal_random_object_change(raw_object: RawObject, level: usize) -> (ObjectID, ObjectChange) {
-    let mut object_change = ObjectChange::default();
-
-    let object_id = raw_object.id.clone();
-    object_change.op = Some(Op::New(raw_object.into_state()));
+fn internal_random_object_change(
+    object_state: ObjectState,
+    level: usize,
+) -> (ObjectID, ObjectChange) {
+    let object_id = object_state.id().clone();
+    let mut object_change = ObjectChange::new(object_state.metadata, Op::New(object_state.value));
 
     let mut rng = thread_rng();
-
-    for _n in 0..rng.gen_range(1..=10) {
-        let (key, change) = random_field_change(level + 1);
-        object_change.fields.insert(key, change);
+    if level <= 2 {
+        for _n in 0..rng.gen_range(1..=5) {
+            let (key, change) = random_field_change(level + 1);
+            object_change.fields.insert(key, change);
+        }
     }
     (object_id, object_change)
 }
@@ -337,13 +308,13 @@ pub fn random_state_change_set() -> StateChangeSet {
     let mut state_change_set = StateChangeSet::default();
 
     let mut rng = thread_rng();
-    let size = rng.gen_range(1..=20);
-    state_change_set.global_size = size;
+    let size = rng.gen_range(1..=2);
+    state_change_set.root_metadata.size = size;
 
     // generate changes
     for _n in 0..size {
         let (id, change) = random_object_change(1);
-        state_change_set.changes.insert(id, change);
+        state_change_set.changes.insert(id.field_key(), change);
     }
 
     state_change_set
@@ -354,18 +325,19 @@ pub fn random_state_change_set_for_child_object(parent_id: ObjectID) -> StateCha
 
     let mut rng = thread_rng();
     let size = rng.gen_range(1..=20);
-    state_change_set.global_size = size + 1;
+
+    state_change_set.root_metadata.size = size;
 
     let (_parent_id, parent_object_change) =
         random_object_change_with_object_id(parent_id.clone(), 1);
     state_change_set
         .changes
-        .insert(parent_id.clone(), parent_object_change);
+        .insert(parent_id.field_key(), parent_object_change);
 
     // generate changes
     for _n in 0..size {
         let (id, change) = random_object_change_for_child_object(parent_id.clone(), 1);
-        state_change_set.changes.insert(id, change);
+        state_change_set.changes.insert(id.field_key(), change);
     }
 
     state_change_set

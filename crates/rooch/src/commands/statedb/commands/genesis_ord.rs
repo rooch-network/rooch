@@ -27,7 +27,7 @@ use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::{
     ObjectEntity, ObjectID, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
 };
-use moveos_types::state::{KeyState, MoveState, MoveType, State};
+use moveos_types::state::{FieldKey, ObjectState};
 use rooch_common::fs::file_cache::FileCacheManager;
 use rooch_common::utils::humanize;
 use rooch_config::R_OPT_NET_HELP;
@@ -133,7 +133,7 @@ impl GenesisOrdCommand {
         // 1. init import job
         let (root, moveos_store, start_time) =
             init_genesis_job(self.base_data_dir.clone(), self.chain_id.clone());
-        let pre_root_state_root = H256::from(root.state_root.into_bytes());
+        let pre_root_state_root = root.state_root();
 
         let utxo_ord_map_existed = self.utxo_ord_map.exists();
         if utxo_ord_map_existed {
@@ -164,7 +164,7 @@ impl GenesisOrdCommand {
             utxo_ord_map.clone(),
             moveos_store.clone(),
             startup_update_set.clone(),
-            root.size,
+            root.size(),
             pre_root_state_root,
             start_time,
         );
@@ -175,7 +175,7 @@ impl GenesisOrdCommand {
     fn import_ord(
         self,
         moveos_store: Arc<MoveOSStore>,
-        startup_update_set: UpdateSet<KeyState, State>,
+        startup_update_set: UpdateSet<FieldKey, ObjectState>,
     ) {
         let input_path = self.ord_source.clone();
         let batch_size = self.ord_batch_size.unwrap();
@@ -257,7 +257,7 @@ fn import_utxo(
     batch_size: usize,
     utxo_ord_map_db: Arc<Database>,
     moveos_store: Arc<MoveOSStore>,
-    startup_update_set: UpdateSet<KeyState, State>,
+    startup_update_set: UpdateSet<FieldKey, ObjectState>,
     root_size: u64,
     root_state_root: H256,
     startup_time: SystemTime,
@@ -283,7 +283,7 @@ fn import_utxo(
 fn apply_ord_updates_to_state(
     rx: Receiver<BatchUpdatesOrd>,
     moveos_store_arc: Arc<MoveOSStore>,
-    startup_update_set: UpdateSet<KeyState, State>,
+    startup_update_set: UpdateSet<FieldKey, ObjectState>,
 ) {
     let mut inscription_store_state_root = *GENESIS_STATE_ROOT;
     let mut last_inscription_store_state_root = inscription_store_state_root;
@@ -357,7 +357,7 @@ fn apply_ord_updates_to_state(
 }
 
 fn update_startup_ord(
-    mut startup_update_set: UpdateSet<KeyState, State>,
+    mut startup_update_set: UpdateSet<FieldKey, ObjectState>,
     ord_store_state_root: H256,
     inscription_ids_state_root: H256,
     ord_count: u32,
@@ -372,7 +372,7 @@ fn update_startup_ord(
         (cursed_inscription_count + blessed_inscription_count) as u64,
     );
     inscriptions_update_set.put(
-        inscription_ids_content_table.clone().id.to_key(),
+        inscription_ids_content_table.clone().id.field_key(),
         inscription_ids_content_table.clone().into_state(),
     );
 
@@ -381,14 +381,14 @@ fn update_startup_ord(
         inscription_ids_table_vec_obj_id.clone(),
         SYSTEM_OWNER_ADDRESS,
         SHARED_OBJECT_FLAG_MASK,
-        *GENESIS_STATE_ROOT,
+        None,
         0,
         0,
         0,
         inscription_ids_content_table.id,
     );
     startup_update_set.put(
-        inscription_ids_table_vec.id.to_key(),
+        inscription_ids_table_vec.id.field_key(),
         inscription_ids_table_vec.into_state(),
     );
 
@@ -399,17 +399,17 @@ fn update_startup_ord(
         ord_count,
     );
     genesis_inscription_store_object.size += ord_count as u64;
-    genesis_inscription_store_object.state_root = ord_store_state_root.into_address();
+    genesis_inscription_store_object.state_root = Some(ord_store_state_root);
     let parent_id = InscriptionStore::object_id();
     startup_update_set.put(
-        parent_id.to_key(),
+        parent_id.field_key(),
         genesis_inscription_store_object.into_state(),
     );
 }
 
 struct BatchUpdatesOrd {
-    ord_updates: UpdateSet<KeyState, State>,
-    inscription_ids_updates: UpdateSet<KeyState, State>,
+    ord_updates: UpdateSet<FieldKey, ObjectState>,
+    inscription_ids_updates: UpdateSet<FieldKey, ObjectState>,
     cursed_inscription_count: u32,
     blessed_inscription_count: u32,
 
@@ -472,13 +472,17 @@ fn produce_ord_updates(tx: SyncSender<BatchUpdatesOrd>, input: PathBuf, batch_si
     drop(tx);
 }
 
-fn gen_inscription_ids_update(index: u64, inscription_id: InscriptionID) -> (KeyState, State) {
-    let key = bcs::to_bytes(&index).expect("bcs to_bytes u64 must success.");
-    let key_state = KeyState::new(key, u64::type_tag());
-
-    let state = inscription_id.into_state();
-
-    (key_state, state)
+fn gen_inscription_ids_update(
+    index: u64,
+    inscription_id: InscriptionID,
+) -> (FieldKey, ObjectState) {
+    //let key = bcs::to_bytes(&index).expect("bcs to_bytes u64 must success.");
+    //TODO we need to get the TableVec object id from args
+    let parent_id = ObjectID::random();
+    let field = ObjectEntity::new_dynamic_field(parent_id, index, inscription_id);
+    let state = field.into_state();
+    let key = state.id().field_key();
+    (key, state)
 }
 
 impl InscriptionSource {
@@ -533,29 +537,20 @@ impl InscriptionSource {
     }
 }
 
-fn gen_ord_update(src: InscriptionSource) -> Result<(KeyState, State, InscriptionID)> {
+fn gen_ord_update(src: InscriptionSource) -> Result<(FieldKey, ObjectState, InscriptionID)> {
     let inscription = src.clone().to_inscription();
     let address = src.clone().get_rooch_address()?;
 
     let inscription_id = InscriptionID::new(inscription.txid, inscription.index);
     let obj_id = derive_inscription_id(&inscription_id);
-    let ord_obj = ObjectEntity::new(
-        obj_id.clone(),
-        address,
-        0u8,
-        *GENESIS_STATE_ROOT,
-        0,
-        0,
-        0,
-        inscription,
-    );
+    let ord_obj = ObjectEntity::new(obj_id.clone(), address, 0u8, None, 0, 0, 0, inscription);
 
     let satpoint_output_str = src.satpoint_outpoint.clone();
     let satpoint_output = OutPoint::from_str(satpoint_output_str.as_str()).unwrap();
 
     let _ = is_unbound_outpoint(satpoint_output); // TODO may count it later
 
-    Ok((ord_obj.id.to_key(), ord_obj.into_state(), inscription_id))
+    Ok((ord_obj.id.field_key(), ord_obj.into_state(), inscription_id))
 }
 
 fn convert_option_string_to_move_type(opt: Option<String>) -> MoveOption<MoveString> {
@@ -601,7 +596,7 @@ fn create_genesis_inscription_store_object(
         obj_id,
         SYSTEM_OWNER_ADDRESS,
         SHARED_OBJECT_FLAG_MASK,
-        *GENESIS_STATE_ROOT,
+        None,
         0,
         0,
         0,

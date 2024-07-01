@@ -6,7 +6,9 @@ use anyhow::ensure;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use move_core_types::u256::U256;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
-use moveos_types::state::{MoveState, MoveStructState, MoveStructType, PlaceholderStruct, State};
+use moveos_types::state::{
+    MoveState, MoveStructState, MoveStructType, ObjectState, PlaceholderStruct,
+};
 use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("coin_store");
@@ -155,11 +157,11 @@ impl CoinStoreInfo {
     }
 }
 
-impl TryFrom<State> for CoinStoreInfo {
+impl TryFrom<ObjectState> for CoinStoreInfo {
     type Error = anyhow::Error;
 
-    fn try_from(state: State) -> Result<Self, Self::Error> {
-        let raw_object = state.as_raw_object()?;
+    fn try_from(state: ObjectState) -> Result<Self, Self::Error> {
+        let raw_object = state.into_raw_object()?;
         ensure!(
             CoinStore::<PlaceholderStruct>::struct_tag_match_without_type_param(
                 &raw_object.value.struct_tag

@@ -45,9 +45,8 @@ module basic_object::child_object{
 
     public fun remove_child(child: Object<Child>){
         remove_child_property<u64>(&mut child, std::string::utf8(b"age"));
-        let parent_obj = borrow_mut_parent();
         let id = object::id(&child);
-        let Child{ sequencer, name:_ } = object::remove_object_field(parent_obj, child);
+        let Child{ sequencer, name:_ } = object::remove(child);
         moveos_std::event::emit(ChildRemovedEvent{id:id, sequencer:sequencer});
     }
 

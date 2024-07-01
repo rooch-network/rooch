@@ -211,7 +211,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     info!(
         "The latest Root object state root: {:?}, size: {}",
         root.state_root(),
-        root.size
+        root.size()
     );
 
     let executor_actor =

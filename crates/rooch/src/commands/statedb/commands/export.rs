@@ -174,9 +174,7 @@ impl ExportCommand {
         let mut writer = writer_builder.from_path(file_name).map_err(|e| {
             RoochError::from(anyhow::Error::msg(format!("Invalid output path: {}", e)))
         })?;
-        let root_state_root = self
-            .state_root
-            .unwrap_or(H256::from(root.state_root.into_bytes()));
+        let root_state_root = self.state_root.unwrap_or(root.state_root());
 
         let mode = ExportMode::try_from(self.mode.unwrap_or(ExportMode::Genesis.to_num()))?;
         match mode {
@@ -229,29 +227,30 @@ impl ExportCommand {
             rooch_to_bitcoin_address_mapping_id,
         ];
 
-        let mut genesis_objects = vec![];
+        //let mut genesis_objects = vec![];
         let mut genesis_states = vec![];
         for object_id in genesis_object_ids.into_iter() {
             let state = moveos_store
-                .get_field_at(root_state_root, &object_id.to_key())?
+                .get_field_at(root_state_root, &object_id.field_key())?
                 .expect("state should exist.");
-            let object = state.clone().as_raw_object()?;
-            genesis_states.push((object_id.to_key(), state));
-            genesis_objects.push(object);
+            //TODO
+            //let object = state.clone().as_raw_object()?;
+            genesis_states.push((object_id.field_key(), state));
+            //genesis_objects.push(object);
         }
 
         // write csv field states
-        for obj in genesis_objects.into_iter() {
-            Self::export_field_states(
-                moveos_store,
-                H256::from(obj.state_root.into_bytes()),
-                root_state_root,
-                obj.id,
-                false,
-                true,
-                writer,
-            )?;
-        }
+        // for obj in genesis_objects.into_iter() {
+        //     Self::export_field_states(
+        //         moveos_store,
+        //         H256::from(obj.state_root.into_bytes()),
+        //         root_state_root,
+        //         obj.id,
+        //         false,
+        //         true,
+        //         writer,
+        //     )?;
+        // }
 
         // write csv object states.
         {
@@ -261,9 +260,10 @@ impl ExportCommand {
             writer.write_field(root_export_id.to_string())?;
             writer.write_record(None::<&[u8]>)?;
         }
-        for (k, v) in genesis_states.into_iter() {
+        for (k, _v) in genesis_states.into_iter() {
             writer.write_field(k.to_string())?;
-            writer.write_field(v.to_string())?;
+            //TODO write ObjectState csv
+            //writer.write_field(v.to_string())?;
             writer.write_record(None::<&[u8]>)?;
         }
 
@@ -282,13 +282,12 @@ impl ExportCommand {
     ) -> Result<()> {
         println!("export_object object_id: {:?}", object_id);
 
-        let state = moveos_store
-            .get_field_at(root_state_root, &object_id.to_key())?
+        let obj = moveos_store
+            .get_field_at(root_state_root, &object_id.field_key())?
             .expect("state should exist.");
-        let obj = state.clone().as_raw_object()?;
 
-        let state_root = H256::from(obj.state_root.into_bytes());
-        let timestamp = obj.updated_at;
+        let state_root = obj.state_root();
+        let timestamp = obj.updated_at();
         // write csv field states
         Self::export_field_states(
             moveos_store,
@@ -308,8 +307,9 @@ impl ExportCommand {
             writer.write_field(export_id.to_string())?;
             writer.write_record(None::<&[u8]>)?;
         }
-        writer.write_field(object_id.to_key().to_string())?;
-        writer.write_field(state.to_string())?;
+        writer.write_field(object_id.field_key().to_string())?;
+        //TODO
+        //writer.write_field(obj.to_string())?;
         writer.write_record(None::<&[u8]>)?;
 
         // flush csv writer
@@ -334,31 +334,32 @@ impl ExportCommand {
 
         let mut iter = moveos_store
             .get_state_store()
-            .iter(state_root, starting_key.clone())?;
+            .iter(state_root, starting_key)?;
 
         if is_recursive_export_child_field && object_id.has_child() {
             for item in iter {
-                let (_k, v) = item?;
-                if v.is_object() {
-                    let object = v.clone().as_raw_object()?;
-                    if object.size > 0 {
-                        Self::export_field_states(
-                            moveos_store,
-                            H256::from(object.state_root.into_bytes()),
-                            state_root,
-                            object.id,
-                            false,
-                            false,
-                            writer,
-                        )?;
-                    }
-                }
+                let (_k, _v) = item?;
+                //TODO
+                // if v.is_object() {
+                //     let object = v.clone().as_raw_object()?;
+                //     if object.size > 0 {
+                //         Self::export_field_states(
+                //             moveos_store,
+                //             object.state_root(),
+                //             state_root,
+                //             object.id,
+                //             false,
+                //             false,
+                //             writer,
+                //         )?;
+                //     }
+                // }
             }
 
             // seek from starting_key
             iter = moveos_store
                 .get_state_store()
-                .iter(state_root, starting_key.clone())?;
+                .iter(state_root, starting_key)?;
         }
 
         // write csv header.
@@ -375,9 +376,10 @@ impl ExportCommand {
         }
 
         for item in iter {
-            let (k, v) = item?;
+            let (k, _v) = item?;
             writer.write_field(k.to_string())?;
-            writer.write_field(v.to_string())?;
+            //TODO
+            //writer.write_field(v.to_string())?;
             writer.write_record(None::<&[u8]>)?;
 
             count += 1;
@@ -405,29 +407,30 @@ impl ExportCommand {
 
         let genesis_object_ids = vec![utxo_store_id.clone(), inscription_store_id.clone()];
 
-        let mut genesis_objects = vec![];
+        //let mut genesis_objects = vec![];
         let mut genesis_states = vec![];
         for object_id in genesis_object_ids.into_iter() {
             let state = moveos_store
-                .get_field_at(root_state_root, &object_id.to_key())?
+                .get_field_at(root_state_root, &object_id.field_key())?
                 .expect("state should exist.");
-            let object = state.clone().as_raw_object()?;
-            genesis_states.push((object_id.to_key(), state));
-            genesis_objects.push(object);
+            //let object = state.clone().as_raw_object()?;
+            genesis_states.push((object_id.field_key(), state));
+            //genesis_objects.push(object);
         }
 
         // write csv field states
-        for obj in genesis_objects.into_iter() {
-            Self::export_field_states(
-                moveos_store,
-                H256::from(obj.state_root.into_bytes()),
-                root_state_root,
-                obj.id,
-                true,
-                false,
-                writer,
-            )?;
-        }
+        //TODO
+        // for obj in genesis_objects.into_iter() {
+        //     Self::export_field_states(
+        //         moveos_store,
+        //         H256::from(obj.state_root.into_bytes()),
+        //         root_state_root,
+        //         obj.id,
+        //         true,
+        //         false,
+        //         writer,
+        //     )?;
+        // }
 
         // write csv object states.
         {
@@ -437,9 +440,10 @@ impl ExportCommand {
             writer.write_field(root_export_id.to_string())?;
             writer.write_record(None::<&[u8]>)?;
         }
-        for (k, v) in genesis_states.into_iter() {
+        for (k, _v) in genesis_states.into_iter() {
             writer.write_field(k.to_string())?;
-            writer.write_field(v.to_string())?;
+            //TODO
+            //writer.write_field(v.to_string())?;
             writer.write_record(None::<&[u8]>)?;
         }
 

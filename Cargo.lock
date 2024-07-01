@@ -7172,6 +7172,7 @@ dependencies = [
  "sha3 0.10.8",
  "smallvec 1.13.2",
  "smt",
+ "tracing",
 ]
 
 [[package]]

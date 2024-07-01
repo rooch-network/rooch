@@ -4,7 +4,8 @@
 use bitcoin::OutPoint;
 use chrono::{DateTime, Local};
 use moveos_store::MoveOSStore;
-use moveos_types::moveos_std::object::{ObjectID, RootObjectEntity};
+use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::state::ObjectState;
 use redb::{ReadOnlyTable, TableDefinition};
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
@@ -37,7 +38,7 @@ const UTXO_ORD_MAP_TABLE: TableDefinition<&[u8], &[u8]> = TableDefinition::new("
 pub fn init_genesis_job(
     base_data_dir: Option<PathBuf>,
     chain_id: Option<RoochChainID>,
-) -> (RootObjectEntity, MoveOSStore, SystemTime) {
+) -> (ObjectState, MoveOSStore, SystemTime) {
     let start_time = SystemTime::now();
     let datetime: DateTime<Local> = start_time.into();
 
