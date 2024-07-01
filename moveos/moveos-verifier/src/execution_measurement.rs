@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use better_any::{Tid, TidAble};
 use move_command_line_common::address::NumericalAddress;
 use move_compiler::parser::ast as P;
 use move_compiler::parser::ast::Exp_::Call;
@@ -20,6 +21,12 @@ use move_symbol_pool::symbol::Symbol;
 use std::ops::Deref;
 use std::path::Path;
 use P::ModuleMember as PM;
+
+#[derive(Default, Tid)]
+pub struct NativeExecutionTracing {
+    pub calling_depth: u64,
+    pub log: Vec<String>,
+}
 
 fn filter_module_member(
     module_member: P::ModuleMember,

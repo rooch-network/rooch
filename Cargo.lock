@@ -7131,6 +7131,7 @@ version = "0.5.6"
 dependencies = [
  "anyhow",
  "bcs",
+ "better_any",
  "codespan-reporting",
  "itertools 0.13.0",
  "log",
