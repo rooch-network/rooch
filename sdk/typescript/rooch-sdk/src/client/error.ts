@@ -1,22 +1,34 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { SubStatus } from '../utils/index.js'
+export const ErrorValidateSequenceNuberTooOld = 1001
+export const ErrorValidateSequenceNumberTooNew = 1002
+export const ErrorValidateAccountDoesNotExist = 1003
+export const ErrorValidateCantPayGasDeposit = 1004
+export const ErrorValidateTransactionExpired = 1005
+export const ErrorValidateBadChainId = 1006
+export const ErrorValidateSequenceNumberTooBig = 1007
+export const ErrorValidateMaxGasAmountExceeded = 1008
+export const ErrorValidateInvalidAccountAuthKey = 1009
+export const ErrorValidateInvalidAuthenticator = 1010
+export const ErrorValidateNotInstalledAuthValidator = 1011
+export const ErrorValidateSessionIsExpired = 1012
+export const ErrorValidateFunctionCallBeyondSessionScope = 1013
 
 const CODE_TO_ERROR_TYPE: Record<number, string> = {
-  // 0x1: 'INVALID_ARGUMENT', // Caller specified an invalid argument (http: 400)
-  // 0x2: 'OUT_OF_RANGE', // An input or result of a computation is out of range (http: 400)
-  // 0x3: 'INVALID_STATE', // The system is not in a state where the operation can be performed (http: 400)
-  // 0x4: 'UNAUTHENTICATED', // Request not authenticated due to missing, invalid, or expired auth token (http: 401)
-  // 0x5: 'PERMISSION_DENIED', // Client does not have sufficient permission (http: 403)
-  // 0x6: 'NOT_FOUND', // A specified resource is not found (http: 404)
-  // 0x7: 'ABORTED', // Concurrency conflict, such as read-modify-write conflict (http: 409)
-  // 0x8: 'ALREADY_EXISTS', // The resource that a client tried to create already exists (http: 409)
-  // 0x9: 'RESOURCE_EXHAUSTED', // Out of gas or other forms of quota (http: 429)
-  // 0xa: 'CANCELLED', // Request cancelled by the client (http: 499)
-  // 0xb: 'INTERNAL', // Internal error (http: 500)
-  // 0xc: 'NOT_IMPLEMENTED', // Feature not implemented (http: 501)
-  // 0xd: 'UNAVAILABLE', // The service is currently unavailable. Indicates that a retry could solve the issue (http: 503)
+  1001: 'SequenceNuberTooOld',
+  1002: 'SequenceNuberTooNew',
+  1003: 'AccountDoesNotExist',
+  1004: 'CantPayGasDeposit',
+  1005: 'TransactionExpired',
+  1006: 'BadChainId',
+  1007: 'SequenceNumberTooBig',
+  1008: 'MaxGasAmountExceeded',
+  1009: 'InvalidAccountAuthKey',
+  1010: 'InvalidAuthenticator',
+  1011: 'NotInstalledAuthValidator',
+  1012: 'SessionIsExpired',
+  1013: 'CallFunctionBeyondSessionScop',
 }
 
 export class RoochHTTPTransportError extends Error {}
@@ -27,24 +39,20 @@ export class JsonRpcError extends RoochHTTPTransportError {
 
   constructor(message: string, code: number) {
     super(message)
-    this.code = code
-    this.type = CODE_TO_ERROR_TYPE[code] ?? 'ServerError'
+    const parse = this.parseSubStatus()
+    this.code = parse || code
+    this.type = CODE_TO_ERROR_TYPE[this.code] ?? 'ServerError'
   }
 
   // Parse rooch RPC error sub status from `status ABORTED of type Execution with sub status 66537`
   parse() {}
 
-  parseSubStatus(): SubStatus | null {
+  parseSubStatus(): number | null {
     const regex = /sub status (\d+)/
     const match = this.message.match(regex)
     const code = match ? parseInt(match[1]) : null
 
-    return code
-      ? {
-          category: code >> 16,
-          reason: code & 0xffff,
-        }
-      : null
+    return code ? code & 0xffff : null
   }
 }
 

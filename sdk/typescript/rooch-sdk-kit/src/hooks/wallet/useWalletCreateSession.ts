@@ -48,20 +48,14 @@ export function useCreateSessionKey({
         throw new WalletNotConnectedError('No wallet is connected.')
       }
 
-      try {
-        const sessionAccount = await client.createSession({
-          signer: currentWallet.wallet!,
-          sessionArgs: args,
-        })
+      const sessionAccount = await client.createSession({
+        signer: currentWallet.wallet!,
+        sessionArgs: args,
+      })
 
-        setCurrentSession(sessionAccount)
+      setCurrentSession(sessionAccount)
 
-        return sessionAccount
-      } catch (e: any) {
-        console.log(e.toString())
-      }
-
-      return null
+      return sessionAccount
     },
     ...mutationOptions,
   })

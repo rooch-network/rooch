@@ -8,6 +8,7 @@ export { type RoochClientOptions, isRoochClient, RoochClient } from './client.js
 export {
   type RoochTransport,
   type RoochHTTPTransportOptions,
+  type RoochTransportRequestOptions,
   type HttpHeaders,
   RoochHTTPTransport,
 } from './httpTransport.js'
