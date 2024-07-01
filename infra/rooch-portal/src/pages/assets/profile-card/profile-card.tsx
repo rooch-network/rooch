@@ -7,13 +7,13 @@ import { Avatar } from '@/components/ui/avatar'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 
 import { formatAddress } from '@/utils/format'
-import { useCurrentAccount } from '@roochnetwork/rooch-sdk-kit'
+import { useCurrentAddress } from '@roochnetwork/rooch-sdk-kit'
 // import { useNavigate } from 'react-router-dom'
 import Jazzicon, { jsNumberForAddress } from 'react-jazzicon'
 
 export const ProfileCard = () => {
   // const navigate = useNavigate()
-  const account = useCurrentAccount()
+  const account = useCurrentAddress()
 
   // TODO: handleClickCopy
   const handleClickCopy = (accountType: string) => {
@@ -27,9 +27,9 @@ export const ProfileCard = () => {
     }
 
     if (accountType === 'btc') {
-      textToCopy = account.address
+      textToCopy = account.toStr()
     } else if (accountType === 'rooch') {
-      textToCopy = account.getRoochAddress()
+      textToCopy = account.genRoochAddress().toBech32Address()
     }
 
     if (textToCopy) {
@@ -80,14 +80,14 @@ export const ProfileCard = () => {
         <div className="absolute">
           <Avatar className="hidden md:inline">
             {account ? (
-              <Jazzicon diameter={80} seed={jsNumberForAddress(`0x${account.address}`)} />
+              <Jazzicon diameter={80} seed={jsNumberForAddress(`0x${account.toStr()}`)} />
             ) : (
               <Jazzicon diameter={80} seed={10000000} />
             )}
           </Avatar>
           <Avatar className="inline md:hidden">
             {account ? (
-              <Jazzicon diameter={55} seed={jsNumberForAddress(account.address)} />
+              <Jazzicon diameter={55} seed={jsNumberForAddress(account.toStr())} />
             ) : (
               <Jazzicon diameter={55} seed={10000000} />
             )}
@@ -129,7 +129,7 @@ export const ProfileCard = () => {
                 <img src="/icon-btc.svg" alt="btc logo" className="w-4 h-4" />
               </Button>
               <span className="text-muted-foreground">
-                {account === null ? 'Wallet Address' : formatAddress(account?.address)}
+                {account === null ? 'Wallet Address' : formatAddress(account?.toStr())}
               </span>
             </div>
           </div>

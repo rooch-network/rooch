@@ -36,6 +36,10 @@ export class CallFunction {
     return this.args?.map((item) => item.encodeWithHex())
   }
 
+  encodeArgsWithUtf8(): string {
+    return ''
+  }
+
   encodeArgsToByteArrays(): u8[][] {
     return this.args.map((item) => item.encode()).map((item) => Array.from(item))
   }

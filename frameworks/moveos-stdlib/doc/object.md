@@ -45,18 +45,11 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `is_shared`](#0x2_object_is_shared)
 -  [Function `to_frozen`](#0x2_object_to_frozen)
 -  [Function `is_frozen`](#0x2_object_is_frozen)
--  [Function `is_bound`](#0x2_object_is_bound)
--  [Function `is_bound_internal`](#0x2_object_is_bound_internal)
--  [Function `to_user_owned`](#0x2_object_to_user_owned)
--  [Function `to_system_owned`](#0x2_object_to_system_owned)
--  [Function `to_system_owned_internal`](#0x2_object_to_system_owned_internal)
 -  [Function `transfer`](#0x2_object_transfer)
 -  [Function `transfer_extend`](#0x2_object_transfer_extend)
 -  [Function `id`](#0x2_object_id)
 -  [Function `owner`](#0x2_object_owner)
--  [Function `owner_internal`](#0x2_object_owner_internal)
 -  [Function `is_system_owned`](#0x2_object_is_system_owned)
--  [Function `is_user_owned_internal`](#0x2_object_is_user_owned_internal)
 -  [Function `is_user_owned`](#0x2_object_is_user_owned)
 -  [Function `add_field`](#0x2_object_add_field)
 -  [Function `add_field_internal`](#0x2_object_add_field_internal)
@@ -199,15 +192,6 @@ The type of the object or field is mismatch
 
 
 
-<a name="0x2_object_BOUND_OBJECT_FLAG_MASK"></a>
-
-
-
-<pre><code><b>const</b> <a href="object.md#0x2_object_BOUND_OBJECT_FLAG_MASK">BOUND_OBJECT_FLAG_MASK</a>: u8 = 4;
-</code></pre>
-
-
-
 <a name="0x2_object_ErrorAlreadyExists"></a>
 
 The Object or dynamic field already exists
@@ -311,6 +295,16 @@ Can not take out the object which is bound to the account
 
 
 <pre><code><b>const</b> <a href="object.md#0x2_object_ErrorObjectIsBound">ErrorObjectIsBound</a>: u64 = 6;
+</code></pre>
+
+
+
+<a name="0x2_object_ErrorObjectIsEmbeddedInOtherStruct"></a>
+
+The object is embedded in other struct, so it can not be borrowed or taken out
+
+
+<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorObjectIsEmbeddedInOtherStruct">ErrorObjectIsEmbeddedInOtherStruct</a>: u64 = 16;
 </code></pre>
 
 
@@ -630,6 +624,7 @@ Check if the object exists in the global object storage and the type of the obje
 
 Borrow Object from object store by object_id
 Any one can borrow an <code>&<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;</code> from the global object storage
+Except the object is embedded in other struct
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_object">borrow_object</a>&lt;T: key&gt;(object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
@@ -653,7 +648,8 @@ Borrow mut Object by <code>owner</code> and <code>object_id</code>
 
 ## Function `borrow_mut_object_extend`
 
-Borrow mut Object by <code>object_id</code>
+Borrow mut Object by <code>object_id</code>, Only the module of <code>T</code> can borrow the <code><a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;</code> with object_id.
+The Object must be a <code>Shared</code> or <code>UserOwned</code> Object
 
 
 <pre><code>#[private_generics(#[T])]
@@ -680,8 +676,8 @@ Note: When the Object is taken out, the Object will auto become <code>SystemOwne
 
 ## Function `take_object_extend`
 
-Take out the UserOwnedObject by <code>object_id</code>, return the owner and Object
-This function is for developer to extend, Only the module of <code>T</code> can take out the <code>UserOwnedObject</code> with object_id.
+Take out the Shared or UserOwned Object by <code>object_id</code>, return the owner and Object
+This function is for developer to extend, Only the module of <code>T</code> can call this function.
 
 
 <pre><code>#[private_generics(#[T])]
@@ -735,7 +731,7 @@ Do not check if the dynamic fields are empty
 ## Function `to_shared`
 
 Make the Object shared, Any one can get the &mut Object<T> from shared object
-The shared object also can be removed from the object storage.
+The module of <code>T</code> can call <code>take_object_extend</code> to take out the shared object, then remove the shared object.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_to_shared">to_shared</a>&lt;T: key&gt;(self: <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;)
@@ -773,61 +769,6 @@ Make the Object frozen, Any one can not get the &mut Object<T> from frozen objec
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_is_frozen">is_frozen</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): bool
-</code></pre>
-
-
-
-<a name="0x2_object_is_bound"></a>
-
-## Function `is_bound`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_is_bound">is_bound</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): bool
-</code></pre>
-
-
-
-<a name="0x2_object_is_bound_internal"></a>
-
-## Function `is_bound_internal`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_is_bound_internal">is_bound_internal</a>&lt;T&gt;(self: &<a href="object.md#0x2_object_ObjectEntity">object::ObjectEntity</a>&lt;T&gt;): bool
-</code></pre>
-
-
-
-<a name="0x2_object_to_user_owned"></a>
-
-## Function `to_user_owned`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_to_user_owned">to_user_owned</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, new_owner: <b>address</b>)
-</code></pre>
-
-
-
-<a name="0x2_object_to_system_owned"></a>
-
-## Function `to_system_owned`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_to_system_owned">to_system_owned</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;)
-</code></pre>
-
-
-
-<a name="0x2_object_to_system_owned_internal"></a>
-
-## Function `to_system_owned_internal`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_to_system_owned_internal">to_system_owned_internal</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_ObjectEntity">object::ObjectEntity</a>&lt;T&gt;)
 </code></pre>
 
 
@@ -881,17 +822,6 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 
 
-<a name="0x2_object_owner_internal"></a>
-
-## Function `owner_internal`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_owner_internal">owner_internal</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_ObjectEntity">object::ObjectEntity</a>&lt;T&gt;): <b>address</b>
-</code></pre>
-
-
-
 <a name="0x2_object_is_system_owned"></a>
 
 ## Function `is_system_owned`
@@ -899,17 +829,6 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_is_system_owned">is_system_owned</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): bool
-</code></pre>
-
-
-
-<a name="0x2_object_is_user_owned_internal"></a>
-
-## Function `is_user_owned_internal`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_is_user_owned_internal">is_user_owned_internal</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_ObjectEntity">object::ObjectEntity</a>&lt;T&gt;): bool
 </code></pre>
 
 

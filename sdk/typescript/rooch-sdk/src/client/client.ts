@@ -4,7 +4,7 @@
 import { Args } from '../bcs/index.js'
 import { Signer } from '../crypto/index.js'
 import { CreateSessionArgs, Session } from '../session/index.js'
-import { isValidRoochAddress } from '../address/index.js'
+import { isValidRoochAddress, decodeToRoochAddressStr } from '../address/index.js'
 import { address, Bytes, u64 } from '../types/index.js'
 import { fromHEX, str } from '../utils/index.js'
 import { RoochHTTPTransport, RoochTransport } from './httpTransport.js'
@@ -28,6 +28,20 @@ import {
   PaginationResult,
   SessionInfoView,
   StateView,
+  QueryUTXOsParams,
+  PaginatedUTXOStateViews,
+  PaginatedInscriptionStateViews,
+  QueryInscriptionsParams,
+  GetBalancesParams,
+  PaginatedBalanceInfoViews,
+  QueryObjectStatesParams,
+  PaginatedIndexerObjectStateViews,
+  QueryTransactionsParams,
+  PaginatedTransactionWithInfoViews,
+  PaginatedEventViews,
+  GetEventsByEventHandleParams,
+  QueryEventsParams,
+  PaginatedIndexerEventViews,
 } from './types/index.js'
 
 /**
@@ -151,6 +165,59 @@ export class RoochClient {
     })
   }
 
+  async getEvents(input: GetEventsByEventHandleParams): Promise<PaginatedEventViews> {
+    return await this.transport.request({
+      method: 'rooch_getEventsByEventHandle',
+      params: [
+        input.eventHandleType,
+        input.cursor,
+        input.limit,
+        input.descendingOrder,
+        input.eventOptions,
+      ],
+    })
+  }
+
+  async queryEvents(input: QueryEventsParams): Promise<PaginatedIndexerEventViews> {
+    return await this.transport.request({
+      method: 'rooch_queryEvents',
+      params: [input.filter, input.cursor, input.limit, input.queryOption],
+    })
+  }
+
+  // Query the Inscription via global index by Inscription filter
+  async queryInscriptions(input: QueryInscriptionsParams): Promise<PaginatedInscriptionStateViews> {
+    return await this.transport.request({
+      method: 'btc_queryInscriptions',
+      params: [input.filter, input.cursor, input.limit, input.descendingOrder],
+    })
+  }
+
+  async queryUTXO(input: QueryUTXOsParams): Promise<PaginatedUTXOStateViews> {
+    return this.transport.request({
+      method: 'btc_queryUTXOs',
+      params: [input.filter, input.cursor, input.limit, input.descendingOrder],
+    })
+  }
+
+  async queryObjectStates(
+    input: QueryObjectStatesParams,
+  ): Promise<PaginatedIndexerObjectStateViews> {
+    return this.transport.request({
+      method: 'rooch_queryObjectStates',
+      params: [input.filter, input.cursor, input.limit, input.queryOption],
+    })
+  }
+
+  async queryTransactions(
+    input: QueryTransactionsParams,
+  ): Promise<PaginatedTransactionWithInfoViews> {
+    return this.transport.request({
+      method: 'rooch_queryTransactions',
+      params: [input.filter, input.cursor, input.limit, input.queryOption],
+    })
+  }
+
   // helper fn
 
   async getSequenceNumber(address: string): Promise<u64> {
@@ -179,6 +246,16 @@ export class RoochClient {
     })
   }
 
+  async getBalances(input: GetBalancesParams): Promise<PaginatedBalanceInfoViews> {
+    if (!input.owner || !isValidRoochAddress(input.owner)) {
+      throw new Error('Invalid rooch address')
+    }
+    return await this.transport.request({
+      method: 'rooch_getBalances',
+      params: [input.owner, input.cursor, input.limit],
+    })
+  }
+
   async transfer(input: {
     signer: Signer
     recipient: address
@@ -200,7 +277,7 @@ export class RoochClient {
 
   async transferObject(input: {
     signer: Signer
-    recipient: string
+    recipient: address
     objectId: string
     objectType: TypeArgs
   }) {
@@ -268,7 +345,7 @@ export class RoochClient {
   }: {
     address: address
   } & PaginationArguments<string>): Promise<PaginationResult<string, SessionInfoView>> {
-    const accessPath = `/resource/${address}/0x3::session_key::SessionKeys`
+    const accessPath = `/resource/${decodeToRoochAddressStr(address)}/0x3::session_key::SessionKeys`
     const states = await this.getStates({
       accessPath,
       stateOption: {
@@ -336,7 +413,7 @@ export class RoochClient {
           } as SessionInfoView)
         }
       }
-      return result
+      return result.sort((a, b) => b.createTime - a.createTime)
     }
 
     return {

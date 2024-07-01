@@ -42,7 +42,6 @@ pub const SYSTEM_OWNER_ADDRESS: AccountAddress = AccountAddress::ZERO;
 
 pub const SHARED_OBJECT_FLAG_MASK: u8 = 1;
 pub const FROZEN_OBJECT_FLAG_MASK: u8 = 1 << 1;
-pub const BOUND_OBJECT_FLAG_MASK: u8 = 1 << 2;
 
 // New table's state_root should be the place holder hash.
 pub static GENESIS_STATE_ROOT: Lazy<H256> = Lazy::new(|| *SPARSE_MERKLE_PLACEHOLDER_HASH);
@@ -58,9 +57,6 @@ pub fn human_readable_flag(flag: u8) -> String {
     }
     if flag & FROZEN_OBJECT_FLAG_MASK == FROZEN_OBJECT_FLAG_MASK {
         status.push("Frozen".to_string());
-    }
-    if flag & BOUND_OBJECT_FLAG_MASK == BOUND_OBJECT_FLAG_MASK {
-        status.push("Bound".to_string());
     }
 
     status.join(",")
@@ -461,6 +457,10 @@ impl<T> ObjectEntity<T> {
 
     pub fn is_genesis(&self) -> bool {
         self.state_root() == *GENESIS_STATE_ROOT
+    }
+
+    pub fn is_system_owned(&self) -> bool {
+        self.owner == SYSTEM_OWNER_ADDRESS
     }
 }
 
