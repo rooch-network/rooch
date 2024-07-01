@@ -45,10 +45,8 @@ module moveos_std::object {
     const ErrorParentNotMatch: u64 = 13;
     /// The object runtime error
     const ErrorObjectRuntimeError: u64 = 14;
-    /// The object or field is already taken out
-    const ErrorObjectAlreadyTakenOut: u64 = 15;
-    /// The object is embedded in other struct, so it can not be borrowed or taken out
-    const ErrorObjectIsEmbeddedInOtherStruct: u64 = 16;
+    /// The object or field is already taken out or embedded in other struct
+    const ErrorObjectAlreadyTakenOutOrEmbeded: u64 = 15;
 
     const SYSTEM_OWNER_ADDRESS: address = @0x0;
 
@@ -252,8 +250,6 @@ module moveos_std::object {
     /// Any one can borrow an `&Object<T>` from the global object storage
     /// Except the object is embedded in other struct
     public fun borrow_object<T: key>(object_id: ObjectID): &Object<T> {
-        let object_entity = borrow_from_global<T>(object_id);
-        assert!(is_shared_internal(object_entity)||is_frozen_internal(object_entity)||is_user_owned_internal(object_entity), ErrorObjectIsEmbeddedInOtherStruct);
         native_borrow_object_pointer<Object<T>>(object_id)
     }
 
@@ -270,7 +266,6 @@ module moveos_std::object {
     /// The Object must be a `Shared` or `UserOwned` Object
     public fun borrow_mut_object_extend<T: key>(object_id: ObjectID): &mut Object<T> {
         let object_entity = borrow_mut_from_global<T>(object_id);
-        assert!(is_shared_internal(object_entity) || is_user_owned_internal(object_entity), ErrorObjectIsEmbeddedInOtherStruct);
         native_borrow_mut_object_pointer<Object<T>>(object_id)
     }
 
@@ -290,7 +285,6 @@ module moveos_std::object {
     /// This function is for developer to extend, Only the module of `T` can call this function.
     public fun take_object_extend<T: key>(object_id: ObjectID): (address, Object<T>) {
         let object_entity = borrow_mut_from_global<T>(object_id);
-        assert!(is_shared_internal(object_entity) || is_user_owned_internal(object_entity), ErrorObjectIsEmbeddedInOtherStruct);
         let owner = owner_internal(object_entity);
         to_system_owned_internal(object_entity);
         (owner, native_take_object_pointer<Object<T>>(object_id))
@@ -1162,7 +1156,7 @@ module moveos_std::object {
     }
 
     #[test]
-    #[expected_failure(abort_code = ErrorObjectAlreadyTakenOut, location = Self)]
+    #[expected_failure(abort_code = ErrorObjectAlreadyTakenOutOrEmbeded, location = Self)]
     fun test_borrow_embed_object_failed(){
         let obj = new(TestStruct { count: 1 });
         let id = id(&obj);

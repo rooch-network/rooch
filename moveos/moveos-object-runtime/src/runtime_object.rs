@@ -2,14 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    assert_abort, field_value::{self, FieldValue, FIELD_VALUE_STRUCT_NAME}, runtime::{
+    assert_abort,
+    field_value::{self, FieldValue, FIELD_VALUE_STRUCT_NAME},
+    runtime::{
         check_type, deserialize, partial_extension_error, serialize, ERROR_OBJECT_ALREADY_BORROWED,
-        ERROR_OBJECT_ALREADY_TAKEN_OUT,ERROR_OBJECT_FROZEN,
-    }, TypeLayoutLoader
+        ERROR_OBJECT_ALREADY_TAKEN_OUT_EMBEDED, ERROR_OBJECT_FROZEN,
+    },
+    TypeLayoutLoader,
 };
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{
-    account_address::AccountAddress, effects::Op, gas_algebra::NumBytes, language_storage::{StructTag, TypeTag}, value::{MoveStructLayout, MoveTypeLayout}, vm_status::StatusCode
+    account_address::AccountAddress,
+    effects::Op,
+    gas_algebra::NumBytes,
+    language_storage::{StructTag, TypeTag},
+    value::{MoveStructLayout, MoveTypeLayout},
+    vm_status::StatusCode,
 };
 use move_vm_types::values::{GlobalValue, Reference, Struct, StructRef, Value};
 use moveos_types::{
@@ -25,7 +33,10 @@ use moveos_types::{
     },
     state_resolver::StatelessResolver,
 };
-use std::{collections::{btree_map::Entry, BTreeMap}, io::Read};
+use std::{
+    collections::{btree_map::Entry, BTreeMap},
+    io::Read,
+};
 
 /// A structure representing runtime field.
 pub enum RuntimeField {
@@ -298,7 +309,7 @@ impl RuntimeObject {
 
     pub fn borrow_pointer(&self, _expect_value_type: &TypeTag) -> PartialVMResult<Value> {
         //check_type(&self.value_type, &expect_value_type)?;
-        
+
         //If the object pointer does not exist, it means the object is taken out
         if !self.pointer.value.exists()? {
             return Err(PartialVMError::new(StatusCode::ABORTED)
@@ -319,28 +330,65 @@ impl RuntimeObject {
         self.pointer.value.borrow_global()
     }
 
-    pub fn borrow_mut_pointer(&self, owner: AccountAddress, by_pass_owner_check: bool, expect_value_type: &TypeTag) -> PartialVMResult<Value> {
+    pub fn borrow_mut_pointer(
+        &self,
+        owner: AccountAddress,
+        by_pass_owner_check: bool,
+        expect_value_type: &TypeTag,
+    ) -> PartialVMResult<Value> {
         let pointer = self.borrow_pointer(expect_value_type)?;
-        assert_abort!(!self.metadata.is_frozen(), ERROR_OBJECT_FROZEN, "Object {} is frozen", self.id);
-        assert_abort!(self.metadata.owner == owner || by_pass_owner_check, ERROR_OBJECT_NOT_OWNER, "Object {} is not owned by {}", self.id, sender);
+        assert_abort!(
+            !self.metadata.is_frozen(),
+            ERROR_OBJECT_FROZEN,
+            "Object {} is frozen",
+            self.id
+        );
+        assert_abort!(
+            self.metadata.owner == owner || by_pass_owner_check,
+            ERROR_OBJECT_NOT_OWNER,
+            "Object {} is not owned by {}",
+            self.id,
+            sender
+        );
         Ok(pointer)
     }
 
     pub fn borrow_mut_shared_pointer(&self, expect_value_type: &TypeTag) -> PartialVMResult<Value> {
         let pointer = self.borrow_pointer(expect_value_type)?;
-        assert_abort!(self.metadata.is_shared(), ERROR_OBJECT_NOT_SHARED, "Object {} is not shared", self.id);
+        assert_abort!(
+            self.metadata.is_shared(),
+            ERROR_OBJECT_NOT_SHARED,
+            "Object {} is not shared",
+            self.id
+        );
         Ok(pointer)
     }
 
-    pub fn take_pointer(&mut self,owner: AccountAddress, by_pass_owner_check: bool, _expect_value_type: &TypeTag) -> PartialVMResult<Value> {
+    pub fn take_pointer(
+        &mut self,
+        owner: AccountAddress,
+        by_pass_owner_check: bool,
+        _expect_value_type: &TypeTag,
+    ) -> PartialVMResult<Value> {
         //check_type(&self.value_type, &expect_value_type)?;
-        assert_abort!(self.metadata.owner == owner || by_pass_owner_check, ERROR_OBJECT_NOT_OWNER, "Object {} is not owned by {}", self.id, owner);
+        assert_abort!(
+            self.metadata.owner == owner || by_pass_owner_check,
+            ERROR_OBJECT_NOT_OWNER,
+            "Object {} is not owned by {}",
+            self.id,
+            owner
+        );
         self.pointer.value.move_from()
     }
 
     pub fn take_shared_pointer(&mut self, _expect_value_type: &TypeTag) -> PartialVMResult<Value> {
         //check_type(&self.value_type, &expect_value_type)?;
-        assert_abort!(self.metadata.is_shared(), ERROR_OBJECT_NOT_SHARED, "Object {} is not shared", self.id);
+        assert_abort!(
+            self.metadata.is_shared(),
+            ERROR_OBJECT_NOT_SHARED,
+            "Object {} is not shared",
+            self.id
+        );
         self.pointer.value.move_from()
     }
 
@@ -534,13 +582,8 @@ impl RuntimeField {
                 partial_extension_error(format!("expect object id, but got {:?}, {:?}", key, e))
             })?;
             let metadata = ObjectMeta::genesis_meta(object_id);
-            let object = RuntimeObject::init(
-                object_id,
-                value_layout,
-                value_type,
-                global_value,
-                metadata,
-            )?;
+            let object =
+                RuntimeObject::init(object_id, value_layout, value_type, global_value, metadata)?;
             RuntimeField::Object(object)
         })
     }

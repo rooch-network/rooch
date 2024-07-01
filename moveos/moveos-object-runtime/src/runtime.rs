@@ -21,8 +21,8 @@ use move_core_types::{
     vm_status::StatusCode,
 };
 use move_vm_types::values::{GlobalValue, Value};
-use moveos_types::moveos_std::{object::TimestampObject, timestamp};
 use moveos_types::moveos_std::timestamp::Timestamp;
+use moveos_types::moveos_std::{object::TimestampObject, timestamp};
 use moveos_types::{
     moveos_std::{
         module_store::{ModuleStore, Package},
@@ -56,8 +56,7 @@ pub const ERROR_CHILD_OBJECT_TOO_DEEP: u64 = 11;
 pub const ERROR_WITHOUT_PARENT: u64 = 12;
 pub const ERROR_PARENT_NOT_MATCH: u64 = 13;
 pub const ERROR_OBJECT_RUNTIME_ERROR: u64 = 14;
-pub const ERROR_OBJECT_ALREADY_TAKEN_OUT: u64 = 15;
-pub const ERROR_OBJECT_IS_EMBEDDED_IN_OTHER_STRUCT: u64 = 16;
+pub const ERROR_OBJECT_ALREADY_TAKEN_OUT_EMBEDED: u64 = 15;
 
 /// The native Object runtime context extension. This needs to be attached to the NativeContextExtensions
 /// value which is passed into session functions, so its accessible from natives of this
@@ -142,19 +141,22 @@ impl ObjectRuntime {
                     e
                 ))
             })?;
-        let (metadata,global_value) = match state {
+        let (metadata, global_value) = match state {
             Some(state) => {
                 let module_store = ModuleStore::from_bytes(&state.value.value)?;
                 let value = module_store.to_runtime_value();
-                (state.metadata(), GlobalValue::cached(value)
-                        .expect("Cache the ModuleStore Object should success"))
+                (
+                    state.metadata(),
+                    GlobalValue::cached(value)
+                        .expect("Cache the ModuleStore Object should success"),
+                )
             }
             None => {
                 // If the module store object is not found, we should create a new one(before genesis).
                 // Init none GlobalValue and move value to it, make the data status is dirty
                 // The change will apart of the state change set
                 let obj = ModuleStoreObject::genesis_module_store();
-                
+
                 let value = obj.value.to_runtime_value();
                 let mut global_value = GlobalValue::none();
                 global_value
@@ -163,7 +165,10 @@ impl ObjectRuntime {
                 (obj.metadata(), global_value)
             }
         };
-        debug!("Init module store object with state_root: {}", metadata.state_root());
+        debug!(
+            "Init module store object with state_root: {}",
+            metadata.state_root()
+        );
         let module_store_runtime = RuntimeObject::init(
             module_store_id.clone(),
             ModuleStore::type_layout(),
@@ -209,7 +214,7 @@ impl ObjectRuntime {
                 // Init none GlobalValue and move value to it, make the data status is dirty
                 // The change will apart of the state change set
                 let obj = TimestampObject::genesis_timestamp();
-                
+
                 let value = obj.value.to_runtime_value();
                 let mut global_value = GlobalValue::none();
                 global_value
@@ -218,7 +223,10 @@ impl ObjectRuntime {
                 (obj.metadata(), global_value)
             }
         };
-        debug!("Init timestamp object with state_root: {}", metadata.state_root());
+        debug!(
+            "Init timestamp object with state_root: {}",
+            metadata.state_root()
+        );
         let timestamp_runtime = RuntimeObject::init(
             timestamp_id.clone(),
             Timestamp::type_layout(),
