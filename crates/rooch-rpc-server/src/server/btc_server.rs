@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::err_obj;
 use crate::service::{aggregate_service::AggregateService, rpc_service::RpcService};
 use anyhow::Result;
 use jsonrpsee::{
@@ -54,20 +55,23 @@ impl BtcAPIServer for BtcServer {
             _ => AccountAddress::ZERO.into(),
         };
 
-        let global_state_filter =
-            UTXOFilterView::into_global_state_filter(filter, resolve_address)?;
+        let global_state_filter = UTXOFilterView::into_global_state_filter(filter, resolve_address)
+            .map_err(|e| err_obj(e.to_string()))?;
         let states = self
             .rpc_service
             .query_object_states(global_state_filter, cursor, limit_of + 1, descending_order)
-            .await?;
+            .await
+            .map_err(|e| err_obj(e.to_string()))?;
 
         let mut data = self
             .aggregate_service
             .build_utxos(states)
-            .await?
+            .await
+            .map_err(|e| err_obj(e.to_string()))?
             .into_iter()
             .map(|v| UTXOStateView::try_new_from_utxo_state(v, self.btc_network))
-            .collect::<Result<Vec<_>, _>>()?;
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| err_obj(e.to_string()))?;
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
@@ -102,19 +106,23 @@ impl BtcAPIServer for BtcServer {
         };
 
         let global_state_filter =
-            InscriptionFilterView::into_global_state_filter(filter, resolve_address)?;
+            InscriptionFilterView::into_global_state_filter(filter, resolve_address)
+                .map_err(|e| err_obj(e.to_string()))?;
         let states = self
             .rpc_service
             .query_object_states(global_state_filter, cursor, limit_of + 1, descending_order)
-            .await?;
+            .await
+            .map_err(|e| err_obj(e.to_string()))?;
 
         let mut data = self
             .aggregate_service
             .build_inscriptions(states)
-            .await?
+            .await
+            .map_err(|e| err_obj(e.to_string()))?
             .into_iter()
             .map(|v| InscriptionStateView::try_new_from_inscription_state(v, self.btc_network))
-            .collect::<Result<Vec<_>, _>>()?;
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| err_obj(e.to_string()))?;
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);

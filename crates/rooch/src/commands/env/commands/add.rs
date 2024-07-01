@@ -31,7 +31,7 @@ impl AddCommand {
         };
 
         // TODO: is this request timeout okay?
-        env.create_rpc_client(Duration::from_secs(5), None).await?;
+        env.create_rpc_client(Duration::from_secs(5)).await?;
         context.client_config.add_env(env);
         context.client_config.save()?;
 
