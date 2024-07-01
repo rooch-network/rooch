@@ -3,12 +3,11 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Copy, Check, CircleUser } from 'lucide-react'
-// import { formatAddress } from '@/utils/format.ts'
-import { useCurrentAccount } from '@roochnetwork/rooch-sdk-kit'
+import { useCurrentAddress } from '@roochnetwork/rooch-sdk-kit'
 import toast from 'react-hot-toast'
 
 export const RoochAddress = () => {
-  const account = useCurrentAccount()
+  const account = useCurrentAddress()
   const [copied, setCopied] = useState(false)
 
   const handleClickCopy = () => {
@@ -19,7 +18,7 @@ export const RoochAddress = () => {
       return
     }
 
-    const textToCopy = account.getBech32RoochAddress()
+    const textToCopy = account.genRoochAddress().toBech32Address()
 
     navigator.clipboard
       .writeText(textToCopy)
@@ -66,7 +65,7 @@ export const RoochAddress = () => {
             alt="rooch logo"
             className="w-4 h-4 rounded-full bg-zinc-900 p-0.5 mr-2"
           />
-          {account.getBech32RoochAddress()}
+          {account.genRoochAddress().toBech32Address()}
         </span>
       </div>
     </div>

@@ -88,10 +88,19 @@ function WalletConnectionManager({ children }: WalletConnectionManagerProps) {
         if (selectedAddress !== currentAddress?.toStr()) {
           setAddressSwitched(new BitcoinAddress(selectedAddress))
           setCurrentSession(undefined)
+          const cur = sessions.find(
+            (item: Session) =>
+              item.getRoochAddress().toStr() === currentAddress?.genRoochAddress().toStr(),
+          )
+          if (cur && cur.getAuthKey() !== curSession?.getAuthKey()) {
+            setCurrentSession(cur)
+          }
         }
       }
     },
     [
+      sessions,
+      curSession,
       currentAddress,
       setAddressSwitched,
       setConnectionStatus,
@@ -114,14 +123,14 @@ function WalletConnectionManager({ children }: WalletConnectionManagerProps) {
   }, [accountsChangedHandler, connectionStatus, currentWallet])
 
   // handle session
-  useEffect(() => {
-    const cur = sessions.find(
-      (item: Session) =>
-        item.getRoochAddress().toStr() === currentAddress?.genRoochAddress().toStr(),
-    )
-    if (cur && cur.getAuthKey() !== curSession?.getAuthKey()) {
-      setCurrentSession(cur)
-    }
-  }, [sessions, currentAddress, curSession, setCurrentSession])
+  // useEffect(() => {
+  //   const cur = sessions.find(
+  //     (item: Session) =>
+  //       item.getRoochAddress().toStr() === currentAddress?.genRoochAddress().toStr(),
+  //   )
+  //   if (cur && cur.getAuthKey() !== curSession?.getAuthKey()) {
+  //     setCurrentSession(cur)
+  //   }
+  // }, [sessions, currentAddress, curSession, setCurrentSession])
   return children
 }

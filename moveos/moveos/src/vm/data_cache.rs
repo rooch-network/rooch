@@ -20,7 +20,7 @@ use move_vm_types::{
     loaded_data::runtime_types::Type,
     values::{GlobalValue, Value},
 };
-use moveos_object_runtime::runtime::{ObjectRuntime, TypeLayoutLoader};
+use moveos_object_runtime::{runtime::ObjectRuntime, TypeLayoutLoader};
 use moveos_types::state::KeyState;
 use moveos_types::{
     moveos_std::tx_context::TxContext, state::StateChangeSet, state_resolver::MoveOSResolver,
