@@ -264,15 +264,13 @@ fn apply_ord_updates_to_state(
         apply_nodes(moveos_store, nodes).expect("failed to apply ord nodes");
 
         println!(
-            "{} ord applied ({} cursed, {} blessed, new inscription_store_state_root: {:?}, new inscription_ids_state_root: {:?}). This bacth cost: {:?}",
+            "{} ord applied ({} cursed, {} blessed). This bacth cost: {:?}",
             // e.g. batch_size = 8192:
             // 8192 ord applied in: 1.000000000s
             // 16384 ord applied in: 2.000000000s
             ord_count,
             cursed_inscription_count,
             blessed_inscription_count,
-            inscription_store_state_root,
-            inscription_ids_state_root,
             loop_start_time.elapsed().unwrap()
         );
 
@@ -433,6 +431,7 @@ impl InscriptionSource {
             let pubkey = match PublicKey::from_str(self.address.as_str()) {
                 Ok(pubkey) => pubkey,
                 Err(_) => {
+                    // address is script
                     let script_buf = ScriptBuf::from_hex(self.address.as_str()).unwrap();
                     script_buf.p2pk_public_key().unwrap()
                 }
