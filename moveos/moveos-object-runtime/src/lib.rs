@@ -10,6 +10,7 @@ use runtime::partial_extension_error;
 pub mod field_value;
 pub mod resolved_arg;
 pub mod runtime;
+pub mod runtime_native_fn;
 pub mod runtime_object;
 pub mod tx_context;
 

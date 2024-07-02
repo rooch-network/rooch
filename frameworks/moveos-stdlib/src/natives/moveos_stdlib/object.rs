@@ -27,7 +27,7 @@ use std::{collections::VecDeque, sync::Arc};
 
 pub use moveos_object_runtime::runtime::{
     ERROR_ALREADY_EXISTS, ERROR_NOT_FOUND, ERROR_OBJECT_ALREADY_BORROWED,
-    ERROR_OBJECT_ALREADY_TAKEN_OUT_EMBEDED, ERROR_OBJECT_RUNTIME_ERROR, ERROR_TYPE_MISMATCH,
+    ERROR_OBJECT_ALREADY_TAKEN_OUT_OR_EMBEDED, ERROR_OBJECT_RUNTIME_ERROR, ERROR_TYPE_MISMATCH,
 };
 
 /***************************************************************************************************

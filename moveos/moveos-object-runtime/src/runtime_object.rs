@@ -6,7 +6,8 @@ use crate::{
     field_value::{self, FieldValue, FIELD_VALUE_STRUCT_NAME},
     runtime::{
         check_type, deserialize, partial_extension_error, serialize, ERROR_OBJECT_ALREADY_BORROWED,
-        ERROR_OBJECT_ALREADY_TAKEN_OUT_EMBEDED, ERROR_OBJECT_FROZEN,
+        ERROR_OBJECT_ALREADY_TAKEN_OUT_OR_EMBEDED, ERROR_OBJECT_FROZEN, ERROR_OBJECT_NOT_SHARED,
+        ERROR_OBJECT_OWNER_NOT_MATCH,
     },
     TypeLayoutLoader,
 };
@@ -98,6 +99,19 @@ impl ObjectPointer {
     pub fn none() -> Self {
         let value = GlobalValue::none();
         Self { value }
+    }
+
+    pub fn has_borrowed(&self) -> bool {
+        //We can not distinguish between `&` and `&mut`
+        //Because the GlobalValue do not distinguish between `&` and `&mut`
+        //If we record a bool value to distinguish between `&` and `&mut`
+        //When the `&mut` is dropped, we can not reset the bool value
+        //The reference_count after cached is 1, so it should be 2 if borrowed
+        debug_assert!(
+            self.value.reference_count() <= 2,
+            "The reference count should not exceed 2"
+        );
+        self.value.reference_count() >= 2
     }
 }
 
@@ -240,6 +254,10 @@ impl RuntimeObject {
         &self.id
     }
 
+    pub fn state_root(&self) -> H256 {
+        self.metadata.state_root()
+    }
+
     pub fn load(id: ObjectID, value_layout: MoveTypeLayout, state: State) -> PartialVMResult<Self> {
         let raw_obj = state
             .as_raw_object()
@@ -311,22 +329,20 @@ impl RuntimeObject {
         //check_type(&self.value_type, &expect_value_type)?;
 
         //If the object pointer does not exist, it means the object is taken out
-        if !self.pointer.value.exists()? {
-            return Err(PartialVMError::new(StatusCode::ABORTED)
-                .with_sub_status(ERROR_OBJECT_ALREADY_TAKEN_OUT)
-                .with_message(format!("Object {} already taken out", self.id)));
-        }
-        //We can not distinguish between `&` and `&mut`
-        //Because the GlobalValue do not distinguish between `&` and `&mut`
-        //If we record a bool value to distinguish between `&` and `&mut`
-        //When the `&mut` is dropped, we can not reset the bool value
-        if self.pointer.value.reference_count() >= 2 {
-            // We raise an error if the object is already borrowed
-            // Use the error code in object.move for easy debugging
-            return Err(PartialVMError::new(StatusCode::ABORTED)
-                .with_sub_status(ERROR_OBJECT_ALREADY_BORROWED)
-                .with_message(format!("Object {} already borrowed", self.id)));
-        }
+        assert_abort!(
+            self.pointer.value.exists()?,
+            ERROR_OBJECT_ALREADY_TAKEN_OUT_OR_EMBEDED,
+            "Object {} already taken out",
+            self.id
+        );
+
+        assert_abort!(
+            !self.pointer.has_borrowed(),
+            ERROR_OBJECT_ALREADY_BORROWED,
+            "Object {} already borrowed",
+            self.id
+        );
+
         self.pointer.value.borrow_global()
     }
 
@@ -345,10 +361,10 @@ impl RuntimeObject {
         );
         assert_abort!(
             self.metadata.owner == owner || by_pass_owner_check,
-            ERROR_OBJECT_NOT_OWNER,
+            ERROR_OBJECT_OWNER_NOT_MATCH,
             "Object {} is not owned by {}",
             self.id,
-            sender
+            owner
         );
         Ok(pointer)
     }
@@ -372,8 +388,22 @@ impl RuntimeObject {
     ) -> PartialVMResult<Value> {
         //check_type(&self.value_type, &expect_value_type)?;
         assert_abort!(
+            self.pointer.value.exists()?,
+            ERROR_OBJECT_ALREADY_TAKEN_OUT_OR_EMBEDED,
+            "Object {} already taken out",
+            self.id
+        );
+
+        assert_abort!(
+            !self.pointer.has_borrowed(),
+            ERROR_OBJECT_ALREADY_BORROWED,
+            "Object {} already borrowed",
+            self.id
+        );
+
+        assert_abort!(
             self.metadata.owner == owner || by_pass_owner_check,
-            ERROR_OBJECT_NOT_OWNER,
+            ERROR_OBJECT_OWNER_NOT_MATCH,
             "Object {} is not owned by {}",
             self.id,
             owner
@@ -383,6 +413,20 @@ impl RuntimeObject {
 
     pub fn take_shared_pointer(&mut self, _expect_value_type: &TypeTag) -> PartialVMResult<Value> {
         //check_type(&self.value_type, &expect_value_type)?;
+        assert_abort!(
+            self.pointer.value.exists()?,
+            ERROR_OBJECT_ALREADY_TAKEN_OUT_OR_EMBEDED,
+            "Object {} already taken out",
+            self.id
+        );
+
+        assert_abort!(
+            !self.pointer.has_borrowed(),
+            ERROR_OBJECT_ALREADY_BORROWED,
+            "Object {} already borrowed",
+            self.id
+        );
+
         assert_abort!(
             self.metadata.is_shared(),
             ERROR_OBJECT_NOT_SHARED,
@@ -397,6 +441,10 @@ impl RuntimeObject {
         pointer: Value,
         _expect_value_type: &TypeTag,
     ) -> PartialVMResult<()> {
+        debug_assert!(
+            !self.pointer.value.exists()?,
+            "The object pointer should not exist"
+        );
         self.pointer.value.move_to(pointer).map_err(|(e, _)| e)
     }
 
@@ -459,27 +507,22 @@ impl RuntimeObject {
         key: KeyState,
         f: impl FnOnce(&TypeTag) -> PartialVMResult<MoveTypeLayout>,
     ) -> PartialVMResult<(&mut RuntimeField, Option<Option<NumBytes>>)> {
+        let state_root = self.state_root();
         Ok(match self.fields.entry(key.clone()) {
             Entry::Vacant(entry) => {
-                let (tv, loaded) =
-                    match resolver
-                        .get_field_at(self.state_root, &key)
-                        .map_err(|err| {
-                            partial_extension_error(format!(
-                                "remote object resolver failure: {}",
-                                err
-                            ))
-                        })? {
-                        Some(state) => {
-                            let value_layout = f(&state.value_type)?;
-                            let state_bytes_len = state.value.len() as u64;
-                            (
-                                RuntimeField::load(key, value_layout, state)?,
-                                Some(NumBytes::new(state_bytes_len)),
-                            )
-                        }
-                        None => (RuntimeField::none(key), None),
-                    };
+                let (tv, loaded) = match resolver.get_field_at(state_root, &key).map_err(|err| {
+                    partial_extension_error(format!("remote object resolver failure: {}", err))
+                })? {
+                    Some(state) => {
+                        let value_layout = f(&state.value_type)?;
+                        let state_bytes_len = state.value.len() as u64;
+                        (
+                            RuntimeField::load(key, value_layout, state)?,
+                            Some(NumBytes::new(state_bytes_len)),
+                        )
+                    }
+                    None => (RuntimeField::none(key), None),
+                };
                 (entry.insert(tv), Some(loaded))
             }
             Entry::Occupied(entry) => (entry.into_mut(), None),
@@ -581,7 +624,7 @@ impl RuntimeField {
             let object_id = key.as_object_id().map_err(|e| {
                 partial_extension_error(format!("expect object id, but got {:?}, {:?}", key, e))
             })?;
-            let metadata = ObjectMeta::genesis_meta(object_id);
+            let metadata = ObjectMeta::genesis_meta(object_id.clone());
             let object =
                 RuntimeObject::init(object_id, value_layout, value_type, global_value, metadata)?;
             RuntimeField::Object(object)
@@ -669,5 +712,27 @@ impl RuntimeField {
                 normal.into_change().map(|op| op.map(FieldChange::Normal))
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use moveos_types::moveos_std::object::ObjectID;
+
+    #[test]
+    fn test_object_pointer_has_borrowed() {
+        let object_id = ObjectID::random();
+        let object_pointer_cached = ObjectPointer::cached(object_id.clone());
+        assert_eq!(object_pointer_cached.value.reference_count(), 1);
+        assert!(!object_pointer_cached.has_borrowed());
+        let _borrowed_pointer = object_pointer_cached.value.borrow_global().unwrap();
+        assert!(object_pointer_cached.has_borrowed());
+
+        let object_pointer_fresh = ObjectPointer::fresh(object_id);
+        assert_eq!(object_pointer_fresh.value.reference_count(), 1);
+        assert!(!object_pointer_fresh.has_borrowed());
+        let _borrowed_pointer = object_pointer_fresh.value.borrow_global().unwrap();
+        assert!(object_pointer_fresh.has_borrowed());
     }
 }

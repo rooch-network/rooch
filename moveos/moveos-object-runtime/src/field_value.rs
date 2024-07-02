@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_core_types::{
-    ident_str, identifier::IdentStr, language_storage::StructTag, value::MoveStructLayout,
+    ident_str,
+    identifier::IdentStr,
+    language_storage::{StructTag, TypeTag},
+    value::MoveStructLayout,
 };
 use move_vm_types::values::{Struct, Value};
 use moveos_types::{
@@ -59,8 +62,15 @@ where
     }
 }
 
-pub(crate) fn is_field_value_type(tag: &StructTag) -> bool {
+pub(crate) fn is_field_value_type(tag: &TypeTag) -> bool {
+    match tag {
+        TypeTag::Struct(tag) => is_field_value_struct_tag(tag),
+        _ => false,
+    }
+}
+
+fn is_field_value_struct_tag(tag: &StructTag) -> bool {
     tag.address == MOVEOS_STD_ADDRESS
-        && tag.module == object::MODULE_NAME
-        && tag.name == FIELD_VALUE_STRUCT_NAME
+        && tag.module.as_ref() == object::MODULE_NAME
+        && tag.name.as_ref() == FIELD_VALUE_STRUCT_NAME
 }

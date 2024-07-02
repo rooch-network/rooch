@@ -407,7 +407,7 @@ impl ObjectMeta {
             id,
             owner: MOVEOS_STD_ADDRESS,
             flag: SHARED_OBJECT_FLAG_MASK,
-            state_root: Some(AccountAddress::new(*GENESIS_STATE_ROOT)),
+            state_root: None,
             size: 0,
             created_at: 0,
             updated_at: 0,

@@ -56,7 +56,7 @@ pub const ERROR_CHILD_OBJECT_TOO_DEEP: u64 = 11;
 pub const ERROR_WITHOUT_PARENT: u64 = 12;
 pub const ERROR_PARENT_NOT_MATCH: u64 = 13;
 pub const ERROR_OBJECT_RUNTIME_ERROR: u64 = 14;
-pub const ERROR_OBJECT_ALREADY_TAKEN_OUT_EMBEDED: u64 = 15;
+pub const ERROR_OBJECT_ALREADY_TAKEN_OUT_OR_EMBEDED: u64 = 15;
 
 /// The native Object runtime context extension. This needs to be attached to the NativeContextExtensions
 /// value which is passed into session functions, so its accessible from natives of this
@@ -134,7 +134,7 @@ impl ObjectRuntime {
     pub fn init_module_store(&mut self, resolver: &dyn StatelessResolver) -> PartialVMResult<()> {
         let module_store_id = ModuleStore::module_store_id();
         let state = resolver
-            .get_object_field_at(self.root.state_root, &module_store_id)
+            .get_object_field_at(self.root.state_root(), &module_store_id)
             .map_err(|e| {
                 partial_extension_error(format!(
                     "Failed to resolve module store object state: {:?}",
@@ -143,7 +143,12 @@ impl ObjectRuntime {
             })?;
         let (metadata, global_value) = match state {
             Some(state) => {
-                let module_store = ModuleStore::from_bytes(&state.value.value)?;
+                let module_store = ModuleStore::from_bytes(&state.value.value).map_err(|e| {
+                    partial_extension_error(format!(
+                        "Failed to deserialize module store object: {:?}",
+                        e
+                    ))
+                })?;
                 let value = module_store.to_runtime_value();
                 (
                     state.metadata(),
@@ -192,7 +197,7 @@ impl ObjectRuntime {
     ) -> PartialVMResult<()> {
         let timestamp_id = Timestamp::object_id();
         let state = resolver
-            .get_object_field_at(self.root.state_root, &timestamp_id)
+            .get_object_field_at(self.root.state_root(), &timestamp_id)
             .map_err(|e| {
                 partial_extension_error(format!(
                     "Failed to resolve timestamp object state: {:?}",
@@ -201,7 +206,12 @@ impl ObjectRuntime {
             })?;
         let (metadata, global_value) = match state {
             Some(state) => {
-                let timestamp = Timestamp::from_bytes(&state.value.value)?;
+                let timestamp = Timestamp::from_bytes(&state.value.value).map_err(|e| {
+                    partial_extension_error(format!(
+                        "Failed to deserialize timestamp object: {:?}",
+                        e
+                    ))
+                })?;
                 let value = timestamp.to_runtime_value();
                 // If we load the timestamp object, we should cache it
                 (
@@ -315,6 +325,19 @@ impl ObjectRuntime {
             .expect("Failed to add value to tx_context");
         self.tx_context = TxContextValue::new(tx_ctx);
         Ok(())
+    }
+
+    pub fn timestamp(&self) -> Timestamp {
+        let timestamp_id = Timestamp::object_id();
+        let timestamp_obj = self
+            .get_loaded_object(&timestamp_id)
+            .expect("Failed to get timestamp object")
+            .expect("Timestamp object must exist");
+        let timestamp_value = timestamp_obj
+            .borrow_value(Timestamp::type_tag())
+            .expect("Failed to borrow timestamp value");
+        Timestamp::from_runtime_value(timestamp_value)
+            .expect("Failed to convert timestamp value to timestamp")
     }
 
     /// Load Object to the ObjectRuntime.
@@ -485,8 +508,13 @@ impl ObjectRuntime {
                             .insert(object_id.clone(), pointer_value);
                     }
                     ObjectArg::Value(obj) => {
+                        //TODO use tx sender as owner
                         let pointer_value = rt_obj
-                            .take_pointer(&TypeTag::Struct(Box::new(obj.struct_tag())))
+                            .take_pointer(
+                                obj.owner,
+                                false,
+                                &TypeTag::Struct(Box::new(obj.struct_tag())),
+                            )
                             .map_err(|e| e.finish(Location::Module(object::MODULE_ID.clone())))?;
                         //We cache the object pointer value in the object_pointer_in_args
                         //Ensure the reference count and the object can not be borrowed in Move
@@ -552,7 +580,7 @@ pub(crate) fn check_type(actual_type: &TypeTag, expect_type: &TypeTag) -> Partia
     Ok(())
 }
 
-fn sum_load_cost(
+pub(crate) fn sum_load_cost(
     first_loaded: Option<Option<NumBytes>>,
     second_loaded: Option<Option<NumBytes>>,
 ) -> Option<Option<NumBytes>> {

@@ -135,32 +135,8 @@ module moveos_std::object {
         _placeholder: bool,
     }
 
-    /// ObjectEntity<T> is a box of the value of T
-    /// It does not have any ability, so it can not be `drop`, `copy`, or `store`, and can only be handled by storage API after creation.
-    struct ObjectEntity<T> {
-        // The object id
-        id: ObjectID,
-        // The owner of the object
-        owner: address,
-        /// A flag to indicate whether the object is shared or frozen
-        flag: u8,
-        // Fields SMT root
-        state_root: address,
-        // Fields size, number of items
-        size: u64,
-        // The object created timestamp on chain
-        created_at: u64,
-        // The object updated timestamp on chain
-        updated_at: u64,
 
-        // The value of the object
-        // The value must be the last field
-        value: T,
-    }
-
-    /// Object<T> is a pointer to the ObjectEntity<T>, It has `key` and `store` ability. 
-    /// It has the same lifetime as the ObjectEntity<T>
-    /// Developers only need to use Object<T> related APIs and do not need to know the ObjectEntity<T>.
+    /// Object<T> is a pointer type to the Object in storage, It has `key` and `store` ability. 
     struct Object<phantom T> has key, store {
         id: ObjectID,
     }
@@ -209,31 +185,16 @@ module moveos_std::object {
         add_object_field_internal<Root, T>(root_object_id(), id, value)
     }
 
-    fun new_internal<T: key>(id: ObjectID, value: T): ObjectEntity<T> {
-        let owner = SYSTEM_OWNER_ADDRESS;
-
-        ObjectEntity<T> {
-            id,
-            owner,
-            flag: 0u8,
-            state_root: SPARSE_MERKLE_PLACEHOLDER_HASH,
-            size: 0,
-            created_at: 0,
-            updated_at: 0,
-            value,
-        }
-    }
-
     /// Borrow the object value
     public fun borrow<T: key>(self: &Object<T>): &T {
-        let obj_enitty = borrow_from_global<T>(self.id);
-        &obj_enitty.value
+        let parent = parent_id(&self.id);
+        native_borrow_field<ObjectID, T>(parent, self.id)
     }
 
     /// Borrow the object mutable value
     public fun borrow_mut<T: key>(self: &mut Object<T>): &mut T {
-        let obj_entity = borrow_mut_from_global<T>(self.id);
-        &mut obj_entity.value
+        let parent = parent_id(&self.id);
+        native_borrow_mut_field<ObjectID, T>(parent, self.id)
     }
 
     /// Check if the object with `object_id` exists in the global object storage
@@ -250,51 +211,51 @@ module moveos_std::object {
     /// Any one can borrow an `&Object<T>` from the global object storage
     /// Except the object is embedded in other struct
     public fun borrow_object<T: key>(object_id: ObjectID): &Object<T> {
-        native_borrow_object_pointer<Object<T>>(object_id)
+        native_borrow_object<Object<T>>(object_id)
     }
 
     /// Borrow mut Object by `owner` and `object_id`
     public fun borrow_mut_object<T: key>(owner: &signer, object_id: ObjectID): &mut Object<T> {
         let owner_address = signer::address_of(owner);
-        let object_entity = borrow_mut_from_global<T>(object_id);
-        assert!(owner_internal(object_entity) == owner_address, ErrorObjectOwnerNotMatch);
-        native_borrow_mut_object_pointer<Object<T>>(object_id)
+        let obj_ref = native_borrow_mut_object<Object<T>>(object_id);
+        assert!(owner_address == owner(obj_ref), ErrorObjectOwnerNotMatch);
+        obj_ref
     }
 
     #[private_generics(T)]
     /// Borrow mut Object by `object_id`, Only the module of `T` can borrow the `Object<T>` with object_id.
-    /// The Object must be a `Shared` or `UserOwned` Object
+    /// Except the object is frozen or is embedded in other struct
     public fun borrow_mut_object_extend<T: key>(object_id: ObjectID): &mut Object<T> {
-        let object_entity = borrow_mut_from_global<T>(object_id);
-        native_borrow_mut_object_pointer<Object<T>>(object_id)
+        let obj_ref = native_borrow_mut_object<Object<T>>(object_id);
+        assert!(!is_frozen(obj_ref), ErrorObjectFrozen);
+        obj_ref
     }
 
-    /// Take out the UserOwnedObject by `owner` and `object_id`
+    /// Take out the Object by `owner` and `object_id`
     /// The `T` must have `key + store` ability.
-    /// Note: When the Object is taken out, the Object will auto become `SystemOwned` Object.
     public fun take_object<T: key + store>(owner: &signer, object_id: ObjectID): Object<T> {
         let owner_address = signer::address_of(owner);
-        let object_entity = borrow_mut_from_global<T>(object_id);
-        assert!(owner_internal(object_entity) == owner_address, ErrorObjectOwnerNotMatch);
-        to_system_owned_internal(object_entity);
-        native_take_object_pointer<Object<T>>(object_id)
+        let obj = native_take_object<Object<T>>(object_id);
+        assert!(owner_address == owner(&obj), ErrorObjectOwnerNotMatch);
+        obj
     }
 
     #[private_generics(T)]
-    /// Take out the Shared or UserOwned Object by `object_id`, return the owner and Object
+    /// Take out the Object by `object_id`
     /// This function is for developer to extend, Only the module of `T` can call this function.
     public fun take_object_extend<T: key>(object_id: ObjectID): (address, Object<T>) {
-        let object_entity = borrow_mut_from_global<T>(object_id);
-        let owner = owner_internal(object_entity);
-        to_system_owned_internal(object_entity);
-        (owner, native_take_object_pointer<Object<T>>(object_id))
+        let obj = native_take_object<Object<T>>(object_id);
+        assert!(!is_frozen(&obj), ErrorObjectFrozen);
+        let owner = owner(&obj);
+        //to_system_owned(&mut obj);
+        (owner, obj)
     }
 
     /// Borrow mut Shared Object by object_id
     public fun borrow_mut_object_shared<T: key>(object_id: ObjectID): &mut Object<T> {
-        let object_entity = borrow_mut_from_global<T>(object_id);
-        assert!(is_shared_internal(object_entity), ErrorObjectNotShared);
-        native_borrow_mut_object_pointer<Object<T>>(object_id)
+        let obj_ref = native_borrow_mut_object<Object<T>>(object_id);
+        assert!(is_shared(obj_ref), ErrorObjectNotShared);
+        obj_ref
     }
 
 
@@ -304,91 +265,66 @@ module moveos_std::object {
     /// The caller must ensure that the dynamic fields are empty before delete the Object
     public fun remove<T: key>(self: Object<T>): T {
         let Object{id} = self;
-        // Currently, we only support to remove the object from the root object
-        // If we want to remove the child object, we need to call the `remove_object_field` function
-        remove_object_field_internal<Root, T>(root_object_id(), id, true)
+        let parent_id = parent_id(&id);
+        remove_object_field_internal<T>(parent_id, id, true)
     }
 
     /// Remove the object from the global storage, and return the object value
     /// Do not check if the dynamic fields are empty 
     public(friend) fun remove_unchecked<T: key>(self: Object<T>): T {
         let Object{id} = self;
-        remove_object_field_internal<Root, T>(root_object_id(), id, false)
-    }
-
-    /// Directly drop the Object
-    fun drop<T: key>(self: Object<T>) {
-        native_return_object_pointer(self)
-    }
-
-    fun drop_entity<T: key>(entity: ObjectEntity<T>): T {
-        let ObjectEntity { id: _, owner: _, flag: _, state_root: _, size: _, created_at: _, updated_at: _, value } = entity;
-        value
+        let parent_id = parent_id(&id);
+        remove_object_field_internal<T>(parent_id, id, false)
     }
 
     /// Make the Object shared, Any one can get the &mut Object<T> from shared object
     /// The module of `T` can call `take_object_extend` to take out the shared object, then remove the shared object.
     public fun to_shared<T: key>(self: Object<T>) {
-        let obj_entity = borrow_mut_from_global<T>(self.id);
-        to_shared_internal(obj_entity);
-        drop(self);
-    }
-
-    fun to_shared_internal<T: key>(self: &mut ObjectEntity<T>) {
-        self.flag = self.flag | SHARED_OBJECT_FLAG_MASK;
-        to_system_owned_internal(self);
+        let flag = native_object_flag(self.id);
+        if(flag & SHARED_OBJECT_FLAG_MASK == SHARED_OBJECT_FLAG_MASK) {
+            return
+        };
+        let new_flag = flag | SHARED_OBJECT_FLAG_MASK;
+        native_update_object_flag(self.id, new_flag);
+        native_return_object(self);
     }
 
     public fun is_shared<T: key>(self: &Object<T>): bool {
-        let obj_enitty = borrow_from_global<T>(self.id);
-        is_shared_internal(obj_enitty)
-    }
-
-    fun is_shared_internal<T>(self: &ObjectEntity<T>): bool {
-        self.flag & SHARED_OBJECT_FLAG_MASK == SHARED_OBJECT_FLAG_MASK
+        let flag = native_object_flag(self.id);
+        flag & SHARED_OBJECT_FLAG_MASK == SHARED_OBJECT_FLAG_MASK
     }
 
     /// Make the Object frozen, Any one can not get the &mut Object<T> from frozen object
     public fun to_frozen<T: key>(self: Object<T>) {
-        let obj_entity = borrow_mut_from_global<T>(self.id);
-        to_frozen_internal(obj_entity);
-        drop(self);
-    }
-
-    fun to_frozen_internal<T: key>(self: &mut ObjectEntity<T>) {
-        self.flag = self.flag | FROZEN_OBJECT_FLAG_MASK;
-        to_system_owned_internal(self);
+        let flag = native_object_flag(self.id);
+        if(flag & FROZEN_OBJECT_FLAG_MASK == FROZEN_OBJECT_FLAG_MASK) {
+            return
+        };
+        let new_flag = flag | FROZEN_OBJECT_FLAG_MASK;
+        native_update_object_flag(self.id, new_flag);
+        native_return_object(self);
     }
 
     public fun is_frozen<T: key>(self: &Object<T>): bool {
-        let obj_enitty = borrow_from_global<T>(self.id);
-        is_frozen_internal(obj_enitty)
-    }
-
-    fun is_frozen_internal<T>(self: &ObjectEntity<T>): bool {
-        self.flag & FROZEN_OBJECT_FLAG_MASK == FROZEN_OBJECT_FLAG_MASK
+        let flag = native_object_flag(self.id);
+        flag & FROZEN_OBJECT_FLAG_MASK == FROZEN_OBJECT_FLAG_MASK
     }
 
     fun to_user_owned<T: key>(self: &mut Object<T>, new_owner: address) {
         assert!(new_owner != SYSTEM_OWNER_ADDRESS, ErrorInvalidOwnerAddress);
-        let obj_entity = borrow_mut_from_global<T>(self.id);
-        obj_entity.owner = new_owner;
+        native_update_object_owner(self.id, new_owner);
     }
 
     fun to_system_owned<T: key>(self: &mut Object<T>) {
-        let obj_entity = borrow_mut_from_global<T>(self.id);
-        to_system_owned_internal(obj_entity);
+        native_update_object_owner(self.id, SYSTEM_OWNER_ADDRESS);
     }
 
-    fun to_system_owned_internal<T>(self: &mut ObjectEntity<T>) {
-        self.owner = SYSTEM_OWNER_ADDRESS;
-    }
 
     /// Transfer the object to the new owner
     /// Only the `T` with `store` can be directly transferred.
     public fun transfer<T: key + store>(self: Object<T>, new_owner: address) {
         to_user_owned(&mut self, new_owner);
-        drop(self);
+        native_return_object(self)
     }
 
     #[private_generics(T)]
@@ -396,7 +332,7 @@ module moveos_std::object {
     /// This function is for the module of `T` to extend the `transfer` function.
     public fun transfer_extend<T: key>(self: Object<T>, new_owner: address) {
         to_user_owned(&mut self, new_owner);
-        drop(self);
+        native_return_object(self)
     }
 
     public fun id<T>(self: &Object<T>): ObjectID {
@@ -404,20 +340,11 @@ module moveos_std::object {
     }
 
     public fun owner<T: key>(self: &Object<T>): address {
-        let obj_enitty = borrow_from_global<T>(self.id);
-        obj_enitty.owner
-    }
-
-    fun owner_internal<T: key>(self: &ObjectEntity<T>): address {
-        self.owner
+        native_object_owner(self.id)
     }
 
     public fun is_system_owned<T: key>(self: &Object<T>): bool {
         owner(self) == SYSTEM_OWNER_ADDRESS
-    }
-
-    fun is_user_owned_internal<T: key>(self: &ObjectEntity<T>): bool {
-        owner_internal(self) != SYSTEM_OWNER_ADDRESS
     }
 
     public fun is_user_owned<T: key>(self: &Object<T>): bool {
@@ -429,14 +356,6 @@ module moveos_std::object {
     /// The global root object id is `[]`
     fun root_object_id(): ObjectID {
         ObjectID { path: vector::empty() }
-    }
-
-    fun borrow_from_global<T: key>(object_id: ObjectID): &ObjectEntity<T> {
-        borrow_object_field_internal<T>(parent_id(&object_id), object_id)
-    }
-
-    fun borrow_mut_from_global<T: key>(object_id: ObjectID): &mut ObjectEntity<T> {
-        borrow_mut_object_field_internal<T>(parent_id(&object_id), object_id)
     }
 
     // === Object Raw Dynamic Fields ===
@@ -452,8 +371,6 @@ module moveos_std::object {
     // Add field and wrap the value to FieldValue
     public(friend) fun add_field_internal<T: key, K: copy + drop, V>(obj_id: ObjectID, key: K, val: V) {
         native_add_field<K, FieldValue<V>>(obj_id, key, FieldValue{val});
-        increment_size<T>(obj_id);
-        update_timestamp<T>(obj_id);
     }
 
     #[private_generics(T, V)]
@@ -465,7 +382,7 @@ module moveos_std::object {
         // Currently, the child object level is limited to 2
         assert!(vector::length(&obj.id.path) < 2, ErrorChildObjectTooDeep);
         let child_id = derive_child_object_id(&obj.id);
-        add_object_field_internal<T, V>(obj.id, child_id, v)
+        add_object_field_internal<V>(obj.id, child_id, v)
     }
 
     #[private_generics(T, V)]
@@ -477,29 +394,19 @@ module moveos_std::object {
         // Currently, the child object level is limited to 2
         assert!(vector::length(&obj.id.path) < 2, ErrorChildObjectTooDeep);
         let child_id = custom_child_object_id<ID, V>(obj.id, id);
-        add_object_field_internal<T, V>(obj.id, child_id, v)
+        add_object_field_internal<V>(obj.id, child_id, v)
     }
 
 
-    fun add_object_field_internal<T: key, V: key>(parent_id: ObjectID, child_id: ObjectID, v: V): Object<V> {
-        let child_entity = new_internal(child_id, v);
-        init_timestamp(&mut child_entity);
-        native_add_field<ObjectID, ObjectEntity<V>>(parent_id, child_id, child_entity);
-        increment_size<T>(parent_id);
-        // init_timestamp(&mut child_entity);
-        update_timestamp<T>(parent_id);
-        native_take_object_pointer<Object<V>>(child_id)
+    fun add_object_field_internal<V: key>(parent_id: ObjectID, child_id: ObjectID, v: V): Object<V> {
+        native_add_field<ObjectID, V>(parent_id, child_id, v);
+        native_take_object<Object<V>>(child_id)
     }
 
     /// Acquire an immutable reference to the value which `key` maps to.
     /// Aborts if there is no field for `key`.
     public fun borrow_field<T: key, K: copy + drop, V: store>(obj: &Object<T>, key: K): &V {
         borrow_field_internal<K, V>(obj.id, key)
-    }
-
-    fun borrow_object_field_internal<V: key>(parent_id: ObjectID, key: ObjectID): &ObjectEntity<V> {
-        assert!(is_parent(&parent_id, &key), ErrorParentNotMatch);
-        native_borrow_field<ObjectID, ObjectEntity<V>>(parent_id, key)
     }
 
     /// Borrow FieldValue and return the val of FieldValue
@@ -558,13 +465,6 @@ module moveos_std::object {
         borrow_mut_field_internal(obj_id, key)
     }
 
-    fun borrow_mut_object_field_internal<V: key>(parent_id: ObjectID, key: ObjectID): &mut ObjectEntity<V> {
-        assert!(is_parent(&parent_id, &key), ErrorParentNotMatch);
-        let object_entity = native_borrow_mut_field<ObjectID, ObjectEntity<V>>(parent_id, key);
-        assert!(!is_frozen_internal(object_entity), ErrorObjectFrozen);
-        object_entity
-    }
-
     #[private_generics(T)]
     /// Insert the pair (`key`, `value`) if there is no field for `key`.
     /// update the value of the field for `key` to `value` otherwise
@@ -578,7 +478,6 @@ module moveos_std::object {
         } else {
             let ref = borrow_mut_field_internal(obj_id, key);
             *ref = value;
-            update_timestamp<T>(obj_id);
         };
     }
 
@@ -590,65 +489,19 @@ module moveos_std::object {
     }
 
     public(friend) fun remove_field_internal<T: key, K: copy + drop, V>(obj_id: ObjectID, key: K): V {
-        let FieldValue { val } = native_remove_field<K, FieldValue<V>>(obj_id, key);
-        decreases_size<T>(obj_id);
-        update_timestamp<T>(obj_id);
+        let FieldValue { val } = native_remove_field<K, FieldValue<V>>(obj_id, key, false);
         val
-    }
-
-    fun increment_size<T: key>(obj_id: ObjectID) {
-        if(has_parent(&obj_id)) {
-            let object_entity = borrow_mut_from_global<T>(obj_id);
-            object_entity.size = object_entity.size + 1;
-        }else{
-            let root = native_borrow_root();
-            root.size = root.size + 1;
-        }
-    }
-
-    fun decreases_size<T: key>(obj_id: ObjectID) {
-        if(has_parent(&obj_id)) {
-            let object_entity = borrow_mut_from_global<T>(obj_id);
-            object_entity.size = object_entity.size - 1;
-        }else{
-            let root = native_borrow_root();
-            root.size = root.size - 1;
-        }
-    }
-
-    fun init_timestamp<T: key>(entity: &mut ObjectEntity<T>) {
-        let now_milliseconds = now_milliseconds();
-        entity.created_at = now_milliseconds;
-        entity.updated_at = now_milliseconds;
-    }
-
-    fun update_timestamp<T: key>(obj_id: ObjectID) {
-        let now_milliseconds = now_milliseconds();
-        if(has_parent(&obj_id)) {
-            let object_entity = borrow_mut_from_global<T>(obj_id);
-            object_entity.updated_at = now_milliseconds;
-        }else{
-            let root = native_borrow_root();
-            root.updated_at = now_milliseconds;
-        }
     }
 
     #[private_generics(T)]
     public fun remove_object_field<T: key, V: key>(obj: &mut Object<T>, child: Object<V>): V {
         let Object { id: child_id } = child;
-        remove_object_field_internal<T, V>(obj.id, child_id, true)
+        remove_object_field_internal<V>(obj.id, child_id, true)
     }
 
-    fun remove_object_field_internal<T: key, V: key>(parent_id: ObjectID, child_id: ObjectID, check_size: bool): V {
+    fun remove_object_field_internal<V: key>(parent_id: ObjectID, child_id: ObjectID, check_size: bool): V {
         assert!(is_parent(&parent_id, &child_id), ErrorParentNotMatch);
-        let object_entity = native_remove_field<ObjectID, ObjectEntity<V>>(parent_id, child_id);
-        let ObjectEntity { id: _, owner: _, flag: _, value, state_root: _, size: size, created_at: _, updated_at: _ } = object_entity;
-        if (check_size) {
-            // Need to ensure that the Fields is empty before delete the Object
-            assert!(size == 0, ErrorFieldsNotEmpty);
-        };
-        decreases_size<T>(parent_id);
-        update_timestamp<T>(parent_id);
+        let value = native_remove_field<ObjectID, V>(parent_id, child_id, check_size);
         value
     }
 
@@ -673,7 +526,7 @@ module moveos_std::object {
 
     fun contains_object_field_internal<V: key>(parent: ObjectID, key: ObjectID): bool {
         if (is_parent(&parent, &key)) {
-            native_contains_field_with_value_type<ObjectID, ObjectEntity<V>>(parent, key)
+            native_contains_field_with_value_type<ObjectID, V>(parent, key)
         }else {
             false
         }
@@ -681,13 +534,9 @@ module moveos_std::object {
 
     /// Returns the size of the object fields, the number of key-value pairs
     public fun field_size<T: key>(obj: &Object<T>): u64 {
-        field_size_internal<T>(obj.id)
+        native_object_size(obj.id)
     }
 
-    fun field_size_internal<T: key>(object_id: ObjectID): u64 {
-        let object_entity = borrow_from_global<T>(object_id);
-        object_entity.size
-    }
     // ======================================================================================================
     // Internal API
 
@@ -774,19 +623,26 @@ module moveos_std::object {
         now_milliseconds() / MILLI_CONVERSION_FACTOR
     }
 
-    // ===== Object<T> pointer native functions ====
+    // ===== ObjectMeta native functions ======
 
-    native fun native_borrow_object_pointer<O>(object_id: ObjectID): &O;
+    native fun native_object_owner(object_id: ObjectID): address;
+    // Object fields size
+    native fun native_object_size(object_id: ObjectID): u64;
+    native fun native_object_flag(object_id: ObjectID): u8;
+    native fun native_update_object_flag(object_id: ObjectID, flag: u8);
+    native fun native_update_object_owner(object_id: ObjectID, owner: address);
 
-    native fun native_borrow_mut_object_pointer<O>(object_id: ObjectID): &mut O;
+    // ===== Object<T> native functions ====
 
-    native fun native_take_object_pointer<O>(object_id: ObjectID): O;
+    native fun native_borrow_object<O>(object_id: ObjectID): &O;
 
-    native fun native_return_object_pointer<O>(object: O);
+    native fun native_borrow_mut_object<O>(object_id: ObjectID): &mut O;
 
-    // ==== ObjectEntity<T> and field native functions ====
+    native fun native_take_object<O>(object_id: ObjectID): O;
 
-    native fun native_borrow_root(): &mut ObjectEntity<Root>;
+    native fun native_return_object<O>(object: O);
+
+    // ==== object field native functions ====
 
     native fun native_add_field<K: copy + drop, V>(obj_id: ObjectID, key: K, val: V);
 
@@ -799,7 +655,7 @@ module moveos_std::object {
     /// If the Object contains a field for `key` with value type `V`.
     native fun native_contains_field_with_value_type<K: copy + drop, V>(obj_id: ObjectID, key: K): bool;
 
-    native fun native_remove_field<K: copy + drop, V>(obj_id: ObjectID, key: K): V;
+    native fun native_remove_field<K: copy + drop, V>(obj_id: ObjectID, key: K, check_size: bool): V;
 
     #[test_only]
     /// Testing only: allows to drop a Object even if it's fields is not empty.
@@ -849,41 +705,26 @@ module moveos_std::object {
 
     #[test]
     fun test_shared() {
-        let object_id = derive_object_id();
-        let obj_enitty = new_internal(object_id, TestStruct { count: 1 });
-        assert!(!is_shared_internal(&obj_enitty), 1000);
-        assert!(!is_frozen_internal(&obj_enitty), 1001);
-        to_shared_internal(&mut obj_enitty);
-        assert!(is_shared_internal(&obj_enitty), 1002);
-        assert!(!is_frozen_internal(&obj_enitty), 1003);
-        let TestStruct { count: _ } = drop_entity(obj_enitty);
+        let obj = new(TestStruct { count: 1 });
+        let obj_id = obj.id;
+        assert!(!is_shared(&obj), 1000);
+        assert!(!is_frozen(&obj), 1001);
+        to_shared(obj);
+        let obj_ref = borrow_object<TestStruct>(obj_id);
+        assert!(is_shared(obj_ref), 1002);
+        assert!(!is_frozen(obj_ref), 1003);
     }
 
     #[test]
     fun test_frozen() {
-        let object_id = derive_object_id();
-        let obj_enitty = new_internal(object_id, TestStruct { count: 1 });
-        assert!(!is_shared_internal(&obj_enitty), 1000);
-        assert!(!is_frozen_internal(&obj_enitty), 1001);
-        to_frozen_internal(&mut obj_enitty);
-        assert!(!is_shared_internal(&obj_enitty), 1002);
-        assert!(is_frozen_internal(&obj_enitty), 1003);
-        let TestStruct { count: _ } = drop_entity(obj_enitty);
-    }
-
-    // An object can not be shared and frozen at the same time
-    // This test just ensure the flag can be set at the same time
-    #[test]
-    fun test_all_flag() {
-        let object_id = derive_object_id();
-        let obj_enitty = new_internal(object_id, TestStruct { count: 1 });
-        assert!(!is_shared_internal(&obj_enitty), 1000);
-        assert!(!is_frozen_internal(&obj_enitty), 1001);
-        to_shared_internal(&mut obj_enitty);
-        to_frozen_internal(&mut obj_enitty);
-        assert!(is_shared_internal(&obj_enitty), 1002);
-        assert!(is_frozen_internal(&obj_enitty), 1003);
-        let TestStruct { count: _ } = drop_entity(obj_enitty);
+        let obj = new(TestStruct { count: 1 });
+        let obj_id = obj.id;
+        assert!(!is_shared(&obj), 1000);
+        assert!(!is_frozen(&obj), 1001);
+        to_frozen(obj);
+        let obj_ref = borrow_object<TestStruct>(obj_id);
+        assert!(!is_shared(obj_ref), 1002);
+        assert!(is_frozen(obj_ref), 1003);
     }
 
     #[test]
@@ -892,17 +733,16 @@ module moveos_std::object {
         let obj = new(TestStruct { count: 1 });
         let object_id = obj.id;
         let TestStruct { count : _ } = remove(obj);
-        let _obj_ref = borrow_from_global<TestStruct>(object_id);
+        let _obj_ref = borrow_object<TestStruct>(object_id);
     }
 
     #[test]
     #[expected_failure(abort_code = ErrorNotFound, location = moveos_std::object)]
-    fun test_double_remove_failure() {
+    fun test_remove_then_borrow_failure() {
         let obj = new(TestStruct { count: 1 });
         let obj_id = id(&obj);
-
-        let TestStruct { count : _ } = remove_object_field_internal<Root, TestStruct>(root_object_id(), obj_id, true);
         let TestStruct { count : _ } = remove(obj);
+        let _obj_ref = borrow_object<TestStruct>(obj_id);
     }
 
     #[test]
@@ -910,15 +750,10 @@ module moveos_std::object {
     fun test_type_mismatch() {
         let object_id = derive_object_id();
         let obj = new_with_object_id(object_id, TestStruct { count: 1 });
+        transfer_extend(obj, @moveos_std);
         {
-            let test_struct_ref = borrow(&obj);
-            assert!(test_struct_ref.count == 1, 1001);
+            let _test_struct2_object = borrow_object<TestStruct2>(object_id);
         };
-        {
-            let test_struct2_object_entity = borrow_from_global<TestStruct2>(object_id);
-            assert!(test_struct2_object_entity.value.count == 1, 1002);
-        };
-        drop(obj);
     }
 
     struct TestStructID has store, copy, drop {
