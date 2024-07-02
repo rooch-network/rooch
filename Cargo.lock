@@ -10068,6 +10068,7 @@ dependencies = [
  "parking_lot 0.12.3",
  "rand 0.8.5",
  "regex",
+ "rooch-alloc",
  "rooch-config",
  "rooch-rpc-api",
  "rooch-types",

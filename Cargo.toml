@@ -49,14 +49,14 @@ members = [
     "frameworks/moveos-stdlib",
     "frameworks/rooch-framework",
     "frameworks/bitcoin-move",
-    "frameworks/framework-types"
+    "frameworks/framework-types",
 ]
 
 default-members = [
     "moveos/moveos",
     "frameworks/framework-release",
     "crates/rooch",
-    "crates/rooch-faucet"
+    "crates/rooch-faucet",
 ]
 
 # All workspace members should inherit these keys
@@ -120,7 +120,7 @@ rooch-faucet = { path = "crates/rooch-faucet" }
 rooch-test-transaction-builder = { path = "crates/rooch-test-transaction-builder" }
 data-verify = { path = "crates/data_verify" }
 rooch-db = { path = "crates/rooch-db" }
-rooch-alloc = { path = "crates/rooch-alloc" }
+rooch-alloc = { path = "crates/rooch-alloc", features = ["jemalloc"] }
 
 # frameworks
 framework-types = { path = "frameworks/framework-types" }
@@ -217,7 +217,12 @@ unescape = "0.1.0"
 tempfile = "3.2.0"
 regex = "1.10.5"
 walkdir = "2.3.3"
-rocksdb = { version = "0.22.0", features = ["snappy", "lz4", "zstd", "zlib"], default-features = false }
+rocksdb = { version = "0.22.0", features = [
+    "snappy",
+    "lz4",
+    "zstd",
+    "zlib",
+], default-features = false }
 prometheus = "0.13.3"
 coarsetime = "0.1.22"
 hyper = { version = "0.14.12", features = ["full"] }
@@ -229,8 +234,20 @@ nostr = "0.22"
 serde-reflection = "0.3.6"
 serde-generate = "0.25.1"
 bcs-ext = { path = "moveos/moveos-commons/bcs_ext" }
-tower = { version = "0.4.12", features = ["full", "util", "timeout", "load-shed", "limit"] }
-tower-http = { version = "0.4.4", features = ["cors", "full", "trace", "set-header", "propagate-header"] }
+tower = { version = "0.4.12", features = [
+    "full",
+    "util",
+    "timeout",
+    "load-shed",
+    "limit",
+] }
+tower-http = { version = "0.4.4", features = [
+    "cors",
+    "full",
+    "trace",
+    "set-header",
+    "propagate-header",
+] }
 mirai-annotations = "1.12.0"
 lru = "0.11.0"
 bs58 = "0.5.1"
@@ -293,7 +310,13 @@ wasmer = "4.2.5"
 wasmer-types = "4.2.5"
 wasmer-compiler-singlepass = "4.3.1"
 ciborium = "0.2.1"
-pprof = { version = "0.13.0", features = ["flamegraph", "criterion", "cpp", "frame-pointer", "protobuf-codec"] }
+pprof = { version = "0.13.0", features = [
+    "flamegraph",
+    "criterion",
+    "cpp",
+    "frame-pointer",
+    "protobuf-codec",
+] }
 celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
 celestia-types = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
 opendal = { version = "0.47.1", features = ["services-fs", "services-gcs"] }
@@ -328,18 +351,28 @@ move-stackless-bytecode = { git = "https://github.com/rooch-network/move", rev =
 move-prover-test-utils = { git = "https://github.com/rooch-network/move", rev = "c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27" }
 move-resource-viewer = { git = "https://github.com/rooch-network/move", rev = "c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27" }
 move-stackless-bytecode-interpreter = { git = "https://github.com/rooch-network/move", rev = "c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27" }
-move-stdlib = { git = "https://github.com/rooch-network/move", rev = "c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27", features = ["testing"] }
+move-stdlib = { git = "https://github.com/rooch-network/move", rev = "c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27", features = [
+    "testing",
+] }
 move-symbol-pool = { git = "https://github.com/rooch-network/move", rev = "c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27" }
 #move-table-extension = { git = "https://github.com/rooch-network/move", rev = "c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27" }
 move-transactional-test-runner = { git = "https://github.com/rooch-network/move", rev = "c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27" }
-move-unit-test = { git = "https://github.com/rooch-network/move", rev = "c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27", features = ["table-extension"] }
-move-vm-runtime = { git = "https://github.com/rooch-network/move", rev = "c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27", features = ["stacktrace", "debugging", "testing"] }
-move-vm-test-utils = { git = "https://github.com/rooch-network/move", rev = "c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27", features = ["table-extension"] }
+move-unit-test = { git = "https://github.com/rooch-network/move", rev = "c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27", features = [
+    "table-extension",
+] }
+move-vm-runtime = { git = "https://github.com/rooch-network/move", rev = "c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27", features = [
+    "stacktrace",
+    "debugging",
+    "testing",
+] }
+move-vm-test-utils = { git = "https://github.com/rooch-network/move", rev = "c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27", features = [
+    "table-extension",
+] }
 move-vm-types = { git = "https://github.com/rooch-network/move", rev = "c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27" }
 read-write-set = { git = "https://github.com/rooch-network/move", rev = "c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27" }
 read-write-set-dynamic = { git = "https://github.com/rooch-network/move", rev = "c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27" }
 move-bytecode-source-map = { git = "https://github.com/rooch-network/move", rev = "c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27" }
-move-ir-types = { git = "https://github.com/rooch-network/move", rev = "c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27" }# END MOVE DEPENDENCIES
+move-ir-types = { git = "https://github.com/rooch-network/move", rev = "c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27" } # END MOVE DEPENDENCIES
 
 # keep this for convenient debug Move in local repo
 # [patch.'https://github.com/rooch-network/move']
