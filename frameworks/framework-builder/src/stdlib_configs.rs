@@ -83,7 +83,7 @@ static STDLIB_BUILD_CONFIGS: Lazy<Vec<StdlibBuildConfig>> = Lazy::new(|| {
     ]
 });
 
-pub fn build_stdlib(stable: bool, gas_profile: bool) -> Result<Stdlib> {
+pub fn build_stdlib(stable: bool) -> Result<Stdlib> {
     let configs = if stable {
         STDLIB_BUILD_CONFIGS
             .iter()
@@ -93,5 +93,5 @@ pub fn build_stdlib(stable: bool, gas_profile: bool) -> Result<Stdlib> {
     } else {
         STDLIB_BUILD_CONFIGS.clone()
     };
-    Stdlib::build(configs, gas_profile)
+    Stdlib::build(configs)
 }

@@ -10,8 +10,10 @@ use move_model::model::GlobalEnv;
 use move_package::{compilation::compiled_package::CompiledPackage, BuildConfig, ModelConfig};
 use moveos_compiler::dependency_order::sort_by_dependency_order;
 use moveos_verifier::build::run_verifier;
+#[cfg(feature = "execution_tracing")]
 use moveos_verifier::execution_measurement::compile_with_filter;
 use serde::{Deserialize, Serialize};
+#[cfg(not(feature = "execution_tracing"))]
 use std::io::stderr;
 use std::{
     collections::{HashMap, HashSet},
@@ -86,19 +88,20 @@ pub struct StdlibBuildConfig {
 }
 
 impl StdlibBuildConfig {
-    pub fn build(self, _deps: &[StdlibBuildConfig], gas_profile: bool) -> Result<StdlibPackage> {
+    pub fn build(self, _deps: &[StdlibBuildConfig]) -> Result<StdlibPackage> {
         println!("Build stdlib at {:?}", self.path);
         let original_current_dir = current_dir()?;
         let project_path = self.path.clone();
         let project_path = reroot_path(Some(project_path))?;
 
-        let mut compiled_package = if gas_profile {
-            compile_with_filter(&self.path, self.build_config.clone())?
-        } else {
-            self.build_config
-                .clone()
-                .compile_package_no_exit(&self.path, &mut stderr())?
-        };
+        #[cfg(feature = "execution_tracing")]
+        let mut compiled_package = compile_with_filter(&self.path, self.build_config.clone())?;
+
+        #[cfg(not(feature = "execution_tracing"))]
+        let mut compiled_package = self
+            .build_config
+            .clone()
+            .compile_package_no_exit(&self.path, &mut stderr())?;
 
         run_verifier(
             &project_path,
@@ -243,11 +246,11 @@ impl StdlibBuildConfig {
 
 impl Stdlib {
     /// Build the stdlib or framework packages
-    pub fn build(build_configs: Vec<StdlibBuildConfig>, gas_profile: bool) -> Result<Self> {
+    pub fn build(build_configs: Vec<StdlibBuildConfig>) -> Result<Self> {
         let mut packages = vec![];
         let mut deps = vec![];
         for build_config in build_configs {
-            packages.push(build_config.clone().build(&deps, gas_profile)?);
+            packages.push(build_config.clone().build(&deps)?);
             deps.push(build_config);
         }
         Ok(Self { packages })

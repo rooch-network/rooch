@@ -39,3 +39,6 @@ framework-builder = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 framework-builder = { workspace = true }
+
+[features]
+execution_tracing = ["framework-builder/execution_tracing"]

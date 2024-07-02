@@ -415,7 +415,7 @@ impl RoochGenesis {
     }
 
     pub fn build_stdlib() -> Result<Stdlib> {
-        framework_builder::stdlib_configs::build_stdlib(false, false)
+        framework_builder::stdlib_configs::build_stdlib(false)
     }
 
     pub fn load_stdlib(stdlib_version: StdlibVersion) -> Result<Stdlib> {
