@@ -47,6 +47,7 @@ use moveos_types::{
     state_resolver::MoveOSResolver,
     transaction::{FunctionCall, MoveAction, VerifiedMoveAction},
 };
+use moveos_verifier::execution_measurement::NativeExecutionTracing;
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
 use parking_lot::RwLock;
 use std::collections::BTreeSet;
@@ -167,6 +168,7 @@ where
         extensions.add(ObjectRuntimeContext::new(remote, object_runtime.clone()));
         extensions.add(NativeModuleContext::new(remote));
         extensions.add(NativeEventContext::default());
+        extensions.add(NativeExecutionTracing::default());
 
         // The VM code loader has bugs around module upgrade. After a module upgrade, the internal
         // cache needs to be flushed to work around those bugs.
@@ -559,6 +561,7 @@ where
         drop(raw_events);
 
         let event_context = extensions.remove::<NativeEventContext>();
+        let tracing_logs = extensions.remove::<NativeExecutionTracing>();
         let raw_events = event_context.into_events();
         drop(extensions);
 
@@ -635,6 +638,10 @@ where
             gas_statement.storage_gas_used = 0;
         }
          */
+
+        for log_line in tracing_logs.log.iter() {
+            println!("{}", log_line);
+        }
 
         Ok((
             ctx,

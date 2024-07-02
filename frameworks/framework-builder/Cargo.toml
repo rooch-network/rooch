@@ -53,3 +53,6 @@ moveos-stdlib = { workspace = true }
 moveos-compiler = { workspace = true }
 
 framework-types = { workspace = true }
+
+[features]
+execution_tracing = []

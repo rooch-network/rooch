@@ -59,3 +59,6 @@ moveos-object-runtime = { workspace = true }
 moveos-compiler = { workspace = true }
 
 smt = { workspace = true }
+
+[features]
+execution_tracing = []

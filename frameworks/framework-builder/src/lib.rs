@@ -10,12 +10,16 @@ use move_model::model::GlobalEnv;
 use move_package::{compilation::compiled_package::CompiledPackage, BuildConfig, ModelConfig};
 use moveos_compiler::dependency_order::sort_by_dependency_order;
 use moveos_verifier::build::run_verifier;
+#[cfg(feature = "execution_tracing")]
+use moveos_verifier::execution_measurement::compile_with_filter;
 use serde::{Deserialize, Serialize};
+#[cfg(not(feature = "execution_tracing"))]
+use std::io::stderr;
 use std::{
     collections::{HashMap, HashSet},
     env::current_dir,
     fs::{self, File},
-    io::{stderr, Write},
+    io::Write,
     path::{Path, PathBuf},
 };
 
@@ -90,6 +94,10 @@ impl StdlibBuildConfig {
         let project_path = self.path.clone();
         let project_path = reroot_path(Some(project_path))?;
 
+        #[cfg(feature = "execution_tracing")]
+        let mut compiled_package = compile_with_filter(&self.path, self.build_config.clone())?;
+
+        #[cfg(not(feature = "execution_tracing"))]
         let mut compiled_package = self
             .build_config
             .clone()
