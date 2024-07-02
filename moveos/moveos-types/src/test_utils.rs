@@ -276,7 +276,7 @@ pub fn random_raw_object_with_object_id(object_id: ObjectID) -> RawObject {
 }
 
 pub fn random_raw_object_for_child_object(parent_id: ObjectID) -> RawObject {
-    let id = ObjectID::new_with_child(parent_id, AccountAddress::random());
+    let id = parent_id.child_id(AccountAddress::random());
     internal_random_raw_object(id)
 }
 

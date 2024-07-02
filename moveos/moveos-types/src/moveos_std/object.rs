@@ -46,6 +46,10 @@ pub const FROZEN_OBJECT_FLAG_MASK: u8 = 1 << 1;
 // New table's state_root should be the place holder hash.
 pub static GENESIS_STATE_ROOT: Lazy<H256> = Lazy::new(|| *SPARSE_MERKLE_PLACEHOLDER_HASH);
 
+/// The genesis state root in address format
+pub static GENESIS_STATE_ROOT_ADDRESS: Lazy<AccountAddress> =
+    Lazy::new(|| AccountAddress::new(GENESIS_STATE_ROOT.0));
+
 pub fn human_readable_flag(flag: u8) -> String {
     if flag == 0 {
         return "UserOwned".to_string();
@@ -71,12 +75,6 @@ impl ObjectID {
         Self(vec![AccountAddress::new(obj_id)])
     }
 
-    pub fn new_with_child(parent_id: ObjectID, obj_id: AccountAddress) -> Self {
-        let mut parent = parent_id.0.clone();
-        parent.push(obj_id);
-        Self(parent)
-    }
-
     pub fn root() -> Self {
         Self(vec![])
     }
@@ -87,6 +85,12 @@ impl ObjectID {
 
     pub fn zero() -> Self {
         Self::new([0u8; AccountAddress::LENGTH])
+    }
+
+    pub fn child_id(&self, child_key: AccountAddress) -> Self {
+        let mut path = self.0.clone();
+        path.push(child_key);
+        Self(path)
     }
 
     /// Create an ObjectID from transaction hash digest and `creation_num`.
@@ -132,6 +136,15 @@ impl ObjectID {
         let key_type = TypeTag::Struct(Box::new(Self::struct_tag()));
         //We should use the bcs::to_bytes(ObjectID) as the key
         KeyState::new(self.to_bytes(), key_type)
+    }
+
+    /// The object's field key in the parent object
+    /// TODO give a better name
+    pub fn field_key(&self) -> AccountAddress {
+        self.0
+            .last()
+            .cloned()
+            .unwrap_or_else(|| AccountAddress::ZERO)
     }
 
     pub fn to_hex(&self) -> String {
@@ -379,6 +392,7 @@ pub struct ObjectMeta {
     pub size: u64,
     pub created_at: u64,
     pub updated_at: u64,
+    pub value_type: TypeTag,
 }
 
 impl ObjectMeta {
@@ -390,6 +404,7 @@ impl ObjectMeta {
         size: u64,
         created_at: u64,
         updated_at: u64,
+        value_type: TypeTag,
     ) -> Self {
         Self {
             id,
@@ -399,18 +414,20 @@ impl ObjectMeta {
             size,
             created_at,
             updated_at,
+            value_type,
         }
     }
 
-    pub fn genesis_meta(id: ObjectID) -> Self {
+    pub fn genesis_meta(id: ObjectID, value_type: TypeTag) -> Self {
         Self {
             id,
             owner: MOVEOS_STD_ADDRESS,
-            flag: SHARED_OBJECT_FLAG_MASK,
+            flag: 0,
             state_root: None,
             size: 0,
             created_at: 0,
             updated_at: 0,
+            value_type,
         }
     }
 
@@ -427,13 +444,35 @@ impl ObjectMeta {
     }
 
     pub fn is_genesis(&self) -> bool {
-        self.state_root() == *GENESIS_STATE_ROOT
+        match self.state_root {
+            Some(state_root) => state_root == *GENESIS_STATE_ROOT_ADDRESS,
+            None => true,
+        }
     }
 
     pub fn state_root(&self) -> H256 {
         self.state_root
             .map(|addr| addr.into_bytes().into())
             .unwrap_or_else(|| *GENESIS_STATE_ROOT)
+    }
+
+    pub fn is_system_owned(&self) -> bool {
+        self.owner == SYSTEM_OWNER_ADDRESS
+    }
+
+    //If the object is system owned and not frozen or shared, it should be embeded in other struct
+    pub fn is_embeded(&self) -> bool {
+        self.is_system_owned() && !(self.is_frozen() || self.is_shared())
+    }
+
+    pub fn has_fields(&self) -> bool {
+        let has_fields = self.size > 0;
+        if !has_fields {
+            debug_assert!(
+                self.state_root.is_none() || self.state_root == Some(*GENESIS_STATE_ROOT_ADDRESS)
+            );
+        }
+        has_fields
     }
 }
 
@@ -445,6 +484,7 @@ pub struct ObjectEntity<T> {
     pub owner: AccountAddress,
     pub flag: u8,
     /// The state tree root of the object dynamic fields
+    //TODO make it optional
     pub state_root: AccountAddress,
     pub size: u64,
     // The object created timestamp on chain
@@ -526,18 +566,6 @@ impl<T> ObjectEntity<T> {
         self.state_root() == *GENESIS_STATE_ROOT
     }
 
-    pub fn metadata(&self) -> ObjectMeta {
-        ObjectMeta {
-            id: self.id.clone(),
-            owner: self.owner,
-            flag: self.flag,
-            state_root: Some(self.state_root),
-            size: self.size,
-            created_at: self.created_at,
-            updated_at: self.updated_at,
-        }
-    }
-
     pub fn is_system_owned(&self) -> bool {
         self.owner == SYSTEM_OWNER_ADDRESS
     }
@@ -573,6 +601,19 @@ where
             size: self.size,
             created_at: self.created_at,
             updated_at: self.updated_at,
+        }
+    }
+
+    pub fn metadata(&self) -> ObjectMeta {
+        ObjectMeta {
+            id: self.id.clone(),
+            owner: self.owner,
+            flag: self.flag,
+            state_root: Some(self.state_root),
+            size: self.size,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            value_type: T::struct_tag().into(),
         }
     }
 }
@@ -718,6 +759,7 @@ pub type RootObjectEntity = ObjectEntity<Root>;
 #[derive(Eq, PartialEq, Debug, Clone)]
 pub struct RawData {
     pub struct_tag: StructTag,
+    //TODO wrap the Vec<u8> to MoveValue
     pub value: Vec<u8>,
 }
 
@@ -850,6 +892,25 @@ impl RawObject {
             updated_at: self.updated_at,
             value,
         })
+    }
+
+    pub fn value_type(&self) -> TypeTag {
+        TypeTag::Struct(Box::new(self.value.struct_tag.clone()))
+    }
+
+    pub fn into_metadata_and_value(self) -> (ObjectMeta, Vec<u8>) {
+        let value_type = TypeTag::Struct(Box::new(self.value.struct_tag.clone()));
+        let meta = ObjectMeta::new(
+            self.id,
+            self.owner,
+            self.flag,
+            Some(self.state_root),
+            self.size,
+            self.created_at,
+            self.updated_at,
+            TypeTag::Struct(Box::new(self.value.struct_tag)),
+        );
+        (meta, self.value.value)
     }
 }
 

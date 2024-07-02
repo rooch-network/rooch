@@ -46,11 +46,12 @@ pub trait StateResolver: StatelessResolver {
         if id.is_root() {
             Ok(Some(self.root_object().to_raw()))
         } else {
+            let field_key = id.field_key();
             let parent_id = id.parent().expect("ObjectID parent should not be None");
             let parent = self.get_object(&parent_id)?;
             match parent {
                 Some(parent) => {
-                    let obj_field = self.get_object_field_at(parent.state_root(), id)?;
+                    let obj_field = self.get_object_field_at(parent.state_root(), field_key)?;
                     Ok(obj_field)
                 }
                 None => Ok(None),
@@ -130,8 +131,12 @@ pub trait StatelessResolver {
         key: &KeyState,
     ) -> Result<Option<State>, anyhow::Error>;
 
-    fn get_object_field_at(&self, state_root: H256, id: &ObjectID) -> Result<Option<RawObject>> {
-        self.get_field_at(state_root, &id.to_key())?
+    fn get_object_field_at(
+        &self,
+        state_root: H256,
+        key: AccountAddress,
+    ) -> Result<Option<RawObject>> {
+        self.get_field_at(state_root, &KeyState::from_address(key))?
             .map(|state| state.as_raw_object())
             .transpose()
             .map_err(Into::into)

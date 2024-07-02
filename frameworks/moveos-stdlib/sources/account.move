@@ -139,7 +139,7 @@ module moveos_std::account {
 
    fun account_move_resource_to_internal<T: key>(self: &mut Object<Account>, resource: T){
       assert!(!object::contains_field(self, key<T>()), ErrorResourceAlreadyExists);
-      object::add_field_internal<Account, std::string::String, T>(object::id(self), key<T>(), resource)
+      object::add_field_internal<std::string::String, T>(object::id(self), key<T>(), resource)
    }
 
    #[private_generics(T)]

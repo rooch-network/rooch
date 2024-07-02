@@ -15,38 +15,41 @@ use moveos_types::{
 };
 use serde::{Deserialize, Serialize};
 
-pub(crate) const FIELD_VALUE_STRUCT_NAME: &IdentStr = ident_str!("FieldValue");
+pub(crate) const FIELD_STRUCT_NAME: &IdentStr = ident_str!("Field");
 
-/// A wrapper of Object dynamic field value, mirroring `FieldValue<V>` in `object.move`.
+/// A wrapper of Object dynamic field value, mirroring `Field<K, V>` in `object.move`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct FieldValue<V> {
-    pub(crate) val: V,
+pub(crate) struct Field<K, V> {
+    pub(crate) key: K,
+    pub(crate) value: V,
 }
 
-impl<V> MoveStructType for FieldValue<V>
+impl<K, V> MoveStructType for Field<K, V>
 where
+    K: MoveState,
     V: MoveState,
 {
     const ADDRESS: move_core_types::account_address::AccountAddress = MOVEOS_STD_ADDRESS;
     const MODULE_NAME: &'static IdentStr = object::MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = FIELD_VALUE_STRUCT_NAME;
+    const STRUCT_NAME: &'static IdentStr = FIELD_STRUCT_NAME;
 
     fn struct_tag() -> StructTag {
         StructTag {
             address: Self::ADDRESS,
             module: Self::MODULE_NAME.to_owned(),
             name: Self::STRUCT_NAME.to_owned(),
-            type_params: vec![V::type_tag()],
+            type_params: vec![K::type_tag(), V::type_tag()],
         }
     }
 }
 
-impl<V> MoveStructState for FieldValue<V>
+impl<K, V> MoveStructState for Field<K, V>
 where
+    K: MoveState,
     V: MoveState,
 {
     fn struct_layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![V::type_layout()])
+        MoveStructLayout::new(vec![K::type_layout(), V::type_layout()])
     }
 
     fn from_runtime_value_struct(value: Struct) -> anyhow::Result<Self>
@@ -54,23 +57,25 @@ where
         Self: Sized,
     {
         let mut fields = value.unpack()?.collect::<Vec<Value>>();
-        debug_assert!(fields.len() == 1, "Fields of FieldValue struct must be 1");
+        debug_assert!(fields.len() == 2, "Fields of Field struct must be 2");
         let v = fields.pop().unwrap();
-        Ok(FieldValue {
-            val: V::from_runtime_value(v)?,
+        let k = fields.pop().unwrap();
+        Ok(Field {
+            key: K::from_runtime_value(k)?,
+            value: V::from_runtime_value(v)?,
         })
     }
 }
 
-pub(crate) fn is_field_value_type(tag: &TypeTag) -> bool {
+pub(crate) fn is_field_type(tag: &TypeTag) -> bool {
     match tag {
-        TypeTag::Struct(tag) => is_field_value_struct_tag(tag),
+        TypeTag::Struct(tag) => is_field_struct_tag(tag),
         _ => false,
     }
 }
 
-fn is_field_value_struct_tag(tag: &StructTag) -> bool {
+fn is_field_struct_tag(tag: &StructTag) -> bool {
     tag.address == MOVEOS_STD_ADDRESS
         && tag.module.as_ref() == object::MODULE_NAME
-        && tag.name.as_ref() == FIELD_VALUE_STRUCT_NAME
+        && tag.name.as_ref() == FIELD_STRUCT_NAME
 }
