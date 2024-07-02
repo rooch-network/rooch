@@ -14,8 +14,8 @@ use std::fmt::{Display, Formatter, Write};
 use std::path::PathBuf;
 
 pub const DEFAULT_EXPIRATION_SECS: u64 = 30;
-pub const ROOCH_DEV_NET_URL: &str = "https://dev-seed.rooch.network:443/";
-pub const ROOCH_TEST_NET_URL: &str = "https://test-seed.rooch.network:443/";
+pub const ROOCH_DEV_NET_URL: &str = "https://dev-seed.rooch.network";
+pub const ROOCH_TEST_NET_URL: &str = "https://test-seed.rooch.network";
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ClientConfig {
@@ -77,16 +77,11 @@ impl Env {
     pub async fn create_rpc_client(
         &self,
         request_timeout: std::time::Duration,
-        max_concurrent_requests: Option<u64>,
     ) -> Result<Client, anyhow::Error> {
         let mut builder = ClientBuilder::default();
         builder = builder.request_timeout(request_timeout);
         if let Some(ws_url) = &self.ws {
             builder = builder.ws_url(ws_url);
-        }
-
-        if let Some(max_concurrent_requests) = max_concurrent_requests {
-            builder = builder.max_concurrent_requests(max_concurrent_requests as usize);
         }
 
         builder.build(&self.rpc).await
