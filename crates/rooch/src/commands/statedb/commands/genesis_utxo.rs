@@ -3,7 +3,7 @@
 
 use crate::cli_types::WalletContextOptions;
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
-use crate::commands::statedb::commands::UTXO_SEAL_INSCRIPTION_PROTOCOL;
+use crate::commands::statedb::commands::{get_ord_by_outpoint, UTXO_SEAL_INSCRIPTION_PROTOCOL};
 use anyhow::{Error, Result};
 use bitcoin::{OutPoint, PublicKey, Txid};
 use chrono::{DateTime, Local};
@@ -478,19 +478,6 @@ fn gen_utxo_update(
         utxo_object.into_state(),
         address_mapping_data,
     ))
-}
-
-fn get_ord_by_outpoint(
-    utxo_ord_map: Option<Arc<sled::Db>>,
-    outpoint: OutPoint,
-) -> Option<Vec<ObjectID>> {
-    if let Some(db) = utxo_ord_map {
-        let key = bcs::to_bytes(&outpoint).unwrap();
-        let value = db.get(key).unwrap();
-        value.map(|value| bcs::from_bytes(&value).unwrap())
-    } else {
-        None
-    }
 }
 
 fn inscription_object_ids_to_utxo_seal(
