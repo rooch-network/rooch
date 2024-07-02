@@ -3,16 +3,14 @@
 
 use crate::service::{aggregate_service::AggregateService, rpc_service::RpcService};
 use anyhow::Result;
-use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    RpcModule,
-};
+use jsonrpsee::{core::async_trait, RpcModule};
 use move_core_types::account_address::AccountAddress;
 use rooch_rpc_api::api::btc_api::BtcAPIServer;
 use rooch_rpc_api::api::{RoochRpcModule, DEFAULT_RESULT_LIMIT_USIZE, MAX_RESULT_LIMIT_USIZE};
 use rooch_rpc_api::jsonrpc_types::btc::ord::{InscriptionFilterView, InscriptionStateView};
 use rooch_rpc_api::jsonrpc_types::btc::utxo::{UTXOFilterView, UTXOStateView};
 use rooch_rpc_api::jsonrpc_types::{InscriptionPageView, StrView, UTXOPageView};
+use rooch_rpc_api::RpcResult;
 use rooch_types::indexer::state::IndexerStateID;
 use std::cmp::min;
 

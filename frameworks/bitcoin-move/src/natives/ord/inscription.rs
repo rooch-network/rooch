@@ -12,7 +12,7 @@ use {
     super::envelope,
     super::inscription_id::InscriptionId,
     super::media::Media,
-    axum::http::header::HeaderValue,
+    axum::http::HeaderValue,
     bitcoin::{
         blockdata::{
             opcodes,

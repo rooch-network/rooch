@@ -252,6 +252,9 @@ impl RocksDB {
         db_opts.set_wal_recovery_mode(rocksdb::DBRecoveryMode::PointInTime); // for memtable crash recovery
         db_opts.enable_statistics();
         db_opts.set_statistics_level(rocksdb::statistics::StatsLevel::ExceptTimeForMutex);
+        db_opts.set_enable_blob_files(true);
+        db_opts.set_min_blob_size(1024);
+        db_opts.set_enable_blob_gc(false);
         db_opts
 
         // db_opts.enable_statistics();

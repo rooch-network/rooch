@@ -6,7 +6,8 @@ import { useMutation } from '@tanstack/react-query'
 
 import { Session } from '@roochnetwork/rooch-sdk'
 import { roochMutationKeys } from '../constants/index.js'
-import { useCurrentSession, useRoochClient, useRoochSessionStore, useSession } from './index.js'
+import { useCurrentSession, useRoochClient, useSession } from './index.js'
+import { useSessionStore } from './useSessionsStore.js'
 
 type UseRemoveSessionArgs = {
   authKey: string
@@ -29,8 +30,8 @@ export function useRemoveSession({
   unknown
 > {
   const sessionsKeys = useSession()
-  const removeSession = useRoochSessionStore((state) => state.removeSession)
-  const setCurrentSession = useRoochSessionStore((state) => state.setCurrentSession)
+  const removeSession = useSessionStore((state) => state.removeSession)
+  const setCurrentSession = useSessionStore((state) => state.setCurrentSession)
   const currentSession = useCurrentSession()
   const client = useRoochClient()
   const curSessionKey = useCurrentSession()

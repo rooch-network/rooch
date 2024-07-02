@@ -12,7 +12,7 @@ use crate::jsonrpc_types::{
     ObjectIDView, ObjectStateFilterView, ObjectStateView, QueryOptions, StateOptions,
     StatePageView, StateView, StrView, StructTagView, TransactionWithInfoPageView, TxOptions,
 };
-use jsonrpsee::core::RpcResult;
+use crate::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 use moveos_types::{access_path::AccessPath, state::KeyState};
 use rooch_open_rpc_macros::open_rpc;
