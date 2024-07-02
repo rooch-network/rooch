@@ -8,7 +8,7 @@ import { ThirdPartyAddress, Session } from '@roochnetwork/rooch-sdk'
 import { useWalletStore } from './useWalletStore.js'
 import { walletMutationKeys } from '../../constants/index.js'
 import { Wallet } from '../../wellet/index.js'
-import { useRoochSessionStore } from '../useSessionsStore.js'
+import { useSessionStore } from '../useSessionsStore.js'
 import { useSession } from '../useSessions.js'
 
 type ConnectWalletArgs = {
@@ -35,7 +35,7 @@ export function useConnectWallet({
   unknown
 > {
   const sessions = useSession()
-  const setCurrentSession = useRoochSessionStore((state) => state.setCurrentSession)
+  const setCurrentSession = useSessionStore((state) => state.setCurrentSession)
   const setWalletConnected = useWalletStore((state) => state.setWalletConnected)
   const setConnectionStatus = useWalletStore((state) => state.setConnectionStatus)
 

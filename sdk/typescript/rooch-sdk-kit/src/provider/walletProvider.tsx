@@ -9,11 +9,11 @@ import { createWalletStore, WalletStore } from './walletStore.js'
 import {
   useAutoConnectWallet,
   useCurrentSession,
-  useRoochSessionStore,
   useSession,
   useWalletStore,
   useCurrentNetwork,
 } from '../hooks/index.js'
+import { useSessionStore } from '../hooks/useSessionsStore.js'
 import { getDefaultStorage, StorageType } from '../utils/index.js'
 import { SupportChain } from '../feature/index.js'
 import { getWallets } from '../wellet/util.js'
@@ -76,7 +76,7 @@ function WalletConnectionManager({ children }: WalletConnectionManagerProps) {
   const currentAddress = useWalletStore((state) => state.currentAddress)
   const sessions = useSession()
   const curSession = useCurrentSession()
-  const setCurrentSession = useRoochSessionStore((state) => state.setCurrentSession)
+  const setCurrentSession = useSessionStore((state) => state.setCurrentSession)
 
   const accountsChangedHandler = useCallback(
     async (address: string[]) => {
