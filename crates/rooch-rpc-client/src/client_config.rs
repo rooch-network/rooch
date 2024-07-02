@@ -14,8 +14,8 @@ use std::fmt::{Display, Formatter, Write};
 use std::path::PathBuf;
 
 pub const DEFAULT_EXPIRATION_SECS: u64 = 30;
-pub const ROOCH_DEV_NET_URL: &str = "https://dev-seed.rooch.network:443/";
-pub const ROOCH_TEST_NET_URL: &str = "https://test-seed.rooch.network:443/";
+pub const ROOCH_DEV_NET_URL: &str = "https://dev-seed.rooch.network/";
+pub const ROOCH_TEST_NET_URL: &str = "https://test-seed.rooch.network/";
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ClientConfig {

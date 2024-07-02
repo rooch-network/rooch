@@ -4,7 +4,7 @@
 use crate::jsonrpc_types::btc::ord::InscriptionFilterView;
 use crate::jsonrpc_types::btc::utxo::UTXOFilterView;
 use crate::jsonrpc_types::{InscriptionPageView, StrView, UTXOPageView};
-use jsonrpsee::core::RpcResult;
+use crate::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 use rooch_open_rpc_macros::open_rpc;
 use rooch_types::indexer::state::IndexerStateID;

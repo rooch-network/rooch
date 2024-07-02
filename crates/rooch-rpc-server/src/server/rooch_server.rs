@@ -1,14 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::err_obj;
 use crate::service::aggregate_service::AggregateService;
 use crate::service::rpc_service::RpcService;
 use anyhow::Result;
-use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    RpcModule,
-};
+use jsonrpsee::{core::async_trait, RpcModule};
 use moveos_types::{
     access_path::AccessPath,
     h256::H256,
@@ -34,6 +30,8 @@ use rooch_rpc_api::jsonrpc_types::{
     ExecuteTransactionResponseView, FunctionCallView, H256View, StatePageView, StateView, StrView,
     StructTagView, TransactionWithInfoPageView,
 };
+use rooch_rpc_api::RpcError;
+use rooch_rpc_api::RpcResult;
 use rooch_rpc_api::{api::rooch_api::RoochAPIServer, api::DEFAULT_RESULT_LIMIT};
 use rooch_rpc_api::{
     api::{RoochRpcModule, DEFAULT_RESULT_LIMIT_USIZE},
@@ -155,25 +153,17 @@ impl RoochServer {
 #[async_trait]
 impl RoochAPIServer for RoochServer {
     async fn get_chain_id(&self) -> RpcResult<StrView<u64>> {
-        let chain_id = self
-            .rpc_service
-            .get_chain_id()
-            .await
-            .map_err(|e| err_obj(e.to_string()))?;
+        let chain_id = self.rpc_service.get_chain_id().await?;
         Ok(StrView(chain_id))
     }
 
     async fn send_raw_transaction(&self, payload: BytesView) -> RpcResult<H256View> {
         info!("send_raw_transaction payload: {:?}", payload);
-        let mut tx =
-            bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(|e| err_obj(e.to_string()))?;
+        let mut tx = bcs::from_bytes::<RoochTransaction>(&payload.0)?;
         info!("send_raw_transaction tx: {:?}", tx);
 
         let hash = tx.tx_hash();
-        self.rpc_service
-            .queue_tx(tx)
-            .await
-            .map_err(|e| err_obj(e.to_string()))?;
+        self.rpc_service.queue_tx(tx).await?;
         Ok(hash.into())
     }
 
@@ -183,13 +173,8 @@ impl RoochAPIServer for RoochServer {
         tx_options: Option<TxOptions>,
     ) -> RpcResult<ExecuteTransactionResponseView> {
         let tx_options = tx_options.unwrap_or_default();
-        let tx =
-            bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(|e| err_obj(e.to_string()))?;
-        let tx_response = self
-            .rpc_service
-            .execute_tx(tx)
-            .await
-            .map_err(|e| err_obj(e.to_string()))?;
+        let tx = bcs::from_bytes::<RoochTransaction>(&payload.0)?;
+        let tx_response = self.rpc_service.execute_tx(tx).await?;
 
         let result = if tx_options.with_output {
             ExecuteTransactionResponseView::from(tx_response)
@@ -206,8 +191,7 @@ impl RoochAPIServer for RoochServer {
         Ok(self
             .rpc_service
             .execute_view_function(function_call.into())
-            .await
-            .map_err(|e| err_obj(e.to_string()))?
+            .await?
             .into())
     }
 
@@ -225,15 +209,13 @@ impl RoochAPIServer for RoochServer {
             let states = self
                 .rpc_service
                 .get_annotated_states(access_path.into())
-                .await
-                .map_err(|e| err_obj(e.to_string()))?;
+                .await?;
 
             if show_display {
                 let valid_states = states.iter().filter_map(|s| s.as_ref()).collect::<Vec<_>>();
                 let mut valid_display_field_views = self
                     .get_display_fields_and_render(valid_states, is_object)
-                    .await
-                    .map_err(|e| err_obj(e.to_string()))?;
+                    .await?;
                 valid_display_field_views.reverse();
                 states
                     .into_iter()
@@ -254,8 +236,7 @@ impl RoochAPIServer for RoochServer {
         } else {
             self.rpc_service
                 .get_states(access_path.into())
-                .await
-                .map_err(|e| err_obj(e.to_string()))?
+                .await?
                 .into_iter()
                 .map(|s| s.map(StateView::from))
                 .collect()
@@ -279,9 +260,7 @@ impl RoochAPIServer for RoochServer {
             MAX_RESULT_LIMIT_USIZE,
         );
         let cursor_of = match cursor.clone() {
-            Some(key_state_str) => Some(
-                KeyState::from_str(key_state_str.as_str()).map_err(|e| err_obj(e.to_string()))?,
-            ),
+            Some(key_state_str) => Some(KeyState::from_str(key_state_str.as_str())?),
             None => None,
         };
         let mut data: Vec<StateKVView> = if state_option.decode || show_display {
@@ -289,16 +268,14 @@ impl RoochAPIServer for RoochServer {
             let (key_states, states): (Vec<AnnotatedKeyState>, Vec<AnnotatedState>) = self
                 .rpc_service
                 .list_annotated_states(access_path.into(), cursor_of, limit_of + 1)
-                .await
-                .map_err(|e| err_obj(e.to_string()))?
+                .await?
                 .into_iter()
                 .unzip();
             let state_refs: Vec<&AnnotatedState> = states.iter().collect();
             if show_display {
                 let display_field_views = self
                     .get_display_fields_and_render(state_refs, is_object)
-                    .await
-                    .map_err(|e| err_obj(e.to_string()))?;
+                    .await?;
                 key_states
                     .into_iter()
                     .zip(states)
@@ -322,8 +299,7 @@ impl RoochAPIServer for RoochServer {
         } else {
             self.rpc_service
                 .list_states(access_path.into(), cursor_of, limit_of + 1)
-                .await
-                .map_err(|e| err_obj(e.to_string()))?
+                .await?
                 .into_iter()
                 .map(|(key_state, state)| {
                     StateKVView::new(KeyStateHexView::from(key_state), StateView::from(state))
@@ -356,17 +332,13 @@ impl RoochAPIServer for RoochServer {
         let show_display = state_option.show_display;
 
         let objects_view = if decode || show_display {
-            let states: Vec<Option<AnnotatedState>> = self
-                .rpc_service
-                .get_annotated_states(access_path)
-                .await
-                .map_err(|e| err_obj(e.to_string()))?;
+            let states: Vec<Option<AnnotatedState>> =
+                self.rpc_service.get_annotated_states(access_path).await?;
 
             let mut valid_display_field_views = if show_display {
                 let valid_states = states.iter().filter_map(|s| s.as_ref()).collect::<Vec<_>>();
                 self.get_display_fields_and_render(valid_states, true)
-                    .await
-                    .map_err(|e| err_obj(e.to_string()))?
+                    .await?
             } else {
                 vec![]
             };
@@ -388,8 +360,7 @@ impl RoochAPIServer for RoochServer {
                         })
                         .transpose()
                 })
-                .collect::<Result<Vec<_>>>()
-                .map_err(|e| err_obj(e.to_string()))?;
+                .collect::<Result<Vec<_>>>()?;
 
             if show_display {
                 valid_display_field_views.reverse();
@@ -412,8 +383,7 @@ impl RoochAPIServer for RoochServer {
         } else {
             self.rpc_service
                 .get_states(access_path)
-                .await
-                .map_err(|e| err_obj(e.to_string()))?
+                .await?
                 .into_iter()
                 .map(|s| {
                     s.map(|s| {
@@ -429,16 +399,8 @@ impl RoochAPIServer for RoochServer {
             .iter()
             .filter_map(|o| o.as_ref().map(|s| s.owner.into()))
             .collect::<Vec<_>>();
-        let btc_network = self
-            .rpc_service
-            .get_bitcoin_network()
-            .await
-            .map_err(|e| err_obj(e.to_string()))?;
-        let address_mapping = self
-            .rpc_service
-            .get_bitcoin_addresses(addresses)
-            .await
-            .map_err(|e| err_obj(e.to_string()))?;
+        let btc_network = self.rpc_service.get_bitcoin_network().await?;
+        let address_mapping = self.rpc_service.get_bitcoin_addresses(addresses).await?;
 
         let objects_view = objects_view
             .into_iter()
@@ -450,14 +412,12 @@ impl RoochAPIServer for RoochServer {
                         .expect("should exist.")
                         .clone()
                         .map(|a| a.format(btc_network))
-                        .transpose()
-                        .map_err(|e| err_obj(e.to_string()))?;
+                        .transpose()?;
                     Ok(s.with_owner_bitcoin_address(bitcoin_address))
                 })
                 .transpose()
             })
-            .collect::<Result<Vec<_>>>()
-            .map_err(|e| err_obj(e.to_string()))?;
+            .collect::<Result<Vec<_>>>()?;
         Ok(objects_view)
     }
 
@@ -485,8 +445,7 @@ impl RoochAPIServer for RoochServer {
                     limit,
                     descending_order,
                 )
-                .await
-                .map_err(|e| err_obj(e.to_string()))?
+                .await?
                 .into_iter()
                 .map(EventView::from)
                 .collect::<Vec<_>>()
@@ -498,8 +457,7 @@ impl RoochAPIServer for RoochServer {
                     limit,
                     descending_order,
                 )
-                .await
-                .map_err(|e| err_obj(e.to_string()))?
+                .await?
                 .into_iter()
                 .map(EventView::from)
                 .collect::<Vec<_>>()
@@ -525,16 +483,11 @@ impl RoochAPIServer for RoochServer {
     ) -> RpcResult<Vec<Option<TransactionWithInfoView>>> {
         let tx_hashes: Vec<H256> = tx_hashes.iter().map(|m| (*m).into()).collect::<Vec<_>>();
 
-        let bitcoin_network = self
-            .rpc_service
-            .get_bitcoin_network()
-            .await
-            .map_err(|e| err_obj(e.to_string()))?;
+        let bitcoin_network = self.rpc_service.get_bitcoin_network().await?;
         let data = self
             .aggregate_service
             .get_transaction_with_info(tx_hashes)
-            .await
-            .map_err(|e| err_obj(e.to_string()))?;
+            .await?;
 
         let rooch_addresses = data
             .iter()
@@ -543,8 +496,7 @@ impl RoochAPIServer for RoochServer {
         let address_mapping = self
             .rpc_service
             .get_bitcoin_addresses(rooch_addresses)
-            .await
-            .map_err(|e| err_obj(e.to_string()))?;
+            .await?;
 
         let data = data
             .into_iter()
@@ -557,8 +509,7 @@ impl RoochAPIServer for RoochServer {
                         None => None,
                     }
                     .flatten()
-                    .transpose()
-                    .map_err(|e| err_obj(e.to_string()))?;
+                    .transpose()?;
                     Ok(TransactionWithInfoView::new_from_transaction_with_info(
                         tx,
                         sender_bitcoin_address,
@@ -566,8 +517,7 @@ impl RoochAPIServer for RoochServer {
                 })
                 .transpose()
             })
-            .collect::<Result<Vec<_>>>()
-            .map_err(|e| err_obj(e.to_string()))?;
+            .collect::<Result<Vec<_>>>()?;
 
         Ok(data)
     }
@@ -578,11 +528,7 @@ impl RoochAPIServer for RoochServer {
         limit: Option<StrView<u64>>,
         descending_order: Option<bool>,
     ) -> RpcResult<TransactionWithInfoPageView> {
-        let last_sequencer_order = self
-            .rpc_service
-            .get_sequencer_order()
-            .await
-            .map_err(|e| err_obj(e.to_string()))?;
+        let last_sequencer_order = self.rpc_service.get_sequencer_order().await?;
 
         let limit_of = min(
             limit
@@ -607,18 +553,15 @@ impl RoochAPIServer for RoochServer {
             let start = cursor.unwrap_or(0);
             let start_plus = start
                 .checked_add(limit_of + 1)
-                .ok_or(err_obj("cursor value is overflow".to_string()))
-                .map_err(|e| err_obj(e.to_string()))?;
+                .ok_or(RpcError::UnexpectedError(
+                    "cursor value is overflow".to_string(),
+                ))?;
             let end = min(start_plus, last_sequencer_order + 1);
 
             (start..end).collect::<Vec<_>>()
         };
 
-        let tx_hashs = self
-            .rpc_service
-            .get_tx_hashs(tx_orders.clone())
-            .await
-            .map_err(|e| err_obj(e.to_string()))?;
+        let tx_hashs = self.rpc_service.get_tx_hashs(tx_orders.clone()).await?;
 
         let mut hash_order_pair = tx_hashs
             .into_iter()
@@ -639,16 +582,12 @@ impl RoochAPIServer for RoochServer {
                     .map(|(h, _o)| h)
                     .collect::<Vec<_>>(),
             )
-            .await
-            .map_err(|e| err_obj(e.to_string()))?
+            .await?
             .into_iter()
             .flatten()
             .collect::<Vec<_>>();
 
-        let data = self
-            .transactions_to_view(data)
-            .await
-            .map_err(|e| err_obj(e.to_string()))?;
+        let data = self.transactions_to_view(data).await?;
 
         Ok(TransactionWithInfoPageView {
             data,
@@ -666,8 +605,7 @@ impl RoochAPIServer for RoochServer {
             .aggregate_service
             .get_balance(account_addr.into(), coin_type.into())
             .await
-            .map(Into::into)
-            .map_err(|e| err_obj(e.to_string()))?)
+            .map(Into::into)?)
     }
 
     /// get account balances by RoochAddress
@@ -684,8 +622,7 @@ impl RoochAPIServer for RoochServer {
         let mut data = self
             .aggregate_service
             .get_balances(account_addr.into(), cursor, limit_of + 1)
-            .await
-            .map_err(|e| err_obj(e.to_string()))?;
+            .await?;
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
@@ -724,22 +661,17 @@ impl RoochAPIServer for RoochServer {
         let txs = self
             .rpc_service
             .query_transactions(filter.into(), cursor, limit_of + 1, descending_order)
-            .await
-            .map_err(|e| err_obj(e.to_string()))?;
+            .await?;
 
         let mut data = self
             .aggregate_service
             .build_transaction_with_infos(txs)
-            .await
-            .map_err(|e| err_obj(e.to_string()))?;
+            .await?;
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
 
-        let data = self
-            .transactions_to_view(data)
-            .await
-            .map_err(|e| err_obj(e.to_string()))?;
+        let data = self.transactions_to_view(data).await?;
 
         let next_cursor = data
             .last()
@@ -771,8 +703,7 @@ impl RoochAPIServer for RoochServer {
         let mut data = self
             .rpc_service
             .query_events(filter.into(), cursor, limit_of + 1, descending_order)
-            .await
-            .map_err(|e| err_obj(e.to_string()))?
+            .await?
             .into_iter()
             .map(IndexerEventView::from)
             .collect::<Vec<_>>();
@@ -807,13 +738,11 @@ impl RoochAPIServer for RoochServer {
         let descending_order = query_option.descending;
         let decode = query_option.decode;
 
-        let global_state_filter = ObjectStateFilterView::try_into_object_state_filter(filter)
-            .map_err(|e| err_obj(e.to_string()))?;
+        let global_state_filter = ObjectStateFilterView::try_into_object_state_filter(filter)?;
         let states = self
             .rpc_service
             .query_object_states(global_state_filter, cursor, limit_of + 1, descending_order)
-            .await
-            .map_err(|e| err_obj(e.to_string()))?;
+            .await?;
 
         let object_ids = states
             .iter()
@@ -823,8 +752,7 @@ impl RoochAPIServer for RoochServer {
         let annotated_states = self
             .rpc_service
             .get_annotated_states(access_path)
-            .await
-            .map_err(|e| err_obj(e.to_string()))?
+            .await?
             .into_iter()
             .map(|s| s.expect("object should exist!")) // TODO: is statedb always synced with indexer?
             .collect::<Vec<_>>();
@@ -833,8 +761,7 @@ impl RoochAPIServer for RoochServer {
             let valid_states = annotated_states.iter().collect::<Vec<_>>();
             let valid_display_field_views = self
                 .get_display_fields_and_render(valid_states, true)
-                .await
-                .map_err(|e| err_obj(e.to_string()))?;
+                .await?;
             annotated_states
                 .into_iter()
                 .zip(valid_display_field_views)
@@ -860,21 +787,15 @@ impl RoochAPIServer for RoochServer {
                 .collect::<Vec<_>>()
         };
 
-        let network = self
-            .rpc_service
-            .get_bitcoin_network()
-            .await
-            .map_err(|e| err_obj(e.to_string()))?;
+        let network = self.rpc_service.get_bitcoin_network().await?;
         let rooch_addresses = states.iter().map(|s| s.owner).collect::<Vec<_>>();
         let bitcoin_addresses = self
             .rpc_service
             .get_bitcoin_addresses(rooch_addresses)
-            .await
-            .map_err(|e| err_obj(e.to_string()))?
+            .await?
             .into_values()
             .map(|btc_addr| btc_addr.map(|addr| addr.format(network)).transpose())
-            .collect::<Result<Vec<Option<String>>>>()
-            .map_err(|e| err_obj(e.to_string()))?;
+            .collect::<Result<Vec<Option<String>>>>()?;
 
         let mut data = annotated_states_with_display
             .into_iter()
