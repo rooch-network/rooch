@@ -1,5 +1,5 @@
 packages:
-#  - 'infra/dashboard/**'
+  - 'infra/dashboard/**'
   - 'infra/rooch-portal/**'
 #  - 'grow-rooch/**'
   - 'sdk/typescript/build-scripts'

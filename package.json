@@ -4,8 +4,8 @@
   "license": "Apache-2.0",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
-    "dashboard": "pnpm --filter ./dashboard",
-    "rooch-portal": "pnpm --filter ./rooch-portal-v1",
+    "dashboard": "pnpm --filter ./infra/dashboard",
+    "rooch-portal": "pnpm --filter ./infra/rooch-portal",
     "rooch-create": "pnpm --filter ./sdk/typescript/rooch-create/",
     "rooch-sdk": "pnpm --filter ./sdk/typescript/rooch-sdk/",
     "rooch-sdk-kit": "pnpm --filter ./sdk/typescript/rooch-sdk-kit/",
