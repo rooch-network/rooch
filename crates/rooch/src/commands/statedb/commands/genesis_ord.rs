@@ -493,17 +493,15 @@ fn convert_option_string_to_move_type(opt: Option<String>) -> MoveOption<MoveStr
     opt.map(MoveString::from).into()
 }
 
-// update id:object for parents
-// update outpoint:object for utxo
+// update outpoint:ord_objects for utxo
 fn update_ord_map(utxo_ord_map: Arc<sled::Db>, outpoint: OutPoint, obj_id: ObjectID) -> bool {
-    let obj_id_bytes = bcs::to_bytes(&obj_id).unwrap();
-
     let is_unbound = outpoint.txid == Hash::all_zeros() && outpoint.vout == 0;
     if is_unbound {
         return is_unbound; // unbound has no outpoint
     }
 
     // update outpoint:ord
+    let obj_id_bytes = bcs::to_bytes(&obj_id).unwrap();
     insert_ord_to_output(utxo_ord_map.clone(), outpoint, obj_id_bytes);
 
     is_unbound
