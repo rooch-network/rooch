@@ -284,7 +284,7 @@ criterion = { version = "0.5.1", features = [
     "async_tokio",
     "html_reports",
 ] }
-xxhash-rust = "0.8.8"
+xxhash-rust = { version = "0.8.11", features = ["std", "xxh3"] }
 base64 = "0.22.1"
 #criterion-cpu-time = "0.1.0"
 wasmer = "4.2.5"
