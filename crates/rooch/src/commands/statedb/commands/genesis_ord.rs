@@ -28,6 +28,7 @@ use moveos_types::moveos_std::object::{
     ObjectEntity, ObjectID, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
 };
 use moveos_types::state::{KeyState, MoveState, MoveType, State};
+use rooch_common::fs::file_cache::FileCacheManager;
 use rooch_common::utils::humanize;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::address::BitcoinAddress;
@@ -362,10 +363,15 @@ fn produce_ord_updates(
     batch_size: usize,
     utxo_ord_map: Arc<sled::Db>,
 ) {
-    let mut reader = BufReader::new(File::open(input).unwrap());
+    let file_cache_mgr = FileCacheManager::new(input.clone()).unwrap();
+    let mut reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
     let mut is_title_line = true;
     let mut index: u64 = 0;
+
+    let mut cache_drop_offset: u64 = 0;
     loop {
+        let mut bytes_read = 0;
+
         let mut updates = BatchUpdatesOrd {
             ord_updates: UpdateSet::new(),
             inscription_ids_updates: UpdateSet::new(),
@@ -373,6 +379,7 @@ fn produce_ord_updates(
             blessed_inscription_count: 0,
             ord_value_bytes: 0,
         };
+
         for line in reader.by_ref().lines().take(batch_size) {
             let line = line.unwrap();
 
@@ -380,6 +387,7 @@ fn produce_ord_updates(
                 is_title_line = false;
                 if line.starts_with("# export at") {
                     // skip block height info
+                    bytes_read += line.len() as u64 + 1; // Add line.len() + 1, assuming that the line terminator is '\n'
                     continue;
                 }
             }
@@ -396,8 +404,12 @@ fn produce_ord_updates(
             updates.ord_updates.put(key, state);
             let (key2, state2) = gen_inscription_ids_update(index, inscription_id);
             updates.inscription_ids_updates.put(key2, state2);
-            index += 1
+            index += 1;
+            bytes_read += line.len() as u64 + 1;
         }
+        let _ = file_cache_mgr.drop_cache_range(cache_drop_offset, bytes_read);
+        cache_drop_offset += bytes_read;
+
         if updates.ord_updates.is_empty() {
             break;
         }

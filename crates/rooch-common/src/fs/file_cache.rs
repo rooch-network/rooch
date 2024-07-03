@@ -1,18 +1,18 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use libc::{posix_fadvise, POSIX_FADV_DONTNEED};
 use std::fs::File;
 use std::io::{Error, Result};
 use std::os::unix::io::AsRawFd;
+use std::path::PathBuf;
 
-use libc::{posix_fadvise, POSIX_FADV_DONTNEED};
-
-struct FileCacheManager {
+pub struct FileCacheManager {
     file: File,
 }
 
 impl FileCacheManager {
-    pub fn new(file_path: &str) -> Result<Self> {
+    pub fn new(file_path: PathBuf) -> Result<Self> {
         let file = File::open(file_path)?;
         Ok(FileCacheManager { file })
     }
