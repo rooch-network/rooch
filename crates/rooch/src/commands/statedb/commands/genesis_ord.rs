@@ -28,6 +28,7 @@ use moveos_types::moveos_std::object::{
     ObjectEntity, ObjectID, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
 };
 use moveos_types::state::{KeyState, MoveState, MoveType, State};
+use rooch_common::utils::humanize;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::address::BitcoinAddress;
 use rooch_types::addresses::BITCOIN_MOVE_ADDRESS;
@@ -136,6 +137,7 @@ impl GenesisOrdCommand {
             .tmp_dir
             .clone()
             .unwrap_or_else(|| TempDir::new().unwrap().into_path());
+
         let db_config = sled::Config::new()
             .temporary(true)
             .path(TempDir::new_in(tmp_dir.clone()).unwrap());
@@ -261,13 +263,14 @@ fn apply_ord_updates_to_state(
         apply_nodes(moveos_store, nodes).expect("failed to apply ord nodes");
 
         println!(
-            "{} ord applied ({} cursed, {} blessed). This bacth cost: {:?}",
+            "{} ord applied ({} cursed, {} blessed). value size: {}. cost: {:?}",
             // e.g. batch_size = 8192:
             // 8192 ord applied in: 1.000000000s
             // 16384 ord applied in: 2.000000000s
             ord_count,
             cursed_inscription_count,
             blessed_inscription_count,
+            humanize::human_readable_size(batch.ord_value_bytes),
             loop_start_time.elapsed().unwrap()
         );
 
@@ -349,6 +352,8 @@ struct BatchUpdatesOrd {
     inscription_ids_updates: UpdateSet<KeyState, State>,
     cursed_inscription_count: u32,
     blessed_inscription_count: u32,
+
+    ord_value_bytes: u64, // for optimization
 }
 
 fn produce_ord_updates(
@@ -366,6 +371,7 @@ fn produce_ord_updates(
             inscription_ids_updates: UpdateSet::new(),
             cursed_inscription_count: 0,
             blessed_inscription_count: 0,
+            ord_value_bytes: 0,
         };
         for line in reader.by_ref().lines().take(batch_size) {
             let line = line.unwrap();
@@ -386,6 +392,7 @@ fn produce_ord_updates(
             }
             let (key, state, inscription_id) =
                 gen_ord_update(source, utxo_ord_map.clone()).unwrap();
+            updates.ord_value_bytes += state.value.len() as u64;
             updates.ord_updates.put(key, state);
             let (key2, state2) = gen_inscription_ids_update(index, inscription_id);
             updates.inscription_ids_updates.put(key2, state2);
