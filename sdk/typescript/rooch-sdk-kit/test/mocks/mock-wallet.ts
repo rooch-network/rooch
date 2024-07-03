@@ -27,7 +27,7 @@ export class MockBitcoinWallet extends Wallet {
   }
 
   constructor() {
-    super(true)
+    super()
     this.kp = Secp256k1Keypair.generate()
 
     this.mocks = {
@@ -44,7 +44,7 @@ export class MockBitcoinWallet extends Wallet {
   }
 
   getChain(): SupportChain {
-    return SupportChain.BITCOIN
+    return 'bitcoin'
   }
 
   getKeyScheme(): SignatureScheme {

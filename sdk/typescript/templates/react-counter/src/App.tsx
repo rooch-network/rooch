@@ -1,6 +1,5 @@
 import {Box, Button, Container, Flex, Heading, Text} from "@radix-ui/themes";
 import {
-  SupportChain,
   useCurrentSession,
   useWallets,
   useRoochClientQuery, useConnectWallet, useCreateSessionKey,
@@ -19,7 +18,7 @@ function App() {
   const sessionKey = useCurrentSession();
   const currentWallet = useCurrentWallet();
   const client = useRoochClient()
-  const wallets = useWallets().filter((wallet) => wallet.getChain() === SupportChain.BITCOIN)
+  const wallets = useWallets()
   const [loading, setLoading] = useState(false)
   const [sessionLoading, setSessionLoading] = useState(false)
   const {mutateAsync: connectWallet} = useConnectWallet()
@@ -30,8 +29,6 @@ function App() {
   let {data, error, isPending, refetch} = useRoochClientQuery("executeViewFunction", {
     target: `${devCounterModule}::value`,
   })
-
-  console.log(sessionKey)
 
   const handlerCreateSessionKey = () => {
     if (sessionLoading) {

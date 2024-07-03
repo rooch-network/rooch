@@ -11,7 +11,6 @@ import {
   useCurrentWallet,
   useCurrentAddress,
 } from './index.js'
-import { SupportChain } from '../../feature/index.js'
 
 export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
   const { mutateAsync: connectWallet } = useConnectWallet()
@@ -51,14 +50,9 @@ export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
 
       if (wallet) {
         await connectWallet({ wallet })
-      }
-
-      // bitcoin wallet is not support switch account
-      if (
-        wallet!.getChain() !== SupportChain.BITCOIN &&
-        currentAddress?.toStr() !== lastConnectedAddress
-      ) {
-        wallet!.switchAccount(lastConnectedAddress)
+        if (wallet.getChain() !== 'bitcoin' && currentAddress?.toStr() !== lastConnectedAddress) {
+          wallet.switchAccount(lastConnectedAddress)
+        }
       }
 
       return 'attempted'
@@ -68,9 +62,18 @@ export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
     gcTime: 0,
     staleTime: 0,
     networkMode: 'always',
-    retry: false,
+    retry: (failureCount) => {
+      // Retry only if there is a wallet to connect and we haven't exceeded 3 attempts
+      if (
+        wallets.find((wallet) => wallet.getName() === lastConnectedWalletName) &&
+        failureCount < 3
+      ) {
+        return true
+      }
+      return false
+    },
     retryOnMount: false,
-    refetchInterval: false,
+    refetchInterval: 1000,
     refetchIntervalInBackground: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
