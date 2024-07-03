@@ -529,7 +529,7 @@ fn create_genesis_inscription_store_object(
     inscriptions_object_id: ObjectID,
     cursed_inscription_count: u32,
     blessed_inscription_count: u32,
-    next_sequence_number: u32,
+    next_sequence_number: u32, // ord count
 ) -> ObjectEntity<InscriptionStore> {
     let inscription_store = InscriptionStore {
         inscriptions: inscriptions_object_id,
