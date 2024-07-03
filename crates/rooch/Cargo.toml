@@ -73,7 +73,7 @@ moveos = { workspace = true }
 moveos-verifier = { workspace = true }
 moveos-object-runtime = { workspace = true }
 moveos-compiler = { workspace = true }
-moveos-config ={ workspace = true }
+moveos-config = { workspace = true }
 
 framework-builder = { workspace = true }
 framework-types = { workspace = true }
@@ -93,5 +93,6 @@ rooch-rpc-client = { workspace = true }
 rooch-integration-test-runner = { workspace = true }
 rooch-indexer = { workspace = true }
 rooch-db = { workspace = true }
+rooch-common = { workspace = true }
 
 framework-release = { workspace = true }

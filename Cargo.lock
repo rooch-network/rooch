@@ -9767,6 +9767,7 @@ dependencies = [
  "proptest-derive",
  "raw-store",
  "regex",
+ "rooch-common",
  "rooch-config",
  "rooch-db",
  "rooch-framework",
@@ -9866,6 +9867,10 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
 ]
+
+[[package]]
+name = "rooch-common"
+version = "0.5.7"
 
 [[package]]
 name = "rooch-config"
