@@ -1,15 +1,22 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { UniSatWallet } from './unisat.js'
-import { Wallet } from '../wellet/wallet.js'
+import { Wallet } from './wallet.js'
+import { getWallets } from './wallets.js'
 
-let wallets: Wallet[] = [new UniSatWallet(false)]
+export function getRegisteredWallets(
+  preferredWallets: string[],
+  walletFilter?: (wallet: Wallet) => boolean,
+): Wallet[] {
+  const walletsApi = getWallets()
+  const wallets = walletsApi.get()
 
-export function getWallets() {
-  return wallets
-}
+  const Wallets = wallets.filter((wallet) => !walletFilter || walletFilter(wallet))
 
-export function registerMock(mockWallets: Wallet) {
-  wallets.push(mockWallets)
+  return [
+    // Preferred wallets, in order:
+    ...preferredWallets.map((name) => Wallets.find((wallet) => wallet.getName() === name)),
+    // Wallets in default order:
+    ...Wallets.filter((wallet) => !preferredWallets.includes(wallet.getName())),
+  ].filter((wallet): wallet is Wallet => wallet !== undefined)
 }
