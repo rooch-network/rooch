@@ -9766,6 +9766,7 @@ dependencies = [
  "proptest",
  "proptest-derive",
  "raw-store",
+ "redb",
  "regex",
  "rooch-common",
  "rooch-config",
@@ -9786,7 +9787,6 @@ dependencies = [
  "serde_json",
  "serde_with 2.3.3",
  "serde_yaml 0.9.34+deprecated",
- "sled",
  "smt",
  "tempfile",
  "termcolor",
@@ -12012,22 +12012,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f92a496fb766b417c996b9c5e57daf2f7ad3b0bebe1ccfca4856390e3d3bb67"
 dependencies = [
  "autocfg",
-]
-
-[[package]]
-name = "sled"
-version = "0.34.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f96b4737c2ce5987354855aed3797279def4ebf734436c6aa4552cf8e169935"
-dependencies = [
- "crc32fast",
- "crossbeam-epoch",
- "crossbeam-utils",
- "fs2",
- "fxhash",
- "libc",
- "log",
- "parking_lot 0.11.2",
 ]
 
 [[package]]
