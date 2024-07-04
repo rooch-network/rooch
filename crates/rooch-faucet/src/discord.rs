@@ -65,7 +65,7 @@ impl App {
                 } else {
                     //TODO: use coin decimals
                     let funds = self.faucet_funds as f64 / 100000000f64;
-                    format!("Sending gas {funds} to {address:?}")
+                    format!("Sending {funds} Rooch Gas Coin to {address:?}")
                 }
             }
             _ => "No address found!".to_string(),

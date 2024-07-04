@@ -6,15 +6,9 @@ import { ThirdPartyAddress, Bytes, Signer } from '@roochnetwork/rooch-sdk'
 import { SupportChain } from '../feature/index.js'
 
 export abstract class Wallet extends Signer {
-  public readonly installed: boolean
   protected address: ThirdPartyAddress[] | undefined
   protected publicKey: string | undefined
   protected currentAddress: ThirdPartyAddress | undefined
-
-  constructor(installed: boolean) {
-    super()
-    this.installed = installed
-  }
 
   /**
    * Connects the wallet.
