@@ -7789,9 +7789,9 @@ dependencies = [
 
 [[package]]
 name = "opendal"
-version = "0.47.1"
+version = "0.47.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "876c6655dd5b410c83e0c9edf38be60fed540a1cc1c2f3a2ac31830eb8a8ff45"
+checksum = "ff159a2da374ef2d64848a6547943cf1af7d2ceada5ae77be175e1389aa07ae3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9767,6 +9767,7 @@ dependencies = [
  "proptest-derive",
  "raw-store",
  "regex",
+ "rooch-common",
  "rooch-config",
  "rooch-db",
  "rooch-framework",
@@ -9865,6 +9866,13 @@ dependencies = [
  "tower-http 0.5.2",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "rooch-common"
+version = "0.5.7"
+dependencies = [
+ "libc",
 ]
 
 [[package]]
@@ -14448,9 +14456,9 @@ dependencies = [
 
 [[package]]
 name = "xxhash-rust"
-version = "0.8.10"
+version = "0.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "927da81e25be1e1a2901d59b81b37dd2efd1fc9c9345a55007f09bf5a2d3ee03"
+checksum = "63658493314859b4dfdf3fb8c1defd61587839def09582db50b8a4e93afca6bb"
 
 [[package]]
 name = "yaml-rust"

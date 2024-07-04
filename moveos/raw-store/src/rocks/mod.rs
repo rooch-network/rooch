@@ -153,6 +153,11 @@ impl RocksDB {
                 ]);
                 cf_opts.set_block_based_table_factory(&table_opts);
 
+                cf_opts.set_enable_blob_files(true);
+                cf_opts.set_min_blob_size(1024);
+                cf_opts.set_enable_blob_gc(false);
+                cf_opts.set_blob_compression_type(DBCompressionType::Lz4);
+
                 if (*cf_name) == "state_node" {
                     cf_opts.set_write_buffer_size(512 * 1024 * 1024);
                     cf_opts.set_max_write_buffer_number(4);
@@ -252,12 +257,7 @@ impl RocksDB {
         db_opts.set_wal_recovery_mode(rocksdb::DBRecoveryMode::PointInTime); // for memtable crash recovery
         db_opts.enable_statistics();
         db_opts.set_statistics_level(rocksdb::statistics::StatsLevel::ExceptTimeForMutex);
-        db_opts.set_enable_blob_files(true);
-        db_opts.set_min_blob_size(1024);
-        db_opts.set_enable_blob_gc(false);
         db_opts
-
-        // db_opts.enable_statistics();
     }
     fn iter_with_direction<K, V>(
         &self,

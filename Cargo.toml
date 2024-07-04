@@ -15,6 +15,7 @@ members = [
     "moveos/moveos-wasm",
     "moveos/moveos-object-runtime",
     "moveos/moveos-compiler",
+    "crates/rooch-common",
     "crates/rooch-key",
     "crates/rooch-types",
     "crates/rooch-framework-tests",
@@ -92,6 +93,7 @@ accumulator = { path = "moveos/moveos-commons/accumulator" }
 
 # crates for Rooch
 rooch = { path = "crates/rooch" }
+rooch-common = { path = "crates/rooch-common" }
 rooch-key = { path = "crates/rooch-key" }
 rooch-types = { path = "crates/rooch-types" }
 rooch-framework-tests = { path = "crates/rooch-framework-tests" }
@@ -282,7 +284,7 @@ criterion = { version = "0.5.1", features = [
     "async_tokio",
     "html_reports",
 ] }
-xxhash-rust = "0.8.8"
+xxhash-rust = { version = "0.8.11", features = ["std", "xxh3"] }
 base64 = "0.22.1"
 #criterion-cpu-time = "0.1.0"
 wasmer = "4.2.5"
@@ -292,7 +294,7 @@ ciborium = "0.2.1"
 pprof = { version = "0.13.0", features = ["flamegraph", "criterion", "cpp", "frame-pointer", "protobuf-codec"] }
 celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
 celestia-types = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
-opendal = { version = "0.47.1", features = ["services-fs", "services-gcs"] }
+opendal = { version = "0.47.2", features = ["services-fs", "services-gcs"] }
 bitcoincore-rpc-json = "0.18.0"
 toml = "0.8.14"
 csv = "1.2.1"

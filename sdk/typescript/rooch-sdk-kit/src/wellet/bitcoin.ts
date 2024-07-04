@@ -64,6 +64,6 @@ export abstract class BitcoinWallet extends Wallet {
   }
 
   getChain(): SupportChain {
-    return SupportChain.BITCOIN
+    return 'bitcoin'
   }
 }
