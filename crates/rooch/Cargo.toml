@@ -45,8 +45,8 @@ proptest = { optional = true, workspace = true }
 proptest-derive = { optional = true, workspace = true }
 csv = { workspace = true }
 tempfile = { workspace = true }
-sled = { workspace = true }
 ord = { workspace = true }
+redb = { workspace = true }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }
