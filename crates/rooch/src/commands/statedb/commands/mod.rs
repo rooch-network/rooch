@@ -5,7 +5,7 @@ use bitcoin::OutPoint;
 use chrono::{DateTime, Local};
 use moveos_store::MoveOSStore;
 use moveos_types::moveos_std::object::{ObjectID, RootObjectEntity};
-use redb::{Database, ReadOnlyTable, TableDefinition};
+use redb::{ReadOnlyTable, TableDefinition};
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
 use rooch_types::bitcoin::ord::InscriptionStore;
@@ -112,6 +112,7 @@ mod tests {
     use super::*;
     use bitcoin::hashes::Hash;
     use bitcoin::OutPoint;
+    use redb::Database;
     use std::iter;
     use tempfile::NamedTempFile;
 
