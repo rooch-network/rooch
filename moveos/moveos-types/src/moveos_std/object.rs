@@ -36,12 +36,12 @@ pub const MODULE_NAME: &IdentStr = ident_str!("object");
 pub static MODULE_ID: Lazy<ModuleId> =
     Lazy::new(|| ModuleId::new(MOVEOS_STD_ADDRESS, MODULE_NAME.to_owned()));
 pub const OBJECT_ENTITY_STRUCT_NAME: &IdentStr = ident_str!("ObjectEntity");
+pub const OBJECT_STRUCT_NAME: &IdentStr = ident_str!("Object");
 
 pub const SYSTEM_OWNER_ADDRESS: AccountAddress = AccountAddress::ZERO;
 
 pub const SHARED_OBJECT_FLAG_MASK: u8 = 1;
 pub const FROZEN_OBJECT_FLAG_MASK: u8 = 1 << 1;
-pub const BOUND_OBJECT_FLAG_MASK: u8 = 1 << 2;
 
 // New table's state_root should be the place holder hash.
 pub static GENESIS_STATE_ROOT: Lazy<H256> = Lazy::new(|| *SPARSE_MERKLE_PLACEHOLDER_HASH);
@@ -57,9 +57,6 @@ pub fn human_readable_flag(flag: u8) -> String {
     }
     if flag & FROZEN_OBJECT_FLAG_MASK == FROZEN_OBJECT_FLAG_MASK {
         status.push("Frozen".to_string());
-    }
-    if flag & BOUND_OBJECT_FLAG_MASK == BOUND_OBJECT_FLAG_MASK {
-        status.push("Bound".to_string());
     }
 
     status.join(",")
@@ -461,6 +458,10 @@ impl<T> ObjectEntity<T> {
     pub fn is_genesis(&self) -> bool {
         self.state_root() == *GENESIS_STATE_ROOT
     }
+
+    pub fn is_system_owned(&self) -> bool {
+        self.owner == SYSTEM_OWNER_ADDRESS
+    }
 }
 
 impl<T> ObjectEntity<T>
@@ -736,7 +737,7 @@ impl RawObject {
         bytes
     }
 
-    fn struct_tag(&self) -> StructTag {
+    pub fn struct_tag(&self) -> StructTag {
         StructTag {
             address: Self::ADDRESS,
             module: Self::MODULE_NAME.to_owned(),
@@ -900,7 +901,7 @@ where
 {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = ident_str!("Object");
+    const STRUCT_NAME: &'static IdentStr = OBJECT_STRUCT_NAME;
 
     fn type_params() -> Vec<TypeTag> {
         vec![T::type_tag()]
@@ -936,6 +937,15 @@ pub fn object_entity_struct_tag(value_type: StructTag) -> StructTag {
         address: MOVEOS_STD_ADDRESS,
         module: MODULE_NAME.to_owned(),
         name: OBJECT_ENTITY_STRUCT_NAME.to_owned(),
+        type_params: vec![value_type.into()],
+    }
+}
+
+pub fn object_struct_tag(value_type: StructTag) -> StructTag {
+    StructTag {
+        address: MOVEOS_STD_ADDRESS,
+        module: MODULE_NAME.to_owned(),
+        name: OBJECT_STRUCT_NAME.to_owned(),
         type_params: vec![value_type.into()],
     }
 }

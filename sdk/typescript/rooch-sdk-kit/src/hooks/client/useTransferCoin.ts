@@ -3,15 +3,17 @@
 
 import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-query'
 import { useMutation } from '@tanstack/react-query'
-import { IAccount } from '@roochnetwork/rooch-sdk'
-import { roochMutationKeys } from '../../constants/roochMutationKeys'
-import { useRoochClient } from './index'
+import { address, TypeArgs, Signer } from '@roochnetwork/rooch-sdk'
+
+import { roochMutationKeys } from '../../constants/index.js'
+import { useRoochClient } from './index.js'
+import { useCurrentSession } from '../useCurrentSession.js'
 
 type UseTransferCoinArgs = {
-  account: IAccount
-  recipient: string
-  amount: number
-  coinType: string
+  signer?: Signer
+  recipient: address
+  amount: number | bigint
+  coinType: TypeArgs
 }
 
 type UseTransferCoinResult = void
@@ -31,40 +33,20 @@ export function useTransferCoin({
   unknown
 > {
   const client = useRoochClient()
+  const curSession = useCurrentSession()
 
   return useMutation({
     mutationKey: roochMutationKeys.transferCoin(mutationKey),
     mutationFn: async (args) => {
-      const struct = args.coinType.split('::')
+      const signer = args.signer || curSession
 
-      if (struct.length !== 3) {
-        console.log('type args is error')
-        return
+      if (signer === null) {
+        throw Error('')
       }
 
-      const result = await client.executeTransaction({
-        address: args.account.getAddress(),
-        authorizer: args.account.getAuthorizer(),
-        funcId: '0x3::transfer::transfer_coin',
-        args: [
-          {
-            type: 'Address',
-            value: args.recipient,
-          },
-          {
-            type: 'U256',
-            value: BigInt(args.amount),
-          },
-        ],
-        tyArgs: [
-          {
-            Struct: {
-              address: '0x3',
-              module: 'gas_coin',
-              name: 'GasCoin',
-            },
-          },
-        ],
+      const result = await client.transfer({
+        ...args,
+        signer: args.signer || curSession!,
       })
 
       if (result.execution_info.status.type !== 'executed') {

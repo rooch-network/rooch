@@ -2,15 +2,27 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module basic_object::pub_transfer{
-    use moveos_std::object::{Self, Object};
+    use moveos_std::object::{Self, Object, ObjectID};
+
+    struct NewPubEvent has copy,drop{
+        id: ObjectID,
+    }
 
     /// A object are transferable by anyone using `object::tansfer`
-    struct PubTransfer has key,store{
+    struct Pub has key,store{
         value: u64,
     }
 
-    public fun new(value: u64) : Object<PubTransfer>{
-        object::new(PubTransfer{value}) 
+    public fun new(value: u64) : Object<Pub>{
+        let obj = object::new(Pub{value});
+        let id = object::id(&obj);
+        moveos_std::event::emit(NewPubEvent{id});
+        obj 
+    }
+
+    public entry fun create_obj(value: u64){
+        let obj = object::new(Pub{value});
+        object::transfer(obj, moveos_std::tx_context::sender()); 
     }
 
 }
@@ -21,19 +33,19 @@ module basic_object::custom_transfer{
     const ErrorInvalidTransfer: u64 = 1;
 
     /// A object support custom transfer rule
-    struct CustomTransfer has key{
+    struct Custom has key{
         value: u64,
     }
 
-    public fun new(value: u64) : Object<CustomTransfer>{
-        object::new(CustomTransfer{value}) 
+    public fun new(value: u64) : Object<Custom>{
+        object::new(Custom{value}) 
     }
 
-    fun custom_transfer_role(obj: &Object<CustomTransfer>) {
+    fun custom_transfer_role(obj: &Object<Custom>) {
         assert!(object::borrow(obj).value > 10, ErrorInvalidTransfer);
     }
 
-    public fun transfer(obj: Object<CustomTransfer>, new_owner: address) {
+    public fun transfer(obj: Object<Custom>, new_owner: address) {
         custom_transfer_role(&obj);
         //We use `object::transfer_extend` to extend the transfer rule
         object::transfer_extend(obj, new_owner);
@@ -44,7 +56,7 @@ module basic_object::third_party_module{
     use moveos_std::object;
     use moveos_std::tx_context;
 
-    public fun create_and_pub_transfer(value: u64){
+    public entry fun create_and_pub_transfer(value: u64){
         let obj = basic_object::pub_transfer::new(value);
         object::transfer(obj, tx_context::sender());
     }

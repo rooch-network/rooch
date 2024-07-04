@@ -464,7 +464,7 @@ module moveos_std::account {
          bob: bob,
       };
       let alice_signer = create_signer_with_account(&mut holder.alice);
-      move_resource_to(&alice_signer, Test{
+      account_move_resource_to(&mut holder.alice, Test{
          addr: signer::address_of(&alice_signer),
          version: 1,
       });

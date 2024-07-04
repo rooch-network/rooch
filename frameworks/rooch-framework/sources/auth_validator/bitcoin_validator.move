@@ -53,7 +53,7 @@ module rooch_framework::bitcoin_validator {
 
         let from_address_in_payload = auth_payload::from_address(payload);
         let bitcoin_addr = bitcoin_address::from_string(&from_address_in_payload);
-        
+
         // Check if the address and public key are related
         assert!(
             bitcoin_address::verify_with_public_key(&from_address_in_payload, &auth_payload::public_key(payload)),

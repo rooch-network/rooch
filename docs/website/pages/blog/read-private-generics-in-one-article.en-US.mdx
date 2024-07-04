@@ -62,13 +62,15 @@ Run unit tests:
 
 ```shell
 $ rooch move test
+
 INCLUDING DEPENDENCY MoveStdlib
 INCLUDING DEPENDENCY MoveosStdlib
+INCLUDING DEPENDENCY RoochFramework
 BUILDING private_generics
 Running Move unit tests
-[ PASS    ] 0x42::module1::test1
+2024-06-26T15:35:02.835842Z  INFO moveos_common::utils: set max open fds 8192
+[ PASS    ] 0xfc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::module1::test1
 Test result: OK. Total tests: 1; passed: 1; failed: 0
-Success
 ```
 
 Next, we perform **private generic constraints** on the generic function `new_box`, add the `#[private_generics(T)]` attribute annotation in the previous line of the function, and leave other places unchanged:
@@ -79,11 +81,13 @@ public fun new_box<T, U>(value: T): Box<T> {
 	Box { v: value }
 }
 ```
+
 With the addition of a private generic constraint, type `T` must be defined within the current module when the function is called. Obviously the **built-in** type `u32` is not defined in the current module, so if you run the code at this time, an error will be reported, as follows:
 
 ```shell
 $ rooch move test
-error: resource type "U32" in function "0x42::module1::new_box" not defined in current module or not allowed
+
+error: resource type "U32" in function "0xfc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::module1::new_box" not defined in current module or not allowed
    ┌─ ./sources/module1.move:17:19
    │
 17 │         let box = new_box<u32, u64>(123);
@@ -135,13 +139,15 @@ At this point, run the test again and the test example can pass the test success
 
 ```shell
 $ rooch move test
+
 INCLUDING DEPENDENCY MoveStdlib
 INCLUDING DEPENDENCY MoveosStdlib
+INCLUDING DEPENDENCY RoochFramework
 BUILDING private_generics
 Running Move unit tests
-[ PASS    ] 0x42::module1::test1
+2024-06-26T15:38:13.522724Z  INFO moveos_common::utils: set max open fds 8192
+[ PASS    ] 0xfc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::module1::test1
 Test result: OK. Total tests: 1; passed: 1; failed: 0
-Success
 ```
 
 The private generic function is called in `module1`, and the custom type `Data` is also defined in the **current** module, so `Data` can pass the function's private generic constraints.
@@ -218,11 +224,12 @@ At this point, run the unit test:
 
 ```shell
 $ rooch move test
-error: resource type "Data2" in function "0x42::module1::new_box" not defined in current module or not allowed
+
+error: resource type "Data2" in function "0xfc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::module1::new_box" not defined in current module or not allowed
    ┌─ ./sources/module1.move:32:20
    │
-32 │         let box2 = new_box<Data2, u64>(data2);
-   │                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+32 │         let box2 = new_box<Data2, Data2>(data2);
+   │                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 Error: extended checks failed
@@ -258,54 +265,68 @@ At this time, we comment out the unit test `test2` in `module1` and rerun the un
 
 ```shell
 $ rooch move test
+
 INCLUDING DEPENDENCY MoveStdlib
 INCLUDING DEPENDENCY MoveosStdlib
+INCLUDING DEPENDENCY RoochFramework
 BUILDING private_generics
 Running Move unit tests
-[ PASS    ] 0x42::module1::test1
-[ PASS    ] 0x42::module3::test3
+2024-06-26T15:59:25.520858Z  INFO moveos_common::utils: set max open fds 8192
+[ PASS    ] 0xfc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::module3::test3
+[ PASS    ] 0xfc3c1fa4f1538deee1048fa066a1b0029f2cf428e21667e5a7d4d570626c112e::module1::test1
 Test result: OK. Total tests: 2; passed: 2; failed: 0
-Success
 ```
+
 ### Application
 
 Such a function is defined in the MoveOS standard library:
 
 ```move
 #[private_generics(T)]
-/// Move a resource to the account's storage
-/// This function equates to `move_to<T>(&signer, resource)` instruction in Move
-public fun global_move_to<T: key>(ctx: &mut Context, account: &signer, resource: T){
-    let account_address = signer::address_of(account);
-    //Auto create the account storage when move resource to the account
-    ensure_account_storage(ctx, account_address);
-    let account_storage = borrow_account_storage_mut(ctx, account_address);
-    add_resource_to_account_storage(account_storage, resource);
+/// Borrow a mut resource from the account's storage
+/// This function equates to `borrow_global_mut<T>(address)` instruction in Move
+public fun borrow_mut_resource<T: key>(account: address): &mut T {
+    let account_obj = borrow_mut_account_internal(account);
+    account_borrow_mut_resource_interal<T>(account_obj)
 }
 ```
 
-The function `global_move_to` is a private generic function, and the type `T` constrained by the private generic is a resource type. Calling the function requires passing three parameters (storage context, signer, resource).
-
-First, the address of calling the current function is obtained and stored in `account_address`. `ensure_account_storage` ensures that the account storage exists. Then, `borrow_account_storage_mut` is called to obtain the variable borrow in the account. Finally, `add_resource_to_account_storage` is called to add the `resource` to the account storage.
+The function `borrow_mut_resource` is a private generic function, and the type `T` constrained by the private generic is a resource type.
 
 For a private generic function like this, the module that calls it must define the type of private generic constraint. Let's take a look at an example used in Rooch Framework:
 
 ```move
-public(friend) fun init_authentication_keys(ctx: &mut Context, account: &signer) {
-  let authentication_keys = AuthenticationKeys {
-     authentication_keys: type_table::new(ctx),
-  };
-  context::move_resource_to<AuthenticationKeys>(ctx, account, authentication_keys);
+public fun install_auth_validator<ValidatorType: store>(account_signer: &signer) {
+    features::ensure_testnet_enabled();
+
+    let validator = auth_validator_registry::borrow_validator_by_type<ValidatorType>();
+    let validator_id = auth_validator::validator_id(validator);
+    let account_addr = signer::address_of(account_signer);
+
+    assert!(
+        !is_auth_validator_installed(account_addr, validator_id),
+        ErrorAuthValidatorAlreadyInstalled);
+
+
+    if (!account::exists_resource<InstalledAuthValidator>(account_addr)) {
+        let installed_auth_validator = InstalledAuthValidator {
+            validators: vector::empty(),
+        };
+        account::move_resource_to<InstalledAuthValidator>(account_signer, installed_auth_validator);
+    };
+    let installed_auth_validator = account::borrow_mut_resource<InstalledAuthValidator>(account_addr);
+    vector::push_back(&mut installed_auth_validator.validators, validator_id);
 }
 ```
 
-The `init_authentication_keys` function in `account_authentication.move` uses the `global_move_to` private generic function, which means `AuthenticationKeys` must also be defined in the current module.
+The `install_auth_validator` function in `account_authentication.move` uses the `account::borrow_mut_resource` private generic function, which means `InstalledAuthValidator` must also be defined in the current module.
 
-We can find the definition of the `AuthenticationKeys` type at the beginning of the current module:
+We can find the definition of the `InstalledAuthValidator` type at the beginning of the current module:
 
 ```move
-struct AuthenticationKeys has key{
-  authentication_keys: TypeTable,
+/// A resource that holds the auth validator ids for this account has installed.
+struct InstalledAuthValidator has key {
+    validators: vector<u64>,
 }
 ```
 

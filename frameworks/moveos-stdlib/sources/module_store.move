@@ -63,7 +63,7 @@ module moveos_std::module_store {
 
     public fun exists_package(module_object: &Object<ModuleStore>, package_id: address): bool {
         let package_obj_id = object::custom_child_object_id<address, Package>(object::id(module_object), package_id);
-        object::contains_object_field<ModuleStore, Package>(module_object, package_obj_id)
+        object::exists_object_with_type<Package>(package_obj_id)
     }
 
     /// Check if module exists
@@ -152,12 +152,12 @@ module moveos_std::module_store {
 
     fun borrow_package(module_store: &Object<ModuleStore>, package_id: address): &Object<Package> {
         let package_obj_id = object::custom_child_object_id<address, Package>(object::id(module_store), package_id);
-        object::borrow_object_field<ModuleStore, Package>(module_store, package_obj_id)
+        object::borrow_object<Package>(package_obj_id)
     }
 
     fun borrow_mut_package(module_store: &mut Object<ModuleStore>, package_id: address): &mut Object<Package> {
         let package_obj_id = object::custom_child_object_id<address, Package>(object::id(module_store), package_id);
-        object::borrow_mut_object_field<ModuleStore, Package>(module_store, package_obj_id)
+        object::borrow_mut_object_extend<Package>(package_obj_id)
     }
 
     fun add_module(package: &mut Object<Package>, name: String, mod: MoveModule) {

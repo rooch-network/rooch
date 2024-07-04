@@ -1,79 +1,117 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { createContext, useMemo, useRef } from 'react'
-import type { ReactNode } from 'react'
+import { ReactNode, useCallback } from 'react'
 
-import { AllNetwork, isRoochClient, Network, RoochClient } from '@roochnetwork/rooch-sdk'
-import { ClientContextStore, createClientContextStore } from '../clientStore'
-import type { StateStorage } from 'zustand/middleware'
-import { useCurrentNetwork } from '../hooks'
-import { RoochSessionProvider } from './sessionProvider'
-import { getDefaultStorage, StorageType } from '../utils/stateStorage'
+import { createContext, useMemo, useState } from 'react'
 
-const DEFAULT_STORAGE_KEY = 'rooch-sdk-kit:rooch-client-info'
+import {
+  getRoochNodeUrl,
+  isRoochClient,
+  RoochClient,
+  RoochClientOptions,
+} from '@roochnetwork/rooch-sdk'
 
-export const RoochClientContext = createContext<ClientContextStore | null>(null)
+import { NetworkConfig } from '../hooks/index.js'
+import { useSessionStore } from '../hooks/useSessionsStore.js'
+import { HTTPTransport } from '../http/httpTransport.js'
 
-export type RoochClientProviderProps = {
-  network: Network
-  networks?: Network[]
-  /** Configures how the most recently connected to wallet account is stored. Defaults to using localStorage. */
-  storage?: StateStorage
+export type NetworkConfigs<T extends NetworkConfig | RoochClient = NetworkConfig | RoochClient> =
+  Record<string, T>
 
-  /** The key to use to store the most recently connected wallet account. */
-  storageKey?: string
+export interface ClientProviderContext {
+  client: RoochClient
+  networks: NetworkConfigs
+  network: string
+  config: NetworkConfig | null
+  selectNetwork: (network: string) => void
+}
 
+export const ClientContext = createContext<ClientProviderContext | null>(null)
+
+export type RoochClientProviderProps<T extends NetworkConfigs> = {
+  networks?: NetworkConfigs
+  onNetworkChange?: (network: keyof T & string) => void
   children: ReactNode
+} & (
+  | {
+      defaultNetwork?: keyof T & string
+      network?: never
+    }
+  | {
+      defaultNetwork?: never
+      network?: keyof T & string
+    }
+)
+
+const DEFAULT_NETWORKS = {
+  localnet: { url: getRoochNodeUrl('localnet') },
 }
 
-export function RoochClientProvider(props: RoochClientProviderProps) {
-  // ** Props **
-  const { storage, storageKey, network, networks, children } = props
-
-  const clientStoreRef = useRef(
-    createClientContextStore({
-      storage: storage || getDefaultStorage(StorageType.Local),
-      storageKey: storageKey || DEFAULT_STORAGE_KEY + network.id,
-      networks: networks || AllNetwork,
-      currentNetwork: network,
-    }),
-  )
-
-  return (
-    <RoochClientContext.Provider value={clientStoreRef.current}>
-      <ClientManagerProvider> {children} </ClientManagerProvider>
-    </RoochClientContext.Provider>
-  )
-}
-
-export const ClientManagerContext = createContext<RoochClient | null>(null)
-
-type ClientManagerProps = Required<Pick<RoochClientProviderProps, 'children'>>
-
-const DEFAULT_CREATE_CLIENT = function createClient(config: Network | RoochClient) {
+const DEFAULT_CREATE_CLIENT = function createClient(
+  _name: string,
+  config: NetworkConfig | RoochClient,
+  setCurrentSession: any,
+) {
   if (isRoochClient(config)) {
     return config
   }
 
+  config.transport = new HTTPTransport(
+    {
+      url: config.url!.toString(),
+    },
+    setCurrentSession,
+  )
+
   return new RoochClient(config)
 }
 
-function ClientManagerProvider(props: ClientManagerProps) {
-  // ** Props **
-  const { children } = props
+export function RoochClientProvider<T extends NetworkConfigs>(props: RoochClientProviderProps<T>) {
+  const { onNetworkChange, network, children } = props
+  const setCurrentSession = useSessionStore((state) => state.setCurrentSession)
+  const networks = (props.networks ?? DEFAULT_NETWORKS) as T
+  const [selectedNetwork, setSelectedNetwork] = useState<keyof T & string>(
+    props.network ?? props.defaultNetwork ?? (Object.keys(networks)[0] as keyof T & string),
+  )
+  const currentNetwork = props.network ?? selectedNetwork
 
-  // ** Hooks **
-  const network = useCurrentNetwork()
-  const createClient = DEFAULT_CREATE_CLIENT
+  const clearSession = useCallback(() => {
+    try {
+      setCurrentSession(undefined)
+    } catch (e) {
+      console.log(e)
+    }
+  }, [setCurrentSession])
 
   const client = useMemo(() => {
-    return createClient(network)
-  }, [createClient, network])
+    return DEFAULT_CREATE_CLIENT(currentNetwork, networks[currentNetwork], () => {
+      clearSession()
+    })
+  }, [currentNetwork, networks, clearSession])
 
-  return (
-    <ClientManagerContext.Provider value={client}>
-      <RoochSessionProvider> {children}</RoochSessionProvider>
-    </ClientManagerContext.Provider>
-  )
+  const ctx = useMemo((): ClientProviderContext => {
+    return {
+      client,
+      network: currentNetwork,
+      networks,
+      config:
+        networks[currentNetwork] instanceof RoochClient
+          ? null
+          : (networks[currentNetwork] as RoochClientOptions),
+      selectNetwork: (newNetwork) => {
+        if (currentNetwork === newNetwork) {
+          return
+        }
+
+        if (!network && newNetwork !== selectedNetwork) {
+          setSelectedNetwork(newNetwork)
+        }
+
+        onNetworkChange?.(newNetwork)
+      },
+    }
+  }, [client, currentNetwork, networks, network, selectedNetwork, onNetworkChange])
+
+  return <ClientContext.Provider value={ctx}>{children}</ClientContext.Provider>
 }

@@ -79,11 +79,9 @@ const theme: DocsThemeConfig = {
     useEffect(() => {
       if (asPath.includes('/blog/')) {
         const contents = getPagesUnderRoute('/blog') as Content[]
-        console.log('contents', contents)
         const currentPage = contents.find(
           (content): content is Page => isPage(content) && content.route === asPath,
         )
-        console.log('currentPage', currentPage)
         if (currentPage) {
           setPageTitle(
             currentPage.frontMatter.title

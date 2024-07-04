@@ -11,7 +11,6 @@ import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 
 const tabItems: TabItem[] = [
   { id: 'overview', label: 'Overview', available: true },
-  { id: 'userSignatures', label: 'User Signatures', available: true },
   { id: 'rawJson', label: 'Raw Json', available: true },
 ]
 

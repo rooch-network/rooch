@@ -555,7 +555,6 @@ impl<'a> ExtendedChecker<'a> {
                     self.env
                         .get_struct(mid.qualified(*sid))
                         .get_full_name_with_address(),
-                    false,
                 ) =>
             {
                 // Specific struct types are allowed
@@ -589,25 +588,21 @@ impl<'a> ExtendedChecker<'a> {
                     .env
                     .get_struct(mid.qualified(*sid))
                     .get_full_name_with_address();
-                if is_allowed_input_struct(struct_name, true) {
-                    return true;
-                }
-                false
+                is_allowed_input_struct(struct_name)
             }
             _ => false,
         }
     }
 }
 
-pub fn is_allowed_input_struct(name: String, is_ref: bool) -> bool {
+pub fn is_allowed_input_struct(name: String) -> bool {
     matches!(
         name.as_str(),
         "0x1::string::String"
             | "0x1::ascii::String"
             | "0x2::object::ObjectID"
-    ) ||
-    // Object<T> only support passing argument by-ref, not by-value
-     (is_ref && name.as_str() == "0x2::object::Object")
+            | "0x2::object::Object"
+    )
 }
 
 // ----------------------------------------------------------------------------------
@@ -835,8 +830,9 @@ impl<'a> ExtendedChecker<'a> {
                                                             error_msg.as_str(),
                                                         );
                                                     }
-                                                    gas_free_function_info.gas_validate =
-                                                        full_function_name.clone();
+                                                    gas_free_function_info
+                                                        .gas_validate
+                                                        .clone_from(&full_function_name)
                                                 }
 
                                                 if attribute_key == GAS_FREE_CHARGE_POST {
@@ -899,12 +895,14 @@ impl<'a> ExtendedChecker<'a> {
                                                 .or_default();
 
                                             if attribute_key == GAS_FREE_VALIDATE {
-                                                gas_free_function_info.gas_validate =
-                                                    full_function_name.clone();
+                                                gas_free_function_info
+                                                    .gas_validate
+                                                    .clone_from(&full_function_name)
                                             }
                                             if attribute_key == GAS_FREE_CHARGE_POST {
-                                                gas_free_function_info.gas_charge_post =
-                                                    full_function_name.clone();
+                                                gas_free_function_info
+                                                    .gas_charge_post
+                                                    .clone_from(&full_function_name)
                                             }
                                         }
                                     }

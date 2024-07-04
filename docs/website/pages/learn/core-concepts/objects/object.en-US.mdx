@@ -305,10 +305,7 @@ Note: Since the Object type itself also has the `store` ability, what is the dif
 |---|---
 | `add_object_field<T: key, V: key>(obj: &mut Object<T>, v: V): Object<V>` | Adds a new child object field to the object and returns the newly added child object. Only shared objects can add child object fields.
 | `add_object_field_with_id<T: key, ID:drop, V: key>(obj: &mut Object<T>, id: ID, v: V): Object<V>` | Adds a new child object field to the object with a custom ID and returns the newly added child object. Only shared objects can add child object fields.
-| `borrow_object_field<T: key, V: key>(obj: &Object<T>, key: ObjectID): &Object<V>` | Borrows an immutable reference to the specified child object field in the object. If the child object field does not exist, the operation fails.
-| `borrow_mut_object_field<T: key, V: key>(obj: &mut Object<T>, key: ObjectID): &mut Object<V>` | Borrows a mutable reference to the specified child object field in the object. If the child object field does not exist, the operation fails.
 | `remove_object_field<T: key, V: key>(obj: &mut Object<T>, child: Object<V>): V` | Removes the specified child object field from the object and returns its value. If the child object field does not exist, the operation fails.
-| `contains_object_field<T: key, V: key>(obj: &Object<T>, key: ObjectID): bool` | Checks if the object contains the specified child object field.
 
 ## Comparison between Rooch Object, Sui Object, and Aptos Object
 

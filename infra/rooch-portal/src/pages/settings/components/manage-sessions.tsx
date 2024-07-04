@@ -1,5 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
 import React, { useCallback, useState } from 'react'
 import {
   Table,
@@ -12,36 +13,36 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import {
-  useCurrentSession,
   useRemoveSession,
   useRoochClientQuery,
+  useCurrentAddress,
 } from '@roochnetwork/rooch-sdk-kit'
 import { AlertCircle, Check, ChevronDown, ChevronUp, Copy, Loader } from 'lucide-react'
-import { SessionInfoResult } from '@roochnetwork/rooch-sdk'
+import { SessionInfoView } from '@roochnetwork/rooch-sdk'
 import { copyToClipboard } from '@/utils/copyToClipboard'
 import { formatTimestamp } from '@/utils/format.ts'
 
 interface ExpandableRowProps {
-  session: SessionInfoResult
+  session: SessionInfoView
   remove: (authKey: string) => void
   loading: boolean
 }
 
-const isSessionExpired = (createTime: number, maxInactiveInterval: number) => {
-  const expirationTime = new Date(createTime).getTime() + maxInactiveInterval * 1000
+const isSessionExpired = (lastActiveTime: number, maxInactiveInterval: number) => {
+  const expirationTime = (lastActiveTime + maxInactiveInterval) * 1000
   return Date.now() > expirationTime
 }
 
 export const ManageSessions: React.FC = () => {
-  const sessionKey = useCurrentSession()
+  const address = useCurrentAddress()
   const { mutateAsync: removeSession } = useRemoveSession()
   const {
     data: sessionKeys,
     isLoading,
     isError,
     refetch,
-  } = useRoochClientQuery('querySessionKeys', {
-    address: sessionKey?.getAddress() || '',
+  } = useRoochClientQuery('getSessionKeys', {
+    address: address!,
   })
 
   const [loading, setLoading] = useState<string | null>(null)
@@ -49,6 +50,7 @@ export const ManageSessions: React.FC = () => {
   const remove = useCallback(
     async (authKey: string) => {
       setLoading(authKey)
+
       try {
         await removeSession({ authKey })
         await refetch()
@@ -134,7 +136,7 @@ const ExpandableRow: React.FC<ExpandableRowProps> = ({ session, remove, loading 
     })
   }
 
-  const expired = isSessionExpired(Number(session.createTime), session.maxInactiveInterval)
+  const expired = isSessionExpired(Number(session.lastActiveTime), session.maxInactiveInterval)
 
   return (
     <>

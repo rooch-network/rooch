@@ -1,9 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use bitcoin::OutPoint;
 use chrono::{DateTime, Local};
 use moveos_store::MoveOSStore;
-use moveos_types::moveos_std::object::RootObjectEntity;
+use moveos_types::moveos_std::object::{ObjectID, RootObjectEntity};
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
 use rooch_types::bitcoin::ord::InscriptionStore;
@@ -11,6 +12,7 @@ use rooch_types::bitcoin::utxo::BitcoinUTXOStore;
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::rooch_network::RoochChainID;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::SystemTime;
 
 pub mod export;
@@ -52,4 +54,72 @@ pub fn init_genesis_job(
     );
     println!("inscription_store_id: {:?}", inscription_store_id);
     (root, rooch_db.moveos_store, start_time)
+}
+
+pub fn concatenate_object_id_merge(
+    _key: &[u8],              // the key being merged
+    old_value: Option<&[u8]>, // the previous value, if one existed
+    merged_bytes: &[u8],      // the new bytes(object_id) being merged in
+) -> Option<Vec<u8>> {
+    // set the new value, return None to delete
+    let mut object_ids: Vec<ObjectID> = old_value
+        .map(|ov| bcs::from_bytes(ov).unwrap())
+        .unwrap_or_default();
+
+    let new_object_id = bcs::from_bytes(merged_bytes).unwrap();
+    object_ids.push(new_object_id);
+
+    Some(bcs::to_bytes(&object_ids).unwrap())
+}
+
+pub fn insert_ord_to_output(
+    utxo_ord_map: Arc<sled::Db>,
+    outpoint: OutPoint,
+    obj_id_bytes: Vec<u8>,
+) {
+    let key = bcs::to_bytes(&outpoint).unwrap();
+    utxo_ord_map.merge(key, obj_id_bytes).unwrap();
+}
+
+pub fn get_ord_by_outpoint(
+    utxo_ord_map: Option<Arc<sled::Db>>,
+    outpoint: OutPoint,
+) -> Option<Vec<ObjectID>> {
+    if let Some(db) = utxo_ord_map {
+        let key = bcs::to_bytes(&outpoint).unwrap();
+        let value = db.get(key).unwrap();
+        value.map(|value| bcs::from_bytes(&value).unwrap())
+    } else {
+        None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::commands::statedb::commands::get_ord_by_outpoint;
+
+    #[test]
+    fn test_concatenate_object_id_merge() {
+        let db_config = sled::Config::new().temporary(true);
+        let db = db_config.open().unwrap();
+        db.set_merge_operator(concatenate_object_id_merge);
+        let utxo_ord_map = Arc::new(db);
+        let outpoint = OutPoint::default();
+
+        let obj_ids = get_ord_by_outpoint(Some(utxo_ord_map.clone()), outpoint);
+        assert_eq!(None, obj_ids);
+
+        let obj_id_0 = ObjectID::random();
+        let value = bcs::to_bytes(&obj_id_0).unwrap();
+        insert_ord_to_output(utxo_ord_map.clone(), outpoint, value);
+        let obj_ids = get_ord_by_outpoint(Some(utxo_ord_map.clone()), outpoint).unwrap();
+        assert_eq!(obj_ids[0], obj_id_0);
+
+        let obj_id_1 = ObjectID::random();
+        let value = bcs::to_bytes(&obj_id_1).unwrap();
+        insert_ord_to_output(utxo_ord_map.clone(), outpoint, value);
+        let obj_ids = get_ord_by_outpoint(Some(utxo_ord_map.clone()), outpoint).unwrap();
+        assert_eq!(obj_ids, vec![obj_id_0, obj_id_1]);
+    }
 }

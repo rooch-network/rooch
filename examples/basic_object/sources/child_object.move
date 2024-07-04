@@ -118,8 +118,7 @@ module basic_object::third_party_module_for_child_object{
         child_object::update_age(child, age);
     }
 
-    public entry fun remove_child_via_id(sender: &signer, child_id: ObjectID){
-        let child = object::take_object<Child>(sender, child_id);
+    public entry fun remove_child(child: Object<Child>){
         child_object::remove_child(child);
     }
 

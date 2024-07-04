@@ -4,10 +4,7 @@
 use crate::service::aggregate_service::AggregateService;
 use crate::service::rpc_service::RpcService;
 use anyhow::Result;
-use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    RpcModule,
-};
+use jsonrpsee::{core::async_trait, RpcModule};
 use moveos_types::{
     access_path::AccessPath,
     h256::H256,
@@ -33,6 +30,8 @@ use rooch_rpc_api::jsonrpc_types::{
     ExecuteTransactionResponseView, FunctionCallView, H256View, StatePageView, StateView, StrView,
     StructTagView, TransactionWithInfoPageView,
 };
+use rooch_rpc_api::RpcError;
+use rooch_rpc_api::RpcResult;
 use rooch_rpc_api::{api::rooch_api::RoochAPIServer, api::DEFAULT_RESULT_LIMIT};
 use rooch_rpc_api::{
     api::{RoochRpcModule, DEFAULT_RESULT_LIMIT_USIZE},
@@ -160,8 +159,7 @@ impl RoochAPIServer for RoochServer {
 
     async fn send_raw_transaction(&self, payload: BytesView) -> RpcResult<H256View> {
         info!("send_raw_transaction payload: {:?}", payload);
-        let mut tx =
-            bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
+        let mut tx = bcs::from_bytes::<RoochTransaction>(&payload.0)?;
         info!("send_raw_transaction tx: {:?}", tx);
 
         let hash = tx.tx_hash();
@@ -175,7 +173,7 @@ impl RoochAPIServer for RoochServer {
         tx_options: Option<TxOptions>,
     ) -> RpcResult<ExecuteTransactionResponseView> {
         let tx_options = tx_options.unwrap_or_default();
-        let tx = bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
+        let tx = bcs::from_bytes::<RoochTransaction>(&payload.0)?;
         let tx_response = self.rpc_service.execute_tx(tx).await?;
 
         let result = if tx_options.with_output {
@@ -553,12 +551,11 @@ impl RoochAPIServer for RoochServer {
             (end..start).rev().collect::<Vec<_>>()
         } else {
             let start = cursor.unwrap_or(0);
-            let start_plus =
-                start
-                    .checked_add(limit_of + 1)
-                    .ok_or(jsonrpsee::core::Error::Custom(
-                        "cursor value is overflow".to_string(),
-                    ))?;
+            let start_plus = start
+                .checked_add(limit_of + 1)
+                .ok_or(RpcError::UnexpectedError(
+                    "cursor value is overflow".to_string(),
+                ))?;
             let end = min(start_plus, last_sequencer_order + 1);
 
             (start..end).collect::<Vec<_>>()

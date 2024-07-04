@@ -30,6 +30,7 @@ module moveos_std::object {
     const ErrorObjectNotShared: u64 = 5;
     ///Can not take out the object which is bound to the account
     const ErrorObjectIsBound: u64 = 6;
+    /// The object or field is already borrowed
     const ErrorObjectAlreadyBorrowed: u64 = 7;
     /// The dynamic fields is not empty
     const ErrorFieldsNotEmpty: u64 = 8;
@@ -44,12 +45,15 @@ module moveos_std::object {
     const ErrorParentNotMatch: u64 = 13;
     /// The object runtime error
     const ErrorObjectRuntimeError: u64 = 14;
+    /// The object or field is already taken out
+    const ErrorObjectAlreadyTakenOut: u64 = 15;
+    /// The object is embedded in other struct, so it can not be borrowed or taken out
+    const ErrorObjectIsEmbeddedInOtherStruct: u64 = 16;
 
     const SYSTEM_OWNER_ADDRESS: address = @0x0;
 
     const SHARED_OBJECT_FLAG_MASK: u8 = 1;
     const FROZEN_OBJECT_FLAG_MASK: u8 = 1 << 1;
-    const BOUND_OBJECT_FLAG_MASK: u8 = 1 << 2;
 
     const SPARSE_MERKLE_PLACEHOLDER_HASH: address = @0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000;
 
@@ -246,30 +250,28 @@ module moveos_std::object {
 
     /// Borrow Object from object store by object_id
     /// Any one can borrow an `&Object<T>` from the global object storage
+    /// Except the object is embedded in other struct
     public fun borrow_object<T: key>(object_id: ObjectID): &Object<T> {
         let object_entity = borrow_from_global<T>(object_id);
-        as_ref(object_entity)
+        assert!(is_shared_internal(object_entity)||is_frozen_internal(object_entity)||is_user_owned_internal(object_entity), ErrorObjectIsEmbeddedInOtherStruct);
+        native_borrow_object_pointer<Object<T>>(object_id)
     }
 
     /// Borrow mut Object by `owner` and `object_id`
     public fun borrow_mut_object<T: key>(owner: &signer, object_id: ObjectID): &mut Object<T> {
         let owner_address = signer::address_of(owner);
-        let obj = borrow_mut_object_internal<T>(object_id);
-        assert!(owner(obj) == owner_address, ErrorObjectOwnerNotMatch);
-        obj
+        let object_entity = borrow_mut_from_global<T>(object_id);
+        assert!(owner_internal(object_entity) == owner_address, ErrorObjectOwnerNotMatch);
+        native_borrow_mut_object_pointer<Object<T>>(object_id)
     }
 
     #[private_generics(T)]
-    /// Borrow mut Object by `object_id`
+    /// Borrow mut Object by `object_id`, Only the module of `T` can borrow the `Object<T>` with object_id.
+    /// The Object must be a `Shared` or `UserOwned` Object
     public fun borrow_mut_object_extend<T: key>(object_id: ObjectID): &mut Object<T> {
-        let obj = borrow_mut_object_internal<T>(object_id);
-        obj
-    }
-
-    fun borrow_mut_object_internal<T: key>(object_id: ObjectID): &mut Object<T> {
         let object_entity = borrow_mut_from_global<T>(object_id);
-        let obj = as_mut_ref(object_entity);
-        obj
+        assert!(is_shared_internal(object_entity) || is_user_owned_internal(object_entity), ErrorObjectIsEmbeddedInOtherStruct);
+        native_borrow_mut_object_pointer<Object<T>>(object_id)
     }
 
     /// Take out the UserOwnedObject by `owner` and `object_id`
@@ -279,28 +281,26 @@ module moveos_std::object {
         let owner_address = signer::address_of(owner);
         let object_entity = borrow_mut_from_global<T>(object_id);
         assert!(owner_internal(object_entity) == owner_address, ErrorObjectOwnerNotMatch);
-        assert!(!is_bound_internal(object_entity), ErrorObjectIsBound);
         to_system_owned_internal(object_entity);
-        mut_entity_as_object(object_entity)
+        native_take_object_pointer<Object<T>>(object_id)
     }
 
     #[private_generics(T)]
-    /// Take out the UserOwnedObject by `object_id`, return the owner and Object
-    /// This function is for developer to extend, Only the module of `T` can take out the `UserOwnedObject` with object_id.
+    /// Take out the Shared or UserOwned Object by `object_id`, return the owner and Object
+    /// This function is for developer to extend, Only the module of `T` can call this function.
     public fun take_object_extend<T: key>(object_id: ObjectID): (address, Object<T>) {
         let object_entity = borrow_mut_from_global<T>(object_id);
-        assert!(is_user_owned_internal(object_entity), ErrorObjectOwnerNotMatch);
-        assert!(!is_bound_internal(object_entity), ErrorObjectIsBound);
+        assert!(is_shared_internal(object_entity) || is_user_owned_internal(object_entity), ErrorObjectIsEmbeddedInOtherStruct);
         let owner = owner_internal(object_entity);
         to_system_owned_internal(object_entity);
-        (owner, mut_entity_as_object(object_entity))
+        (owner, native_take_object_pointer<Object<T>>(object_id))
     }
 
     /// Borrow mut Shared Object by object_id
     public fun borrow_mut_object_shared<T: key>(object_id: ObjectID): &mut Object<T> {
-        let obj = borrow_mut_object_internal<T>(object_id);
-        assert!(is_shared(obj), ErrorObjectNotShared);
-        obj
+        let object_entity = borrow_mut_from_global<T>(object_id);
+        assert!(is_shared_internal(object_entity), ErrorObjectNotShared);
+        native_borrow_mut_object_pointer<Object<T>>(object_id)
     }
 
 
@@ -324,7 +324,7 @@ module moveos_std::object {
 
     /// Directly drop the Object
     fun drop<T: key>(self: Object<T>) {
-        let Object { id: _ } = self;
+        native_return_object_pointer(self)
     }
 
     fun drop_entity<T: key>(entity: ObjectEntity<T>): T {
@@ -333,7 +333,7 @@ module moveos_std::object {
     }
 
     /// Make the Object shared, Any one can get the &mut Object<T> from shared object
-    /// The shared object also can be removed from the object storage.
+    /// The module of `T` can call `take_object_extend` to take out the shared object, then remove the shared object.
     public fun to_shared<T: key>(self: Object<T>) {
         let obj_entity = borrow_mut_from_global<T>(self.id);
         to_shared_internal(obj_entity);
@@ -375,33 +375,18 @@ module moveos_std::object {
         self.flag & FROZEN_OBJECT_FLAG_MASK == FROZEN_OBJECT_FLAG_MASK
     }
 
-    //TODO how to provide public bound object API
-
-    fun to_bound_internal<T>(self: &mut ObjectEntity<T>) {
-        self.flag = self.flag | BOUND_OBJECT_FLAG_MASK;
-    }
-
-    public fun is_bound<T: key>(self: &Object<T>): bool {
-        let obj_enitty = borrow_from_global<T>(self.id);
-        is_bound_internal(obj_enitty)
-    }
-
-    public(friend) fun is_bound_internal<T>(self: &ObjectEntity<T>): bool {
-        self.flag & BOUND_OBJECT_FLAG_MASK == BOUND_OBJECT_FLAG_MASK
-    }
-
-    public(friend) fun to_user_owned<T: key>(self: &mut Object<T>, new_owner: address) {
+    fun to_user_owned<T: key>(self: &mut Object<T>, new_owner: address) {
         assert!(new_owner != SYSTEM_OWNER_ADDRESS, ErrorInvalidOwnerAddress);
         let obj_entity = borrow_mut_from_global<T>(self.id);
         obj_entity.owner = new_owner;
     }
 
-    public(friend) fun to_system_owned<T: key>(self: &mut Object<T>) {
+    fun to_system_owned<T: key>(self: &mut Object<T>) {
         let obj_entity = borrow_mut_from_global<T>(self.id);
         to_system_owned_internal(obj_entity);
     }
 
-    public(friend) fun to_system_owned_internal<T>(self: &mut ObjectEntity<T>) {
+    fun to_system_owned_internal<T>(self: &mut ObjectEntity<T>) {
         self.owner = SYSTEM_OWNER_ADDRESS;
     }
 
@@ -429,7 +414,7 @@ module moveos_std::object {
         obj_enitty.owner
     }
 
-    public(friend) fun owner_internal<T: key>(self: &ObjectEntity<T>): address {
+    fun owner_internal<T: key>(self: &ObjectEntity<T>): address {
         self.owner
     }
 
@@ -437,7 +422,7 @@ module moveos_std::object {
         owner(self) == SYSTEM_OWNER_ADDRESS
     }
 
-    public(friend) fun is_user_owned_internal<T: key>(self: &ObjectEntity<T>): bool {
+    fun is_user_owned_internal<T: key>(self: &ObjectEntity<T>): bool {
         owner_internal(self) != SYSTEM_OWNER_ADDRESS
     }
 
@@ -445,28 +430,7 @@ module moveos_std::object {
         owner(self) != SYSTEM_OWNER_ADDRESS
     }
 
-    // === Object Ref ===
-
-    public(friend) fun as_ref<T: key>(object_entity: &ObjectEntity<T>): &Object<T> {
-        as_ref_inner<Object<T>>(object_entity.id)
-    }
-
-    public(friend) fun as_mut_ref<T: key>(object_entity: &mut ObjectEntity<T>): &mut Object<T> {
-        as_mut_ref_inner<Object<T>>(object_entity.id)
-    }
-
-    public(friend) fun mut_entity_as_object<T: key>(object_entity: &mut ObjectEntity<T>): Object<T> {
-        Object { id: object_entity.id }
-    }
-
-    /// Convert the ObjectID to &T or &mut T
-    /// The caller must ensure the T only has one `ObjectID` field, such as `Object<T>`.
-    native fun as_ref_inner<T>(object_id: ObjectID): &T;
-
-    native fun as_mut_ref_inner<T>(object_id: ObjectID): &mut T;
-
     // === Object Storage ===
-
 
     /// The global root object id is `[]`
     fun root_object_id(): ObjectID {
@@ -530,19 +494,13 @@ module moveos_std::object {
         increment_size<T>(parent_id);
         // init_timestamp(&mut child_entity);
         update_timestamp<T>(parent_id);
-        Object { id: child_id }
+        native_take_object_pointer<Object<V>>(child_id)
     }
 
     /// Acquire an immutable reference to the value which `key` maps to.
     /// Aborts if there is no field for `key`.
     public fun borrow_field<T: key, K: copy + drop, V: store>(obj: &Object<T>, key: K): &V {
         borrow_field_internal<K, V>(obj.id, key)
-    }
-
-    /// Borrow the child object by `key`
-    public fun borrow_object_field<T: key, V: key>(obj: &Object<T>, key: ObjectID): &Object<V> {
-        let object_entity = borrow_object_field_internal<V>(obj.id, key);
-        as_ref(object_entity)
     }
 
     fun borrow_object_field_internal<V: key>(parent_id: ObjectID, key: ObjectID): &ObjectEntity<V> {
@@ -604,13 +562,6 @@ module moveos_std::object {
             add_field_internal<T, K, V>(obj_id, key, default)
         };
         borrow_mut_field_internal(obj_id, key)
-    }
-
-    /// Borrow the child object by `key`
-    /// Because the parent object must be a shared object, so we do not require the #[private_generics(T)] here
-    public fun borrow_mut_object_field<T: key, V: key>(obj: &mut Object<T>, key: ObjectID): &mut Object<V> {
-        let object_entity = borrow_mut_object_field_internal<V>(obj.id, key);
-        as_mut_ref(object_entity)
     }
 
     fun borrow_mut_object_field_internal<V: key>(parent_id: ObjectID, key: ObjectID): &mut ObjectEntity<V> {
@@ -726,11 +677,6 @@ module moveos_std::object {
         native_contains_field_with_value_type<K, FieldValue<V>>(obj_id, key)
     }
 
-    /// Returns true if `object` contains an Object field for `key` and the value type is `V`.
-    public fun contains_object_field<T: key, V: key>(obj: &Object<T>, key: ObjectID): bool {
-        contains_object_field_internal<V>(obj.id, key)
-    }
-
     fun contains_object_field_internal<V: key>(parent: ObjectID, key: ObjectID): bool {
         if (is_parent(&parent, &key)) {
             native_contains_field_with_value_type<ObjectID, ObjectEntity<V>>(parent, key)
@@ -833,6 +779,18 @@ module moveos_std::object {
     public(friend) fun now_seconds(): u64 {
         now_milliseconds() / MILLI_CONVERSION_FACTOR
     }
+
+    // ===== Object<T> pointer native functions ====
+
+    native fun native_borrow_object_pointer<O>(object_id: ObjectID): &O;
+
+    native fun native_borrow_mut_object_pointer<O>(object_id: ObjectID): &mut O;
+
+    native fun native_take_object_pointer<O>(object_id: ObjectID): O;
+
+    native fun native_return_object_pointer<O>(object: O);
+
+    // ==== ObjectEntity<T> and field native functions ====
 
     native fun native_borrow_root(): &mut ObjectEntity<Root>;
 
@@ -1151,5 +1109,55 @@ module moveos_std::object {
         assert!(*borrow_field(&child, b"key") == 2u64, 1000);
         let _v:u64 = remove_field(&mut child, b"key");
         let TestStruct { count: _ } = remove_object_field(parent, child);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ErrorObjectAlreadyBorrowed, location = Self)]
+    fun test_borrow_two_reference(){
+        let obj = new(TestStruct { count: 1 });
+        let obj_id = id(&obj);
+        to_shared(obj);
+        let obj_ref1 = borrow_object<TestStruct>(obj_id);
+        let obj_ref2 = borrow_object<TestStruct>(obj_id);
+        assert!(obj_ref1.id == obj_ref2.id, 1000);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ErrorObjectAlreadyBorrowed, location = Self)]
+    fun test_borrow_two_mut_reference(){
+        let obj = new(TestStruct { count: 1 });
+        let obj_id = id(&obj);
+        to_shared(obj);
+        let obj_ref1 = borrow_mut_object_shared<TestStruct>(obj_id);
+        let obj_ref2 = borrow_mut_object_shared<TestStruct>(obj_id);
+        assert!(obj_ref1.id == obj_ref2.id, 1000);
+    }
+
+    #[test]
+    fun test_take_shared_object_and_remove(){
+        let obj = new(TestStruct { count: 1 });
+        let obj_id = id(&obj);
+        to_shared(obj);
+        let(_,obj) = take_object_extend<TestStruct>(obj_id);
+        let TestStruct{count:_} = remove(obj);
+    }
+
+    #[test_only]
+    struct TestContainer has key {
+        inner_obj: Object<TestStruct>,
+    }
+
+    #[test]
+    fun test_embed_object_unpack_and_transfer(){
+        let obj = new(TestStruct { count: 1 });
+        let container = TestContainer {
+            inner_obj: obj,
+        };
+        let container_obj = new(container);
+        let container_obj_id = id(&container_obj);
+        transfer_extend(container_obj, @moveos_std);
+        let (_,container_obj) = take_object_extend<TestContainer>(container_obj_id);
+        let TestContainer{inner_obj} = remove(container_obj);
+        transfer_extend(inner_obj, @moveos_std);
     }
 }

@@ -15,6 +15,7 @@ members = [
     "moveos/moveos-wasm",
     "moveos/moveos-object-runtime",
     "moveos/moveos-compiler",
+    "crates/rooch-common",
     "crates/rooch-key",
     "crates/rooch-types",
     "crates/rooch-framework-tests",
@@ -67,8 +68,8 @@ homepage = "https://rooch.network"
 license = "Apache-2.0"
 publish = false
 repository = "https://github.com/rooch-network/rooch"
-rust-version = "1.77.2"
-version = "0.5.6"
+rust-version = "1.78.0"
+version = "0.5.7"
 
 
 [workspace.dependencies]
@@ -88,9 +89,11 @@ moveos-config = { path = "moveos/moveos-config" }
 moveos-wasm = { path = "moveos/moveos-wasm" }
 moveos-object-runtime = { path = "moveos/moveos-object-runtime" }
 moveos-compiler = { path = "moveos/moveos-compiler" }
+accumulator = { path = "moveos/moveos-commons/accumulator" }
 
 # crates for Rooch
 rooch = { path = "crates/rooch" }
+rooch-common = { path = "crates/rooch-common" }
 rooch-key = { path = "crates/rooch-key" }
 rooch-types = { path = "crates/rooch-types" }
 rooch-framework-tests = { path = "crates/rooch-framework-tests" }
@@ -141,7 +144,7 @@ bitcoin = { version = "0.31.0", features = ["rand-std"] }
 bitcoincore-rpc = "0.18.0"
 bip32 = "0.4.0"
 byteorder = "1.4.3"
-clap = { version = "4.5.7", features = ["derive", "env"] }
+clap = { version = "4.5.8", features = ["derive", "env"] }
 brotli = "3.4.0"
 chrono = "0.4.23"
 coerce = "0.8"
@@ -158,11 +161,11 @@ futures = "0.3.28"
 hex = "0.4.3"
 rustc-hex = "2.1"
 itertools = "0.13.0"
-jsonrpsee = { version = "0.16.3", features = ["full"] }
+jsonrpsee = { version = "0.23.2", features = ["full"] }
 jpst = "0.1.1"
 lazy_static = "1.5.0"
 linked-hash-map = "0.5.6"
-log = "0.4.16"
+log = "0.4.22"
 more-asserts = "0.3.0"
 num-derive = "0.3.3"
 num-traits = "0.2.15"
@@ -180,9 +183,9 @@ rand = "0.8.5"
 rand_core = { version = "0.6.3", default-features = false }
 schemars = { version = "0.8.21", features = ["either"] }
 serde = { version = "1.0.203", features = ["derive", "rc"] }
-serde_bytes = "0.11.6"
+serde_bytes = "0.11.15"
 #serde_json = { version = "1.0.111", features = ["preserve_order", "arbitrary_precision"] }
-serde_json = { version = "1.0.111", features = ["preserve_order"] }
+serde_json = { version = "1.0.120", features = ["preserve_order"] }
 serde_yaml = "0.9"
 serde_repr = "0.1"
 serde-name = "0.2"
@@ -218,7 +221,6 @@ rocksdb = { version = "0.22.0", features = ["snappy", "lz4", "zstd", "zlib"], de
 prometheus = "0.13.3"
 coarsetime = "0.1.22"
 hyper = { version = "0.14.12", features = ["full"] }
-http = "0.2.6"
 num_enum = "0.7.2"
 libc = "^0.2"
 include_dir = { version = "0.6.2" }
@@ -226,11 +228,10 @@ nostr = "0.22"
 serde-reflection = "0.3.6"
 serde-generate = "0.25.1"
 bcs-ext = { path = "moveos/moveos-commons/bcs_ext" }
-tower = { version = "0.4.12", features = ["full", "util", "timeout", "load-shed", "limit"] }
-tower-http = { version = "0.4.4", features = ["cors", "full", "trace", "set-header", "propagate-header"] }
+tower = { version = "0.4.13", features = ["full", "util", "timeout", "load-shed", "limit"] }
+tower-http = { version = "0.5.2", features = ["cors", "full", "trace", "set-header", "propagate-header"] }
 mirai-annotations = "1.12.0"
 lru = "0.11.0"
-accumulator = { path = "moveos/moveos-commons/accumulator" }
 bs58 = "0.5.1"
 dirs-next = "2.0.0"
 anstream = { version = "0.3" }
@@ -243,15 +244,16 @@ uint = "0.9.5"
 rlp = "0.5.2"
 const-hex = "1.12.0"
 cached = "0.43.0"
-diesel = { version = "2.1.0", features = [
+diesel = { version = "2.2.1", features = [
     "chrono",
     "sqlite",
     "r2d2",
     "serde_json",
     "64-column-tables",
 ] }
-axum = { version = "0.6.6", default-features = false, features = [
-    "headers",
+diesel-derive-enum = { version = "2.1.0", features = ["sqlite"] }
+diesel_migrations = { version = "2.2.0" }
+axum = { version = "0.7.5", default-features = false, features = [
     "tokio",
     "http1",
     "http2",
@@ -262,8 +264,8 @@ axum = { version = "0.6.6", default-features = false, features = [
     "query",
     "ws",
 ] }
-axum-extra = "0.4.2"
-axum-server = { version = "0.5.1", default-features = false, features = [
+axum-extra = "0.9.3"
+axum-server = { version = "0.6.0", default-features = false, features = [
     "tls-rustls",
 ] }
 serenity = { version = "0.12.2", default-features = false, features = [
@@ -273,8 +275,6 @@ serenity = { version = "0.12.2", default-features = false, features = [
     "rustls_backend",
     "model",
 ] }
-diesel-derive-enum = { version = "2.0.1", features = ["sqlite"] }
-diesel_migrations = { version = "2.0.0" }
 tap = "1.0.1"
 dotenvy = "0.15"
 sized-chunks = { version = "0.6" }
@@ -284,7 +284,7 @@ criterion = { version = "0.5.1", features = [
     "async_tokio",
     "html_reports",
 ] }
-xxhash-rust = "0.8.8"
+xxhash-rust = { version = "0.8.11", features = ["std", "xxh3"] }
 base64 = "0.22.1"
 #criterion-cpu-time = "0.1.0"
 wasmer = "4.2.5"

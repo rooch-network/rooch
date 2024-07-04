@@ -65,6 +65,7 @@ impl RocksDB {
                 "Duplicate column family name found.",
             );
         }
+        #[allow(clippy::unnecessary_to_owned)]
         if Self::db_exists(path) {
             let cf_vec = Self::list_cf(path)?;
             let mut db_cfs_set: HashSet<_> = cf_vec.iter().collect();
@@ -151,6 +152,11 @@ impl RocksDB {
                     DBCompressionType::Lz4,
                 ]);
                 cf_opts.set_block_based_table_factory(&table_opts);
+
+                cf_opts.set_enable_blob_files(true);
+                cf_opts.set_min_blob_size(1024);
+                cf_opts.set_enable_blob_gc(false);
+                cf_opts.set_blob_compression_type(DBCompressionType::Lz4);
 
                 if (*cf_name) == "state_node" {
                     cf_opts.set_write_buffer_size(512 * 1024 * 1024);
@@ -252,8 +258,6 @@ impl RocksDB {
         db_opts.enable_statistics();
         db_opts.set_statistics_level(rocksdb::statistics::StatsLevel::ExceptTimeForMutex);
         db_opts
-
-        // db_opts.enable_statistics();
     }
     fn iter_with_direction<K, V>(
         &self,

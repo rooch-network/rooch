@@ -20,10 +20,10 @@ serenity = { features = [
     "model",
 ], workspace = true }
 axum = { workspace = true }
+axum-server = { workspace = true }
 tracing = { workspace = true}
 tower = { workspace = true }
 tower-http = { workspace = true }
-http = { workspace = true }
 futures = { workspace = true }
 prometheus = { workspace = true}
 tap = { workspace = true }
