@@ -18,10 +18,7 @@ pub fn release_latest() -> Result<Vec<String>> {
     release(StdlibVersion::Latest, false)
 }
 
-pub fn release(
-    version: StdlibVersion,
-    check_compatibility: bool,
-) -> Result<Vec<String>> {
+pub fn release(version: StdlibVersion, check_compatibility: bool) -> Result<Vec<String>> {
     let mut warnings = vec![];
     let pre_version = match version {
         StdlibVersion::Version(version_num) => {

@@ -64,36 +64,38 @@ fn inject_parameter(
         if !gas_used_p1.is_zero() {
             if gas_used_p1 > InternalGas::new(31892) {
                 if let Some(gas_used_p2) = gas_used_p1.checked_sub(31892.into()) {
-                    let time_used: u64 =
-                        current_timestamp_millis.saturating_sub(timestamp);
+                    let time_used: u64 = current_timestamp_millis.saturating_sub(timestamp);
                     execution_tracing.log.push(format!(
-                        "{}{}.gas_used: {:}, time_used {:?} -> {}",
+                        "{}{}.gas_used: {:}, time_used {:?} -> {}, balance {:}",
                         generate_print_space(execution_tracing.calling_depth),
                         execution_tracing.calling_depth,
                         gas_used_p2,
                         time_used,
-                        full_func_name
+                        full_func_name,
+                        current_gas_balance
                     ));
                 }
             } else {
                 let time_used: u64 = current_timestamp_millis.saturating_sub(timestamp);
                 execution_tracing.log.push(format!(
-                    "{}{}.gas_used: {:}, time_used {:?} -> {}",
+                    "{}{}.gas_used: {:}, time_used {:?} -> {}, balance {:}",
                     generate_print_space(execution_tracing.calling_depth),
                     execution_tracing.calling_depth,
                     gas_used_p1,
                     time_used,
-                    full_func_name
+                    full_func_name,
+                    current_gas_balance
                 ));
             }
         } else {
             execution_tracing.log.push(format!(
-                "{}{}.gas_used: {:}, time_used {:?} -> {}",
+                "{}{}.gas_used: {:}, time_used {:?} -> {}, balance {:}",
                 generate_print_space(execution_tracing.calling_depth),
                 execution_tracing.calling_depth,
                 0,
                 timestamp,
-                full_func_name
+                full_func_name,
+                current_gas_balance
             ));
         }
 
@@ -106,10 +108,11 @@ fn inject_parameter(
     } else {
         execution_tracing.calling_depth += 1;
         execution_tracing.log.push(format!(
-            "{}{}.call {:}",
+            "{}{}.call {:} balance {:}",
             generate_print_space(execution_tracing.calling_depth),
             execution_tracing.calling_depth,
-            full_func_name
+            full_func_name,
+            current_gas_balance
         ));
         Ok(NativeResult::Success {
             cost: InternalGas::zero(),
