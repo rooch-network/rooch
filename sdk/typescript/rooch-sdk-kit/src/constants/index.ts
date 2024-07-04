@@ -3,3 +3,4 @@
 
 export * from './roochMutationKeys.js'
 export * from './walletMutationKeys.js'
+export * from './walletsMaterialMap.js'
