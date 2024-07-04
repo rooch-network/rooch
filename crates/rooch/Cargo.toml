@@ -13,10 +13,15 @@ rust-version = { workspace = true }
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = ["jemalloc"]
+jemalloc = ["rooch-alloc/jemalloc"]
+
+
 [dependencies]
 anyhow = { workspace = true }
 bcs = { workspace = true }
-clap = { features = ["derive", ], workspace = true }
+clap = { features = ["derive"], workspace = true }
 chrono = { workspace = true }
 datatest-stable = { git = "https://github.com/rooch-network/diem-devtools", branch = "feature/pub-test-opts" }
 tokio = { features = ["full"], workspace = true }
@@ -73,7 +78,7 @@ moveos = { workspace = true }
 moveos-verifier = { workspace = true }
 moveos-object-runtime = { workspace = true }
 moveos-compiler = { workspace = true }
-moveos-config ={ workspace = true }
+moveos-config = { workspace = true }
 
 framework-builder = { workspace = true }
 framework-types = { workspace = true }
@@ -93,5 +98,6 @@ rooch-rpc-client = { workspace = true }
 rooch-integration-test-runner = { workspace = true }
 rooch-indexer = { workspace = true }
 rooch-db = { workspace = true }
+rooch-alloc = { workspace = true }
 
 framework-release = { workspace = true }
