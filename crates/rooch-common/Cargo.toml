@@ -10,3 +10,6 @@ license = { workspace = true }
 publish = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }
+
+[dependencies]
+libc = { workspace = true }
