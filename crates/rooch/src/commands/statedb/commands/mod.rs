@@ -11,6 +11,7 @@ use rooch_types::bitcoin::ord::InscriptionStore;
 use rooch_types::bitcoin::utxo::BitcoinUTXOStore;
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::rooch_network::RoochChainID;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::SystemTime;
@@ -94,10 +95,46 @@ pub fn get_ord_by_outpoint(
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Default)]
+pub struct UTXOOrds {
+    pub utxo: OutPoint,
+    pub ords: Vec<ObjectID>,
+}
+
+pub fn sort_merge_utxo_ords(kvs: &mut Vec<UTXOOrds>) -> usize {
+    if kvs.is_empty() {
+        return 0;
+    }
+
+    // Step 1: Sort by utxo
+    kvs.sort_by(|a, b| a.utxo.cmp(&b.utxo));
+    // Step 2: Merge in place
+    let mut write_index = 0;
+    for read_index in 1..kvs.len() {
+        if kvs[write_index].utxo == kvs[read_index].utxo {
+            let drained_ords: Vec<ObjectID> = kvs[read_index].ords.drain(..).collect();
+            kvs[write_index].ords.extend(drained_ords);
+        } else {
+            write_index += 1;
+            if write_index != read_index {
+                kvs[write_index] = std::mem::take(&mut kvs[read_index]);
+            }
+        }
+    }
+
+    // Truncate the vector to remove the unused elements
+    let new_len = write_index + 1;
+    kvs.truncate(new_len);
+    new_len
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::commands::statedb::commands::get_ord_by_outpoint;
+    use bitcoin::hashes::Hash;
+    use bitcoin::OutPoint;
+    use std::iter;
 
     #[test]
     fn test_concatenate_object_id_merge() {
@@ -121,5 +158,169 @@ mod tests {
         insert_ord_to_output(utxo_ord_map.clone(), outpoint, value);
         let obj_ids = get_ord_by_outpoint(Some(utxo_ord_map.clone()), outpoint).unwrap();
         assert_eq!(obj_ids, vec![obj_id_0, obj_id_1]);
+    }
+
+    #[test]
+    fn test_sort_merge_utxo_ords() {
+        let obj_ids: Vec<ObjectID> = iter::repeat_with(ObjectID::random).take(3).collect();
+
+        let mut kvs = vec![
+            UTXOOrds {
+                utxo: OutPoint {
+                    txid: Hash::all_zeros(),
+                    vout: 0,
+                },
+                ords: vec![obj_ids[0].clone()],
+            },
+            UTXOOrds {
+                utxo: OutPoint {
+                    txid: Hash::all_zeros(),
+                    vout: 1,
+                },
+                ords: vec![obj_ids[1].clone()],
+            },
+            UTXOOrds {
+                utxo: OutPoint {
+                    txid: Hash::all_zeros(),
+                    vout: 0,
+                },
+                ords: vec![obj_ids[2].clone()],
+            },
+        ];
+
+        let new_len = sort_merge_utxo_ords(&mut kvs);
+
+        assert_eq!(new_len, 2);
+        assert_eq!(
+            kvs,
+            vec![
+                UTXOOrds {
+                    utxo: OutPoint {
+                        txid: Hash::all_zeros(),
+                        vout: 0,
+                    },
+                    ords: vec![obj_ids[0].clone(), obj_ids[2].clone()],
+                },
+                UTXOOrds {
+                    utxo: OutPoint {
+                        txid: Hash::all_zeros(),
+                        vout: 1,
+                    },
+                    ords: vec![obj_ids[1].clone()],
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn test_sort_merge_utxo_ords_empty() {
+        let mut kvs: Vec<UTXOOrds> = Vec::new();
+
+        let new_len = sort_merge_utxo_ords(&mut kvs);
+
+        assert_eq!(new_len, 0);
+        assert!(kvs.is_empty());
+    }
+
+    #[test]
+    fn test_sort_merge_utxo_ords_no_merge_needed() {
+        let obj_ids: Vec<ObjectID> = iter::repeat_with(ObjectID::random).take(3).collect();
+
+        let mut kvs = vec![
+            UTXOOrds {
+                utxo: OutPoint {
+                    txid: Hash::all_zeros(),
+                    vout: 0,
+                },
+                ords: vec![obj_ids[0].clone()],
+            },
+            UTXOOrds {
+                utxo: OutPoint {
+                    txid: Hash::all_zeros(),
+                    vout: 1,
+                },
+                ords: vec![obj_ids[1].clone()],
+            },
+            UTXOOrds {
+                utxo: OutPoint {
+                    txid: Hash::all_zeros(),
+                    vout: 2,
+                },
+                ords: vec![obj_ids[2].clone()],
+            },
+        ];
+
+        let new_len = sort_merge_utxo_ords(&mut kvs);
+
+        assert_eq!(new_len, 3);
+        assert_eq!(
+            kvs,
+            vec![
+                UTXOOrds {
+                    utxo: OutPoint {
+                        txid: Hash::all_zeros(),
+                        vout: 0,
+                    },
+                    ords: vec![obj_ids[0].clone()],
+                },
+                UTXOOrds {
+                    utxo: OutPoint {
+                        txid: Hash::all_zeros(),
+                        vout: 1,
+                    },
+                    ords: vec![obj_ids[1].clone()],
+                },
+                UTXOOrds {
+                    utxo: OutPoint {
+                        txid: Hash::all_zeros(),
+                        vout: 2,
+                    },
+                    ords: vec![obj_ids[2].clone()],
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn test_sort_merge_utxo_ords_all_merge() {
+        let obj_ids: Vec<ObjectID> = iter::repeat_with(ObjectID::random).take(3).collect();
+
+        let mut kvs = vec![
+            UTXOOrds {
+                utxo: OutPoint {
+                    txid: Hash::all_zeros(),
+                    vout: 0,
+                },
+                ords: vec![obj_ids[0].clone()],
+            },
+            UTXOOrds {
+                utxo: OutPoint {
+                    txid: Hash::all_zeros(),
+                    vout: 0,
+                },
+                ords: vec![obj_ids[1].clone()],
+            },
+            UTXOOrds {
+                utxo: OutPoint {
+                    txid: Hash::all_zeros(),
+                    vout: 0,
+                },
+                ords: vec![obj_ids[2].clone()],
+            },
+        ];
+
+        let new_len = sort_merge_utxo_ords(&mut kvs);
+
+        assert_eq!(new_len, 1);
+        assert_eq!(
+            kvs,
+            vec![UTXOOrds {
+                utxo: OutPoint {
+                    txid: Hash::all_zeros(),
+                    vout: 0,
+                },
+                ords: vec![obj_ids[0].clone(), obj_ids[1].clone(), obj_ids[2].clone()],
+            },]
+        );
     }
 }
