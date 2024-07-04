@@ -1,5 +1,5 @@
-// Licensed under SPDX-License-Identifier: Apache-2.0
 // Copyright 2021 TiKV Project Authors
+// SPDX-License-Identifier: Apache-2.0
 
 use std::{error, fmt};
 

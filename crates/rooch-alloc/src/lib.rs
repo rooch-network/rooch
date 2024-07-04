@@ -1,3 +1,6 @@
+// Copyright 2021 TiKV Project Authors
+// SPDX-License-Identifier: Apache-2.0
+
 #[cfg(feature = "jemalloc")]
 #[macro_use]
 extern crate lazy_static;
