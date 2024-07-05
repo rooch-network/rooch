@@ -15,13 +15,13 @@ import {
 } from '../hooks/index.js'
 import { useSessionStore } from '../hooks/useSessionsStore.js'
 import { getDefaultStorage, StorageType, checkWallets } from '../utils/index.js'
-import { SupportChain } from '../feature/index.js'
+import { SupportChain, SupportWallet } from '../feature/index.js'
 import { getRegisteredWallets } from '../wellet/util.js'
 import { getWallets } from '../wellet/wallets.js'
 import { useWalletChanged } from '../hooks/index.js'
 
 type WalletProviderProps = {
-  preferredWallets?: string[]
+  preferredWallets?: SupportWallet[]
 
   chain?: SupportChain
 
