@@ -118,7 +118,7 @@ impl WalletContext {
             let client = self
                 .client_config
                 .get_active_env()?
-                .create_rpc_client(Duration::from_secs(DEFAULT_EXPIRATION_SECS), None)
+                .create_rpc_client(Duration::from_secs(DEFAULT_EXPIRATION_SECS))
                 .await?;
 
             self.client.write().await.insert(client).clone()

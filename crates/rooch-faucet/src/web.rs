@@ -90,7 +90,7 @@ pub async fn serve(app: App, web_config: WebConfig) -> Result<(), anyhow::Error>
 
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), web_config.port);
 
-    axum::Server::bind(&addr)
+    axum_server::bind(addr)
         .serve(router.into_make_service())
         .await?;
 

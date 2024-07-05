@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import { createContext, useRef } from 'react'
 
 import { NetworkConfigs, RoochClientProvider } from './clientProvider.js'
-import { createSessionStore, SessionStore } from './roochStore.js'
+import { createSessionStore, SessionStore } from './sessionStore.js'
 import { getDefaultStorage, StorageType } from '../utils/index.js'
 
 const DEFAULT_SESSION_STORAGE_KEY = function (_?: string) {
@@ -17,6 +17,7 @@ export const RoochContext = createContext<SessionStore | null>(null)
 export type RoochProviderProps<T extends NetworkConfigs> = {
   networks?: NetworkConfigs
   onNetworkChange?: (network: keyof T & string) => void
+
   children: ReactNode
 } & (
   | {

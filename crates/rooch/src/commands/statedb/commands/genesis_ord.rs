@@ -17,8 +17,8 @@ use bitcoin::{OutPoint, PublicKey, ScriptBuf};
 use bitcoin_move::natives::ord::inscription_id::InscriptionId;
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
+use redb::Database;
 use serde::{Deserialize, Serialize};
-use tempfile::TempDir;
 
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
@@ -28,6 +28,8 @@ use moveos_types::moveos_std::object::{
     ObjectEntity, ObjectID, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
 };
 use moveos_types::state::{KeyState, MoveState, MoveType, State};
+use rooch_common::fs::file_cache::FileCacheManager;
+use rooch_common::utils::humanize;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::address::BitcoinAddress;
 use rooch_types::addresses::BITCOIN_MOVE_ADDRESS;
@@ -44,7 +46,9 @@ use crate::commands::statedb::commands::genesis_utxo::{
     apply_utxo_updates_to_state, produce_utxo_updates,
 };
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
-use crate::commands::statedb::commands::init_genesis_job;
+use crate::commands::statedb::commands::{
+    init_genesis_job, sort_merge_utxo_ords, UTXOOrds, UTXO_ORD_MAP_TABLE,
+};
 
 pub const ADDRESS_UNBOUND: &str = "unbound";
 pub const ADDRESS_NON_STANDARD: &str = "non-standard";
@@ -103,6 +107,8 @@ pub struct GenesisOrdCommand {
         help = "batch size submited to state db, default 1M. Set it smaller if memory is limited."
     )] // ord may have large body, so set a smaller batch
     pub ord_batch_size: Option<usize>,
+    #[clap(long, help = "utxo:ords map db path, will create new one if not exist")]
+    pub utxo_ord_map: PathBuf,
 
     #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
@@ -128,12 +134,19 @@ impl GenesisOrdCommand {
         let (root, moveos_store, start_time) =
             init_genesis_job(self.base_data_dir.clone(), self.chain_id.clone());
         let pre_root_state_root = H256::from(root.state_root.into_bytes());
-        let db_config = sled::Config::new()
-            .temporary(true)
-            .path(TempDir::new().unwrap());
-        let utxo_ord_map_db = db_config.open().unwrap();
-        utxo_ord_map_db.set_merge_operator(concatenate_object_id_merge);
+
+        let utxo_ord_map_existed = self.utxo_ord_map.exists();
+        if utxo_ord_map_existed {
+            println!("utxo:ords indexed in: {:?}", self.utxo_ord_map.clone());
+        }
+        // check utxo_ord_map_index file exist or not
+        let utxo_ord_map_db = Database::create(self.utxo_ord_map.clone()).unwrap();
         let utxo_ord_map = Arc::new(utxo_ord_map_db);
+        index_utxo_ords(
+            self.ord_source.clone(),
+            utxo_ord_map.clone(),
+            utxo_ord_map_existed,
+        );
 
         let moveos_store = Arc::new(moveos_store);
         let startup_update_set = UpdateSet::new();
@@ -142,11 +155,7 @@ impl GenesisOrdCommand {
         let utxo_batch_size = self.utxo_batch_size.unwrap();
 
         // 2. import od
-        self.import_ord(
-            utxo_ord_map.clone(),
-            moveos_store.clone(),
-            startup_update_set.clone(),
-        );
+        self.import_ord(moveos_store.clone(), startup_update_set.clone());
 
         // 3. import utxo
         import_utxo(
@@ -165,7 +174,6 @@ impl GenesisOrdCommand {
 
     fn import_ord(
         self,
-        utxo_ord_map: Arc<sled::Db>,
         moveos_store: Arc<MoveOSStore>,
         startup_update_set: UpdateSet<KeyState, State>,
     ) {
@@ -174,7 +182,7 @@ impl GenesisOrdCommand {
 
         let (tx, rx) = mpsc::sync_channel(2);
         let produce_updates_thread =
-            thread::spawn(move || produce_ord_updates(tx, input_path, batch_size, utxo_ord_map));
+            thread::spawn(move || produce_ord_updates(tx, input_path, batch_size));
         let apply_updates_thread = thread::spawn(move || {
             apply_ord_updates_to_state(rx, moveos_store, startup_update_set);
         });
@@ -183,10 +191,71 @@ impl GenesisOrdCommand {
     }
 }
 
+fn index_utxo_ords(input_path: PathBuf, utxo_ord_map: Arc<Database>, utxo_ord_map_existed: bool) {
+    if utxo_ord_map_existed {
+        return;
+    }
+
+    let start_time = SystemTime::now();
+
+    let mut reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input_path).unwrap());
+    let mut is_title_line = true;
+
+    let mut ord_count: u64 = 0;
+
+    let mut utxo_ords = Vec::with_capacity(80 * 1024 * 1024);
+    for line in reader.by_ref().lines() {
+        let line = line.unwrap();
+        if is_title_line {
+            is_title_line = false;
+            if line.starts_with("# export at") {
+                // skip block height info
+                continue;
+            }
+        }
+
+        let src: InscriptionSource = serde_json::from_str(&line).unwrap();
+        let txid: AccountAddress = src.id.txid.into_address();
+        let inscription_id = InscriptionID::new(txid, src.id.index);
+        let obj_id = derive_inscription_id(&inscription_id);
+        let satpoint_output = OutPoint::from_str(src.satpoint_outpoint.as_str()).unwrap();
+
+        utxo_ords.push(UTXOOrds {
+            utxo: satpoint_output,
+            ords: vec![obj_id],
+        });
+        ord_count += 1;
+    }
+
+    let utxo_count = sort_merge_utxo_ords(&mut utxo_ords);
+
+    let write_txn = utxo_ord_map.clone().begin_write().unwrap();
+    {
+        let mut table = write_txn.open_table(UTXO_ORD_MAP_TABLE).unwrap();
+        for utxo_ord in utxo_ords {
+            table
+                .insert(
+                    bcs::to_bytes(&utxo_ord.utxo).unwrap().as_slice(),
+                    bcs::to_bytes(&utxo_ord.ords).unwrap().as_slice(),
+                )
+                .unwrap();
+        }
+    }
+    write_txn.commit().unwrap();
+
+    println!(
+        "{} utxo : {} ords indexed in: {:?} (started at: {:?})",
+        utxo_count,
+        ord_count,
+        start_time.elapsed().unwrap(),
+        start_time
+    );
+}
+
 fn import_utxo(
     input_path: PathBuf,
     batch_size: usize,
-    utxo_ord_map: Arc<sled::Db>,
+    utxo_ord_map_db: Arc<Database>,
     moveos_store: Arc<MoveOSStore>,
     startup_update_set: UpdateSet<KeyState, State>,
     root_size: u64,
@@ -194,8 +263,9 @@ fn import_utxo(
     startup_time: SystemTime,
 ) {
     let (tx, rx) = mpsc::sync_channel(2);
-    let produce_updates_thread =
-        thread::spawn(move || produce_utxo_updates(tx, input_path, batch_size, Some(utxo_ord_map)));
+    let produce_updates_thread = thread::spawn(move || {
+        produce_utxo_updates(tx, input_path, batch_size, Some(utxo_ord_map_db))
+    });
     let apply_updates_thread = thread::spawn(move || {
         apply_utxo_updates_to_state(
             rx,
@@ -253,15 +323,14 @@ fn apply_ord_updates_to_state(
         apply_nodes(moveos_store, nodes).expect("failed to apply ord nodes");
 
         println!(
-            "{} ord applied ({} cursed, {} blessed, new inscription_store_state_root: {:?}, new inscription_ids_state_root: {:?}). This bacth cost: {:?}",
+            "{} ord applied ({} cursed, {} blessed). value size: {}. cost: {:?}",
             // e.g. batch_size = 8192:
             // 8192 ord applied in: 1.000000000s
             // 16384 ord applied in: 2.000000000s
             ord_count,
             cursed_inscription_count,
             blessed_inscription_count,
-            inscription_store_state_root,
-            inscription_ids_state_root,
+            humanize::human_readable_size(batch.ord_value_bytes),
             loop_start_time.elapsed().unwrap()
         );
 
@@ -343,29 +412,28 @@ struct BatchUpdatesOrd {
     inscription_ids_updates: UpdateSet<KeyState, State>,
     cursed_inscription_count: u32,
     blessed_inscription_count: u32,
+
+    ord_value_bytes: u64, // for optimization
 }
 
-fn produce_ord_updates(
-    tx: SyncSender<BatchUpdatesOrd>,
-    input: PathBuf,
-    batch_size: usize,
-    utxo_ord_map: Arc<sled::Db>,
-) {
-    let db_config = sled::Config::new()
-        .temporary(true)
-        .path(TempDir::new().unwrap());
-    let id_ord_map = db_config.open().unwrap();
-
-    let mut reader = BufReader::new(File::open(input).unwrap());
+fn produce_ord_updates(tx: SyncSender<BatchUpdatesOrd>, input: PathBuf, batch_size: usize) {
+    let file_cache_mgr = FileCacheManager::new(input.clone()).unwrap();
+    let mut reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
     let mut is_title_line = true;
     let mut index: u64 = 0;
+
+    let mut cache_drop_offset: u64 = 0;
     loop {
+        let mut bytes_read = 0;
+
         let mut updates = BatchUpdatesOrd {
             ord_updates: UpdateSet::new(),
             inscription_ids_updates: UpdateSet::new(),
             cursed_inscription_count: 0,
             blessed_inscription_count: 0,
+            ord_value_bytes: 0,
         };
+
         for line in reader.by_ref().lines().take(batch_size) {
             let line = line.unwrap();
 
@@ -373,6 +441,7 @@ fn produce_ord_updates(
                 is_title_line = false;
                 if line.starts_with("# export at") {
                     // skip block height info
+                    bytes_read += line.len() as u64 + 1; // Add line.len() + 1, assuming that the line terminator is '\n'
                     continue;
                 }
             }
@@ -383,13 +452,17 @@ fn produce_ord_updates(
             } else {
                 updates.blessed_inscription_count += 1;
             }
-            let (key, state, inscription_id) =
-                gen_ord_update(source, utxo_ord_map.clone(), &id_ord_map).unwrap();
+            let (key, state, inscription_id) = gen_ord_update(source).unwrap();
+            updates.ord_value_bytes += state.value.len() as u64;
             updates.ord_updates.put(key, state);
             let (key2, state2) = gen_inscription_ids_update(index, inscription_id);
             updates.inscription_ids_updates.put(key2, state2);
-            index += 1
+            index += 1;
+            bytes_read += line.len() as u64 + 1;
         }
+        let _ = file_cache_mgr.drop_cache_range(cache_drop_offset, bytes_read);
+        cache_drop_offset += bytes_read;
+
         if updates.ord_updates.is_empty() {
             break;
         }
@@ -397,7 +470,6 @@ fn produce_ord_updates(
     }
 
     drop(tx);
-    drop(id_ord_map);
 }
 
 fn gen_inscription_ids_update(index: u64, inscription_id: InscriptionID) -> (KeyState, State) {
@@ -421,6 +493,7 @@ impl InscriptionSource {
             let pubkey = match PublicKey::from_str(self.address.as_str()) {
                 Ok(pubkey) => pubkey,
                 Err(_) => {
+                    // address is script
                     let script_buf = ScriptBuf::from_hex(self.address.as_str()).unwrap();
                     script_buf.p2pk_public_key().unwrap()
                 }
@@ -434,17 +507,16 @@ impl InscriptionSource {
         Ok(address)
     }
 
-    pub fn to_inscription(self, id_ord_map: &sled::Db) -> (Inscription, InscriptionId) {
+    pub fn to_inscription(self) -> Inscription {
         let src = self;
 
-        let ord_id = src.id;
-        let txid: AccountAddress = ord_id.txid.into_address();
+        let txid: AccountAddress = src.id.txid.into_address();
 
-        let parents = get_ords_by_ids(id_ord_map, src.parent);
+        let parents = derive_obj_ids_by_inscription_ids(src.parent);
 
-        let inscription = Inscription {
+        Inscription {
             txid,
-            index: ord_id.index,
+            index: src.id.index,
             offset: src.satpoint_offset,
             sequence_number: src.sequence_number,
             inscription_number: src.inscription_number.unsigned_abs(),
@@ -457,17 +529,12 @@ impl InscriptionSource {
             pointer: src.pointer.into(),
             parents,
             rune: src.rune.into(),
-        };
-        (inscription, ord_id)
+        }
     }
 }
 
-fn gen_ord_update(
-    src: InscriptionSource,
-    utxo_ord_map: Arc<sled::Db>,
-    id_ord_map: &sled::Db,
-) -> Result<(KeyState, State, InscriptionID)> {
-    let (inscription, src_inscription_id) = src.clone().to_inscription(id_ord_map);
+fn gen_ord_update(src: InscriptionSource) -> Result<(KeyState, State, InscriptionID)> {
+    let inscription = src.clone().to_inscription();
     let address = src.clone().get_rooch_address()?;
 
     let inscription_id = InscriptionID::new(inscription.txid, inscription.index);
@@ -486,13 +553,7 @@ fn gen_ord_update(
     let satpoint_output_str = src.satpoint_outpoint.clone();
     let satpoint_output = OutPoint::from_str(satpoint_output_str.as_str()).unwrap();
 
-    _ = update_ord_map(
-        utxo_ord_map,
-        id_ord_map,
-        src_inscription_id,
-        satpoint_output,
-        obj_id.clone(),
-    );
+    let _ = is_unbound_outpoint(satpoint_output); // TODO may count it later
 
     Ok((ord_obj.id.to_key(), ord_obj.into_state(), inscription_id))
 }
@@ -501,50 +562,15 @@ fn convert_option_string_to_move_type(opt: Option<String>) -> MoveOption<MoveStr
     opt.map(MoveString::from).into()
 }
 
-// update id:object for parents
-// update outpoint:object for utxo
-fn update_ord_map(
-    utxo_ord_map: Arc<sled::Db>,
-    id_ord_map: &sled::Db,
-    id: InscriptionId,
-    outpoint: OutPoint,
-    obj_id: ObjectID,
-) -> bool {
-    let obj_id_bytes = bcs::to_bytes(&obj_id).unwrap();
-    // update inscription_id:ord
-    let id_key = bcs::to_bytes(&id).unwrap();
-    id_ord_map.insert(id_key, obj_id_bytes.clone()).unwrap();
-
-    let is_unbound = outpoint.txid == Hash::all_zeros() && outpoint.vout == 0;
-    if is_unbound {
-        return is_unbound; // unbound has no outpoint
-    }
-
-    // update outpoint:ord
-    let key = bcs::to_bytes(&outpoint).unwrap();
-    utxo_ord_map.merge(key, obj_id_bytes).unwrap();
-
-    is_unbound
+fn is_unbound_outpoint(outpoint: OutPoint) -> bool {
+    outpoint.txid == Hash::all_zeros() && outpoint.vout == 0
 }
 
-fn concatenate_object_id_merge(
-    _key: &[u8],              // the key being merged
-    old_value: Option<&[u8]>, // the previous value, if one existed
-    merged_bytes: &[u8],      // the new bytes being merged in
-) -> Option<Vec<u8>> {
-    // set the new value, return None to delete
-    let mut ret = old_value.map(|ov| ov.to_vec()).unwrap_or_default();
-
-    ret.extend_from_slice(merged_bytes);
-
-    Some(ret)
-}
-
-fn get_ords_by_ids(id_ord_map: &sled::Db, ids: Option<Vec<InscriptionId>>) -> Vec<ObjectID> {
+fn derive_obj_ids_by_inscription_ids(ids: Option<Vec<InscriptionId>>) -> Vec<ObjectID> {
     if let Some(ids) = ids {
-        let mut obj_ids = Vec::new();
+        let mut obj_ids = Vec::with_capacity(ids.len());
         for id in ids {
-            let obj_id = get_ord_by_id(id_ord_map, id);
+            let obj_id = derive_inscription_id(&derive_rooch_inscription_id(id));
             obj_ids.push(obj_id)
         }
         obj_ids
@@ -553,20 +579,16 @@ fn get_ords_by_ids(id_ord_map: &sled::Db, ids: Option<Vec<InscriptionId>>) -> Ve
     }
 }
 
-fn get_ord_by_id(id_ord_map: &sled::Db, id: InscriptionId) -> ObjectID {
-    let id_key = bcs::to_bytes(&id).unwrap();
-    let value = id_ord_map
-        .get(id_key)
-        .unwrap()
-        .expect("get ord object id by inscriptionId must be succeed");
-    bcs::from_bytes(&value).unwrap()
+fn derive_rooch_inscription_id(id: InscriptionId) -> InscriptionID {
+    let txid: AccountAddress = id.txid.into_address();
+    InscriptionID::new(txid, id.index)
 }
 
 fn create_genesis_inscription_store_object(
     inscriptions_object_id: ObjectID,
     cursed_inscription_count: u32,
     blessed_inscription_count: u32,
-    next_sequence_number: u32,
+    next_sequence_number: u32, // ord count
 ) -> ObjectEntity<InscriptionStore> {
     let inscription_store = InscriptionStore {
         inscriptions: inscriptions_object_id,

@@ -7,10 +7,10 @@ use crate::service::aggregate_service::AggregateService;
 use crate::service::rpc_logger::RpcLogger;
 use crate::service::rpc_service::RpcService;
 use anyhow::{ensure, Error, Result};
+use axum::http::{HeaderValue, Method};
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
-use hyper::header::HeaderValue;
-use hyper::Method;
+use jsonrpsee::server::middleware::rpc::RpcServiceBuilder;
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
 use raw_store::errors::RawStoreError;
@@ -34,6 +34,7 @@ use rooch_proposer::proxy::ProposerProxy;
 use rooch_relayer::actor::messages::RelayTick;
 use rooch_relayer::actor::relayer::RelayerActor;
 use rooch_rpc_api::api::RoochRpcModule;
+use rooch_rpc_api::RpcError;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::address::RoochAddress;
@@ -327,7 +328,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         .allow_methods([Method::POST])
         // Allow requests from any origin
         .allow_origin(acl)
-        .allow_headers([hyper::header::CONTENT_TYPE]);
+        .allow_headers([axum::http::header::CONTENT_TYPE]);
 
     let middleware = tower::ServiceBuilder::new()
         .layer(TraceLayer::new_for_http())
@@ -335,10 +336,12 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
 
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
 
+    let rpc_middleware = RpcServiceBuilder::new().layer_fn(RpcLogger);
+
     // Build server
     let server = ServerBuilder::default()
-        .set_logger(RpcLogger)
-        .set_middleware(middleware)
+        .set_http_middleware(middleware)
+        .set_rpc_middleware(rpc_middleware)
         .build(&addr)
         .await?;
 
@@ -352,7 +355,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
 
     // let rpc_api = build_rpc_api(rpc_api);
     let methods_names = rpc_module_builder.module.method_names().collect::<Vec<_>>();
-    let handle = server.start(rpc_module_builder.module)?;
+    let handle = server.start(rpc_module_builder.module);
 
     info!("JSON-RPC HTTP Server start listening {:?}", addr);
     info!("Available JSON-RPC methods : {:?}", methods_names);
@@ -369,8 +372,8 @@ fn _build_rpc_api<M: Send + Sync + 'static>(mut rpc_module: RpcModule<M>) -> Rpc
     available_methods.sort();
 
     rpc_module
-        .register_method("rpc_methods", move |_, _| {
-            Ok(json!({
+        .register_method("rpc_methods", move |_, _, _| {
+            Ok::<serde_json::Value, RpcError>(json!({
                 "methods": available_methods,
             }))
         })

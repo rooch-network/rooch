@@ -27,7 +27,7 @@ use rooch_types::rooch_network::RoochChainID;
 use crate::commands::indexer::commands::init_indexer;
 use crate::commands::statedb::commands::import::parse_state_data_from_csv_line;
 use crate::commands::statedb::commands::{
-    GLOBAL_STATE_TYPE_COLUMN_FAMILY, GLOBAL_STATE_TYPE_OBJECT, GLOBAL_STATE_TYPE_ROOT,
+    GLOBAL_STATE_TYPE_OBJECT, GLOBAL_STATE_TYPE_PREFIX, GLOBAL_STATE_TYPE_ROOT,
 };
 
 /// Rebuild indexer
@@ -119,7 +119,7 @@ fn produce_updates(
         for line in csv_reader.by_ref().lines().take(batch_size) {
             let line = line?;
 
-            if line.starts_with(GLOBAL_STATE_TYPE_COLUMN_FAMILY) {
+            if line.starts_with(GLOBAL_STATE_TYPE_PREFIX) {
                 let (c1, _c2) = parse_state_data_from_csv_line(&line)?;
                 let state_type = c1;
                 last_state_type = Some(state_type);

@@ -3,7 +3,7 @@
 
 use crate::cli_types::WalletContextOptions;
 use crate::commands::statedb::commands::export::ExportID;
-use crate::commands::statedb::commands::{GLOBAL_STATE_TYPE_COLUMN_FAMILY, GLOBAL_STATE_TYPE_ROOT};
+use crate::commands::statedb::commands::{GLOBAL_STATE_TYPE_PREFIX, GLOBAL_STATE_TYPE_ROOT};
 use anyhow::{Error, Result};
 use chrono::{DateTime, Local};
 use clap::Parser;
@@ -132,7 +132,7 @@ fn produce_updates(
         for line in csv_reader.by_ref().lines().take(batch_size) {
             let line = line?;
 
-            if line.starts_with(GLOBAL_STATE_TYPE_COLUMN_FAMILY) {
+            if line.starts_with(GLOBAL_STATE_TYPE_PREFIX) {
                 // TODO check current statedb root state root
                 if line.starts_with(GLOBAL_STATE_TYPE_ROOT) {
                     break;

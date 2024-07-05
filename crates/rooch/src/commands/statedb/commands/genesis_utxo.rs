@@ -3,7 +3,9 @@
 
 use crate::cli_types::WalletContextOptions;
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
-use crate::commands::statedb::commands::UTXO_SEAL_INSCRIPTION_PROTOCOL;
+use crate::commands::statedb::commands::{
+    get_ord_by_outpoint, UTXO_ORD_MAP_TABLE, UTXO_SEAL_INSCRIPTION_PROTOCOL,
+};
 use anyhow::{Error, Result};
 use bitcoin::{OutPoint, PublicKey, Txid};
 use chrono::{DateTime, Local};
@@ -19,6 +21,7 @@ use moveos_types::moveos_std::object::{
 use moveos_types::moveos_std::simple_multimap::{Element, SimpleMultiMap};
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{KeyState, MoveState, State};
+use redb::{Database, ReadOnlyTable};
 use rooch_config::{RoochOpt, R_OPT_NET_HELP};
 use rooch_db::RoochDB;
 use rooch_types::address::BitcoinAddress;
@@ -394,11 +397,18 @@ pub fn produce_utxo_updates(
     tx: SyncSender<BatchUpdates>,
     input: PathBuf,
     batch_size: usize,
-    utxo_ord_map: Option<Arc<sled::Db>>,
+    utxo_ord_map_db: Option<Arc<Database>>,
 ) {
-    let mut csv_reader = BufReader::new(File::open(input).unwrap());
+    let mut csv_reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
     let mut is_title_line = true;
     let mut address_mapping_checker = HashMap::new();
+    let utxo_ord_map = match utxo_ord_map_db {
+        None => None,
+        Some(utxo_ord_map_db) => {
+            let read_txn = utxo_ord_map_db.begin_read().unwrap();
+            Some(Arc::new(read_txn.open_table(UTXO_ORD_MAP_TABLE).unwrap()))
+        }
+    };
     loop {
         let mut updates = BatchUpdates {
             utxo_updates: UpdateSet::new(),
@@ -440,7 +450,7 @@ pub fn produce_utxo_updates(
 
 fn gen_utxo_update(
     mut utxo_data: UTXOData,
-    utxo_ord_map: Option<Arc<sled::Db>>,
+    utxo_ord_map: Option<Arc<ReadOnlyTable<&[u8], &[u8]>>>,
 ) -> Result<(KeyState, State, Option<AddressMappingData>)> {
     let raw_txid = Txid::from_str(utxo_data.txid.as_str())?;
     let txid = raw_txid.into_address();
@@ -478,19 +488,6 @@ fn gen_utxo_update(
         utxo_object.into_state(),
         address_mapping_data,
     ))
-}
-
-fn get_ord_by_outpoint(
-    utxo_ord_map: Option<Arc<sled::Db>>,
-    outpoint: OutPoint,
-) -> Option<Vec<ObjectID>> {
-    if let Some(db) = utxo_ord_map {
-        let key = bcs::to_bytes(&outpoint).unwrap();
-        let value = db.get(key).unwrap();
-        value.map(|value| bcs::from_bytes(&value).unwrap())
-    } else {
-        None
-    }
 }
 
 fn inscription_object_ids_to_utxo_seal(

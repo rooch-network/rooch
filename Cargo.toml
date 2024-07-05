@@ -15,6 +15,7 @@ members = [
     "moveos/moveos-wasm",
     "moveos/moveos-object-runtime",
     "moveos/moveos-compiler",
+    "crates/rooch-common",
     "crates/rooch-key",
     "crates/rooch-types",
     "crates/rooch-framework-tests",
@@ -92,6 +93,7 @@ accumulator = { path = "moveos/moveos-commons/accumulator" }
 
 # crates for Rooch
 rooch = { path = "crates/rooch" }
+rooch-common = { path = "crates/rooch-common" }
 rooch-key = { path = "crates/rooch-key" }
 rooch-types = { path = "crates/rooch-types" }
 rooch-framework-tests = { path = "crates/rooch-framework-tests" }
@@ -159,7 +161,7 @@ futures = "0.3.28"
 hex = "0.4.3"
 rustc-hex = "2.1"
 itertools = "0.13.0"
-jsonrpsee = { version = "0.16.3", features = ["full"] }
+jsonrpsee = { version = "0.23.2", features = ["full"] }
 jpst = "0.1.1"
 lazy_static = "1.5.0"
 linked-hash-map = "0.5.6"
@@ -183,7 +185,7 @@ schemars = { version = "0.8.21", features = ["either"] }
 serde = { version = "1.0.203", features = ["derive", "rc"] }
 serde_bytes = "0.11.15"
 #serde_json = { version = "1.0.111", features = ["preserve_order", "arbitrary_precision"] }
-serde_json = { version = "1.0.119", features = ["preserve_order"] }
+serde_json = { version = "1.0.120", features = ["preserve_order"] }
 serde_yaml = "0.9"
 serde_repr = "0.1"
 serde-name = "0.2"
@@ -241,8 +243,8 @@ nostr = "0.22"
 serde-reflection = "0.3.6"
 serde-generate = "0.25.1"
 bcs-ext = { path = "moveos/moveos-commons/bcs_ext" }
-tower = { version = "0.4.12", features = ["full", "util", "timeout", "load-shed", "limit"] }
-tower-http = { version = "0.4.4", features = ["cors", "full", "trace", "set-header", "propagate-header"] }
+tower = { version = "0.4.13", features = ["full", "util", "timeout", "load-shed", "limit"] }
+tower-http = { version = "0.5.2", features = ["cors", "full", "trace", "set-header", "propagate-header"] }
 mirai-annotations = "1.12.0"
 lru = "0.11.0"
 bs58 = "0.5.1"
@@ -266,8 +268,7 @@ diesel = { version = "2.2.1", features = [
 ] }
 diesel-derive-enum = { version = "2.1.0", features = ["sqlite"] }
 diesel_migrations = { version = "2.2.0" }
-axum = { version = "0.6.6", default-features = false, features = [
-    "headers",
+axum = { version = "0.7.5", default-features = false, features = [
     "tokio",
     "http1",
     "http2",
@@ -278,8 +279,8 @@ axum = { version = "0.6.6", default-features = false, features = [
     "query",
     "ws",
 ] }
-axum-extra = "0.4.2"
-axum-server = { version = "0.5.1", default-features = false, features = [
+axum-extra = "0.9.3"
+axum-server = { version = "0.6.0", default-features = false, features = [
     "tls-rustls",
 ] }
 serenity = { version = "0.12.2", default-features = false, features = [
@@ -298,7 +299,7 @@ criterion = { version = "0.5.1", features = [
     "async_tokio",
     "html_reports",
 ] }
-xxhash-rust = "0.8.8"
+xxhash-rust = { version = "0.8.11", features = ["std", "xxh3"] }
 base64 = "0.22.1"
 #criterion-cpu-time = "0.1.0"
 wasmer = "4.2.5"
@@ -308,7 +309,7 @@ ciborium = "0.2.1"
 pprof = { version = "0.13.0", features = ["flamegraph", "criterion", "cpp", "frame-pointer", "protobuf-codec"] }
 celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
 celestia-types = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
-opendal = { version = "0.47.1", features = ["services-fs", "services-gcs"] }
+opendal = { version = "0.47.2", features = ["services-fs", "services-gcs"] }
 bitcoincore-rpc-json = "0.18.0"
 toml = "0.8.14"
 csv = "1.2.1"
@@ -319,6 +320,7 @@ sled = { version = "0.34.7" }
 scopeguard = "1.1"
 uuid = { version = "1.1.2", features = ["v4", "fast-rng"] }
 protobuf = { version = "2.28", features = ["with-bytes"] }
+redb = { version = "2.1.1" }
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES
