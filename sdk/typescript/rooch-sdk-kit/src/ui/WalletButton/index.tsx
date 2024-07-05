@@ -175,7 +175,7 @@ export function WalletButton() {
             </Card>
           ))}
         </DialogContent>
-      </Dialog >
+      </Dialog>
     </>
   )
 }
