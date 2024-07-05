@@ -11,11 +11,13 @@ use moveos_types::{
     moveos_std::object::{ObjectID, ObjectMeta, SYSTEM_OWNER_ADDRESS},
 };
 
+#[derive(Debug, Clone)]
 pub(crate) enum DataStatus {
     Clean,
     Dirty,
 }
 
+#[derive(Debug, Clone)]
 pub(crate) struct ObjectMetaValue {
     metadata: ObjectMeta,
     value_layout: MoveTypeLayout,
@@ -26,6 +28,7 @@ pub(crate) enum RuntimeObjectMeta {
     None(ObjectID),
     Fresh(ObjectMetaValue),
     Cached(ObjectMetaValue),
+    Deleted(ObjectMetaValue),
 }
 
 impl RuntimeObjectMeta {
@@ -47,8 +50,10 @@ impl RuntimeObjectMeta {
         value_layout: MoveTypeLayout,
     ) -> PartialVMResult<()> {
         let obj_id = match self {
-            RuntimeObjectMeta::None(id) => id.clone(),
-            RuntimeObjectMeta::Fresh(v) | RuntimeObjectMeta::Cached(v) => {
+            Self::None(id) => id.clone(),
+            //If the object is removed, and init it again, we treat it is fresh
+            Self::Deleted(meta) => meta.metadata.id.clone(),
+            Self::Fresh(v) | Self::Cached(v) => {
                 //If the object is removed, and init it again, the value type may be different
                 v.metadata.value_type = value_type;
                 v.value_layout = value_layout;
@@ -57,12 +62,35 @@ impl RuntimeObjectMeta {
         };
 
         let metadata = ObjectMeta::genesis_meta(obj_id, value_type);
-        *self = RuntimeObjectMeta::Fresh(ObjectMetaValue {
+        *self = Self::Fresh(ObjectMetaValue {
             metadata,
             value_layout,
             status: DataStatus::Dirty,
         });
         Ok(())
+    }
+
+    pub fn move_from(&mut self) -> PartialVMResult<ObjectMeta> {
+        match self {
+            Self::None(id) => Err(PartialVMError::new(StatusCode::MISSING_DATA)
+                .with_message(format!("ObjectMeta {} is None", id))),
+            Self::Fresh(meta) => {
+                let id = meta.metadata.id.clone();
+                match std::mem::replace(self, Self::None(id)) {
+                    Self::Fresh(meta) => Ok(meta.metadata),
+                    _ => unreachable!(),
+                }
+            }
+            Self::Cached(meta) => {
+                let meta_copy = meta.clone();
+                match std::mem::replace(self, Self::Deleted(meta_copy)) {
+                    Self::Cached(meta) => Ok(meta.metadata),
+                    _ => unreachable!(),
+                }
+            }
+            Self::Deleted(meta) => Err(PartialVMError::new(StatusCode::MISSING_DATA)
+                .with_message(format!("ObjectMeta {} is Deleted", meta.metadata.id))),
+        }
     }
 
     pub fn is_none(&self) -> bool {
@@ -71,17 +99,23 @@ impl RuntimeObjectMeta {
 
     pub fn id(&self) -> &ObjectID {
         match self {
-            RuntimeObjectMeta::None(id) => id,
-            RuntimeObjectMeta::Fresh(meta) => &meta.metadata.id,
-            RuntimeObjectMeta::Cached(meta) => &meta.metadata.id,
+            Self::None(id) => id,
+            Self::Deleted(meta) => &meta.metadata.id,
+            Self::Fresh(meta) => &meta.metadata.id,
+            Self::Cached(meta) => &meta.metadata.id,
         }
     }
 
     pub fn metadata(&self) -> PartialVMResult<&ObjectMeta> {
         match self {
-            RuntimeObjectMeta::None(_) => Err(PartialVMError::new(StatusCode::MISSING_DATA)),
-            RuntimeObjectMeta::Fresh(meta) => Ok(&meta.metadata),
-            RuntimeObjectMeta::Cached(meta) => Ok(&meta.metadata),
+            Self::None(id) => Err(PartialVMError::new(StatusCode::MISSING_DATA)
+                .with_message(format!("ObjectMeta of {} is None", id))),
+            Self::Deleted(meta) => {
+                //We allow get read-only metadata of deleted object
+                Ok(&meta.metadata)
+            }
+            Self::Fresh(meta) => Ok(&meta.metadata),
+            Self::Cached(meta) => Ok(&meta.metadata),
         }
     }
 
@@ -92,9 +126,12 @@ impl RuntimeObjectMeta {
 
     pub fn value_layout(&self) -> PartialVMResult<&MoveTypeLayout> {
         match self {
-            RuntimeObjectMeta::None(_) => Err(PartialVMError::new(StatusCode::MISSING_DATA)),
-            RuntimeObjectMeta::Fresh(meta) => Ok(&meta.value_layout),
-            RuntimeObjectMeta::Cached(meta) => Ok(&meta.value_layout),
+            Self::None(id) => Err(PartialVMError::new(StatusCode::MISSING_DATA)
+                .with_message(format!("Layout of {} is None or Deleted", id))),
+            Self::Deleted(meta) => Err(PartialVMError::new(StatusCode::MISSING_DATA)
+                .with_message(format!("Layout of {} is Deleted", &meta.metadata.id))),
+            Self::Fresh(meta) => Ok(&meta.value_layout),
+            Self::Cached(meta) => Ok(&meta.value_layout),
         }
     }
 
@@ -105,8 +142,14 @@ impl RuntimeObjectMeta {
 
     fn metadata_mut(&mut self) -> PartialVMResult<&mut ObjectMeta> {
         let meta_value = match self {
-            RuntimeObjectMeta::None(_) => {
-                return Err(PartialVMError::new(StatusCode::MISSING_DATA))
+            RuntimeObjectMeta::None(id) => {
+                return Err(PartialVMError::new(StatusCode::MISSING_DATA)
+                    .with_message(format!("ObjectMeta of {} is None", id)))
+            }
+            RuntimeObjectMeta::Deleted(meta) => {
+                debug_assert!(false, "Deleted object should not be modified");
+                return Err(PartialVMError::new(StatusCode::MISSING_DATA)
+                    .with_message(format!("ObjectMeta of {} is Deleted", &meta.metadata.id)));
             }
             RuntimeObjectMeta::Fresh(meta) => meta,
             RuntimeObjectMeta::Cached(meta) => meta,
@@ -147,6 +190,15 @@ impl RuntimeObjectMeta {
         match meta.size.checked_add(1) {
             Some(size) => {
                 meta.size = size;
+                if log::log_enabled!(log::Level::Trace) {
+                    tracing::trace!(
+                        object_id = tracing::field::display(&meta.id),
+                        op = "increase_size",
+                        "Object {} increase size to {}",
+                        &meta.id,
+                        size
+                    );
+                }
                 Ok(size)
             }
             None => Err(
@@ -162,6 +214,15 @@ impl RuntimeObjectMeta {
         match meta.size.checked_sub(1) {
             Some(size) => {
                 meta.size = size;
+                if log::log_enabled!(log::Level::Trace) {
+                    tracing::trace!(
+                        object_id = tracing::field::display(&meta.id),
+                        op = "decrease_size",
+                        "Object {} decrease size to {}",
+                        &meta.id,
+                        size
+                    );
+                }
                 Ok(size)
             }
             None => Err(
@@ -192,6 +253,7 @@ impl RuntimeObjectMeta {
                 DataStatus::Clean => Some((meta.metadata, false)),
                 DataStatus::Dirty => Some((meta.metadata, true)),
             },
+            RuntimeObjectMeta::Deleted(meta) => Some((meta.metadata, true)),
         }
     }
 }

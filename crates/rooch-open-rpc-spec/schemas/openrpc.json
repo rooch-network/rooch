@@ -268,7 +268,7 @@
           "schema": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/KeyStateHexView"
+              "$ref": "#/components/schemas/moveos_types::state::FieldKey"
             }
           }
         },
@@ -1545,9 +1545,6 @@
             }
           }
         ]
-      },
-      "KeyStateHexView": {
-        "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
       },
       "LedgerTransactionView": {
         "type": "object",

@@ -155,6 +155,11 @@ impl RuntimeObject {
 
     pub fn move_from(&mut self, expect_value_type: Option<&TypeTag>) -> PartialVMResult<Value> {
         self.check_type(expect_value_type)?;
+        //Also mark the metadata as deleted or none
+        self.rt_meta.move_from()?;
+        //We do not need to reset the pointer, because:
+        // 1. If the Object is dynamic field, the pointer is taken out and returned to the `native_add_field` function
+        // 2. Otherwise, call `object::remove()` function must take out the object pointer first.
         self.value.move_from()
     }
 
@@ -240,17 +245,19 @@ impl RuntimeObject {
         if let Some(op) = pointer_op {
             match op {
                 Op::Delete => {
-                    //The object pointer is deleted, the object is taken out
-                    //The object should be embeded in other struct
-                    //We need to change the Object owener to system
-                    rt_meta.to_system_owner()?;
-                    if log::log_enabled!(log::Level::Trace) {
-                        tracing::trace!(
-                            object_id = tracing::field::display(&object_id),
-                            op = "embeded",
-                            "Object {} is embeded",
-                            object_id
-                        );
+                    //The object pointer is deleted, and the value is not deleted,
+                    //means the object is taken out and is embeded in other struct
+                    //We need to change the Object owner to system
+                    if !matches!(&value_change, Some(Op::Delete)) {
+                        rt_meta.to_system_owner()?;
+                        if log::log_enabled!(log::Level::Trace) {
+                            tracing::trace!(
+                                object_id = tracing::field::display(&object_id),
+                                op = "embeded",
+                                "Object {} is embeded",
+                                object_id
+                            );
+                        }
                     }
                 }
                 Op::New(_pointer_value) => {
@@ -265,7 +272,7 @@ impl RuntimeObject {
                     }
                 }
                 Op::Modify(_) => {
-                    debug_assert!(false, "The object pointer should not be modified");
+                    //if the pointer is taken out then returned, the pointer is modified
                 }
             }
         };
@@ -433,6 +440,15 @@ impl RuntimeObject {
         tv.move_to(value, value_type.clone(), value_layout)?;
         let object_pointer = tv.take_object(Some(&value_type))?;
         self.rt_meta.increase_size()?;
+        if log::log_enabled!(log::Level::Trace) {
+            tracing::trace!(
+                object_id = tracing::field::display(&self.rt_meta.id()),
+                op = "add_field",
+                "Add field {} to Object {}",
+                field_key,
+                &self.rt_meta.id()
+            );
+        }
         Ok((object_pointer, field_load_gas))
     }
 
@@ -447,6 +463,15 @@ impl RuntimeObject {
         let (tv, field_load_gas) = self.load_field(layout_loader, resolver, field_key)?;
         let value = tv.move_from(Some(&expect_value_type))?;
         self.rt_meta.decrease_size()?;
+        if log::log_enabled!(log::Level::Trace) {
+            tracing::trace!(
+                object_id = tracing::field::display(self.rt_meta.id()),
+                op = "remove_field",
+                "Remove field {} from Object {}",
+                field_key,
+                self.rt_meta.id()
+            );
+        }
         Ok((value, field_load_gas))
     }
 

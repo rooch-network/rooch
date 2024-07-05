@@ -261,4 +261,28 @@ module moveos_std::table {
         destroy_empty(t);
     }
 
+    #[test]
+    fun test_add_and_remove_u64_key(){
+        let t = new<u64, u8>();
+        let key: u64 = 100;
+        let error_code: u64 = 1;
+        add(&mut t, key, 1);
+        assert!(contains(&t, key), error_code);
+        remove(&mut t, key);
+        assert!(!contains(&t, key), error_code);
+        destroy_empty(t);
+    }
+
+    #[test]
+    fun test_add_and_remove_string_key(){
+        let t = new<std::string::String, vector<u8>>();
+        let key = std::string::utf8(b"test1");
+        let error_code: u64 = 1;
+        add(&mut t, key, b"value");
+        assert!(contains(&t, key), error_code);
+        remove(&mut t, key);
+        assert!(!contains(&t, key), error_code);
+        destroy_empty(t);
+    }
+
 }

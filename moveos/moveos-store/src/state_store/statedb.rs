@@ -75,10 +75,13 @@ impl StateDBStore {
             },
             None => {
                 let object_id = obj_change.metadata.id.clone();
-                // The VM do not change the value of ObjectEntity
-                resolver
+                // The VM do not change the value of Object
+                let mut obj_state = resolver
                     .get_object(&object_id)?
-                    .ok_or_else(|| anyhow::format_err!("Object with id {} not found", object_id))?
+                    .ok_or_else(|| anyhow::format_err!("Object with id {} not found", object_id))?;
+                //The object value is not changed, but the metadata may be changed
+                obj_state.metadata = obj_change.metadata;
+                obj_state
             }
         };
         let mut field_update_set = UpdateSet::new();

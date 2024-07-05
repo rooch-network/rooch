@@ -9,7 +9,7 @@ crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasPar
     [.common.load_per_byte, "common.load_per_byte", 10 * MUL],
     [.common.load_failure, "common.load_failure", 5 * MUL],
 
-    [.native_object_meta.base, "native_borrow_object.base", 100 * MUL],
+    [.native_object_meta.base, "native_object_meta.base", 100 * MUL],
 
     [.native_borrow_object.base, "native_borrow_object.base", 500 * MUL],
     [.native_take_object.base, "native_take_object.base", 500 * MUL],
