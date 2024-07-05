@@ -21,10 +21,10 @@ import { useConnectWallet } from '../../hooks/wallet/useConnectWallet.js'
 import { Wallet } from '../../wellet/wallet.js'
 export function WalletButton() {
   const [selectWalletDialog, setSelectWalletDialog] = useState(false)
-  const { isConnecting, wallet } = useCurrentWallet()
+  const { wallet } = useCurrentWallet()
   const { mutateAsync: connectWallet } = useConnectWallet()
-
-  const wallets = useWallets().filter((wallet) => wallet.getChain() === SupportChain.BITCOIN)
+  const chain: SupportChain = 'bitcoin'
+  const wallets = useWallets().filter((wallet) => wallet.getChain() === chain)
   const styleThemeDark: React.CSSProperties = {
     backgroundColor: '#27272a',
     color: 'white',
@@ -36,7 +36,7 @@ export function WalletButton() {
   const dialogContentStyle: React.CSSProperties = {
     maxWidth: '425px',
     overflow: 'hidden',
-    border: isConnecting ? '1px solid #3f3f46' : 'none',
+    // border: isConnecting ? '1px solid #3f3f46' : 'none',
   }
   const dialogTitleStyle: React.CSSProperties = {
     fontSize: '1.5rem',
@@ -79,6 +79,19 @@ export function WalletButton() {
     padding: '0 0.125rem',
     borderRadius: '0.375rem',
   }
+  const cardStyle: { [key: string]: React.CSSProperties } = {
+    style: {
+      cursor: 'pointer', // cursor-pointer
+      transition: 'all 0.3s ease', // transition-all
+      backgroundColor: '#27272a',
+      borderRadius: '.75rem',
+    },
+    hoverStyle: {
+      border: '1px solid rgba(255,255,255,.8)',
+    },
+  }
+  const [cardHoveredName, setCardHoveredName] = useState('false')
+
   const handleConnectSpecificWallet = async (wallet: Wallet) => {
     try {
       await connectWallet({ wallet })
@@ -117,9 +130,15 @@ export function WalletButton() {
           </DialogHeader>
           {wallets.map((wallet) => (
             <Card
+              style={{
+                ...cardStyle.style,
+                ...(wallet.getName() === cardHoveredName ? cardStyle.hoverStyle : {}),
+              }}
               key={wallet.getName()}
               onClick={() => handleConnectSpecificWallet(wallet)}
-              className="bg-secondary cursor-pointer hover:border-primary/20 transition-all"
+              onMouseEnter={() => setCardHoveredName(wallet.getName())}
+              onMouseLeave={() => setCardHoveredName('')}
+              className="bg-secondary"
             >
               <CardHeader className="p-4">
                 <div className="flex items-center justify-between">
@@ -156,7 +175,7 @@ export function WalletButton() {
             </Card>
           ))}
         </DialogContent>
-      </Dialog>
+      </Dialog >
     </>
   )
 }

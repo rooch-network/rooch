@@ -1,0 +1,111 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+import { useMemo, useRef, useState } from 'react'
+import { useCurrentAddress, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
+
+import { AlertCircle, Wallet } from 'lucide-react'
+import { CursorType } from '@/common/interface'
+import type { IndexerStateID } from '@roochnetwork/rooch-sdk'
+
+import { NoData } from '@/components/no-data.tsx'
+import CustomPagination from '@/components/custom-pagination.tsx'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+
+export const BitcoinAssetsBtc: React.FC = () => {
+  const account = useCurrentAddress()
+
+  // ** PAGINATION
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 1 })
+  const mapPageToNextCursor = useRef<{ [page: number]: CursorType }>({})
+
+  const handlePageChange = (selectedPage: number) => {
+    if (selectedPage < 0) return
+
+    setPaginationModel({
+      page: selectedPage,
+      pageSize: paginationModel.pageSize,
+    })
+  }
+
+  const queryOptions = useMemo(
+    () => ({
+      cursor: mapPageToNextCursor.current[paginationModel.page - 1] || null,
+      pageSize: paginationModel.pageSize.toString(),
+    }),
+    [paginationModel],
+  )
+
+  const {
+    data: result,
+    isLoading,
+    isError,
+  } = useRoochClientQuery('queryUTXO', {
+    filter: {
+      owner: account?.toStr() || '',
+    },
+    cursor: queryOptions.cursor as IndexerStateID | null,
+    limit: queryOptions.pageSize,
+  })
+
+  console.log('result of UTXOs', result)
+
+  if (!account) {
+    return (
+      <div className="flex flex-col items-center justify-center text-center p-40">
+        <Wallet className="w-12 h-12 mb-4 text-zinc-500" />
+        <p className="text-xl text-zinc-500 font-semibold">Haven't connected to wallet</p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Please connect your wallet to view your assets.
+        </p>
+      </div>
+    )
+  }
+
+  if (isLoading || isError) {
+    return (
+      <div className="relative p-24">
+        <div className="absolute inset-0 bg-inherit bg-opacity-50 flex justify-center items-center">
+          {isLoading ? (
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          ) : (
+            <div className="flex flex-col items-center justify-center text-center">
+              <AlertCircle className="w-12 h-12 mb-4 text-red-500" />
+              <p className="text-xl text-red-500 font-semibold">Error loading data</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Something went wrong while fetching the data. Please try again later.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  return !result || result.data.length === 0 ? (
+    <NoData />
+  ) : (
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        {result?.data.map((data) => (
+          <Card
+            key={data.object_id}
+            className="w-full transition-all border-border/40 dark:bg-zinc-800/90 dark:hover:border-primary/20 hover:shadow-md overflow-hidden"
+          >
+            <CardHeader className="flex items-center justify-center">
+              <h3 className="text-xl md:text-2xl">UTXO #{data.tx_order}</h3>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center text-sm md:text-base">
+              {/*Amount {data.amount.toLocaleString()}*/}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <CustomPagination
+        currentPage={paginationModel.page}
+        hasNextPage={!!result?.has_next_page}
+        onPageChange={handlePageChange}
+      />
+    </>
+  )
+}
