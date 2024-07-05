@@ -69,3 +69,5 @@ rooch-da = { workspace = true }
 rooch-framework = { workspace = true }
 rooch-genesis = { workspace = true }
 rooch-db = { workspace = true }
+rooch-open-rpc = { workspace = true }
+rooch-open-rpc-spec-builder = { workspace = true }
