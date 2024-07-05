@@ -38,15 +38,6 @@ pub struct ObjectState {
     pub value: Vec<u8>,
 }
 
-/// `State` is represent state in MoveOS statedb, it can be a Move module or a Move Object or a Move resource or a Table value
-// #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-// pub struct ObjectState {
-//     /// the bytes of state
-//     pub value: Vec<u8>,
-//     /// the type of state
-//     pub value_type: TypeTag,
-// }
-
 /// `FieldKey` is represent field key in statedb, it is a hash of (key|key_type)
 #[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Clone, Copy)]
 pub struct FieldKey(pub [u8; FieldKey::LENGTH]);

@@ -94,7 +94,7 @@ fn test_transaction_store() -> Result<()> {
     let tx_context = TxContext::new_readonly_ctx(AccountAddress::random());
     let move_action = random_verified_move_action();
     let random_moveos_tx = VerifiedMoveOSTransaction {
-        root: ObjectEntity::genesis_root_object(),
+        root: ObjectEntity::genesis_root_object().into_state(),
         ctx: tx_context,
         action: move_action,
         pre_execute_functions: random_function_calls(),
@@ -130,7 +130,7 @@ fn test_event_store() -> Result<()> {
     let tx_context = TxContext::new_readonly_ctx(AccountAddress::random());
     let move_action = random_verified_move_action();
     let random_moveos_tx = VerifiedMoveOSTransaction {
-        root: ObjectEntity::genesis_root_object(),
+        root: ObjectEntity::genesis_root_object().into_state(),
         ctx: tx_context,
         action: move_action,
         pre_execute_functions: random_function_calls(),
@@ -245,7 +245,7 @@ fn test_escape_transaction() -> Result<()> {
     let tx_context = TxContext::new_readonly_ctx(AccountAddress::random());
     let move_action = random_verified_move_action();
     let random_moveos_tx = VerifiedMoveOSTransaction {
-        root: ObjectEntity::genesis_root_object(),
+        root: ObjectEntity::genesis_root_object().into_state(),
         ctx: tx_context,
         action: move_action,
         pre_execute_functions: random_function_calls(),

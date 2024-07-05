@@ -14,7 +14,6 @@ crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasPar
     [.native_borrow_object.base, "native_borrow_object.base", 500 * MUL],
     [.native_take_object.base, "native_take_object.base", 500 * MUL],
     [.native_transfer_object.base, "native_transfer_object.base", 500 * MUL],
-    [.native_transfer_object.base, "native_transfer_object.base", 500 * MUL],
     [.native_to_shared_object.base, "native_to_shared_object.base", 500 * MUL],
     [.native_to_frozen_object.base, "native_to_frozen_object.base", 500 * MUL],
 

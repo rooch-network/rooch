@@ -201,26 +201,6 @@ impl AggregateService {
             .collect::<Result<Vec<_>>>()
     }
 
-    // pub async fn get_raw_objects(
-    //     &self,
-    //     object_ids: Vec<ObjectID>,
-    // ) -> Result<HashMap<ObjectID, Option<ObjectState>>> {
-    //     // Global table 0x0 table's key type is always ObjectID.
-    //     let access_path = AccessPath::objects(object_ids.clone());
-    //     self.rpc_service
-    //         .get_states(access_path)
-    //         .await?
-    //         .into_iter()
-    //         .zip(object_ids)
-    //         .map(|(state_opt, object_id)| {
-    //             Ok((
-    //                 object_id,
-    //                 state_opt,
-    //             ))
-    //         })
-    //         .collect::<Result<HashMap<_, _>>>()
-    // }
-
     pub async fn build_utxos(&self, states: Vec<IndexerObjectState>) -> Result<Vec<UTXOState>> {
         let object_ids = states
             .iter()

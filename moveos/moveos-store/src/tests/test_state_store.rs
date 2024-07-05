@@ -3,17 +3,9 @@
 
 use crate::MoveOSStore;
 use anyhow::Result;
-use move_core_types::effects::Op;
 use moveos_types::h256::H256;
-use moveos_types::move_std::string::MoveString;
-use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::moveos_std::object::{ObjectEntity, GENESIS_STATE_ROOT};
-use moveos_types::moveos_std::table::TablePlaceholder;
-use moveos_types::state::{FieldKey, MoveState, MoveType, ObjectChange, StateChangeSet};
-use moveos_types::state_resolver::StatelessResolver;
 use moveos_types::test_utils::random_state_change_set;
 use smt::NodeReader;
-use std::str::FromStr;
 
 #[test]
 fn test_reopen() {
