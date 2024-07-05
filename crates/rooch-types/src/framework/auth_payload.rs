@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("auth_payload");
 
-const MESSAGE_INFO_PREFIX: &[u8] = b"\x18Bitcoin Signed Message:\n";
+const MESSAGE_INFO_COLUMN_FAMILY: &[u8] = b"\x18Bitcoin Signed Message:\n";
 const MESSAGE_INFO: &[u8] = b"Rooch Transaction:\n";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -36,7 +36,7 @@ impl SignData {
         let message_info = MESSAGE_INFO.to_vec();
 
         // We simulate the format of the Bitcoin wallet, append the length of message info and tx hash to the prefix
-        let mut encode_message_prefix = MESSAGE_INFO_PREFIX.to_vec();
+        let mut encode_message_prefix = MESSAGE_INFO_COLUMN_FAMILY.to_vec();
         encode_message_prefix.push((message_info.len() + tx_hash_hex.len()) as u8);
 
         SignData {

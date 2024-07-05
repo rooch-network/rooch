@@ -39,8 +39,6 @@ impl RoochDB {
             store_dir,
             column_families,
             config.rocksdb_config(),
-            //TODO collect metrics
-            None,
         )?);
 
         let moveos_store = MoveOSStore::new_with_instance(instance.clone())?;

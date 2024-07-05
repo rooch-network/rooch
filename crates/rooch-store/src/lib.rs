@@ -24,20 +24,21 @@ pub mod meta_store;
 mod tests;
 pub mod transaction_store;
 
-// pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
-pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction";
-pub const TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME: ColumnFamilyName = "tx_sequence_info_mapping";
-pub const META_SEQUENCER_INFO_PREFIX_NAME: ColumnFamilyName = "meta_sequencer_info";
-pub const TX_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "transaction_acc_node";
+// pub const DEFAULT_COLUMN_FAMILY_NAME: ColumnFamilyName = "default";
+pub const TRANSACTION_COLUMN_FAMILY_NAME: ColumnFamilyName = "transaction";
+pub const TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME: ColumnFamilyName =
+    "tx_sequence_info_mapping";
+pub const META_SEQUENCER_INFO_COLUMN_FAMILY_NAME: ColumnFamilyName = "meta_sequencer_info";
+pub const TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME: ColumnFamilyName = "transaction_acc_node";
 
-///db store use prefix_name vec to init
-/// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
-static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
+///db store use cf_name vec to init
+/// Please note that adding a column family needs to be added in vec simultaneously, remember！！
+static VEC_COLUMN_FAMILY_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     vec![
-        TRANSACTION_PREFIX_NAME,
-        TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME,
-        META_SEQUENCER_INFO_PREFIX_NAME,
-        TX_ACCUMULATOR_NODE_PREFIX_NAME,
+        TRANSACTION_COLUMN_FAMILY_NAME,
+        TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME,
+        META_SEQUENCER_INFO_COLUMN_FAMILY_NAME,
+        TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME,
     ]
 });
 
@@ -46,7 +47,7 @@ pub struct StoreMeta {}
 
 impl StoreMeta {
     pub fn get_column_family_names() -> &'static [ColumnFamilyName] {
-        &VEC_PREFIX_NAME
+        &VEC_COLUMN_FAMILY_NAME
     }
 }
 
@@ -63,7 +64,6 @@ impl RoochStore {
             db_path,
             StoreMeta::get_column_family_names().to_vec(),
             RocksdbConfig::default(),
-            None,
         )?);
         Self::new_with_instance(instance)
     }
