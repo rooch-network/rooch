@@ -26,7 +26,7 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::oneshot;
-use tracing::{debug, error};
+use tracing::debug;
 
 /// Type alias to improve readability.
 pub type ColumnFamilyName = &'static str;
@@ -59,7 +59,8 @@ impl StoreInstance {
         let db_metrics_ref = DBMetrics::get();
         let db_metrics_arc = db_metrics_ref.clone();
         let (sender, mut recv) = tokio::sync::oneshot::channel();
-        tokio::task::spawn(async move {
+
+        tokio::spawn(async move {
             let mut interval =
                 tokio::time::interval(Duration::from_millis(CF_METRICS_REPORT_PERIOD_MILLIS));
             loop {
@@ -69,11 +70,12 @@ impl StoreInstance {
                         for cf_name in cfs {
                             let db_clone_clone = db_clone.clone();
                             let db_metrics_clone = db_metrics_ref.clone();
-                            if let Err(e) = tokio::task::spawn_blocking(move || {
-                                Self::report_cf_metrics(&db_clone_clone, cf_name, &db_metrics_clone);
-                            }).await {
-                                error!("Failed to report cf metrics with error: {}", e);
-                            }
+                            // if let Err(e) = tokio::task::spawn_blocking(move || {
+                            //     Self::report_cf_metrics(&db_clone_clone, cf_name, &db_metrics_clone);
+                            // }).await {
+                            //     error!("Failed to report cf metrics with error: {}", e);
+                            // }
+                            Self::report_cf_metrics(&db_clone_clone, cf_name, &db_metrics_clone);
                         }
                     }
                     _ = &mut recv => break,
@@ -81,6 +83,28 @@ impl StoreInstance {
             }
             debug!("Returning to report cf metrics task for StoreInstance");
         });
+
+        // tokio::spawn(async move {
+        //     loop {
+        //         let cfs = db_clone.cfs.clone();
+        //         for cf_name in cfs {
+        //             let db_clone_clone = db_clone.clone();
+        //             let db_metrics_clone = db_metrics_ref.clone();
+        //             if let Err(e) = tokio::task::spawn_blocking(move || {
+        //                 Self::report_cf_metrics(&db_clone_clone, cf_name, &db_metrics_clone);
+        //             })
+        //             .await
+        //             {
+        //                 error!("Failed to report cf metrics with error: {}", e);
+        //             }
+        //         }
+        //         tokio::time::sleep(tokio::time::Duration::from_millis(
+        //             CF_METRICS_REPORT_PERIOD_MILLIS,
+        //         ))
+        //         .await;
+        //     }
+        // });
+
         Self::DB {
             db: db_arc,
             db_metrics: db_metrics_arc,

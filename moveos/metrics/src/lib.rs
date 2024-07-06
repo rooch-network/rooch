@@ -391,7 +391,7 @@ pub fn start_prometheus_server(addr: SocketAddr) -> RegistryService {
         .layer(Extension(registry_service.clone()));
 
     tokio::spawn(async move {
-        axum::Server::bind(&addr)
+        axum_server::bind(addr)
             .serve(app.into_make_service())
             .await
             .unwrap();
