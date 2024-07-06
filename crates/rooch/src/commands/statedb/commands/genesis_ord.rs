@@ -355,10 +355,7 @@ fn apply_ord_updates_to_state(
         apply_nodes(moveos_store, nodes).expect("failed to apply ord nodes");
 
         println!(
-            "{} ord applied ({} cursed, {} blessed). value size: {}. cost: {:?}",
-            // e.g. batch_size = 8192:
-            // 8192 ord applied in: 1.000000000s
-            // 16384 ord applied in: 2.000000000s
+            "{} ord applied ({} cursed, {} blessed). this batch: value size: {}, cost: {:?}",
             ord_count,
             cursed_inscription_count,
             blessed_inscription_count,
@@ -377,6 +374,8 @@ fn apply_ord_updates_to_state(
         last_inscription_store_state_root = inscription_store_state_root;
         last_inscription_ids_state_root = inscription_ids_state_root;
     }
+
+    drop(rx);
 
     update_startup_ord(
         startup_update_set,
@@ -457,7 +456,6 @@ fn produce_ord_updates(tx: SyncSender<BatchUpdatesOrd>, input: PathBuf, batch_si
     let mut cache_drop_offset: u64 = 0;
     loop {
         let mut bytes_read = 0;
-
         let mut updates = BatchUpdatesOrd {
             ord_updates: UpdateSet::new(),
             inscription_ids_updates: UpdateSet::new(),
