@@ -1,20 +1,18 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-pub fn human_readable_size(bytes: u64) -> String {
-    let units = ["B", "KB", "MB", "GB", "TB", "PB", "EB"];
-    let mut size = bytes as f64;
-    let mut unit = units[0];
+const LOWER_BYTES_UNITS: [&str; 7] = ["b", "k", "m", "g", "t", "p", "e"];
 
-    for &u in &units[1..] {
-        if size < 1024.0 {
-            break;
-        }
-        size /= 1024.0;
-        unit = u;
+pub fn human_readable_bytes(bytes: u64) -> String {
+    let mut v = bytes as f64;
+    let mut unit_index = 0;
+
+    while v >= 1024.0 && unit_index < LOWER_BYTES_UNITS.len() - 1 {
+        v /= 1024.0;
+        unit_index += 1;
     }
 
-    format!("{:.2} {}", size, unit)
+    format!("{:.2}{}", v, LOWER_BYTES_UNITS[unit_index])
 }
 
 #[cfg(test)]
@@ -22,19 +20,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_human_readable_size() {
-        assert_eq!(human_readable_size(0), "0.00 B");
-        assert_eq!(human_readable_size(1024), "1.00 KB");
-        assert_eq!(human_readable_size(1024 * 1024), "1.00 MB");
-        assert_eq!(human_readable_size(1024 * 1024 * 1024), "1.00 GB");
-        assert_eq!(human_readable_size(1024 * 1024 * 1024 * 1024), "1.00 TB");
-        assert_eq!(
-            human_readable_size(1024 * 1024 * 1024 * 1024 * 1024),
-            "1.00 PB"
-        );
-        assert_eq!(
-            human_readable_size(1024 * 1024 * 1024 * 1024 * 1024 * 1024),
-            "1.00 EB"
-        );
+    fn test_human_readable_bytes() {
+        let test_cases = [
+            (0, "0.00b"),
+            (1024, "1.00k"),
+            (1024 * 1024, "1.00m"),
+            (1024 * 1024 * 1024, "1.00g"),
+            (1024_u64 * 1024 * 1024 * 1024, "1.00t"),
+            (1024_u64 * 1024 * 1024 * 1024 * 1024, "1.00p"),
+            (1024_u64 * 1024 * 1024 * 1024 * 1024 * 1024, "1.00e"),
+        ];
+
+        for (bytes, expected) in test_cases.iter() {
+            assert_eq!(human_readable_bytes(*bytes), *expected);
+        }
     }
 }
