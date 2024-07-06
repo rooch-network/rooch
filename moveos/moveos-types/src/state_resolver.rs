@@ -5,7 +5,7 @@ use crate::move_std::string::MoveString;
 use crate::moveos_std::account::Account;
 use crate::moveos_std::module_store::Package;
 use crate::moveos_std::move_module::MoveModuleDynamicField;
-use crate::moveos_std::object::{ObjectEntity, ObjectID};
+use crate::moveos_std::object::{ObjectEntity, ObjectID, RawField};
 use crate::state::{FieldKey, MoveType, ObjectState};
 use crate::{
     access_path::AccessPath, h256::H256, moveos_std::object::AnnotatedObject, state::AnnotatedState,
@@ -161,7 +161,8 @@ where
                     resource_tag,
                     s.value_type()
                 );
-                Ok(s.value)
+                let field = RawField::parse_resource_field(&s.value, resource_tag.clone().into())?;
+                Ok(field.value)
             })
             .transpose();
 

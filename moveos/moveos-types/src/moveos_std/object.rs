@@ -37,7 +37,7 @@ use std::str::FromStr;
 
 pub use dynamic_field::{
     construct_dynamic_field_struct_tag, is_dynamic_field_type, is_field_struct_tag, DynamicField,
-    DYNAMIC_FIELD_STRUCT_NAME,
+    RawField, DYNAMIC_FIELD_STRUCT_NAME,
 };
 
 mod dynamic_field;

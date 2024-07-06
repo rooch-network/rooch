@@ -576,9 +576,15 @@ where
     }
 }
 
-impl MoveType for String {
-    fn type_tag() -> TypeTag {
-        MoveString::type_tag()
+impl MoveStructType for String {
+    const ADDRESS: AccountAddress = MoveString::ADDRESS;
+    const MODULE_NAME: &'static IdentStr = MoveString::MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = MoveString::STRUCT_NAME;
+}
+
+impl MoveStructState for String {
+    fn struct_layout() -> MoveStructLayout {
+        MoveString::struct_layout()
     }
 }
 

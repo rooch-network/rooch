@@ -393,7 +393,6 @@ impl<'de> Deserialize<'de> for AccessPath {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::move_std::string::MoveString;
 
     fn test_path_roundtrip(path: &str) {
         let path = path.parse::<Path>().unwrap();
