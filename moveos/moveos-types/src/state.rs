@@ -3,7 +3,7 @@
 
 use crate::h256;
 use crate::move_std::string::MoveString;
-use crate::moveos_std::object::ObjectID;
+use crate::moveos_std::object::{self, ObjectID};
 use crate::moveos_std::object::{
     AnnotatedObject, DynamicField, ObjectEntity, ObjectMeta, RawData, RawObject,
 };
@@ -682,6 +682,16 @@ impl ObjectState {
         match self.value_type() {
             TypeTag::Struct(struct_tag) => struct_tag.as_ref() == type_tag,
             _ => false,
+        }
+    }
+
+    pub fn match_dynamic_field_type(&self, name_type: TypeTag, value_type: TypeTag) -> bool {
+        if self.is_dynamic_field() {
+            self.match_struct_type(&object::construct_dynamic_field_struct_tag(
+                name_type, value_type,
+            ))
+        } else {
+            false
         }
     }
 

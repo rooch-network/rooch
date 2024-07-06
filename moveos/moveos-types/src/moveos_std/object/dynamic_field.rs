@@ -85,3 +85,12 @@ pub fn is_field_struct_tag(tag: &StructTag) -> bool {
         && tag.module.as_ref() == super::MODULE_NAME
         && tag.name.as_ref() == DYNAMIC_FIELD_STRUCT_NAME
 }
+
+pub fn construct_dynamic_field_struct_tag(name_tag: TypeTag, value_tag: TypeTag) -> StructTag {
+    StructTag {
+        address: MOVEOS_STD_ADDRESS,
+        module: super::MODULE_NAME.to_owned(),
+        name: DYNAMIC_FIELD_STRUCT_NAME.to_owned(),
+        type_params: vec![name_tag, value_tag],
+    }
+}

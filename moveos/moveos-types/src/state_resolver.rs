@@ -1,11 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::move_std::string::MoveString;
 use crate::moveos_std::account::Account;
 use crate::moveos_std::module_store::Package;
 use crate::moveos_std::move_module::MoveModuleDynamicField;
 use crate::moveos_std::object::{ObjectEntity, ObjectID};
-use crate::state::{FieldKey, ObjectState};
+use crate::state::{FieldKey, MoveType, ObjectState};
 use crate::{
     access_path::AccessPath, h256::H256, moveos_std::object::AnnotatedObject, state::AnnotatedState,
 };
@@ -144,19 +145,20 @@ where
     fn get_resource_with_metadata(
         &self,
         address: &AccountAddress,
-        tag: &StructTag,
+        resource_tag: &StructTag,
         _metadata: &[Metadata],
     ) -> Result<(Option<Vec<u8>>, usize), Error> {
         let account_object_id = Account::account_object_id(*address);
 
-        let key = FieldKey::derive_resource_key(tag);
+        let key = FieldKey::derive_resource_key(resource_tag);
         let result = self
             .get_field(&account_object_id, &key)?
             .map(|s| {
+                //Resource dynamic field should be `DynamicField<MoveString, T>`
                 ensure!(
-                    s.match_struct_type(tag),
-                    "Resource type mismatch, expected: {:?}, actual: {:?}",
-                    tag,
+                    s.match_dynamic_field_type(MoveString::type_tag(), resource_tag.clone().into()),
+                    "Resource type mismatch, expected field value type: {:?}, actual: {:?}",
+                    resource_tag,
                     s.value_type()
                 );
                 Ok(s.value)
