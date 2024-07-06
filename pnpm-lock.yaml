@@ -218,7 +218,7 @@ importers:
         version: 0.2.0
       '@roochnetwork/rooch-sdk-kit':
         specifier: 0.2.0
-        version: 0.2.0(@tanstack/react-query@5.45.1(react@18.2.0))(@types/react@18.3.3)(babel-plugin-macros@3.1.0)(immer@9.0.21)(react@18.2.0)
+        version: 0.2.0(@tanstack/react-query@5.45.1(react@18.2.0))(@types/react@18.3.3)(immer@9.0.21)(react@18.2.0)
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.45.1(react@18.2.0)
@@ -12012,7 +12012,7 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.18.0':
     optional: true
 
-  '@roochnetwork/rooch-sdk-kit@0.2.0(@tanstack/react-query@5.45.1(react@18.2.0))(@types/react@18.3.3)(babel-plugin-macros@3.1.0)(immer@9.0.21)(react@18.2.0)':
+  '@roochnetwork/rooch-sdk-kit@0.2.0(@tanstack/react-query@5.45.1(react@18.2.0))(@types/react@18.3.3)(immer@9.0.21)(react@18.2.0)':
     dependencies:
       '@roochnetwork/rooch-sdk': 0.2.0
       '@tanstack/react-query': 5.45.1(react@18.2.0)

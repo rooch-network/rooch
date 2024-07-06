@@ -4,28 +4,34 @@
 import { BitcoinAddress, Bytes, ThirdPartyAddress, str, bytes } from '@roochnetwork/rooch-sdk'
 import { BitcoinWallet } from '../wellet/index.js'
 
-export class OkxWallet extends BitcoinWallet {
+export class OnekeyWallet extends BitcoinWallet {
   getName(): string {
-    return 'okx'
+    return 'onekey'
   }
 
   async sign(msg: Bytes): Promise<Bytes> {
     const msgStr = str('utf8', msg)
-    const sign = await this.getTarget().signMessage(msgStr, {
-      from: this.currentAddress?.toStr(),
-    })
+    const sign = await this.getTarget().signMessage(msgStr)
     return bytes('base64', sign).subarray(1)
   }
 
   getTarget(): any {
-    return (window as any).okxwallet?.bitcoin
+    return (window as any).$onekey?.btc
   }
 
   async connect(): Promise<ThirdPartyAddress[]> {
-    const obj = await this.getTarget().connect()
-    this.currentAddress = new BitcoinAddress(obj.address)
-    this.publicKey = obj.compressedPublicKey !== '' ? obj.compressedPublicKey : obj.publicKey
-    this.address = [this.currentAddress]
+    let addresses: string[] = await this.getTarget().getAccounts()
+
+    if (!addresses || addresses.length === 0) {
+      await this.getTarget().requestAccounts()
+      return this.connect()
+    }
+
+    let publicKey = await this.getTarget().getPublicKey()
+
+    this.address = addresses.map((item) => new BitcoinAddress(item))
+    this.currentAddress = this.address[0]
+    this.publicKey = publicKey
 
     return this.address
   }
