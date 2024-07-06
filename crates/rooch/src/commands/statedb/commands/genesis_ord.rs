@@ -362,7 +362,7 @@ fn apply_ord_updates_to_state(
             ord_count,
             cursed_inscription_count,
             blessed_inscription_count,
-            humanize::human_readable_size(batch.ord_value_bytes),
+            humanize::human_readable_bytes(batch.ord_value_bytes),
             loop_start_time.elapsed().unwrap()
         );
 
