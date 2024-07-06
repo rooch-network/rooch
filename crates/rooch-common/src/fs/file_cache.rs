@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use libc::{posix_fadvise, POSIX_FADV_DONTNEED};
 use std::fs::File;
 use std::io::{Error, Result};
 use std::os::unix::io::AsRawFd;
@@ -23,11 +22,11 @@ impl FileCacheManager {
     pub fn drop_cache_range(&self, offset: u64, len: u64) -> Result<()> {
         let fd = self.file.as_raw_fd();
         let ret = unsafe {
-            posix_fadvise(
+            libc::posix_fadvise(
                 fd,
                 offset as libc::off_t,
                 len as libc::off_t,
-                POSIX_FADV_DONTNEED,
+                libc::POSIX_FADV_DONTNEED,
             )
         };
 
