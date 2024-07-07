@@ -293,9 +293,9 @@ Feature: Rooch CLI integration tests
       Then cmd: "move run --function 0x3::transfer::transfer_object --type-args default::pub_transfer::Pub --args address:{{$.account[-1].account0.hex_address}} --args object:{{$.event[-1].data[0].decoded_event_data.value.id}}"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       #TODO FIXME the indexer do not update the owner after object transfer.
-      #Then sleep: "2"
-      #Then cmd: "object -t default::pub_transfer::Pub"
-      #Then assert: "{{$.object[-1].data[0].owner}} == {{$.account[-1].account0.address}}"
+      Then sleep: "2"
+      Then cmd: "object -t default::pub_transfer::Pub"
+      Then assert: "{{$.object[-1].data[0].owner}} == {{$.account[-1].account0.address}}"
       
       #child object
       Then cmd: "move run --function default::third_party_module_for_child_object::create_child --args string:alice"

@@ -122,6 +122,19 @@ pub fn handle_object_change(
                 indexer_object_state_changes.new_object_states.push(state);
             }
         }
+    } else {
+        //If value is not changed, we should update the metadata.
+        let refresh_object = resolver
+            .get_object(&object_id)?
+            .ok_or_else(|| anyhow::anyhow!("Object {} not found for indexer", metadata.id))?;
+        let state = IndexerObjectState::new_from_object_state(
+            refresh_object,
+            tx_order,
+            state_index_generator,
+        );
+        indexer_object_state_changes
+            .update_object_states
+            .push(state);
     }
 
     state_index_generator += 1;
