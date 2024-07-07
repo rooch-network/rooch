@@ -15,6 +15,7 @@ use anyhow::Result;
 use bitcoin::hashes::Hash;
 use bitcoin::{OutPoint, PublicKey, ScriptBuf};
 use bitcoin_move::natives::ord::inscription_id::InscriptionId;
+use chrono::{DateTime, Local};
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use redb::Database;
@@ -47,7 +48,7 @@ use crate::commands::statedb::commands::genesis_utxo::{
 };
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
 use crate::commands::statedb::commands::{
-    init_genesis_job, sort_merge_utxo_ords, UTXOOrds, UTXO_ORD_MAP_TABLE,
+    get_ord_by_outpoint, init_genesis_job, sort_merge_utxo_ords, UTXOOrds, UTXO_ORD_MAP_TABLE,
 };
 
 pub const ADDRESS_UNBOUND: &str = "unbound";
@@ -109,6 +110,12 @@ pub struct GenesisOrdCommand {
     pub ord_batch_size: Option<usize>,
     #[clap(long, help = "utxo:ords map db path, will create new one if not exist")]
     pub utxo_ord_map: PathBuf,
+    #[clap(
+        long,
+        help = "deep check utxo:ords map db integrity",
+        default_value = "false"
+    )]
+    pub deep_check_utxo_ord_map: Option<bool>,
 
     #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
@@ -135,17 +142,14 @@ impl GenesisOrdCommand {
             init_genesis_job(self.base_data_dir.clone(), self.chain_id.clone());
         let pre_root_state_root = H256::from(root.state_root.into_bytes());
 
-        let utxo_ord_map_existed = self.utxo_ord_map.exists();
-        if utxo_ord_map_existed {
-            println!("utxo:ords indexed in: {:?}", self.utxo_ord_map.clone());
-        }
-        // check utxo_ord_map_index file exist or not
-        let utxo_ord_map_db = Database::create(self.utxo_ord_map.clone()).unwrap();
+        let utxo_ord_map_existed = self.utxo_ord_map.exists(); // check if utxo:ords map db existed before create db
+        let utxo_ord_map_db = Database::create(self.utxo_ord_map.clone()).unwrap(); // create db if not existed
         let utxo_ord_map = Arc::new(utxo_ord_map_db);
         index_utxo_ords(
             self.ord_source.clone(),
             utxo_ord_map.clone(),
             utxo_ord_map_existed,
+            self.deep_check_utxo_ord_map.unwrap(),
         );
 
         let moveos_store = Arc::new(moveos_store);
@@ -191,14 +195,30 @@ impl GenesisOrdCommand {
     }
 }
 
-fn index_utxo_ords(input_path: PathBuf, utxo_ord_map: Arc<Database>, utxo_ord_map_existed: bool) {
-    if utxo_ord_map_existed {
+// indexing steps:
+// 1. load all ords for ord_src_path (may cost 10GiB memory)
+// 2. sort merge ords by utxo
+// 3. insert utxo:ords into db
+fn index_utxo_ords(
+    ord_src_path: PathBuf,
+    utxo_ord_map: Arc<Database>,
+    utxo_ord_map_existed: bool,
+    deep_check: bool,
+) {
+    if !deep_check && utxo_ord_map_existed {
+        println!("utxo:ords map db existed, skip indexing");
         return;
     }
 
     let start_time = SystemTime::now();
+    let datetime: DateTime<Local> = start_time.into();
 
-    let mut reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input_path).unwrap());
+    println!("indexing utxo:ords started at: {}", datetime);
+
+    let read_txn = utxo_ord_map.clone().begin_read().unwrap();
+    let read_table = Some(Arc::new(read_txn.open_table(UTXO_ORD_MAP_TABLE).unwrap()));
+
+    let mut reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(ord_src_path).unwrap());
     let mut is_title_line = true;
 
     let mut ord_count: u64 = 0;
@@ -222,33 +242,45 @@ fn index_utxo_ords(input_path: PathBuf, utxo_ord_map: Arc<Database>, utxo_ord_ma
 
         utxo_ords.push(UTXOOrds {
             utxo: satpoint_output,
-            ords: vec![obj_id],
+            ords: vec![obj_id.clone()], // only one ord for one utxo at most time
         });
         ord_count += 1;
     }
 
-    let utxo_count = sort_merge_utxo_ords(&mut utxo_ords);
+    let utxo_count = sort_merge_utxo_ords(&mut utxo_ords) as u64;
 
-    let write_txn = utxo_ord_map.clone().begin_write().unwrap();
-    {
-        let mut table = write_txn.open_table(UTXO_ORD_MAP_TABLE).unwrap();
-        for utxo_ord in utxo_ords {
-            table
-                .insert(
-                    bcs::to_bytes(&utxo_ord.utxo).unwrap().as_slice(),
-                    bcs::to_bytes(&utxo_ord.ords).unwrap().as_slice(),
-                )
-                .unwrap();
+    if deep_check && utxo_ord_map_existed {
+        for utxo_ord in utxo_ords.iter() {
+            let ords_in_db = get_ord_by_outpoint(read_table.clone(), utxo_ord.utxo).unwrap();
+            if ords_in_db != utxo_ord.ords {
+                panic!(
+                    "failed to deep check: utxo: {} ords not match, expected: {:?}, actual: {:?}",
+                    utxo_ord.utxo, utxo_ord.ords, ords_in_db
+                );
+            }
         }
+        println!("deep check passed");
+    } else {
+        let write_txn = utxo_ord_map.clone().begin_write().unwrap();
+        {
+            let mut table = write_txn.open_table(UTXO_ORD_MAP_TABLE).unwrap();
+            for utxo_ord in utxo_ords {
+                table
+                    .insert(
+                        bcs::to_bytes(&utxo_ord.utxo).unwrap().as_slice(),
+                        bcs::to_bytes(&utxo_ord.ords).unwrap().as_slice(),
+                    )
+                    .unwrap();
+            }
+        }
+        write_txn.commit().unwrap();
     }
-    write_txn.commit().unwrap();
 
     println!(
-        "{} utxo : {} ords indexed in: {:?} (started at: {:?})",
+        "{} utxo : {} ords indexed in: {:?}",
         utxo_count,
         ord_count,
         start_time.elapsed().unwrap(),
-        start_time
     );
 }
 
@@ -323,14 +355,11 @@ fn apply_ord_updates_to_state(
         apply_nodes(moveos_store, nodes).expect("failed to apply ord nodes");
 
         println!(
-            "{} ord applied ({} cursed, {} blessed). value size: {}. cost: {:?}",
-            // e.g. batch_size = 8192:
-            // 8192 ord applied in: 1.000000000s
-            // 16384 ord applied in: 2.000000000s
+            "{} ord applied ({} cursed, {} blessed). this batch: value size: {}, cost: {:?}",
             ord_count,
             cursed_inscription_count,
             blessed_inscription_count,
-            humanize::human_readable_size(batch.ord_value_bytes),
+            humanize::human_readable_bytes(batch.ord_value_bytes),
             loop_start_time.elapsed().unwrap()
         );
 
@@ -345,6 +374,8 @@ fn apply_ord_updates_to_state(
         last_inscription_store_state_root = inscription_store_state_root;
         last_inscription_ids_state_root = inscription_ids_state_root;
     }
+
+    drop(rx);
 
     update_startup_ord(
         startup_update_set,
@@ -425,7 +456,6 @@ fn produce_ord_updates(tx: SyncSender<BatchUpdatesOrd>, input: PathBuf, batch_si
     let mut cache_drop_offset: u64 = 0;
     loop {
         let mut bytes_read = 0;
-
         let mut updates = BatchUpdatesOrd {
             ord_updates: UpdateSet::new(),
             inscription_ids_updates: UpdateSet::new(),

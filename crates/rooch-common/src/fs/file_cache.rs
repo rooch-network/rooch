@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::fs::File;
 use std::io::Result;
 #[cfg(target_os = "linux")]
 use std::os::unix::io::AsRawFd;
@@ -9,17 +8,21 @@ use std::path::PathBuf;
 
 #[allow(dead_code)]
 pub struct FileCacheManager {
-    file: File,
+    #[cfg(target_os = "linux")]
+    file: std::fs::File,
 }
 
 impl FileCacheManager {
+    #[cfg(target_os = "linux")]
     pub fn new(file_path: PathBuf) -> Result<Self> {
-        let file = File::open(file_path)?;
+        let file = std::fs::File::open(file_path)?;
         Ok(FileCacheManager { file })
     }
 
     #[cfg(target_os = "linux")]
     pub fn drop_cache_range(&self, offset: u64, len: u64) -> Result<()> {
+        use std::os::unix::io::AsRawFd;
+
         let fd = self.file.as_raw_fd();
         let ret = unsafe {
             libc::posix_fadvise(
@@ -38,7 +41,12 @@ impl FileCacheManager {
     }
 
     #[cfg(not(target_os = "linux"))]
-    pub fn drop_cache_range(&self, _offset: u64, _len: u64) -> Result<()> {
+    pub fn new(_: PathBuf) -> Result<Self> {
+        Ok(FileCacheManager {})
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    pub fn drop_cache_range(&self, _: u64, _: u64) -> Result<()> {
         Ok(())
     }
 }

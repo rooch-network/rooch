@@ -10549,6 +10549,8 @@ dependencies = [
  "rooch-genesis",
  "rooch-indexer",
  "rooch-key",
+ "rooch-open-rpc",
+ "rooch-open-rpc-spec-builder",
  "rooch-pipeline-processor",
  "rooch-proposer",
  "rooch-relayer",
