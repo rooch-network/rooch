@@ -11,8 +11,9 @@ use std::marker::PhantomData;
 use std::path::Path;
 
 use anyhow::{ensure, format_err, Error, Result};
-use rocksdb::{
-    BlockBasedOptions, Cache, ColumnFamily, DBCompressionType, Options, ReadOptions,
+use rust_rocksdb::{
+    statistics, BlockBasedIndexType, BlockBasedOptions, Cache, ColumnFamily,
+    ColumnFamilyDescriptor, DBCompressionType, DBRawIterator, DBRecoveryMode, Options, ReadOptions,
     WriteBatch as DBWriteBatch, WriteOptions, DB,
 };
 use serde::de::DeserializeOwned;
@@ -125,7 +126,7 @@ impl RocksDB {
         let mut table_opts = BlockBasedOptions::default();
 
         // options for enabling partitioned index filter
-        table_opts.set_index_type(rocksdb::BlockBasedIndexType::TwoLevelIndexSearch);
+        table_opts.set_index_type(BlockBasedIndexType::TwoLevelIndexSearch);
         table_opts.set_bloom_filter(10 as c_double, false); // we use get op frequently, so set bloom filter to reduce disk read
         table_opts.set_partition_filters(true);
         table_opts.set_metadata_block_size(4096);
@@ -169,7 +170,7 @@ impl RocksDB {
                     cf_opts.set_compaction_readahead_size(2 * 1024 * 1024);
                 }
 
-                rocksdb::ColumnFamilyDescriptor::new((*cf_name).to_string(), cf_opts)
+                ColumnFamilyDescriptor::new((*cf_name).to_string(), cf_opts)
             }),
         )?;
         Ok(inner)
@@ -254,9 +255,10 @@ impl RocksDB {
         let cache = Cache::new_lru_cache(config.row_cache_size as usize);
         db_opts.set_row_cache(&cache);
         db_opts.set_enable_pipelined_write(true);
-        db_opts.set_wal_recovery_mode(rocksdb::DBRecoveryMode::PointInTime); // for memtable crash recovery
+        db_opts.set_wal_recovery_mode(DBRecoveryMode::PointInTime); // for memtable crash recovery
         db_opts.enable_statistics();
-        db_opts.set_statistics_level(rocksdb::statistics::StatsLevel::ExceptTimeForMutex);
+        db_opts.set_statistics_level(statistics::StatsLevel::ExceptTimeForMutex);
+        db_opts.set_dump_malloc_stats(true);
         db_opts
     }
     fn iter_with_direction<K, V>(
@@ -307,7 +309,7 @@ pub enum ScanDirection {
 }
 
 pub struct SchemaIterator<'a, K, V> {
-    db_iter: rocksdb::DBRawIterator<'a>,
+    db_iter: DBRawIterator<'a>,
     direction: ScanDirection,
     phantom_k: PhantomData<K>,
     phantom_v: PhantomData<V>,
@@ -318,7 +320,7 @@ where
     K: Serialize + DeserializeOwned,
     V: Serialize + DeserializeOwned,
 {
-    fn new(db_iter: rocksdb::DBRawIterator<'a>, direction: ScanDirection) -> Self {
+    fn new(db_iter: DBRawIterator<'a>, direction: ScanDirection) -> Self {
         SchemaIterator {
             db_iter,
             direction,
