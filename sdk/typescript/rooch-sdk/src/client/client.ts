@@ -364,7 +364,7 @@ export class RoochClient {
     // Maybe we should define the type?
     const tableId = (
       (
-        (states[0].decoded_value as AnnotatedMoveStructView).value[
+        ((states[0].decoded_value as AnnotatedMoveStructView).value['value'] as AnnotatedMoveStructView).value[
           'keys'
         ] as AnnotatedMoveStructView
       ).value['handle'] as AnnotatedMoveStructView
@@ -400,7 +400,7 @@ export class RoochClient {
         const moveValue = state?.state.decoded_value as any
 
         if (moveValue) {
-          const val = moveValue.value
+          const val = moveValue.value.value.value
 
           result.push({
             appName: val.app_name,
