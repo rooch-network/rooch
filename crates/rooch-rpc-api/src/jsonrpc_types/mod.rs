@@ -6,10 +6,12 @@
 mod str_view;
 mod execute_tx_response;
 mod function_return_value_view;
+mod module_abi_view;
 mod move_types;
 mod rooch_types;
 mod rpc_options;
 mod state_view;
+
 #[cfg(test)]
 mod tests;
 mod transaction_argument_view;
@@ -25,6 +27,7 @@ pub use self::rooch_types::*;
 pub use address::*;
 pub use execute_tx_response::*;
 pub use function_return_value_view::*;
+pub use module_abi_view::*;
 pub use move_types::*;
 pub use rpc_options::*;
 pub use state_view::*;
