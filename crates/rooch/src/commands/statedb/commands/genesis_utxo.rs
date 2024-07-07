@@ -426,7 +426,15 @@ pub fn produce_utxo_updates(
 
             let utxo_data = gen_utxo_data_from_csv_line(&line).unwrap();
             let (key, state, address_mapping_data) =
-                gen_utxo_update(utxo_data, utxo_ord_map.clone()).unwrap();
+                match gen_utxo_update(utxo_data.clone(), utxo_ord_map.clone()) {
+                    Ok((key, state, address_mapping_data)) => (key, state, address_mapping_data),
+                    Err(e) => {
+                        panic!(
+                            "failed to gen_utxo_update: {:?} for {}[{:?}]",
+                            e, line, utxo_data
+                        );
+                    }
+                };
             updates.utxo_updates.put(key, state);
 
             if let Some(address_mapping_data) = address_mapping_data {
@@ -455,26 +463,33 @@ fn gen_utxo_update(
     let raw_txid = Txid::from_str(utxo_data.txid.as_str())?;
     let txid = raw_txid.into_address();
 
+    let mut address = BITCOIN_MOVE_ADDRESS;
+    let mut address_mapping_data = None;
+
     // reserve utxo by default bitcoin and rooch address
     let (address, address_mapping_data) = if SCRIPT_TYPE_P2MS.eq(utxo_data.script_type.as_str())
         || SCRIPT_TYPE_NON_STANDARD.eq(utxo_data.script_type.as_str())
     {
-        let _bitcoin_address = BitcoinAddress::default();
-        let address = BITCOIN_MOVE_ADDRESS;
-        (address, None)
+        (address, address_mapping_data)
     } else {
         if SCRIPT_TYPE_P2PK.eq(utxo_data.script_type.as_str()) {
-            let pubkey = PublicKey::from_str(utxo_data.script.as_str())?;
-            let pubkey_hash = pubkey.pubkey_hash();
-            let bitcoin_address = BitcoinAddress::new_p2pkh(&pubkey_hash);
-            utxo_data.address = bitcoin_address.to_string();
+            if let Ok(pubkey) = PublicKey::from_str(utxo_data.script.as_str()) {
+                let pubkey_hash = pubkey.pubkey_hash();
+                let bitcoin_address = BitcoinAddress::new_p2pkh(&pubkey_hash);
+                utxo_data.address = bitcoin_address.to_string();
+            }
         }
 
-        let bitcoin_address = BitcoinAddress::from_str(utxo_data.address.as_str())?;
-        let address = AccountAddress::from(bitcoin_address.to_rooch_address());
-        let address_mapping_data =
-            AddressMappingData::new(utxo_data.address, bitcoin_address, address);
-        (address, Some(address_mapping_data))
+        if let Ok(bitcoin_address) = BitcoinAddress::from_str(utxo_data.address.as_str()) {
+            address = AccountAddress::from(bitcoin_address.to_rooch_address());
+            address_mapping_data = Some(AddressMappingData::new(
+                utxo_data.address.clone(),
+                bitcoin_address,
+                address,
+            ));
+        }
+
+        (address, address_mapping_data)
     };
 
     let ids_in_seal = get_ord_by_outpoint(utxo_ord_map, OutPoint::new(raw_txid, utxo_data.vout));
