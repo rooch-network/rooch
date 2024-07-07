@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::{
-    AbilityView, AccountAddressView, IdentifierView, ModuleIdView, TypeTagView,
+    AbilityView, AccountAddressView, IdentifierView, ModuleIdView, StrView,
 };
 use anyhow::Result;
 use move_binary_format::{
@@ -20,55 +20,180 @@ use move_core_types::{
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::borrow::Borrow;
-use std::fmt::Debug;
+use std::fmt::{self, Debug};
+use std::{borrow::Borrow, str::FromStr};
 
-fn signature_token_to_struct_tag(
+#[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
+pub enum MoveABIType {
+    Bool,
+    U8,
+    U16,
+    U32,
+    U64,
+    U128,
+    U256,
+    Address,
+    Signer,
+    Vector(Box<MoveABIType>),
+    Struct(Box<MoveABIStructTag>),
+    /// A generic type param with index
+    GenericTypeParam {
+        index: u16,
+    },
+    /// A reference type
+    Reference {
+        mutable: bool,
+        to: Box<MoveABIType>,
+    },
+}
+
+impl std::fmt::Display for MoveABIType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MoveABIType::Bool => write!(f, "bool"),
+            MoveABIType::U8 => write!(f, "u8"),
+            MoveABIType::U16 => write!(f, "u16"),
+            MoveABIType::U32 => write!(f, "u32"),
+            MoveABIType::U64 => write!(f, "u64"),
+            MoveABIType::U128 => write!(f, "u128"),
+            MoveABIType::U256 => write!(f, "u256"),
+            MoveABIType::Address => write!(f, "address"),
+            MoveABIType::Signer => write!(f, "signer"),
+            MoveABIType::Vector(v) => write!(f, "vector<{}>", v),
+            MoveABIType::Struct(s) => write!(f, "{}", s),
+            MoveABIType::GenericTypeParam { index } => write!(f, "T{}", index),
+            MoveABIType::Reference { mutable, to } => {
+                if *mutable {
+                    write!(f, "&mut {}", to)
+                } else {
+                    write!(f, "&{}", to)
+                }
+            }
+        }
+    }
+}
+
+type MoveABITypeView = StrView<MoveABIType>;
+
+impl std::fmt::Display for MoveABITypeView {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for MoveABITypeView {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // TODO
+        unimplemented!("No scenario for deserializing MoveABITypeView")
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
+pub struct MoveABIStructTag {
+    pub address: AccountAddress,
+    pub module: Identifier,
+    pub name: Identifier,
+    /// Generic type parameters associated with the struct
+    pub type_params: Vec<MoveABIType>,
+}
+
+impl MoveABIStructTag {
+    pub fn new(
+        address: AccountAddress,
+        module: Identifier,
+        name: Identifier,
+        type_params: Vec<MoveABIType>,
+    ) -> Self {
+        Self {
+            address,
+            module,
+            name,
+            type_params,
+        }
+    }
+}
+
+impl fmt::Display for MoveABIStructTag {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}::{}::{}", self.address, self.module, self.name)?;
+        if let Some(first_ty) = self.type_params.first() {
+            write!(f, "<")?;
+            write!(f, "{}", first_ty)?;
+            for ty in self.type_params.iter().skip(1) {
+                write!(f, ", {}", ty)?;
+            }
+            write!(f, ">")?;
+        }
+        Ok(())
+    }
+}
+
+type MoveABIStructTagView = StrView<MoveABIStructTag>;
+
+impl std::fmt::Display for MoveABIStructTagView {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for MoveABIStructTagView {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // TODO
+        unimplemented!("No scenario for deserializing MoveABIStructTagView")
+    }
+}
+
+fn signature_token_to_abi_struct_tag(
     m: &CompiledModule,
     index: &StructHandleIndex,
     type_params: &[SignatureToken],
-) -> StructTag {
+) -> MoveABIStructTag {
     let s_handle = m.struct_handle_at(*index);
     let m_handle = m.module_handle_at(s_handle.module);
-    StructTag {
-        address: (*m.address_identifier_at(m_handle.address)).into(),
-        module: m.identifier_at(m_handle.name).to_owned().into(),
-        name: m.identifier_at(s_handle.name).to_owned().into(),
+    MoveABIStructTag {
+        address: (*m.address_identifier_at(m_handle.address)),
+        module: m.identifier_at(m_handle.name).to_owned(),
+        name: m.identifier_at(s_handle.name).to_owned(),
         type_params: type_params
             .iter()
-            .map(|t| signature_token_to_type_tag(m, t))
+            .map(|t| signature_token_to_abi_type(m, t))
             .collect(),
     }
 }
 
-fn signature_token_to_type_tag(m: &CompiledModule, token: &SignatureToken) -> TypeTag {
+fn signature_token_to_abi_type(m: &CompiledModule, token: &SignatureToken) -> MoveABIType {
     match token {
-        SignatureToken::Bool => TypeTag::Bool,
-        SignatureToken::U8 => TypeTag::U8,
-        SignatureToken::U16 => TypeTag::U16,
-        SignatureToken::U32 => TypeTag::U32,
-        SignatureToken::U64 => TypeTag::U64,
-        SignatureToken::U128 => TypeTag::U128,
-        SignatureToken::U256 => TypeTag::U256,
-        SignatureToken::Address => TypeTag::Address,
-        SignatureToken::Signer => TypeTag::Signer,
+        SignatureToken::Bool => MoveABIType::Bool,
+        SignatureToken::U8 => MoveABIType::U8,
+        SignatureToken::U16 => MoveABIType::U16,
+        SignatureToken::U32 => MoveABIType::U32,
+        SignatureToken::U64 => MoveABIType::U64,
+        SignatureToken::U128 => MoveABIType::U128,
+        SignatureToken::U256 => MoveABIType::U256,
+        SignatureToken::Address => MoveABIType::Address,
+        SignatureToken::Signer => MoveABIType::Signer,
         SignatureToken::Vector(t) => {
-            TypeTag::Vector(Box::new(signature_token_to_type_tag(m, t.borrow())))
+            MoveABIType::Vector(Box::new(signature_token_to_abi_type(m, t.borrow())))
         }
-        SignatureToken::Struct(v) => TypeTag::from(signature_token_to_struct_tag(&m, v, &[])),
-        SignatureToken::StructInstantiation(shi, type_params) => {
-            TypeTag::from(signature_token_to_struct_tag(m, shi, type_params))
+        SignatureToken::Struct(v) => {
+            MoveABIType::Struct(Box::new(signature_token_to_abi_struct_tag(&m, v, &[])))
         }
-        // SignatureToken::TypeParameter(i) => MoveType::GenericTypeParam { index: *i },
-        // SignatureToken::Reference(t) => MoveType::Reference {
-        //     mutable: false,
-        //     to: Box::new(self.new_move_type(t.borrow())),
-        // },
-        // SignatureToken::MutableReference(t) => MoveType::Reference {
-        //     mutable: true,
-        //     to: Box::new(self.new_move_type(t.borrow())),
-        // },
-        _ => todo!(),
+        SignatureToken::StructInstantiation(shi, type_params) => MoveABIType::Struct(Box::new(
+            signature_token_to_abi_struct_tag(&m, shi, type_params),
+        )),
+        SignatureToken::TypeParameter(i) => MoveABIType::GenericTypeParam { index: *i },
+        SignatureToken::Reference(t) => MoveABIType::Reference {
+            mutable: false,
+            to: Box::new(signature_token_to_abi_type(m, t.borrow())),
+        },
+        SignatureToken::MutableReference(t) => MoveABIType::Reference {
+            mutable: true,
+            to: Box::new(signature_token_to_abi_type(m, t.borrow())),
+        },
     }
 }
 
@@ -96,9 +221,9 @@ pub struct MoveFunctionView {
     /// Generic type params associated with the Move function
     pub type_params: Vec<MoveFunctionTypeParamView>,
     /// Parameters associated with the move function
-    pub params: Vec<TypeTagView>,
+    pub params: Vec<MoveABITypeView>,
     /// Return type of the function
-    pub return_: Vec<TypeTagView>,
+    pub return_: Vec<MoveABITypeView>,
 }
 
 impl MoveFunctionView {
@@ -117,13 +242,13 @@ impl MoveFunctionView {
                 .signature_at(fhandle.parameters)
                 .0
                 .iter()
-                .map(|s| TypeTagView::from(signature_token_to_type_tag(m, s)))
+                .map(|s| MoveABITypeView::from(signature_token_to_abi_type(m, s)))
                 .collect(),
             return_: m
                 .signature_at(fhandle.return_)
                 .0
                 .iter()
-                .map(|s| TypeTagView::from(signature_token_to_type_tag(m, s)))
+                .map(|s| MoveABITypeView::from(signature_token_to_abi_type(m, s)))
                 .collect(),
         }
     }
@@ -156,13 +281,13 @@ impl From<&StructTypeParameter> for MoveStructTypeParamView {
 pub struct MoveStructFieldView {
     pub name: IdentifierView,
     #[serde(rename = "type")]
-    pub ty: TypeTagView,
+    pub ty: MoveABITypeView,
 }
 
 fn new_move_struct_field_view(m: &CompiledModule, def: &FieldDefinition) -> MoveStructFieldView {
     MoveStructFieldView {
         name: m.identifier_at(def.name).to_owned().into(),
-        ty: signature_token_to_type_tag(m, &def.signature.0).into(),
+        ty: signature_token_to_abi_type(m, &def.signature.0).into(),
     }
 }
 
