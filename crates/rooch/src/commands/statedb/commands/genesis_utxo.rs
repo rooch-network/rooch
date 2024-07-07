@@ -22,6 +22,7 @@ use moveos_types::moveos_std::simple_multimap::{Element, SimpleMultiMap};
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{KeyState, MoveState, State};
 use redb::{Database, ReadOnlyTable};
+use rooch_common::fs::file_cache::FileCacheManager;
 use rooch_config::{RoochOpt, R_OPT_NET_HELP};
 use rooch_db::RoochDB;
 use rooch_types::address::BitcoinAddress;
@@ -399,6 +400,9 @@ pub fn produce_utxo_updates(
     batch_size: usize,
     utxo_ord_map_db: Option<Arc<Database>>,
 ) {
+    let file_cache_mgr = FileCacheManager::new(input.clone()).unwrap();
+    let mut cache_drop_offset: u64 = 0;
+
     let mut csv_reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
     let mut is_title_line = true;
     let mut address_mapping_checker = HashMap::new();
@@ -410,12 +414,15 @@ pub fn produce_utxo_updates(
         }
     };
     loop {
+        let mut bytes_read = 0;
+
         let mut updates = BatchUpdates {
             utxo_updates: UpdateSet::new(),
             rooch_to_bitcoin_mapping_updates: UpdateSet::new(),
         };
         for line in csv_reader.by_ref().lines().take(batch_size) {
             let line = line.unwrap();
+            bytes_read += line.len() as u64 + 1; // Add line.len() + 1, assuming that the line terminator is '\n'
 
             if is_title_line {
                 is_title_line = false;
@@ -447,6 +454,8 @@ pub fn produce_utxo_updates(
                 }
             }
         }
+        let _ = file_cache_mgr.drop_cache_range(cache_drop_offset, bytes_read);
+        cache_drop_offset += bytes_read;
         if updates.utxo_updates.is_empty() {
             break;
         }
