@@ -466,12 +466,12 @@ fn produce_ord_updates(tx: SyncSender<BatchUpdatesOrd>, input: PathBuf, batch_si
 
         for line in reader.by_ref().lines().take(batch_size) {
             let line = line.unwrap();
+            bytes_read += line.len() as u64 + 1; // Add line.len() + 1, assuming that the line terminator is '\n'
 
             if is_title_line {
                 is_title_line = false;
                 if line.starts_with("# export at") {
                     // skip block height info
-                    bytes_read += line.len() as u64 + 1; // Add line.len() + 1, assuming that the line terminator is '\n'
                     continue;
                 }
             }
@@ -488,7 +488,6 @@ fn produce_ord_updates(tx: SyncSender<BatchUpdatesOrd>, input: PathBuf, batch_si
             let (key2, state2) = gen_inscription_ids_update(index, inscription_id);
             updates.inscription_ids_updates.put(key2, state2);
             index += 1;
-            bytes_read += line.len() as u64 + 1;
         }
         let _ = file_cache_mgr.drop_cache_range(cache_drop_offset, bytes_read);
         cache_drop_offset += bytes_read;
