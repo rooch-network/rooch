@@ -13,11 +13,7 @@ use move_binary_format::{
         Visibility,
     },
 };
-use move_core_types::{
-    account_address::AccountAddress,
-    identifier::Identifier,
-    language_storage::{StructTag, TypeTag},
-};
+use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Debug};
@@ -84,7 +80,7 @@ impl std::fmt::Display for MoveABITypeView {
 impl FromStr for MoveABITypeView {
     type Err = anyhow::Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(_s: &str) -> Result<Self, Self::Err> {
         // TODO
         unimplemented!("No scenario for deserializing MoveABITypeView")
     }
@@ -141,7 +137,7 @@ impl std::fmt::Display for MoveABIStructTagView {
 impl FromStr for MoveABIStructTagView {
     type Err = anyhow::Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(_s: &str) -> Result<Self, Self::Err> {
         // TODO
         unimplemented!("No scenario for deserializing MoveABIStructTagView")
     }
@@ -180,10 +176,10 @@ fn signature_token_to_abi_type(m: &CompiledModule, token: &SignatureToken) -> Mo
             MoveABIType::Vector(Box::new(signature_token_to_abi_type(m, t.borrow())))
         }
         SignatureToken::Struct(v) => {
-            MoveABIType::Struct(Box::new(signature_token_to_abi_struct_tag(&m, v, &[])))
+            MoveABIType::Struct(Box::new(signature_token_to_abi_struct_tag(m, v, &[])))
         }
         SignatureToken::StructInstantiation(shi, type_params) => MoveABIType::Struct(Box::new(
-            signature_token_to_abi_struct_tag(&m, shi, type_params),
+            signature_token_to_abi_struct_tag(m, shi, type_params),
         )),
         SignatureToken::TypeParameter(i) => MoveABIType::GenericTypeParam { index: *i },
         SignatureToken::Reference(t) => MoveABIType::Reference {
@@ -369,7 +365,7 @@ impl From<CompiledModule> for ModuleABIView {
             friends: m
                 .immediate_friends()
                 .into_iter()
-                .map(|m| ModuleIdView::from(m))
+                .map(ModuleIdView::from)
                 .collect(),
             functions: m
                 .function_defs
