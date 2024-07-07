@@ -180,7 +180,7 @@ pub fn construct_dynamic_field_struct_tag(name_tag: TypeTag, value_tag: TypeTag)
 mod tests {
     use super::*;
     use crate::{move_std::string::MoveString, state::MoveType};
-    use move_core_types::account_address::AccountAddress;
+    use move_core_types::{account_address::AccountAddress, value::MoveTypeLayout};
 
     #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
     struct TestStruct {

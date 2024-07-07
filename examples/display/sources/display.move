@@ -29,6 +29,9 @@ module display::display{
     fun init(){
         // Template syntax
 
+        //TODO after https://github.com/rooch-network/rooch/pull/2066
+        // The object meta fields is not in MoveStruct, how to display them?
+        
         // - `{var_name}`, no space between `{` with `var_name` and `var_name` with `}`.
         // - There are two types of template: 
         //     - for object meta fields. Availabel fields: {id}, {owner}, {flag}, {state_root}, {size}
@@ -37,10 +40,10 @@ module display::display{
         //       so you can use templates: {value.name}, {value.creator}, {value.description} respectively.
         // - Supported type for object instance fields: primitive types, `0x1::string::String`, `0x2::ObjectID`. Other custom Move structs are not supported.      
         let display_obj = display::object_display<ObjectType>(); 
-        display::set_value(display_obj, string::utf8(b"name"), string::utf8(b"{value.name}"));
+        display::set_value(display_obj, string::utf8(b"name"), string::utf8(b"{name}"));
         display::set_value(display_obj, string::utf8(b"uri"), string::utf8(b"https:://{owner}/{id}"));
-        display::set_value(display_obj, string::utf8(b"description"), string::utf8(b"{value.description}"));
-        display::set_value(display_obj, string::utf8(b"creator"), string::utf8(b"{value.creator}"));
+        display::set_value(display_obj, string::utf8(b"description"), string::utf8(b"{description}"));
+        display::set_value(display_obj, string::utf8(b"creator"), string::utf8(b"{creator}"));
 
         // For resource display templates:
         // - there are no object meta fields. {id}, {owner}, {flag}, {state_root}, {size} are not available.
