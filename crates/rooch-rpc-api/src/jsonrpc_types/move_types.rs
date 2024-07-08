@@ -378,7 +378,7 @@ impl From<MoveAction> for MoveActionTypeView {
 
 impl std::fmt::Display for StrView<ModuleId> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", &self.0)
+        write!(f, "{}", &self.0.short_str_lossless())
     }
 }
 

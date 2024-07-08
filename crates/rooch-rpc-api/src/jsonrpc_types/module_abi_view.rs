@@ -113,7 +113,13 @@ impl MoveABIStructTag {
 
 impl fmt::Display for MoveABIStructTag {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}::{}::{}", self.address, self.module, self.name)?;
+        write!(
+            f,
+            "0x{}::{}::{}",
+            self.address.short_str_lossless(),
+            self.module,
+            self.name
+        )?;
         if let Some(first_ty) = self.type_params.first() {
             write!(f, "<")?;
             write!(f, "{}", first_ty)?;
@@ -219,6 +225,7 @@ pub struct MoveFunctionView {
     /// Parameters associated with the move function
     pub params: Vec<MoveABITypeView>,
     /// Return type of the function
+    #[serde(rename = "return")]
     pub return_: Vec<MoveABITypeView>,
 }
 
