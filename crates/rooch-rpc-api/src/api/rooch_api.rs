@@ -9,8 +9,8 @@ use crate::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
     EventPageView, ExecuteTransactionResponseView, FieldKeyView, FunctionCallView, H256View,
     IndexerEventPageView, IndexerObjectStatePageView, ModuleABIView, ObjectIDVecView, ObjectIDView,
-    ObjectStateFilterView, ObjectStateView, QueryOptions, StateOptions, StatePageView, StrView,
-    StructTagView, TransactionWithInfoPageView, TxOptions,
+    ObjectStateFilterView, ObjectStateView, QueryOptions, RoochAddressView, StateOptions,
+    StatePageView, StrView, StructTagView, TransactionWithInfoPageView, TxOptions,
 };
 use crate::RpcResult;
 use jsonrpsee::proc_macros::rpc;

@@ -11,6 +11,7 @@ use move_core_types::{
 use moveos_types::{
     access_path::AccessPath,
     h256::H256,
+    move_std::string::MoveString,
     moveos_std::{
         display::{get_object_display_id, get_resource_display_id, RawDisplay},
         move_module::MoveModule,
@@ -24,9 +25,10 @@ use rooch_rpc_api::jsonrpc_types::{
     transaction_view::{TransactionFilterView, TransactionWithInfoView},
     AccessPathView, AnnotatedMoveStructView, BalanceInfoPageView, DisplayFieldsView, EventOptions,
     EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
-    IndexerEventPageView, IndexerObjectStatePageView, IndexerObjectStateView, ObjectIDVecView,
-    ObjectStateFilterView, ObjectStateView, QueryOptions, RoochOrBitcoinAddressView, StateKVView,
-    StateOptions, StatePageView, StrView, StructTagView, TransactionWithInfoPageView, TxOptions,
+    IndexerEventPageView, IndexerObjectStatePageView, IndexerObjectStateView, ModuleABIView,
+    ObjectIDVecView, ObjectStateFilterView, ObjectStateView, QueryOptions, RoochAddressView,
+    RoochOrBitcoinAddressView, StateKVView, StateOptions, StatePageView, StrView, StructTagView,
+    TransactionWithInfoPageView, TxOptions,
 };
 use rooch_rpc_api::{
     api::rooch_api::RoochAPIServer,
@@ -639,7 +641,7 @@ impl RoochAPIServer for RoochServer {
 
         Ok(match module {
             Some(m) => {
-                let move_module = m.cast::<MoveModule>()?;
+                let move_module = m.value_as_df::<MoveString, MoveModule>()?.value;
                 Some(ModuleABIView::try_parse_from_module_bytes(
                     &move_module.byte_codes,
                 )?)
