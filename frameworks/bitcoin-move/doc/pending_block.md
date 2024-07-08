@@ -7,14 +7,12 @@ PendingStore is used to store the pending blocks and txs, and handle the reorg
 
 
 -  [Resource `PendingBlock`](#0x4_pending_block_PendingBlock)
--  [Struct `PendingBlockID`](#0x4_pending_block_PendingBlockID)
 -  [Resource `PendingStore`](#0x4_pending_block_PendingStore)
 -  [Struct `InprocessBlock`](#0x4_pending_block_InprocessBlock)
 -  [Struct `ReorgEvent`](#0x4_pending_block_ReorgEvent)
 -  [Struct `PendingTxs`](#0x4_pending_block_PendingTxs)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_pending_block_genesis_init)
--  [Function `new_pending_block_id`](#0x4_pending_block_new_pending_block_id)
 -  [Function `add_pending_block`](#0x4_pending_block_add_pending_block)
 -  [Function `process_pending_tx`](#0x4_pending_block_process_pending_tx)
 -  [Function `finish_pending_tx`](#0x4_pending_block_finish_pending_tx)
@@ -49,17 +47,6 @@ PendingStore is used to store the pending blocks and txs, and handle the reorg
 
 
 <pre><code><b>struct</b> <a href="pending_block.md#0x4_pending_block_PendingBlock">PendingBlock</a> <b>has</b> key
-</code></pre>
-
-
-
-<a name="0x4_pending_block_PendingBlockID"></a>
-
-## Struct `PendingBlockID`
-
-
-
-<pre><code><b>struct</b> <a href="pending_block.md#0x4_pending_block_PendingBlockID">PendingBlockID</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -203,17 +190,6 @@ This is a hot potato struct, can not be store and drop
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_genesis_init">genesis_init</a>(reorg_block_count: u64)
-</code></pre>
-
-
-
-<a name="0x4_pending_block_new_pending_block_id"></a>
-
-## Function `new_pending_block_id`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_new_pending_block_id">new_pending_block_id</a>(block_hash: <b>address</b>): <a href="pending_block.md#0x4_pending_block_PendingBlockID">pending_block::PendingBlockID</a>
 </code></pre>
 
 
