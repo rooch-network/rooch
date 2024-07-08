@@ -24,13 +24,13 @@ impl AccountKeystore for InMemKeystore {
         self.keystore.get_accounts(password)
     }
 
-    fn add_address_encryption_data(
+    fn add_address_encryption_data_to_keys(
         &mut self,
         address: RoochAddress,
         encryption: EncryptionData,
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .add_address_encryption_data(address, encryption)
+            .add_address_encryption_data_to_keys(address, encryption)
     }
 
     fn get_key_pair(
@@ -142,6 +142,10 @@ impl AccountKeystore for InMemKeystore {
 
     fn init_mnemonic_data(&mut self, mnemonic_data: MnemonicData) -> Result<(), anyhow::Error> {
         self.keystore.init_mnemonic_data(mnemonic_data)
+    }
+
+    fn add_addresses_to_mnemonic_data(&mut self, address: RoochAddress, mnemonic_data: &mut MnemonicData) -> Result<(), anyhow::Error> {
+        self.keystore.add_addresses_to_mnemonic_data(address, mnemonic_data)
     }
 }
 
