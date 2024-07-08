@@ -203,7 +203,7 @@ module bitcoin_move::ord {
 
     public fun derive_inscription_id(inscription_id: InscriptionID) : ObjectID {
         let parent_id = object::named_object_id<InscriptionStore>();
-        object::custom_child_object_id<InscriptionID, Inscription>(parent_id, inscription_id)
+        object::custom_child_object_id(parent_id, inscription_id)
     }
 
     /// Prase InscriptionID from String
@@ -342,7 +342,8 @@ module bitcoin_move::ord {
         let seals_len = vector::length(&seals);
         while(j < seals_len){
             let seal_object_id = *vector::borrow(&mut seals, j);
-            let (origin_owner, inscription_obj) = object::take_object_extend<Inscription>(seal_object_id);
+            let inscription_obj = object::take_object_extend<Inscription>(seal_object_id);
+            let origin_owner = object::owner(&inscription_obj);
             let inscription = object::borrow_mut(&mut inscription_obj);
             
 
@@ -384,7 +385,7 @@ module bitcoin_move::ord {
         let flotsams_len = vector::length(&flotsams);
         while(j < flotsams_len){
             let flotsam = *vector::borrow(&mut flotsams, j);
-            let (_origin_owner, inscription_obj) = object::take_object_extend<Inscription>(flotsam.object_id);
+            let inscription_obj = object::take_object_extend<Inscription>(flotsam.object_id);
             let inscription = object::borrow_mut(&mut inscription_obj);
 
             let new_sat_point = match_coinbase_and_generate_sat_point(j, tx, flotsams, block_height);

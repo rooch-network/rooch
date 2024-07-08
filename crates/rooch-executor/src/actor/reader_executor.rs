@@ -3,8 +3,7 @@
 
 use super::messages::{
     AnnotatedStatesMessage, ExecuteViewFunctionMessage, GetAnnotatedEventsByEventHandleMessage,
-    GetAnnotatedStatesByStateMessage, GetEventsByEventHandleMessage, RefreshStateMessage,
-    StatesMessage,
+    GetEventsByEventHandleMessage, RefreshStateMessage, StatesMessage,
 };
 use crate::actor::messages::{
     GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage,
@@ -22,8 +21,7 @@ use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::moveos_std::event::EventHandle;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event};
-use moveos_types::moveos_std::object::RootObjectEntity;
-use moveos_types::state::{AnnotatedState, State};
+use moveos_types::state::{AnnotatedState, ObjectState};
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::state_resolver::{AnnotatedStateKV, AnnotatedStateReader, StateKV, StateReader};
 use moveos_types::transaction::TransactionExecutionInfo;
@@ -32,7 +30,7 @@ use rooch_store::RoochStore;
 use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
 
 pub struct ReaderExecutorActor {
-    root: RootObjectEntity,
+    root: ObjectState,
     moveos: MoveOS,
     moveos_store: MoveOSStore,
     rooch_store: RoochStore,
@@ -40,7 +38,7 @@ pub struct ReaderExecutorActor {
 
 impl ReaderExecutorActor {
     pub fn new(
-        root: RootObjectEntity,
+        root: ObjectState,
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
     ) -> Result<Self> {
@@ -70,7 +68,7 @@ impl ReaderExecutorActor {
         &self.moveos
     }
 
-    pub fn refresh_state(&mut self, root: RootObjectEntity, is_upgrade: bool) -> Result<()> {
+    pub fn refresh_state(&mut self, root: ObjectState, is_upgrade: bool) -> Result<()> {
         self.root = root;
         self.moveos.flush_module_cache(is_upgrade)
     }
@@ -116,7 +114,7 @@ impl Handler<StatesMessage> for ReaderExecutorActor {
         &mut self,
         msg: StatesMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Vec<Option<State>>, anyhow::Error> {
+    ) -> Result<Vec<Option<ObjectState>>, anyhow::Error> {
         let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
         resolver.get_states(msg.access_path)
     }
@@ -250,27 +248,6 @@ impl Handler<GetTxExecutionInfosByHashMessage> for ReaderExecutorActor {
         self.moveos
             .transaction_store()
             .multi_get_tx_execution_infos(tx_hashes)
-    }
-}
-
-#[async_trait]
-impl Handler<GetAnnotatedStatesByStateMessage> for ReaderExecutorActor {
-    async fn handle(
-        &mut self,
-        msg: GetAnnotatedStatesByStateMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<Vec<AnnotatedState>> {
-        let GetAnnotatedStatesByStateMessage { states } = msg;
-        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
-
-        states
-            .into_iter()
-            .map(|state| {
-                let annotate_state = MoveValueAnnotator::new(&resolver)
-                    .view_value(&state.value_type, &state.value)?;
-                Ok(AnnotatedState::new(state, annotate_state))
-            })
-            .collect::<Result<Vec<_>>>()
     }
 }
 

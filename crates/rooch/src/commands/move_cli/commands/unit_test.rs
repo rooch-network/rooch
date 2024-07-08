@@ -127,7 +127,7 @@ static MOVEOSSTORE: Lazy<(MoveOSStore, DataDirPath)> =
 
 static RESOLVER: Lazy<Box<RootObjectResolver<MoveOSStore>>> = Lazy::new(|| {
     Box::new(RootObjectResolver::new(
-        RootObjectEntity::genesis_root_object(),
+        RootObjectEntity::genesis_root_object().into_state(),
         &MOVEOSSTORE.0,
     ))
 });
@@ -137,7 +137,7 @@ fn new_moveos_natives_runtime(ext: &mut NativeContextExtensions) {
     let resolver = Lazy::force(&RESOLVER).as_ref();
     let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(
         TxContext::random_for_testing_only(),
-        RootObjectEntity::genesis_root_object(),
+        RootObjectEntity::genesis_root_object().into_state(),
     )));
     let table_ext = ObjectRuntimeContext::new(resolver, object_runtime);
     let module_ext = NativeModuleContext::new(resolver);

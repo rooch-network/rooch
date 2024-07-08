@@ -1,24 +1,22 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { SupportChain, SupportChains } from '../feature/index.js'
-import { UniSatWallet, Wallet } from '../wellet/index.js'
+import { SupportChain } from '../feature/index.js'
+import {
+  Wallet,
+  UniSatWallet,
+  OkxWallet,
+  OnekeyWallet,
+  // OnekeyHardwareWallet,
+} from '../wellet/index.js'
 
 export async function checkWallets(filter?: SupportChain) {
-  const wallets: Wallet[] = []
-  SupportChains.filter((v) => !filter || filter === v).forEach((w) => {
-    switch (w) {
-      case SupportChain.BITCOIN:
-        wallets.push(new UniSatWallet(false))
-    }
-  })
+  const wallets: Wallet[] = [
+    new UniSatWallet(),
+    new OkxWallet(),
+    new OnekeyWallet(),
+    // new OnekeyHardwareWallet(),
+  ].filter((wallet) => wallet.getChain() === filter || !filter)
 
-  return await Promise.all(
-    wallets.map(async (w) => {
-      if (await w.checkInstalled()) {
-        return new UniSatWallet(true)
-      }
-      return w
-    }),
-  )
+  return await Promise.all(wallets.filter(async (w) => await w.checkInstalled()))
 }

@@ -15,7 +15,7 @@ use anyhow::{Error, Result};
 use chrono::{DateTime, Local};
 use clap::Parser;
 
-use moveos_types::state::State;
+use moveos_types::state::ObjectState;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_indexer::indexer_reader::IndexerReader;
 use rooch_indexer::store::traits::IndexerStoreTrait;
@@ -127,21 +127,20 @@ fn produce_updates(
             }
 
             let (_c1, c2) = parse_state_data_from_csv_line(&line)?;
-            let state = State::from_str(&c2)?;
+            let state = ObjectState::from_str(&c2)?;
 
             let state_type = last_state_type
                 .clone()
                 .expect("Last state type should have value");
 
             if state_type.eq(GLOBAL_STATE_TYPE_OBJECT) || state_type.eq(GLOBAL_STATE_TYPE_ROOT) {
-                let raw_object = state.as_raw_object()?;
-                let state = IndexerObjectState::try_new_from_state(
+                let indexer_state = IndexerObjectState::new_from_object_state(
+                    state,
                     tx_order,
                     state_index_generator,
-                    raw_object,
-                )?;
+                );
                 state_index_generator += 1;
-                updates.object_states.push(state);
+                updates.object_states.push(indexer_state);
             };
         }
         if updates.object_states.is_empty() {

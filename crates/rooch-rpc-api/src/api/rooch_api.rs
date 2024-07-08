@@ -7,14 +7,14 @@ use crate::jsonrpc_types::event_view::EventFilterView;
 use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionWithInfoView};
 use crate::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
-    EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
-    IndexerEventPageView, IndexerObjectStatePageView, KeyStateHexView, ObjectIDVecView,
-    ObjectIDView, ObjectStateFilterView, ObjectStateView, QueryOptions, StateOptions,
-    StatePageView, StateView, StrView, StructTagView, TransactionWithInfoPageView, TxOptions,
+    EventPageView, ExecuteTransactionResponseView, FieldKeyView, FunctionCallView, H256View,
+    IndexerEventPageView, IndexerObjectStatePageView, ObjectIDVecView, ObjectIDView,
+    ObjectStateFilterView, ObjectStateView, QueryOptions, StateOptions, StatePageView, StrView,
+    StructTagView, TransactionWithInfoPageView, TxOptions,
 };
 use crate::RpcResult;
 use jsonrpsee::proc_macros::rpc;
-use moveos_types::{access_path::AccessPath, state::KeyState};
+use moveos_types::{access_path::AccessPath, state::FieldKey};
 use rooch_open_rpc_macros::open_rpc;
 use rooch_types::indexer::event::IndexerEventID;
 use rooch_types::indexer::state::IndexerStateID;
@@ -55,7 +55,7 @@ pub trait RoochAPI {
         &self,
         access_path: AccessPathView,
         state_option: Option<StateOptions>,
-    ) -> RpcResult<Vec<Option<StateView>>>;
+    ) -> RpcResult<Vec<Option<ObjectStateView>>>;
 
     /// List the states by access_path
     /// If the StateOptions.decode is true, the state is decoded and the decoded value is returned in the response.
@@ -81,10 +81,10 @@ pub trait RoochAPI {
     async fn get_field_states(
         &self,
         object_id: ObjectIDView,
-        field_key: Vec<KeyStateHexView>,
+        field_key: Vec<FieldKeyView>,
         state_option: Option<StateOptions>,
-    ) -> RpcResult<Vec<Option<StateView>>> {
-        let key_states = field_key.into_iter().map(KeyState::from).collect();
+    ) -> RpcResult<Vec<Option<ObjectStateView>>> {
+        let key_states = field_key.into_iter().map(FieldKey::from).collect();
         let access_path_view =
             AccessPathView::from(AccessPath::fields(object_id.into(), key_states));
         self.get_states(access_path_view, state_option).await

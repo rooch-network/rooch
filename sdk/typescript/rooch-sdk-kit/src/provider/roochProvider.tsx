@@ -17,6 +17,7 @@ export const RoochContext = createContext<SessionStore | null>(null)
 export type RoochProviderProps<T extends NetworkConfigs> = {
   networks?: NetworkConfigs
   onNetworkChange?: (network: keyof T & string) => void
+
   children: ReactNode
 } & (
   | {

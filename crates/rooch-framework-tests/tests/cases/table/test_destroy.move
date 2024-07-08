@@ -77,6 +77,9 @@ script {
     }
 }
 
+//view the account object
+// view_object --object-id 0x42
+
 // check contains
 //# run --signers test
 script {

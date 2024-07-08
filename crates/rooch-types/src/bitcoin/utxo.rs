@@ -87,7 +87,7 @@ impl UTXO {
 }
 
 pub fn derive_utxo_id(outpoint: &types::OutPoint) -> ObjectID {
-    object::custom_child_object_id(BitcoinUTXOStore::object_id(), outpoint, &UTXO::struct_tag())
+    object::custom_child_object_id(BitcoinUTXOStore::object_id(), outpoint)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -187,7 +187,7 @@ mod tests {
         assert_eq!(
             object_id,
             ObjectID::from_bytes(
-                hex::decode("02826a5e56581ba5ab84c39976f27cf3578cf524308b4ffc123922dfff507e514db8fc937bf3c15abe49c95fa6906aff29087149f542b48db0cf25dce671a68a63").unwrap()
+                hex::decode("02826a5e56581ba5ab84c39976f27cf3578cf524308b4ffc123922dfff507e514d97a26b8e893eb4345b18fb4c396f4341c44f1ba04b417b8c50a83a579a5a833c").unwrap()
             )
             .unwrap()
         );

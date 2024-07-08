@@ -148,7 +148,8 @@ where
     /// Re spawn a new session with the same context.
     pub fn respawn(self, env: SimpleMap<MoveString, Any>) -> Self {
         let new_ctx = self.object_runtime.read().tx_context().spawn(env);
-        let root = self.object_runtime.read().root();
+        // We get the root object from the remote, because the root object may be changed during the transaction execution
+        let root = self.remote.root_object().clone();
         let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(new_ctx, root)));
         Self {
             session: Self::new_inner_session(self.vm, self.remote, object_runtime.clone()),

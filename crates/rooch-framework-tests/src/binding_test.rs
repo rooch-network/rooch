@@ -8,8 +8,9 @@ use moveos_config::DataDirPath;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
-use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
+use moveos_types::moveos_std::object::ObjectEntity;
 use moveos_types::moveos_std::tx_context::TxContext;
+use moveos_types::state::ObjectState;
 use moveos_types::state_resolver::{RootObjectResolver, StateReaderExt};
 use moveos_types::transaction::{FunctionCall, VerifiedMoveOSTransaction};
 use rooch_config::RoochOpt;
@@ -46,7 +47,7 @@ pub struct RustBindingTest {
     kp: RoochKeyPair,
     pub executor: ExecutorActor,
     pub reader_executor: ReaderExecutorActor,
-    root: RootObjectEntity,
+    root: ObjectState,
     moveos_store: MoveOSStore,
 }
 
@@ -105,7 +106,7 @@ impl RustBindingTest {
         RootObjectResolver::new(self.root.clone(), &self.moveos_store)
     }
 
-    pub fn root(&self) -> &RootObjectEntity {
+    pub fn root(&self) -> &ObjectState {
         &self.root
     }
 
@@ -186,7 +187,8 @@ impl RustBindingTest {
         let root = ObjectEntity::root_object(
             result.transaction_info.state_root,
             result.transaction_info.size,
-        );
+        )
+        .into_state();
         self.reader_executor.refresh_state(root.clone(), false)?;
         self.root = root;
         Ok(result)

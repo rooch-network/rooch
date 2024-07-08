@@ -10,7 +10,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_store::MoveOSStore;
-use moveos_types::moveos_std::object::RootObjectEntity;
+use moveos_types::state::ObjectState;
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::MoveAction;
 use rooch_types::indexer::event::IndexerEvent;
@@ -18,14 +18,14 @@ use rooch_types::indexer::state::{handle_object_change, IndexerObjectStateChange
 use rooch_types::indexer::transaction::IndexerTransaction;
 
 pub struct IndexerActor {
-    root: RootObjectEntity,
+    root: ObjectState,
     indexer_store: IndexerStore,
     moveos_store: MoveOSStore,
 }
 
 impl IndexerActor {
     pub fn new(
-        root: RootObjectEntity,
+        root: ObjectState,
         indexer_store: IndexerStore,
         moveos_store: MoveOSStore,
     ) -> Result<Self> {
@@ -84,12 +84,11 @@ impl Handler<UpdateIndexerMessage> for IndexerActor {
         let mut state_index_generator = 0u64;
         let mut indexer_object_state_changes = IndexerObjectStateChanges::default();
 
-        for (object_id, object_change) in state_change_set.changes {
+        for (_feild_key, object_change) in state_change_set.changes {
             state_index_generator = handle_object_change(
                 state_index_generator,
                 tx_order,
                 &mut indexer_object_state_changes,
-                object_id,
                 object_change,
                 &resolver,
             )?;
@@ -118,12 +117,11 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
         let mut indexer_object_state_changes = IndexerObjectStateChanges::default();
 
         let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
-        for (object_id, object_change) in state_change_set.changes {
+        for (_field_key, object_change) in state_change_set.changes {
             state_index_generator = handle_object_change(
                 state_index_generator,
                 tx_order,
                 &mut indexer_object_state_changes,
-                object_id,
                 object_change,
                 &resolver,
             )?;

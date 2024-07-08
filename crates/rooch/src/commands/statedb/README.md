@@ -99,13 +99,12 @@ rooch statedb genesis-utxo --input <utxo_src_path> -d <rooch_datadir> -n main --
 **genesis-ord**:
 
 ```shell
-rooch statedb genesis-ord --utxo-source <utxo_src_path> --ord-source <ord_src_path> -d <rooch_datadir> -n main --tmp-dir <tmp_dir> --utxo-batch-size <utxo_batch_size> --ord-batch-size <ord_batch_size>
+rooch statedb genesis-ord --utxo-source <utxo_src_path> --ord-source <ord_src_path> -d <rooch_datadir> -n main --utxo-ord-map <db_dir> --utxo-batch-size <utxo_batch_size> --ord-batch-size <ord_batch_size>
 ```
 
 ***tips***:
 
-> - `--tmp-dir` is optional, default is under `tmpfs`. Specify it if space is limited(in production env, we always need
-    to set it to a disk path).
+> - `--utxo-ord-map` is redb database file path. We could reuse it in `genesis-utxo` command.
 > - `--batch-size`/`--utxo-batch-size` is optional, default is 2M. Set it smaller if memory is limited.
 > - `--ord-batch-size` is optional, default is 1M. Set it smaller if memory is limited.
 

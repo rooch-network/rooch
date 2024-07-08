@@ -14,11 +14,15 @@ import {
   useCurrentNetwork,
 } from '../hooks/index.js'
 import { useSessionStore } from '../hooks/useSessionsStore.js'
-import { getDefaultStorage, StorageType } from '../utils/index.js'
-import { SupportChain } from '../feature/index.js'
-import { getWallets } from '../wellet/util.js'
+import { getDefaultStorage, StorageType, checkWallets } from '../utils/index.js'
+import { SupportChain, SupportWallet } from '../feature/index.js'
+import { getRegisteredWallets } from '../wellet/util.js'
+import { getWallets } from '../wellet/wallets.js'
+import { useWalletChanged } from '../hooks/index.js'
 
 type WalletProviderProps = {
+  preferredWallets?: SupportWallet[]
+
   chain?: SupportChain
 
   /** Enables automatically reconnecting to the most recently used wallet account upon mounting. */
@@ -38,7 +42,8 @@ const DEFAULT_STORAGE_KEY = 'rooch-sdk-kit:wallet-connect-info'
 export const WalletContext = createContext<WalletStore | null>(null)
 
 export function WalletProvider({
-  chain = SupportChain.BITCOIN,
+  preferredWallets = ['unisat', 'okx'],
+  chain = 'bitcoin',
   storage,
   storageKey = DEFAULT_STORAGE_KEY,
   autoConnect = false,
@@ -49,24 +54,39 @@ export function WalletProvider({
   const storeRef = useRef(
     createWalletStore({
       chain,
-      wallets: getWallets(),
+      wallets: getRegisteredWallets(preferredWallets, (w) => w.getChain() === chain),
       currentWallet: undefined,
       autoConnectEnabled: autoConnect,
       storage: storage || getDefaultStorage(StorageType.Local),
       storageKey: storageKey + network + chain?.toString(),
     }),
   )
+
+  useEffect(() => {
+    const fetchWallet = async () => {
+      const wallets = await checkWallets(chain)
+      getWallets().register(...wallets)
+    }
+
+    fetchWallet()
+  }, [chain])
+
   return (
     <WalletContext.Provider value={storeRef.current}>
-      <WalletConnectionManager>{children}</WalletConnectionManager>
+      <WalletConnectionManager preferredWallets={preferredWallets} chain={chain}>
+        {children}
+      </WalletConnectionManager>
     </WalletContext.Provider>
   )
 }
 
-type WalletConnectionManagerProps = Required<Pick<WalletProviderProps, 'children'>>
+type WalletConnectionManagerProps = Required<
+  Pick<WalletProviderProps, 'children' | 'preferredWallets' | 'chain'>
+>
 
-function WalletConnectionManager({ children }: WalletConnectionManagerProps) {
+function WalletConnectionManager({ children, preferredWallets }: WalletConnectionManagerProps) {
   useAutoConnectWallet()
+  useWalletChanged(preferredWallets)
 
   const connectionStatus = useWalletStore((store) => store.connectionStatus)
   const currentWallet = useWalletStore((store) => store.currentWallet)
@@ -122,15 +142,5 @@ function WalletConnectionManager({ children }: WalletConnectionManagerProps) {
     }
   }, [accountsChangedHandler, connectionStatus, currentWallet])
 
-  // handle session
-  // useEffect(() => {
-  //   const cur = sessions.find(
-  //     (item: Session) =>
-  //       item.getRoochAddress().toStr() === currentAddress?.genRoochAddress().toStr(),
-  //   )
-  //   if (cur && cur.getAuthKey() !== curSession?.getAuthKey()) {
-  //     setCurrentSession(cur)
-  //   }
-  // }, [sessions, currentAddress, curSession, setCurrentSession])
   return children
 }

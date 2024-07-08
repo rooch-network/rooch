@@ -3,3 +3,4 @@
 
 export * from './roochProvider.js'
 export * from './walletProvider.js'
+export type { NetworkConfigs } from './clientProvider.js'

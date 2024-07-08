@@ -211,7 +211,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     info!(
         "The latest Root object state root: {:?}, size: {}",
         root.state_root(),
-        root.size
+        root.size()
     );
 
     let executor_actor =
@@ -352,6 +352,13 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     ))?;
     rpc_module_builder
         .register_module(BtcServer::new(rpc_service.clone(), aggregate_service.clone()).await?)?;
+    rpc_module_builder
+        .module
+        .register_method("rpc.discover", move |_, _, _| {
+            Ok::<rooch_open_rpc::Project, RpcError>(
+                rooch_open_rpc_spec_builder::build_rooch_rpc_spec(),
+            )
+        })?;
 
     // let rpc_api = build_rpc_api(rpc_api);
     let methods_names = rpc_module_builder.module.method_names().collect::<Vec<_>>();

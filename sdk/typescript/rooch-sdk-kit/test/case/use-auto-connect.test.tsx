@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { renderHook, waitFor } from '@testing-library/react'
+import { renderHook, waitFor, act } from '@testing-library/react'
 import { createWalletProviderContextWrapper, registerMockWallet } from '../utils.js'
 import { useAutoConnectWallet, useConnectWallet, useCurrentWallet } from '../../src/index.js'
 
@@ -18,17 +18,21 @@ describe('useAutoConnectWallet', () => {
   test('returns "disabled" when the auto-connect functionality is disabled', async () => {
     const wrapper = createWalletProviderContextWrapper()
     const { result } = renderHook(() => useAutoConnectWallet(), { wrapper })
-    expect(result.current).toBe('disabled')
+    await waitFor(() => {
+      expect(result.current).toBe('disabled')
+    })
   })
 
   test(`returns "attempted" immediately when there is no last connected wallet`, async () => {
     const wrapper = createWalletProviderContextWrapper({ autoConnect: true })
     const { result } = renderHook(() => useAutoConnectWallet(), { wrapper })
-    expect(result.current).toBe('attempted')
+    await waitFor(() => {
+      expect(result.current).toBe('attempted')
+    })
   })
 
   test('returns "attempted" when we have made a successful auto-connection attempt', async () => {
-    const { mockWallet } = registerMockWallet()
+    const { mockWallet, unregister } = registerMockWallet()
 
     const wrapper = createWalletProviderContextWrapper({
       autoConnect: true,
@@ -69,5 +73,7 @@ describe('useAutoConnectWallet', () => {
     // Now that the connection has completed, the state should be "attempted":
     await waitFor(() => expect(updatedResult.current.autoConnect).toBe('attempted'))
     expect(updatedResult.current.wallet.isConnected).toBe(true)
+
+    act(() => unregister())
   })
 })

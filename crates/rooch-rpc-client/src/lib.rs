@@ -8,8 +8,9 @@ use move_core_types::language_storage::ModuleId;
 use move_core_types::metadata::Metadata;
 use move_core_types::resolver::ModuleResolver;
 use moveos_types::access_path::AccessPath;
+use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::move_module::MoveModule;
-use moveos_types::state::State;
+use moveos_types::state::ObjectState;
 use moveos_types::{
     function_return_value::FunctionResult, module_binding::MoveFunctionCaller,
     moveos_std::tx_context::TxContext, transaction::FunctionCall,
@@ -112,9 +113,9 @@ impl ModuleResolver for &Client {
                     .pop()
                     .flatten()
                     .map(|state_view| {
-                        let state = State::from(state_view);
-                        let module = state.cast::<MoveModule>()?;
-                        Ok(module.byte_codes)
+                        let state = ObjectState::from(state_view);
+                        let module = state.value_as_df::<MoveString, MoveModule>()?;
+                        Ok(module.value.byte_codes)
                     })
                     .transpose()
             })

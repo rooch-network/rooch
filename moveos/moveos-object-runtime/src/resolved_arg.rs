@@ -3,26 +3,26 @@
 
 use move_core_types::{account_address::AccountAddress, value::MoveValue};
 use moveos_types::{
-    moveos_std::object::{ObjectEntity, ObjectID, RawData},
-    state::MoveState,
+    moveos_std::object::ObjectID,
+    state::{MoveState, ObjectState},
 };
 
 #[derive(Debug, Clone)]
 pub enum ObjectArg {
     /// The object argument is &mut Object<T>
-    Mutref(ObjectEntity<RawData>),
+    Mutref(ObjectState),
     /// The object argument is &Object<T>
-    Ref(ObjectEntity<RawData>),
+    Ref(ObjectState),
     /// The object argument is Object<T>
-    Value(ObjectEntity<RawData>),
+    Value(ObjectState),
 }
 
 impl ObjectArg {
     pub fn object_id(&self) -> &ObjectID {
         match self {
-            ObjectArg::Mutref(object) => &object.id,
-            ObjectArg::Ref(object) => &object.id,
-            ObjectArg::Value(object) => &object.id,
+            ObjectArg::Mutref(object) => object.id(),
+            ObjectArg::Ref(object) => object.id(),
+            ObjectArg::Value(object) => object.id(),
         }
     }
 }
@@ -39,15 +39,15 @@ impl ResolvedArg {
         ResolvedArg::Signer { address }
     }
 
-    pub fn object_by_mutref(object: ObjectEntity<RawData>) -> Self {
+    pub fn object_by_mutref(object: ObjectState) -> Self {
         ResolvedArg::Object(ObjectArg::Mutref(object))
     }
 
-    pub fn object_by_ref(object: ObjectEntity<RawData>) -> Self {
+    pub fn object_by_ref(object: ObjectState) -> Self {
         ResolvedArg::Object(ObjectArg::Ref(object))
     }
 
-    pub fn object_by_value(object: ObjectEntity<RawData>) -> Self {
+    pub fn object_by_value(object: ObjectState) -> Self {
         ResolvedArg::Object(ObjectArg::Value(object))
     }
 
@@ -60,9 +60,9 @@ impl ResolvedArg {
             ResolvedArg::Signer { address } => MoveValue::Signer(address)
                 .simple_serialize()
                 .expect("serialize signer should success"),
-            ResolvedArg::Object(ObjectArg::Mutref(object)) => object.id.to_bytes(),
-            ResolvedArg::Object(ObjectArg::Ref(object)) => object.id.to_bytes(),
-            ResolvedArg::Object(ObjectArg::Value(object)) => object.id.to_bytes(),
+            ResolvedArg::Object(ObjectArg::Mutref(object)) => object.id().to_bytes(),
+            ResolvedArg::Object(ObjectArg::Ref(object)) => object.id().to_bytes(),
+            ResolvedArg::Object(ObjectArg::Value(object)) => object.id().to_bytes(),
             ResolvedArg::Pure { value } => value,
         }
     }

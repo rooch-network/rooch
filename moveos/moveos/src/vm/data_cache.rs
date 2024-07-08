@@ -21,10 +21,8 @@ use move_vm_types::{
     values::{GlobalValue, Value},
 };
 use moveos_object_runtime::{runtime::ObjectRuntime, TypeLayoutLoader};
-use moveos_types::state::KeyState;
-use moveos_types::{
-    moveos_std::tx_context::TxContext, state::StateChangeSet, state_resolver::MoveOSResolver,
-};
+use moveos_types::state::{FieldKey, StateChangeSet};
+use moveos_types::{moveos_std::tx_context::TxContext, state_resolver::MoveOSResolver};
 use parking_lot::RwLock;
 use std::sync::Arc;
 
@@ -126,11 +124,11 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
         match result {
             Ok(Some(code)) => Ok(code),
             Ok(None) => {
-                let key_state = KeyState::from_module_id(module_id);
+                let field_key = FieldKey::derive_module_key(module_id.name());
                 Err(PartialVMError::new(StatusCode::LINKER_ERROR)
                     .with_message(format!(
                         "Cannot find module {:?}(key:{}) in ObjectRuntime and Storage",
-                        module_id, key_state,
+                        module_id, field_key,
                     ))
                     .finish(Location::Undefined))
             }
