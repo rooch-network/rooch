@@ -62,7 +62,7 @@ module moveos_std::module_store {
     // ==== Module functions ====
 
     public fun exists_package(module_object: &Object<ModuleStore>, package_id: address): bool {
-        let package_obj_id = object::custom_child_object_id<address, Package>(object::id(module_object), package_id);
+        let package_obj_id = object::custom_child_object_id(object::id(module_object), package_id);
         object::exists_object_with_type<Package>(package_obj_id)
     }
 
@@ -151,12 +151,12 @@ module moveos_std::module_store {
     }
 
     fun borrow_package(module_store: &Object<ModuleStore>, package_id: address): &Object<Package> {
-        let package_obj_id = object::custom_child_object_id<address, Package>(object::id(module_store), package_id);
+        let package_obj_id = object::custom_child_object_id(object::id(module_store), package_id);
         object::borrow_object<Package>(package_obj_id)
     }
 
     fun borrow_mut_package(module_store: &mut Object<ModuleStore>, package_id: address): &mut Object<Package> {
-        let package_obj_id = object::custom_child_object_id<address, Package>(object::id(module_store), package_id);
+        let package_obj_id = object::custom_child_object_id(object::id(module_store), package_id);
         object::borrow_mut_object_extend<Package>(package_obj_id)
     }
 
@@ -235,7 +235,7 @@ module moveos_std::module_store {
     fun test_publish_modules(account: &signer) {
         init_module_store();
         features::init_feature_store_for_test();
-        
+        let _ = account;
         let module_object = borrow_mut_module_store();
         let module_bytes = COUNTER_MV_BYTES;
         let m: MoveModule = move_module::new(module_bytes);
@@ -301,8 +301,8 @@ module moveos_std::module_store {
         publish_modules(module_object, account, vector::singleton(m));
         publish_modules(module_object, account, vector::singleton(m));
 
-        let package_obj_id = object::custom_child_object_id<address, Package>(object::id(module_object), signer::address_of(account));
-        let (_, package) = object::take_object_extend< Package>(package_obj_id);
+        let package_obj_id = object::custom_child_object_id(object::id(module_object), signer::address_of(account));
+        let package = object::take_object_extend<Package>(package_obj_id);
         freeze_package(package);
         publish_modules(module_object, account, vector::singleton(m));
     }

@@ -4,50 +4,57 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    field_value::FieldValue,
     resolved_arg::{ObjectArg, ResolvedArg},
-    runtime_object::{RuntimeField, RuntimeObject},
+    runtime_object::RuntimeObject,
     tx_context::TxContextValue,
     TypeLayoutLoader,
 };
 use better_any::{Tid, TidAble};
-use log::debug;
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use move_core_types::{
-    account_address::AccountAddress,
-    gas_algebra::NumBytes,
-    language_storage::{ModuleId, TypeTag},
-    value::MoveTypeLayout,
-    vm_status::StatusCode,
+    account_address::AccountAddress, gas_algebra::NumBytes, language_storage::ModuleId,
+    value::MoveTypeLayout, vm_status::StatusCode,
 };
-use move_vm_types::values::{GlobalValue, Value};
-use moveos_types::moveos_std::object::TimestampObject;
-use moveos_types::moveos_std::timestamp::Timestamp;
+use move_vm_types::values::{StructRef, Value};
+use moveos_types::{
+    move_std::string::MoveString,
+    moveos_std::timestamp::Timestamp,
+    state::{FieldKey, ObjectChange, ObjectState},
+};
+use moveos_types::{moveos_std::object::TimestampObject, state::StateChangeSet};
 use moveos_types::{
     moveos_std::{
         module_store::{ModuleStore, Package},
         move_module::MoveModule,
-        object::{
-            ModuleStoreObject, ObjectEntity, ObjectID, PackageObject, Root, RootObjectEntity,
-        },
+        object::{DynamicField, ModuleStoreObject, ObjectID, PackageObject, Root},
     },
-    state::{MoveType, StateChangeSet},
+    state::MoveType,
     state_resolver::StatelessResolver,
 };
 use moveos_types::{
     moveos_std::{object, tx_context::TxContext},
-    state::{KeyState, MoveState},
+    state::MoveState,
 };
 use parking_lot::RwLock;
 use std::{collections::BTreeMap, sync::Arc};
+use tracing::debug;
 
 /// Ensure the error codes in this file is consistent with the error code in object.move
 pub const ERROR_ALREADY_EXISTS: u64 = 1;
 pub const ERROR_NOT_FOUND: u64 = 2;
+pub const ERROR_INVALID_OWNER_ADDRESS: u64 = 3;
+pub const ERROR_OBJECT_OWNER_NOT_MATCH: u64 = 4;
+pub const ERROR_OBJECT_NOT_SHARED: u64 = 5;
+pub const ERROR_OBJECT_IS_BOUND: u64 = 6;
 pub const ERROR_OBJECT_ALREADY_BORROWED: u64 = 7;
+pub const ERROR_FIELDS_NOT_EMPTY: u64 = 8;
+pub const ERROR_OBJECT_FROZEN: u64 = 9;
 pub const ERROR_TYPE_MISMATCH: u64 = 10;
+pub const ERROR_CHILD_OBJECT_TOO_DEEP: u64 = 11;
+pub const ERROR_WITHOUT_PARENT: u64 = 12;
+pub const ERROR_PARENT_NOT_MATCH: u64 = 13;
 pub const ERROR_OBJECT_RUNTIME_ERROR: u64 = 14;
-pub const ERROR_OBJECT_ALREADY_TAKEN_OUT: u64 = 15;
+pub const ERROR_OBJECT_ALREADY_TAKEN_OUT_OR_EMBEDED: u64 = 15;
 
 /// The native Object runtime context extension. This needs to be attached to the NativeContextExtensions
 /// value which is passed into session functions, so its accessible from natives of this
@@ -99,9 +106,9 @@ pub struct ObjectRuntime {
 }
 
 impl ObjectRuntime {
-    pub fn new(tx_context: TxContext, root: RootObjectEntity) -> Self {
+    pub fn new(tx_context: TxContext, root: ObjectState) -> Self {
         if log::log_enabled!(log::Level::Trace) {
-            log::trace!(
+            tracing::trace!(
                 "Init ObjectRuntime with tx_hash: {:?}, state_root: {}",
                 tx_context.tx_hash(),
                 root.state_root()
@@ -109,12 +116,8 @@ impl ObjectRuntime {
         }
         Self {
             tx_context: TxContextValue::new(tx_context),
-            root: RuntimeObject::load(
-                root.id.clone(),
-                RootObjectEntity::type_layout(),
-                root.into_state(),
-            )
-            .expect("Load root object should success"),
+            root: RuntimeObject::load(Root::type_layout(), root)
+                .expect("Load root object should success"),
             object_pointer_in_args: Default::default(),
         }
     }
@@ -124,57 +127,38 @@ impl ObjectRuntime {
     /// So we can not initialize it in Move.
     pub fn init_module_store(&mut self, resolver: &dyn StatelessResolver) -> PartialVMResult<()> {
         let module_store_id = ModuleStore::module_store_id();
+        let field_key = module_store_id.field_key();
         let state = resolver
-            .get_object_field_at(self.root.state_root, &module_store_id)
+            .get_field_at(self.root.state_root()?, &field_key)
             .map_err(|e| {
                 partial_extension_error(format!(
                     "Failed to resolve module store object state: {:?}",
                     e
                 ))
             })?;
-        let (state_root, global_value) = match state {
-            Some(state) => {
-                let obj = state.into_object::<ModuleStore>().map_err(|e| {
-                    partial_extension_error(format!(
-                        "Failed to resolve module store object: {:?}",
-                        e
-                    ))
-                })?;
-                let state_root = obj.state_root();
-                let value = obj.to_runtime_value();
-                // If we load the module store object, we should cache it
-                (
-                    state_root,
-                    GlobalValue::cached(value)
-                        .expect("Cache the ModuleStore Object should success"),
-                )
-            }
+        let module_store_rt_obj = match state {
+            Some(obj_state) => RuntimeObject::load(ModuleStore::type_layout(), obj_state)?,
             None => {
+                //TODO Put ModuleStore Object to genesis config.
                 // If the module store object is not found, we should create a new one(before genesis).
                 // Init none GlobalValue and move value to it, make the data status is dirty
                 // The change will apart of the state change set
                 let obj = ModuleStoreObject::genesis_module_store();
-                let state_root = obj.state_root();
-                let value = obj.to_runtime_value();
-                let mut global_value = GlobalValue::none();
-                global_value
-                    .move_to(value)
-                    .expect("Move value to GlobalValue none should success");
-                (state_root, global_value)
+                let value_type = ModuleStore::type_tag();
+                let value_layout = ModuleStore::type_layout();
+                let value = obj.value.to_runtime_value();
+                let mut rt_obj = RuntimeObject::none(obj.id);
+                rt_obj.move_to(value, value_type, value_layout)?;
+                rt_obj.rt_meta.to_shared()?;
+                rt_obj
             }
         };
-        debug!("Init module store object with state_root: {}", state_root);
-        let module_store_runtime = RuntimeObject::init(
-            module_store_id.clone(),
-            ObjectEntity::<ModuleStore>::type_layout(),
-            ObjectEntity::<ModuleStore>::type_tag(),
-            global_value,
-            state_root,
-        )?;
-        self.root.fields.insert(
-            module_store_id.to_key(),
-            RuntimeField::Object(module_store_runtime),
+        debug!(
+            "Init module store object with state_root: {}",
+            module_store_rt_obj.rt_meta.state_root()?
         );
+
+        self.root.fields.insert(field_key, module_store_rt_obj);
         Ok(())
     }
 
@@ -186,53 +170,37 @@ impl ObjectRuntime {
         resolver: &dyn StatelessResolver,
     ) -> PartialVMResult<()> {
         let timestamp_id = Timestamp::object_id();
+        let field_key = timestamp_id.field_key();
         let state = resolver
-            .get_object_field_at(self.root.state_root, &timestamp_id)
+            .get_field_at(self.root.state_root()?, &field_key)
             .map_err(|e| {
                 partial_extension_error(format!(
                     "Failed to resolve timestamp object state: {:?}",
                     e
                 ))
             })?;
-        let (state_root, global_value) = match state {
-            Some(state) => {
-                let obj = state.into_object::<Timestamp>().map_err(|e| {
-                    partial_extension_error(format!("Failed to resolve timestamp object: {:?}", e))
-                })?;
-                let state_root = obj.state_root();
-                let value = obj.to_runtime_value();
-                // If we load the timestamp object, we should cache it
-                (
-                    state_root,
-                    GlobalValue::cached(value).expect("Cache the Timestamp Object should success"),
-                )
-            }
+        let timestamp_rt_obj = match state {
+            Some(obj_state) => RuntimeObject::load(Timestamp::type_layout(), obj_state)?,
             None => {
                 // If the timestamp object is not found, we should create a new one(before genesis).
                 // Init none GlobalValue and move value to it, make the data status is dirty
                 // The change will apart of the state change set
                 let obj = TimestampObject::genesis_timestamp();
-                let state_root = obj.state_root();
-                let value = obj.to_runtime_value();
-                let mut global_value = GlobalValue::none();
-                global_value
-                    .move_to(value)
-                    .expect("Move value to GlobalValue none should success");
-                (state_root, global_value)
+                let value_type = Timestamp::type_tag();
+                let value_layout = Timestamp::type_layout();
+                let value = obj.value.to_runtime_value();
+
+                let mut rt_obj = RuntimeObject::none(obj.id);
+                rt_obj.move_to(value, value_type, value_layout)?;
+                rt_obj.rt_meta.to_shared()?;
+                rt_obj
             }
         };
-        debug!("Init timestamp object with state_root: {}", state_root);
-        let timestamp_runtime = RuntimeObject::init(
-            timestamp_id.clone(),
-            ObjectEntity::<Timestamp>::type_layout(),
-            ObjectEntity::<Timestamp>::type_tag(),
-            global_value,
-            state_root,
-        )?;
-        self.root.fields.insert(
-            timestamp_id.to_key(),
-            RuntimeField::Object(timestamp_runtime),
+        debug!(
+            "Init timestamp object with state_root: {}",
+            timestamp_rt_obj.rt_meta.state_root()?
         );
+        self.root.fields.insert(field_key, timestamp_rt_obj);
         Ok(())
     }
 
@@ -242,59 +210,22 @@ impl ObjectRuntime {
         resolver: &'a dyn StatelessResolver,
         address: &'a AccountAddress,
         package_owner: AccountAddress,
-    ) -> PartialVMResult<&'a mut RuntimeObject> {
-        let package_obj_id = Package::package_id(address);
-        let package_obj_exists =
-            match module_store_obj.load_object_field(layout_loader, resolver, &package_obj_id) {
-                Ok((_, _)) => true,
-                Err(e) => {
-                    if e.major_status() == StatusCode::MISSING_DATA {
-                        // Package not exists.
-                        false
-                    } else {
-                        return Err(e);
-                    }
-                }
-            };
-
-        if !package_obj_exists {
-            let obj = PackageObject::new_package(address, package_owner);
-            let state_root = obj.state_root();
-            let value = obj.to_runtime_value();
-            let mut global_value = GlobalValue::none();
-            global_value
-                .move_to(value)
-                .expect("Move value to GlobalValue none should success");
-            let package_runtime = RuntimeObject::init(
-                package_obj_id.clone(),
-                ObjectEntity::<Package>::type_layout(),
-                ObjectEntity::<Package>::type_tag(),
-                global_value,
-                state_root,
-            )?;
-            module_store_obj.fields.insert(
-                package_obj_id.to_key(),
-                RuntimeField::Object(package_runtime),
-            );
-            // Increase the size of module store, as we create a new package.
-            let module_store_obj_value = module_store_obj.value.move_from()?;
-            let mut module_store_obj_entity = ObjectEntity::<ModuleStore>::from_runtime_value(
-                module_store_obj_value,
-            )
-            .map_err(|e| {
-                PartialVMError::new(StatusCode::TYPE_MISMATCH)
-                    .with_message(format!("expect ObjectEntity<ModuleStore>, but got {:?}", e))
-            })?;
-            module_store_obj_entity.size += 1;
-            let module_store_obj_value = module_store_obj_entity.to_runtime_value();
-            module_store_obj
-                .value
-                .move_to(module_store_obj_value)
-                .map_err(|(e, _)| e)?;
-        };
+    ) -> PartialVMResult<(&'a mut RuntimeObject, bool)> {
+        let package_field_key = Package::derive_package_key(address);
         let (package_obj, _) =
-            module_store_obj.load_object_field(layout_loader, resolver, &package_obj_id)?;
-        Ok(package_obj)
+            module_store_obj.load_field(layout_loader, resolver, package_field_key)?;
+
+        let mut new_package = false;
+        if !package_obj.exists()? {
+            let obj = PackageObject::new_package(address, package_owner);
+            let value = obj.value.to_runtime_value();
+            package_obj.move_to(value, Package::type_tag(), Package::type_layout())?;
+            // If the Package is new, we should increase the size of module store
+            // But we can not get mutable reference of module store object here
+            // So we need to increase the size of module store in publish_module
+            new_package = true;
+        };
+        Ok((package_obj, new_package))
     }
 
     pub fn tx_context(&self) -> TxContext {
@@ -307,16 +238,6 @@ impl ObjectRuntime {
         self.tx_context.borrow_global()
     }
 
-    pub fn borrow_root(&self) -> PartialVMResult<Value> {
-        self.root.borrow_value(ObjectEntity::<Root>::type_tag())
-    }
-
-    pub fn root(&self) -> RootObjectEntity {
-        self.root
-            .as_object_entity::<Root>()
-            .expect("Failed to get root object")
-    }
-
     pub fn add_to_tx_context<T: MoveState>(&mut self, value: T) -> PartialVMResult<()> {
         let mut tx_ctx = self.tx_context.as_tx_context()?;
         tx_ctx
@@ -324,6 +245,26 @@ impl ObjectRuntime {
             .expect("Failed to add value to tx_context");
         self.tx_context = TxContextValue::new(tx_ctx);
         Ok(())
+    }
+
+    pub fn timestamp(&self) -> Timestamp {
+        let timestamp_id = Timestamp::object_id();
+        let timestamp_obj = self
+            .get_loaded_object(&timestamp_id)
+            .expect("Failed to get timestamp object")
+            .expect("Timestamp object must exist");
+        let timestamp_ref = timestamp_obj
+            .borrow_value(None)
+            .expect("Failed to borrow timestamp value");
+        let struct_ref = timestamp_ref
+            .value_as::<StructRef>()
+            .expect("Failed to get struct ref");
+        Timestamp::from_runtime_value(
+            struct_ref
+                .read_ref()
+                .expect("Failed to read timestamp value"),
+        )
+        .expect("Failed to convert timestamp value to timestamp")
     }
 
     /// Load Object to the ObjectRuntime.
@@ -337,9 +278,10 @@ impl ObjectRuntime {
             Ok((&mut self.root, None))
         } else {
             let parent_id = object_id.parent().expect("expect parent id");
+            let field_key = object_id.field_key();
             let (parent, parent_load_gas) =
                 self.load_object(layout_loader, resolver, &parent_id)?;
-            let (obj, load_gas) = parent.load_object_field(layout_loader, resolver, object_id)?;
+            let (obj, load_gas) = parent.load_field(layout_loader, resolver, field_key)?;
             let total_gas = sum_load_cost(parent_load_gas, load_gas);
             Ok((obj, total_gas))
         }
@@ -355,7 +297,10 @@ impl ObjectRuntime {
             let parent_id = object_id.parent().expect("expect parent id");
             let parent = self.get_loaded_object(&parent_id)?;
             match parent {
-                Some(parent) => parent.get_loaded_object_field(object_id),
+                Some(parent) => {
+                    let field_key = object_id.field_key();
+                    Ok(parent.get_loaded_field(&field_key))
+                }
                 None => Ok(None),
             }
         }
@@ -366,12 +311,13 @@ impl ObjectRuntime {
         let module_store_obj = self
             .get_loaded_object(&module_store_id)?
             .expect("module store object must exist");
-        let package_obj_id = Package::package_id(module_id.address());
-        let package_obj = module_store_obj.get_loaded_object_field(&package_obj_id)?;
+
+        let package_obj =
+            module_store_obj.get_loaded_field(&Package::derive_package_key(module_id.address()));
         match package_obj {
             Some(package_obj) => {
-                let key = KeyState::from_string(&format!("{}", module_id.name()));
-                let module_field = package_obj.get_loaded_field(&key);
+                let field_key = FieldKey::derive_module_key(module_id.name());
+                let module_field = package_obj.get_loaded_field(&field_key);
                 match module_field {
                     Some(field) => field.as_move_module(),
                     None => Ok(None),
@@ -390,12 +336,12 @@ impl ObjectRuntime {
         let module_store_id = ModuleStore::module_store_id();
         match self.load_object(layout_loader, resolver, &module_store_id) {
             Ok((module_store_obj, _)) => {
-                let package_obj_id = Package::package_id(module_id.address());
+                let package_key = Package::derive_package_key(module_id.address());
                 let (package_obj, _) =
-                    module_store_obj.load_object_field(layout_loader, resolver, &package_obj_id)?;
-                let key = KeyState::from_string(&format!("{}", module_id.name()));
+                    module_store_obj.load_field(layout_loader, resolver, package_key)?;
+                let field_key = FieldKey::derive_module_key(module_id.name());
                 let (module_field, _loaded) =
-                    package_obj.load_field(layout_loader, resolver, key)?;
+                    package_obj.load_field(layout_loader, resolver, field_key)?;
                 let move_module = module_field.as_move_module()?;
                 Ok(move_module.map(|m| m.byte_codes))
             }
@@ -425,44 +371,39 @@ impl ObjectRuntime {
         // Is the genesis tx sender framework addresses?
         let tx_sender = self.tx_context().sender();
         let (module_store_obj, _) = self.load_object(layout_loader, resolver, &module_store_id)?;
-        let package_obj = Self::load_or_create_package_object(
+        let (package_obj, new_package) = Self::load_or_create_package_object(
             module_store_obj,
             layout_loader,
             resolver,
             module_id.address(),
             tx_sender,
         )?;
+        let module_name = MoveString::from(module_id.name());
+        let field_key = FieldKey::derive_module_key(module_id.name());
+        let (module_field, _) = package_obj.load_field(layout_loader, resolver, field_key)?;
 
-        let key = KeyState::from_string(&format!("{}", module_id.name()));
-        let (module_field, _) = package_obj.load_field(layout_loader, resolver, key)?;
-
-        let value_type = FieldValue::<MoveModule>::type_tag();
-        let value_layout = FieldValue::<MoveModule>::type_layout();
+        let value_type = DynamicField::<MoveString, MoveModule>::type_tag();
+        let value_layout = DynamicField::<MoveString, MoveModule>::type_layout();
 
         let move_module = MoveModule::new(blob);
-        let field_value = FieldValue { val: move_module };
+        let field_value = DynamicField {
+            name: module_name,
+            value: move_module,
+        };
         let runtime_field_value = field_value.to_runtime_value();
         if is_republishing {
-            let _old_value = module_field.move_from(value_type.clone())?;
+            let _old_value = module_field.move_from(Some(&value_type))?;
         }
 
-        module_field.move_to(runtime_field_value, value_layout, value_type)?;
+        module_field.move_to(runtime_field_value, value_type, value_layout)?;
 
         if !is_republishing {
             // If we directly publish module in Rust, not in Move, we need to increase the size of module store
-            // TODO we need to find a better way to handle this
-            let package_obj_value = package_obj.value.move_from()?;
-            let mut package_obj_entity =
-                ObjectEntity::<Package>::from_runtime_value(package_obj_value).map_err(|e| {
-                    PartialVMError::new(StatusCode::TYPE_MISMATCH)
-                        .with_message(format!("expect ObjectEntity<Package>, but got {:?}", e))
-                })?;
-            package_obj_entity.size += 1;
-            let package_obj_value = package_obj_entity.to_runtime_value();
-            package_obj
-                .value
-                .move_to(package_obj_value)
-                .map_err(|(e, _)| e)?;
+            package_obj.rt_meta.increase_size()?;
+        }
+        if new_package {
+            // If the Package is new, we should increase the size of module store
+            module_store_obj.rt_meta.increase_size()?;
         }
         Ok(())
     }
@@ -484,18 +425,18 @@ impl ObjectRuntime {
                     .load_object(layout_loader, resolver, object_id)
                     .map_err(|e| e.finish(Location::Module(object::MODULE_ID.clone())))?;
                 match object_arg {
-                    ObjectArg::Ref(obj) | ObjectArg::Mutref(obj) => {
+                    ObjectArg::Ref(_obj) | ObjectArg::Mutref(_obj) => {
                         let pointer_value = rt_obj
-                            .borrow_pointer(&TypeTag::Struct(Box::new(obj.struct_tag())))
+                            .borrow_object(None)
                             .map_err(|e| e.finish(Location::Module(object::MODULE_ID.clone())))?;
                         //We cache the object pointer value in the object_pointer_in_args
                         //Ensure the reference count and the object can not be borrowed in Move
                         self.object_pointer_in_args
                             .insert(object_id.clone(), pointer_value);
                     }
-                    ObjectArg::Value(obj) => {
+                    ObjectArg::Value(_obj) => {
                         let pointer_value = rt_obj
-                            .take_pointer(&TypeTag::Struct(Box::new(obj.struct_tag())))
+                            .take_object(None)
                             .map_err(|e| e.finish(Location::Module(object::MODULE_ID.clone())))?;
                         //We cache the object pointer value in the object_pointer_in_args
                         //Ensure the reference count and the object can not be borrowed in Move
@@ -519,25 +460,19 @@ impl ObjectRuntime {
     }
 
     pub fn into_change_set(self) -> PartialVMResult<(TxContext, StateChangeSet)> {
+        let timestamp = self.timestamp();
         let (tx_context, root) = self.into_inner();
-        let root_entity = root.as_object_entity::<Root>()?;
-        let root_change = root.into_change()?;
+        let root_metadata = root.metadata()?.clone();
+        let root_change = root
+            .into_change(&timestamp)?
+            .unwrap_or(ObjectChange::meta(root_metadata.clone()));
         let mut changes = BTreeMap::new();
-        if let Some(root_change) = root_change {
-            for (k, field_change) in root_change.fields {
-                let obj_change = field_change
-                    .into_object_change()
-                    .expect("root object's field must be object");
-                changes.insert(
-                    k.as_object_id()
-                        .expect("object change's key must be ObjectID"),
-                    obj_change,
-                );
-            }
+        for (k, field_change) in root_change.fields {
+            changes.insert(k, field_change);
         }
         let change_set = StateChangeSet {
-            state_root: root_entity.state_root(),
-            global_size: root_entity.size,
+            //TODO should we keep the root ObjectMeta in the change set?
+            root_metadata: root_change.metadata,
             changes,
         };
         Ok((tx_context, change_set))
@@ -549,19 +484,7 @@ pub(crate) fn partial_extension_error(msg: impl ToString) -> PartialVMError {
     PartialVMError::new(StatusCode::VM_EXTENSION_ERROR).with_message(msg.to_string())
 }
 
-pub(crate) fn check_type(actual_type: &TypeTag, expect_type: &TypeTag) -> PartialVMResult<()> {
-    if expect_type != actual_type {
-        return Err(
-            PartialVMError::new(StatusCode::TYPE_MISMATCH).with_message(format!(
-                "Field state type {}, but get type {}",
-                actual_type, expect_type
-            )),
-        );
-    }
-    Ok(())
-}
-
-fn sum_load_cost(
+pub(crate) fn sum_load_cost(
     first_loaded: Option<Option<NumBytes>>,
     second_loaded: Option<Option<NumBytes>>,
 ) -> Option<Option<NumBytes>> {

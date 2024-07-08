@@ -12,5 +12,6 @@ fn test_changeset() {
     let json = serde_json::to_string_pretty(&changeset_view).unwrap();
     //println!("{}", json);
     let changeset_view2: StateChangeSetView = serde_json::from_str(&json).unwrap();
+    assert_eq!(changeset_view.root_metadata, changeset_view2.root_metadata);
     assert_eq!(changeset_view, changeset_view2);
 }

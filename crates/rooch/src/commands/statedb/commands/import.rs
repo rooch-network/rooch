@@ -9,9 +9,9 @@ use chrono::{DateTime, Local};
 use clap::Parser;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
-use moveos_types::moveos_std::object::{ObjectID, RootObjectEntity, GENESIS_STATE_ROOT};
+use moveos_types::moveos_std::object::{ObjectID, GENESIS_STATE_ROOT};
 use moveos_types::startup_info::StartupInfo;
-use moveos_types::state::{KeyState, State};
+use moveos_types::state::{FieldKey, ObjectState};
 use moveos_types::state_resolver::StatelessResolver;
 use rooch_config::{RoochOpt, R_OPT_NET_HELP};
 use rooch_db::RoochDB;
@@ -58,7 +58,7 @@ impl ImportCommand {
         let input_path = self.input.clone();
         let batch_size = self.batch_size.unwrap();
         let (root, moveos_store, start_time) = self.init();
-        let root_state_root = H256::from(root.state_root.into_bytes());
+        let root_state_root = root.state_root();
         let (tx, rx) = mpsc::sync_channel(2);
 
         let moveos_store_arc = Arc::new(moveos_store.clone());
@@ -66,7 +66,13 @@ impl ImportCommand {
             produce_updates(tx, &moveos_store, input_path, root_state_root, batch_size)
         });
         let apply_updates_thread = thread::spawn(move || {
-            apply_updates_to_state(rx, moveos_store_arc, root_state_root, root.size, start_time)
+            apply_updates_to_state(
+                rx,
+                moveos_store_arc,
+                root_state_root,
+                root.size(),
+                start_time,
+            )
         });
         let _ = produce_updates_thread
             .join()
@@ -78,7 +84,7 @@ impl ImportCommand {
         Ok(())
     }
 
-    fn init(self) -> (RootObjectEntity, MoveOSStore, SystemTime) {
+    fn init(self) -> (ObjectState, MoveOSStore, SystemTime) {
         let start_time = SystemTime::now();
         let datetime: DateTime<Local> = start_time.into();
 
@@ -97,7 +103,7 @@ impl ImportCommand {
 }
 
 struct BatchUpdates {
-    states: BTreeMap<StateID, UpdateSet<KeyState, State>>,
+    states: BTreeMap<StateID, UpdateSet<FieldKey, ObjectState>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Ord, Eq, PartialOrd, PartialEq)]
@@ -151,8 +157,8 @@ fn produce_updates(
             }
 
             let (c1, c2) = parse_state_data_from_csv_line(&line)?;
-            let key_state = KeyState::from_str(&c1)?;
-            let state = State::from_str(&c2)?;
+            let key_state = FieldKey::from_str(&c1)?;
+            let state = ObjectState::from_str(&c2)?;
             let state_id = last_state_id.clone().expect("State ID should have value");
             let update_set = updates.states.entry(state_id).or_default();
             update_set.put(key_state, state);
@@ -248,21 +254,16 @@ pub fn get_pre_state_root(
 ) -> Result<H256> {
     let parent_state_root_opt = match object_id.parent() {
         Some(parent_id) => {
-            let state_opt = moveos_store.get_field_at(root_state_root, &parent_id.to_key())?;
-            match state_opt {
-                Some(state) => Some(H256::from(
-                    state.clone().as_raw_object()?.state_root.into_bytes(),
-                )),
-                None => None,
-            }
+            let state_opt = moveos_store.get_field_at(root_state_root, &parent_id.field_key())?;
+            state_opt.map(|state| state.state_root())
         }
         None => Some(root_state_root),
     };
     let state_root = match parent_state_root_opt {
         Some(parent_state_root) => {
-            let state_opt = moveos_store.get_field_at(parent_state_root, &object_id.to_key())?;
+            let state_opt = moveos_store.get_field_at(parent_state_root, &object_id.field_key())?;
             match state_opt {
-                Some(state) => H256::from(state.as_raw_object()?.state_root.into_bytes()),
+                Some(state) => state.state_root(),
                 None => *GENESIS_STATE_ROOT,
             }
         }
@@ -273,17 +274,18 @@ pub fn get_pre_state_root(
 }
 
 pub fn apply_fields<I>(
-    moveos_store: &MoveOSStore,
-    pre_state_root: H256,
-    update_set: I,
+    _moveos_store: &MoveOSStore,
+    _pre_state_root: H256,
+    _update_set: I,
 ) -> Result<TreeChangeSet>
 where
-    I: Into<UpdateSet<KeyState, State>>,
+    I: Into<UpdateSet<FieldKey, ObjectState>>,
 {
-    let tree_change_set = moveos_store
-        .state_store
-        .update_fields(pre_state_root, update_set)?;
-    Ok(tree_change_set)
+    // let tree_change_set = moveos_store
+    //     .state_store
+    //     .update_fields(pre_state_root, update_set)?;
+    // Ok(tree_change_set)
+    unimplemented!()
 }
 
 pub fn apply_nodes(moveos_store: &MoveOSStore, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {

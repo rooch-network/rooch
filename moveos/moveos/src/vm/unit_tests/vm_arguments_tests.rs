@@ -29,13 +29,13 @@ use move_core_types::{
     vm_status::StatusCode,
 };
 use move_vm_runtime::config::VMConfig;
-use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
-use moveos_types::state::KeyState;
+use moveos_types::moveos_std::object::ObjectEntity;
+use moveos_types::state::{FieldKey, ObjectState};
 use moveos_types::state_resolver::{StateKV, StatelessResolver};
 use moveos_types::transaction::FunctionCall;
 use moveos_types::{
     move_types::FunctionId, moveos_std::object::ObjectID, moveos_std::tx_context::TxContext,
-    state::State, state_resolver::StateResolver, transaction::MoveAction,
+    state_resolver::StateResolver, transaction::MoveAction,
 };
 use std::collections::HashMap;
 
@@ -243,14 +243,14 @@ pub(crate) fn make_script_function(signature: Signature) -> (CompiledModule, Ide
 }
 
 pub(crate) struct RemoteStore {
-    root: RootObjectEntity,
+    root: ObjectState,
     modules: HashMap<ModuleId, Vec<u8>>,
 }
 
 impl RemoteStore {
     pub(crate) fn new() -> Self {
         Self {
-            root: ObjectEntity::genesis_root_object(),
+            root: ObjectEntity::genesis_root_object().into_state(),
             modules: HashMap::new(),
         }
     }
@@ -288,15 +288,15 @@ impl StatelessResolver for RemoteStore {
     fn get_field_at(
         &self,
         _state_root: moveos_types::h256::H256,
-        _key: &KeyState,
-    ) -> anyhow::Result<Option<State>, anyhow::Error> {
+        _key: &FieldKey,
+    ) -> anyhow::Result<Option<ObjectState>, anyhow::Error> {
         Ok(None)
     }
 
     fn list_fields_at(
         &self,
         _state_root: moveos_types::h256::H256,
-        _cursor: Option<KeyState>,
+        _cursor: Option<FieldKey>,
         _limit: usize,
     ) -> anyhow::Result<Vec<StateKV>> {
         Ok(vec![])
@@ -307,20 +307,20 @@ impl StateResolver for RemoteStore {
     fn get_field(
         &self,
         _handle: &ObjectID,
-        _key: &KeyState,
-    ) -> anyhow::Result<Option<State>, anyhow::Error> {
+        _key: &FieldKey,
+    ) -> anyhow::Result<Option<ObjectState>, anyhow::Error> {
         Ok(None)
     }
 
     fn list_fields(
         &self,
         _handle: &ObjectID,
-        _cursor: Option<KeyState>,
+        _cursor: Option<FieldKey>,
         _limit: usize,
     ) -> anyhow::Result<Vec<StateKV>, anyhow::Error> {
         todo!()
     }
-    fn root_object(&self) -> &RootObjectEntity {
+    fn root_object(&self) -> &ObjectState {
         &self.root
     }
 }

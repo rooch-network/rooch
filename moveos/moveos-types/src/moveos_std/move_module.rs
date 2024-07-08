@@ -3,6 +3,7 @@
 
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
+    move_std::string::MoveString,
     state::{MoveStructState, MoveStructType},
 };
 use anyhow::{anyhow, Result};
@@ -18,7 +19,11 @@ use move_vm_types::values::{Struct, Value};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
+use super::object;
+
 pub const MODULE_NAME: &IdentStr = ident_str!("move_module");
+
+pub type MoveModuleDynamicField = object::DynamicField<MoveString, MoveModule>;
 
 /// `MoveModule` is represented `moveos_std::move_module::MoveModule` in Move.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]

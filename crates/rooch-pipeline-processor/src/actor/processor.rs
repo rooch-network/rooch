@@ -91,7 +91,8 @@ impl PipelineProcessorActor {
         self.proposer
             .propose_transaction(tx.clone(), execution_info.clone())
             .await?;
-        let root = ObjectEntity::root_object(execution_info.state_root, execution_info.size);
+        let root =
+            ObjectEntity::root_object(execution_info.state_root, execution_info.size).into_state();
         // Sync latest state root from writer executor to reader executor
         self.executor
             .refresh_state(root.clone(), output.is_upgrade)

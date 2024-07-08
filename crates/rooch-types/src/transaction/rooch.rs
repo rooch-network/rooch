@@ -9,7 +9,7 @@ use crate::rooch_network::BuiltinChainID;
 use anyhow::Result;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::gas_schedule::GasScheduleConfig;
-use moveos_types::moveos_std::object::RootObjectEntity;
+use moveos_types::state::ObjectState;
 use moveos_types::{
     moveos_std::tx_context::TxContext,
     transaction::{MoveAction, MoveOSTransaction},
@@ -181,7 +181,7 @@ impl RoochTransaction {
         RoochTransaction::new(transaction_data, auth)
     }
 
-    pub fn into_moveos_transaction(mut self, root: RootObjectEntity) -> MoveOSTransaction {
+    pub fn into_moveos_transaction(mut self, root: ObjectState) -> MoveOSTransaction {
         let tx_hash = self.tx_hash();
         let tx_size = self.tx_size();
         let tx_ctx = TxContext::new(

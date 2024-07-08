@@ -5,7 +5,7 @@ use anyhow::Result;
 use jsonrpsee::http_client::HttpClient;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::account::Account;
-use moveos_types::{access_path::AccessPath, state::State, transaction::FunctionCall};
+use moveos_types::{access_path::AccessPath, state::ObjectState, transaction::FunctionCall};
 use rooch_rpc_api::api::rooch_api::RoochAPIClient;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, transaction_view::TransactionWithInfoView,
@@ -14,7 +14,7 @@ use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, EventOptions, EventPageView,
     RoochAddressView, StateOptions, StatePageView, StructTagView,
 };
-use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, StateView};
+use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, ObjectStateView};
 use rooch_rpc_api::jsonrpc_types::{
     IndexerObjectStatePageView, ObjectStateFilterView, QueryOptions,
 };
@@ -62,14 +62,17 @@ impl RoochRpcClient {
             .map_err(|e| anyhow::anyhow!(e))
     }
 
-    pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<StateView>>> {
+    pub async fn get_states(
+        &self,
+        access_path: AccessPath,
+    ) -> Result<Vec<Option<ObjectStateView>>> {
         Ok(self.http.get_states(access_path.into(), None).await?)
     }
 
     pub async fn get_decoded_states(
         &self,
         access_path: AccessPath,
-    ) -> Result<Vec<Option<StateView>>> {
+    ) -> Result<Vec<Option<ObjectStateView>>> {
         Ok(self
             .http
             .get_states(
@@ -82,7 +85,7 @@ impl RoochRpcClient {
     pub async fn get_decoded_states_with_display(
         &self,
         access_path: AccessPath,
-    ) -> Result<Vec<Option<StateView>>> {
+    ) -> Result<Vec<Option<ObjectStateView>>> {
         Ok(self
             .http
             .get_states(
@@ -127,8 +130,8 @@ impl RoochRpcClient {
             .pop()
             .flatten()
             .map(|state_view| {
-                let state = State::from(state_view);
-                state.as_object_uncheck::<Account>()
+                let state = ObjectState::from(state_view);
+                state.into_object_uncheck::<Account>()
             })
             .transpose()?
             .map_or(0, |account| account.value.sequence_number))
