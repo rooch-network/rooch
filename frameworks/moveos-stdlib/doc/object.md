@@ -63,7 +63,6 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `upsert_field`](#0x2_object_upsert_field)
 -  [Function `remove_field`](#0x2_object_remove_field)
 -  [Function `remove_field_internal`](#0x2_object_remove_field_internal)
--  [Function `remove_object_field`](#0x2_object_remove_object_field)
 -  [Function `contains_field`](#0x2_object_contains_field)
 -  [Function `contains_field_internal`](#0x2_object_contains_field_internal)
 -  [Function `contains_field_with_type`](#0x2_object_contains_field_with_type)
@@ -982,18 +981,6 @@ Aborts if there is no field for <code>key</code>.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_remove_field_internal">remove_field_internal</a>&lt;T: key, Name: <b>copy</b>, drop, store, Value&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, name: Name): Value
-</code></pre>
-
-
-
-<a name="0x2_object_remove_object_field"></a>
-
-## Function `remove_object_field`
-
-
-
-<pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="object.md#0x2_object_remove_object_field">remove_object_field</a>&lt;T: key, Value: key&gt;(_obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, child: <a href="object.md#0x2_object_Object">object::Object</a>&lt;Value&gt;): Value
 </code></pre>
 
 

@@ -472,15 +472,6 @@ module moveos_std::object {
         let DynamicField { name:_, value } = native_remove_field<DynamicField<Name, Value>>(obj_id, key);
         value
     }
-
-    //TODO deprecated this function, and replace it with remove();
-    #[private_generics(T)]
-    public fun remove_object_field<T: key, Value: key>(_obj: &mut Object<T>, child: Object<Value>): Value {
-        let size = field_size(&child);
-        assert!(size == 0, ErrorFieldsNotEmpty);
-        remove_unchecked(child)
-    }
-
    
     /// Returns true if `object` contains an field for `key`, include normal field and object field
     public fun contains_field<T: key, Name: copy + drop + store>(obj: &Object<T>, name: Name): bool {
