@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fmt::Debug;
 
-use crate::moveos_std::object::{ObjectEntity, RootObjectEntity};
+use crate::{moveos_std::object::ObjectEntity, state::ObjectState};
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct StartupInfo {
@@ -43,7 +43,8 @@ impl StartupInfo {
         self.size
     }
 
-    pub fn into_root_object(self) -> RootObjectEntity {
-        ObjectEntity::root_object(self.state_root, self.size)
+    pub fn into_root_object(self) -> ObjectState {
+        //TODO keep metadata
+        ObjectEntity::root_object(self.state_root, self.size).into_state()
     }
 }

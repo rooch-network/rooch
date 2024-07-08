@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{ModuleId, StructTag};
 use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
-use moveos_types::state::{AnnotatedState, KeyState, State};
+use moveos_types::state::{AnnotatedState, FieldKey, ObjectState};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
 use rooch_executor::proxy::ExecutorProxy;
@@ -81,7 +82,7 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<State>>> {
+    pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<ObjectState>>> {
         self.executor.get_states(access_path).await
     }
 
@@ -100,7 +101,7 @@ impl RpcService {
     pub async fn list_states(
         &self,
         access_path: AccessPath,
-        cursor: Option<KeyState>,
+        cursor: Option<FieldKey>,
         limit: usize,
     ) -> Result<Vec<StateKV>> {
         self.executor.list_states(access_path, cursor, limit).await
@@ -109,7 +110,7 @@ impl RpcService {
     pub async fn list_annotated_states(
         &self,
         access_path: AccessPath,
-        cursor: Option<KeyState>,
+        cursor: Option<FieldKey>,
         limit: usize,
     ) -> Result<Vec<AnnotatedStateKV>> {
         self.executor
@@ -192,14 +193,6 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn get_annotated_states_by_state(
-        &self,
-        states: Vec<State>,
-    ) -> Result<Vec<AnnotatedState>> {
-        let resp = self.executor.get_annotated_states_by_state(states).await?;
-        Ok(resp)
-    }
-
     pub async fn query_transactions(
         &self,
         filter: TransactionFilter,
@@ -254,7 +247,7 @@ impl RpcService {
         let mapping_object_id = RoochToBitcoinAddressMapping::object_id();
         let owner_keys = rooch_addresses
             .iter()
-            .map(|addr| KeyState::from_address((*addr).into()))
+            .map(|addr| FieldKey::derive_from_address(&(*addr).into()))
             .collect::<Vec<_>>();
 
         let access_path = AccessPath::fields(mapping_object_id, owner_keys);
@@ -267,7 +260,11 @@ impl RpcService {
                 Ok((
                     owner,
                     state_opt
-                        .map(|state| state.cast_unchecked::<BitcoinAddress>())
+                        .map(|state| {
+                            state
+                                .value_as_df::<AccountAddress, BitcoinAddress>()
+                                .map(|df| df.value)
+                        })
                         .transpose()?,
                 ))
             })

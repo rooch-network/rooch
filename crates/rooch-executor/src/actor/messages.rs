@@ -9,8 +9,7 @@ use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
-use moveos_types::moveos_std::object::RootObjectEntity;
-use moveos_types::state::{AnnotatedState, KeyState, State};
+use moveos_types::state::{AnnotatedState, FieldKey, ObjectState};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
@@ -77,7 +76,7 @@ pub struct StatesMessage {
 }
 
 impl Message for StatesMessage {
-    type Result = Result<Vec<Option<State>>>;
+    type Result = Result<Vec<Option<ObjectState>>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -101,7 +100,7 @@ impl Message for AnnotatedStatesMessage {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ListStatesMessage {
     pub access_path: AccessPath,
-    pub cursor: Option<KeyState>,
+    pub cursor: Option<FieldKey>,
     pub limit: usize,
 }
 
@@ -112,7 +111,7 @@ impl Message for ListStatesMessage {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ListAnnotatedStatesMessage {
     pub access_path: AccessPath,
-    pub cursor: Option<KeyState>,
+    pub cursor: Option<FieldKey>,
     pub limit: usize,
 }
 
@@ -163,17 +162,8 @@ impl Message for GetTxExecutionInfosByHashMessage {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct GetAnnotatedStatesByStateMessage {
-    pub states: Vec<State>,
-}
-
-impl Message for GetAnnotatedStatesByStateMessage {
-    type Result = Result<Vec<AnnotatedState>>;
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct RefreshStateMessage {
-    pub root: RootObjectEntity,
+    pub root: ObjectState,
     pub is_upgrade: bool,
 }
 
@@ -185,5 +175,5 @@ impl Message for RefreshStateMessage {
 pub struct GetRootMessage {}
 
 impl Message for GetRootMessage {
-    type Result = Result<RootObjectEntity>;
+    type Result = Result<ObjectState>;
 }

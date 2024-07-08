@@ -1,8 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::sync::Arc;
-
 use crate::gas::table::{
     get_gas_schedule_entries, initial_cost_schedule, ClassifiedGasMeter, CostTable, MoveOSGasMeter,
 };
@@ -27,11 +25,10 @@ use moveos_types::addresses::MOVEOS_STD_ADDRESS;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::moveos_std::event::EventID;
 use moveos_types::moveos_std::gas_schedule::GasScheduleUpdated;
-use moveos_types::moveos_std::object::RootObjectEntity;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::moveos_std::tx_result::TxResult;
 use moveos_types::startup_info::StartupInfo;
-use moveos_types::state::{MoveStructState, MoveStructType};
+use moveos_types::state::{MoveStructState, MoveStructType, ObjectState};
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::{
     MoveOSTransaction, RawTransactionOutput, TransactionOutput, VerifiedMoveAction,
@@ -40,6 +37,7 @@ use moveos_types::transaction::{
 use moveos_types::{h256::H256, transaction::FunctionCall};
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct GasPaymentAccount {
@@ -179,7 +177,7 @@ impl MoveOS {
         Ok((state_root, size, output))
     }
 
-    fn load_cost_table(&self, root: &RootObjectEntity) -> VMResult<CostTable> {
+    fn load_cost_table(&self, root: &ObjectState) -> VMResult<CostTable> {
         // We use a scoped lock here to avoid holding the lock for a long time.
         {
             let rlock = self.cost_table.read();
@@ -399,7 +397,7 @@ impl MoveOS {
     /// Execute readonly view function
     pub fn execute_view_function(
         &self,
-        root: RootObjectEntity,
+        root: ObjectState,
         function_call: FunctionCall,
     ) -> FunctionResult {
         //TODO allow user to specify the sender
@@ -410,7 +408,7 @@ impl MoveOS {
 
     pub fn execute_readonly_function(
         &self,
-        root: RootObjectEntity,
+        root: ObjectState,
         tx_context: &TxContext,
         function_call: FunctionCall,
     ) -> FunctionResult {

@@ -13,7 +13,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::str::FromStr;
 
 /// StrVeiw is a wrapper around T that implements Serialize and Deserialize for jsonrpc
-#[derive(Debug, PartialEq, Hash, Eq, Clone, Copy, PartialOrd, Ord)]
+#[derive(Debug, Eq, Hash, PartialEq, Clone, Copy, PartialOrd, Ord)]
 pub struct StrView<T>(pub T);
 
 impl<T> JsonSchema for StrView<T> {
@@ -94,7 +94,7 @@ macro_rules! impl_str_view_for {
 }
 
 // Because the max value of json number is less than u64::MAX, so we need to use string to represent usize, u64, i64, u128, i128, U256
-impl_str_view_for! {usize u64 i64 u128 i128 move_core_types::u256::U256}
+impl_str_view_for! {usize u64 i64 u128 i128 move_core_types::u256::U256 moveos_types::state::FieldKey}
 
 pub type BytesView = StrView<Vec<u8>>;
 

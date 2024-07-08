@@ -3,6 +3,7 @@
 
 use crate::moveos_std::object;
 use crate::moveos_std::object::ObjectID;
+use crate::state::FieldKey;
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     state::{MoveStructState, MoveStructType},
@@ -61,13 +62,13 @@ pub struct Package {
 }
 
 impl Package {
-    pub fn package_id(address: &AccountAddress) -> ObjectID {
+    pub fn package_id(module_address: &AccountAddress) -> ObjectID {
         let module_store_id = ModuleStore::module_store_id();
-        object::custom_child_object_id::<AccountAddress>(
-            module_store_id,
-            address,
-            &Package::struct_tag(),
-        )
+        module_store_id.child_id(Self::derive_package_key(module_address))
+    }
+
+    pub fn derive_package_key(module_address: &AccountAddress) -> FieldKey {
+        FieldKey::derive_from_address(module_address)
     }
 }
 

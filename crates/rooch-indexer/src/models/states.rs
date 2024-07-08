@@ -52,7 +52,10 @@ impl From<IndexerObjectState> for StoredObjectState {
             owner: state.owner.to_hex_literal(),
             flag: state.flag as i16,
             object_type: state.object_type.to_string(),
-            state_root: format!("{:?}", state.state_root),
+            state_root: state
+                .state_root
+                .map(|h| format!("{:?}", h))
+                .unwrap_or_default(),
             size: state.size as i64,
             tx_order: state.tx_order as i64,
             state_index: state.state_index as i64,
@@ -67,7 +70,11 @@ impl StoredObjectState {
         let object_id = ObjectID::from_str(self.object_id.as_str())?;
         let owner = RoochAddress::from_str(self.owner.as_str())?;
         let object_type = StructTag::from_str(self.object_type.as_str())?;
-        let state_root = H256::from_str(self.state_root.as_str())?;
+        let state_root = if self.state_root.is_empty() {
+            None
+        } else {
+            Some(H256::from_str(self.state_root.as_str())?)
+        };
 
         let state = IndexerObjectState {
             object_id,

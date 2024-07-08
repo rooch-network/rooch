@@ -86,22 +86,18 @@ where
                                 .with_message(format!("Object not found: {:?}", object_id))
                                 .finish(location.clone())
                         })?;
-                    if let TypeTag::Struct(s) = object_type {
-                        if s.as_ref() != &object.value.struct_tag {
-                            return Err(PartialVMError::new(
-                                StatusCode::TYPE_MISMATCH,
-                            )
-                            .with_message(format!(
-                                "Invalid object type, object type in argument:{:?}, object type in store:{:?}",
-                                s, object.value.struct_tag
-                            )).finish(location.clone()));
-                        }
-                    } else {
+                    if !object.match_type(&object_type) {
+                        return Err(PartialVMError::new(
+                            StatusCode::TYPE_MISMATCH,
+                        )
+                        .with_message(format!(
+                            "Invalid object type, object type in argument:{:?}, object type in store:{:?}",
+                            object_type, object.value_type()
+                        )).finish(location.clone()));
+                    }
+                    if object.is_dynamic_field() {
                         return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
-                            .with_message(format!(
-                                "Object type should be struct, got:{:?}",
-                                object_type
-                            ))
+                            .with_message("Dynamic field object can not as argument".to_string())
                             .finish(location.clone()));
                     }
                     match parameter {
@@ -110,7 +106,8 @@ where
                             resolved_args.push(ResolvedArg::object_by_ref(object));
                         }
                         Type::MutableReference(_r) => {
-                            // Only the owner can pass &mut Object<T>
+                            // If the object is shared, the object can be passed by mutref
+                            // If the object is not shared, the object can be passed by mutref only if the sender is the owner
                             if object.is_frozen() {
                                 return Err(PartialVMError::new(StatusCode::NO_ACCOUNT_ROLE)
                                     .with_message(format!(
@@ -120,18 +117,19 @@ where
                                     .finish(location.clone()));
                             }
                             let sender = self.tx_context().sender();
-                            if !object.is_shared() && object.owner != sender {
+                            if !object.is_shared() && object.owner() != sender {
                                 return Err(PartialVMError::new(StatusCode::NO_ACCOUNT_ROLE)
                                     .with_message(format!(
                                         "Object owner mismatch, object owner:{:?}, sender:{:?}",
-                                        object.owner, sender
+                                        object.owner(),
+                                        sender
                                     ))
                                     .finish(location.clone()));
                             }
                             resolved_args.push(ResolvedArg::object_by_mutref(object));
                         }
                         Type::StructInstantiation(_, _) => {
-                            // Only the owner can pass `Object<T>`
+                            // Only the owner can pass `Object<T>` by value
                             if object.is_frozen() {
                                 return Err(PartialVMError::new(StatusCode::NO_ACCOUNT_ROLE)
                                     .with_message(format!(
@@ -141,11 +139,12 @@ where
                                     .finish(location.clone()));
                             }
                             let sender = self.tx_context().sender();
-                            if !object.is_shared() && object.owner != sender {
+                            if object.owner() != sender {
                                 return Err(PartialVMError::new(StatusCode::NO_ACCOUNT_ROLE)
                                     .with_message(format!(
                                         "Object owner mismatch, object owner:{:?}, sender:{:?}",
-                                        object.owner, sender
+                                        object.owner(),
+                                        sender
                                     ))
                                     .finish(location.clone()));
                             }

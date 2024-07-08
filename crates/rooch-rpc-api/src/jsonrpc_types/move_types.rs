@@ -17,7 +17,6 @@ use moveos_types::transaction::MoveAction;
 use moveos_types::{
     access_path::AccessPath,
     move_types::FunctionId,
-    moveos_std::object::AnnotatedObject,
     transaction::{FunctionCall, ScriptCall},
 };
 use moveos_types::{
@@ -28,8 +27,6 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::str::FromStr;
-
-use super::{H256View, RoochAddressView};
 
 pub type ModuleIdView = StrView<ModuleId>;
 pub type TypeTagView = StrView<TypeTag>;
@@ -227,29 +224,6 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
 //         })
 //     }
 // }
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct AnnotatedObjectView {
-    pub id: ObjectID,
-    pub owner: RoochAddressView,
-    pub flag: u8,
-    pub state_root: H256View,
-    pub size: u64,
-    pub value: AnnotatedMoveStructView,
-}
-
-impl From<AnnotatedObject> for AnnotatedObjectView {
-    fn from(origin: AnnotatedObject) -> Self {
-        Self {
-            id: origin.id,
-            owner: origin.owner.into(),
-            flag: origin.flag,
-            state_root: origin.state_root.into(),
-            size: origin.size,
-            value: origin.value.into(),
-        }
-    }
-}
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 pub struct ScriptCallView {

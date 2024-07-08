@@ -112,7 +112,7 @@ module bitcoin_move::pending_block{
         let block_id = new_pending_block_id(block_hash);
         let block_obj_id = object::custom_object_id<PendingBlockID, PendingBlock>(block_id);
         assert!(object::exists_object(block_obj_id), ErrorPendingBlockNotFound);
-        let (_, obj) = object::take_object_extend(block_obj_id);
+        let obj = object::take_object_extend(block_obj_id);
         obj
     }
 

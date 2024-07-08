@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{
-    GetAnnotatedStatesByStateMessage, GetEventsByEventHandleMessage, GetEventsByEventIDsMessage,
-    GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage, ListStatesMessage,
-    RefreshStateMessage, ValidateL1BlockMessage, ValidateL1TxMessage,
+    GetEventsByEventHandleMessage, GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage,
+    ListAnnotatedStatesMessage, ListStatesMessage, RefreshStateMessage, ValidateL1BlockMessage,
+    ValidateL1TxMessage,
 };
 use crate::actor::reader_executor::ReaderExecutorActor;
 use crate::actor::{
@@ -23,9 +23,8 @@ use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::moveos_std::account::Account;
 use moveos_types::moveos_std::event::{Event, EventID};
-use moveos_types::moveos_std::object::RootObjectEntity;
 use moveos_types::moveos_std::tx_context::TxContext;
-use moveos_types::state::KeyState;
+use moveos_types::state::FieldKey;
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
@@ -33,7 +32,7 @@ use moveos_types::transaction::TransactionOutput;
 use moveos_types::{access_path::AccessPath, transaction::VerifiedMoveOSTransaction};
 use moveos_types::{
     moveos_std::event::AnnotatedEvent,
-    state::{AnnotatedState, State},
+    state::{AnnotatedState, ObjectState},
 };
 use rooch_types::bitcoin::network::BitcoinNetwork;
 use rooch_types::framework::chain_id::ChainID;
@@ -93,7 +92,7 @@ impl ExecutorProxy {
             .await?
     }
 
-    pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<State>>> {
+    pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<ObjectState>>> {
         self.reader_actor
             .send(StatesMessage { access_path })
             .await?
@@ -111,7 +110,7 @@ impl ExecutorProxy {
     pub async fn list_states(
         &self,
         access_path: AccessPath,
-        cursor: Option<KeyState>,
+        cursor: Option<FieldKey>,
         limit: usize,
     ) -> Result<Vec<StateKV>> {
         self.reader_actor
@@ -126,7 +125,7 @@ impl ExecutorProxy {
     pub async fn list_annotated_states(
         &self,
         access_path: AccessPath,
-        cursor: Option<KeyState>,
+        cursor: Option<FieldKey>,
         limit: usize,
     ) -> Result<Vec<AnnotatedStateKV>> {
         self.reader_actor
@@ -190,16 +189,7 @@ impl ExecutorProxy {
             .await?
     }
 
-    pub async fn get_annotated_states_by_state(
-        &self,
-        states: Vec<State>,
-    ) -> Result<Vec<AnnotatedState>> {
-        self.reader_actor
-            .send(GetAnnotatedStatesByStateMessage { states })
-            .await?
-    }
-
-    pub async fn refresh_state(&self, root: RootObjectEntity, is_upgrade: bool) -> Result<()> {
+    pub async fn refresh_state(&self, root: ObjectState, is_upgrade: bool) -> Result<()> {
         self.reader_actor
             .send(RefreshStateMessage { root, is_upgrade })
             .await?
@@ -221,7 +211,7 @@ impl ExecutorProxy {
             .next()
             .ok_or_else(|| anyhow::anyhow!("chain id not found"))
             .and_then(|state| state.ok_or_else(|| anyhow::anyhow!("chain id not found")))
-            .and_then(|state| Ok(state.as_object::<ChainID>()?.value))
+            .and_then(|state| Ok(state.into_object::<ChainID>()?.value))
     }
 
     pub async fn bitcoin_network(&self) -> Result<BitcoinNetwork> {
@@ -231,7 +221,7 @@ impl ExecutorProxy {
             .next()
             .ok_or_else(|| anyhow::anyhow!("bitcoin network not found"))
             .and_then(|state| state.ok_or_else(|| anyhow::anyhow!("bitcoin network not found")))
-            .and_then(|state| Ok(state.as_object::<BitcoinNetwork>()?.value))
+            .and_then(|state| Ok(state.into_object::<BitcoinNetwork>()?.value))
     }
 
     //TODO provide a trait to abstract the async state reader, elemiate the duplicated code bwteen RpcService and Client
@@ -241,7 +231,7 @@ impl ExecutorProxy {
             .await?
             .pop()
             .flatten()
-            .map(|state| state.as_object::<Account>())
+            .map(|state| state.into_object::<Account>())
             .transpose()?
             .map_or(0, |account| account.value.sequence_number))
     }

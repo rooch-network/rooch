@@ -19,6 +19,7 @@ better_any = { workspace = true }
 fastcrypto = { workspace = true }
 linked-hash-map = { workspace = true }
 log = { workspace = true }
+tracing = { workspace = true }
 once_cell = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

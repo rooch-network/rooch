@@ -2,68 +2,44 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    field_value::{FieldValue, FIELD_VALUE_STRUCT_NAME},
+    assert_abort,
     runtime::{
-        check_type, deserialize, partial_extension_error, serialize, ERROR_OBJECT_ALREADY_BORROWED,
-        ERROR_OBJECT_ALREADY_TAKEN_OUT,
+        deserialize, partial_extension_error, serialize, ERROR_NOT_FOUND,
+        ERROR_OBJECT_ALREADY_BORROWED, ERROR_OBJECT_ALREADY_TAKEN_OUT_OR_EMBEDED,
     },
+    runtime_object_meta::RuntimeObjectMeta,
     TypeLayoutLoader,
 };
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{
-    effects::Op,
-    gas_algebra::NumBytes,
-    language_storage::{StructTag, TypeTag},
-    value::{MoveStructLayout, MoveTypeLayout},
-    vm_status::StatusCode,
+    account_address::AccountAddress, effects::Op, gas_algebra::NumBytes, language_storage::TypeTag,
+    value::MoveTypeLayout, vm_status::StatusCode,
 };
-use move_vm_types::values::{GlobalValue, Reference, Struct, StructRef, Value};
+use move_vm_types::{
+    loaded_data::runtime_types::Type,
+    values::{GlobalValue, Reference, Struct, Value},
+};
 use moveos_types::{
-    addresses::MOVEOS_STD_ADDRESS,
     h256::H256,
+    move_std::string::MoveString,
     moveos_std::{
         move_module::MoveModule,
-        object::{self, ObjectEntity, ObjectID, GENESIS_STATE_ROOT},
+        object::{DynamicField, ObjectID, ObjectMeta},
+        timestamp::Timestamp,
     },
-    state::{
-        FieldChange, KeyState, MoveState, MoveStructState, MoveType, NormalFieldChange,
-        ObjectChange, State,
-    },
+    state::{FieldKey, MoveState, MoveType, ObjectChange, ObjectState},
     state_resolver::StatelessResolver,
 };
 use std::collections::{btree_map::Entry, BTreeMap};
 
-/// A structure representing runtime field.
-pub enum RuntimeField {
-    None(KeyState),
-    Object(RuntimeObject),
-    Normal(RuntimeNormalField),
-}
-
 /// A structure representing a single runtime object.
 pub struct RuntimeObject {
-    pub(crate) id: ObjectID,
-    /// This is the Layout of ObjectEntity<T>
-    pub(crate) value_layout: MoveTypeLayout,
-    /// This is the TypeTag of ObjectEntity<T>
-    pub(crate) value_type: TypeTag,
-    /// This is the ObjectEntity<T> value in MoveVM memory
+    pub(crate) rt_meta: RuntimeObjectMeta,
+    /// This is the T value in MoveVM memory
     pub(crate) value: GlobalValue,
-    /// This is the ObjectEntity<T> pointer in MoveVM memory
+    /// This is the Object<T> pointer in MoveVM memory
     pub(crate) pointer: ObjectPointer,
-    /// The state root of the fields
-    pub(crate) state_root: H256,
-    pub(crate) fields: BTreeMap<KeyState, RuntimeField>,
-}
-
-pub struct RuntimeNormalField {
-    pub(crate) key: KeyState,
-    /// This is the Layout of FieldValue<V>
-    pub(crate) value_layout: MoveTypeLayout,
-    /// This is the TypeTag of FieldValue<V>
-    pub(crate) value_type: TypeTag,
-    /// This is the FieldValue<V> value in MoveVM memory
-    pub(crate) value: GlobalValue,
+    pub(crate) fields: BTreeMap<FieldKey, RuntimeObject>,
 }
 
 /// A structure representing the `Object<T>` in Move.
@@ -81,259 +57,118 @@ impl ObjectPointer {
         Self { value }
     }
 
-    pub fn fresh(object_id: ObjectID) -> Self {
-        let object_id_value = object_id.to_runtime_value();
-        let mut value = GlobalValue::none();
-        value
-            .move_to(Value::struct_(Struct::pack(vec![object_id_value])))
-            .expect("Failed to move value to GlobalValue none");
-        Self { value }
-    }
-
     pub fn none() -> Self {
         let value = GlobalValue::none();
         Self { value }
     }
-}
 
-impl RuntimeNormalField {
-    pub fn load(
-        key: KeyState,
-        value_layout: MoveTypeLayout,
-        state: State,
-    ) -> PartialVMResult<Self> {
-        let value = deserialize(&value_layout, state.value.as_slice())?;
-        //the state only contains V of FieldValue<T>, so we need wrap there.
-        let wraped_value = Value::struct_(Struct::pack(vec![value]));
-        let wraped_layout = MoveTypeLayout::Struct(MoveStructLayout::new(vec![value_layout]));
-        let wraped_type = TypeTag::Struct(Box::new(StructTag {
-            address: MOVEOS_STD_ADDRESS,
-            module: object::MODULE_NAME.to_owned(),
-            name: FIELD_VALUE_STRUCT_NAME.to_owned(),
-            type_params: vec![state.value_type],
-        }));
-        Ok(Self {
-            key,
-            value_layout: wraped_layout,
-            value_type: wraped_type,
-            value: GlobalValue::cached(wraped_value)?,
-        })
+    pub fn init(&mut self, object_id: ObjectID) -> PartialVMResult<()> {
+        let object_id_value = object_id.to_runtime_value();
+        self.value
+            .move_to(Value::struct_(Struct::pack(vec![object_id_value])))
+            .map_err(|(e, _)| e)
     }
 
-    pub fn init(
-        key: KeyState,
-        value_layout: MoveTypeLayout,
-        value_type: TypeTag,
-        value: GlobalValue,
-    ) -> PartialVMResult<Self> {
-        Ok(Self {
-            key,
-            value_layout,
-            value_type,
-            value,
-        })
-    }
-
-    pub fn key(&self) -> &KeyState {
-        &self.key
-    }
-
-    pub fn move_to(
-        &mut self,
-        val: Value,
-        _value_layout: MoveTypeLayout,
-        value_type: TypeTag,
-    ) -> PartialVMResult<()> {
-        if self.value.exists()? {
-            return Err(PartialVMError::new(StatusCode::RESOURCE_ALREADY_EXISTS)
-                .with_message("Field already exists".to_string()));
-        }
-        check_type(&self.value_type, &value_type)?;
-        self.value.move_to(val).map_err(|(e, _)| e)
-    }
-
-    pub fn borrow_value(&self, expect_value_type: TypeTag) -> PartialVMResult<Value> {
-        check_type(&self.value_type, &expect_value_type)?;
-        self.value.borrow_global()
-    }
-
-    pub fn move_from(&mut self, expect_value_type: TypeTag) -> PartialVMResult<Value> {
-        check_type(&self.value_type, &expect_value_type)?;
-        self.value.move_from()
-    }
-
-    pub fn as_move_module(&self) -> PartialVMResult<Option<MoveModule>> {
-        if !self.value.exists()? {
-            Ok(None)
-        } else {
-            let field_runtime_value_ref = self.borrow_value(FieldValue::<MoveModule>::type_tag())?;
-            let field_runtime_value = field_runtime_value_ref
-                .value_as::<Reference>()?
-                .read_ref()?;
-            let field_value = FieldValue::<MoveModule>::from_runtime_value(field_runtime_value)
-                .map_err(|e| {
-                    partial_extension_error(format!(
-                        "expect FieldValue<MoveModule>, but got {:?}",
-                        e
-                    ))
-                })?;
-            Ok(Some(field_value.val))
-        }
-    }
-
-    pub fn into_effect(self) -> (MoveTypeLayout, TypeTag, Option<Op<Value>>) {
-        let op = self.value.into_effect();
-        // we need to unwrap the FieldValue<V> to V
-        let unwraped_op = op.map(|op| {
-            op.map(|val| {
-                let field_value_struct = val.value_as::<Struct>().expect("expect struct value");
-                let mut fields = field_value_struct
-                    .unpack()
-                    .expect("unpack struct should success");
-                fields
-                    .next()
-                    .expect("FieldValue<V> should have one field of type V")
-            })
-        });
-        let unwraped_layout = match self.value_layout {
-            MoveTypeLayout::Struct(layout) => layout
-                .into_fields()
-                .pop()
-                .expect("expect FieldValue<V> must have one field"),
-            _ => unreachable!("expect FieldValue<V> to be a struct"),
-        };
-        let unwraped_type = match self.value_type {
-            TypeTag::Struct(mut tag) => tag.type_params.pop().unwrap_or_else(|| {
-                panic!(
-                    "expect FieldValue<V> must have one type param, value_type:{:?}",
-                    tag
-                )
-            }),
-            _ => unreachable!("expect FieldValue<V> to be a struct"),
-        };
-        (unwraped_layout, unwraped_type, unwraped_op)
-    }
-
-    pub fn into_change(self) -> PartialVMResult<Option<NormalFieldChange>> {
-        let (layout, value_type, op) = self.into_effect();
-        Ok(match op {
-            Some(op) => {
-                let change = op.and_then(|v| {
-                    let bytes = serialize(&layout, &v)?;
-                    let state = State::new(bytes, value_type);
-                    Ok(state)
-                })?;
-                Some(NormalFieldChange { op: change })
-            }
-            None => None,
-        })
+    pub fn has_borrowed(&self) -> bool {
+        //We can not distinguish between `&` and `&mut`
+        //Because the GlobalValue do not distinguish between `&` and `&mut`
+        //If we record a bool value to distinguish between `&` and `&mut`
+        //When the `&mut` is dropped, we can not reset the bool value
+        //The reference_count after cached is 1, so it should be 2 if borrowed
+        debug_assert!(
+            self.value.reference_count() <= 2,
+            "The reference count should not exceed 2"
+        );
+        self.value.reference_count() >= 2
     }
 }
 
 impl RuntimeObject {
-    pub fn id(&self) -> &ObjectID {
-        &self.id
-    }
-
-    pub fn load(id: ObjectID, value_layout: MoveTypeLayout, state: State) -> PartialVMResult<Self> {
-        let raw_obj = state
-            .as_raw_object()
-            .map_err(|e| partial_extension_error(format!("expect raw object, but got {:?}", e)))?;
-        let value = deserialize(&value_layout, state.value.as_slice())?;
-
-        //If the object is system owned and not frozen or shared, it should be embeded in other struct
+    /// Load a runtime object from the state
+    pub fn load(value_layout: MoveTypeLayout, obj_state: ObjectState) -> PartialVMResult<Self> {
+        let metadata = obj_state.metadata;
+        let value = deserialize(&value_layout, &obj_state.value)?;
+        let id = metadata.id.clone();
+        //If the object be embeded in other struct
         //So we should make the object pointer to none, ensure no one can borrow the object pointer
-        let pointer = if raw_obj.is_system_owned() && !(raw_obj.is_frozen() || raw_obj.is_shared())
-        {
+        let pointer = if metadata.is_embeded() {
             ObjectPointer::none()
         } else {
             ObjectPointer::cached(id.clone())
         };
         Ok(Self {
-            id: id.clone(),
-            value_layout,
-            value_type: state.value_type,
+            rt_meta: RuntimeObjectMeta::cached(metadata, value_layout),
             value: GlobalValue::cached(value)?,
             pointer,
-            state_root: raw_obj.state_root(),
             fields: Default::default(),
         })
     }
 
-    pub fn init(
-        id: ObjectID,
-        value_layout: MoveTypeLayout,
-        value_type: TypeTag,
-        value: GlobalValue,
-        state_root: H256,
-    ) -> PartialVMResult<Self> {
-        Ok(Self {
-            id: id.clone(),
-            value_layout,
-            value_type,
-            value,
-            pointer: ObjectPointer::cached(id),
-            state_root,
+    pub fn none(obj_id: ObjectID) -> Self {
+        Self {
+            rt_meta: RuntimeObjectMeta::none(obj_id),
+            value: GlobalValue::none(),
+            pointer: ObjectPointer::none(),
             fields: Default::default(),
-        })
+        }
+    }
+
+    pub fn is_none(&self) -> bool {
+        self.rt_meta.is_none()
+    }
+
+    pub fn id(&self) -> &ObjectID {
+        self.rt_meta.id()
+    }
+
+    pub fn state_root(&self) -> PartialVMResult<H256> {
+        self.rt_meta.state_root()
+    }
+
+    pub fn metadata(&self) -> PartialVMResult<&ObjectMeta> {
+        self.rt_meta.metadata()
     }
 
     pub fn move_to(
         &mut self,
-        val: Value,
-        _value_layout: MoveTypeLayout,
+        value: Value,
         value_type: TypeTag,
+        value_layout: MoveTypeLayout,
     ) -> PartialVMResult<()> {
         if self.value.exists()? {
             return Err(PartialVMError::new(StatusCode::RESOURCE_ALREADY_EXISTS)
                 .with_message("Object Field already exists".to_string()));
         }
-        check_type(&self.value_type, &value_type)?;
-        self.value.move_to(val).map_err(|(e, _)| e)
+        let obj_id = self.rt_meta.id().clone();
+        self.rt_meta.init(value_type, value_layout)?;
+        //If the value not exists, the pointer should also not exists
+        //Because when `add_field` is called, the pointer is taken out and returned to the `native_add_field` function.
+        self.pointer.init(obj_id)?;
+        self.value.move_to(value).map_err(|(e, _)| e)?;
+        Ok(())
     }
 
-    pub fn borrow_value(&self, expect_value_type: TypeTag) -> PartialVMResult<Value> {
-        check_type(&self.value_type, &expect_value_type)?;
+    pub fn borrow_value(&self, expect_value_type: Option<&TypeTag>) -> PartialVMResult<Value> {
+        self.check_type(expect_value_type)?;
         self.value.borrow_global()
     }
 
-    pub fn move_from(&mut self, expect_value_type: TypeTag) -> PartialVMResult<Value> {
-        check_type(&self.value_type, &expect_value_type)?;
+    pub fn move_from(&mut self, expect_value_type: Option<&TypeTag>) -> PartialVMResult<Value> {
+        self.check_type(expect_value_type)?;
+        //Also mark the metadata as deleted or none
+        self.rt_meta.move_from()?;
+        //We do not need to reset the pointer, because:
+        // 1. If the Object is dynamic field, the pointer is taken out and returned to the `native_add_field` function
+        // 2. Otherwise, call `object::remove()` function must take out the object pointer first.
         self.value.move_from()
     }
 
-    pub fn borrow_pointer(&self, _expect_value_type: &TypeTag) -> PartialVMResult<Value> {
-        //check_type(&self.value_type, &expect_value_type)?;
-        //If the object pointer does not exist, it means the object is taken out
-        if !self.pointer.value.exists()? {
-            return Err(PartialVMError::new(StatusCode::ABORTED)
-                .with_sub_status(ERROR_OBJECT_ALREADY_TAKEN_OUT)
-                .with_message(format!("Object {} already taken out", self.id)));
-        }
-        //We can not distinguish between `&` and `&mut`
-        //Because the GlobalValue do not distinguish between `&` and `&mut`
-        //If we record a bool value to distinguish between `&` and `&mut`
-        //When the `&mut` is dropped, we can not reset the bool value
-        if self.pointer.value.reference_count() >= 2 {
-            // We raise an error if the object is already borrowed
-            // Use the error code in object.move for easy debugging
-            return Err(PartialVMError::new(StatusCode::ABORTED)
-                .with_sub_status(ERROR_OBJECT_ALREADY_BORROWED)
-                .with_message(format!("Object {} already borrowed", self.id)));
-        }
-        self.pointer.value.borrow_global()
+    pub fn exists(&self) -> PartialVMResult<bool> {
+        self.value.exists()
     }
 
-    pub fn take_pointer(&mut self, _expect_value_type: &TypeTag) -> PartialVMResult<Value> {
-        self.pointer.value.move_from()
-    }
-
-    pub fn return_pointer(
-        &mut self,
-        pointer: Value,
-        _expect_value_type: &TypeTag,
-    ) -> PartialVMResult<()> {
-        self.pointer.value.move_to(pointer).map_err(|(e, _)| e)
+    pub fn exists_with_type(&self, expect_value_type: &TypeTag) -> PartialVMResult<bool> {
+        Ok(self.value.exists()? && self.rt_meta.value_type()? == expect_value_type)
     }
 
     /// Load a field from the object. If the field not exists, init a None field.
@@ -341,80 +176,35 @@ impl RuntimeObject {
         &mut self,
         layout_loader: &dyn TypeLayoutLoader,
         resolver: &dyn StatelessResolver,
-        key: KeyState,
-    ) -> PartialVMResult<(&mut RuntimeField, Option<Option<NumBytes>>)> {
-        self.load_field_with_layout_fn(resolver, key, |value_type| {
-            layout_loader.get_type_layout(value_type)
-        })
-    }
-
-    pub fn get_loaded_field(&self, key: &KeyState) -> Option<&RuntimeField> {
-        self.fields.get(key)
-    }
-
-    pub fn load_object_field(
-        &mut self,
-        layout_loader: &dyn TypeLayoutLoader,
-        resolver: &dyn StatelessResolver,
-        object_id: &ObjectID,
+        field_key: FieldKey,
     ) -> PartialVMResult<(&mut RuntimeObject, Option<Option<NumBytes>>)> {
-        let (field, loaded) = self.load_field(layout_loader, resolver, object_id.to_key())?;
-        match field {
-            RuntimeField::Object(obj) => Ok((obj, loaded)),
-            RuntimeField::None(_) => Err(PartialVMError::new(StatusCode::MISSING_DATA)
-                .with_message(format!("Can not load Object with id: {}", object_id))),
-            _ => Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
-                .with_message(format!("Not Object Field with key {}", object_id))),
-        }
-    }
-
-    pub fn get_loaded_object_field(
-        &self,
-        object_id: &ObjectID,
-    ) -> PartialVMResult<Option<&RuntimeObject>> {
-        let field = self.get_loaded_field(&object_id.to_key());
-        match field {
-            Some(RuntimeField::Object(obj)) => Ok(Some(obj)),
-            Some(RuntimeField::None(_)) => Ok(None),
-            None => Ok(None),
-            Some(RuntimeField::Normal(field)) => {
-                debug_assert!(
-                    false,
-                    "expect object field, but got {:?}, this should not happend",
-                    field.value_type
-                );
-                Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
-                    .with_message(format!("Not Object Field with key {}", object_id)))
-            }
-        }
-    }
-
-    pub fn load_field_with_layout_fn(
-        &mut self,
-        resolver: &dyn StatelessResolver,
-        key: KeyState,
-        f: impl FnOnce(&TypeTag) -> PartialVMResult<MoveTypeLayout>,
-    ) -> PartialVMResult<(&mut RuntimeField, Option<Option<NumBytes>>)> {
-        Ok(match self.fields.entry(key.clone()) {
+        let state_root = self.state_root()?;
+        let field_obj_id = self.id().child_id(field_key);
+        Ok(match self.fields.entry(field_key) {
             Entry::Vacant(entry) => {
                 let (tv, loaded) =
                     match resolver
-                        .get_field_at(self.state_root, &key)
+                        .get_field_at(state_root, &field_key)
                         .map_err(|err| {
                             partial_extension_error(format!(
                                 "remote object resolver failure: {}",
                                 err
                             ))
                         })? {
-                        Some(state) => {
-                            let value_layout = f(&state.value_type)?;
-                            let state_bytes_len = state.value.len() as u64;
+                        Some(obj_state) => {
+                            debug_assert!(
+                            obj_state.metadata.id == field_obj_id,
+                            "The loaded object id should be equal to the expected field object id"
+                        );
+                            let value_layout =
+                                layout_loader.get_type_layout(obj_state.value_type())?;
+                            let state_bytes_len = obj_state.value.len() as u64;
                             (
-                                RuntimeField::load(key, value_layout, state)?,
+                                RuntimeObject::load(value_layout, obj_state)?,
                                 Some(NumBytes::new(state_bytes_len)),
                             )
                         }
-                        None => (RuntimeField::none(key), None),
+                        None => (RuntimeObject::none(field_obj_id), None),
                     };
                 (entry.insert(tv), Some(loaded))
             }
@@ -422,192 +212,322 @@ impl RuntimeObject {
         })
     }
 
-    pub fn into_change(self) -> PartialVMResult<Option<ObjectChange>> {
-        //TODO we should process the object pointer here
-        //If the object pointer is deleted, there are two case:
-        //1. the object is deleted
-        //2. the object pointer is taken out and not returned, tt should be embeded in other struct, we need to change the Object owener to system.
+    pub fn get_loaded_field(&self, field_key: &FieldKey) -> Option<&RuntimeObject> {
+        self.fields
+            .get(field_key)
+            .filter(|rt_obj| !rt_obj.is_none())
+    }
 
-        let op = self.value.into_effect();
-        let change = match op {
+    pub fn get_mut_loaded_field(&mut self, field_key: &FieldKey) -> Option<&mut RuntimeObject> {
+        self.fields
+            .get_mut(field_key)
+            .filter(|rt_obj| !rt_obj.is_none())
+    }
+
+    pub fn into_change(self, timestamp: &Timestamp) -> PartialVMResult<Option<ObjectChange>> {
+        let object_id = self.id().clone();
+        let mut rt_meta = self.rt_meta;
+        let value_op = self.value.into_effect();
+        let value_change = match value_op {
             Some(op) => {
                 let change = op.and_then(|v| {
-                    let bytes = serialize(&self.value_layout, &v)?;
-                    let state = State::new(bytes, self.value_type);
-                    Ok(state)
+                    let bytes = serialize(rt_meta.value_layout()?, &v)?;
+                    //If the value is changed, we update the `update_at` of the object
+                    rt_meta.update_timestamp(timestamp.milliseconds)?;
+                    Ok(bytes)
                 })?;
                 Some(change)
             }
             None => None,
         };
 
+        let pointer_op = self.pointer.value.into_effect();
+        if let Some(op) = pointer_op {
+            match op {
+                Op::Delete => {
+                    //The object pointer is deleted, and the value is not deleted,
+                    //means the object is taken out and is embeded in other struct
+                    //We need to change the Object owner to system
+                    if !matches!(&value_change, Some(Op::Delete)) {
+                        rt_meta.to_system_owner()?;
+                        if log::log_enabled!(log::Level::Trace) {
+                            tracing::trace!(
+                                object_id = tracing::field::display(&object_id),
+                                op = "embeded",
+                                "Object {} is embeded",
+                                object_id
+                            );
+                        }
+                    }
+                }
+                Op::New(_pointer_value) => {
+                    //If the pointer is new, and the value is not new, means the enbeded object is returned
+                    if !matches!(&value_change, Some(Op::New(_))) {
+                        tracing::trace!(
+                            object_id = tracing::field::display(&object_id),
+                            op = "returned",
+                            "Object {} is returned",
+                            object_id
+                        );
+                    }
+                }
+                Op::Modify(_) => {
+                    //if the pointer is taken out then returned, the pointer is modified
+                }
+            }
+        };
+
         let mut fields_change = BTreeMap::new();
         for (key, field) in self.fields.into_iter() {
-            let field_change = field.into_change()?;
+            let field_change = field.into_change(timestamp)?;
             if let Some(change) = field_change {
                 fields_change.insert(key, change);
             }
         }
-        if change.is_none() && fields_change.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(ObjectChange {
-                op: change,
-                fields: fields_change,
-            }))
-        }
-    }
-
-    pub fn as_object_entity<T: MoveStructState>(&self) -> PartialVMResult<ObjectEntity<T>> {
-        let obj_value = self.value.borrow_global()?;
-        let value_ref = obj_value.value_as::<StructRef>()?;
-        ObjectEntity::<T>::from_runtime_value(value_ref.read_ref()?)
-            .map_err(|_e| partial_extension_error("Convert value to ObjectEntity failed"))
-    }
-}
-
-impl RuntimeField {
-    pub fn field_type(&self) -> String {
-        match self {
-            RuntimeField::None(_) => "None".to_string(),
-            RuntimeField::Object(f) => f.value_type.to_string(),
-            RuntimeField::Normal(f) => f.value_type.to_string(),
-        }
-    }
-
-    /// Load field from state
-    pub fn load(
-        key: KeyState,
-        value_layout: MoveTypeLayout,
-        state: State,
-    ) -> PartialVMResult<Self> {
-        if object::is_object_entity_type(&state.value_type) {
-            let object = RuntimeObject::load(
-                key.as_object_id().map_err(|e| {
-                    partial_extension_error(format!("expect object id,but got {:?}, {:?}", key, e))
-                })?,
-                value_layout,
-                state,
-            )?;
-            Ok(RuntimeField::Object(object))
-        } else {
-            let normal = RuntimeNormalField::load(key, value_layout, state)?;
-            Ok(RuntimeField::Normal(normal))
-        }
-    }
-
-    /// Init a field with value
-    pub fn init(
-        key: KeyState,
-        value_layout: MoveTypeLayout,
-        value_type: TypeTag,
-        value: Value,
-    ) -> PartialVMResult<Self> {
-        // Init none GlobalValue and move value to it, make the data status is dirty
-        let mut global_value = GlobalValue::none();
-        global_value
-            .move_to(value)
-            .expect("Move value to GlobalValue none should success");
-
-        Ok(if object::is_object_entity_type(&value_type) {
-            //The object field is new, so the state_root is the genesis state root
-            let state_root = *GENESIS_STATE_ROOT;
-            let object = RuntimeObject::init(
-                key.as_object_id().map_err(|e| {
-                    partial_extension_error(format!("expect object id, but got {:?}, {:?}", key, e))
-                })?,
-                value_layout,
-                value_type,
-                global_value,
-                state_root,
-            )?;
-            RuntimeField::Object(object)
-        } else {
-            let normal = RuntimeNormalField::init(key, value_layout, value_type, global_value)?;
-            RuntimeField::Normal(normal)
-        })
-    }
-
-    pub fn none(key: KeyState) -> Self {
-        RuntimeField::None(key)
-    }
-
-    pub fn exists(&self) -> PartialVMResult<bool> {
-        match self {
-            RuntimeField::None(_) => Ok(false),
-            RuntimeField::Object(obj) => Ok(obj.value.exists()?),
-            RuntimeField::Normal(normal) => Ok(normal.value.exists()?),
-        }
-    }
-
-    pub fn exists_with_type(&self, expect_value_type: TypeTag) -> PartialVMResult<bool> {
-        match self {
-            RuntimeField::None(_) => Ok(false),
-            RuntimeField::Object(obj) => {
-                Ok(obj.value.exists()? && obj.value_type == expect_value_type)
+        let meta_change = rt_meta.into_effect();
+        match meta_change {
+            Some((metadata, is_dirty)) => {
+                if !is_dirty && value_change.is_none() && fields_change.is_empty() {
+                    Ok(None)
+                } else {
+                    Ok(Some(ObjectChange {
+                        metadata,
+                        value: value_change,
+                        fields: fields_change,
+                    }))
+                }
             }
-            RuntimeField::Normal(normal) => {
-                Ok(normal.value.exists()? && normal.value_type == expect_value_type)
+            None => {
+                debug_assert!(
+                    value_change.is_none() && fields_change.is_empty(),
+                    "The object meta should not be None"
+                );
+                Ok(None)
             }
-        }
-    }
-
-    pub fn move_to(
-        &mut self,
-        val: Value,
-        value_layout: MoveTypeLayout,
-        value_type: TypeTag,
-    ) -> PartialVMResult<()> {
-        match self {
-            RuntimeField::None(key) => {
-                *self = Self::init(key.clone(), value_layout, value_type, val)?;
-                Ok(())
-            }
-            RuntimeField::Object(obj) => obj.move_to(val, value_layout, value_type),
-            RuntimeField::Normal(normal) => normal.move_to(val, value_layout, value_type),
-        }
-    }
-
-    pub fn borrow_value(&self, expect_value_type: TypeTag) -> PartialVMResult<Value> {
-        match self {
-            RuntimeField::None(_) => Err(PartialVMError::new(StatusCode::MISSING_DATA)
-                .with_message(format!(
-                    "Cannot borrow value of None as type {}",
-                    expect_value_type
-                ))),
-            RuntimeField::Object(obj) => obj.borrow_value(expect_value_type),
-            RuntimeField::Normal(normal) => normal.borrow_value(expect_value_type),
-        }
-    }
-
-    pub fn move_from(&mut self, expect_value_type: TypeTag) -> PartialVMResult<Value> {
-        match self {
-            RuntimeField::None(_) => Err(PartialVMError::new(StatusCode::MISSING_DATA)
-                .with_message(format!(
-                    "Cannot move value of unknown type as type {}",
-                    expect_value_type
-                ))),
-            RuntimeField::Object(obj) => obj.move_from(expect_value_type),
-            RuntimeField::Normal(normal) => normal.move_from(expect_value_type),
         }
     }
 
     pub fn as_move_module(&self) -> PartialVMResult<Option<MoveModule>> {
-        match self {
-            RuntimeField::Normal(normal) => normal.as_move_module(),
-            RuntimeField::None(_) => Ok(None),
-            _ => Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
-                .with_message("Not Module Field".to_string())),
+        if !self.value.exists()? {
+            Ok(None)
+        } else {
+            let field_runtime_value_ref =
+                self.borrow_value(Some(&DynamicField::<MoveString, MoveModule>::type_tag()))?;
+            let field_runtime_value = field_runtime_value_ref
+                .value_as::<Reference>()?
+                .read_ref()?;
+            let field =
+                DynamicField::<MoveString, MoveModule>::from_runtime_value(field_runtime_value)
+                    .map_err(|e| {
+                        partial_extension_error(format!(
+                            "expect FieldValue<MoveModule>, but got {:?}",
+                            e
+                        ))
+                    })?;
+            Ok(Some(field.value))
         }
     }
+}
 
-    pub fn into_change(self) -> PartialVMResult<Option<FieldChange>> {
-        match self {
-            RuntimeField::None(_) => Ok(None),
-            RuntimeField::Object(obj) => obj.into_change().map(|op| op.map(FieldChange::Object)),
-            RuntimeField::Normal(normal) => {
-                normal.into_change().map(|op| op.map(FieldChange::Normal))
+/// ObjectPointer functions
+impl RuntimeObject {
+    pub fn borrow_object(&self, expect_value_type: Option<&TypeTag>) -> PartialVMResult<Value> {
+        self.check_type(expect_value_type)?;
+
+        //If the object does not exist, it means the object is deleted
+        assert_abort!(
+            self.value.exists()?,
+            ERROR_NOT_FOUND,
+            "Object {} is not found",
+            self.id()
+        );
+
+        //If the object pointer does not exist, it means the object is taken out
+        assert_abort!(
+            self.pointer.value.exists()?,
+            ERROR_OBJECT_ALREADY_TAKEN_OUT_OR_EMBEDED,
+            "Object {} already taken out",
+            self.id()
+        );
+
+        assert_abort!(
+            !self.pointer.has_borrowed(),
+            ERROR_OBJECT_ALREADY_BORROWED,
+            "Object {} already borrowed",
+            self.id()
+        );
+
+        self.pointer.value.borrow_global()
+    }
+
+    pub fn take_object(&mut self, expect_value_type: Option<&TypeTag>) -> PartialVMResult<Value> {
+        self.check_type(expect_value_type)?;
+        assert_abort!(
+            self.pointer.value.exists()?,
+            ERROR_OBJECT_ALREADY_TAKEN_OUT_OR_EMBEDED,
+            "Object {} already taken out",
+            self.id()
+        );
+
+        assert_abort!(
+            !self.pointer.has_borrowed(),
+            ERROR_OBJECT_ALREADY_BORROWED,
+            "Object {} already borrowed",
+            self.id()
+        );
+        self.pointer.value.move_from()
+    }
+
+    /// Transfer the object to a new owner, the pointer is `Object<T>` in MoveVM
+    pub fn transfer_object(
+        &mut self,
+        pointer: Value,
+        new_owner: AccountAddress,
+        expect_value_type: Option<&TypeTag>,
+    ) -> PartialVMResult<()> {
+        self.return_pointer(pointer, expect_value_type)?;
+        self.rt_meta.transfer(new_owner)?;
+        Ok(())
+    }
+
+    pub fn to_shared_object(
+        &mut self,
+        pointer: Value,
+        expect_value_type: Option<&TypeTag>,
+    ) -> PartialVMResult<()> {
+        self.return_pointer(pointer, expect_value_type)?;
+        self.rt_meta.to_shared()?;
+        Ok(())
+    }
+
+    pub fn to_frozen_object(
+        &mut self,
+        pointer: Value,
+        expect_value_type: Option<&TypeTag>,
+    ) -> PartialVMResult<()> {
+        self.return_pointer(pointer, expect_value_type)?;
+        self.rt_meta.to_frozen()?;
+        Ok(())
+    }
+
+    fn return_pointer(
+        &mut self,
+        pointer: Value,
+        expect_value_type: Option<&TypeTag>,
+    ) -> PartialVMResult<()> {
+        self.check_type(expect_value_type)?;
+        debug_assert!(
+            !self.pointer.value.exists()?,
+            "The object pointer should not exist"
+        );
+        self.pointer.value.move_to(pointer).map_err(|(e, _)| e)
+    }
+}
+
+/// Object field functions
+impl RuntimeObject {
+    pub fn add_field(
+        &mut self,
+        layout_loader: &dyn TypeLayoutLoader,
+        resolver: &dyn StatelessResolver,
+        field_key: FieldKey,
+        rt_type: &Type,
+        value: Value,
+    ) -> PartialVMResult<(Value, Option<Option<NumBytes>>)> {
+        let value_type = layout_loader.type_to_type_tag(rt_type)?;
+        let value_layout = layout_loader.get_type_layout(&value_type)?;
+        let (tv, field_load_gas) = self.load_field(layout_loader, resolver, field_key)?;
+        tv.move_to(value, value_type.clone(), value_layout)?;
+        let object_pointer = tv.take_object(Some(&value_type))?;
+        self.rt_meta.increase_size()?;
+        if log::log_enabled!(log::Level::Trace) {
+            tracing::trace!(
+                object_id = tracing::field::display(&self.rt_meta.id()),
+                op = "add_field",
+                "Add field {} to Object {}",
+                field_key,
+                &self.rt_meta.id()
+            );
+        }
+        Ok((object_pointer, field_load_gas))
+    }
+
+    pub fn remove_field(
+        &mut self,
+        layout_loader: &dyn TypeLayoutLoader,
+        resolver: &dyn StatelessResolver,
+        field_key: FieldKey,
+        rt_type: &Type,
+    ) -> PartialVMResult<(Value, Option<Option<NumBytes>>)> {
+        let expect_value_type = layout_loader.type_to_type_tag(rt_type)?;
+        let (tv, field_load_gas) = self.load_field(layout_loader, resolver, field_key)?;
+        let value = tv.move_from(Some(&expect_value_type))?;
+        self.rt_meta.decrease_size()?;
+        if log::log_enabled!(log::Level::Trace) {
+            tracing::trace!(
+                object_id = tracing::field::display(self.rt_meta.id()),
+                op = "remove_field",
+                "Remove field {} from Object {}",
+                field_key,
+                self.rt_meta.id()
+            );
+        }
+        Ok((value, field_load_gas))
+    }
+
+    pub fn borrow_field(
+        &mut self,
+        layout_loader: &dyn TypeLayoutLoader,
+        resolver: &dyn StatelessResolver,
+        field_key: FieldKey,
+        rt_type: &Type,
+    ) -> PartialVMResult<(Value, Option<Option<NumBytes>>)> {
+        let expect_value_type = layout_loader.type_to_type_tag(rt_type)?;
+        let (tv, field_load_gas) = self.load_field(layout_loader, resolver, field_key)?;
+        let value = tv.borrow_value(Some(&expect_value_type))?;
+        Ok((value, field_load_gas))
+    }
+}
+
+/// Internal functions
+impl RuntimeObject {
+    /// Check the object type is equal to the expect type
+    /// If the expect type is None, do nothing, for skip the type check
+    fn check_type(&self, expect_type: Option<&TypeTag>) -> PartialVMResult<()> {
+        if let Some(expect_type) = expect_type {
+            let actual_type = self.rt_meta.value_type()?;
+            if expect_type != actual_type {
+                return Err(
+                    PartialVMError::new(StatusCode::TYPE_MISMATCH).with_message(format!(
+                        "RuntimeObject type {}, but get type {}",
+                        actual_type, expect_type
+                    )),
+                );
             }
         }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use moveos_types::moveos_std::object::ObjectID;
+
+    #[test]
+    fn test_object_pointer_has_borrowed() {
+        let object_id = ObjectID::random();
+        let object_pointer_cached = ObjectPointer::cached(object_id.clone());
+        assert_eq!(object_pointer_cached.value.reference_count(), 1);
+        assert!(!object_pointer_cached.has_borrowed());
+        let _borrowed_pointer = object_pointer_cached.value.borrow_global().unwrap();
+        assert!(object_pointer_cached.has_borrowed());
+
+        let mut object_pointer_fresh = ObjectPointer::none();
+        assert_eq!(object_pointer_fresh.value.reference_count(), 0);
+        object_pointer_fresh.init(ObjectID::random()).unwrap();
+        assert!(!object_pointer_fresh.has_borrowed());
+        let _borrowed_pointer = object_pointer_fresh.value.borrow_global().unwrap();
+        assert!(object_pointer_fresh.has_borrowed());
     }
 }
