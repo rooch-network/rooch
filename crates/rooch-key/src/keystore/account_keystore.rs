@@ -42,7 +42,6 @@ pub trait AccountKeystore {
     fn add_addresses_to_mnemonic_data(
         &mut self,
         address: RoochAddress,
-        mnemonic_data: &mut MnemonicData,
     ) -> Result<(), anyhow::Error>;
 
     fn get_mnemonic(&self, password: Option<String>) -> Result<MnemonicResult, anyhow::Error>;
@@ -53,7 +52,7 @@ pub trait AccountKeystore {
         password: Option<String>,
     ) -> Result<GeneratedKeyPair, anyhow::Error> {
         // load mnemonic phrase from keystore
-        let mut mnemonic = self.get_mnemonic(password.clone())?;
+        let mnemonic = self.get_mnemonic(password.clone())?;
         let derivation_path = generate_derivation_path(account_index)?;
         let result = generate_new_key_pair(
             Some(mnemonic.mnemonic_phrase),
@@ -66,7 +65,7 @@ pub trait AccountKeystore {
             new_address,
             result.key_pair_data.private_key_encryption.clone(),
         )?;
-        self.add_addresses_to_mnemonic_data(new_address, &mut mnemonic.mnemonic_data)?;
+        self.add_addresses_to_mnemonic_data(new_address)?;
         Ok(result)
     }
 
