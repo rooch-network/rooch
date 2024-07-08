@@ -4,9 +4,8 @@
 use anyhow::Result;
 use coerce::actor::message::Message;
 use moveos_types::moveos_std::event::Event;
-use moveos_types::moveos_std::object::RootObjectEntity;
 use moveos_types::moveos_std::tx_context::TxContext;
-use moveos_types::state::StateChangeSet;
+use moveos_types::state::{ObjectState, StateChangeSet};
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{IndexerObjectState, IndexerStateID, ObjectStateFilter};
@@ -17,7 +16,7 @@ use serde::{Deserialize, Serialize};
 /// Indexer write Message
 #[derive(Debug, Clone)]
 pub struct UpdateIndexerMessage {
-    pub root: RootObjectEntity,
+    pub root: ObjectState,
     pub ledger_transaction: LedgerTransaction,
     pub execution_info: TransactionExecutionInfo,
     pub moveos_tx: VerifiedMoveOSTransaction,
@@ -57,7 +56,7 @@ impl Message for IndexerEventsMessage {
 /// Indexer State write Message
 #[derive(Debug, Clone)]
 pub struct IndexerStatesMessage {
-    pub root: RootObjectEntity,
+    pub root: ObjectState,
     pub tx_order: u64,
     pub tx_timestamp: u64,
     pub state_change_set: StateChangeSet,

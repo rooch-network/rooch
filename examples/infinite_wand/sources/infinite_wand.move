@@ -62,7 +62,7 @@ module infinite_wand::infinite_wand {
             whitelist: table::new()
         });
         let nft_display_object = display::object_display<InfiniteWand>();
-        display::set_value(nft_display_object, string::utf8(b"name"), string::utf8(b"InfiniteWand#{value.nft_id}"));
+        display::set_value(nft_display_object, string::utf8(b"name"), string::utf8(b"InfiniteWand#{nft_id}"));
         display::set_value(nft_display_object, string::utf8(b"description"), string::utf8(b"PreToken of InfiniteGames DAO"));
         display::set_value(nft_display_object, string::utf8(b"image_url"), string::utf8(b"https://base_url/{level}"));
         object::to_shared(coin_info_obj);

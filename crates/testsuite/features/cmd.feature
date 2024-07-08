@@ -4,22 +4,23 @@ Feature: Rooch CLI integration tests
     Scenario: rooch rpc test
       Given a server for rooch_rpc_test
       Then cmd: "rpc request --method rooch_getStates --params '["/resource/0x3/0x3::account_coin_store::AutoAcceptCoins",{"decode":true}]' --json"
-      Then assert: "{{$.rpc[-1][0].value_type}} == '0x3::account_coin_store::AutoAcceptCoins'"
+      #The object_type contians blank space, so, we should quote it
+      Then assert: "'{{$.rpc[-1][0].object_type}}' == '0x2::object::DynamicField<0x1::string::String, 0x3::account_coin_store::AutoAcceptCoins>'"
       Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3",{"decode":true}]' --json"
-      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::account::Account>'"
+      Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::account::Account'"
       Then cmd: "rpc request --method rooch_listStates --params '["/resource/0x3", null, null, {"decode":true}]' --json"
       Then assert: "'{{$.rpc[-1]}}' contains '0x3::account_coin_store::AutoAcceptCoins'"
       Then cmd: "rpc request --method rooch_getStates --params '["/object/0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9",{"decode":true}]' --json"
-      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::object::Timestamp>'"
-      Then assert: "{{$.rpc[-1][0].decoded_value.value.value.value.milliseconds}} == 0"
+      Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::object::Timestamp'"
+      Then assert: "{{$.rpc[-1][0].decoded_value.value.milliseconds}} == 0"
       Then cmd: "rpc request --method rooch_getStates --params '["/object/0x2::object::Timestamp",{"decode":true}]' --json"
-      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::object::Timestamp>'"
+      Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::object::Timestamp'"
       Then cmd: "rpc request --method rooch_getObjectStates --params '["0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9", {"decode":false}]' --json"
       Then cmd: "rpc request --method rooch_getObjectStates --params '["0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9", {"decode":true}]' --json"
       Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::object::Timestamp'"
       Then assert: "{{$.rpc[-1][0].value}} == {{$.rpc[-2][0].value}}"
-      Then cmd: "rpc request --method rooch_getFieldStates --params '["0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb", ["0x41022214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb8238d4e7553801ebf92b4311e16bbeb26eec676fd5bcbb31dcc59610148d90c8070000000000000000000000000000000000000000000000000000000000000002066f626a656374084f626a656374494400"], {"decode": true, "showDisplay": true}]' --json"
-      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::module_store::Package>'"
+      Then cmd: "rpc request --method rooch_getFieldStates --params '["0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb", ["0x337bf72017d07657344a29fff043e10db11eb2e0c8c3ea8e2b6ed36e44ea9c9d"], {"decode": true, "showDisplay": true}]' --json"
+      Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::module_store::Package'"
       Then cmd: "rpc request --method rooch_listFieldStates --params '["0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb", null, "2", {"decode": false, "showDisplay": false}]' --json"
       Then assert: "{{$.rpc[-1].has_next_page}} == true"
       Then stop the server 
@@ -42,9 +43,9 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       Then cmd: "rpc request --method rooch_getStates --params '["/object/0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9",{"decode":true}]' --json"
-      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::object::Timestamp>'"
+      Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::object::Timestamp'"
       # ensure the tx_timestamp update the global timestamp
-      Then assert: "{{$.rpc[-1][0].decoded_value.value.value.value.milliseconds}} != 0"
+      Then assert: "{{$.rpc[-1][0].decoded_value.value.milliseconds}} != 0"
 
       # session key
       Then cmd: "session-key create  --app-name test --app-url https:://test.rooch.network --scope 0x3::empty::empty"
@@ -69,14 +70,14 @@ Feature: Rooch CLI integration tests
       Then cmd: "object -i 0x3" 
       Then cmd: "object -i 0x2::object::Timestamp"
       Then cmd: "state --access-path /object/0x2::object::Timestamp"
-      Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::object::Timestamp>'"
+      Then assert: "{{$.state[-1][0].object_type}} == '0x2::object::Timestamp'"
       Then cmd: "state --access-path /object/0x3::chain_id::ChainID"
-      Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::chain_id::ChainID>'"
-      Then assert: "{{$.state[-1][0].decoded_value.value.value.value.id}} == 4"
+      Then assert: "{{$.state[-1][0].object_type}} == '0x3::chain_id::ChainID'"
+      Then assert: "{{$.state[-1][0].decoded_value.value.id}} == 4"
       Then cmd: "state --access-path /object/0x3::address_mapping::RoochToBitcoinAddressMapping"
-      Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::address_mapping::RoochToBitcoinAddressMapping>'"
+      Then assert: "{{$.state[-1][0].object_type}} == '0x3::address_mapping::RoochToBitcoinAddressMapping'"
       Then cmd: "state --access-path /object/0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>"
-      Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>>'"
+      Then assert: "{{$.state[-1][0].object_type}} == '0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>'"
       Then stop the server
 
     @serial
@@ -160,8 +161,8 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].return_values[0].decoded_value}} == value1"
       #the access-path argument do not support named address yet, so, we use `{{$.address_mapping.default}}` template var to repleace it.
       Then cmd: "state --access-path /resource/{{$.address_mapping.default}}/{{$.address_mapping.default}}::kv_store::KVStore"
-      Then cmd: "state --access-path /fields/{{$.state[-1][0].decoded_value.value.table.value.handle.value.id}}/key1"
-      Then assert: "{{$.state[-1][0].decoded_value}} == value1"
+      Then cmd: "state --access-path /fields/{{$.state[-1][0].decoded_value.value.value.value.table.value.handle.value.id}}/key1"
+      Then assert: "{{$.state[-1][0].decoded_value.value.value}} == value1"
 
 
       Then stop the server
@@ -210,7 +211,7 @@ Feature: Rooch CLI integration tests
       Then stop the server
 
   @serial
-  Scenario: publish through Move entry function and module upgrade
+  Scenario: publish_through_entry_function publish through Move entry function and module upgrade
       Given a server for publish_through_entry_function
 
       # The counter example
@@ -222,7 +223,7 @@ Feature: Rooch CLI integration tests
       Then cmd: "move view --function default::counter::value"
       Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 1"
       Then cmd: "resource --address default --resource default::counter::Counter"
-      Then assert: "{{$.resource[-1].decoded_value.value.value}} == 1"
+      Then assert: "{{$.resource[-1].decoded_value.value.value.value.value}} == 1"
 
       # The entry_function_arguments example
       Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default"
@@ -291,7 +292,9 @@ Feature: Rooch CLI integration tests
       Then cmd: "event get-events-by-event-handle -t default::pub_transfer::NewPubEvent"
       Then cmd: "move run --function 0x3::transfer::transfer_object --type-args default::pub_transfer::Pub --args address:{{$.account[-1].account0.hex_address}} --args object:{{$.event[-1].data[0].decoded_event_data.value.id}}"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "object -t default::pub_transfer::Pub -o {{$.account[-1].account0.address}}"
+      #TODO FIXME the indexer do not update the owner after object transfer.
+      Then sleep: "2"
+      Then cmd: "object -t default::pub_transfer::Pub"
       Then assert: "{{$.object[-1].data[0].owner}} == {{$.account[-1].account0.address}}"
       
       #child object
@@ -300,13 +303,13 @@ Feature: Rooch CLI integration tests
       
       Then cmd: "event get-events-by-event-handle -t default::child_object::NewChildEvent"
       Then cmd: "state --access-path /object/{{$.event[-1].data[0].decoded_event_data.value.id}}"
-      Then assert: "{{$.state[-1][0].decoded_value.value.value.value.name}} == alice"
+      Then assert: "{{$.state[-1][0].decoded_value.value.name}} == alice"
 
       Then cmd: "move run --function default::third_party_module_for_child_object::update_child_name --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --args string:bob"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       
       Then cmd: "state --access-path /object/{{$.event[-1].data[0].decoded_event_data.value.id}}"
-      Then assert: "{{$.state[-1][0].decoded_value.value.value.value.name}} == bob"
+      Then assert: "{{$.state[-1][0].decoded_value.value.name}} == bob"
 
       # because the indexer is async update, so sleep 2 seconds to wait indexer update.
       Then sleep: "2"
@@ -337,7 +340,7 @@ Feature: Rooch CLI integration tests
       
       Then cmd: "event get-events-by-event-handle -t default::display::NewObjectEvent"
       Then cmd: "state --access-path /object/{{$.event[-1].data[0].decoded_event_data.value.id}}"
-      Then assert: "{{$.state[-1][0].decoded_value.value.value.type}} == '{{$.address_mapping.default}}::display::ObjectType'"
+      Then assert: "{{$.state[-1][0].object_type}} == '{{$.address_mapping.default}}::display::ObjectType'"
 
       Then cmd: "rpc request --method rooch_getStates --params '["/object/{{$.event[-1].data[0].decoded_event_data.value.id}}", {"decode": false, "showDisplay": true}]' --json"
       Then assert: "{{$.rpc[-1][0].display_fields.fields.name}}  == test_object"

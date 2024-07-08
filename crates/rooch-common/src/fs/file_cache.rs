@@ -2,11 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::io::Result;
-#[cfg(target_os = "linux")]
-use std::os::unix::io::AsRawFd;
 use std::path::PathBuf;
 
-#[allow(dead_code)]
 pub struct FileCacheManager {
     #[cfg(target_os = "linux")]
     file: std::fs::File,

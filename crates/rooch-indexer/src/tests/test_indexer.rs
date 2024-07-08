@@ -48,8 +48,8 @@ fn random_new_object_states() -> Result<Vec<IndexerObjectState>> {
     let mut state_index = 0u64;
     let mut rng = thread_rng();
     for n in 0..rng.gen_range(1..=10) {
-        let state = IndexerObjectState::new_from_raw_object(
-            random_table_object()?.to_raw(),
+        let state = IndexerObjectState::new_from_object_state(
+            random_table_object()?.into_state(),
             n as u64,
             state_index,
         );
@@ -94,7 +94,7 @@ fn test_transaction_store() -> Result<()> {
     let tx_context = TxContext::new_readonly_ctx(AccountAddress::random());
     let move_action = random_verified_move_action();
     let random_moveos_tx = VerifiedMoveOSTransaction {
-        root: ObjectEntity::genesis_root_object(),
+        root: ObjectEntity::genesis_root_object().into_state(),
         ctx: tx_context,
         action: move_action,
         pre_execute_functions: random_function_calls(),
@@ -130,7 +130,7 @@ fn test_event_store() -> Result<()> {
     let tx_context = TxContext::new_readonly_ctx(AccountAddress::random());
     let move_action = random_verified_move_action();
     let random_moveos_tx = VerifiedMoveOSTransaction {
-        root: ObjectEntity::genesis_root_object(),
+        root: ObjectEntity::genesis_root_object().into_state(),
         ctx: tx_context,
         action: move_action,
         pre_execute_functions: random_function_calls(),
@@ -193,14 +193,14 @@ fn test_object_type_query() -> Result<()> {
         object_id.clone(),
         owner,
         0,
-        H256::random(),
+        Some(H256::random()),
         0,
         0,
         0,
         CoinStore::<GasCoin>::new(100u64.into(), false),
     );
-    let raw_obj = coin_store_obj.to_raw();
-    let state = IndexerObjectState::new_from_raw_object(raw_obj, 1, 0);
+    let raw_obj = coin_store_obj.into_state();
+    let state = IndexerObjectState::new_from_object_state(raw_obj, 1, 0);
     let object_states = vec![state];
     indexer_store.persist_or_update_object_states(object_states.clone())?;
     // filter by exact object type
@@ -245,7 +245,7 @@ fn test_escape_transaction() -> Result<()> {
     let tx_context = TxContext::new_readonly_ctx(AccountAddress::random());
     let move_action = random_verified_move_action();
     let random_moveos_tx = VerifiedMoveOSTransaction {
-        root: ObjectEntity::genesis_root_object(),
+        root: ObjectEntity::genesis_root_object().into_state(),
         ctx: tx_context,
         action: move_action,
         pre_execute_functions: random_function_calls(),

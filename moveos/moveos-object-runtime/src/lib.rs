@@ -7,10 +7,10 @@ use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::loaded_data::runtime_types::Type;
 use runtime::partial_extension_error;
 
-pub mod field_value;
 pub mod resolved_arg;
 pub mod runtime;
 pub mod runtime_object;
+pub mod runtime_object_meta;
 pub mod tx_context;
 
 pub trait TypeLayoutLoader {
@@ -30,4 +30,29 @@ impl<'a, 'b> TypeLayoutLoader for NativeContext<'a, 'b> {
     fn type_to_type_tag(&self, ty: &Type) -> PartialVMResult<TypeTag> {
         self.type_to_type_tag(ty)
     }
+}
+
+/// Asserts that a condition is true, otherwise returns an MoveVM abort with a message.
+#[macro_export]
+macro_rules! assert_abort {
+    ($cond:expr, $abort:expr $(,)?) => {
+        if !$cond {
+            return Err(move_binary_format::errors::PartialVMError::new(StatusCode::ABORTED)
+                .with_sub_status($abort));
+        }
+    };
+    ($cond:expr, $abort:expr, $msg:literal $(,)?) => {
+        if !$cond {
+            return Err(move_binary_format::errors::PartialVMError::new(StatusCode::ABORTED)
+                .with_sub_status($abort)
+                .with_message($msg:literal));
+        }
+    };
+    ($cond:expr, $abort:expr, $fmt:expr, $($arg:tt)*) => {
+        if !$cond {
+            return Err(move_binary_format::errors::PartialVMError::new(StatusCode::ABORTED)
+                .with_sub_status($abort)
+                .with_message(format!($fmt, $($arg)*)));
+        }
+    };
 }

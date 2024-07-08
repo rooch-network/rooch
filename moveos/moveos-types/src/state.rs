@@ -1,12 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::h256;
 use crate::move_std::string::MoveString;
-use crate::moveos_std::object::{AnnotatedObject, ObjectEntity, RawObject, GENESIS_STATE_ROOT};
-use crate::moveos_std::object::{ObjectID, RootObjectEntity};
+use crate::moveos_std::object::{self, ObjectID};
+use crate::moveos_std::object::{
+    AnnotatedObject, DynamicField, ObjectEntity, ObjectMeta, RawData, RawObject,
+};
 use anyhow::{bail, ensure, Result};
 use core::str;
-use move_core_types::language_storage::ModuleId;
+use hex::FromHex;
 use move_core_types::{
     account_address::AccountAddress,
     effects::Op,
@@ -17,146 +20,221 @@ use move_core_types::{
     u256::U256,
     value::{MoveStructLayout, MoveTypeLayout, MoveValue},
 };
-use move_resource_viewer::{AnnotatedMoveValue, MoveValueAnnotator};
+use move_resource_viewer::{AnnotatedMoveStruct, MoveValueAnnotator};
 use move_vm_types::values::{Struct, Value};
 use primitive_types::H256;
-use serde::ser::Error;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{
+    de::DeserializeOwned, de::Error as _, Deserialize, Deserializer, Serialize, Serializer,
+};
 use std::collections::BTreeMap;
+use std::fmt;
+use std::fmt::Debug;
 use std::str::FromStr;
-
-/// `State` is represent state in MoveOS statedb, it can be a Move module or a Move Object or a Move resource or a Table value
+/// `ObjectState` is represent state in MoveOS statedb
+/// It can be DynamicField  or user defined Move Struct
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-pub struct State {
-    /// the bytes of state
+pub struct ObjectState {
+    pub metadata: ObjectMeta,
     pub value: Vec<u8>,
-    /// the type of state
-    pub value_type: TypeTag,
 }
 
-/// `KeyState` is represent key state
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
-pub struct KeyState {
-    /// the bytes of key state
-    pub key: Vec<u8>,
-    /// the type of key state
-    pub key_type: TypeTag,
-}
+/// `FieldKey` is represent field key in statedb, it is a hash of (key|key_type)
+#[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Clone, Copy)]
+pub struct FieldKey(pub [u8; FieldKey::LENGTH]);
 
-impl std::fmt::Debug for KeyState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let hex_key = hex::encode(&self.key);
-        write!(
-            f,
-            "key-type:{}, key: 0x{}",
-            self.key_type.to_canonical_string(),
-            hex_key
-        )
-    }
-}
+impl FieldKey {
+    pub const LENGTH: usize = AccountAddress::LENGTH;
 
-impl KeyState {
-    pub fn new(key: Vec<u8>, key_type: TypeTag) -> Self {
-        Self { key, key_type }
+    pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
+        Self(bytes)
     }
 
-    pub fn from_string(s: &str) -> Self {
-        let key = bcs::to_bytes(s).expect("bcs to_bytes String must success.");
-        KeyState::new(key, MoveString::type_tag())
-    }
-
-    pub fn from_address(address: AccountAddress) -> Self {
-        KeyState::new(address.to_vec(), AccountAddress::type_tag())
-    }
-
-    pub fn from_module_id(module_id: &ModuleId) -> Self {
-        // The key is the moduleId string in bcs serialize format, not String::into_bytes.
-        // bcs::to_bytes(&String) same as bcs::to_bytes(&MoveString)
-        let key = bcs::to_bytes(&module_id.short_str_lossless())
-            .expect("bcs to_bytes String must success.");
-        //TODO should we use MoveAsciiString here? unify with resource key
-        KeyState::new(key, MoveString::type_tag())
-    }
-
-    pub fn from_struct_tag(struct_tag: &StructTag) -> Self {
-        // The resource key is struct_tag to_canonical_string in bcs serialize format string, not String::into_bytes.
-        let key = bcs::to_bytes(&struct_tag.to_canonical_string())
-            .expect("bcs to_bytes String must success.");
-        KeyState::new(key, MoveString::type_tag())
-    }
-
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self>
+    /// Derive a dynamic field key from the key
+    pub fn derive<K>(key: &K) -> Result<Self>
     where
-        Self: Sized,
+        K: ?Sized + Serialize + MoveType + Debug,
     {
-        bcs::from_bytes(bytes)
-            .map_err(|e| anyhow::anyhow!("Deserialize the KeyState error: {:?}", e))
+        let key_type_tag = K::type_tag();
+        let k_tag_str = key_type_tag.to_canonical_string();
+        tracing::trace!(
+            "Deriving dynamic field key for key={:?}, key_type_tag={:?}",
+            key,
+            k_tag_str,
+        );
+
+        // hash(key || key_type_tag)
+        let mut buffer = bcs::to_bytes(key)?;
+        buffer.extend_from_slice(k_tag_str.as_bytes());
+        let hash = h256::sha3_256_of(&buffer);
+        Ok(FieldKey(hash.0))
     }
 
-    pub fn to_bytes(&self) -> Result<Vec<u8>> {
-        bcs::to_bytes(self).map_err(|e| anyhow::anyhow!("Serialize the KeyState error: {:?}", e))
+    pub fn derive_from_string(s: &str) -> Self {
+        Self::derive(&MoveString::from(s))
+            .expect("Derive dynamic field key with MoveString should not fail")
     }
 
-    pub fn is_object_id(&self) -> bool {
-        match &self.key_type {
-            TypeTag::Struct(struct_tag) => ObjectID::struct_tag_match(struct_tag.as_ref()),
-            _ => false,
+    pub fn derive_from_address(address: &AccountAddress) -> Self {
+        Self::derive(address).expect("Derive dynamic field key with AccountAddress should not fail")
+    }
+
+    /// The module of Package use the module name to derive the key
+    pub fn derive_module_key(module_name: &IdentStr) -> Self {
+        // bcs::to_bytes(&String) same as bcs::to_bytes(&MoveString)
+        let module_name_str = MoveString::from(module_name);
+        Self::derive(&module_name_str)
+            .expect("Derive dynamic field key with MoveString should not fail")
+    }
+
+    /// The resource of Account use the StructTag string to derive the key
+    pub fn derive_resource_key(struct_tag: &StructTag) -> Self {
+        let struct_tag_str = MoveString::from(struct_tag.to_canonical_string());
+        Self::derive(&struct_tag_str)
+            .expect("Derive dynamic field key with MoveString should not fail")
+    }
+
+    pub fn from_hex(hex: &str) -> Result<Self> {
+        Ok(<[u8; Self::LENGTH]>::from_hex(hex).map(FieldKey::new)?)
+    }
+
+    pub fn from_hex_literal(hex: &str) -> Result<Self> {
+        let hex = hex.strip_prefix("0x").unwrap_or(hex);
+        Self::from_hex(hex)
+    }
+
+    pub fn to_hex(&self) -> String {
+        format!("{:x}", self)
+    }
+
+    pub fn to_hex_literal(&self) -> String {
+        format!("{:#x}", self)
+    }
+
+    pub fn random() -> Self {
+        AccountAddress::random().into()
+    }
+}
+
+impl AsRef<[u8]> for FieldKey {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl std::ops::Deref for FieldKey {
+    type Target = [u8; Self::LENGTH];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl fmt::Display for FieldKey {
+    fn fmt(&self, f: &mut fmt::Formatter) -> std::fmt::Result {
+        //append 0x prefix
+        write!(f, "{:#x}", self)
+    }
+}
+
+impl fmt::Debug for FieldKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:#x}", self)
+    }
+}
+
+impl fmt::LowerHex for FieldKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if f.alternate() {
+            write!(f, "0x")?;
+        }
+
+        for byte in &self.0 {
+            write!(f, "{:02x}", byte)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl fmt::UpperHex for FieldKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if f.alternate() {
+            write!(f, "0x")?;
+        }
+
+        for byte in &self.0 {
+            write!(f, "{:02X}", byte)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl From<[u8; FieldKey::LENGTH]> for FieldKey {
+    fn from(bytes: [u8; FieldKey::LENGTH]) -> Self {
+        Self::new(bytes)
+    }
+}
+
+impl From<AccountAddress> for FieldKey {
+    fn from(address: AccountAddress) -> Self {
+        Self(address.into_bytes())
+    }
+}
+
+impl From<FieldKey> for AccountAddress {
+    fn from(field_key: FieldKey) -> Self {
+        AccountAddress::from(field_key.0)
+    }
+}
+
+impl From<H256> for FieldKey {
+    fn from(hash: H256) -> Self {
+        Self(hash.0)
+    }
+}
+
+impl FromStr for FieldKey {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, anyhow::Error> {
+        Self::from_hex_literal(s)
+    }
+}
+
+impl<'de> Deserialize<'de> for FieldKey {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        if deserializer.is_human_readable() {
+            let s = <String>::deserialize(deserializer)?;
+            FieldKey::from_str(&s).map_err(D::Error::custom)
+        } else {
+            // In order to preserve the Serde data model and help analysis tools,
+            // make sure to wrap our value in a container with the same name
+            // as the original type.
+            #[derive(::serde::Deserialize)]
+            #[serde(rename = "FieldKey")]
+            struct Value([u8; FieldKey::LENGTH]);
+
+            let value = Value::deserialize(deserializer)?;
+            Ok(FieldKey::new(value.0))
         }
     }
-
-    pub fn as_object_id(&self) -> Result<ObjectID> {
-        ensure!(
-            self.is_object_id(),
-            "Expect key type is ObjectID but found {:?}",
-            self.key_type
-        );
-        let object_id = ObjectID::from_bytes(&self.key)?;
-        Ok(object_id)
-    }
-
-    pub fn into_annotated_state<T: MoveResolver + ?Sized>(
-        self,
-        annotator: &MoveValueAnnotator<T>,
-    ) -> Result<AnnotatedKeyState> {
-        let decoded_value = annotator.view_value(&self.key_type, &self.key)?;
-        Ok(AnnotatedKeyState::new(self, decoded_value))
-    }
 }
 
-impl std::fmt::Display for KeyState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let hex_key = hex::encode(
-            self.to_bytes()
-                .map_err(|e| std::fmt::Error::custom(e.to_string()))?,
-        );
-        write!(f, "0x{}", hex_key)
-    }
-}
-
-impl FromStr for KeyState {
-    type Err = anyhow::Error;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let key = hex::decode(s.strip_prefix("0x").unwrap_or(s))
-            .map_err(|_| anyhow::anyhow!("Invalid key state str: {}", s))?;
-        KeyState::from_bytes(key.as_slice())
-    }
-}
-
-impl From<ObjectID> for KeyState {
-    fn from(object_id: ObjectID) -> Self {
-        object_id.to_key()
-    }
-}
-
-impl From<ModuleId> for KeyState {
-    fn from(module_id: ModuleId) -> Self {
-        KeyState::from_module_id(&module_id)
-    }
-}
-
-impl From<StructTag> for KeyState {
-    fn from(tag: StructTag) -> Self {
-        KeyState::from_struct_tag(&tag)
+impl Serialize for FieldKey {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        if serializer.is_human_readable() {
+            self.to_hex_literal().serialize(serializer)
+        } else {
+            // See comment in deserialize.
+            serializer.serialize_newtype_struct("FieldKey", &self.0)
+        }
     }
 }
 
@@ -265,10 +343,6 @@ pub trait MoveState: MoveType + DeserializeOwned + Serialize {
     }
     fn to_bytes(&self) -> Vec<u8> {
         bcs::to_bytes(self).expect("Serialize the MoveState should success")
-    }
-    fn into_state(self) -> State {
-        let value = self.to_bytes();
-        State::new(value, Self::type_tag())
     }
 
     /// Convert the MoveState to MoveValue
@@ -502,6 +576,30 @@ where
     }
 }
 
+impl MoveStructType for String {
+    const ADDRESS: AccountAddress = MoveString::ADDRESS;
+    const MODULE_NAME: &'static IdentStr = MoveString::MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = MoveString::STRUCT_NAME;
+}
+
+impl MoveStructState for String {
+    fn struct_layout() -> MoveStructLayout {
+        MoveString::struct_layout()
+    }
+}
+
+impl MoveType for str {
+    fn type_tag() -> TypeTag {
+        MoveString::type_tag()
+    }
+}
+
+impl MoveType for [u8] {
+    fn type_tag() -> TypeTag {
+        TypeTag::Vector(Box::new(TypeTag::U8))
+    }
+}
+
 /// A placeholder struct for unknown Move Struct
 /// Sometimes we need a generic struct type, but we don't know the struct type
 pub struct PlaceholderStruct;
@@ -545,110 +643,95 @@ pub trait MoveStructState: MoveState + MoveStructType + DeserializeOwned + Seria
     }
 }
 
-impl<T> From<T> for State
-where
-    T: MoveStructState,
-{
-    fn from(state: T) -> Self {
-        state.into_state()
+impl ObjectState {
+    pub fn new(metadata: ObjectMeta, value: Vec<u8>) -> Self {
+        Self { metadata, value }
     }
-}
 
-pub trait MoveRuntimeValue {}
-
-impl State {
-    pub fn new(value: Vec<u8>, value_type: TypeTag) -> Self {
-        Self { value, value_type }
+    pub fn id(&self) -> &ObjectID {
+        &self.metadata.id
     }
 
     pub fn value_type(&self) -> &TypeTag {
-        &self.value_type
+        &self.metadata.value_type
+    }
+
+    pub fn value_struct_tag(&self) -> &StructTag {
+        self.metadata.value_struct_tag()
+    }
+
+    pub fn flag(&self) -> u8 {
+        self.metadata.flag
+    }
+
+    pub fn state_root(&self) -> H256 {
+        self.metadata.state_root()
+    }
+
+    pub fn size(&self) -> u64 {
+        self.metadata.size
+    }
+
+    pub fn created_at(&self) -> u64 {
+        self.metadata.created_at
+    }
+
+    pub fn updated_at(&self) -> u64 {
+        self.metadata.updated_at
     }
 
     pub fn match_type(&self, type_tag: &TypeTag) -> bool {
-        &self.value_type == type_tag
+        self.value_type() == type_tag
     }
 
     pub fn match_struct_type(&self, type_tag: &StructTag) -> bool {
-        match &self.value_type {
+        match self.value_type() {
             TypeTag::Struct(struct_tag) => struct_tag.as_ref() == type_tag,
             _ => false,
         }
     }
 
+    pub fn match_dynamic_field_type(&self, name_type: TypeTag, value_type: TypeTag) -> bool {
+        if self.is_dynamic_field() {
+            self.match_struct_type(&object::construct_dynamic_field_struct_tag(
+                name_type, value_type,
+            ))
+        } else {
+            false
+        }
+    }
+
+    pub fn is_dynamic_field(&self) -> bool {
+        self.metadata.is_dynamic_field()
+    }
+
     pub fn is_object(&self) -> bool {
-        self.get_object_struct_tag().is_some()
+        self.metadata.is_object()
     }
 
-    /// If the state is a Object, return the T's struct_tag of Object<T>
-    /// Otherwise, return None
-    pub fn get_object_struct_tag(&self) -> Option<StructTag> {
-        let val_type = self.value_type();
-        match val_type {
-            TypeTag::Struct(struct_tag) => {
-                if ObjectEntity::<PlaceholderStruct>::struct_tag_match_without_type_param(
-                    struct_tag,
-                ) {
-                    let object_type_param = struct_tag
-                        .type_params
-                        .first()
-                        .expect("The ObjectEntity<T> should have a type param");
-                    match object_type_param {
-                        TypeTag::Struct(struct_tag) => Some(struct_tag.as_ref().clone()),
-                        _ => {
-                            unreachable!("The ObjectEntity<T> should have a struct type param")
-                        }
-                    }
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        }
+    pub fn is_frozen(&self) -> bool {
+        self.metadata.is_frozen()
     }
 
-    /// If the state is a Move resource, return the T's struct_tag
-    /// Otherwise, return None
-    pub fn get_resource_struct_tag(&self) -> Option<StructTag> {
-        match self.value_type() {
-            TypeTag::Struct(struct_tag) => Some(struct_tag.as_ref().clone()),
-            _ => None,
-        }
+    pub fn is_shared(&self) -> bool {
+        self.metadata.is_shared()
     }
 
-    pub fn as_object<T>(&self) -> Result<ObjectEntity<T>>
-    where
-        T: MoveStructState,
-    {
-        self.cast::<ObjectEntity<T>>()
+    pub fn owner(&self) -> AccountAddress {
+        self.metadata.owner
     }
 
-    pub fn as_object_uncheck<T>(&self) -> Result<ObjectEntity<T>>
-    where
-        T: DeserializeOwned,
-    {
-        self.cast_unchecked::<ObjectEntity<T>>()
+    pub fn update_state_root(&mut self, new_state_root: H256) {
+        self.metadata.update_state_root(new_state_root);
     }
 
-    pub fn as_raw_object(&self) -> Result<RawObject> {
-        let object_struct_tag = self.get_object_struct_tag().ok_or_else(|| {
-            anyhow::anyhow!(
-                "Expect type ObjectEntity<T> but the state type:{}",
-                self.value_type
-            )
-        })?;
-        RawObject::from_bytes(&self.value, object_struct_tag)
-    }
-
-    /// Case the state to T
-    pub fn cast<T>(&self) -> Result<T>
+    pub fn value_as<T>(&self) -> Result<T>
     where
         T: MoveStructState,
     {
         let val_type = self.value_type();
         match val_type {
             TypeTag::Struct(struct_tag) => {
-                //TODO define error code and rasie it to Move
                 ensure!(
                     T::struct_tag_match(struct_tag),
                     "Expect type:{} but the state type:{}",
@@ -661,16 +744,59 @@ impl State {
         }
     }
 
-    /// Directly cast the state to T without type check
-    pub fn cast_unchecked<T: DeserializeOwned>(&self) -> Result<T> {
+    pub fn value_as_df<N, V>(&self) -> Result<DynamicField<N, V>>
+    where
+        N: MoveState,
+        V: MoveState,
+    {
+        self.value_as::<DynamicField<N, V>>()
+    }
+
+    pub fn value_as_uncheck<T>(&self) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
         bcs::from_bytes(&self.value).map_err(Into::into)
+    }
+
+    pub fn into_object<T>(self) -> Result<ObjectEntity<T>>
+    where
+        T: MoveStructState,
+    {
+        let value = self.value_as()?;
+        Ok(ObjectEntity::new_with_object_meta(self.metadata, value))
+    }
+
+    pub fn into_object_uncheck<T>(self) -> Result<ObjectEntity<T>>
+    where
+        T: DeserializeOwned,
+    {
+        let value = self.value_as_uncheck::<T>()?;
+        Ok(ObjectEntity::new_with_object_meta(self.metadata, value))
+    }
+
+    pub fn into_raw_object(self) -> Result<RawObject> {
+        let object_struct_tag = self.value_struct_tag().clone();
+        Ok(RawObject::new_with_object_meta(
+            self.metadata,
+            RawData {
+                struct_tag: object_struct_tag,
+                value: self.value,
+            },
+        ))
+    }
+
+    pub fn into_inner(self) -> (ObjectMeta, Vec<u8>) {
+        (self.metadata, self.value)
     }
 
     pub fn into_annotated_state<T: MoveResolver + ?Sized>(
         self,
         annotator: &MoveValueAnnotator<T>,
     ) -> Result<AnnotatedState> {
-        let decoded_value = annotator.view_value(&self.value_type, &self.value)?;
+        let decoded_value = annotator
+            .view_resource(self.value_struct_tag(), &self.value)
+            .map_err(|e| anyhow::anyhow!("Annotate the MoveValue error: {:?}", e))?;
         Ok(AnnotatedState::new(self, decoded_value))
     }
 
@@ -686,265 +812,148 @@ impl State {
     }
 }
 
-impl std::fmt::Display for State {
+impl std::fmt::Display for ObjectState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let hex_state = hex::encode(
-            self.to_bytes()
-                .map_err(|e| std::fmt::Error::custom(e.to_string()))?,
-        );
+        let hex_state = hex::encode(self.to_bytes().map_err(|_e| std::fmt::Error)?);
         write!(f, "0x{}", hex_state)
     }
 }
 
-impl FromStr for State {
+impl FromStr for ObjectState {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let state = hex::decode(s.strip_prefix("0x").unwrap_or(s))
             .map_err(|_| anyhow::anyhow!("Invalid state str: {}", s))?;
-        State::from_bytes(state.as_slice())
+        ObjectState::from_bytes(state.as_slice())
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct AnnotatedState {
-    pub state: State,
-    pub decoded_value: AnnotatedMoveValue,
+    pub metadata: ObjectMeta,
+    pub value: Vec<u8>,
+    pub decoded_value: AnnotatedMoveStruct,
 }
 
 impl AnnotatedState {
-    pub fn new(state: State, decoded_value: AnnotatedMoveValue) -> Self {
+    pub fn new(state: ObjectState, decoded_value: AnnotatedMoveStruct) -> Self {
         Self {
-            state,
+            metadata: state.metadata,
+            value: state.value,
             decoded_value,
         }
     }
 
+    pub fn into_inner(self) -> (ObjectMeta, Vec<u8>, AnnotatedMoveStruct) {
+        (self.metadata, self.value, self.decoded_value)
+    }
+
     pub fn into_annotated_object(self) -> Result<AnnotatedObject> {
-        ensure!(
-            self.state.is_object(),
-            "Expect state is a Object but found {:?}",
-            self.state.value_type()
-        );
-
-        match self.decoded_value {
-            AnnotatedMoveValue::Struct(annotated_move_object) => {
-                AnnotatedObject::new_from_annotated_struct(annotated_move_object)
-            }
-            _ => bail!("Expect MoveStruct but found {:?}", self.decoded_value),
-        }
+        Ok(AnnotatedObject::new_with_object_meta(
+            self.metadata,
+            self.decoded_value,
+        ))
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct AnnotatedKeyState {
-    pub state: KeyState,
-    pub decoded_key: AnnotatedMoveValue,
-}
-
-impl AnnotatedKeyState {
-    pub fn new(state: KeyState, decoded_key: AnnotatedMoveValue) -> Self {
-        Self { state, decoded_key }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct TableTypeInfo {
-    pub key_type: TypeTag,
-}
-
-impl TableTypeInfo {
-    pub fn new(key_type: TypeTag) -> Self {
-        Self { key_type }
-    }
-}
-
-impl std::fmt::Display for TableTypeInfo {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Table<{}>", self.key_type)
-    }
-}
-
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct ObjectChange {
-    pub op: Option<Op<State>>,
-    pub fields: BTreeMap<KeyState, FieldChange>,
+    pub metadata: ObjectMeta,
+    pub value: Option<Op<Vec<u8>>>,
+    pub fields: BTreeMap<FieldKey, ObjectChange>,
 }
 
 impl ObjectChange {
-    pub fn new(op: Op<State>) -> Self {
+    pub fn new(metadata: ObjectMeta, value: Op<Vec<u8>>) -> Self {
         Self {
-            op: Some(op),
+            metadata,
+            value: Some(value),
             fields: BTreeMap::new(),
         }
     }
 
-    pub fn new_empty() -> Self {
+    pub fn meta(metadata: ObjectMeta) -> Self {
         Self {
-            op: None,
+            metadata,
+            value: None,
             fields: BTreeMap::new(),
         }
     }
 
-    pub fn add_field_change(&mut self, key: KeyState, field_change: FieldChange) {
+    pub fn add_field_change(&mut self, key: FieldKey, field_change: ObjectChange) {
         self.fields.insert(key, field_change);
-    }
-
-    pub fn add_field_changes(&mut self, field_states: Vec<FieldState>) {
-        for v in field_states {
-            self.fields.insert(v.key_state, v.field_change);
-        }
-    }
-
-    pub fn get_field_change(&self, key: &KeyState) -> Option<&FieldChange> {
-        self.fields.get(key)
-    }
-
-    pub fn get_field_change_mut(&mut self, key: &KeyState) -> Option<&mut FieldChange> {
-        self.fields.get_mut(key)
-    }
-
-    pub fn remove_field_change(&mut self, key: &KeyState) -> Option<FieldChange> {
-        self.fields.remove(key)
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.op.is_none() && self.fields.is_empty()
-    }
-
-    /// just use for statedb dump and apply
-    pub fn reset_state_root(&mut self, state_root: H256) -> Result<()> {
-        if let Some(op) = self.op.clone() {
-            match op.clone() {
-                Op::New(state) | Op::Modify(state) => {
-                    let mut obj = state.as_raw_object()?;
-                    obj.state_root = AccountAddress::new(state_root.into());
-                    if Op::New(state) == op {
-                        self.op = Some(Op::New(obj.into_state()));
-                    } else {
-                        self.op = Some(Op::Modify(obj.into_state()));
-                    }
-                }
-                Op::Delete => {}
-            }
-        };
-
-        Ok(())
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct NormalFieldChange {
-    pub op: Op<State>,
-}
-
-#[derive(Clone, Debug)]
-pub enum FieldChange {
-    Object(ObjectChange),
-    Normal(NormalFieldChange),
-}
-
-impl std::fmt::Display for FieldChange {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            FieldChange::Object(object_change) => {
-                write!(f, "{:?}", object_change)
-            }
-            FieldChange::Normal(normal_change) => {
-                write!(f, "{:?}", normal_change)
-            }
-        }
-    }
-}
-
-impl std::error::Error for FieldChange {}
-
-impl FieldChange {
-    pub fn new_normal(op: Op<State>) -> Self {
-        FieldChange::Normal(NormalFieldChange { op })
-    }
-
-    pub fn new_object(object_change: ObjectChange) -> Self {
-        FieldChange::Object(object_change)
-    }
-
-    pub fn into_object_change(self) -> Result<ObjectChange, FieldChange> {
-        match self {
-            FieldChange::Object(object_change) => Ok(object_change),
-            _ => Err(self),
-        }
-    }
-
-    pub fn into_normal_change(self) -> Result<NormalFieldChange, FieldChange> {
-        match self {
-            FieldChange::Normal(normal_change) => Ok(normal_change),
-            _ => Err(self),
-        }
     }
 }
 
 /// Global State change set.
+/// The state_root in the ObjectChange is the state_root before the changes
 #[derive(Clone, Debug)]
 pub struct StateChangeSet {
-    /// The state root before the changes
-    pub state_root: H256,
-    /// The root Object field size
-    pub global_size: u64,
-    pub changes: BTreeMap<ObjectID, ObjectChange>,
+    pub root_metadata: ObjectMeta,
+    pub changes: BTreeMap<FieldKey, ObjectChange>,
 }
 
 impl StateChangeSet {
-    pub fn root_object(&self) -> RootObjectEntity {
-        ObjectEntity::root_object(self.state_root, self.global_size)
+    pub fn root_object(&self) -> ObjectState {
+        ObjectState::new(self.root_metadata.clone(), vec![])
     }
 }
 
 impl Default for StateChangeSet {
     fn default() -> Self {
         Self {
-            state_root: *GENESIS_STATE_ROOT,
-            global_size: 0,
-            changes: Default::default(),
+            root_metadata: ObjectMeta::genesis_root(),
+            changes: BTreeMap::new(),
         }
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct ObjectState {
-    /// The state root of the Object
-    pub state_root: H256,
-    /// The Object field size
-    pub size: u64,
-    pub object_id: ObjectID,
-    pub object_change: ObjectChange,
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-impl ObjectState {
-    pub fn new(
-        state_root: H256,
-        size: u64,
-        object_id: ObjectID,
-        object_change: ObjectChange,
-    ) -> ObjectState {
-        Self {
-            state_root,
-            size,
-            object_id,
-            object_change,
-        }
+    fn field_key_derive_test<K>(k: &K, expect_result: &str)
+    where
+        K: ?Sized + Serialize + MoveType + Debug,
+    {
+        let key = FieldKey::derive(k).unwrap();
+        //println!("key: {}", key);
+        assert_eq!(
+            expect_result,
+            key.to_hex_literal(),
+            "FieldKey derive from {:?} should be {}",
+            k,
+            expect_result
+        );
     }
-}
 
-#[derive(Clone, Debug)]
-pub struct FieldState {
-    pub key_state: KeyState,
-    pub field_change: FieldChange,
-}
-
-impl FieldState {
-    pub fn new(key_state: KeyState, field_change: FieldChange) -> FieldState {
-        Self {
-            key_state,
-            field_change,
-        }
+    //Make sure the FieldKey derive function result is same with it in Move
+    #[test]
+    fn test_field_key_derive_cases() {
+        //test vector
+        field_key_derive_test(
+            b"1".as_slice(),
+            "0x7301c6d045ed0df28fa129f5a825b210c8300eb0f44bb302e8a54b5eebeae13f",
+        );
+        //test string
+        field_key_derive_test(
+            "1",
+            "0xc62df9a91eae549c2ff104f121549251c748185d0a21d5018c87db4be47fd191",
+        );
+        //test u8
+        field_key_derive_test(
+            &1u8,
+            "0x988ba0cd547556c2014c5e718b15fce912b95aa39db882de598b6ea841cde194",
+        );
+        //test u64
+        field_key_derive_test(
+            &1u64,
+            "0x7eb4036673c8611e43c3eff1202446612f22a4b3bac92b7e14c0562ade5f1a3f",
+        );
+        //test address
+        field_key_derive_test(
+            &AccountAddress::ONE,
+            "0x07d29b5cffb95d39f98baed1a973e676891bc9d379022aba6f4a2e4912a5e552",
+        );
     }
 }
