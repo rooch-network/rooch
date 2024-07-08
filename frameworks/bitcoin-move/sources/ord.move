@@ -203,7 +203,7 @@ module bitcoin_move::ord {
 
     public fun derive_inscription_id(inscription_id: InscriptionID) : ObjectID {
         let parent_id = object::named_object_id<InscriptionStore>();
-        object::custom_child_object_id(parent_id, inscription_id)
+        object::custom_object_id_with_parent<InscriptionID, Inscription>(parent_id, inscription_id)
     }
 
     /// Prase InscriptionID from String
@@ -290,7 +290,7 @@ module bitcoin_move::ord {
         let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
         let store = object::borrow_mut(store_obj);
         table_vec::push_back(&mut store.inscriptions, id);
-        let object = object::add_object_field_with_id(store_obj, id, inscription);
+        let object = object::new_with_parent_and_id(store_obj, id, inscription);
         object
     }
     

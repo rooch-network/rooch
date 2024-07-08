@@ -211,7 +211,7 @@ impl ObjectRuntime {
         address: &'a AccountAddress,
         package_owner: AccountAddress,
     ) -> PartialVMResult<(&'a mut RuntimeObject, bool)> {
-        let package_field_key = Package::derive_package_key(address);
+        let package_field_key = Package::package_field_key(address);
         let (package_obj, _) =
             module_store_obj.load_field(layout_loader, resolver, package_field_key)?;
 
@@ -313,7 +313,7 @@ impl ObjectRuntime {
             .expect("module store object must exist");
 
         let package_obj =
-            module_store_obj.get_loaded_field(&Package::derive_package_key(module_id.address()));
+            module_store_obj.get_loaded_field(&Package::package_field_key(module_id.address()));
         match package_obj {
             Some(package_obj) => {
                 let field_key = FieldKey::derive_module_key(module_id.name());
@@ -336,7 +336,7 @@ impl ObjectRuntime {
         let module_store_id = ModuleStore::module_store_id();
         match self.load_object(layout_loader, resolver, &module_store_id) {
             Ok((module_store_obj, _)) => {
-                let package_key = Package::derive_package_key(module_id.address());
+                let package_key = Package::package_field_key(module_id.address());
                 let (package_obj, _) =
                     module_store_obj.load_field(layout_loader, resolver, package_key)?;
                 let field_key = FieldKey::derive_module_key(module_id.name());

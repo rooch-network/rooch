@@ -335,24 +335,35 @@ pub fn account_named_object_id(account: AccountAddress, struct_tag: &StructTag) 
     AccountAddress::new(struct_tag_hash.0).into()
 }
 
-pub fn custom_object_id<ID: Serialize>(id: &ID, struct_tag: &StructTag) -> ObjectID {
+pub fn custom_object_id<ID: Serialize>(id: &ID, value_struct_tag: &StructTag) -> ObjectID {
     //TODO raise error if the ID cannot be serialized
     let mut buffer = bcs::to_bytes(id).expect("ID to bcs should success");
-    buffer.extend_from_slice(struct_tag.to_canonical_string().as_bytes());
+    buffer.extend_from_slice(value_struct_tag.to_canonical_string().as_bytes());
     let struct_tag_hash = h256::sha3_256_of(&buffer);
     let child_part = AccountAddress::new(struct_tag_hash.0);
     ObjectID(vec![child_part])
 }
 
-pub fn custom_child_object_id<ID>(parent_id: ObjectID, id: &ID) -> ObjectID
+pub fn custom_object_id_with_parent<ID, T>(parent_id: ObjectID, id: &ID) -> ObjectID
+where
+    ID: MoveType + fmt::Debug + Serialize,
+    T: MoveStructType,
+{
+    custom_object_id_with_parent_and_struct_tag(parent_id, id, &T::struct_tag())
+}
+
+pub fn custom_object_id_with_parent_and_struct_tag<ID>(
+    parent_id: ObjectID,
+    id: &ID,
+    value_struct_tag: &StructTag,
+) -> ObjectID
 where
     ID: MoveType + fmt::Debug + Serialize,
 {
     //TODO raise error if the ID cannot be serialized
     //Child object id is the parent object id + child part
     //The child part same as the dynamic field key
-    let child_part =
-        FieldKey::derive(id).expect("ID to FieldKey should success, TODO: raise error");
+    let child_part = custom_object_id(id, value_struct_tag).field_key();
     let ObjectID(mut parent_path) = parent_id;
     parent_path.push(child_part.into());
     ObjectID(parent_path)
