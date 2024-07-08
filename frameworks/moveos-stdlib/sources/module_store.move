@@ -254,6 +254,7 @@ module moveos_std::module_store {
         let m: MoveModule = move_module::new(module_bytes);
 
         Self::publish_modules(module_object, account, vector::singleton(m));
+        assert!(exists_module(@0x42, std::string::utf8(b"counter")), 1);
     }
 
     #[test(sender=@0x42)]

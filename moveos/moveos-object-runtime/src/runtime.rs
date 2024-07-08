@@ -26,7 +26,7 @@ use moveos_types::{
     moveos_std::{
         module_store::{ModuleStore, Package},
         move_module::MoveModule,
-        object::{DynamicField, ModuleStoreObject, ObjectID, PackageObject, Root},
+        object::{DynamicField, ModuleStoreObject, ObjectID, Root},
     },
     state::MoveType,
     state_resolver::StatelessResolver,
@@ -217,9 +217,9 @@ impl ObjectRuntime {
 
         let mut new_package = false;
         if !package_obj.exists()? {
-            let obj = PackageObject::new_package(address, package_owner);
-            let value = obj.value.to_runtime_value();
+            let value = Package::default().to_runtime_value();
             package_obj.move_to(value, Package::type_tag(), Package::type_layout())?;
+            package_obj.rt_meta.transfer(package_owner)?;
             // If the Package is new, we should increase the size of module store
             // But we can not get mutable reference of module store object here
             // So we need to increase the size of module store in publish_module
@@ -367,16 +367,15 @@ impl ObjectRuntime {
     ) -> PartialVMResult<()> {
         let module_store_id = ModuleStore::module_store_id();
         // TODO: Publishing module in Rust is only available for genesis transaction.
-        // The tx sender will be used ad package object owner,
-        // Is the genesis tx sender framework addresses?
-        let tx_sender = self.tx_context().sender();
+
         let (module_store_obj, _) = self.load_object(layout_loader, resolver, &module_store_id)?;
         let (package_obj, new_package) = Self::load_or_create_package_object(
             module_store_obj,
             layout_loader,
             resolver,
             module_id.address(),
-            tx_sender,
+            // The package owner is the same as the module address
+            *module_id.address(),
         )?;
         let module_name = MoveString::from(module_id.name());
         let field_key = FieldKey::derive_module_key(module_id.name());
