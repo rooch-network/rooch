@@ -153,8 +153,11 @@ impl InMemKeystore {
     pub fn new_insecure_for_tests(initial_key_number: usize) -> Self {
         let mut keystore = BaseKeyStore::new();
         keystore.init_keystore(None, None, None).unwrap();
+        let account_index = keystore.addresses().len() as u32;
         for _ in 0..initial_key_number {
-            keystore.generate_and_add_new_key(None).unwrap();
+            keystore
+                .generate_and_add_new_key(account_index, None)
+                .unwrap();
         }
 
         Self { keystore }
