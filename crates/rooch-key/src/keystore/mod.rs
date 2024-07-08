@@ -59,10 +59,18 @@ impl AccountKeystore for Keystore {
         }
     }
 
-    fn add_addresses_to_mnemonic_data(&mut self, address: RoochAddress, mnemonic_data: &mut MnemonicData) -> Result<(), anyhow::Error> {
+    fn add_addresses_to_mnemonic_data(
+        &mut self,
+        address: RoochAddress,
+        mnemonic_data: &mut MnemonicData,
+    ) -> Result<(), anyhow::Error> {
         match self {
-            Keystore::File(file_keystore) => file_keystore.add_addresses_to_mnemonic_data(address, mnemonic_data),
-            Keystore::InMem(inmem_keystore) => inmem_keystore.add_addresses_to_mnemonic_data(address, mnemonic_data),
+            Keystore::File(file_keystore) => {
+                file_keystore.add_addresses_to_mnemonic_data(address, mnemonic_data)
+            }
+            Keystore::InMem(inmem_keystore) => {
+                inmem_keystore.add_addresses_to_mnemonic_data(address, mnemonic_data)
+            }
         }
     }
 

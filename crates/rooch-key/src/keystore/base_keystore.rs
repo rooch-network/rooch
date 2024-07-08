@@ -56,9 +56,16 @@ impl AccountKeystore for BaseKeyStore {
         Ok(())
     }
 
-    fn add_addresses_to_mnemonic_data(&mut self, address: RoochAddress, mnemonic_data: &mut MnemonicData) -> Result<(), anyhow::Error> {
+    fn add_addresses_to_mnemonic_data(
+        &mut self,
+        address: RoochAddress,
+        mnemonic_data: &mut MnemonicData,
+    ) -> Result<(), anyhow::Error> {
         ensure!(self.mnemonic.is_some(), "Mnemonic data do not exist");
-        ensure!(self.mnemonic.clone().unwrap().addresses.len() > 0, "Address is empty");
+        ensure!(
+            !self.mnemonic.clone().unwrap().addresses.is_empty(),
+            "Address is empty"
+        );
         mnemonic_data.addresses.push(address);
         Ok(())
     }

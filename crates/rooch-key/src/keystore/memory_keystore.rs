@@ -144,8 +144,13 @@ impl AccountKeystore for InMemKeystore {
         self.keystore.init_mnemonic_data(mnemonic_data)
     }
 
-    fn add_addresses_to_mnemonic_data(&mut self, address: RoochAddress, mnemonic_data: &mut MnemonicData) -> Result<(), anyhow::Error> {
-        self.keystore.add_addresses_to_mnemonic_data(address, mnemonic_data)
+    fn add_addresses_to_mnemonic_data(
+        &mut self,
+        address: RoochAddress,
+        mnemonic_data: &mut MnemonicData,
+    ) -> Result<(), anyhow::Error> {
+        self.keystore
+            .add_addresses_to_mnemonic_data(address, mnemonic_data)
     }
 }
 

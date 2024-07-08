@@ -38,8 +38,12 @@ pub trait AccountKeystore {
     }
 
     fn init_mnemonic_data(&mut self, mnemonic_data: MnemonicData) -> Result<(), anyhow::Error>;
-    
-    fn add_addresses_to_mnemonic_data(&mut self, address: RoochAddress, mnemonic_data: &mut MnemonicData) -> Result<(), anyhow::Error>;
+
+    fn add_addresses_to_mnemonic_data(
+        &mut self,
+        address: RoochAddress,
+        mnemonic_data: &mut MnemonicData,
+    ) -> Result<(), anyhow::Error>;
 
     fn get_mnemonic(&self, password: Option<String>) -> Result<MnemonicResult, anyhow::Error>;
 
