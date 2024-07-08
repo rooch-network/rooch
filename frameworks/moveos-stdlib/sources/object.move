@@ -645,6 +645,10 @@ module moveos_std::object {
     }
 
     #[test_only]
+    struct TestParent has key {
+    }
+
+    #[test_only]
     struct TestStruct has key {
         count: u64,
     }
@@ -1010,6 +1014,22 @@ module moveos_std::object {
         add_field(&mut obj, b"key", 2u128);
         let _v:u128 = remove_field(&mut obj, b"key");
         let TestStruct{ count: _} = remove(obj);
+    }
+
+    #[test]
+    fun test_child_object_with_same_id_but_different_type(){
+        let parent = new(TestParent {});
+        let parent_id = id(&parent);
+        to_shared(parent);
+        let parent_ref = borrow_mut_object_shared<TestParent>(parent_id);
+        let id = 1u64;
+        let child1 = new_with_parent_and_id(parent_ref, id, TestStruct { count: 1 });
+        let child_id1 = id(&child1);
+        let child2 = new_with_parent_and_id(parent_ref, id, TestStruct2 { count: 2 });
+        let child_id2 = id(&child2);
+        assert!(child_id1 != child_id2, 1000);
+        let TestStruct { count: _ } = remove(child1);
+        let TestStruct2 { count: _ } = remove(child2);
     }
 
     #[test_only]
