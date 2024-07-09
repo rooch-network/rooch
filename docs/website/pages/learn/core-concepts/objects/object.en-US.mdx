@@ -280,7 +280,7 @@ Normal dynamic fields are resources with `store` ability stored under an object;
 
 <Callout>
 Note: Since the Object type itself also has the `store` ability, what is the difference between storing the entire `Object<T>` as a normal field under an object and using an Object type field?
-1. If a child object is created via `add_object_field`, it is a child of the parent object and is under the same SMT subtree. This facilitates management of the entire parent object's state transition, queries and so on.
+1. If a child object is created via `new_with_parent`, it is a child of the parent object and is under the same SMT subtree. This facilitates management of the entire parent object's state transition, queries and so on.
 2. If an object is created globally, even if it is added to the dynamic fields of an object via `add_field`, it actually a global object, and its state tree is under the global Root.
 </Callout>
 
@@ -303,12 +303,8 @@ Note: Since the Object type itself also has the `store` ability, what is the dif
 
 | Method | Description
 |---|---
-| `add_object_field<T: key, V: key>(obj: &mut Object<T>, v: V): Object<V>` | Adds a new child object field to the object and returns the newly added child object. Only shared objects can add child object fields.
-| `add_object_field_with_id<T: key, ID:drop, V: key>(obj: &mut Object<T>, id: ID, v: V): Object<V>` | Adds a new child object field to the object with a custom ID and returns the newly added child object. Only shared objects can add child object fields.
-| `borrow_object_field<T: key, V: key>(obj: &Object<T>, key: ObjectID): &Object<V>` | Borrows an immutable reference to the specified child object field in the object. If the child object field does not exist, the operation fails.
-| `borrow_mut_object_field<T: key, V: key>(obj: &mut Object<T>, key: ObjectID): &mut Object<V>` | Borrows a mutable reference to the specified child object field in the object. If the child object field does not exist, the operation fails.
-| `remove_object_field<T: key, V: key>(obj: &mut Object<T>, child: Object<V>): V` | Removes the specified child object field from the object and returns its value. If the child object field does not exist, the operation fails.
-| `contains_object_field<T: key, V: key>(obj: &Object<T>, key: ObjectID): bool` | Checks if the object contains the specified child object field.
+| `new_with_parent<P: key, T: key>(parent: &mut Object<P>, v: T): Object<T>` | Adds a new child object field to the object and returns the newly added child object. Only shared objects can add child object fields.
+| `new_with_parent_and_id<P: key, ID:drop, T: key>(parent: &mut Object<P>, id: ID, v: T): Object<T>` | Adds a new child object field to the object with a custom ID and returns the newly added child object. Only shared objects can add child object fields.
 
 ## Comparison between Rooch Object, Sui Object, and Aptos Object
 

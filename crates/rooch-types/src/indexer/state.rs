@@ -8,8 +8,8 @@ use anyhow::Result;
 use move_core_types::effects::Op;
 use move_core_types::language_storage::StructTag;
 use moveos_types::h256::H256;
-use moveos_types::moveos_std::object::{ObjectID, RawObject};
-use moveos_types::state::{FieldChange, MoveStructType, ObjectChange, StateChangeSet};
+use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::state::{MoveStructType, ObjectChange, ObjectState, StateChangeSet};
 use moveos_types::state_resolver::StateResolver;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -24,7 +24,7 @@ pub struct IndexerObjectState {
     // A flag to indicate whether the object is shared or frozen
     pub flag: u8,
     // The table state root of the object
-    pub state_root: H256,
+    pub state_root: Option<H256>,
     // The table length
     pub size: u64,
     // The T struct tag of the object value
@@ -40,32 +40,25 @@ pub struct IndexerObjectState {
 }
 
 impl IndexerObjectState {
-    pub fn new_from_raw_object(raw_object: RawObject, tx_order: u64, state_index: u64) -> Self {
+    pub fn new_from_object_state(state: ObjectState, tx_order: u64, state_index: u64) -> Self {
+        let (metadata, _value) = state.into_inner();
+        let object_type = metadata.value_struct_tag().clone();
         IndexerObjectState {
-            object_id: raw_object.id,
-            owner: raw_object.owner.into(),
-            flag: raw_object.flag,
-            state_root: H256::from(raw_object.state_root.into_bytes()),
-            size: raw_object.size,
-            object_type: raw_object.value.struct_tag,
+            object_id: metadata.id,
+            owner: metadata.owner.into(),
+            flag: metadata.flag,
+            state_root: metadata.state_root,
+            size: metadata.size,
+            object_type,
             tx_order,
             state_index,
-            created_at: raw_object.created_at,
-            updated_at: raw_object.updated_at,
+            created_at: metadata.created_at,
+            updated_at: metadata.updated_at,
         }
     }
 
     pub fn is_utxo_object_state(&self) -> bool {
         self.object_type == UTXO::struct_tag()
-    }
-
-    pub fn try_new_from_state(
-        tx_order: u64,
-        state_index: u64,
-        refresh_object: RawObject,
-    ) -> Result<IndexerObjectState> {
-        let state = IndexerObjectState::new_from_raw_object(refresh_object, tx_order, state_index);
-        Ok(state)
     }
 
     pub fn indexer_state_id(&self) -> IndexerStateID {
@@ -84,25 +77,29 @@ pub fn handle_object_change(
     mut state_index_generator: u64,
     tx_order: u64,
     indexer_object_state_changes: &mut IndexerObjectStateChanges,
-    object_id: ObjectID,
     object_change: ObjectChange,
     resolver: &dyn StateResolver,
 ) -> Result<u64> {
-    let ObjectChange { op, fields } = object_change;
-
-    if let Some(op) = op {
+    let ObjectChange {
+        metadata,
+        value,
+        fields,
+    } = object_change;
+    let object_id = metadata.id.clone();
+    if let Some(op) = value {
         match op {
             Op::Modify(value) => {
-                debug_assert!(value.is_object());
                 // refresh object to acquire lastest object state root
+                //TODO we should update the state_root in the ObjectChange after apply.
                 let refresh_object = resolver
                     .get_object(&object_id)?
-                    .unwrap_or(value.as_raw_object()?);
-                let state = IndexerObjectState::try_new_from_state(
+                    .unwrap_or(ObjectState::new(metadata, value));
+
+                let state = IndexerObjectState::new_from_object_state(
+                    refresh_object,
                     tx_order,
                     state_index_generator,
-                    refresh_object,
-                )?;
+                );
                 indexer_object_state_changes
                     .update_object_states
                     .push(state);
@@ -113,38 +110,42 @@ pub fn handle_object_change(
                     .push(object_id.to_string());
             }
             Op::New(value) => {
-                debug_assert!(value.is_object());
                 // refresh object to acquire lastest object state root
                 let refresh_object = resolver
                     .get_object(&object_id)?
-                    .unwrap_or(value.as_raw_object()?);
-                let state = IndexerObjectState::try_new_from_state(
+                    .unwrap_or(ObjectState::new(metadata, value));
+                let state = IndexerObjectState::new_from_object_state(
+                    refresh_object,
                     tx_order,
                     state_index_generator,
-                    refresh_object,
-                )?;
+                );
                 indexer_object_state_changes.new_object_states.push(state);
             }
         }
+    } else {
+        //If value is not changed, we should update the metadata.
+        let refresh_object = resolver
+            .get_object(&object_id)?
+            .ok_or_else(|| anyhow::anyhow!("Object {} not found for indexer", metadata.id))?;
+        let state = IndexerObjectState::new_from_object_state(
+            refresh_object,
+            tx_order,
+            state_index_generator,
+        );
+        indexer_object_state_changes
+            .update_object_states
+            .push(state);
     }
 
     state_index_generator += 1;
-    for (key, change) in fields {
-        match change {
-            FieldChange::Normal(_normal_change) => {
-                // TODO: we do not save normal fields in indexer db, so we do nothing here.
-            }
-            FieldChange::Object(object_change) => {
-                state_index_generator = handle_object_change(
-                    state_index_generator,
-                    tx_order,
-                    indexer_object_state_changes,
-                    key.as_object_id()?,
-                    object_change,
-                    resolver,
-                )?;
-            }
-        }
+    for (_key, change) in fields {
+        state_index_generator = handle_object_change(
+            state_index_generator,
+            tx_order,
+            indexer_object_state_changes,
+            change,
+            resolver,
+        )?;
     }
     Ok(state_index_generator)
 }

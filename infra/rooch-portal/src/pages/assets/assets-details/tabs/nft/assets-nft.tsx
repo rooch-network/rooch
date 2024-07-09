@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  useCurrentAccount,
   useCurrentSession,
   useRoochClient,
   useRoochClientQuery,
@@ -21,10 +20,10 @@ import { LoadingSpinner } from '@/components/loading-spinner.tsx'
 
 import { formatAddress } from '@/utils/format'
 import { ROOCH_OPERATING_ADDRESS } from '@/common/constant.ts'
+import { address } from 'bitcoinjs-lib'
 
 export const AssetsNft = () => {
   const sessionKey = useCurrentSession()
-  const account = useCurrentAccount()
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedNFTId, setSelectedNFTId] = useState('')
   // const [curNFT, setCurNFT] = useState<ObjectStateView>()
@@ -51,7 +50,7 @@ export const AssetsNft = () => {
   const queryOptions = useMemo(
     () => ({
       cursor: mapPageToNextCursor.current[paginationModel.page - 1],
-      pageSize: paginationModel.pageSize,
+      pageSize: paginationModel.pageSize.toString(),
     }),
     [paginationModel],
   )
@@ -63,7 +62,7 @@ export const AssetsNft = () => {
   } = useRoochClientQuery('queryObjectStates', {
     filter: {
       object_type_with_owner: {
-        owner: sessionKey?.getAddress() || '',
+        owner: sessionKey?.getRoochAddress().toHexAddress() || '',
         object_type: `${ROOCH_OPERATING_ADDRESS}::nft::NFT`,
       },
     },
@@ -162,10 +161,12 @@ export const AssetsNft = () => {
     setTransferLoading(true)
 
     await transferObject({
-      account: sessionKey!,
-      toAddress: toAddress,
-      objId: nft.object_id,
-      objType: nft.object_type,
+      signer: sessionKey!,
+      recipient: toAddress,
+      objectId: nft.object_id,
+      objectType: {
+        target: nft.object_type
+      },
     })
 
     handleClose()
@@ -173,7 +174,7 @@ export const AssetsNft = () => {
     reFetchNFTS()
   }
 
-  if (!account) {
+  if (!address) {
     return (
       <div className="flex flex-col items-center justify-center text-center p-40">
         <Wallet className="w-12 h-12 mb-4 text-zinc-500" />
@@ -272,7 +273,7 @@ export const AssetsNft = () => {
                     {/* From Address */}
                     <div className="cursor-pointer">
                       <span className="text-base font-normal text-gray-800 dark:text-gray-100 flex items-center justify-start gap-2 transition-all">
-                        <p>{formatAddress(sessionKey?.getAddress())}</p>
+                        <p>{formatAddress(sessionKey?.getRoochAddress().toBech32Address())}</p>
                         <Copy className="w-4 h-4 text-muted-foreground" />
                       </span>
                     </div>

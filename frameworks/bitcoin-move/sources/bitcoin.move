@@ -144,7 +144,7 @@ module bitcoin_move::bitcoin{
             let outpoint = *types::txin_previous_output(txin);
             if (utxo::exists_utxo(outpoint)) {
                 let object_id = utxo::derive_utxo_id(outpoint);
-                let (_owner, utxo_obj) = utxo::take(object_id);
+                let utxo_obj = utxo::take(object_id);
                 if(need_process_oridinal) {
                     let (sat_points, utxo_flotsams) = ord::spend_utxo(&mut utxo_obj, tx, input_utxo_values, idx);
                     handle_sat_point(sat_points, &mut output_seals);

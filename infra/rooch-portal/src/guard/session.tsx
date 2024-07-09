@@ -37,6 +37,10 @@ export const SessionGuard = (props: SessionGuardProps) => {
       return
     }
 
+    const a = sessionKey === null &&
+      navItems().find((item) => s.pathname.startsWith(item.path) && item.auth) !== undefined
+    console.log(a)
+
     setOpen(
       sessionKey === null &&
         navItems().find((item) => s.pathname.startsWith(item.path) && item.auth) !== undefined,
@@ -45,13 +49,14 @@ export const SessionGuard = (props: SessionGuardProps) => {
 
   const handleAuth = async () => {
     setError(null)
-    const result = await createSessionKey({
-      appName: 'rooch-portal',
-      appUrl: 'portal.rooch.network',
-      scopes: defaultScope,
-    })
-
-    if (result === null) {
+    try {
+      await createSessionKey({
+        appName: 'rooch-portal',
+        appUrl: 'portal.rooch.network',
+        scopes: defaultScope,
+      })
+    } catch (e) {
+      console.log(e)
       setError(
         'Authorization failed due to insufficient gas fees. Please ensure you have enough gas fees.',
       )

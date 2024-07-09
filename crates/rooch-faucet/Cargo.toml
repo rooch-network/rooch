@@ -20,16 +20,16 @@ serenity = { features = [
     "model",
 ], workspace = true }
 axum = { workspace = true }
-tracing = { workspace = true}
+axum-server = { workspace = true }
+tracing = { workspace = true }
 tower = { workspace = true }
 tower-http = { workspace = true }
-http = { workspace = true }
 futures = { workspace = true }
-prometheus = { workspace = true}
+prometheus = { workspace = true }
 tap = { workspace = true }
 eyre = { workspace = true }
-rocksdb = { workspace = true }
-tempfile = { workspace = true}
+rust-rocksdb = { workspace = true }
+tempfile = { workspace = true }
 
 anyhow = { workspace = true }
 async-trait = { workspace = true }

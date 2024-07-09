@@ -28,7 +28,7 @@ fn publish_and_load_module() {
     let loader = move_vm.runtime.loader();
     let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(
         TxContext::random_for_testing_only(),
-        RootObjectEntity::genesis_root_object(),
+        RootObjectEntity::genesis_root_object().into_state(),
     )));
     object_runtime
         .write()

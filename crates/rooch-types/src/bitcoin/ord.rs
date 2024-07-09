@@ -101,10 +101,9 @@ impl MoveStructState for Inscription {
 }
 
 pub fn derive_inscription_id(inscription_id: &InscriptionID) -> ObjectID {
-    object::custom_child_object_id(
+    object::custom_object_id_with_parent::<InscriptionID, Inscription>(
         InscriptionStore::object_id(),
         inscription_id,
-        &Inscription::struct_tag(),
     )
 }
 

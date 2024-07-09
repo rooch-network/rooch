@@ -3,13 +3,33 @@
 
 import { bech32m } from '@scure/base'
 
-import { isBytes } from '../utils/bytes.js'
+import { isBytes, str } from '../utils/bytes.js'
 import { fromHEX, getHexByteLength, isHex } from '../utils/hex.js'
 import { address } from '../types/rooch.js'
 import { Bytes } from '../types/bytes.js'
 
 import { BitcoinAddress } from './bitcoin.js'
 import { ROOCH_ADDRESS_LENGTH, ROOCH_BECH32_PREFIX } from './address.js'
+
+export function decodeToRoochAddressStr(input: address): string {
+  if (typeof input === 'string') {
+    if (isValidRoochAddress(input)) {
+      return input
+    }
+
+    if (isValidBitcoinAddress(input)) {
+      return new BitcoinAddress(input).genRoochAddress().toHexAddress()
+    }
+
+    throw Error('Invalid Address')
+  }
+
+  if (isBytes(input)) {
+    return str('hex', input)
+  }
+
+  return decodeToRoochAddressStr(input.toStr())
+}
 
 export function convertToRoochAddressBytes(input: address): Bytes {
   if (typeof input === 'string') {
@@ -25,13 +45,22 @@ export function convertToRoochAddressBytes(input: address): Bytes {
       if (decode.prefix === ROOCH_BECH32_PREFIX && bytes.length === ROOCH_ADDRESS_LENGTH) {
         return bytes
       }
-      throw new Error('invalid address')
     }
+    // throw new Error('invalid address')
 
     return new BitcoinAddress(input).genRoochAddress().toBytes()
   }
 
   return isBytes(input) ? input : convertToRoochAddressBytes(input.toStr())
+}
+
+export function isValidBitcoinAddress(input: string): boolean {
+  try {
+    new BitcoinAddress(input)
+    return true
+  } catch (_) {}
+
+  return false
 }
 
 export function isValidRoochAddress(input: address): input is string {
@@ -48,12 +77,22 @@ export function isValidRoochAddress(input: address): input is string {
       return decode.prefix === ROOCH_BECH32_PREFIX && bytes.length === ROOCH_ADDRESS_LENGTH
     }
 
-    // btc addr deafault is ok
-
-    return true
+    return false
   }
 
-  return isBytes(input) ? input.length === ROOCH_ADDRESS_LENGTH : isValidRoochAddress(input.toStr())
+  return isBytes(input) ? input.length === ROOCH_ADDRESS_LENGTH : isValidAddress(input.toStr())
+}
+
+export function isValidAddress(input: address): input is string {
+  if (typeof input === 'string') {
+    if (isValidRoochAddress(input)) {
+      return true
+    }
+
+    return isValidBitcoinAddress(input)
+  }
+
+  return isBytes(input) ? input.length === ROOCH_ADDRESS_LENGTH : isValidAddress(input.toStr())
 }
 
 /**

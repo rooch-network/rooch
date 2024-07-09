@@ -3,7 +3,7 @@
 
 use crate::moveos_std::account::Account;
 use crate::moveos_std::module_store::Package;
-use crate::state::KeyState;
+use crate::state::FieldKey;
 use crate::{
     move_types::{random_identity, random_struct_tag},
     moveos_std::object::ObjectID,
@@ -32,14 +32,14 @@ pub enum Path {
     },
     Fields {
         object_id: ObjectID,
-        fields: Vec<KeyState>,
+        fields: Vec<FieldKey>,
     },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum StateQuery {
     Objects(Vec<ObjectID>),
-    Fields(ObjectID, Vec<KeyState>),
+    Fields(ObjectID, Vec<FieldKey>),
 }
 
 impl StateQuery {
@@ -59,13 +59,13 @@ impl StateQuery {
         }
     }
 
-    pub fn into_fields_query(self) -> Result<Vec<(ObjectID, KeyState)>> {
+    pub fn into_fields_query(self) -> Result<Vec<(ObjectID, FieldKey)>> {
         match self {
             StateQuery::Objects(object_ids) => {
                 ensure!(!object_ids.is_empty(), "Please specify object id");
                 Ok(object_ids
                     .into_iter()
-                    .map(|id| (id.parent().unwrap_or(ObjectID::root()), id.to_key()))
+                    .map(|id| (id.parent().unwrap_or(ObjectID::root()), id.field_key()))
                     .collect())
             }
             StateQuery::Fields(object_id, fields) => Ok(fields
@@ -206,7 +206,7 @@ impl FromStr for Path {
                             v.split(',')
                                 .map(|key| {
                                     if key.starts_with("0x") {
-                                        KeyState::from_str(key).map_err(|e| {
+                                        FieldKey::from_hex_literal(key).map_err(|e| {
                                             anyhow::anyhow!(
                                                 "Invalid access path key: {}, err: {:?}",
                                                 key,
@@ -215,7 +215,7 @@ impl FromStr for Path {
                                         })
                                     } else {
                                         //If the key is not a hex string, treat it as a MoveString
-                                        Ok(KeyState::from_string(key))
+                                        Ok(FieldKey::derive_from_string(key))
                                     }
                                 })
                                 .collect::<Result<Vec<_>, _>>()?
@@ -236,7 +236,7 @@ impl FromStr for Path {
 /// 1. /object/$object_id1[,$object_id2]*
 /// 2. /resource/$account_address/$resource_type1[,$resource_type2]*
 /// 3. /module/$account_address/$module_name1[,$module_name2]*
-/// 4. /fields/$object_id/$field_key_state1[,$field_key_state2]*
+/// 4. /fields/$object_id/$field_key1[,$field_key2]*
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AccessPath(pub Path);
 
@@ -279,7 +279,7 @@ impl AccessPath {
         })
     }
 
-    pub fn fields(object_id: ObjectID, fields: Vec<KeyState>) -> Self {
+    pub fn fields(object_id: ObjectID, fields: Vec<FieldKey>) -> Self {
         AccessPath(Path::Fields { object_id, fields })
     }
 
@@ -308,7 +308,7 @@ impl AccessPath {
                 let package_object_id = Package::package_id(&account);
                 let keys = module_names
                     .into_iter()
-                    .map(|name| KeyState::from_string(name.as_str()))
+                    .map(|name| FieldKey::derive_module_key(name.as_ident_str()))
                     .collect();
                 StateQuery::Fields(package_object_id, keys)
             }
@@ -319,7 +319,7 @@ impl AccessPath {
                 let account_object_id = Account::account_object_id(account);
                 let keys = resource_types
                     .into_iter()
-                    .map(|tag| KeyState::from_struct_tag(&tag))
+                    .map(|tag| FieldKey::derive_resource_key(&tag))
                     .collect();
                 StateQuery::Fields(account_object_id, keys)
             }
@@ -393,8 +393,6 @@ impl<'de> Deserialize<'de> for AccessPath {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::move_std::string::MoveString;
-    use crate::state::MoveType;
 
     fn test_path_roundtrip(path: &str) {
         let path = path.parse::<Path>().unwrap();
@@ -404,15 +402,11 @@ mod tests {
     }
 
     #[test]
-    pub fn test_table_path() -> Result<()> {
-        let key1 = KeyState::new("0x12".as_bytes().to_vec(), MoveString::type_tag());
-        let key2 = KeyState::new("0x13".as_bytes().to_vec(), MoveString::type_tag());
-        let key3 = KeyState::new("key1".as_bytes().to_vec(), MoveString::type_tag());
-        let key4 = KeyState::new("key2".as_bytes().to_vec(), MoveString::type_tag());
-        println!("test_table_path key1 {}", key1.to_string());
-        println!("test_table_path key2 {}", key2.to_string());
-        println!("test_table_path key3 {}", key3.to_string());
-        println!("test_table_path key4 {}", key4.to_string());
+    pub fn test_field_path() -> Result<()> {
+        let key1 = FieldKey::derive(&"key1".to_owned()).unwrap();
+        let key2 = FieldKey::derive(&"key2".to_owned()).unwrap();
+        println!("test_field_path key1 {}", key1.to_string());
+        println!("test_field_path key2 {}", key2.to_string());
 
         Ok(())
     }
@@ -425,11 +419,11 @@ mod tests {
         test_path_roundtrip("/resource/0x1/0x2::m1::S1,0x3::m2::S2");
         test_path_roundtrip("/module/0x2/m1");
         test_path_roundtrip("/module/0x2/m1,m2");
-        // test_path_roundtrip("/table/0x1/0x12");
-        // test_path_roundtrip("/table/0x1/0x12,0x13");
-        // test_path_roundtrip("/table/0x1/key1,key2");
-        test_path_roundtrip("/table/0x1/0x043078313207000000000000000000000000000000000000000000000000000000000000000106737472696e6706537472696e6700");
-        test_path_roundtrip("/table/0x1/0x043078313207000000000000000000000000000000000000000000000000000000000000000106737472696e6706537472696e6700,0x043078313307000000000000000000000000000000000000000000000000000000000000000106737472696e6706537472696e6700");
-        test_path_roundtrip("/table/0x1/0x046b65793107000000000000000000000000000000000000000000000000000000000000000106737472696e6706537472696e6700,0x046b65793207000000000000000000000000000000000000000000000000000000000000000106737472696e6706537472696e6700");
+        test_path_roundtrip("/fields/0x1/key1");
+        test_path_roundtrip("/fields/0x1/key1,key2");
+        test_path_roundtrip(
+            "/fields/0x1/0x2159d0daf46fb5a9e6f75e3ec0a892c1d7d3f447aec35e48674e19bbb080a2ca",
+        );
+        test_path_roundtrip("/fields/0x1/0x2159d0daf46fb5a9e6f75e3ec0a892c1d7d3f447aec35e48674e19bbb080a2ca,0x5a193b3014eac29d5f06d815046d905a92b90e64a1881af023e7853e204bfb63");
     }
 }

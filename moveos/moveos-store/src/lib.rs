@@ -19,7 +19,7 @@ use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{Event, EventID, TransactionEvent};
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::startup_info::StartupInfo;
-use moveos_types::state::{KeyState, State};
+use moveos_types::state::{FieldKey, ObjectState};
 use moveos_types::state_resolver::{StateKV, StatelessResolver};
 use moveos_types::transaction::{TransactionExecutionInfo, TransactionOutput};
 use once_cell::sync::Lazy;
@@ -301,14 +301,14 @@ impl<'a, T: 'a + NodeReader> IntoSuper<dyn NodeReader + 'a> for T {
 impl Store for MoveOSStore {}
 
 impl StatelessResolver for MoveOSStore {
-    fn get_field_at(&self, state_root: H256, key: &KeyState) -> Result<Option<State>, Error> {
+    fn get_field_at(&self, state_root: H256, key: &FieldKey) -> Result<Option<ObjectState>, Error> {
         self.get_state_store().get_field_at(state_root, key)
     }
 
     fn list_fields_at(
         &self,
         state_root: H256,
-        cursor: Option<KeyState>,
+        cursor: Option<FieldKey>,
         limit: usize,
     ) -> Result<Vec<StateKV>, Error> {
         self.get_state_store()

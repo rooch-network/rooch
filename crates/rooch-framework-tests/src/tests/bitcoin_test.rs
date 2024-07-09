@@ -136,7 +136,7 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
             outpoint,
         );
         let utxo_state = utxo_state.unwrap();
-        let utxo_object = utxo_state.as_object::<UTXO>().unwrap();
+        let utxo_object = utxo_state.into_object::<UTXO>().unwrap();
         assert_eq!(utxo_object.value.txid, outpoint.txid);
         assert_eq!(utxo_object.value.vout, outpoint.vout);
         assert_eq!(utxo_object.value.value, tx_out.value.to_sat());
@@ -174,7 +174,7 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
             index
         );
         let inscription_state = inscription_state.unwrap();
-        let inscription_object = inscription_state.as_object::<Inscription>().unwrap();
+        let inscription_object = inscription_state.into_object::<Inscription>().unwrap();
         assert_eq!(inscription_object.value.txid, txid.into_address());
         assert_eq!(inscription_object.value.index, index);
         assert_eq!(

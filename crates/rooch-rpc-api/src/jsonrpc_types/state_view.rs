@@ -2,25 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    AnnotatedMoveStructView, AnnotatedMoveValueView, BytesView, H256View, HumanReadableDisplay,
-    ObjectIDVecView, RoochAddressView, RoochOrBitcoinAddressView, StrView, StructTagView,
-    TypeTagView,
+    AnnotatedMoveStructView, BytesView, H256View, HumanReadableDisplay, ObjectIDVecView,
+    RoochAddressView, RoochOrBitcoinAddressView, StrView, StructTagView, TypeTagView,
 };
 use anyhow::Result;
-
-use bcs;
 use move_core_types::effects::Op;
-use moveos_types::state::{
-    AnnotatedKeyState, FieldChange, KeyState, NormalFieldChange, ObjectChange,
-};
+use moveos_types::moveos_std::object::ObjectMeta;
+use moveos_types::state::{FieldKey, ObjectChange};
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
-    moveos_std::object::{human_readable_flag, AnnotatedObject, ObjectID, RawObject},
-    state::{AnnotatedState, State, StateChangeSet, TableTypeInfo},
+    moveos_std::object::{human_readable_flag, ObjectID},
+    state::{AnnotatedState, ObjectState, StateChangeSet},
 };
-use rooch_types::indexer::state::{
-    IndexerObjectState, IndexerStateChangeSet, ObjectStateFilter, StateSyncFilter,
-};
+use rooch_types::indexer::state::{IndexerObjectState, ObjectStateFilter};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -36,139 +30,12 @@ impl DisplayFieldsView {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, JsonSchema)]
-pub struct StateView {
-    pub value: BytesView,
-    pub value_type: TypeTagView,
-    pub decoded_value: Option<AnnotatedMoveValueView>,
-    pub display_fields: Option<DisplayFieldsView>,
-}
-
-impl StateView {
-    pub fn with_display_fields(mut self, display_fields: Option<DisplayFieldsView>) -> Self {
-        self.display_fields = display_fields;
-        self
-    }
-}
-
-impl From<State> for StateView {
-    fn from(state: State) -> Self {
-        Self {
-            value: StrView(state.value),
-            value_type: state.value_type.into(),
-            decoded_value: None,
-            display_fields: None,
-        }
-    }
-}
-
-impl From<AnnotatedState> for StateView {
-    fn from(state: AnnotatedState) -> Self {
-        Self {
-            value: StrView(state.state.value),
-            value_type: state.state.value_type.into(),
-            decoded_value: Some(state.decoded_value.into()),
-            display_fields: None,
-        }
-    }
-}
-
-impl From<StateView> for State {
-    fn from(state: StateView) -> Self {
-        Self {
-            value: state.value.0,
-            value_type: state.value_type.into(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema, Ord, Eq, PartialOrd, PartialEq)]
-pub struct KeyStateHexView(pub BytesView);
-
-impl From<KeyState> for KeyStateHexView {
-    fn from(state: KeyState) -> Self {
-        let bytes = bcs::to_bytes(&state).expect("bcs serialization should succeed");
-        Self(bytes.into())
-    }
-}
-
-impl From<AnnotatedKeyState> for KeyStateHexView {
-    fn from(state: AnnotatedKeyState) -> Self {
-        state.state.into()
-    }
-}
-
-impl From<KeyStateHexView> for KeyState {
-    fn from(state: KeyStateHexView) -> Self {
-        let bytes = state.0 .0;
-        bcs::from_bytes(&bytes).expect("bcs deserialization should succeed")
-    }
-}
-
-impl std::fmt::Display for KeyStateHexView {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "0x{}", hex::encode(&self.0 .0))
-    }
-}
-
-// TODO: Do we need to keep KeyStateView for showing key state in detail?
-
-// #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema, Ord, Eq, PartialOrd, PartialEq)]
-// pub struct KeyStateView {
-//     pub key: BytesView,
-//     pub key_type: TypeTagView,
-//     pub decoded_key: Option<AnnotatedMoveValueView>,
-// }
-
-// impl From<KeyState> for KeyStateView {
-//     fn from(state: KeyState) -> Self {
-//         Self {
-//             key: StrView(state.key),
-//             key_type: state.key_type.into(),
-//             decoded_key: None,
-//         }
-//     }
-// }
-
-// impl From<AnnotatedKeyState> for KeyStateView {
-//     fn from(state: AnnotatedKeyState) -> Self {
-//         Self {
-//             key: StrView(state.state.key),
-//             key_type: state.state.key_type.into(),
-//             decoded_key: Some(state.decoded_key.into()),
-//         }
-//     }
-// }
-
-// impl From<KeyStateView> for KeyState {
-//     fn from(state: KeyStateView) -> Self {
-//         Self {
-//             key: state.key.0,
-//             key_type: state.key_type.into(),
-//         }
-//     }
-// }
-
-// impl std::fmt::Display for KeyStateView {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         let key_state = KeyState::from(self.clone());
-//         write!(f, "{}", key_state)
-//     }
-// }
-
-// /// KeyStateView parse from str will ignored decoded_key
-// impl FromStr for KeyStateView {
-//     type Err = anyhow::Error;
-//     fn from_str(s: &str) -> Result<Self, Self::Err> {
-//         let key_state = KeyState::from_str(s)?;
-//         Ok(KeyStateView::from(key_state))
-//     }
-// }
+pub type FieldKeyView = StrView<FieldKey>;
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct StateKVView {
-    pub key_hex: KeyStateHexView,
-    pub state: StateView,
+    pub key_hex: FieldKeyView,
+    pub state: ObjectStateView,
 }
 
 impl From<StateKV> for StateKVView {
@@ -181,61 +48,77 @@ impl From<StateKV> for StateKVView {
 }
 
 impl StateKVView {
-    pub fn new(key_hex: KeyStateHexView, state: StateView) -> Self {
+    pub fn new(key_hex: FieldKeyView, state: ObjectStateView) -> Self {
         Self { key_hex, state }
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct TableTypeInfoView {
-    pub key_type: TypeTagView,
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct ObjectMetaView {
+    pub id: ObjectID,
+    pub owner: RoochAddressView,
+    pub flag: u8,
+    pub state_root: Option<H256View>,
+    pub size: u64,
+    pub created_at: u64,
+    pub updated_at: u64,
+    pub value_type: TypeTagView,
 }
 
-impl From<TableTypeInfo> for TableTypeInfoView {
-    fn from(table_type_info: TableTypeInfo) -> Self {
+impl From<ObjectMeta> for ObjectMetaView {
+    fn from(meta: ObjectMeta) -> Self {
         Self {
-            key_type: table_type_info.key_type.into(),
+            id: meta.id,
+            owner: meta.owner.into(),
+            flag: meta.flag,
+            state_root: meta.state_root.map(Into::into),
+            size: meta.size,
+            created_at: meta.created_at,
+            updated_at: meta.updated_at,
+            value_type: meta.value_type.into(),
         }
     }
 }
 
-impl From<TableTypeInfoView> for TableTypeInfo {
-    fn from(table_type_info: TableTypeInfoView) -> Self {
-        Self {
-            key_type: table_type_info.key_type.into(),
-        }
-    }
-}
-
-#[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct StateChangeSetView {
-    pub global_size: u64,
-    pub changes: BTreeMap<ObjectID, ObjectChangeView>,
+    pub root_metadata: ObjectMetaView,
+    pub changes: Vec<ObjectChangeView>,
 }
 
 impl From<StateChangeSet> for StateChangeSetView {
     fn from(state_change_set: StateChangeSet) -> Self {
         Self {
-            global_size: state_change_set.global_size,
+            root_metadata: state_change_set.root_metadata.into(),
             changes: state_change_set
                 .changes
-                .into_iter()
-                .map(|(k, v)| (k, v.into()))
+                .into_values()
+                .map(|v| v.into())
                 .collect(),
         }
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
-#[serde(tag = "type", rename_all = "lowercase")]
-pub enum OpView<T> {
-    New(T),
-    Modify(T),
+#[serde(rename_all = "lowercase")]
+pub enum OpView {
+    New(BytesView),
+    Modify(BytesView),
     Delete,
 }
 
-impl From<Op<State>> for OpView<StateView> {
-    fn from(op: Op<State>) -> Self {
+impl From<OpView> for Op<Vec<u8>> {
+    fn from(op: OpView) -> Self {
+        match op {
+            OpView::New(data) => Self::New(data.0),
+            OpView::Modify(data) => Self::Modify(data.0),
+            OpView::Delete => Self::Delete,
+        }
+    }
+}
+
+impl From<Op<Vec<u8>>> for OpView {
+    fn from(op: Op<Vec<u8>>) -> Self {
         match op {
             Op::New(data) => Self::New(data.into()),
             Op::Modify(data) => Self::Modify(data.into()),
@@ -244,110 +127,23 @@ impl From<Op<State>> for OpView<StateView> {
     }
 }
 
-impl From<OpView<StateView>> for Op<State> {
-    fn from(op: OpView<StateView>) -> Self {
-        match op {
-            OpView::New(data) => Self::New(data.into()),
-            OpView::Modify(data) => Self::Modify(data.into()),
-            OpView::Delete => Self::Delete,
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema)]
-#[serde(tag = "type", rename_all = "lowercase")]
-pub enum FieldChangeView {
-    Object {
-        key: KeyStateHexView,
-        key_state: String,
-        #[serde(flatten)]
-        change: ObjectChangeView,
-    },
-    Normal {
-        key: KeyStateHexView,
-        key_state: String,
-        #[serde(flatten)]
-        change: NormalFieldChangeView,
-    },
-}
-
-impl From<(KeyState, FieldChange)> for FieldChangeView {
-    fn from((key, field_change): (KeyState, FieldChange)) -> Self {
-        match field_change {
-            FieldChange::Object(object_change) => Self::Object {
-                key: key.clone().into(),
-                key_state: key.to_string(),
-                change: object_change.into(),
-            },
-            FieldChange::Normal(normal_field_change) => Self::Normal {
-                key: key.clone().into(),
-                key_state: key.to_string(),
-                change: normal_field_change.into(),
-            },
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema)]
-pub struct NormalFieldChangeView {
-    pub op: OpView<StateView>,
-}
-
-impl From<NormalFieldChange> for NormalFieldChangeView {
-    fn from(normal_field_change: NormalFieldChange) -> Self {
-        Self {
-            op: normal_field_change.op.into(),
-        }
-    }
-}
-
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema)]
 pub struct ObjectChangeView {
-    pub op: Option<OpView<StateView>>,
-    pub fields: Vec<FieldChangeView>,
+    pub metadata: ObjectMetaView,
+    pub value: Option<OpView>,
+    pub fields: Vec<ObjectChangeView>,
 }
 
 impl From<ObjectChange> for ObjectChangeView {
     fn from(object_change: ObjectChange) -> Self {
         Self {
-            op: object_change.op.map(|op| op.into()),
+            metadata: object_change.metadata.into(),
+            value: object_change.value.map(|op| op.into()),
             fields: object_change
                 .fields
-                .into_iter()
-                .map(|(k, v)| (k, v).into())
+                .into_values()
+                .map(|v| v.into())
                 .collect(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct IndexerStateChangeSetView {
-    pub tx_order: u64,
-    pub state_change_set: StateChangeSetView,
-    pub created_at: u64,
-}
-
-impl From<IndexerStateChangeSet> for IndexerStateChangeSetView {
-    fn from(state_change_set: IndexerStateChangeSet) -> Self {
-        IndexerStateChangeSetView {
-            tx_order: state_change_set.tx_order,
-            state_change_set: state_change_set.state_change_set.into(),
-            created_at: state_change_set.created_at,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum StateSyncFilterView {
-    /// Query by table handle.
-    TableHandle(ObjectID),
-}
-
-impl From<StateSyncFilterView> for StateSyncFilter {
-    fn from(state_filter: StateSyncFilterView) -> Self {
-        match state_filter {
-            StateSyncFilterView::TableHandle(object_id) => Self::ObjectId(object_id),
         }
     }
 }
@@ -362,7 +158,7 @@ pub struct IndexerObjectStateView {
     pub value: BytesView,
     pub decoded_value: Option<AnnotatedMoveStructView>,
     pub object_type: StructTagView,
-    pub state_root: H256View,
+    pub state_root: Option<H256View>,
     pub size: u64,
     pub tx_order: u64,
     pub state_index: u64,
@@ -387,7 +183,7 @@ impl IndexerObjectStateView {
             value: value.into(),
             decoded_value,
             object_type: state.object_type.into(),
-            state_root: state.state_root.into(),
+            state_root: state.state_root.map(Into::into),
             size: state.size,
             tx_order: state.tx_order,
             state_index: state.state_index,
@@ -471,7 +267,7 @@ pub struct ObjectStateView {
     pub owner_bitcoin_address: Option<String>,
     pub flag: u8,
     pub object_type: StructTagView,
-    pub state_root: H256View,
+    pub state_root: Option<H256View>,
     pub size: u64,
     pub created_at: u64,
     pub updated_at: u64,
@@ -481,20 +277,22 @@ pub struct ObjectStateView {
 }
 
 impl ObjectStateView {
-    pub fn new(value: Vec<u8>, object: AnnotatedObject, decode: bool) -> Self {
+    pub fn new(object: AnnotatedState, decode: bool) -> Self {
+        let (metadata, value, decoded_value) = object.into_inner();
+        let object_type = metadata.value_struct_tag().clone().into();
         ObjectStateView {
-            id: object.id,
-            owner: object.owner.into(),
+            id: metadata.id,
+            owner: metadata.owner.into(),
             owner_bitcoin_address: None,
-            flag: object.flag,
-            object_type: object.value.type_.clone().into(),
-            state_root: object.state_root.into(),
-            size: object.size,
-            created_at: object.created_at,
-            updated_at: object.updated_at,
+            flag: metadata.flag,
+            object_type,
+            state_root: metadata.state_root.map(Into::into),
+            size: metadata.size,
+            created_at: metadata.created_at,
+            updated_at: metadata.updated_at,
             value: value.into(),
             decoded_value: if decode {
-                Some(AnnotatedMoveStructView::from(object.value))
+                Some(AnnotatedMoveStructView::from(decoded_value))
             } else {
                 None
             },
@@ -502,18 +300,20 @@ impl ObjectStateView {
         }
     }
 
-    pub fn new_from_raw_object(object: RawObject) -> Self {
+    pub fn new_from_object_state(object: ObjectState) -> Self {
+        let (metadata, value) = object.into_inner();
+        let value_struct_tag = metadata.value_struct_tag().clone();
         ObjectStateView {
-            id: object.id,
-            owner: object.owner.into(),
+            id: metadata.id,
+            owner: metadata.owner.into(),
             owner_bitcoin_address: None,
-            flag: object.flag,
-            object_type: object.value.struct_tag.into(),
-            state_root: object.state_root.into(),
-            size: object.size,
-            created_at: object.created_at,
-            updated_at: object.updated_at,
-            value: object.value.value.into(),
+            flag: metadata.flag,
+            object_type: value_struct_tag.into(),
+            state_root: metadata.state_root.map(Into::into),
+            size: metadata.size,
+            created_at: metadata.created_at,
+            updated_at: metadata.updated_at,
+            value: value.into(),
             decoded_value: None,
             display_fields: None,
         }
@@ -527,6 +327,34 @@ impl ObjectStateView {
     pub fn with_owner_bitcoin_address(mut self, owner_bitcoin_address: Option<String>) -> Self {
         self.owner_bitcoin_address = owner_bitcoin_address;
         self
+    }
+}
+
+impl From<ObjectState> for ObjectStateView {
+    fn from(state: ObjectState) -> Self {
+        ObjectStateView::new_from_object_state(state)
+    }
+}
+
+impl From<ObjectStateView> for ObjectState {
+    fn from(state: ObjectStateView) -> Self {
+        let metadata = ObjectMeta {
+            id: state.id,
+            owner: state.owner.0.into(),
+            flag: state.flag,
+            state_root: state.state_root.map(Into::into),
+            size: state.size,
+            created_at: state.created_at,
+            updated_at: state.updated_at,
+            value_type: state.object_type.0.into(),
+        };
+        ObjectState::new(metadata, state.value.0)
+    }
+}
+
+impl From<AnnotatedState> for ObjectStateView {
+    fn from(state: AnnotatedState) -> Self {
+        ObjectStateView::new(state, true)
     }
 }
 

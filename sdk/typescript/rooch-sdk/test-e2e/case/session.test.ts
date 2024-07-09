@@ -5,7 +5,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { setup, TestBox } from '../setup.js'
 import { Transaction } from '../../src/transactions/index.js'
 
-describe('Checkpoints Transaction API', () => {
+describe('Checkpoints Session API', () => {
   let testBox: TestBox
 
   beforeAll(async () => {

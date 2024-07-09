@@ -5,7 +5,7 @@ module rooch_framework::transfer {
     
     use std::option;
     use std::string::String;
-    use moveos_std::object::ObjectID;
+    use moveos_std::object::Object;
     use moveos_std::object;
     use rooch_framework::account_coin_store;
     use rooch_framework::multichain_address;
@@ -52,21 +52,16 @@ module rooch_framework::transfer {
     }
 
     /// Transfer `from` owned `Object<T>` to `to` account.
-    /// TODO: Currently, we can not pass the `Object<T>` argument by value, so, we use `ObjectID` instead.
-    /// After the `Object<T>` argument can be passed by value, we should change the argument type to `Object<T>`.
-    public entry fun transfer_object<T: key + store>(from: &signer, to: address, object_id: ObjectID) {
-        let obj = object::take_object<T>(from, object_id);
+    public entry fun transfer_object<T: key + store>(to: address, obj: Object<T>) {
         object::transfer(obj, to);
     }
 
     /// Transfer `from` owned `Object<T>` to a Bitcoin Address.
     public entry fun transfer_object_to_bitcoin_address<T: key + store>(
-        from: &signer, 
         to: String, 
-        object_id: ObjectID) {
+        obj: Object<T>) {
         let btc_address = bitcoin_address::from_string(&to);
         let rooch_address = bitcoin_address::to_rooch_address(&btc_address);
-        let obj = object::take_object<T>(from, object_id);
         object::transfer(obj, rooch_address);
     }
 }

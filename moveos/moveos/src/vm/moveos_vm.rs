@@ -148,7 +148,8 @@ where
     /// Re spawn a new session with the same context.
     pub fn respawn(self, env: SimpleMap<MoveString, Any>) -> Self {
         let new_ctx = self.object_runtime.read().tx_context().spawn(env);
-        let root = self.object_runtime.read().root();
+        // We get the root object from the remote, because the root object may be changed during the transaction execution
+        let root = self.remote.root_object().clone();
         let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(new_ctx, root)));
         Self {
             session: Self::new_inner_session(self.vm, self.remote, object_runtime.clone()),
@@ -715,20 +716,27 @@ where
         )
     }
 
-    pub fn load_type(&self, type_tag: &TypeTag) -> VMResult<Type> {
-        self.session.load_type(type_tag)
-    }
-
-    pub fn get_type_layout(&self, type_tag: &TypeTag) -> VMResult<MoveTypeLayout> {
-        self.session.get_type_layout(type_tag)
-    }
-
-    pub fn get_fully_annotated_type_layout(&self, type_tag: &TypeTag) -> VMResult<MoveTypeLayout> {
-        self.session.get_fully_annotated_type_layout(type_tag)
+    /// Try to get the type tag of a type, but return None if the type is not a struct or struct instantiation
+    /// This function also support struct reference and mutable reference
+    pub fn get_type_tag_option(&self, t: &Type) -> Option<TypeTag> {
+        match t {
+            Type::Struct(_) | Type::StructInstantiation(_, _) => self.session.get_type_tag(t).ok(),
+            Type::Reference(r) => self.get_type_tag_option(r),
+            Type::MutableReference(r) => self.get_type_tag_option(r),
+            _ => None,
+        }
     }
 
     pub fn get_type_tag(&self, ty: &Type) -> VMResult<TypeTag> {
         self.session.get_type_tag(ty)
+    }
+
+    pub fn load_type(&self, type_tag: &TypeTag) -> VMResult<Type> {
+        self.session.load_type(type_tag)
+    }
+
+    pub fn get_fully_annotated_type_layout(&self, type_tag: &TypeTag) -> VMResult<MoveTypeLayout> {
+        self.session.get_fully_annotated_type_layout(type_tag)
     }
 
     pub fn get_struct_type(&self, index: CachedStructIndex) -> Option<Arc<StructType>> {

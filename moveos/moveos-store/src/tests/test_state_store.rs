@@ -3,63 +3,9 @@
 
 use crate::MoveOSStore;
 use anyhow::Result;
-use move_core_types::effects::Op;
 use moveos_types::h256::H256;
-use moveos_types::move_std::string::MoveString;
-use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::moveos_std::object::{ObjectEntity, GENESIS_STATE_ROOT};
-use moveos_types::moveos_std::table::TablePlaceholder;
-use moveos_types::state::{
-    FieldChange, KeyState, MoveState, MoveType, ObjectChange, StateChangeSet,
-};
-use moveos_types::state_resolver::StatelessResolver;
 use moveos_types::test_utils::random_state_change_set;
 use smt::NodeReader;
-use std::str::FromStr;
-
-#[test]
-fn test_statedb() {
-    let (moveos_store, _) = MoveOSStore::mock_moveos_store().unwrap();
-
-    let mut state_change_set = StateChangeSet::default();
-
-    let object_id = ObjectID::random();
-
-    let obj = ObjectEntity::new_table_object(object_id.clone(), *GENESIS_STATE_ROOT, 0);
-
-    let mut object_change = ObjectChange::new(Op::New(obj.into_state()));
-
-    let key = KeyState::new(
-        MoveString::from_str("test_key").unwrap().to_bytes(),
-        MoveString::type_tag(),
-    );
-    let value = MoveString::from_str("test_value").unwrap();
-
-    object_change.add_field_change(
-        key.clone(),
-        FieldChange::new_normal(Op::New(value.clone().into())),
-    );
-
-    state_change_set
-        .changes
-        .insert(object_id.clone(), object_change);
-
-    let (state_root, _size) = moveos_store
-        .get_state_store()
-        .apply_change_set(state_change_set)
-        .unwrap();
-
-    let state = moveos_store
-        .get_state_store()
-        .get_field_at(state_root, &object_id.to_key())
-        .unwrap();
-    assert!(state.is_some());
-    let obj2 = state.unwrap().as_object::<TablePlaceholder>().unwrap();
-    //The object field size is not changed, because the size is updated in the `object.move`` Move module.
-    //assert_eq!(obj2.size, 1);
-    let value_state = moveos_store.get_field_at(obj2.state_root(), &key).unwrap();
-    assert_eq!(value_state.unwrap(), value.into());
-}
 
 #[test]
 fn test_reopen() {

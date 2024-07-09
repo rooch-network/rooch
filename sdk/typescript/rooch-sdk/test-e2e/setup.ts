@@ -54,7 +54,6 @@ export async function setup(opts?: { url?: string }): Promise<TestBox> {
 export async function cmd(args: string[] | string): Promise<string> {
   return execSync(`cargo run --bin rooch ${typeof args === 'string' ? args : args.join(' ')}`, {
     encoding: 'utf-8',
-    stdio: 'pipe',
   })
 }
 
@@ -63,11 +62,11 @@ export async function cmdPublishPackage(
   options: {
     namedAddresses: string
   } = {
-    namedAddresses: 'default',
+    namedAddresses: 'rooch_examples=default',
   },
 ) {
   const result = await cmd(
-    `move publish -p ${packagePath} --named-addresses rooch_examples=${options.namedAddresses}`,
+    `move publish -p ${packagePath} --named-addresses ${options.namedAddresses}`,
   )
   const { execution_info } = JSON.parse(result)
 

@@ -3,7 +3,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { Ed25519Keypair } from '../keypairs/index.js'
-import { RoochAddress, BitcoinAddress, isValidRoochAddress } from '../address/index.js'
+import { RoochAddress, BitcoinAddress, isValidAddress } from '../address/index.js'
 
 const TEST_CASES: { btcAddr: string; roochAddr: string; hexAddr: string }[] = [
   // {
@@ -48,8 +48,8 @@ describe('Bitcoin address', () => {
       const genRoochAddr = roochAddr.toBech32Address()
       const genRoochHexAddr = roochAddr.toHexAddress()
 
-      expect(isValidRoochAddress(genRoochAddr)).toBeTruthy()
-      expect(isValidRoochAddress(genRoochHexAddr)).toBeTruthy()
+      expect(isValidAddress(genRoochAddr)).toBeTruthy()
+      expect(isValidAddress(genRoochHexAddr)).toBeTruthy()
       expect(genRoochAddr).eq(item.roochAddr)
       expect(genRoochHexAddr).eq(item.hexAddr)
     }

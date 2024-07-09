@@ -82,11 +82,9 @@ This public entry function requires the <code>CoinType</code> to have <code>key<
 ## Function `transfer_object`
 
 Transfer <code>from</code> owned <code>Object&lt;T&gt;</code> to <code><b>to</b></code> account.
-TODO: Currently, we can not pass the <code>Object&lt;T&gt;</code> argument by value, so, we use <code>ObjectID</code> instead.
-After the <code>Object&lt;T&gt;</code> argument can be passed by value, we should change the argument type to <code>Object&lt;T&gt;</code>.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_object">transfer_object</a>&lt;T: store, key&gt;(from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, object_id: <a href="_ObjectID">object::ObjectID</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_object">transfer_object</a>&lt;T: store, key&gt;(<b>to</b>: <b>address</b>, obj: <a href="_Object">object::Object</a>&lt;T&gt;)
 </code></pre>
 
 
@@ -98,5 +96,5 @@ After the <code>Object&lt;T&gt;</code> argument can be passed by value, we shoul
 Transfer <code>from</code> owned <code>Object&lt;T&gt;</code> to a Bitcoin Address.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_object_to_bitcoin_address">transfer_object_to_bitcoin_address</a>&lt;T: store, key&gt;(from: &<a href="">signer</a>, <b>to</b>: <a href="_String">string::String</a>, object_id: <a href="_ObjectID">object::ObjectID</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_object_to_bitcoin_address">transfer_object_to_bitcoin_address</a>&lt;T: store, key&gt;(<b>to</b>: <a href="_String">string::String</a>, obj: <a href="_Object">object::Object</a>&lt;T&gt;)
 </code></pre>

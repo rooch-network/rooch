@@ -4,6 +4,7 @@
     "target": "ESNext",
     "module": "Node16",
     "moduleResolution": "Node16",
+    "isolatedModules": true,
     "outDir": "dist/esm"
   }
 }

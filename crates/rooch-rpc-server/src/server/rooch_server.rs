@@ -4,43 +4,40 @@
 use crate::service::aggregate_service::AggregateService;
 use crate::service::rpc_service::RpcService;
 use anyhow::Result;
-use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    RpcModule,
+use jsonrpsee::{core::async_trait, RpcModule};
+use move_core_types::{
+    account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
 };
 use moveos_types::{
     access_path::AccessPath,
     h256::H256,
+    move_std::string::MoveString,
     moveos_std::{
         display::{get_object_display_id, get_resource_display_id, RawDisplay},
+        move_module::MoveModule,
         object::{ObjectEntity, ObjectID},
     },
-    state::{AnnotatedKeyState, AnnotatedState, KeyState},
-};
-use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
-use rooch_rpc_api::jsonrpc_types::{
-    account_view::BalanceInfoView, IndexerEventPageView, IndexerObjectStatePageView,
-    IndexerObjectStateView, KeyStateHexView, ObjectIDVecView, ObjectStateFilterView,
-    ObjectStateView, QueryOptions, StateKVView, StateOptions, TxOptions,
+    state::{AnnotatedState, FieldKey},
 };
 use rooch_rpc_api::jsonrpc_types::{
+    account_view::BalanceInfoView,
     event_view::{EventFilterView, EventView, IndexerEventView},
-    RoochOrBitcoinAddressView,
+    transaction_view::{TransactionFilterView, TransactionWithInfoView},
+    AccessPathView, AnnotatedMoveStructView, BalanceInfoPageView, DisplayFieldsView, EventOptions,
+    EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
+    IndexerEventPageView, IndexerObjectStatePageView, IndexerObjectStateView, ModuleABIView,
+    ObjectIDVecView, ObjectStateFilterView, ObjectStateView, QueryOptions, RoochAddressView,
+    RoochOrBitcoinAddressView, StateKVView, StateOptions, StatePageView, StrView, StructTagView,
+    TransactionWithInfoPageView, TxOptions,
 };
-use rooch_rpc_api::jsonrpc_types::{transaction_view::TransactionWithInfoView, EventOptions};
-use rooch_rpc_api::jsonrpc_types::{
-    AccessPathView, AnnotatedMoveStructView, BalanceInfoPageView, DisplayFieldsView, EventPageView,
-    ExecuteTransactionResponseView, FunctionCallView, H256View, StatePageView, StateView, StrView,
-    StructTagView, TransactionWithInfoPageView,
-};
-use rooch_rpc_api::{api::rooch_api::RoochAPIServer, api::DEFAULT_RESULT_LIMIT};
 use rooch_rpc_api::{
+    api::rooch_api::RoochAPIServer,
+    api::DEFAULT_RESULT_LIMIT,
     api::{RoochRpcModule, DEFAULT_RESULT_LIMIT_USIZE},
-    jsonrpc_types::AnnotatedFunctionResultView,
-};
-use rooch_rpc_api::{
     api::{MAX_RESULT_LIMIT, MAX_RESULT_LIMIT_USIZE},
+    jsonrpc_types::AnnotatedFunctionResultView,
     jsonrpc_types::BytesView,
+    RpcError, RpcResult,
 };
 use rooch_types::indexer::event::IndexerEventID;
 use rooch_types::indexer::state::IndexerStateID;
@@ -71,14 +68,11 @@ impl RoochServer {
         let mut displayable_states = vec![];
         for s in &states {
             displayable_states.push(if is_object {
-                if let Some(tag) = s.state.get_object_struct_tag() {
-                    display_ids.push(get_object_display_id(tag.into()));
-                    true
-                } else {
-                    false
-                }
-            } else if let Some(tag) = s.state.get_resource_struct_tag() {
-                display_ids.push(get_resource_display_id(tag.into()));
+                let value_struct_tag = s.metadata.value_struct_tag();
+                display_ids.push(get_object_display_id(value_struct_tag.clone().into()));
+                true
+            } else if let Some(tag) = s.metadata.get_resource_struct_tag() {
+                display_ids.push(get_resource_display_id(tag.clone().into()));
                 true
             } else {
                 false
@@ -93,7 +87,7 @@ impl RoochServer {
             .into_iter()
             .map(|option_s| {
                 option_s
-                    .map(|s| s.as_object_uncheck::<RawDisplay>())
+                    .map(|s| s.into_object_uncheck::<RawDisplay>())
                     .transpose()
             })
             .collect::<Result<Vec<Option<ObjectEntity<RawDisplay>>>>>()?;
@@ -106,10 +100,13 @@ impl RoochServer {
                     !display_fields.is_empty(),
                     "Display fields should not be empty"
                 );
-                display_fields
-                    .pop()
-                    .unwrap()
-                    .map(|obj| DisplayFieldsView::new(obj.value.render(&annotated_s.decoded_value)))
+                display_fields.pop().unwrap().map(|obj| {
+                    DisplayFieldsView::new(obj.value.render(
+                        &move_resource_viewer::AnnotatedMoveValue::Struct(
+                            annotated_s.decoded_value.clone(),
+                        ),
+                    ))
+                })
             } else {
                 None
             });
@@ -160,8 +157,7 @@ impl RoochAPIServer for RoochServer {
 
     async fn send_raw_transaction(&self, payload: BytesView) -> RpcResult<H256View> {
         info!("send_raw_transaction payload: {:?}", payload);
-        let mut tx =
-            bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
+        let mut tx = bcs::from_bytes::<RoochTransaction>(&payload.0)?;
         info!("send_raw_transaction tx: {:?}", tx);
 
         let hash = tx.tx_hash();
@@ -175,7 +171,7 @@ impl RoochAPIServer for RoochServer {
         tx_options: Option<TxOptions>,
     ) -> RpcResult<ExecuteTransactionResponseView> {
         let tx_options = tx_options.unwrap_or_default();
-        let tx = bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
+        let tx = bcs::from_bytes::<RoochTransaction>(&payload.0)?;
         let tx_response = self.rpc_service.execute_tx(tx).await?;
 
         let result = if tx_options.with_output {
@@ -201,7 +197,7 @@ impl RoochAPIServer for RoochServer {
         &self,
         access_path: AccessPathView,
         state_option: Option<StateOptions>,
-    ) -> RpcResult<Vec<Option<StateView>>> {
+    ) -> RpcResult<Vec<Option<ObjectStateView>>> {
         let state_option = state_option.unwrap_or_default();
         let show_display =
             state_option.show_display && (access_path.0.is_object() || access_path.0.is_resource());
@@ -228,19 +224,22 @@ impl RoochAPIServer for RoochServer {
                                 "display fields should not be empty"
                             );
                             let display_view = valid_display_field_views.pop().unwrap();
-                            StateView::from(annotated_s).with_display_fields(display_view)
+                            ObjectStateView::from(annotated_s).with_display_fields(display_view)
                         })
                     })
                     .collect()
             } else {
-                states.into_iter().map(|s| s.map(StateView::from)).collect()
+                states
+                    .into_iter()
+                    .map(|s| s.map(ObjectStateView::from))
+                    .collect()
             }
         } else {
             self.rpc_service
                 .get_states(access_path.into())
                 .await?
                 .into_iter()
-                .map(|s| s.map(StateView::from))
+                .map(|s| s.map(ObjectStateView::from))
                 .collect()
         };
         Ok(state_views)
@@ -262,12 +261,12 @@ impl RoochAPIServer for RoochServer {
             MAX_RESULT_LIMIT_USIZE,
         );
         let cursor_of = match cursor.clone() {
-            Some(key_state_str) => Some(KeyState::from_str(key_state_str.as_str())?),
+            Some(key_state_str) => Some(FieldKey::from_str(key_state_str.as_str())?),
             None => None,
         };
         let mut data: Vec<StateKVView> = if state_option.decode || show_display {
             let is_object = access_path.0.is_object();
-            let (key_states, states): (Vec<AnnotatedKeyState>, Vec<AnnotatedState>) = self
+            let (key_states, states): (Vec<FieldKey>, Vec<AnnotatedState>) = self
                 .rpc_service
                 .list_annotated_states(access_path.into(), cursor_of, limit_of + 1)
                 .await?
@@ -282,10 +281,10 @@ impl RoochAPIServer for RoochServer {
                     .into_iter()
                     .zip(states)
                     .zip(display_field_views)
-                    .map(|((key_state, state), display_field_view)| {
+                    .map(|((key, state), display_field_view)| {
                         StateKVView::new(
-                            KeyStateHexView::from(key_state),
-                            StateView::from(state).with_display_fields(display_field_view),
+                            key.into(),
+                            ObjectStateView::from(state).with_display_fields(display_field_view),
                         )
                     })
                     .collect::<Vec<_>>()
@@ -293,9 +292,7 @@ impl RoochAPIServer for RoochServer {
                 key_states
                     .into_iter()
                     .zip(states)
-                    .map(|(key_state, state)| {
-                        StateKVView::new(KeyStateHexView::from(key_state), StateView::from(state))
-                    })
+                    .map(|(key, state)| StateKVView::new(key.into(), state.into()))
                     .collect::<Vec<_>>()
             }
         } else {
@@ -303,9 +300,7 @@ impl RoochAPIServer for RoochServer {
                 .list_states(access_path.into(), cursor_of, limit_of + 1)
                 .await?
                 .into_iter()
-                .map(|(key_state, state)| {
-                    StateKVView::new(KeyStateHexView::from(key_state), StateView::from(state))
-                })
+                .map(|(key, state)| StateKVView::new(key.into(), state.into()))
                 .collect::<Vec<_>>()
         };
 
@@ -348,21 +343,9 @@ impl RoochAPIServer for RoochServer {
             let objects_view = states
                 .into_iter()
                 .map(|option_annotated_s| {
-                    option_annotated_s
-                        .map(|annotated_s| {
-                            let value = annotated_s
-                                .state
-                                .as_raw_object()
-                                .expect("should be object")
-                                .value
-                                .value;
-                            annotated_s
-                                .into_annotated_object()
-                                .map(|obj| ObjectStateView::new(value, obj, decode))
-                        })
-                        .transpose()
+                    option_annotated_s.map(|annotated_s| ObjectStateView::new(annotated_s, decode))
                 })
-                .collect::<Result<Vec<_>>>()?;
+                .collect::<Vec<_>>();
 
             if show_display {
                 valid_display_field_views.reverse();
@@ -387,12 +370,7 @@ impl RoochAPIServer for RoochServer {
                 .get_states(access_path)
                 .await?
                 .into_iter()
-                .map(|s| {
-                    s.map(|s| {
-                        let obj = s.as_raw_object().expect("should be object");
-                        ObjectStateView::new_from_raw_object(obj)
-                    })
-                })
+                .map(|s| s.map(Into::into))
                 .collect()
         };
 
@@ -553,12 +531,11 @@ impl RoochAPIServer for RoochServer {
             (end..start).rev().collect::<Vec<_>>()
         } else {
             let start = cursor.unwrap_or(0);
-            let start_plus =
-                start
-                    .checked_add(limit_of + 1)
-                    .ok_or(jsonrpsee::core::Error::Custom(
-                        "cursor value is overflow".to_string(),
-                    ))?;
+            let start_plus = start
+                .checked_add(limit_of + 1)
+                .ok_or(RpcError::UnexpectedError(
+                    "cursor value is overflow".to_string(),
+                ))?;
             let end = min(start_plus, last_sequencer_order + 1);
 
             (start..end).collect::<Vec<_>>()
@@ -642,6 +619,34 @@ impl RoochAPIServer for RoochServer {
                 .collect(),
             next_cursor,
             has_next_page,
+        })
+    }
+
+    async fn get_module_abi(
+        &self,
+        module_addr: RoochAddressView,
+        module_name: String,
+    ) -> RpcResult<Option<ModuleABIView>> {
+        let module_id = ModuleId::new(
+            AccountAddress::from(module_addr.0),
+            Identifier::new(module_name)?,
+        );
+        let access_path = AccessPath::module(&module_id);
+        let module = self
+            .rpc_service
+            .get_states(access_path)
+            .await?
+            .pop()
+            .flatten();
+
+        Ok(match module {
+            Some(m) => {
+                let move_module = m.value_as_df::<MoveString, MoveModule>()?.value;
+                Some(ModuleABIView::try_parse_from_module_bytes(
+                    &move_module.byte_codes,
+                )?)
+            }
+            None => None,
         })
     }
 
@@ -768,25 +773,11 @@ impl RoochAPIServer for RoochServer {
             annotated_states
                 .into_iter()
                 .zip(valid_display_field_views)
-                .map(|(annotated_state, display_field_view)| {
-                    let value = annotated_state.state.value.clone();
-                    (
-                        value,
-                        annotated_state
-                            .into_annotated_object()
-                            .expect("should be object"),
-                        display_field_view,
-                    )
-                })
                 .collect::<Vec<_>>()
         } else {
             annotated_states
                 .into_iter()
-                .map(|s| {
-                    let value = s.state.value.clone();
-                    let obj = s.into_annotated_object().expect("must be object");
-                    (value, obj, None)
-                })
+                .map(|s| (s, None))
                 .collect::<Vec<_>>()
         };
 
@@ -805,15 +796,15 @@ impl RoochAPIServer for RoochServer {
             .zip(states)
             .zip(bitcoin_addresses)
             .map(
-                |(((value, annotated_state, display_fields), state), bitcoin_address)| {
+                |(((annotated_state, display_fields), state), bitcoin_address)| {
                     let decoded_value = if decode {
-                        Some(AnnotatedMoveStructView::from(annotated_state.value))
+                        Some(AnnotatedMoveStructView::from(annotated_state.decoded_value))
                     } else {
                         None
                     };
                     IndexerObjectStateView::new_from_object_state(
                         state,
-                        value,
+                        annotated_state.value,
                         bitcoin_address,
                         decoded_value,
                         display_fields,

@@ -87,7 +87,10 @@ impl UTXO {
 }
 
 pub fn derive_utxo_id(outpoint: &types::OutPoint) -> ObjectID {
-    object::custom_child_object_id(BitcoinUTXOStore::object_id(), outpoint, &UTXO::struct_tag())
+    object::custom_object_id_with_parent::<types::OutPoint, UTXO>(
+        BitcoinUTXOStore::object_id(),
+        outpoint,
+    )
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

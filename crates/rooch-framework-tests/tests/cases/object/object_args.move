@@ -25,6 +25,16 @@ module test::m {
     }
 }
 
+// test one ref: expect success
+//# run --signers test --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
+script {
+    use moveos_std::object::{Object};
+    use test::m::{TestStruct};
+
+    fun main(_obj_from_arg: &Object<TestStruct>) {
+    }
+}
+
 // test one mut ref: expect success
 //# run --signers test --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
 script {
@@ -32,6 +42,27 @@ script {
     use test::m::{TestStruct};
 
     fun main(_obj_from_arg: &mut Object<TestStruct>) {
+    }
+}
+
+// test one value: expect success
+//# run --signers test --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
+script {
+    use moveos_std::object::{Self, Object};
+    use test::m::{TestStruct};
+
+    fun main(obj_from_arg: Object<TestStruct>) {
+        object::transfer(obj_from_arg, moveos_std::tx_context::sender());
+    }
+}
+
+// test one value with type args: expect success
+//# run --signers test --type-args 0x42::m::TestStruct --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
+script {
+    use moveos_std::object::{Self, Object};
+
+    fun main<T:key+store>(obj_from_arg: Object<T>) {
+        object::transfer(obj_from_arg, moveos_std::tx_context::sender());
     }
 }
 
@@ -65,5 +96,27 @@ script {
     use test::m::{TestStruct};
 
     fun main(_obj_from_arg: &mut Object<TestStruct>, _obj_from_arg2: &mut Object<TestStruct>) {
+    }
+}
+
+// test one value and one ref with same object: expect failure
+//# run --signers test --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
+script {
+    use moveos_std::object::{Self, Object};
+    use test::m::{TestStruct};
+
+    fun main(obj_from_arg: Object<TestStruct>, _obj_from_arg2: &Object<TestStruct>) {
+        object::transfer(obj_from_arg, moveos_std::tx_context::sender());
+    }
+}
+
+// test one value and one mut ref with same object: expect failure
+//# run --signers test --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
+script {
+    use moveos_std::object::{Self, Object};
+    use test::m::{TestStruct};
+
+    fun main(obj_from_arg: Object<TestStruct>, _obj_from_arg2: &mut Object<TestStruct>) {
+        object::transfer(obj_from_arg, moveos_std::tx_context::sender());
     }
 }

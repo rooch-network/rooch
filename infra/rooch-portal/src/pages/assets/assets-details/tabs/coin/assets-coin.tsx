@@ -1,11 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react'
-import { BalanceInfoView } from '@roochnetwork/rooch-sdk'
 import {
-  useCurrentAccount,
-  useCurrentSession, useRoochClient,
-  useRoochClientQuery,
+  BalanceInfoView,
+  IndexerStateID,
+  isValidAddress,
+} from '@roochnetwork/rooch-sdk'
+import {
+  useCurrentAddress,
+  useCurrentSession,
+  useRoochClientQuery, useTransferCoin,
 } from '@roochnetwork/rooch-sdk-kit'
 import { AlertCircle, ArrowLeft, Wallet } from 'lucide-react'
 import {
@@ -22,19 +27,17 @@ import CustomPagination from '@/components/custom-pagination'
 import { formatCoin } from '@/utils/format'
 import { useToast } from '@/components/ui/use-toast'
 import { ToastAction } from '@/components/ui/toast'
-import { isValidBitcoinAddress } from '@/utils/addressValidation'
 
 const RecipientInput = React.lazy(() => import('@/components/recipient-input'))
 const AmountInput = React.lazy(() => import('@/components/amount-input'))
 
 export const AssetsCoin: React.FC = () => {
-  const account = useCurrentAccount()
+  const account = useCurrentAddress()
   const sessionKey = useCurrentSession()
   const { toast } = useToast()
 
-  // const { mutateAsync: transferCoin } = useTransferCoin()
+  const { mutateAsync: transferCoin } = useTransferCoin()
 
-  const client = useRoochClient()
   const [recipient, setRecipient] = useState<string>('')
   const [amount, setAmount] = useState<string>('')
   const [transferLoading, setTransferLoading] = useState<boolean>(false)
@@ -42,7 +45,7 @@ export const AssetsCoin: React.FC = () => {
 
   // ** PAGINATION
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 1 })
-  const mapPageToNextCursor = useRef<{ [page: number]: string | null }>({})
+  const mapPageToNextCursor = useRef<{ [page: number]: IndexerStateID | null }>({})
 
   const handlePageChange = (selectedPage: number) => {
     if (selectedPage < 0) {
@@ -63,9 +66,9 @@ export const AssetsCoin: React.FC = () => {
   )
 
   const { data, isLoading, isError, refetch } = useRoochClientQuery('getBalances', {
-    address: sessionKey?.getAddress() || '',
-    cursor: queryOptions.cursor,
-    limit: queryOptions.pageSize,
+    owner: sessionKey?.getRoochAddress().toHexAddress() || '',
+    cursor: null,
+    limit: queryOptions.pageSize.toString(),
   })
 
   // ** MODAL
@@ -120,7 +123,7 @@ export const AssetsCoin: React.FC = () => {
       return
     }
 
-    if (data.has_next_page) {
+    if (data) {
       mapPageToNextCursor.current[paginationModel.page] = data.next_cursor ?? null
     }
   }, [paginationModel, data])
@@ -158,7 +161,7 @@ export const AssetsCoin: React.FC = () => {
 
     // Is Session Key expired
     try {
-      if (!sessionKey || (await sessionKey.isExpired())) {
+      if (!sessionKey) {
         toast({
           title: 'Session Key Expired',
           description: 'The session key has expired, please authorize a new one.',
@@ -183,59 +186,30 @@ export const AssetsCoin: React.FC = () => {
       return
     }
 
-    if (!isValidBitcoinAddress(recipient)) {
-      setError('Please enter a valid Bitcoin address.')
+    if (!isValidAddress(recipient)) {
+      setError('Please enter a valid Bitcoin or Rooch address.')
       return
     }
 
     const amountNumber = Math.floor(Number(amount) * 10 ** selectedCoin.decimals)
 
     try {
-
-      const result = await client.executeTransaction({
-        address: sessionKey.getAddress(),
-        authorizer: sessionKey.getAuthorizer(),
-        funcId: '0x3::transfer::transfer_coin',
-        args: [
-          {
-            type: 'Address',
-            value: recipient,
-          },
-          {
-            type: 'U256',
-            value: BigInt(amountNumber),
-          },
-        ],
-        tyArgs: [
-          {
-            Struct: {
-              address: '0x3',
-              module: 'gas_coin',
-              name: 'GasCoin',
-            },
-          },
-        ],
-        opts: {
-          maxGasAmount: 50000000,
-        },
+      await transferCoin({
+        recipient: recipient,
+        amount: amountNumber,
+        coinType: {
+          target: selectedCoin.coin_type
+        }
       })
-
-      if (result.execution_info.status.type !== 'executed') {
-        toast({
-          title: 'Transfer Failed',
-          description: 'The transfer could not be completed. Please try again later.',
-          action: <ToastAction altText="Close">Close</ToastAction>,
-        })
-      } else {
-        await refetch()
-        toast({
-          title: 'Transfer Successful',
-          description: `Successfully transferred ${amount} ${selectedCoin.name} to ${recipient}`,
-          action: <ToastAction altText="Close">Close</ToastAction>,
-        })
-      }
-
-    } finally {
+      await refetch()
+    } catch (e) {
+      // toast({
+      //   title: 'Transfer Failed',
+      //   description: 'The transfer could not be completed. Please try again later.',
+      //   action: <ToastAction altText="Close">Close</ToastAction>,
+      // })
+    }
+    finally {
       setTransferLoading(false)
       handleClose()
       setError('')

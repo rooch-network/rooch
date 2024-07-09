@@ -51,6 +51,30 @@ impl From<String> for MoveString {
     }
 }
 
+impl From<&str> for MoveString {
+    fn from(s: &str) -> Self {
+        MoveString {
+            bytes: s.as_bytes().to_vec(),
+        }
+    }
+}
+
+impl From<&IdentStr> for MoveString {
+    fn from(s: &IdentStr) -> Self {
+        MoveString {
+            bytes: s.as_str().as_bytes().to_vec(),
+        }
+    }
+}
+
+impl From<Identifier> for MoveString {
+    fn from(s: Identifier) -> Self {
+        MoveString {
+            bytes: s.as_str().as_bytes().to_vec(),
+        }
+    }
+}
+
 impl FromStr for MoveString {
     type Err = anyhow::Error;
 

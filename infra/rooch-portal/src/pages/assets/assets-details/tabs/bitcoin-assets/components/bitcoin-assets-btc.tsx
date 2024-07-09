@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 import { useMemo, useRef, useState } from 'react'
-import { useCurrentAccount, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
+import { useCurrentAddress, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 
 import { AlertCircle, Wallet } from 'lucide-react'
 import { CursorType } from '@/common/interface'
@@ -12,7 +12,7 @@ import CustomPagination from '@/components/custom-pagination.tsx'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
 export const BitcoinAssetsBtc: React.FC = () => {
-  const account = useCurrentAccount()
+  const account = useCurrentAddress()
 
   // ** PAGINATION
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 1 })
@@ -30,7 +30,7 @@ export const BitcoinAssetsBtc: React.FC = () => {
   const queryOptions = useMemo(
     () => ({
       cursor: mapPageToNextCursor.current[paginationModel.page - 1] || null,
-      pageSize: paginationModel.pageSize,
+      pageSize: paginationModel.pageSize.toString(),
     }),
     [paginationModel],
   )
@@ -39,9 +39,9 @@ export const BitcoinAssetsBtc: React.FC = () => {
     data: result,
     isLoading,
     isError,
-  } = useRoochClientQuery('queryUTXOs', {
+  } = useRoochClientQuery('queryUTXO', {
     filter: {
-      owner: account?.address || '',
+      owner: account?.toStr() || '',
     },
     cursor: queryOptions.cursor as IndexerStateID | null,
     limit: queryOptions.pageSize,

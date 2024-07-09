@@ -268,7 +268,7 @@
           "schema": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/KeyStateHexView"
+              "$ref": "#/components/schemas/moveos_types::state::FieldKey"
             }
           }
         },
@@ -280,20 +280,46 @@
         }
       ],
       "result": {
-        "name": "Vec<Option<StateView>>",
+        "name": "Vec<Option<ObjectStateView>>",
         "required": true,
         "schema": {
           "type": "array",
           "items": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/StateView"
+                "$ref": "#/components/schemas/ObjectStateView"
               },
               {
                 "type": "null"
               }
             ]
           }
+        }
+      }
+    },
+    {
+      "name": "rooch_getModuleABI",
+      "description": "get module ABI by module id",
+      "params": [
+        {
+          "name": "module_addr",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
+          }
+        },
+        {
+          "name": "module_name",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "result": {
+        "name": "ModuleABIView",
+        "schema": {
+          "$ref": "#/components/schemas/ModuleABIView"
         }
       }
     },
@@ -352,14 +378,14 @@
         }
       ],
       "result": {
-        "name": "Vec<Option<StateView>>",
+        "name": "Vec<Option<ObjectStateView>>",
         "required": true,
         "schema": {
           "type": "array",
           "items": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/StateView"
+                "$ref": "#/components/schemas/ObjectStateView"
               },
               {
                 "type": "null"
@@ -1003,75 +1029,6 @@
           }
         }
       },
-      "FieldChangeView": {
-        "oneOf": [
-          {
-            "type": "object",
-            "required": [
-              "fields",
-              "key",
-              "key_state",
-              "type"
-            ],
-            "properties": {
-              "fields": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/FieldChangeView"
-                }
-              },
-              "key": {
-                "$ref": "#/components/schemas/KeyStateHexView"
-              },
-              "key_state": {
-                "type": "string"
-              },
-              "op": {
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/OpView_for_StateView"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "type": {
-                "type": "string",
-                "enum": [
-                  "object"
-                ]
-              }
-            }
-          },
-          {
-            "type": "object",
-            "required": [
-              "key",
-              "key_state",
-              "op",
-              "type"
-            ],
-            "properties": {
-              "key": {
-                "$ref": "#/components/schemas/KeyStateHexView"
-              },
-              "key_state": {
-                "type": "string"
-              },
-              "op": {
-                "$ref": "#/components/schemas/OpView_for_StateView"
-              },
-              "type": {
-                "type": "string",
-                "enum": [
-                  "normal"
-                ]
-              }
-            }
-          }
-        ]
-      },
       "FunctionCallView": {
         "type": "object",
         "required": [
@@ -1192,7 +1149,6 @@
           "owner",
           "size",
           "state_index",
-          "state_root",
           "tx_order",
           "updated_at",
           "value"
@@ -1254,7 +1210,14 @@
             "minimum": 0.0
           },
           "state_root": {
-            "$ref": "#/components/schemas/primitive_types::H256"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/primitive_types::H256"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "tx_order": {
             "type": "integer",
@@ -1609,9 +1572,6 @@
           }
         ]
       },
-      "KeyStateHexView": {
-        "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
-      },
       "LedgerTransactionView": {
         "type": "object",
         "required": [
@@ -1731,6 +1691,46 @@
           }
         ]
       },
+      "ModuleABIView": {
+        "description": "A Move module ABI",
+        "type": "object",
+        "required": [
+          "address",
+          "friends",
+          "functions",
+          "name",
+          "structs"
+        ],
+        "properties": {
+          "address": {
+            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+          },
+          "friends": {
+            "description": "Friends of the module",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/move_core_types::language_storage::ModuleId"
+            }
+          },
+          "functions": {
+            "description": "Public or entry functions of the module",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MoveFunctionView"
+            }
+          },
+          "name": {
+            "$ref": "#/components/schemas/move_core_types::identifier::Identifier"
+          },
+          "structs": {
+            "description": "Structs of the module",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MoveStructView"
+            }
+          }
+        }
+      },
       "MoveActionTypeView": {
         "type": "string",
         "enum": [
@@ -1789,6 +1789,63 @@
           }
         }
       },
+      "MoveFunctionTypeParamView": {
+        "description": "Move function generic type param",
+        "type": "object",
+        "required": [
+          "constraints"
+        ],
+        "properties": {
+          "constraints": {
+            "description": "Move abilities tied to the generic type param and associated with the function that uses it",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/move_binary_format::file_format::Ability"
+            }
+          }
+        }
+      },
+      "MoveFunctionView": {
+        "description": "Move function",
+        "type": "object",
+        "required": [
+          "is_entry",
+          "name",
+          "params",
+          "return",
+          "type_params"
+        ],
+        "properties": {
+          "is_entry": {
+            "description": "Whether the function can be called as an entry function directly in a transaction",
+            "type": "boolean"
+          },
+          "name": {
+            "$ref": "#/components/schemas/move_core_types::identifier::Identifier"
+          },
+          "params": {
+            "description": "Parameters associated with the move function",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::module_abi_view::MoveABIType"
+            }
+          },
+          "return": {
+            "description": "Return type of the function",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::module_abi_view::MoveABIType"
+            }
+          },
+          "type_params": {
+            "description": "Generic type params associated with the Move function",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MoveFunctionTypeParamView"
+            }
+          }
+        }
+      },
       "MoveString": {
         "type": "object",
         "required": [
@@ -1805,22 +1862,104 @@
           }
         }
       },
+      "MoveStructFieldView": {
+        "description": "Move struct field",
+        "type": "object",
+        "required": [
+          "name",
+          "type"
+        ],
+        "properties": {
+          "name": {
+            "$ref": "#/components/schemas/move_core_types::identifier::Identifier"
+          },
+          "type": {
+            "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::module_abi_view::MoveABIType"
+          }
+        }
+      },
+      "MoveStructTypeParamView": {
+        "description": "Move generic type param",
+        "type": "object",
+        "required": [
+          "constraints",
+          "is_phantom"
+        ],
+        "properties": {
+          "constraints": {
+            "description": "Move abilities tied to the generic type param and associated with the type that uses it",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/move_binary_format::file_format::Ability"
+            }
+          },
+          "is_phantom": {
+            "description": "Whether the type is a phantom type",
+            "type": "boolean"
+          }
+        }
+      },
+      "MoveStructView": {
+        "description": "A move struct",
+        "type": "object",
+        "required": [
+          "abilities",
+          "fields",
+          "is_native",
+          "name",
+          "type_params"
+        ],
+        "properties": {
+          "abilities": {
+            "description": "Abilities associated with the struct",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/move_binary_format::file_format::Ability"
+            }
+          },
+          "fields": {
+            "description": "Fields associated with the struct",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MoveStructFieldView"
+            }
+          },
+          "is_native": {
+            "description": "Whether the struct is a native struct of Move",
+            "type": "boolean"
+          },
+          "name": {
+            "$ref": "#/components/schemas/move_core_types::identifier::Identifier"
+          },
+          "type_params": {
+            "description": "Generic types associated with the struct",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MoveStructTypeParamView"
+            }
+          }
+        }
+      },
       "ObjectChangeView": {
         "type": "object",
         "required": [
-          "fields"
+          "fields",
+          "metadata"
         ],
         "properties": {
           "fields": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/FieldChangeView"
+              "$ref": "#/components/schemas/ObjectChangeView"
             }
           },
-          "op": {
+          "metadata": {
+            "$ref": "#/components/schemas/ObjectMetaView"
+          },
+          "value": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/OpView_for_StateView"
+                "$ref": "#/components/schemas/OpView"
               },
               {
                 "type": "null"
@@ -1831,6 +1970,59 @@
       },
       "ObjectID": {
         "$ref": "#/components/schemas/Hex"
+      },
+      "ObjectMetaView": {
+        "type": "object",
+        "required": [
+          "created_at",
+          "flag",
+          "id",
+          "owner",
+          "size",
+          "updated_at",
+          "value_type"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "flag": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          },
+          "id": {
+            "$ref": "#/components/schemas/ObjectID"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
+          },
+          "size": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "state_root": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/primitive_types::H256"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "value_type": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
+          }
+        }
       },
       "ObjectStateFilterView": {
         "oneOf": [
@@ -1910,7 +2102,6 @@
           "object_type",
           "owner",
           "size",
-          "state_root",
           "updated_at",
           "value"
         ],
@@ -1966,7 +2157,14 @@
             "minimum": 0.0
           },
           "state_root": {
-            "$ref": "#/components/schemas/primitive_types::H256"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/primitive_types::H256"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "updated_at": {
             "type": "integer",
@@ -1978,105 +2176,37 @@
           }
         }
       },
-      "OpView_for_StateView": {
+      "OpView": {
         "oneOf": [
           {
-            "type": "object",
-            "required": [
-              "type",
-              "value",
-              "value_type"
-            ],
-            "properties": {
-              "decoded_value": {
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/AnnotatedMoveValueView"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "display_fields": {
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/DisplayFieldsView"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "type": {
-                "type": "string",
-                "enum": [
-                  "new"
-                ]
-              },
-              "value": {
-                "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
-              },
-              "value_type": {
-                "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
-              }
-            }
+            "type": "string",
+            "enum": [
+              "delete"
+            ]
           },
           {
             "type": "object",
             "required": [
-              "type",
-              "value",
-              "value_type"
+              "new"
             ],
             "properties": {
-              "decoded_value": {
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/AnnotatedMoveValueView"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "display_fields": {
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/DisplayFieldsView"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "type": {
-                "type": "string",
-                "enum": [
-                  "modify"
-                ]
-              },
-              "value": {
+              "new": {
                 "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
-              },
-              "value_type": {
-                "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
               }
-            }
+            },
+            "additionalProperties": false
           },
           {
             "type": "object",
             "required": [
-              "type"
+              "modify"
             ],
             "properties": {
-              "type": {
-                "type": "string",
-                "enum": [
-                  "delete"
-                ]
+              "modify": {
+                "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
               }
-            }
+            },
+            "additionalProperties": false
           }
         ]
       },
@@ -2367,19 +2497,17 @@
         "type": "object",
         "required": [
           "changes",
-          "global_size"
+          "root_metadata"
         ],
         "properties": {
           "changes": {
-            "type": "object",
-            "additionalProperties": {
+            "type": "array",
+            "items": {
               "$ref": "#/components/schemas/ObjectChangeView"
             }
           },
-          "global_size": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+          "root_metadata": {
+            "$ref": "#/components/schemas/ObjectMetaView"
           }
         }
       },
@@ -2391,10 +2519,10 @@
         ],
         "properties": {
           "key_hex": {
-            "$ref": "#/components/schemas/KeyStateHexView"
+            "$ref": "#/components/schemas/moveos_types::state::FieldKey"
           },
           "state": {
-            "$ref": "#/components/schemas/StateView"
+            "$ref": "#/components/schemas/ObjectStateView"
           }
         }
       },
@@ -2410,41 +2538,6 @@
             "description": "If true, result with display rendered is returned",
             "default": false,
             "type": "boolean"
-          }
-        }
-      },
-      "StateView": {
-        "type": "object",
-        "required": [
-          "value",
-          "value_type"
-        ],
-        "properties": {
-          "decoded_value": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AnnotatedMoveValueView"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "display_fields": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/DisplayFieldsView"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "value": {
-            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
-          },
-          "value_type": {
-            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
           }
         }
       },
@@ -2929,7 +3022,16 @@
       "bitcoin::hash_types::newtypes::Txid": {
         "type": "string"
       },
+      "move_binary_format::file_format::Ability": {
+        "type": "string"
+      },
       "move_core_types::account_address::AccountAddress": {
+        "type": "string"
+      },
+      "move_core_types::identifier::Identifier": {
+        "type": "string"
+      },
+      "move_core_types::language_storage::ModuleId": {
         "type": "string"
       },
       "move_core_types::language_storage::StructTag": {
@@ -2953,10 +3055,16 @@
       "moveos_types::move_types::FunctionId": {
         "type": "string"
       },
+      "moveos_types::state::FieldKey": {
+        "type": "string"
+      },
       "primitive_types::H256": {
         "type": "string"
       },
       "rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress": {
+        "type": "string"
+      },
+      "rooch_rpc_api::jsonrpc_types::module_abi_view::MoveABIType": {
         "type": "string"
       },
       "rooch_types::address::BitcoinAddress": {

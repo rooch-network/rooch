@@ -7,6 +7,7 @@ use std::{
     task::{Context, Poll},
 };
 
+use axum::http;
 use futures::Future;
 use http::StatusCode;
 use prometheus::{HistogramTimer, Registry};

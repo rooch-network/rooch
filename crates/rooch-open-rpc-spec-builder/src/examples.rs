@@ -16,6 +16,7 @@ struct Examples {
 }
 
 #[derive(serde::Serialize)]
+#[allow(dead_code)]
 struct Value {
     value: String,
 }

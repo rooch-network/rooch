@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use clap::Parser;
 use move_command_line_common::types::ParsedStructType;
 use moveos_types::access_path::AccessPath;
-use rooch_rpc_api::jsonrpc_types::StateView;
+use rooch_rpc_api::jsonrpc_types::ObjectStateView;
 use rooch_types::{address::ParsedAddress, error::RoochResult};
 
 #[derive(Debug, Parser)]
@@ -31,8 +31,8 @@ pub struct ResourceCommand {
 }
 
 #[async_trait]
-impl CommandAction<Option<StateView>> for ResourceCommand {
-    async fn execute(self) -> RoochResult<Option<StateView>> {
+impl CommandAction<Option<ObjectStateView>> for ResourceCommand {
+    async fn execute(self) -> RoochResult<Option<ObjectStateView>> {
         let context = self.context_options.build()?;
         let mapping = context.address_mapping();
         let address = self.address.into_account_address(&mapping)?;

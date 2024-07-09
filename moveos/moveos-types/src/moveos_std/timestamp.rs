@@ -18,7 +18,7 @@ pub const MODULE_NAME: &IdentStr = ident_str!("timestamp");
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Default)]
 pub struct Timestamp {
-    pub microseconds: u64,
+    pub milliseconds: u64,
 }
 
 impl Timestamp {

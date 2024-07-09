@@ -36,7 +36,7 @@ module basic_object::child_object{
     public fun new_child(name: String): Object<Child> {
         let parent_obj = borrow_mut_parent();
         let new_sequencer = object::borrow(parent_obj).sequencer + 1;
-        let child = object::add_object_field(parent_obj, Child{sequencer:new_sequencer, name:name});
+        let child = object::new_with_parent(parent_obj, Child{sequencer:new_sequencer, name:name});
         let id = object::id(&child);
         object::borrow_mut(parent_obj).sequencer = new_sequencer;
         moveos_std::event::emit(NewChildEvent{id:id, sequencer:new_sequencer});
@@ -45,9 +45,8 @@ module basic_object::child_object{
 
     public fun remove_child(child: Object<Child>){
         remove_child_property<u64>(&mut child, std::string::utf8(b"age"));
-        let parent_obj = borrow_mut_parent();
         let id = object::id(&child);
-        let Child{ sequencer, name:_ } = object::remove_object_field(parent_obj, child);
+        let Child{ sequencer, name:_ } = object::remove(child);
         moveos_std::event::emit(ChildRemovedEvent{id:id, sequencer:sequencer});
     }
 
@@ -118,8 +117,7 @@ module basic_object::third_party_module_for_child_object{
         child_object::update_age(child, age);
     }
 
-    public entry fun remove_child_via_id(sender: &signer, child_id: ObjectID){
-        let child = object::take_object<Child>(sender, child_id);
+    public entry fun remove_child(child: Object<Child>){
         child_object::remove_child(child);
     }
 

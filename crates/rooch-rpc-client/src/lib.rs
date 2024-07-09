@@ -8,8 +8,9 @@ use move_core_types::language_storage::ModuleId;
 use move_core_types::metadata::Metadata;
 use move_core_types::resolver::ModuleResolver;
 use moveos_types::access_path::AccessPath;
+use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::move_module::MoveModule;
-use moveos_types::state::State;
+use moveos_types::state::ObjectState;
 use moveos_types::{
     function_return_value::FunctionResult, module_binding::MoveFunctionCaller,
     moveos_std::tx_context::TxContext, transaction::FunctionCall,
@@ -25,18 +26,12 @@ pub mod wallet_context;
 
 pub struct ClientBuilder {
     request_timeout: Duration,
-    max_concurrent_requests: usize,
     ws_url: Option<String>,
 }
 
 impl ClientBuilder {
     pub fn request_timeout(mut self, request_timeout: Duration) -> Self {
         self.request_timeout = request_timeout;
-        self
-    }
-
-    pub fn max_concurrent_requests(mut self, max_concurrent_requests: usize) -> Self {
-        self.max_concurrent_requests = max_concurrent_requests;
         self
     }
 
@@ -50,8 +45,7 @@ impl ClientBuilder {
 
         let http_client = Arc::new(
             HttpClientBuilder::default()
-                .max_request_body_size(2 << 30)
-                .max_concurrent_requests(self.max_concurrent_requests)
+                .max_request_size(2 << 30)
                 .request_timeout(self.request_timeout)
                 .build(http)?,
         );
@@ -67,7 +61,6 @@ impl Default for ClientBuilder {
     fn default() -> Self {
         Self {
             request_timeout: Duration::from_secs(60),
-            max_concurrent_requests: 256,
             ws_url: None,
         }
     }
@@ -120,9 +113,9 @@ impl ModuleResolver for &Client {
                     .pop()
                     .flatten()
                     .map(|state_view| {
-                        let state = State::from(state_view);
-                        let module = state.cast::<MoveModule>()?;
-                        Ok(module.byte_codes)
+                        let state = ObjectState::from(state_view);
+                        let module = state.value_as_df::<MoveString, MoveModule>()?;
+                        Ok(module.value.byte_codes)
                     })
                     .transpose()
             })
