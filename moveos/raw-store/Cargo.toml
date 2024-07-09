@@ -22,7 +22,7 @@ hex = { workspace = true }
 parking_lot = { workspace = true }
 tap = { workspace = true }
 
-rocksdb = { workspace = true, features = ["lz4"], default-features = false }
+rust-rocksdb = { workspace = true, features = ["lz4", "jemalloc"] }
 prometheus = { workspace = true }
 tokio = { workspace = true }
 once_cell = { workspace = true }

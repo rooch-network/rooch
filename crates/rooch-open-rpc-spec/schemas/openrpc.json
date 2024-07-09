@@ -298,6 +298,32 @@
       }
     },
     {
+      "name": "rooch_getModuleABI",
+      "description": "get module ABI by module id",
+      "params": [
+        {
+          "name": "module_addr",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
+          }
+        },
+        {
+          "name": "module_name",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "result": {
+        "name": "ModuleABIView",
+        "schema": {
+          "$ref": "#/components/schemas/ModuleABIView"
+        }
+      }
+    },
+    {
       "name": "rooch_getObjectStates",
       "description": "Get object states by object id",
       "params": [
@@ -1665,6 +1691,46 @@
           }
         ]
       },
+      "ModuleABIView": {
+        "description": "A Move module ABI",
+        "type": "object",
+        "required": [
+          "address",
+          "friends",
+          "functions",
+          "name",
+          "structs"
+        ],
+        "properties": {
+          "address": {
+            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+          },
+          "friends": {
+            "description": "Friends of the module",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/move_core_types::language_storage::ModuleId"
+            }
+          },
+          "functions": {
+            "description": "Public or entry functions of the module",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MoveFunctionView"
+            }
+          },
+          "name": {
+            "$ref": "#/components/schemas/move_core_types::identifier::Identifier"
+          },
+          "structs": {
+            "description": "Structs of the module",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MoveStructView"
+            }
+          }
+        }
+      },
       "MoveActionTypeView": {
         "type": "string",
         "enum": [
@@ -1723,6 +1789,63 @@
           }
         }
       },
+      "MoveFunctionTypeParamView": {
+        "description": "Move function generic type param",
+        "type": "object",
+        "required": [
+          "constraints"
+        ],
+        "properties": {
+          "constraints": {
+            "description": "Move abilities tied to the generic type param and associated with the function that uses it",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/move_binary_format::file_format::Ability"
+            }
+          }
+        }
+      },
+      "MoveFunctionView": {
+        "description": "Move function",
+        "type": "object",
+        "required": [
+          "is_entry",
+          "name",
+          "params",
+          "return",
+          "type_params"
+        ],
+        "properties": {
+          "is_entry": {
+            "description": "Whether the function can be called as an entry function directly in a transaction",
+            "type": "boolean"
+          },
+          "name": {
+            "$ref": "#/components/schemas/move_core_types::identifier::Identifier"
+          },
+          "params": {
+            "description": "Parameters associated with the move function",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::module_abi_view::MoveABIType"
+            }
+          },
+          "return": {
+            "description": "Return type of the function",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::module_abi_view::MoveABIType"
+            }
+          },
+          "type_params": {
+            "description": "Generic type params associated with the Move function",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MoveFunctionTypeParamView"
+            }
+          }
+        }
+      },
       "MoveString": {
         "type": "object",
         "required": [
@@ -1735,6 +1858,84 @@
               "type": "integer",
               "format": "uint8",
               "minimum": 0.0
+            }
+          }
+        }
+      },
+      "MoveStructFieldView": {
+        "description": "Move struct field",
+        "type": "object",
+        "required": [
+          "name",
+          "type"
+        ],
+        "properties": {
+          "name": {
+            "$ref": "#/components/schemas/move_core_types::identifier::Identifier"
+          },
+          "type": {
+            "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::module_abi_view::MoveABIType"
+          }
+        }
+      },
+      "MoveStructTypeParamView": {
+        "description": "Move generic type param",
+        "type": "object",
+        "required": [
+          "constraints",
+          "is_phantom"
+        ],
+        "properties": {
+          "constraints": {
+            "description": "Move abilities tied to the generic type param and associated with the type that uses it",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/move_binary_format::file_format::Ability"
+            }
+          },
+          "is_phantom": {
+            "description": "Whether the type is a phantom type",
+            "type": "boolean"
+          }
+        }
+      },
+      "MoveStructView": {
+        "description": "A move struct",
+        "type": "object",
+        "required": [
+          "abilities",
+          "fields",
+          "is_native",
+          "name",
+          "type_params"
+        ],
+        "properties": {
+          "abilities": {
+            "description": "Abilities associated with the struct",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/move_binary_format::file_format::Ability"
+            }
+          },
+          "fields": {
+            "description": "Fields associated with the struct",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MoveStructFieldView"
+            }
+          },
+          "is_native": {
+            "description": "Whether the struct is a native struct of Move",
+            "type": "boolean"
+          },
+          "name": {
+            "$ref": "#/components/schemas/move_core_types::identifier::Identifier"
+          },
+          "type_params": {
+            "description": "Generic types associated with the struct",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MoveStructTypeParamView"
             }
           }
         }
@@ -2821,7 +3022,16 @@
       "bitcoin::hash_types::newtypes::Txid": {
         "type": "string"
       },
+      "move_binary_format::file_format::Ability": {
+        "type": "string"
+      },
       "move_core_types::account_address::AccountAddress": {
+        "type": "string"
+      },
+      "move_core_types::identifier::Identifier": {
+        "type": "string"
+      },
+      "move_core_types::language_storage::ModuleId": {
         "type": "string"
       },
       "move_core_types::language_storage::StructTag": {
@@ -2852,6 +3062,9 @@
         "type": "string"
       },
       "rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress": {
+        "type": "string"
+      },
+      "rooch_rpc_api::jsonrpc_types::module_abi_view::MoveABIType": {
         "type": "string"
       },
       "rooch_types::address::BitcoinAddress": {

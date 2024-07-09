@@ -26,7 +26,7 @@ use moveos_types::{
     moveos_std::{
         module_store::{ModuleStore, Package},
         move_module::MoveModule,
-        object::{DynamicField, ModuleStoreObject, ObjectID, PackageObject, Root},
+        object::{DynamicField, ModuleStoreObject, ObjectID, Root},
     },
     state::MoveType,
     state_resolver::StatelessResolver,
@@ -211,15 +211,15 @@ impl ObjectRuntime {
         address: &'a AccountAddress,
         package_owner: AccountAddress,
     ) -> PartialVMResult<(&'a mut RuntimeObject, bool)> {
-        let package_field_key = Package::derive_package_key(address);
+        let package_field_key = Package::package_field_key(address);
         let (package_obj, _) =
             module_store_obj.load_field(layout_loader, resolver, package_field_key)?;
 
         let mut new_package = false;
         if !package_obj.exists()? {
-            let obj = PackageObject::new_package(address, package_owner);
-            let value = obj.value.to_runtime_value();
+            let value = Package::default().to_runtime_value();
             package_obj.move_to(value, Package::type_tag(), Package::type_layout())?;
+            package_obj.rt_meta.transfer(package_owner)?;
             // If the Package is new, we should increase the size of module store
             // But we can not get mutable reference of module store object here
             // So we need to increase the size of module store in publish_module
@@ -313,7 +313,7 @@ impl ObjectRuntime {
             .expect("module store object must exist");
 
         let package_obj =
-            module_store_obj.get_loaded_field(&Package::derive_package_key(module_id.address()));
+            module_store_obj.get_loaded_field(&Package::package_field_key(module_id.address()));
         match package_obj {
             Some(package_obj) => {
                 let field_key = FieldKey::derive_module_key(module_id.name());
@@ -336,7 +336,7 @@ impl ObjectRuntime {
         let module_store_id = ModuleStore::module_store_id();
         match self.load_object(layout_loader, resolver, &module_store_id) {
             Ok((module_store_obj, _)) => {
-                let package_key = Package::derive_package_key(module_id.address());
+                let package_key = Package::package_field_key(module_id.address());
                 let (package_obj, _) =
                     module_store_obj.load_field(layout_loader, resolver, package_key)?;
                 let field_key = FieldKey::derive_module_key(module_id.name());
@@ -367,16 +367,15 @@ impl ObjectRuntime {
     ) -> PartialVMResult<()> {
         let module_store_id = ModuleStore::module_store_id();
         // TODO: Publishing module in Rust is only available for genesis transaction.
-        // The tx sender will be used ad package object owner,
-        // Is the genesis tx sender framework addresses?
-        let tx_sender = self.tx_context().sender();
+
         let (module_store_obj, _) = self.load_object(layout_loader, resolver, &module_store_id)?;
         let (package_obj, new_package) = Self::load_or_create_package_object(
             module_store_obj,
             layout_loader,
             resolver,
             module_id.address(),
-            tx_sender,
+            // The package owner is the same as the module address
+            *module_id.address(),
         )?;
         let module_name = MoveString::from(module_id.name());
         let field_key = FieldKey::derive_module_key(module_id.name());

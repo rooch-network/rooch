@@ -98,8 +98,8 @@ impl FieldKey {
     }
 
     pub fn from_hex_literal(hex: &str) -> Result<Self> {
-        let hex = hex.strip_prefix("0x").unwrap_or(hex);
-        Self::from_hex(hex)
+        //We use the AccountAddress::from_hex_literal for support the short hex format.
+        Ok(AccountAddress::from_hex_literal(hex)?.into())
     }
 
     pub fn to_hex(&self) -> String {

@@ -36,7 +36,7 @@ module basic_object::child_object{
     public fun new_child(name: String): Object<Child> {
         let parent_obj = borrow_mut_parent();
         let new_sequencer = object::borrow(parent_obj).sequencer + 1;
-        let child = object::add_object_field(parent_obj, Child{sequencer:new_sequencer, name:name});
+        let child = object::new_with_parent(parent_obj, Child{sequencer:new_sequencer, name:name});
         let id = object::id(&child);
         object::borrow_mut(parent_obj).sequencer = new_sequencer;
         moveos_std::event::emit(NewChildEvent{id:id, sequencer:new_sequencer});

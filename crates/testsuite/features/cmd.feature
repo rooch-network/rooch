@@ -19,10 +19,15 @@ Feature: Rooch CLI integration tests
       Then cmd: "rpc request --method rooch_getObjectStates --params '["0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9", {"decode":true}]' --json"
       Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::object::Timestamp'"
       Then assert: "{{$.rpc[-1][0].value}} == {{$.rpc[-2][0].value}}"
-      Then cmd: "rpc request --method rooch_getFieldStates --params '["0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb", ["0x337bf72017d07657344a29fff043e10db11eb2e0c8c3ea8e2b6ed36e44ea9c9d"], {"decode": true, "showDisplay": true}]' --json"
+      # ModuleStore is a named object, so we can directly use the struct tag as ObjectID arguments.
+      # named_object_id(0x2::module_store::ModuleStore) == 0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb
+      # 0x3 is the rooch_framwork package address, the package's field key is the package address.
+      Then cmd: "rpc request --method rooch_getFieldStates --params '["0x2::module_store::ModuleStore", ["0x3"], {"decode": true, "showDisplay": true}]' --json"
       Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::module_store::Package'"
       Then cmd: "rpc request --method rooch_listFieldStates --params '["0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb", null, "2", {"decode": false, "showDisplay": false}]' --json"
       Then assert: "{{$.rpc[-1].has_next_page}} == true"
+      Then cmd: "rpc request --method rooch_getModuleABI --params '["0x2", "display"]'"
+      Then assert: "{{$.rpc[-1].name}} == 'display'"
       Then stop the server 
     
     @serial

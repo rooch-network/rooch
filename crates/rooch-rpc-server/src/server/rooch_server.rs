@@ -5,11 +5,16 @@ use crate::service::aggregate_service::AggregateService;
 use crate::service::rpc_service::RpcService;
 use anyhow::Result;
 use jsonrpsee::{core::async_trait, RpcModule};
+use move_core_types::{
+    account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
+};
 use moveos_types::{
     access_path::AccessPath,
     h256::H256,
+    move_std::string::MoveString,
     moveos_std::{
         display::{get_object_display_id, get_resource_display_id, RawDisplay},
+        move_module::MoveModule,
         object::{ObjectEntity, ObjectID},
     },
     state::{AnnotatedState, FieldKey},
@@ -20,9 +25,10 @@ use rooch_rpc_api::jsonrpc_types::{
     transaction_view::{TransactionFilterView, TransactionWithInfoView},
     AccessPathView, AnnotatedMoveStructView, BalanceInfoPageView, DisplayFieldsView, EventOptions,
     EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
-    IndexerEventPageView, IndexerObjectStatePageView, IndexerObjectStateView, ObjectIDVecView,
-    ObjectStateFilterView, ObjectStateView, QueryOptions, RoochOrBitcoinAddressView, StateKVView,
-    StateOptions, StatePageView, StrView, StructTagView, TransactionWithInfoPageView, TxOptions,
+    IndexerEventPageView, IndexerObjectStatePageView, IndexerObjectStateView, ModuleABIView,
+    ObjectIDVecView, ObjectStateFilterView, ObjectStateView, QueryOptions, RoochAddressView,
+    RoochOrBitcoinAddressView, StateKVView, StateOptions, StatePageView, StrView, StructTagView,
+    TransactionWithInfoPageView, TxOptions,
 };
 use rooch_rpc_api::{
     api::rooch_api::RoochAPIServer,
@@ -613,6 +619,34 @@ impl RoochAPIServer for RoochServer {
                 .collect(),
             next_cursor,
             has_next_page,
+        })
+    }
+
+    async fn get_module_abi(
+        &self,
+        module_addr: RoochAddressView,
+        module_name: String,
+    ) -> RpcResult<Option<ModuleABIView>> {
+        let module_id = ModuleId::new(
+            AccountAddress::from(module_addr.0),
+            Identifier::new(module_name)?,
+        );
+        let access_path = AccessPath::module(&module_id);
+        let module = self
+            .rpc_service
+            .get_states(access_path)
+            .await?
+            .pop()
+            .flatten();
+
+        Ok(match module {
+            Some(m) => {
+                let move_module = m.value_as_df::<MoveString, MoveModule>()?.value;
+                Some(ModuleABIView::try_parse_from_module_bytes(
+                    &move_module.byte_codes,
+                )?)
+            }
+            None => None,
         })
     }
 
