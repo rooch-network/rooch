@@ -103,7 +103,7 @@ const theme: DocsThemeConfig = {
         setPageDescription(frontMatter.description || defaultDescription)
         setOgImage('https://rooch.network/logo/rooch-banner.png')
       }
-    }, [asPath, title, frontMatter, defaultDescription, ogImage])
+    }, [asPath, title, frontMatter, defaultDescription])
 
     return (
       <>
@@ -126,7 +126,6 @@ const theme: DocsThemeConfig = {
         <meta name="twitter:site" content="https://rooch.network" />
         <meta name="twitter:creator" content="https://rooch.network" />
         <meta name="twitter:title" content={pageTitle} />
-        <meta name="twitter:image" content={ogImage} />
         {/* FAVICON */}
         <link rel="icon" href="/logo/rooch_black_logo.svg" type="image/svg+xml" />
         <link rel="icon" href="/logo/rooch_black_logo.png" type="image/png" />
