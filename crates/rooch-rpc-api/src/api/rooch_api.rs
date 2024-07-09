@@ -8,9 +8,9 @@ use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionW
 use crate::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
     EventPageView, ExecuteTransactionResponseView, FieldKeyView, FunctionCallView, H256View,
-    IndexerEventPageView, IndexerObjectStatePageView, ObjectIDVecView, ObjectIDView,
-    ObjectStateFilterView, ObjectStateView, QueryOptions, StateOptions, StatePageView, StrView,
-    StructTagView, TransactionWithInfoPageView, TxOptions,
+    IndexerEventPageView, IndexerObjectStatePageView, ModuleABIView, ObjectIDVecView, ObjectIDView,
+    ObjectStateFilterView, ObjectStateView, QueryOptions, RoochAddressView, StateOptions,
+    StatePageView, StrView, StructTagView, TransactionWithInfoPageView, TxOptions,
 };
 use crate::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -146,6 +146,14 @@ pub trait RoochAPI {
         cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
     ) -> RpcResult<BalanceInfoPageView>;
+
+    /// get module ABI by module id
+    #[method(name = "getModuleABI")]
+    async fn get_module_abi(
+        &self,
+        module_addr: RoochAddressView,
+        module_name: String,
+    ) -> RpcResult<Option<ModuleABIView>>;
 
     /// Query the transactions indexer by transaction filter
     #[method(name = "queryTransactions")]

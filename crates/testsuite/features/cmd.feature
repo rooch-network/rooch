@@ -23,6 +23,8 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::module_store::Package'"
       Then cmd: "rpc request --method rooch_listFieldStates --params '["0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb", null, "2", {"decode": false, "showDisplay": false}]' --json"
       Then assert: "{{$.rpc[-1].has_next_page}} == true"
+      Then cmd: "rpc request --method rooch_getModuleABI --params '["0x2", "display"]'"
+      Then assert: "{{$.rpc[-1].name}} == 'display'"
       Then stop the server 
     
     @serial
