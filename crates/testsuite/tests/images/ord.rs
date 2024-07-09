@@ -9,7 +9,7 @@ use testcontainers::{
 };
 
 const NAME: &str = "bitseed/ord";
-const TAG: &str = "0.17.0";
+const TAG: &str = "0.18.0-burn-rc1";
 
 #[derive(Debug, Default, Clone)]
 pub struct OrdImageArgs {
@@ -23,9 +23,9 @@ impl ImageArgs for OrdImageArgs {
         Box::new(
             vec![
                 "--regtest".to_string(),
-                format!("--rpc-url={}", self.bitcoin_rpc_url),
-                format!("--bitcoin-rpc-user={}", self.bitcoin_rpc_user),
-                format!("--bitcoin-rpc-pass={}", self.bitcoin_rpc_pass),
+                format!("--bitcoin-rpc-url={}", self.bitcoin_rpc_url),
+                format!("--bitcoin-rpc-username={}", self.bitcoin_rpc_user),
+                format!("--bitcoin-rpc-password={}", self.bitcoin_rpc_pass),
                 "server".to_string(),
             ]
             .into_iter(),

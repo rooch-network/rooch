@@ -412,9 +412,9 @@ fn ord_run_cmd(w: &mut World, input_tpl: String) {
     let mut bitseed_args = vec![
         "ord".to_string(),
         "--regtest".to_string(),
-        format!("--rpc-url=http://bitcoind:{}", RPC_PORT),
-        format!("--bitcoin-rpc-user={}", RPC_USER),
-        format!("--bitcoin-rpc-pass={}", RPC_PASS),
+        format!("--bitcoin-rpc-url=http://bitcoind:{}", RPC_PORT),
+        format!("--bitcoin-rpc-username={}", RPC_USER),
+        format!("--bitcoin-rpc-password={}", RPC_PASS),
     ];
 
     if w.tpl_ctx.is_none() {

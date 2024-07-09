@@ -451,7 +451,7 @@ Feature: Rooch CLI integration tests
 
       # mine a block
       Then cmd ord: "wallet receive"
-      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].address}}"
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].addresses[0]}}"
       Then sleep: "10"
 
       # Sync bitseed
@@ -469,7 +469,7 @@ Feature: Rooch CLI integration tests
 
       # mine a block
       Then cmd ord: "wallet receive"
-      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].address}}"
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].addresses[0]}}"
       Then sleep: "10"
 
       # Sync bitseed
@@ -487,7 +487,7 @@ Feature: Rooch CLI integration tests
 
       # mine a block
       Then cmd ord: "wallet receive"
-      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].address}}"
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].addresses[0]}}"
       Then sleep: "10"
 
       # Sync bitseed
