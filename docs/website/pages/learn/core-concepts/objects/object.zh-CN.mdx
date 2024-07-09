@@ -280,7 +280,7 @@ Rooch object 的提供了两种类型的动态字段：常规类型和Object类�
 
 <Callout>
 注意：由于 Object 类型本身也具有 `store` ability，那把整个 `Obejct<T>` 作为一个普通的字段存放在 object 下和使用 Object 类型字段有什么区别？
-1. 如果通过 `add_object_field` 创建的子 object，是属于父 object 的子对象，与父 object 在同一个 SMT 子树下。这对于整个父 object 的状态迁移，查询等管理都很便捷。
+1. 如果通过 `new_with_parent` 创建的子 object，是属于父 object 的子对象，与父 object 在同一个 SMT 子树下。这对于整个父 object 的状态迁移，查询等管理都很便捷。
 2. 如果在全局创建的 object，即使通过 `add_field` 放到 object 的动态字段中了，它实际上也是属于 global object，它的状态树处于 Root 根下。
 </Callout>
 
@@ -303,9 +303,8 @@ Rooch object 的提供了两种类型的动态字段：常规类型和Object类�
 
 | 方法 | 说明
 |---|---
-| `add_object_field<T: key, V: key>(obj: &mut Object<T>, v: V): Object<V>` | 向对象添加一个新的子对象字段，返回新添加的子对象。只有共享对象可以添加子对象字段。
-| `add_object_field_with_id<T: key, ID:drop, V: key>(obj: &mut Object<T>, id: ID, v: V): Object<V>` | 使用自定义ID向对象添加一个新的子对象字段，返回新添加的子对象。只有共享对象可以添加子对象字段。
-| `remove_object_field<T: key, V: key>(obj: &mut Object<T>, child: Object<V>): V` | 从对象中移除指定的子对象字段并返回其值。如果子对象字段不存在，此操作将失败。
+| `new_with_parent<P: key, T: key>(parent: &mut Object<P>, v: T): Object<T>` | 向对象添加一个新的子对象字段，返回新添加的子对象。只有共享对象可以添加子对象字段。
+| `new_with_parent_and_id<P: key, ID:drop, T: key>(parent: &mut Object<P>, id: ID, v: T): Object<T>` | 使用自定义ID向对象添加一个新的子对象字段，返回新添加的子对象。只有共享对象可以添加子对象字段。
 
 ## Rooch Object, Sui Object, Aptos Object 的比较
 

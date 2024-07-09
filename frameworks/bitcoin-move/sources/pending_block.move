@@ -6,7 +6,7 @@ module bitcoin_move::pending_block{
     
     use std::vector;
     use std::option::{Self, Option};
-    use moveos_std::object::{Self, Object};
+    use moveos_std::object::{Self, Object, ObjectID};
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::event;
     use bitcoin_move::types::{Self, Transaction, Header, Block, BlockHeightHash};
@@ -32,10 +32,6 @@ module bitcoin_move::pending_block{
         header: Header,
         processed_tx: u64,
         next_block_hash: Option<address>,
-    }
-
-    struct PendingBlockID has copy, store, drop{
-        block_hash: address,
     }
 
     struct PendingStore has key{
@@ -70,10 +66,8 @@ module bitcoin_move::pending_block{
         object::transfer_extend(store_obj, @bitcoin_move);
     }
 
-    public(friend) fun new_pending_block_id(block_hash: address): PendingBlockID {
-        PendingBlockID{
-            block_hash: block_hash,
-        }
+    fun pending_block_obj_id(block_hash: address): ObjectID{
+        object::custom_object_id<address, PendingBlock>(block_hash)
     }
 
     fun borrow_store(): &PendingStore {
@@ -89,36 +83,31 @@ module bitcoin_move::pending_block{
     }
     
     fun exists_pending_block(block_hash: address): bool{
-        let block_id = new_pending_block_id(block_hash);
-        let block_obj_id = object::custom_object_id<PendingBlockID, PendingBlock>(block_id);
+        let block_obj_id = pending_block_obj_id(block_hash);
         object::exists_object(block_obj_id)
     }
 
     fun borrow_pending_block(block_hash: address): &Object<PendingBlock>{
-        let block_id = new_pending_block_id(block_hash);
-        let block_obj_id = object::custom_object_id<PendingBlockID, PendingBlock>(block_id);
+        let block_obj_id = pending_block_obj_id(block_hash);
         assert!(object::exists_object(block_obj_id), ErrorPendingBlockNotFound);
         object::borrow_object(block_obj_id)
     }
 
     fun borrow_mut_pending_block(block_hash: address): &mut Object<PendingBlock>{
-        let block_id = new_pending_block_id(block_hash);
-        let block_obj_id = object::custom_object_id<PendingBlockID, PendingBlock>(block_id);
+        let block_obj_id = pending_block_obj_id(block_hash);
         assert!(object::exists_object(block_obj_id), ErrorPendingBlockNotFound);
         object::borrow_mut_object_extend(block_obj_id)
     }
 
     fun take_pending_block(block_hash: address): Object<PendingBlock>{
-        let block_id = new_pending_block_id(block_hash);
-        let block_obj_id = object::custom_object_id<PendingBlockID, PendingBlock>(block_id);
+        let block_obj_id = object::custom_object_id<address, PendingBlock>(block_hash);
         assert!(object::exists_object(block_obj_id), ErrorPendingBlockNotFound);
         let obj = object::take_object_extend(block_obj_id);
         obj
     }
 
     public(friend) fun add_pending_block(block_height: u64, block_hash: address, block: Block){
-        let block_id = new_pending_block_id(block_hash);
-        let block_obj_id = object::custom_object_id<PendingBlockID, PendingBlock>(block_id);
+        let block_obj_id = pending_block_obj_id(block_hash);
         assert!(!object::exists_object(block_obj_id), ErrorBlockAlreadyProcessed);
 
         let store = borrow_mut_store();
@@ -128,7 +117,7 @@ module bitcoin_move::pending_block{
         };
         let (header, txs) = types::unpack_block(block);
         let prev_block_hash = types::prev_blockhash(&header);
-        let block_obj = object::new_with_id(block_id, PendingBlock{
+        let block_obj = object::new_with_id(block_hash, PendingBlock{
             block_height: block_height,
             block_hash: block_hash,
             header: header,

@@ -92,7 +92,7 @@ module bitcoin_move::utxo{
             seals: simple_multimap::new(),
         };
         let uxto_store = borrow_mut_utxo_store();
-        let utxo_obj = object::add_object_field_with_id(uxto_store, id, utxo);
+        let utxo_obj = object::new_with_parent_and_id(uxto_store, id, utxo);
 
         event::emit<CreatingUTXOEvent>( CreatingUTXOEvent { id: object::id(&utxo_obj) } );
         utxo_obj
@@ -100,7 +100,7 @@ module bitcoin_move::utxo{
 
     public fun derive_utxo_id(outpoint: OutPoint) : ObjectID {
         let parent_id = object::named_object_id<BitcoinUTXOStore>();
-        object::custom_child_object_id(parent_id, outpoint)
+        object::custom_object_id_with_parent<OutPoint, UTXO>(parent_id, outpoint)
     }
 
     /// Get the UTXO's value
@@ -269,7 +269,7 @@ module bitcoin_move::utxo{
         let vout = 0;
         let object_id = derive_utxo_id(types::new_outpoint(txid, vout));
         std::debug::print(&std::bcs::to_bytes(&object_id));
-        assert!(std::bcs::to_bytes(&object_id) == x"02826a5e56581ba5ab84c39976f27cf3578cf524308b4ffc123922dfff507e514d97a26b8e893eb4345b18fb4c396f4341c44f1ba04b417b8c50a83a579a5a833c", 1);
+        assert!(std::bcs::to_bytes(&object_id) == x"02826a5e56581ba5ab84c39976f27cf3578cf524308b4ffc123922dfff507e514db8fc937bf3c15abe49c95fa6906aff29087149f542b48db0cf25dce671a68a63", 1);
     }
 
     #[test]

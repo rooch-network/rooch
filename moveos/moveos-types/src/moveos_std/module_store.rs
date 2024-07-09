@@ -64,11 +64,12 @@ pub struct Package {
 impl Package {
     pub fn package_id(module_address: &AccountAddress) -> ObjectID {
         let module_store_id = ModuleStore::module_store_id();
-        module_store_id.child_id(Self::derive_package_key(module_address))
+        module_store_id.child_id(Self::package_field_key(module_address))
     }
 
-    pub fn derive_package_key(module_address: &AccountAddress) -> FieldKey {
-        FieldKey::derive_from_address(module_address)
+    ///Package field key, package is a special case, we directly use the module address as the field key, do not hash it
+    pub fn package_field_key(module_address: &AccountAddress) -> FieldKey {
+        (*module_address).into()
     }
 }
 
