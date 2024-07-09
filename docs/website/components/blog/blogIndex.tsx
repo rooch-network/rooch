@@ -124,9 +124,9 @@ export default function BlogIndex({
           return (
             <div key={page.route}>
               <Link href={page.route}>
-                <button className="mb-10 w-full text-left postbox focus:bg-zinc-100 dark:focus:bg-zinc-800 pl-4 py-6 rounded-2xl ">
+                <button className="mb-10 w-full text-left postbox focus:bg-zinc-100 dark:focus:bg-zinc-800 pl-4 py-6 rounded-2xl dark:text-zinc-200">
                   {/* Post Category */}
-                  <p className="-mb-1 text-sm uppercase inline-block text-zinc-500 ">
+                  <p className="-mb-1 text-sm uppercase inline-block text-zinc-500 dark:text-zinc-400">
                     {page.frontMatter.category}
                   </p>
 

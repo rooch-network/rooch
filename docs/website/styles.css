@@ -1,7 +1,11 @@
 @tailwind utilities;
 
 html {
-  font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1, "ss06" 1 !important;
+  font-feature-settings:
+    'rlig' 1,
+    'calt' 1,
+    'ss01' 1,
+    'ss06' 1 !important;
 }
 
 [data-reach-skip-link] {
@@ -17,23 +21,17 @@ html {
 }
 
 body {
-  background: linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 1) 300px
-    ),
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 1) 300px),
     fixed 0 0 / 20px 20px radial-gradient(#d1d1d1 1px, transparent 0),
     fixed 10px 10px / 20px 20px radial-gradient(#d1d1d1 1px, transparent 0);
 }
 
 .dark body {
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, #111 300px),
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, #111 300px),
     fixed 0 0 / 20px 20px radial-gradient(#313131 1px, transparent 0),
     fixed 10px 10px / 20px 20px radial-gradient(#313131 1px, transparent 0);
-}
-
-a {
-  color: black;
 }
 
 .cta {
@@ -53,7 +51,9 @@ a {
 
 .cta-container-selected .cta {
   color: #000;
-  box-shadow: 0 0 0 #efefef, 0 0 100px #efefef inset;
+  box-shadow:
+    0 0 0 #efefef,
+    0 0 100px #efefef inset;
   outline: none;
 }
 
@@ -62,12 +62,16 @@ a {
 }
 .cta-container .cta:hover {
   color: #000;
-  box-shadow: 0 0 0 #efefef, 0 0 100px #efefef inset;
+  box-shadow:
+    0 0 0 #efefef,
+    0 0 100px #efefef inset;
   outline: none;
 }
 .cta-container .cta:active {
   color: #000;
-  box-shadow: 0 0 0 #efefef, 0 0 100px #ddd inset;
+  box-shadow:
+    0 0 0 #efefef,
+    0 0 100px #ddd inset;
   outline: none;
 }
 
@@ -80,7 +84,9 @@ a {
 }
 .dark .cta-container-selected .cta {
   color: #fff;
-  box-shadow: 0 0 0 #333, 0 0 100px #333 inset;
+  box-shadow:
+    0 0 0 #333,
+    0 0 100px #333 inset;
 }
 
 .dark .cta-container:hover .cta {
@@ -88,11 +94,15 @@ a {
 }
 .dark .cta-container .cta:hover {
   color: #fff;
-  box-shadow: 0 0 0 #333, 0 0 100px #333 inset;
+  box-shadow:
+    0 0 0 #333,
+    0 0 100px #333 inset;
 }
 .dark .cta-container .cta:active {
   color: #fff;
-  box-shadow: 0 0 0 #333, 0 0 100px #444 inset;
+  box-shadow:
+    0 0 0 #333,
+    0 0 100px #444 inset;
 }
 
 .postbox {
@@ -100,7 +110,8 @@ a {
   border-radius: 10px;
   float: left;
   width: 100%;
-  transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1) 0s,
+  transition:
+    transform 250ms cubic-bezier(0.4, 0, 0.2, 1) 0s,
     box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1) 0s,
     padding 250ms cubic-bezier(0.4, 0, 0.2, 1) 0s;
 }
@@ -111,9 +122,11 @@ a {
   /* Safari */
   -webkit-transform: translate(0, -10px);
   transform: translate(0, -5px);
-  box-shadow: rgba(46, 41, 51, 0.08) 0px 10px 20px,
+  box-shadow:
+    rgba(46, 41, 51, 0.08) 0px 10px 20px,
     rgba(71, 63, 79, 0.08) 0px 20px 40px;
-  transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1) 0s,
+  transition:
+    transform 250ms cubic-bezier(0.4, 0, 0.2, 1) 0s,
     box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1) 0s,
     padding 250ms cubic-bezier(0.4, 0, 0.2, 1) 0s;
 }
@@ -124,8 +137,11 @@ a {
   /* Safari */
   -webkit-transform: translate(0, -10px);
   transform: translate(0, -5px);
-  box-shadow: rgb(57, 57, 57) 0px 10px 20px, rgb(65, 65, 65) 0px 20px 40px;
-  transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1) 0s,
+  box-shadow:
+    rgb(57, 57, 57) 0px 10px 20px,
+    rgb(65, 65, 65) 0px 20px 40px;
+  transition:
+    transform 250ms cubic-bezier(0.4, 0, 0.2, 1) 0s,
     box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1) 0s,
     padding 250ms cubic-bezier(0.4, 0, 0.2, 1) 0s;
 }
