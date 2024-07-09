@@ -32,17 +32,26 @@ impl AccountKeystore for FileBasedKeystore {
         Ok(())
     }
 
+    fn add_addresses_to_mnemonic_data(
+        &mut self,
+        address: RoochAddress,
+    ) -> Result<(), anyhow::Error> {
+        self.keystore.add_addresses_to_mnemonic_data(address)?;
+        self.save()?;
+        Ok(())
+    }
+
     fn get_accounts(&self, password: Option<String>) -> Result<Vec<LocalAccount>, anyhow::Error> {
         self.keystore.get_accounts(password)
     }
 
-    fn add_address_encryption_data(
+    fn add_address_encryption_data_to_keys(
         &mut self,
         address: RoochAddress,
         encryption: EncryptionData,
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .add_address_encryption_data(address, encryption)?;
+            .add_address_encryption_data_to_keys(address, encryption)?;
         self.save()?;
         Ok(())
     }
