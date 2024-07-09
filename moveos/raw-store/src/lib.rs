@@ -26,7 +26,7 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::oneshot;
-use tracing::debug;
+use tracing::{debug, error};
 
 /// Type alias to improve readability.
 pub type ColumnFamilyName = &'static str;
@@ -46,7 +46,7 @@ pub enum StoreInstance {
     DB {
         db: Arc<RocksDB>,
         db_metrics: Arc<DBMetrics>,
-        _metrics_task_cancel_handle: Arc<oneshot::Sender<()>>,
+        metrics_task_cancel_handle: Arc<oneshot::Sender<()>>,
     },
 }
 
@@ -54,10 +54,14 @@ unsafe impl Send for StoreInstance {}
 
 impl StoreInstance {
     pub fn new_db_instance(db: RocksDB) -> Self {
+        let db_metrics_arc = DBMetrics::get().clone();
+        Self::new_db_instance_with_metrics(db, db_metrics_arc)
+    }
+
+    pub fn new_db_instance_with_metrics(db: RocksDB, db_metrics: Arc<DBMetrics>) -> Self {
         let db_arc = Arc::new(db);
         let db_clone = db_arc.clone();
-        let db_metrics_ref = DBMetrics::get();
-        let db_metrics_arc = db_metrics_ref.clone();
+        let db_metrics_clone = db_metrics.clone();
         let (sender, mut recv) = tokio::sync::oneshot::channel();
 
         tokio::spawn(async move {
@@ -69,13 +73,13 @@ impl StoreInstance {
                         let cfs = db_clone.cfs.clone();
                         for cf_name in cfs {
                             let db_clone_clone = db_clone.clone();
-                            let db_metrics_clone = db_metrics_ref.clone();
-                            // if let Err(e) = tokio::task::spawn_blocking(move || {
-                            //     Self::report_cf_metrics(&db_clone_clone, cf_name, &db_metrics_clone);
-                            // }).await {
-                            //     error!("Failed to report cf metrics with error: {}", e);
-                            // }
-                            Self::report_cf_metrics(&db_clone_clone, cf_name, &db_metrics_clone);
+                            let db_metrics_clone_clone = db_metrics_clone.clone();
+                            if let Err(e) = tokio::task::spawn_blocking(move || {
+                                Self::report_cf_metrics(&db_clone_clone, cf_name, &db_metrics_clone_clone);
+                            }).await {
+                                error!("Failed to report cf metrics with error: {}", e);
+                            }
+                            // Self::report_cf_metrics(&db_clone_clone, cf_name, &db_metrics_clone);
                         }
                     }
                     _ = &mut recv => break,
@@ -84,40 +88,36 @@ impl StoreInstance {
             debug!("Returning to report cf metrics task for StoreInstance");
         });
 
-        // tokio::spawn(async move {
-        //     loop {
-        //         let cfs = db_clone.cfs.clone();
-        //         for cf_name in cfs {
-        //             let db_clone_clone = db_clone.clone();
-        //             let db_metrics_clone = db_metrics_ref.clone();
-        //             if let Err(e) = tokio::task::spawn_blocking(move || {
-        //                 Self::report_cf_metrics(&db_clone_clone, cf_name, &db_metrics_clone);
-        //             })
-        //             .await
-        //             {
-        //                 error!("Failed to report cf metrics with error: {}", e);
-        //             }
-        //         }
-        //         tokio::time::sleep(tokio::time::Duration::from_millis(
-        //             CF_METRICS_REPORT_PERIOD_MILLIS,
-        //         ))
-        //         .await;
-        //     }
-        // });
-
         Self::DB {
             db: db_arc,
-            db_metrics: db_metrics_arc,
-            _metrics_task_cancel_handle: Arc::new(sender),
+            db_metrics,
+            metrics_task_cancel_handle: Arc::new(sender),
         }
     }
+
+    // pub fn cancel_metrics_task(&mut self) -> Result<()> {
+    //     match self {
+    //         StoreInstance::DB {
+    //             db: _,
+    //             db_metrics: _,
+    //             metrics_task_cancel_handle,
+    //         } => {
+    //             // metrics_task_cancel_handle.send()
+    //             // Send a cancellation signal
+    //             // metrics_task_cancel_handle
+    //             let handle = Arc::get_mut(metrics_task_cancel_handle).unwrap();
+    //             handle.send()?;
+    //         }
+    //     };
+    //     Ok(())
+    // }
 
     pub fn db(&self) -> Option<&RocksDB> {
         match self {
             StoreInstance::DB {
                 db,
                 db_metrics: _,
-                _metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => Some(db.as_ref()),
         }
     }
@@ -127,7 +127,7 @@ impl StoreInstance {
             StoreInstance::DB {
                 db: _,
                 db_metrics,
-                _metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => Some(db_metrics.as_ref()),
         }
     }
@@ -137,7 +137,7 @@ impl StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics: _,
-                _metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => Arc::get_mut(db),
         }
     }
@@ -147,7 +147,7 @@ impl StoreInstance {
             StoreInstance::DB {
                 db: _,
                 db_metrics,
-                _metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => Arc::get_mut(db_metrics),
         }
     }
@@ -320,7 +320,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                _metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .op_metrics
@@ -343,7 +343,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                _metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .op_metrics
@@ -367,7 +367,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                _metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .op_metrics
@@ -385,7 +385,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                _metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .op_metrics
@@ -408,7 +408,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                _metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .op_metrics
@@ -440,7 +440,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                _metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .op_metrics
@@ -464,7 +464,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                _metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .op_metrics
@@ -488,7 +488,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                _metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .op_metrics

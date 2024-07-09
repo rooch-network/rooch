@@ -7222,12 +7222,14 @@ dependencies = [
  "num_enum",
  "once_cell",
  "parking_lot 0.12.3",
+ "prometheus",
  "quote 1.0.36",
  "rand 0.8.5",
  "raw-store",
  "serde 1.0.204",
  "serde_bytes",
  "smt",
+ "tokio",
  "tracing",
  "tracing-subscriber",
 ]
@@ -9902,6 +9904,7 @@ dependencies = [
  "moveos-types",
  "once_cell",
  "parking_lot 0.12.3",
+ "prometheus",
  "raw-store",
  "rooch-config",
  "rooch-indexer",
@@ -9910,6 +9913,7 @@ dependencies = [
  "serde 1.0.204",
  "serde_bytes",
  "smt",
+ "tokio",
 ]
 
 [[package]]
@@ -10119,6 +10123,8 @@ dependencies = [
  "moveos-types",
  "moveos-verifier",
  "once_cell",
+ "prometheus",
+ "raw-store",
  "rooch-config",
  "rooch-db",
  "rooch-framework",
@@ -10630,11 +10636,13 @@ dependencies = [
  "moveos-types",
  "once_cell",
  "parking_lot 0.12.3",
+ "prometheus",
  "raw-store",
  "rooch-types",
  "serde 1.0.204",
  "serde_bytes",
  "smt",
+ "tokio",
 ]
 
 [[package]]
@@ -12820,6 +12828,7 @@ dependencies = [
  "signal-hook-registry",
  "socket2 0.5.7",
  "tokio-macros",
+ "tracing",
  "windows-sys 0.48.0",
 ]
 

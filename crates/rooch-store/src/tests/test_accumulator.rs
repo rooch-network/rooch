@@ -6,8 +6,8 @@ use accumulator::node_index::NodeIndex;
 use accumulator::{AccumulatorNode, AccumulatorTreeStore};
 use moveos_types::h256::H256;
 
-#[test]
-fn test_accumulator_store() {
+#[tokio::test]
+async fn test_accumulator_store() {
     let (rooch_store, _) = RoochStore::mock_rooch_store().unwrap();
 
     let acc_node = AccumulatorNode::new_leaf(NodeIndex::from_inorder_index(1), H256::random());

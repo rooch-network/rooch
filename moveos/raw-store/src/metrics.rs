@@ -942,7 +942,7 @@ pub struct DBMetrics {
 static ONCE: OnceCell<Arc<DBMetrics>> = OnceCell::new();
 
 impl DBMetrics {
-    fn new(registry: &Registry) -> Self {
+    pub fn new(registry: &Registry) -> Self {
         DBMetrics {
             op_metrics: OperationMetrics::new(registry),
             cf_metrics: ColumnFamilyMetrics::new(registry),
