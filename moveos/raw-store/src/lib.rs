@@ -16,7 +16,7 @@ use crate::rocks::{RocksDB, SchemaIterator};
 use crate::traits::{DBStore, KVStore};
 use anyhow::{bail, format_err, Result};
 use moveos_common::utils::{from_bytes, to_bytes};
-use rocksdb::{properties, AsColumnFamilyRef};
+use rust_rocksdb::{properties, AsColumnFamilyRef};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::convert::TryInto;
@@ -24,9 +24,6 @@ use std::ffi::CStr;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use std::time::Duration;
-use tokio::sync::oneshot;
-use tracing::{debug, error};
 
 /// Type alias to improve readability.
 pub type ColumnFamilyName = &'static str;
@@ -46,7 +43,7 @@ pub enum StoreInstance {
     DB {
         db: Arc<RocksDB>,
         db_metrics: Arc<DBMetrics>,
-        metrics_task_cancel_handle: Arc<oneshot::Sender<()>>,
+        // metrics_task_cancel_handle: Arc<oneshot::Sender<()>>,
     },
 }
 
@@ -60,38 +57,42 @@ impl StoreInstance {
 
     pub fn new_db_instance_with_metrics(db: RocksDB, db_metrics: Arc<DBMetrics>) -> Self {
         let db_arc = Arc::new(db);
-        let db_clone = db_arc.clone();
-        let db_metrics_clone = db_metrics.clone();
-        let (sender, mut recv) = tokio::sync::oneshot::channel();
+        // let db_clone = db_arc.clone();
+        // let db_metrics_clone = db_metrics.clone();
+        // let (sender, mut recv) = tokio::sync::oneshot::channel();
 
-        tokio::spawn(async move {
-            let mut interval =
-                tokio::time::interval(Duration::from_millis(CF_METRICS_REPORT_PERIOD_MILLIS));
-            loop {
-                tokio::select! {
-                    _ = interval.tick() => {
-                        let cfs = db_clone.cfs.clone();
-                        for cf_name in cfs {
-                            let db_clone_clone = db_clone.clone();
-                            let db_metrics_clone_clone = db_metrics_clone.clone();
-                            if let Err(e) = tokio::task::spawn_blocking(move || {
-                                Self::report_cf_metrics(&db_clone_clone, cf_name, &db_metrics_clone_clone);
-                            }).await {
-                                error!("Failed to report cf metrics with error: {}", e);
-                            }
-                            // Self::report_cf_metrics(&db_clone_clone, cf_name, &db_metrics_clone);
-                        }
-                    }
-                    _ = &mut recv => break,
-                }
-            }
-            debug!("Returning to report cf metrics task for StoreInstance");
-        });
+        // TODO We need to find a more elegant implementation to avoid
+        // introducing tokio 1.x runtime dependency in the raw store layer,
+        // which would cause upper-level unit test cases and framework tests to depend on tokio.
+
+        // tokio::spawn(async move {
+        //     let mut interval =
+        //         tokio::time::interval(Duration::from_millis(CF_METRICS_REPORT_PERIOD_MILLIS));
+        //     loop {
+        //         tokio::select! {
+        //             _ = interval.tick() => {
+        //                 let cfs = db_clone.cfs.clone();
+        //                 for cf_name in cfs {
+        //                     let db_clone_clone = db_clone.clone();
+        //                     let db_metrics_clone_clone = db_metrics_clone.clone();
+        //                     if let Err(e) = tokio::task::spawn_blocking(move || {
+        //                         Self::report_cf_metrics(&db_clone_clone, cf_name, &db_metrics_clone_clone);
+        //                     }).await {
+        //                         error!("Failed to report cf metrics with error: {}", e);
+        //                     }
+        //                     // Self::report_cf_metrics(&db_clone_clone, cf_name, &db_metrics_clone);
+        //                 }
+        //             }
+        //             _ = &mut recv => break,
+        //         }
+        //     }
+        //     debug!("Returning to report cf metrics task for StoreInstance");
+        // });
 
         Self::DB {
             db: db_arc,
             db_metrics,
-            metrics_task_cancel_handle: Arc::new(sender),
+            // metrics_task_cancel_handle: Arc::new(sender),
         }
     }
 
@@ -117,7 +118,7 @@ impl StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics: _,
-                metrics_task_cancel_handle: _,
+                // metrics_task_cancel_handle: _,
             } => Some(db.as_ref()),
         }
     }
@@ -127,7 +128,7 @@ impl StoreInstance {
             StoreInstance::DB {
                 db: _,
                 db_metrics,
-                metrics_task_cancel_handle: _,
+                // metrics_task_cancel_handle: _,
             } => Some(db_metrics.as_ref()),
         }
     }
@@ -137,7 +138,7 @@ impl StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics: _,
-                metrics_task_cancel_handle: _,
+                // metrics_task_cancel_handle: _,
             } => Arc::get_mut(db),
         }
     }
@@ -147,11 +148,12 @@ impl StoreInstance {
             StoreInstance::DB {
                 db: _,
                 db_metrics,
-                metrics_task_cancel_handle: _,
+                // metrics_task_cancel_handle: _,
             } => Arc::get_mut(db_metrics),
         }
     }
 
+    #[allow(dead_code)]
     fn report_cf_metrics(rocksdb: &Arc<RocksDB>, cf_name: &str, db_metrics: &Arc<DBMetrics>) {
         let cf = rocksdb.get_cf_handle(cf_name);
         db_metrics
@@ -300,6 +302,7 @@ impl StoreInstance {
             );
     }
 
+    #[allow(dead_code)]
     fn get_int_property(
         rocksdb: &RocksDB,
         cf: &impl AsColumnFamilyRef,
@@ -320,7 +323,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                metrics_task_cancel_handle: _,
+                // metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .op_metrics
@@ -343,7 +346,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                metrics_task_cancel_handle: _,
+                // metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .op_metrics
@@ -367,7 +370,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                metrics_task_cancel_handle: _,
+                // metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .op_metrics
@@ -385,7 +388,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                metrics_task_cancel_handle: _,
+                // metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .op_metrics
@@ -408,7 +411,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                metrics_task_cancel_handle: _,
+                // metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .op_metrics
@@ -440,7 +443,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                metrics_task_cancel_handle: _,
+                // metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .op_metrics
@@ -464,7 +467,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                metrics_task_cancel_handle: _,
+                // metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .op_metrics
@@ -488,7 +491,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                metrics_task_cancel_handle: _,
+                // metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .op_metrics

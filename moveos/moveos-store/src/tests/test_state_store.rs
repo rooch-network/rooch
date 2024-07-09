@@ -3,29 +3,31 @@
 
 use crate::MoveOSStore;
 use anyhow::Result;
+use moveos_types::h256::H256;
 use moveos_types::test_utils::random_state_change_set;
+use smt::NodeReader;
 
-// #[tokio::test]
-// async fn test_reopen() {
-//     let temp_dir = moveos_config::temp_dir();
-//
-//     let key = H256::random();
-//     let node = b"testnode".to_vec();
-//     {
-//         let moveos_store = MoveOSStore::new(temp_dir.path()).unwrap();
-//         let node_store = moveos_store.get_state_node_store();
-//         node_store
-//             .put(key, node.clone())
-//             .map_err(|e| anyhow::anyhow!("test_state_store test_reopen error: {:?}", e))
-//             .ok();
-//         assert_eq!(node_store.get(&key).unwrap(), Some(node.clone()));
-//     }
-//     {
-//         let moveos_store = MoveOSStore::new(temp_dir.path()).unwrap();
-//         let node_store = moveos_store.get_state_node_store();
-//         assert_eq!(node_store.get(&key).unwrap(), Some(node));
-//     }
-// }
+#[tokio::test]
+async fn test_reopen() {
+    let temp_dir = moveos_config::temp_dir();
+
+    let key = H256::random();
+    let node = b"testnode".to_vec();
+    {
+        let moveos_store = MoveOSStore::new(temp_dir.path()).unwrap();
+        let node_store = moveos_store.get_state_node_store();
+        node_store
+            .put(key, node.clone())
+            .map_err(|e| anyhow::anyhow!("test_state_store test_reopen error: {:?}", e))
+            .ok();
+        assert_eq!(node_store.get(&key).unwrap(), Some(node.clone()));
+    }
+    {
+        let moveos_store = MoveOSStore::new(temp_dir.path()).unwrap();
+        let node_store = moveos_store.get_state_node_store();
+        assert_eq!(node_store.get(&key).unwrap(), Some(node));
+    }
+}
 
 #[tokio::test]
 async fn test_statedb_state_root() -> Result<()> {
