@@ -48,11 +48,11 @@ pub trait AccountKeystore {
 
     fn generate_and_add_new_key(
         &mut self,
-        account_index: u32,
         password: Option<String>,
     ) -> Result<GeneratedKeyPair, anyhow::Error> {
         // load mnemonic phrase from keystore
         let mnemonic = self.get_mnemonic(password.clone())?;
+        let account_index = mnemonic.mnemonic_data.addresses.len() as u32;
         let derivation_path = generate_derivation_path(account_index)?;
         let result = generate_new_key_pair(
             Some(mnemonic.mnemonic_phrase),

@@ -29,10 +29,7 @@ impl CommandAction<Option<RoochAddressView>> for CreateCommand {
     async fn execute(self) -> RoochResult<Option<RoochAddressView>> {
         let mut context = self.context_options.build_require_password()?;
         let password = context.get_password();
-        let account_index = context.keystore.addresses().len() as u32;
-        let result = context
-            .keystore
-            .generate_and_add_new_key(account_index, password)?;
+        let result = context.keystore.generate_and_add_new_key(password)?;
 
         if self.json {
             Ok(Some(result.address.into()))
