@@ -31,7 +31,7 @@ impl BtcAPIServer for BtcServer {
         filter: UTXOFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateIDView>,
-        limit: Option<StrView<usize>>,
+        limit: Option<StrView<u64>>,
         descending_order: Option<bool>,
     ) -> RpcResult<UTXOPageView> {
         let limit_of = min(
@@ -74,7 +74,7 @@ impl BtcAPIServer for BtcServer {
         filter: InscriptionFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateIDView>,
-        limit: Option<StrView<usize>>,
+        limit: Option<StrView<u64>>,
         descending_order: Option<bool>,
     ) -> RpcResult<InscriptionPageView> {
         let limit_of = min(

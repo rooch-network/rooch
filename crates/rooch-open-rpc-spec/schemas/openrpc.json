@@ -35,7 +35,7 @@
         {
           "name": "limit",
           "schema": {
-            "$ref": "#/components/schemas/usize"
+            "$ref": "#/components/schemas/u64"
           }
         },
         {
@@ -73,7 +73,7 @@
         {
           "name": "limit",
           "schema": {
-            "$ref": "#/components/schemas/usize"
+            "$ref": "#/components/schemas/u64"
           }
         },
         {
@@ -184,7 +184,7 @@
         {
           "name": "limit",
           "schema": {
-            "$ref": "#/components/schemas/usize"
+            "$ref": "#/components/schemas/u64"
           }
         }
       ],
@@ -477,7 +477,7 @@
         {
           "name": "limit",
           "schema": {
-            "$ref": "#/components/schemas/usize"
+            "$ref": "#/components/schemas/u64"
           }
         },
         {
@@ -515,7 +515,7 @@
         {
           "name": "limit",
           "schema": {
-            "$ref": "#/components/schemas/usize"
+            "$ref": "#/components/schemas/u64"
           }
         },
         {
@@ -553,7 +553,7 @@
         {
           "name": "limit",
           "schema": {
-            "$ref": "#/components/schemas/usize"
+            "$ref": "#/components/schemas/u64"
           }
         },
         {
@@ -591,7 +591,7 @@
         {
           "name": "limit",
           "schema": {
-            "$ref": "#/components/schemas/usize"
+            "$ref": "#/components/schemas/u64"
           }
         },
         {
@@ -629,7 +629,7 @@
         {
           "name": "limit",
           "schema": {
-            "$ref": "#/components/schemas/usize"
+            "$ref": "#/components/schemas/u64"
           }
         },
         {
@@ -3063,9 +3063,6 @@
         "type": "string"
       },
       "u64": {
-        "type": "string"
-      },
-      "usize": {
         "type": "string"
       }
     }

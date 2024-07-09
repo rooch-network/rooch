@@ -135,6 +135,12 @@ macro_rules! impl_str_view_for {
 // Because the max value of json number is less than u64::MAX, so we need to use string to represent usize, u64, i64, u128, i128, U256
 impl_str_view_for! {usize u64 i64 u128 i128 move_core_types::u256::U256 moveos_types::state::FieldKey}
 
+impl From<StrView<u64>> for usize {
+    fn from(view: StrView<u64>) -> usize {
+        view.0 as usize
+    }
+}
+
 pub type BytesView = StrView<Vec<u8>>;
 
 impl std::fmt::Display for BytesView {

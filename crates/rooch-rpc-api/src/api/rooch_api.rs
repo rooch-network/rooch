@@ -63,7 +63,7 @@ pub trait RoochAPI {
         &self,
         access_path: AccessPathView,
         cursor: Option<String>,
-        limit: Option<StrView<usize>>,
+        limit: Option<StrView<u64>>,
         state_option: Option<StateOptions>,
     ) -> RpcResult<StatePageView>;
 
@@ -95,7 +95,7 @@ pub trait RoochAPI {
         &self,
         object_id: ObjectIDView,
         cursor: Option<String>,
-        limit: Option<StrView<usize>>,
+        limit: Option<StrView<u64>>,
         state_option: Option<StateOptions>,
     ) -> RpcResult<StatePageView> {
         let access_path_view =
@@ -143,7 +143,7 @@ pub trait RoochAPI {
         &self,
         account_addr: RoochOrBitcoinAddressView,
         cursor: Option<IndexerStateIDView>,
-        limit: Option<StrView<usize>>,
+        limit: Option<StrView<u64>>,
     ) -> RpcResult<BalanceInfoPageView>;
 
     /// get module ABI by module id
@@ -161,7 +161,7 @@ pub trait RoochAPI {
         filter: TransactionFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<StrView<u64>>,
-        limit: Option<StrView<usize>>,
+        limit: Option<StrView<u64>>,
         query_option: Option<QueryOptions>,
     ) -> RpcResult<TransactionWithInfoPageView>;
 
@@ -172,7 +172,7 @@ pub trait RoochAPI {
         filter: EventFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerEventIDView>,
-        limit: Option<StrView<usize>>,
+        limit: Option<StrView<u64>>,
         query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerEventPageView>;
 
@@ -183,7 +183,7 @@ pub trait RoochAPI {
         filter: ObjectStateFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateIDView>,
-        limit: Option<StrView<usize>>,
+        limit: Option<StrView<u64>>,
         query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerObjectStatePageView>;
 }

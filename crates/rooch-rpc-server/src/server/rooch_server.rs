@@ -190,7 +190,7 @@ impl RoochAPIServer for RoochServer {
         &self,
         access_path: AccessPathView,
         cursor: Option<String>,
-        limit: Option<StrView<usize>>,
+        limit: Option<StrView<u64>>,
         state_option: Option<StateOptions>,
     ) -> RpcResult<StatePageView> {
         let state_option = state_option.unwrap_or_default();
@@ -521,7 +521,7 @@ impl RoochAPIServer for RoochServer {
         &self,
         account_addr: RoochOrBitcoinAddressView,
         cursor: Option<IndexerStateIDView>,
-        limit: Option<StrView<usize>>,
+        limit: Option<StrView<u64>>,
     ) -> RpcResult<BalanceInfoPageView> {
         let limit_of = min(
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
@@ -584,7 +584,7 @@ impl RoochAPIServer for RoochServer {
         filter: TransactionFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<StrView<u64>>,
-        limit: Option<StrView<usize>>,
+        limit: Option<StrView<u64>>,
         query_option: Option<QueryOptions>,
     ) -> RpcResult<TransactionWithInfoPageView> {
         let limit_of = min(
@@ -627,7 +627,7 @@ impl RoochAPIServer for RoochServer {
         filter: EventFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerEventIDView>,
-        limit: Option<StrView<usize>>,
+        limit: Option<StrView<u64>>,
         query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerEventPageView> {
         let limit_of = min(
@@ -669,7 +669,7 @@ impl RoochAPIServer for RoochServer {
         filter: ObjectStateFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateIDView>,
-        limit: Option<StrView<usize>>,
+        limit: Option<StrView<u64>>,
         query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerObjectStatePageView> {
         let limit_of = min(
