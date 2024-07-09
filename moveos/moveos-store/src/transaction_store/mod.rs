@@ -6,14 +6,14 @@ use moveos_types::h256::H256;
 use moveos_types::transaction::TransactionExecutionInfo;
 use raw_store::CodecKVStore;
 
-use crate::TRANSACTION_EXECUTION_INFO_PREFIX_NAME;
+use crate::TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME;
 use raw_store::derive_store;
 
 derive_store!(
     TransactionDBStore,
     H256,
     TransactionExecutionInfo,
-    TRANSACTION_EXECUTION_INFO_PREFIX_NAME
+    TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME
 );
 
 pub trait TransactionStore {

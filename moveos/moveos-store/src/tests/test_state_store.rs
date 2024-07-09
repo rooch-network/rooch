@@ -7,8 +7,8 @@ use moveos_types::h256::H256;
 use moveos_types::test_utils::random_state_change_set;
 use smt::NodeReader;
 
-#[test]
-fn test_reopen() {
+#[tokio::test]
+async fn test_reopen() {
     let temp_dir = moveos_config::temp_dir();
 
     let key = H256::random();
@@ -29,8 +29,8 @@ fn test_reopen() {
     }
 }
 
-#[test]
-fn test_statedb_state_root() -> Result<()> {
+#[tokio::test]
+async fn test_statedb_state_root() -> Result<()> {
     let (moveos_store, _) =
         MoveOSStore::mock_moveos_store().expect("moveos store mock should succ");
     let change_set = random_state_change_set();
@@ -44,8 +44,8 @@ fn test_statedb_state_root() -> Result<()> {
     Ok(())
 }
 
-// #[test]
-// fn test_child_state_db_dump_and_apply() -> Result<()> {
+// #[tokio::test]
+// async fn test_child_state_db_dump_and_apply() -> Result<()> {
 //     let mut moveos_store = MoveOSStore::mock_moveos_store().expect("moveos store mock should succ");
 //
 //     let base_state_change_set = random_state_change_set();
