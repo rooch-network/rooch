@@ -887,15 +887,19 @@
                 "properties": {
                   "end_time": {
                     "description": "right endpoint of time interval, milliseconds since block, exclusive",
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/u64"
+                      }
+                    ]
                   },
                   "start_time": {
                     "description": "left endpoint of time interval, milliseconds since block, inclusive",
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/u64"
+                      }
+                    ]
                   }
                 }
               }
@@ -918,15 +922,19 @@
                 "properties": {
                   "from_order": {
                     "description": "left endpoint of transaction order, inclusive",
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/u64"
+                      }
+                    ]
                   },
                   "to_order": {
                     "description": "right endpoint of transaction order, exclusive",
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/u64"
+                      }
+                    ]
                   }
                 }
               }
@@ -1247,7 +1255,7 @@
             ],
             "properties": {
               "owner": {
-                "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
+                "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress"
               }
             },
             "additionalProperties": false
@@ -1434,20 +1442,20 @@
             ]
           },
           "offset": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "parents": {
             "$ref": "#/components/schemas/alloc::vec::Vec<moveos_types::moveos_std::object::ObjectID>"
           },
           "pointer": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "uint64",
-            "minimum": 0.0
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/u64"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "sequence_number": {
             "type": "integer",
@@ -1587,14 +1595,10 @@
                 "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
               },
               "block_height": {
-                "type": "integer",
-                "format": "uint64",
-                "minimum": 0.0
+                "$ref": "#/components/schemas/u64"
               },
               "chain_id": {
-                "type": "integer",
-                "format": "uint64",
-                "minimum": 0.0
+                "$ref": "#/components/schemas/u64"
               },
               "type": {
                 "type": "string",
@@ -1617,9 +1621,7 @@
                 "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
               },
               "chain_id": {
-                "type": "integer",
-                "format": "uint64",
-                "minimum": 0.0
+                "$ref": "#/components/schemas/u64"
               },
               "txid": {
                 "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
@@ -1662,9 +1664,7 @@
                 ]
               },
               "sequence_number": {
-                "type": "integer",
-                "format": "uint64",
-                "minimum": 0.0
+                "$ref": "#/components/schemas/u64"
               },
               "type": {
                 "type": "string",
@@ -2538,9 +2538,7 @@
             "$ref": "#/components/schemas/primitive_types::H256"
           },
           "gas_used": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "state_root": {
             "$ref": "#/components/schemas/primitive_types::H256"
@@ -2613,15 +2611,19 @@
                 "properties": {
                   "end_time": {
                     "description": "right endpoint of time interval, milliseconds since block, exclusive",
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/u64"
+                      }
+                    ]
                   },
                   "start_time": {
                     "description": "left endpoint of time interval, milliseconds since block, inclusive",
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/u64"
+                      }
+                    ]
                   }
                 }
               }
@@ -2644,15 +2646,19 @@
                 "properties": {
                   "from_order": {
                     "description": "left endpoint of transaction order, inclusive",
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/u64"
+                      }
+                    ]
                   },
                   "to_order": {
                     "description": "right endpoint of transaction order, exclusive",
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/u64"
+                      }
+                    ]
                   }
                 }
               }
@@ -2681,9 +2687,7 @@
             }
           },
           "gas_used": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "is_upgrade": {
             "type": "boolean"
@@ -2751,7 +2755,7 @@
             ],
             "properties": {
               "owner": {
-                "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
+                "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress"
               }
             },
             "additionalProperties": false
@@ -2902,9 +2906,11 @@
           },
           "value": {
             "description": "The value of the UTXO",
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/u64"
+              }
+            ]
           },
           "vout": {
             "description": "The vout of the UTXO",

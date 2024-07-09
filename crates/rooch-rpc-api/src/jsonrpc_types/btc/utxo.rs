@@ -3,7 +3,8 @@
 
 use crate::jsonrpc_types::btc::transaction::{hex_to_txid, TxidView};
 use crate::jsonrpc_types::{
-    H256View, IndexerObjectStateView, IndexerStateIDView, ObjectMetaView, RoochAddressView, StrView,
+    H256View, IndexerObjectStateView, IndexerStateIDView, ObjectMetaView,
+    RoochOrBitcoinAddressView, StrView,
 };
 use anyhow::Result;
 use bitcoin::hashes::Hash;
@@ -33,7 +34,7 @@ impl From<BitcoinOutPointView> for bitcoin::OutPoint {
 #[serde(rename_all = "snake_case")]
 pub enum UTXOFilterView {
     /// Query by owner, support rooch address and bitcoin address
-    Owner(RoochAddressView),
+    Owner(RoochOrBitcoinAddressView),
     /// Query by bitcoin outpoint, represent by bitcoin txid and vout
     OutPoint { txid: String, vout: u32 },
     /// Query by object id.
@@ -47,7 +48,7 @@ impl UTXOFilterView {
         Ok(match filter_opt {
             UTXOFilterView::Owner(owner) => ObjectStateFilter::ObjectTypeWithOwner {
                 object_type: UTXO::struct_tag(),
-                owner: owner.0,
+                owner: owner.0.rooch_address,
             },
             UTXOFilterView::OutPoint { txid, vout } => {
                 let txid = hex_to_txid(txid.as_str())?;

@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::BytesView;
+use super::{BytesView, StrView};
 use crate::jsonrpc_types::{
     H256View, RoochOrBitcoinAddressView, TransactionExecutionInfoView, TransactionSequenceInfoView,
     TransactionView,
@@ -121,17 +121,17 @@ pub enum TransactionFilterView {
     /// Return transactions in [start_time, end_time) interval
     TimeRange {
         /// left endpoint of time interval, milliseconds since block, inclusive
-        start_time: u64,
+        start_time: StrView<u64>,
         /// right endpoint of time interval, milliseconds since block, exclusive
-        end_time: u64,
+        end_time: StrView<u64>,
     },
     /// Return events emitted in [from_order, to_order) interval
     // #[serde(rename_all = "camelCase")]
     TxOrderRange {
         /// left endpoint of transaction order, inclusive
-        from_order: u64,
+        from_order: StrView<u64>,
         /// right endpoint of transaction order, exclusive
-        to_order: u64,
+        to_order: StrView<u64>,
     },
 }
 
@@ -147,15 +147,15 @@ impl From<TransactionFilterView> for TransactionFilter {
                 start_time,
                 end_time,
             } => Self::TimeRange {
-                start_time,
-                end_time,
+                start_time: start_time.0,
+                end_time: end_time.0,
             },
             TransactionFilterView::TxOrderRange {
                 from_order,
                 to_order,
             } => Self::TxOrderRange {
-                from_order,
-                to_order,
+                from_order: from_order.0,
+                to_order: to_order.0,
             },
         }
     }

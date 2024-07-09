@@ -4,7 +4,7 @@
 use crate::jsonrpc_types::btc::transaction::{hex_to_txid, TxidView};
 use crate::jsonrpc_types::{
     BytesView, H256View, IndexerObjectStateView, IndexerStateIDView, MoveStringView,
-    ObjectIDVecView, ObjectMetaView, RoochAddressView, StrView,
+    ObjectIDVecView, ObjectMetaView, RoochOrBitcoinAddressView, StrView,
 };
 use anyhow::Result;
 use bitcoin::hashes::Hash;
@@ -38,7 +38,7 @@ impl From<BitcoinInscriptionIDView> for BitcoinInscriptionID {
 #[serde(rename_all = "snake_case")]
 pub enum InscriptionFilterView {
     /// Query by owner, support rooch address and bitcoin address
-    Owner(RoochAddressView),
+    Owner(RoochOrBitcoinAddressView),
     /// Query by inscription id, represent by bitcoin txid and index
     InscriptionId { txid: String, index: u32 },
     /// Query by object id.
@@ -52,7 +52,7 @@ impl InscriptionFilterView {
         Ok(match filter {
             InscriptionFilterView::Owner(owner) => ObjectStateFilter::ObjectTypeWithOwner {
                 object_type: Inscription::struct_tag(),
-                owner: owner.0,
+                owner: owner.0.rooch_address,
             },
             InscriptionFilterView::InscriptionId { txid, index } => {
                 let txid = hex_to_txid(txid.as_str())?;
