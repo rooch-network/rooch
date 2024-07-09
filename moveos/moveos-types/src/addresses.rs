@@ -21,6 +21,11 @@ pub fn is_system_reserved_address(addr: AccountAddress) -> bool {
     bytes.iter().take(31).all(|u| u == &0u8) && bytes[31] > 0u8 && bytes[31] <= 10u8
 }
 
+pub fn is_vm_or_system_reserved_address(addr: AccountAddress) -> bool {
+    //zero is vm address
+    addr == AccountAddress::ZERO || is_system_reserved_address(addr)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

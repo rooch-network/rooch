@@ -1,33 +1,26 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::service::{aggregate_service::AggregateService, rpc_service::RpcService};
+use crate::service::rpc_service::RpcService;
 use anyhow::Result;
 use jsonrpsee::{core::async_trait, RpcModule};
-use move_core_types::account_address::AccountAddress;
 use rooch_rpc_api::api::btc_api::BtcAPIServer;
 use rooch_rpc_api::api::{RoochRpcModule, DEFAULT_RESULT_LIMIT_USIZE, MAX_RESULT_LIMIT_USIZE};
 use rooch_rpc_api::jsonrpc_types::btc::ord::{InscriptionFilterView, InscriptionStateView};
 use rooch_rpc_api::jsonrpc_types::btc::utxo::{UTXOFilterView, UTXOStateView};
-use rooch_rpc_api::jsonrpc_types::{InscriptionPageView, StrView, UTXOPageView};
+use rooch_rpc_api::jsonrpc_types::{
+    IndexerStateIDView, InscriptionPageView, StrView, UTXOPageView,
+};
 use rooch_rpc_api::RpcResult;
-use rooch_types::indexer::state::IndexerStateID;
 use std::cmp::min;
 
 pub struct BtcServer {
     rpc_service: RpcService,
-    aggregate_service: AggregateService,
-    btc_network: u8,
 }
 
 impl BtcServer {
-    pub async fn new(rpc_service: RpcService, aggregate_service: AggregateService) -> Result<Self> {
-        let btc_network = rpc_service.get_bitcoin_network().await?;
-        Ok(Self {
-            rpc_service,
-            aggregate_service,
-            btc_network,
-        })
+    pub async fn new(rpc_service: RpcService) -> Result<Self> {
+        Ok(Self { rpc_service })
     }
 }
 
@@ -37,7 +30,7 @@ impl BtcAPIServer for BtcServer {
         &self,
         filter: UTXOFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
-        cursor: Option<IndexerStateID>,
+        cursor: Option<IndexerStateIDView>,
         limit: Option<StrView<usize>>,
         descending_order: Option<bool>,
     ) -> RpcResult<UTXOPageView> {
@@ -47,31 +40,27 @@ impl BtcAPIServer for BtcServer {
         );
         let descending_order = descending_order.unwrap_or(true);
 
-        let resolve_address = match filter.clone() {
-            UTXOFilterView::Owner(address) => address.0.to_rooch_address(),
-            _ => AccountAddress::ZERO.into(),
-        };
-
-        let global_state_filter =
-            UTXOFilterView::into_global_state_filter(filter, resolve_address)?;
-        let states = self
+        let global_state_filter = UTXOFilterView::into_global_state_filter(filter)?;
+        let object_states = self
             .rpc_service
-            .query_object_states(global_state_filter, cursor, limit_of + 1, descending_order)
+            .query_object_states(
+                global_state_filter,
+                cursor.map(|c| c.into()),
+                limit_of + 1,
+                descending_order,
+                false,
+                false,
+            )
             .await?;
 
-        let mut data = self
-            .aggregate_service
-            .build_utxos(states)
-            .await?
+        let mut data = object_states
             .into_iter()
-            .map(|v| UTXOStateView::try_new_from_utxo_state(v, self.btc_network))
+            .map(UTXOStateView::try_from)
             .collect::<Result<Vec<_>, _>>()?;
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
-        let next_cursor = data.last().cloned().map_or(cursor, |t| {
-            Some(IndexerStateID::new(t.tx_order, t.state_index))
-        });
+        let next_cursor = data.last().cloned().map_or(cursor, |t| Some(t.indexer_id));
 
         Ok(UTXOPageView {
             data,
@@ -84,7 +73,7 @@ impl BtcAPIServer for BtcServer {
         &self,
         filter: InscriptionFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
-        cursor: Option<IndexerStateID>,
+        cursor: Option<IndexerStateIDView>,
         limit: Option<StrView<usize>>,
         descending_order: Option<bool>,
     ) -> RpcResult<InscriptionPageView> {
@@ -94,31 +83,27 @@ impl BtcAPIServer for BtcServer {
         );
         let descending_order = descending_order.unwrap_or(true);
 
-        let resolve_address = match filter.clone() {
-            InscriptionFilterView::Owner(address) => address.0.to_rooch_address(),
-            _ => AccountAddress::ZERO.into(),
-        };
-
-        let global_state_filter =
-            InscriptionFilterView::into_global_state_filter(filter, resolve_address)?;
-        let states = self
+        let global_state_filter = InscriptionFilterView::into_global_state_filter(filter)?;
+        let object_states = self
             .rpc_service
-            .query_object_states(global_state_filter, cursor, limit_of + 1, descending_order)
+            .query_object_states(
+                global_state_filter,
+                cursor.map(Into::into),
+                limit_of + 1,
+                descending_order,
+                false,
+                false,
+            )
             .await?;
 
-        let mut data = self
-            .aggregate_service
-            .build_inscriptions(states)
-            .await?
+        let mut data = object_states
             .into_iter()
-            .map(|v| InscriptionStateView::try_new_from_inscription_state(v, self.btc_network))
+            .map(InscriptionStateView::try_from)
             .collect::<Result<Vec<_>, _>>()?;
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
-        let next_cursor = data.last().cloned().map_or(cursor, |t| {
-            Some(IndexerStateID::new(t.tx_order, t.state_index))
-        });
+        let next_cursor = data.last().cloned().map_or(cursor, |t| Some(t.indexer_id));
 
         Ok(InscriptionPageView {
             data,

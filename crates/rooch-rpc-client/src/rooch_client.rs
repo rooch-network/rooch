@@ -206,7 +206,11 @@ impl RoochRpcClient {
     ) -> Result<BalanceInfoPageView> {
         Ok(self
             .http
-            .get_balances(account_addr.into(), cursor, limit.map(Into::into))
+            .get_balances(
+                account_addr.into(),
+                cursor.map(Into::into),
+                limit.map(Into::into),
+            )
             .await?)
     }
 
@@ -219,7 +223,12 @@ impl RoochRpcClient {
     ) -> Result<IndexerObjectStatePageView> {
         Ok(self
             .http
-            .query_object_states(filter, cursor, limit.map(Into::into), query_options)
+            .query_object_states(
+                filter,
+                cursor.map(Into::into),
+                limit.map(Into::into),
+                query_options,
+            )
             .await?)
     }
 }

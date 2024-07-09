@@ -3,11 +3,10 @@
 
 use crate::jsonrpc_types::btc::ord::InscriptionFilterView;
 use crate::jsonrpc_types::btc::utxo::UTXOFilterView;
-use crate::jsonrpc_types::{InscriptionPageView, StrView, UTXOPageView};
+use crate::jsonrpc_types::{IndexerStateIDView, InscriptionPageView, StrView, UTXOPageView};
 use crate::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 use rooch_open_rpc_macros::open_rpc;
-use rooch_types::indexer::state::IndexerStateID;
 
 #[open_rpc(namespace = "btc")]
 #[rpc(server, client, namespace = "btc")]
@@ -19,7 +18,7 @@ pub trait BtcAPI {
         &self,
         filter: UTXOFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
-        cursor: Option<IndexerStateID>,
+        cursor: Option<IndexerStateIDView>,
         limit: Option<StrView<usize>>,
         descending_order: Option<bool>,
     ) -> RpcResult<UTXOPageView>;
@@ -30,7 +29,7 @@ pub trait BtcAPI {
         &self,
         filter: InscriptionFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
-        cursor: Option<IndexerStateID>,
+        cursor: Option<IndexerStateIDView>,
         limit: Option<StrView<usize>>,
         descending_order: Option<bool>,
     ) -> RpcResult<InscriptionPageView>;

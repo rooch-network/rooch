@@ -159,7 +159,7 @@ where
                     s.match_dynamic_field_type(MoveString::type_tag(), resource_tag.clone().into()),
                     "Resource type mismatch, expected field value type: {:?}, actual: {:?}",
                     resource_tag,
-                    s.value_type()
+                    s.object_type()
                 );
                 let field = RawField::parse_resource_field(&s.value, resource_tag.clone().into())?;
                 Ok(field.value)

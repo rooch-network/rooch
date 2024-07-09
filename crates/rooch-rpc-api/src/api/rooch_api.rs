@@ -3,21 +3,20 @@
 
 use crate::jsonrpc_types::account_view::BalanceInfoView;
 use crate::jsonrpc_types::address::RoochOrBitcoinAddressView;
-use crate::jsonrpc_types::event_view::EventFilterView;
+use crate::jsonrpc_types::event_view::{EventFilterView, IndexerEventIDView};
 use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionWithInfoView};
 use crate::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
     EventPageView, ExecuteTransactionResponseView, FieldKeyView, FunctionCallView, H256View,
-    IndexerEventPageView, IndexerObjectStatePageView, ModuleABIView, ObjectIDVecView, ObjectIDView,
-    ObjectStateFilterView, ObjectStateView, QueryOptions, RoochAddressView, StateOptions,
-    StatePageView, StrView, StructTagView, TransactionWithInfoPageView, TxOptions,
+    IndexerEventPageView, IndexerObjectStatePageView, IndexerStateIDView, ModuleABIView,
+    ObjectIDVecView, ObjectIDView, ObjectStateFilterView, ObjectStateView, QueryOptions,
+    RoochAddressView, StateOptions, StatePageView, StrView, StructTagView,
+    TransactionWithInfoPageView, TxOptions,
 };
 use crate::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 use moveos_types::{access_path::AccessPath, state::FieldKey};
 use rooch_open_rpc_macros::open_rpc;
-use rooch_types::indexer::event::IndexerEventID;
-use rooch_types::indexer::state::IndexerStateID;
 
 #[open_rpc(namespace = "rooch")]
 #[rpc(server, client, namespace = "rooch")]
@@ -143,7 +142,7 @@ pub trait RoochAPI {
     async fn get_balances(
         &self,
         account_addr: RoochOrBitcoinAddressView,
-        cursor: Option<IndexerStateID>,
+        cursor: Option<IndexerStateIDView>,
         limit: Option<StrView<usize>>,
     ) -> RpcResult<BalanceInfoPageView>;
 
@@ -172,7 +171,7 @@ pub trait RoochAPI {
         &self,
         filter: EventFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
-        cursor: Option<IndexerEventID>,
+        cursor: Option<IndexerEventIDView>,
         limit: Option<StrView<usize>>,
         query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerEventPageView>;
@@ -183,7 +182,7 @@ pub trait RoochAPI {
         &self,
         filter: ObjectStateFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
-        cursor: Option<IndexerStateID>,
+        cursor: Option<IndexerStateIDView>,
         limit: Option<StrView<usize>>,
         query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerObjectStatePageView>;

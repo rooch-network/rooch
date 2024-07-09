@@ -15,16 +15,16 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct L1BlockView {
-    pub chain_id: u64,
-    pub block_height: u64,
+    pub chain_id: StrView<u64>,
+    pub block_height: StrView<u64>,
     pub block_hash: BytesView,
 }
 
 impl From<L1Block> for L1BlockView {
     fn from(block: L1Block) -> Self {
         Self {
-            chain_id: block.chain_id.id(),
-            block_height: block.block_height,
+            chain_id: block.chain_id.id().into(),
+            block_height: block.block_height.into(),
             block_hash: block.block_hash.into(),
         }
     }
@@ -32,7 +32,7 @@ impl From<L1Block> for L1BlockView {
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct L1TransactionView {
-    pub chain_id: u64,
+    pub chain_id: StrView<u64>,
     pub block_hash: BytesView,
     pub txid: BytesView,
 }
@@ -40,7 +40,7 @@ pub struct L1TransactionView {
 impl From<L1Transaction> for L1TransactionView {
     fn from(tx: L1Transaction) -> Self {
         Self {
-            chain_id: tx.chain_id.id(),
+            chain_id: tx.chain_id.id().into(),
             block_hash: tx.block_hash.into(),
             txid: tx.txid.into(),
         }

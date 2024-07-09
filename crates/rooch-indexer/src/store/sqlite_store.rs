@@ -47,7 +47,7 @@ impl SqliteIndexerStore {
             .map(|state| {
                 format!(
                     "('{}', '{}', {}, '{}', '{}', {}, {}, {}, {}, {})",
-                    escape_sql_string(state.object_id),
+                    escape_sql_string(state.id),
                     escape_sql_string(state.owner),
                     state.flag,
                     escape_sql_string(state.object_type),
@@ -63,9 +63,9 @@ impl SqliteIndexerStore {
             .join(",");
         let query = format!(
             "
-                INSERT INTO object_states (object_id, owner, flag, object_type, state_root, size, tx_order, state_index, created_at, updated_at) \
+                INSERT INTO object_states (id, owner, flag, object_type, state_root, size, tx_order, state_index, created_at, updated_at) \
                 VALUES {} \
-                ON CONFLICT (object_id) DO UPDATE SET \
+                ON CONFLICT (id) DO UPDATE SET \
                 owner = excluded.owner, \
                 flag = excluded.flag, \
                 state_root = excluded.state_root, \
@@ -112,12 +112,10 @@ impl SqliteIndexerStore {
 
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
 
-        diesel::delete(
-            object_states::table.filter(object_states::object_id.eq_any(state_pks.as_slice())),
-        )
-        .execute(&mut connection)
-        .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
-        .context("Failed to delete object states to SQLiteDB")?;
+        diesel::delete(object_states::table.filter(object_states::id.eq_any(state_pks.as_slice())))
+            .execute(&mut connection)
+            .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
+            .context("Failed to delete object states to SQLiteDB")?;
 
         Ok(())
     }

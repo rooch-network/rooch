@@ -409,6 +409,7 @@ pub struct ObjectMeta {
     pub owner: AccountAddress,
     pub flag: u8,
     pub state_root: Option<H256>,
+    /// The fields size of the object
     pub size: u64,
     /// The object created timestamp on chain
     pub created_at: u64,
@@ -416,7 +417,8 @@ pub struct ObjectMeta {
     /// Note: only the object value updated will update this timestamp
     /// The metadata updated or dynamic fields updated will not update this timestamp
     pub updated_at: u64,
-    pub value_type: TypeTag,
+    /// The object value type, it should be a struct type
+    pub object_type: TypeTag,
 }
 
 impl ObjectMeta {
@@ -428,7 +430,7 @@ impl ObjectMeta {
         size: u64,
         created_at: u64,
         updated_at: u64,
-        value_type: TypeTag,
+        object_type: TypeTag,
     ) -> Self {
         Self {
             id,
@@ -438,7 +440,7 @@ impl ObjectMeta {
             size,
             created_at,
             updated_at,
-            value_type,
+            object_type,
         }
     }
 
@@ -451,11 +453,11 @@ impl ObjectMeta {
             size: 0,
             created_at: 0,
             updated_at: 0,
-            value_type: Root::struct_tag().into(),
+            object_type: Root::struct_tag().into(),
         }
     }
 
-    pub fn genesis_meta(id: ObjectID, value_type: TypeTag) -> Self {
+    pub fn genesis_meta(id: ObjectID, object_type: TypeTag) -> Self {
         Self {
             id,
             owner: SYSTEM_OWNER_ADDRESS,
@@ -464,7 +466,7 @@ impl ObjectMeta {
             size: 0,
             created_at: 0,
             updated_at: 0,
-            value_type,
+            object_type,
         }
     }
 
@@ -521,7 +523,7 @@ impl ObjectMeta {
     }
 
     pub fn is_dynamic_field(&self) -> bool {
-        is_dynamic_field_type(&self.value_type)
+        is_dynamic_field_type(&self.object_type)
     }
 
     /// Exclude the DynamicField object
@@ -529,10 +531,29 @@ impl ObjectMeta {
         !self.is_dynamic_field()
     }
 
-    pub fn value_struct_tag(&self) -> &StructTag {
-        match &self.value_type {
+    pub fn object_struct_tag(&self) -> &StructTag {
+        match &self.object_type {
             TypeTag::Struct(struct_tag) => struct_tag,
-            _ => panic!("The ObjectState must be Struct:{}", self.value_type),
+            _ => panic!("The ObjectState must be Struct:{}", self.object_type),
+        }
+    }
+
+    pub fn match_type(&self, type_tag: &TypeTag) -> bool {
+        &self.object_type == type_tag
+    }
+
+    pub fn match_struct_type(&self, type_tag: &StructTag) -> bool {
+        match &self.object_type {
+            TypeTag::Struct(struct_tag) => struct_tag.as_ref() == type_tag,
+            _ => false,
+        }
+    }
+
+    pub fn match_dynamic_field_type(&self, name_type: TypeTag, value_type: TypeTag) -> bool {
+        if self.is_dynamic_field() {
+            self.match_struct_type(&construct_dynamic_field_struct_tag(name_type, value_type))
+        } else {
+            false
         }
     }
 
@@ -661,7 +682,7 @@ where
             size: self.size,
             created_at: self.created_at,
             updated_at: self.updated_at,
-            value_type: T::struct_tag().into(),
+            object_type: T::struct_tag().into(),
         }
     }
 
@@ -674,7 +695,7 @@ where
             size: self.size,
             created_at: self.created_at,
             updated_at: self.updated_at,
-            value_type: T::struct_tag().into(),
+            object_type: T::struct_tag().into(),
         };
         ObjectState::new(
             metadata,

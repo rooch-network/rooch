@@ -1,22 +1,19 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::jsonrpc_types::address::BitcoinAddressView;
 use crate::jsonrpc_types::btc::transaction::{hex_to_txid, TxidView};
 use crate::jsonrpc_types::{
-    BytesView, H256View, MoveStringView, ObjectIDVecView, RoochAddressView, StrView, StructTagView,
+    BytesView, H256View, IndexerObjectStateView, IndexerStateIDView, MoveStringView,
+    ObjectIDVecView, ObjectMetaView, RoochAddressView, StrView,
 };
 use anyhow::Result;
 use bitcoin::hashes::Hash;
 use bitcoin::Txid;
-
 use moveos_types::move_std::string::MoveString;
+use moveos_types::state::MoveState;
 use moveos_types::{moveos_std::object::ObjectID, state::MoveStructType};
-use rooch_types::address::RoochAddress;
 use rooch_types::bitcoin::ord;
-use rooch_types::bitcoin::ord::{
-    BitcoinInscriptionID, Inscription, InscriptionID, InscriptionState,
-};
+use rooch_types::bitcoin::ord::{BitcoinInscriptionID, Inscription, InscriptionID};
 use rooch_types::indexer::state::ObjectStateFilter;
 use rooch_types::into_address::IntoAddress;
 use schemars::JsonSchema;
@@ -40,8 +37,8 @@ impl From<BitcoinInscriptionIDView> for BitcoinInscriptionID {
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum InscriptionFilterView {
-    /// Query by owner, represent by bitcoin address
-    Owner(BitcoinAddressView),
+    /// Query by owner, support rooch address and bitcoin address
+    Owner(RoochAddressView),
     /// Query by inscription id, represent by bitcoin txid and index
     InscriptionId { txid: String, index: u32 },
     /// Query by object id.
@@ -51,14 +48,11 @@ pub enum InscriptionFilterView {
 }
 
 impl InscriptionFilterView {
-    pub fn into_global_state_filter(
-        filter: InscriptionFilterView,
-        resolve_address: RoochAddress,
-    ) -> Result<ObjectStateFilter> {
+    pub fn into_global_state_filter(filter: InscriptionFilterView) -> Result<ObjectStateFilter> {
         Ok(match filter {
-            InscriptionFilterView::Owner(_owner) => ObjectStateFilter::ObjectTypeWithOwner {
+            InscriptionFilterView::Owner(owner) => ObjectStateFilter::ObjectTypeWithOwner {
                 object_type: Inscription::struct_tag(),
-                owner: resolve_address,
+                owner: owner.0,
             },
             InscriptionFilterView::InscriptionId { txid, index } => {
                 let txid = hex_to_txid(txid.as_str())?;
@@ -85,7 +79,7 @@ pub struct InscriptionView {
     pub txid: H256View,
     pub bitcoin_txid: TxidView,
     pub index: u32,
-    pub offset: u64,
+    pub offset: StrView<u64>,
     pub sequence_number: u32,
     pub inscription_number: u32,
     pub is_curse: bool,
@@ -95,7 +89,7 @@ pub struct InscriptionView {
     pub metadata: BytesView,
     pub metaprotocol: Option<MoveStringView>,
     pub parents: ObjectIDVecView,
-    pub pointer: Option<u64>,
+    pub pointer: Option<StrView<u64>>,
 }
 
 impl From<Inscription> for InscriptionView {
@@ -104,7 +98,7 @@ impl From<Inscription> for InscriptionView {
             txid: inscription.txid.into(),
             bitcoin_txid: StrView(Txid::from_byte_array(inscription.txid.into_bytes())),
             index: inscription.index,
-            offset: inscription.offset,
+            offset: inscription.offset.into(),
             sequence_number: inscription.sequence_number,
             inscription_number: inscription.inscription_number,
             is_curse: inscription.is_curse,
@@ -114,45 +108,30 @@ impl From<Inscription> for InscriptionView {
             metadata: StrView(inscription.metadata),
             metaprotocol: Option::<MoveString>::from(inscription.metaprotocol).map(StrView),
             parents: inscription.parents.into(),
-            pointer: Option::<u64>::from(inscription.pointer),
+            pointer: Option::<u64>::from(inscription.pointer).map(StrView),
         }
     }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct InscriptionStateView {
-    pub object_id: ObjectID,
-    pub owner: RoochAddressView,
-    pub owner_bitcoin_address: Option<String>,
-    pub flag: u8,
+    #[serde(flatten)]
+    pub metadata: ObjectMetaView,
     pub value: InscriptionView,
-    pub object_type: StructTagView,
-    pub tx_order: u64,
-    pub state_index: u64,
-    pub created_at: u64,
-    pub updated_at: u64,
+    #[serde(flatten)]
+    pub indexer_id: IndexerStateIDView,
 }
 
-impl InscriptionStateView {
-    pub fn try_new_from_inscription_state(
-        inscription: InscriptionState,
-        network: u8,
-    ) -> Result<InscriptionStateView, anyhow::Error> {
-        let owner_bitcoin_address = match inscription.owner_bitcoin_address {
-            Some(baddress) => Some(baddress.format(network)?),
-            None => None,
-        };
+impl TryFrom<IndexerObjectStateView> for InscriptionStateView {
+    type Error = anyhow::Error;
+
+    fn try_from(state: IndexerObjectStateView) -> Result<Self, Self::Error> {
+        let inscription = Inscription::from_bytes(&state.value.0)?;
+        let inscription_view = InscriptionView::from(inscription);
         Ok(InscriptionStateView {
-            object_id: inscription.object_id,
-            owner: inscription.owner.into(),
-            owner_bitcoin_address,
-            flag: inscription.flag,
-            value: inscription.value.into(),
-            object_type: inscription.object_type.into(),
-            tx_order: inscription.tx_order,
-            state_index: inscription.state_index,
-            created_at: inscription.created_at,
-            updated_at: inscription.updated_at,
+            metadata: state.metadata,
+            value: inscription_view,
+            indexer_id: state.indexer_id,
         })
     }
 }

@@ -92,7 +92,7 @@ where
                         )
                         .with_message(format!(
                             "Invalid object type, object type in argument:{:?}, object type in store:{:?}",
-                            object_type, object.value_type()
+                            object_type, object.object_type()
                         )).finish(location.clone()));
                     }
                     if object.is_dynamic_field() {

@@ -5,7 +5,10 @@ use crate::jsonrpc_types::{
     AnnotatedMoveStructView, H256View, RoochAddressView, RoochOrBitcoinAddressView, StrView,
     StructTagView,
 };
-use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID, TransactionEvent};
+use moveos_types::moveos_std::{
+    event::{AnnotatedEvent, Event, EventID, TransactionEvent},
+    object::ObjectID,
+};
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -14,7 +17,7 @@ use serde::{Deserialize, Serialize};
 pub struct TransactionEventView {
     pub event_type: StructTagView,
     pub event_data: StrView<Vec<u8>>,
-    pub event_index: u64,
+    pub event_index: StrView<u64>,
     pub decoded_event_data: Option<AnnotatedMoveStructView>,
 }
 
@@ -23,28 +26,56 @@ impl From<TransactionEvent> for TransactionEventView {
         TransactionEventView {
             event_type: event.event_type.into(),
             event_data: StrView(event.event_data),
-            event_index: event.event_index,
+            event_index: event.event_index.into(),
             decoded_event_data: None,
+        }
+    }
+}
+
+#[derive(
+    Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize, JsonSchema,
+)]
+pub struct EventIDView {
+    /// each event handle corresponds to a unique event handle id. event handler id equal to guid.
+    pub event_handle_id: ObjectID,
+    /// For expansion: The number of messages that have been emitted to the path previously
+    pub event_seq: StrView<u64>,
+}
+
+impl From<EventID> for EventIDView {
+    fn from(event_id: EventID) -> Self {
+        EventIDView {
+            event_handle_id: event_id.event_handle_id,
+            event_seq: StrView(event_id.event_seq),
+        }
+    }
+}
+
+impl From<EventIDView> for EventID {
+    fn from(event_id: EventIDView) -> Self {
+        EventID {
+            event_handle_id: event_id.event_handle_id,
+            event_seq: event_id.event_seq.0,
         }
     }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct EventView {
-    pub event_id: EventID,
+    pub event_id: EventIDView,
     pub event_type: StructTagView,
     pub event_data: StrView<Vec<u8>>,
-    pub event_index: u64,
+    pub event_index: StrView<u64>,
     pub decoded_event_data: Option<AnnotatedMoveStructView>,
 }
 
 impl From<Event> for EventView {
     fn from(event: Event) -> Self {
         EventView {
-            event_id: event.event_id,
+            event_id: event.event_id.into(),
             event_type: event.event_type.into(),
             event_data: StrView(event.event_data),
-            event_index: event.event_index,
+            event_index: event.event_index.into(),
             decoded_event_data: None,
         }
     }
@@ -53,10 +84,10 @@ impl From<Event> for EventView {
 impl From<EventView> for Event {
     fn from(event: EventView) -> Self {
         Event {
-            event_id: event.event_id,
+            event_id: event.event_id.into(),
             event_type: event.event_type.into(),
             event_data: event.event_data.0,
-            event_index: event.event_index,
+            event_index: event.event_index.into(),
         }
     }
 }
@@ -64,37 +95,63 @@ impl From<EventView> for Event {
 impl From<AnnotatedEvent> for EventView {
     fn from(event: AnnotatedEvent) -> Self {
         EventView {
-            event_id: event.event.event_id,
+            event_id: event.event.event_id.into(),
             event_type: event.event.event_type.into(),
             event_data: StrView(event.event.event_data),
-            event_index: event.event.event_index,
+            event_index: event.event.event_index.into(),
             decoded_event_data: Some(event.decoded_event_data.into()),
+        }
+    }
+}
+
+#[derive(
+    Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize, JsonSchema,
+)]
+pub struct IndexerEventIDView {
+    pub tx_order: StrView<u64>,
+    pub event_index: StrView<u64>,
+}
+
+impl From<IndexerEventID> for IndexerEventIDView {
+    fn from(event_id: IndexerEventID) -> Self {
+        IndexerEventIDView {
+            tx_order: StrView(event_id.tx_order),
+            event_index: StrView(event_id.event_index),
+        }
+    }
+}
+
+impl From<IndexerEventIDView> for IndexerEventID {
+    fn from(event_id: IndexerEventIDView) -> Self {
+        IndexerEventID {
+            tx_order: event_id.tx_order.0,
+            event_index: event_id.event_index.0,
         }
     }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct IndexerEventView {
-    pub indexer_event_id: IndexerEventID,
-    pub event_id: EventID,
+    pub indexer_event_id: IndexerEventIDView,
+    pub event_id: EventIDView,
     pub event_type: StructTagView,
     pub event_data: StrView<Vec<u8>>,
     pub tx_hash: H256View,
     pub sender: RoochAddressView,
-    pub created_at: u64,
+    pub created_at: StrView<u64>,
     pub decoded_event_data: Option<AnnotatedMoveStructView>,
 }
 
 impl From<IndexerEvent> for IndexerEventView {
     fn from(event: IndexerEvent) -> Self {
         IndexerEventView {
-            indexer_event_id: event.indexer_event_id,
-            event_id: event.event_id,
+            indexer_event_id: event.indexer_event_id.into(),
+            event_id: event.event_id.into(),
             event_type: event.event_type.into(),
             event_data: StrView(event.event_data),
             tx_hash: event.tx_hash.into(),
             sender: event.sender.into(),
-            created_at: event.created_at,
+            created_at: event.created_at.into(),
 
             decoded_event_data: None,
         }
