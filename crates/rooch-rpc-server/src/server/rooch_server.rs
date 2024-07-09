@@ -249,7 +249,7 @@ impl RoochAPIServer for RoochServer {
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
         let next_cursor = data.last().map_or(cursor, |state_kv| {
-            Some(state_kv.key_hex.clone().to_string())
+            Some(state_kv.field_key.clone().to_string())
         });
 
         Ok(StatePageView {

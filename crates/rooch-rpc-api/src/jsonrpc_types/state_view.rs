@@ -34,22 +34,22 @@ pub type FieldKeyView = StrView<FieldKey>;
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct StateKVView {
-    pub key_hex: FieldKeyView,
+    pub field_key: FieldKeyView,
     pub state: ObjectStateView,
 }
 
 impl From<StateKV> for StateKVView {
     fn from(state: StateKV) -> Self {
         Self {
-            key_hex: state.0.into(),
+            field_key: state.0.into(),
             state: state.1.into(),
         }
     }
 }
 
 impl StateKVView {
-    pub fn new(key_hex: FieldKeyView, state: ObjectStateView) -> Self {
-        Self { key_hex, state }
+    pub fn new(field_key: FieldKeyView, state: ObjectStateView) -> Self {
+        Self { field_key, state }
     }
 }
 

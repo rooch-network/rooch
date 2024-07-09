@@ -2497,11 +2497,11 @@
       "StateKVView": {
         "type": "object",
         "required": [
-          "key_hex",
+          "field_key",
           "state"
         ],
         "properties": {
-          "key_hex": {
+          "field_key": {
             "$ref": "#/components/schemas/moveos_types::state::FieldKey"
           },
           "state": {

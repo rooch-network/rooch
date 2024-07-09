@@ -421,7 +421,7 @@ export interface StateChangeSetView {
   global_size: string
 }
 export interface StateKVView {
-  key_hex: string
+  field_key: string
   state: StateView
 }
 export interface StateOptions {
