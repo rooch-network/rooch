@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{TRANSACTION_PREFIX_NAME, TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME};
+use crate::{TRANSACTION_COLUMN_FAMILY_NAME, TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME};
 use anyhow::Result;
 use moveos_types::h256::H256;
 use raw_store::CodecKVStore;
@@ -12,14 +12,14 @@ derive_store!(
     LedgerTransactionStore,
     H256,
     LedgerTransaction,
-    TRANSACTION_PREFIX_NAME
+    TRANSACTION_COLUMN_FAMILY_NAME
 );
 
 derive_store!(
     TxSequenceInfoMappingStore,
     u64,
     H256,
-    TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME
+    TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME
 );
 
 pub trait TransactionStore {

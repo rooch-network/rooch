@@ -4,13 +4,14 @@
 use crate::actor::indexer::IndexerActor;
 use crate::actor::messages::{
     IndexerEventsMessage, IndexerStatesMessage, IndexerTransactionMessage,
-    QueryIndexerEventsMessage, QueryIndexerObjectStatesMessage, QueryIndexerTransactionsMessage,
-    UpdateIndexerMessage,
+    QueryIndexerEventsMessage, QueryIndexerObjectIdsMessage, QueryIndexerObjectStatesMessage,
+    QueryIndexerTransactionsMessage, UpdateIndexerMessage,
 };
 use crate::actor::reader_indexer::IndexerReaderActor;
 use anyhow::Result;
 use coerce::actor::ActorRef;
 use moveos_types::moveos_std::event::Event;
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::{ObjectState, StateChangeSet};
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
@@ -149,6 +150,24 @@ impl IndexerProxy {
     ) -> Result<Vec<IndexerObjectState>> {
         self.reader_actor
             .send(QueryIndexerObjectStatesMessage {
+                filter,
+                cursor,
+                limit,
+                descending_order,
+            })
+            .await?
+    }
+
+    pub async fn query_object_ids(
+        &self,
+        filter: ObjectStateFilter,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerStateID>,
+        limit: usize,
+        descending_order: bool,
+    ) -> Result<Vec<(ObjectID, IndexerStateID)>> {
+        self.reader_actor
+            .send(QueryIndexerObjectIdsMessage {
                 filter,
                 cursor,
                 limit,

@@ -23,6 +23,8 @@ hex = { workspace = true }
 parking_lot = { workspace = true }
 once_cell = { workspace = true }
 log = { workspace = true }
+prometheus = { workspace = true }
+tokio = { workspace = true }
 
 move-core-types = { workspace = true }
 move-resource-viewer = { workspace = true }

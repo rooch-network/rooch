@@ -3,9 +3,8 @@
 
 use crate::h256;
 use crate::move_std::string::MoveString;
-use crate::moveos_std::object::{self, ObjectID};
 use crate::moveos_std::object::{
-    AnnotatedObject, DynamicField, ObjectEntity, ObjectMeta, RawData, RawObject,
+    AnnotatedObject, DynamicField, ObjectEntity, ObjectID, ObjectMeta, RawData, RawObject,
 };
 use anyhow::{bail, ensure, Result};
 use core::str;
@@ -98,8 +97,8 @@ impl FieldKey {
     }
 
     pub fn from_hex_literal(hex: &str) -> Result<Self> {
-        let hex = hex.strip_prefix("0x").unwrap_or(hex);
-        Self::from_hex(hex)
+        //We use the AccountAddress::from_hex_literal for support the short hex format.
+        Ok(AccountAddress::from_hex_literal(hex)?.into())
     }
 
     pub fn to_hex(&self) -> String {
@@ -652,12 +651,12 @@ impl ObjectState {
         &self.metadata.id
     }
 
-    pub fn value_type(&self) -> &TypeTag {
-        &self.metadata.value_type
+    pub fn object_type(&self) -> &TypeTag {
+        &self.metadata.object_type
     }
 
-    pub fn value_struct_tag(&self) -> &StructTag {
-        self.metadata.value_struct_tag()
+    pub fn object_struct_tag(&self) -> &StructTag {
+        self.metadata.object_struct_tag()
     }
 
     pub fn flag(&self) -> u8 {
@@ -681,24 +680,16 @@ impl ObjectState {
     }
 
     pub fn match_type(&self, type_tag: &TypeTag) -> bool {
-        self.value_type() == type_tag
+        self.metadata.match_type(type_tag)
     }
 
     pub fn match_struct_type(&self, type_tag: &StructTag) -> bool {
-        match self.value_type() {
-            TypeTag::Struct(struct_tag) => struct_tag.as_ref() == type_tag,
-            _ => false,
-        }
+        self.metadata.match_struct_type(type_tag)
     }
 
     pub fn match_dynamic_field_type(&self, name_type: TypeTag, value_type: TypeTag) -> bool {
-        if self.is_dynamic_field() {
-            self.match_struct_type(&object::construct_dynamic_field_struct_tag(
-                name_type, value_type,
-            ))
-        } else {
-            false
-        }
+        self.metadata
+            .match_dynamic_field_type(name_type, value_type)
     }
 
     pub fn is_dynamic_field(&self) -> bool {
@@ -729,7 +720,7 @@ impl ObjectState {
     where
         T: MoveStructState,
     {
-        let val_type = self.value_type();
+        let val_type = self.object_type();
         match val_type {
             TypeTag::Struct(struct_tag) => {
                 ensure!(
@@ -776,7 +767,7 @@ impl ObjectState {
     }
 
     pub fn into_raw_object(self) -> Result<RawObject> {
-        let object_struct_tag = self.value_struct_tag().clone();
+        let object_struct_tag = self.object_struct_tag().clone();
         Ok(RawObject::new_with_object_meta(
             self.metadata,
             RawData {
@@ -795,7 +786,7 @@ impl ObjectState {
         annotator: &MoveValueAnnotator<T>,
     ) -> Result<AnnotatedState> {
         let decoded_value = annotator
-            .view_resource(self.value_struct_tag(), &self.value)
+            .view_resource(self.object_struct_tag(), &self.value)
             .map_err(|e| anyhow::anyhow!("Annotate the MoveValue error: {:?}", e))?;
         Ok(AnnotatedState::new(self, decoded_value))
     }

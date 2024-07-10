@@ -20,6 +20,7 @@ serde = { workspace = true }
 serde_bytes = { workspace = true }
 hex = { workspace = true }
 parking_lot = { workspace = true }
+tap = { workspace = true }
 
 rust-rocksdb = { workspace = true, features = ["lz4", "jemalloc"] }
 prometheus = { workspace = true }

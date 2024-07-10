@@ -60,20 +60,31 @@ module moveos_std::module_store {
     }
 
     // ==== Module functions ====
+    
+    public fun package_obj_id(package_id: address): ObjectID{
+        let module_store_id = module_store_id();
+        //Package object directly use the package address as the field key, do not need to hash
+        object::child_id(module_store_id, package_id)
+    }
 
-    public fun exists_package(module_object: &Object<ModuleStore>, package_id: address): bool {
-        let package_obj_id = object::custom_child_object_id(object::id(module_object), package_id);
-        object::exists_object_with_type<Package>(package_obj_id)
+    public fun exists_package(package_id: address): bool {
+        let package_obj_id = package_obj_id(package_id);
+        exists_package_obj(package_obj_id)
+    }
+
+    fun exists_package_obj(package_obj_id: ObjectID): bool{
+        object::exists_object(package_obj_id)
     }
 
     /// Check if module exists
     /// package_id: the address of the package
     /// name: the name of the module
-    public fun exists_module(module_object: &Object<ModuleStore>, package_id: address, name: String): bool {
-        if (!exists_package(module_object, package_id)) {
+    public fun exists_module(package_id: address, name: String): bool {
+        let package_obj_id = package_obj_id(package_id);
+        if (!exists_package_obj(package_obj_id)) {
             return false
         };
-        let package = borrow_package(module_object, package_id);
+        let package = borrow_package(package_obj_id);
         object::contains_field(package, name)
     }
 
@@ -114,14 +125,17 @@ module moveos_std::module_store {
         let i = 0;
         let len = vector::length(&modules);
         let (module_names, module_names_with_init_fn, indices) = move_module::sort_and_verify_modules(&modules, package_id);
-
+        let package_obj_id = package_obj_id(package_id);
         let is_upgrade = true;
-        if (!exists_package(module_object, package_id)) {
-            // TODO: should we transfer the Package object to tx sender or package id address?
-            create_package(module_object, package_id, tx_context::sender());
+        if (!exists_package_obj(package_obj_id)) {
+            //Note: the owner of the package is the package_id itself, not the tx sender.
+            //Now, the package_id should be the same as the sender,
+            //In the future, we will support publishing modules via DAO.
+            let owner = package_id;
+            create_package(module_object, package_id, owner);
             is_upgrade = false;
         };
-        let package = borrow_mut_package(module_object, package_id);
+        let package = borrow_mut_package(package_obj_id);
 
         while (i < len) {
             let module_name = vector::pop_back(&mut module_names);
@@ -146,17 +160,16 @@ module moveos_std::module_store {
     }
 
     fun create_package(module_object: &mut Object<ModuleStore>, package_id: address, owner: address) {
-        let package = object::add_object_field_with_id(module_object, package_id, Package {});
+        //We directly use the package_id as the field key, do not need to hash
+        let package = object::new_with_parent_and_key(module_object, package_id, Package {});
         object::transfer_extend(package, owner);   
     }
 
-    fun borrow_package(module_store: &Object<ModuleStore>, package_id: address): &Object<Package> {
-        let package_obj_id = object::custom_child_object_id(object::id(module_store), package_id);
+    fun borrow_package(package_obj_id: ObjectID): &Object<Package> {
         object::borrow_object<Package>(package_obj_id)
     }
 
-    fun borrow_mut_package(module_store: &mut Object<ModuleStore>, package_id: address): &mut Object<Package> {
-        let package_obj_id = object::custom_child_object_id(object::id(module_store), package_id);
+    fun borrow_mut_package(package_obj_id: ObjectID): &mut Object<Package> {
         object::borrow_mut_object_extend<Package>(package_obj_id)
     }
 
@@ -241,6 +254,7 @@ module moveos_std::module_store {
         let m: MoveModule = move_module::new(module_bytes);
 
         Self::publish_modules(module_object, account, vector::singleton(m));
+        assert!(exists_module(@0x42, std::string::utf8(b"counter")), 1);
     }
 
     #[test(sender=@0x42)]
@@ -301,7 +315,7 @@ module moveos_std::module_store {
         publish_modules(module_object, account, vector::singleton(m));
         publish_modules(module_object, account, vector::singleton(m));
 
-        let package_obj_id = object::custom_child_object_id(object::id(module_object), signer::address_of(account));
+        let package_obj_id = package_obj_id(signer::address_of(account));
         let package = object::take_object_extend<Package>(package_obj_id);
         freeze_package(package);
         publish_modules(module_object, account, vector::singleton(m));

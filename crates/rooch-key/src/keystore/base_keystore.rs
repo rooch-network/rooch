@@ -56,6 +56,18 @@ impl AccountKeystore for BaseKeyStore {
         Ok(())
     }
 
+    fn add_addresses_to_mnemonic_data(
+        &mut self,
+        address: RoochAddress,
+    ) -> Result<(), anyhow::Error> {
+        ensure!(self.mnemonic.is_some(), "Mnemonic data do not exist");
+        let mut mnemonic_unwrapped = self.mnemonic.clone().unwrap();
+        ensure!(!mnemonic_unwrapped.addresses.is_empty(), "Address is empty");
+        mnemonic_unwrapped.addresses.push(address);
+        self.mnemonic = Some(mnemonic_unwrapped);
+        Ok(())
+    }
+
     fn get_accounts(&self, password: Option<String>) -> Result<Vec<LocalAccount>, anyhow::Error> {
         let mut accounts = BTreeMap::new();
         for (address, encryption) in &self.keys {
@@ -127,7 +139,7 @@ impl AccountKeystore for BaseKeyStore {
         Ok(RoochTransaction::new(msg, auth))
     }
 
-    fn add_address_encryption_data(
+    fn add_address_encryption_data_to_keys(
         &mut self,
         address: RoochAddress,
         encryption: EncryptionData,

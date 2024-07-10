@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{EVENT_HANDLE_PREFIX_NAME, EVENT_PREFIX_NAME};
+use crate::{EVENT_COLUMN_FAMILY_NAME, EVENT_HANDLE_COLUMN_FAMILY_NAME};
 use anyhow::{anyhow, Result};
 use move_core_types::language_storage::StructTag;
 use moveos_types::moveos_std::event::{Event, EventHandle, EventID, TransactionEvent};
@@ -10,13 +10,18 @@ use raw_store::{derive_store, CodecKVStore, StoreInstance};
 use std::cmp::min;
 use std::collections::{HashMap, HashSet};
 
-derive_store!(EventDBBaseStore, (ObjectID, u64), Event, EVENT_PREFIX_NAME);
+derive_store!(
+    EventDBBaseStore,
+    (ObjectID, u64),
+    Event,
+    EVENT_COLUMN_FAMILY_NAME
+);
 
 derive_store!(
     EventHandleDBStore,
     ObjectID,
     EventHandle,
-    EVENT_HANDLE_PREFIX_NAME
+    EVENT_HANDLE_COLUMN_FAMILY_NAME
 );
 
 pub trait EventStore {

@@ -19,14 +19,14 @@ pub trait KVStore: Send + Sync {
 }
 
 pub trait DBStore: Send + Sync {
-    fn get(&self, prefix_name: &str, key: &[u8]) -> Result<Option<Vec<u8>>>;
-    fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
-    fn contains_key(&self, prefix_name: &str, key: &[u8]) -> Result<bool>;
-    fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()>;
-    fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()>;
+    fn get(&self, cf_name: &str, key: &[u8]) -> Result<Option<Vec<u8>>>;
+    fn put(&self, cf_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
+    fn contains_key(&self, cf_name: &str, key: &[u8]) -> Result<bool>;
+    fn remove(&self, cf_name: &str, key: Vec<u8>) -> Result<()>;
+    fn write_batch(&self, cf_name: &str, batch: WriteBatch) -> Result<()>;
     fn get_len(&self) -> Result<u64>;
     fn keys(&self) -> Result<Vec<Vec<u8>>>;
-    fn put_sync(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
-    fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()>;
-    fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>>;
+    fn put_sync(&self, cf_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
+    fn write_batch_sync(&self, cf_name: &str, batch: WriteBatch) -> Result<()>;
+    fn multi_get(&self, cf_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>>;
 }

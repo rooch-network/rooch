@@ -56,6 +56,12 @@ impl From<AccountAddress> for RoochAddressView {
     }
 }
 
+impl From<RoochAddressView> for AccountAddress {
+    fn from(value: RoochAddressView) -> Self {
+        value.0.into()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct RoochOrBitcoinAddress {
     pub rooch_address: RoochAddress,

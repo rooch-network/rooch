@@ -3,6 +3,7 @@
 
 use crate::jsonrpc_types::{BytesView, StrView};
 use anyhow::Result;
+use move_binary_format::file_format::Ability;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
@@ -90,6 +91,38 @@ impl FromStr for ObjectIDVecView {
 
 impl From<ObjectIDVecView> for Vec<ObjectID> {
     fn from(value: ObjectIDVecView) -> Self {
+        value.0
+    }
+}
+
+pub type AbilityView = StrView<Ability>;
+
+impl std::fmt::Display for AbilityView {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.0 {
+            Ability::Copy => write!(f, "copy"),
+            Ability::Drop => write!(f, "drop"),
+            Ability::Store => write!(f, "store"),
+            Ability::Key => write!(f, "key"),
+        }
+    }
+}
+
+impl FromStr for AbilityView {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "copy" => Ok(StrView(Ability::Copy)),
+            "drop" => Ok(StrView(Ability::Drop)),
+            "store" => Ok(StrView(Ability::Store)),
+            "key" => Ok(StrView(Ability::Key)),
+            _ => Err(anyhow::anyhow!("Invalid ability: {}", s)),
+        }
+    }
+}
+
+impl From<AbilityView> for Ability {
+    fn from(value: AbilityView) -> Self {
         value.0
     }
 }
@@ -345,7 +378,7 @@ impl From<MoveAction> for MoveActionTypeView {
 
 impl std::fmt::Display for StrView<ModuleId> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", &self.0)
+        write!(f, "{}", &self.0.short_str_lossless())
     }
 }
 

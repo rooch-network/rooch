@@ -91,6 +91,20 @@ module std::vector {
         pragma intrinsic = true;
     }
 
+    public fun append<Element>(lhs: &mut vector<Element>, other: vector<Element>) {
+        native_append(lhs, &mut other);
+        destroy_empty(other);
+    }
+    spec append {
+        pragma intrinsic = true;
+    }
+    spec is_empty {
+        pragma intrinsic = true;
+    }
+
+    native fun native_append<Element>(lhs: &mut vector<Element>, other: &mut vector<Element>);
+
+    /*
     /// Pushes all of the elements of the `other` vector into the `lhs` vector.
     public fun append<Element>(lhs: &mut vector<Element>, other: vector<Element>) {
         reverse(&mut other);
@@ -102,6 +116,7 @@ module std::vector {
     spec is_empty {
         pragma intrinsic = true;
     }
+    */
 
     /// Pushes all of the elements of the `other` vector into the `lhs` vector.
     public fun reverse_append<Element>(lhs: &mut vector<Element>, other: vector<Element>) {

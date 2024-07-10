@@ -202,7 +202,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         );
     }
 
-    let genesis = RoochGenesis::load_or_init(network, &rooch_db)?;
+    let genesis = RoochGenesis::load_or_init(network.clone(), &rooch_db)?;
 
     let root = match rooch_db.latest_root()? {
         Some(root) => root,
@@ -282,6 +282,8 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let processor_proxy = PipelineProcessorProxy::new(processor.into());
 
     let rpc_service = RpcService::new(
+        network.chain_id.id,
+        network.genesis_config.bitcoin_network,
         executor_proxy.clone(),
         sequencer_proxy,
         indexer_proxy,
@@ -350,8 +352,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         rpc_service.clone(),
         aggregate_service.clone(),
     ))?;
-    rpc_module_builder
-        .register_module(BtcServer::new(rpc_service.clone(), aggregate_service.clone()).await?)?;
+    rpc_module_builder.register_module(BtcServer::new(rpc_service.clone()).await?)?;
     rpc_module_builder
         .module
         .register_method("rpc.discover", move |_, _, _| {

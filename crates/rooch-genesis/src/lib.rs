@@ -208,9 +208,9 @@ impl RoochGenesis {
         genesis_moveos_tx.ctx.add(gas_config.clone())?;
 
         let vm_config = MoveOSConfig::default();
-        let temp_dir = moveos_config::temp_dir();
+        let (moveos_store, _temp_dir) = MoveOSStore::mock_moveos_store()?;
         let moveos = MoveOS::new(
-            MoveOSStore::new(temp_dir.path())?,
+            moveos_store,
             gas_parameter.all_natives(),
             vm_config,
             vec![],
@@ -475,7 +475,8 @@ mod tests {
         );
 
         let opt = RoochOpt::new_with_temp_store().expect("create rooch opt failed");
-        let rooch_db = RoochDB::init(&opt.store_config()).expect("init rooch db failed");
+        let rooch_db = RoochDB::init_with_mock_metrics_for_test(&opt.store_config())
+            .expect("init rooch db failed");
 
         let root = genesis.init_genesis(&rooch_db).unwrap();
 
@@ -552,8 +553,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_builtin_genesis_init() {
+    #[tokio::test]
+    async fn test_builtin_genesis_init() {
         let _ = tracing_subscriber::fmt::try_init();
         {
             let network = BuiltinChainID::Local.into();
@@ -577,8 +578,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_custom_genesis_init() {
+    #[tokio::test]
+    async fn test_custom_genesis_init() {
         let network = RoochNetwork::new(100.into(), BuiltinChainID::Local.genesis_config().clone());
         let genesis = RoochGenesis::build(network.clone()).unwrap();
         genesis_init_test_case(network, genesis);

@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{CONFIG_GENESIS_PREFIX_NAME, CONFIG_STARTUP_INFO_PREFIX_NAME};
+use crate::{CONFIG_GENESIS_COLUMN_FAMILY_NAME, CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME};
 use anyhow::Result;
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::startup_info::StartupInfo;
@@ -15,13 +15,13 @@ derive_store!(
     StartupInfoStore,
     String,
     StartupInfo,
-    CONFIG_STARTUP_INFO_PREFIX_NAME
+    CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME
 );
 derive_store!(
     GenesisStore,
     String,
     GenesisInfo,
-    CONFIG_GENESIS_PREFIX_NAME
+    CONFIG_GENESIS_COLUMN_FAMILY_NAME
 );
 
 pub trait ConfigStore {

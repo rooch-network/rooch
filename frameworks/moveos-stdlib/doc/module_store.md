@@ -14,6 +14,7 @@
 -  [Function `init_module_store`](#0x2_module_store_init_module_store)
 -  [Function `borrow_module_store`](#0x2_module_store_borrow_module_store)
 -  [Function `borrow_mut_module_store`](#0x2_module_store_borrow_mut_module_store)
+-  [Function `package_obj_id`](#0x2_module_store_package_obj_id)
 -  [Function `exists_package`](#0x2_module_store_exists_package)
 -  [Function `exists_module`](#0x2_module_store_exists_module)
 -  [Function `publish_modules`](#0x2_module_store_publish_modules)
@@ -136,13 +137,24 @@ Create a new module object space
 
 
 
+<a name="0x2_module_store_package_obj_id"></a>
+
+## Function `package_obj_id`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_package_obj_id">package_obj_id</a>(package_id: <b>address</b>): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
+</code></pre>
+
+
+
 <a name="0x2_module_store_exists_package"></a>
 
 ## Function `exists_package`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_exists_package">exists_package</a>(module_object: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="module_store.md#0x2_module_store_ModuleStore">module_store::ModuleStore</a>&gt;, package_id: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_exists_package">exists_package</a>(package_id: <b>address</b>): bool
 </code></pre>
 
 
@@ -156,7 +168,7 @@ package_id: the address of the package
 name: the name of the module
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_exists_module">exists_module</a>(module_object: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="module_store.md#0x2_module_store_ModuleStore">module_store::ModuleStore</a>&gt;, package_id: <b>address</b>, name: <a href="_String">string::String</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_exists_module">exists_module</a>(package_id: <b>address</b>, name: <a href="_String">string::String</a>): bool
 </code></pre>
 
 

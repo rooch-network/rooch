@@ -27,6 +27,8 @@ walkdir = { workspace = true }
 once_cell = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+tokio = { workspace = true }
+prometheus = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }
@@ -50,6 +52,7 @@ moveos = { workspace = true }
 moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }
 moveos-config = { workspace = true }
+raw-store = { workspace = true }
 
 rooch-types ={ workspace = true }
 rooch-framework = { workspace = true }

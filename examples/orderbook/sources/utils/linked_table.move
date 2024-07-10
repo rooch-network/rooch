@@ -34,7 +34,7 @@ module orderbook::linked_table {
 
     /// Creates a new, empty table
     public fun new<K: copy + drop + store, V: store>(): Object<LinkedTable<K, V>> {
-        object::new_named_object(
+        object::new(
             LinkedTable {
                 size: 0,
                 head: option::none(),

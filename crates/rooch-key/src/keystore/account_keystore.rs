@@ -25,7 +25,7 @@ pub trait AccountKeystore {
         let result =
             generate_new_key_pair(mnemonic_phrase, derivation_path, word_length, password)?;
         let new_address = result.address;
-        self.add_address_encryption_data(
+        self.add_address_encryption_data_to_keys(
             new_address,
             result.key_pair_data.private_key_encryption.clone(),
         )?;
@@ -39,6 +39,11 @@ pub trait AccountKeystore {
 
     fn init_mnemonic_data(&mut self, mnemonic_data: MnemonicData) -> Result<(), anyhow::Error>;
 
+    fn add_addresses_to_mnemonic_data(
+        &mut self,
+        address: RoochAddress,
+    ) -> Result<(), anyhow::Error>;
+
     fn get_mnemonic(&self, password: Option<String>) -> Result<MnemonicResult, anyhow::Error>;
 
     fn generate_and_add_new_key(
@@ -49,7 +54,6 @@ pub trait AccountKeystore {
         let mnemonic = self.get_mnemonic(password.clone())?;
         let account_index = mnemonic.mnemonic_data.addresses.len() as u32;
         let derivation_path = generate_derivation_path(account_index)?;
-
         let result = generate_new_key_pair(
             Some(mnemonic.mnemonic_phrase),
             derivation_path,
@@ -57,16 +61,17 @@ pub trait AccountKeystore {
             password,
         )?;
         let new_address = result.address;
-        self.add_address_encryption_data(
+        self.add_address_encryption_data_to_keys(
             new_address,
             result.key_pair_data.private_key_encryption.clone(),
         )?;
+        self.add_addresses_to_mnemonic_data(new_address)?;
         Ok(result)
     }
 
     fn get_accounts(&self, password: Option<String>) -> Result<Vec<LocalAccount>, anyhow::Error>;
 
-    fn add_address_encryption_data(
+    fn add_address_encryption_data_to_keys(
         &mut self,
         address: RoochAddress,
         encryption: EncryptionData,

@@ -23,6 +23,7 @@ use moveos_types::state::{FieldKey, ObjectState};
 use moveos_types::state_resolver::{StateKV, StatelessResolver};
 use moveos_types::transaction::{TransactionExecutionInfo, TransactionOutput};
 use once_cell::sync::Lazy;
+use raw_store::metrics::DBMetrics;
 use raw_store::rocks::RocksDB;
 use raw_store::{ColumnFamilyName, StoreInstance};
 use smt::NodeReader;
@@ -37,24 +38,25 @@ pub mod state_store;
 mod tests;
 pub mod transaction_store;
 
-// pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
-pub const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
-pub const TRANSACTION_EXECUTION_INFO_PREFIX_NAME: ColumnFamilyName = "transaction_execution_info";
-pub const EVENT_PREFIX_NAME: ColumnFamilyName = "event";
-pub const EVENT_HANDLE_PREFIX_NAME: ColumnFamilyName = "event_handle";
-pub const CONFIG_STARTUP_INFO_PREFIX_NAME: ColumnFamilyName = "config_startup_info";
-pub const CONFIG_GENESIS_PREFIX_NAME: ColumnFamilyName = "config_genesis";
+// pub const DEFAULT_COLUMN_FAMILY_NAME: ColumnFamilyName = "default";
+pub const STATE_NODE_COLUMN_FAMILY_NAME: ColumnFamilyName = "state_node";
+pub const TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME: ColumnFamilyName =
+    "transaction_execution_info";
+pub const EVENT_COLUMN_FAMILY_NAME: ColumnFamilyName = "event";
+pub const EVENT_HANDLE_COLUMN_FAMILY_NAME: ColumnFamilyName = "event_handle";
+pub const CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME: ColumnFamilyName = "config_startup_info";
+pub const CONFIG_GENESIS_COLUMN_FAMILY_NAME: ColumnFamilyName = "config_genesis";
 
-/// db store use prefix_name vec to init
-/// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
-static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
+/// db store use cf_name vec to init
+/// Please note that adding a column family needs to be added in vec simultaneously, remember！！
+static VEC_COLUMN_FAMILY_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     vec![
-        STATE_NODE_PREFIX_NAME,
-        TRANSACTION_EXECUTION_INFO_PREFIX_NAME,
-        EVENT_PREFIX_NAME,
-        EVENT_HANDLE_PREFIX_NAME,
-        CONFIG_STARTUP_INFO_PREFIX_NAME,
-        CONFIG_GENESIS_PREFIX_NAME,
+        STATE_NODE_COLUMN_FAMILY_NAME,
+        TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME,
+        EVENT_COLUMN_FAMILY_NAME,
+        EVENT_HANDLE_COLUMN_FAMILY_NAME,
+        CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME,
+        CONFIG_GENESIS_COLUMN_FAMILY_NAME,
     ]
 });
 
@@ -63,7 +65,7 @@ pub struct StoreMeta {}
 
 impl StoreMeta {
     pub fn get_column_family_names() -> &'static [ColumnFamilyName] {
-        &VEC_PREFIX_NAME
+        &VEC_COLUMN_FAMILY_NAME
     }
 }
 
@@ -82,8 +84,19 @@ impl MoveOSStore {
             db_path,
             StoreMeta::get_column_family_names().to_vec(),
             RocksdbConfig::default(),
-            None,
         )?);
+        Self::new_with_instance(instance)
+    }
+
+    pub fn new_with_metrics(db_path: &Path, db_metrics: Arc<DBMetrics>) -> Result<Self> {
+        let instance = StoreInstance::new_db_instance_with_metrics(
+            RocksDB::new(
+                db_path,
+                StoreMeta::get_column_family_names().to_vec(),
+                RocksdbConfig::default(),
+            )?,
+            db_metrics,
+        );
         Self::new_with_instance(instance)
     }
 
@@ -102,8 +115,14 @@ impl MoveOSStore {
 
     pub fn mock_moveos_store() -> Result<(Self, DataDirPath)> {
         let tmpdir = moveos_config::temp_dir();
+        let db_registry = prometheus::Registry::new();
+        let db_metrics = DBMetrics::new(&db_registry);
+
         //The testcases should hold the tmpdir to prevent the tmpdir from being deleted.
-        Ok((Self::new(tmpdir.path())?, tmpdir))
+        Ok((
+            Self::new_with_metrics(tmpdir.path(), Arc::new(db_metrics))?,
+            tmpdir,
+        ))
     }
 
     pub fn get_event_store(&self) -> &EventDBStore {

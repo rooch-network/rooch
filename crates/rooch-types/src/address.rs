@@ -43,6 +43,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::serde_as;
 use sha3::{Digest, Sha3_256};
 use std::fmt;
+use std::ops::Deref;
 use std::str::FromStr;
 
 /// The address type that Rooch supports
@@ -221,6 +222,10 @@ impl RoochAddress {
     /// RoochAddress length in hex string length: 0x + 64 data
     pub const LENGTH_HEX: usize = 66;
 
+    pub fn is_vm_or_system_reserved_address(&self) -> bool {
+        moveos_types::addresses::is_vm_or_system_reserved_address((*self).into())
+    }
+
     pub fn from_bech32(bech32: &str) -> Result<Self> {
         let (hrp, data) = bech32::decode(bech32)?;
         anyhow::ensure!(hrp == *ROOCH_HRP, "invalid rooch hrp");
@@ -275,6 +280,12 @@ impl RoochAddress {
 
     pub fn to_hex(&self) -> String {
         format!("{:x}", self.0)
+    }
+}
+
+impl std::cmp::PartialEq<AccountAddress> for RoochAddress {
+    fn eq(&self, other: &AccountAddress) -> bool {
+        &self.0 .0 == other.deref()
     }
 }
 
@@ -994,7 +1005,7 @@ mod test {
 
         let bytes = bcs::to_bytes(&rooch_address).unwrap();
         assert!(bytes.len() == 32);
-        let rooch_address_from_bytes = bcs::from_bytes(&bytes).unwrap();
+        let rooch_address_from_bytes: RoochAddress = bcs::from_bytes(&bytes).unwrap();
         assert_eq!(rooch_address, rooch_address_from_bytes);
     }
 

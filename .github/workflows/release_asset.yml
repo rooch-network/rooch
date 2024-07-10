@@ -16,6 +16,11 @@ jobs:
           - ubuntu-22.04
           - macos-latest
           - windows-2022
+        include:
+          - platform: macos-latest
+            architecture: intel
+          - platform: macos-latest
+            architecture: arm64
     runs-on: ${{matrix.platform}}
     steps:
       - name: Checkout code

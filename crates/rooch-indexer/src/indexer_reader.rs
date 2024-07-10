@@ -17,18 +17,20 @@ use diesel::{
     r2d2::ConnectionManager, Connection, ExpressionMethods, QueryDsl, RunQueryDsl, SqliteConnection,
 };
 use move_core_types::language_storage::StructTag;
+use moveos_types::moveos_std::object::ObjectID;
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{IndexerObjectState, IndexerStateID, ObjectStateFilter};
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::path::PathBuf;
+use std::sync::{Arc, RwLock};
 
 pub const TX_ORDER_STR: &str = "tx_order";
 pub const TX_HASH_STR: &str = "tx_hash";
 pub const TX_SENDER_STR: &str = "sender";
 pub const CREATED_AT_STR: &str = "created_at";
-pub const OBJECT_ID_STR: &str = "object_id";
+pub const OBJECT_ID_STR: &str = "id";
 
 pub const TRANSACTION_ORIGINAL_ADDRESS_STR: &str = "multichain_original_address";
 
@@ -37,7 +39,7 @@ pub const EVENT_INDEX_STR: &str = "event_index";
 pub const EVENT_SEQ_STR: &str = "event_seq";
 pub const EVENT_TYPE_STR: &str = "event_type";
 
-pub const STATE_OBJECT_ID_STR: &str = "object_id";
+pub const STATE_OBJECT_ID_STR: &str = "id";
 pub const STATE_INDEX_STR: &str = "state_index";
 pub const STATE_OBJECT_TYPE_STR: &str = "object_type";
 pub const STATE_OWNER_STR: &str = "owner";
@@ -54,10 +56,12 @@ impl InnerIndexerReader {
     ) -> Result<Self> {
         let manager = ConnectionManager::<SqliteConnection>::new(db_url);
 
+        let locker = Arc::new(RwLock::new(0));
         let connection_config = SqliteConnectionConfig {
             read_only: true,
             enable_wal: true,
             busy_timeout: DEFAULT_BUSY_TIMEOUT,
+            locker,
         };
 
         let pool = diesel::r2d2::Pool::builder()
@@ -329,13 +333,13 @@ impl IndexerReader {
         Ok(result)
     }
 
-    pub fn query_object_states_with_filter(
+    fn query_stored_states_with_filter(
         &self,
         filter: ObjectStateFilter,
         cursor: Option<IndexerStateID>,
         limit: usize,
         descending_order: bool,
-    ) -> IndexerResult<Vec<IndexerObjectState>> {
+    ) -> IndexerResult<Vec<StoredObjectState>> {
         let (tx_order, state_index) = if let Some(cursor) = cursor {
             let IndexerStateID {
                 tx_order,
@@ -413,13 +417,44 @@ impl IndexerReader {
         let stored_states = self
             .get_inner_indexer_reader(INDEXER_OBJECT_STATES_TABLE_NAME)?
             .run_query(|conn| diesel::sql_query(query).load::<StoredObjectState>(conn))?;
+        Ok(stored_states)
+    }
 
+    pub fn query_object_states_with_filter(
+        &self,
+        filter: ObjectStateFilter,
+        cursor: Option<IndexerStateID>,
+        limit: usize,
+        descending_order: bool,
+    ) -> IndexerResult<Vec<IndexerObjectState>> {
+        let stored_states =
+            self.query_stored_states_with_filter(filter, cursor, limit, descending_order)?;
         let result = stored_states
             .into_iter()
-            .map(|v| v.try_into_indexer_global_state())
+            .map(|v| v.try_parse_indexer_object_state())
             .collect::<Result<Vec<_>>>()
             .map_err(|e| {
                 IndexerError::SQLiteReadError(format!("Cast indexer object states failed: {:?}", e))
+            })?;
+
+        Ok(result)
+    }
+
+    pub fn query_object_ids_with_filter(
+        &self,
+        filter: ObjectStateFilter,
+        cursor: Option<IndexerStateID>,
+        limit: usize,
+        descending_order: bool,
+    ) -> IndexerResult<Vec<(ObjectID, IndexerStateID)>> {
+        let stored_states =
+            self.query_stored_states_with_filter(filter, cursor, limit, descending_order)?;
+        let result = stored_states
+            .into_iter()
+            .map(|v| v.try_parse_id())
+            .collect::<Result<Vec<_>>>()
+            .map_err(|e| {
+                IndexerError::SQLiteReadError(format!("Cast indexer object ids failed: {:?}", e))
             })?;
 
         Ok(result)
