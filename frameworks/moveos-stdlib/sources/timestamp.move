@@ -7,7 +7,7 @@
 /// * L1 block: update the timestamp via L1s block header timestamp
 /// * L2 transactions: update the timestamp via L2 transaction's timestamp 
 module moveos_std::timestamp {
-    use moveos_std::object::{update_global_time, try_update_global_time_internal, Timestamp};
+    
     use moveos_std::object;
     use moveos_std::core_addresses;
     use moveos_std::signer;
@@ -19,6 +19,21 @@ module moveos_std::timestamp {
     const ErrorInvalidTimestamp: u64 = 1;
     const ErrorNotGenesisAddress: u64 = 2;
 
+
+    /// A object holding the current Unix time in milliseconds
+    /// Timestamp is initialized before genesis, so we do not need to initialize it in the genesis module. 
+    struct Timestamp has key {
+        milliseconds: u64,
+    }
+
+    /// Updates the global clock time, if the new time is smaller than the current time, aborts.
+    public(friend) fun update_global_time(timestamp_milliseconds: u64) {
+        let current_timestamp = timestamp_mut();
+        let now = current_timestamp.milliseconds;
+        assert!(now <= timestamp_milliseconds, ErrorInvalidTimestamp);
+        current_timestamp.milliseconds = timestamp_milliseconds;
+    }
+
     /// Tries to update the global clock time, if the new time is smaller than the current time, ignores the update, and returns false.
     /// Only the framework genesis account can update the global clock time.
     public fun try_update_global_time(genesis_account: &signer, timestamp_milliseconds: u64) : bool {
@@ -27,26 +42,45 @@ module moveos_std::timestamp {
         try_update_global_time_internal(timestamp_milliseconds)
     }
 
+    fun try_update_global_time_internal(timestamp_milliseconds: u64) : bool {
+        let current_timestamp = timestamp_mut();
+        let now = current_timestamp.milliseconds;
+        if(now <= timestamp_milliseconds) {
+            current_timestamp.milliseconds = timestamp_milliseconds;
+            true
+        }else{
+            false
+        }
+    }
+
+    fun timestamp_mut(): &mut Timestamp {
+        let object_id = object::named_object_id<Timestamp>();
+        let obj = object::borrow_mut_object_extend<Timestamp>(object_id);
+        object::borrow_mut(obj)
+    }
+
     public fun timestamp(): &Timestamp {
-        object::timestamp()
+        let object_id = object::named_object_id<Timestamp>();
+        let obj = object::borrow_object<Timestamp>(object_id);
+        object::borrow(obj)
     }
 
     public fun milliseconds(self: &Timestamp): u64 {
-        object::milliseconds(self)
+        self.milliseconds
     }
 
     public fun seconds(self: &Timestamp): u64 {
-        object::seconds(self)
+        self.milliseconds / MILLI_CONVERSION_FACTOR
     }
 
     /// Gets the current time in milliseconds.
     public fun now_milliseconds(): u64 {
-        object::now_milliseconds()
+        milliseconds(timestamp())
     }
 
     /// Gets the current time in seconds.
     public fun now_seconds(): u64 {
-        object::now_seconds()
+        now_milliseconds() / MILLI_CONVERSION_FACTOR
     }
 
     public fun seconds_to_milliseconds(seconds: u64): u64 {

@@ -3,7 +3,6 @@
 
 module moveos_std::genesis {
     use std::option;
-    use moveos_std::object;
     use moveos_std::module_store;
     use moveos_std::features;
     use moveos_std::tx_context;
@@ -18,11 +17,10 @@ module moveos_std::genesis {
     }
 
     fun init(){
-        let genesis_account = moveos_std::signer::module_signer<GenesisContext>();
+        let _genesis_account = moveos_std::signer::module_signer<GenesisContext>();
         let genesis_context_option = tx_context::get_attribute<GenesisContext>();
         assert!(option::is_some(&genesis_context_option), ErrorGenesisInit);
-        let genesis_context = option::extract(&mut genesis_context_option);
-        object::genesis_init(&genesis_account, genesis_context.timestamp);
+        let _genesis_context = option::extract(&mut genesis_context_option);
 
         module_store::init_module_store();
         features::init_feature_store();

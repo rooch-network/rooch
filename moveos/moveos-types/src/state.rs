@@ -6,6 +6,7 @@ use crate::move_std::string::MoveString;
 use crate::moveos_std::object::{
     AnnotatedObject, DynamicField, ObjectEntity, ObjectID, ObjectMeta, RawData, RawObject,
 };
+use crate::moveos_std::timestamp::Timestamp;
 use anyhow::{bail, ensure, Result};
 use core::str;
 use hex::FromHex;
@@ -645,6 +646,28 @@ pub trait MoveStructState: MoveState + MoveStructType + DeserializeOwned + Seria
 impl ObjectState {
     pub fn new(metadata: ObjectMeta, value: Vec<u8>) -> Self {
         Self { metadata, value }
+    }
+
+    pub fn new_with_struct<S>(metadata: ObjectMeta, value: S) -> Result<Self>
+    where
+        S: MoveStructState,
+    {
+        let value_bytes = value.to_bytes();
+        ensure!(
+            metadata.match_struct_type(&S::struct_tag()),
+            "Expect type:{} but the state type:{}",
+            S::struct_tag(),
+            metadata.object_struct_tag()
+        );
+        Ok(Self::new(metadata, value_bytes))
+    }
+
+    /// Create Timestamp Object
+    pub fn new_timestamp(timestamp: Timestamp) -> Self {
+        let id = Timestamp::object_id();
+        let mut metadata = ObjectMeta::genesis_meta(id, Timestamp::type_tag());
+        metadata.to_shared();
+        Self::new_with_struct(metadata, timestamp).expect("Create Timestamp Object should success")
     }
 
     pub fn id(&self) -> &ObjectID {

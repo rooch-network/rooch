@@ -4,7 +4,7 @@
 //# run --signers test
 script {
     fun main() {
-        let object_id = moveos_std::object::named_object_id<moveos_std::object::Timestamp>();
+        let object_id = moveos_std::object::named_object_id<moveos_std::timestamp::Timestamp>();
         std::debug::print(&object_id);
     }
 }
