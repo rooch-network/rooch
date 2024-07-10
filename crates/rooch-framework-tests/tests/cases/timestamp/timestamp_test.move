@@ -4,16 +4,16 @@
 //# run --signers test
 script {
     fun main() {
-        let object_id = moveos_std::object::named_object_id<moveos_std::object::Timestamp>();
+        let object_id = moveos_std::object::named_object_id<moveos_std::timestamp::Timestamp>();
         std::debug::print(&object_id);
     }
 }
 
 //Timestamp object as argument.
-//# run --signers test --args object:0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9
+//# run --signers test --args object:0x4e8d2c243339c6e02f8b7dd34436a1b1eb541b0fe4d938f845f4dbb9d9f218a2
 script {
-    use moveos_std::object::{Self, Object, Timestamp};
-    use moveos_std::timestamp::{Self};
+    use moveos_std::object::{Self, Object};
+    use moveos_std::timestamp::{Self, Timestamp};
 
     fun main(timestamp_obj: &Object<Timestamp>) {
         let timestamp = object::borrow(timestamp_obj);

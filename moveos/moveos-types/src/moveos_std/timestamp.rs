@@ -29,7 +29,7 @@ impl Timestamp {
 
 impl MoveStructType for Timestamp {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = ident_str!("object");
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("Timestamp");
 }
 
@@ -111,7 +111,7 @@ mod tests {
         assert_eq!(
             object_id,
             ObjectID::from_str(
-                "0x05921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9"
+                "0x4e8d2c243339c6e02f8b7dd34436a1b1eb541b0fe4d938f845f4dbb9d9f218a2"
             )
             .unwrap()
         );

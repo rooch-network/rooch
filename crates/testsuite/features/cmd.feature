@@ -10,14 +10,14 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::account::Account'"
       Then cmd: "rpc request --method rooch_listStates --params '["/resource/0x3", null, null, {"decode":true}]' --json"
       Then assert: "'{{$.rpc[-1]}}' contains '0x3::account_coin_store::AutoAcceptCoins'"
-      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9",{"decode":true}]' --json"
-      Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::object::Timestamp'"
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x4e8d2c243339c6e02f8b7dd34436a1b1eb541b0fe4d938f845f4dbb9d9f218a2",{"decode":true}]' --json"
+      Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::timestamp::Timestamp'"
       Then assert: "{{$.rpc[-1][0].decoded_value.value.milliseconds}} == 0"
-      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x2::object::Timestamp",{"decode":true}]' --json"
-      Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::object::Timestamp'"
-      Then cmd: "rpc request --method rooch_getObjectStates --params '["0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9", {"decode":false}]' --json"
-      Then cmd: "rpc request --method rooch_getObjectStates --params '["0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9", {"decode":true}]' --json"
-      Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::object::Timestamp'"
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x2::timestamp::Timestamp",{"decode":true}]' --json"
+      Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::timestamp::Timestamp'"
+      Then cmd: "rpc request --method rooch_getObjectStates --params '["0x4e8d2c243339c6e02f8b7dd34436a1b1eb541b0fe4d938f845f4dbb9d9f218a2", {"decode":false}]' --json"
+      Then cmd: "rpc request --method rooch_getObjectStates --params '["0x4e8d2c243339c6e02f8b7dd34436a1b1eb541b0fe4d938f845f4dbb9d9f218a2", {"decode":true}]' --json"
+      Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::timestamp::Timestamp'"
       Then assert: "{{$.rpc[-1][0].value}} == {{$.rpc[-2][0].value}}"
       # ModuleStore is a named object, so we can directly use the struct tag as ObjectID arguments.
       # named_object_id(0x2::module_store::ModuleStore) == 0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb
@@ -47,8 +47,8 @@ Feature: Rooch CLI integration tests
       Then cmd: "move run --function rooch_framework::gas_coin::faucet_entry --args u256:10000000000"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
-      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x5921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9",{"decode":true}]' --json"
-      Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::object::Timestamp'"
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x4e8d2c243339c6e02f8b7dd34436a1b1eb541b0fe4d938f845f4dbb9d9f218a2",{"decode":true}]' --json"
+      Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::timestamp::Timestamp'"
       # ensure the tx_timestamp update the global timestamp
       Then assert: "{{$.rpc[-1][0].decoded_value.value.milliseconds}} != 0"
 
@@ -73,9 +73,9 @@ Feature: Rooch CLI integration tests
     Scenario: state
       Given a server for state
       Then cmd: "object -i 0x3" 
-      Then cmd: "object -i 0x2::object::Timestamp"
-      Then cmd: "state --access-path /object/0x2::object::Timestamp"
-      Then assert: "{{$.state[-1][0].object_type}} == '0x2::object::Timestamp'"
+      Then cmd: "object -i 0x2::timestamp::Timestamp"
+      Then cmd: "state --access-path /object/0x2::timestamp::Timestamp"
+      Then assert: "{{$.state[-1][0].object_type}} == '0x2::timestamp::Timestamp'"
       Then cmd: "state --access-path /object/0x3::chain_id::ChainID"
       Then assert: "{{$.state[-1][0].object_type}} == '0x3::chain_id::ChainID'"
       Then assert: "{{$.state[-1][0].decoded_value.value.id}} == 4"
@@ -320,7 +320,7 @@ Feature: Rooch CLI integration tests
       Then sleep: "2"
 
       Then cmd: "object -t {{$.address_mapping.default}}::child_object::Child --limit 10 -d"
-      Then assert: "{{$.object[-1].data[0].object_id}} == {{$.event[-1].data[0].decoded_event_data.value.id}}"
+      Then assert: "{{$.object[-1].data[0].id}} == {{$.event[-1].data[0].decoded_event_data.value.id}}"
 
       Then cmd: "move run --function default::third_party_module_for_child_object::update_child_age --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --args u64:10"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
@@ -354,7 +354,7 @@ Feature: Rooch CLI integration tests
       Then sleep: "2"
 
       Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"{{$.address_mapping.default}}::display::ObjectType"}, null, "10", {"descending": false,"showDisplay":true}]' --json"
-      Then assert: "{{$.rpc[-1].data[0].object_id}} == {{$.event[-1].data[0].decoded_event_data.value.id}}"
+      Then assert: "{{$.rpc[-1].data[0].id}} == {{$.event[-1].data[0].decoded_event_data.value.id}}"
       Then assert: "{{$.rpc[-1].data[0].display_fields.fields.name}} == test_object"
 
       Then cmd: "rpc request --method rooch_getObjectStates --params '["{{$.event[-1].data[0].decoded_event_data.value.id}}", {"decode": false, "showDisplay": true}]' --json"

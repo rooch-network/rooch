@@ -5,7 +5,6 @@ use super::table::TablePlaceholder;
 use crate::h256;
 use crate::moveos_std::account::Account;
 use crate::moveos_std::module_store::{ModuleStore, Package};
-use crate::moveos_std::timestamp::Timestamp;
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     state::{
@@ -401,7 +400,6 @@ pub type TableObject = ObjectEntity<TablePlaceholder>;
 pub type AccountObject = ObjectEntity<Account>;
 pub type ModuleStoreObject = ObjectEntity<ModuleStore>;
 pub type PackageObject = ObjectEntity<Package>;
-pub type TimestampObject = ObjectEntity<Timestamp>;
 
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
 pub struct ObjectMeta {
@@ -409,6 +407,7 @@ pub struct ObjectMeta {
     pub owner: AccountAddress,
     pub flag: u8,
     pub state_root: Option<H256>,
+    /// The fields size of the object
     pub size: u64,
     /// The object created timestamp on chain
     pub created_at: u64,
@@ -416,7 +415,8 @@ pub struct ObjectMeta {
     /// Note: only the object value updated will update this timestamp
     /// The metadata updated or dynamic fields updated will not update this timestamp
     pub updated_at: u64,
-    pub value_type: TypeTag,
+    /// The object value type, it should be a struct type
+    pub object_type: TypeTag,
 }
 
 impl ObjectMeta {
@@ -428,7 +428,7 @@ impl ObjectMeta {
         size: u64,
         created_at: u64,
         updated_at: u64,
-        value_type: TypeTag,
+        object_type: TypeTag,
     ) -> Self {
         Self {
             id,
@@ -438,7 +438,7 @@ impl ObjectMeta {
             size,
             created_at,
             updated_at,
-            value_type,
+            object_type,
         }
     }
 
@@ -451,11 +451,11 @@ impl ObjectMeta {
             size: 0,
             created_at: 0,
             updated_at: 0,
-            value_type: Root::struct_tag().into(),
+            object_type: Root::struct_tag().into(),
         }
     }
 
-    pub fn genesis_meta(id: ObjectID, value_type: TypeTag) -> Self {
+    pub fn genesis_meta(id: ObjectID, object_type: TypeTag) -> Self {
         Self {
             id,
             owner: SYSTEM_OWNER_ADDRESS,
@@ -464,7 +464,7 @@ impl ObjectMeta {
             size: 0,
             created_at: 0,
             updated_at: 0,
-            value_type,
+            object_type,
         }
     }
 
@@ -521,7 +521,7 @@ impl ObjectMeta {
     }
 
     pub fn is_dynamic_field(&self) -> bool {
-        is_dynamic_field_type(&self.value_type)
+        is_dynamic_field_type(&self.object_type)
     }
 
     /// Exclude the DynamicField object
@@ -529,10 +529,29 @@ impl ObjectMeta {
         !self.is_dynamic_field()
     }
 
-    pub fn value_struct_tag(&self) -> &StructTag {
-        match &self.value_type {
+    pub fn object_struct_tag(&self) -> &StructTag {
+        match &self.object_type {
             TypeTag::Struct(struct_tag) => struct_tag,
-            _ => panic!("The ObjectState must be Struct:{}", self.value_type),
+            _ => panic!("The ObjectState must be Struct:{}", self.object_type),
+        }
+    }
+
+    pub fn match_type(&self, type_tag: &TypeTag) -> bool {
+        &self.object_type == type_tag
+    }
+
+    pub fn match_struct_type(&self, type_tag: &StructTag) -> bool {
+        match &self.object_type {
+            TypeTag::Struct(struct_tag) => struct_tag.as_ref() == type_tag,
+            _ => false,
+        }
+    }
+
+    pub fn match_dynamic_field_type(&self, name_type: TypeTag, value_type: TypeTag) -> bool {
+        if self.is_dynamic_field() {
+            self.match_struct_type(&construct_dynamic_field_struct_tag(name_type, value_type))
+        } else {
+            false
         }
     }
 
@@ -661,7 +680,7 @@ where
             size: self.size,
             created_at: self.created_at,
             updated_at: self.updated_at,
-            value_type: T::struct_tag().into(),
+            object_type: T::struct_tag().into(),
         }
     }
 
@@ -674,7 +693,7 @@ where
             size: self.size,
             created_at: self.created_at,
             updated_at: self.updated_at,
-            value_type: T::struct_tag().into(),
+            object_type: T::struct_tag().into(),
         };
         ObjectState::new(
             metadata,
@@ -739,21 +758,6 @@ impl ObjectEntity<Package> {
             0,
             0,
             Package::default(),
-        )
-    }
-}
-
-impl ObjectEntity<Timestamp> {
-    pub fn genesis_timestamp() -> TimestampObject {
-        Self::new(
-            Timestamp::object_id(),
-            MOVEOS_STD_ADDRESS,
-            0u8,
-            None,
-            0,
-            0,
-            0,
-            Timestamp::default(),
         )
     }
 }
@@ -1055,17 +1059,17 @@ mod tests {
     fn test_named_object_id() {
         let struct_tag = StructTag {
             address: AccountAddress::from_str("0x2").unwrap(),
-            module: ident_str!("object").to_owned(),
+            module: ident_str!("timestamp").to_owned(),
             name: ident_str!("Timestamp").to_owned(),
             type_params: vec![],
         };
         let timestamp_object_id = named_object_id(&struct_tag);
         //The object id generated by crates/rooch-framework-tests/tests/cases/timestamp/timestamp_test.move
         let object_id = ObjectID::from_str(
-            "0x05921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9",
+            "0x4e8d2c243339c6e02f8b7dd34436a1b1eb541b0fe4d938f845f4dbb9d9f218a2",
         )
         .unwrap();
-        let timestamp_object_id2 = ObjectID::from_str("0x2::object::Timestamp").unwrap();
+        let timestamp_object_id2 = ObjectID::from_str("0x2::timestamp::Timestamp").unwrap();
         assert_eq!(timestamp_object_id, object_id,);
         assert_eq!(timestamp_object_id2, object_id,);
     }

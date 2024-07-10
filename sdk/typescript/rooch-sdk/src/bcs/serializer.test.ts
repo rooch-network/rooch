@@ -76,12 +76,12 @@ describe('Serializer', () => {
   it('test named object id', () => {
     const testData: StructTag = {
       address: '0x2',
-      module: 'object',
+      module: 'timestamp',
       name: 'Timestamp',
       typeParams: [],
     }
 
-    const expectObjectID = '0x05921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9'
+    const expectObjectID = '0x4e8d2c243339c6e02f8b7dd34436a1b1eb541b0fe4d938f845f4dbb9d9f218a2'
     const resultObjectID = Serializer.structTagToObjectID(testData)
     expect(resultObjectID).toBe(expectObjectID)
   })

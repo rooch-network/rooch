@@ -10,7 +10,9 @@ It interacts with the other modules in the following ways:
 * L2 transactions: update the timestamp via L2 transaction's timestamp
 
 
+-  [Resource `Timestamp`](#0x2_timestamp_Timestamp)
 -  [Constants](#@Constants_0)
+-  [Function `update_global_time`](#0x2_timestamp_update_global_time)
 -  [Function `try_update_global_time`](#0x2_timestamp_try_update_global_time)
 -  [Function `timestamp`](#0x2_timestamp_timestamp)
 -  [Function `milliseconds`](#0x2_timestamp_milliseconds)
@@ -24,6 +26,19 @@ It interacts with the other modules in the following ways:
 <pre><code><b>use</b> <a href="core_addresses.md#0x2_core_addresses">0x2::core_addresses</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="signer.md#0x2_signer">0x2::signer</a>;
+</code></pre>
+
+
+
+<a name="0x2_timestamp_Timestamp"></a>
+
+## Resource `Timestamp`
+
+A object holding the current Unix time in milliseconds
+Timestamp is initialized before genesis, so we do not need to initialize it in the genesis module.
+
+
+<pre><code><b>struct</b> <a href="timestamp.md#0x2_timestamp_Timestamp">Timestamp</a> <b>has</b> key
 </code></pre>
 
 
@@ -62,6 +77,18 @@ Conversion factor between seconds and milliseconds
 
 
 
+<a name="0x2_timestamp_update_global_time"></a>
+
+## Function `update_global_time`
+
+Updates the global clock time, if the new time is smaller than the current time, aborts.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="timestamp.md#0x2_timestamp_update_global_time">update_global_time</a>(timestamp_milliseconds: u64)
+</code></pre>
+
+
+
 <a name="0x2_timestamp_try_update_global_time"></a>
 
 ## Function `try_update_global_time`
@@ -81,7 +108,7 @@ Only the framework genesis account can update the global clock time.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x2_timestamp">timestamp</a>(): &<a href="object.md#0x2_object_Timestamp">object::Timestamp</a>
+<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x2_timestamp">timestamp</a>(): &<a href="timestamp.md#0x2_timestamp_Timestamp">timestamp::Timestamp</a>
 </code></pre>
 
 
@@ -92,7 +119,7 @@ Only the framework genesis account can update the global clock time.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x2_timestamp_milliseconds">milliseconds</a>(self: &<a href="object.md#0x2_object_Timestamp">object::Timestamp</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x2_timestamp_milliseconds">milliseconds</a>(self: &<a href="timestamp.md#0x2_timestamp_Timestamp">timestamp::Timestamp</a>): u64
 </code></pre>
 
 
@@ -103,7 +130,7 @@ Only the framework genesis account can update the global clock time.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x2_timestamp_seconds">seconds</a>(self: &<a href="object.md#0x2_object_Timestamp">object::Timestamp</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x2_timestamp_seconds">seconds</a>(self: &<a href="timestamp.md#0x2_timestamp_Timestamp">timestamp::Timestamp</a>): u64
 </code></pre>
 
 

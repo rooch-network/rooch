@@ -4,6 +4,7 @@
 use anyhow::Result;
 use coerce::actor::message::Message;
 use moveos_types::moveos_std::event::Event;
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::{ObjectState, StateChangeSet};
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
@@ -94,7 +95,7 @@ impl Message for QueryIndexerEventsMessage {
     type Result = Result<Vec<IndexerEvent>>;
 }
 
-/// Query Indexer Global States Message
+/// Query Indexer Object States Message
 #[derive(Debug, Serialize, Deserialize)]
 pub struct QueryIndexerObjectStatesMessage {
     pub filter: ObjectStateFilter,
@@ -106,4 +107,17 @@ pub struct QueryIndexerObjectStatesMessage {
 
 impl Message for QueryIndexerObjectStatesMessage {
     type Result = Result<Vec<IndexerObjectState>>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct QueryIndexerObjectIdsMessage {
+    pub filter: ObjectStateFilter,
+    // exclusive cursor if `Some`, otherwise start from the beginning
+    pub cursor: Option<IndexerStateID>,
+    pub limit: usize,
+    pub descending_order: bool,
+}
+
+impl Message for QueryIndexerObjectIdsMessage {
+    type Result = Result<Vec<(ObjectID, IndexerStateID)>>;
 }

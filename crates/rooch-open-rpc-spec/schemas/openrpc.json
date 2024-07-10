@@ -29,13 +29,13 @@
         {
           "name": "cursor",
           "schema": {
-            "$ref": "#/components/schemas/IndexerStateID"
+            "$ref": "#/components/schemas/IndexerStateIDView"
           }
         },
         {
           "name": "limit",
           "schema": {
-            "$ref": "#/components/schemas/usize"
+            "$ref": "#/components/schemas/u64"
           }
         },
         {
@@ -49,7 +49,7 @@
         "name": "InscriptionPageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_InscriptionStateView_and_IndexerStateID"
+          "$ref": "#/components/schemas/PageView_for_InscriptionStateView_and_IndexerStateIDView"
         }
       }
     },
@@ -67,13 +67,13 @@
         {
           "name": "cursor",
           "schema": {
-            "$ref": "#/components/schemas/IndexerStateID"
+            "$ref": "#/components/schemas/IndexerStateIDView"
           }
         },
         {
           "name": "limit",
           "schema": {
-            "$ref": "#/components/schemas/usize"
+            "$ref": "#/components/schemas/u64"
           }
         },
         {
@@ -87,7 +87,7 @@
         "name": "UTXOPageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_UTXOStateView_and_IndexerStateID"
+          "$ref": "#/components/schemas/PageView_for_UTXOStateView_and_IndexerStateIDView"
         }
       }
     },
@@ -178,13 +178,13 @@
         {
           "name": "cursor",
           "schema": {
-            "$ref": "#/components/schemas/IndexerStateID"
+            "$ref": "#/components/schemas/IndexerStateIDView"
           }
         },
         {
           "name": "limit",
           "schema": {
-            "$ref": "#/components/schemas/usize"
+            "$ref": "#/components/schemas/u64"
           }
         }
       ],
@@ -192,7 +192,7 @@
         "name": "BalanceInfoPageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_BalanceInfoView_and_IndexerStateID"
+          "$ref": "#/components/schemas/PageView_for_BalanceInfoView_and_IndexerStateIDView"
         }
       }
     },
@@ -247,7 +247,7 @@
         "name": "EventPageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_EventView_and_uint64"
+          "$ref": "#/components/schemas/PageView_for_EventView_and_u64"
         }
       }
     },
@@ -453,7 +453,7 @@
         "name": "TransactionWithInfoPageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_TransactionWithInfoView_and_uint64"
+          "$ref": "#/components/schemas/PageView_for_TransactionWithInfoView_and_u64"
         }
       }
     },
@@ -477,7 +477,7 @@
         {
           "name": "limit",
           "schema": {
-            "$ref": "#/components/schemas/usize"
+            "$ref": "#/components/schemas/u64"
           }
         },
         {
@@ -515,7 +515,7 @@
         {
           "name": "limit",
           "schema": {
-            "$ref": "#/components/schemas/usize"
+            "$ref": "#/components/schemas/u64"
           }
         },
         {
@@ -547,13 +547,13 @@
         {
           "name": "cursor",
           "schema": {
-            "$ref": "#/components/schemas/IndexerEventID"
+            "$ref": "#/components/schemas/IndexerEventIDView"
           }
         },
         {
           "name": "limit",
           "schema": {
-            "$ref": "#/components/schemas/usize"
+            "$ref": "#/components/schemas/u64"
           }
         },
         {
@@ -567,7 +567,7 @@
         "name": "IndexerEventPageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_IndexerEventView_and_IndexerEventID"
+          "$ref": "#/components/schemas/PageView_for_IndexerEventView_and_IndexerEventIDView"
         }
       }
     },
@@ -585,13 +585,13 @@
         {
           "name": "cursor",
           "schema": {
-            "$ref": "#/components/schemas/IndexerStateID"
+            "$ref": "#/components/schemas/IndexerStateIDView"
           }
         },
         {
           "name": "limit",
           "schema": {
-            "$ref": "#/components/schemas/usize"
+            "$ref": "#/components/schemas/u64"
           }
         },
         {
@@ -605,7 +605,7 @@
         "name": "IndexerObjectStatePageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_IndexerObjectStateView_and_IndexerStateID"
+          "$ref": "#/components/schemas/PageView_for_IndexerObjectStateView_and_IndexerStateIDView"
         }
       }
     },
@@ -629,7 +629,7 @@
         {
           "name": "limit",
           "schema": {
-            "$ref": "#/components/schemas/usize"
+            "$ref": "#/components/schemas/u64"
           }
         },
         {
@@ -643,7 +643,7 @@
         "name": "TransactionWithInfoPageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_TransactionWithInfoView_and_uint64"
+          "$ref": "#/components/schemas/PageView_for_TransactionWithInfoView_and_u64"
         }
       }
     },
@@ -887,15 +887,19 @@
                 "properties": {
                   "end_time": {
                     "description": "right endpoint of time interval, milliseconds since block, exclusive",
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/u64"
+                      }
+                    ]
                   },
                   "start_time": {
                     "description": "left endpoint of time interval, milliseconds since block, inclusive",
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/u64"
+                      }
+                    ]
                   }
                 }
               }
@@ -918,15 +922,19 @@
                 "properties": {
                   "from_order": {
                     "description": "left endpoint of transaction order, inclusive",
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/u64"
+                      }
+                    ]
                   },
                   "to_order": {
                     "description": "right endpoint of transaction order, exclusive",
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/u64"
+                      }
+                    ]
                   }
                 }
               }
@@ -935,8 +943,7 @@
           }
         ]
       },
-      "EventID": {
-        "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. the Unique ID is a combination of event handle id and event seq number. the ID is local to this particular fullnode and will be different from other fullnode.",
+      "EventIDView": {
         "type": "object",
         "required": [
           "event_handle_id",
@@ -953,9 +960,11 @@
           },
           "event_seq": {
             "description": "For expansion: The number of messages that have been emitted to the path previously",
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/u64"
+              }
+            ]
           }
         }
       },
@@ -992,12 +1001,10 @@
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
           },
           "event_id": {
-            "$ref": "#/components/schemas/EventID"
+            "$ref": "#/components/schemas/EventIDView"
           },
           "event_index": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "event_type": {
             "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
@@ -1073,7 +1080,7 @@
         "description": "Hex string encoding.",
         "type": "string"
       },
-      "IndexerEventID": {
+      "IndexerEventIDView": {
         "type": "object",
         "required": [
           "event_index",
@@ -1081,14 +1088,10 @@
         ],
         "properties": {
           "event_index": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "tx_order": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           }
         }
       },
@@ -1105,9 +1108,7 @@
         ],
         "properties": {
           "created_at": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "decoded_event_data": {
             "anyOf": [
@@ -1123,13 +1124,13 @@
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
           },
           "event_id": {
-            "$ref": "#/components/schemas/EventID"
+            "$ref": "#/components/schemas/EventIDView"
           },
           "event_type": {
             "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
           },
           "indexer_event_id": {
-            "$ref": "#/components/schemas/IndexerEventID"
+            "$ref": "#/components/schemas/IndexerEventIDView"
           },
           "sender": {
             "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
@@ -1144,7 +1145,7 @@
         "required": [
           "created_at",
           "flag",
-          "object_id",
+          "id",
           "object_type",
           "owner",
           "size",
@@ -1155,9 +1156,7 @@
         ],
         "properties": {
           "created_at": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "decoded_value": {
             "anyOf": [
@@ -1184,11 +1183,11 @@
             "format": "uint8",
             "minimum": 0.0
           },
-          "object_id": {
+          "id": {
             "$ref": "#/components/schemas/ObjectID"
           },
           "object_type": {
-            "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
           },
           "owner": {
             "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
@@ -1200,14 +1199,10 @@
             ]
           },
           "size": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "state_index": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "state_root": {
             "anyOf": [
@@ -1220,14 +1215,10 @@
             ]
           },
           "tx_order": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "updated_at": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "value": {
             "description": "bcs bytes of the Object.",
@@ -1239,7 +1230,7 @@
           }
         }
       },
-      "IndexerStateID": {
+      "IndexerStateIDView": {
         "type": "object",
         "required": [
           "state_index",
@@ -1247,28 +1238,24 @@
         ],
         "properties": {
           "state_index": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "tx_order": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           }
         }
       },
       "InscriptionFilterView": {
         "oneOf": [
           {
-            "description": "Query by owner, represent by bitcoin address",
+            "description": "Query by owner, support rooch address and bitcoin address",
             "type": "object",
             "required": [
               "owner"
             ],
             "properties": {
               "owner": {
-                "$ref": "#/components/schemas/rooch_types::address::BitcoinAddress"
+                "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress"
               }
             },
             "additionalProperties": false
@@ -1327,9 +1314,10 @@
         "required": [
           "created_at",
           "flag",
-          "object_id",
+          "id",
           "object_type",
           "owner",
+          "size",
           "state_index",
           "tx_order",
           "updated_at",
@@ -1337,20 +1325,18 @@
         ],
         "properties": {
           "created_at": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "flag": {
             "type": "integer",
             "format": "uint8",
             "minimum": 0.0
           },
-          "object_id": {
+          "id": {
             "$ref": "#/components/schemas/ObjectID"
           },
           "object_type": {
-            "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
           },
           "owner": {
             "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
@@ -1361,20 +1347,27 @@
               "null"
             ]
           },
+          "size": {
+            "$ref": "#/components/schemas/u64"
+          },
           "state_index": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
+          },
+          "state_root": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/primitive_types::H256"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "tx_order": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "updated_at": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "value": {
             "$ref": "#/components/schemas/InscriptionView"
@@ -1449,20 +1442,20 @@
             ]
           },
           "offset": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "parents": {
             "$ref": "#/components/schemas/alloc::vec::Vec<moveos_types::moveos_std::object::ObjectID>"
           },
           "pointer": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "uint64",
-            "minimum": 0.0
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/u64"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "sequence_number": {
             "type": "integer",
@@ -1602,14 +1595,10 @@
                 "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
               },
               "block_height": {
-                "type": "integer",
-                "format": "uint64",
-                "minimum": 0.0
+                "$ref": "#/components/schemas/u64"
               },
               "chain_id": {
-                "type": "integer",
-                "format": "uint64",
-                "minimum": 0.0
+                "$ref": "#/components/schemas/u64"
               },
               "type": {
                 "type": "string",
@@ -1632,9 +1621,7 @@
                 "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
               },
               "chain_id": {
-                "type": "integer",
-                "format": "uint64",
-                "minimum": 0.0
+                "$ref": "#/components/schemas/u64"
               },
               "txid": {
                 "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
@@ -1677,9 +1664,7 @@
                 ]
               },
               "sequence_number": {
-                "type": "integer",
-                "format": "uint64",
-                "minimum": 0.0
+                "$ref": "#/components/schemas/u64"
               },
               "type": {
                 "type": "string",
@@ -1977,16 +1962,14 @@
           "created_at",
           "flag",
           "id",
+          "object_type",
           "owner",
           "size",
-          "updated_at",
-          "value_type"
+          "updated_at"
         ],
         "properties": {
           "created_at": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "flag": {
             "type": "integer",
@@ -1996,13 +1979,20 @@
           "id": {
             "$ref": "#/components/schemas/ObjectID"
           },
+          "object_type": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
+          },
           "owner": {
             "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
           },
+          "owner_bitcoin_address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "size": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "state_root": {
             "anyOf": [
@@ -2015,12 +2005,7 @@
             ]
           },
           "updated_at": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          },
-          "value_type": {
-            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
+            "$ref": "#/components/schemas/u64"
           }
         }
       },
@@ -2107,9 +2092,7 @@
         ],
         "properties": {
           "created_at": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "decoded_value": {
             "anyOf": [
@@ -2140,7 +2123,7 @@
             "$ref": "#/components/schemas/ObjectID"
           },
           "object_type": {
-            "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
           },
           "owner": {
             "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
@@ -2152,9 +2135,7 @@
             ]
           },
           "size": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "state_root": {
             "anyOf": [
@@ -2167,9 +2148,7 @@
             ]
           },
           "updated_at": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "value": {
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
@@ -2210,7 +2189,7 @@
           }
         ]
       },
-      "PageView_for_BalanceInfoView_and_IndexerStateID": {
+      "PageView_for_BalanceInfoView_and_IndexerStateIDView": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -2230,7 +2209,7 @@
           "next_cursor": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/IndexerStateID"
+                "$ref": "#/components/schemas/IndexerStateIDView"
               },
               {
                 "type": "null"
@@ -2239,7 +2218,7 @@
           }
         }
       },
-      "PageView_for_EventView_and_uint64": {
+      "PageView_for_EventView_and_u64": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -2257,16 +2236,18 @@
             "type": "boolean"
           },
           "next_cursor": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "uint64",
-            "minimum": 0.0
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/u64"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
-      "PageView_for_IndexerEventView_and_IndexerEventID": {
+      "PageView_for_IndexerEventView_and_IndexerEventIDView": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -2286,7 +2267,7 @@
           "next_cursor": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/IndexerEventID"
+                "$ref": "#/components/schemas/IndexerEventIDView"
               },
               {
                 "type": "null"
@@ -2295,7 +2276,7 @@
           }
         }
       },
-      "PageView_for_IndexerObjectStateView_and_IndexerStateID": {
+      "PageView_for_IndexerObjectStateView_and_IndexerStateIDView": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -2315,7 +2296,7 @@
           "next_cursor": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/IndexerStateID"
+                "$ref": "#/components/schemas/IndexerStateIDView"
               },
               {
                 "type": "null"
@@ -2324,7 +2305,7 @@
           }
         }
       },
-      "PageView_for_InscriptionStateView_and_IndexerStateID": {
+      "PageView_for_InscriptionStateView_and_IndexerStateIDView": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -2344,7 +2325,7 @@
           "next_cursor": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/IndexerStateID"
+                "$ref": "#/components/schemas/IndexerStateIDView"
               },
               {
                 "type": "null"
@@ -2378,7 +2359,7 @@
           }
         }
       },
-      "PageView_for_TransactionWithInfoView_and_uint64": {
+      "PageView_for_TransactionWithInfoView_and_u64": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -2396,16 +2377,18 @@
             "type": "boolean"
           },
           "next_cursor": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "uint64",
-            "minimum": 0.0
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/u64"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
-      "PageView_for_UTXOStateView_and_IndexerStateID": {
+      "PageView_for_UTXOStateView_and_IndexerStateIDView": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -2425,7 +2408,7 @@
           "next_cursor": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/IndexerStateID"
+                "$ref": "#/components/schemas/IndexerStateIDView"
               },
               {
                 "type": "null"
@@ -2514,11 +2497,11 @@
       "StateKVView": {
         "type": "object",
         "required": [
-          "key_hex",
+          "field_key",
           "state"
         ],
         "properties": {
-          "key_hex": {
+          "field_key": {
             "$ref": "#/components/schemas/moveos_types::state::FieldKey"
           },
           "state": {
@@ -2555,9 +2538,7 @@
             "$ref": "#/components/schemas/primitive_types::H256"
           },
           "gas_used": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "state_root": {
             "$ref": "#/components/schemas/primitive_types::H256"
@@ -2630,15 +2611,19 @@
                 "properties": {
                   "end_time": {
                     "description": "right endpoint of time interval, milliseconds since block, exclusive",
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/u64"
+                      }
+                    ]
                   },
                   "start_time": {
                     "description": "left endpoint of time interval, milliseconds since block, inclusive",
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/u64"
+                      }
+                    ]
                   }
                 }
               }
@@ -2661,15 +2646,19 @@
                 "properties": {
                   "from_order": {
                     "description": "left endpoint of transaction order, inclusive",
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/u64"
+                      }
+                    ]
                   },
                   "to_order": {
                     "description": "right endpoint of transaction order, exclusive",
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/u64"
+                      }
+                    ]
                   }
                 }
               }
@@ -2698,9 +2687,7 @@
             }
           },
           "gas_used": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "is_upgrade": {
             "type": "boolean"
@@ -2761,14 +2748,14 @@
       "UTXOFilterView": {
         "oneOf": [
           {
-            "description": "Query by owner, represent by bitcoin address",
+            "description": "Query by owner, support rooch address and bitcoin address",
             "type": "object",
             "required": [
               "owner"
             ],
             "properties": {
               "owner": {
-                "$ref": "#/components/schemas/rooch_types::address::BitcoinAddress"
+                "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress"
               }
             },
             "additionalProperties": false
@@ -2827,29 +2814,29 @@
         "required": [
           "created_at",
           "flag",
-          "object_id",
+          "id",
           "object_type",
           "owner",
+          "size",
           "state_index",
           "tx_order",
-          "updated_at"
+          "updated_at",
+          "value"
         ],
         "properties": {
           "created_at": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
           "flag": {
             "type": "integer",
             "format": "uint8",
             "minimum": 0.0
           },
-          "object_id": {
+          "id": {
             "$ref": "#/components/schemas/ObjectID"
           },
           "object_type": {
-            "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
           },
           "owner": {
             "$ref": "#/components/schemas/rooch_types::address::RoochAddress"
@@ -2860,30 +2847,30 @@
               "null"
             ]
           },
+          "size": {
+            "$ref": "#/components/schemas/u64"
+          },
           "state_index": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           },
-          "tx_order": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          },
-          "updated_at": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          },
-          "value": {
+          "state_root": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/UTXOView"
+                "$ref": "#/components/schemas/primitive_types::H256"
               },
               {
                 "type": "null"
               }
             ]
+          },
+          "tx_order": {
+            "$ref": "#/components/schemas/u64"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/u64"
+          },
+          "value": {
+            "$ref": "#/components/schemas/UTXOView"
           }
         }
       },
@@ -2919,9 +2906,11 @@
           },
           "value": {
             "description": "The value of the UTXO",
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/u64"
+              }
+            ]
           },
           "vout": {
             "description": "The vout of the UTXO",
@@ -3067,9 +3056,6 @@
       "rooch_rpc_api::jsonrpc_types::module_abi_view::MoveABIType": {
         "type": "string"
       },
-      "rooch_types::address::BitcoinAddress": {
-        "type": "string"
-      },
       "rooch_types::address::RoochAddress": {
         "type": "string"
       },
@@ -3077,9 +3063,6 @@
         "type": "string"
       },
       "u64": {
-        "type": "string"
-      },
-      "usize": {
         "type": "string"
       }
     }

@@ -8,7 +8,7 @@ use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
 use move_command_line_common::types::ParsedStructType;
-use rooch_rpc_api::api::MAX_RESULT_LIMIT_USIZE;
+use rooch_rpc_api::api::MAX_RESULT_LIMIT;
 use rooch_rpc_api::jsonrpc_types::account_view::BalanceInfoView;
 use rooch_types::address::ParsedAddress;
 use rooch_types::error::RoochResult;
@@ -60,7 +60,7 @@ impl CommandAction<Option<BalancesView>> for BalanceCommand {
             None => {
                 client
                     .rooch
-                    .get_balances(address_addr.into(), None, Some(MAX_RESULT_LIMIT_USIZE))
+                    .get_balances(address_addr.into(), None, Some(MAX_RESULT_LIMIT))
                     .await?
                     .data
             }

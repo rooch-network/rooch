@@ -11,8 +11,6 @@ use moveos_types::state::PlaceholderStruct;
 use rooch_rpc_api::jsonrpc_types::account_view::BalanceInfoView;
 use rooch_rpc_api::jsonrpc_types::CoinInfoView;
 use rooch_types::address::RoochAddress;
-use rooch_types::bitcoin::ord::{Inscription, InscriptionState};
-use rooch_types::bitcoin::utxo::{UTXOState, UTXO};
 use rooch_types::framework::account_coin_store::AccountCoinStoreModule;
 use rooch_types::framework::coin::{CoinInfo, CoinModule};
 use rooch_types::framework::coin_store::{CoinStore, CoinStoreInfo};
@@ -137,7 +135,7 @@ impl AggregateService {
         let indexer_coin_stores = self.query_account_coin_stores(owner, cursor, limit).await?;
         let coin_store_ids = indexer_coin_stores
             .iter()
-            .map(|m| m.object_id.clone())
+            .map(|m| m.metadata.id.clone())
             .collect::<Vec<_>>();
 
         let coin_stores = self.get_coin_stores(coin_store_ids.clone()).await?;
@@ -155,7 +153,7 @@ impl AggregateService {
             let coin_store = coin_store.ok_or_else(|| {
                 anyhow::anyhow!(
                     "Can not find CoinStore with id: {}",
-                    indexer_coin_store.object_id
+                    indexer_coin_store.metadata.id
                 )
             })?;
             let coin_info = coin_info_map
@@ -199,103 +197,6 @@ impl AggregateService {
                 _ => Ok(None),
             })
             .collect::<Result<Vec<_>>>()
-    }
-
-    pub async fn build_utxos(&self, states: Vec<IndexerObjectState>) -> Result<Vec<UTXOState>> {
-        let object_ids = states
-            .iter()
-            .map(|m| m.object_id.clone())
-            .collect::<Vec<_>>();
-        let owners = states.iter().map(|m| m.owner).collect::<Vec<_>>();
-        let reverse_address_mapping = self.rpc_service.get_bitcoin_addresses(owners).await?;
-
-        // Global table 0x0 table's key type is always ObjectID.
-        let access_path = AccessPath::objects(object_ids.clone());
-        let objects = self
-            .rpc_service
-            .get_states(access_path)
-            .await?
-            .into_iter()
-            .zip(object_ids)
-            .map(|(state_opt, object_id)| {
-                Ok((
-                    object_id,
-                    state_opt
-                        .map(|state| {
-                            Ok::<UTXO, anyhow::Error>(state.into_object_uncheck::<UTXO>()?.value)
-                        })
-                        .transpose()?,
-                ))
-            })
-            .collect::<Result<HashMap<_, _>>>()?;
-
-        let data = states
-            .into_iter()
-            .map(|state| {
-                let utxo = objects.get(&state.object_id).cloned().flatten();
-                let reverse_address = reverse_address_mapping.get(&state.owner).cloned().flatten();
-
-                Ok(UTXOState::new_from_object_state(
-                    state,
-                    utxo,
-                    reverse_address,
-                ))
-            })
-            .collect::<Result<Vec<_>>>()?;
-        Ok(data)
-    }
-
-    pub async fn build_inscriptions(
-        &self,
-        states: Vec<IndexerObjectState>,
-    ) -> Result<Vec<InscriptionState>> {
-        let object_ids = states
-            .iter()
-            .map(|m| m.object_id.clone())
-            .collect::<Vec<_>>();
-        let owners = states.iter().map(|m| m.owner).collect::<Vec<_>>();
-        let reverse_address_mapping = self.rpc_service.get_bitcoin_addresses(owners).await?;
-
-        // Global table 0x0 table's key type is always ObjectID.
-        let access_path = AccessPath::objects(object_ids.clone());
-        let objects = self
-            .rpc_service
-            .get_states(access_path)
-            .await?
-            .into_iter()
-            .zip(object_ids)
-            .map(|(state_opt, object_id)| {
-                Ok((
-                    object_id,
-                    state_opt
-                        .map(|state| {
-                            Ok::<Inscription, anyhow::Error>(
-                                state.into_object_uncheck::<Inscription>()?.value,
-                            )
-                        })
-                        .transpose()?,
-                ))
-            })
-            .collect::<Result<HashMap<_, _>>>()?;
-
-        let data = states
-            .into_iter()
-            .map(|state| {
-                let inscription = objects
-                    .get(&state.object_id)
-                    .cloned()
-                    .flatten()
-                    .ok_or(anyhow::anyhow!("Inscription should have value"))?;
-                let reverse_address = reverse_address_mapping.get(&state.owner).cloned().flatten();
-
-                Ok(InscriptionState::new_from_object_state(
-                    state,
-                    inscription,
-                    reverse_address,
-                ))
-            })
-            .collect::<Result<Vec<_>>>()?;
-        Ok(data)
     }
 
     pub async fn build_transaction_with_infos(
