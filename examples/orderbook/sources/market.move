@@ -15,7 +15,7 @@ module orderbook::market {
     use rooch_framework::coin_store;
     use moveos_std::tx_context::sender;
     use moveos_std::type_info::type_name;
-    use moveos_std::object::{Object, ObjectID, to_shared, new_named_object, transfer};
+    use moveos_std::object::{Object, ObjectID, to_shared, new_named_object, transfer, new};
     use rooch_framework::coin_store::{CoinStore, create_coin_store};
     use moveos_std::timestamp::now_milliseconds;
     use orderbook::critbit::{CritbitTree, find_leaf, borrow_leaf_by_index, borrow_mut_leaf_by_index,
@@ -116,7 +116,7 @@ module orderbook::market {
     public entry fun create_market<BaseAsset: key + store, QuoteAsset: key + store>(
         market_house_obj: &mut Object<MarketplaceHouse>,
     ) {
-        let market_obj = new_named_object(Marketplace {
+        let market_obj = new(Marketplace {
             is_paused: false,
             version: VERSION,
             bids: critbit::new(),
