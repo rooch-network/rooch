@@ -19,7 +19,7 @@ export const MintDetailComponents: React.FC<MintDetailComponentsProps> = ({ toke
       return
     }
 
-    const timer = setTimeout(() => setProgress((Math.trunc((tokenInfo.endTime - tokenInfo.starTime) / (Date.now() / 1000 - tokenInfo.starTime) * 100)) || 0), 500)
+    const timer = setTimeout(() => setProgress((Math.trunc((tokenInfo.endTime - tokenInfo.starTime) / (tokenInfo.endTime - tokenInfo.starTime) * 100)) || 0), 500)
     return () => clearTimeout(timer)
   }, [tokenInfo])
 

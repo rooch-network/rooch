@@ -22,11 +22,14 @@ import { UseSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit'
 type StakeCardProps = {
   tokenInfo: TokenInfo | undefined,
   tokenAddress: string
+  inProgress: boolean
 }
 
-export const SelfStakingCard:React.FC<StakeCardProps> = ({tokenInfo, tokenAddress}) => {
+export const SelfStakingCard:React.FC<StakeCardProps> = ({tokenInfo, tokenAddress, inProgress}) => {
   const { toast } = useToast()
   const {wallet} = useCurrentWallet()
+
+  console.log(tokenInfo)
 
   const client = useRoochClient()
   const {mutateAsync: signAndExecuteTransaction} = UseSignAndExecuteTransaction()
@@ -50,7 +53,7 @@ export const SelfStakingCard:React.FC<StakeCardProps> = ({tokenInfo, tokenAddres
 
     const tx = new Transaction()
     tx.callFunction({
-      target: `${tokenAddress}::hold_farmer::do_stake`,
+      target: `${tokenAddress}::hold_farmer::stake`,
       args: [Args.objectId(selectedUTXO)]
     })
 
@@ -144,7 +147,7 @@ export const SelfStakingCard:React.FC<StakeCardProps> = ({tokenInfo, tokenAddres
         </Card>
 
       </div>
-      <Button className="rounded-lg w-full mt-4 mb-2 md:mt-8" onClick={handleSelfStake}>Mint</Button>
+      <Button className="rounded-lg w-full mt-4 mb-2 md:mt-8" onClick={handleSelfStake}>{inProgress ? 'Mint' : 'Claim'}</Button>
     </div>
 
   )

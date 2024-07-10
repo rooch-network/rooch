@@ -49,7 +49,7 @@ export const SftDetailLayoutForSelfStaking = () => {
                 variant="outline"
                 className="rounded-full border-amber-500 text-amber-500 dark:border-amber-300 dark:text-amber-300 hover:bg-amber-500/10"
               >
-                {tokenInfo.endTime < (Date.now()) / 1000 ? 'In Progress' : 'finished'}
+                {tokenInfo.endTime < Math.floor((Date.now() / 1000)) ? 'Finished' : 'In Progress'}
               </Badge>
             </div>
             <p className="text-muted-foreground text-sm">Self-Staking</p>
