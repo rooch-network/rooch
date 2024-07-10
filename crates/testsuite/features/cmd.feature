@@ -54,7 +54,9 @@ Feature: Rooch CLI integration tests
 
       # session key
       Then cmd: "session-key create  --app-name test --app-url https:://test.rooch.network --scope 0x3::empty::empty"
-      Then cmd: "move run --function 0x3::empty::empty  --session-key {{$.session-key[-1].authentication_key}}"
+      Then cmd: "session-key list"
+      Then assert: "'{{$.session-key[-1]}}' not_contains Error"
+      Then cmd: "move run --function 0x3::empty::empty  --session-key {{$.session-key[-1][0].name}}"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # transaction
