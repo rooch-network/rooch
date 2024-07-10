@@ -8,6 +8,7 @@ use anyhow::Result;
 use diesel::connection::SimpleConnection;
 use diesel::r2d2::ConnectionManager;
 use diesel::sqlite::SqliteConnection;
+use diesel::RunQueryDsl;
 use errors::IndexerError;
 use once_cell::sync::Lazy;
 use rooch_types::indexer::event::IndexerEvent;
@@ -17,6 +18,7 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::path::PathBuf;
 use std::string::ToString;
+use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
 pub mod actor;
@@ -33,7 +35,7 @@ pub mod utils;
 /// Type alias to improve readability.
 pub type IndexerResult<T> = Result<T, IndexerError>;
 
-pub const DEFAULT_BUSY_TIMEOUT: u64 = 10000; // millsecond
+pub const DEFAULT_BUSY_TIMEOUT: u64 = 5000; // millsecond
 pub type IndexerTableName = &'static str;
 pub const INDEXER_EVENTS_TABLE_NAME: IndexerTableName = "events";
 pub const INDEXER_OBJECT_STATES_TABLE_NAME: IndexerTableName = "object_states";
@@ -198,10 +200,12 @@ impl SqliteConnectionPoolConfig {
     const DEFAULT_CONNECTION_TIMEOUT: u64 = 120; // second
 
     fn connection_config(&self) -> SqliteConnectionConfig {
+        let locker = Arc::new(RwLock::new(0));
         SqliteConnectionConfig {
             read_only: false,
             enable_wal: true,
             busy_timeout: DEFAULT_BUSY_TIMEOUT,
+            locker,
         }
     }
 
@@ -232,12 +236,13 @@ impl Default for SqliteConnectionPoolConfig {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 struct SqliteConnectionConfig {
     // SQLite does not support the statement_timeout parameter
     read_only: bool,
     enable_wal: bool,
     busy_timeout: u64,
+    locker: Arc<RwLock<u64>>,
 }
 
 impl diesel::r2d2::CustomizeConnection<SqliteConnection, diesel::r2d2::Error>
@@ -247,7 +252,17 @@ impl diesel::r2d2::CustomizeConnection<SqliteConnection, diesel::r2d2::Error>
         &self,
         conn: &mut SqliteConnection,
     ) -> std::result::Result<(), diesel::r2d2::Error> {
-        conn.batch_execute(&format!("PRAGMA busy_timeout = {};", self.busy_timeout))
+        let mut locker_cnt = self.locker.write().unwrap();
+        *locker_cnt += 1;
+        log::trace!(
+            "Sqlite CustomizeConnection on_acquire connection [rw:{}]",
+            *locker_cnt
+        );
+        // https://github.com/diesel-rs/diesel/issues/2365
+        // conn.batch_execute(&format!("PRAGMA busy_timeout = {};", self.busy_timeout))
+        //     .map_err(diesel::r2d2::Error::QueryError)?;
+        diesel::sql_query(format!("PRAGMA busy_timeout = {};", self.busy_timeout))
+            .execute(conn)
             .map_err(diesel::r2d2::Error::QueryError)?;
 
         let mut pragma_builder = String::new();
@@ -262,6 +277,10 @@ impl diesel::r2d2::CustomizeConnection<SqliteConnection, diesel::r2d2::Error>
             .map_err(diesel::r2d2::Error::QueryError)?;
 
         Ok(())
+    }
+
+    fn on_release(&self, _conn: SqliteConnection) {
+        log::trace!("Sqlite CustomizeConnection on_release connection");
     }
 }
 

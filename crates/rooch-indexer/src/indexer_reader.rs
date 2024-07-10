@@ -23,6 +23,7 @@ use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::path::PathBuf;
+use std::sync::{Arc, RwLock};
 
 pub const TX_ORDER_STR: &str = "tx_order";
 pub const TX_HASH_STR: &str = "tx_hash";
@@ -54,10 +55,12 @@ impl InnerIndexerReader {
     ) -> Result<Self> {
         let manager = ConnectionManager::<SqliteConnection>::new(db_url);
 
+        let locker = Arc::new(RwLock::new(0));
         let connection_config = SqliteConnectionConfig {
             read_only: true,
             enable_wal: true,
             busy_timeout: DEFAULT_BUSY_TIMEOUT,
+            locker,
         };
 
         let pool = diesel::r2d2::Pool::builder()
