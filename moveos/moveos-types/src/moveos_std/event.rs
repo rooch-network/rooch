@@ -125,11 +125,7 @@ impl FromStr for EventID {
 
 impl std::fmt::Display for EventID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "EventID[event handle id: {:?}, event seq: {}]",
-            self.event_handle_id, self.event_seq,
-        )
+        write!(f, "{}:{}", self.event_handle_id, self.event_seq)
     }
 }
 

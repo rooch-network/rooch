@@ -8,9 +8,12 @@ use crate::indexer_reader::IndexerReader;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
+use moveos_types::moveos_std::object::ObjectID;
 use rooch_types::indexer::event::IndexerEvent;
-use rooch_types::indexer::state::IndexerObjectState;
+use rooch_types::indexer::state::{IndexerObjectState, IndexerStateID};
 use rooch_types::indexer::transaction::IndexerTransaction;
+
+use super::messages::QueryIndexerObjectIdsMessage;
 
 pub struct IndexerReaderActor {
     indexer_reader: IndexerReader,
@@ -77,6 +80,25 @@ impl Handler<QueryIndexerObjectStatesMessage> for IndexerReaderActor {
         } = msg;
         self.indexer_reader
             .query_object_states_with_filter(filter, cursor, limit, descending_order)
+            .map_err(|e| anyhow!(format!("Failed to query indexer object states: {:?}", e)))
+    }
+}
+
+#[async_trait]
+impl Handler<QueryIndexerObjectIdsMessage> for IndexerReaderActor {
+    async fn handle(
+        &mut self,
+        msg: QueryIndexerObjectIdsMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<(ObjectID, IndexerStateID)>> {
+        let QueryIndexerObjectIdsMessage {
+            filter,
+            cursor,
+            limit,
+            descending_order,
+        } = msg;
+        self.indexer_reader
+            .query_object_ids_with_filter(filter, cursor, limit, descending_order)
             .map_err(|e| anyhow!(format!("Failed to query indexer object states: {:?}", e)))
     }
 }

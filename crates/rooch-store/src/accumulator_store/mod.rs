@@ -4,7 +4,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::TX_ACCUMULATOR_NODE_PREFIX_NAME;
+use crate::TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME;
 use accumulator::{AccumulatorNode, AccumulatorTreeStore};
 use anyhow::Result;
 use moveos_types::h256::H256;
@@ -14,7 +14,7 @@ derive_store!(
     TransactionAccumulatorStore,
     H256,
     AccumulatorNode,
-    TX_ACCUMULATOR_NODE_PREFIX_NAME
+    TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME
 );
 
 #[derive(Clone)]

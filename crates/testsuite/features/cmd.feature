@@ -320,7 +320,7 @@ Feature: Rooch CLI integration tests
       Then sleep: "2"
 
       Then cmd: "object -t {{$.address_mapping.default}}::child_object::Child --limit 10 -d"
-      Then assert: "{{$.object[-1].data[0].object_id}} == {{$.event[-1].data[0].decoded_event_data.value.id}}"
+      Then assert: "{{$.object[-1].data[0].id}} == {{$.event[-1].data[0].decoded_event_data.value.id}}"
 
       Then cmd: "move run --function default::third_party_module_for_child_object::update_child_age --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --args u64:10"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
@@ -354,7 +354,7 @@ Feature: Rooch CLI integration tests
       Then sleep: "2"
 
       Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"{{$.address_mapping.default}}::display::ObjectType"}, null, "10", {"descending": false,"showDisplay":true}]' --json"
-      Then assert: "{{$.rpc[-1].data[0].object_id}} == {{$.event[-1].data[0].decoded_event_data.value.id}}"
+      Then assert: "{{$.rpc[-1].data[0].id}} == {{$.event[-1].data[0].decoded_event_data.value.id}}"
       Then assert: "{{$.rpc[-1].data[0].display_fields.fields.name}} == test_object"
 
       Then cmd: "rpc request --method rooch_getObjectStates --params '["{{$.event[-1].data[0].decoded_event_data.value.id}}", {"decode": false, "showDisplay": true}]' --json"

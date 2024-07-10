@@ -1545,7 +1545,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05efc5cfd9110c8416e471df0e96702d58690178e206e61b7173706673c93706"
 dependencies = [
  "memchr",
- "regex-automata",
+ "regex-automata 0.4.6",
  "serde 1.0.204",
 ]
 
@@ -2824,26 +2824,6 @@ dependencies = [
  "darling_core 0.20.9",
  "quote 1.0.36",
  "syn 2.0.65",
-]
-
-[[package]]
-name = "darwin-libproc"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9fb90051930c9a0f09e585762152048e23ac74d20c10590ef7cf01c0343c3046"
-dependencies = [
- "darwin-libproc-sys",
- "libc",
- "memchr",
-]
-
-[[package]]
-name = "darwin-libproc-sys"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57cebb5bde66eecdd30ddc4b9cd208238b15db4982ccc72db59d699ea10867c1"
-dependencies = [
- "libc",
 ]
 
 [[package]]
@@ -4573,7 +4553,7 @@ dependencies = [
  "aho-corasick",
  "bstr",
  "log",
- "regex-automata",
+ "regex-automata 0.4.6",
  "regex-syntax 0.8.3",
 ]
 
@@ -5109,22 +5089,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hyper-tls"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70206fc6890eaca9fde8a0bf71caa2ddfc9fe045ac9e5c70df101a7dbde866e0"
-dependencies = [
- "bytes",
- "http-body-util",
- "hyper 1.3.1",
- "hyper-util",
- "native-tls",
- "tokio",
- "tokio-native-tls",
- "tower-service",
-]
-
-[[package]]
 name = "hyper-util"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5193,7 +5157,7 @@ dependencies = [
  "globset",
  "log",
  "memchr",
- "regex-automata",
+ "regex-automata 0.4.6",
  "same-file",
  "walkdir",
  "winapi-util",
@@ -5952,7 +5916,7 @@ version = "0.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "507460a910eb7b32ee961886ff48539633b788a36b65692b95f225b844c82553"
 dependencies = [
- "regex-automata",
+ "regex-automata 0.4.6",
 ]
 
 [[package]]
@@ -6178,6 +6142,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "matchers"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8263075bb86c5a1b1427b5ae862e8889656f126e9f77c484496e8b47cf5c5558"
+dependencies = [
+ "regex-automata 0.1.10",
+]
+
+[[package]]
 name = "matchit"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6258,13 +6231,20 @@ name = "metrics"
 version = "0.5.7"
 dependencies = [
  "anyhow",
+ "async-trait",
+ "axum 0.7.5",
+ "axum-server 0.6.0",
+ "dashmap",
  "futures",
- "hyper 0.14.28",
- "log",
+ "once_cell",
+ "parking_lot 0.12.3",
  "prometheus",
- "psutil",
- "serde_json",
- "timeout-join-handler",
+ "protobuf",
+ "scopeguard",
+ "tap",
+ "tokio",
+ "tracing",
+ "uuid 1.9.1",
 ]
 
 [[package]]
@@ -6362,7 +6342,7 @@ checksum = "1fafa6961cabd9c63bcd77a45d7e3b7f3b552b70417831fb0f56db717e72407e"
 [[package]]
 name = "move-abigen"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6379,7 +6359,7 @@ dependencies = [
 [[package]]
 name = "move-binary-format"
 version = "0.0.3"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -6394,12 +6374,12 @@ dependencies = [
 [[package]]
 name = "move-borrow-graph"
 version = "0.0.1"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 
 [[package]]
 name = "move-bytecode-source-map"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6414,7 +6394,7 @@ dependencies = [
 [[package]]
 name = "move-bytecode-utils"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -6426,7 +6406,7 @@ dependencies = [
 [[package]]
 name = "move-bytecode-verifier"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "fail",
@@ -6440,7 +6420,7 @@ dependencies = [
 [[package]]
 name = "move-bytecode-viewer"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "clap 4.5.8",
@@ -6457,7 +6437,7 @@ dependencies = [
 [[package]]
 name = "move-cli"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6501,7 +6481,7 @@ dependencies = [
 [[package]]
 name = "move-command-line-common"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "difference",
@@ -6518,7 +6498,7 @@ dependencies = [
 [[package]]
 name = "move-compiler"
 version = "0.0.1"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6547,7 +6527,7 @@ dependencies = [
 [[package]]
 name = "move-core-types"
 version = "0.0.4"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "arbitrary",
@@ -6569,7 +6549,7 @@ dependencies = [
 [[package]]
 name = "move-coverage"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6589,7 +6569,7 @@ dependencies = [
 [[package]]
 name = "move-disassembler"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "clap 4.5.8",
@@ -6607,7 +6587,7 @@ dependencies = [
 [[package]]
 name = "move-docgen"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "codespan",
@@ -6626,7 +6606,7 @@ dependencies = [
 [[package]]
 name = "move-errmapgen"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6640,7 +6620,7 @@ dependencies = [
 [[package]]
 name = "move-ir-compiler"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6659,7 +6639,7 @@ dependencies = [
 [[package]]
 name = "move-ir-to-bytecode"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "codespan-reporting",
@@ -6678,7 +6658,7 @@ dependencies = [
 [[package]]
 name = "move-ir-to-bytecode-syntax"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "hex",
@@ -6691,7 +6671,7 @@ dependencies = [
 [[package]]
 name = "move-ir-types"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "hex",
@@ -6705,7 +6685,7 @@ dependencies = [
 [[package]]
 name = "move-model"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "codespan",
@@ -6732,7 +6712,7 @@ dependencies = [
 [[package]]
 name = "move-package"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6768,7 +6748,7 @@ dependencies = [
 [[package]]
 name = "move-prover"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6805,7 +6785,7 @@ dependencies = [
 [[package]]
 name = "move-prover-boogie-backend"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6834,7 +6814,7 @@ dependencies = [
 [[package]]
 name = "move-resource-viewer"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6849,7 +6829,7 @@ dependencies = [
 [[package]]
 name = "move-stackless-bytecode"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "codespan",
  "codespan-reporting",
@@ -6875,7 +6855,7 @@ dependencies = [
 [[package]]
 name = "move-stdlib"
 version = "0.1.1"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "hex",
@@ -6898,7 +6878,7 @@ dependencies = [
 [[package]]
 name = "move-symbol-pool"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "once_cell",
  "serde 1.0.204",
@@ -6907,7 +6887,7 @@ dependencies = [
 [[package]]
 name = "move-table-extension"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6924,7 +6904,7 @@ dependencies = [
 [[package]]
 name = "move-transactional-test-runner"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "clap 4.5.8",
@@ -6955,7 +6935,7 @@ dependencies = [
 [[package]]
 name = "move-unit-test"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "better_any",
@@ -6985,7 +6965,7 @@ dependencies = [
 [[package]]
 name = "move-vm-runtime"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "better_any",
  "fail",
@@ -7002,7 +6982,7 @@ dependencies = [
 [[package]]
 name = "move-vm-test-utils"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -7016,7 +6996,7 @@ dependencies = [
 [[package]]
 name = "move-vm-types"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27#c8c5dbd860bcc48f3d3fc1bb0a6446f2ddc57b27"
+source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "bcs",
  "move-binary-format",
@@ -7226,12 +7206,14 @@ dependencies = [
  "num_enum",
  "once_cell",
  "parking_lot 0.12.3",
+ "prometheus",
  "quote 1.0.36",
  "rand 0.8.5",
  "raw-store",
  "serde 1.0.204",
  "serde_bytes",
  "smt",
+ "tokio",
  "tracing",
  "tracing-subscriber",
 ]
@@ -7420,17 +7402,6 @@ checksum = "c2d684d1b59e0dc07b37e2203ef576987473288f530082512aff850585c61b1f"
 dependencies = [
  "mime",
  "unicase",
-]
-
-[[package]]
-name = "nix"
-version = "0.24.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa52e972a9a719cecb6864fb88568781eb706bac2cd1d4f04a648542dbf78069"
-dependencies = [
- "bitflags 1.3.2",
- "cfg-if",
- "libc",
 ]
 
 [[package]]
@@ -8817,11 +8788,9 @@ dependencies = [
  "cfg-if",
  "fnv",
  "lazy_static 1.5.0",
- "libc",
  "memchr",
  "parking_lot 0.12.3",
  "protobuf",
- "reqwest 0.12.4",
  "thiserror",
 ]
 
@@ -8937,6 +8906,9 @@ name = "protobuf"
 version = "2.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
+dependencies = [
+ "bytes",
+]
 
 [[package]]
 name = "protobuf-codegen"
@@ -8955,21 +8927,6 @@ checksum = "95a29399fc94bcd3eeaa951c715f7bea69409b2445356b00519740bcd6ddd865"
 dependencies = [
  "protobuf",
  "protobuf-codegen",
-]
-
-[[package]]
-name = "psutil"
-version = "3.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e617cc9058daa5e1fe5a0d23ed745773a5ee354111dad1ec0235b0cc16b6730"
-dependencies = [
- "cfg-if",
- "darwin-libproc",
- "mach2",
- "nix 0.24.3",
- "num_cpus",
- "once_cell",
- "thiserror",
 ]
 
 [[package]]
@@ -9217,6 +9174,7 @@ dependencies = [
  "rust-rocksdb",
  "serde 1.0.204",
  "serde_bytes",
+ "tap",
  "tempfile",
  "thiserror",
  "tokio",
@@ -9353,8 +9311,17 @@ checksum = "b91213439dad192326a0d7c6ee3955910425f441d7038e0d6933b0aec5c4517f"
 dependencies = [
  "aho-corasick",
  "memchr",
- "regex-automata",
+ "regex-automata 0.4.6",
  "regex-syntax 0.8.3",
+]
+
+[[package]]
+name = "regex-automata"
+version = "0.1.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c230d73fb8d8c1b9c0b3135c5142a8acee3a0558fb8db5cf1cb65f8d7862132"
+dependencies = [
+ "regex-syntax 0.6.29",
 ]
 
 [[package]]
@@ -9367,6 +9334,12 @@ dependencies = [
  "memchr",
  "regex-syntax 0.8.3",
 ]
+
+[[package]]
+name = "regex-syntax"
+version = "0.6.29"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f162c6dd7b008981e4d40210aca20b4bd0f9b60ca9271061b07f78537722f2e1"
 
 [[package]]
 name = "regex-syntax"
@@ -9445,7 +9418,7 @@ dependencies = [
  "http-body 0.4.6",
  "hyper 0.14.28",
  "hyper-rustls 0.24.2",
- "hyper-tls 0.5.0",
+ "hyper-tls",
  "ipnet",
  "js-sys",
  "log",
@@ -9485,23 +9458,18 @@ checksum = "566cafdd92868e0939d3fb961bd0dc25fcfaaed179291093b3d43e6b3150ea10"
 dependencies = [
  "base64 0.22.1",
  "bytes",
- "encoding_rs",
- "futures-channel",
  "futures-core",
  "futures-util",
- "h2 0.4.5",
  "http 1.1.0",
  "http-body 1.0.0",
  "http-body-util",
  "hyper 1.3.1",
  "hyper-rustls 0.26.0",
- "hyper-tls 0.6.0",
  "hyper-util",
  "ipnet",
  "js-sys",
  "log",
  "mime",
- "native-tls",
  "once_cell",
  "percent-encoding",
  "pin-project-lite",
@@ -9512,9 +9480,7 @@ dependencies = [
  "serde_json",
  "serde_urlencoded",
  "sync_wrapper 0.1.2",
- "system-configuration",
  "tokio",
- "tokio-native-tls",
  "tokio-rustls 0.25.0",
  "tokio-util",
  "tower-service",
@@ -9913,6 +9879,7 @@ dependencies = [
  "moveos-types",
  "once_cell",
  "parking_lot 0.12.3",
+ "prometheus",
  "raw-store",
  "rooch-config",
  "rooch-indexer",
@@ -9921,6 +9888,7 @@ dependencies = [
  "serde 1.0.204",
  "serde_bytes",
  "smt",
+ "tokio",
 ]
 
 [[package]]
@@ -10130,6 +10098,8 @@ dependencies = [
  "moveos-types",
  "moveos-verifier",
  "once_cell",
+ "prometheus",
+ "raw-store",
  "rooch-config",
  "rooch-db",
  "rooch-framework",
@@ -10222,12 +10192,15 @@ dependencies = [
  "moveos-types",
  "moveos-verifier",
  "once_cell",
+ "prometheus",
+ "raw-store",
  "regex",
  "rooch-framework",
  "rooch-genesis",
  "rooch-types",
  "serde 1.0.204",
  "serde_bytes",
+ "tokio",
  "tracing",
  "tracing-subscriber",
  "walkdir",
@@ -10641,11 +10614,13 @@ dependencies = [
  "moveos-types",
  "once_cell",
  "parking_lot 0.12.3",
+ "prometheus",
  "raw-store",
  "rooch-types",
  "serde 1.0.204",
  "serde_bytes",
  "smt",
+ "tokio",
 ]
 
 [[package]]
@@ -12878,6 +12853,7 @@ dependencies = [
  "signal-hook-registry",
  "socket2 0.5.7",
  "tokio-macros",
+ "tracing",
  "windows-sys 0.48.0",
 ]
 
@@ -13282,13 +13258,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "tracing-log"
-version = "0.2.0"
+name = "tracing-serde"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee855f1f400bd0e5c02d150ae5de3840039a3f54b025156404e34c23c03f47c3"
+checksum = "bc6b213177105856957181934e4920de57730fc69bf42c37ee5bb664d406d9e1"
 dependencies = [
- "log",
- "once_cell",
+ "serde 1.0.204",
  "tracing-core",
 ]
 
@@ -13298,12 +13273,19 @@ version = "0.3.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ad0f048c97dbd9faa9b7df56362b8ebcaa52adb06b498c050d2f4e32f90a7a8b"
 dependencies = [
+ "matchers",
  "nu-ansi-term",
+ "once_cell",
+ "regex",
+ "serde 1.0.204",
+ "serde_json",
  "sharded-slab",
  "smallvec 1.13.2",
  "thread_local",
+ "time",
+ "tracing",
  "tracing-core",
- "tracing-log",
+ "tracing-serde",
 ]
 
 [[package]]

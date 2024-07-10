@@ -1,6 +1,6 @@
 CREATE TABLE object_states
 (
-    object_id          VARCHAR        NOT NULL       PRIMARY KEY,
+    id          VARCHAR        NOT NULL       PRIMARY KEY,
     owner              VARCHAR        NOT NULL,
     flag               SMALLINT       NOT NULL,
     state_root         VARCHAR        NOT NULL,

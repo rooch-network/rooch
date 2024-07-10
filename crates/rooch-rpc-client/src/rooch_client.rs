@@ -162,7 +162,7 @@ impl RoochRpcClient {
         &self,
         access_path: AccessPathView,
         cursor: Option<String>,
-        limit: Option<usize>,
+        limit: Option<u64>,
     ) -> Result<StatePageView> {
         Ok(self
             .http
@@ -174,7 +174,7 @@ impl RoochRpcClient {
         &self,
         access_path: AccessPathView,
         cursor: Option<String>,
-        limit: Option<usize>,
+        limit: Option<u64>,
     ) -> Result<StatePageView> {
         Ok(self
             .http
@@ -202,11 +202,15 @@ impl RoochRpcClient {
         &self,
         account_addr: RoochAddressView,
         cursor: Option<IndexerStateID>,
-        limit: Option<usize>,
+        limit: Option<u64>,
     ) -> Result<BalanceInfoPageView> {
         Ok(self
             .http
-            .get_balances(account_addr.into(), cursor, limit.map(Into::into))
+            .get_balances(
+                account_addr.into(),
+                cursor.map(Into::into),
+                limit.map(Into::into),
+            )
             .await?)
     }
 
@@ -214,12 +218,17 @@ impl RoochRpcClient {
         &self,
         filter: ObjectStateFilterView,
         cursor: Option<IndexerStateID>,
-        limit: Option<usize>,
+        limit: Option<u64>,
         query_options: Option<QueryOptions>,
     ) -> Result<IndexerObjectStatePageView> {
         Ok(self
             .http
-            .query_object_states(filter, cursor, limit.map(Into::into), query_options)
+            .query_object_states(
+                filter,
+                cursor.map(Into::into),
+                limit.map(Into::into),
+                query_options,
+            )
             .await?)
     }
 }
