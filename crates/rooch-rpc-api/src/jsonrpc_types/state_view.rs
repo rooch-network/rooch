@@ -14,7 +14,7 @@ use moveos_types::{
     moveos_std::object::{human_readable_flag, ObjectID},
     state::{AnnotatedState, ObjectState, StateChangeSet},
 };
-use rooch_types::indexer::state::{IndexerObjectState, ObjectStateFilter};
+use rooch_types::indexer::state::{IndexerStateID, ObjectStateFilter};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -34,22 +34,22 @@ pub type FieldKeyView = StrView<FieldKey>;
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct StateKVView {
-    pub key_hex: FieldKeyView,
+    pub field_key: FieldKeyView,
     pub state: ObjectStateView,
 }
 
 impl From<StateKV> for StateKVView {
     fn from(state: StateKV) -> Self {
         Self {
-            key_hex: state.0.into(),
+            field_key: state.0.into(),
             state: state.1.into(),
         }
     }
 }
 
 impl StateKVView {
-    pub fn new(key_hex: FieldKeyView, state: ObjectStateView) -> Self {
-        Self { key_hex, state }
+    pub fn new(field_key: FieldKeyView, state: ObjectStateView) -> Self {
+        Self { field_key, state }
     }
 }
 
@@ -57,12 +57,20 @@ impl StateKVView {
 pub struct ObjectMetaView {
     pub id: ObjectID,
     pub owner: RoochAddressView,
+    pub owner_bitcoin_address: Option<String>,
     pub flag: u8,
     pub state_root: Option<H256View>,
-    pub size: u64,
-    pub created_at: u64,
-    pub updated_at: u64,
-    pub value_type: TypeTagView,
+    pub size: StrView<u64>,
+    pub created_at: StrView<u64>,
+    pub updated_at: StrView<u64>,
+    pub object_type: TypeTagView,
+}
+
+impl ObjectMetaView {
+    pub fn with_owner_bitcoin_address(mut self, owner_bitcoin_address: Option<String>) -> Self {
+        self.owner_bitcoin_address = owner_bitcoin_address;
+        self
+    }
 }
 
 impl From<ObjectMeta> for ObjectMetaView {
@@ -70,12 +78,28 @@ impl From<ObjectMeta> for ObjectMetaView {
         Self {
             id: meta.id,
             owner: meta.owner.into(),
+            owner_bitcoin_address: None,
             flag: meta.flag,
             state_root: meta.state_root.map(Into::into),
-            size: meta.size,
-            created_at: meta.created_at,
-            updated_at: meta.updated_at,
-            value_type: meta.value_type.into(),
+            size: meta.size.into(),
+            created_at: meta.created_at.into(),
+            updated_at: meta.updated_at.into(),
+            object_type: meta.object_type.into(),
+        }
+    }
+}
+
+impl From<ObjectMetaView> for ObjectMeta {
+    fn from(meta: ObjectMetaView) -> Self {
+        Self {
+            id: meta.id,
+            owner: meta.owner.into(),
+            flag: meta.flag,
+            state_root: meta.state_root.map(Into::into),
+            size: meta.size.0,
+            created_at: meta.created_at.0,
+            updated_at: meta.updated_at.0,
+            object_type: meta.object_type.into(),
         }
     }
 }
@@ -148,49 +172,89 @@ impl From<ObjectChange> for ObjectChangeView {
     }
 }
 
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub struct IndexerStateIDView {
+    pub tx_order: StrView<u64>,
+    pub state_index: StrView<u64>,
+}
+
+impl From<IndexerStateID> for IndexerStateIDView {
+    fn from(id: IndexerStateID) -> Self {
+        Self {
+            tx_order: id.tx_order.into(),
+            state_index: id.state_index.into(),
+        }
+    }
+}
+
+impl From<IndexerStateIDView> for IndexerStateID {
+    fn from(id: IndexerStateIDView) -> Self {
+        Self {
+            tx_order: id.tx_order.0,
+            state_index: id.state_index.0,
+        }
+    }
+}
+
+impl std::fmt::Display for IndexerStateIDView {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "IndexerStateID[tx order: {}, state index: {}]",
+            self.tx_order, self.state_index,
+        )
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct IndexerObjectStateView {
-    pub object_id: ObjectID,
-    pub owner: RoochAddressView,
-    pub owner_bitcoin_address: Option<String>,
-    pub flag: u8,
+    #[serde(flatten)]
+    pub metadata: ObjectMetaView,
     /// bcs bytes of the Object.
     pub value: BytesView,
     pub decoded_value: Option<AnnotatedMoveStructView>,
-    pub object_type: StructTagView,
-    pub state_root: Option<H256View>,
-    pub size: u64,
-    pub tx_order: u64,
-    pub state_index: u64,
-    pub created_at: u64,
-    pub updated_at: u64,
+    #[serde(flatten)]
+    pub indexer_id: IndexerStateIDView,
     pub display_fields: Option<DisplayFieldsView>,
 }
 
 impl IndexerObjectStateView {
     pub fn new_from_object_state(
-        state: IndexerObjectState,
-        value: Vec<u8>,
-        owner_bitcoin_address: Option<String>,
-        decoded_value: Option<AnnotatedMoveStructView>,
-        display_fields: Option<DisplayFieldsView>,
+        state: ObjectState,
+        indexer_id: IndexerStateID,
     ) -> IndexerObjectStateView {
+        let (metadata, value) = state.into_inner();
         IndexerObjectStateView {
-            object_id: state.object_id,
-            owner: state.owner.into(),
-            owner_bitcoin_address,
-            flag: state.flag,
+            metadata: metadata.into(),
             value: value.into(),
-            decoded_value,
-            object_type: state.object_type.into(),
-            state_root: state.state_root.map(Into::into),
-            size: state.size,
-            tx_order: state.tx_order,
-            state_index: state.state_index,
-            created_at: state.created_at,
-            updated_at: state.updated_at,
-            display_fields,
+            decoded_value: None,
+            indexer_id: indexer_id.into(),
+            display_fields: None,
         }
+    }
+
+    pub fn new_from_annotated_state(
+        state: AnnotatedState,
+        indexer_id: IndexerStateID,
+    ) -> IndexerObjectStateView {
+        let (metadata, value, decoded_value) = state.into_inner();
+        IndexerObjectStateView {
+            metadata: metadata.into(),
+            value: value.into(),
+            decoded_value: Some(AnnotatedMoveStructView::from(decoded_value)),
+            indexer_id: indexer_id.into(),
+            display_fields: None,
+        }
+    }
+
+    pub fn with_owner_bitcoin_address(mut self, owner_bitcoin_address: Option<String>) -> Self {
+        self.metadata.owner_bitcoin_address = owner_bitcoin_address;
+        self
+    }
+
+    pub fn with_display_fields(mut self, display_fields: Option<DisplayFieldsView>) -> Self {
+        self.display_fields = display_fields;
+        self
     }
 }
 
@@ -209,13 +273,13 @@ impl HumanReadableDisplay for IndexerObjectStateView {
   state_index    | {}
 {}"#,
             "-".repeat(100),
-            self.object_id,
-            self.object_type,
-            self.owner,
-            self.owner_bitcoin_address,
-            human_readable_flag(self.flag),
-            self.tx_order,
-            self.state_index,
+            self.metadata.id,
+            self.metadata.object_type,
+            self.metadata.owner,
+            self.metadata.owner_bitcoin_address,
+            human_readable_flag(self.metadata.flag),
+            self.indexer_id.tx_order,
+            self.indexer_id.state_index,
             "-".repeat(100),
         )
     }
@@ -262,15 +326,8 @@ impl ObjectStateFilterView {
 /// Object state view. Used as return type of `getObjectStates`.
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ObjectStateView {
-    pub id: ObjectID,
-    pub owner: RoochAddressView,
-    pub owner_bitcoin_address: Option<String>,
-    pub flag: u8,
-    pub object_type: StructTagView,
-    pub state_root: Option<H256View>,
-    pub size: u64,
-    pub created_at: u64,
-    pub updated_at: u64,
+    #[serde(flatten)]
+    pub metadata: ObjectMetaView,
     pub value: BytesView,
     pub decoded_value: Option<AnnotatedMoveStructView>,
     pub display_fields: Option<DisplayFieldsView>,
@@ -279,17 +336,9 @@ pub struct ObjectStateView {
 impl ObjectStateView {
     pub fn new(object: AnnotatedState, decode: bool) -> Self {
         let (metadata, value, decoded_value) = object.into_inner();
-        let object_type = metadata.value_struct_tag().clone().into();
+
         ObjectStateView {
-            id: metadata.id,
-            owner: metadata.owner.into(),
-            owner_bitcoin_address: None,
-            flag: metadata.flag,
-            object_type,
-            state_root: metadata.state_root.map(Into::into),
-            size: metadata.size,
-            created_at: metadata.created_at,
-            updated_at: metadata.updated_at,
+            metadata: metadata.into(),
             value: value.into(),
             decoded_value: if decode {
                 Some(AnnotatedMoveStructView::from(decoded_value))
@@ -302,17 +351,8 @@ impl ObjectStateView {
 
     pub fn new_from_object_state(object: ObjectState) -> Self {
         let (metadata, value) = object.into_inner();
-        let value_struct_tag = metadata.value_struct_tag().clone();
         ObjectStateView {
-            id: metadata.id,
-            owner: metadata.owner.into(),
-            owner_bitcoin_address: None,
-            flag: metadata.flag,
-            object_type: value_struct_tag.into(),
-            state_root: metadata.state_root.map(Into::into),
-            size: metadata.size,
-            created_at: metadata.created_at,
-            updated_at: metadata.updated_at,
+            metadata: metadata.into(),
             value: value.into(),
             decoded_value: None,
             display_fields: None,
@@ -325,7 +365,7 @@ impl ObjectStateView {
     }
 
     pub fn with_owner_bitcoin_address(mut self, owner_bitcoin_address: Option<String>) -> Self {
-        self.owner_bitcoin_address = owner_bitcoin_address;
+        self.metadata.owner_bitcoin_address = owner_bitcoin_address;
         self
     }
 }
@@ -338,16 +378,7 @@ impl From<ObjectState> for ObjectStateView {
 
 impl From<ObjectStateView> for ObjectState {
     fn from(state: ObjectStateView) -> Self {
-        let metadata = ObjectMeta {
-            id: state.id,
-            owner: state.owner.0.into(),
-            flag: state.flag,
-            state_root: state.state_root.map(Into::into),
-            size: state.size,
-            created_at: state.created_at,
-            updated_at: state.updated_at,
-            value_type: state.object_type.0.into(),
-        };
+        let metadata = state.metadata.into();
         ObjectState::new(metadata, state.value.0)
     }
 }
@@ -371,11 +402,11 @@ impl HumanReadableDisplay for ObjectStateView {
   status         | {}
 {}"#,
             "-".repeat(100),
-            self.id,
-            self.object_type,
-            self.owner,
-            self.owner_bitcoin_address,
-            human_readable_flag(self.flag),
+            self.metadata.id,
+            self.metadata.object_type,
+            self.metadata.owner,
+            self.metadata.owner_bitcoin_address,
+            human_readable_flag(self.metadata.flag),
             "-".repeat(100),
         )
     }

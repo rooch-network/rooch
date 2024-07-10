@@ -55,7 +55,7 @@ impl RuntimeObjectMeta {
             Self::Deleted(meta) => meta.metadata.id.clone(),
             Self::Fresh(v) | Self::Cached(v) => {
                 //If the object is removed, and init it again, the value type may be different
-                v.metadata.value_type = value_type;
+                v.metadata.object_type = value_type;
                 v.value_layout = value_layout;
                 return Ok(());
             }
@@ -121,7 +121,7 @@ impl RuntimeObjectMeta {
 
     pub fn value_type(&self) -> PartialVMResult<&TypeTag> {
         let meta = self.metadata()?;
-        Ok(&meta.value_type)
+        Ok(&meta.object_type)
     }
 
     pub fn value_layout(&self) -> PartialVMResult<&MoveTypeLayout> {

@@ -1,33 +1,40 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{Ok, Result};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{ModuleId, StructTag};
 use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
+use moveos_types::moveos_std::display::{
+    get_object_display_id, get_resource_display_id, RawDisplay,
+};
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
+use moveos_types::moveos_std::object::{ObjectEntity, ObjectID};
 use moveos_types::state::{AnnotatedState, FieldKey, ObjectState};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
+use rooch_rpc_api::jsonrpc_types::{DisplayFieldsView, IndexerObjectStateView, ObjectMetaView};
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::address::{BitcoinAddress, RoochAddress};
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
-use rooch_types::indexer::state::{IndexerObjectState, IndexerStateID, ObjectStateFilter};
+use rooch_types::indexer::state::{IndexerStateID, ObjectStateFilter};
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::transaction::{ExecuteTransactionResponse, LedgerTransaction, RoochTransaction};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 /// RpcService is the implementation of the RPC service.
 /// It is the glue between the RPC server(EthAPIServer,RoochApiServer) and the rooch's actors.
 /// The RpcService encapsulates the logic of the functions, and the RPC server handle the response format.
 #[derive(Clone)]
 pub struct RpcService {
+    chain_id: u64,
+    bitcoin_network: u8,
     pub(crate) executor: ExecutorProxy,
     pub(crate) sequencer: SequencerProxy,
     pub(crate) indexer: IndexerProxy,
@@ -36,12 +43,16 @@ pub struct RpcService {
 
 impl RpcService {
     pub fn new(
+        chain_id: u64,
+        bitcoin_network: u8,
         executor: ExecutorProxy,
         sequencer: SequencerProxy,
         indexer: IndexerProxy,
         pipeline_processor: PipelineProcessorProxy,
     ) -> Self {
         Self {
+            chain_id,
+            bitcoin_network,
             executor,
             sequencer,
             indexer,
@@ -51,12 +62,12 @@ impl RpcService {
 }
 
 impl RpcService {
-    pub async fn get_chain_id(&self) -> Result<u64> {
-        Ok(self.executor.chain_id().await?.id)
+    pub fn get_chain_id(&self) -> u64 {
+        self.chain_id
     }
 
-    pub async fn get_bitcoin_network(&self) -> Result<u8> {
-        Ok(self.executor.bitcoin_network().await?.network)
+    pub fn get_bitcoin_network(&self) -> u8 {
+        self.bitcoin_network
     }
 
     pub async fn queue_tx(&self, tx: RoochTransaction) -> Result<()> {
@@ -232,12 +243,105 @@ impl RpcService {
         cursor: Option<IndexerStateID>,
         limit: usize,
         descending_order: bool,
-    ) -> Result<Vec<IndexerObjectState>> {
-        let resp = self
+        decode: bool,
+        show_display: bool,
+    ) -> Result<Vec<IndexerObjectStateView>> {
+        let indexer_ids = self
             .indexer
-            .query_object_states(filter, cursor, limit, descending_order)
+            .query_object_ids(filter, cursor, limit, descending_order)
             .await?;
-        Ok(resp)
+        let object_ids = indexer_ids.iter().map(|m| m.0.clone()).collect::<Vec<_>>();
+
+        let access_path = AccessPath::objects(object_ids.clone());
+        let mut object_states = if decode || show_display {
+            let annotated_states = self.get_annotated_states(access_path).await?;
+            let mut displays: BTreeMap<ObjectID, Option<DisplayFieldsView>> = if show_display {
+                let valid_states = annotated_states
+                    .iter()
+                    .filter_map(|s| s.as_ref())
+                    .collect::<Vec<&AnnotatedState>>();
+                let valid_display_field_views = self
+                    .get_display_fields_and_render(&valid_states, true)
+                    .await?;
+                valid_states
+                    .iter()
+                    .zip(valid_display_field_views)
+                    .map(|(state, display_fields)| (state.metadata.id.clone(), display_fields))
+                    .collect()
+            } else {
+                BTreeMap::new()
+            };
+            let mut object_states = annotated_states
+                .into_iter()
+                .zip(indexer_ids)
+                .filter_map(|(state_opt, (object_id, indexer_state_id))| {
+                    match state_opt {
+                        Some(state) => Some(IndexerObjectStateView::new_from_annotated_state(
+                            state,
+                            indexer_state_id,
+                        )),
+                        None => {
+                            // Sometime the indexer is delayed, maybe the object is deleted in the state
+                            tracing::trace!(
+                                "Object {} in the indexer but can not found in state",
+                                object_id
+                            );
+                            None
+                        }
+                    }
+                })
+                .collect::<Vec<_>>();
+            if !displays.is_empty() {
+                object_states.iter_mut().for_each(|object_state| {
+                    object_state.display_fields =
+                        displays.remove(&object_state.metadata.id).flatten();
+                });
+            }
+            object_states
+        } else {
+            let states = self.get_states(access_path).await?;
+            states
+                .into_iter()
+                .zip(indexer_ids)
+                .filter_map(|(state_opt, (object_id, indexer_state_id))| {
+                    match state_opt {
+                        Some(state) => Some(IndexerObjectStateView::new_from_object_state(
+                            state,
+                            indexer_state_id,
+                        )),
+                        None => {
+                            // Sometime the indexer is delayed, maybe the object is deleted in the state
+                            tracing::trace!(
+                                "Object {} in the indexer but can not found in state",
+                                object_id
+                            );
+                            None
+                        }
+                    }
+                })
+                .collect::<Vec<_>>()
+        };
+        self.fill_bitcoin_addresses(object_states.iter_mut().map(|m| &mut m.metadata).collect())
+            .await?;
+        Ok(object_states)
+    }
+
+    pub async fn fill_bitcoin_addresses(
+        &self,
+        mut metadatas: Vec<&mut ObjectMetaView>,
+    ) -> Result<()> {
+        let bitcoin_network = self.bitcoin_network;
+        let owners = metadatas.iter().map(|m| m.owner.0).collect::<Vec<_>>();
+        let reverse_address_mapping = self.get_bitcoin_addresses(owners).await?;
+        for metadata in metadatas.iter_mut() {
+            let reverse_address = reverse_address_mapping
+                .get(&metadata.owner.0)
+                .cloned()
+                .flatten();
+            metadata.owner_bitcoin_address =
+                reverse_address.and_then(|addr| addr.format(bitcoin_network).ok());
+        }
+        Ok(())
     }
 
     pub async fn get_bitcoin_addresses(
@@ -247,6 +351,9 @@ impl RpcService {
         let mapping_object_id = RoochToBitcoinAddressMapping::object_id();
         let owner_keys = rooch_addresses
             .iter()
+            .filter(|addr|
+                //skip vm and system reserved addresses
+                !addr.is_vm_or_system_reserved_address())
             .map(|addr| FieldKey::derive_from_address(&(*addr).into()))
             .collect::<Vec<_>>();
 
@@ -270,5 +377,58 @@ impl RpcService {
             })
             .collect::<Result<HashMap<_, _>>>()?;
         Ok(address_mapping)
+    }
+
+    pub async fn get_display_fields_and_render(
+        &self,
+        states: &[&AnnotatedState],
+        is_object: bool,
+    ) -> Result<Vec<Option<DisplayFieldsView>>> {
+        let mut display_ids = vec![];
+        let mut displayable_states = vec![];
+        for s in states {
+            displayable_states.push(if is_object {
+                display_ids.push(get_object_display_id(s.metadata.object_type.clone()));
+                true
+            } else if let Some(tag) = s.metadata.get_resource_struct_tag() {
+                display_ids.push(get_resource_display_id(tag.clone().into()));
+                true
+            } else {
+                false
+            });
+        }
+        // get display fields
+        let path = AccessPath::objects(display_ids);
+        let mut display_fields = self
+            .get_states(path)
+            .await?
+            .into_iter()
+            .map(|option_s| {
+                option_s
+                    .map(|s| s.into_object_uncheck::<RawDisplay>())
+                    .transpose()
+            })
+            .collect::<Result<Vec<Option<ObjectEntity<RawDisplay>>>>>()?;
+        display_fields.reverse();
+
+        let mut display_field_views = vec![];
+        for (annotated_s, displayable) in states.iter().zip(displayable_states) {
+            display_field_views.push(if displayable {
+                debug_assert!(
+                    !display_fields.is_empty(),
+                    "Display fields should not be empty"
+                );
+                display_fields.pop().unwrap().map(|obj| {
+                    DisplayFieldsView::new(obj.value.render(
+                        &move_resource_viewer::AnnotatedMoveValue::Struct(
+                            annotated_s.decoded_value.clone(),
+                        ),
+                    ))
+                })
+            } else {
+                None
+            });
+        }
+        Ok(display_field_views)
     }
 }

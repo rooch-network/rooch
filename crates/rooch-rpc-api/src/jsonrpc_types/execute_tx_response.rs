@@ -119,7 +119,7 @@ pub struct TransactionExecutionInfoView {
     pub tx_hash: H256View,
     pub state_root: H256View,
     pub event_root: H256View,
-    pub gas_used: u64,
+    pub gas_used: StrView<u64>,
     pub status: KeptVMStatusView,
 }
 
@@ -129,7 +129,7 @@ impl From<TransactionExecutionInfo> for TransactionExecutionInfoView {
             tx_hash: transaction_execution_info.tx_hash.into(),
             state_root: transaction_execution_info.state_root.into(),
             event_root: transaction_execution_info.event_root.into(),
-            gas_used: transaction_execution_info.gas_used,
+            gas_used: transaction_execution_info.gas_used.into(),
             status: KeptVMStatusView::from(transaction_execution_info.status),
         }
     }
@@ -140,7 +140,7 @@ pub struct TransactionOutputView {
     pub status: KeptVMStatusView,
     pub changeset: StateChangeSetView,
     pub events: Vec<EventView>,
-    pub gas_used: u64,
+    pub gas_used: StrView<u64>,
     pub is_upgrade: bool,
 }
 
@@ -154,7 +154,7 @@ impl From<TransactionOutput> for TransactionOutputView {
                 .into_iter()
                 .map(|event| event.into())
                 .collect(),
-            gas_used: tx_output.gas_used,
+            gas_used: tx_output.gas_used.into(),
             is_upgrade: tx_output.is_upgrade,
         }
     }

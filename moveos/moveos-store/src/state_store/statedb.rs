@@ -156,7 +156,7 @@ impl StatelessResolver for StateDBStore {
         let result = self.smt.get(state_root, *key);
         if log::log_enabled!(log::Level::Trace) {
             let result_info = match &result {
-                Ok(Some(state)) => format!("Some({})", state.metadata.value_type),
+                Ok(Some(state)) => format!("Some({})", state.metadata.object_type),
                 Ok(None) => "None".to_string(),
                 Err(e) => format!("Error({:?})", e),
             };

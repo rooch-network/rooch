@@ -197,7 +197,7 @@ impl RuntimeObject {
                             "The loaded object id should be equal to the expected field object id"
                         );
                             let value_layout =
-                                layout_loader.get_type_layout(obj_state.value_type())?;
+                                layout_loader.get_type_layout(obj_state.object_type())?;
                             let state_bytes_len = obj_state.value.len() as u64;
                             (
                                 RuntimeObject::load(value_layout, obj_state)?,

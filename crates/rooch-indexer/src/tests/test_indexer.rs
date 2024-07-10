@@ -27,17 +27,16 @@ use rooch_types::test_utils::{
 fn random_update_object_states(states: Vec<IndexerObjectState>) -> Vec<IndexerObjectState> {
     states
         .into_iter()
-        .map(|item| IndexerObjectState {
-            object_id: item.object_id,
-            owner: item.owner,
-            flag: item.flag,
-            object_type: item.object_type,
-            state_root: item.state_root,
-            size: item.size + 1,
-            tx_order: item.tx_order,
-            state_index: item.state_index,
-            created_at: item.created_at,
-            updated_at: item.updated_at + 1,
+        .map(|item| {
+            let mut metadata = item.metadata;
+            metadata.size = metadata.size + 1;
+            metadata.updated_at = metadata.updated_at + 1;
+
+            IndexerObjectState {
+                metadata,
+                tx_order: item.tx_order,
+                state_index: item.state_index,
+            }
         })
         .collect()
 }
@@ -161,7 +160,7 @@ fn test_state_store() -> Result<()> {
     let mut new_object_states = random_new_object_states()?;
     let new_object_ids = new_object_states
         .iter()
-        .map(|state| state.object_id.clone())
+        .map(|state| state.metadata.id.clone())
         .collect::<Vec<ObjectID>>();
     let mut update_object_states = random_update_object_states(new_object_states.clone());
     let remove_object_states = random_remove_object_states();
