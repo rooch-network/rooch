@@ -7,7 +7,7 @@ import { getRoochNodeUrl, RoochClient } from '../src/client/index.js'
 import { Secp256k1Keypair } from '../src/keypairs/index.js'
 import { Transaction } from '../src/transactions/index.js'
 
-export const DEFAULT_NODE_URL = import.meta.env.VITE_FULLNODE_URL ?? getRoochNodeUrl('localnet')
+export const DEFAULT_NODE_URL = import.meta.env.VITE_FULLNODE_URL ?? getRoochNodeUrl('testnet')
 
 let _defaultCmdAddress = ''
 

@@ -12,12 +12,14 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } =
       url: getRoochNodeUrl("testnet"),
       variables: {
         roochOperatingAddress: ROOCH_OPERATING_ADDRESS,
+        mintAddress: ROOCH_OPERATING_ADDRESS
       },
     },
     localnet: {
       url: getRoochNodeUrl("localnet"),
       variables: {
         roochOperatingAddress: ROOCH_OPERATING_ADDRESS,
+        mintAddress: ROOCH_OPERATING_ADDRESS,
       },
     }
   });

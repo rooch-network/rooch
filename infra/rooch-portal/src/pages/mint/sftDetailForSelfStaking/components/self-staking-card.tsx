@@ -12,6 +12,7 @@ import { CheckCircle2 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { ToastAction } from '@/components/ui/toast'
 import { UTXO } from '@/common/interface'
+import { useRoochClientQuery, useCurrentWallet } from '@roochnetwork/rooch-sdk-kit'
 
 const SAMPLE_UTXOS: UTXO[] = [
   { id: 0, amount: 1000, isStaked: false, isSelected: false },
@@ -74,6 +75,13 @@ export const SelfStakingCard = () => {
       })
     }
   }
+
+  const {wallet} = useCurrentWallet()
+  const {data} = useRoochClientQuery('queryUTXO', {
+    filter: {
+      owner: wallet?.getBitcoinAddress().toStr() || ''
+    }
+  })
 
   return (
     <div className="mt-6">

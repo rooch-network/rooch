@@ -17,6 +17,9 @@ import { TransactionsLayout } from './pages/transactions/transactions-layout.tsx
 import './styles/globals.css'
 import { TradeLayout } from '@/pages/trade/trade-layout.tsx'
 import { LeapLayout } from '@/pages/leap/leap-layout.tsx'
+import {
+  SftDetailLayoutForSelfStaking
+} from '@/pages/mint/sftDetailForSelfStaking/sft-detail-layout-for-self-staking.tsx'
 
 const router = createBrowserRouter([
   {
@@ -25,8 +28,8 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
     children: [
       { path: '/mint', element: <MintLayout /> },
-      { path: '/mint/sft/:sftId', element: <MintLayout /> },
-      { path: '/mint/sft/self-staking/:sftId', element: <MintLayout /> },
+      { path: '/mint/detail', element: <MintLayout /> },
+      { path: '/mint/stake', element: <SftDetailLayoutForSelfStaking /> },
       { path: '/trade', element: <TradeLayout /> },
       { path: '/leap', element: <LeapLayout /> },
       { path: '/apps', element: <AppsLayout /> },

@@ -71,7 +71,7 @@ const otherRouter = [
   { path: '/trade', element: <TradeLayout /> },
   { path: '/leap', element: <LeapLayout /> },
   {
-    path: '/mint/sft/:sftid',
+    path: '/mint/detail',
     element: <SftDetailLayout />,
   },
   {
@@ -79,7 +79,7 @@ const otherRouter = [
     element: <TransactionsBrowserLayout />,
   },
   {
-    path: '/mint/sft/self-staking/:sftId',
+    path: '/mint/stake',
     element: <SftDetailLayoutForSelfStaking />,
   },
 ]

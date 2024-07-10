@@ -27,6 +27,7 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <RoochProvider networks={networkConfig} defaultNetwork='testnet'>
             <WalletProvider
+
               chain={SupportChain.BITCOIN}
               autoConnect
               // fallback={
