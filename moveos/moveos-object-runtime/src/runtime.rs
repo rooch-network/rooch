@@ -16,12 +16,12 @@ use move_core_types::{
     value::MoveTypeLayout, vm_status::StatusCode,
 };
 use move_vm_types::values::{StructRef, Value};
+use moveos_types::state::StateChangeSet;
 use moveos_types::{
     move_std::string::MoveString,
     moveos_std::timestamp::Timestamp,
     state::{FieldKey, ObjectChange, ObjectState},
 };
-use moveos_types::{moveos_std::object::TimestampObject, state::StateChangeSet};
 use moveos_types::{
     moveos_std::{
         module_store::{ModuleStore, Package},
@@ -185,12 +185,12 @@ impl ObjectRuntime {
                 // If the timestamp object is not found, we should create a new one(before genesis).
                 // Init none GlobalValue and move value to it, make the data status is dirty
                 // The change will apart of the state change set
-                let obj = TimestampObject::genesis_timestamp();
+                let id = Timestamp::object_id();
                 let value_type = Timestamp::type_tag();
                 let value_layout = Timestamp::type_layout();
-                let value = obj.value.to_runtime_value();
+                let value = Timestamp { milliseconds: 0 }.to_runtime_value();
 
-                let mut rt_obj = RuntimeObject::none(obj.id);
+                let mut rt_obj = RuntimeObject::none(id);
                 rt_obj.move_to(value, value_type, value_layout)?;
                 rt_obj.rt_meta.to_shared()?;
                 rt_obj
