@@ -8,6 +8,7 @@ use anyhow::Result;
 use diesel::connection::SimpleConnection;
 use diesel::r2d2::ConnectionManager;
 use diesel::sqlite::SqliteConnection;
+use diesel::ConnectionError::BadConnection;
 use diesel::RunQueryDsl;
 use errors::IndexerError;
 use once_cell::sync::Lazy;
@@ -252,15 +253,16 @@ impl diesel::r2d2::CustomizeConnection<SqliteConnection, diesel::r2d2::Error>
         &self,
         conn: &mut SqliteConnection,
     ) -> std::result::Result<(), diesel::r2d2::Error> {
-        let mut locker_cnt = self.locker.write().unwrap();
+        let mut locker_cnt = self
+            .locker
+            .write()
+            .map_err(|e| diesel::r2d2::Error::ConnectionError(BadConnection(e.to_string())))?;
         *locker_cnt += 1;
         log::trace!(
             "Sqlite CustomizeConnection on_acquire connection [rw:{}]",
             *locker_cnt
         );
         // https://github.com/diesel-rs/diesel/issues/2365
-        // conn.batch_execute(&format!("PRAGMA busy_timeout = {};", self.busy_timeout))
-        //     .map_err(diesel::r2d2::Error::QueryError)?;
         diesel::sql_query(format!("PRAGMA busy_timeout = {};", self.busy_timeout))
             .execute(conn)
             .map_err(diesel::r2d2::Error::QueryError)?;
