@@ -32,7 +32,7 @@ EOF
       BITCOIN_INT_TEST=1
       ;;
     o)
-      UNIT_TEST=1
+      UNIT_TEST=0
       ORD_INT_TEST=1
       ;;
     s)
@@ -49,7 +49,7 @@ EOF
 done
 
 export CARGO_BUILD_JOBS=8
-export RUST_LOG=debug 
+export RUST_LOG=info 
 export RUST_BACKTRACE=1
 
 if [ ! -z "$UNIT_TEST" ]; then

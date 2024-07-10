@@ -23,7 +23,7 @@ Feature: Rooch Bitcoin ord tests
       
       # create a inscription
       Then cmd ord bash: "echo "{"p":"brc-20","op":"mint","tick":"Rooch","amt":"1"}">/tmp/hello.txt"
-      Then cmd ord: "wallet inscribe --fee-rate 1 --file /tmp/hello.txt --destination {{$.wallet[-1].addresses[0]}}"
+      Then cmd ord: "wallet inscribe --fee-rate 1 --file /tmp/hello.txt --destination {{$.wallet[-2].addresses[0]}}"
 
       # mine a block
       Then cmd ord: "wallet receive"
@@ -32,6 +32,10 @@ Feature: Rooch Bitcoin ord tests
 
       # get a inscription
       Then cmd ord: "wallet inscriptions"
+
+      # burn latest inscription
+      Then cmd ord: "wallet burn --fee-rate 1 {{$.wallet[-1][0].inscription}}"
+      Then assert: "'{{$.wallet[-1]}}' not_contains error"
 
       # release servers
       Then stop the server

@@ -433,7 +433,7 @@ fn ord_run_cmd(w: &mut World, input_tpl: String) {
     debug!("run cmd: ord {}", joined_args);
 
     let exec_cmd = ExecCommand {
-        cmd: joined_args,
+        cmd: joined_args.clone(),
         ready_conditions: vec![WaitFor::Nothing],
     };
 
@@ -455,7 +455,7 @@ fn ord_run_cmd(w: &mut World, input_tpl: String) {
         }
     };
 
-    debug!("run cmd: ord stdout: {}", stdout_string);
+    info!("run cmd: {} ,stdout: {}", joined_args, stdout_string);
 
     // Check if stderr_string is not empty and panic if it contains any content.
     if !stderr_string.is_empty() {
