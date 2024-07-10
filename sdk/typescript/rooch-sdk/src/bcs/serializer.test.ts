@@ -76,7 +76,7 @@ describe('Serializer', () => {
   it('test named object id', () => {
     const testData: StructTag = {
       address: '0x2',
-      module: 'object',
+      module: 'timestamp',
       name: 'Timestamp',
       typeParams: [],
     }
