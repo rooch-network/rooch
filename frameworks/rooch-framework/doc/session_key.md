@@ -22,7 +22,7 @@
 -  [Function `active_session_key`](#0x3_session_key_active_session_key)
 -  [Function `remove_session_key`](#0x3_session_key_remove_session_key)
 -  [Function `remove_session_key_entry`](#0x3_session_key_remove_session_key_entry)
--  [Function `handle`](#0x3_session_key_handle)
+-  [Function `get_session_keys_handle`](#0x3_session_key_get_session_keys_handle)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -265,11 +265,11 @@ Check the current tx is in the session scope or not
 
 
 
-<a name="0x3_session_key_handle"></a>
+<a name="0x3_session_key_get_session_keys_handle"></a>
 
-## Function `handle`
+## Function `get_session_keys_handle`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_handle">handle</a>(account_address: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_get_session_keys_handle">get_session_keys_handle</a>(account_address: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
 </code></pre>

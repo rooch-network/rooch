@@ -33,7 +33,7 @@ impl CommandAction<Vec<BTreeMap<Identifier, AnnotatedMoveValueView>>> for ListCo
         let mapping = context.address_mapping();
         let address_addr = self.address.into_account_address(&mapping)?;
 
-        let function_id = "0x3::session_key::handle".parse::<FunctionId>()?;
+        let function_id = "0x3::session_key::get_session_keys_handle".parse::<FunctionId>()?;
         let function_call = FunctionCall::new(function_id, vec![], vec![address_addr.to_vec()]);
         let client = context.get_client().await?;
         let view_result = client
