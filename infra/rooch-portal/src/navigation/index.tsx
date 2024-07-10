@@ -1,5 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
 import {
   Bitcoin,
   LucideIcon,
@@ -16,7 +17,7 @@ import { AssetsLayout } from '@/pages/assets/assets-layout.tsx'
 import { MintLayout } from '@/pages/mint/mint-layout.tsx'
 import { TradeLayout } from '@/pages/trade/trade-layout.tsx'
 import { LeapLayout } from '@/pages/leap/leap-layout.tsx'
-import { SftDetailLayout } from '@/pages/mint/sftDetail/sft-detail-layout.tsx'
+import { MintDetailLayout } from '@/pages/mint/detail/mint-detail-layout.tsx'
 import { SftDetailLayoutForSelfStaking } from '@/pages/mint/sftDetailForSelfStaking/sft-detail-layout-for-self-staking.tsx'
 import { TransactionsLayout } from '@/pages/transactions/transactions-layout.tsx'
 import { TransactionsBrowserLayout } from '@/pages/txblock/transactions-browser-layout.tsx'
@@ -33,6 +34,18 @@ export type NavLink = {
 }
 
 export type NavItemsType = NavLink[]
+
+export const allRouter = [
+  { path: '/mint', element: <MintLayout /> },
+  { path: '/mint/detail', element: <MintDetailLayout /> },
+  { path: '/mint/stake', element: <SftDetailLayoutForSelfStaking /> },
+  { path: '/trade', element: <TradeLayout /> },
+  { path: '/leap', element: <LeapLayout /> },
+  { path: '/apps', element: <AppsLayout /> },
+  { path: '/transactions', element: <TransactionsLayout /> },
+  { path: '/transactions/txblock/:hash', element: <TransactionsBrowserLayout /> },
+  { path: '/settings', element: <SettingsLayout /> },
+]
 
 export const navItems = (): NavItemsType => {
   return [
@@ -72,7 +85,7 @@ const otherRouter = [
   { path: '/leap', element: <LeapLayout /> },
   {
     path: '/mint/detail',
-    element: <SftDetailLayout />,
+    element: <MintDetailLayout />,
   },
   {
     path: '/transactions/txblock/:hash',

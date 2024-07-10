@@ -1,12 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 import { Button } from '@/components/ui/button'
-import { SftDetails } from './components/sft-details'
+import { Details } from './components/details'
 import { Badge } from '@/components/ui/badge'
 import { ArrowLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
-export const SftDetailLayout = () => {
+export const MintDetailLayout = () => {
   const navigate = useNavigate()
 
   return (
@@ -34,8 +34,7 @@ export const SftDetailLayout = () => {
             </Badge>
           </div>
         </div>
-        {/* Mint SFT Overview */}
-        <SftDetails />
+        <Details />
       </div>
     </div>
   )

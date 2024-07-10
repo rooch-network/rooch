@@ -1,6 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-import { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -12,76 +12,95 @@ import { CheckCircle2 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { ToastAction } from '@/components/ui/toast'
 import { UTXO } from '@/common/interface'
-import { useRoochClientQuery, useCurrentWallet } from '@roochnetwork/rooch-sdk-kit'
+import { useRoochClientQuery, useCurrentWallet, useRoochClient } from '@roochnetwork/rooch-sdk-kit'
+import Skeleton, { SkeletonTheme } from 'react-loading-skeleton'
+import { TokenInfo } from '@/pages/mint/util/get-token-info'
+import { UtxoCard } from '@/pages/mint/sftDetailForSelfStaking/components/utxo'
+import { Transaction, Args } from '@roochnetwork/rooch-sdk'
+import { UseSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit'
 
-const SAMPLE_UTXOS: UTXO[] = [
-  { id: 0, amount: 1000, isStaked: false, isSelected: false },
-  { id: 1, amount: 2000, isStaked: false, isSelected: false },
-  { id: 2, amount: 2000, isStaked: false, isSelected: false },
-  { id: 3, amount: 1500, isStaked: true, isSelected: false },
-]
+type StakeCardProps = {
+  tokenInfo: TokenInfo | undefined,
+  tokenAddress: string
+}
 
-export const SelfStakingCard = () => {
+export const SelfStakingCard:React.FC<StakeCardProps> = ({tokenInfo, tokenAddress}) => {
   const { toast } = useToast()
-  const [isSwitchOn, setIsSwitchOn] = useState(false)
-  const [utxos, setUtxos] = useState<UTXO[]>(SAMPLE_UTXOS)
-
-  const handleSwitchChange = (checked: boolean) => {
-    setIsSwitchOn(checked)
-
-    if (!checked) {
-      setUtxos(
-        utxos.map((utxo) => ({
-          ...utxo,
-          isSelected: false,
-        })),
-      )
-    }
-  }
-
-  const toggleUTXOSelected = (utxoId: number) => {
-    setUtxos(
-      utxos.map((utxo) => {
-        if (utxo.id === utxoId && !utxo.isStaked) {
-          return { ...utxo, isSelected: !utxo.isSelected }
-        }
-        return utxo
-      }),
-    )
-  }
-
-  const handleSelfStake = () => {
-    const hasSelectedUTXOs = utxos.some((utxo) => utxo.isSelected) // For displaying "success" message
-
-    setUtxos(
-      utxos.map((utxo) => {
-        if (utxo.isSelected) {
-          return { ...utxo, isStaked: true, isSelected: false }
-        }
-        return utxo
-      }),
-    )
-
-    if (hasSelectedUTXOs) {
-      toast({
-        title: 'Self-staking successful ✅',
-        description: (
-          // eslint-disable-next-line jsx-a11y/anchor-is-valid
-          <a className="text-muted-foreground hover:underline cursor-pointer">
-            See the transaction on explorer
-          </a>
-        ),
-        action: <ToastAction altText="Confirm">Confirm</ToastAction>,
-      })
-    }
-  }
-
   const {wallet} = useCurrentWallet()
-  const {data} = useRoochClientQuery('queryUTXO', {
+
+  const client = useRoochClient()
+  const {mutateAsync: signAndExecuteTransaction} = UseSignAndExecuteTransaction()
+  console.log(tokenInfo)
+  const [selectedUTXO, setSelectUTXO] = useState('')
+
+  const toggleUTXOSelected = (utxoId: string) => {
+    // if (utxoId === )
+    setSelectUTXO(utxoId)
+    // setUtxos(
+    //   utxos.map((utxo) => {
+    //     if (utxo.id === utxoId && !utxo.isStaked) {
+    //       return { ...utxo, isSelected: !utxo.isSelected }
+    //     }
+    //     return utxo
+    //   }),
+    // )
+  }
+
+  const handleSelfStake = async () => {
+
+    const tx = new Transaction()
+    tx.callFunction({
+      target: `${tokenAddress}::hold_farmer::do_stake`,
+      args: [Args.objectId(selectedUTXO)]
+    })
+
+    const result = await signAndExecuteTransaction({
+      transaction: tx
+    })
+
+    console.log(result)
+
+    // const hasSelectedUTXOs = utxos.some((utxo) => utxo.isSelected) // For displaying "success" message
+
+    // setUtxos(
+    //   utxos.map((utxo) => {
+    //     if (utxo.isSelected) {
+    //       return { ...utxo, isStaked: true, isSelected: false }
+    //     }
+    //     return utxo
+    //   }),
+    // )
+    //
+    // if (hasSelectedUTXOs) {
+    //   toast({
+    //     title: 'Self-staking successful ✅',
+    //     description: (
+    //       // eslint-disable-next-line jsx-a11y/anchor-is-valid
+    //       <a className="text-muted-foreground hover:underline cursor-pointer">
+    //         See the transaction on explorer
+    //       </a>
+    //     ),
+    //     action: <ToastAction altText="Confirm">Confirm</ToastAction>,
+    //   })
+    // }
+  }
+
+  const {data:utxos, isPending: utxosIsPending} = useRoochClientQuery('queryUTXO', {
     filter: {
       owner: wallet?.getBitcoinAddress().toStr() || ''
     }
   })
+  useEffect(() => {
+    // const {data: state} = useRoochClientQuery('getStates', {
+    //   accessPath: `/resource/${wallet?.getRoochAddress().toHexAddress()}/${tokenAddress}::hold_farmer::UserStake`,
+    //   stateOption: {
+    //     decode: true,
+    //     showDisplay: true
+    //   }
+    // })
+  }, [])
+
+  console.log(utxos)
 
   return (
     <div className="mt-6">
@@ -94,70 +113,39 @@ export const SelfStakingCard = () => {
                 Stake your UTXO below
               </CardDescription>
             </div>
-
-            <div className="flex items-center justify-center gap-4">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="batch-mode"
-                  checked={isSwitchOn}
-                  onCheckedChange={handleSwitchChange}
-                  className="data-[state=checked]:bg-teal-500 dark:data-[state=checked]:bg-teal-400"
-                />
-                <Label htmlFor="batch-mode" className="text-muted-foreground">
-                  Batch Mode
-                </Label>
-              </div>
-              <Button
-                size="sm"
-                className="rounded-lg border-teal-400 dark:border-teal-500 bg-teal-500 hover:bg-teal-600 dark:bg-teal-400 dark:hover:bg-teal-300"
-                onClick={handleSelfStake}
-              >
-                Self-stake
-              </Button>
-            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {utxos.map((utxo) => (
-                <Card
-                  key={utxo.id}
-                  onClick={() => isSwitchOn && toggleUTXOSelected(utxo.id)}
-                  className={cn(
-                    'relative rounded-lg border border-border/40 dark:bg-zinc-800/90 overflow-hidden select-none',
-                    utxo.isSelected
-                      ? 'border-teal-400 dark:border-teal-500 bg-teal-50 dark:bg-teal-800/60'
-                      : '',
-                    isSwitchOn && utxo.isStaked ? 'opacity-50' : 'opacity-100',
-                    utxo.isStaked ? 'opacity-50 dark:bg-zinc-900' : '',
-                  )}
-                >
-                  {utxo.isStaked && (
-                    <div className="absolute top-0 left-0 px-5 py-0.5 bg-gradient-to-r bg-clip-padding from-teal-500 via-purple-500 to-orange-500 text-white text-xs font-semibold transform -rotate-45 -translate-x-6 translate-y-2">
-                      Staked
-                    </div>
-                  )}
-                  <CardHeader className="flex items-center justify-center">
-                    <h3 className="text-2xl">UTXO #{utxo.id}</h3>
-                  </CardHeader>
-                  <CardContent className="flex items-center justify-center">
-                    Amount {utxo.amount}
-                  </CardContent>
-                  {isSwitchOn && !utxo.isStaked && (
-                    <div className="absolute top-2 right-2">
-                      <CheckCircle2
-                        className={cn(
-                          'w-5 h-5 text-muted-foreground',
-                          utxo.isSelected ? 'text-teal-400' : '',
-                        )}
-                      />
-                    </div>
-                  )}
-                </Card>
-              ))}
+              {utxos && tokenInfo ? utxos.data.map((utxo) =>
+                <UtxoCard utxo={utxo} selected={utxo.object_id === selectedUTXO} selectedCallback={toggleUTXOSelected} noData={false}/>
+              ): <UtxoCard utxo={undefined} selected={false} selectedCallback={toggleUTXOSelected} noData={!utxosIsPending && tokenInfo !== undefined}/>}
             </div>
           </CardContent>
         </Card>
+        <Card className="border-border/40 shadow-inner bg-border/10 dark:bg-border/60 mt-6">
+          <CardHeader className="dark:text-zinc-100">
+            <CardTitle>Mint Overview</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm dark:text-primary w-full px-6">
+            <SkeletonTheme baseColor="#27272A" highlightColor="#444">
+              <div className="flex flex-col items-start justify-start gap-3">
+            <div
+              className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
+              <div className="w-36">
+                <span>Type:</span>
+              </div>
+              <span
+                className="border border-accent dark:border-none dark:bg-zinc-800 py-0.5 px-2 rounded-lg text-gray-800 dark:text-gray-50 tracking-tight ">
+                aaa
+              </span>
+            </div>
+              </div></SkeletonTheme>
+          </CardContent>
+        </Card>
+
       </div>
+      <Button className="rounded-lg w-full mt-4 mb-2 md:mt-8" onClick={handleSelfStake}>Mint</Button>
     </div>
+
   )
 }

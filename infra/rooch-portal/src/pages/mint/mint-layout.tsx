@@ -2,9 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SftTabs } from './components/sft-tabs'
 import {useTranslation} from 'react-i18next';
+import { useCurrentWallet } from '@roochnetwork/rooch-sdk-kit'
 
 export const MintLayout = () => {
   const { t } = useTranslation()
+  const { wallet } = useCurrentWallet()
+
+  if (!wallet) {
+    return <></>
+  }
   return (
     <div className="h-full flex-1 flex-col space-y-6 flex rounded-lg md:shadow-custom md:p-4 md:dark:shadow-muted">
       <div className="flex items-center justify-between space-y-2">

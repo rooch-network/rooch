@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import { OverviewCard } from './overview-card'
 import { YourMintingJourneyCard } from './your-minting-journey-card'
 
-export function SftDetails() {
+export function Details() {
   const [progress, setProgress] = useState(0)
 
   useEffect(() => {

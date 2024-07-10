@@ -13,24 +13,11 @@ import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 import { MousePointer2 } from 'lucide-react'
 import { useNetworkVariable } from '@/networks'
-import { useRoochClientQuery, useRoochClient } from '@roochnetwork/rooch-sdk-kit'
+import { useRoochClient } from '@roochnetwork/rooch-sdk-kit'
 import { useEffect, useState } from 'react'
-import { AnnotatedMoveStructView } from '@roochnetwork/rooch-sdk'
 import { formatTimestamp } from '@/utils/format'
 import { useNavigate } from 'react-router-dom'
-
-type TokenInfo =
-  {
-    coin: {
-      name: string,
-      symbol: string,
-      decimals: number,
-    }
-    assetTotalWeight: number,
-    starTime: number,
-    endTime: number,
-    releasePerSecond: number,
-  }
+import { getTokenInfo, TokenInfo } from '@/pages/mint/util/get-token-info'
 
 export const Tokens = () => {
   const navigate = useNavigate()
@@ -38,47 +25,15 @@ export const Tokens = () => {
 
   const client = useRoochClient()
   const s = useNetworkVariable('mintAddress')
-  const { data } = useRoochClientQuery('getStates', {
-    accessPath: `/resource/${s}/${s}::hold_farmer::FarmingAsset`,
-    stateOption: {
-      decode: true,
-      showDisplay: true,
-    },
-  })
 
   useEffect(() => {
 
-    if (data && data.length > 0) {
-      console.log(data)
-      const decode = (data[0].decoded_value as AnnotatedMoveStructView).value
-      const coinId = (decode['coin_info'] as AnnotatedMoveStructView).value['id'] as string
-
-      client.getStates({
-        accessPath: `/object/${coinId}`,
-        stateOption: {
-          decode: true,
-          showDisplay: true
-        }
-      }).then((sv) => {
-        console.log(sv)
-        const coinView = (((sv[0].decoded_value as any).value as any).value as any).value as any
-
-        let token: TokenInfo = {
-          coin: {
-            name: coinView.name,
-            decimals: coinView.decimals,
-            symbol: coinView.symbol
-          },
-          starTime: decode['start_time'] as number,
-          endTime: decode['end_time'] as number,
-          assetTotalWeight: decode['asset_total_weight'] as number,
-          releasePerSecond: decode['release_per_second'] as number,
-        }
-
+    getTokenInfo(client, s).then((token) => {
+      if (token) {
         setTokens([token])
-      })
-    }
-  }, [client, data])
+      }
+    })
+  }, [client, s])
 
   return (
     <div className="rounded-lg border w-full">
