@@ -34,8 +34,13 @@ Feature: Rooch Bitcoin ord tests
       Then cmd ord: "wallet inscriptions"
 
       # burn latest inscription
-      Then cmd ord: "wallet burn --fee-rate 1 {{$.wallet[-1][0].inscription}}"
+      Then cmd ord: "wallet burn --fee-rate 1 --postage 1000sat {{$.wallet[-1][0].inscription}}"
       Then assert: "'{{$.wallet[-1]}}' not_contains error"
+
+      # Check inscription burned
+      Then cmd: "move view --function 0x4::ord::view_inscription_burned --args string:{{$.wallet[-2][0].inscription}} "
+      Then assert: "{{$.move[-1].vm_status}} == Executed"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value}} == true"
 
       # release servers
       Then stop the server

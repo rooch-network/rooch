@@ -34,6 +34,7 @@
 -  [Function `exists_inscription`](#0x4_ord_exists_inscription)
 -  [Function `borrow_inscription`](#0x4_ord_borrow_inscription)
 -  [Function `borrow_inscription_by_id`](#0x4_ord_borrow_inscription_by_id)
+-  [Function `view_inscription_burned`](#0x4_ord_view_inscription_burned)
 -  [Function `spend_utxo`](#0x4_ord_spend_utxo)
 -  [Function `handle_coinbase_tx`](#0x4_ord_handle_coinbase_tx)
 -  [Function `process_transaction`](#0x4_ord_process_transaction)
@@ -47,6 +48,7 @@
 -  [Function `metaprotocol`](#0x4_ord_metaprotocol)
 -  [Function `parents`](#0x4_ord_parents)
 -  [Function `pointer`](#0x4_ord_pointer)
+-  [Function `is_burned`](#0x4_ord_is_burned)
 -  [Function `inscription_id_txid`](#0x4_ord_inscription_id_txid)
 -  [Function `inscription_id_index`](#0x4_ord_inscription_id_index)
 -  [Function `new_sat_point`](#0x4_ord_new_sat_point)
@@ -90,6 +92,7 @@
 <b>use</b> <a href="">0x2::string_utils</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="bitcoin_hash.md#0x4_bitcoin_hash">0x4::bitcoin_hash</a>;
+<b>use</b> <a href="script_buf.md#0x4_script_buf">0x4::script_buf</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 <b>use</b> <a href="utxo.md#0x4_utxo">0x4::utxo</a>;
 </code></pre>
@@ -548,6 +551,17 @@ Prase InscriptionID from String
 
 
 
+<a name="0x4_ord_view_inscription_burned"></a>
+
+## Function `view_inscription_burned`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_view_inscription_burned">view_inscription_burned</a>(inscription_id_str: <a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;bool&gt;
+</code></pre>
+
+
+
 <a name="0x4_ord_spend_utxo"></a>
 
 ## Function `spend_utxo`
@@ -687,6 +701,17 @@ Prase InscriptionID from String
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_pointer">pointer</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="_Option">option::Option</a>&lt;u64&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_is_burned"></a>
+
+## Function `is_burned`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_is_burned">is_burned</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): bool
 </code></pre>
 
 

@@ -95,8 +95,13 @@ module bitcoin_move::script_buf{
         result
     }
 
+    /// Checks if the given script is an OP_RETURN script.
+    public fun is_op_return(self: &ScriptBuf): bool {
+        vector::length(&self.bytes) > 1 &&
+            *vector::borrow(&self.bytes, 0) == opcode::op_return()
+    }
 
-     #[test]
+    #[test]
     fun test_get_address_p2pkh(){
         let script_buf = Self::new(x"76a914010966776006953d5567439e5e39f86a0d273bee88ac");
         let addr_opt = get_address(&script_buf);

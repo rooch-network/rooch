@@ -16,6 +16,7 @@ module bitcoin_move::ord {
     use moveos_std::bag;
     use moveos_std::string_utils;
 
+    use bitcoin_move::script_buf;
     use bitcoin_move::types::{Self, Witness, Transaction};
     use bitcoin_move::utxo::{Self, UTXO};
     use bitcoin_move::bitcoin_hash;
@@ -123,6 +124,8 @@ module bitcoin_move::ord {
         pointer: Option<u64>,
         // Reserved for extending the Rune protocol
         rune: Option<u128>,
+
+        burned: bool,
     }
 
     struct Envelope<T> has store, copy, drop {
@@ -273,6 +276,7 @@ module bitcoin_move::ord {
             parents,
             pointer: record.pointer,
             rune: option::none(),
+            burned: false,
         }
     }
 
@@ -321,6 +325,18 @@ module bitcoin_move::ord {
         object::borrow(inscription_obj)
     }
 
+    public fun view_inscription_burned(inscription_id_str: String) : Option<bool> {
+        let inscription_id_option = parse_inscription_id(&inscription_id_str);
+        if (option::is_none(&inscription_id_option)) {
+            return option::none()
+        };
+
+        let inscription_id = option::destroy_some(inscription_id_option);
+        let inscription = borrow_inscription_by_id(inscription_id);
+        let burned = is_burned(inscription);
+        option::some(burned)
+    }
+
     public(friend) fun spend_utxo(utxo_obj: &mut Object<UTXO>, tx: &Transaction, input_utxo_values: vector<u64>, input_index: u64): (vector<SatPoint>, vector<Flotsam>){
         let utxo = object::borrow_mut(utxo_obj);
 
@@ -347,6 +363,12 @@ module bitcoin_move::ord {
                 let match_output_index = new_sat_point.output_index;
 
                 let match_output = vector::borrow(outputs, (match_output_index as u64));
+
+                let output_script_buf = types::txout_script_pubkey(match_output);
+                if (script_buf::is_op_return(output_script_buf)) {
+                    inscription.burned = true;
+                };
+
                 let to_address = types::txout_object_address(match_output);
                 inscription.offset = new_sat_point.offset;
 
@@ -598,6 +620,10 @@ module bitcoin_move::ord {
         self.pointer
     }
 
+    public fun is_burned(self: &Inscription): bool {
+        self.burned
+    }
+
     fun drop(self: Inscription){
         let Inscription{
             txid: _,
@@ -614,6 +640,7 @@ module bitcoin_move::ord {
             parents: _,
             pointer: _,
             rune: _,
+            burned: _,
         } = self;
     }
 
@@ -998,6 +1025,7 @@ module bitcoin_move::ord {
             parents,
             pointer,
             rune: option::none(),
+            burned: false,
         };
 
         object::new(inscription)
@@ -1021,6 +1049,7 @@ module bitcoin_move::ord {
             parents: _,
             pointer: _,
             rune: _,
+            burned: _,
         } = inscription;
     }
 
@@ -1167,6 +1196,7 @@ module bitcoin_move::ord {
             parents,
             pointer,
             rune: option::none(),
+            burned: false,
         }
     }
 
