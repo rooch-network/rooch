@@ -274,18 +274,17 @@ pub fn get_pre_state_root(
 }
 
 pub fn apply_fields<I>(
-    _moveos_store: &MoveOSStore,
-    _pre_state_root: H256,
-    _update_set: I,
+    moveos_store: &MoveOSStore,
+    pre_state_root: H256,
+    update_set: I,
 ) -> Result<TreeChangeSet>
 where
     I: Into<UpdateSet<FieldKey, ObjectState>>,
 {
-    // let tree_change_set = moveos_store
-    //     .state_store
-    //     .update_fields(pre_state_root, update_set)?;
-    // Ok(tree_change_set)
-    unimplemented!()
+    let tree_change_set = moveos_store
+        .state_store
+        .update_fields(pre_state_root, update_set)?;
+    Ok(tree_change_set)
 }
 
 pub fn apply_nodes(moveos_store: &MoveOSStore, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
