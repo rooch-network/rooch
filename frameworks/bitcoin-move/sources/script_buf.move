@@ -97,7 +97,7 @@ module bitcoin_move::script_buf{
 
     /// Checks if the given script is an OP_RETURN script.
     public fun is_op_return(self: &ScriptBuf): bool {
-        vector::length(&self.bytes) > 1 &&
+        vector::length(&self.bytes) > 0 &&
             *vector::borrow(&self.bytes, 0) == opcode::op_return()
     }
 

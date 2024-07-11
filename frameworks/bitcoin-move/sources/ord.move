@@ -325,18 +325,6 @@ module bitcoin_move::ord {
         object::borrow(inscription_obj)
     }
 
-    public fun view_inscription_burned(inscription_id_str: String) : Option<bool> {
-        let inscription_id_option = parse_inscription_id(&inscription_id_str);
-        if (option::is_none(&inscription_id_option)) {
-            return option::none()
-        };
-
-        let inscription_id = option::destroy_some(inscription_id_option);
-        let inscription = borrow_inscription_by_id(inscription_id);
-        let burned = is_burned(inscription);
-        option::some(burned)
-    }
-
     public(friend) fun spend_utxo(utxo_obj: &mut Object<UTXO>, tx: &Transaction, input_utxo_values: vector<u64>, input_index: u64): (vector<SatPoint>, vector<Flotsam>){
         let utxo = object::borrow_mut(utxo_obj);
 
@@ -1302,5 +1290,19 @@ module bitcoin_move::ord {
         let inscription_id_str = std::string::utf8(b"6f55475ce65054aa8371d618d217da8c9a764cecdaf4debcbce8d6312fe6b4d8ix");
         let inscription_id_option = parse_inscription_id(&inscription_id_str);
         assert!(option::is_none(&inscription_id_option), 1);
+    }
+
+    // ==== Inscription Burned ==== //
+
+    public fun view_inscription_burned(inscription_id_str: String) : Option<bool> {
+        let inscription_id_option = parse_inscription_id(&inscription_id_str);
+        if (option::is_none(&inscription_id_option)) {
+            return option::none()
+        };
+
+        let inscription_id = option::destroy_some(inscription_id_option);
+        let inscription = borrow_inscription_by_id(inscription_id);
+        let burned = is_burned(inscription);
+        option::some(burned)
     }
 }

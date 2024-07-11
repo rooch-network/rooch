@@ -34,7 +34,6 @@
 -  [Function `exists_inscription`](#0x4_ord_exists_inscription)
 -  [Function `borrow_inscription`](#0x4_ord_borrow_inscription)
 -  [Function `borrow_inscription_by_id`](#0x4_ord_borrow_inscription_by_id)
--  [Function `view_inscription_burned`](#0x4_ord_view_inscription_burned)
 -  [Function `spend_utxo`](#0x4_ord_spend_utxo)
 -  [Function `handle_coinbase_tx`](#0x4_ord_handle_coinbase_tx)
 -  [Function `process_transaction`](#0x4_ord_process_transaction)
@@ -78,6 +77,7 @@
 -  [Function `metaprotocol_validity_protocol_type`](#0x4_ord_metaprotocol_validity_protocol_type)
 -  [Function `metaprotocol_validity_is_valid`](#0x4_ord_metaprotocol_validity_is_valid)
 -  [Function `metaprotocol_validity_invalid_reason`](#0x4_ord_metaprotocol_validity_invalid_reason)
+-  [Function `view_inscription_burned`](#0x4_ord_view_inscription_burned)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -547,17 +547,6 @@ Prase InscriptionID from String
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_borrow_inscription_by_id">borrow_inscription_by_id</a>(id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>): &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>
-</code></pre>
-
-
-
-<a name="0x4_ord_view_inscription_burned"></a>
-
-## Function `view_inscription_burned`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_view_inscription_burned">view_inscription_burned</a>(inscription_id_str: <a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;bool&gt;
 </code></pre>
 
 
@@ -1051,4 +1040,15 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_metaprotocol_validity_invalid_reason">metaprotocol_validity_invalid_reason</a>(validity: &<a href="ord.md#0x4_ord_MetaprotocolValidity">ord::MetaprotocolValidity</a>): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_view_inscription_burned"></a>
+
+## Function `view_inscription_burned`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_view_inscription_burned">view_inscription_burned</a>(inscription_id_str: <a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;bool&gt;
 </code></pre>
