@@ -11,6 +11,8 @@ use moveos_types::{
     addresses::MOVEOS_STD_ADDRESS, move_types::FunctionId, transaction::MoveAction,
 };
 use moveos_verifier::build::run_verifier;
+#[cfg(feature = "execution_tracing")]
+use moveos_verifier::execution_measurement::compile_with_filter;
 use moveos_verifier::verifier;
 use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
@@ -20,6 +22,7 @@ use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::rooch::RoochTransaction;
 use rpassword::prompt_password;
 use std::collections::BTreeMap;
+#[cfg(not(feature = "execution_tracing"))]
 use std::io::stderr;
 
 #[derive(Parser)]
@@ -49,6 +52,10 @@ pub struct Publish {
     /// For now, the option is kept for test only.
     #[clap(long)]
     pub by_move_action: bool,
+
+    /// Inject gas profiling codes to measure gas use
+    #[clap(long)]
+    pub gas_profile: bool,
 }
 
 #[async_trait]
@@ -71,7 +78,12 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         let config_cloned = config.clone();
 
         // Compile the package and run the verifier
+        #[cfg(feature = "execution_tracing")]
+        let mut package = compile_with_filter(&package_path, config_cloned.clone())?;
+
+        #[cfg(not(feature = "execution_tracing"))]
         let mut package = config.compile_package_no_exit(&package_path, &mut stderr())?;
+
         run_verifier(package_path, config_cloned, &mut package)?;
 
         // Get the modules from the package

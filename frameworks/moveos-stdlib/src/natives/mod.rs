@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::natives::moveos_stdlib::measurement::MeasurementGas;
 use move_core_types::gas_algebra::InternalGas;
 use move_vm_runtime::native_functions::{make_table_from_iter, NativeFunctionTable};
 use moveos_types::addresses::{MOVEOS_STD_ADDRESS, MOVE_STD_ADDRESS};
@@ -129,6 +130,10 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
         moveos_stdlib::bls12381::make_all(gas_params.bls12381)
     );
     add_natives!("evm", moveos_stdlib::evm::make_all(gas_params.evm));
+    add_natives!(
+        "measurements",
+        moveos_stdlib::measurement::make_all(MeasurementGas::zero())
+    );
 
     let moveos_native_fun_table = make_table_from_iter(MOVEOS_STD_ADDRESS, natives);
     native_fun_table.extend(moveos_native_fun_table);

@@ -863,7 +863,7 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         (
             "native_release_wasm_instance",
             make_native(
-                gas_params.release_wasm_instance,
+                gas_params.release_wasm_instance.clone(),
                 native_release_wasm_instance,
             ),
         ),

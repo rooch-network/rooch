@@ -21,6 +21,7 @@ termcolor = { workspace = true }
 bcs = { workspace = true }
 thiserror = { workspace = true }
 itertools = { workspace = true }
+better_any = { workspace = true }
 
 move-core-types = { workspace = true }
 move-model = { workspace = true }
