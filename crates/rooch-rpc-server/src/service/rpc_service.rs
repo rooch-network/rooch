@@ -7,11 +7,9 @@ use move_core_types::language_storage::{ModuleId, StructTag};
 use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
-use moveos_types::moveos_std::display::{
-    get_object_display_id, get_resource_display_id, RawDisplay,
-};
+use moveos_types::moveos_std::display::{get_object_display_id, RawDisplay};
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
-use moveos_types::moveos_std::object::{ObjectEntity, ObjectID};
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::{AnnotatedState, FieldKey, ObjectState};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
@@ -260,9 +258,8 @@ impl RpcService {
                     .iter()
                     .filter_map(|s| s.as_ref())
                     .collect::<Vec<&AnnotatedState>>();
-                let valid_display_field_views = self
-                    .get_display_fields_and_render(&valid_states, true)
-                    .await?;
+                let valid_display_field_views =
+                    self.get_display_fields_and_render(&valid_states).await?;
                 valid_states
                     .iter()
                     .zip(valid_display_field_views)
@@ -382,18 +379,15 @@ impl RpcService {
     pub async fn get_display_fields_and_render(
         &self,
         states: &[&AnnotatedState],
-        is_object: bool,
     ) -> Result<Vec<Option<DisplayFieldsView>>> {
         let mut display_ids = vec![];
         let mut displayable_states = vec![];
         for s in states {
-            displayable_states.push(if is_object {
+            displayable_states.push(if !s.metadata.is_dynamic_field() {
                 display_ids.push(get_object_display_id(s.metadata.object_type.clone()));
                 true
-            } else if let Some(tag) = s.metadata.get_resource_struct_tag() {
-                display_ids.push(get_resource_display_id(tag.clone().into()));
-                true
             } else {
+                //TODO should we support display for dynamic fields?
                 false
             });
         }
@@ -405,10 +399,10 @@ impl RpcService {
             .into_iter()
             .map(|option_s| {
                 option_s
-                    .map(|s| s.into_object_uncheck::<RawDisplay>())
+                    .map(|s| s.value_as_uncheck::<RawDisplay>())
                     .transpose()
             })
-            .collect::<Result<Vec<Option<ObjectEntity<RawDisplay>>>>>()?;
+            .collect::<Result<Vec<Option<RawDisplay>>>>()?;
         display_fields.reverse();
 
         let mut display_field_views = vec![];
@@ -418,8 +412,9 @@ impl RpcService {
                     !display_fields.is_empty(),
                     "Display fields should not be empty"
                 );
-                display_fields.pop().unwrap().map(|obj| {
-                    DisplayFieldsView::new(obj.value.render(
+                display_fields.pop().unwrap().map(|display| {
+                    DisplayFieldsView::new(display.render(
+                        &annotated_s.metadata,
                         &move_resource_viewer::AnnotatedMoveValue::Struct(
                             annotated_s.decoded_value.clone(),
                         ),
