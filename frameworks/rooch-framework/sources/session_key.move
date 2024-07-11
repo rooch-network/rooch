@@ -261,7 +261,7 @@ module rooch_framework::session_key {
         remove_session_key(sender, authentication_key);
     }
 
-    public fun handle(account_address: address) : Option<ObjectID> {
+    public fun get_session_keys_handle(account_address: address) : Option<ObjectID> {
         if (!account::exists_resource<SessionKeys>(account_address)){
             return option::none()
         };

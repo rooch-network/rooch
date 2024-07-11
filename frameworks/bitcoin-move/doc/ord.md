@@ -29,8 +29,8 @@
 -  [Function `derive_inscription_id`](#0x4_ord_derive_inscription_id)
 -  [Function `parse_inscription_id`](#0x4_ord_parse_inscription_id)
 -  [Function `inscription_id_to_string`](#0x4_ord_inscription_id_to_string)
--  [Function `get_inscription_id_by_index`](#0x4_ord_get_inscription_id_by_index)
--  [Function `inscription_latest_height`](#0x4_ord_inscription_latest_height)
+-  [Function `get_inscription_id_by_sequence_number`](#0x4_ord_get_inscription_id_by_sequence_number)
+-  [Function `get_inscription_next_sequence_number`](#0x4_ord_get_inscription_next_sequence_number)
 -  [Function `exists_inscription`](#0x4_ord_exists_inscription)
 -  [Function `borrow_inscription`](#0x4_ord_borrow_inscription)
 -  [Function `borrow_inscription_by_id`](#0x4_ord_borrow_inscription_by_id)
@@ -88,7 +88,6 @@
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
 <b>use</b> <a href="">0x2::string_utils</a>;
-<b>use</b> <a href="">0x2::table_vec</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="bitcoin_hash.md#0x4_bitcoin_hash">0x4::bitcoin_hash</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
@@ -494,24 +493,24 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_get_inscription_id_by_index"></a>
+<a name="0x4_ord_get_inscription_id_by_sequence_number"></a>
 
-## Function `get_inscription_id_by_index`
+## Function `get_inscription_id_by_sequence_number`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_get_inscription_id_by_index">get_inscription_id_by_index</a>(index: u64): &<a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_get_inscription_id_by_sequence_number">get_inscription_id_by_sequence_number</a>(sequence_number: u32): &<a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>
 </code></pre>
 
 
 
-<a name="0x4_ord_inscription_latest_height"></a>
+<a name="0x4_ord_get_inscription_next_sequence_number"></a>
 
-## Function `inscription_latest_height`
+## Function `get_inscription_next_sequence_number`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_inscription_latest_height">inscription_latest_height</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_get_inscription_next_sequence_number">get_inscription_next_sequence_number</a>(): u32
 </code></pre>
 
 
