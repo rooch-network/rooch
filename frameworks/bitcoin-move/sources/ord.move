@@ -33,6 +33,7 @@ module bitcoin_move::ord {
     const TEMPORARY_AREA: vector<u8> = b"temporary_area";
     
     const METAPROTOCOL_VALIDITY: vector<u8> = b"metaprotocol_validity";
+    const INSCRIPTION_CHARM: vector<u8> = b"inscription_charm";
 
     /// How many satoshis are in "one bitcoin".
     const COIN_VALUE: u64 = 100_000_000;
@@ -124,8 +125,6 @@ module bitcoin_move::ord {
         pointer: Option<u64>,
         // Reserved for extending the Rune protocol
         rune: Option<u128>,
-
-        burned: bool,
     }
 
     struct Envelope<T> has store, copy, drop {
@@ -276,7 +275,6 @@ module bitcoin_move::ord {
             parents,
             pointer: record.pointer,
             rune: option::none(),
-            burned: false,
         }
     }
 
@@ -344,27 +342,26 @@ module bitcoin_move::ord {
             let inscription_obj = object::take_object_extend<Inscription>(seal_object_id);
             let origin_owner = object::owner(&inscription_obj);
             let inscription = object::borrow_mut(&mut inscription_obj);
-            
-
+           
             let (is_match, new_sat_point) = match_utxo_and_generate_sat_point(inscription.offset, seal_object_id, tx, input_utxo_values, input_index);
             if(is_match){
                 let match_output_index = new_sat_point.output_index;
 
                 let match_output = vector::borrow(outputs, (match_output_index as u64));
-
-                let output_script_buf = types::txout_script_pubkey(match_output);
-                if (script_buf::is_op_return(output_script_buf)) {
-                    inscription.burned = true;
-                };
-
                 let to_address = types::txout_object_address(match_output);
                 inscription.offset = new_sat_point.offset;
+
+                // flag inscription burned
+                let inscription_clarm = borrow_mut_inscription_charm(&mut inscription_obj);
+                let output_script_buf = types::txout_script_pubkey(match_output);
+                if (script_buf::is_op_return(output_script_buf)) {
+                    inscription_clarm.burned = true;
+                };
 
                 // drop the temporary area if inscription is transferred.
                 drop_temp_area(&mut inscription_obj);
                 object::transfer_extend(inscription_obj, to_address);
                 vector::push_back(&mut new_sat_points, new_sat_point);
-               
             } else {
                 let flotsam = new_flotsam(new_sat_point.output_index, new_sat_point.offset, new_sat_point.object_id);
                 vector::push_back(&mut flotsams, flotsam);
@@ -608,10 +605,6 @@ module bitcoin_move::ord {
         self.pointer
     }
 
-    public fun is_burned(self: &Inscription): bool {
-        self.burned
-    }
-
     fun drop(self: Inscription){
         let Inscription{
             txid: _,
@@ -628,7 +621,6 @@ module bitcoin_move::ord {
             parents: _,
             pointer: _,
             rune: _,
-            burned: _,
         } = self;
     }
 
@@ -1013,7 +1005,6 @@ module bitcoin_move::ord {
             parents,
             pointer,
             rune: option::none(),
-            burned: false,
         };
 
         object::new(inscription)
@@ -1037,7 +1028,6 @@ module bitcoin_move::ord {
             parents: _,
             pointer: _,
             rune: _,
-            burned: _,
         } = inscription;
     }
 
@@ -1184,7 +1174,6 @@ module bitcoin_move::ord {
             parents,
             pointer,
             rune: option::none(),
-            burned: false,
         }
     }
 
@@ -1292,17 +1281,54 @@ module bitcoin_move::ord {
         assert!(option::is_none(&inscription_id_option), 1);
     }
 
-    // ==== Inscription Burned ==== //
+    // ==== Inscription Charm ==== //
 
-    public fun view_inscription_burned(inscription_id_str: String) : Option<bool> {
+    struct InscriptionCharm has store, copy, drop {
+        burned: bool
+    }
+
+    fun borrow_mut_inscription_charm(inscription_mut_obj: &mut Object<Inscription>): &mut InscriptionCharm {
+        if (!object::contains_field(inscription_mut_obj, INSCRIPTION_CHARM)) {
+            let clarm = InscriptionCharm{
+                burned: false,
+            };
+
+            object::upsert_field(inscription_mut_obj, INSCRIPTION_CHARM, clarm);
+        };
+
+        object::borrow_mut_field(inscription_mut_obj, INSCRIPTION_CHARM)
+    }
+
+    public fun exists_inscription_charm(inscription_id: InscriptionID): bool {
+        let inscription_object_id = derive_inscription_id(inscription_id);
+        let exists = object::exists_object_with_type<Inscription>(inscription_object_id);
+        if (!exists) {
+            return false
+        };
+
+        let inscription_obj = object::borrow_object<Inscription>(inscription_object_id);
+        object::contains_field(inscription_obj, INSCRIPTION_CHARM)
+    }
+
+    public fun borrow_inscription_charm(inscription_id: InscriptionID): &InscriptionCharm {
+        let inscription_object_id = derive_inscription_id(inscription_id);
+        let inscription_obj = object::borrow_object<Inscription>(inscription_object_id);
+
+        object::borrow_field(inscription_obj, INSCRIPTION_CHARM)
+    }
+
+    public fun view_inscription_charm(inscription_id_str: String) : Option<InscriptionCharm> {
         let inscription_id_option = parse_inscription_id(&inscription_id_str);
         if (option::is_none(&inscription_id_option)) {
             return option::none()
         };
 
         let inscription_id = option::destroy_some(inscription_id_option);
-        let inscription = borrow_inscription_by_id(inscription_id);
-        let burned = is_burned(inscription);
-        option::some(burned)
+        if (!exists_inscription_charm(inscription_id)) {
+            return option::none()
+        };
+
+        let clarm = borrow_inscription_charm(inscription_id);
+        option::some(*clarm)
     }
 }

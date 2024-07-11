@@ -14,6 +14,7 @@
 -  [Struct `InvalidInscriptionEvent`](#0x4_ord_InvalidInscriptionEvent)
 -  [Struct `MetaprotocolValidity`](#0x4_ord_MetaprotocolValidity)
 -  [Resource `InscriptionStore`](#0x4_ord_InscriptionStore)
+-  [Struct `InscriptionCharm`](#0x4_ord_InscriptionCharm)
 -  [Constants](#@Constants_0)
 -  [Function `curse_duplicate_field`](#0x4_ord_curse_duplicate_field)
 -  [Function `curse_incompleted_field`](#0x4_ord_curse_incompleted_field)
@@ -47,7 +48,6 @@
 -  [Function `metaprotocol`](#0x4_ord_metaprotocol)
 -  [Function `parents`](#0x4_ord_parents)
 -  [Function `pointer`](#0x4_ord_pointer)
--  [Function `is_burned`](#0x4_ord_is_burned)
 -  [Function `inscription_id_txid`](#0x4_ord_inscription_id_txid)
 -  [Function `inscription_id_index`](#0x4_ord_inscription_id_index)
 -  [Function `new_sat_point`](#0x4_ord_new_sat_point)
@@ -77,7 +77,9 @@
 -  [Function `metaprotocol_validity_protocol_type`](#0x4_ord_metaprotocol_validity_protocol_type)
 -  [Function `metaprotocol_validity_is_valid`](#0x4_ord_metaprotocol_validity_is_valid)
 -  [Function `metaprotocol_validity_invalid_reason`](#0x4_ord_metaprotocol_validity_invalid_reason)
--  [Function `view_inscription_burned`](#0x4_ord_view_inscription_burned)
+-  [Function `exists_inscription_charm`](#0x4_ord_exists_inscription_charm)
+-  [Function `borrow_inscription_charm`](#0x4_ord_borrow_inscription_charm)
+-  [Function `view_inscription_charm`](#0x4_ord_view_inscription_charm)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -198,6 +200,17 @@
 
 
 
+<a name="0x4_ord_InscriptionCharm"></a>
+
+## Struct `InscriptionCharm`
+
+
+
+<pre><code><b>struct</b> <a href="ord.md#0x4_ord_InscriptionCharm">InscriptionCharm</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -309,6 +322,15 @@ Curse Inscription
 
 
 <pre><code><b>const</b> <a href="ord.md#0x4_ord_FIRST_POST_SUBSIDY_EPOCH">FIRST_POST_SUBSIDY_EPOCH</a>: u32 = 33;
+</code></pre>
+
+
+
+<a name="0x4_ord_INSCRIPTION_CHARM"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_INSCRIPTION_CHARM">INSCRIPTION_CHARM</a>: <a href="">vector</a>&lt;u8&gt; = [105, 110, 115, 99, 114, 105, 112, 116, 105, 111, 110, 95, 99, 104, 97, 114, 109];
 </code></pre>
 
 
@@ -694,17 +716,6 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_is_burned"></a>
-
-## Function `is_burned`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_is_burned">is_burned</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): bool
-</code></pre>
-
-
-
 <a name="0x4_ord_inscription_id_txid"></a>
 
 ## Function `inscription_id_txid`
@@ -1044,11 +1055,33 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_view_inscription_burned"></a>
+<a name="0x4_ord_exists_inscription_charm"></a>
 
-## Function `view_inscription_burned`
+## Function `exists_inscription_charm`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_view_inscription_burned">view_inscription_burned</a>(inscription_id_str: <a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;bool&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_exists_inscription_charm">exists_inscription_charm</a>(inscription_id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>): bool
+</code></pre>
+
+
+
+<a name="0x4_ord_borrow_inscription_charm"></a>
+
+## Function `borrow_inscription_charm`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_borrow_inscription_charm">borrow_inscription_charm</a>(inscription_id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>): &<a href="ord.md#0x4_ord_InscriptionCharm">ord::InscriptionCharm</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_view_inscription_charm"></a>
+
+## Function `view_inscription_charm`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_view_inscription_charm">view_inscription_charm</a>(inscription_id_str: <a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="ord.md#0x4_ord_InscriptionCharm">ord::InscriptionCharm</a>&gt;
 </code></pre>

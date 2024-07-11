@@ -43,9 +43,9 @@ Feature: Rooch Bitcoin ord tests
       Then sleep: "10"
 
       # Check inscription burned
-      Then cmd: "move view --function 0x4::ord::view_inscription_burned --args string:{{$.wallet[-3][0].inscription}} "
+      Then cmd: "move view --function 0x4::ord::view_inscription_charm --args string:{{$.wallet[-3][0].inscription}} "
       Then assert: "{{$.move[-1].vm_status}} == Executed"
-      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0]}} == true"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.burned}} == true"
 
       # release servers
       Then stop the server
