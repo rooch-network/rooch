@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{Ok, Result};
 use jsonrpsee::http_client::HttpClient;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::account::Account;
@@ -12,7 +12,7 @@ use rooch_rpc_api::jsonrpc_types::{
 };
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, EventOptions, EventPageView,
-    RoochAddressView, StateOptions, StatePageView, StructTagView,
+    ObjectIDView, RoochAddressView, StateOptions, StatePageView, StructTagView,
 };
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, ObjectStateView};
 use rooch_rpc_api::jsonrpc_types::{
@@ -167,6 +167,19 @@ impl RoochRpcClient {
         Ok(self
             .http
             .list_states(access_path, cursor, limit.map(Into::into), None)
+            .await?)
+    }
+
+    pub async fn list_field_states(
+        &self,
+        object_id: ObjectIDView,
+        cursor: Option<String>,
+        limit: Option<u64>,
+        state_option: Option<StateOptions>,
+    ) -> Result<StatePageView> {
+        Ok(self
+            .http
+            .list_field_states(object_id, cursor, limit.map(Into::into), state_option)
             .await?)
     }
 
