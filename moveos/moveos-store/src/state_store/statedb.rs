@@ -62,11 +62,13 @@ impl StateDBStore {
         nodes: &mut BTreeMap<H256, Vec<u8>>,
         update_set: &mut UpdateSet<FieldKey, ObjectState>,
         field_key: FieldKey,
-        obj_change: ObjectChange,
+        obj_change: &mut ObjectChange,
     ) -> Result<()> {
-        let mut obj = match obj_change.value {
+        let mut obj = match &obj_change.value {
             Some(op) => match op {
-                Op::New(state) | Op::Modify(state) => ObjectState::new(obj_change.metadata, state),
+                Op::New(state) | Op::Modify(state) => {
+                    ObjectState::new(obj_change.metadata.clone(), state.clone())
+                }
                 Op::Delete => {
                     //TODO clean up the removed object fields
                     update_set.remove(field_key);
@@ -80,28 +82,30 @@ impl StateDBStore {
                     .get_object(&object_id)?
                     .ok_or_else(|| anyhow::format_err!("Object with id {} not found", object_id))?;
                 //The object value is not changed, but the metadata may be changed
-                obj_state.metadata = obj_change.metadata;
+                obj_state.metadata = obj_change.metadata.clone();
                 obj_state
             }
         };
         let mut field_update_set = UpdateSet::new();
-        for (child_field_key, child_change) in obj_change.fields {
+        for (child_field_key, child_change) in &mut obj_change.fields {
             self.apply_object_change(
                 resolver,
                 nodes,
                 &mut field_update_set,
-                child_field_key,
+                *child_field_key,
                 child_change,
             )?;
         }
         let mut tree_change_set = self.update_fields(obj.state_root(), field_update_set)?;
         nodes.append(&mut tree_change_set.nodes);
-        obj.update_state_root(tree_change_set.state_root);
+        let new_state_root = tree_change_set.state_root;
+        obj.update_state_root(new_state_root);
+        obj_change.update_state_root(new_state_root);
         update_set.put(field_key, obj);
         Ok(())
     }
 
-    pub fn apply_change_set(&self, state_change_set: StateChangeSet) -> Result<(H256, u64)> {
+    pub fn apply_change_set(&self, state_change_set: &mut StateChangeSet) -> Result<()> {
         let root = state_change_set.root_metadata();
         let pre_state_root = root.state_root();
         let global_size = root.size;
@@ -110,12 +114,12 @@ impl StateDBStore {
 
         let mut update_set = UpdateSet::new();
         let mut nodes = BTreeMap::new();
-        for (field_key, obj_change) in state_change_set.changes {
+        for (field_key, obj_change) in &mut state_change_set.changes {
             self.apply_object_change(
                 &resolver,
                 &mut nodes,
                 &mut update_set,
-                field_key,
+                *field_key,
                 obj_change,
             )?;
         }
@@ -132,7 +136,8 @@ impl StateDBStore {
             );
         }
         self.node_store.write_nodes(nodes)?;
-        Ok((new_state_root, global_size))
+        state_change_set.update_state_root(new_state_root);
+        Ok(())
     }
 
     pub fn iter(

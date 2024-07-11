@@ -215,10 +215,10 @@ impl RoochGenesis {
             vec![],
             vec![],
         )?;
-        let (state_root, size, _output) = moveos.init_genesis(genesis_moveos_tx.clone())?;
+        let output = moveos.init_genesis(genesis_moveos_tx.clone())?;
 
         Ok(Self {
-            root: ObjectMeta::root_metadata(state_root, size),
+            root: output.changeset.root_metadata(),
             initial_gas_config: gas_config,
             genesis_tx,
             genesis_moveos_tx,
@@ -313,22 +313,18 @@ impl RoochGenesis {
             vec![],
         )?;
 
-        let (genesis_state_root, size, genesis_tx_output) =
-            moveos.init_genesis(self.genesis_moveos_tx())?;
+        let genesis_tx_output = moveos.init_genesis(self.genesis_moveos_tx())?;
 
-        let inited_root = ObjectMeta::root_metadata(genesis_state_root, size);
+        let inited_root = genesis_tx_output.changeset.root_metadata();
         debug_assert!(
             inited_root == *self.genesis_root(),
             "Genesis state root mismatch"
         );
 
         let tx_hash = self.genesis_tx().tx_hash();
-        let genesis_execution_info = rooch_db.moveos_store.handle_tx_output(
-            tx_hash,
-            genesis_state_root,
-            size,
-            genesis_tx_output.clone(),
-        )?;
+        let genesis_execution_info = rooch_db
+            .moveos_store
+            .handle_tx_output(tx_hash, genesis_tx_output.clone())?;
 
         // Save the genesis txs to sequencer
         let genesis_tx_order: u64 = 0;

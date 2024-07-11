@@ -82,10 +82,10 @@ impl ExecutorActor {
 
     pub fn execute(&mut self, tx: VerifiedMoveOSTransaction) -> Result<ExecuteTransactionResult> {
         let tx_hash = tx.ctx.tx_hash();
-        let (state_root, size, output) = self.moveos.execute_and_apply(tx)?;
-        let execution_info =
-            self.moveos_store
-                .handle_tx_output(tx_hash, state_root, size, output.clone())?;
+        let output = self.moveos.execute_and_apply(tx)?;
+        let execution_info = self
+            .moveos_store
+            .handle_tx_output(tx_hash, output.clone())?;
 
         self.root = execution_info.root_metadata();
         Ok(ExecuteTransactionResult {

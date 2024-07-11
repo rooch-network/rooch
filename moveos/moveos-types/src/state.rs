@@ -903,6 +903,10 @@ impl ObjectChange {
     pub fn add_field_change(&mut self, key: FieldKey, field_change: ObjectChange) {
         self.fields.insert(key, field_change);
     }
+
+    pub fn update_state_root(&mut self, new_state_root: H256) {
+        self.metadata.update_state_root(new_state_root);
+    }
 }
 
 /// Global State change set.
@@ -919,6 +923,10 @@ pub struct StateChangeSet {
 impl StateChangeSet {
     pub fn root_metadata(&self) -> ObjectMeta {
         ObjectMeta::root_metadata(self.state_root, self.global_size)
+    }
+
+    pub fn update_state_root(&mut self, new_state_root: H256) {
+        self.state_root = new_state_root;
     }
 }
 

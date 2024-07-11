@@ -21,7 +21,7 @@ use std::fmt::Display;
 
 #[cfg(any(test, feature = "fuzzing"))]
 use crate::move_types::type_tag_prop_strategy;
-use crate::moveos_std::event::{Event, EventID};
+use crate::moveos_std::event::Event;
 #[cfg(any(test, feature = "fuzzing"))]
 use move_core_types::identifier::Identifier;
 #[cfg(any(test, feature = "fuzzing"))]
@@ -337,25 +337,19 @@ pub struct TransactionOutput {
 }
 
 impl TransactionOutput {
-    pub fn new(transaction_output: RawTransactionOutput, event_ids: Vec<EventID>) -> Self {
-        debug_assert!(
-            transaction_output.events.len() == event_ids.len(),
-            "Transaction events len mismatch events len"
-        );
-
-        let events = transaction_output
-            .events
-            .clone()
-            .into_iter()
-            .zip(event_ids)
-            .map(|(event, event_id)| Event::new_with_event_id(event_id, event))
-            .collect::<Vec<_>>();
+    pub fn new(
+        status: KeptVMStatus,
+        changeset: StateChangeSet,
+        events: Vec<Event>,
+        gas_used: u64,
+        is_upgrade: bool,
+    ) -> Self {
         TransactionOutput {
-            status: transaction_output.status,
-            changeset: transaction_output.changeset,
+            status,
+            changeset,
             events,
-            gas_used: transaction_output.gas_used,
-            is_upgrade: transaction_output.is_upgrade,
+            gas_used,
+            is_upgrade,
         }
     }
 }

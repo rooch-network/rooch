@@ -129,7 +129,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         )
         .unwrap();
 
-        let (state_root, size, _output) = moveos.init_genesis(genesis.genesis_moveos_tx()).unwrap();
+        let output = moveos.init_genesis(genesis.genesis_moveos_tx()).unwrap();
 
         let mut named_address_mapping = rooch_framework::rooch_framework_named_addresses()
             .into_iter()
@@ -150,7 +150,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             default_syntax,
             _temp_dir: temp_dir,
             moveos,
-            root: ObjectMeta::root_metadata(state_root, size),
+            root: output.changeset.root_metadata(),
         };
         debug!("init moveos test adapter");
         (adapter, None)
@@ -185,8 +185,8 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
 
         let tx = MoveOSTransaction::new_for_test(self.root.clone(), sender, action);
         let verified_tx = self.validate_tx(tx)?;
-        let (state_root, size, output) = self.moveos.execute_and_apply(verified_tx)?;
-        self.root = ObjectMeta::root_metadata(state_root, size);
+        let output = self.moveos.execute_and_apply(verified_tx)?;
+        self.root = output.changeset.root_metadata();
         Ok((Some(tx_output_to_str(output)), module))
     }
 
@@ -223,8 +223,8 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             MoveAction::new_script_call(script_bytes, type_args, args),
         );
         let verified_tx = self.validate_tx(tx)?;
-        let (state_root, size, output) = self.moveos.execute_and_apply(verified_tx)?;
-        self.root = ObjectMeta::root_metadata(state_root, size);
+        let output = self.moveos.execute_and_apply(verified_tx)?;
+        self.root = output.changeset.root_metadata();
         //TODO return values
         let value = SerializedReturnValues {
             mutable_reference_outputs: vec![],
@@ -264,8 +264,8 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             MoveAction::new_function_call(function_id, type_args, args),
         );
         let verified_tx = self.validate_tx(tx)?;
-        let (state_root, size, output) = self.moveos.execute_and_apply(verified_tx)?;
-        self.root = ObjectMeta::root_metadata(state_root, size);
+        let output = self.moveos.execute_and_apply(verified_tx)?;
+        self.root = output.changeset.root_metadata();
         debug_assert!(
             output.status == move_core_types::vm_status::KeptVMStatus::Executed,
             "{:?}",
