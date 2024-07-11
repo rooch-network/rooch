@@ -10,6 +10,7 @@ use backtrace::Backtrace;
 use move_binary_format::errors::VMError;
 use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError, VMResult};
 use move_core_types::identifier::IdentStr;
+use move_core_types::value::MoveTypeLayout;
 use move_core_types::vm_status::{KeptVMStatus, VMStatus};
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::Identifier, vm_status::StatusCode,
@@ -29,7 +30,7 @@ use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::moveos_std::tx_result::TxResult;
 use moveos_types::startup_info::StartupInfo;
-use moveos_types::state::{MoveStructState, MoveStructType};
+use moveos_types::state::{MoveStructState, MoveStructType, ObjectState};
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::{
@@ -125,11 +126,19 @@ impl MoveOS {
         })
     }
 
-    pub fn init_genesis(&self, genesis_tx: MoveOSTransaction) -> Result<TransactionOutput> {
-        self.verify_and_execute_genesis_tx(genesis_tx)
+    pub fn init_genesis(
+        &self,
+        genesis_tx: MoveOSTransaction,
+        genesis_objects: Vec<(ObjectState, MoveTypeLayout)>,
+    ) -> Result<TransactionOutput> {
+        self.verify_and_execute_genesis_tx(genesis_tx, genesis_objects)
     }
 
-    fn verify_and_execute_genesis_tx(&self, tx: MoveOSTransaction) -> Result<TransactionOutput> {
+    fn verify_and_execute_genesis_tx(
+        &self,
+        tx: MoveOSTransaction,
+        genesis_objects: Vec<(ObjectState, MoveTypeLayout)>,
+    ) -> Result<TransactionOutput> {
         let MoveOSTransaction {
             root,
             ctx,
@@ -139,7 +148,7 @@ impl MoveOS {
         } = tx;
 
         let resolver = RootObjectResolver::new(root, &self.db);
-        let mut session = self.vm.new_genesis_session(&resolver, ctx);
+        let mut session = self.vm.new_genesis_session(&resolver, ctx, genesis_objects);
 
         let verified_action = session.verify_move_action(action).map_err(|e| {
             log::error!("verify_genesis_tx error:{:?}", e);

@@ -44,6 +44,14 @@ impl RuntimeObjectMeta {
         })
     }
 
+    pub fn fresh(metadata: ObjectMeta, value_layout: MoveTypeLayout) -> Self {
+        RuntimeObjectMeta::Fresh(ObjectMetaValue {
+            metadata,
+            value_layout,
+            status: DataStatus::Dirty,
+        })
+    }
+
     pub fn init(
         &mut self,
         value_type: TypeTag,

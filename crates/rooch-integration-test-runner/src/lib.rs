@@ -129,7 +129,9 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         )
         .unwrap();
 
-        let output = moveos.init_genesis(genesis.genesis_moveos_tx()).unwrap();
+        let output = moveos
+            .init_genesis(genesis.genesis_moveos_tx(), genesis.genesis_objects.clone())
+            .unwrap();
 
         let mut named_address_mapping = rooch_framework::rooch_framework_named_addresses()
             .into_iter()

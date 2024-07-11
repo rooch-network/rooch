@@ -35,6 +35,7 @@ use moveos_object_runtime::runtime::{ObjectRuntime, ObjectRuntimeContext};
 use moveos_stdlib::natives::moveos_stdlib::{
     event::NativeEventContext, move_module::NativeModuleContext,
 };
+use moveos_types::state::ObjectState;
 use moveos_types::{addresses, transaction::RawTransactionOutput};
 use moveos_types::{
     function_return_value::FunctionReturnValue,
@@ -50,6 +51,7 @@ use moveos_types::{
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
 use parking_lot::RwLock;
 use std::collections::BTreeSet;
+use std::rc::Rc;
 use std::{borrow::Borrow, sync::Arc};
 
 /// MoveOSVM is a wrapper of MoveVM with MoveOS specific features.
@@ -77,17 +79,33 @@ impl MoveOSVM {
         ctx: TxContext,
         gas_meter: G,
     ) -> MoveOSSession<'r, '_, S, G> {
-        MoveOSSession::new(&self.inner, remote, ctx, gas_meter, false)
+        let root = remote.root();
+        let object_runtime = Rc::new(RwLock::new(ObjectRuntime::new(ctx, root.clone(), remote)));
+        MoveOSSession::new(&self.inner, remote, object_runtime, gas_meter, false)
     }
 
     pub fn new_genesis_session<'r, S: MoveOSResolver>(
         &self,
         remote: &'r S,
         ctx: TxContext,
+        genesis_objects: Vec<(ObjectState, MoveTypeLayout)>,
     ) -> MoveOSSession<'r, '_, S, UnmeteredGasMeter> {
+        let root = remote.root();
+        let object_runtime = Rc::new(RwLock::new(ObjectRuntime::genesis(
+            ctx,
+            root.clone(),
+            remote,
+            genesis_objects,
+        )));
         //Do not charge gas for genesis session
         // Genesis session do not need to execute pre_execute and post_execute function
-        MoveOSSession::new(&self.inner, remote, ctx, UnmeteredGasMeter, false)
+        MoveOSSession::new(
+            &self.inner,
+            remote,
+            object_runtime,
+            UnmeteredGasMeter,
+            false,
+        )
     }
 
     pub fn new_readonly_session<
@@ -100,7 +118,9 @@ impl MoveOSVM {
         ctx: TxContext,
         gas_meter: G,
     ) -> MoveOSSession<'r, '_, S, G> {
-        MoveOSSession::new(&self.inner, remote, ctx, gas_meter, true)
+        let root = remote.root();
+        let object_runtime = Rc::new(RwLock::new(ObjectRuntime::new(ctx, root.clone(), remote)));
+        MoveOSSession::new(&self.inner, remote, object_runtime, gas_meter, true)
     }
 
     pub fn mark_loader_cache_as_invalid(&self) {
@@ -115,7 +135,7 @@ pub struct MoveOSSession<'r, 'l, S, G> {
     pub(crate) vm: &'l MoveVM,
     pub(crate) remote: &'r S,
     pub(crate) session: Session<'r, 'l, MoveosDataCache<'r, 'l, S>>,
-    pub(crate) object_runtime: Arc<RwLock<ObjectRuntime>>,
+    pub(crate) object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
     pub(crate) gas_meter: G,
     pub(crate) read_only: bool,
 }
@@ -129,12 +149,10 @@ where
     pub fn new(
         vm: &'l MoveVM,
         remote: &'r S,
-        ctx: TxContext,
+        object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
         gas_meter: G,
         read_only: bool,
     ) -> Self {
-        let root = remote.root();
-        let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(ctx, root.clone())));
         Self {
             vm,
             remote,
@@ -147,10 +165,11 @@ where
 
     /// Re spawn a new session with the same context.
     pub fn respawn(self, env: SimpleMap<MoveString, Any>) -> Self {
-        let new_ctx = self.object_runtime.read().tx_context().spawn(env);
+        let ctx = self.object_runtime.read().tx_context().clone();
+        let new_ctx = ctx.spawn(env);
         // We get the root object from the remote, because the root object may be changed during the transaction execution
         let root = self.remote.root().clone();
-        let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(new_ctx, root)));
+        let object_runtime = Rc::new(RwLock::new(ObjectRuntime::new(new_ctx, root, self.remote)));
         Self {
             session: Self::new_inner_session(self.vm, self.remote, object_runtime.clone()),
             object_runtime,
@@ -161,11 +180,11 @@ where
     fn new_inner_session(
         vm: &'l MoveVM,
         remote: &'r S,
-        object_runtime: Arc<RwLock<ObjectRuntime>>,
+        object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
     ) -> Session<'r, 'l, MoveosDataCache<'r, 'l, S>> {
         let mut extensions = NativeContextExtensions::default();
 
-        extensions.add(ObjectRuntimeContext::new(remote, object_runtime.clone()));
+        extensions.add(ObjectRuntimeContext::new(object_runtime.clone()));
         extensions.add(NativeModuleContext::new(remote));
         extensions.add(NativeEventContext::default());
 

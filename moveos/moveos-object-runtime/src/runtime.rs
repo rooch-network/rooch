@@ -26,7 +26,7 @@ use moveos_types::{
     moveos_std::{
         module_store::{ModuleStore, Package},
         move_module::MoveModule,
-        object::{DynamicField, ModuleStoreObject, ObjectID, Root},
+        object::{DynamicField, ObjectID, Root},
     },
     state::MoveType,
     state_resolver::StatelessResolver,
@@ -36,7 +36,7 @@ use moveos_types::{
     state::MoveState,
 };
 use parking_lot::RwLock;
-use std::{collections::BTreeMap, sync::Arc};
+use std::{collections::BTreeMap, rc::Rc};
 use tracing::debug;
 
 /// Ensure the error codes in this file is consistent with the error code in object.move
@@ -60,53 +60,55 @@ pub const ERROR_OBJECT_ALREADY_TAKEN_OUT_OR_EMBEDED: u64 = 15;
 /// value which is passed into session functions, so its accessible from natives of this
 /// extension.
 #[derive(Tid)]
-pub struct ObjectRuntimeContext<'a> {
-    resolver: &'a dyn StatelessResolver,
-    object_runtime: Arc<RwLock<ObjectRuntime>>,
+pub struct ObjectRuntimeContext<'r> {
+    object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
 }
 
-impl<'a> ObjectRuntimeContext<'a> {
+impl<'r> ObjectRuntimeContext<'r> {
     /// Create a new instance of a object runtime context. This must be passed in via an
     /// extension into VM session functions.
-    pub fn new(
-        resolver: &'a dyn StatelessResolver,
-        object_runtime: Arc<RwLock<ObjectRuntime>>,
-    ) -> Self {
-        //We need to init or load the module store and timestamp store before verify and execute tx
-        object_runtime
-            .write()
-            .init_module_store(resolver)
-            .expect("Failed to init module store");
-        object_runtime
-            .write()
-            .init_timestamp_store(resolver)
-            .expect("Failed to init module store");
-
-        Self {
-            resolver,
-            object_runtime,
-        }
+    pub fn new(object_runtime: Rc<RwLock<ObjectRuntime<'r>>>) -> Self {
+        Self { object_runtime }
     }
 
-    pub fn object_runtime(&self) -> Arc<RwLock<ObjectRuntime>> {
+    pub fn object_runtime(&self) -> Rc<RwLock<ObjectRuntime<'r>>> {
         self.object_runtime.clone()
-    }
-
-    pub fn resolver(&self) -> &dyn StatelessResolver {
-        self.resolver
     }
 }
 
 /// A structure representing mutable data of the ObjectRuntimeContext. This is in a RefCell
 /// of the overall context so we can mutate while still accessing the overall context.
-pub struct ObjectRuntime {
+pub struct ObjectRuntime<'r> {
     pub(crate) tx_context: TxContextValue,
     pub(crate) root: RuntimeObject,
     pub(crate) object_pointer_in_args: BTreeMap<ObjectID, Value>,
+    resolver: &'r dyn StatelessResolver,
 }
 
-impl ObjectRuntime {
-    pub fn new(tx_context: TxContext, root: ObjectMeta) -> Self {
+impl<'r> ObjectRuntime<'r> {
+    pub fn genesis(
+        tx_context: TxContext,
+        root: ObjectMeta,
+        resolver: &'r dyn StatelessResolver,
+        genesis_objects: Vec<(ObjectState, MoveTypeLayout)>,
+    ) -> Self {
+        let mut s = Self {
+            tx_context: TxContextValue::new(tx_context),
+            root: RuntimeObject::load(Root::type_layout(), ObjectState::new_root(root))
+                .expect("Load root object should success"),
+            object_pointer_in_args: Default::default(),
+            resolver,
+        };
+        s.init_genesis_object(genesis_objects)
+            .expect("Init genesis object should success");
+        s
+    }
+
+    pub fn new(
+        tx_context: TxContext,
+        root: ObjectMeta,
+        resolver: &'r dyn StatelessResolver,
+    ) -> Self {
         if log::log_enabled!(log::Level::Trace) {
             tracing::trace!(
                 "Init ObjectRuntime with tx_hash: {:?}, state_root: {}",
@@ -119,89 +121,24 @@ impl ObjectRuntime {
             root: RuntimeObject::load(Root::type_layout(), ObjectState::new_root(root))
                 .expect("Load root object should success"),
             object_pointer_in_args: Default::default(),
+            resolver,
         }
     }
 
-    /// Initialize or load the module store Object into the ObjectRuntime.
-    /// Because the module store is required when publishing genesis modules,
-    /// So we can not initialize it in Move.
-    pub fn init_module_store(&mut self, resolver: &dyn StatelessResolver) -> PartialVMResult<()> {
-        let module_store_id = ModuleStore::module_store_id();
-        let field_key = module_store_id.field_key();
-        let state = resolver
-            .get_field_at(self.root.state_root()?, &field_key)
-            .map_err(|e| {
-                partial_extension_error(format!(
-                    "Failed to resolve module store object state: {:?}",
-                    e
-                ))
-            })?;
-        let module_store_rt_obj = match state {
-            Some(obj_state) => RuntimeObject::load(ModuleStore::type_layout(), obj_state)?,
-            None => {
-                //TODO Put ModuleStore Object to genesis config.
-                // If the module store object is not found, we should create a new one(before genesis).
-                // Init none GlobalValue and move value to it, make the data status is dirty
-                // The change will apart of the state change set
-                let obj = ModuleStoreObject::genesis_module_store();
-                let value_type = ModuleStore::type_tag();
-                let value_layout = ModuleStore::type_layout();
-                let value = obj.value.to_runtime_value();
-                let mut rt_obj = RuntimeObject::none(obj.id);
-                rt_obj.move_to(value, value_type, value_layout)?;
-                rt_obj.rt_meta.to_shared()?;
-                rt_obj
-            }
-        };
-        debug!(
-            "Init module store object with state_root: {}",
-            module_store_rt_obj.rt_meta.state_root()?
-        );
-
-        self.root.fields.insert(field_key, module_store_rt_obj);
+    fn init_genesis_object(
+        &mut self,
+        genesis_objects: Vec<(ObjectState, MoveTypeLayout)>,
+    ) -> PartialVMResult<()> {
+        for (obj, layout) in genesis_objects {
+            let field_key = obj.id().field_key();
+            let rt_obj = RuntimeObject::fresh(obj, layout)?;
+            self.root.fields.insert(field_key, rt_obj);
+        }
         Ok(())
     }
 
-    /// Initialize or load the timestamp store Object into the ObjectRuntime.
-    /// Because the timestamp store is required when execute unit test,
-    /// So we initialize it in the ObjectRuntime.
-    pub fn init_timestamp_store(
-        &mut self,
-        resolver: &dyn StatelessResolver,
-    ) -> PartialVMResult<()> {
-        let timestamp_id = Timestamp::object_id();
-        let field_key = timestamp_id.field_key();
-        let state = resolver
-            .get_field_at(self.root.state_root()?, &field_key)
-            .map_err(|e| {
-                partial_extension_error(format!(
-                    "Failed to resolve timestamp object state: {:?}",
-                    e
-                ))
-            })?;
-        let timestamp_rt_obj = match state {
-            Some(obj_state) => RuntimeObject::load(Timestamp::type_layout(), obj_state)?,
-            None => {
-                // If the timestamp object is not found, we should create a new one(before genesis).
-                // Init none GlobalValue and move value to it, make the data status is dirty
-                // The change will apart of the state change set
-                let id = Timestamp::object_id();
-                let value_type = Timestamp::type_tag();
-                let value_layout = Timestamp::type_layout();
-                let value = Timestamp { milliseconds: 0 }.to_runtime_value();
-
-                let mut rt_obj = RuntimeObject::none(id);
-                rt_obj.move_to(value, value_type, value_layout)?;
-                rt_obj.rt_meta.to_shared()?;
-                rt_obj
-            }
-        };
-        debug!(
-            "Init timestamp object with state_root: {}",
-            timestamp_rt_obj.rt_meta.state_root()?
-        );
-        self.root.fields.insert(field_key, timestamp_rt_obj);
-        Ok(())
+    pub fn resolver(&self) -> &'r dyn StatelessResolver {
+        self.resolver
     }
 
     fn load_or_create_package_object<'a>(
@@ -247,31 +184,46 @@ impl ObjectRuntime {
         Ok(())
     }
 
-    pub fn timestamp(&self) -> Timestamp {
+    pub fn timestamp(&self) -> PartialVMResult<Timestamp> {
         let timestamp_id = Timestamp::object_id();
-        let timestamp_obj = self
-            .get_loaded_object(&timestamp_id)
-            .expect("Failed to get timestamp object")
-            .expect("Timestamp object must exist");
-        let timestamp_ref = timestamp_obj
-            .borrow_value(None)
-            .expect("Failed to borrow timestamp value");
-        let struct_ref = timestamp_ref
-            .value_as::<StructRef>()
-            .expect("Failed to get struct ref");
-        Timestamp::from_runtime_value(
-            struct_ref
-                .read_ref()
-                .expect("Failed to read timestamp value"),
-        )
-        .expect("Failed to convert timestamp value to timestamp")
+
+        let timestamp = match self.get_loaded_object(&timestamp_id)? {
+            Some(timestamp_obj) => {
+                let timestamp_ref = timestamp_obj.borrow_value(None)?;
+                let struct_ref = timestamp_ref.value_as::<StructRef>()?;
+                Timestamp::from_runtime_value(struct_ref.read_ref()?).map_err(|e| {
+                    partial_extension_error(format!(
+                        "Failed to get timestamp object from runtime value: {:?}",
+                        e
+                    ))
+                })?
+            }
+            None => {
+                let timestamp_state = self
+                    .resolver
+                    .get_field_at(self.root.state_root()?, &timestamp_id.field_key())
+                    .map_err(|e| {
+                        partial_extension_error(format!(
+                            "Failed to resolve timestamp object state: {:?}",
+                            e
+                        ))
+                    })?
+                    .ok_or_else(|| partial_extension_error("timestamp object not found"))?;
+                timestamp_state.value_as::<Timestamp>().map_err(|e| {
+                    partial_extension_error(format!(
+                        "Failed to decode timestamp from state: {:?}",
+                        e
+                    ))
+                })?
+            }
+        };
+        Ok(timestamp)
     }
 
     /// Load Object to the ObjectRuntime.
     pub fn load_object(
         &mut self,
         layout_loader: &dyn TypeLayoutLoader,
-        resolver: &dyn StatelessResolver,
         object_id: &ObjectID,
     ) -> PartialVMResult<(&mut RuntimeObject, Option<Option<NumBytes>>)> {
         if object_id.is_root() {
@@ -279,8 +231,8 @@ impl ObjectRuntime {
         } else {
             let parent_id = object_id.parent().expect("expect parent id");
             let field_key = object_id.field_key();
-            let (parent, parent_load_gas) =
-                self.load_object(layout_loader, resolver, &parent_id)?;
+            let resolver = self.resolver;
+            let (parent, parent_load_gas) = self.load_object(layout_loader, &parent_id)?;
             let (obj, load_gas) = parent.load_field(layout_loader, resolver, field_key)?;
             let total_gas = sum_load_cost(parent_load_gas, load_gas);
             Ok((obj, total_gas))
@@ -307,10 +259,11 @@ impl ObjectRuntime {
     }
 
     pub fn get_loaded_module(&self, module_id: &ModuleId) -> PartialVMResult<Option<MoveModule>> {
-        let module_store_id = ModuleStore::module_store_id();
-        let module_store_obj = self
-            .get_loaded_object(&module_store_id)?
-            .expect("module store object must exist");
+        let module_store_id = ModuleStore::object_id();
+        let module_store_obj = match self.get_loaded_object(&module_store_id)? {
+            Some(obj) => obj,
+            None => return Ok(None),
+        };
 
         let package_obj =
             module_store_obj.get_loaded_field(&Package::package_field_key(module_id.address()));
@@ -330,11 +283,11 @@ impl ObjectRuntime {
     pub fn load_module(
         &mut self,
         layout_loader: &dyn TypeLayoutLoader,
-        resolver: &dyn StatelessResolver,
         module_id: &ModuleId,
     ) -> PartialVMResult<Option<Vec<u8>>> {
-        let module_store_id = ModuleStore::module_store_id();
-        match self.load_object(layout_loader, resolver, &module_store_id) {
+        let module_store_id = ModuleStore::object_id();
+        let resolver = self.resolver;
+        match self.load_object(layout_loader, &module_store_id) {
             Ok((module_store_obj, _)) => {
                 let package_key = Package::package_field_key(module_id.address());
                 let (package_obj, _) =
@@ -365,10 +318,10 @@ impl ObjectRuntime {
         blob: Vec<u8>,
         is_republishing: bool,
     ) -> PartialVMResult<()> {
-        let module_store_id = ModuleStore::module_store_id();
+        let module_store_id = ModuleStore::object_id();
         // TODO: Publishing module in Rust is only available for genesis transaction.
 
-        let (module_store_obj, _) = self.load_object(layout_loader, resolver, &module_store_id)?;
+        let (module_store_obj, _) = self.load_object(layout_loader, &module_store_id)?;
         let (package_obj, new_package) = Self::load_or_create_package_object(
             module_store_obj,
             layout_loader,
@@ -414,14 +367,13 @@ impl ObjectRuntime {
     pub fn load_arguments(
         &mut self,
         layout_loader: &dyn TypeLayoutLoader,
-        resolver: &dyn StatelessResolver,
         resolved_args: &[ResolvedArg],
     ) -> VMResult<()> {
         for resolved_arg in resolved_args {
             if let ResolvedArg::Object(object_arg) = resolved_arg {
                 let object_id = object_arg.object_id();
                 let (rt_obj, _) = self
-                    .load_object(layout_loader, resolver, object_id)
+                    .load_object(layout_loader, object_id)
                     .map_err(|e| e.finish(Location::Module(object::MODULE_ID.clone())))?;
                 match object_arg {
                     ObjectArg::Ref(_obj) | ObjectArg::Mutref(_obj) => {
@@ -449,17 +401,18 @@ impl ObjectRuntime {
     }
 
     // into inner
-    fn into_inner(self) -> (TxContext, RuntimeObject) {
+    pub fn into_inner(self) -> (TxContext, RuntimeObject) {
         let ObjectRuntime {
             tx_context,
             root,
             object_pointer_in_args: _,
+            resolver: _,
         } = self;
         (tx_context.into_inner(), root)
     }
 
     pub fn into_change_set(self) -> PartialVMResult<(TxContext, StateChangeSet)> {
-        let timestamp = self.timestamp();
+        let timestamp = self.timestamp()?;
         let (tx_context, root) = self.into_inner();
         let root_metadata = root.metadata()?.clone();
         let root_change = root
