@@ -134,11 +134,8 @@ fn produce_updates(
                 .expect("Last state type should have value");
 
             if state_type.eq(GLOBAL_STATE_TYPE_OBJECT) || state_type.eq(GLOBAL_STATE_TYPE_ROOT) {
-                let indexer_state = IndexerObjectState::new_from_object_state(
-                    state,
-                    tx_order,
-                    state_index_generator,
-                );
+                let indexer_state =
+                    IndexerObjectState::new(state.metadata, tx_order, state_index_generator);
                 state_index_generator += 1;
                 updates.object_states.push(indexer_state);
             };

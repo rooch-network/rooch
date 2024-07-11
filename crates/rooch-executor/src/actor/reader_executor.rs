@@ -21,6 +21,7 @@ use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::moveos_std::event::EventHandle;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event};
+use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::state::{AnnotatedState, ObjectState};
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::state_resolver::{AnnotatedStateKV, AnnotatedStateReader, StateKV, StateReader};
@@ -30,7 +31,7 @@ use rooch_store::RoochStore;
 use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
 
 pub struct ReaderExecutorActor {
-    root: ObjectState,
+    root: ObjectMeta,
     moveos: MoveOS,
     moveos_store: MoveOSStore,
     rooch_store: RoochStore,
@@ -38,7 +39,7 @@ pub struct ReaderExecutorActor {
 
 impl ReaderExecutorActor {
     pub fn new(
-        root: ObjectState,
+        root: ObjectMeta,
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
     ) -> Result<Self> {
@@ -68,7 +69,7 @@ impl ReaderExecutorActor {
         &self.moveos
     }
 
-    pub fn refresh_state(&mut self, root: ObjectState, is_upgrade: bool) -> Result<()> {
+    pub fn refresh_state(&mut self, root: ObjectMeta, is_upgrade: bool) -> Result<()> {
         self.root = root;
         self.moveos.flush_module_cache(is_upgrade)
     }

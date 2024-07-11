@@ -29,7 +29,7 @@ use move_core_types::{
     vm_status::StatusCode,
 };
 use move_vm_runtime::config::VMConfig;
-use moveos_types::moveos_std::object::ObjectEntity;
+use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::state::{FieldKey, ObjectState};
 use moveos_types::state_resolver::{StateKV, StatelessResolver};
 use moveos_types::transaction::FunctionCall;
@@ -243,14 +243,14 @@ pub(crate) fn make_script_function(signature: Signature) -> (CompiledModule, Ide
 }
 
 pub(crate) struct RemoteStore {
-    root: ObjectState,
+    root: ObjectMeta,
     modules: HashMap<ModuleId, Vec<u8>>,
 }
 
 impl RemoteStore {
     pub(crate) fn new() -> Self {
         Self {
-            root: ObjectEntity::genesis_root_object().into_state(),
+            root: ObjectMeta::genesis_root(),
             modules: HashMap::new(),
         }
     }
@@ -320,7 +320,7 @@ impl StateResolver for RemoteStore {
     ) -> anyhow::Result<Vec<StateKV>, anyhow::Error> {
         todo!()
     }
-    fn root_object(&self) -> &ObjectState {
+    fn root(&self) -> &ObjectMeta {
         &self.root
     }
 }

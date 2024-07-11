@@ -10,7 +10,7 @@ use move_binary_format::file_format::{Signature, SignatureToken};
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::move_vm::MoveVM;
 use moveos_object_runtime::runtime::ObjectRuntime;
-use moveos_types::moveos_std::{object::RootObjectEntity, tx_context::TxContext};
+use moveos_types::moveos_std::{object::ObjectMeta, tx_context::TxContext};
 use parking_lot::RwLock;
 
 #[test]
@@ -28,7 +28,7 @@ fn publish_and_load_module() {
     let loader = move_vm.runtime.loader();
     let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(
         TxContext::random_for_testing_only(),
-        RootObjectEntity::genesis_root_object().into_state(),
+        ObjectMeta::genesis_root(),
     )));
     object_runtime
         .write()

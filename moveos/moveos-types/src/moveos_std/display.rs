@@ -4,7 +4,7 @@
 use std::collections::BTreeMap;
 
 // use super::object::Object;
-use super::object::{self, ObjectID};
+use super::object::{self, ObjectID, ObjectMeta};
 use crate::{
     addresses::{MOVEOS_STD_ADDRESS, MOVE_STD_ADDRESS},
     move_std::string::MoveString,
@@ -33,16 +33,6 @@ pub fn get_display_id_from_object_struct_tag(struct_tag: StructTag) -> ObjectID 
 }
 
 pub fn get_object_display_id(value_type: TypeTag) -> ObjectID {
-    let object_tag = StructTag {
-        address: MOVEOS_STD_ADDRESS,
-        name: ident_str!("Object").to_owned(),
-        module: ident_str!("object").to_owned(),
-        type_params: vec![value_type],
-    };
-    get_display_id_from_object_struct_tag(object_tag)
-}
-
-pub fn get_resource_display_id(value_type: TypeTag) -> ObjectID {
     let struct_tag = StructTag {
         address: MOVEOS_STD_ADDRESS,
         name: ident_str!("Display").to_owned(),
@@ -169,7 +159,12 @@ pub struct RawDisplay {
 
 impl RawDisplay {
     /// Render the display with given MoveStruct instance.
-    pub fn render(&self, annotated_obj: &AnnotatedMoveValue) -> BTreeMap<String, String> {
+    pub fn render(
+        &self,
+        _metadata: &ObjectMeta,
+        annotated_obj: &AnnotatedMoveValue,
+    ) -> BTreeMap<String, String> {
+        //TODO support access metadata via `metadata.x` in display template
         let fields = self.to_btree_map().into_iter().map(|entry| {
             match parse_template(&entry.1, annotated_obj) {
                 Ok(value) => (entry.0, value),

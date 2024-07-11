@@ -951,13 +951,13 @@ impl DBMetrics {
         }
     }
     pub fn init(registry: &Registry) -> &'static Arc<DBMetrics> {
-        // Initialize this before creating any instance of DBMap
+        // Initialize this before creating any instance of StoreInstance
         // TODO: Remove static initialization because this basically means we can
         // only ever initialize db metrics once with a registry whereas
         // in the code we might want to initialize it with different
         // registries. The problem is underlying metrics cannot be re-initialized
         // or prometheus complains. We essentially need to pass in DBMetrics
-        // everywhere we create DBMap as the right fix
+        // everywhere we create StoreInstance as the right fix
         let _ = ONCE
             .set(Arc::new(DBMetrics::new(registry)))
             // this happens many times during tests

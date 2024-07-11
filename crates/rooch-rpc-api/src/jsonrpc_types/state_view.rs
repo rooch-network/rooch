@@ -106,14 +106,16 @@ impl From<ObjectMetaView> for ObjectMeta {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct StateChangeSetView {
-    pub root_metadata: ObjectMetaView,
+    pub state_root: H256View,
+    pub global_size: StrView<u64>,
     pub changes: Vec<ObjectChangeView>,
 }
 
 impl From<StateChangeSet> for StateChangeSetView {
     fn from(state_change_set: StateChangeSet) -> Self {
         Self {
-            root_metadata: state_change_set.root_metadata.into(),
+            state_root: state_change_set.state_root.into(),
+            global_size: state_change_set.global_size.into(),
             changes: state_change_set
                 .changes
                 .into_values()

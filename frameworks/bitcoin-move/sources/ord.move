@@ -12,7 +12,6 @@ module bitcoin_move::ord {
     use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::json;
-    use moveos_std::table_vec::{Self, TableVec};
     use moveos_std::type_info;
     use moveos_std::bag;
     use moveos_std::string_utils;
@@ -161,16 +160,13 @@ module bitcoin_move::ord {
     }
 
     struct InscriptionStore has key{
-        inscriptions: TableVec<InscriptionID>,
         cursed_inscription_count: u32,
         blessed_inscription_count: u32,
         next_sequence_number: u32,
     }
 
     public(friend) fun genesis_init(_genesis_account: &signer){
-        let inscriptions = table_vec::new<InscriptionID>();
         let store = InscriptionStore{
-            inscriptions,
             cursed_inscription_count: 0,
             blessed_inscription_count: 0,
             next_sequence_number: 0,
@@ -242,18 +238,17 @@ module bitcoin_move::ord {
     }
 
     // ==== Inscription ==== //
-    public fun get_inscription_id_by_index(index: u64) : &InscriptionID {
+    public fun get_inscription_id_by_sequence_number(sequence_number: u32) : &InscriptionID {
         let store_obj_id = object::named_object_id<InscriptionStore>();
-        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
-        let store = object::borrow_mut(store_obj);
-        table_vec::borrow(& store.inscriptions, index)
+        let store_obj = object::borrow_object<InscriptionStore>(store_obj_id);
+        object::borrow_field(store_obj, sequence_number)
     }
 
-    public fun inscription_latest_height() : u64 {
+    public fun get_inscription_next_sequence_number() : u32 {
         let store_obj_id = object::named_object_id<InscriptionStore>();
-        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
-        let store = object::borrow_mut(store_obj);
-        table_vec::length(& store.inscriptions)
+        let store_obj = object::borrow_object<InscriptionStore>(store_obj_id);
+        let store = object::borrow(store_obj);
+        store.next_sequence_number
     }
 
     fun record_to_inscription(txid: address, index: u32, offset: u64, record: InscriptionRecord, is_curse: bool, inscription_number: u32, sequence_number: u32): Inscription{
@@ -288,8 +283,8 @@ module bitcoin_move::ord {
         };
         let store_obj_id = object::named_object_id<InscriptionStore>();
         let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
-        let store = object::borrow_mut(store_obj);
-        table_vec::push_back(&mut store.inscriptions, id);
+        // record a sequence_number to InscriptionID mapping
+        object::add_field(store_obj, inscription.sequence_number, id);
         let object = object::new_with_parent_and_id(store_obj, id, inscription);
         object
     }

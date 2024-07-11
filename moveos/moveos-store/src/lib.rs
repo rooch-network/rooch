@@ -148,10 +148,11 @@ impl MoveOSStore {
     pub fn handle_tx_output(
         &self,
         tx_hash: H256,
-        state_root: H256,
-        size: u64,
         output: TransactionOutput,
     ) -> Result<TransactionExecutionInfo> {
+        let state_root = output.changeset.state_root;
+        let size = output.changeset.global_size;
+
         if log::log_enabled!(log::Level::Debug) {
             log::debug!(
                 "tx_hash: {}, state_root: {}, size: {}, gas_used: {}, status: {:?}",

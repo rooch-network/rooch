@@ -15,7 +15,8 @@ use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::{
-    ObjectEntity, ObjectID, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
+    ObjectEntity, ObjectID, ObjectMeta, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK,
+    SYSTEM_OWNER_ADDRESS,
 };
 use moveos_types::moveos_std::simple_multimap::{Element, SimpleMultiMap};
 use moveos_types::startup_info::StartupInfo;
@@ -101,7 +102,7 @@ impl GenesisUTXOCommand {
         Ok(())
     }
 
-    fn init(self) -> (ObjectState, MoveOSStore, SystemTime) {
+    fn init(self) -> (ObjectMeta, MoveOSStore, SystemTime) {
         let start_time = SystemTime::now();
         let datetime: DateTime<Local> = start_time.into();
 

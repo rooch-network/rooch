@@ -23,6 +23,7 @@ use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::moveos_std::account::Account;
 use moveos_types::moveos_std::event::{Event, EventID};
+use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::FieldKey;
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
@@ -189,7 +190,7 @@ impl ExecutorProxy {
             .await?
     }
 
-    pub async fn refresh_state(&self, root: ObjectState, is_upgrade: bool) -> Result<()> {
+    pub async fn refresh_state(&self, root: ObjectMeta, is_upgrade: bool) -> Result<()> {
         self.reader_actor
             .send(RefreshStateMessage { root, is_upgrade })
             .await?
@@ -201,7 +202,7 @@ impl ExecutorProxy {
             .actor
             .send(crate::actor::messages::GetRootMessage {})
             .await??;
-        self.refresh_state(root, false).await
+        self.refresh_state(root.metadata, false).await
     }
 
     pub async fn chain_id(&self) -> Result<ChainID> {

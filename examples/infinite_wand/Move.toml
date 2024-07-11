@@ -3,9 +3,13 @@ name = "infinite_wand"
 version = "0.0.1"
 
 [dependencies]
-MoveStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/move-stdlib", rev = "main" }
-MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/moveos-stdlib", rev = "main" }
-RoochFramework = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/rooch-framework", rev = "main" }
+#MoveStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/move-stdlib", rev = "main" }
+#MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/moveos-stdlib", rev = "main" }
+#RoochFramework = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/rooch-framework", rev = "main" }
+
+MoveStdlib = { local = "../../frameworks/move-stdlib" }
+MoveosStdlib = { local = "../../frameworks/moveos-stdlib" }
+RoochFramework = { local = "../../frameworks/rooch-framework" }
 
 [addresses]
 infinite_wand = "_"

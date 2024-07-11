@@ -9,7 +9,7 @@ use chrono::{DateTime, Local};
 use clap::Parser;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
-use moveos_types::moveos_std::object::{ObjectID, GENESIS_STATE_ROOT};
+use moveos_types::moveos_std::object::{ObjectID, ObjectMeta, GENESIS_STATE_ROOT};
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{FieldKey, ObjectState};
 use moveos_types::state_resolver::StatelessResolver;
@@ -84,7 +84,7 @@ impl ImportCommand {
         Ok(())
     }
 
-    fn init(self) -> (ObjectState, MoveOSStore, SystemTime) {
+    fn init(self) -> (ObjectMeta, MoveOSStore, SystemTime) {
         let start_time = SystemTime::now();
         let datetime: DateTime<Local> = start_time.into();
 

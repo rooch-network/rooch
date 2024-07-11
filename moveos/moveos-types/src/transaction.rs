@@ -5,13 +5,10 @@ use crate::{
     h256::{self, H256},
     move_types::FunctionId,
     moveos_std::{
-        event::TransactionEvent,
-        gas_schedule::GasScheduleConfig,
-        object::{ObjectEntity, RootObjectEntity},
-        tx_context::TxContext,
-        tx_meta::TxMeta,
+        event::TransactionEvent, gas_schedule::GasScheduleConfig, object::ObjectMeta,
+        tx_context::TxContext, tx_meta::TxMeta,
     },
-    state::{ObjectState, StateChangeSet},
+    state::StateChangeSet,
 };
 use move_core_types::gas_algebra::InternalGas;
 use move_core_types::{
@@ -24,7 +21,7 @@ use std::fmt::Display;
 
 #[cfg(any(test, feature = "fuzzing"))]
 use crate::move_types::type_tag_prop_strategy;
-use crate::moveos_std::event::{Event, EventID};
+use crate::moveos_std::event::Event;
 #[cfg(any(test, feature = "fuzzing"))]
 use move_core_types::identifier::Identifier;
 #[cfg(any(test, feature = "fuzzing"))]
@@ -243,7 +240,7 @@ impl Display for VerifiedMoveAction {
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct MoveOSTransaction {
-    pub root: ObjectState,
+    pub root: ObjectMeta,
     pub ctx: TxContext,
     pub action: MoveAction,
     /// if the pre_execute_functions is not empty, the MoveOS will call the functions before the transaction is executed.
@@ -255,7 +252,7 @@ pub struct MoveOSTransaction {
 impl MoveOSTransaction {
     /// Create a new MoveOS transaction
     /// This function only for test case usage
-    pub fn new_for_test(root: ObjectState, sender: AccountAddress, action: MoveAction) -> Self {
+    pub fn new_for_test(root: ObjectMeta, sender: AccountAddress, action: MoveAction) -> Self {
         let sender_and_action = (sender, action);
         let tx_hash = h256::sha3_256_of(bcs::to_bytes(&sender_and_action).unwrap().as_slice());
         //TODO pass the sequence_number
@@ -269,7 +266,7 @@ impl MoveOSTransaction {
         Self::new(root, ctx, sender_and_action.1)
     }
 
-    pub fn new(root: ObjectState, mut ctx: TxContext, action: MoveAction) -> Self {
+    pub fn new(root: ObjectMeta, mut ctx: TxContext, action: MoveAction) -> Self {
         ctx.add(TxMeta::new_from_move_action(&action))
             .expect("add TxMeta to TxContext should success");
         Self {
@@ -298,7 +295,7 @@ pub struct GasStatement {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VerifiedMoveOSTransaction {
-    pub root: ObjectState,
+    pub root: ObjectMeta,
     pub ctx: TxContext,
     pub action: VerifiedMoveAction,
     pub pre_execute_functions: Vec<FunctionCall>,
@@ -306,7 +303,7 @@ pub struct VerifiedMoveOSTransaction {
 }
 
 impl VerifiedMoveOSTransaction {
-    pub fn new(root: ObjectState, ctx: TxContext, action: VerifiedMoveAction) -> Self {
+    pub fn new(root: ObjectMeta, ctx: TxContext, action: VerifiedMoveAction) -> Self {
         Self {
             root,
             ctx,
@@ -340,25 +337,19 @@ pub struct TransactionOutput {
 }
 
 impl TransactionOutput {
-    pub fn new(transaction_output: RawTransactionOutput, event_ids: Vec<EventID>) -> Self {
-        debug_assert!(
-            transaction_output.events.len() == event_ids.len(),
-            "Transaction events len mismatch events len"
-        );
-
-        let events = transaction_output
-            .events
-            .clone()
-            .into_iter()
-            .zip(event_ids)
-            .map(|(event, event_id)| Event::new_with_event_id(event_id, event))
-            .collect::<Vec<_>>();
+    pub fn new(
+        status: KeptVMStatus,
+        changeset: StateChangeSet,
+        events: Vec<Event>,
+        gas_used: u64,
+        is_upgrade: bool,
+    ) -> Self {
         TransactionOutput {
-            status: transaction_output.status,
-            changeset: transaction_output.changeset,
+            status,
+            changeset,
             events,
-            gas_used: transaction_output.gas_used,
-            is_upgrade: transaction_output.is_upgrade,
+            gas_used,
+            is_upgrade,
         }
     }
 }
@@ -411,8 +402,8 @@ impl TransactionExecutionInfo {
         h256::sha3_256_of(bcs::to_bytes(self).unwrap().as_slice())
     }
 
-    pub fn root_object(&self) -> RootObjectEntity {
-        ObjectEntity::root_object(self.state_root, self.size)
+    pub fn root_metadata(&self) -> ObjectMeta {
+        ObjectMeta::root_metadata(self.state_root, self.size)
     }
 }
 

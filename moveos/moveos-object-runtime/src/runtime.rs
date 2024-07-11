@@ -16,12 +16,12 @@ use move_core_types::{
     value::MoveTypeLayout, vm_status::StatusCode,
 };
 use move_vm_types::values::{StructRef, Value};
-use moveos_types::state::StateChangeSet;
 use moveos_types::{
     move_std::string::MoveString,
     moveos_std::timestamp::Timestamp,
     state::{FieldKey, ObjectChange, ObjectState},
 };
+use moveos_types::{moveos_std::object::ObjectMeta, state::StateChangeSet};
 use moveos_types::{
     moveos_std::{
         module_store::{ModuleStore, Package},
@@ -106,7 +106,7 @@ pub struct ObjectRuntime {
 }
 
 impl ObjectRuntime {
-    pub fn new(tx_context: TxContext, root: ObjectState) -> Self {
+    pub fn new(tx_context: TxContext, root: ObjectMeta) -> Self {
         if log::log_enabled!(log::Level::Trace) {
             tracing::trace!(
                 "Init ObjectRuntime with tx_hash: {:?}, state_root: {}",
@@ -116,7 +116,7 @@ impl ObjectRuntime {
         }
         Self {
             tx_context: TxContextValue::new(tx_context),
-            root: RuntimeObject::load(Root::type_layout(), root)
+            root: RuntimeObject::load(Root::type_layout(), ObjectState::new_root(root))
                 .expect("Load root object should success"),
             object_pointer_in_args: Default::default(),
         }
@@ -469,9 +469,14 @@ impl ObjectRuntime {
         for (k, field_change) in root_change.fields {
             changes.insert(k, field_change);
         }
+        debug_assert!(
+            root_change.metadata.updated_at == 0,
+            "root object updated_at should not be updated"
+        );
+
         let change_set = StateChangeSet {
-            //TODO should we keep the root ObjectMeta in the change set?
-            root_metadata: root_change.metadata,
+            state_root: root_change.metadata.state_root(),
+            global_size: root_change.metadata.size,
             changes,
         };
         Ok((tx_context, change_set))
