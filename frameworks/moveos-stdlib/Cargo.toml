@@ -37,6 +37,7 @@ bech32 = { workspace = true }
 bs58 = { workspace = true, features = ["check"] }
 revm-precompile = { workspace = true }
 revm-primitives = { workspace = true }
+ripemd = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }

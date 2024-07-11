@@ -7067,6 +7067,7 @@ dependencies = [
  "primitive-types 0.12.2",
  "revm-precompile",
  "revm-primitives",
+ "ripemd",
  "rlp",
  "serde 1.0.204",
  "serde_bytes",
