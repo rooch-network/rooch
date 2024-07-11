@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use moveos_store::MoveOSStore;
-use moveos_types::state::ObjectState;
+use moveos_types::moveos_std::object::ObjectMeta;
 use raw_store::metrics::DBMetrics;
 use raw_store::{rocks::RocksDB, StoreInstance};
 use rooch_config::store_config::StoreConfig;
@@ -68,9 +68,9 @@ impl RoochDB {
         Self::init_with_metrics(config, Arc::new(db_metrics))
     }
 
-    pub fn latest_root(&self) -> Result<Option<ObjectState>> {
+    pub fn latest_root(&self) -> Result<Option<ObjectMeta>> {
         let startup_info = self.moveos_store.config_store.get_startup_info()?;
 
-        Ok(startup_info.map(|s| s.into_root_object()))
+        Ok(startup_info.map(|s| s.into_root_metadata()))
     }
 }

@@ -5,7 +5,7 @@ use crate::move_std::string::MoveString;
 use crate::moveos_std::account::Account;
 use crate::moveos_std::module_store::Package;
 use crate::moveos_std::move_module::MoveModuleDynamicField;
-use crate::moveos_std::object::{ObjectEntity, ObjectID, RawField};
+use crate::moveos_std::object::{ObjectEntity, ObjectID, ObjectMeta, RawField};
 use crate::state::{FieldKey, MoveType, ObjectState};
 use crate::{
     access_path::AccessPath, h256::H256, moveos_std::object::AnnotatedObject, state::AnnotatedState,
@@ -42,7 +42,7 @@ pub trait StateResolver: StatelessResolver {
 
     fn get_object(&self, id: &ObjectID) -> Result<Option<ObjectState>> {
         if id.is_root() {
-            Ok(Some(self.root_object().clone()))
+            Ok(Some(ObjectState::new_root(self.root().clone())))
         } else {
             let field_key = id.field_key();
             let parent_id = id.parent().expect("ObjectID parent should not be None");
@@ -70,11 +70,11 @@ pub trait StateResolver: StatelessResolver {
         self.list_fields_at(obj.state_root(), cursor, limit)
     }
 
-    fn root_object(&self) -> &ObjectState;
+    fn root(&self) -> &ObjectMeta;
 }
 
 pub struct RootObjectResolver<'a, R> {
-    root_object: ObjectState,
+    root: ObjectMeta,
     resolver: &'a R,
 }
 
@@ -82,11 +82,8 @@ impl<'a, R> RootObjectResolver<'a, R>
 where
     R: StatelessResolver,
 {
-    pub fn new(root_object: ObjectState, resolver: &'a R) -> Self {
-        Self {
-            root_object,
-            resolver,
-        }
+    pub fn new(root: ObjectMeta, resolver: &'a R) -> Self {
+        Self { root, resolver }
     }
 }
 
@@ -116,8 +113,8 @@ impl<R> StateResolver for RootObjectResolver<'_, R>
 where
     R: StatelessResolver,
 {
-    fn root_object(&self) -> &ObjectState {
-        &self.root_object
+    fn root(&self) -> &ObjectMeta {
+        &self.root
     }
 }
 

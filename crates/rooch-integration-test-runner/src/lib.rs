@@ -24,8 +24,7 @@ use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos::moveos_test_runner::{CompiledState, MoveOSTestAdapter, TaskInput};
 use moveos_config::DataDirPath;
 use moveos_store::MoveOSStore;
-use moveos_types::moveos_std::object::ObjectEntity;
-use moveos_types::state::ObjectState;
+use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::{
@@ -55,7 +54,7 @@ pub struct MoveOSTestRunner<'a> {
     _temp_dir: DataDirPath,
     //debug: bool,
     moveos: MoveOS,
-    root: ObjectState,
+    root: ObjectMeta,
 }
 
 impl MoveOSTestRunner<'_> {
@@ -151,7 +150,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             default_syntax,
             _temp_dir: temp_dir,
             moveos,
-            root: ObjectEntity::root_object(state_root, size).into_state(),
+            root: ObjectMeta::root_metadata(state_root, size),
         };
         debug!("init moveos test adapter");
         (adapter, None)
@@ -187,7 +186,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         let tx = MoveOSTransaction::new_for_test(self.root.clone(), sender, action);
         let verified_tx = self.validate_tx(tx)?;
         let (state_root, size, output) = self.moveos.execute_and_apply(verified_tx)?;
-        self.root = ObjectEntity::root_object(state_root, size).into_state();
+        self.root = ObjectMeta::root_metadata(state_root, size);
         Ok((Some(tx_output_to_str(output)), module))
     }
 
@@ -225,7 +224,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         );
         let verified_tx = self.validate_tx(tx)?;
         let (state_root, size, output) = self.moveos.execute_and_apply(verified_tx)?;
-        self.root = ObjectEntity::root_object(state_root, size).into_state();
+        self.root = ObjectMeta::root_metadata(state_root, size);
         //TODO return values
         let value = SerializedReturnValues {
             mutable_reference_outputs: vec![],
@@ -266,7 +265,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         );
         let verified_tx = self.validate_tx(tx)?;
         let (state_root, size, output) = self.moveos.execute_and_apply(verified_tx)?;
-        self.root = ObjectEntity::root_object(state_root, size).into_state();
+        self.root = ObjectMeta::root_metadata(state_root, size);
         debug_assert!(
             output.status == move_core_types::vm_status::KeptVMStatus::Executed,
             "{:?}",

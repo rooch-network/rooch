@@ -10,7 +10,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_store::MoveOSStore;
-use moveos_types::state::ObjectState;
+use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::MoveAction;
 use rooch_types::indexer::event::IndexerEvent;
@@ -18,14 +18,14 @@ use rooch_types::indexer::state::{handle_object_change, IndexerObjectStateChange
 use rooch_types::indexer::transaction::IndexerTransaction;
 
 pub struct IndexerActor {
-    root: ObjectState,
+    root: ObjectMeta,
     indexer_store: IndexerStore,
     moveos_store: MoveOSStore,
 }
 
 impl IndexerActor {
     pub fn new(
-        root: ObjectState,
+        root: ObjectMeta,
         indexer_store: IndexerStore,
         moveos_store: MoveOSStore,
     ) -> Result<Self> {

@@ -4,7 +4,8 @@
 use crate::h256;
 use crate::move_std::string::MoveString;
 use crate::moveos_std::object::{
-    AnnotatedObject, DynamicField, ObjectEntity, ObjectID, ObjectMeta, RawData, RawObject,
+    AnnotatedObject, DynamicField, ObjectEntity, ObjectID, ObjectMeta, RawData, RawObject, Root,
+    GENESIS_STATE_ROOT,
 };
 use crate::moveos_std::timestamp::Timestamp;
 use anyhow::{bail, ensure, Result};
@@ -662,6 +663,11 @@ impl ObjectState {
         Ok(Self::new(metadata, value_bytes))
     }
 
+    pub fn new_root(root_metadata: ObjectMeta) -> Self {
+        Self::new_with_struct(root_metadata, Root::default())
+            .expect("Create Root Object should success")
+    }
+
     /// Create Timestamp Object
     pub fn new_timestamp(timestamp: Timestamp) -> Self {
         let id = Timestamp::object_id();
@@ -903,20 +909,24 @@ impl ObjectChange {
 /// The state_root in the ObjectChange is the state_root before the changes
 #[derive(Clone, Debug)]
 pub struct StateChangeSet {
-    pub root_metadata: ObjectMeta,
+    /// The state root of the root Object
+    pub state_root: H256,
+    /// The field size of the root Object
+    pub global_size: u64,
     pub changes: BTreeMap<FieldKey, ObjectChange>,
 }
 
 impl StateChangeSet {
-    pub fn root_object(&self) -> ObjectState {
-        ObjectState::new(self.root_metadata.clone(), vec![])
+    pub fn root_metadata(&self) -> ObjectMeta {
+        ObjectMeta::root_metadata(self.state_root, self.global_size)
     }
 }
 
 impl Default for StateChangeSet {
     fn default() -> Self {
         Self {
-            root_metadata: ObjectMeta::genesis_root(),
+            state_root: *GENESIS_STATE_ROOT,
+            global_size: 0,
             changes: BTreeMap::new(),
         }
     }

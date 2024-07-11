@@ -5,7 +5,7 @@ use super::messages::{ExecuteL1BlockMessage, ExecuteL1TxMessage, ExecuteL2TxMess
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
-use moveos_types::{moveos_std::object::ObjectEntity, transaction::VerifiedMoveOSTransaction};
+use moveos_types::transaction::VerifiedMoveOSTransaction;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_proposer::proxy::ProposerProxy;
@@ -91,8 +91,7 @@ impl PipelineProcessorActor {
         self.proposer
             .propose_transaction(tx.clone(), execution_info.clone())
             .await?;
-        let root =
-            ObjectEntity::root_object(execution_info.state_root, execution_info.size).into_state();
+        let root = execution_info.root_metadata();
         // Sync latest state root from writer executor to reader executor
         self.executor
             .refresh_state(root.clone(), output.is_upgrade)

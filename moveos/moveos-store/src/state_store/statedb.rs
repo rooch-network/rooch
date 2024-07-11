@@ -102,9 +102,9 @@ impl StateDBStore {
     }
 
     pub fn apply_change_set(&self, state_change_set: StateChangeSet) -> Result<(H256, u64)> {
-        let root = state_change_set.root_object();
-        let pre_state_root = root.metadata.state_root();
-        let global_size = root.metadata.size;
+        let root = state_change_set.root_metadata();
+        let pre_state_root = root.state_root();
+        let global_size = root.size;
 
         let resolver = RootObjectResolver::new(root, self);
 

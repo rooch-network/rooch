@@ -25,10 +25,11 @@ use moveos_types::addresses::MOVEOS_STD_ADDRESS;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::moveos_std::event::EventID;
 use moveos_types::moveos_std::gas_schedule::GasScheduleUpdated;
+use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::moveos_std::tx_result::TxResult;
 use moveos_types::startup_info::StartupInfo;
-use moveos_types::state::{MoveStructState, MoveStructType, ObjectState};
+use moveos_types::state::{MoveStructState, MoveStructType};
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::{
     MoveOSTransaction, RawTransactionOutput, TransactionOutput, VerifiedMoveAction,
@@ -177,7 +178,7 @@ impl MoveOS {
         Ok((state_root, size, output))
     }
 
-    fn load_cost_table(&self, root: &ObjectState) -> VMResult<CostTable> {
+    fn load_cost_table(&self, root: &ObjectMeta) -> VMResult<CostTable> {
         // We use a scoped lock here to avoid holding the lock for a long time.
         {
             let rlock = self.cost_table.read();
@@ -397,7 +398,7 @@ impl MoveOS {
     /// Execute readonly view function
     pub fn execute_view_function(
         &self,
-        root: ObjectState,
+        root: ObjectMeta,
         function_call: FunctionCall,
     ) -> FunctionResult {
         //TODO allow user to specify the sender
@@ -408,7 +409,7 @@ impl MoveOS {
 
     pub fn execute_readonly_function(
         &self,
-        root: ObjectState,
+        root: ObjectMeta,
         tx_context: &TxContext,
         function_call: FunctionCall,
     ) -> FunctionResult {

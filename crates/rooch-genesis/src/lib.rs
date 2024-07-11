@@ -16,8 +16,7 @@ use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::gas_schedule::{GasEntry, GasSchedule, GasScheduleConfig};
-use moveos_types::moveos_std::object::ObjectEntity;
-use moveos_types::state::ObjectState;
+use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use moveos_types::{h256, state_resolver};
@@ -157,7 +156,7 @@ impl FrameworksGasParameters {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RoochGenesis {
     /// The root object after genesis initialization
-    pub root: ObjectState,
+    pub root: ObjectMeta,
     pub initial_gas_config: GasScheduleConfig,
     pub genesis_tx: RoochTransaction,
     pub genesis_moveos_tx: MoveOSTransaction,
@@ -198,7 +197,7 @@ impl RoochGenesis {
 
         let mut genesis_moveos_tx = genesis_tx
             .clone()
-            .into_moveos_transaction(ObjectEntity::genesis_root_object().into_state());
+            .into_moveos_transaction(ObjectMeta::genesis_root());
 
         let gas_parameter = FrameworksGasParameters::initial();
         let gas_config = gas_parameter.to_gas_schedule_config();
@@ -219,7 +218,7 @@ impl RoochGenesis {
         let (state_root, size, _output) = moveos.init_genesis(genesis_moveos_tx.clone())?;
 
         Ok(Self {
-            root: ObjectEntity::root_object(state_root, size).into_state(),
+            root: ObjectMeta::root_metadata(state_root, size),
             initial_gas_config: gas_config,
             genesis_tx,
             genesis_moveos_tx,
@@ -247,7 +246,7 @@ impl RoochGenesis {
         h256::sha3_256_of(self.encode().as_slice())
     }
 
-    pub fn genesis_root(&self) -> &ObjectState {
+    pub fn genesis_root(&self) -> &ObjectMeta {
         &self.root
     }
 
@@ -291,7 +290,7 @@ impl RoochGenesis {
         }
     }
 
-    pub fn init_genesis(&self, rooch_db: &RoochDB) -> Result<ObjectState> {
+    pub fn init_genesis(&self, rooch_db: &RoochDB) -> Result<ObjectMeta> {
         ensure!(
             rooch_db
                 .moveos_store
@@ -317,7 +316,7 @@ impl RoochGenesis {
         let (genesis_state_root, size, genesis_tx_output) =
             moveos.init_genesis(self.genesis_moveos_tx())?;
 
-        let inited_root = ObjectEntity::root_object(genesis_state_root, size).into_state();
+        let inited_root = ObjectMeta::root_metadata(genesis_state_root, size);
         debug_assert!(
             inited_root == *self.genesis_root(),
             "Genesis state root mismatch"
