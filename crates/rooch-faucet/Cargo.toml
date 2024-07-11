@@ -28,7 +28,7 @@ futures = { workspace = true }
 prometheus = { workspace = true }
 tap = { workspace = true }
 eyre = { workspace = true }
-rust-rocksdb = { workspace = true }
+rust-rocksdb = { workspace = true, features = ["lz4"] }
 tempfile = { workspace = true }
 
 anyhow = { workspace = true }
@@ -50,3 +50,6 @@ rooch-key = { workspace = true }
 rooch-types = { workspace = true }
 rooch-rpc-client = { workspace = true }
 rooch-rpc-api = { workspace = true }
+
+[target.'cfg(not(target_env = "msvc"))'.dependencies]
+rust-rocksdb = { workspace = true, features = ["lz4", "jemalloc"] }

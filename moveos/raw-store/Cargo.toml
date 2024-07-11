@@ -21,8 +21,8 @@ serde_bytes = { workspace = true }
 hex = { workspace = true }
 parking_lot = { workspace = true }
 tap = { workspace = true }
+rust-rocksdb = { workspace = true, features = ["lz4"] }
 
-rust-rocksdb = { workspace = true, features = ["lz4", "jemalloc"] }
 prometheus = { workspace = true }
 tokio = { workspace = true }
 once_cell = { workspace = true }
@@ -44,3 +44,5 @@ metrics = { workspace = true }
 moveos-common = { workspace = true }
 moveos-config = { workspace = true }
 
+[target.'cfg(not(target_env = "msvc"))'.dependencies]
+rust-rocksdb = { workspace = true, features = ["lz4", "jemalloc"] }

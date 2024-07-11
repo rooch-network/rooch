@@ -5,13 +5,6 @@ use clap::Parser;
 use rooch::RoochCli;
 use std::process::exit;
 
-#[cfg(not(target_env = "msvc"))]
-use tikv_jemallocator::Jemalloc;
-
-#[cfg(not(target_env = "msvc"))]
-#[global_allocator]
-static GLOBAL: Jemalloc = Jemalloc;
-
 /// rooch is a command line tools for Rooch Network
 #[tokio::main]
 async fn main() {
