@@ -2480,7 +2480,8 @@
         "type": "object",
         "required": [
           "changes",
-          "root_metadata"
+          "global_size",
+          "state_root"
         ],
         "properties": {
           "changes": {
@@ -2489,8 +2490,11 @@
               "$ref": "#/components/schemas/ObjectChangeView"
             }
           },
-          "root_metadata": {
-            "$ref": "#/components/schemas/ObjectMetaView"
+          "global_size": {
+            "$ref": "#/components/schemas/u64"
+          },
+          "state_root": {
+            "$ref": "#/components/schemas/primitive_types::H256"
           }
         }
       },

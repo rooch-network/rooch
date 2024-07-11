@@ -17,7 +17,6 @@ use serde::{Deserialize, Serialize};
 /// Indexer write Message
 #[derive(Debug, Clone)]
 pub struct UpdateIndexerMessage {
-    pub root: ObjectMeta,
     pub ledger_transaction: LedgerTransaction,
     pub execution_info: TransactionExecutionInfo,
     pub moveos_tx: VerifiedMoveOSTransaction,

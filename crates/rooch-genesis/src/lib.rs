@@ -17,7 +17,6 @@ use moveos_types::h256::H256;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::gas_schedule::{GasEntry, GasSchedule, GasScheduleConfig};
 use moveos_types::moveos_std::object::ObjectMeta;
-use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use moveos_types::{h256, state_resolver};
 use once_cell::sync::Lazy;
@@ -386,14 +385,12 @@ impl RoochGenesis {
         let mut state_index_generator = 0u64;
         let mut indexer_object_state_changes = IndexerObjectStateChanges::default();
 
-        let resolver = RootObjectResolver::new(inited_root.clone(), &rooch_db.moveos_store);
         for (_field_key, object_change) in genesis_tx_output.changeset.changes {
             state_index_generator = handle_object_change(
                 state_index_generator,
                 genesis_tx_order,
                 &mut indexer_object_state_changes,
                 object_change,
-                &resolver,
             )?;
         }
         rooch_db

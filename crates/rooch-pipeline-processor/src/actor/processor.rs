@@ -104,22 +104,20 @@ impl PipelineProcessorActor {
 
         // If bitcoin block data import, don't write all indexer
         if !self.data_import_flag {
-            tokio::spawn(async move {
-                let result = indexer
-                    .update_indexer(
-                        root,
-                        tx,
-                        execution_info_clone,
-                        moveos_tx,
-                        output_clone.events,
-                        output_clone.changeset,
-                    )
-                    .await;
-                match result {
-                    Ok(_) => {}
-                    Err(error) => log::error!("Update indexer error: {}", error),
-                };
-            });
+            //The update_indexer is a notify call, do not block current task
+            let result = indexer
+                .update_indexer(
+                    tx,
+                    execution_info_clone,
+                    moveos_tx,
+                    output_clone.events,
+                    output_clone.changeset,
+                )
+                .await;
+            match result {
+                Ok(_) => {}
+                Err(error) => log::error!("Update indexer error: {}", error),
+            };
         };
 
         Ok(ExecuteTransactionResponse {

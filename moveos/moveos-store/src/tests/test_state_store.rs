@@ -33,14 +33,14 @@ async fn test_reopen() {
 async fn test_statedb_state_root() -> Result<()> {
     let (moveos_store, _) =
         MoveOSStore::mock_moveos_store().expect("moveos store mock should succ");
-    let change_set = random_state_change_set();
+    let mut change_set = random_state_change_set();
     moveos_store
         .get_state_store()
         .apply_change_set(&mut change_set)?;
-    let new_change_set = random_state_change_set();
+    let mut new_change_set = random_state_change_set();
     moveos_store
         .get_state_store()
-        .apply_change_set(&mut random_state_change_set())?;
+        .apply_change_set(&mut new_change_set)?;
     assert_ne!(change_set.state_root, new_change_set.state_root);
     Ok(())
 }

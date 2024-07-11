@@ -9,9 +9,7 @@ use crate::IndexerStore;
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
-use moveos_store::MoveOSStore;
 use moveos_types::moveos_std::object::ObjectMeta;
-use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::MoveAction;
 use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::indexer::state::{handle_object_change, IndexerObjectStateChanges};
@@ -20,19 +18,13 @@ use rooch_types::indexer::transaction::IndexerTransaction;
 pub struct IndexerActor {
     root: ObjectMeta,
     indexer_store: IndexerStore,
-    moveos_store: MoveOSStore,
 }
 
 impl IndexerActor {
-    pub fn new(
-        root: ObjectMeta,
-        indexer_store: IndexerStore,
-        moveos_store: MoveOSStore,
-    ) -> Result<Self> {
+    pub fn new(root: ObjectMeta, indexer_store: IndexerStore) -> Result<Self> {
         Ok(Self {
             root,
             indexer_store,
-            moveos_store,
         })
     }
 }
@@ -43,7 +35,6 @@ impl Actor for IndexerActor {}
 impl Handler<UpdateIndexerMessage> for IndexerActor {
     async fn handle(&mut self, msg: UpdateIndexerMessage, _ctx: &mut ActorContext) -> Result<()> {
         let UpdateIndexerMessage {
-            root,
             ledger_transaction,
             execution_info,
             moveos_tx,
@@ -51,9 +42,8 @@ impl Handler<UpdateIndexerMessage> for IndexerActor {
             state_change_set,
         } = msg;
 
-        self.root = root;
+        self.root = state_change_set.root_metadata();
         let tx_order = ledger_transaction.sequence_info.tx_order;
-        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
 
         // 1. update indexer transaction
         let move_action = MoveAction::from(moveos_tx.action);
@@ -90,7 +80,6 @@ impl Handler<UpdateIndexerMessage> for IndexerActor {
                 tx_order,
                 &mut indexer_object_state_changes,
                 object_change,
-                &resolver,
             )?;
         }
         self.indexer_store
@@ -116,14 +105,12 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
         let mut state_index_generator = 0u64;
         let mut indexer_object_state_changes = IndexerObjectStateChanges::default();
 
-        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
         for (_field_key, object_change) in state_change_set.changes {
             state_index_generator = handle_object_change(
                 state_index_generator,
                 tx_order,
                 &mut indexer_object_state_changes,
                 object_change,
-                &resolver,
             )?;
         }
 

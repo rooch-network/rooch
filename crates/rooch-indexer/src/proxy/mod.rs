@@ -8,7 +8,7 @@ use crate::actor::messages::{
     QueryIndexerTransactionsMessage, UpdateIndexerMessage,
 };
 use crate::actor::reader_indexer::IndexerReaderActor;
-use anyhow::Result;
+use anyhow::{Ok, Result};
 use coerce::actor::ActorRef;
 use moveos_types::moveos_std::event::Event;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
@@ -36,7 +36,6 @@ impl IndexerProxy {
 
     pub async fn update_indexer(
         &self,
-        root: ObjectMeta,
         ledger_transaction: LedgerTransaction,
         execution_info: TransactionExecutionInfo,
         moveos_tx: VerifiedMoveOSTransaction,
@@ -44,15 +43,15 @@ impl IndexerProxy {
         state_change_set: StateChangeSet,
     ) -> Result<()> {
         self.actor
-            .send(UpdateIndexerMessage {
-                root,
+            .notify(UpdateIndexerMessage {
                 ledger_transaction,
                 execution_info,
                 moveos_tx,
                 events,
                 state_change_set,
             })
-            .await?
+            .await?;
+        Ok(())
     }
 
     pub async fn indexer_states(
