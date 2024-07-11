@@ -11,7 +11,7 @@ use std::marker::PhantomData;
 use std::path::Path;
 
 use anyhow::{ensure, format_err, Error, Result};
-use rust_rocksdb::{
+use rocksdb::{
     statistics, AsColumnFamilyRef, BlockBasedIndexType, BlockBasedOptions, CStrLike, Cache,
     ColumnFamily, ColumnFamilyDescriptor, DBCompressionType, DBRawIterator, DBRecoveryMode,
     Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB,
@@ -300,7 +300,7 @@ impl RocksDB {
         &self,
         cf: &impl AsColumnFamilyRef,
         name: impl CStrLike,
-    ) -> Result<Option<u64>, rust_rocksdb::Error> {
+    ) -> Result<Option<u64>, rocksdb::Error> {
         self.db.property_int_value_cf(cf, name)
     }
 }

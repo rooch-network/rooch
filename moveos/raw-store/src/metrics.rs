@@ -9,8 +9,8 @@ use prometheus::{
     register_histogram_vec_with_registry, register_int_counter_vec_with_registry,
     register_int_gauge_vec_with_registry, HistogramVec, IntCounterVec, IntGaugeVec, Registry,
 };
-use rust_rocksdb::perf::set_perf_stats;
-use rust_rocksdb::{PerfContext, PerfMetric, PerfStatsLevel};
+use rocksdb::perf::set_perf_stats;
+use rocksdb::{PerfContext, PerfMetric, PerfStatsLevel};
 use std::cell::RefCell;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -19,7 +19,7 @@ use tap::TapFallible;
 use tracing::warn;
 
 thread_local! {
-    static PER_THREAD_ROCKS_PERF_CONTEXT: std::cell::RefCell<rust_rocksdb::PerfContext>  = RefCell::new(PerfContext::default());
+    static PER_THREAD_ROCKS_PERF_CONTEXT: std::cell::RefCell<rocksdb::PerfContext>  = RefCell::new(PerfContext::default());
 }
 
 const LATENCY_SEC_BUCKETS: &[f64] = &[

@@ -16,7 +16,7 @@ use crate::rocks::{RocksDB, SchemaIterator};
 use crate::traits::{DBStore, KVStore};
 use anyhow::{bail, format_err, Result};
 use moveos_common::utils::{from_bytes, to_bytes};
-use rust_rocksdb::{properties, AsColumnFamilyRef};
+use rocksdb::{properties, AsColumnFamilyRef};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::convert::TryInto;
