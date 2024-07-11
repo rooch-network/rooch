@@ -45,6 +45,8 @@ proptest-derive = { optional = true, workspace = true }
 csv = { workspace = true }
 tempfile = { workspace = true }
 redb = { workspace = true }
+[target.'cfg(not(target_env = "msvc"))'.dependencies]
+tikv-jemallocator = { version = "0.5", features = ["unprefixed_malloc_on_supported_platforms", "profiling"] }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }
@@ -94,3 +96,4 @@ rooch-db = { workspace = true }
 rooch-common = { workspace = true }
 
 framework-release = { workspace = true }
+
