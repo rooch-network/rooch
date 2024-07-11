@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::natives::helpers::{make_module_natives, make_native};
-use fastcrypto::hash::{Blake2b256, HashFunction, Keccak256, Ripemd160};
+use fastcrypto::hash::{Blake2b256, HashFunction, HashFunctionWrapper, Keccak256};
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
@@ -12,8 +12,11 @@ use move_vm_types::{
     pop_arg,
     values::{Value, VectorRef},
 };
+use ripemd::Ripemd160;
 use smallvec::smallvec;
 use std::collections::VecDeque;
+
+type Ripemd160Hash = HashFunctionWrapper<Ripemd160, 20>;
 
 fn hash<H: HashFunction<DIGEST_SIZE>, const DIGEST_SIZE: usize>(
     gas_params: &FromBytesGasParameters,
@@ -82,7 +85,7 @@ pub fn native_ripemd160(
     ty_args: Vec<Type>,
     args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    hash::<Ripemd160, 20>(gas_params, context, ty_args, args)
+    hash::<Ripemd160Hash, 20>(gas_params, context, ty_args, args)
 }
 
 #[derive(Debug, Clone)]
