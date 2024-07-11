@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::metrics_server::start_basic_prometheus_server;
 use crate::server::btc_server::BtcServer;
 use crate::server::rooch_server::RoochServer;
 use crate::service::aggregate_service::AggregateService;
@@ -14,6 +15,7 @@ use jsonrpsee::server::middleware::rpc::RpcServiceBuilder;
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
 use raw_store::errors::RawStoreError;
+use raw_store::metrics::DBMetrics;
 use rooch_config::server_config::ServerConfig;
 use rooch_config::{RoochOpt, ServerOpt};
 use rooch_da::actor::da::DAActor;
@@ -49,6 +51,7 @@ use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::info;
 
+pub mod metrics_server;
 pub mod server;
 pub mod service;
 
@@ -59,6 +62,7 @@ pub struct ServerHandle {
     handle: jsonrpsee::server::ServerHandle,
     timers: Vec<Timer>,
     _opt: RoochOpt,
+    _prometheus_registry: prometheus::Registry,
 }
 
 impl ServerHandle {
@@ -89,7 +93,6 @@ impl Service {
         Self { handle: None }
     }
 
-    // pub async fn start(&mut self, opt: &RoochOpt, key_keypair: Option<RoochKeyPair>) -> Result<()> {
     pub async fn start(&mut self, opt: RoochOpt, server_opt: ServerOpt) -> Result<()> {
         self.handle = Some(start_server(opt, server_opt).await?);
         Ok(())
@@ -165,6 +168,11 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
 
     let config = ServerConfig::new_with_port(opt.port());
     let actor_system = ActorSystem::global_system();
+
+    // start prometheus server
+    let prometheus_registry = start_basic_prometheus_server();
+    // Initialize metrics to track db usage before creating any stores
+    DBMetrics::init(&prometheus_registry);
 
     //Init store
     let store_config = opt.store_config();
@@ -372,6 +380,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         handle,
         timers,
         _opt: opt,
+        _prometheus_registry: prometheus_registry,
     })
 }
 

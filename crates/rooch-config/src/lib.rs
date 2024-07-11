@@ -320,7 +320,6 @@ impl BaseConfig {
     }
 }
 
-// #[derive(Debug, Parser, Default, Serialize, Deserialize)]
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct ServerOpt {
     /// Sequencer, proposer and relayer keypair
