@@ -5,14 +5,11 @@ use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
 use move_core_types::identifier::Identifier;
-use moveos_types::move_types::FunctionId;
-use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::transaction::FunctionCall;
-use rooch_rpc_api::jsonrpc_types::{
-    AnnotatedFunctionResultView, AnnotatedMoveValueView, StateOptions, StatePageView,
-};
+use moveos_types::module_binding::MoveFunctionCaller;
+use rooch_rpc_api::jsonrpc_types::{AnnotatedMoveValueView, StateOptions, StatePageView};
 use rooch_types::address::ParsedAddress;
 use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::framework::session_key::SessionKeyModule;
 use std::collections::BTreeMap;
 
 /// List all session keys by address
@@ -33,16 +30,13 @@ impl CommandAction<Vec<BTreeMap<Identifier, AnnotatedMoveValueView>>> for ListCo
         let mapping = context.address_mapping();
         let address_addr = self.address.into_account_address(&mapping)?;
 
-        let function_id = "0x3::session_key::get_session_keys_handle".parse::<FunctionId>()?;
-        let function_call = FunctionCall::new(function_id, vec![], vec![address_addr.to_vec()]);
         let client = context.get_client().await?;
-        let view_result = client
-            .rooch
-            .execute_view_function(function_call)
-            .await
-            .map_err(|e| RoochError::ViewFunctionError(e.to_string()))?;
-        let obj_id = extract_obj_id(view_result)
-            .ok_or(RoochError::from(anyhow::anyhow!("Session key not found")))?;
+        let session_key_module = client.as_module_binding::<SessionKeyModule>();
+        let obj_id = session_key_module
+            .get_session_keys_handle(address_addr)?
+            .ok_or_else(|| {
+                RoochError::ViewFunctionError("Failed to get session keys object".to_string())
+            })?;
 
         let options = StateOptions::new().decode(true);
         let field_result = client
@@ -52,30 +46,6 @@ impl CommandAction<Vec<BTreeMap<Identifier, AnnotatedMoveValueView>>> for ListCo
             .map_err(RoochError::from)?;
 
         Ok(extract_session_keys(field_result))
-    }
-}
-
-fn extract_obj_id(view_result: AnnotatedFunctionResultView) -> Option<ObjectID> {
-    if let Some(return_value) = view_result.return_values {
-        if let AnnotatedMoveValueView::Struct(struct_value) =
-            return_value.first()?.decoded_value.clone()
-        {
-            if let Some(AnnotatedMoveValueView::Vector(vec)) =
-                struct_value.value.first_key_value().map(|(_, value)| value)
-            {
-                if let AnnotatedMoveValueView::Address(addr) = vec.first()? {
-                    addr.to_string().parse::<ObjectID>().ok()
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    } else {
-        None
     }
 }
 
