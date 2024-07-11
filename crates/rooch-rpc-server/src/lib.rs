@@ -262,7 +262,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     timers.push(proposer_timer);
 
     // Init indexer
-    let indexer_executor = IndexerActor::new(root, indexer_store, moveos_store)?
+    let indexer_executor = IndexerActor::new(root, indexer_store)?
         .into_actor(Some("Indexer"), &actor_system)
         .await?;
     let indexer_reader_executor = IndexerReaderActor::new(indexer_reader)?

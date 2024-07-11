@@ -451,7 +451,7 @@ impl ObjectMeta {
             size: 0,
             created_at: 0,
             updated_at: 0,
-            object_type: Root::struct_tag().into(),
+            object_type: Root::type_tag(),
         }
     }
 
@@ -465,6 +465,19 @@ impl ObjectMeta {
             created_at: 0,
             updated_at: 0,
             object_type,
+        }
+    }
+
+    pub fn root_metadata(state_root: H256, size: u64) -> Self {
+        Self {
+            id: ObjectID::root(),
+            owner: MOVEOS_STD_ADDRESS,
+            flag: SHARED_OBJECT_FLAG_MASK,
+            state_root: Some(state_root),
+            size,
+            created_at: 0,
+            updated_at: 0,
+            object_type: Root::type_tag(),
         }
     }
 
@@ -495,6 +508,10 @@ impl ObjectMeta {
 
     pub fn state_root(&self) -> H256 {
         self.state_root.unwrap_or_else(|| *GENESIS_STATE_ROOT)
+    }
+
+    pub fn size(&self) -> u64 {
+        self.size
     }
 
     pub fn is_system_owned(&self) -> bool {

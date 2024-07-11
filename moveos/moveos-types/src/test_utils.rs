@@ -309,7 +309,7 @@ pub fn random_state_change_set() -> StateChangeSet {
 
     let mut rng = thread_rng();
     let size = rng.gen_range(1..=2);
-    state_change_set.root_metadata.size = size;
+    state_change_set.global_size = size;
 
     // generate changes
     for _n in 0..size {
@@ -326,7 +326,7 @@ pub fn random_state_change_set_for_child_object(parent_id: ObjectID) -> StateCha
     let mut rng = thread_rng();
     let size = rng.gen_range(1..=20);
 
-    state_change_set.root_metadata.size = size;
+    state_change_set.global_size = size;
 
     let (_parent_id, parent_object_change) =
         random_object_change_with_object_id(parent_id.clone(), 1);

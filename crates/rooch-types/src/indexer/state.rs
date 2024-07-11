@@ -8,8 +8,7 @@ use anyhow::Result;
 use move_core_types::effects::Op;
 use move_core_types::language_storage::StructTag;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
-use moveos_types::state::{MoveStructType, ObjectChange, ObjectState, StateChangeSet};
-use moveos_types::state_resolver::StateResolver;
+use moveos_types::state::{MoveStructType, ObjectChange, StateChangeSet};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -24,8 +23,7 @@ pub struct IndexerObjectState {
 }
 
 impl IndexerObjectState {
-    pub fn new_from_object_state(state: ObjectState, tx_order: u64, state_index: u64) -> Self {
-        let (metadata, _value) = state.into_inner();
+    pub fn new(metadata: ObjectMeta, tx_order: u64, state_index: u64) -> Self {
         IndexerObjectState {
             metadata,
             tx_order,
@@ -58,7 +56,6 @@ pub fn handle_object_change(
     tx_order: u64,
     indexer_object_state_changes: &mut IndexerObjectStateChanges,
     object_change: ObjectChange,
-    resolver: &dyn StateResolver,
 ) -> Result<u64> {
     let ObjectChange {
         metadata,
@@ -68,18 +65,8 @@ pub fn handle_object_change(
     let object_id = metadata.id.clone();
     if let Some(op) = value {
         match op {
-            Op::Modify(value) => {
-                // refresh object to acquire lastest object state root
-                //TODO we should update the state_root in the ObjectChange after apply.
-                let refresh_object = resolver
-                    .get_object(&object_id)?
-                    .unwrap_or(ObjectState::new(metadata, value));
-
-                let state = IndexerObjectState::new_from_object_state(
-                    refresh_object,
-                    tx_order,
-                    state_index_generator,
-                );
+            Op::Modify(_value) => {
+                let state = IndexerObjectState::new(metadata, tx_order, state_index_generator);
                 indexer_object_state_changes
                     .update_object_states
                     .push(state);
@@ -89,29 +76,14 @@ pub fn handle_object_change(
                     .remove_object_states
                     .push(object_id.to_string());
             }
-            Op::New(value) => {
-                // refresh object to acquire lastest object state root
-                let refresh_object = resolver
-                    .get_object(&object_id)?
-                    .unwrap_or(ObjectState::new(metadata, value));
-                let state = IndexerObjectState::new_from_object_state(
-                    refresh_object,
-                    tx_order,
-                    state_index_generator,
-                );
+            Op::New(_value) => {
+                let state = IndexerObjectState::new(metadata, tx_order, state_index_generator);
                 indexer_object_state_changes.new_object_states.push(state);
             }
         }
     } else {
         //If value is not changed, we should update the metadata.
-        let refresh_object = resolver
-            .get_object(&object_id)?
-            .ok_or_else(|| anyhow::anyhow!("Object {} not found for indexer", metadata.id))?;
-        let state = IndexerObjectState::new_from_object_state(
-            refresh_object,
-            tx_order,
-            state_index_generator,
-        );
+        let state = IndexerObjectState::new(metadata, tx_order, state_index_generator);
         indexer_object_state_changes
             .update_object_states
             .push(state);
@@ -124,7 +96,6 @@ pub fn handle_object_change(
             tx_order,
             indexer_object_state_changes,
             change,
-            resolver,
         )?;
     }
     Ok(state_index_generator)

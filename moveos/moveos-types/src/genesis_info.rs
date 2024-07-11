@@ -1,17 +1,18 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::state::ObjectState;
 use primitive_types::H256;
 use serde::{Deserialize, Serialize};
 use std::fmt;
+
+use crate::moveos_std::object::ObjectMeta;
 
 #[derive(Eq, PartialEq, Deserialize, Serialize, Clone)]
 pub struct GenesisInfo {
     /// genesis package hash
     pub genesis_package_hash: H256,
     /// lastest state root hash
-    pub root: ObjectState,
+    pub root: ObjectMeta,
     /// genesis binary
     pub genesis_bin: Vec<u8>,
 }
@@ -41,7 +42,7 @@ impl fmt::Display for GenesisInfo {
 }
 
 impl GenesisInfo {
-    pub fn new(genesis_package_hash: H256, root: ObjectState, genesis_bin: Vec<u8>) -> Self {
+    pub fn new(genesis_package_hash: H256, root: ObjectMeta, genesis_bin: Vec<u8>) -> Self {
         GenesisInfo {
             genesis_package_hash,
             root,

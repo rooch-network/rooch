@@ -14,6 +14,7 @@ use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::ObjectState;
 use moveos_types::state_resolver::RootObjectResolver;
@@ -33,7 +34,7 @@ use rooch_types::transaction::{
 use tracing::{debug, warn};
 
 pub struct ExecutorActor {
-    root: ObjectState,
+    root: ObjectMeta,
     moveos: MoveOS,
     moveos_store: MoveOSStore,
     rooch_store: RoochStore,
@@ -44,7 +45,7 @@ type ValidateAuthenticatorResult =
 
 impl ExecutorActor {
     pub fn new(
-        root: ObjectState,
+        root: ObjectMeta,
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
     ) -> Result<Self> {
@@ -81,12 +82,12 @@ impl ExecutorActor {
 
     pub fn execute(&mut self, tx: VerifiedMoveOSTransaction) -> Result<ExecuteTransactionResult> {
         let tx_hash = tx.ctx.tx_hash();
-        let (state_root, size, output) = self.moveos.execute_and_apply(tx)?;
-        let execution_info =
-            self.moveos_store
-                .handle_tx_output(tx_hash, state_root, size, output.clone())?;
+        let output = self.moveos.execute_and_apply(tx)?;
+        let execution_info = self
+            .moveos_store
+            .handle_tx_output(tx_hash, output.clone())?;
 
-        self.root = execution_info.root_object().into_state();
+        self.root = execution_info.root_metadata();
         Ok(ExecuteTransactionResult {
             output,
             transaction_info: execution_info,
@@ -325,7 +326,7 @@ impl Handler<GetRootMessage> for ExecutorActor {
         _msg: GetRootMessage,
         _ctx: &mut ActorContext,
     ) -> Result<ObjectState> {
-        Ok(self.root.clone())
+        Ok(ObjectState::new_root(self.root.clone()))
     }
 }
 

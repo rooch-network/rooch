@@ -8,12 +8,12 @@ use crate::actor::messages::{
     QueryIndexerTransactionsMessage, UpdateIndexerMessage,
 };
 use crate::actor::reader_indexer::IndexerReaderActor;
-use anyhow::Result;
+use anyhow::{Ok, Result};
 use coerce::actor::ActorRef;
 use moveos_types::moveos_std::event::Event;
-use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
 use moveos_types::moveos_std::tx_context::TxContext;
-use moveos_types::state::{ObjectState, StateChangeSet};
+use moveos_types::state::StateChangeSet;
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{IndexerObjectState, IndexerStateID, ObjectStateFilter};
@@ -36,7 +36,6 @@ impl IndexerProxy {
 
     pub async fn update_indexer(
         &self,
-        root: ObjectState,
         ledger_transaction: LedgerTransaction,
         execution_info: TransactionExecutionInfo,
         moveos_tx: VerifiedMoveOSTransaction,
@@ -44,20 +43,20 @@ impl IndexerProxy {
         state_change_set: StateChangeSet,
     ) -> Result<()> {
         self.actor
-            .send(UpdateIndexerMessage {
-                root,
+            .notify(UpdateIndexerMessage {
                 ledger_transaction,
                 execution_info,
                 moveos_tx,
                 events,
                 state_change_set,
             })
-            .await?
+            .await?;
+        Ok(())
     }
 
     pub async fn indexer_states(
         &self,
-        root: ObjectState,
+        root: ObjectMeta,
         tx_order: u64,
         tx_timestamp: u64,
         state_change_set: StateChangeSet,
