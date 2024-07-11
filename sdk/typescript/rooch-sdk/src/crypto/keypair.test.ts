@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { describe, it, expect } from 'vitest'
-import { decodeRoochSercetKey, encodeRoochSercetKey, ROOCH_SECRET_KEY_PREFIX } from './keypair'
+import { decodeRoochSercetKey, encodeRoochSercetKey, ROOCH_SECRET_KEY_PREFIX } from './keypair.js'
 import { bech32 } from 'bech32'
-import { SIGNATURE_FLAG_TO_SCHEME } from './signatureScheme'
+import { SIGNATURE_FLAG_TO_SCHEME } from './signatureScheme.js'
 
 describe('decodeRoochSercetKey function', () => {
   it('should correctly decode a valid Bech32 encoded string', () => {

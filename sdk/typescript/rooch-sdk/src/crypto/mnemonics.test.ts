@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { describe, it, expect } from 'vitest'
-import { isValidBIP32Path, isValidHardenedPath } from './mnemonics'
+import { isValidBIP32Path, isValidHardenedPath } from './mnemonics.js'
 
 describe('isValidHardenedPath', () => {
   it('should return true for valid path with typical indices', () => {

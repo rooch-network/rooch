@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { describe, it, expect } from 'vitest'
-import { fromHEX, getHexByteLength, isHex, normalizeHex, toHEX } from './hex'
+import { fromHEX, getHexByteLength, isHex, normalizeHex, toHEX } from './hex.js'
 
 describe('isHex', () => {
   it('should return true when input is a valid hex string with "0x" prefix', () => {

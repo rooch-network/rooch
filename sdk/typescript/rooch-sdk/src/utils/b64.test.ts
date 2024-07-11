@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 import { describe, it, expect } from 'vitest'
-import { toB64 } from './b64'
+import { toB64 } from './b64.js'
 
 describe('toB64', () => {
   it('should convert small Uint8Array to base64 string correctly', () => {

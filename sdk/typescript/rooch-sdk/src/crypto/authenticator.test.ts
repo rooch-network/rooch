@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { describe, it, expect } from 'vitest'
-import { BitcoinSignMessage } from './authenticator'
+import { BitcoinSignMessage } from './authenticator.js'
 
 describe('BitcoinSignMessage', () => {
   it('should correctly construct with valid txData and messageInfo', () => {
