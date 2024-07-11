@@ -19,7 +19,7 @@ module nft::nft {
     }
 
     fun init(){
-        let nft_display_object = display::object_display<NFT>();
+        let nft_display_object = display::display<NFT>();
         display::set_value(nft_display_object, string::utf8(b"name"), string::utf8(b"{value.name}"));
         display::set_value(nft_display_object, string::utf8(b"owner"), string::utf8(b"{owner}"));
         display::set_value(nft_display_object, string::utf8(b"creator"), string::utf8(b"{value.creator}"));
@@ -92,8 +92,8 @@ module nft::nft {
         let sender_address = moveos_std::tx_context::sender();
         let collection = object::borrow(collection_obj);
         assert!(collection::creator(collection) == sender_address, ErrorCreatorNotMatch);
-        let nft_display_obj = display::object_display<NFT>();
-        string::append(&mut new_base_uri, string::utf8(b"{ collection }/{ id }"));
+        let nft_display_obj = display::display<NFT>();
+        string::append(&mut new_base_uri, string::utf8(b"{ collection }/{ metadata.id }"));
         display::set_value(nft_display_obj, string::utf8(b"uri"), new_base_uri);
     }
 

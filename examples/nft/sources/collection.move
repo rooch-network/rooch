@@ -36,12 +36,12 @@ module nft::collection{
     }
 
     fun init(){
-        let collection_display_obj = display::object_display<Collection>(); 
-        display::set_value(collection_display_obj, string::utf8(b"name"), string::utf8(b"{value.name}"));
-        display::set_value(collection_display_obj, string::utf8(b"uri"), string::utf8(b"https:://base_url/{id}"));
-        display::set_value(collection_display_obj, string::utf8(b"description"), string::utf8(b"{value.description}"));
-        display::set_value(collection_display_obj, string::utf8(b"creator"), string::utf8(b"{value.creator}"));
-        display::set_value(collection_display_obj, string::utf8(b"supply"), string::utf8(b"{value.supply}"));
+        let collection_display_obj = display::display<Collection>(); 
+        display::set_value(collection_display_obj, string::utf8(b"name"), string::utf8(b"{name}"));
+        display::set_value(collection_display_obj, string::utf8(b"uri"), string::utf8(b"https:://base_url/{metadata.id}"));
+        display::set_value(collection_display_obj, string::utf8(b"description"), string::utf8(b"{description}"));
+        display::set_value(collection_display_obj, string::utf8(b"creator"), string::utf8(b"{creator}"));
+        display::set_value(collection_display_obj, string::utf8(b"supply"), string::utf8(b"{supply}"));
     }
 
     /// Create a new collection Object

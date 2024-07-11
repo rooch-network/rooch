@@ -143,7 +143,6 @@ impl RoochAPIServer for RoochServer {
             state_option.show_display && (access_path.0.is_object() || access_path.0.is_resource());
 
         let state_views = if state_option.decode || show_display {
-            let is_object = access_path.0.is_object();
             let states = self
                 .rpc_service
                 .get_annotated_states(access_path.into())
@@ -153,7 +152,7 @@ impl RoochAPIServer for RoochServer {
                 let valid_states = states.iter().filter_map(|s| s.as_ref()).collect::<Vec<_>>();
                 let mut valid_display_field_views = self
                     .rpc_service
-                    .get_display_fields_and_render(valid_states.as_slice(), is_object)
+                    .get_display_fields_and_render(valid_states.as_slice())
                     .await?;
                 valid_display_field_views.reverse();
                 states
@@ -206,7 +205,6 @@ impl RoochAPIServer for RoochServer {
             None => None,
         };
         let mut data: Vec<StateKVView> = if state_option.decode || show_display {
-            let is_object = access_path.0.is_object();
             let (key_states, states): (Vec<FieldKey>, Vec<AnnotatedState>) = self
                 .rpc_service
                 .list_annotated_states(access_path.into(), cursor_of, limit_of + 1)
@@ -217,7 +215,7 @@ impl RoochAPIServer for RoochServer {
             if show_display {
                 let display_field_views = self
                     .rpc_service
-                    .get_display_fields_and_render(state_refs.as_slice(), is_object)
+                    .get_display_fields_and_render(state_refs.as_slice())
                     .await?;
                 key_states
                     .into_iter()
@@ -277,7 +275,7 @@ impl RoochAPIServer for RoochServer {
             let mut valid_display_field_views = if show_display {
                 let valid_states = states.iter().filter_map(|s| s.as_ref()).collect::<Vec<_>>();
                 self.rpc_service
-                    .get_display_fields_and_render(valid_states.as_slice(), true)
+                    .get_display_fields_and_render(valid_states.as_slice())
                     .await?
             } else {
                 vec![]
