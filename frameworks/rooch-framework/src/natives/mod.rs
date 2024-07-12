@@ -266,11 +266,7 @@ mod tests {
         gas_parameters
             .to_on_chain_gas_schedule()
             .into_iter()
-            .zip(
-                gas_parameters_from_on_chain
-                    .to_on_chain_gas_schedule()
-                    .into_iter(),
-            )
+            .zip(gas_parameters_from_on_chain.to_on_chain_gas_schedule())
             .for_each(|((k1, v1), (k2, v2))| {
                 assert_eq!(k1, k2);
                 assert_eq!(v1, v2, "k1: {}, v1: {}, k2: {}, v2: {}", k1, v1, k2, v2);

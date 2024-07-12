@@ -144,14 +144,13 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
 
     let inscriptions = txs
         .iter()
-        .map(|tx| {
+        .flat_map(|tx| {
             let txid = tx.txid();
             bitcoin_move::natives::ord::from_transaction(tx)
                 .into_iter()
                 .enumerate()
-                .map(move |(idx, i)| ((txid.clone(), idx, i)))
+                .map(move |(idx, i)| (txid, idx, i))
         })
-        .flatten()
         .collect::<Vec<_>>();
     for (txid, index, inscription) in inscriptions {
         let txid_address = txid.into_address();

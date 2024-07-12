@@ -475,7 +475,7 @@ mod tests {
         );
 
         let opt = RoochOpt::new_with_temp_store().expect("create rooch opt failed");
-        let rooch_db = RoochDB::init_with_mock_metrics_for_test(&opt.store_config())
+        let rooch_db = RoochDB::init_with_mock_metrics_for_test(opt.store_config())
             .expect("init rooch db failed");
 
         let root = genesis.init_genesis(&rooch_db).unwrap();
