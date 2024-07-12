@@ -355,14 +355,14 @@ pub fn inject_runtime_metadata<P: AsRef<Path>>(
                         for (k, v) in module_metadata.data_struct_map.iter() {
                             log::trace!("{:?} -> {:?}", k, v);
                         }
+                        log::trace!(
+                            "start dump data structs map func {:?}\n\n",
+                            named_module.module.self_id().to_string()
+                        );
                         log::trace!("\n");
                         for (k, v) in module_metadata.data_struct_func_map.iter() {
                             log::trace!("{:?} -> {:?}", k, v);
                         }
-                        log::trace!(
-                            "start dump data structs map {:?}\n\n",
-                            named_module.module.self_id().to_string()
-                        );
 
                         let serialized_metadata =
                             bcs::to_bytes(&module_metadata).expect("BCS for RuntimeModuleMetadata");
