@@ -3,6 +3,7 @@
 
 use crate::h256;
 use crate::move_std::string::MoveString;
+use crate::moveos_std::module_store::ModuleStore;
 use crate::moveos_std::object::{
     AnnotatedObject, DynamicField, ObjectEntity, ObjectID, ObjectMeta, RawData, RawObject, Root,
     GENESIS_STATE_ROOT,
@@ -674,6 +675,15 @@ impl ObjectState {
         let mut metadata = ObjectMeta::genesis_meta(id, Timestamp::type_tag());
         metadata.to_shared();
         Self::new_with_struct(metadata, timestamp).expect("Create Timestamp Object should success")
+    }
+
+    /// Create ModuleStore Object
+    pub fn new_module_store() -> Self {
+        let id = ModuleStore::object_id();
+        let mut metadata = ObjectMeta::genesis_meta(id, ModuleStore::type_tag());
+        metadata.to_shared();
+        Self::new_with_struct(metadata, ModuleStore::default())
+            .expect("Create ModuleStore Object should success")
     }
 
     pub fn id(&self) -> &ObjectID {

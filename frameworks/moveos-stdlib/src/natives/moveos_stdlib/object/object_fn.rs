@@ -274,8 +274,7 @@ fn object_fn_dispatch(
     let object_context = context.extensions().get::<ObjectRuntimeContext>();
     let binding = object_context.object_runtime();
     let mut object_runtime = binding.write();
-    let (object, object_load_gas) =
-        object_runtime.load_object(context, object_context.resolver(), &obj_id)?;
+    let (object, object_load_gas) = object_runtime.load_object(context, &obj_id)?;
     let gas_cost = base + common_gas_params.calculate_load_cost(object_load_gas);
     let result = f(object, &type_tag);
     match result {

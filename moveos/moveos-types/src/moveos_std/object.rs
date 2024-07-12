@@ -752,7 +752,7 @@ impl ObjectEntity<Account> {
 impl ObjectEntity<ModuleStore> {
     pub fn genesis_module_store() -> ModuleStoreObject {
         Self::new(
-            ModuleStore::module_store_id(),
+            ModuleStore::object_id(),
             MOVEOS_STD_ADDRESS,
             SHARED_OBJECT_FLAG_MASK,
             None,
@@ -1043,7 +1043,7 @@ mod tests {
         )
         .unwrap();
         let account_object_id = Account::account_object_id(addr);
-        let module_object_id = ModuleStore::module_store_id();
+        let module_object_id = ModuleStore::object_id();
         print!("{:?} {:?}", account_object_id, module_object_id)
     }
 

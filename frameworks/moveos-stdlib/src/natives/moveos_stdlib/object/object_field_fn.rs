@@ -278,15 +278,14 @@ fn object_field_fn_dispatch(
     let object_context = context.extensions().get::<ObjectRuntimeContext>();
     let binding = object_context.object_runtime();
     let mut object_runtime = binding.write();
-
-    let (rt_obj, object_load_gas) =
-        object_runtime.load_object(context, object_context.resolver(), &obj_id)?;
+    let resolver = object_runtime.resolver();
+    let (rt_obj, object_load_gas) = object_runtime.load_object(context, &obj_id)?;
     let field_key_bytes = AccountAddress::LENGTH as u64;
     let gas_cost = base
         + per_byte_serialized * NumBytes::new(field_key_bytes)
         + common_gas_params.calculate_load_cost(object_load_gas);
 
-    let result = f(context, object_context.resolver(), rt_obj);
+    let result = f(context, resolver, rt_obj);
     match result {
         Ok((value, field_load_gas)) => Ok(NativeResult::ok(
             gas_cost + common_gas_params.calculate_load_cost(field_load_gas),

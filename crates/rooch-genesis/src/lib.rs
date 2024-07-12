@@ -7,6 +7,7 @@ use anyhow::{ensure, Result};
 use framework_builder::stdlib_version::StdlibVersion;
 use framework_builder::Stdlib;
 use include_dir::{include_dir, Dir};
+use move_core_types::value::MoveTypeLayout;
 use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use move_vm_runtime::native_functions::NativeFunction;
 use moveos::gas::table::VMGasParameters;
@@ -17,6 +18,7 @@ use moveos_types::h256::H256;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::gas_schedule::{GasEntry, GasSchedule, GasScheduleConfig};
 use moveos_types::moveos_std::object::ObjectMeta;
+use moveos_types::state::ObjectState;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use moveos_types::{h256, state_resolver};
 use once_cell::sync::Lazy;
@@ -157,6 +159,7 @@ pub struct RoochGenesis {
     /// The root object after genesis initialization
     pub root: ObjectMeta,
     pub initial_gas_config: GasScheduleConfig,
+    pub genesis_objects: Vec<(ObjectState, MoveTypeLayout)>,
     pub genesis_tx: RoochTransaction,
     pub genesis_moveos_tx: MoveOSTransaction,
 }
@@ -214,11 +217,15 @@ impl RoochGenesis {
             vec![],
             vec![],
         )?;
-        let output = moveos.init_genesis(genesis_moveos_tx.clone())?;
+        let output = moveos.init_genesis(
+            genesis_moveos_tx.clone(),
+            genesis_config.genesis_objects.clone(),
+        )?;
 
         Ok(Self {
             root: output.changeset.root_metadata(),
             initial_gas_config: gas_config,
+            genesis_objects: genesis_config.genesis_objects,
             genesis_tx,
             genesis_moveos_tx,
         })
@@ -312,7 +319,8 @@ impl RoochGenesis {
             vec![],
         )?;
 
-        let genesis_tx_output = moveos.init_genesis(self.genesis_moveos_tx())?;
+        let genesis_tx_output =
+            moveos.init_genesis(self.genesis_moveos_tx(), self.genesis_objects.clone())?;
 
         let inited_root = genesis_tx_output.changeset.root_metadata();
         debug_assert!(
@@ -491,9 +499,7 @@ mod tests {
                 .collect::<BTreeMap<_, _>>(),
         );
 
-        let module_store_state = resolver
-            .get_object(&ModuleStore::module_store_id())
-            .unwrap();
+        let module_store_state = resolver.get_object(&ModuleStore::object_id()).unwrap();
         assert!(module_store_state.is_some());
         let module_store_obj = module_store_state
             .unwrap()

@@ -62,6 +62,13 @@ impl ObjectPointer {
         Self { value }
     }
 
+    pub fn fresh(object_id: ObjectID) -> Self {
+        let mut s = Self::none();
+        s.init(object_id)
+            .expect("Init none ObjectPointer should success");
+        s
+    }
+
     pub fn init(&mut self, object_id: ObjectID) -> PartialVMResult<()> {
         let object_id_value = object_id.to_runtime_value();
         self.value
@@ -111,6 +118,22 @@ impl RuntimeObject {
             pointer: ObjectPointer::none(),
             fields: Default::default(),
         }
+    }
+
+    pub fn fresh(obj: ObjectState, value_layout: MoveTypeLayout) -> PartialVMResult<Self> {
+        let metadata = obj.metadata;
+        let value = deserialize(&value_layout, &obj.value)?;
+        let id = metadata.id.clone();
+        let pointer = ObjectPointer::fresh(id.clone());
+        // We use the none value then move the value to the object to get a fresh state
+        let mut gv = GlobalValue::none();
+        gv.move_to(value).map_err(|(e, _)| e)?;
+        Ok(Self {
+            rt_meta: RuntimeObjectMeta::fresh(metadata, value_layout),
+            value: gv,
+            pointer,
+            fields: Default::default(),
+        })
     }
 
     pub fn is_none(&self) -> bool {

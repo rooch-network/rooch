@@ -39,13 +39,7 @@ module moveos_std::module_store {
 
     /// Create a new module object space
     public(friend) fun init_module_store() {
-        let module_store_id = module_store_id();
         // The ModuleStore object will initialize before the genesis.
-        // It should be exists, we add this for the test case.
-        if (!object::exists_object(module_store_id)) {
-            let obj = object::new_named_object(ModuleStore { });
-            object::to_shared(obj)
-        };
 
         let allowlist = object::new_named_object(Allowlist { publisher: vector::empty() });
         object::to_shared(allowlist);
