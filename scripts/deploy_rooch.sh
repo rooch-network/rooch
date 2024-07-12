@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (c) RoochNetwork
+# SPDX-License-Identifier: Apache-2.0
 
 REF="\$1"
 BTC_TEST_RPC_URL="\$2"
