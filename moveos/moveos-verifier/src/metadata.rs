@@ -981,14 +981,14 @@ impl<'a> ExtendedChecker<'a> {
         }
 
         if !available_data_structs.is_empty() {
-            log::debug!(
+            log::trace!(
                 "\n\ncheck_data_struct() module {:?} data structs start...",
                 module_env.get_full_name_str()
             );
             for (k, v) in available_data_structs.iter() {
-                log::debug!("{:?} -> {:?}", k, v);
+                log::trace!("{:?} -> {:?}", k, v);
             }
-            log::debug!(
+            log::trace!(
                 "\n\ncheck_data_struct() module {:?} data structs end...",
                 module_env.get_full_name_str()
             );
@@ -1320,14 +1320,14 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
         .collect();
 
     if !data_struct_func_map.is_empty() {
-        log::debug!(
+        log::trace!(
             "\n\ncheck_data_struct_func() module {:?} data structs func start...",
             module_env.get_full_name_str()
         );
         for (k, v) in data_struct_func_map.iter() {
-            log::debug!("{:?} -> {:?}", k, v);
+            log::trace!("{:?} -> {:?}", k, v);
         }
-        log::debug!(
+        log::trace!(
             "\n\ncheck_data_struct_func() module {:?} data structs func end...",
             module_env.get_full_name_str()
         );
@@ -1375,7 +1375,7 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
 
                 if let Some(data_struct_func_indicies) = data_struct_func_types {
                     let caller_fun_name = fun.get_full_name_str();
-                    log::debug!(
+                    log::trace!(
                         "function {:?}::{:?} call data_struct func {:?} with types {:?}",
                         module_env.self_address(),
                         caller_fun_name,
