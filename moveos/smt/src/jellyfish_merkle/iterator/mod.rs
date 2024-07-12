@@ -126,11 +126,7 @@ where
     /// Constructs a new iterator. This puts the internal state in the correct position, so the
     /// following `next` call will yield the smallest key that is greater or equal to
     /// `starting_key`.
-    pub fn new(
-        reader: &'a R,
-        state_root_hash: HashValue,
-        starting_key: Option<SMTObject<K>>,
-    ) -> Result<Self> {
+    pub fn new(reader: &'a R, state_root_hash: HashValue, starting_key: Option<K>) -> Result<Self> {
         let mut parent_stack = vec![];
         let mut done = false;
 
@@ -234,7 +230,7 @@ where
     K: Key,
     V: Value,
 {
-    type Item = Result<(SMTObject<K>, SMTObject<V>)>;
+    type Item = Result<(K, SMTObject<V>)>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.done {
@@ -250,7 +246,7 @@ where
                     // true in `new`). Return the node and mark `self.done` so next time we return
                     // None.
                     self.done = true;
-                    return Some(Ok((leaf_node.key().clone(), leaf_node.value().clone())));
+                    return Some(Ok((*leaf_node.key(), leaf_node.value().clone())));
                 }
                 Ok(Node::Internal(_)) => {
                     // This means `starting_key` is bigger than every key in this tree, or we have
@@ -281,7 +277,7 @@ where
                     self.parent_stack.push(visit_info);
                 }
                 Ok(Node::Leaf(leaf_node)) => {
-                    let ret = (leaf_node.key().clone(), leaf_node.value().clone());
+                    let ret = (*leaf_node.key(), leaf_node.value().clone());
                     Self::cleanup_stack(&mut self.parent_stack);
                     return Some(Ok(ret));
                 }
@@ -422,7 +418,7 @@ where
     K: Key,
     V: Value,
 {
-    type Item = Result<(SMTObject<K>, SMTObject<V>)>;
+    type Item = Result<(K, SMTObject<V>)>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.done {
@@ -438,7 +434,7 @@ where
                     // true in `new`). Return the node and mark `self.done` so next time we return
                     // None.
                     self.done = true;
-                    return Some(Ok((leaf_node.key().clone(), leaf_node.value().clone())));
+                    return Some(Ok((*leaf_node.key(), leaf_node.value().clone())));
                 }
                 Ok(Node::Internal(_)) => {
                     // This means `starting_key` is bigger than every key in this tree, or we have
@@ -469,7 +465,7 @@ where
                     self.parent_stack.push(visit_info);
                 }
                 Ok(Node::Leaf(leaf_node)) => {
-                    let ret = (leaf_node.key().clone(), leaf_node.value().clone());
+                    let ret = (*leaf_node.key(), leaf_node.value().clone());
                     Self::cleanup_stack(&mut self.parent_stack);
                     return Some(Ok(ret));
                 }

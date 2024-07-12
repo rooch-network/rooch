@@ -113,7 +113,7 @@ fn bench_put_and_commit(c: &mut Criterion) {
         changeset,
     );
 
-    let (ks, changeset) = prepare_change_set(*GENESIS_STATE_ROOT, 1000_000).unwrap();
+    let (ks, changeset) = prepare_change_set(*GENESIS_STATE_ROOT, 1_000_000).unwrap();
 
     bench_put_with_tree(
         &mut group,

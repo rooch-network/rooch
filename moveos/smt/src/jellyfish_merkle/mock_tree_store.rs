@@ -12,8 +12,9 @@ use super::{
     node_type::{Node, NodeKey},
     NodeBatch, StaleNodeIndex, TreeReader, TreeUpdateBatch, TreeWriter,
 };
-use crate::{DecodeToObject, EncodeToObject, Key, SMTObject, Value};
+use crate::{Key, SMTObject, Value};
 use anyhow::{bail, ensure, Result};
+use primitive_types::H256;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use serde::{Deserialize, Serialize};
@@ -25,6 +26,18 @@ use std::{
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub(crate) struct TestKey(pub HashValue);
+
+impl From<H256> for TestKey {
+    fn from(hash: H256) -> Self {
+        Self(hash.into())
+    }
+}
+
+impl From<TestKey> for H256 {
+    fn from(key: TestKey) -> H256 {
+        key.0.into()
+    }
+}
 
 impl TestKey {
     pub fn new(value: [u8; HashValue::LENGTH]) -> TestKey {
@@ -47,25 +60,6 @@ impl TestKey {
         let raw = self.0.to_vec();
         let hash = self.0;
         Ok(SMTObject::new_for_test(self, raw, hash))
-    }
-}
-
-impl EncodeToObject for TestKey {
-    fn into_object(self) -> Result<SMTObject<Self>>
-    where
-        Self: std::marker::Sized,
-    {
-        self.into_object()
-    }
-}
-
-impl DecodeToObject for TestKey {
-    fn from_raw(raw: Vec<u8>) -> Result<SMTObject<Self>>
-    where
-        Self: std::marker::Sized,
-    {
-        let key = TestKey::new_with_hash(HashValue::from_slice(raw).unwrap());
-        key.into_object()
     }
 }
 

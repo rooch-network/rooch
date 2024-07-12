@@ -39,7 +39,6 @@ impl StateDBStore {
     where
         I: Into<UpdateSet<FieldKey, ObjectState>>,
     {
-        let update_set: UpdateSet<FieldKey, ObjectState> = update_set.into();
         let change_set = self.smt.puts(pre_state_root, update_set)?;
         if log::log_enabled!(log::Level::Trace) {
             log::trace!(
