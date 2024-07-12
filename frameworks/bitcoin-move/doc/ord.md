@@ -77,6 +77,7 @@
 -  [Function `metaprotocol_validity_protocol_type`](#0x4_ord_metaprotocol_validity_protocol_type)
 -  [Function `metaprotocol_validity_is_valid`](#0x4_ord_metaprotocol_validity_is_valid)
 -  [Function `metaprotocol_validity_invalid_reason`](#0x4_ord_metaprotocol_validity_invalid_reason)
+-  [Function `inscription_charm_burned`](#0x4_ord_inscription_charm_burned)
 -  [Function `exists_inscription_charm`](#0x4_ord_exists_inscription_charm)
 -  [Function `borrow_inscription_charm`](#0x4_ord_borrow_inscription_charm)
 -  [Function `view_inscription_charm`](#0x4_ord_view_inscription_charm)
@@ -204,6 +205,7 @@
 
 ## Struct `InscriptionCharm`
 
+Represents the charm of an inscription, containing various properties.
 
 
 <pre><code><b>struct</b> <a href="ord.md#0x4_ord_InscriptionCharm">InscriptionCharm</a> <b>has</b> <b>copy</b>, drop, store
@@ -1055,10 +1057,26 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
+<a name="0x4_ord_inscription_charm_burned"></a>
+
+## Function `inscription_charm_burned`
+
+Get the InscriptionCharm's burned
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_inscription_charm_burned">inscription_charm_burned</a>(charm: &<a href="ord.md#0x4_ord_InscriptionCharm">ord::InscriptionCharm</a>): bool
+</code></pre>
+
+
+
 <a name="0x4_ord_exists_inscription_charm"></a>
 
 ## Function `exists_inscription_charm`
 
+Checks if an InscriptionCharm exists for a given InscriptionID.
+
+@param inscription_id - The ID of the inscription
+@return Boolean indicating whether the charm exists
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_exists_inscription_charm">exists_inscription_charm</a>(inscription_id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>): bool
@@ -1070,6 +1088,10 @@ Get the MetaprotocolValidity's invalid_reason
 
 ## Function `borrow_inscription_charm`
 
+Borrows a reference to the InscriptionCharm for a given InscriptionID.
+
+@param inscription_id - The ID of the inscription
+@return Reference to the InscriptionCharm
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_borrow_inscription_charm">borrow_inscription_charm</a>(inscription_id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>): &<a href="ord.md#0x4_ord_InscriptionCharm">ord::InscriptionCharm</a>
@@ -1081,6 +1103,11 @@ Get the MetaprotocolValidity's invalid_reason
 
 ## Function `view_inscription_charm`
 
+Views the InscriptionCharm for a given inscription ID string.
+Returns None if the inscription doesn't exist or doesn't have a charm.
+
+@param inscription_id_str - String representation of the inscription ID
+@return Option<InscriptionCharm> - Some(charm) if exists, None otherwise
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_view_inscription_charm">view_inscription_charm</a>(inscription_id_str: <a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="ord.md#0x4_ord_InscriptionCharm">ord::InscriptionCharm</a>&gt;
