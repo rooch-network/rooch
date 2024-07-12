@@ -5,6 +5,7 @@ use crate::cli_types::CommandAction;
 use async_trait::async_trait;
 use clap::Parser;
 use commands::create::CreateCommand;
+use commands::list::ListCommand;
 use rooch_types::error::RoochResult;
 
 pub mod commands;
@@ -23,6 +24,7 @@ impl CommandAction<String> for SessionKey {
             SessionKeyCommand::Create(create) => create.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
+            SessionKeyCommand::List(list) => list.execute_serialized().await,
         }
     }
 }
@@ -30,5 +32,6 @@ impl CommandAction<String> for SessionKey {
 #[derive(clap::Subcommand)]
 #[clap(name = "session_key")]
 pub enum SessionKeyCommand {
-    Create(CreateCommand),
+    Create(Box<CreateCommand>),
+    List(ListCommand),
 }

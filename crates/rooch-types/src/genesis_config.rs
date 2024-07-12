@@ -3,23 +3,17 @@
 
 use crate::address::BitcoinAddress;
 use bitcoin::BlockHash;
-use ethers::types::H256;
 use framework_builder::stdlib_version::StdlibVersion;
-use move_core_types::language_storage::StructTag;
-use moveos_types::moveos_std::object::ObjectID;
+use move_core_types::value::MoveTypeLayout;
+use moveos_types::{
+    moveos_std::{module_store::ModuleStore, timestamp::Timestamp},
+    state::{MoveState, ObjectState},
+};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
-pub struct GenesisObject {
-    pub id: ObjectID,
-    pub object_type: StructTag,
-    pub state_root: H256,
-    pub size: u64,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GenesisConfig {
     /// The Bitcoin network that the genesis block is based on
     pub bitcoin_network: u8,
@@ -32,7 +26,7 @@ pub struct GenesisConfig {
     /// The timestamp of the Bitcoin block that the genesis block is based on
     pub timestamp: u64,
     pub sequencer_account: BitcoinAddress,
-    pub genesis_objects: Vec<GenesisObject>,
+    pub genesis_objects: Vec<(ObjectState, MoveTypeLayout)>,
     pub stdlib_version: StdlibVersion,
 }
 
@@ -44,7 +38,7 @@ impl GenesisConfig {
         bitcoin_reorg_block_count: u64,
         timestamp: u64,
         sequencer_account: BitcoinAddress,
-        genesis_objects: Vec<GenesisObject>,
+        genesis_objects: Vec<(ObjectState, MoveTypeLayout)>,
         stdlib_version: StdlibVersion,
     ) -> Self {
         Self {
@@ -89,7 +83,13 @@ pub static G_LOCAL_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     bitcoin_reorg_block_count: 0,
     timestamp: 0,
     sequencer_account: BitcoinAddress::default(),
-    genesis_objects: vec![],
+    genesis_objects: vec![
+        (
+            ObjectState::new_timestamp(Timestamp { milliseconds: 0 }),
+            Timestamp::type_layout(),
+        ),
+        (ObjectState::new_module_store(), ModuleStore::type_layout()),
+    ],
     stdlib_version: StdlibVersion::Latest,
 });
 
@@ -107,7 +107,13 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
         "bcrt1p56tdhxkcpc5xvdurfnufn9lkkywsh0gxttv5ktkvlezj0t23nasqawwrla",
     )
     .expect("Should be valid"),
-    genesis_objects: vec![],
+    genesis_objects: vec![
+        (
+            ObjectState::new_timestamp(Timestamp { milliseconds: 0 }),
+            Timestamp::type_layout(),
+        ),
+        (ObjectState::new_module_store(), ModuleStore::type_layout()),
+    ],
     stdlib_version: StdlibVersion::Latest,
 });
 
@@ -126,7 +132,15 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             "bcrt1p56tdhxkcpc5xvdurfnufn9lkkywsh0gxttv5ktkvlezj0t23nasqawwrla",
         )
         .expect("Should be valid"),
-        genesis_objects: vec![],
+        genesis_objects: vec![
+            (
+                ObjectState::new_timestamp(Timestamp {
+                    milliseconds: 1718592994000,
+                }),
+                Timestamp::type_layout(),
+            ),
+            (ObjectState::new_module_store(), ModuleStore::type_layout()),
+        ],
         stdlib_version: StdlibVersion::Version(1),
     }
 });
@@ -146,7 +160,13 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             "bcrt1p56tdhxkcpc5xvdurfnufn9lkkywsh0gxttv5ktkvlezj0t23nasqawwrla",
         )
         .expect("Should be valid"),
-        genesis_objects: vec![],
+        genesis_objects: vec![
+            (
+                ObjectState::new_timestamp(Timestamp { milliseconds: 0 }),
+                Timestamp::type_layout(),
+            ),
+            (ObjectState::new_module_store(), ModuleStore::type_layout()),
+        ],
         stdlib_version: StdlibVersion::Version(1),
     }
 });

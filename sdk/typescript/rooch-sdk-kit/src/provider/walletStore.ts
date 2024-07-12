@@ -23,6 +23,7 @@ export type WalletActions = {
   ) => void
   updateWalletAddresses: (accounts: readonly ThirdPartyAddress[]) => void
   setWalletDisconnected: () => void
+  updateWallets: (wallets: readonly Wallet[]) => void
 }
 
 export type WalletStore = ReturnType<typeof createWalletStore>
@@ -31,7 +32,7 @@ export type WalletStoreState = {
   autoConnectEnabled: boolean
   currentChain: SupportChain
   currentWallet: Wallet | undefined
-  wallets: Wallet[]
+  wallets: readonly Wallet[]
   addresses: readonly ThirdPartyAddress[]
   currentAddress: ThirdPartyAddress | undefined
   lastConnectedAddress: string | undefined
@@ -118,6 +119,11 @@ export function createWalletStore({
             currentAddress:
               (currentAddr && addresses.find((addr) => addr.toStr() === currentAddr.toStr())) ||
               addresses[0],
+          }))
+        },
+        updateWallets(wallets) {
+          set(() => ({
+            wallets: wallets,
           }))
         },
       }),

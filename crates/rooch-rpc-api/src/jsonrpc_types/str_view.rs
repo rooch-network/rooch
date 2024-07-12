@@ -13,7 +13,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::str::FromStr;
 
 /// StrVeiw is a wrapper around T that implements Serialize and Deserialize for jsonrpc
-#[derive(Debug, PartialEq, Hash, Eq, Clone, Copy, PartialOrd, Ord)]
+#[derive(Debug, Eq, Hash, PartialEq, Clone, Copy, PartialOrd, Ord)]
 pub struct StrView<T>(pub T);
 
 impl<T> JsonSchema for StrView<T> {
@@ -57,9 +57,48 @@ where
     where
         D: Deserializer<'de>,
     {
-        let s = <String>::deserialize(deserializer)?;
+        //We provide a custom deserializer for u64
+        //Support both string and number
 
-        StrView::<T>::from_str(&s).map_err(serde::de::Error::custom)
+        struct NumberOrStringVisitor;
+        enum NumberOrString {
+            U64(u64),
+            String(String),
+        }
+
+        impl NumberOrString {
+            pub fn into_string(self) -> String {
+                match self {
+                    NumberOrString::U64(v) => v.to_string(),
+                    NumberOrString::String(v) => v,
+                }
+            }
+        }
+
+        impl<'de> serde::de::Visitor<'de> for NumberOrStringVisitor {
+            type Value = NumberOrString;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a string or an unsigned 64-bit integer")
+            }
+
+            fn visit_u64<E>(self, value: u64) -> Result<NumberOrString, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(NumberOrString::U64(value))
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<NumberOrString, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(NumberOrString::String(value.to_owned()))
+            }
+        }
+        let number_or_string = deserializer.deserialize_any(NumberOrStringVisitor)?;
+        let s = number_or_string.into_string();
+        Self::from_str(&s).map_err(serde::de::Error::custom)
     }
 }
 
@@ -94,7 +133,13 @@ macro_rules! impl_str_view_for {
 }
 
 // Because the max value of json number is less than u64::MAX, so we need to use string to represent usize, u64, i64, u128, i128, U256
-impl_str_view_for! {usize u64 i64 u128 i128 move_core_types::u256::U256}
+impl_str_view_for! {usize u64 i64 u128 i128 move_core_types::u256::U256 moveos_types::state::FieldKey}
+
+impl From<StrView<u64>> for usize {
+    fn from(view: StrView<u64>) -> usize {
+        view.0 as usize
+    }
+}
 
 pub type BytesView = StrView<Vec<u8>>;
 

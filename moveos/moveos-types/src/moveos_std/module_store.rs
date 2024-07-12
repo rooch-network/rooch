@@ -3,6 +3,7 @@
 
 use crate::moveos_std::object;
 use crate::moveos_std::object::ObjectID;
+use crate::state::FieldKey;
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     state::{MoveStructState, MoveStructType},
@@ -20,13 +21,13 @@ pub const MODULE_NAME: &IdentStr = ident_str!("module_store");
 
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Default)]
 pub struct ModuleStore {
-    // // Move VM will auto add a bool field to the empty struct
-    // // So we manually add a bool field to the struct
+    //Move VM will auto add a bool field to the empty struct
+    //So we manually add a bool field to the struct
     _placeholder: bool,
 }
 
 impl ModuleStore {
-    pub fn module_store_id() -> ObjectID {
+    pub fn object_id() -> ObjectID {
         object::named_object_id(&Self::struct_tag())
     }
 }
@@ -61,13 +62,14 @@ pub struct Package {
 }
 
 impl Package {
-    pub fn package_id(address: &AccountAddress) -> ObjectID {
-        let module_store_id = ModuleStore::module_store_id();
-        object::custom_child_object_id::<AccountAddress>(
-            module_store_id,
-            address,
-            &Package::struct_tag(),
-        )
+    pub fn package_id(module_address: &AccountAddress) -> ObjectID {
+        let module_store_id = ModuleStore::object_id();
+        module_store_id.child_id(Self::package_field_key(module_address))
+    }
+
+    ///Package field key, package is a special case, we directly use the module address as the field key, do not hash it
+    pub fn package_field_key(module_address: &AccountAddress) -> FieldKey {
+        (*module_address).into()
     }
 }
 

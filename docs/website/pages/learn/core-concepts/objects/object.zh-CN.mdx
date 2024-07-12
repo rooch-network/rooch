@@ -43,7 +43,7 @@ module moveos_std::object {
 }
 ```
 
-* NamedObject: 用类型 `T` 的类型名来生成 ObjectID。生成的公式为 `sha3(type_name<T>())`。一般用于全局唯一的 Object，比如 `0x2::object::Timestamp`。
+* NamedObject: 用类型 `T` 的类型名来生成 ObjectID。生成的公式为 `sha3(type_name<T>())`。一般用于全局唯一的 Object，比如 `0x2::timestamp::Timestamp`。
 * Account NamedObject: 是用 account 地址和 `T` 类型名来生成 ObjectID。生成的公式为 `sha3(account + type_name<T>())`。一般用于每个用户只有一个的 Object，比如 `0x3::coin_store::CoinStore<CoinType>`。
 
 ### 操作 Object
@@ -209,7 +209,7 @@ module moveos_std::object {
 
 ```bash
 curl -H "Content-Type: application/json" -X POST \
---data '{"jsonrpc":"2.0","method":"rooch_getStates","params":["/object/0x2::object::Timestamp", {"decode":true}],"id":1}' \
+--data '{"jsonrpc":"2.0","method":"rooch_getStates","params":["/object/0x2::timestamp::Timestamp", {"decode":true}],"id":1}' \
 https://dev-seed.rooch.network
 ``` 
 
@@ -219,17 +219,17 @@ https://dev-seed.rooch.network
   "result": [
     {
       "value": "0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3000000000000000000000000000000000000000000000000000000000000000004002db02e34050600",
-      "value_type": "0x2::object::ObjectEntity<0x2::object::Timestamp>",
+      "value_type": "0x2::object::ObjectEntity<0x2::timestamp::Timestamp>",
       "decoded_value": {
         "abilities": 0,
-        "type": "0x2::object::ObjectEntity<0x2::object::Timestamp>",
+        "type": "0x2::object::ObjectEntity<0x2::timestamp::Timestamp>",
         "value": {
           "flag": 4,
-          "id": "0x05921974509dbe44ab84328a625f4a6580a5f89dff3e4e2dec448cb2b1c7f5b9",
+          "id": "0x4e8d2c243339c6e02f8b7dd34436a1b1eb541b0fe4d938f845f4dbb9d9f218a2",
           "owner": "0x0000000000000000000000000000000000000000000000000000000000000000",
           "value": {
             "abilities": 8,
-            "type": "0x2::object::Timestamp",
+            "type": "0x2::timestamp::Timestamp",
             "value": {
               "milliseconds": "1694571540000000"
             }
@@ -280,7 +280,7 @@ Rooch object 的提供了两种类型的动态字段：常规类型和Object类�
 
 <Callout>
 注意：由于 Object 类型本身也具有 `store` ability，那把整个 `Obejct<T>` 作为一个普通的字段存放在 object 下和使用 Object 类型字段有什么区别？
-1. 如果通过 `add_object_field` 创建的子 object，是属于父 object 的子对象，与父 object 在同一个 SMT 子树下。这对于整个父 object 的状态迁移，查询等管理都很便捷。
+1. 如果通过 `new_with_parent` 创建的子 object，是属于父 object 的子对象，与父 object 在同一个 SMT 子树下。这对于整个父 object 的状态迁移，查询等管理都很便捷。
 2. 如果在全局创建的 object，即使通过 `add_field` 放到 object 的动态字段中了，它实际上也是属于 global object，它的状态树处于 Root 根下。
 </Callout>
 
@@ -303,12 +303,8 @@ Rooch object 的提供了两种类型的动态字段：常规类型和Object类�
 
 | 方法 | 说明
 |---|---
-| `add_object_field<T: key, V: key>(obj: &mut Object<T>, v: V): Object<V>` | 向对象添加一个新的子对象字段，返回新添加的子对象。只有共享对象可以添加子对象字段。
-| `add_object_field_with_id<T: key, ID:drop, V: key>(obj: &mut Object<T>, id: ID, v: V): Object<V>` | 使用自定义ID向对象添加一个新的子对象字段，返回新添加的子对象。只有共享对象可以添加子对象字段。
-| `borrow_object_field<T: key, V: key>(obj: &Object<T>, key: ObjectID): &Object<V>` | 借用对象中指定子对象字段的不可变引用。如果子对象字段不存在，此操作将失败。
-| `borrow_mut_object_field<T: key, V: key>(obj: &mut Object<T>, key: ObjectID): &mut Object<V>` | 借用对象中指定子对象字段的可变引用。如果子对象字段不存在，此操作将失败。
-| `remove_object_field<T: key, V: key>(obj: &mut Object<T>, child: Object<V>): V` | 从对象中移除指定的子对象字段并返回其值。如果子对象字段不存在，此操作将失败。
-| `contains_object_field<T: key, V: key>(obj: &Object<T>, key: ObjectID): bool` | 检查对象中是否存在指定的子对象字段。
+| `new_with_parent<P: key, T: key>(parent: &mut Object<P>, v: T): Object<T>` | 向对象添加一个新的子对象字段，返回新添加的子对象。只有共享对象可以添加子对象字段。
+| `new_with_parent_and_id<P: key, ID:drop, T: key>(parent: &mut Object<P>, id: ID, v: T): Object<T>` | 使用自定义ID向对象添加一个新的子对象字段，返回新添加的子对象。只有共享对象可以添加子对象字段。
 
 ## Rooch Object, Sui Object, Aptos Object 的比较
 

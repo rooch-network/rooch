@@ -15,10 +15,11 @@ module moveos_std::display {
     /// Event when Display<T> created
     struct DisplayCreate<phantom T> has drop,copy {}
 
+
     #[private_generics(T)]
-    /// Create or borrow_mut Display object for resource `T`
+    /// Create or borrow_mut Display object for `T`
     /// Only the module of `T` can call this function.
-    public fun resource_display<T: key>(): &mut Object<Display<T>> {
+    public fun display<T: key>(): &mut Object<Display<T>> {
         let object_id = object::named_object_id<Display<T>>();
         if (!object::exists_object(object_id)) {
             let display_obj = object::new_named_object(Display<T> {
@@ -31,24 +32,6 @@ module moveos_std::display {
 
         emit<DisplayCreate<T>>(DisplayCreate{});
         object::borrow_mut_object_extend<Display<T>>(object_id)
-    }
-
-    #[private_generics(T)]
-    /// Create or borrow_mut Display object for `Object<T>`
-    /// Only the module of `T` can call this function.
-    public fun object_display<T: key>(): &mut Object<Display<Object<T>>> {
-        let object_id = object::named_object_id<Display<Object<T>>>();
-        if (!object::exists_object(object_id)) {
-            let display_obj = object::new_named_object(Display<Object<T>> {
-                sample_map: simple_map::create()
-            });
-            //We transfer the display object to the moveos_std
-            //And the caller do not need to care about the display object
-            object::transfer_extend(display_obj, @moveos_std);
-        };
-
-        emit<DisplayCreate<T>>(DisplayCreate{});
-        object::borrow_mut_object_extend<Display<Object<T>>>(object_id)
     }
 
     /// Set the key-value pair for the display object

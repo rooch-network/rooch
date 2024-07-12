@@ -92,7 +92,7 @@ module bitcoin_move::utxo{
             seals: simple_multimap::new(),
         };
         let uxto_store = borrow_mut_utxo_store();
-        let utxo_obj = object::add_object_field_with_id(uxto_store, id, utxo);
+        let utxo_obj = object::new_with_parent_and_id(uxto_store, id, utxo);
 
         event::emit<CreatingUTXOEvent>( CreatingUTXOEvent { id: object::id(&utxo_obj) } );
         utxo_obj
@@ -100,7 +100,7 @@ module bitcoin_move::utxo{
 
     public fun derive_utxo_id(outpoint: OutPoint) : ObjectID {
         let parent_id = object::named_object_id<BitcoinUTXOStore>();
-        object::custom_child_object_id<OutPoint, UTXO>(parent_id, outpoint)
+        object::custom_object_id_with_parent<OutPoint, UTXO>(parent_id, outpoint)
     }
 
     /// Get the UTXO's value
@@ -176,7 +176,7 @@ module bitcoin_move::utxo{
         object::transfer_extend(utxo_obj, to);
     }
 
-    public(friend) fun take(object_id: ObjectID): (address, Object<UTXO>){
+    public(friend) fun take(object_id: ObjectID): Object<UTXO>{
         object::take_object_extend<UTXO>(object_id)
     }
 
@@ -185,11 +185,10 @@ module bitcoin_move::utxo{
             let bag = object::remove_field(&mut utxo_obj, TEMPORARY_AREA);
             bag::drop(bag);
         };
-        let uxto_store = borrow_mut_utxo_store();
 
         event::emit<RemovingUTXOEvent>( RemovingUTXOEvent { id: object::id(&utxo_obj) } );
         
-        let utxo = object::remove_object_field(uxto_store, utxo_obj);
+        let utxo = object::remove(utxo_obj);
         let UTXO{txid:_, vout:_, value:_, seals} = utxo;
         seals
     }

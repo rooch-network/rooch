@@ -119,9 +119,13 @@ pub fn match_inscription_data(
 ) -> bool {
     let ord_inscription_info_body = format!("0x{}", ord_inscription_info.body);
 
-    (rooch_inscription_info.owner_bitcoin_address.is_some()
+    (rooch_inscription_info
+        .metadata
+        .owner_bitcoin_address
+        .is_some()
         && ord_inscription_info.address
             == rooch_inscription_info
+                .metadata
                 .owner_bitcoin_address
                 .unwrap()
                 .to_string())

@@ -1,8 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::sync::Arc;
-
 use crate::gas::table::{
     get_gas_schedule_entries, initial_cost_schedule, ClassifiedGasMeter, CostTable, MoveOSGasMeter,
 };
@@ -12,6 +10,7 @@ use backtrace::Backtrace;
 use move_binary_format::errors::VMError;
 use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError, VMResult};
 use move_core_types::identifier::IdentStr;
+use move_core_types::value::MoveTypeLayout;
 use move_core_types::vm_status::{KeptVMStatus, VMStatus};
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::Identifier, vm_status::StatusCode,
@@ -25,21 +24,22 @@ use moveos_store::transaction_store::TransactionDBStore;
 use moveos_store::MoveOSStore;
 use moveos_types::addresses::MOVEOS_STD_ADDRESS;
 use moveos_types::function_return_value::FunctionResult;
-use moveos_types::moveos_std::event::EventID;
+use moveos_types::moveos_std::event::Event;
 use moveos_types::moveos_std::gas_schedule::GasScheduleUpdated;
-use moveos_types::moveos_std::object::RootObjectEntity;
+use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::moveos_std::tx_result::TxResult;
 use moveos_types::startup_info::StartupInfo;
-use moveos_types::state::{MoveStructState, MoveStructType};
+use moveos_types::state::{MoveStructState, MoveStructType, ObjectState};
 use moveos_types::state_resolver::RootObjectResolver;
+use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::{
     MoveOSTransaction, RawTransactionOutput, TransactionOutput, VerifiedMoveAction,
     VerifiedMoveOSTransaction,
 };
-use moveos_types::{h256::H256, transaction::FunctionCall};
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct GasPaymentAccount {
@@ -129,14 +129,16 @@ impl MoveOS {
     pub fn init_genesis(
         &self,
         genesis_tx: MoveOSTransaction,
-    ) -> Result<(H256, u64, TransactionOutput)> {
-        self.verify_and_execute_genesis_tx(genesis_tx)
+        genesis_objects: Vec<(ObjectState, MoveTypeLayout)>,
+    ) -> Result<TransactionOutput> {
+        self.verify_and_execute_genesis_tx(genesis_tx, genesis_objects)
     }
 
     fn verify_and_execute_genesis_tx(
         &self,
         tx: MoveOSTransaction,
-    ) -> Result<(H256, u64, TransactionOutput)> {
+        genesis_objects: Vec<(ObjectState, MoveTypeLayout)>,
+    ) -> Result<TransactionOutput> {
         let MoveOSTransaction {
             root,
             ctx,
@@ -146,7 +148,7 @@ impl MoveOS {
         } = tx;
 
         let resolver = RootObjectResolver::new(root, &self.db);
-        let mut session = self.vm.new_genesis_session(&resolver, ctx);
+        let mut session = self.vm.new_genesis_session(&resolver, ctx, genesis_objects);
 
         let verified_action = session.verify_move_action(action).map_err(|e| {
             log::error!("verify_genesis_tx error:{:?}", e);
@@ -169,17 +171,16 @@ impl MoveOS {
         if raw_output.status != KeptVMStatus::Executed {
             bail!("genesis tx should success, error: {:?}", raw_output.status);
         }
-        let (state_root, size, event_ids) = self.apply_transaction_output(raw_output.clone())?;
-        let output = TransactionOutput::new(raw_output, event_ids);
+        let output = self.apply_transaction_output(raw_output.clone())?;
         log::info!(
             "execute genesis tx state_root:{:?}, state_size:{}",
-            state_root,
-            size
+            output.changeset.state_root,
+            output.changeset.global_size
         );
-        Ok((state_root, size, output))
+        Ok(output)
     }
 
-    fn load_cost_table(&self, root: &RootObjectEntity) -> VMResult<CostTable> {
+    fn load_cost_table(&self, root: &ObjectMeta) -> VMResult<CostTable> {
         // We use a scoped lock here to avoid holding the lock for a long time.
         {
             let rlock = self.cost_table.read();
@@ -347,44 +348,48 @@ impl MoveOS {
         }
     }
 
-    pub fn execute_and_apply(
-        &self,
-        tx: VerifiedMoveOSTransaction,
-    ) -> Result<(H256, u64, TransactionOutput)> {
+    pub fn execute_and_apply(&self, tx: VerifiedMoveOSTransaction) -> Result<TransactionOutput> {
         let raw_output = self.execute(tx)?;
-        let (state_root, size, event_ids) = self.apply_transaction_output(raw_output.clone())?;
-        let output = TransactionOutput::new(raw_output, event_ids);
-
-        Ok((state_root, size, output))
+        let output = self.apply_transaction_output(raw_output.clone())?;
+        Ok(output)
     }
 
-    fn apply_transaction_output(
-        &self,
-        output: RawTransactionOutput,
-    ) -> Result<(H256, u64, Vec<EventID>)> {
-        //TODO move apply change set to a suitable place, and make MoveOS stateless?
+    fn apply_transaction_output(&self, output: RawTransactionOutput) -> Result<TransactionOutput> {
         let RawTransactionOutput {
-            status: _,
-            changeset,
-            events,
-            gas_used: _,
-            is_upgrade: _,
+            status,
+            mut changeset,
+            events: tx_events,
+            gas_used,
+            is_upgrade,
         } = output;
 
-        let (new_state_root, size) = self
-            .db
+        self.db
             .get_state_store()
-            .apply_change_set(changeset)
+            .apply_change_set(&mut changeset)
             .map_err(|e| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR)
                     .with_message(e.to_string())
                     .finish(Location::Undefined)
             })?;
-        let event_ids = self.db.get_event_store().save_events(events).map_err(|e| {
-            PartialVMError::new(StatusCode::STORAGE_ERROR)
-                .with_message(e.to_string())
-                .finish(Location::Undefined)
-        })?;
+        let event_ids = self
+            .db
+            .get_event_store()
+            .save_events(tx_events.clone())
+            .map_err(|e| {
+                PartialVMError::new(StatusCode::STORAGE_ERROR)
+                    .with_message(e.to_string())
+                    .finish(Location::Undefined)
+            })?;
+        let events = tx_events
+            .clone()
+            .into_iter()
+            .zip(event_ids)
+            .map(|(event, event_id)| Event::new_with_event_id(event_id, event))
+            .collect::<Vec<_>>();
+
+        let new_state_root = changeset.state_root;
+        let size = changeset.global_size;
+
         self.db
             .get_config_store()
             .save_startup_info(StartupInfo::new(new_state_root, size))
@@ -393,13 +398,16 @@ impl MoveOS {
                     .with_message(e.to_string())
                     .finish(Location::Undefined)
             })?;
-        Ok((new_state_root, size, event_ids))
+
+        Ok(TransactionOutput::new(
+            status, changeset, events, gas_used, is_upgrade,
+        ))
     }
 
     /// Execute readonly view function
     pub fn execute_view_function(
         &self,
-        root: RootObjectEntity,
+        root: ObjectMeta,
         function_call: FunctionCall,
     ) -> FunctionResult {
         //TODO allow user to specify the sender
@@ -410,7 +418,7 @@ impl MoveOS {
 
     pub fn execute_readonly_function(
         &self,
-        root: RootObjectEntity,
+        root: ObjectMeta,
         tx_context: &TxContext,
         function_call: FunctionCall,
     ) -> FunctionResult {

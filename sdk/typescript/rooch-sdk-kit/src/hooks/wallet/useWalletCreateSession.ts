@@ -10,7 +10,7 @@ import { useRoochClient } from '../client/index.js'
 import { useCurrentWallet } from './useCurrentWallet.js'
 import { walletMutationKeys } from '../../constants/index.js'
 import { WalletNotConnectedError } from '../../error/walletErrors.js'
-import { useRoochSessionStore } from '../useSessionsStore.js'
+import { useSessionStore } from '../useSessionsStore.js'
 
 type UseCreateSessionKeyArgs = CreateSessionArgs
 
@@ -39,7 +39,7 @@ export function useCreateSessionKey({
 > {
   const client = useRoochClient()
   const currentWallet = useCurrentWallet()
-  const setCurrentSession = useRoochSessionStore((state) => state.setCurrentSession)
+  const setCurrentSession = useSessionStore((state) => state.setCurrentSession)
 
   return useMutation({
     mutationKey: walletMutationKeys.createSessionKey(mutationKey),
@@ -48,20 +48,14 @@ export function useCreateSessionKey({
         throw new WalletNotConnectedError('No wallet is connected.')
       }
 
-      try {
-        const sessionAccount = await client.createSession({
-          signer: currentWallet.wallet!,
-          sessionArgs: args,
-        })
+      const sessionAccount = await client.createSession({
+        signer: currentWallet.wallet!,
+        sessionArgs: args,
+      })
 
-        setCurrentSession(sessionAccount)
+      setCurrentSession(sessionAccount)
 
-        return sessionAccount
-      } catch (e: any) {
-        console.log(e.toString())
-      }
-
-      return null
+      return sessionAccount
     },
     ...mutationOptions,
   })

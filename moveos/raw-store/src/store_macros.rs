@@ -3,7 +3,7 @@
 
 #[macro_export]
 macro_rules! derive_store {
-    ($store_type: ident, $key_type: ty, $value_type: ty, $prefix_name: expr) => {
+    ($store_type: ident, $key_type: ty, $value_type: ty, $cf_name: expr) => {
         #[derive(Clone)]
         pub struct $store_type {
             store: $crate::InnerStore<Self>,
@@ -22,7 +22,7 @@ macro_rules! derive_store {
             type Value = $value_type;
 
             fn name() -> $crate::ColumnFamilyName {
-                $prefix_name
+                $cf_name
             }
         }
 

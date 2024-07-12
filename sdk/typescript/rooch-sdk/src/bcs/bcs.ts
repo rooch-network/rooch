@@ -6,10 +6,10 @@ import { bcs, BcsType, BcsTypeOptions } from '@mysten/bcs'
 import { address, Bytes } from '../types/index.js'
 import { bytes, CoderType, fromHEX, toHEX } from '../utils/index.js'
 import {
-  isValidRoochAddress,
   normalizeRoochAddress,
   ROOCH_ADDRESS_LENGTH,
   convertToRoochAddressBytes,
+  isValidAddress,
 } from '../address/index.js'
 
 import { Serializer } from './serializer.js'
@@ -79,7 +79,7 @@ export const Vector = (coder: CoderType = 'hex') => {
 
 export const Address = bcs.bytes(ROOCH_ADDRESS_LENGTH).transform({
   validate: (input) => {
-    if (!isValidRoochAddress(input)) {
+    if (!isValidAddress(input)) {
       throw new Error(`Invalid address ${input}`)
     }
   },

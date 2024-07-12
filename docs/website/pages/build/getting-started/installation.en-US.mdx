@@ -7,7 +7,7 @@
 #### Install dependencies
 
 ```shell
-sudo apt install git curl gcc lld pkg-config libssl-dev libclang-dev libsqlite3-dev g++
+sudo apt install git curl cmake make gcc lld pkg-config libssl-dev libclang-dev libsqlite3-dev g++ protobuf-compiler
 ```
 
 #### Install Rust
@@ -80,7 +80,7 @@ Firstly, create a binary file directory
 mkdir ~/.local/bin/ 
 ```
 
-Secondly, add the binary file directory path into `~/.zschrc`
+Secondly, add the binary file directory path into `~/.zshrc`
 
 ```shell
 export PATH="$PATH:$HOME/.local/bin"
@@ -97,7 +97,7 @@ Fourthly, open a new terminal window and run `rooch` to check if it works
 #### Download
 
 ```shell
-wget https://github.com/rooch-network/rooch/releases/download/v0.1/rooch-ubuntu-latest.zip
+wget https://github.com/rooch-network/rooch/releases/latest/download/rooch-ubuntu-latest.zip
 ```
 
 #### Decompress

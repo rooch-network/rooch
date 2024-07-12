@@ -263,7 +263,7 @@ impl Default for RoochChainID {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RoochNetwork {
     pub chain_id: ChainID,
     pub genesis_config: GenesisConfig,

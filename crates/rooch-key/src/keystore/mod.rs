@@ -59,6 +59,18 @@ impl AccountKeystore for Keystore {
         }
     }
 
+    fn add_addresses_to_mnemonic_data(
+        &mut self,
+        address: RoochAddress,
+    ) -> Result<(), anyhow::Error> {
+        match self {
+            Keystore::File(file_keystore) => file_keystore.add_addresses_to_mnemonic_data(address),
+            Keystore::InMem(inmem_keystore) => {
+                inmem_keystore.add_addresses_to_mnemonic_data(address)
+            }
+        }
+    }
+
     fn get_accounts(
         &self,
         password: Option<String>,
@@ -93,7 +105,7 @@ impl AccountKeystore for Keystore {
         }
     }
 
-    fn add_address_encryption_data(
+    fn add_address_encryption_data_to_keys(
         &mut self,
         address: RoochAddress,
         encryption: EncryptionData,
@@ -101,10 +113,10 @@ impl AccountKeystore for Keystore {
         // Implement this method to add a key pair to the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.add_address_encryption_data(address, encryption)
+                file_keystore.add_address_encryption_data_to_keys(address, encryption)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.add_address_encryption_data(address, encryption)
+                inmem_keystore.add_address_encryption_data_to_keys(address, encryption)
             }
         }
     }

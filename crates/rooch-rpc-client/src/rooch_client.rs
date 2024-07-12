@@ -1,20 +1,20 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{Ok, Result};
 use jsonrpsee::http_client::HttpClient;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::account::Account;
-use moveos_types::{access_path::AccessPath, state::State, transaction::FunctionCall};
+use moveos_types::{access_path::AccessPath, state::ObjectState, transaction::FunctionCall};
 use rooch_rpc_api::api::rooch_api::RoochAPIClient;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, transaction_view::TransactionWithInfoView,
 };
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, EventOptions, EventPageView,
-    RoochAddressView, StateOptions, StatePageView, StructTagView,
+    ObjectIDView, RoochAddressView, StateOptions, StatePageView, StructTagView,
 };
-use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, StateView};
+use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, ObjectStateView};
 use rooch_rpc_api::jsonrpc_types::{
     IndexerObjectStatePageView, ObjectStateFilterView, QueryOptions,
 };
@@ -62,14 +62,17 @@ impl RoochRpcClient {
             .map_err(|e| anyhow::anyhow!(e))
     }
 
-    pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<StateView>>> {
+    pub async fn get_states(
+        &self,
+        access_path: AccessPath,
+    ) -> Result<Vec<Option<ObjectStateView>>> {
         Ok(self.http.get_states(access_path.into(), None).await?)
     }
 
     pub async fn get_decoded_states(
         &self,
         access_path: AccessPath,
-    ) -> Result<Vec<Option<StateView>>> {
+    ) -> Result<Vec<Option<ObjectStateView>>> {
         Ok(self
             .http
             .get_states(
@@ -82,7 +85,7 @@ impl RoochRpcClient {
     pub async fn get_decoded_states_with_display(
         &self,
         access_path: AccessPath,
-    ) -> Result<Vec<Option<StateView>>> {
+    ) -> Result<Vec<Option<ObjectStateView>>> {
         Ok(self
             .http
             .get_states(
@@ -127,8 +130,8 @@ impl RoochRpcClient {
             .pop()
             .flatten()
             .map(|state_view| {
-                let state = State::from(state_view);
-                state.as_object_uncheck::<Account>()
+                let state = ObjectState::from(state_view);
+                state.into_object_uncheck::<Account>()
             })
             .transpose()?
             .map_or(0, |account| account.value.sequence_number))
@@ -159,7 +162,7 @@ impl RoochRpcClient {
         &self,
         access_path: AccessPathView,
         cursor: Option<String>,
-        limit: Option<usize>,
+        limit: Option<u64>,
     ) -> Result<StatePageView> {
         Ok(self
             .http
@@ -167,11 +170,24 @@ impl RoochRpcClient {
             .await?)
     }
 
+    pub async fn list_field_states(
+        &self,
+        object_id: ObjectIDView,
+        cursor: Option<String>,
+        limit: Option<u64>,
+        state_option: Option<StateOptions>,
+    ) -> Result<StatePageView> {
+        Ok(self
+            .http
+            .list_field_states(object_id, cursor, limit.map(Into::into), state_option)
+            .await?)
+    }
+
     pub async fn list_decoded_states(
         &self,
         access_path: AccessPathView,
         cursor: Option<String>,
-        limit: Option<usize>,
+        limit: Option<u64>,
     ) -> Result<StatePageView> {
         Ok(self
             .http
@@ -199,11 +215,15 @@ impl RoochRpcClient {
         &self,
         account_addr: RoochAddressView,
         cursor: Option<IndexerStateID>,
-        limit: Option<usize>,
+        limit: Option<u64>,
     ) -> Result<BalanceInfoPageView> {
         Ok(self
             .http
-            .get_balances(account_addr.into(), cursor, limit.map(Into::into))
+            .get_balances(
+                account_addr.into(),
+                cursor.map(Into::into),
+                limit.map(Into::into),
+            )
             .await?)
     }
 
@@ -211,12 +231,17 @@ impl RoochRpcClient {
         &self,
         filter: ObjectStateFilterView,
         cursor: Option<IndexerStateID>,
-        limit: Option<usize>,
+        limit: Option<u64>,
         query_options: Option<QueryOptions>,
     ) -> Result<IndexerObjectStatePageView> {
         Ok(self
             .http
-            .query_object_states(filter, cursor, limit.map(Into::into), query_options)
+            .query_object_states(
+                filter,
+                cursor.map(Into::into),
+                limit.map(Into::into),
+                query_options,
+            )
             .await?)
     }
 }

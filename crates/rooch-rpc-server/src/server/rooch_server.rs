@@ -4,45 +4,37 @@
 use crate::service::aggregate_service::AggregateService;
 use crate::service::rpc_service::RpcService;
 use anyhow::Result;
-use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    RpcModule,
+use jsonrpsee::{core::async_trait, RpcModule};
+use move_core_types::{
+    account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
 };
 use moveos_types::{
     access_path::AccessPath,
     h256::H256,
-    moveos_std::{
-        display::{get_object_display_id, get_resource_display_id, RawDisplay},
-        object::{ObjectEntity, ObjectID},
-    },
-    state::{AnnotatedKeyState, AnnotatedState, KeyState},
-};
-use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
-use rooch_rpc_api::jsonrpc_types::{
-    account_view::BalanceInfoView, IndexerEventPageView, IndexerObjectStatePageView,
-    IndexerObjectStateView, KeyStateHexView, ObjectIDVecView, ObjectStateFilterView,
-    ObjectStateView, QueryOptions, StateKVView, StateOptions, TxOptions,
+    move_std::string::MoveString,
+    moveos_std::{move_module::MoveModule, object::ObjectID},
+    state::{AnnotatedState, FieldKey},
 };
 use rooch_rpc_api::jsonrpc_types::{
-    event_view::{EventFilterView, EventView, IndexerEventView},
-    RoochOrBitcoinAddressView,
+    account_view::BalanceInfoView,
+    event_view::{EventFilterView, EventView, IndexerEventIDView, IndexerEventView},
+    transaction_view::{TransactionFilterView, TransactionWithInfoView},
+    AccessPathView, BalanceInfoPageView, EventOptions, EventPageView,
+    ExecuteTransactionResponseView, FunctionCallView, H256View, IndexerEventPageView,
+    IndexerObjectStatePageView, IndexerStateIDView, ModuleABIView, ObjectIDVecView,
+    ObjectStateFilterView, ObjectStateView, QueryOptions, RoochAddressView,
+    RoochOrBitcoinAddressView, StateKVView, StateOptions, StatePageView, StrView, StructTagView,
+    TransactionWithInfoPageView, TxOptions,
 };
-use rooch_rpc_api::jsonrpc_types::{transaction_view::TransactionWithInfoView, EventOptions};
-use rooch_rpc_api::jsonrpc_types::{
-    AccessPathView, AnnotatedMoveStructView, BalanceInfoPageView, DisplayFieldsView, EventPageView,
-    ExecuteTransactionResponseView, FunctionCallView, H256View, StatePageView, StateView, StrView,
-    StructTagView, TransactionWithInfoPageView,
-};
-use rooch_rpc_api::{api::rooch_api::RoochAPIServer, api::DEFAULT_RESULT_LIMIT};
 use rooch_rpc_api::{
+    api::rooch_api::RoochAPIServer,
+    api::DEFAULT_RESULT_LIMIT,
     api::{RoochRpcModule, DEFAULT_RESULT_LIMIT_USIZE},
-    jsonrpc_types::AnnotatedFunctionResultView,
-};
-use rooch_rpc_api::{
     api::{MAX_RESULT_LIMIT, MAX_RESULT_LIMIT_USIZE},
+    jsonrpc_types::AnnotatedFunctionResultView,
     jsonrpc_types::BytesView,
+    RpcError, RpcResult,
 };
-use rooch_types::indexer::event::IndexerEventID;
 use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::transaction::{RoochTransaction, TransactionWithInfo};
 use std::cmp::min;
@@ -62,61 +54,6 @@ impl RoochServer {
         }
     }
 
-    async fn get_display_fields_and_render(
-        &self,
-        states: Vec<&AnnotatedState>,
-        is_object: bool,
-    ) -> Result<Vec<Option<DisplayFieldsView>>> {
-        let mut display_ids = vec![];
-        let mut displayable_states = vec![];
-        for s in &states {
-            displayable_states.push(if is_object {
-                if let Some(tag) = s.state.get_object_struct_tag() {
-                    display_ids.push(get_object_display_id(tag.into()));
-                    true
-                } else {
-                    false
-                }
-            } else if let Some(tag) = s.state.get_resource_struct_tag() {
-                display_ids.push(get_resource_display_id(tag.into()));
-                true
-            } else {
-                false
-            });
-        }
-        // get display fields
-        let path = AccessPath::objects(display_ids);
-        let mut display_fields = self
-            .rpc_service
-            .get_states(path)
-            .await?
-            .into_iter()
-            .map(|option_s| {
-                option_s
-                    .map(|s| s.as_object_uncheck::<RawDisplay>())
-                    .transpose()
-            })
-            .collect::<Result<Vec<Option<ObjectEntity<RawDisplay>>>>>()?;
-        display_fields.reverse();
-
-        let mut display_field_views = vec![];
-        for (annotated_s, displayable) in states.into_iter().zip(displayable_states) {
-            display_field_views.push(if displayable {
-                debug_assert!(
-                    !display_fields.is_empty(),
-                    "Display fields should not be empty"
-                );
-                display_fields
-                    .pop()
-                    .unwrap()
-                    .map(|obj| DisplayFieldsView::new(obj.value.render(&annotated_s.decoded_value)))
-            } else {
-                None
-            });
-        }
-        Ok(display_field_views)
-    }
-
     async fn transactions_to_view(
         &self,
         data: Vec<TransactionWithInfo>,
@@ -129,7 +66,7 @@ impl RoochServer {
             .rpc_service
             .get_bitcoin_addresses(rooch_addresses)
             .await?;
-        let bitcoin_network = self.rpc_service.get_bitcoin_network().await?;
+        let bitcoin_network = self.rpc_service.get_bitcoin_network();
         let data = data
             .into_iter()
             .map(|tx| {
@@ -154,14 +91,13 @@ impl RoochServer {
 #[async_trait]
 impl RoochAPIServer for RoochServer {
     async fn get_chain_id(&self) -> RpcResult<StrView<u64>> {
-        let chain_id = self.rpc_service.get_chain_id().await?;
+        let chain_id = self.rpc_service.get_chain_id();
         Ok(StrView(chain_id))
     }
 
     async fn send_raw_transaction(&self, payload: BytesView) -> RpcResult<H256View> {
         info!("send_raw_transaction payload: {:?}", payload);
-        let mut tx =
-            bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
+        let mut tx = bcs::from_bytes::<RoochTransaction>(&payload.0)?;
         info!("send_raw_transaction tx: {:?}", tx);
 
         let hash = tx.tx_hash();
@@ -175,7 +111,7 @@ impl RoochAPIServer for RoochServer {
         tx_options: Option<TxOptions>,
     ) -> RpcResult<ExecuteTransactionResponseView> {
         let tx_options = tx_options.unwrap_or_default();
-        let tx = bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
+        let tx = bcs::from_bytes::<RoochTransaction>(&payload.0)?;
         let tx_response = self.rpc_service.execute_tx(tx).await?;
 
         let result = if tx_options.with_output {
@@ -201,13 +137,12 @@ impl RoochAPIServer for RoochServer {
         &self,
         access_path: AccessPathView,
         state_option: Option<StateOptions>,
-    ) -> RpcResult<Vec<Option<StateView>>> {
+    ) -> RpcResult<Vec<Option<ObjectStateView>>> {
         let state_option = state_option.unwrap_or_default();
         let show_display =
             state_option.show_display && (access_path.0.is_object() || access_path.0.is_resource());
 
         let state_views = if state_option.decode || show_display {
-            let is_object = access_path.0.is_object();
             let states = self
                 .rpc_service
                 .get_annotated_states(access_path.into())
@@ -216,7 +151,8 @@ impl RoochAPIServer for RoochServer {
             if show_display {
                 let valid_states = states.iter().filter_map(|s| s.as_ref()).collect::<Vec<_>>();
                 let mut valid_display_field_views = self
-                    .get_display_fields_and_render(valid_states, is_object)
+                    .rpc_service
+                    .get_display_fields_and_render(valid_states.as_slice())
                     .await?;
                 valid_display_field_views.reverse();
                 states
@@ -228,19 +164,22 @@ impl RoochAPIServer for RoochServer {
                                 "display fields should not be empty"
                             );
                             let display_view = valid_display_field_views.pop().unwrap();
-                            StateView::from(annotated_s).with_display_fields(display_view)
+                            ObjectStateView::from(annotated_s).with_display_fields(display_view)
                         })
                     })
                     .collect()
             } else {
-                states.into_iter().map(|s| s.map(StateView::from)).collect()
+                states
+                    .into_iter()
+                    .map(|s| s.map(ObjectStateView::from))
+                    .collect()
             }
         } else {
             self.rpc_service
                 .get_states(access_path.into())
                 .await?
                 .into_iter()
-                .map(|s| s.map(StateView::from))
+                .map(|s| s.map(ObjectStateView::from))
                 .collect()
         };
         Ok(state_views)
@@ -250,7 +189,7 @@ impl RoochAPIServer for RoochServer {
         &self,
         access_path: AccessPathView,
         cursor: Option<String>,
-        limit: Option<StrView<usize>>,
+        limit: Option<StrView<u64>>,
         state_option: Option<StateOptions>,
     ) -> RpcResult<StatePageView> {
         let state_option = state_option.unwrap_or_default();
@@ -262,12 +201,11 @@ impl RoochAPIServer for RoochServer {
             MAX_RESULT_LIMIT_USIZE,
         );
         let cursor_of = match cursor.clone() {
-            Some(key_state_str) => Some(KeyState::from_str(key_state_str.as_str())?),
+            Some(key_state_str) => Some(FieldKey::from_str(key_state_str.as_str())?),
             None => None,
         };
         let mut data: Vec<StateKVView> = if state_option.decode || show_display {
-            let is_object = access_path.0.is_object();
-            let (key_states, states): (Vec<AnnotatedKeyState>, Vec<AnnotatedState>) = self
+            let (key_states, states): (Vec<FieldKey>, Vec<AnnotatedState>) = self
                 .rpc_service
                 .list_annotated_states(access_path.into(), cursor_of, limit_of + 1)
                 .await?
@@ -276,16 +214,17 @@ impl RoochAPIServer for RoochServer {
             let state_refs: Vec<&AnnotatedState> = states.iter().collect();
             if show_display {
                 let display_field_views = self
-                    .get_display_fields_and_render(state_refs, is_object)
+                    .rpc_service
+                    .get_display_fields_and_render(state_refs.as_slice())
                     .await?;
                 key_states
                     .into_iter()
                     .zip(states)
                     .zip(display_field_views)
-                    .map(|((key_state, state), display_field_view)| {
+                    .map(|((key, state), display_field_view)| {
                         StateKVView::new(
-                            KeyStateHexView::from(key_state),
-                            StateView::from(state).with_display_fields(display_field_view),
+                            key.into(),
+                            ObjectStateView::from(state).with_display_fields(display_field_view),
                         )
                     })
                     .collect::<Vec<_>>()
@@ -293,9 +232,7 @@ impl RoochAPIServer for RoochServer {
                 key_states
                     .into_iter()
                     .zip(states)
-                    .map(|(key_state, state)| {
-                        StateKVView::new(KeyStateHexView::from(key_state), StateView::from(state))
-                    })
+                    .map(|(key, state)| StateKVView::new(key.into(), state.into()))
                     .collect::<Vec<_>>()
             }
         } else {
@@ -303,16 +240,14 @@ impl RoochAPIServer for RoochServer {
                 .list_states(access_path.into(), cursor_of, limit_of + 1)
                 .await?
                 .into_iter()
-                .map(|(key_state, state)| {
-                    StateKVView::new(KeyStateHexView::from(key_state), StateView::from(state))
-                })
+                .map(|(key, state)| StateKVView::new(key.into(), state.into()))
                 .collect::<Vec<_>>()
         };
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
         let next_cursor = data.last().map_or(cursor, |state_kv| {
-            Some(state_kv.key_hex.clone().to_string())
+            Some(state_kv.field_key.clone().to_string())
         });
 
         Ok(StatePageView {
@@ -333,13 +268,14 @@ impl RoochAPIServer for RoochServer {
         let decode = state_option.decode;
         let show_display = state_option.show_display;
 
-        let objects_view = if decode || show_display {
+        let mut objects_view = if decode || show_display {
             let states: Vec<Option<AnnotatedState>> =
                 self.rpc_service.get_annotated_states(access_path).await?;
 
             let mut valid_display_field_views = if show_display {
                 let valid_states = states.iter().filter_map(|s| s.as_ref()).collect::<Vec<_>>();
-                self.get_display_fields_and_render(valid_states, true)
+                self.rpc_service
+                    .get_display_fields_and_render(valid_states.as_slice())
                     .await?
             } else {
                 vec![]
@@ -348,21 +284,9 @@ impl RoochAPIServer for RoochServer {
             let objects_view = states
                 .into_iter()
                 .map(|option_annotated_s| {
-                    option_annotated_s
-                        .map(|annotated_s| {
-                            let value = annotated_s
-                                .state
-                                .as_raw_object()
-                                .expect("should be object")
-                                .value
-                                .value;
-                            annotated_s
-                                .into_annotated_object()
-                                .map(|obj| ObjectStateView::new(value, obj, decode))
-                        })
-                        .transpose()
+                    option_annotated_s.map(|annotated_s| ObjectStateView::new(annotated_s, decode))
                 })
-                .collect::<Result<Vec<_>>>()?;
+                .collect::<Vec<_>>();
 
             if show_display {
                 valid_display_field_views.reverse();
@@ -387,39 +311,19 @@ impl RoochAPIServer for RoochServer {
                 .get_states(access_path)
                 .await?
                 .into_iter()
-                .map(|s| {
-                    s.map(|s| {
-                        let obj = s.as_raw_object().expect("should be object");
-                        ObjectStateView::new_from_raw_object(obj)
-                    })
-                })
+                .map(|s| s.map(Into::into))
                 .collect()
         };
 
-        // Get owner_bitcoin_address
-        let addresses = objects_view
-            .iter()
-            .filter_map(|o| o.as_ref().map(|s| s.owner.into()))
-            .collect::<Vec<_>>();
-        let btc_network = self.rpc_service.get_bitcoin_network().await?;
-        let address_mapping = self.rpc_service.get_bitcoin_addresses(addresses).await?;
+        self.rpc_service
+            .fill_bitcoin_addresses(
+                objects_view
+                    .iter_mut()
+                    .filter_map(|state_opt| state_opt.as_mut().map(|state| &mut state.metadata))
+                    .collect(),
+            )
+            .await?;
 
-        let objects_view = objects_view
-            .into_iter()
-            .map(|o| {
-                o.map(|s| {
-                    let rooch_address = s.owner.into();
-                    let bitcoin_address = address_mapping
-                        .get(&rooch_address)
-                        .expect("should exist.")
-                        .clone()
-                        .map(|a| a.format(btc_network))
-                        .transpose()?;
-                    Ok(s.with_owner_bitcoin_address(bitcoin_address))
-                })
-                .transpose()
-            })
-            .collect::<Result<Vec<_>>>()?;
         Ok(objects_view)
     }
 
@@ -470,11 +374,11 @@ impl RoochAPIServer for RoochServer {
         //next_cursor is the last event's event_seq
         let next_cursor = data
             .last()
-            .map_or(cursor, |event| Some(event.event_id.event_seq));
+            .map_or(cursor, |event| Some(event.event_id.event_seq.0));
 
         Ok(EventPageView {
             data,
-            next_cursor,
+            next_cursor: next_cursor.map(StrView),
             has_next_page,
         })
     }
@@ -485,7 +389,7 @@ impl RoochAPIServer for RoochServer {
     ) -> RpcResult<Vec<Option<TransactionWithInfoView>>> {
         let tx_hashes: Vec<H256> = tx_hashes.iter().map(|m| (*m).into()).collect::<Vec<_>>();
 
-        let bitcoin_network = self.rpc_service.get_bitcoin_network().await?;
+        let bitcoin_network = self.rpc_service.get_bitcoin_network();
         let data = self
             .aggregate_service
             .get_transaction_with_info(tx_hashes)
@@ -553,12 +457,11 @@ impl RoochAPIServer for RoochServer {
             (end..start).rev().collect::<Vec<_>>()
         } else {
             let start = cursor.unwrap_or(0);
-            let start_plus =
-                start
-                    .checked_add(limit_of + 1)
-                    .ok_or(jsonrpsee::core::Error::Custom(
-                        "cursor value is overflow".to_string(),
-                    ))?;
+            let start_plus = start
+                .checked_add(limit_of + 1)
+                .ok_or(RpcError::UnexpectedError(
+                    "cursor value is overflow".to_string(),
+                ))?;
             let end = min(start_plus, last_sequencer_order + 1);
 
             (start..end).collect::<Vec<_>>()
@@ -594,7 +497,7 @@ impl RoochAPIServer for RoochServer {
 
         Ok(TransactionWithInfoPageView {
             data,
-            next_cursor,
+            next_cursor: next_cursor.map(StrView),
             has_next_page,
         })
     }
@@ -615,13 +518,14 @@ impl RoochAPIServer for RoochServer {
     async fn get_balances(
         &self,
         account_addr: RoochOrBitcoinAddressView,
-        cursor: Option<IndexerStateID>,
-        limit: Option<StrView<usize>>,
+        cursor: Option<IndexerStateIDView>,
+        limit: Option<StrView<u64>>,
     ) -> RpcResult<BalanceInfoPageView> {
         let limit_of = min(
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
         );
+        let cursor: Option<IndexerStateID> = cursor.map(Into::into);
         let mut data = self
             .aggregate_service
             .get_balances(account_addr.into(), cursor, limit_of + 1)
@@ -640,8 +544,36 @@ impl RoochAPIServer for RoochServer {
                 .into_iter()
                 .map(|(_, balance_info)| balance_info)
                 .collect(),
-            next_cursor,
+            next_cursor: next_cursor.map(Into::into),
             has_next_page,
+        })
+    }
+
+    async fn get_module_abi(
+        &self,
+        module_addr: RoochAddressView,
+        module_name: String,
+    ) -> RpcResult<Option<ModuleABIView>> {
+        let module_id = ModuleId::new(
+            AccountAddress::from(module_addr.0),
+            Identifier::new(module_name)?,
+        );
+        let access_path = AccessPath::module(&module_id);
+        let module = self
+            .rpc_service
+            .get_states(access_path)
+            .await?
+            .pop()
+            .flatten();
+
+        Ok(match module {
+            Some(m) => {
+                let move_module = m.value_as_df::<MoveString, MoveModule>()?.value;
+                Some(ModuleABIView::try_parse_from_module_bytes(
+                    &move_module.byte_codes,
+                )?)
+            }
+            None => None,
         })
     }
 
@@ -650,7 +582,7 @@ impl RoochAPIServer for RoochServer {
         filter: TransactionFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<StrView<u64>>,
-        limit: Option<StrView<usize>>,
+        limit: Option<StrView<u64>>,
         query_option: Option<QueryOptions>,
     ) -> RpcResult<TransactionWithInfoPageView> {
         let limit_of = min(
@@ -683,7 +615,7 @@ impl RoochAPIServer for RoochServer {
 
         Ok(TransactionWithInfoPageView {
             data,
-            next_cursor,
+            next_cursor: next_cursor.map(StrView),
             has_next_page,
         })
     }
@@ -692,8 +624,8 @@ impl RoochAPIServer for RoochServer {
         &self,
         filter: EventFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
-        cursor: Option<IndexerEventID>,
-        limit: Option<StrView<usize>>,
+        cursor: Option<IndexerEventIDView>,
+        limit: Option<StrView<u64>>,
         query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerEventPageView> {
         let limit_of = min(
@@ -705,7 +637,12 @@ impl RoochAPIServer for RoochServer {
 
         let mut data = self
             .rpc_service
-            .query_events(filter.into(), cursor, limit_of + 1, descending_order)
+            .query_events(
+                filter.into(),
+                cursor.map(Into::into),
+                limit_of + 1,
+                descending_order,
+            )
             .await?
             .into_iter()
             .map(IndexerEventView::from)
@@ -729,8 +666,8 @@ impl RoochAPIServer for RoochServer {
         &self,
         filter: ObjectStateFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
-        cursor: Option<IndexerStateID>,
-        limit: Option<StrView<usize>>,
+        cursor: Option<IndexerStateIDView>,
+        limit: Option<StrView<u64>>,
         query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerObjectStatePageView> {
         let limit_of = min(
@@ -739,98 +676,30 @@ impl RoochAPIServer for RoochServer {
         );
         let query_option = query_option.unwrap_or_default();
         let descending_order = query_option.descending;
-        let decode = query_option.decode;
 
         let global_state_filter = ObjectStateFilterView::try_into_object_state_filter(filter)?;
-        let states = self
+        let mut object_states = self
             .rpc_service
-            .query_object_states(global_state_filter, cursor, limit_of + 1, descending_order)
+            .query_object_states(
+                global_state_filter,
+                cursor.map(Into::into),
+                limit_of + 1,
+                descending_order,
+                query_option.decode,
+                query_option.show_display,
+            )
             .await?;
 
-        let object_ids = states
-            .iter()
-            .map(|m| m.object_id.clone())
-            .collect::<Vec<_>>();
-        let access_path = AccessPath::objects(object_ids.clone());
-        let annotated_states = self
-            .rpc_service
-            .get_annotated_states(access_path)
-            .await?
-            .into_iter()
-            .map(|s| s.expect("object should exist!")) // TODO: is statedb always synced with indexer?
-            .collect::<Vec<_>>();
+        let has_next_page = object_states.len() > limit_of;
+        object_states.truncate(limit_of);
 
-        let annotated_states_with_display = if query_option.show_display {
-            let valid_states = annotated_states.iter().collect::<Vec<_>>();
-            let valid_display_field_views = self
-                .get_display_fields_and_render(valid_states, true)
-                .await?;
-            annotated_states
-                .into_iter()
-                .zip(valid_display_field_views)
-                .map(|(annotated_state, display_field_view)| {
-                    let value = annotated_state.state.value.clone();
-                    (
-                        value,
-                        annotated_state
-                            .into_annotated_object()
-                            .expect("should be object"),
-                        display_field_view,
-                    )
-                })
-                .collect::<Vec<_>>()
-        } else {
-            annotated_states
-                .into_iter()
-                .map(|s| {
-                    let value = s.state.value.clone();
-                    let obj = s.into_annotated_object().expect("must be object");
-                    (value, obj, None)
-                })
-                .collect::<Vec<_>>()
-        };
-
-        let network = self.rpc_service.get_bitcoin_network().await?;
-        let rooch_addresses = states.iter().map(|s| s.owner).collect::<Vec<_>>();
-        let bitcoin_addresses = self
-            .rpc_service
-            .get_bitcoin_addresses(rooch_addresses)
-            .await?
-            .into_values()
-            .map(|btc_addr| btc_addr.map(|addr| addr.format(network)).transpose())
-            .collect::<Result<Vec<Option<String>>>>()?;
-
-        let mut data = annotated_states_with_display
-            .into_iter()
-            .zip(states)
-            .zip(bitcoin_addresses)
-            .map(
-                |(((value, annotated_state, display_fields), state), bitcoin_address)| {
-                    let decoded_value = if decode {
-                        Some(AnnotatedMoveStructView::from(annotated_state.value))
-                    } else {
-                        None
-                    };
-                    IndexerObjectStateView::new_from_object_state(
-                        state,
-                        value,
-                        bitcoin_address,
-                        decoded_value,
-                        display_fields,
-                    )
-                },
-            )
-            .collect::<Vec<_>>();
-
-        let has_next_page = data.len() > limit_of;
-        data.truncate(limit_of);
-
-        let next_cursor = data.last().cloned().map_or(cursor, |t| {
-            Some(IndexerStateID::new(t.tx_order, t.state_index))
-        });
+        let next_cursor = object_states
+            .last()
+            .cloned()
+            .map_or(cursor, |t| Some(t.indexer_id));
 
         Ok(IndexerObjectStatePageView {
-            data,
+            data: object_states,
             next_cursor,
             has_next_page,
         })

@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::event_view::IndexerEventIDView;
+use super::{HumanReadableDisplay, IndexerStateIDView};
 use crate::jsonrpc_types::account_view::BalanceInfoView;
 use crate::jsonrpc_types::btc::ord::InscriptionStateView;
 use crate::jsonrpc_types::btc::utxo::UTXOStateView;
@@ -12,25 +14,21 @@ use crate::jsonrpc_types::{
 };
 use move_core_types::u256::U256;
 use rooch_types::framework::coin::CoinInfo;
-use rooch_types::indexer::event::IndexerEventID;
-use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::transaction::rooch::RoochTransaction;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::string::String;
 
-use super::HumanReadableDisplay;
-
-pub type EventPageView = PageView<EventView, u64>;
-pub type TransactionWithInfoPageView = PageView<TransactionWithInfoView, u64>;
+pub type EventPageView = PageView<EventView, StrView<u64>>;
+pub type TransactionWithInfoPageView = PageView<TransactionWithInfoView, StrView<u64>>;
 pub type StatePageView = PageView<StateKVView, String>;
-pub type BalanceInfoPageView = PageView<BalanceInfoView, IndexerStateID>;
-pub type IndexerEventPageView = PageView<IndexerEventView, IndexerEventID>;
+pub type BalanceInfoPageView = PageView<BalanceInfoView, IndexerStateIDView>;
+pub type IndexerEventPageView = PageView<IndexerEventView, IndexerEventIDView>;
 
-pub type IndexerObjectStatePageView = PageView<IndexerObjectStateView, IndexerStateID>;
+pub type IndexerObjectStatePageView = PageView<IndexerObjectStateView, IndexerStateIDView>;
 
-pub type UTXOPageView = PageView<UTXOStateView, IndexerStateID>;
-pub type InscriptionPageView = PageView<InscriptionStateView, IndexerStateID>;
+pub type UTXOPageView = PageView<UTXOStateView, IndexerStateIDView>;
+pub type InscriptionPageView = PageView<InscriptionStateView, IndexerStateIDView>;
 
 /// `next_cursor` points to the last item in the page;
 /// Reading with `next_cursor` will start from the next item after `next_cursor` if
@@ -68,7 +66,7 @@ Has next page: {:?}"#,
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionView {
-    pub sequence_number: u64,
+    pub sequence_number: StrView<u64>,
     pub sender: String,
     pub sender_bitcoin_address: Option<String>,
     pub action_type: MoveActionTypeView,
@@ -82,7 +80,7 @@ impl TransactionView {
         sender_bitcoin_address: Option<String>,
     ) -> Self {
         Self {
-            sequence_number: transaction.sequence_number(),
+            sequence_number: transaction.sequence_number().into(),
             sender: transaction.sender().to_string(),
             sender_bitcoin_address,
             action: transaction.action().clone().into(),

@@ -20,13 +20,11 @@ use move_vm_types::{
     loaded_data::runtime_types::Type,
     values::{GlobalValue, Value},
 };
-use moveos_object_runtime::runtime::{ObjectRuntime, TypeLayoutLoader};
-use moveos_types::state::KeyState;
-use moveos_types::{
-    moveos_std::tx_context::TxContext, state::StateChangeSet, state_resolver::MoveOSResolver,
-};
+use moveos_object_runtime::{runtime::ObjectRuntime, TypeLayoutLoader};
+use moveos_types::state::{FieldKey, StateChangeSet};
+use moveos_types::{moveos_std::tx_context::TxContext, state_resolver::MoveOSResolver};
 use parking_lot::RwLock;
-use std::sync::Arc;
+use std::rc::Rc;
 
 /// Transaction data cache. Keep updates within a transaction so they can all be published at
 /// once when the transaction succeeds.
@@ -45,7 +43,7 @@ pub struct MoveosDataCache<'r, 'l, S> {
     resolver: &'r S,
     loader: &'l Loader,
     event_data: Vec<(Vec<u8>, u64, Type, MoveTypeLayout, Value)>,
-    object_runtime: Arc<RwLock<ObjectRuntime>>,
+    object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
 }
 
 impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
@@ -54,7 +52,7 @@ impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
     pub fn new(
         resolver: &'r S,
         loader: &'l Loader,
-        object_runtime: Arc<RwLock<ObjectRuntime>>,
+        object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
     ) -> Self {
         MoveosDataCache {
             resolver,
@@ -126,11 +124,11 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
         match result {
             Ok(Some(code)) => Ok(code),
             Ok(None) => {
-                let key_state = KeyState::from_module_id(module_id);
+                let field_key = FieldKey::derive_module_key(module_id.name());
                 Err(PartialVMError::new(StatusCode::LINKER_ERROR)
                     .with_message(format!(
                         "Cannot find module {:?}(key:{}) in ObjectRuntime and Storage",
-                        module_id, key_state,
+                        module_id, field_key,
                     ))
                     .finish(Location::Undefined))
             }
@@ -194,9 +192,9 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
 }
 
 pub fn into_change_set(
-    object_runtime: Arc<RwLock<ObjectRuntime>>,
+    object_runtime: Rc<RwLock<ObjectRuntime>>,
 ) -> PartialVMResult<(TxContext, StateChangeSet)> {
-    let object_runtime = Arc::try_unwrap(object_runtime).map_err(|_| {
+    let object_runtime = Rc::try_unwrap(object_runtime).map_err(|_| {
         PartialVMError::new(StatusCode::STORAGE_ERROR)
             .with_message("ObjectRuntime is referenced more than once".to_owned())
     })?;

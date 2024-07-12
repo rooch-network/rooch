@@ -38,10 +38,11 @@ schemars = { workspace = true }
 serde_with = { workspace = true }
 rand = { workspace = true }
 fastcrypto = { workspace = true, features = ["copy_key"] }
-hyper = { workspace = true }
+axum = { workspace = true }
 log = { workspace = true }
 lazy_static = { workspace = true }
 rpassword = { workspace = true }
+prometheus = { workspace = true }
 
 move-core-types = { workspace = true }
 move-resource-viewer = { workspace = true }
@@ -53,6 +54,7 @@ move-bytecode-utils = { workspace = true }
 raw-store = { workspace = true }
 moveos-config = { workspace = true }
 accumulator = { workspace = true }
+metrics = { workspace = true }
 
 rooch-config = { workspace = true }
 rooch-types = { workspace = true }
@@ -69,3 +71,5 @@ rooch-da = { workspace = true }
 rooch-framework = { workspace = true }
 rooch-genesis = { workspace = true }
 rooch-db = { workspace = true }
+rooch-open-rpc = { workspace = true }
+rooch-open-rpc-spec-builder = { workspace = true }

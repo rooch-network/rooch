@@ -86,8 +86,6 @@ jobs:
             ## Build and test app start
       - name: Install pnpm dependencies
         run: npm install pnpm@9.4.0 -g && pnpm install
-      - name: Gen SDK dependencie Code
-        run: pnpm rooch-sdk gen
       - name: Lint
         run: pnpm lint
         continue-on-error: true

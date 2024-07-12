@@ -18,8 +18,8 @@ diesel::table! {
 }
 
 diesel::table! {
-    object_states (object_id) {
-        object_id -> Text,
+    object_states (id) {
+        id -> Text,
         owner -> Text,
         flag -> SmallInt,
         state_root -> Text,

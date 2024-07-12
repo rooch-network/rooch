@@ -19,7 +19,6 @@ use fastcrypto::hash::Blake2b256;
 use fastcrypto::hash::HashFunction;
 use fastcrypto::secp256k1::Secp256k1PublicKey;
 use hex::FromHex;
-use move_core_types::language_storage::TypeTag;
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
@@ -28,7 +27,7 @@ use move_core_types::{
 };
 #[cfg(any(test, feature = "fuzzing"))]
 use moveos_types::h256;
-use moveos_types::state::{KeyState, MoveState};
+use moveos_types::state::MoveState;
 use moveos_types::{
     h256::H256,
     state::{MoveStructState, MoveStructType},
@@ -44,6 +43,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::serde_as;
 use sha3::{Digest, Sha3_256};
 use std::fmt;
+use std::ops::Deref;
 use std::str::FromStr;
 
 /// The address type that Rooch supports
@@ -125,11 +125,6 @@ impl MultiChainAddress {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         bcs::to_bytes(self).expect("bcs encode should success")
-    }
-
-    pub fn to_key(&self) -> KeyState {
-        let key_type = TypeTag::Struct(Box::new(Self::struct_tag()));
-        KeyState::new(self.to_bytes(), key_type)
     }
 }
 
@@ -227,6 +222,10 @@ impl RoochAddress {
     /// RoochAddress length in hex string length: 0x + 64 data
     pub const LENGTH_HEX: usize = 66;
 
+    pub fn is_vm_or_system_reserved_address(&self) -> bool {
+        moveos_types::addresses::is_vm_or_system_reserved_address((*self).into())
+    }
+
     pub fn from_bech32(bech32: &str) -> Result<Self> {
         let (hrp, data) = bech32::decode(bech32)?;
         anyhow::ensure!(hrp == *ROOCH_HRP, "invalid rooch hrp");
@@ -281,6 +280,12 @@ impl RoochAddress {
 
     pub fn to_hex(&self) -> String {
         format!("{:x}", self.0)
+    }
+}
+
+impl std::cmp::PartialEq<AccountAddress> for RoochAddress {
+    fn eq(&self, other: &AccountAddress) -> bool {
+        &self.0 .0 == other.deref()
     }
 }
 
@@ -1000,7 +1005,7 @@ mod test {
 
         let bytes = bcs::to_bytes(&rooch_address).unwrap();
         assert!(bytes.len() == 32);
-        let rooch_address_from_bytes = bcs::from_bytes(&bytes).unwrap();
+        let rooch_address_from_bytes: RoochAddress = bcs::from_bytes(&bytes).unwrap();
         assert_eq!(rooch_address, rooch_address_from_bytes);
     }
 

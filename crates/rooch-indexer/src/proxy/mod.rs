@@ -4,14 +4,14 @@
 use crate::actor::indexer::IndexerActor;
 use crate::actor::messages::{
     IndexerEventsMessage, IndexerStatesMessage, IndexerTransactionMessage,
-    QueryIndexerEventsMessage, QueryIndexerObjectStatesMessage, QueryIndexerTransactionsMessage,
-    UpdateIndexerMessage,
+    QueryIndexerEventsMessage, QueryIndexerObjectIdsMessage, QueryIndexerObjectStatesMessage,
+    QueryIndexerTransactionsMessage, UpdateIndexerMessage,
 };
 use crate::actor::reader_indexer::IndexerReaderActor;
-use anyhow::Result;
+use anyhow::{Ok, Result};
 use coerce::actor::ActorRef;
 use moveos_types::moveos_std::event::Event;
-use moveos_types::moveos_std::object::RootObjectEntity;
+use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::StateChangeSet;
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
@@ -36,7 +36,6 @@ impl IndexerProxy {
 
     pub async fn update_indexer(
         &self,
-        root: RootObjectEntity,
         ledger_transaction: LedgerTransaction,
         execution_info: TransactionExecutionInfo,
         moveos_tx: VerifiedMoveOSTransaction,
@@ -44,20 +43,20 @@ impl IndexerProxy {
         state_change_set: StateChangeSet,
     ) -> Result<()> {
         self.actor
-            .send(UpdateIndexerMessage {
-                root,
+            .notify(UpdateIndexerMessage {
                 ledger_transaction,
                 execution_info,
                 moveos_tx,
                 events,
                 state_change_set,
             })
-            .await?
+            .await?;
+        Ok(())
     }
 
     pub async fn indexer_states(
         &self,
-        root: RootObjectEntity,
+        root: ObjectMeta,
         tx_order: u64,
         tx_timestamp: u64,
         state_change_set: StateChangeSet,
@@ -150,6 +149,24 @@ impl IndexerProxy {
     ) -> Result<Vec<IndexerObjectState>> {
         self.reader_actor
             .send(QueryIndexerObjectStatesMessage {
+                filter,
+                cursor,
+                limit,
+                descending_order,
+            })
+            .await?
+    }
+
+    pub async fn query_object_ids(
+        &self,
+        filter: ObjectStateFilter,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerStateID>,
+        limit: usize,
+        descending_order: bool,
+    ) -> Result<Vec<(ObjectID, IndexerStateID)>> {
+        self.reader_actor
+            .send(QueryIndexerObjectIdsMessage {
                 filter,
                 cursor,
                 limit,

@@ -6,6 +6,7 @@ use crate::authentication_key::AuthenticationKey;
 use anyhow::Result;
 use move_core_types::value::MoveValue;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::option::MoveOption,
@@ -191,6 +192,8 @@ impl<'a> SessionKeyModule<'a> {
     pub const GET_SESSION_KEY_FUNCTION_NAME: &'static IdentStr = ident_str!("get_session_key");
     pub const CREATE_SESSION_KEY_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("create_session_key_entry");
+    pub const GET_SESSION_KEYS_HANDLE_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("get_session_keys_handle");
 
     pub fn get_session_key(
         &self,
@@ -221,6 +224,31 @@ impl<'a> SessionKeyModule<'a> {
                         .into()
                 })?;
         Ok(session_key)
+    }
+
+    pub fn get_session_keys_handle(
+        &self,
+        account_address: AccountAddress,
+    ) -> Result<Option<ObjectID>> {
+        let call = FunctionCall::new(
+            Self::function_id(Self::GET_SESSION_KEYS_HANDLE_FUNCTION_NAME),
+            vec![],
+            vec![MoveValue::Address(account_address)
+                .simple_serialize()
+                .unwrap()],
+        );
+        let ctx = TxContext::new_readonly_ctx(account_address);
+        let obj_id = self
+            .caller
+            .call_function(&ctx, call)?
+            .into_result()
+            .map(|mut values| {
+                let value = values.pop().expect("should have one return value");
+                bcs::from_bytes::<MoveOption<ObjectID>>(&value.value)
+                    .expect("should be a valid MoveOption<ObjectID>")
+                    .into()
+            })?;
+        Ok(obj_id)
     }
 
     pub fn create_session_key_action(

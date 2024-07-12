@@ -129,3 +129,14 @@ fn test_rooch_address_view() {
         "rooch16kg65sgpy497wc4j09ds6tha6e48cg45303fnxxxua6khevfa8sqwnxk0l",
     );
 }
+
+#[test]
+fn test_u64_deserialize_support_string_and_number() {
+    let u64_0: Result<StrView<u64>, serde_json::Error> = serde_json::from_str("0");
+    let u64_1: Result<StrView<u64>, serde_json::Error> = serde_json::from_str("\"1\"");
+    let u64_2: Result<StrView<u64>, serde_json::Error> = serde_json::from_str("1");
+
+    assert_eq!(u64_0.unwrap(), StrView(0));
+    assert_eq!(u64_1.unwrap(), StrView(1));
+    assert_eq!(u64_2.unwrap(), StrView(1));
+}

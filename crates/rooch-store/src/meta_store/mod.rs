@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::META_SEQUENCER_INFO_PREFIX_NAME;
+use crate::META_SEQUENCER_INFO_COLUMN_FAMILY_NAME;
 use anyhow::Result;
 use raw_store::{derive_store, CodecKVStore, StoreInstance};
 use rooch_types::sequencer::SequencerInfo;
@@ -13,7 +13,7 @@ derive_store!(
     SequencerInfoStore,
     String,
     SequencerInfo,
-    META_SEQUENCER_INFO_PREFIX_NAME
+    META_SEQUENCER_INFO_COLUMN_FAMILY_NAME
 );
 
 pub trait MetaStore {

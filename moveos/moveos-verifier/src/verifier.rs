@@ -212,7 +212,7 @@ fn check_transaction_input_type_at_publish(
         }
         Struct(sid) | StructInstantiation(sid, _) => {
             let struct_full_name = struct_full_name_from_sid(sid, module_bin_view);
-            is_allowed_input_struct(struct_full_name, false)
+            is_allowed_input_struct(struct_full_name)
         }
 
         _ => {
@@ -229,7 +229,7 @@ fn is_allowed_reference_types_at_publish(
     match bt {
         SignatureToken::Struct(sid) | SignatureToken::StructInstantiation(sid, _) => {
             let struct_full_name = struct_full_name_from_sid(sid, module_bin_view);
-            is_allowed_input_struct(struct_full_name, true)
+            is_allowed_input_struct(struct_full_name)
         }
         _ => false,
     }
@@ -271,7 +271,7 @@ where
         Struct(idx) | StructInstantiation(idx, _) => {
             if let Some(st) = session.get_struct_type(*idx) {
                 let full_name = format!("{}::{}", st.module.short_str_lossless(), st.name);
-                is_allowed_input_struct(full_name, false)
+                is_allowed_input_struct(full_name)
             } else {
                 false
             }
@@ -308,7 +308,7 @@ where
             );
             if let Some(st) = st_option {
                 let full_name = format!("{}::{}", st.module.short_str_lossless(), st.name);
-                is_allowed_input_struct(full_name, true)
+                is_allowed_input_struct(full_name)
             } else {
                 false
             }

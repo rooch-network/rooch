@@ -12,7 +12,6 @@ module bitcoin_move::ord {
     use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::json;
-    use moveos_std::table_vec::{Self, TableVec};
     use moveos_std::type_info;
     use moveos_std::bag;
     use moveos_std::string_utils;
@@ -161,16 +160,13 @@ module bitcoin_move::ord {
     }
 
     struct InscriptionStore has key{
-        inscriptions: TableVec<InscriptionID>,
         cursed_inscription_count: u32,
         blessed_inscription_count: u32,
         next_sequence_number: u32,
     }
 
     public(friend) fun genesis_init(_genesis_account: &signer){
-        let inscriptions = table_vec::new<InscriptionID>();
         let store = InscriptionStore{
-            inscriptions,
             cursed_inscription_count: 0,
             blessed_inscription_count: 0,
             next_sequence_number: 0,
@@ -203,7 +199,7 @@ module bitcoin_move::ord {
 
     public fun derive_inscription_id(inscription_id: InscriptionID) : ObjectID {
         let parent_id = object::named_object_id<InscriptionStore>();
-        object::custom_child_object_id<InscriptionID, Inscription>(parent_id, inscription_id)
+        object::custom_object_id_with_parent<InscriptionID, Inscription>(parent_id, inscription_id)
     }
 
     /// Prase InscriptionID from String
@@ -242,18 +238,17 @@ module bitcoin_move::ord {
     }
 
     // ==== Inscription ==== //
-    public fun get_inscription_id_by_index(index: u64) : &InscriptionID {
+    public fun get_inscription_id_by_sequence_number(sequence_number: u32) : &InscriptionID {
         let store_obj_id = object::named_object_id<InscriptionStore>();
-        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
-        let store = object::borrow_mut(store_obj);
-        table_vec::borrow(& store.inscriptions, index)
+        let store_obj = object::borrow_object<InscriptionStore>(store_obj_id);
+        object::borrow_field(store_obj, sequence_number)
     }
 
-    public fun inscription_latest_height() : u64 {
+    public fun get_inscription_next_sequence_number() : u32 {
         let store_obj_id = object::named_object_id<InscriptionStore>();
-        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
-        let store = object::borrow_mut(store_obj);
-        table_vec::length(& store.inscriptions)
+        let store_obj = object::borrow_object<InscriptionStore>(store_obj_id);
+        let store = object::borrow(store_obj);
+        store.next_sequence_number
     }
 
     fun record_to_inscription(txid: address, index: u32, offset: u64, record: InscriptionRecord, is_curse: bool, inscription_number: u32, sequence_number: u32): Inscription{
@@ -288,9 +283,9 @@ module bitcoin_move::ord {
         };
         let store_obj_id = object::named_object_id<InscriptionStore>();
         let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
-        let store = object::borrow_mut(store_obj);
-        table_vec::push_back(&mut store.inscriptions, id);
-        let object = object::add_object_field_with_id(store_obj, id, inscription);
+        // record a sequence_number to InscriptionID mapping
+        object::add_field(store_obj, inscription.sequence_number, id);
+        let object = object::new_with_parent_and_id(store_obj, id, inscription);
         object
     }
     
@@ -342,7 +337,8 @@ module bitcoin_move::ord {
         let seals_len = vector::length(&seals);
         while(j < seals_len){
             let seal_object_id = *vector::borrow(&mut seals, j);
-            let (origin_owner, inscription_obj) = object::take_object_extend<Inscription>(seal_object_id);
+            let inscription_obj = object::take_object_extend<Inscription>(seal_object_id);
+            let origin_owner = object::owner(&inscription_obj);
             let inscription = object::borrow_mut(&mut inscription_obj);
             
 
@@ -384,7 +380,7 @@ module bitcoin_move::ord {
         let flotsams_len = vector::length(&flotsams);
         while(j < flotsams_len){
             let flotsam = *vector::borrow(&mut flotsams, j);
-            let (_origin_owner, inscription_obj) = object::take_object_extend<Inscription>(flotsam.object_id);
+            let inscription_obj = object::take_object_extend<Inscription>(flotsam.object_id);
             let inscription = object::borrow_mut(&mut inscription_obj);
 
             let new_sat_point = match_coinbase_and_generate_sat_point(j, tx, flotsams, block_height);
@@ -910,11 +906,8 @@ module bitcoin_move::ord {
     #[private_generics(T)]
     /// Seal the metaprotocol validity for the given inscription_id.
     public fun seal_metaprotocol_validity<T>(inscription_id: InscriptionID, is_valid: bool, invalid_reason: Option<String>) {
-        let store_obj_id = object::named_object_id<InscriptionStore>();
-        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
-
         let inscription_object_id = derive_inscription_id(inscription_id);
-        let inscription_obj = object::borrow_mut_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
+        let inscription_obj = object::borrow_mut_object_extend<Inscription>(inscription_object_id);
 
         let protocol_type = type_info::type_name<T>();
         let validity = MetaprotocolValidity {
@@ -928,26 +921,20 @@ module bitcoin_move::ord {
 
     /// Returns true if Inscription `object` contains metaprotocol validity
     public fun exists_metaprotocol_validity(inscription_id: InscriptionID): bool{
-        let store_obj_id = object::named_object_id<InscriptionStore>();
-        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
-
         let inscription_object_id = derive_inscription_id(inscription_id);
-        let exists = object::contains_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
+        let exists = object::exists_object_with_type<Inscription>(inscription_object_id);
         if (!exists) {
             return false
         };
 
-        let inscription_obj = object::borrow_mut_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
+        let inscription_obj = object::borrow_object<Inscription>(inscription_object_id);
         object::contains_field(inscription_obj, METAPROTOCOL_VALIDITY)
     }
 
     /// Borrow the metaprotocol validity for the given inscription_id.
     public fun borrow_metaprotocol_validity(inscription_id: InscriptionID): &MetaprotocolValidity {
-        let store_obj_id = object::named_object_id<InscriptionStore>();
-        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
-
         let inscription_object_id = derive_inscription_id(inscription_id);
-        let inscription_obj = object::borrow_mut_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
+        let inscription_obj = object::borrow_object<Inscription>(inscription_object_id);
 
         object::borrow_field(inscription_obj, METAPROTOCOL_VALIDITY)
     }

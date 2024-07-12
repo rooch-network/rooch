@@ -1,22 +1,23 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
 import { Button } from '@/components/ui/button'
 import { Avatar } from '@/components/ui/avatar'
 
 import Jazzicon, { jsNumberForAddress } from 'react-jazzicon'
 
 import { formatAddress } from '@/utils/format'
-import { useCurrentAccount } from '@roochnetwork/rooch-sdk-kit'
+import { useCurrentAddress } from '@roochnetwork/rooch-sdk-kit'
 
 export const ProfileInfo = () => {
-  const account = useCurrentAccount()
+  const address = useCurrentAddress()
 
   return (
     <div className="h-12 w-full cursor-default flex items-center justify-start transition-all ease-in-out mt-2">
       <div className="flex items-center justify-start gap-x-3 w-full p-2 rounded-lg hover:bg-accent transition-all">
         <Avatar className="">
-          {account ? (
-            <Jazzicon diameter={55} seed={jsNumberForAddress(`0x${account.address}`)} />
+          {address ? (
+            <Jazzicon diameter={55} seed={jsNumberForAddress(`0x${address.toStr()}`)} />
           ) : (
             <Jazzicon diameter={55} seed={10000000} />
           )}
@@ -26,7 +27,7 @@ export const ProfileInfo = () => {
             Rooch Account
           </h3>
           <div className="leading-none text-muted-foreground flex items-center justify-start font-normal text-xs sm:text-sm">
-            {account ? <p>{formatAddress(account?.address)}</p> : <p>Connect to wallet</p>}
+            {address ? <p>{formatAddress(address?.toStr())}</p> : <p>Connect to wallet</p>}
             <Button
               variant="ghost"
               size="icon"

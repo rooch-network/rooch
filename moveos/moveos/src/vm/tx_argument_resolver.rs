@@ -3,12 +3,13 @@
 
 use super::moveos_vm::MoveOSSession;
 use crate::gas::{table::ClassifiedGasMeter, SwitchableGasMeter};
-use move_binary_format::errors::{Location, PartialVMError, VMResult};
+use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use move_core_types::{language_storage::TypeTag, vm_status::StatusCode};
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
 use move_vm_types::loaded_data::runtime_types::{StructType, Type};
 use moveos_object_runtime::resolved_arg::ResolvedArg;
+use moveos_object_runtime::TypeLayoutLoader;
 use moveos_types::{
     move_std::{ascii::MoveAsciiString, string::MoveString},
     moveos_std::object::{is_object_struct, ObjectID},
@@ -35,19 +36,26 @@ where
         let mut resolved_args = Vec::with_capacity(args.len());
 
         let mut args = args.into_iter();
+        let parameters = func.parameters.clone();
+
+        //fill the type arguments to parameter type
+        let parameters = parameters
+            .into_iter()
+            .map(|ty| ty.subst(&func.type_arguments))
+            .collect::<PartialVMResult<Vec<_>>>()
+            .map_err(|err| err.finish(location.clone()))?;
 
         //check object id
-        for parameter in func.parameters.iter() {
+        for parameter in parameters.iter() {
             if is_signer(parameter) {
                 resolved_args.push(ResolvedArg::signer(self.tx_context().sender()));
             } else if let Some(struct_arg_type) = as_struct_no_panic(&self.session, parameter) {
                 if is_object(&struct_arg_type) {
-                    let object_type_tag =
-                        get_type_tag(&self.session, parameter)?.ok_or_else(|| {
-                            PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
-                                .with_message("Resolve parameter type failed".to_string())
-                                .finish(location.clone())
-                        })?;
+                    let object_type_tag = self.get_type_tag_option(parameter).ok_or_else(|| {
+                        PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
+                            .with_message("Resolve parameter type failed".to_string())
+                            .finish(location.clone())
+                    })?;
                     //The Object<T>'s T type
                     let object_type = get_object_type(&object_type_tag).ok_or_else(|| {
                         PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
@@ -64,6 +72,7 @@ where
                             .with_message(format!("Invalid object id: {:?}", e))
                             .finish(location.clone())
                     })?;
+                    //TODO we can directly resolve args via ObjectRuntime, and remove the load_arguments functions.
                     let object = self
                         .remote
                         .get_object(&object_id)
@@ -77,31 +86,28 @@ where
                                 .with_message(format!("Object not found: {:?}", object_id))
                                 .finish(location.clone())
                         })?;
-                    if let TypeTag::Struct(s) = object_type {
-                        if s.as_ref() != &object.value.struct_tag {
-                            return Err(PartialVMError::new(
-                                StatusCode::TYPE_MISMATCH,
-                            )
-                            .with_message(format!(
-                                "Invalid object type, object type in argument:{:?}, object type in store:{:?}",
-                                s, object.value.struct_tag
-                            )).finish(location.clone()));
-                        }
-                    } else {
+                    if !object.match_type(&object_type) {
+                        return Err(PartialVMError::new(
+                            StatusCode::TYPE_MISMATCH,
+                        )
+                        .with_message(format!(
+                            "Invalid object type, object type in argument:{:?}, object type in store:{:?}",
+                            object_type, object.object_type()
+                        )).finish(location.clone()));
+                    }
+                    if object.is_dynamic_field() {
                         return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
-                            .with_message(format!(
-                                "Object type should be struct, got:{:?}",
-                                object_type
-                            ))
+                            .with_message("Dynamic field object can not as argument".to_string())
                             .finish(location.clone()));
                     }
                     match parameter {
                         Type::Reference(_r) => {
-                            // Any one can get any &Object<T>
+                            // Any one can pass any &Object<T>
                             resolved_args.push(ResolvedArg::object_by_ref(object));
                         }
                         Type::MutableReference(_r) => {
-                            // Only the owner can get &mut Object<T>
+                            // If the object is shared, the object can be passed by mutref
+                            // If the object is not shared, the object can be passed by mutref only if the sender is the owner
                             if object.is_frozen() {
                                 return Err(PartialVMError::new(StatusCode::NO_ACCOUNT_ROLE)
                                     .with_message(format!(
@@ -111,21 +117,43 @@ where
                                     .finish(location.clone()));
                             }
                             let sender = self.tx_context().sender();
-                            if !object.is_shared() && object.owner != sender {
+                            if !object.is_shared() && object.owner() != sender {
                                 return Err(PartialVMError::new(StatusCode::NO_ACCOUNT_ROLE)
                                     .with_message(format!(
                                         "Object owner mismatch, object owner:{:?}, sender:{:?}",
-                                        object.owner, sender
+                                        object.owner(),
+                                        sender
                                     ))
                                     .finish(location.clone()));
                             }
                             resolved_args.push(ResolvedArg::object_by_mutref(object));
                         }
+                        Type::StructInstantiation(_, _) => {
+                            // Only the owner can pass `Object<T>` by value
+                            if object.is_frozen() {
+                                return Err(PartialVMError::new(StatusCode::NO_ACCOUNT_ROLE)
+                                    .with_message(format!(
+                                        "Object is frozen, object id:{:?}",
+                                        object_id
+                                    ))
+                                    .finish(location.clone()));
+                            }
+                            let sender = self.tx_context().sender();
+                            if object.owner() != sender {
+                                return Err(PartialVMError::new(StatusCode::NO_ACCOUNT_ROLE)
+                                    .with_message(format!(
+                                        "Object owner mismatch, object owner:{:?}, sender:{:?}",
+                                        object.owner(),
+                                        sender
+                                    ))
+                                    .finish(location.clone()));
+                            }
+                            resolved_args.push(ResolvedArg::object_by_value(object));
+                        }
                         _ => {
-                            //TODO support Object<T> as argument
                             return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
                                 .with_message(
-                                    "Object type only support `&Object<T>` and `&mut Object<T>`, do not support `Object<T>`".to_string())
+                                    "Object type only support `&Object<T>`, `&mut Object<T>`, and `Object<T>`".to_string())
                                 .finish(location.clone()));
                         }
                     }
@@ -180,11 +208,38 @@ where
 
     pub fn load_arguments(&mut self, resolved_args: Vec<ResolvedArg>) -> VMResult<Vec<Vec<u8>>> {
         let mut object_runtime = self.object_runtime.write();
-        object_runtime.load_arguments(&resolved_args)?;
+        object_runtime.load_arguments(self, &resolved_args)?;
         Ok(resolved_args
             .into_iter()
             .map(|arg| arg.into_serialized_arg())
             .collect())
+    }
+}
+
+impl<'r, 'l, S, G> TypeLayoutLoader for MoveOSSession<'r, 'l, S, G>
+where
+    S: MoveOSResolver,
+    G: SwitchableGasMeter + ClassifiedGasMeter,
+{
+    fn get_type_layout(
+        &self,
+        type_tag: &TypeTag,
+    ) -> move_binary_format::errors::PartialVMResult<move_core_types::value::MoveTypeLayout> {
+        self.session
+            .get_type_layout(type_tag)
+            .map_err(|e| e.to_partial())
+    }
+
+    fn type_to_type_layout(
+        &self,
+        ty: &Type,
+    ) -> move_binary_format::errors::PartialVMResult<move_core_types::value::MoveTypeLayout> {
+        let type_tag = self.type_to_type_tag(ty)?;
+        self.get_type_layout(&type_tag)
+    }
+
+    fn type_to_type_tag(&self, ty: &Type) -> move_binary_format::errors::PartialVMResult<TypeTag> {
+        self.session.get_type_tag(ty).map_err(|e| e.to_partial())
     }
 }
 
@@ -201,18 +256,6 @@ where
         Type::Reference(r) => as_struct_no_panic(session, r),
         Type::MutableReference(r) => as_struct_no_panic(session, r),
         _ => None,
-    }
-}
-
-pub fn get_type_tag<T>(session: &Session<T>, t: &Type) -> VMResult<Option<TypeTag>>
-where
-    T: TransactionCache,
-{
-    match t {
-        Type::Struct(_) | Type::StructInstantiation(_, _) => Ok(Some(session.get_type_tag(t)?)),
-        Type::Reference(r) => get_type_tag(session, r),
-        Type::MutableReference(r) => get_type_tag(session, r),
-        _ => Ok(None),
     }
 }
 

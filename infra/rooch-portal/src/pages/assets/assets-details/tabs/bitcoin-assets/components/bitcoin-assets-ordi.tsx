@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { useCurrentAccount, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
+import { useCurrentAddress, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 import { NoData } from '@/components/no-data'
 import { Card, CardHeader } from '@/components/ui/card'
 import CustomPagination from '@/components/custom-pagination.tsx'
@@ -12,7 +12,7 @@ import { CursorType } from '@/common/interface'
 import type { IndexerStateID } from '@roochnetwork/rooch-sdk'
 
 export const BitcoinAssetsOrdi: React.FC = () => {
-  const account = useCurrentAccount()
+  const address = useCurrentAddress()
 
   // ** PAGINATION
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 1 })
@@ -30,7 +30,7 @@ export const BitcoinAssetsOrdi: React.FC = () => {
   const queryOptions = useMemo(
     () => ({
       cursor: mapPageToNextCursor.current[paginationModel.page - 1] || null,
-      pageSize: paginationModel.pageSize,
+      pageSize: paginationModel.pageSize.toString(),
     }),
     [paginationModel],
   )
@@ -41,7 +41,7 @@ export const BitcoinAssetsOrdi: React.FC = () => {
     isError,
   } = useRoochClientQuery('queryInscriptions', {
     filter: {
-      owner: account?.address || '',
+      owner: address?.toStr() || '',
     },
     cursor: queryOptions.cursor as IndexerStateID | null,
     limit: queryOptions.pageSize,
@@ -53,7 +53,7 @@ export const BitcoinAssetsOrdi: React.FC = () => {
     }
   }, [result, paginationModel.page])
 
-  if (!account) {
+  if (!address) {
     return (
       <div className="flex flex-col items-center justify-center text-center p-40">
         <Wallet className="w-12 h-12 mb-4 text-zinc-500" />

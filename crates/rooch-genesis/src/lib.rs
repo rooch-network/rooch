@@ -7,6 +7,7 @@ use anyhow::{ensure, Result};
 use framework_builder::stdlib_version::StdlibVersion;
 use framework_builder::Stdlib;
 use include_dir::{include_dir, Dir};
+use move_core_types::value::MoveTypeLayout;
 use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use move_vm_runtime::native_functions::NativeFunction;
 use moveos::gas::table::VMGasParameters;
@@ -16,8 +17,8 @@ use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::gas_schedule::{GasEntry, GasSchedule, GasScheduleConfig};
-use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
-use moveos_types::state_resolver::RootObjectResolver;
+use moveos_types::moveos_std::object::ObjectMeta;
+use moveos_types::state::ObjectState;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use moveos_types::{h256, state_resolver};
 use once_cell::sync::Lazy;
@@ -156,8 +157,9 @@ impl FrameworksGasParameters {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RoochGenesis {
     /// The root object after genesis initialization
-    pub root: RootObjectEntity,
+    pub root: ObjectMeta,
     pub initial_gas_config: GasScheduleConfig,
+    pub genesis_objects: Vec<(ObjectState, MoveTypeLayout)>,
     pub genesis_tx: RoochTransaction,
     pub genesis_moveos_tx: MoveOSTransaction,
 }
@@ -197,7 +199,7 @@ impl RoochGenesis {
 
         let mut genesis_moveos_tx = genesis_tx
             .clone()
-            .into_moveos_transaction(ObjectEntity::genesis_root_object());
+            .into_moveos_transaction(ObjectMeta::genesis_root());
 
         let gas_parameter = FrameworksGasParameters::initial();
         let gas_config = gas_parameter.to_gas_schedule_config();
@@ -207,19 +209,23 @@ impl RoochGenesis {
         genesis_moveos_tx.ctx.add(gas_config.clone())?;
 
         let vm_config = MoveOSConfig::default();
-        let temp_dir = moveos_config::temp_dir();
+        let (moveos_store, _temp_dir) = MoveOSStore::mock_moveos_store()?;
         let moveos = MoveOS::new(
-            MoveOSStore::new(temp_dir.path())?,
+            moveos_store,
             gas_parameter.all_natives(),
             vm_config,
             vec![],
             vec![],
         )?;
-        let (state_root, size, _output) = moveos.init_genesis(genesis_moveos_tx.clone())?;
+        let output = moveos.init_genesis(
+            genesis_moveos_tx.clone(),
+            genesis_config.genesis_objects.clone(),
+        )?;
 
         Ok(Self {
-            root: ObjectEntity::root_object(state_root, size),
+            root: output.changeset.root_metadata(),
             initial_gas_config: gas_config,
+            genesis_objects: genesis_config.genesis_objects,
             genesis_tx,
             genesis_moveos_tx,
         })
@@ -246,7 +252,7 @@ impl RoochGenesis {
         h256::sha3_256_of(self.encode().as_slice())
     }
 
-    pub fn genesis_root(&self) -> &RootObjectEntity {
+    pub fn genesis_root(&self) -> &ObjectMeta {
         &self.root
     }
 
@@ -290,7 +296,7 @@ impl RoochGenesis {
         }
     }
 
-    pub fn init_genesis(&self, rooch_db: &RoochDB) -> Result<RootObjectEntity> {
+    pub fn init_genesis(&self, rooch_db: &RoochDB) -> Result<ObjectMeta> {
         ensure!(
             rooch_db
                 .moveos_store
@@ -313,22 +319,19 @@ impl RoochGenesis {
             vec![],
         )?;
 
-        let (genesis_state_root, size, genesis_tx_output) =
-            moveos.init_genesis(self.genesis_moveos_tx())?;
+        let genesis_tx_output =
+            moveos.init_genesis(self.genesis_moveos_tx(), self.genesis_objects.clone())?;
 
-        let inited_root = ObjectEntity::root_object(genesis_state_root, size);
+        let inited_root = genesis_tx_output.changeset.root_metadata();
         debug_assert!(
             inited_root == *self.genesis_root(),
             "Genesis state root mismatch"
         );
 
         let tx_hash = self.genesis_tx().tx_hash();
-        let genesis_execution_info = rooch_db.moveos_store.handle_tx_output(
-            tx_hash,
-            genesis_state_root,
-            size,
-            genesis_tx_output.clone(),
-        )?;
+        let genesis_execution_info = rooch_db
+            .moveos_store
+            .handle_tx_output(tx_hash, genesis_tx_output.clone())?;
 
         // Save the genesis txs to sequencer
         let genesis_tx_order: u64 = 0;
@@ -390,15 +393,12 @@ impl RoochGenesis {
         let mut state_index_generator = 0u64;
         let mut indexer_object_state_changes = IndexerObjectStateChanges::default();
 
-        let resolver = RootObjectResolver::new(inited_root.clone(), &rooch_db.moveos_store);
-        for (object_id, object_change) in genesis_tx_output.changeset.changes {
+        for (_field_key, object_change) in genesis_tx_output.changeset.changes {
             state_index_generator = handle_object_change(
                 state_index_generator,
                 genesis_tx_order,
                 &mut indexer_object_state_changes,
-                object_id,
                 object_change,
-                &resolver,
             )?;
         }
         rooch_db
@@ -475,7 +475,8 @@ mod tests {
         );
 
         let opt = RoochOpt::new_with_temp_store().expect("create rooch opt failed");
-        let rooch_db = RoochDB::init(&opt.store_config()).expect("init rooch db failed");
+        let rooch_db = RoochDB::init_with_mock_metrics_for_test(&opt.store_config())
+            .expect("init rooch db failed");
 
         let root = genesis.init_genesis(&rooch_db).unwrap();
 
@@ -498,9 +499,7 @@ mod tests {
                 .collect::<BTreeMap<_, _>>(),
         );
 
-        let module_store_state = resolver
-            .get_object(&ModuleStore::module_store_id())
-            .unwrap();
+        let module_store_state = resolver.get_object(&ModuleStore::object_id()).unwrap();
         assert!(module_store_state.is_some());
         let module_store_obj = module_store_state
             .unwrap()
@@ -552,8 +551,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_builtin_genesis_init() {
+    #[tokio::test]
+    async fn test_builtin_genesis_init() {
         let _ = tracing_subscriber::fmt::try_init();
         {
             let network = BuiltinChainID::Local.into();
@@ -577,8 +576,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_custom_genesis_init() {
+    #[tokio::test]
+    async fn test_custom_genesis_init() {
         let network = RoochNetwork::new(100.into(), BuiltinChainID::Local.genesis_config().clone());
         let genesis = RoochGenesis::build(network.clone()).unwrap();
         genesis_init_test_case(network, genesis);

@@ -31,7 +31,7 @@ pub struct ObjectCommand {
 
     /// Max number of items returned per page
     #[clap(long)]
-    limit: Option<usize>,
+    limit: Option<u64>,
 
     /// descending order
     #[clap(short = 'd', long, default_value = "false")]

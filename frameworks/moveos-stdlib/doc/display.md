@@ -7,8 +7,7 @@
 
 -  [Resource `Display`](#0x2_display_Display)
 -  [Struct `DisplayCreate`](#0x2_display_DisplayCreate)
--  [Function `resource_display`](#0x2_display_resource_display)
--  [Function `object_display`](#0x2_display_object_display)
+-  [Function `display`](#0x2_display_display)
 -  [Function `set_value`](#0x2_display_set_value)
 -  [Function `borrow_value`](#0x2_display_borrow_value)
 -  [Function `borrow_mut_value`](#0x2_display_borrow_mut_value)
@@ -51,30 +50,16 @@ Event when Display<T> created
 
 
 
-<a name="0x2_display_resource_display"></a>
+<a name="0x2_display_display"></a>
 
-## Function `resource_display`
+## Function `display`
 
-Create or borrow_mut Display object for resource <code>T</code>
+Create or borrow_mut Display object for <code>T</code>
 Only the module of <code>T</code> can call this function.
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="display.md#0x2_display_resource_display">resource_display</a>&lt;T: key&gt;(): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;T&gt;&gt;
-</code></pre>
-
-
-
-<a name="0x2_display_object_display"></a>
-
-## Function `object_display`
-
-Create or borrow_mut Display object for <code>Object&lt;T&gt;</code>
-Only the module of <code>T</code> can call this function.
-
-
-<pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="display.md#0x2_display_object_display">object_display</a>&lt;T: key&gt;(): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;&gt;&gt;
+<b>public</b> <b>fun</b> <a href="display.md#0x2_display">display</a>&lt;T: key&gt;(): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;T&gt;&gt;
 </code></pre>
 
 

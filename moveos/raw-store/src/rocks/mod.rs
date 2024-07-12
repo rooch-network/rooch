@@ -12,8 +12,9 @@ use std::path::Path;
 
 use anyhow::{ensure, format_err, Error, Result};
 use rocksdb::{
-    BlockBasedOptions, Cache, ColumnFamily, DBCompressionType, Options, ReadOptions,
-    WriteBatch as DBWriteBatch, WriteOptions, DB,
+    statistics, AsColumnFamilyRef, BlockBasedIndexType, BlockBasedOptions, CStrLike, Cache,
+    ColumnFamily, ColumnFamilyDescriptor, DBCompressionType, DBRawIterator, DBRecoveryMode,
+    Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB,
 };
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -22,21 +23,19 @@ use moveos_common::utils::{check_open_fds_limit, from_bytes};
 use moveos_config::store_config::RocksdbConfig;
 
 use crate::errors::RawStoreError;
-use crate::metrics::{record_metrics, StoreMetrics};
 use crate::rocks::batch::WriteBatch;
 use crate::traits::DBStore;
 use crate::{ColumnFamilyName, WriteOp};
 
 pub mod batch;
 
-pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
+pub const DEFAULT_COLUMN_FAMILY_NAME: ColumnFamilyName = "default";
 pub const RES_FDS: u64 = 4096;
 
 #[allow(clippy::upper_case_acronyms)]
 pub struct RocksDB {
     db: DB,
-    cfs: Vec<ColumnFamilyName>,
-    metrics: Option<StoreMetrics>,
+    pub(crate) cfs: Vec<ColumnFamilyName>,
 }
 
 impl RocksDB {
@@ -44,9 +43,8 @@ impl RocksDB {
         db_path: P,
         column_families: Vec<ColumnFamilyName>,
         rocksdb_config: RocksdbConfig,
-        metrics: Option<StoreMetrics>,
     ) -> Result<Self> {
-        Self::open_with_cfs(db_path, column_families, false, rocksdb_config, metrics)
+        Self::open_with_cfs(db_path, column_families, false, rocksdb_config)
     }
 
     pub fn open_with_cfs(
@@ -54,7 +52,6 @@ impl RocksDB {
         column_families: Vec<ColumnFamilyName>,
         readonly: bool,
         rocksdb_config: RocksdbConfig,
-        metrics: Option<StoreMetrics>,
     ) -> Result<Self> {
         let path = root_path.as_ref();
 
@@ -69,7 +66,7 @@ impl RocksDB {
         if Self::db_exists(path) {
             let cf_vec = Self::list_cf(path)?;
             let mut db_cfs_set: HashSet<_> = cf_vec.iter().collect();
-            db_cfs_set.remove(&DEFAULT_PREFIX_NAME.to_string());
+            db_cfs_set.remove(&DEFAULT_COLUMN_FAMILY_NAME.to_string());
             ensure!(
                 db_cfs_set.len() <= cfs_set.len(),
                 RawStoreError::StoreCheckError(format_err!(
@@ -112,7 +109,6 @@ impl RocksDB {
         Ok(RocksDB {
             db,
             cfs: column_families,
-            metrics,
         })
     }
 
@@ -125,7 +121,7 @@ impl RocksDB {
         let mut table_opts = BlockBasedOptions::default();
 
         // options for enabling partitioned index filter
-        table_opts.set_index_type(rocksdb::BlockBasedIndexType::TwoLevelIndexSearch);
+        table_opts.set_index_type(BlockBasedIndexType::TwoLevelIndexSearch);
         table_opts.set_bloom_filter(10 as c_double, false); // we use get op frequently, so set bloom filter to reduce disk read
         table_opts.set_partition_filters(true);
         table_opts.set_metadata_block_size(4096);
@@ -153,6 +149,11 @@ impl RocksDB {
                 ]);
                 cf_opts.set_block_based_table_factory(&table_opts);
 
+                cf_opts.set_enable_blob_files(true);
+                cf_opts.set_min_blob_size(1024);
+                cf_opts.set_enable_blob_gc(false);
+                cf_opts.set_blob_compression_type(DBCompressionType::Lz4);
+
                 if (*cf_name) == "state_node" {
                     cf_opts.set_write_buffer_size(512 * 1024 * 1024);
                     cf_opts.set_max_write_buffer_number(4);
@@ -164,7 +165,7 @@ impl RocksDB {
                     cf_opts.set_compaction_readahead_size(2 * 1024 * 1024);
                 }
 
-                rocksdb::ColumnFamilyDescriptor::new((*cf_name).to_string(), cf_opts)
+                ColumnFamilyDescriptor::new((*cf_name).to_string(), cf_opts)
             }),
         )?;
         Ok(inner)
@@ -223,7 +224,7 @@ impl RocksDB {
         rocksdb_current_file.is_file()
     }
 
-    fn get_cf_handle(&self, cf_name: &str) -> &ColumnFamily {
+    pub fn get_cf_handle(&self, cf_name: &str) -> &ColumnFamily {
         self.db.cf_handle(cf_name).unwrap_or_else(|| {
             panic!(
                 "DB::cf_handle not found for column family name: {}",
@@ -249,23 +250,21 @@ impl RocksDB {
         let cache = Cache::new_lru_cache(config.row_cache_size as usize);
         db_opts.set_row_cache(&cache);
         db_opts.set_enable_pipelined_write(true);
-        db_opts.set_wal_recovery_mode(rocksdb::DBRecoveryMode::PointInTime); // for memtable crash recovery
+        db_opts.set_wal_recovery_mode(DBRecoveryMode::PointInTime); // for memtable crash recovery
         db_opts.enable_statistics();
-        db_opts.set_statistics_level(rocksdb::statistics::StatsLevel::ExceptTimeForMutex);
+        db_opts.set_statistics_level(statistics::StatsLevel::ExceptTimeForMutex);
         db_opts
-
-        // db_opts.enable_statistics();
     }
     fn iter_with_direction<K, V>(
         &self,
-        prefix_name: &str,
+        cf_name: &str,
         direction: ScanDirection,
     ) -> Result<SchemaIterator<K, V>>
     where
         K: Serialize + DeserializeOwned,
         V: Serialize + DeserializeOwned,
     {
-        let cf_handle = self.get_cf_handle(prefix_name);
+        let cf_handle = self.get_cf_handle(cf_name);
         Ok(SchemaIterator::new(
             self.db
                 .raw_iterator_cf_opt(&cf_handle, ReadOptions::default()),
@@ -274,27 +273,35 @@ impl RocksDB {
     }
 
     /// Returns a forward [`SchemaIterator`] on a certain schema.
-    pub fn iter<K, V>(&self, prefix_name: &str) -> Result<SchemaIterator<K, V>>
+    pub fn iter<K, V>(&self, cf_name: &str) -> Result<SchemaIterator<K, V>>
     where
         K: Serialize + DeserializeOwned,
         V: Serialize + DeserializeOwned,
     {
-        self.iter_with_direction(prefix_name, ScanDirection::Forward)
+        self.iter_with_direction(cf_name, ScanDirection::Forward)
     }
 
     /// Returns a backward [`SchemaIterator`] on a certain schema.
-    pub fn rev_iter<K, V>(&self, prefix_name: &str) -> Result<SchemaIterator<K, V>>
+    pub fn rev_iter<K, V>(&self, cf_name: &str) -> Result<SchemaIterator<K, V>>
     where
         K: Serialize + DeserializeOwned,
         V: Serialize + DeserializeOwned,
     {
-        self.iter_with_direction(prefix_name, ScanDirection::Backward)
+        self.iter_with_direction(cf_name, ScanDirection::Backward)
     }
 
     fn sync_write_options() -> WriteOptions {
         let mut opts = WriteOptions::new();
         opts.set_sync(true);
         opts
+    }
+
+    pub fn property_int_value_cf(
+        &self,
+        cf: &impl AsColumnFamilyRef,
+        name: impl CStrLike,
+    ) -> Result<Option<u64>, rocksdb::Error> {
+        self.db.property_int_value_cf(cf, name)
     }
 }
 
@@ -304,7 +311,7 @@ pub enum ScanDirection {
 }
 
 pub struct SchemaIterator<'a, K, V> {
-    db_iter: rocksdb::DBRawIterator<'a>,
+    db_iter: DBRawIterator<'a>,
     direction: ScanDirection,
     phantom_k: PhantomData<K>,
     phantom_v: PhantomData<V>,
@@ -315,7 +322,7 @@ where
     K: Serialize + DeserializeOwned,
     V: Serialize + DeserializeOwned,
 {
-    fn new(db_iter: rocksdb::DBRawIterator<'a>, direction: ScanDirection) -> Self {
+    fn new(db_iter: DBRawIterator<'a>, direction: ScanDirection) -> Self {
         SchemaIterator {
             db_iter,
             direction,
@@ -380,61 +387,44 @@ where
 }
 
 impl DBStore for RocksDB {
-    fn get(&self, prefix_name: &str, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        record_metrics("db", prefix_name, "get", self.metrics.as_ref()).call(|| {
-            let cf_handle = self.get_cf_handle(prefix_name);
-            let result = self.db.get_cf(&cf_handle, key)?;
-            Ok(result)
-        })
+    fn get(&self, cf_name: &str, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        let cf_handle = self.get_cf_handle(cf_name);
+        let result = self.db.get_cf(&cf_handle, key)?;
+        Ok(result)
     }
 
-    fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
-        if let Some(metrics) = self.metrics.as_ref() {
-            metrics
-                .store_item_bytes
-                .with_label_values(&[prefix_name])
-                .observe((key.len() + value.len()) as f64);
-        }
-
-        record_metrics("db", prefix_name, "put", self.metrics.as_ref()).call(|| {
-            let cf_handle = self.get_cf_handle(prefix_name);
-            self.db
-                .put_cf_opt(&cf_handle, &key, &value, &Self::default_write_options())?;
-            Ok(())
-        })
+    fn put(&self, cf_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+        let cf_handle = self.get_cf_handle(cf_name);
+        self.db
+            .put_cf_opt(&cf_handle, key, value, &Self::default_write_options())?;
+        Ok(())
     }
 
-    fn contains_key(&self, prefix_name: &str, key: &[u8]) -> Result<bool> {
-        record_metrics("db", prefix_name, "contains_key", self.metrics.as_ref()).call(|| match self
-            .get(prefix_name, key)
-        {
+    fn contains_key(&self, cf_name: &str, key: &[u8]) -> Result<bool> {
+        match self.get(cf_name, key) {
             Ok(Some(_)) => Ok(true),
             _ => Ok(false),
-        })
+        }
     }
-    fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
-        record_metrics("db", prefix_name, "remove", self.metrics.as_ref()).call(|| {
-            let cf_handle = self.get_cf_handle(prefix_name);
-            self.db.delete_cf(&cf_handle, &key)?;
-            Ok(())
-        })
+    fn remove(&self, cf_name: &str, key: Vec<u8>) -> Result<()> {
+        let cf_handle = self.get_cf_handle(cf_name);
+        self.db.delete_cf(&cf_handle, key)?;
+        Ok(())
     }
 
     /// Writes a group of records wrapped in a WriteBatch.
-    fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
-        record_metrics("db", prefix_name, "write_batch", self.metrics.as_ref()).call(|| {
-            let mut db_batch = DBWriteBatch::default();
-            let cf_handle = self.get_cf_handle(prefix_name);
-            for (key, write_op) in &batch.rows {
-                match write_op {
-                    WriteOp::Value(value) => db_batch.put_cf(&cf_handle, key, value),
-                    WriteOp::Deletion => db_batch.delete_cf(&cf_handle, key),
-                };
-            }
-            self.db
-                .write_opt(db_batch, &Self::default_write_options())?;
-            Ok(())
-        })
+    fn write_batch(&self, cf_name: &str, batch: WriteBatch) -> Result<()> {
+        let mut db_batch = DBWriteBatch::default();
+        let cf_handle = self.get_cf_handle(cf_name);
+        for (key, write_op) in &batch.rows {
+            match write_op {
+                WriteOp::Value(value) => db_batch.put_cf(&cf_handle, key, value),
+                WriteOp::Deletion => db_batch.delete_cf(&cf_handle, key),
+            };
+        }
+        self.db
+            .write_opt(db_batch, &Self::default_write_options())?;
+        Ok(())
     }
 
     fn get_len(&self) -> Result<u64> {
@@ -445,56 +435,43 @@ impl DBStore for RocksDB {
         unimplemented!()
     }
 
-    fn put_sync(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
-        if let Some(metrics) = self.metrics.as_ref() {
-            metrics
-                .store_item_bytes
-                .with_label_values(&[prefix_name])
-                .observe((key.len() + value.len()) as f64);
+    fn put_sync(&self, cf_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+        let cf_handle = self.get_cf_handle(cf_name);
+        self.db
+            .put_cf_opt(&cf_handle, key, value, &Self::sync_write_options())?;
+        Ok(())
+    }
+
+    fn write_batch_sync(&self, cf_name: &str, batch: WriteBatch) -> Result<()> {
+        let mut db_batch = DBWriteBatch::default();
+        let cf_handle = self.get_cf_handle(cf_name);
+        for (key, write_op) in &batch.rows {
+            match write_op {
+                WriteOp::Value(value) => db_batch.put_cf(&cf_handle, key, value),
+                WriteOp::Deletion => db_batch.delete_cf(&cf_handle, key),
+            };
         }
-
-        record_metrics("db", prefix_name, "put_sync", self.metrics.as_ref()).call(|| {
-            let cf_handle = self.get_cf_handle(prefix_name);
-            self.db
-                .put_cf_opt(&cf_handle, &key, &value, &Self::sync_write_options())?;
-            Ok(())
-        })
+        self.db.write_opt(db_batch, &Self::sync_write_options())?;
+        Ok(())
     }
 
-    fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
-        record_metrics("db", prefix_name, "write_batch_sync", self.metrics.as_ref()).call(|| {
-            let mut db_batch = DBWriteBatch::default();
-            let cf_handle = self.get_cf_handle(prefix_name);
-            for (key, write_op) in &batch.rows {
-                match write_op {
-                    WriteOp::Value(value) => db_batch.put_cf(&cf_handle, key, value),
-                    WriteOp::Deletion => db_batch.delete_cf(&cf_handle, key),
-                };
-            }
-            self.db.write_opt(db_batch, &Self::sync_write_options())?;
-            Ok(())
-        })
-    }
+    fn multi_get(&self, cf_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
+        let cf_handle = self.get_cf_handle(cf_name);
+        let cf_handles = iter::repeat(&cf_handle)
+            .take(keys.len())
+            .collect::<Vec<_>>();
+        let keys_multi = keys
+            .iter()
+            .zip(cf_handles)
+            .map(|(key, handle)| (handle, key.as_slice()))
+            .collect::<Vec<_>>();
 
-    fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
-        record_metrics("db", prefix_name, "multi_get", self.metrics.as_ref()).call(|| {
-            let cf_handle = self.get_cf_handle(prefix_name);
-            let cf_handles = iter::repeat(&cf_handle)
-                .take(keys.len())
-                .collect::<Vec<_>>();
-            let keys_multi = keys
-                .iter()
-                .zip(cf_handles)
-                .map(|(key, handle)| (handle, key.as_slice()))
-                .collect::<Vec<_>>();
-
-            let result = self.db.multi_get_cf(keys_multi);
-            let mut res = vec![];
-            for item in result {
-                let item = item?;
-                res.push(item);
-            }
-            Ok(res)
-        })
+        let result = self.db.multi_get_cf(keys_multi);
+        let mut res = vec![];
+        for item in result {
+            let item = item?;
+            res.push(item);
+        }
+        Ok(res)
     }
 }

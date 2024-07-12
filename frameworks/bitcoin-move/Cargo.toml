@@ -29,7 +29,7 @@ smallvec = { workspace = true }
 hex = { workspace = true }
 bitcoin = { workspace = true }
 bs58 = { workspace = true, features = ["check"] }
-http = { workspace = true }
+axum = { workspace = true }
 tracing = { workspace = true }
 serde_json = { workspace = true }
 ciborium = { workspace = true }

@@ -1,9 +1,7 @@
 import Image from 'next/image'
-import { usePathname } from 'next/navigation'
+import Head from 'next/head'
 import { getPagesUnderRoute } from 'nextra/context'
 import ROOCH_TEAM from '../../data/team'
-import { useState, useEffect } from 'react'
-import Head from 'next/head'
 
 interface FrontMatter {
   title: string
@@ -19,29 +17,16 @@ interface CustomPage {
 }
 
 function isCustomPage(page: any): page is CustomPage {
-  return page && page.frontMatter && typeof page.frontMatter.title === 'string'
+  return (
+    typeof page === 'object' &&
+    page !== null &&
+    'frontMatter' in page &&
+    typeof page.frontMatter === 'object' &&
+    typeof page.frontMatter.title === 'string'
+  )
 }
 
-export default function PostHeader() {
-  const pathname = usePathname()
-  const [page, setPage] = useState<CustomPage | null>(null)
-  const [ogImage, setOgImage] = useState('https://rooch.network/logo/rooch-banner.png')
-
-  const fetchPage = () => {
-    const pages = getPagesUnderRoute('/blog') as unknown as any[]
-    const customPages = pages.filter(isCustomPage) as CustomPage[]
-    const currentPage = customPages.find((page) => page.route === pathname)
-    if (currentPage) {
-      setPage(currentPage)
-      if (currentPage.frontMatter.image) {
-        setOgImage(`https://rooch.network${currentPage.frontMatter.image}`)
-      }
-    }
-  }
-  useEffect(() => {
-    fetchPage()
-  }, [pathname])
-
+export default function PostHeader({ page, ogImage }: { page: CustomPage; ogImage: string }) {
   return page ? (
     <>
       <Head>
@@ -60,7 +45,7 @@ export default function PostHeader() {
           {page.frontMatter.category}
           {' | '}
           <Image
-            src={ROOCH_TEAM[page.frontMatter.author].avatar}
+            src={page.frontMatter.image || '/default-avatar.png'}
             alt={page.frontMatter.author}
             width={20}
             height={20}
@@ -79,4 +64,27 @@ export default function PostHeader() {
       </div>
     </>
   ) : null
+}
+
+export async function getStaticProps(context: any) {
+  const pages = (await getPagesUnderRoute('/blog')) as unknown[]
+  const customPages = pages.filter(isCustomPage)
+  const currentPage = customPages.find((page) => page.route === context.params.path)
+
+  return {
+    props: {
+      page: currentPage,
+      ogImage:
+        currentPage && currentPage.frontMatter.image
+          ? `https://rooch.network${currentPage.frontMatter.image}`
+          : 'https://rooch.network/logo/rooch-banner.png',
+    },
+  }
+}
+
+export async function getStaticPaths() {
+  const pages = (await getPagesUnderRoute('/blog')) as unknown[]
+  const paths = pages.filter(isCustomPage).map((page) => ({ params: { path: page.route } }))
+
+  return { paths, fallback: false }
 }

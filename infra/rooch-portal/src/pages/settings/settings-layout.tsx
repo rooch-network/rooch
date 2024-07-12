@@ -3,8 +3,10 @@
 import { RoochAddress } from '@/pages/settings/components/rooch-address'
 import { useTranslation } from 'react-i18next'
 import { ManageSessions } from '@/pages/settings/components/manage-sessions.tsx'
+import { useCurrentAddress } from '@roochnetwork/rooch-sdk-kit'
 
 export const SettingsLayout = () => {
+  const address = useCurrentAddress()
   const { t } = useTranslation()
   return (
     <div className="h-full flex-1 flex-col space-y-6 flex rounded-lg md:shadow-custom md:p-4 md:dark:shadow-muted">
@@ -26,7 +28,7 @@ export const SettingsLayout = () => {
             <p className="text-muted-foreground">{t('Settings.sessionSubTitle')}</p>
           </span>
         </div>
-        <ManageSessions />
+        {address !== undefined ? <ManageSessions /> : <></>}
       </div>
     </div>
   )

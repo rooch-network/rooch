@@ -19,8 +19,8 @@ fn init_rooch_db(opt: &RoochOpt) -> Result<RoochDB> {
     Ok(rooch_db)
 }
 
-#[test]
-fn test_sequencer() -> Result<()> {
+#[tokio::test]
+async fn test_sequencer() -> Result<()> {
     let opt = RoochOpt::new_with_temp_store()?;
     let mut last_tx_order = 0;
     {

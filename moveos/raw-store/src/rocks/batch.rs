@@ -43,6 +43,18 @@ impl WriteBatch {
         self.rows.clear();
         Ok(())
     }
+
+    pub fn size_in_bytes(&self) -> usize {
+        let mut batch_size: usize = 0;
+        for (k, op) in self.rows.iter() {
+            batch_size += k.len();
+            match op {
+                WriteOp::Value(v) => batch_size += v.len(),
+                WriteOp::Deletion => {}
+            }
+        }
+        batch_size
+    }
 }
 
 impl<K, V> TryFrom<CodecWriteBatch<K, V>> for WriteBatch

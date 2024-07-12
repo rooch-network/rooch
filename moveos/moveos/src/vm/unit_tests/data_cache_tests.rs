@@ -1,8 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::sync::Arc;
-
 use crate::vm::data_cache::{into_change_set, MoveosDataCache};
 #[cfg(test)]
 use crate::vm::unit_tests::vm_arguments_tests::{make_script_function, RemoteStore};
@@ -10,8 +8,14 @@ use move_binary_format::file_format::{Signature, SignatureToken};
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::move_vm::MoveVM;
 use moveos_object_runtime::runtime::ObjectRuntime;
-use moveos_types::moveos_std::{object::RootObjectEntity, tx_context::TxContext};
+use moveos_types::{
+    moveos_std::{
+        module_store::ModuleStore, object::ObjectMeta, timestamp::Timestamp, tx_context::TxContext,
+    },
+    state::{MoveState, ObjectState},
+};
 use parking_lot::RwLock;
+use std::rc::Rc;
 
 #[test]
 #[allow(clippy::arc_with_non_send_sync)]
@@ -26,18 +30,18 @@ fn publish_and_load_module() {
     let move_vm = MoveVM::new(vec![]).unwrap();
     let remote_view = RemoteStore::new();
     let loader = move_vm.runtime.loader();
-    let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(
+    let object_runtime = Rc::new(RwLock::new(ObjectRuntime::genesis(
         TxContext::random_for_testing_only(),
-        RootObjectEntity::genesis_root_object(),
+        ObjectMeta::genesis_root(),
+        &remote_view,
+        vec![
+            (
+                ObjectState::new_timestamp(Timestamp { milliseconds: 0 }),
+                Timestamp::type_layout(),
+            ),
+            (ObjectState::new_module_store(), ModuleStore::type_layout()),
+        ],
     )));
-    object_runtime
-        .write()
-        .init_module_store(&remote_view)
-        .unwrap();
-    object_runtime
-        .write()
-        .init_timestamp_store(&remote_view)
-        .unwrap();
 
     let mut data_cache = MoveosDataCache::new(&remote_view, loader, object_runtime.clone());
 

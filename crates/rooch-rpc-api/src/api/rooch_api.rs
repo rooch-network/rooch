@@ -3,21 +3,20 @@
 
 use crate::jsonrpc_types::account_view::BalanceInfoView;
 use crate::jsonrpc_types::address::RoochOrBitcoinAddressView;
-use crate::jsonrpc_types::event_view::EventFilterView;
+use crate::jsonrpc_types::event_view::{EventFilterView, IndexerEventIDView};
 use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionWithInfoView};
 use crate::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
-    EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
-    IndexerEventPageView, IndexerObjectStatePageView, KeyStateHexView, ObjectIDVecView,
-    ObjectIDView, ObjectStateFilterView, ObjectStateView, QueryOptions, StateOptions,
-    StatePageView, StateView, StrView, StructTagView, TransactionWithInfoPageView, TxOptions,
+    EventPageView, ExecuteTransactionResponseView, FieldKeyView, FunctionCallView, H256View,
+    IndexerEventPageView, IndexerObjectStatePageView, IndexerStateIDView, ModuleABIView,
+    ObjectIDVecView, ObjectIDView, ObjectStateFilterView, ObjectStateView, QueryOptions,
+    RoochAddressView, StateOptions, StatePageView, StrView, StructTagView,
+    TransactionWithInfoPageView, TxOptions,
 };
-use jsonrpsee::core::RpcResult;
+use crate::RpcResult;
 use jsonrpsee::proc_macros::rpc;
-use moveos_types::{access_path::AccessPath, state::KeyState};
+use moveos_types::{access_path::AccessPath, state::FieldKey};
 use rooch_open_rpc_macros::open_rpc;
-use rooch_types::indexer::event::IndexerEventID;
-use rooch_types::indexer::state::IndexerStateID;
 
 #[open_rpc(namespace = "rooch")]
 #[rpc(server, client, namespace = "rooch")]
@@ -55,7 +54,7 @@ pub trait RoochAPI {
         &self,
         access_path: AccessPathView,
         state_option: Option<StateOptions>,
-    ) -> RpcResult<Vec<Option<StateView>>>;
+    ) -> RpcResult<Vec<Option<ObjectStateView>>>;
 
     /// List the states by access_path
     /// If the StateOptions.decode is true, the state is decoded and the decoded value is returned in the response.
@@ -64,7 +63,7 @@ pub trait RoochAPI {
         &self,
         access_path: AccessPathView,
         cursor: Option<String>,
-        limit: Option<StrView<usize>>,
+        limit: Option<StrView<u64>>,
         state_option: Option<StateOptions>,
     ) -> RpcResult<StatePageView>;
 
@@ -81,10 +80,10 @@ pub trait RoochAPI {
     async fn get_field_states(
         &self,
         object_id: ObjectIDView,
-        field_key: Vec<KeyStateHexView>,
+        field_key: Vec<FieldKeyView>,
         state_option: Option<StateOptions>,
-    ) -> RpcResult<Vec<Option<StateView>>> {
-        let key_states = field_key.into_iter().map(KeyState::from).collect();
+    ) -> RpcResult<Vec<Option<ObjectStateView>>> {
+        let key_states = field_key.into_iter().map(FieldKey::from).collect();
         let access_path_view =
             AccessPathView::from(AccessPath::fields(object_id.into(), key_states));
         self.get_states(access_path_view, state_option).await
@@ -96,7 +95,7 @@ pub trait RoochAPI {
         &self,
         object_id: ObjectIDView,
         cursor: Option<String>,
-        limit: Option<StrView<usize>>,
+        limit: Option<StrView<u64>>,
         state_option: Option<StateOptions>,
     ) -> RpcResult<StatePageView> {
         let access_path_view =
@@ -143,9 +142,17 @@ pub trait RoochAPI {
     async fn get_balances(
         &self,
         account_addr: RoochOrBitcoinAddressView,
-        cursor: Option<IndexerStateID>,
-        limit: Option<StrView<usize>>,
+        cursor: Option<IndexerStateIDView>,
+        limit: Option<StrView<u64>>,
     ) -> RpcResult<BalanceInfoPageView>;
+
+    /// get module ABI by module id
+    #[method(name = "getModuleABI")]
+    async fn get_module_abi(
+        &self,
+        module_addr: RoochAddressView,
+        module_name: String,
+    ) -> RpcResult<Option<ModuleABIView>>;
 
     /// Query the transactions indexer by transaction filter
     #[method(name = "queryTransactions")]
@@ -154,7 +161,7 @@ pub trait RoochAPI {
         filter: TransactionFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<StrView<u64>>,
-        limit: Option<StrView<usize>>,
+        limit: Option<StrView<u64>>,
         query_option: Option<QueryOptions>,
     ) -> RpcResult<TransactionWithInfoPageView>;
 
@@ -164,8 +171,8 @@ pub trait RoochAPI {
         &self,
         filter: EventFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
-        cursor: Option<IndexerEventID>,
-        limit: Option<StrView<usize>>,
+        cursor: Option<IndexerEventIDView>,
+        limit: Option<StrView<u64>>,
         query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerEventPageView>;
 
@@ -175,8 +182,8 @@ pub trait RoochAPI {
         &self,
         filter: ObjectStateFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
-        cursor: Option<IndexerStateID>,
-        limit: Option<StrView<usize>>,
+        cursor: Option<IndexerStateIDView>,
+        limit: Option<StrView<u64>>,
         query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerObjectStatePageView>;
 }

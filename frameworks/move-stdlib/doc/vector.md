@@ -254,7 +254,6 @@ Reverses the order of the elements [left, right) in the vector <code>v</code> in
 
 ## Function `append`
 
-Pushes all of the elements of the <code>other</code> vector into the <code>lhs</code> vector.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_append">append</a>&lt;Element&gt;(lhs: &<b>mut</b> <a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;, other: <a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;)

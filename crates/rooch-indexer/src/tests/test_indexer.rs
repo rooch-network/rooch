@@ -8,7 +8,7 @@ use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::h256::H256;
-use moveos_types::moveos_std::object::{ObjectEntity, ObjectID};
+use moveos_types::moveos_std::object::{ObjectEntity, ObjectID, ObjectMeta};
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::MoveStructType;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
@@ -27,17 +27,16 @@ use rooch_types::test_utils::{
 fn random_update_object_states(states: Vec<IndexerObjectState>) -> Vec<IndexerObjectState> {
     states
         .into_iter()
-        .map(|item| IndexerObjectState {
-            object_id: item.object_id,
-            owner: item.owner,
-            flag: item.flag,
-            object_type: item.object_type,
-            state_root: item.state_root,
-            size: item.size + 1,
-            tx_order: item.tx_order,
-            state_index: item.state_index,
-            created_at: item.created_at,
-            updated_at: item.updated_at + 1,
+        .map(|item| {
+            let mut metadata = item.metadata;
+            metadata.size = metadata.size + 1;
+            metadata.updated_at = metadata.updated_at + 1;
+
+            IndexerObjectState {
+                metadata,
+                tx_order: item.tx_order,
+                state_index: item.state_index,
+            }
         })
         .collect()
 }
@@ -48,8 +47,8 @@ fn random_new_object_states() -> Result<Vec<IndexerObjectState>> {
     let mut state_index = 0u64;
     let mut rng = thread_rng();
     for n in 0..rng.gen_range(1..=10) {
-        let state = IndexerObjectState::new_from_raw_object(
-            random_table_object()?.to_raw(),
+        let state = IndexerObjectState::new(
+            random_table_object()?.into_state().metadata,
             n as u64,
             state_index,
         );
@@ -94,7 +93,7 @@ fn test_transaction_store() -> Result<()> {
     let tx_context = TxContext::new_readonly_ctx(AccountAddress::random());
     let move_action = random_verified_move_action();
     let random_moveos_tx = VerifiedMoveOSTransaction {
-        root: ObjectEntity::genesis_root_object(),
+        root: ObjectMeta::genesis_root(),
         ctx: tx_context,
         action: move_action,
         pre_execute_functions: random_function_calls(),
@@ -130,7 +129,7 @@ fn test_event_store() -> Result<()> {
     let tx_context = TxContext::new_readonly_ctx(AccountAddress::random());
     let move_action = random_verified_move_action();
     let random_moveos_tx = VerifiedMoveOSTransaction {
-        root: ObjectEntity::genesis_root_object(),
+        root: ObjectMeta::genesis_root(),
         ctx: tx_context,
         action: move_action,
         pre_execute_functions: random_function_calls(),
@@ -161,7 +160,7 @@ fn test_state_store() -> Result<()> {
     let mut new_object_states = random_new_object_states()?;
     let new_object_ids = new_object_states
         .iter()
-        .map(|state| state.object_id.clone())
+        .map(|state| state.metadata.id.clone())
         .collect::<Vec<ObjectID>>();
     let mut update_object_states = random_update_object_states(new_object_states.clone());
     let remove_object_states = random_remove_object_states();
@@ -193,14 +192,14 @@ fn test_object_type_query() -> Result<()> {
         object_id.clone(),
         owner,
         0,
-        H256::random(),
+        Some(H256::random()),
         0,
         0,
         0,
         CoinStore::<GasCoin>::new(100u64.into(), false),
     );
-    let raw_obj = coin_store_obj.to_raw();
-    let state = IndexerObjectState::new_from_raw_object(raw_obj, 1, 0);
+    let raw_obj = coin_store_obj.into_state();
+    let state = IndexerObjectState::new(raw_obj.metadata, 1, 0);
     let object_states = vec![state];
     indexer_store.persist_or_update_object_states(object_states.clone())?;
     // filter by exact object type
@@ -245,7 +244,7 @@ fn test_escape_transaction() -> Result<()> {
     let tx_context = TxContext::new_readonly_ctx(AccountAddress::random());
     let move_action = random_verified_move_action();
     let random_moveos_tx = VerifiedMoveOSTransaction {
-        root: ObjectEntity::genesis_root_object(),
+        root: ObjectMeta::genesis_root(),
         ctx: tx_context,
         action: move_action,
         pre_execute_functions: random_function_calls(),
