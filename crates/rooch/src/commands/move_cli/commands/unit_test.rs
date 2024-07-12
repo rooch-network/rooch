@@ -25,6 +25,7 @@ use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use rooch_genesis::FrameworksGasParameters;
 use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::genesis_config;
 use serde_json::Value;
 use std::rc::Rc;
 use std::{collections::BTreeMap, path::PathBuf};
@@ -134,10 +135,11 @@ static RESOLVER: Lazy<Box<RootObjectResolver<MoveOSStore>>> = Lazy::new(|| {
 #[allow(clippy::arc_with_non_send_sync)]
 fn new_moveos_natives_runtime(ext: &mut NativeContextExtensions) {
     let resolver = Lazy::force(&RESOLVER).as_ref();
-    let object_runtime = Rc::new(RwLock::new(ObjectRuntime::new(
+    let object_runtime = Rc::new(RwLock::new(ObjectRuntime::genesis(
         TxContext::random_for_testing_only(),
         ObjectMeta::genesis_root(),
         resolver,
+        genesis_config::G_LOCAL_CONFIG.genesis_objects.clone(),
     )));
     let table_ext = ObjectRuntimeContext::new(object_runtime);
     let module_ext = NativeModuleContext::new(resolver);
