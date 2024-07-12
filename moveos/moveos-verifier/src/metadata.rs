@@ -1085,9 +1085,9 @@ fn check_data_struct_fields_type(
                 .to_string();
             let full_struct_name = format!("{}::{}", module.get_full_name_str(), struct_name);
 
-            if is_allowed_data_struct_type(&full_struct_name) {
-                return true;
-            }
+            //if is_allowed_data_struct_type(&full_struct_name) {
+            //    return true;
+            //}
 
             let struct_module = module_env.env.get_module(*module_id);
             let struct_env = struct_module.get_struct(*struct_id);
@@ -1431,9 +1431,9 @@ fn check_func_data_struct(
             );
 
             // #[data_struct(T)] supports not only structs, but also string and ObjectID.
-            if is_allowed_data_struct_type(&full_struct_name) {
-                return (true, "".to_string());
-            }
+            //if is_allowed_data_struct_type(&full_struct_name) {
+            //    return (true, "".to_string());
+            //}
 
             let data_struct_opt = unsafe {
                 let data = GLOBAL_DATA_STRUCT.read().unwrap();

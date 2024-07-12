@@ -40,7 +40,8 @@ characters you should use the <code>all_characters_printable</code> predicate
 defined in this module.
 
 
-<pre><code><b>struct</b> <a href="ascii.md#0x1_ascii_String">String</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code>#[data_struct]
+<b>struct</b> <a href="ascii.md#0x1_ascii_String">String</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 

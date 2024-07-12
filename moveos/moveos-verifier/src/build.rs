@@ -348,18 +348,18 @@ pub fn inject_runtime_metadata<P: AsRef<Path>>(
             CompiledUnit::Module(named_module) => {
                 if let Some(module_metadata) = metadata.get(&named_module.module.self_id()) {
                     if !module_metadata.is_empty() {
-                        log::debug!(
+                        log::trace!(
                             "\n\nstart dump data structs map {:?}",
                             named_module.module.self_id().to_string()
                         );
                         for (k, v) in module_metadata.data_struct_map.iter() {
-                            log::debug!("{:?} -> {:?}", k, v);
+                            log::trace!("{:?} -> {:?}", k, v);
                         }
-                        log::debug!("\n");
+                        log::trace!("\n");
                         for (k, v) in module_metadata.data_struct_func_map.iter() {
-                            log::debug!("{:?} -> {:?}", k, v);
+                            log::trace!("{:?} -> {:?}", k, v);
                         }
-                        log::debug!(
+                        log::trace!(
                             "start dump data structs map {:?}\n\n",
                             named_module.module.self_id().to_string()
                         );
