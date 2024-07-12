@@ -9,7 +9,7 @@ use testcontainers::{
 };
 
 const NAME: &str = "bitseed/ord";
-const TAG: &str = "0.18.0-burn-rc2";
+const TAG: &str = "0.18.0-burn";
 
 #[derive(Debug, Default, Clone)]
 pub struct OrdImageArgs {
