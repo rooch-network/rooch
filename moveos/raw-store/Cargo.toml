@@ -21,8 +21,8 @@ serde_bytes = { workspace = true }
 hex = { workspace = true }
 parking_lot = { workspace = true }
 tap = { workspace = true }
+rocksdb = { workspace = true, features = ["lz4"] }
 
-rust-rocksdb = { workspace = true, features = ["lz4", "jemalloc"] }
 prometheus = { workspace = true }
 tokio = { workspace = true }
 once_cell = { workspace = true }
@@ -43,4 +43,3 @@ move-resource-viewer = { workspace = true }
 metrics = { workspace = true }
 moveos-common = { workspace = true }
 moveos-config = { workspace = true }
-

@@ -28,7 +28,6 @@ futures = { workspace = true }
 prometheus = { workspace = true }
 tap = { workspace = true }
 eyre = { workspace = true }
-rust-rocksdb = { workspace = true }
 tempfile = { workspace = true }
 
 anyhow = { workspace = true }
@@ -50,3 +49,4 @@ rooch-key = { workspace = true }
 rooch-types = { workspace = true }
 rooch-rpc-client = { workspace = true }
 rooch-rpc-api = { workspace = true }
+

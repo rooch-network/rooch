@@ -35,7 +35,6 @@ itertools = { workspace = true }
 hex = { workspace = true }
 regex = { workspace = true }
 serde-reflection = { workspace = true }
-serde-generate = { workspace = true }
 parking_lot = { workspace = true }
 bcs-ext = { workspace = true }
 rpassword = { workspace = true }
@@ -45,10 +44,9 @@ proptest = { optional = true, workspace = true }
 proptest-derive = { optional = true, workspace = true }
 csv = { workspace = true }
 tempfile = { workspace = true }
-ord = { workspace = true }
 redb = { workspace = true }
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
-tikv-jemallocator = { version = "0.5.4", features = ["unprefixed_malloc_on_supported_platforms"] }
+jemallocator = { version = "0.5.4", features = ["unprefixed_malloc_on_supported_platforms", "profiling"] }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }
@@ -98,3 +96,4 @@ rooch-db = { workspace = true }
 rooch-common = { workspace = true }
 
 framework-release = { workspace = true }
+
