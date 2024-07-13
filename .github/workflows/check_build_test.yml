@@ -2,14 +2,14 @@ name: Check-Build-Test
 
 on:
   push:
-    branches: ['main']
+    branches: [ 'main' ]
     paths-ignore:
       - 'docs/**'
       - 'fixtures/**'
       - 'kube/**'
       - '**.md'
   pull_request:
-    branches: ['main']
+    branches: [ 'main' ]
     paths-ignore:
       - 'docs/**'
       - 'fixtures/**'
@@ -59,7 +59,7 @@ jobs:
         run: ./scripts/pr.sh -c
       - name: Build
         run: cargo build
-      - name: Framework compatibiliy
+      - name: Framework compatibility
         run: cargo run --package framework-release --bin framework-release
       - name: Run Rooch init
         run: cargo run --bin rooch init --skip-password

@@ -35,8 +35,8 @@ cd "$SCRIPT_PATH/.." || exit
 
 function usage {
   echo "Usage:"
-  echo "Installs or updates necessary dev tools for Roochnetwork/moveos."
-  echo "-b batch mode, no user interactions and miminal output"
+  echo "Installs or updates necessary dev tools for Rooch-Network/moveos."
+  echo "-b batch mode, no user interactions and minimal output"
   echo "-p update ${HOME}/.profile"
   echo "-r install protoc and related tools"
   echo "-t install build tools"
