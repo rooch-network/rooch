@@ -25,8 +25,7 @@ use once_cell::sync::Lazy;
 use crate::error_code::ErrorCode;
 use crate::metadata::{
     check_metadata_format, extract_module_name, get_metadata_from_compiled_module,
-    is_allowed_data_struct_type, is_allowed_input_struct, is_defined_or_allowed_in_current_module,
-    is_std_option_type,
+    is_allowed_input_struct, is_defined_or_allowed_in_current_module, is_std_option_type,
 };
 
 const MAX_DATA_STRUCT_TYPE_DEPTH: u64 = 16;
@@ -1004,9 +1003,9 @@ fn check_field_type(
                 view.identifier_at(struct_handle.name)
             );
             // allow string::String, ascii::String as data struct
-            if is_allowed_data_struct_type(full_struct_name.as_str()) {
-                return Ok(true);
-            }
+            //if is_allowed_data_struct_type(full_struct_name.as_str()) {
+            //    return Ok(true);
+            //}
 
             let is_data_struct_opt = data_structs_map.get(full_struct_name.as_str());
             if is_data_struct_opt.is_none() {
@@ -1386,9 +1385,9 @@ fn validate_struct<Resolver>(
 where
     Resolver: ModuleResolver,
 {
-    if is_allowed_data_struct_type(struct_name) {
-        return (true, ErrorCode::UNKNOWN_CODE);
-    }
+    //if is_allowed_data_struct_type(struct_name) {
+    //    return (true, ErrorCode::UNKNOWN_CODE);
+    //}
 
     let (is_defined_in_current_module, other_module_id) =
         struct_in_current_module(current_module, struct_handle_idx);

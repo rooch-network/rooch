@@ -47,7 +47,7 @@ pub struct RustBindingTest {
     pub executor: ExecutorActor,
     pub reader_executor: ReaderExecutorActor,
     root: ObjectMeta,
-    moveos_store: MoveOSStore,
+    rooch_db: RoochDB,
 }
 
 impl RustBindingTest {
@@ -75,7 +75,7 @@ impl RustBindingTest {
         let reader_executor = ReaderExecutorActor::new(
             root.clone(),
             rooch_db.moveos_store.clone(),
-            rooch_db.rooch_store,
+            rooch_db.rooch_store.clone(),
         )?;
         Ok(Self {
             opt,
@@ -85,7 +85,7 @@ impl RustBindingTest {
             kp,
             executor,
             reader_executor,
-            moveos_store: rooch_db.moveos_store,
+            rooch_db,
         })
     }
 
@@ -102,11 +102,15 @@ impl RustBindingTest {
     }
 
     pub fn resolver(&self) -> RootObjectResolver<MoveOSStore> {
-        RootObjectResolver::new(self.root.clone(), &self.moveos_store)
+        RootObjectResolver::new(self.root.clone(), &self.rooch_db.moveos_store)
     }
 
     pub fn root(&self) -> &ObjectMeta {
         &self.root
+    }
+
+    pub fn rooch_db(&self) -> &RoochDB {
+        &self.rooch_db
     }
 
     //TODO let the module bundle to execute the function

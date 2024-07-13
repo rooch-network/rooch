@@ -26,9 +26,16 @@ mod smt_object;
 pub(crate) mod tests;
 mod update_set;
 
+/// MerkeHashType is a trait to indicate the type can be converted to H256.
+/// So the type can be used as the key of the Sparse Merkle Tree, and do not need to hash again.
+
 /// Load the tree node binary via hash
 pub trait NodeReader {
     fn get(&self, hash: &H256) -> Result<Option<Vec<u8>>>;
+}
+
+pub trait NodeWriter {
+    fn write_nodes(&self, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()>;
 }
 
 impl<K, V, NR> TreeReader<K, V> for NR
@@ -79,6 +86,13 @@ impl NodeReader for InMemoryNodeStore {
     }
 }
 
+impl NodeWriter for InMemoryNodeStore {
+    fn write_nodes(&self, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
+        InMemoryNodeStore::write_nodes(self, nodes)
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct TreeChangeSet {
     pub state_root: H256,
     pub nodes: BTreeMap<H256, Vec<u8>>,
@@ -142,7 +156,6 @@ where
         key: K,
     ) -> Result<(Option<V>, SparseMerkleProof)> {
         let tree: JellyfishMerkleTree<K, V, NR> = JellyfishMerkleTree::new(&self.node_reader);
-        let key = key.into_object()?;
         let (data, proof) = tree.get_with_proof(state_root.into(), key)?;
         match data {
             Some(b) => Ok((Some(b.origin), proof)),
@@ -157,7 +170,7 @@ where
         starting_key: Option<K>,
         limit: usize,
     ) -> Result<Vec<(K, V)>> {
-        let mut iter = self.iter(state_root, starting_key.clone())?;
+        let mut iter = self.iter(state_root, starting_key)?;
 
         let mut data = Vec::new();
         // skip the starting_key if starting_key not NONE
@@ -254,14 +267,7 @@ where
     where
         NR: NodeReader,
     {
-        let key = match starting_key {
-            None => None,
-            Some(v) => match v.into_object() {
-                Ok(object) => Some(object),
-                Err(_) => None,
-            },
-        };
-        let iter = JellyfishMerkleIterator::new(reader, state_root.into(), key)?;
+        let iter = JellyfishMerkleIterator::new(reader, state_root.into(), starting_key)?;
         Ok(SMTIterator { iter })
     }
 }
@@ -276,7 +282,7 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|result| match result {
-            Ok((k, v)) => Ok((k.origin, v.origin)),
+            Ok((k, v)) => Ok((k, v.origin)),
             Err(e) => Err(e),
         })
     }

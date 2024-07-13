@@ -6,15 +6,26 @@
 
 use crate::jellyfish_merkle::hash::{HashValue, SMTHash};
 use anyhow::Result;
+use primitive_types::H256;
 use serde::{
     de::{self, DeserializeOwned},
     Deserialize, Serialize,
 };
 use std::{cell::Cell, fmt};
 
-pub trait Key: std::cmp::Ord + Clone + EncodeToObject + DecodeToObject {}
+pub trait Key: std::cmp::Ord + Copy + Into<H256> + From<H256> {}
 
-impl<T: std::cmp::Ord + Clone + EncodeToObject + DecodeToObject> Key for T {}
+impl<K: std::cmp::Ord + Copy + Into<H256> + From<H256>> Key for K {}
+
+impl<K> SMTHash for K
+where
+    K: Key,
+{
+    fn merkle_hash(&self) -> HashValue {
+        let hash: H256 = (*self).into();
+        hash.into()
+    }
+}
 
 pub trait Value: Clone + EncodeToObject + DecodeToObject {}
 

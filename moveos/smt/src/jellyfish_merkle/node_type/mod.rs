@@ -26,6 +26,7 @@ use anyhow::{ensure, Context, Result};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::cast::FromPrimitive;
+use primitive_types::H256;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::{collection::hash_map, prelude::*};
 #[cfg(any(test, feature = "fuzzing"))]
@@ -412,7 +413,7 @@ pub(crate) fn get_child_and_sibling_half_start(n: Nibble, height: u8) -> (u8, u8
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct LeafNode<K, V> {
     /// The origin key associated with this leaf node's Value.
-    key: SMTObject<K>,
+    key: K,
     /// The blob value associated with `key`.
     value: SMTObject<V>,
     cached_hash: Cell<Option<HashValue>>,
@@ -424,9 +425,9 @@ where
     V: Value,
 {
     /// Creates a new leaf node.
-    pub fn new<NK: Into<SMTObject<K>>, NV: Into<SMTObject<V>>>(key: NK, value: NV) -> Self {
+    pub fn new<NV: Into<SMTObject<V>>>(key: K, value: NV) -> Self {
         Self {
-            key: key.into(),
+            key,
             value: value.into(),
             cached_hash: Cell::new(None),
         }
@@ -444,13 +445,8 @@ where
     }
 
     /// Gets the key
-    pub fn key(&self) -> &SMTObject<K> {
+    pub fn key(&self) -> &K {
         &self.key
-    }
-
-    /// Gets the origin key
-    pub fn origin_key(&self) -> &K {
-        &self.key.origin
     }
 
     /// Gets the hash of origin key.
@@ -477,14 +473,14 @@ where
         bcs::from_bytes(data).map_err(|e| e.into())
     }
 
-    pub fn into(self) -> (SMTObject<K>, SMTObject<V>) {
+    pub fn into(self) -> (K, SMTObject<V>) {
         (self.key, self.value)
     }
 }
 
 #[derive(Serialize, Deserialize)]
 struct RawKV {
-    key: Vec<u8>,
+    key: H256,
     value: Vec<u8>,
 }
 
@@ -498,7 +494,7 @@ where
         S: serde::Serializer,
     {
         let wrapper = RawKV {
-            key: self.key.raw.clone(),
+            key: self.key.into(),
             value: self.value.raw.clone(),
         };
         wrapper.serialize(serializer)
@@ -516,7 +512,7 @@ where
     {
         let wrapper = RawKV::deserialize(deserializer)?;
         Ok(LeafNode::new(
-            K::from_raw(wrapper.key).map_err(serde::de::Error::custom)?,
+            K::from(wrapper.key),
             V::from_raw(wrapper.value).map_err(serde::de::Error::custom)?,
         ))
     }
@@ -586,7 +582,7 @@ where
     }
 
     /// Creates the [`Leaf`](Node::Leaf) variant.
-    pub fn new_leaf<NK: Into<SMTObject<K>>, NV: Into<SMTObject<V>>>(key: NK, value: NV) -> Self {
+    pub fn new_leaf<NV: Into<SMTObject<V>>>(key: K, value: NV) -> Self {
         Node::Leaf(LeafNode::new(key, value))
     }
 

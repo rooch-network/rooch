@@ -4,7 +4,7 @@
 use crate::{Key, SMTObject, Value};
 use std::collections::BTreeMap;
 
-type SMTObjectResult<K, V> = anyhow::Result<Vec<(SMTObject<K>, Option<SMTObject<V>>)>>;
+type SMTObjectResult<K, V> = anyhow::Result<Vec<(K, Option<SMTObject<V>>)>>;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UpdateSet<K, V> {
@@ -72,7 +72,7 @@ where
     pub(crate) fn into_updates(self) -> SMTObjectResult<K, V> {
         let mut ret = Vec::new();
         for (k, v_opt) in self.into_iter() {
-            let key = k.into_object()?;
+            let key = k;
             let value = match v_opt {
                 Some(v) => Some(v.into_object()?),
                 None => None,

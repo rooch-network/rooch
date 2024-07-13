@@ -513,12 +513,14 @@ module btc_holder_farmer::hold_farmer {
         account::exists_resource<UserStake>(account)
     }
 
-    // public fun check_asset_is_staked(asset_id: ObjectID): bool {
-    //     let farming_asset = account::borrow_resource<FarmingAsset>(DEPLOYER);
-    //     // let account = table::borrow(&farming_asset.stake_table, asset_id);
-    //     // let user_stake = account::borrow_resource<UserStake>(*account);
-    //     table::contains(&farming_asset.stake_table, asset_id)
-    // }
+    public fun check_asset_is_staked(asset_id: ObjectID): (bool, u128) {
+        let farming_asset = account::borrow_resource<FarmingAsset>(DEPLOYER);
+        if (table::contains(&farming_asset.stake_table, asset_id)) {
+            let token_amount = query_gov_token_amount(asset_id);
+            return (true, token_amount)
+        };
+        return (false, 0)
+    }
     //
     // public entry fun remove_expired_stake(asset_id: ObjectID) {
     //     assert!(check_asset_is_staked(asset_id), ErrorNotStaked);

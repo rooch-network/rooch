@@ -436,7 +436,7 @@ Feature: Rooch CLI integration tests
       Then cmd ord: "wallet receive"
 
       # mint utxos
-      Then cmd bitcoin-cli: "generatetoaddress 101 {{$.wallet[-1].address}}"
+      Then cmd bitcoin-cli: "generatetoaddress 101 {{$.wallet[-1].addresses[0]}}"
       Then sleep: "10" # wait ord sync and index
       Then cmd ord: "wallet balance"
       Then assert: "{{$.wallet[-1].total}} == 5000000000"
@@ -451,7 +451,7 @@ Feature: Rooch CLI integration tests
 
       # mine a block
       Then cmd ord: "wallet receive"
-      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].address}}"
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].addresses[0]}}"
       Then sleep: "10"
 
       # Sync bitseed
@@ -469,7 +469,7 @@ Feature: Rooch CLI integration tests
 
       # mine a block
       Then cmd ord: "wallet receive"
-      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].address}}"
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].addresses[0]}}"
       Then sleep: "10"
 
       # Sync bitseed
@@ -487,7 +487,7 @@ Feature: Rooch CLI integration tests
 
       # mine a block
       Then cmd ord: "wallet receive"
-      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].address}}"
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].addresses[0]}}"
       Then sleep: "10"
 
       # Sync bitseed

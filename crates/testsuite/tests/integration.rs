@@ -412,9 +412,9 @@ fn ord_run_cmd(w: &mut World, input_tpl: String) {
     let mut bitseed_args = vec![
         "ord".to_string(),
         "--regtest".to_string(),
-        format!("--rpc-url=http://bitcoind:{}", RPC_PORT),
-        format!("--bitcoin-rpc-user={}", RPC_USER),
-        format!("--bitcoin-rpc-pass={}", RPC_PASS),
+        format!("--bitcoin-rpc-url=http://bitcoind:{}", RPC_PORT),
+        format!("--bitcoin-rpc-username={}", RPC_USER),
+        format!("--bitcoin-rpc-password={}", RPC_PASS),
     ];
 
     if w.tpl_ctx.is_none() {
@@ -433,7 +433,7 @@ fn ord_run_cmd(w: &mut World, input_tpl: String) {
     debug!("run cmd: ord {}", joined_args);
 
     let exec_cmd = ExecCommand {
-        cmd: joined_args,
+        cmd: joined_args.clone(),
         ready_conditions: vec![WaitFor::Nothing],
     };
 
@@ -455,7 +455,7 @@ fn ord_run_cmd(w: &mut World, input_tpl: String) {
         }
     };
 
-    debug!("run cmd: ord stdout: {}", stdout_string);
+    info!("run cmd: {} ,stdout: {}", joined_args, stdout_string);
 
     // Check if stderr_string is not empty and panic if it contains any content.
     if !stderr_string.is_empty() {
