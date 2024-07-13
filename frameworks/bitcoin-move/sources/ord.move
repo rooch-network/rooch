@@ -348,12 +348,6 @@ module bitcoin_move::ord {
                 let match_output_index = new_sat_point.output_index;
 
                 let match_output = vector::borrow(outputs, (match_output_index as u64));
-
-                let output_script_buf = types::txout_script_pubkey(match_output);
-                if (script_buf::is_op_return(output_script_buf)) {
-                    std::debug::print(&string::utf8(b"found_inscription_burn"));
-                };
-
                 let to_address = types::txout_object_address(match_output);
                 inscription.offset = new_sat_point.offset;
 

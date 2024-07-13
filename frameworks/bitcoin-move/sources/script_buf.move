@@ -67,12 +67,6 @@ module bitcoin_move::script_buf{
         sub_vector(&self.bytes, 2, vector::length(&self.bytes))
     }
 
-    /// Checks if the given script is an OP_RETURN script.
-    public fun is_op_return(self: &ScriptBuf): bool {
-        vector::length(&self.bytes) > 1 &&
-            *vector::borrow(&self.bytes, 0) == opcode::op_return()
-    }
-
     /// try to get a BitcoinAddress from a ScriptBuf.
     public fun get_address(s: &ScriptBuf): Option<BitcoinAddress> {
          //TODO sync the implementation from rust.
