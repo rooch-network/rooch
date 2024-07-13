@@ -40,7 +40,7 @@ pub fn process_ord_data(
     _ord_inscription_fail_json: &str,
 ) -> Result<()> {
     // let transaction_path = format!("{}/data/id_txid_addr.json", project_path::PATH);
-    if let Ok(transactions) = read_ord_tx_json(&ord_tx_json) {
+    if let Ok(transactions) = read_ord_tx_json(ord_tx_json) {
         for transaction in transactions {
             let txid = &transaction.txid;
             let ord_inscription_body_result = resolve_inscription_body(config, txid);
@@ -64,7 +64,7 @@ pub fn process_ord_data(
                         "[STAT] process_ord_data txid: {} index {} occurs error {}",
                         transaction.txid,
                         transaction.index,
-                        err.to_string()
+                        err
                     )
                 }
             }
@@ -105,9 +105,7 @@ pub fn check_ord_data(
         Err(err) => {
             println!(
                 "[STAT] check_ord_data txid: {} index {} occurs error {}",
-                transaction.txid,
-                transaction.index,
-                err.to_string()
+                transaction.txid, transaction.index, err
             )
         }
     }
@@ -127,8 +125,7 @@ pub fn match_inscription_data(
             == rooch_inscription_info
                 .metadata
                 .owner_bitcoin_address
-                .unwrap()
-                .to_string())
+                .unwrap())
         && (rooch_inscription_info.value.content_type.is_some()
             && ord_inscription_info.content_type
                 == rooch_inscription_info

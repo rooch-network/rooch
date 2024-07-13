@@ -190,7 +190,6 @@ impl Default for CriterionConfig {
 
 pub fn configure_criterion(config: Option<CriterionConfig>) -> Criterion {
     let cfg = config.unwrap_or_default();
-
     let profiler = match cfg.pprof_output {
         PProfOutput::Proto => PProfProfiler::new(cfg.frequency, Output::Protobuf),
         PProfOutput::Flamegraph => PProfProfiler::new(cfg.frequency, Output::Flamegraph(None)),

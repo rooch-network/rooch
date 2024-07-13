@@ -326,7 +326,7 @@ fn test_batch_insertion() {
         let tree = JellyfishMerkleTree::new(&db);
         let mut batches2 = vec![];
 
-        for (_idx, sub_vec) in batches.iter().enumerate() {
+        for sub_vec in batches.iter() {
             for x in sub_vec {
                 batches2.push(vec![(x.0.into(), Some(x.1.clone().into()))]);
             }
@@ -587,7 +587,7 @@ fn test_put_blob_sets() {
     let mut root_hashes_one_by_one = vec![];
     let mut batch_one_by_one = TreeUpdateBatch::default();
     {
-        let mut iter = keys.clone().into_iter().zip(values.clone().into_iter());
+        let mut iter = keys.clone().into_iter().zip(values.clone());
         let db = MockTestStore::new_test();
         let tree = JellyfishMerkleTree::new(&db);
 
@@ -611,7 +611,7 @@ fn test_put_blob_sets() {
         }
     }
     {
-        let mut iter = keys.into_iter().zip(values.into_iter());
+        let mut iter = keys.into_iter().zip(values);
         let db = MockTestStore::new_test();
         let tree = JellyfishMerkleTree::new(&db);
         let mut blob_sets = vec![];
@@ -689,7 +689,7 @@ fn many_versions_get_proof_and_verify_tree_root(seed: &[u8], num_versions: usize
 
     let mut roots = vec![];
     let mut current_root = None;
-    for (_idx, kvs) in kvs.iter().enumerate() {
+    for kvs in kvs.iter() {
         let (root, batch) = tree
             .put_blob_set(current_root, vec![(kvs.0.into(), kvs.1.clone().into())])
             .unwrap();
@@ -699,7 +699,7 @@ fn many_versions_get_proof_and_verify_tree_root(seed: &[u8], num_versions: usize
     }
 
     // Update value of all keys
-    for (_idx, kvs) in kvs.iter().enumerate() {
+    for kvs in kvs.iter() {
         let (root, batch) = tree
             .put_blob_set(current_root, vec![(kvs.0.into(), kvs.2.clone().into())])
             .unwrap();

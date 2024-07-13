@@ -405,8 +405,8 @@ mod tests {
     pub fn test_field_path() -> Result<()> {
         let key1 = FieldKey::derive(&"key1".to_owned()).unwrap();
         let key2 = FieldKey::derive(&"key2".to_owned()).unwrap();
-        println!("test_field_path key1 {}", key1.to_string());
-        println!("test_field_path key2 {}", key2.to_string());
+        println!("test_field_path key1 {}", key1);
+        println!("test_field_path key2 {}", key2);
 
         Ok(())
     }

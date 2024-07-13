@@ -449,7 +449,7 @@ mod tests {
             }
         }
 
-        if let Err(_) = InternalDAServerConfigType::from_str(invalid_config_str) {
+        if InternalDAServerConfigType::from_str(invalid_config_str).is_err() {
         } else {
             panic!("Expected Error for invalid config");
         }
