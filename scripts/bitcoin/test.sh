@@ -4,7 +4,7 @@
 
 set -e
 
-while getopts "huwbsa" opt; do
+while getopts "huwbosa" opt; do
   case $opt in
     h)
       cat <<EOF
@@ -15,6 +15,7 @@ Flags:
     -u   Run unit test
     -w   Run wasm integration test
     -b   Run bitcoin integration test
+    -o   Run ord integration test
     -s   Run bitseed integration test
     -a   Run all test
 EOF
@@ -30,6 +31,10 @@ EOF
       UNIT_TEST=1
       BITCOIN_INT_TEST=1
       ;;
+    o)
+      UNIT_TEST=0
+      ORD_INT_TEST=1
+      ;;
     s)
       UNIT_TEST=1
       BITSEED_INT_TEST=1
@@ -44,7 +49,7 @@ EOF
 done
 
 export CARGO_BUILD_JOBS=8
-export RUST_LOG=info 
+export RUST_LOG=debug 
 export RUST_BACKTRACE=1
 
 if [ ! -z "$UNIT_TEST" ]; then
@@ -56,7 +61,11 @@ if [ ! -z "$WASM_INT_TEST" ]; then
 fi
 
 if [ ! -z "$BITCOIN_INT_TEST" ]; then
-  cargo test -p testsuite --test integration -- --name "rooch bitcoin test"
+  cargo test -p testsuite --test integration -- --name "rooch_bitcoin test"
+fi
+
+if [ ! -z "$ORD_INT_TEST" ]; then
+  cargo test -p testsuite --test integration -- --name "rooch_bitcoin ord burn test"
 fi
 
 if [ ! -z "$BITSEED_INT_TEST" ]; then

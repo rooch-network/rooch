@@ -16,6 +16,7 @@ module bitcoin_move::ord {
     use moveos_std::bag;
     use moveos_std::string_utils;
 
+    use bitcoin_move::script_buf;
     use bitcoin_move::types::{Self, Witness, Transaction};
     use bitcoin_move::utxo::{Self, UTXO};
     use bitcoin_move::bitcoin_hash;
@@ -32,6 +33,7 @@ module bitcoin_move::ord {
     const TEMPORARY_AREA: vector<u8> = b"temporary_area";
     
     const METAPROTOCOL_VALIDITY: vector<u8> = b"metaprotocol_validity";
+    const INSCRIPTION_CHARM: vector<u8> = b"inscription_charm";
 
     /// How many satoshis are in "one bitcoin".
     const COIN_VALUE: u64 = 100_000_000;
@@ -340,8 +342,7 @@ module bitcoin_move::ord {
             let inscription_obj = object::take_object_extend<Inscription>(seal_object_id);
             let origin_owner = object::owner(&inscription_obj);
             let inscription = object::borrow_mut(&mut inscription_obj);
-            
-
+           
             let (is_match, new_sat_point) = match_utxo_and_generate_sat_point(inscription.offset, seal_object_id, tx, input_utxo_values, input_index);
             if(is_match){
                 let match_output_index = new_sat_point.output_index;
@@ -352,9 +353,17 @@ module bitcoin_move::ord {
 
                 // drop the temporary area if inscription is transferred.
                 drop_temp_area(&mut inscription_obj);
-                object::transfer_extend(inscription_obj, to_address);
                 vector::push_back(&mut new_sat_points, new_sat_point);
-               
+
+                // flag inscription burned and frozen inscription
+                let output_script_buf = types::txout_script_pubkey(match_output);
+                if (script_buf::is_op_return(output_script_buf)) {
+                    let inscription_clarm = borrow_mut_inscription_charm_inner(&mut inscription_obj);
+                    inscription_clarm.burned = true;
+                    object::to_frozen(inscription_obj);
+                } else {
+                    object::transfer_extend(inscription_obj, to_address);
+                };
             } else {
                 let flotsam = new_flotsam(new_sat_point.output_index, new_sat_point.offset, new_sat_point.object_id);
                 vector::push_back(&mut flotsams, flotsam);
@@ -1272,5 +1281,167 @@ module bitcoin_move::ord {
         let inscription_id_str = std::string::utf8(b"6f55475ce65054aa8371d618d217da8c9a764cecdaf4debcbce8d6312fe6b4d8ix");
         let inscription_id_option = parse_inscription_id(&inscription_id_str);
         assert!(option::is_none(&inscription_id_option), 1);
+    }
+
+    // ==== Inscription Charm ==== //
+
+    /// Represents the charm of an inscription, containing various properties.
+    struct InscriptionCharm has store, copy, drop {
+        /// Indicates whether the inscription has been burned.
+        burned: bool
+    }
+
+    /// Get the InscriptionCharm's burned
+    public fun inscription_charm_burned(charm: &InscriptionCharm): bool {
+        charm.burned
+    }
+
+    /// Borrows a mutable reference to the InscriptionCharm of a given Inscription object.
+    /// If the charm doesn't exist, it creates a new one with default values.
+    /// 
+    /// @param inscription_mut_obj - Mutable reference to the Inscription object
+    /// @return Mutable reference to the InscriptionCharm
+    fun borrow_mut_inscription_charm_inner(inscription_mut_obj: &mut Object<Inscription>): &mut InscriptionCharm {
+        if (!object::contains_field(inscription_mut_obj, INSCRIPTION_CHARM)) {
+            let clarm = InscriptionCharm{
+                burned: false,
+            };
+
+            object::upsert_field(inscription_mut_obj, INSCRIPTION_CHARM, clarm);
+        };
+
+        object::borrow_mut_field(inscription_mut_obj, INSCRIPTION_CHARM)
+    }
+
+    /// Upserts (updates or inserts) the InscriptionCharm for a given InscriptionID.
+    /// 
+    /// @param inscription_id - The ID of the inscription
+    /// @param charm - The InscriptionCharm to upsert
+    fun upsert_inscription_charm(inscription_id: InscriptionID, charm: InscriptionCharm) {
+        let inscription_object_id = derive_inscription_id(inscription_id);
+        let inscription_mut_obj = object::borrow_mut_object_extend<Inscription>(inscription_object_id);
+
+        object::upsert_field(inscription_mut_obj, INSCRIPTION_CHARM, charm);
+    }
+
+    /// Borrows a mutable reference to the InscriptionCharm for a given InscriptionID.
+    /// 
+    /// @param inscription_id - The ID of the inscription
+    /// @return Mutable reference to the InscriptionCharm
+    fun borrow_mut_inscription_charm(inscription_id: InscriptionID): &mut InscriptionCharm {
+        let inscription_object_id = derive_inscription_id(inscription_id);
+        let inscription_mut_obj = object::borrow_mut_object_extend<Inscription>(inscription_object_id);
+
+        borrow_mut_inscription_charm_inner(inscription_mut_obj)
+    }
+
+    /// Checks if an InscriptionCharm exists for a given InscriptionID.
+    /// 
+    /// @param inscription_id - The ID of the inscription
+    /// @return Boolean indicating whether the charm exists
+    public fun exists_inscription_charm(inscription_id: InscriptionID): bool {
+        let inscription_object_id = derive_inscription_id(inscription_id);
+        let exists = object::exists_object_with_type<Inscription>(inscription_object_id);
+        if (!exists) {
+            return false
+        };
+
+        let inscription_obj = object::borrow_object<Inscription>(inscription_object_id);
+        object::contains_field(inscription_obj, INSCRIPTION_CHARM)
+    }
+
+    /// Borrows a reference to the InscriptionCharm for a given InscriptionID.
+    /// 
+    /// @param inscription_id - The ID of the inscription
+    /// @return Reference to the InscriptionCharm
+    public fun borrow_inscription_charm(inscription_id: InscriptionID): &InscriptionCharm {
+        let inscription_object_id = derive_inscription_id(inscription_id);
+        let inscription_obj = object::borrow_object<Inscription>(inscription_object_id);
+
+        object::borrow_field(inscription_obj, INSCRIPTION_CHARM)
+    }
+
+    /// Views the InscriptionCharm for a given inscription ID string.
+    /// Returns None if the inscription doesn't exist or doesn't have a charm.
+    /// 
+    /// @param inscription_id_str - String representation of the inscription ID
+    /// @return Option<InscriptionCharm> - Some(charm) if exists, None otherwise
+    public fun view_inscription_charm(inscription_id_str: String) : Option<InscriptionCharm> {
+        let inscription_id_option = parse_inscription_id(&inscription_id_str);
+        if (option::is_none(&inscription_id_option)) {
+            return option::none()
+        };
+
+        let inscription_id = option::destroy_some(inscription_id_option);
+        if (!exists_inscription_charm(inscription_id)) {
+            return option::none()
+        };
+
+        let clarm = borrow_inscription_charm(inscription_id);
+        option::some(*clarm)
+    }
+
+    #[test(genesis_account=@0x1)]
+    fun test_inscription_charm(genesis_account: &signer) {
+        // Setup
+        setup_inscription_for_test(genesis_account);
+
+        // Test inscription ID
+        let test_txid = @0x21da2ae8cc773b020b4873f597369416cf961a1896c24106b0198459fec2df77;
+        let test_inscription_id = new_inscription_id(test_txid, 0);
+
+        // Test exists_inscription_charm
+        assert!(!exists_inscription_charm(test_inscription_id), 1);
+
+        // Test upsert_inscription_charm
+        let charm = InscriptionCharm { burned: false };
+        upsert_inscription_charm(test_inscription_id, charm);
+
+        // Test exists_inscription_charm again
+        assert!(exists_inscription_charm(test_inscription_id), 2);
+
+        // Test borrow_inscription_charm
+        let borrowed_charm = borrow_inscription_charm(test_inscription_id);
+        assert!(!borrowed_charm.burned, 3);
+
+        // Test borrow_mut_inscription_charm
+        let mut_charm = borrow_mut_inscription_charm(test_inscription_id);
+        mut_charm.burned = true;
+
+        // Verify the change
+        let borrowed_charm = borrow_inscription_charm(test_inscription_id);
+        assert!(borrowed_charm.burned, 4);
+
+        // Test view_inscription_charm
+        let inscription_id_str = inscription_id_to_string(&test_inscription_id);
+        let viewed_charm_option = view_inscription_charm(inscription_id_str);
+        assert!(option::is_some(&viewed_charm_option), 5);
+        let viewed_charm = option::destroy_some(viewed_charm_option);
+        assert!(viewed_charm.burned, 6);
+
+        // Test view_inscription_charm with non-existent inscription
+        let non_existent_id_str = string::utf8(b"1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefi0");
+        let non_existent_charm_option = view_inscription_charm(non_existent_id_str);
+        assert!(option::is_none(&non_existent_charm_option), 7);
+    }
+
+    #[test(genesis_account=@0x1)]
+    fun test_inscription_charm_edge_cases(genesis_account: &signer) {
+        // Setup
+        setup_inscription_for_test(genesis_account);
+
+        // Test with invalid inscription ID string
+        let invalid_id_str = string::utf8(b"invalid_id");
+        let invalid_charm_option = view_inscription_charm(invalid_id_str);
+        assert!(option::is_none(&invalid_charm_option), 1);
+
+        // Test with valid inscription ID but no charm
+        let test_txid = @0x21da2ae8cc773b020b4873f597369416cf961a1896c24106b0198459fec2df77;
+        let test_inscription_id = new_inscription_id(test_txid, 1); // Using index 1 which doesn't exist
+        assert!(!exists_inscription_charm(test_inscription_id), 2);
+
+        let inscription_id_str = inscription_id_to_string(&test_inscription_id);
+        let non_existent_charm_option = view_inscription_charm(inscription_id_str);
+        assert!(option::is_none(&non_existent_charm_option), 3);
     }
 }

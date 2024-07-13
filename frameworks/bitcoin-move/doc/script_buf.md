@@ -15,6 +15,7 @@
 -  [Function `is_witness_program`](#0x4_script_buf_is_witness_program)
 -  [Function `witness_program`](#0x4_script_buf_witness_program)
 -  [Function `get_address`](#0x4_script_buf_get_address)
+-  [Function `is_op_return`](#0x4_script_buf_is_op_return)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -139,4 +140,16 @@ try to get a BitcoinAddress from a ScriptBuf.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_get_address">get_address</a>(s: &<a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>): <a href="_Option">option::Option</a>&lt;<a href="_BitcoinAddress">bitcoin_address::BitcoinAddress</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_script_buf_is_op_return"></a>
+
+## Function `is_op_return`
+
+Checks if the given script is an OP_RETURN script.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_is_op_return">is_op_return</a>(self: &<a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>): bool
 </code></pre>
