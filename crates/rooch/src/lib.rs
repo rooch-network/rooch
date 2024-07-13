@@ -4,6 +4,7 @@
 use crate::commands::event::EventCommand;
 use crate::commands::indexer::Indexer;
 use crate::commands::statedb::Statedb;
+use clap::builder::styling::{AnsiColor, Effects, Styles};
 use cli_types::CommandAction;
 use commands::{
     abi::ABI, account::Account, env::Env, genesis::Genesis, init::Init, move_cli::MoveCli,
@@ -11,7 +12,6 @@ use commands::{
     session_key::SessionKey, state::StateCommand, transaction::Transaction,
 };
 use rooch_types::error::RoochResult;
-use clap::builder::styling::{AnsiColor, Effects, Styles};
 
 pub mod cli_types;
 pub mod commands;
