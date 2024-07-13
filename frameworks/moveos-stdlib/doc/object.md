@@ -87,7 +87,8 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 ObjectID is a unique identifier for the Object
 
 
-<pre><code><b>struct</b> <a href="object.md#0x2_object_ObjectID">ObjectID</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code>#[data_struct]
+<b>struct</b> <a href="object.md#0x2_object_ObjectID">ObjectID</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 

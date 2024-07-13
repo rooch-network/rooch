@@ -55,6 +55,7 @@ module moveos_std::object {
 
     const SPARSE_MERKLE_PLACEHOLDER_HASH: address = @0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000;
 
+    #[data_struct]
     /// ObjectID is a unique identifier for the Object
     struct ObjectID has store, copy, drop {
         path: vector<address>,
