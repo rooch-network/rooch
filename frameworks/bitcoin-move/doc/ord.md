@@ -15,6 +15,8 @@
 -  [Struct `MetaprotocolValidity`](#0x4_ord_MetaprotocolValidity)
 -  [Resource `InscriptionStore`](#0x4_ord_InscriptionStore)
 -  [Struct `InscriptionCharm`](#0x4_ord_InscriptionCharm)
+-  [Resource `OwnershipHistory`](#0x4_ord_OwnershipHistory)
+-  [Struct `Snapshot`](#0x4_ord_Snapshot)
 -  [Constants](#@Constants_0)
 -  [Function `curse_duplicate_field`](#0x4_ord_curse_duplicate_field)
 -  [Function `curse_incompleted_field`](#0x4_ord_curse_incompleted_field)
@@ -81,6 +83,10 @@
 -  [Function `exists_inscription_charm`](#0x4_ord_exists_inscription_charm)
 -  [Function `borrow_inscription_charm`](#0x4_ord_borrow_inscription_charm)
 -  [Function `view_inscription_charm`](#0x4_ord_view_inscription_charm)
+-  [Function `get_owner_at_version`](#0x4_ord_get_owner_at_version)
+-  [Function `create_snapshot`](#0x4_ord_create_snapshot)
+-  [Function `get_snapshot`](#0x4_ord_get_snapshot)
+-  [Function `transfer_inscription`](#0x4_ord_transfer_inscription)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -93,6 +99,8 @@
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
 <b>use</b> <a href="">0x2::string_utils</a>;
+<b>use</b> <a href="">0x2::table</a>;
+<b>use</b> <a href="">0x2::timestamp</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="bitcoin_hash.md#0x4_bitcoin_hash">0x4::bitcoin_hash</a>;
 <b>use</b> <a href="script_buf.md#0x4_script_buf">0x4::script_buf</a>;
@@ -209,6 +217,30 @@ Represents the charm of an inscription, containing various properties.
 
 
 <pre><code><b>struct</b> <a href="ord.md#0x4_ord_InscriptionCharm">InscriptionCharm</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_ord_OwnershipHistory"></a>
+
+## Resource `OwnershipHistory`
+
+Represents the ownership history of an inscription
+
+
+<pre><code><b>struct</b> <a href="ord.md#0x4_ord_OwnershipHistory">OwnershipHistory</a> <b>has</b> store, key
+</code></pre>
+
+
+
+<a name="0x4_ord_Snapshot"></a>
+
+## Struct `Snapshot`
+
+Represents a snapshot of the inscription system state at a specific point in time
+
+
+<pre><code><b>struct</b> <a href="ord.md#0x4_ord_Snapshot">Snapshot</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -342,6 +374,15 @@ Curse Inscription
 
 
 <pre><code><b>const</b> <a href="ord.md#0x4_ord_METAPROTOCOL_VALIDITY">METAPROTOCOL_VALIDITY</a>: <a href="">vector</a>&lt;u8&gt; = [109, 101, 116, 97, 112, 114, 111, 116, 111, 99, 111, 108, 95, 118, 97, 108, 105, 100, 105, 116, 121];
+</code></pre>
+
+
+
+<a name="0x4_ord_OWNERSHIP_HISTORY"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_OWNERSHIP_HISTORY">OWNERSHIP_HISTORY</a>: <a href="">vector</a>&lt;u8&gt; = [111, 119, 110, 101, 114, 115, 104, 105, 112, 95, 104, 105, 115, 116, 111, 114, 121];
 </code></pre>
 
 
@@ -1111,4 +1152,51 @@ Returns None if the inscription doesn't exist or doesn't have a charm.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_view_inscription_charm">view_inscription_charm</a>(inscription_id_str: <a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="ord.md#0x4_ord_InscriptionCharm">ord::InscriptionCharm</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_get_owner_at_version"></a>
+
+## Function `get_owner_at_version`
+
+Gets the owner at a specific version
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_get_owner_at_version">get_owner_at_version</a>(history: &<a href="ord.md#0x4_ord_OwnershipHistory">ord::OwnershipHistory</a>, version: u64): <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_create_snapshot"></a>
+
+## Function `create_snapshot`
+
+Creates a new snapshot of the current inscription system state
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_create_snapshot">create_snapshot</a>()
+</code></pre>
+
+
+
+<a name="0x4_ord_get_snapshot"></a>
+
+## Function `get_snapshot`
+
+Retrieves a snapshot by its ID
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_get_snapshot">get_snapshot</a>(snapshot_id: u64): <a href="ord.md#0x4_ord_Snapshot">ord::Snapshot</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_transfer_inscription"></a>
+
+## Function `transfer_inscription`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_transfer_inscription">transfer_inscription</a>(inscription_obj: <a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;, <b>to</b>: <b>address</b>)
 </code></pre>

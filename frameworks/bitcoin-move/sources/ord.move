@@ -15,6 +15,8 @@ module bitcoin_move::ord {
     use moveos_std::type_info;
     use moveos_std::bag;
     use moveos_std::string_utils;
+    use moveos_std::table::{Self, Table};
+    use moveos_std::timestamp;
 
     use bitcoin_move::script_buf;
     use bitcoin_move::types::{Self, Witness, Transaction};
@@ -165,6 +167,9 @@ module bitcoin_move::ord {
         cursed_inscription_count: u32,
         blessed_inscription_count: u32,
         next_sequence_number: u32,
+        global_ownership_version: u64,
+        snapshots: table::Table<u64, Snapshot>,
+        latest_snapshot_id: u64,
     }
 
     public(friend) fun genesis_init(_genesis_account: &signer){
@@ -172,6 +177,9 @@ module bitcoin_move::ord {
             cursed_inscription_count: 0,
             blessed_inscription_count: 0,
             next_sequence_number: 0,
+            global_ownership_version: 0,
+            snapshots: table::new(),
+            latest_snapshot_id: 0,
         };
         let store_obj = object::new_named_object(store);
         object::to_shared(store_obj);
@@ -1442,5 +1450,84 @@ module bitcoin_move::ord {
         let inscription_id_str = inscription_id_to_string(&test_inscription_id);
         let non_existent_charm_option = view_inscription_charm(inscription_id_str);
         assert!(option::is_none(&non_existent_charm_option), 3);
+    }
+
+    // ==== Inscription Ownership History ==== //
+
+    /// Represents the ownership history of an inscription
+    struct OwnershipHistory has key, store {
+        history: Table<u64, address>
+    }
+
+    /// Creates a new OwnershipHistory
+    fun new_ownership_history(): OwnershipHistory {
+        OwnershipHistory {
+            history: table::new()
+        }
+    }
+
+    /// Adds a new entry to the ownership history
+    fun add_to_ownership_history(history: &mut OwnershipHistory, version: u64, owner: address) {
+        table::add(&mut history.history, version, owner);
+    }
+
+    /// Gets the owner at a specific version
+    public fun get_owner_at_version(history: &OwnershipHistory, version: u64): Option<address> {
+        if (table::contains(&history.history, version)) {
+            option::some(*table::borrow(&history.history, version))
+        } else {
+            option::none()
+        }
+    }
+
+    // ==== Inscription Snapshot ==== //
+
+    const OWNERSHIP_HISTORY: vector<u8> = b"ownership_history";
+
+    /// Represents a snapshot of the inscription system state at a specific point in time
+    struct Snapshot has store, copy, drop {
+        id: u64,
+        timestamp: u64,
+        global_ownership_version: u64,
+        latest_inscription_id: u64,
+    }
+
+    /// Creates a new snapshot of the current inscription system state
+    public fun create_snapshot() {
+        let store = borrow_mut_inscription_store();
+        let snapshot_id = store.latest_snapshot_id + 1;
+        let snapshot = Snapshot {
+            id: snapshot_id,
+            timestamp: timestamp::now_seconds(),
+            global_ownership_version: store.global_ownership_version,
+            latest_inscription_id: (store.cursed_inscription_count + store.blessed_inscription_count as u64),
+        };
+        table::add(&mut store.snapshots, snapshot_id, snapshot);
+        store.latest_snapshot_id = snapshot_id;
+    }
+
+    /// Retrieves a snapshot by its ID
+    public fun get_snapshot(snapshot_id: u64): Snapshot {
+        let store = borrow_inscription_store();
+        *table::borrow(&store.snapshots, snapshot_id)
+    }
+
+    public(friend) fun transfer_inscription(inscription_obj: Object<Inscription>, to: address) {
+        let store = borrow_mut_inscription_store();
+        store.global_ownership_version = store.global_ownership_version + 1;
+        let current_version = store.global_ownership_version;
+
+        // Initialize or update the ownership history
+        if (!object::contains_field(&mut inscription_obj, OWNERSHIP_HISTORY)) {
+            let ownership_history = new_ownership_history();
+            add_to_ownership_history(&mut ownership_history, current_version, to);
+            object::add_field(&mut inscription_obj, OWNERSHIP_HISTORY, ownership_history);
+        } else {
+            let ownership_history = object::borrow_mut_field(&mut inscription_obj, OWNERSHIP_HISTORY);
+            add_to_ownership_history(ownership_history, current_version, to);
+        };
+
+        // Transfer the object ownership
+        object::transfer_extend(inscription_obj, to);
     }
 }
