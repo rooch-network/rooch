@@ -118,16 +118,18 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
 });
 
 pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
-    //curl -sSL https://mempool.space/testnet/api/block/$(curl -sSL https://mempool.space/testnet/api/blocks/tip/hash)
+    //curl -sSL https://mempool.space/testnet/api/blocks/tip
+    //curl -sSL https://mempool.space/testnet/api/block/$(curl -sSL https://mempool.space/testnet/api/block-height/2867700)
     GenesisConfig {
         bitcoin_network: crate::bitcoin::network::Network::Testnet.to_num(),
-        bitcoin_block_height: 2821523,
+        bitcoin_block_height: 2867700,
         bitcoin_block_hash: BlockHash::from_str(
-            "000000003f2649e6d87c6037d26af712785d5fe59c576469e486991213eda3c6",
+            "0000000000000022704ba8fa408778fd482ed9a6d36e65847b26aea709fd4233",
         )
         .expect("Should be valid"),
         bitcoin_reorg_block_count: 3,
-        timestamp: 1718592994000,
+        //Make sure this timestamp is the same as Genesis Object Timestamp
+        timestamp: 1720806147000,
         sequencer_account: BitcoinAddress::from_str(
             "bcrt1p56tdhxkcpc5xvdurfnufn9lkkywsh0gxttv5ktkvlezj0t23nasqawwrla",
         )
@@ -135,7 +137,7 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         genesis_objects: vec![
             (
                 ObjectState::new_timestamp(Timestamp {
-                    milliseconds: 1718592994000,
+                    milliseconds: 1720806147000,
                 }),
                 Timestamp::type_layout(),
             ),
