@@ -1022,7 +1022,7 @@ mod test {
             let serialized = serde_json::to_string(&address).unwrap();
             let deserialized: RoochAddress = serde_json::from_str(&serialized).unwrap();
             assert_eq!(address, deserialized);
-            let multi_chain_address: MultiChainAddress = address.clone().into();
+            let multi_chain_address: MultiChainAddress = address.into();
             let multi_chain_address_serialized = serde_json::to_string(&multi_chain_address).unwrap();
             let multi_chain_address_deserialized: MultiChainAddress = serde_json::from_str(&multi_chain_address_serialized).unwrap();
             assert_eq!(multi_chain_address, multi_chain_address_deserialized);
@@ -1041,7 +1041,7 @@ mod test {
             address.address_type().unwrap(),
             bitcoin::AddressType::P2wpkh
         );
-        println!("bitcoin address from script {}", address.to_string());
+        println!("bitcoin address from script {}", address);
         assert_eq!(
             address.to_string(),
             // "tb1qjlxl7n7na4hcsh25554hn4azzsg89t3ljdldnj"
@@ -1113,7 +1113,7 @@ mod test {
 
     #[test]
     pub fn test_bitcoin_address_to_rooch_address() -> Result<()> {
-        let bitcoin_address_strs = vec![
+        let bitcoin_address_strs = [
             "18cBEMRxXHqzWWCxZNtU91F5sbUNKhL5PX",
             "bc1q262qeyyhdakrje5qaux8m2a3r4z8sw8vu5mysh",
         ];

@@ -196,6 +196,12 @@ impl From<H256> for FieldKey {
     }
 }
 
+impl From<FieldKey> for H256 {
+    fn from(field_key: FieldKey) -> Self {
+        Self(field_key.0)
+    }
+}
+
 impl FromStr for FieldKey {
     type Err = anyhow::Error;
 

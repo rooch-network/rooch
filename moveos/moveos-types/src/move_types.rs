@@ -173,7 +173,7 @@ pub fn type_tag_prop_strategy() -> impl Strategy<Value = TypeTag> {
         Just(TypeTag::Signer),
     ];
 
-    let type_tag_strategy = leaf.prop_recursive(
+    leaf.prop_recursive(
         8,   // Arbitrarily chosen depth, adjust to suit your needs
         256, // Arbitrarily chosen size limit, adjust to suit your needs
         10,  // Per-vec limit, adjust to suit your needs
@@ -201,9 +201,7 @@ pub fn type_tag_prop_strategy() -> impl Strategy<Value = TypeTag> {
                     }),
             ]
         },
-    );
-
-    type_tag_strategy
+    )
 }
 
 struct IdentifierSymbols;

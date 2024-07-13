@@ -191,7 +191,7 @@ where
     pub fn put_blob_set(
         &self,
         state_root_hash: Option<HashValue>,
-        blob_set: Vec<(SMTObject<K>, SMTObject<V>)>,
+        blob_set: Vec<(K, SMTObject<V>)>,
     ) -> Result<(HashValue, TreeUpdateBatch<K, V>)> {
         let blob_set = blob_set
             .into_iter()
@@ -201,11 +201,7 @@ where
     }
 
     #[cfg(test)]
-    pub fn print_tree<PK: Into<SMTObject<K>>>(
-        &self,
-        state_root_hash: HashValue,
-        start_key: PK,
-    ) -> Result<()> {
+    pub fn print_tree<PK: Into<K>>(&self, state_root_hash: HashValue, start_key: PK) -> Result<()> {
         let iter = self::iterator::JellyfishMerkleIterator::new(
             self.reader,
             state_root_hash,
@@ -216,7 +212,7 @@ where
 
     /// Delete a key from the tree. If the key is not found in the tree, nothing happens.
     #[cfg(test)]
-    pub fn delete<DK: Into<SMTObject<K>>>(
+    pub fn delete<DK: Into<K>>(
         &self,
         state_root_hash: Option<HashValue>,
         key: DK,
@@ -228,7 +224,7 @@ where
     pub fn insert_all(
         &self,
         state_root_hash: Option<HashValue>,
-        blob_set: Vec<(SMTObject<K>, SMTObject<V>)>,
+        blob_set: Vec<(K, SMTObject<V>)>,
     ) -> Result<(HashValue, TreeUpdateBatch<K, V>)> {
         let blob_set = blob_set
             .into_iter()
@@ -237,7 +233,7 @@ where
         self.updates(state_root_hash, blob_set)
     }
 
-    pub fn updates<S: Into<Vec<(SMTObject<K>, Option<SMTObject<V>>)>>>(
+    pub fn updates<S: Into<Vec<(K, Option<SMTObject<V>>)>>>(
         &self,
         state_root_hash: Option<HashValue>,
         blob_set: S,
@@ -297,7 +293,7 @@ where
     fn puts(
         &self,
         state_root_hash: Option<HashValue>,
-        blob_sets: Vec<Vec<(SMTObject<K>, Option<SMTObject<V>>)>>,
+        blob_sets: Vec<Vec<(K, Option<SMTObject<V>>)>>,
     ) -> Result<(Vec<HashValue>, TreeUpdateBatch<K, V>)> {
         let mut tree_cache = TreeCache::new(self.reader, state_root_hash);
         for blob_set in blob_sets.into_iter() {
@@ -316,11 +312,7 @@ where
         Ok(tree_cache.into())
     }
 
-    fn put(
-        key: SMTObject<K>,
-        blob: Option<SMTObject<V>>,
-        tree_cache: &mut TreeCache<R, K, V>,
-    ) -> Result<()> {
+    fn put(key: K, blob: Option<SMTObject<V>>, tree_cache: &mut TreeCache<R, K, V>) -> Result<()> {
         let key_hash = key.merkle_hash();
         let nibble_path = NibblePath::new(key_hash.to_vec());
 
@@ -344,7 +336,7 @@ where
     fn insert_at(
         node_key: NodeKey,
         nibble_iter: &mut NibbleIterator,
-        key: SMTObject<K>,
+        key: K,
         blob: Option<SMTObject<V>>,
         tree_cache: &mut TreeCache<R, K, V>,
     ) -> Result<(NodeKey, Node<K, V>)> {
@@ -378,7 +370,7 @@ where
         node_key: NodeKey,
         internal_node: InternalNode,
         nibble_iter: &mut NibbleIterator,
-        key: SMTObject<K>,
+        key: K,
         blob: Option<SMTObject<V>>,
         tree_cache: &mut TreeCache<R, K, V>,
     ) -> Result<(NodeKey, Node<K, V>)> {
@@ -457,7 +449,7 @@ where
         node_key: NodeKey,
         existing_leaf_node: LeafNode<K, V>,
         nibble_iter: &mut NibbleIterator,
-        key: SMTObject<K>,
+        key: K,
         blob: Option<SMTObject<V>>,
         tree_cache: &mut TreeCache<R, K, V>,
     ) -> Result<(NodeKey, Node<K, V>)> {
@@ -566,7 +558,7 @@ where
 
     /// Helper function for creating leaf nodes. Returns the newly created leaf node.
     fn create_leaf_node(
-        key: SMTObject<K>,
+        key: K,
         blob: SMTObject<V>,
         tree_cache: &mut TreeCache<R, K, V>,
     ) -> Result<(NodeKey, Node<K, V>)> {
@@ -579,7 +571,7 @@ where
     }
 
     /// Returns the account state blob (if applicable) and the corresponding merkle proof.
-    pub fn get_with_proof<GK: Into<SMTObject<K>>>(
+    pub fn get_with_proof<GK: Into<K>>(
         &self,
         state_root_hash: HashValue,
         key: GK,
@@ -657,7 +649,7 @@ where
     pub fn get_range_proof(
         &self,
         state_root_hash: HashValue,
-        rightmost_key_to_prove: SMTObject<K>,
+        rightmost_key_to_prove: K,
     ) -> Result<SparseMerkleRangeProof> {
         let key_hash = rightmost_key_to_prove.merkle_hash();
         let (account, proof) = self.get_with_proof(state_root_hash, rightmost_key_to_prove)?;
@@ -682,7 +674,7 @@ where
     }
 
     #[cfg(test)]
-    pub fn get<GK: Into<SMTObject<K>>>(
+    pub fn get<GK: Into<K>>(
         &self,
         state_root_hash: HashValue,
         key: GK,

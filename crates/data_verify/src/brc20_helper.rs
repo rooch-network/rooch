@@ -43,14 +43,8 @@ pub fn process_transactions(config: &DataConfig, file_path: &str) -> Result<()> 
                     let max_str = max_value.as_str().unwrap_or_default();
                     let limit_str = limit_value.as_str().unwrap_or_default();
                     // println!("{},{},{},{}", tick_str,max_str,limit_str,transaction.id);
-                    if !tick_exists_in_coin_tsv(&config, &tick_str)? {
-                        write_to_coin_tsv(
-                            &config,
-                            &tick_str,
-                            &max_str,
-                            &limit_str,
-                            &transaction.id,
-                        )?;
+                    if !tick_exists_in_coin_tsv(config, tick_str)? {
+                        write_to_coin_tsv(config, tick_str, max_str, limit_str, &transaction.id)?;
                         // println!("{},{},{}",tick_str,op_str,max_str)
                     }
                 }
@@ -62,17 +56,17 @@ pub fn process_transactions(config: &DataConfig, file_path: &str) -> Result<()> 
                     let tick_str = tick_value.as_str().unwrap_or_default();
                     let amt_str = amt_value.as_str().unwrap_or_default();
                     // If tick has not been deployed and is not recorded in failinscription, then record it in failinscription
-                    if !tick_exists_in_coin_tsv(&config, &tick_str)?
+                    if !tick_exists_in_coin_tsv(config, tick_str)?
                         && !inscription_id_exists_in_failinscription_tsv(config, &transaction.txid)?
                     {
                         write_to_failinscription_tsv(config, &transaction.txid)?;
                     }
                     // If tick has not been deployed but is already recorded in failinscription, then skip
-                    else if !tick_exists_in_coin_tsv(&config, &tick_str)?
+                    else if !tick_exists_in_coin_tsv(config, tick_str)?
                         && inscription_id_exists_in_failinscription_tsv(config, &transaction.txid)?
                     {
                         continue;
-                    } else if tick_exists_in_coin_tsv(&config, &tick_str)? {
+                    } else if tick_exists_in_coin_tsv(config, tick_str)? {
                         let (leftforsupply, limit) =
                             read_coin_tsv(config, tick_str).expect("Error reading coin.tsv");
                         // println!("tick:{} ,leftforsupply: {}, limit: {}", tick_str,leftforsupply, limit);
@@ -176,6 +170,7 @@ fn process_indexer_entry(
     let indexer_file = File::open(indexer1_path)?;
     let mut temp_file = OpenOptions::new()
         .create(true)
+        .truncate(true)
         .write(true)
         .open(temp_path)?;
 
@@ -203,7 +198,7 @@ fn process_indexer_entry(
                 let amt_numeric: i32 = amt_str.parse().unwrap_or_default();
 
                 if availablebalance_numeric < amt_numeric {
-                    write_to_failinscription_tsv(config, &txid)?;
+                    write_to_failinscription_tsv(config, txid)?;
                 } else {
                     let updated_availablebalance = availablebalance_numeric - amt_numeric;
                     let updated_transferablebalance =
@@ -226,7 +221,7 @@ fn process_indexer_entry(
     }
 
     if !entry_exists {
-        write_to_failinscription_tsv(config, &txid)?;
+        write_to_failinscription_tsv(config, txid)?;
     }
     let indexer2_path = format!("{}/data/indexer.tsv", config.ord_data_path);
 
@@ -249,6 +244,7 @@ fn update_indexer_tsv(
     let indexer_file = File::open(indexer2_path)?;
     let mut temp_file = OpenOptions::new()
         .create(true)
+        .truncate(true)
         .write(true)
         .open(temp2_path)?;
 
@@ -313,6 +309,7 @@ fn update_coin_tsv(config: &DataConfig, tick_str: &str, amt_numeric: i32) -> Res
     let coin_file = File::open(coin5_path)?;
     let mut temp_file = OpenOptions::new()
         .create(true)
+        .truncate(true)
         .write(true)
         .open(temp5_path)?;
 

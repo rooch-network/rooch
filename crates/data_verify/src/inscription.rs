@@ -85,7 +85,7 @@ pub fn process_ord_transactions(
     ord_inscription_json: &str,
 ) -> Result<()> {
     // let transaction_path = format!("{}/data/id_txid_addr.json", project_path::PATH);
-    if let Ok(transactions) = read_ord_tx_json(&ord_tx_json) {
+    if let Ok(transactions) = read_ord_tx_json(ord_tx_json) {
         let mut result: Vec<serde_json::Value> = Vec::new();
 
         for transaction in transactions {
@@ -109,7 +109,7 @@ pub fn process_ord_transactions(
         }
 
         let result_json_value: serde_json::Value = serde_json::Value::Array(result);
-        if let Err(err) = write_json(&ord_inscription_json, &result_json_value) {
+        if let Err(err) = write_json(ord_inscription_json, &result_json_value) {
             eprintln!(
                 "Error write ord inscription json file {}, error: {}",
                 ord_inscription_json, err

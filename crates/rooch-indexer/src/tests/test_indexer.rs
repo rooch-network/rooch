@@ -29,8 +29,8 @@ fn random_update_object_states(states: Vec<IndexerObjectState>) -> Vec<IndexerOb
         .into_iter()
         .map(|item| {
             let mut metadata = item.metadata;
-            metadata.size = metadata.size + 1;
-            metadata.updated_at = metadata.updated_at + 1;
+            metadata.size += 1;
+            metadata.updated_at += 1;
 
             IndexerObjectState {
                 metadata,
@@ -44,17 +44,15 @@ fn random_update_object_states(states: Vec<IndexerObjectState>) -> Vec<IndexerOb
 fn random_new_object_states() -> Result<Vec<IndexerObjectState>> {
     let mut new_object_states = vec![];
 
-    let mut state_index = 0u64;
     let mut rng = thread_rng();
-    for n in 0..rng.gen_range(1..=10) {
+    for (state_index, n) in (0..rng.gen_range(1..=10)).enumerate() {
         let state = IndexerObjectState::new(
             random_table_object()?.into_state().metadata,
             n as u64,
-            state_index,
+            state_index as u64,
         );
 
         new_object_states.push(state);
-        state_index = state_index + 1;
     }
 
     Ok(new_object_states)
@@ -107,7 +105,7 @@ fn test_transaction_store() -> Result<()> {
         random_moveos_tx.ctx.clone(),
     )?;
     let transactions = vec![indexer_transaction];
-    let _ = indexer_store.persist_transactions(transactions)?;
+    indexer_store.persist_transactions(transactions)?;
 
     let filter = TransactionFilter::Sender(random_moveos_tx.ctx.sender.into());
     let query_transactions =
@@ -142,7 +140,7 @@ fn test_event_store() -> Result<()> {
         random_moveos_tx.ctx.clone(),
     );
     let events = vec![indexer_event];
-    let _ = indexer_store.persist_events(events)?;
+    indexer_store.persist_events(events)?;
 
     let filter = EventFilter::Sender(random_moveos_tx.ctx.sender.into());
     let query_events = indexer_reader.query_events_with_filter(filter, None, 1, true)?;
@@ -261,7 +259,7 @@ fn test_escape_transaction() -> Result<()> {
     let quotes = "Executed: ''There is no escape'";
     indexer_transaction.status = quotes.to_string();
     let transactions = vec![indexer_transaction];
-    let _ = indexer_store.persist_transactions(transactions)?;
+    indexer_store.persist_transactions(transactions)?;
 
     let filter = TransactionFilter::Sender(random_moveos_tx.ctx.sender.into());
     let query_transactions =

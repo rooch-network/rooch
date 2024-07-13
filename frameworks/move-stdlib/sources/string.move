@@ -10,6 +10,7 @@ module std::string {
     /// Index out of range.
     const EINVALID_INDEX: u64 = 2;
 
+    #[data_struct]
     /// A `String` holds a sequence of bytes which is guaranteed to be in utf8 format.
     struct String has copy, drop, store {
         bytes: vector<u8>,

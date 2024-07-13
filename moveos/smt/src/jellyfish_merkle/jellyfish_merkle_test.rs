@@ -62,9 +62,7 @@ fn test_delete_from_tree() {
     let key = TestKey::new([0x00u8; HashValue::LENGTH]);
     let value = TestValue::from(vec![1u8, 2u8, 3u8, 4u8]);
 
-    let (_new_root_hash, batch) = tree
-        .put_blob_set(None, vec![(key.into_object().unwrap(), value.into())])
-        .unwrap();
+    let (_new_root_hash, batch) = tree.put_blob_set(None, vec![(key, value.into())]).unwrap();
     db.write_tree_update_batch(batch).unwrap();
 
     let (new_root, batch) = tree.delete(Some(_new_root_hash), key).unwrap();
@@ -80,7 +78,7 @@ fn test_delete_from_tree() {
     let (_root1_hash, batch) = tree
         .put_blob_set(
             Some(_new_root_hash),
-            vec![(key2.into_object().unwrap(), value2.into_object().unwrap())],
+            vec![(key2, value2.into_object().unwrap())],
         )
         .unwrap();
     assert_eq!(batch.stale_node_index_batch.len(), 0);
@@ -289,11 +287,11 @@ fn test_batch_insertion() {
         vec![(key6, value6)],
         vec![(key2, value2_update)],
     ];
-    let one_batch: Vec<(SMTObject<TestKey>, SMTObject<TestValue>)> = batches
+    let one_batch: Vec<(TestKey, SMTObject<TestValue>)> = batches
         .iter()
         .flatten()
         .cloned()
-        .map(|(k, v)| (k.into(), v.into()))
+        .map(|(k, v)| (k, v.into()))
         .collect::<Vec<_>>();
 
     let mut to_verify = one_batch.clone();
@@ -326,7 +324,7 @@ fn test_batch_insertion() {
         let tree = JellyfishMerkleTree::new(&db);
         let mut batches2 = vec![];
 
-        for (_idx, sub_vec) in batches.iter().enumerate() {
+        for sub_vec in batches.iter() {
             for x in sub_vec {
                 batches2.push(vec![(x.0.into(), Some(x.1.clone().into()))]);
             }
@@ -559,10 +557,7 @@ fn test_non_existence_and_build_new_root_with_proof_many() {
     let value1 = TestValue::from(vec![1u8]);
 
     let (mut root, batch) = tree
-        .put_blob_set(
-            None,
-            vec![(key1.into_object().unwrap(), value1.clone().into())],
-        )
+        .put_blob_set(None, vec![(key1, value1.clone().into())])
         .unwrap();
     db.write_tree_update_batch(batch).unwrap();
     assert_eq!(tree.get(root, key1).unwrap().unwrap().origin, value1);
@@ -587,7 +582,7 @@ fn test_put_blob_sets() {
     let mut root_hashes_one_by_one = vec![];
     let mut batch_one_by_one = TreeUpdateBatch::default();
     {
-        let mut iter = keys.clone().into_iter().zip(values.clone().into_iter());
+        let mut iter = keys.clone().into_iter().zip(values.clone());
         let db = MockTestStore::new_test();
         let tree = JellyfishMerkleTree::new(&db);
 
@@ -596,7 +591,7 @@ fn test_put_blob_sets() {
             let mut keyed_blob_set = vec![];
             for _ in 0..2 {
                 let next = iter.next().unwrap();
-                keyed_blob_set.push((next.0.into_object().unwrap(), next.1.into_object().unwrap()));
+                keyed_blob_set.push((next.0, next.1.into_object().unwrap()));
             }
             let (root, batch) = tree.put_blob_set(temp_root, keyed_blob_set).unwrap();
             db.write_tree_update_batch(batch.clone()).unwrap();
@@ -611,7 +606,7 @@ fn test_put_blob_sets() {
         }
     }
     {
-        let mut iter = keys.into_iter().zip(values.into_iter());
+        let mut iter = keys.into_iter().zip(values);
         let db = MockTestStore::new_test();
         let tree = JellyfishMerkleTree::new(&db);
         let mut blob_sets = vec![];
@@ -619,10 +614,7 @@ fn test_put_blob_sets() {
             let mut keyed_blob_set = vec![];
             for _ in 0..2 {
                 let val = iter.next().unwrap();
-                keyed_blob_set.push((
-                    val.0.into_object().unwrap(),
-                    Some(val.1.into_object().unwrap()),
-                ));
+                keyed_blob_set.push((val.0, Some(val.1.into_object().unwrap())));
             }
             blob_sets.push(keyed_blob_set);
         }
@@ -645,10 +637,7 @@ fn many_keys_get_proof_and_verify_tree_root(seed: &[u8], num_keys: usize) {
     for _i in 0..num_keys {
         let key = HashValue::random_with_rng(&mut rng);
         let value = TestValue::from(HashValue::random_with_rng(&mut rng).to_vec());
-        kvs.push((
-            TestKey(key).into_object().unwrap(),
-            value.into_object().unwrap(),
-        ));
+        kvs.push((TestKey(key), value.into_object().unwrap()));
     }
 
     let (root, batch) = tree.put_blob_set(None, kvs.clone()).unwrap();
@@ -658,7 +647,7 @@ fn many_keys_get_proof_and_verify_tree_root(seed: &[u8], num_keys: usize) {
         let (value, proof) = tree.get_with_proof(root, k.clone()).unwrap();
         assert_eq!(value.unwrap(), *v);
         assert!(proof
-            .verify(root.into(), k.clone().origin, Some(v.clone().origin))
+            .verify(root.into(), *k, Some(v.clone().origin))
             .is_ok());
     }
 }
@@ -689,7 +678,7 @@ fn many_versions_get_proof_and_verify_tree_root(seed: &[u8], num_versions: usize
 
     let mut roots = vec![];
     let mut current_root = None;
-    for (_idx, kvs) in kvs.iter().enumerate() {
+    for kvs in kvs.iter() {
         let (root, batch) = tree
             .put_blob_set(current_root, vec![(kvs.0.into(), kvs.1.clone().into())])
             .unwrap();
@@ -699,7 +688,7 @@ fn many_versions_get_proof_and_verify_tree_root(seed: &[u8], num_versions: usize
     }
 
     // Update value of all keys
-    for (_idx, kvs) in kvs.iter().enumerate() {
+    for kvs in kvs.iter() {
         let (root, batch) = tree
             .put_blob_set(current_root, vec![(kvs.0.into(), kvs.2.clone().into())])
             .unwrap();
@@ -799,7 +788,7 @@ proptest! {
         let tree = JellyfishMerkleTree::new(&db);
         let root_hash = root_hash_option.unwrap();
         let nth_key = *btree.keys().nth(n).unwrap();
-        let proof = tree.get_range_proof(root_hash, nth_key.into_object().unwrap()).unwrap();
+        let proof = tree.get_range_proof(root_hash, nth_key).unwrap();
         verify_range_proof(
             root_hash,
             btree.into_iter().take(n + 1).collect(),
@@ -854,10 +843,7 @@ fn test_nonexistent_key_value_update_impl(
     let (root, batch) = tree
         .put_blob_set(
             Some(root_hash),
-            vec![(
-                key.into_object().unwrap(),
-                value.clone().into_object().unwrap(),
-            )],
+            vec![(key, value.clone().into_object().unwrap())],
         )
         .unwrap();
     db.write_tree_update_batch(batch).unwrap();
@@ -920,10 +906,8 @@ fn verify_range_proof<K: Key, V: Value>(
     let last_proven_key = btree
         .keys()
         .last()
-        .expect("We are proving at least one key.")
-        .clone()
-        .into_object()
-        .unwrap();
+        .cloned()
+        .expect("We are proving at least one key.");
     let last_proven_key_hash = last_proven_key.merkle_hash();
     for (i, sibling) in last_proven_key_hash
         .iter_bits()

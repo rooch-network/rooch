@@ -32,10 +32,10 @@ mod tests {
 
     #[test]
     fn test_is_system_reserved_address() {
-        assert_eq!(is_system_reserved_address(AccountAddress::ZERO), false);
-        assert_eq!(is_system_reserved_address(AccountAddress::ONE), true);
-        assert_eq!(is_system_reserved_address(new_address(11)), false);
-        assert_eq!(is_system_reserved_address(AccountAddress::random()), false);
+        assert!(!is_system_reserved_address(AccountAddress::ZERO));
+        assert!(is_system_reserved_address(AccountAddress::ONE));
+        assert!(!is_system_reserved_address(new_address(11)));
+        assert!(!is_system_reserved_address(AccountAddress::random()));
     }
 
     fn new_address(u: u8) -> AccountAddress {

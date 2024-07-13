@@ -120,7 +120,7 @@ fn test_internal_validity() {
 #[test]
 fn test_leaf_hash() {
     {
-        let key = TestKey::random().into_object().unwrap();
+        let key = TestKey::random();
         let blob = TestValue::from(vec![0x02]).into_object().unwrap();
         let value_hash = blob.merkle_hash();
         let hash = hash_leaf(key.merkle_hash(), value_hash);
