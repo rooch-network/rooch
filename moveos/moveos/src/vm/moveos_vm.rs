@@ -701,16 +701,11 @@ where
     }
 
     pub(crate) fn query_gas_used(&self) -> u64 {
-        if self.read_only {
-            //TODO calculate readonly function gas usage
-            0
-        } else {
-            let max_gas_amount = self.tx_context().max_gas_amount;
-            let gas_left: u64 = self.gas_meter.balance_internal().into();
-            max_gas_amount.checked_sub(gas_left).unwrap_or_else(
+        let max_gas_amount = self.tx_context().max_gas_amount;
+        let gas_left: u64 = self.gas_meter.balance_internal().into();
+        max_gas_amount.checked_sub(gas_left).unwrap_or_else(
                 || panic!("gas_left({gas_left}) should always be less than or equal to max gas amount({max_gas_amount})")
             )
-        }
     }
 
     /// Load a script and all of its types into cache

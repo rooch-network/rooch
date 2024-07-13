@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::address::BitcoinAddress;
-use bitcoin::BlockHash;
+use bitcoin::{block::Header, BlockHash};
 use framework_builder::stdlib_version::StdlibVersion;
 use move_core_types::value::MoveTypeLayout;
 use moveos_types::{
@@ -117,17 +117,22 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     stdlib_version: StdlibVersion::Latest,
 });
 
+//curl -sSL https://mempool.space/testnet/api/block/$(curl -sSL https://mempool.space/testnet/api/block-height/2867700)
+static TESTNET_GENESIS_HEIGHT_HEADER: Lazy<(u64, Header)> = Lazy::new(|| {
+    (2867900, bitcoin::consensus::deserialize(
+        &hex::decode("00e0962bd97a2b80ffb30abf34c2dc211c167a3e35dc6e5bdba5ac1d23208d6f0000000011059bafb1e9ceb8f2e494671c078863589574f5964548f4c0aa3ba0da733ebfa47f9266129422199e86b520")
+            .expect("Should be valid"),
+    ).expect("Should be valid"))
+});
+
 pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
-    //curl -sSL https://mempool.space/testnet/api/block/$(curl -sSL https://mempool.space/testnet/api/blocks/tip/hash)
     GenesisConfig {
         bitcoin_network: crate::bitcoin::network::Network::Testnet.to_num(),
-        bitcoin_block_height: 2821523,
-        bitcoin_block_hash: BlockHash::from_str(
-            "000000003f2649e6d87c6037d26af712785d5fe59c576469e486991213eda3c6",
-        )
-        .expect("Should be valid"),
+        bitcoin_block_height: TESTNET_GENESIS_HEIGHT_HEADER.0,
+        bitcoin_block_hash: TESTNET_GENESIS_HEIGHT_HEADER.1.block_hash(),
         bitcoin_reorg_block_count: 3,
-        timestamp: 1718592994000,
+        //Make sure this timestamp is the same as Genesis Object Timestamp
+        timestamp: TESTNET_GENESIS_HEIGHT_HEADER.1.time as u64 * 1000,
         sequencer_account: BitcoinAddress::from_str(
             "bcrt1p56tdhxkcpc5xvdurfnufn9lkkywsh0gxttv5ktkvlezj0t23nasqawwrla",
         )
@@ -135,7 +140,7 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         genesis_objects: vec![
             (
                 ObjectState::new_timestamp(Timestamp {
-                    milliseconds: 1718592994000,
+                    milliseconds: TESTNET_GENESIS_HEIGHT_HEADER.1.time as u64 * 1000,
                 }),
                 Timestamp::type_layout(),
             ),
