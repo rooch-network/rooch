@@ -43,6 +43,8 @@ pub struct GasScheduleConfig {
 
 impl GasScheduleConfig {
     pub const INITIAL_MAX_GAS_AMOUNT: u64 = 1_000_000_000u64;
+    /// The maximum gas amount that can be used for a read-only function call
+    pub const READONLY_MAX_GAS_AMOUNT: u64 = 5_000_000_000u64;
 }
 
 impl MoveStructType for GasScheduleConfig {

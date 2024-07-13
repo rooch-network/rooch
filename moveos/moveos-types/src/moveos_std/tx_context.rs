@@ -82,7 +82,7 @@ impl TxContext {
         Self::new(
             sender,
             0,
-            GasScheduleConfig::INITIAL_MAX_GAS_AMOUNT,
+            GasScheduleConfig::READONLY_MAX_GAS_AMOUNT,
             H256::zero(),
             0,
         )
