@@ -14,11 +14,10 @@ import {
 import * as React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { AssetsLayout } from '@/pages/assets/assets-layout.tsx'
-import { MintLayout } from '@/pages/mint/mint-layout.tsx'
+import { MintLayout } from '@/pages/mint/layout.tsx'
 import { TradeLayout } from '@/pages/trade/trade-layout.tsx'
 import { LeapLayout } from '@/pages/leap/leap-layout.tsx'
-import { MintDetailLayout } from '@/pages/mint/detail/mint-detail-layout.tsx'
-import { SftDetailLayoutForSelfStaking } from '@/pages/mint/sftDetailForSelfStaking/sft-detail-layout-for-self-staking.tsx'
+import { MintDetailLayout } from '@/pages/mint/detail/layout.tsx'
 import { TransactionsLayout } from '@/pages/transactions/transactions-layout.tsx'
 import { TransactionsBrowserLayout } from '@/pages/txblock/transactions-browser-layout.tsx'
 import { AppsLayout } from '@/pages/apps/apps-layout.tsx'
@@ -36,9 +35,9 @@ export type NavLink = {
 export type NavItemsType = NavLink[]
 
 export const allRouter = [
+  { path: '/', element: <AssetsLayout /> },
   { path: '/mint', element: <MintLayout /> },
-  { path: '/mint/detail', element: <MintDetailLayout /> },
-  { path: '/mint/stake', element: <SftDetailLayoutForSelfStaking /> },
+  { path: '/mint/detail/:address', element: <MintDetailLayout /> },
   { path: '/trade', element: <TradeLayout /> },
   { path: '/leap', element: <LeapLayout /> },
   { path: '/apps', element: <AppsLayout /> },
@@ -47,65 +46,43 @@ export const allRouter = [
   { path: '/settings', element: <SettingsLayout /> },
 ]
 
-export const navItems = (): NavItemsType => {
-  return [
-    { icon: Bitcoin, label: 'Sidebar.assets', path: '/', auth: true,  element: <AssetsLayout /> },
-    { icon: Scroll, label: 'Sidebar.mint', path: '/mint', auth: true, element: <MintLayout /> },
-    {
-      icon: CandlestickChart,
-      label: 'Sidebar.trade',
-      path: '/trade',
-      element: <TradeLayout />,
-    },
-    {
-      icon: ArrowLeftRight,
-      label: 'Sidebar.leap',
-      path: '/leap',
-      element: <LeapLayout />,
-    },
-    {
-      icon: Compass,
-      label: 'Sidebar.transactions',
-      path: '/transactions',
-      element: <TransactionsLayout />,
-    },
-    { icon: LayoutGrid, label: 'Sidebar.apps', path: '/apps', element: <AppsLayout /> },
-    {
-      icon: UserCog,
-      label: 'Sidebar.settings',
-      path: '/settings',
-      auth: true,
-      element: <SettingsLayout />,
-    },
-  ]
-}
-
-const otherRouter = [
-  { path: '/trade', element: <TradeLayout /> },
-  { path: '/leap', element: <LeapLayout /> },
+export const navItems: NavItemsType = [
+  { icon: Bitcoin, label: 'Sidebar.assets', path: '/', auth: true, element: <AssetsLayout /> },
+  { icon: Scroll, label: 'Sidebar.mint', path: '/mint', auth: true, element: <MintLayout /> },
   {
-    path: '/mint/detail',
-    element: <MintDetailLayout />,
+    icon: CandlestickChart,
+    label: 'Sidebar.trade',
+    path: '/trade',
+    element: <TradeLayout />,
   },
   {
-    path: '/transactions/txblock/:hash',
-    element: <TransactionsBrowserLayout />,
+    icon: ArrowLeftRight,
+    label: 'Sidebar.leap',
+    path: '/leap',
+    element: <LeapLayout />,
   },
   {
-    path: '/mint/stake',
-    element: <SftDetailLayoutForSelfStaking />,
+    icon: Compass,
+    label: 'Sidebar.transactions',
+    path: '/transactions',
+    element: <TransactionsLayout />,
+  },
+  { icon: LayoutGrid, label: 'Sidebar.apps', path: '/apps', element: <AppsLayout /> },
+  {
+    icon: UserCog,
+    label: 'Sidebar.settings',
+    path: '/settings',
+    auth: true,
+    element: <SettingsLayout />,
   },
 ]
 
 export const routers = (): React.ReactElement => {
   return (
     <Routes>
-      {navItems()
-        .filter((item) => item.element !== undefined || !item.disabled)
+      {allRouter
         .map((item) => <Route key={item.path} path={item.path} element={item.element} />)
-        .concat(
-          otherRouter.map((or) => <Route key={or.path} path={or.path} element={or.element} />),
-        )}
+      }
     </Routes>
   )
 }

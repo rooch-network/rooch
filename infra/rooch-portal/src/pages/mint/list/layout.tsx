@@ -1,14 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
 import { useState } from 'react'
-import { Tokens } from './tokens'
+import { AllTokens } from './all-tokens'
 import { TabItem } from '@/common/interface'
 
 const mintTabItems: TabItem[] = [
   { id: 'allTokens', label: 'All Tokens', available: false },
 ]
 
-export const SftTabs = () => {
+export const MintTabsLayout = () => {
   const [activeId, setActiveId] = useState<string>('allTokens')
 
   const handleTabClick = (id: string, available: boolean) => {
@@ -20,7 +21,7 @@ export const SftTabs = () => {
   const renderTabContent = () => {
     switch (activeId) {
       case 'allTokens':
-        return <Tokens />
+        return <AllTokens />
     }
   }
 

@@ -19,21 +19,27 @@ import { formatTimestamp } from '@/utils/format'
 import { useNavigate } from 'react-router-dom'
 import { getTokenInfo, TokenInfo } from '@/pages/mint/util/get-token-info'
 
-export const Tokens = () => {
+export const AllTokens = () => {
   const navigate = useNavigate()
   const [tokens, setTokens] = useState<TokenInfo[]>([])
 
   const client = useRoochClient()
-  const s = useNetworkVariable('mintAddress')
+  const addresses = useNetworkVariable('mintAddress')
 
   useEffect(() => {
 
-    getTokenInfo(client, s).then((token) => {
-      if (token) {
-        setTokens([token])
-      }
+    let tokens: TokenInfo[] = []
+
+    addresses.forEach((item) => {
+      getTokenInfo(client, item).then((token) => {
+        if (token) {
+          tokens = tokens.concat(token)
+          setTokens(tokens)
+        }
+      })
     })
-  }, [client, s])
+
+  }, [client, addresses])
 
   return (
     <div className="rounded-lg border w-full">
@@ -63,7 +69,7 @@ export const Tokens = () => {
               </TableCell>
               <TableCell className="text-center">
                 <Button variant="link" size="sm" onClick={() => {
-                  navigate('/mint/stake')
+                  navigate(`/mint/detail/${token.address}`)
                 }}>
                   <span className="flex items-center justify-center">
                     <MousePointer2 className="w-4 h-4 mr-1" />

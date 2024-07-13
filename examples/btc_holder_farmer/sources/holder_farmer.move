@@ -18,7 +18,6 @@ module btc_holder_farmer::hold_farmer {
     use moveos_std::timestamp;
     use moveos_std::account;
 
-
     const DEPLOYER: address = @btc_holder_farmer;
 
     const ErrorWrongDeployer: u64 = 1;
@@ -34,8 +33,6 @@ module btc_holder_farmer::hold_farmer {
     const ErrorAlreadyStaked: u64 = 11;
     const ErrorNotStaked: u64 = 12;
     const ErrorAssetExist: u64 = 13;
-
-
 
     spec module {
         pragma verify = false;
@@ -108,7 +105,7 @@ module btc_holder_farmer::hold_farmer {
         alive: bool,
     }
 
-    struct UserStake has key {
+    struct UserStake has store, key, drop {
         /// utxo ==> stake
         stake: Table<ObjectID, Stake>
     }

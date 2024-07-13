@@ -19,7 +19,7 @@ import CustomPagination from '@/components/custom-pagination.tsx'
 import { LoadingSpinner } from '@/components/loading-spinner.tsx'
 
 import { formatAddress } from '@/utils/format'
-import { ROOCH_OPERATING_ADDRESS } from '@/common/constant.ts'
+import { ROOCH_NFT_OPERATING_ADDRESS } from '@/common/constant.ts'
 import { address } from 'bitcoinjs-lib'
 
 export const AssetsNft = () => {
@@ -63,7 +63,7 @@ export const AssetsNft = () => {
     filter: {
       object_type_with_owner: {
         owner: sessionKey?.getRoochAddress().toHexAddress() || '',
-        object_type: `${ROOCH_OPERATING_ADDRESS}::nft::NFT`,
+        object_type: `${ROOCH_NFT_OPERATING_ADDRESS}::nft::NFT`,
       },
     },
     // @ts-ignore

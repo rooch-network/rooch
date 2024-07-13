@@ -4,6 +4,7 @@ import { RoochClient, AnnotatedMoveStructView } from '@roochnetwork/rooch-sdk'
 
 export type TokenInfo =
   {
+    address: string,
     coin: {
       name: string,
       symbol: string,
@@ -36,6 +37,7 @@ export async function getTokenInfo(client: RoochClient, address: string): Promis
     const coinView = (((sv[0].decoded_value as any).value as any).value as any).value as any
 
     return {
+      address: address,
       coin: {
         name: coinView.name,
         decimals: coinView.decimals,

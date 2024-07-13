@@ -1,10 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { ArrowLeft } from 'lucide-react'
-import { Button } from 'src/components/ui/button.tsx'
 import React, { ReactNode } from 'react'
+import { ArrowLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+
+import { Button } from '@/components/ui/button.tsx'
 
 type DetailViewProps = {
   back: string,

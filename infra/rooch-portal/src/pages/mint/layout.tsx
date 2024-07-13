@@ -1,6 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-import { SftTabs } from './components/sft-tabs'
+import { MintTabsLayout } from './list/layout'
 import {useTranslation} from 'react-i18next';
 import { useCurrentWallet } from '@roochnetwork/rooch-sdk-kit'
 
@@ -19,7 +19,7 @@ export const MintLayout = () => {
           <p className="text-muted-foreground text-wrap">{t('Mint.subTitle')}</p>
         </span>
       </div>
-      <SftTabs />
+      <MintTabsLayout />
     </div>
   )
 }

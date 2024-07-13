@@ -1,5 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
 import { ReactNode, useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import {
@@ -18,7 +19,6 @@ interface SessionGuardProps {
 const defaultScope = [
   '0x1::*::*',
   '0x3::*::*',
-  '0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35::*::*',
 ]
 
 export const SessionGuard = (props: SessionGuardProps) => {
@@ -41,7 +41,7 @@ export const SessionGuard = (props: SessionGuardProps) => {
 
     setOpen(
       sessionKey === null &&
-        navItems().find((item) => location.pathname.startsWith(item.path) && item.auth) !== undefined,
+        navItems.find((item) => location.pathname.startsWith(item.path) && item.auth) !== undefined,
     )
   }, [isConnected, location, sessionKey])
 
@@ -51,7 +51,7 @@ export const SessionGuard = (props: SessionGuardProps) => {
       await createSessionKey({
         appName: 'rooch-portal',
         appUrl: 'portal.rooch.network',
-        scopes: defaultScope.concat(`${mintAddress}::*::*`),
+        scopes: defaultScope.concat(mintAddress.map((address) => `${address}::*::*`)),
       })
     } catch (e) {
       console.log(e)

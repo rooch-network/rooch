@@ -5,16 +5,16 @@ import { SupportChain } from '../feature/index.js'
 import {
   Wallet,
   UniSatWallet,
-  OkxWallet,
-  OnekeyWallet,
+  // OkxWallet,
+  // OnekeyWallet,
   // OnekeyHardwareWallet,
 } from '../wellet/index.js'
 
 export async function checkWallets(filter?: SupportChain) {
   const wallets: Wallet[] = [
     new UniSatWallet(),
-    new OkxWallet(),
-    new OnekeyWallet(),
+    // new OkxWallet(),
+    // new OnekeyWallet(),
     // new OnekeyHardwareWallet(),
   ].filter((wallet) => wallet.getChain() === filter || !filter)
 
