@@ -11,13 +11,19 @@ use commands::{
     session_key::SessionKey, state::StateCommand, transaction::Transaction,
 };
 use rooch_types::error::RoochResult;
+use clap::builder::styling::{AnsiColor, Effects, Styles};
 
 pub mod cli_types;
 pub mod commands;
 pub mod utils;
 
 #[derive(clap::Parser)]
-#[clap(author, version, about, long_about = None)]
+#[clap(author, version, about, long_about = None,
+styles = Styles::styled()
+.header(AnsiColor::Green.on_default() | Effects::BOLD)
+.usage(AnsiColor::Green.on_default() | Effects::BOLD)
+.literal(AnsiColor::Blue.on_default() | Effects::BOLD)
+.placeholder(AnsiColor::Cyan.on_default()))]
 pub struct RoochCli {
     #[clap(subcommand)]
     pub cmd: Command,
