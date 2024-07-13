@@ -37,7 +37,7 @@ fn test_smt() {
     let changeset2 = smt
         .puts(
             changeset.state_root,
-            vec![(key2.clone(), Some(value2.clone())), (key3, Some(value3))],
+            vec![(key2, Some(value2.clone())), (key3, Some(value3))],
         )
         .unwrap();
 
@@ -45,7 +45,7 @@ fn test_smt() {
     let (result, proof) = smt.get_with_proof(changeset2.state_root, key2).unwrap();
     assert_eq!(result, Some(value2.clone()));
     assert!(proof
-        .verify::<H256, String>(changeset2.state_root, key2.clone(), Some(value2))
+        .verify::<H256, String>(changeset2.state_root, key2, Some(value2))
         .is_ok());
 
     let iter = smt.iter(changeset2.state_root, None).unwrap();

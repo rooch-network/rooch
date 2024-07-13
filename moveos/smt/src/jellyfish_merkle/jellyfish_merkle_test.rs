@@ -44,7 +44,7 @@ fn test_insert_to_empty_tree() {
     let value = TestValue::from(vec![1u8, 2u8, 3u8, 4u8]);
 
     let (new_root_hash, batch) = tree
-        .put_blob_set(None, vec![(key.into(), value.clone().into())])
+        .put_blob_set(None, vec![(key, value.clone().into())])
         .unwrap();
     assert!(batch.stale_node_index_batch.is_empty());
     db.write_tree_update_batch(batch).unwrap();
@@ -101,7 +101,7 @@ fn test_insert_at_leaf_with_internal_created() {
     let value1 = TestValue::from(vec![1u8, 2u8]);
 
     let (_root0_hash, batch) = tree
-        .put_blob_set(None, vec![(key1.into(), value1.clone().into())])
+        .put_blob_set(None, vec![(key1, value1.clone().into())])
         .unwrap();
 
     assert!(batch.stale_node_index_batch.is_empty());
@@ -114,10 +114,7 @@ fn test_insert_at_leaf_with_internal_created() {
     let value2 = TestValue::from(vec![3u8, 4u8]);
 
     let (_root1_hash, batch) = tree
-        .put_blob_set(
-            Some(_root0_hash),
-            vec![(key2.into(), value2.clone().into())],
-        )
+        .put_blob_set(Some(_root0_hash), vec![(key2, value2.clone().into())])
         .unwrap();
     assert_eq!(batch.stale_node_index_batch.len(), 0);
     db.write_tree_update_batch(batch).unwrap();
@@ -156,7 +153,7 @@ fn test_insert_at_leaf_with_multiple_internals_created() {
     let value1 = TestValue::from(vec![1u8, 2u8]);
 
     let (_root0_hash, batch) = tree
-        .put_blob_set(None, vec![(key1.into(), value1.clone().into())])
+        .put_blob_set(None, vec![(key1, value1.clone().into())])
         .unwrap();
     db.write_tree_update_batch(batch).unwrap();
     assert_eq!(tree.get(_root0_hash, key1).unwrap().unwrap().origin, value1);
@@ -167,10 +164,7 @@ fn test_insert_at_leaf_with_multiple_internals_created() {
     let value2 = TestValue::from(vec![3u8, 4u8]);
 
     let (_root1_hash, batch) = tree
-        .put_blob_set(
-            Some(_root0_hash),
-            vec![(key2.into(), value2.clone().into())],
-        )
+        .put_blob_set(Some(_root0_hash), vec![(key2, value2.clone().into())])
         .unwrap();
     db.write_tree_update_batch(batch).unwrap();
     assert_eq!(tree.get(_root0_hash, key1).unwrap().unwrap().origin, value1);
@@ -213,7 +207,7 @@ fn test_insert_at_leaf_with_multiple_internals_created() {
     let (_root2_hash, batch) = tree
         .put_blob_set(
             Some(_root1_hash),
-            vec![(key2.into(), value2_update.clone().into())],
+            vec![(key2, value2_update.clone().into())],
         )
         .unwrap();
     db.write_tree_update_batch(batch).unwrap();
@@ -301,7 +295,7 @@ fn test_batch_insertion() {
                      root: HashValue| {
         to_verify
             .iter()
-            .for_each(|(k, v)| assert_eq!(tree.get(root, k.clone()).unwrap().unwrap(), *v))
+            .for_each(|(k, v)| assert_eq!(tree.get(root, *k).unwrap().unwrap(), *v))
     };
 
     // Insert as one batch.
@@ -326,7 +320,7 @@ fn test_batch_insertion() {
 
         for sub_vec in batches.iter() {
             for x in sub_vec {
-                batches2.push(vec![(x.0.into(), Some(x.1.clone().into()))]);
+                batches2.push(vec![(x.0, Some(x.1.clone().into()))]);
             }
         }
         let (mut roots, batch) = tree.puts(None, batches2).unwrap();
@@ -462,9 +456,9 @@ fn test_non_existence() {
         .put_blob_set(
             None,
             vec![
-                (key1.into(), value1.clone().into()),
-                (key2.into(), value2.clone().into()),
-                (key3.into(), value3.clone().into()),
+                (key1, value1.clone().into()),
+                (key2, value2.clone().into()),
+                (key3, value3.clone().into()),
             ],
         )
         .unwrap();
@@ -526,7 +520,7 @@ fn test_non_existence_and_build_new_root_with_proof() {
     let value1 = TestValue::from(vec![1u8]);
 
     let (root, batch) = tree
-        .put_blob_set(None, vec![(key1.into(), value1.clone().into())])
+        .put_blob_set(None, vec![(key1, value1.clone().into())])
         .unwrap();
     db.write_tree_update_batch(batch).unwrap();
     assert_eq!(tree.get(root, key1).unwrap().unwrap().origin, value1);
@@ -644,7 +638,7 @@ fn many_keys_get_proof_and_verify_tree_root(seed: &[u8], num_keys: usize) {
     db.write_tree_update_batch(batch).unwrap();
 
     for (k, v) in &kvs {
-        let (value, proof) = tree.get_with_proof(root, k.clone()).unwrap();
+        let (value, proof) = tree.get_with_proof(root, *k).unwrap();
         assert_eq!(value.unwrap(), *v);
         assert!(proof
             .verify(root.into(), *k, Some(v.clone().origin))
@@ -680,7 +674,7 @@ fn many_versions_get_proof_and_verify_tree_root(seed: &[u8], num_versions: usize
     let mut current_root = None;
     for kvs in kvs.iter() {
         let (root, batch) = tree
-            .put_blob_set(current_root, vec![(kvs.0.into(), kvs.1.clone().into())])
+            .put_blob_set(current_root, vec![(kvs.0, kvs.1.clone().into())])
             .unwrap();
         roots.push(root);
         db.write_tree_update_batch(batch).unwrap();
@@ -690,7 +684,7 @@ fn many_versions_get_proof_and_verify_tree_root(seed: &[u8], num_versions: usize
     // Update value of all keys
     for kvs in kvs.iter() {
         let (root, batch) = tree
-            .put_blob_set(current_root, vec![(kvs.0.into(), kvs.2.clone().into())])
+            .put_blob_set(current_root, vec![(kvs.0, kvs.2.clone().into())])
             .unwrap();
         roots.push(root);
         db.write_tree_update_batch(batch).unwrap();
@@ -897,7 +891,7 @@ fn verify_range_proof<K: Key, V: Value>(
     // that would cause `X` to end up in the above position.
     let mut btree1 = BTreeMap::new();
     for (key, blob) in &btree {
-        let leaf = LeafNode::new(key.clone(), blob.clone());
+        let leaf = LeafNode::new(*key, blob.clone());
         btree1.insert(leaf.key_hash(), leaf.merkle_hash());
     }
     // Using the above example, `last_proven_key` is `e`. We look at the path from root to `e`.
