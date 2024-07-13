@@ -11,7 +11,6 @@ runs:
 
     - uses: dtolnay/rust-toolchain@1.78.0
       with:
-        override: true
         components: rustfmt, clippy
 
     - name: install protoc and related tools
