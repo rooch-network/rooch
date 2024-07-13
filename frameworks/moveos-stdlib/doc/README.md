@@ -30,6 +30,7 @@ This is the reference documentation of the MoveOS standard library.
 -  [`0x2::features`](features.md#0x2_features)
 -  [`0x2::gas_schedule`](gas_schedule.md#0x2_gas_schedule)
 -  [`0x2::genesis`](genesis.md#0x2_genesis)
+-  [`0x2::groth16`](groth16.md#0x2_groth16)
 -  [`0x2::hash`](hash.md#0x2_hash)
 -  [`0x2::hex`](hex.md#0x2_hex)
 -  [`0x2::json`](json.md#0x2_json)
