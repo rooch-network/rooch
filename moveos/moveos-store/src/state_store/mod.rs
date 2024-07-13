@@ -9,7 +9,7 @@ use moveos_types::h256::H256;
 use raw_store::rocks::batch::WriteBatch;
 use raw_store::CodecKVStore;
 use raw_store::{derive_store, WriteOp};
-use smt::NodeReader;
+use smt::{NodeReader, NodeWriter};
 use std::collections::BTreeMap;
 
 derive_store!(NodeDBStore, H256, Vec<u8>, STATE_NODE_COLUMN_FAMILY_NAME);
@@ -33,5 +33,11 @@ impl NodeDBStore {
 impl NodeReader for NodeDBStore {
     fn get(&self, hash: &H256) -> Result<Option<Vec<u8>>> {
         self.get_raw(hash.as_bytes())
+    }
+}
+
+impl NodeWriter for NodeDBStore {
+    fn write_nodes(&self, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
+        NodeDBStore::write_nodes(self, nodes)
     }
 }
