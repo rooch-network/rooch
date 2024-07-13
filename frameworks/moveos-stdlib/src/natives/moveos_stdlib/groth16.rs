@@ -15,9 +15,9 @@ use std::collections::VecDeque;
 
 use crate::natives::helpers::{make_module_natives, make_native};
 
-pub const INVALID_CURVE: u64 = 0;
-pub const INVALID_VERIFYING_KEY: u64 = 1;
-pub const TOO_MANY_PUBLIC_INPUTS: u64 = 2;
+pub const E_INVALID_CURVE: u64 = 0;
+pub const E_INVALID_VERIFYING_KEY: u64 = 1;
+pub const E_TOO_MANY_PUBLIC_INPUTS: u64 = 2;
 
 // These must match the corresponding values in sui::groth16::Curve.
 pub const BLS12381: u8 = 0;
@@ -56,7 +56,7 @@ pub fn native_prepare_verifying_key_internal(
             52 // TODO: use variable?
         }
         _ => {
-            return Ok(NativeResult::err(gas_params.base, INVALID_CURVE));
+            return Ok(NativeResult::err(gas_params.base, E_INVALID_CURVE));
         }
     };
 
@@ -66,7 +66,7 @@ pub fn native_prepare_verifying_key_internal(
     } else if curve == BN254 {
         result = fastcrypto_zkp::bn254::api::prepare_pvk_bytes(&verifying_key_bytes_ref);
     } else {
-        return Ok(NativeResult::err(base_cost.into(), INVALID_CURVE));
+        return Ok(NativeResult::err(base_cost.into(), E_INVALID_CURVE));
     }
 
     match result {
@@ -79,7 +79,7 @@ pub fn native_prepare_verifying_key_internal(
                 Value::vector_u8(pvk[3].to_vec())
             ]))],
         )),
-        Err(_) => Ok(NativeResult::err(base_cost.into(), INVALID_VERIFYING_KEY)),
+        Err(_) => Ok(NativeResult::err(base_cost.into(), E_INVALID_VERIFYING_KEY)),
     }
 }
 
@@ -138,7 +138,7 @@ pub fn native_verify_groth16_proof_internal(
                 / fastcrypto_zkp::bn254::api::SCALAR_SIZE,
         ),
         _ => {
-            return Ok(NativeResult::err(gas_params.base, INVALID_CURVE));
+            return Ok(NativeResult::err(gas_params.base, E_INVALID_CURVE));
         }
     };
 
@@ -151,7 +151,7 @@ pub fn native_verify_groth16_proof_internal(
         if public_proof_inputs_bytes_ref.len()
             > fastcrypto_zkp::bls12381::conversions::SCALAR_SIZE * MAX_PUBLIC_INPUTS
         {
-            return Ok(NativeResult::err(cost, TOO_MANY_PUBLIC_INPUTS));
+            return Ok(NativeResult::err(cost, E_TOO_MANY_PUBLIC_INPUTS));
         }
         result = fastcrypto_zkp::bls12381::api::verify_groth16_in_bytes(
             &vk_gamma_abc_g1_bytes_ref,
@@ -165,7 +165,7 @@ pub fn native_verify_groth16_proof_internal(
         if public_proof_inputs_bytes_ref.len()
             > fastcrypto_zkp::bn254::api::SCALAR_SIZE * MAX_PUBLIC_INPUTS
         {
-            return Ok(NativeResult::err(cost, TOO_MANY_PUBLIC_INPUTS));
+            return Ok(NativeResult::err(cost, E_TOO_MANY_PUBLIC_INPUTS));
         }
         result = fastcrypto_zkp::bn254::api::verify_groth16_in_bytes(
             &vk_gamma_abc_g1_bytes_ref,
@@ -176,7 +176,7 @@ pub fn native_verify_groth16_proof_internal(
             &proof_points_bytes_ref,
         );
     } else {
-        return Ok(NativeResult::err(cost, INVALID_CURVE));
+        return Ok(NativeResult::err(cost, E_INVALID_CURVE));
     }
 
     Ok(NativeResult::ok(

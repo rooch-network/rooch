@@ -5,16 +5,16 @@
 module moveos_std::groth16 {
 
     #[allow(unused_const)]
-    // Error for input is not a valid Arkwork representation of a verifying key.
-    const EInvalidVerifyingKey: u64 = 0;
+    // Error if the given curve is not supported
+    const E_INVALID_CURVE: u64 = 0;
 
     #[allow(unused_const)]
-    // Error if the given curve is not supported
-    const EInvalidCurve: u64 = 1;
+    // Error for input is not a valid Arkwork representation of a verifying key.
+    const E_INVALID_VERIFYING_KEY: u64 = 1;
 
     #[allow(unused_const)]
     // Error if the number of public inputs given exceeds the max.
-    const ETooManyPublicInputs: u64 = 2;
+    const E_TOO_MANY_PUBLIC_INPUTS: u64 = 2;
 
     /// Represents an elliptic curve construction to be used in the verifier. Currently we support BLS12-381 and BN254.
     /// This should be given as the first parameter to `prepare_verifying_key` or `verify_groth16_proof`.
@@ -86,7 +86,7 @@ module moveos_std::groth16 {
         prepare_verifying_key_internal(curve.id, verifying_key)
     }
 
-    /// Native functions that flattens the inputs into an array and passes to the Rust native function. May abort with `EInvalidVerifyingKey` or `EInvalidCurve`.
+    /// Native functions that flattens the inputs into an array and passes to the Rust native function. May abort with `E_INVALID_CURVE` or `E_INVALID_VERIFYING_KEY`.
     native fun prepare_verifying_key_internal(curve: u8, verifying_key: &vector<u8>): PreparedVerifyingKey;
 
     /// @param curve: What elliptic curve construction to use. See the `bls12381` and `bn254` functions.
@@ -107,6 +107,6 @@ module moveos_std::groth16 {
         )
     }
 
-    /// Native functions that flattens the inputs into arrays of vectors and passed to the Rust native function. May abort with `EInvalidCurve` or `ETooManyPublicInputs`.
+    /// Native functions that flattens the inputs into arrays of vectors and passed to the Rust native function. May abort with `E_INVALID_CURVE` or `E_TOO_MANY_PUBLIC_INPUTS`.
     native fun verify_groth16_proof_internal(curve: u8, vk_gamma_abc_g1_bytes: &vector<u8>, alpha_g1_beta_g2_bytes: &vector<u8>, gamma_g2_neg_pc_bytes: &vector<u8>, delta_g2_neg_pc_bytes: &vector<u8>, public_proof_inputs: &vector<u8>, proof_points: &vector<u8>): bool;
 }
