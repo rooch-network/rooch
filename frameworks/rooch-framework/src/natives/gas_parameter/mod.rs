@@ -12,6 +12,7 @@ mod ed25519;
 mod events;
 pub mod evm;
 pub mod gas_member;
+pub mod groth16;
 mod hash;
 mod json;
 mod move_module;

@@ -38,6 +38,7 @@ bs58 = { workspace = true, features = ["check"] }
 revm-precompile = { workspace = true }
 revm-primitives = { workspace = true }
 ripemd = { workspace = true }
+fastcrypto-zkp = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }
