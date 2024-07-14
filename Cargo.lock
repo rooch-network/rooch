@@ -14,7 +14,7 @@ dependencies = [
 
 [[package]]
 name = "accumulator"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -30,6 +30,17 @@ dependencies = [
  "rand 0.8.5",
  "rand_core 0.6.4",
  "serde 1.0.204",
+]
+
+[[package]]
+name = "addchain"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b2e69442aa5628ea6951fa33e24efe8313f4321a91bd729fc2f75bdfc858570"
+dependencies = [
+ "num-bigint 0.3.3",
+ "num-integer",
+ "num-traits 0.2.19",
 ]
 
 [[package]]
@@ -267,6 +278,47 @@ dependencies = [
 ]
 
 [[package]]
+name = "ark-bls12-381"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c775f0d12169cba7aae4caeb547bb6a50781c7449a8aa53793827c9ec4abf488"
+dependencies = [
+ "ark-ec",
+ "ark-ff 0.4.2",
+ "ark-serialize 0.4.2",
+ "ark-std 0.4.0",
+]
+
+[[package]]
+name = "ark-bn254"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a22f4561524cd949590d78d7d4c5df8f592430d221f7f3c9497bbafd8972120f"
+dependencies = [
+ "ark-ec",
+ "ark-ff 0.4.2",
+ "ark-std 0.4.0",
+]
+
+[[package]]
+name = "ark-crypto-primitives"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f3a13b34da09176a8baba701233fdffbaa7c1b1192ce031a3da4e55ce1f1a56"
+dependencies = [
+ "ark-ec",
+ "ark-ff 0.4.2",
+ "ark-relations",
+ "ark-serialize 0.4.2",
+ "ark-snark",
+ "ark-std 0.4.0",
+ "blake2",
+ "derivative",
+ "digest 0.10.7",
+ "sha2 0.10.8",
+]
+
+[[package]]
 name = "ark-ec"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -294,7 +346,7 @@ dependencies = [
  "ark-serialize 0.3.0",
  "ark-std 0.3.0",
  "derivative",
- "num-bigint",
+ "num-bigint 0.4.5",
  "num-traits 0.2.19",
  "paste",
  "rustc_version 0.3.3",
@@ -314,7 +366,7 @@ dependencies = [
  "derivative",
  "digest 0.10.7",
  "itertools 0.10.5",
- "num-bigint",
+ "num-bigint 0.4.5",
  "num-traits 0.2.19",
  "paste",
  "rustc_version 0.4.0",
@@ -347,7 +399,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "db2fd794a08ccb318058009eefdf15bcaaaaf6f8161eb3345f907222bac38b20"
 dependencies = [
- "num-bigint",
+ "num-bigint 0.4.5",
  "num-traits 0.2.19",
  "quote 1.0.36",
  "syn 1.0.109",
@@ -359,11 +411,26 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7abe79b0e4288889c4574159ab790824d0033b9fdcb2a112a3182fac2e514565"
 dependencies = [
- "num-bigint",
+ "num-bigint 0.4.5",
  "num-traits 0.2.19",
  "proc-macro2 1.0.86",
  "quote 1.0.36",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "ark-groth16"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20ceafa83848c3e390f1cbf124bc3193b3e639b3f02009e0e290809a501b95fc"
+dependencies = [
+ "ark-crypto-primitives",
+ "ark-ec",
+ "ark-ff 0.4.2",
+ "ark-poly",
+ "ark-relations",
+ "ark-serialize 0.4.2",
+ "ark-std 0.4.0",
 ]
 
 [[package]]
@@ -377,6 +444,17 @@ dependencies = [
  "ark-std 0.4.0",
  "derivative",
  "hashbrown 0.13.2",
+]
+
+[[package]]
+name = "ark-relations"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "00796b6efc05a3f48225e59cb6a2cda78881e7c390872d5786aaf112f31fb4f0"
+dependencies = [
+ "ark-ff 0.4.2",
+ "ark-std 0.4.0",
+ "tracing",
 ]
 
 [[package]]
@@ -409,7 +487,7 @@ dependencies = [
  "ark-serialize-derive",
  "ark-std 0.4.0",
  "digest 0.10.7",
- "num-bigint",
+ "num-bigint 0.4.5",
 ]
 
 [[package]]
@@ -421,6 +499,18 @@ dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "ark-snark"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "84d3cc6833a335bb8a600241889ead68ee89a3cf8448081fb7694c0fe503da63"
+dependencies = [
+ "ark-ff 0.4.2",
+ "ark-relations",
+ "ark-serialize 0.4.2",
+ "ark-std 0.4.0",
 ]
 
 [[package]]
@@ -853,6 +943,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "bellpepper"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ae286c2cb403324ab644c7cc68dceb25fe52ca9429908a726d7ed272c1edf7b"
+dependencies = [
+ "bellpepper-core",
+ "byteorder",
+ "ff 0.13.0",
+]
+
+[[package]]
+name = "bellpepper-core"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d8abb418570756396d722841b19edfec21d4e89e1cf8990610663040ecb1aea"
+dependencies = [
+ "blake2s_simd",
+ "byteorder",
+ "ff 0.13.0",
+ "serde 1.0.204",
+ "thiserror",
+]
+
+[[package]]
 name = "better_any"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -878,7 +992,7 @@ version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a6773ddc0eafc0e509fb60e48dff7f450f8e674a0686ae8605e8d9901bd5eefa"
 dependencies = [
- "num-bigint",
+ "num-bigint 0.4.5",
  "num-integer",
  "num-traits 0.2.19",
  "serde 1.0.204",
@@ -996,7 +1110,7 @@ dependencies = [
 
 [[package]]
 name = "bitcoin-move"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "axum 0.7.5",
@@ -1006,7 +1120,7 @@ dependencies = [
  "brotli 3.5.0",
  "bs58 0.5.1",
  "ciborium",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "framework-builder",
  "hex",
  "linked-hash-map",
@@ -1149,6 +1263,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "blake2b_simd"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23285ad32269793932e830392f2fe2f83e26488fd3ec778883a93c8323735780"
+dependencies = [
+ "arrayref",
+ "arrayvec 0.7.4",
+ "constant_time_eq 0.3.0",
+]
+
+[[package]]
+name = "blake2s_simd"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94230421e395b9920d23df13ea5d77a20e1725331f90fbbf6df6040b33f756ae"
+dependencies = [
+ "arrayref",
+ "arrayvec 0.7.4",
+ "constant_time_eq 0.3.0",
+]
+
+[[package]]
 name = "block-buffer"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1204,6 +1340,23 @@ dependencies = [
  "glob",
  "threadpool",
  "zeroize",
+]
+
+[[package]]
+name = "blstrs"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a8a8ed6fefbeef4a8c7b460e4110e12c5e22a5b7cf32621aae6ad650c4dcf29"
+dependencies = [
+ "blst",
+ "byte-slice-cast",
+ "ec-gpu",
+ "ff 0.13.0",
+ "group 0.13.0",
+ "pairing",
+ "rand_core 0.6.4",
+ "serde 1.0.204",
+ "subtle",
 ]
 
 [[package]]
@@ -1981,10 +2134,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
 
 [[package]]
+name = "constant_time_eq"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7144d30dcf0fafbce74250a3963025d8d52177934239851c917d29f1df280c2"
+
+[[package]]
 name = "convert_case"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
+
+[[package]]
+name = "convert_case"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
+dependencies = [
+ "unicode-segmentation",
+]
 
 [[package]]
 name = "core-foundation"
@@ -2537,11 +2705,11 @@ dependencies = [
 
 [[package]]
 name = "data-verify"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "bcs",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "log",
  "moveos-config",
  "moveos-types",
@@ -2718,7 +2886,7 @@ version = "0.99.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f33878137e4dafd7fa914ad4e259e18a4e8e532b9617a2d0150262bf53abfce"
 dependencies = [
- "convert_case",
+ "convert_case 0.4.0",
  "proc-macro2 1.0.86",
  "quote 1.0.36",
  "rustc_version 0.4.0",
@@ -2969,6 +3137,12 @@ dependencies = [
  "dynasm",
  "memmap2 0.5.10",
 ]
+
+[[package]]
+name = "ec-gpu"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bd63582de2b59ea1aa48d7c1941b5d87618d95484397521b3acdfa0e1e9f5e45"
 
 [[package]]
 name = "ecdsa"
@@ -3571,6 +3745,58 @@ checksum = "4443176a9f2c162692bd3d352d745ef9413eec5782a80d8fd6f8a1ac692a07f7"
 [[package]]
 name = "fastcrypto"
 version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f9ea2139faa96e4d713803b7777b8fd2d5c245858b1644c08d3220f407149c6"
+dependencies = [
+ "ark-ec",
+ "ark-ff 0.4.2",
+ "ark-secp256r1",
+ "ark-serialize 0.4.2",
+ "auto_ops",
+ "base64ct",
+ "bech32 0.9.1",
+ "bincode",
+ "blake2",
+ "blst",
+ "bs58 0.4.0",
+ "curve25519-dalek-ng",
+ "derive_more",
+ "digest 0.10.7",
+ "ecdsa 0.16.9",
+ "ed25519-consensus",
+ "elliptic-curve 0.13.8",
+ "eyre",
+ "fastcrypto-derive 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "generic-array",
+ "hex",
+ "hex-literal",
+ "hkdf",
+ "lazy_static 1.5.0",
+ "num-bigint 0.4.5",
+ "once_cell",
+ "p256",
+ "rand 0.8.5",
+ "readonly",
+ "rfc6979 0.4.0",
+ "rsa 0.8.2",
+ "schemars",
+ "secp256k1 0.27.0",
+ "serde 1.0.204",
+ "serde_json",
+ "serde_with 2.3.3",
+ "sha2 0.10.8",
+ "sha3 0.10.8",
+ "signature 2.2.0",
+ "static_assertions",
+ "thiserror",
+ "tokio",
+ "typenum",
+ "zeroize",
+]
+
+[[package]]
+name = "fastcrypto"
+version = "0.1.8"
 source = "git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13#56f6223b84ada922b6cb2c672c69db2ea3dc6a13"
 dependencies = [
  "ark-ec",
@@ -3591,13 +3817,13 @@ dependencies = [
  "ed25519-consensus",
  "elliptic-curve 0.13.8",
  "eyre",
- "fastcrypto-derive",
+ "fastcrypto-derive 0.1.3 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "generic-array",
  "hex",
  "hex-literal",
  "hkdf",
  "lazy_static 1.5.0",
- "num-bigint",
+ "num-bigint 0.4.5",
  "once_cell",
  "p256",
  "rand 0.8.5",
@@ -3622,10 +3848,54 @@ dependencies = [
 [[package]]
 name = "fastcrypto-derive"
 version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c0c2af2157f416cb885e11d36cd0de2753f6d5384752d364075c835f5f8f891"
+dependencies = [
+ "convert_case 0.6.0",
+ "proc-macro2 1.0.86",
+ "quote 1.0.36",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "fastcrypto-derive"
+version = "0.1.3"
 source = "git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13#56f6223b84ada922b6cb2c672c69db2ea3dc6a13"
 dependencies = [
  "quote 1.0.36",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "fastcrypto-zkp"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d2510946ae11008ca0c5d11e8acf7168914bcc5cf5d770eae8c03ad3d1526872"
+dependencies = [
+ "ark-bls12-381",
+ "ark-bn254",
+ "ark-ec",
+ "ark-ff 0.4.2",
+ "ark-groth16",
+ "ark-relations",
+ "ark-serialize 0.4.2",
+ "ark-snark",
+ "blst",
+ "byte-slice-cast",
+ "derive_more",
+ "fastcrypto 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ff 0.13.0",
+ "im",
+ "itertools 0.12.1",
+ "lazy_static 1.5.0",
+ "neptune",
+ "num-bigint 0.4.5",
+ "once_cell",
+ "reqwest 0.11.27",
+ "schemars",
+ "serde 1.0.204",
+ "serde_json",
+ "typenum",
 ]
 
 [[package]]
@@ -3661,8 +3931,27 @@ version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ded41244b729663b1e574f1b4fb731469f69f79c17667b5d776b16cda0479449"
 dependencies = [
+ "bitvec 1.0.1",
+ "byteorder",
+ "ff_derive",
  "rand_core 0.6.4",
  "subtle",
+]
+
+[[package]]
+name = "ff_derive"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e9f54704be45ed286151c5e11531316eaef5b8f5af7d597b806fdb8af108d84a"
+dependencies = [
+ "addchain",
+ "cfg-if",
+ "num-bigint 0.3.3",
+ "num-integer",
+ "num-traits 0.2.19",
+ "proc-macro2 1.0.86",
+ "quote 1.0.36",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -3784,13 +4073,13 @@ dependencies = [
 
 [[package]]
 name = "framework-builder"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "bcs",
  "better_any",
  "codespan-reporting",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "framework-types",
  "hex",
  "itertools 0.13.0",
@@ -3826,7 +4115,7 @@ dependencies = [
 
 [[package]]
 name = "framework-release"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "bcs",
@@ -3849,7 +4138,7 @@ dependencies = [
 
 [[package]]
 name = "framework-types"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "clap 4.5.9",
@@ -4177,7 +4466,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f0f9ef7462f7c099f518d754361858f86d8a07af53ba9af0fe635bbccb151a63"
 dependencies = [
  "ff 0.13.0",
+ "rand 0.8.5",
  "rand_core 0.6.4",
+ "rand_xorshift",
  "subtle",
 ]
 
@@ -4323,6 +4614,9 @@ name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
+dependencies = [
+ "serde 1.0.204",
+]
 
 [[package]]
 name = "hex-conservative"
@@ -5704,7 +5998,7 @@ dependencies = [
 
 [[package]]
 name = "metrics"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5954,7 +6248,7 @@ dependencies = [
  "dirs-next",
  "hex",
  "move-core-types",
- "num-bigint",
+ "num-bigint 0.4.5",
  "once_cell",
  "serde 1.0.204",
  "sha2 0.9.9",
@@ -5981,7 +6275,7 @@ dependencies = [
  "move-ir-to-bytecode",
  "move-ir-types",
  "move-symbol-pool",
- "num-bigint",
+ "num-bigint 0.4.5",
  "once_cell",
  "petgraph 0.5.1",
  "regex",
@@ -6474,7 +6768,7 @@ dependencies = [
 
 [[package]]
 name = "moveos"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -6527,7 +6821,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-common"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6539,7 +6833,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-compiler"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -6553,7 +6847,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-config"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "clap 4.5.9",
@@ -6570,11 +6864,11 @@ dependencies = [
 
 [[package]]
 name = "moveos-object-runtime"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "better_any",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "hex",
  "itertools 0.13.0",
  "linked-hash-map",
@@ -6607,14 +6901,15 @@ dependencies = [
 
 [[package]]
 name = "moveos-stdlib"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "bech32 0.11.0",
  "better_any",
  "bs58 0.5.1",
  "ciborium",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
+ "fastcrypto-zkp",
  "hex",
  "itertools 0.13.0",
  "libc",
@@ -6656,7 +6951,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-store"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -6687,11 +6982,11 @@ dependencies = [
 
 [[package]]
 name = "moveos-types"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "bcs",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "hex",
  "move-binary-format",
  "move-bytecode-utils",
@@ -6716,7 +7011,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-verifier"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6743,7 +7038,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-wasm"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "ciborium",
@@ -6833,6 +7128,25 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "tempfile",
+]
+
+[[package]]
+name = "neptune"
+version = "13.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "06626c9ac04c894e9a23d061ba1309f28506cdc5fe64156d28a15fb57fc8e438"
+dependencies = [
+ "bellpepper",
+ "bellpepper-core",
+ "blake2s_simd",
+ "blstrs",
+ "byteorder",
+ "ff 0.13.0",
+ "generic-array",
+ "log",
+ "pasta_curves",
+ "serde 1.0.204",
+ "trait-set",
 ]
 
 [[package]]
@@ -6933,11 +7247,22 @@ version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "35bd024e8b2ff75562e5f34e7f4905839deb4b22955ef5e73d2fea1b9813cb23"
 dependencies = [
- "num-bigint",
+ "num-bigint 0.4.5",
  "num-complex",
  "num-integer",
  "num-iter",
  "num-rational",
+ "num-traits 0.2.19",
+]
+
+[[package]]
+name = "num-bigint"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f6f7833f2cbf2360a6cfd58cd41a53aa7a90bd4c202f5b1c7dd2ed73c57b2c3"
+dependencies = [
+ "autocfg",
+ "num-integer",
  "num-traits 0.2.19",
 ]
 
@@ -6949,6 +7274,7 @@ checksum = "c165a9ab64cf766f73521c0dd2cfdff64f488b8f0b3e621face3462d3db536d7"
 dependencies = [
  "num-integer",
  "num-traits 0.2.19",
+ "rand 0.8.5",
 ]
 
 [[package]]
@@ -7030,7 +7356,7 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f83d14da390562dca69fc84082e73e548e1ad308d24accdedd2720017cb37824"
 dependencies = [
- "num-bigint",
+ "num-bigint 0.4.5",
  "num-integer",
  "num-traits 0.2.19",
 ]
@@ -7273,6 +7599,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "pairing"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81fec4625e73cf41ef4bb6846cafa6d44736525f442ba45e407c4a000a13996f"
+dependencies = [
+ "group 0.13.0",
+]
+
+[[package]]
 name = "parity-scale-codec"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7400,6 +7735,24 @@ checksum = "346f04948ba92c43e8469c1ee6736c7563d71012b17d40745260fe106aac2166"
 dependencies = [
  "base64ct",
  "rand_core 0.6.4",
+ "subtle",
+]
+
+[[package]]
+name = "pasta_curves"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3e57598f73cc7e1b2ac63c79c517b31a0877cd7c402cdcaa311b5208de7a095"
+dependencies = [
+ "blake2b_simd",
+ "ec-gpu",
+ "ff 0.13.0",
+ "group 0.13.0",
+ "hex",
+ "lazy_static 1.5.0",
+ "rand 0.8.5",
+ "serde 1.0.204",
+ "static_assertions",
  "subtle",
 ]
 
@@ -8339,7 +8692,7 @@ dependencies = [
 
 [[package]]
 name = "raw-store"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8826,7 +9179,7 @@ dependencies = [
 
 [[package]]
 name = "rooch"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8840,7 +9193,7 @@ dependencies = [
  "csv",
  "datatest-stable 0.1.1",
  "dirs",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "framework-builder",
  "framework-release",
  "framework-types",
@@ -8908,7 +9261,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-benchmarks"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8922,7 +9275,7 @@ dependencies = [
  "criterion",
  "derive_builder 0.20.0",
  "ethers",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "futures",
  "hex",
  "hyper 0.14.28",
@@ -8983,14 +9336,14 @@ dependencies = [
 
 [[package]]
 name = "rooch-common"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "libc",
 ]
 
 [[package]]
 name = "rooch-config"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "clap 4.5.9",
@@ -9016,7 +9369,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-da"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9037,7 +9390,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-db"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9064,7 +9417,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-executor"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9106,7 +9459,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-faucet"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9139,14 +9492,14 @@ dependencies = [
 
 [[package]]
 name = "rooch-framework"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "bcs",
  "better_any",
  "bitcoin 0.31.2",
  "brotli 3.5.0",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "hex",
  "linked-hash-map",
  "move-binary-format",
@@ -9176,7 +9529,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-framework-tests"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9186,7 +9539,7 @@ dependencies = [
  "coerce",
  "datatest-stable 0.1.3",
  "ethers",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "hex",
  "include_dir",
  "lazy_static 1.5.0",
@@ -9233,7 +9586,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-genesis"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9242,7 +9595,7 @@ dependencies = [
  "bitcoin-move",
  "clap 4.5.9",
  "coerce",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "framework-builder",
  "framework-release",
  "futures",
@@ -9287,7 +9640,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-indexer"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9301,7 +9654,7 @@ dependencies = [
  "diesel_migrations",
  "dotenvy",
  "ethers",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "futures",
  "hex",
  "itertools 0.13.0",
@@ -9333,7 +9686,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-integration-test-runner"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9378,7 +9731,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-key"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "argon2",
@@ -9390,7 +9743,7 @@ dependencies = [
  "enum_dispatch",
  "ethers",
  "eyre",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "move-core-types",
  "moveos-types",
  "proptest",
@@ -9410,12 +9763,12 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "bcs",
  "clap 4.5.9",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "pretty_assertions",
  "rand 0.8.5",
  "schemars",
@@ -9427,7 +9780,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-macros"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "derive-syn-parse",
  "itertools 0.13.0",
@@ -9439,12 +9792,12 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-spec"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "bcs",
  "clap 4.5.9",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "pretty_assertions",
  "rand 0.8.5",
  "rooch-open-rpc",
@@ -9460,12 +9813,12 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-spec-builder"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "bcs",
  "clap 4.5.9",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "pretty_assertions",
  "rand 0.8.5",
  "rooch-open-rpc",
@@ -9480,7 +9833,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-pipeline-processor"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9518,7 +9871,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-proposer"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9551,7 +9904,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-relayer"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9563,7 +9916,7 @@ dependencies = [
  "coerce",
  "derive_builder 0.20.0",
  "ethers",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "futures",
  "hex",
  "jsonrpsee 0.23.2",
@@ -9595,7 +9948,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-api"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9610,7 +9963,7 @@ dependencies = [
  "const-hex",
  "derive_builder 0.20.0",
  "ethers",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "fixed-hash 0.8.0",
  "futures",
  "hex",
@@ -9639,14 +9992,14 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-client"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "bcs",
  "clap 4.5.9",
  "dirs",
  "ethers",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "futures",
  "jsonrpsee 0.23.2",
  "log",
@@ -9669,7 +10022,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-server"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9681,7 +10034,7 @@ dependencies = [
  "coerce",
  "derive_builder 0.20.0",
  "ethers",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "futures",
  "hex",
  "jsonrpsee 0.23.2",
@@ -9733,7 +10086,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-sequencer"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9743,7 +10096,7 @@ dependencies = [
  "clap 4.5.9",
  "coerce",
  "derive_builder 0.20.0",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "futures",
  "jsonrpsee 0.23.2",
  "log",
@@ -9772,7 +10125,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-store"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9797,11 +10150,11 @@ dependencies = [
 
 [[package]]
 name = "rooch-test-transaction-builder"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "bcs",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "framework-builder",
  "log",
  "move-binary-format",
@@ -9833,7 +10186,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-types"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9850,7 +10203,7 @@ dependencies = [
  "enum_dispatch",
  "ethers",
  "eyre",
- "fastcrypto",
+ "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "framework-builder",
  "framework-types",
  "hex",
@@ -9961,7 +10314,7 @@ dependencies = [
  "ark-ff 0.4.2",
  "bytes",
  "fastrlp",
- "num-bigint",
+ "num-bigint 0.4.5",
  "num-traits 0.2.19",
  "parity-scale-codec 3.6.12",
  "primitive-types 0.12.2",
@@ -10449,7 +10802,7 @@ dependencies = [
  "core-foundation",
  "core-foundation-sys",
  "libc",
- "num-bigint",
+ "num-bigint 0.4.5",
  "security-framework-sys",
 ]
 
@@ -10944,7 +11297,7 @@ version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adc4e5204eb1910f40f9cfa375f6f05b68c3abac4b6fd879c8ff5e7ae8a0a085"
 dependencies = [
- "num-bigint",
+ "num-bigint 0.4.5",
  "num-traits 0.2.19",
  "thiserror",
  "time",
@@ -11036,7 +11389,7 @@ checksum = "b7c388c1b5e93756d0c740965c41e8822f866621d41acbdf6336a6a168f8840c"
 
 [[package]]
 name = "smt"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -11550,7 +11903,7 @@ dependencies = [
 
 [[package]]
 name = "testsuite"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -11663,7 +12016,7 @@ dependencies = [
 
 [[package]]
 name = "timeout-join-handler"
-version = "0.5.7"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "thiserror",
@@ -12150,6 +12503,17 @@ dependencies = [
  "thread_local",
  "tracing-core",
  "tracing-log",
+]
+
+[[package]]
+name = "trait-set"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b79e2e9c9ab44c6d7c20d5976961b47e8f49ac199154daa514b77cd1ab536625"
+dependencies = [
+ "proc-macro2 1.0.86",
+ "quote 1.0.36",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -13339,7 +13703,7 @@ dependencies = [
  "aes",
  "byteorder",
  "bzip2",
- "constant_time_eq",
+ "constant_time_eq 0.1.5",
  "crc32fast",
  "crossbeam-utils",
  "flate2",

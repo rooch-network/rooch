@@ -5,7 +5,6 @@
 module rooch_framework::bitcoin_validator {
 
     use moveos_std::tx_context;
-    use moveos_std::features;
     use moveos_std::hash;
     use rooch_framework::ecdsa_k1;
     use rooch_framework::auth_payload;
@@ -43,7 +42,6 @@ module rooch_framework::bitcoin_validator {
     }
 
     public(friend) fun validate(authenticator_payload: vector<u8>) :BitcoinAddress{
-        features::ensure_testnet_enabled();
 
         let sender = tx_context::sender();
         let tx_hash = tx_context::tx_hash();

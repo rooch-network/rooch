@@ -25,7 +25,7 @@ use moveos_store::MoveOSStore;
 use moveos_types::addresses::MOVEOS_STD_ADDRESS;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::moveos_std::event::Event;
-use moveos_types::moveos_std::gas_schedule::GasScheduleUpdated;
+use moveos_types::moveos_std::gas_schedule::{GasScheduleConfig, GasScheduleUpdated};
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::moveos_std::tx_result::TxResult;
@@ -422,7 +422,13 @@ impl MoveOS {
         tx_context: &TxContext,
         function_call: FunctionCall,
     ) -> FunctionResult {
-        //TODO limit the view function max gas usage
+        if tx_context.max_gas_amount > GasScheduleConfig::READONLY_MAX_GAS_AMOUNT {
+            return FunctionResult::err(
+                PartialVMError::new(StatusCode::MAX_GAS_UNITS_EXCEEDS_MAX_GAS_UNITS_BOUND)
+                    .with_message("Max gas amount too large for readonly function".to_string())
+                    .finish(Location::Undefined),
+            );
+        }
         let cost_table = match self.load_cost_table(&root) {
             Ok(cost_table) => cost_table,
             Err(e) => {
