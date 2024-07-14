@@ -78,12 +78,7 @@ export type EventFilterView =
         to_order: string
       }
     }
-/**
- * A struct that represents a globally unique id for an Event stream that a user can listen to. the
- * Unique ID is a combination of event handle id and event seq number. the ID is local to this
- * particular fullnode and will be different from other fullnode.
- */
-export interface EventID {
+export interface EventIDView {
   /** each event handle corresponds to a unique event handle id. event handler id equal to guid. */
   event_handle_id: string
   /** For expansion: The number of messages that have been emitted to the path previously */
@@ -96,7 +91,7 @@ export interface EventOptions {
 export interface EventView {
   decoded_event_data?: AnnotatedMoveStructView | null
   event_data: string
-  event_id: EventID
+  event_id: EventIDView
   event_index: string
   event_type: string
 }
@@ -105,20 +100,6 @@ export interface ExecuteTransactionResponseView {
   output?: TransactionOutputView | null
   sequence_info: TransactionSequenceInfoView
 }
-export type FieldChangeView =
-  | {
-      fields: FieldChangeView[]
-      key: string
-      key_state: string
-      op?: OpView_for_StateView | null
-      type: 'object'
-    }
-  | {
-      key: string
-      key_state: string
-      op: OpView_for_StateView
-      type: 'normal'
-    }
 export interface FunctionCallView {
   args: string[]
   function_id: string
@@ -128,7 +109,7 @@ export interface FunctionReturnValueView {
   type_tag: string
   value: string
 }
-export interface IndexerEventID {
+export interface IndexerEventIDView {
   event_index: string
   tx_order: string
 }
@@ -136,9 +117,9 @@ export interface IndexerEventView {
   created_at: string
   decoded_event_data?: AnnotatedMoveStructView | null
   event_data: string
-  event_id: EventID
+  event_id: EventIDView
   event_type: string
-  indexer_event_id: IndexerEventID
+  indexer_event_id: IndexerEventIDView
   sender: string
   tx_hash: string
 }
@@ -153,18 +134,18 @@ export interface IndexerObjectStateView {
   owner_bitcoin_address?: string | null
   size: string
   state_index: string
-  state_root: string | null
+  state_root?: string | null
   tx_order: string
   updated_at: string
   /** bcs bytes of the Object. */
   value: string
 }
-export interface IndexerStateID {
+export interface IndexerStateIDView {
   state_index: string
   tx_order: string
 }
 export type InscriptionFilterView =
-  /** Query by owner, represent by bitcoin address */
+  /** Query by owner, support rooch address and bitcoin address */
   | {
       owner: string
     } /** Query by inscription id, represent by bitcoin txid and index */
@@ -181,11 +162,13 @@ export type InscriptionFilterView =
 export interface InscriptionStateView {
   created_at: string
   flag: number
-  object_id: string
+  id: string
   object_type: string
   owner: string
   owner_bitcoin_address?: string | null
+  size: string
   state_index: string
+  state_root?: string | null
   tx_order: string
   updated_at: string
   value: InscriptionView
@@ -253,6 +236,17 @@ export type LedgerTxDataView =
       sequence_number: string
       type: 'l2_tx'
     }
+/** A Move module ABI */
+export interface ModuleABIView {
+  address: string
+  /** Friends of the module */
+  friends: string[]
+  /** Public or entry functions of the module */
+  functions: MoveFunctionView[]
+  name: string
+  /** Structs of the module */
+  structs: MoveStructView[]
+}
 export type MoveActionTypeView = 'scriptcall' | 'functioncall' | 'modulebundle'
 export interface MoveActionView {
   function_call?: FunctionCallView | null
@@ -262,12 +256,65 @@ export interface MoveActionView {
 export interface MoveAsciiString {
   bytes: number[]
 }
+/** Move function generic type param */
+export interface MoveFunctionTypeParamView {
+  /** Move abilities tied to the generic type param and associated with the function that uses it */
+  constraints: string[]
+}
+/** Move function */
+export interface MoveFunctionView {
+  /** Whether the function can be called as an entry function directly in a transaction */
+  is_entry: boolean
+  name: string
+  /** Parameters associated with the move function */
+  params: string[]
+  /** Return type of the function */
+  return: string[]
+  /** Generic type params associated with the Move function */
+  type_params: MoveFunctionTypeParamView[]
+}
 export interface MoveString {
   bytes: number[]
 }
+/** Move struct field */
+export interface MoveStructFieldView {
+  name: string
+  type: string
+}
+/** Move generic type param */
+export interface MoveStructTypeParamView {
+  /** Move abilities tied to the generic type param and associated with the type that uses it */
+  constraints: string[]
+  /** Whether the type is a phantom type */
+  is_phantom: boolean
+}
+/** A move struct */
+export interface MoveStructView {
+  /** Abilities associated with the struct */
+  abilities: string[]
+  /** Fields associated with the struct */
+  fields: MoveStructFieldView[]
+  /** Whether the struct is a native struct of Move */
+  is_native: boolean
+  name: string
+  /** Generic types associated with the struct */
+  type_params: MoveStructTypeParamView[]
+}
 export interface ObjectChangeView {
-  fields: FieldChangeView[]
-  op?: OpView_for_StateView | null
+  fields: ObjectChangeView[]
+  metadata: ObjectMetaView
+  value?: OpView | null
+}
+export interface ObjectMetaView {
+  created_at: string
+  flag: number
+  id: string
+  object_type: string
+  owner: string
+  owner_bitcoin_address?: string | null
+  size: string
+  state_root?: string | null
+  updated_at: string
 }
 export type ObjectStateFilterView =
   /** Query by object value type and owner. */
@@ -297,27 +344,17 @@ export interface ObjectStateView {
   owner: string
   owner_bitcoin_address?: string | null
   size: string
-  state_root: string | null
+  state_root?: string | null
   updated_at: string
   value: string
 }
-export type OpView_for_StateView =
+export type OpView =
+  | 'delete'
   | {
-      decoded_value?: AnnotatedMoveValueView | null
-      display_fields?: DisplayFieldsView | null
-      type: 'new'
-      value: string
-      value_type: string
+      new: string
     }
   | {
-      decoded_value?: AnnotatedMoveValueView | null
-      display_fields?: DisplayFieldsView | null
-      type: 'modify'
-      value: string
-      value_type: string
-    }
-  | {
-      type: 'delete'
+      modify: string
     }
 /**
  * `next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the
@@ -327,7 +364,7 @@ export type OpView_for_StateView =
 export interface PaginatedBalanceInfoViews {
   data: BalanceInfoView[]
   has_next_page: boolean
-  next_cursor?: IndexerStateID | null
+  next_cursor?: IndexerStateIDView | null
 }
 /**
  * `next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the
@@ -347,7 +384,7 @@ export interface PaginatedEventViews {
 export interface PaginatedIndexerEventViews {
   data: IndexerEventView[]
   has_next_page: boolean
-  next_cursor?: IndexerEventID | null
+  next_cursor?: IndexerEventIDView | null
 }
 /**
  * `next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the
@@ -357,7 +394,7 @@ export interface PaginatedIndexerEventViews {
 export interface PaginatedIndexerObjectStateViews {
   data: IndexerObjectStateView[]
   has_next_page: boolean
-  next_cursor?: IndexerStateID | null
+  next_cursor?: IndexerStateIDView | null
 }
 /**
  * `next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the
@@ -367,7 +404,7 @@ export interface PaginatedIndexerObjectStateViews {
 export interface PaginatedInscriptionStateViews {
   data: InscriptionStateView[]
   has_next_page: boolean
-  next_cursor?: IndexerStateID | null
+  next_cursor?: IndexerStateIDView | null
 }
 /**
  * `next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the
@@ -397,7 +434,7 @@ export interface PaginatedTransactionWithInfoViews {
 export interface PaginatedUTXOStateViews {
   data: UTXOStateView[]
   has_next_page: boolean
-  next_cursor?: IndexerStateID | null
+  next_cursor?: IndexerStateIDView | null
 }
 export interface QueryOptions {
   /** If true, the state is decoded and the decoded value is returned in the response. */
@@ -415,26 +452,19 @@ export interface ScriptCallView {
 /** Some specific struct that we want to display in a special way for better readability */
 export type SpecificStructView = MoveString | MoveAsciiString | string
 export interface StateChangeSetView {
-  changes: {
-    [key: string]: ObjectChangeView
-  }
+  changes: ObjectChangeView[]
   global_size: string
+  state_root: string
 }
 export interface StateKVView {
   field_key: string
-  state: StateView
+  state: ObjectStateView
 }
 export interface StateOptions {
   /** If true, the state is decoded and the decoded value is returned in the response. */
   decode?: boolean
   /** If true, result with display rendered is returned */
   showDisplay?: boolean
-}
-export interface StateView {
-  decoded_value?: AnnotatedMoveValueView | null
-  display_fields?: DisplayFieldsView | null
-  value: string
-  value_type: string
 }
 export interface TransactionExecutionInfoView {
   event_root: string
@@ -492,7 +522,7 @@ export interface TxOptions {
   withOutput?: boolean
 }
 export type UTXOFilterView =
-  /** Query by owner, represent by bitcoin address */
+  /** Query by owner, support rooch address and bitcoin address */
   | {
       owner: string
     } /** Query by bitcoin outpoint, represent by bitcoin txid and vout */
@@ -509,14 +539,16 @@ export type UTXOFilterView =
 export interface UTXOStateView {
   created_at: string
   flag: number
-  object_id: string
+  id: string
   object_type: string
   owner: string
   owner_bitcoin_address?: string | null
+  size: string
   state_index: string
+  state_root?: string | null
   tx_order: string
   updated_at: string
-  value?: UTXOView | null
+  value: UTXOView
 }
 export interface UTXOView {
   /** The txid of the UTXO */

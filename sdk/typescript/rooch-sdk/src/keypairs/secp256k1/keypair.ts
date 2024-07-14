@@ -155,7 +155,10 @@ export class Secp256k1Keypair extends Keypair {
   }
 
   async signTransaction(input: Transaction): Promise<Authenticator> {
-    return await Authenticator.bitcoin(new BitcoinSignMessage(input.hashData(), 'sdk'), this)
+    return await Authenticator.bitcoin(
+      new BitcoinSignMessage(input.hashData(), input.getInfo() ?? 'sdk'),
+      this,
+    )
   }
 
   /**
