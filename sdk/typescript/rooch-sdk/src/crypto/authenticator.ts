@@ -3,7 +3,7 @@
 
 import { bcs } from '../bcs/index.js'
 import { Bytes } from '../types/index.js'
-import { bytes, sha256, toHEX, concatBytes } from '../utils/index.js'
+import { bytes, sha256, toHEX, concatBytes, varintByteNum } from '../utils/index.js'
 
 import { Signer } from './signer.js'
 import { SIGNATURE_SCHEME_TO_FLAG } from './signatureScheme.js'
@@ -39,7 +39,7 @@ export class BitcoinSignMessage {
     const infoBytes = bytes('utf8', this.messageInfo)
     const prefixBytes = concatBytes(
       bytes('utf8', this.messagePrefix),
-      new Uint8Array([infoBytes.length + msgHex.length]),
+      varintByteNum(infoBytes.length + msgHex.length),
     )
 
     // Calculate the total length
@@ -55,11 +55,6 @@ export class BitcoinSignMessage {
     data.set(infoBytes, offset)
     offset += infoBytes.length
     data.set(msgHex, offset)
-
-    // Avoid the 255 length limit
-    if (data.length > 255) {
-      throw Error(`message info length cannot be greater than > ${data.length - msgHex.length}`)
-    }
 
     return data
   }
@@ -111,14 +106,12 @@ export class Authenticator {
       throw Error('invalid message info')
     }
 
+    const messageLength = bytes('utf8', input.messageInfo).length + toHEX(input.txHash).length
     const sign = await signer.sign(signWith === 'hash' ? input.hash() : bytes('utf8', input.raw()))
 
     const payload = bcs.BitcoinAuthPayload.serialize({
       signature: sign,
-      messagePrefix: concatBytes(
-        bytes('utf8', input.messagePrefix),
-        new Uint8Array([bytes('utf8', input.messageInfo).length + toHEX(input.txHash).length]),
-      ),
+      messagePrefix: concatBytes(bytes('utf8', input.messagePrefix), varintByteNum(messageLength)),
       messageInfo: bytes('utf8', input.messageInfo),
       publicKey: signer.getPublicKey().toBytes(),
       fromAddress: bytes('utf8', signer.getBitcoinAddress().toStr()),

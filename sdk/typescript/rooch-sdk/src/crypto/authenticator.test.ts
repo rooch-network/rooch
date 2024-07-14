@@ -41,13 +41,4 @@ describe('BitcoinSignMessage', () => {
     expect(encodedData).toBeInstanceOf(Uint8Array)
     expect(encodedData.length).toBeLessThanOrEqual(255)
   })
-
-  it('should throw error when messageInfo length causes total length to exceed 255 bytes', () => {
-    const txData = new Uint8Array([0x01, 0x02, 0x03, 0x04])
-    const longMessageInfo = 'A'.repeat(256)
-    const bitcoinSignMessage = new BitcoinSignMessage(txData, longMessageInfo)
-    expect(() => bitcoinSignMessage.encode()).toThrowError(
-      'message info length cannot be greater than > 302',
-    )
-  })
 })

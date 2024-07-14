@@ -65,7 +65,8 @@
     "tweetnacl": "^1.0.3",
     "bech32": "^2.0.0",
     "@mysten/bcs": "1.0.2",
-    "valibot": "^0.25.0"
+    "valibot": "^0.25.0",
+    "buffer": "6.0.0"
   },
   "publishConfig": {
     "access": "public",

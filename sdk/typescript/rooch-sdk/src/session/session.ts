@@ -170,14 +170,7 @@ export class Session extends Signer {
         Args.u64(BigInt(this.maxInactiveInterval)),
       ],
       info: `Welcome to ${this.appName}\nYou will authorize session:\n${
-        'Scope:\n' +
-        this.scopes
-          .filter((v) => !v.startsWith('0x1') && !v.startsWith('0x3'))
-          .map((v) => {
-            return v
-          }) +
-        '\nTimeOut:' +
-        this.maxInactiveInterval.toString()
+        'Scope:\n' + this.scopes.join('\n') + '\nTimeOut:' + this.maxInactiveInterval.toString()
       }`,
     })
 

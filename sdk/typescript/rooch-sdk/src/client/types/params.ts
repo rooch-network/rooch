@@ -14,14 +14,14 @@ import type * as RpcTypes from './generated.js'
 /** Query the Inscription via global index by Inscription filter */
 export interface QueryInscriptionsParams {
   filter: RpcTypes.InscriptionFilterView
-  cursor?: RpcTypes.IndexerStateID | null | undefined
+  cursor?: RpcTypes.IndexerStateIDView | null | undefined
   limit?: string | null | undefined
   descendingOrder?: boolean | null | undefined
 }
 /** Query the UTXO via global index by UTXO filter */
 export interface QueryUTXOsParams {
   filter: RpcTypes.UTXOFilterView
-  cursor?: RpcTypes.IndexerStateID | null | undefined
+  cursor?: RpcTypes.IndexerStateIDView | null | undefined
   limit?: string | null | undefined
   descendingOrder?: boolean | null | undefined
 }
@@ -45,7 +45,7 @@ export interface GetBalanceParams {
 /** get account balances by RoochAddress */
 export interface GetBalancesParams {
   owner: string
-  cursor?: RpcTypes.IndexerStateID | null | undefined
+  cursor?: RpcTypes.IndexerStateIDView | null | undefined
   limit?: string | null | undefined
 }
 export interface GetChainIDParams {}
@@ -62,6 +62,11 @@ export interface GetFieldStatesParams {
   objectId: string
   fieldKey: string[]
   stateOption?: RpcTypes.StateOptions | null | undefined
+}
+/** get module ABI by module id */
+export interface GetModuleABIParams {
+  moduleAddr: string
+  moduleName: string
 }
 /** Get object states by object id */
 export interface GetObjectStatesParams {
@@ -104,14 +109,14 @@ export interface ListStatesParams {
 /** Query the events indexer by event filter */
 export interface QueryEventsParams {
   filter: RpcTypes.EventFilterView
-  cursor?: RpcTypes.IndexerEventID | null | undefined
+  cursor?: RpcTypes.IndexerEventIDView | null | undefined
   limit?: string | null | undefined
   queryOption?: RpcTypes.QueryOptions | null | undefined
 }
 /** Query the object states indexer by state filter */
 export interface QueryObjectStatesParams {
   filter: RpcTypes.ObjectStateFilterView
-  cursor?: RpcTypes.IndexerStateID | null | undefined
+  cursor?: RpcTypes.IndexerStateIDView | null | undefined
   limit?: string | null | undefined
   queryOption?: RpcTypes.QueryOptions | null | undefined
 }
