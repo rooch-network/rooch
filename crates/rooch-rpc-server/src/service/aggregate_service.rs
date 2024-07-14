@@ -192,7 +192,11 @@ impl AggregateService {
             .map(|(tx_opt, exec_info_opt)| match (tx_opt, exec_info_opt) {
                 (Some(tx), Some(exec_info)) => Ok(Some(TransactionWithInfo {
                     transaction: tx,
-                    execution_info: exec_info,
+                    execution_info: Some(exec_info),
+                })),
+                (Some(tx), None) => Ok(Some(TransactionWithInfo {
+                    transaction: tx,
+                    execution_info: None,
                 })),
                 _ => Ok(None),
             })

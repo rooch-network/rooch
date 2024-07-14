@@ -107,7 +107,7 @@ impl MoveStructState for TransactionSequenceInfo {
 #[derive(Debug, Clone)]
 pub struct TransactionWithInfo {
     pub transaction: LedgerTransaction,
-    pub execution_info: TransactionExecutionInfo,
+    pub execution_info: Option<TransactionExecutionInfo>,
 }
 
 impl TransactionWithInfo {
@@ -123,7 +123,7 @@ impl TransactionWithInfo {
         };
         Ok(TransactionWithInfo {
             transaction: ledger_tx,
-            execution_info,
+            execution_info: Some(execution_info),
         })
     }
 }

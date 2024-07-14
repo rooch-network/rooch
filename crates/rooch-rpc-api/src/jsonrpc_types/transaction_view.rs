@@ -6,6 +6,7 @@ use crate::jsonrpc_types::{
     H256View, RoochOrBitcoinAddressView, TransactionExecutionInfoView, TransactionSequenceInfoView,
     TransactionView,
 };
+use bitcoin::hashes::Hash;
 use rooch_types::indexer::transaction::TransactionFilter;
 use rooch_types::transaction::{
     L1Block, L1Transaction, LedgerTransaction, LedgerTxData, TransactionWithInfo,
@@ -34,14 +35,30 @@ impl From<L1Block> for L1BlockView {
 pub struct L1TransactionView {
     pub chain_id: StrView<u64>,
     pub block_hash: BytesView,
+    pub bitcoin_block_hash: Option<String>,
     pub txid: BytesView,
+    pub bitcoin_txid: Option<String>,
 }
 
 impl From<L1Transaction> for L1TransactionView {
     fn from(tx: L1Transaction) -> Self {
         Self {
             chain_id: tx.chain_id.id().into(),
+            bitcoin_block_hash: if tx.chain_id.is_bitcoin() {
+                bitcoin::BlockHash::from_slice(&tx.block_hash)
+                    .map(|hash| hash.to_string())
+                    .ok()
+            } else {
+                None
+            },
             block_hash: tx.block_hash.into(),
+            bitcoin_txid: if tx.chain_id.is_bitcoin() {
+                bitcoin::Txid::from_slice(&tx.txid)
+                    .map(|hash| hash.to_string())
+                    .ok()
+            } else {
+                None
+            },
             txid: tx.txid.into(),
         }
     }
@@ -91,7 +108,7 @@ impl LedgerTransactionView {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionWithInfoView {
     pub transaction: LedgerTransactionView,
-    pub execution_info: TransactionExecutionInfoView,
+    pub execution_info: Option<TransactionExecutionInfoView>,
 }
 
 impl TransactionWithInfoView {
@@ -104,7 +121,7 @@ impl TransactionWithInfoView {
                 tx.transaction,
                 sender_bitcoin_address,
             ),
-            execution_info: tx.execution_info.into(),
+            execution_info: tx.execution_info.map(Into::into),
         }
     }
 }
