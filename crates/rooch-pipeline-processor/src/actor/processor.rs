@@ -14,7 +14,7 @@ use rooch_types::transaction::{
     ExecuteTransactionResponse, L1BlockWithBody, L1Transaction, LedgerTransaction, LedgerTxData,
     RoochTransaction,
 };
-use tracing::debug;
+use tracing::{debug, info};
 
 /// PipelineProcessor aggregates the executor, sequencer, proposer, and indexer to process transactions.
 pub struct PipelineProcessorActor {
@@ -40,6 +40,68 @@ impl PipelineProcessorActor {
             indexer,
             data_import_flag,
         }
+    }
+
+    async fn process_sequenced_tx_on_startup(&mut self) -> Result<()> {
+        let last_order = self.sequencer.get_sequencer_order().await.unwrap_or(0);
+        debug!("process_sequenced_tx_on_startup last_order: {}", last_order);
+        if last_order == 0 {
+            return Ok(());
+        }
+        let mut txs = Vec::new();
+        for order in (1..=last_order).rev() {
+            let tx_hash = self
+                .sequencer
+                .get_tx_hashs(vec![order])
+                .await?
+                .pop()
+                .flatten()
+                .ok_or_else(|| anyhow::anyhow!("The tx with order {} should exists", order))?;
+            let execution_info = self
+                .executor
+                .get_transaction_execution_infos_by_hash(vec![tx_hash])
+                .await?
+                .pop()
+                .flatten();
+            if execution_info.is_none() {
+                txs.push(tx_hash);
+            } else {
+                //we scan the txs from the last to the first, so we can break when we find the first executed tx
+                break;
+            }
+        }
+        if txs.is_empty() {
+            return Ok(());
+        }
+        info!(
+            "Process sequenced but not executed transactions on startup, txs: {:?}",
+            txs
+        );
+
+        for tx_hash in txs.into_iter() {
+            let ledger_tx = self
+                .sequencer
+                .get_transaction_by_hash(tx_hash)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("The tx with hash {} should exists", tx_hash))?;
+            match &ledger_tx.data {
+                LedgerTxData::L1Block(_block) => {
+                    //TODO how to get the L1BlockWithBody
+                    unimplemented!("L1Block tx not support")
+                }
+                LedgerTxData::L1Tx(l1_tx) => {
+                    debug!("process_sequenced_tx_on_startup l1_tx: {:?}", l1_tx);
+                    let moveos_tx = self.executor.validate_l1_tx(l1_tx.clone()).await?;
+                    self.execute_tx(ledger_tx.clone(), moveos_tx).await?;
+                }
+                LedgerTxData::L2Tx(l2_tx) => {
+                    debug!("process_sequenced_tx_on_startup l2_tx: {:?}", l2_tx);
+                    let moveos_tx = self.executor.validate_l2_tx(l2_tx.clone()).await?;
+                    self.execute_tx(ledger_tx.clone(), moveos_tx).await?;
+                }
+            }
+        }
+        Ok(())
     }
 
     pub async fn execute_l1_block(
@@ -128,7 +190,14 @@ impl PipelineProcessorActor {
     }
 }
 
-impl Actor for PipelineProcessorActor {}
+#[async_trait]
+impl Actor for PipelineProcessorActor {
+    async fn started(&mut self, _ctx: &mut ActorContext) {
+        if let Err(e) = self.process_sequenced_tx_on_startup().await {
+            log::error!("Process sequenced tx on startup error: {}", e);
+        }
+    }
+}
 
 #[async_trait]
 impl Handler<ExecuteL2TxMessage> for PipelineProcessorActor {
