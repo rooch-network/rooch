@@ -134,7 +134,7 @@ export const ActionCard: React.FC<StakeCardProps> = ({ tokenInfo, tokenAddress }
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {utxos && tokenInfo ? utxos.data.map((utxo) =>
-                <UtxoCard utxo={utxo} selected={utxo.object_id === selectedUTXO} selectedCallback={toggleUTXOSelected}
+                <UtxoCard utxo={utxo} selected={utxo.id === selectedUTXO} selectedCallback={toggleUTXOSelected}
                           noData={false} />,
               ) : <UtxoCard utxo={undefined} selected={false} selectedCallback={toggleUTXOSelected}
                             noData={!utxosIsPending && tokenInfo !== undefined} />}

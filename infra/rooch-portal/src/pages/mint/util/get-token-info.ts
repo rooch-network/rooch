@@ -55,6 +55,4 @@ export async function getTokenInfo(client: RoochClient, address: string): Promis
       releasePerSecond: decode['release_per_second'] as number,
     }
   })
-
-  return undefined
 }

@@ -4,7 +4,7 @@
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import {
   BalanceInfoView,
-  IndexerStateID,
+  IndexerStateIDView,
   isValidAddress,
 } from '@roochnetwork/rooch-sdk'
 import {
@@ -42,8 +42,8 @@ export const AssetsCoin: React.FC = () => {
   const [error, setError] = useState<string>('')
 
   // ** PAGINATION
-  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 1 })
-  const mapPageToNextCursor = useRef<{ [page: number]: IndexerStateID | null }>({})
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 })
+  const mapPageToNextCursor = useRef<{ [page: number]: IndexerStateIDView | null }>({})
 
   const handlePageChange = (selectedPage: number) => {
     console.log(selectedPage)
@@ -201,6 +201,9 @@ export const AssetsCoin: React.FC = () => {
         }
       })
       await refetch()
+      toast({
+        title: 'Transfer Success',
+      })
     } catch (e) {
       // toast({
       //   title: 'Transfer Failed',

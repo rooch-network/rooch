@@ -82,7 +82,7 @@ export const AssetsNft = () => {
       const collectionInfo = await Promise.all(
         nfts.data
           .map((item) => ({
-            key: item.object_id,
+            key: item.id,
             collection: (item.value as any).value.value.value.collection,
           }))
           .map(async (obj) => {
@@ -151,7 +151,7 @@ export const AssetsNft = () => {
   }
 
   const handleTransferObject = async () => {
-    const nft = nfts?.data.find((item) => item.object_id === selectedNFTId)
+    const nft = nfts?.data.find((item) => item.id === selectedNFTId)
 
     if (!nft || toAddress === '') {
       return
@@ -162,7 +162,7 @@ export const AssetsNft = () => {
     await transferObject({
       signer: sessionKey!,
       recipient: toAddress,
-      objectId: nft.object_id,
+      objectId: nft.id,
       objectType: {
         target: nft.object_type
       },
@@ -200,14 +200,14 @@ export const AssetsNft = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full place-items-center">
         {nfts?.data.map((nft) => (
           <Card
-            key={nft.object_id}
+            key={nft.id}
             className="w-full transition-all border-border/40 dark:bg-zinc-800/90 dark:hover:border-primary/20 hover:shadow-md overflow-hidden"
-            onClick={() => handleImageClick(nft.object_id)}
+            onClick={() => handleImageClick(nft.id)}
           >
             <CardContent className="p-0">
               <AspectRatio ratio={1} className="flex items-center justify-center overflow-hidden">
                 <img
-                  src={images.get(nft.object_id)}
+                  src={images.get(nft.id)}
                   alt="NFT"
                   className="rounded-md object-cover hover:scale-110 transition-all ease-in-out duration-300"
                 />
