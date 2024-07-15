@@ -21,7 +21,7 @@ This directory contains scripts for setting up a local development environment f
 
 ## Usage
 
-You can also configure the environment using the env script, use `./env -i`
+You can also configure the environment using the env script, use `./env.sh -i`
 
 1. Run `ord server` to start ord indexer server
 2. Run `ord wallet create` to create a new ord wallet
