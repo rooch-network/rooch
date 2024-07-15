@@ -158,11 +158,15 @@ impl RuntimeObject {
         value_type: TypeTag,
         value_layout: MoveTypeLayout,
     ) -> PartialVMResult<()> {
-        if self.value.exists()? {
-            return Err(PartialVMError::new(StatusCode::RESOURCE_ALREADY_EXISTS)
-                .with_message("Object Field already exists".to_string()));
-        }
         let obj_id = self.rt_meta.id().clone();
+        if self.value.exists()? {
+            return Err(
+                PartialVMError::new(StatusCode::RESOURCE_ALREADY_EXISTS).with_message(format!(
+                    "Value of object(id:{} type:{}) already exists",
+                    obj_id, value_type
+                )),
+            );
+        }
         self.rt_meta.init(value_type, value_layout)?;
         //If the value not exists, the pointer should also not exists
         //Because when `add_field` is called, the pointer is taken out and returned to the `native_add_field` function.

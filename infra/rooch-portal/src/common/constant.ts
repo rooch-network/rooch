@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { WalletsMaterialProps } from './interface'
 
-export const ROOCH_OPERATING_ADDRESS = import.meta.env.VITE_ROOCH_OPERATING_ADDRESS
+export const ROOCH_NFT_OPERATING_ADDRESS: string[] = import.meta.env.VITE_ROOCH_NFT_OPERATING_ADDRESS
+export const ROOCH_MINT_OPERATING_ADDRESS: string[] = import.meta.env.VITE_ROOCH_MINT_OPERATING_ADDRESS.includes(',') ? import.meta.env.VITE_ROOCH_MINT_OPERATING_ADDRESS.split(',') : [import.meta.env.VITE_ROOCH_MINT_OPERATING_ADDRESS]
 
 // ** Wallet Connect
 export const walletsMaterialMap = new Map<string, WalletsMaterialProps>([

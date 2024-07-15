@@ -11,7 +11,7 @@ export const SidebarRoutes = ({ onClose }: SidebarRoutesProps) => {
 
   return (
     <div className="flex flex-col w-full space-y-1">
-      {navItems().map((item) => (
+      {navItems.map((item) => (
         <SidebarItem
           key={item.path}
           icon={item.icon}

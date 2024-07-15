@@ -1,17 +1,18 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
 import { useState } from 'react'
-import { FeaturedSfts } from './featured-sfts'
-import { Tokens } from './tokens'
+import { AllTokens } from './all-tokens'
 import { TabItem } from '@/common/interface'
-import { ComingSoon } from '@/components/coming-soon.tsx'
+import { useCurrentWallet } from '@roochnetwork/rooch-sdk-kit'
+import { ConnectWalletHint } from '@/components/connect-wallet-hint'
 
 const mintTabItems: TabItem[] = [
   { id: 'allTokens', label: 'All Tokens', available: false },
-  { id: 'featuredTokens', label: 'Featured Tokens', available: false },
 ]
 
-export const SftTabs = () => {
+export const MintTabsLayout = () => {
+  const { isConnected } = useCurrentWallet()
   const [activeId, setActiveId] = useState<string>('allTokens')
 
   const handleTabClick = (id: string, available: boolean) => {
@@ -20,21 +21,10 @@ export const SftTabs = () => {
     }
   }
 
-  const renderComingSoon = () => <ComingSoon />
-
   const renderTabContent = () => {
-    const activeTab = mintTabItems.find((item) => item.id === activeId)
-    if (activeTab && !activeTab.available) {
-      return renderComingSoon()
-    }
-
     switch (activeId) {
       case 'allTokens':
-        return <FeaturedSfts />
-      case 'featuredTokens':
-        return <Tokens />
-      default:
-        return <FeaturedSfts />
+        return <AllTokens />
     }
   }
 
@@ -56,7 +46,7 @@ export const SftTabs = () => {
         ))}
       </nav>
 
-      <div className="mt-4">{renderTabContent()}</div>
+      <div className="mt-4">{isConnected ? renderTabContent() : <ConnectWalletHint />}</div>
     </div>
   )
 }

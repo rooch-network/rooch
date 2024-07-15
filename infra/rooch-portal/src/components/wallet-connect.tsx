@@ -21,7 +21,6 @@ import { capitalizeFirstLetter, cn } from '@/lib/utils'
 import { walletsMaterialMap } from '../common/constant'
 
 import {
-  SupportChain,
   useConnectWallet,
   useCurrentWallet,
   useWallets,
@@ -32,7 +31,7 @@ import { LoadingSpinner } from './loading-spinner'
 export const WalletConnect = () => {
   const [selectWalletDialog, setSelectWalletDialog] = useState(false)
   const { mutateAsync: connectWallet } = useConnectWallet()
-  const wallets = useWallets().filter((wallet) => wallet.getChain() === SupportChain.BITCOIN)
+  const wallets = useWallets()
   const {isConnecting, wallet} = useCurrentWallet()
 
   // ** Connect specific wallet

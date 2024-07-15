@@ -13,7 +13,7 @@ import Tooltip from '@mui/material/Tooltip'
 // ** SDK Imports
 import { IndexerStateID, UTXOStateView } from '@roochnetwork/rooch-sdk'
 
-import { useWalletStore } from '@roochnetwork/rooch-sdk-kit'
+import { useCurrentWallet } from '@roochnetwork/rooch-sdk-kit'
 
 // ** Utils
 import { formatAddress } from 'src/@core/utils/format'
@@ -82,7 +82,7 @@ const defaultColumns: GridColDef[] = [
 ]
 
 const UTXOList = () => {
-  const account = useWalletStore((state) => state.currentAccount)
+  const { wallet } = useCurrentWallet()
 
   // ** State
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 })
@@ -96,14 +96,13 @@ const UTXOList = () => {
   )
 
   let { data, isPending } = useRoochClientQuery(
-    'queryUTXOs',
+    'queryUTXO',
     {
       filter: {
-        owner: account?.address ?? '',
+        owner: wallet?.getBitcoinAddress().toStr() ?? '',
       },
       cursor: cursor,
-      limit: paginationModel.pageSize,
-      descending_order: true,
+      limit: paginationModel.pageSize.toString(),
     },
     {
       enabled: true,
