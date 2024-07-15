@@ -36,6 +36,8 @@ Feature: Rooch CLI integration tests
 
       Then cmd: "account create"
       Then cmd: "account list --json"
+      Then cmd: "account export"
+      Then cmd: "account export -a {{$.account[-1].account0.rooch_address}}"
       # use bitcoin_address
       Then cmd: "account nullify -a {{$.account[-1].account0.bitcoin_address}}"
 
