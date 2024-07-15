@@ -4,19 +4,19 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use rooch_key::keystore::account_keystore::AccountKeystore;
-use rooch_rpc_api::jsonrpc_types::RoochAddressView;
-use rooch_types::{address::ParsedAddress, error::RoochResult};
+use rooch_key::{key_derive::ROOCH_SECRET_KEY_PREFIX, keystore::account_keystore::AccountKeystore};
+use rooch_types::{
+    address::{ParsedAddress, RoochAddress},
+    error::{RoochError, RoochResult},
+};
 
-/// Create a new account off-chain.
-/// If an account not exist on-chain, contract will auto create the account on-chain.
+/// Export an existing private key for one address or mnemonic for all addresses off-chain.
 ///
-/// An account can be created by transferring coins, or by making an explicit
-/// call to create an account.  This will create an account with no coins, and
-/// any coins will have to transferred afterwards.
+/// Default to export all addresses with a mnemonic phrase but can be specified with -a or
+/// --address to export only one address with a private key.
 #[derive(Debug, Parser)]
 pub struct ExportCommand {
-    #[clap(short = 'a', long = "address", value_parser=ParsedAddress::parse)]
+    #[clap(short = 'a', long = "address", value_parser=ParsedAddress::parse, default_value = "")]
     address: ParsedAddress,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
@@ -27,23 +27,34 @@ pub struct ExportCommand {
 }
 
 #[async_trait]
-impl CommandAction<Option<RoochAddressView>> for ExportCommand {
-    async fn execute(self) -> RoochResult<Option<RoochAddressView>> {
+impl CommandAction<Option<String>> for ExportCommand {
+    async fn execute(self) -> RoochResult<Option<String>> {
         let mut context = self.context_options.build_require_password()?;
         let password = context.get_password();
-        let result = context.keystore.generate_and_add_new_key(password)?;
+        let result = if self.address == ParsedAddress::Named("".to_owned()) {
+            context.keystore.export_mnemonic_phrase(password)?
+        } else {
+            let mapping = context.address_mapping();
+            let rooch_address: RoochAddress =
+                self.address.into_rooch_address(&mapping).map_err(|e| {
+                    RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
+                })?;
+            println!("Address to be exported: {:?}", rooch_address);
+            let mnemonic = context.keystore.get_mnemonic(password)?;
+            let mnemonic_phrase = mnemonic.clone().mnemonic_phrase;
+            context
+                .keystore
+                .export_private_key(mnemonic, mnemonic_phrase, rooch_address)?
+        };
 
         if self.json {
-            Ok(Some(result.address.into()))
+            Ok(Some(result))
         } else {
-            println!(
-                "Generated new keypair for address with key pair type [{}]",
-                result.address
-            );
-            println!(
-                "Secret Recovery Phrase : [{}]",
-                result.key_pair_data.mnemonic_phrase
-            );
+            if result.starts_with(ROOCH_SECRET_KEY_PREFIX) {
+                println!("Export succeeded with the encoded private key [{}]", result);
+            } else {
+                println!("Export succeeded with the mnemonic phrase [{}]", result);
+            };
 
             Ok(None)
         }

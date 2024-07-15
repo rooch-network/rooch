@@ -21,6 +21,9 @@ pub const DERIVATION_PATH_PURPOSE_SCHNORR: u32 = 44;
 pub const DERIVATION_PATH_PURPOSE_ECDSA: u32 = 54;
 pub const DERIVATION_PATH_PURPOSE_SECP256R1: u32 = 74;
 pub const DERIVATION_PATH_PURPOSE_BIP86: u32 = 86;
+pub const SIGNATURE_SCHEME_FLAG_ED25519: u8 = 0x00;
+pub const SIGNATURE_SCHEME_FLAG_SECP256K1: u8 = 0x01;
+pub const ROOCH_SECRET_KEY_PREFIX: &str = "roochsecretkey";
 
 pub fn verify_password(
     password: Option<String>,
@@ -109,12 +112,10 @@ pub(crate) fn generate_derivation_path(account_index: u32) -> Result<DerivationP
     .map_err(|_| RoochError::SignatureKeyGenError("Cannot parse derivation path".to_owned()))
 }
 
-pub(crate) fn generate_new_key_pair(
+fn derive_mnemonic_from_mnemonic_phrase(
     mnemonic_phrase: Option<String>,
-    derivation_path: DerivationPath,
     word_length: Option<String>,
-    password: Option<String>,
-) -> Result<GeneratedKeyPair, anyhow::Error> {
+) -> Result<Mnemonic, anyhow::Error> {
     // Reuse the mnemonic phrase to derive new address
     let mnemonic = match mnemonic_phrase {
         Some(phrase) => {
@@ -123,7 +124,27 @@ pub(crate) fn generate_new_key_pair(
         }
         None => Mnemonic::new(parse_word_length(word_length)?, Language::English),
     };
+    Ok(mnemonic)
+}
+
+pub(crate) fn derive_seed_from_mnemonic(
+    mnemonic_phrase: Option<String>,
+    word_length: Option<String>,
+) -> Result<Seed, anyhow::Error> {
+    let mnemonic = derive_mnemonic_from_mnemonic_phrase(mnemonic_phrase, word_length)?;
     let seed = Seed::new(&mnemonic, "");
+    Ok(seed)
+}
+
+pub(crate) fn generate_new_key_pair(
+    mnemonic_phrase: Option<String>,
+    derivation_path: DerivationPath,
+    word_length: Option<String>,
+    password: Option<String>,
+) -> Result<GeneratedKeyPair, anyhow::Error> {
+    let mnemonic =
+        derive_mnemonic_from_mnemonic_phrase(mnemonic_phrase.clone(), word_length.clone())?;
+    let seed = derive_seed_from_mnemonic(mnemonic_phrase, word_length)?;
 
     let sk = derive_bitcoin_private_key_from_path(seed.as_bytes(), derivation_path)?;
     let rooch_kp = RoochKeyPair::Secp256k1(sk);
