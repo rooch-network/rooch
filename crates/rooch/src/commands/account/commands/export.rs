@@ -11,6 +11,7 @@ use rooch_types::{
 };
 
 /// Export an existing private key for one address or mnemonic for all addresses off-chain.
+/// This has to be bound with mnemonic phrase and not related to external private keys and addresses.
 ///
 /// Default to export all addresses with a mnemonic phrase but can be specified with -a or
 /// --address to export only one address with a private key.
