@@ -200,8 +200,6 @@ module moveos_std::object {
     }
 
     public(friend) fun new_with_parent_and_key<P: key, T: key>(parent: &mut Object<P>, child_key: address, value: T): Object<T>{
-        // Only shared object can add child object
-        assert!(is_shared(parent), ErrorObjectNotShared);
         // Currently, the child object level is limited to 2
         assert!(vector::length(&parent.id.path) < 2, ErrorChildObjectTooDeep);
         native_add_field(parent.id, child_key, value)
@@ -818,7 +816,6 @@ module moveos_std::object {
     }
 
     #[test]
-    #[expected_failure(abort_code = ErrorObjectNotShared, location = moveos_std::object)]
     fun test_parent_not_shared(){
         let parent = new(TestStruct { count: 1 });
         //let parent_id = id(&parent);

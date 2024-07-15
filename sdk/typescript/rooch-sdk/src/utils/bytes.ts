@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+import { Buffer } from 'buffer'
 import { base16, base32, base58, base58xmr, base64, base64url, hex, utf8 } from '@scure/base'
-
 import { Bytes } from '../types/bytes.js'
 
 const CODERS = {
@@ -69,5 +69,76 @@ export function concatBytes(...arrays: Uint8Array[]): Uint8Array {
   }
   return res
 }
+
+export function varintByteNum(input: number): Bytes {
+  if (input < 253) {
+    let buf = Buffer.alloc(1)
+    buf.writeUInt8(input)
+    return buf
+  } else if (input < 0x10000) {
+    let buf = Buffer.alloc(1 + 2)
+    buf.writeUInt8(253)
+    buf.writeUInt16LE(input, 1)
+    return buf
+  } else if (input < 0x100000000) {
+    let buf = Buffer.alloc(1 + 4)
+    buf.writeUInt8(254)
+    buf.writeUInt32LE(input, 1)
+    return buf
+  } else {
+    let buf = Buffer.alloc(1 + 8)
+    buf.writeUInt8(255)
+    buf.writeInt32LE(input & -1, 1)
+    buf.writeUInt32LE(Math.floor(input / 0x100000000), 5)
+    return buf
+  }
+}
+
+// export class ByteWriter {
+//   value: Bytes
+//
+//   constructor(value: Bytes) {
+//     this.value = value
+//   }
+//
+//   public writeUInt8(input: number) {
+//     if (input < 0) {
+//       input = input >>> 0
+//     }
+//     let buf = Buffer.from(this.value)
+//     buf.writeUInt8(input, this.value.length)
+//
+//     this.value = buf
+//   }
+//
+//   public writeUInt16BE(input: number) {
+//     if (input < 0) {
+//       input = input >>> 0
+//     }
+//
+//     let buf = Buffer.from(this.value)
+//     buf.writeUInt16BE(input, this.value.length)
+//     this.value = buf
+//   }
+//
+//   public varintBufNum(input: number) {
+//     let buf = Buffer.from([])
+//     if (input < 253) {
+//       buf.writeUInt8(input)
+//     } else if (input < 0x10000) {
+//       buf.writeUInt8(253)
+//       buf.writeUInt16LE(input, 1)
+//     } else if (input < 0x100000000) {
+//       buf.writeUInt8(254)
+//       buf.writeUInt32LE(input, 1)
+//     } else {
+//       buf.writeUInt8(255)
+//       buf.writeInt32LE(input & -1, 1)
+//       buf.writeUInt32LE(Math.floor(input / 0x100000000), 5)
+//     }
+//
+//     this.value = concatBytes(this.value, buf)
+//   }
+// }
 
 export const bytes = stringToBytes

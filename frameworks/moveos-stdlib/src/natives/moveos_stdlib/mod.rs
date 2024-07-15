@@ -9,6 +9,7 @@ pub mod bls12381;
 pub mod cbor;
 pub mod event;
 pub mod evm;
+pub mod groth16;
 pub mod hash;
 pub mod json;
 pub mod move_module;

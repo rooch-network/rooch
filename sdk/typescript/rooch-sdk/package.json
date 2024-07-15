@@ -1,7 +1,7 @@
 {
   "name": "@roochnetwork/rooch-sdk",
   "author": "Rooch.network <opensource@rooch.network>",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Rooch SDK",
   "license": "Apache-2.0",
   "engines": {
@@ -65,7 +65,8 @@
     "tweetnacl": "^1.0.3",
     "bech32": "^2.0.0",
     "@mysten/bcs": "1.0.2",
-    "valibot": "^0.25.0"
+    "valibot": "^0.25.0",
+    "buffer": "6.0.0"
   },
   "publishConfig": {
     "access": "public",

@@ -9,7 +9,7 @@ import { createEmotionCache } from '@/utils/create-emotion-cache'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-import { WalletProvider, RoochProvider, SupportChain } from '@roochnetwork/rooch-sdk-kit'
+import { WalletProvider, RoochProvider } from '@roochnetwork/rooch-sdk-kit'
 
 import { DashboardLayout } from '@/pages/dashboard-layout'
 import { ToastProvider } from '@/providers/toast-provider'
@@ -27,7 +27,7 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <RoochProvider networks={networkConfig} defaultNetwork='testnet'>
             <WalletProvider
-              chain={SupportChain.BITCOIN}
+              chain={'bitcoin'}
               autoConnect
               // fallback={
               //   <div className="h-screen w-screen flex items-center justify-center bg-gradient-to-r from-zinc-900 to-zinc-800">

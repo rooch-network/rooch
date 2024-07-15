@@ -27,7 +27,7 @@ import {
   PaginationArguments,
   PaginationResult,
   SessionInfoView,
-  StateView,
+  ObjectStateView,
   QueryUTXOsParams,
   PaginatedUTXOStateViews,
   PaginatedInscriptionStateViews,
@@ -148,13 +148,13 @@ export class RoochClient {
   }
 
   // Get the states by access_path
-  async getStates(params: GetStatesParams): Promise<StateView[]> {
+  async getStates(params: GetStatesParams): Promise<ObjectStateView[]> {
     const result = await this.transport.request({
       method: 'rooch_getStates',
       params: [params.accessPath, params.stateOption],
     })
 
-    const typedResult = result as unknown as StateView[]
+    const typedResult = result as unknown as ObjectStateView[]
     return typedResult[0] === null ? [] : typedResult
   }
 
@@ -364,9 +364,11 @@ export class RoochClient {
     // Maybe we should define the type?
     const tableId = (
       (
-        ((states[0].decoded_value as AnnotatedMoveStructView).value['value'] as AnnotatedMoveStructView).value[
-          'keys'
-        ] as AnnotatedMoveStructView
+        (
+          (states[0].decoded_value as AnnotatedMoveStructView).value[
+            'value'
+          ] as AnnotatedMoveStructView
+        ).value['keys'] as AnnotatedMoveStructView
       ).value['handle'] as AnnotatedMoveStructView
     ).value['id'] as string
 

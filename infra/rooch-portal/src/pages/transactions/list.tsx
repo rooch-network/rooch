@@ -1,5 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -30,13 +31,11 @@ import { NoData } from '@/components/no-data'
 import { useCurrentAddress, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 
 // ** ICONS
-import { MenuSquare, ExternalLink, Wallet } from 'lucide-react'
-// import { LedgerTxDataView } from '@roochnetwork/rooch-sdk'
+import { MenuSquare, ExternalLink } from 'lucide-react'
 import { SkeletonList } from '@/components/skeleton-list'
 import { formatAddress, formatTimestamp } from '@/utils/format.ts'
-// import { formatAddress } from '@/utils/format'
 
-export const TransactionsTable = () => {
+export const TransactionsList = () => {
   const navigate = useNavigate()
   const account = useCurrentAddress()
 
@@ -81,19 +80,7 @@ export const TransactionsTable = () => {
   }
 
   const handleToTransactionDetail = (hash: string) => {
-    navigate(`txblock/${hash}`)
-  }
-
-  if (!account) {
-    return (
-      <div className="flex flex-col items-center justify-center text-center p-40">
-        <Wallet className="w-12 h-12 mb-4 text-zinc-500" />
-        <p className="text-xl text-zinc-500 font-semibold">Haven't connected to wallet</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Please connect your wallet to view your assets.
-        </p>
-      </div>
-    )
+    navigate(`/transactions/detail/${hash}`)
   }
 
   return isPending ? (
