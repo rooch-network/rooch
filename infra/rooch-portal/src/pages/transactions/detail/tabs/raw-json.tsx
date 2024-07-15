@@ -1,25 +1,17 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { TransactionWithInfoView } from '@roochnetwork/rooch-sdk'
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
-import { useEffect, useState } from 'react'
 
 type RawJsonProps = {
-  txData: TransactionWithInfoView
+  txData?: TransactionWithInfoView
 }
 
-// TODO: Improve ui
 export const RawJson: React.FC<RawJsonProps> = ({ txData }) => {
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (txData) {
-      setLoading(false)
-    }
-  }, [txData])
 
   return (
     <>
@@ -28,7 +20,7 @@ export const RawJson: React.FC<RawJsonProps> = ({ txData }) => {
           <div className="flex flex-col items-start justify-start gap-3">
             <div className="flex flex-col items-start justify-start gap-5 font-medium">
               <div className="rounded-lg flex flex-col items-start">
-                {loading ? (
+                {!txData ? (
                   <>
                     <Skeleton width={700} />
                     <Skeleton width={800} />

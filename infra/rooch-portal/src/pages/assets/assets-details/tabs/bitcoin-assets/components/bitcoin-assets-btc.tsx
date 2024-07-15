@@ -3,9 +3,9 @@
 import { useMemo, useRef, useState } from 'react'
 import { useCurrentAddress, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 
-import { AlertCircle, Wallet } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 import { CursorType } from '@/common/interface'
-import type { IndexerStateID } from '@roochnetwork/rooch-sdk'
+import type { IndexerStateIDView } from '@roochnetwork/rooch-sdk'
 
 import { NoData } from '@/components/no-data.tsx'
 import CustomPagination from '@/components/custom-pagination.tsx'
@@ -43,23 +43,9 @@ export const BitcoinAssetsBtc: React.FC = () => {
     filter: {
       owner: account?.toStr() || '',
     },
-    cursor: queryOptions.cursor as IndexerStateID | null,
+    cursor: queryOptions.cursor as IndexerStateIDView | null,
     limit: queryOptions.pageSize,
   })
-
-  console.log('result of UTXOs', result)
-
-  if (!account) {
-    return (
-      <div className="flex flex-col items-center justify-center text-center p-40">
-        <Wallet className="w-12 h-12 mb-4 text-zinc-500" />
-        <p className="text-xl text-zinc-500 font-semibold">Haven't connected to wallet</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Please connect your wallet to view your assets.
-        </p>
-      </div>
-    )
-  }
 
   if (isLoading || isError) {
     return (
@@ -88,7 +74,7 @@ export const BitcoinAssetsBtc: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {result?.data.map((data) => (
           <Card
-            key={data.object_id}
+            key={data.id}
             className="w-full transition-all border-border/40 dark:bg-zinc-800/90 dark:hover:border-primary/20 hover:shadow-md overflow-hidden"
           >
             <CardHeader className="flex items-center justify-center">

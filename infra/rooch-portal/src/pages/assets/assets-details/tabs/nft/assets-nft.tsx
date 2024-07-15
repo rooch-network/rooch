@@ -8,7 +8,7 @@ import {
   useTransferObject,
 } from '@roochnetwork/rooch-sdk-kit'
 
-import { AlertCircle, ArrowLeft, Copy, Wallet } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Copy } from 'lucide-react'
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -19,8 +19,7 @@ import CustomPagination from '@/components/custom-pagination.tsx'
 import { LoadingSpinner } from '@/components/loading-spinner.tsx'
 
 import { formatAddress } from '@/utils/format'
-import { ROOCH_OPERATING_ADDRESS } from '@/common/constant.ts'
-import { address } from 'bitcoinjs-lib'
+import { ROOCH_NFT_OPERATING_ADDRESS } from '@/common/constant.ts'
 
 export const AssetsNft = () => {
   const sessionKey = useCurrentSession()
@@ -63,7 +62,7 @@ export const AssetsNft = () => {
     filter: {
       object_type_with_owner: {
         owner: sessionKey?.getRoochAddress().toHexAddress() || '',
-        object_type: `${ROOCH_OPERATING_ADDRESS}::nft::NFT`,
+        object_type: `${ROOCH_NFT_OPERATING_ADDRESS}::nft::NFT`,
       },
     },
     // @ts-ignore
@@ -83,7 +82,7 @@ export const AssetsNft = () => {
       const collectionInfo = await Promise.all(
         nfts.data
           .map((item) => ({
-            key: item.object_id,
+            key: item.id,
             collection: (item.value as any).value.value.value.collection,
           }))
           .map(async (obj) => {
@@ -152,7 +151,7 @@ export const AssetsNft = () => {
   }
 
   const handleTransferObject = async () => {
-    const nft = nfts?.data.find((item) => item.object_id === selectedNFTId)
+    const nft = nfts?.data.find((item) => item.id === selectedNFTId)
 
     if (!nft || toAddress === '') {
       return
@@ -163,7 +162,7 @@ export const AssetsNft = () => {
     await transferObject({
       signer: sessionKey!,
       recipient: toAddress,
-      objectId: nft.object_id,
+      objectId: nft.id,
       objectType: {
         target: nft.object_type
       },
@@ -172,18 +171,6 @@ export const AssetsNft = () => {
     handleClose()
     setTransferLoading(false)
     reFetchNFTS()
-  }
-
-  if (!address) {
-    return (
-      <div className="flex flex-col items-center justify-center text-center p-40">
-        <Wallet className="w-12 h-12 mb-4 text-zinc-500" />
-        <p className="text-xl text-zinc-500 font-semibold">Haven't connected to wallet</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Please connect your wallet to view your assets.
-        </p>
-      </div>
-    )
   }
 
   if (isLoading || isError) {
@@ -213,14 +200,14 @@ export const AssetsNft = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full place-items-center">
         {nfts?.data.map((nft) => (
           <Card
-            key={nft.object_id}
+            key={nft.id}
             className="w-full transition-all border-border/40 dark:bg-zinc-800/90 dark:hover:border-primary/20 hover:shadow-md overflow-hidden"
-            onClick={() => handleImageClick(nft.object_id)}
+            onClick={() => handleImageClick(nft.id)}
           >
             <CardContent className="p-0">
               <AspectRatio ratio={1} className="flex items-center justify-center overflow-hidden">
                 <img
-                  src={images.get(nft.object_id)}
+                  src={images.get(nft.id)}
                   alt="NFT"
                   className="rounded-md object-cover hover:scale-110 transition-all ease-in-out duration-300"
                 />

@@ -6,10 +6,10 @@ import { NoData } from '@/components/no-data'
 import { Card, CardHeader } from '@/components/ui/card'
 import CustomPagination from '@/components/custom-pagination.tsx'
 import { hexToString } from '@/utils/format.ts'
-import { AlertCircle, Wallet } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 
 import { CursorType } from '@/common/interface'
-import type { IndexerStateID } from '@roochnetwork/rooch-sdk'
+import type { IndexerStateIDView } from '@roochnetwork/rooch-sdk'
 
 export const BitcoinAssetsOrdi: React.FC = () => {
   const address = useCurrentAddress()
@@ -43,7 +43,7 @@ export const BitcoinAssetsOrdi: React.FC = () => {
     filter: {
       owner: address?.toStr() || '',
     },
-    cursor: queryOptions.cursor as IndexerStateID | null,
+    cursor: queryOptions.cursor as IndexerStateIDView | null,
     limit: queryOptions.pageSize,
   })
 
@@ -52,18 +52,6 @@ export const BitcoinAssetsOrdi: React.FC = () => {
       mapPageToNextCursor.current[paginationModel.page] = (result.next_cursor as CursorType) || null
     }
   }, [result, paginationModel.page])
-
-  if (!address) {
-    return (
-      <div className="flex flex-col items-center justify-center text-center p-40">
-        <Wallet className="w-12 h-12 mb-4 text-zinc-500" />
-        <p className="text-xl text-zinc-500 font-semibold">Haven't connected to wallet</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Please connect your wallet to view your assets.
-        </p>
-      </div>
-    )
-  }
 
   if (isLoading) {
     return (
@@ -102,7 +90,7 @@ export const BitcoinAssetsOrdi: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {result.data.map((item) => (
           <Card
-            key={item.object_id}
+            key={item.id}
             className="w-full transition-all border-border/40 dark:bg-zinc-800/90 dark:hover:border-primary/20 hover:shadow-md overflow-hidden"
           >
             <CardHeader className="flex items-center justify-center">

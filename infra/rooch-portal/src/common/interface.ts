@@ -1,8 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { IndexerStateID } from '@roochnetwork/rooch-sdk'
+import { IndexerStateIDView } from '@roochnetwork/rooch-sdk'
 import { LucideIcon } from 'lucide-react'
+import { ReactNode } from 'react'
 
 export interface WalletsMaterialProps {
   name: string
@@ -77,6 +78,8 @@ export type TabItem = {
   id: string
   label: string
   available: boolean
+  children?: ReactNode
+
 }
 
-export type CursorType = IndexerStateID | null
+export type CursorType = IndexerStateIDView | null
