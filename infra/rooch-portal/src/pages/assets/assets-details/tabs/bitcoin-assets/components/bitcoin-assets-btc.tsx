@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { useCurrentAddress, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 
-import { AlertCircle, Wallet } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 import { CursorType } from '@/common/interface'
 import type { IndexerStateID } from '@roochnetwork/rooch-sdk'
 
@@ -46,20 +46,6 @@ export const BitcoinAssetsBtc: React.FC = () => {
     cursor: queryOptions.cursor as IndexerStateID | null,
     limit: queryOptions.pageSize,
   })
-
-  console.log('result of UTXOs', result)
-
-  if (!account) {
-    return (
-      <div className="flex flex-col items-center justify-center text-center p-40">
-        <Wallet className="w-12 h-12 mb-4 text-zinc-500" />
-        <p className="text-xl text-zinc-500 font-semibold">Haven't connected to wallet</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Please connect your wallet to view your assets.
-        </p>
-      </div>
-    )
-  }
 
   if (isLoading || isError) {
     return (

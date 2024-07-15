@@ -33,9 +33,7 @@ export const MintDetailLayout = () => {
     if (!tokenInfo) {
       return
     }
-    const now = Date.now() / 1000
-
-    const timer = setTimeout(() => setProgress((Math.trunc((now > tokenInfo.endTime ? tokenInfo.endTime : now - tokenInfo.starTime) / (tokenInfo.endTime - tokenInfo.starTime) * 100)) || 0), 500)
+    const timer = setTimeout(() => setProgress(tokenInfo.progress), 500)
     return () => clearTimeout(timer)
   }, [tokenInfo])
 

@@ -6,7 +6,7 @@ import { NoData } from '@/components/no-data'
 import { Card, CardHeader } from '@/components/ui/card'
 import CustomPagination from '@/components/custom-pagination.tsx'
 import { hexToString } from '@/utils/format.ts'
-import { AlertCircle, Wallet } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 
 import { CursorType } from '@/common/interface'
 import type { IndexerStateID } from '@roochnetwork/rooch-sdk'
@@ -52,18 +52,6 @@ export const BitcoinAssetsOrdi: React.FC = () => {
       mapPageToNextCursor.current[paginationModel.page] = (result.next_cursor as CursorType) || null
     }
   }, [result, paginationModel.page])
-
-  if (!address) {
-    return (
-      <div className="flex flex-col items-center justify-center text-center p-40">
-        <Wallet className="w-12 h-12 mb-4 text-zinc-500" />
-        <p className="text-xl text-zinc-500 font-semibold">Haven't connected to wallet</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Please connect your wallet to view your assets.
-        </p>
-      </div>
-    )
-  }
 
   if (isLoading) {
     return (

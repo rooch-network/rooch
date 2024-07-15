@@ -18,8 +18,8 @@ import { MintLayout } from '@/pages/mint/layout.tsx'
 import { TradeLayout } from '@/pages/trade/trade-layout.tsx'
 import { LeapLayout } from '@/pages/leap/leap-layout.tsx'
 import { MintDetailLayout } from '@/pages/mint/detail/layout.tsx'
-import { TransactionsLayout } from '@/pages/transactions/transactions-layout.tsx'
-import { TransactionsBrowserLayout } from '@/pages/txblock/transactions-browser-layout.tsx'
+import { TransactionsLayout } from '@/pages/transactions/layout.tsx'
+import { TransactionDetailLayout } from '@/pages/transactions/detail/layout'
 import { AppsLayout } from '@/pages/apps/apps-layout.tsx'
 import { SettingsLayout } from '@/pages/settings/settings-layout.tsx'
 
@@ -42,7 +42,7 @@ export const allRouter = [
   { path: '/leap', element: <LeapLayout /> },
   { path: '/apps', element: <AppsLayout /> },
   { path: '/transactions', element: <TransactionsLayout /> },
-  { path: '/transactions/txblock/:hash', element: <TransactionsBrowserLayout /> },
+  { path: '/transactions/detail/:hash', element: <TransactionDetailLayout /> },
   { path: '/settings', element: <SettingsLayout /> },
 ]
 

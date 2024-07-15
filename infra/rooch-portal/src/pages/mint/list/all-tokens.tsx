@@ -18,6 +18,7 @@ import { useEffect, useState } from 'react'
 import { formatTimestamp } from '@/utils/format'
 import { useNavigate } from 'react-router-dom'
 import { getTokenInfo, TokenInfo } from '@/pages/mint/util/get-token-info'
+import Skeleton, { SkeletonTheme } from 'react-loading-skeleton'
 
 export const AllTokens = () => {
   const navigate = useNavigate()
@@ -43,44 +44,52 @@ export const AllTokens = () => {
 
   return (
     <div className="rounded-lg border w-full">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[150px]">Name</TableHead>
-            <TableHead>Start time</TableHead>
-            <TableHead>End time</TableHead>
-            <TableHead>Release per second</TableHead>
-            <TableHead>Progress</TableHead>
-            <TableHead className="text-center">Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {tokens.map((token) => (
-            <TableRow key={token.starTime}>
-              <TableCell className="font-medium">{token.coin.name}({token.coin.symbol})</TableCell>
-              <TableCell className="font-medium">{formatTimestamp(token.starTime)}</TableCell>
-              <TableCell className="font-medium">{formatTimestamp(token.endTime)}</TableCell>
-              <TableCell className="font-medium">{token.releasePerSecond}</TableCell>
-              <TableCell>
-                <div className="flex items-center justify-start gap-1">
-                  <Progress value={token.assetTotalWeight} className="w-[60%]" />
-                  <span>{token.assetTotalWeight}%</span>
-                </div>
-              </TableCell>
-              <TableCell className="text-center">
-                <Button variant="link" size="sm" onClick={() => {
-                  navigate(`/mint/detail/${token.address}`)
-                }}>
+      <SkeletonTheme baseColor="#27272A" highlightColor="#444">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {tokens.length > 0 ? <>
+                <TableHead className="w-[150px]">Name</TableHead>
+                <TableHead>Start time</TableHead>
+                <TableHead>End time</TableHead>
+                <TableHead>Release per second</TableHead>
+                <TableHead>Progress</TableHead>
+                <TableHead className="text-center">Action</TableHead>
+              </> : <TableHead className="w-full"><Skeleton/></TableHead>}
+            </TableRow>
+          </TableHeader>
+            <TableBody>
+              {
+                tokens.length > 0 ? tokens.map((token) => (
+                  <TableRow key={token.starTime}>
+                    <TableCell className="font-medium">{token.coin.name}({token.coin.symbol})</TableCell>
+                    <TableCell className="font-medium">{formatTimestamp(token.starTime)}</TableCell>
+                    <TableCell className="font-medium">{formatTimestamp(token.endTime)}</TableCell>
+                    <TableCell className="font-medium">{token.releasePerSecond}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-start gap-1">
+                        <Progress value={token.progress} className="w-[60%]" />
+                        <span>{token.progress}%</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button variant="link" size="sm" onClick={() => {
+                        navigate(`/mint/detail/${token.address}`)
+                      }}>
                   <span className="flex items-center justify-center">
                     <MousePointer2 className="w-4 h-4 mr-1" />
                     Mint
                   </span>
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )): <TableRow key='loading'>
+                  <TableCell className="font-medium w-full"><Skeleton/></TableCell>
+                </TableRow>
+              }
+            </TableBody>
+        </Table>
+      </SkeletonTheme>
     </div>
   )
 }

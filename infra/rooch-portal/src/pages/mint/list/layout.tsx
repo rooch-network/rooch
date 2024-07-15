@@ -4,12 +4,15 @@
 import { useState } from 'react'
 import { AllTokens } from './all-tokens'
 import { TabItem } from '@/common/interface'
+import { useCurrentWallet } from '@roochnetwork/rooch-sdk-kit'
+import { ConnectWalletHint } from '@/components/connect-wallet-hint'
 
 const mintTabItems: TabItem[] = [
   { id: 'allTokens', label: 'All Tokens', available: false },
 ]
 
 export const MintTabsLayout = () => {
+  const { isConnected } = useCurrentWallet()
   const [activeId, setActiveId] = useState<string>('allTokens')
 
   const handleTabClick = (id: string, available: boolean) => {
@@ -43,7 +46,7 @@ export const MintTabsLayout = () => {
         ))}
       </nav>
 
-      <div className="mt-4">{renderTabContent()}</div>
+      <div className="mt-4">{isConnected ? renderTabContent() : <ConnectWalletHint />}</div>
     </div>
   )
 }

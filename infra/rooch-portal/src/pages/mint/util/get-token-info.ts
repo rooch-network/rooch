@@ -13,6 +13,7 @@ export type TokenInfo =
     assetTotalWeight: number,
     starTime: number,
     endTime: number,
+    progress: number,
     releasePerSecond: number,
   }
 
@@ -24,7 +25,7 @@ export async function getTokenInfo(client: RoochClient, address: string): Promis
       showDisplay: true,
     },
   })
-  const decode = (data[0].decoded_value as AnnotatedMoveStructView).value
+  const decode = (((data[0].decoded_value as any).value as any).value as any).value as any
   const coinId = (decode['coin_info'] as AnnotatedMoveStructView).value['id'] as string
 
   return client.getStates({
@@ -34,7 +35,11 @@ export async function getTokenInfo(client: RoochClient, address: string): Promis
       showDisplay: true
     }
   }).then((sv) => {
-    const coinView = (((sv[0].decoded_value as any).value as any).value as any).value as any
+    const coinView = (sv[0].decoded_value as any).value as any
+    const starTime= decode['start_time'] as number
+    const endTime = decode['end_time'] as number
+    const now = Date.now() / 1000
+    const progress = Math.trunc((now > endTime ? endTime - starTime : now - starTime) / (endTime - starTime) * 100) || 0
 
     return {
       address: address,
@@ -43,8 +48,9 @@ export async function getTokenInfo(client: RoochClient, address: string): Promis
         decimals: coinView.decimals,
         symbol: coinView.symbol
       },
-      starTime: decode['start_time'] as number,
-      endTime: decode['end_time'] as number,
+      starTime,
+      endTime,
+      progress,
       assetTotalWeight: decode['asset_total_weight'] as number,
       releasePerSecond: decode['release_per_second'] as number,
     }

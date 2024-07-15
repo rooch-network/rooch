@@ -105,7 +105,7 @@ module btc_holder_farmer::hold_farmer {
         alive: bool,
     }
 
-    struct UserStake has store, key, drop {
+    struct UserStake has key {
         /// utxo ==> stake
         stake: Table<ObjectID, Stake>
     }

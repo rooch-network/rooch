@@ -23,25 +23,25 @@ describe('Checkpoints Reading API', () => {
   })
 
   it('Get latest sequence number should be success', async () => {
-    const s  =await testBox.client.getStates({
-      accessPath: '/resource/0x176214bed3764a1c6a43dc1add387be5578ff8dbc263369f5bdc33a885a501ae/0x176214bed3764a1c6a43dc1add387be5578ff8dbc263369f5bdc33a885a501ae::hold_farmer::FarmingAsset',
+    const s = await testBox.client.getStates({
+      accessPath:
+        '/resource/0x176214bed3764a1c6a43dc1add387be5578ff8dbc263369f5bdc33a885a501ae/0x176214bed3764a1c6a43dc1add387be5578ff8dbc263369f5bdc33a885a501ae::hold_farmer::FarmingAsset',
       stateOption: {
         decode: true,
-        showDisplay: true
-      }
+        showDisplay: true,
+      },
     })
 
     console.log(s)
 
     const resultSN = await testBox.client.queryObjectStates({
       filter: {
-        owner: '0x176214bed3764a1c6a43dc1add387be5578ff8dbc263369f5bdc33a885a501ae'
+        owner: '0x176214bed3764a1c6a43dc1add387be5578ff8dbc263369f5bdc33a885a501ae',
       },
-      limit: '10'
+      limit: '10',
     })
 
     console.log(resultSN)
-
   })
 
   it('Get states should be success', async () => {

@@ -8,11 +8,10 @@ import {
   isValidAddress,
 } from '@roochnetwork/rooch-sdk'
 import {
-  useCurrentAddress,
   useCurrentSession,
   useRoochClientQuery, useTransferCoin,
 } from '@roochnetwork/rooch-sdk-kit'
-import { AlertCircle, ArrowLeft, Wallet } from 'lucide-react'
+import { AlertCircle, ArrowLeft } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -32,7 +31,6 @@ const RecipientInput = React.lazy(() => import('@/components/recipient-input'))
 const AmountInput = React.lazy(() => import('@/components/amount-input'))
 
 export const AssetsCoin: React.FC = () => {
-  const account = useCurrentAddress()
   const sessionKey = useCurrentSession()
   const { toast } = useToast()
 
@@ -48,6 +46,7 @@ export const AssetsCoin: React.FC = () => {
   const mapPageToNextCursor = useRef<{ [page: number]: IndexerStateID | null }>({})
 
   const handlePageChange = (selectedPage: number) => {
+    console.log(selectedPage)
     if (selectedPage < 0) {
       return
     }
@@ -214,18 +213,6 @@ export const AssetsCoin: React.FC = () => {
       handleClose()
       setError('')
     }
-  }
-
-  if (!account) {
-    return (
-      <div className="flex flex-col items-center justify-center text-center p-40">
-        <Wallet className="w-12 h-12 mb-4 text-zinc-500" />
-        <p className="text-xl text-zinc-500 font-semibold">Haven't connected to wallet</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Please connect your wallet to view your assets.
-        </p>
-      </div>
-    )
   }
 
   if (isLoading) {

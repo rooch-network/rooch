@@ -8,7 +8,7 @@ import {
   useTransferObject,
 } from '@roochnetwork/rooch-sdk-kit'
 
-import { AlertCircle, ArrowLeft, Copy, Wallet } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Copy } from 'lucide-react'
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -20,7 +20,6 @@ import { LoadingSpinner } from '@/components/loading-spinner.tsx'
 
 import { formatAddress } from '@/utils/format'
 import { ROOCH_NFT_OPERATING_ADDRESS } from '@/common/constant.ts'
-import { address } from 'bitcoinjs-lib'
 
 export const AssetsNft = () => {
   const sessionKey = useCurrentSession()
@@ -172,18 +171,6 @@ export const AssetsNft = () => {
     handleClose()
     setTransferLoading(false)
     reFetchNFTS()
-  }
-
-  if (!address) {
-    return (
-      <div className="flex flex-col items-center justify-center text-center p-40">
-        <Wallet className="w-12 h-12 mb-4 text-zinc-500" />
-        <p className="text-xl text-zinc-500 font-semibold">Haven't connected to wallet</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Please connect your wallet to view your assets.
-        </p>
-      </div>
-    )
   }
 
   if (isLoading || isError) {

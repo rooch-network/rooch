@@ -47,7 +47,7 @@ const PaginationComponent: React.FC<PaginationComponentProps> = ({
         <PaginationItem>
           <PaginationNext
             href="#"
-            onClick={() => currentPage > 0 && onPageChange(currentPage + 1)}
+            onClick={() => onPageChange(currentPage + 1)}
             className={`cursor-pointer border-none hover:bg-inherit ${
               !hasNextPage ? 'text-gray-500 cursor-not-allowed hover:text-gray-500' : ''
             }`}
