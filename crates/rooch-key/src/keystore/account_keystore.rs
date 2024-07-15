@@ -95,7 +95,7 @@ pub trait AccountKeystore {
             .addresses
             .iter()
             .position(|&target_address| target_address == address)
-            .unwrap() as u32;
+            .expect("Address not found") as u32;
         // get derivation path and seed
         let derivation_path = generate_derivation_path(account_index)?;
         let seed = derive_seed_from_mnemonic(Some(mnemonic_phrase), None)?; // assume word length is none
