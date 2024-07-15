@@ -43,13 +43,13 @@ use rooch_types::address::RoochAddress;
 use rooch_types::error::{GenesisError, RoochError};
 use rooch_types::rooch_network::BuiltinChainID;
 use serde_json::json;
-use std::env;
 use std::fmt::Debug;
 use std::net::SocketAddr;
 use std::time::Duration;
+use std::{env, panic, process};
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
-use tracing::info;
+use tracing::{error, info};
 
 pub mod metrics_server;
 pub mod server;
@@ -165,6 +165,16 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     // We may call `start_server` multiple times in testing scenarios
     // tracing_subscriber can only be inited once.
     let _ = tracing_subscriber::fmt::try_init();
+
+    //Exit the process when some thread panic
+    // take_hook() returns the default hook in case when a custom one is not set
+    let orig_hook = panic::take_hook();
+    panic::set_hook(Box::new(move |panic_info| {
+        // invoke the default handler and exit the process
+        orig_hook(panic_info);
+        error!("Panic occurred:\n {} \n exit the process", panic_info);
+        process::exit(1);
+    }));
 
     let config = ServerConfig::new_with_port(opt.port());
     let actor_system = ActorSystem::global_system();

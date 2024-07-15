@@ -4,6 +4,8 @@
 use super::{RoochTransaction, TransactionSequenceInfo};
 use crate::{address::RoochAddress, multichain_id::MultiChainID};
 use anyhow::Result;
+use bitcoin::hashes::Hash;
+use core::fmt;
 use moveos_types::h256::H256;
 use serde::{Deserialize, Serialize};
 
@@ -34,12 +36,36 @@ pub struct L1BlockWithBody {
     pub block_body: Vec<u8>,
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct L1Transaction {
     pub chain_id: MultiChainID,
     pub block_hash: Vec<u8>,
     /// The original L1 transaction id, usually the hash of the transaction
     pub txid: Vec<u8>,
+}
+
+impl fmt::Debug for L1Transaction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let block_hash = if self.chain_id.is_bitcoin() {
+            bitcoin::BlockHash::from_slice(&self.block_hash)
+                .map(|hash| hash.to_string())
+                .unwrap_or("invalid block hash".to_string())
+        } else {
+            hex::encode(&self.block_hash)
+        };
+        let txid = if self.chain_id.is_bitcoin() {
+            bitcoin::Txid::from_slice(&self.txid)
+                .map(|hash| hash.to_string())
+                .unwrap_or("invalid txid".to_string())
+        } else {
+            hex::encode(&self.txid)
+        };
+        write!(
+            f,
+            "L1Transaction {{ chain_id: {:?}, block_hash: {}, txid: {} }}",
+            self.chain_id, block_hash, txid
+        )
+    }
 }
 
 impl L1Transaction {

@@ -1617,6 +1617,18 @@
               "type"
             ],
             "properties": {
+              "bitcoin_block_hash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "bitcoin_txid": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "block_hash": {
                 "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
               },
@@ -2727,12 +2739,18 @@
       "TransactionWithInfoView": {
         "type": "object",
         "required": [
-          "execution_info",
           "transaction"
         ],
         "properties": {
           "execution_info": {
-            "$ref": "#/components/schemas/TransactionExecutionInfoView"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TransactionExecutionInfoView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "transaction": {
             "$ref": "#/components/schemas/LedgerTransactionView"
