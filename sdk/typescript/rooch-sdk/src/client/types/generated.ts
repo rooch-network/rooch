@@ -222,6 +222,8 @@ export type LedgerTxDataView =
       type: 'l1_block'
     }
   | {
+      bitcoin_block_hash?: string | null
+      bitcoin_txid?: string | null
       block_hash: string
       chain_id: string
       txid: string
@@ -514,7 +516,7 @@ export interface TransactionSequenceInfoView {
   tx_timestamp: string
 }
 export interface TransactionWithInfoView {
-  execution_info: TransactionExecutionInfoView
+  execution_info?: TransactionExecutionInfoView | null
   transaction: LedgerTransactionView
 }
 export interface TxOptions {
