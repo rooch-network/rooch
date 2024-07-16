@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::types::LocalAccount;
-use crate::key_derive::{generate_derivation_path, generate_new_key_pair};
+use crate::key_derive::{generate_derivation_path, generate_new_key_pair, ROOCH_SECRET_KEY_PREFIX};
+use bitcoin::bech32::{encode, Bech32, Hrp};
+use rooch_types::crypto::SignatureScheme;
 use rooch_types::framework::session_key::SessionKey;
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
 use rooch_types::{
@@ -67,6 +69,29 @@ pub trait AccountKeystore {
         )?;
         self.add_addresses_to_mnemonic_data(new_address)?;
         Ok(result)
+    }
+
+    fn export_mnemonic_phrase(
+        &mut self,
+        password: Option<String>,
+    ) -> Result<String, anyhow::Error> {
+        // load mnemonic phrase from keystore
+        let mnemonic = self.get_mnemonic(password.clone())?;
+        let mnemonic_phrase = mnemonic.mnemonic_phrase;
+        Ok(mnemonic_phrase)
+    }
+
+    fn export_private_key(&mut self, sk_bytes: &[u8]) -> Result<String, anyhow::Error> {
+        // get 33 bytes flag and secret key
+        let mut priv_key_bytes = Vec::with_capacity(sk_bytes.len() + 1);
+        // supports secp256k1 signature scheme
+        priv_key_bytes.push(SignatureScheme::Secp256k1.flag());
+        priv_key_bytes.extend_from_slice(sk_bytes);
+        // init `roochsecretkey` as HRP
+        let hrp = Hrp::parse(ROOCH_SECRET_KEY_PREFIX)?;
+        // encode hrp and 33 bytes private key using bech32 method
+        let bech32_encoded = encode::<Bech32>(hrp, &priv_key_bytes)?;
+        Ok(bech32_encoded)
     }
 
     fn get_accounts(&self, password: Option<String>) -> Result<Vec<LocalAccount>, anyhow::Error>;
