@@ -4,9 +4,10 @@
 use super::types::LocalAccount;
 use crate::key_derive::{
     derive_bitcoin_private_key_from_path, derive_seed_from_mnemonic, generate_derivation_path,
-    generate_new_key_pair, ROOCH_SECRET_KEY_PREFIX, SIGNATURE_SCHEME_FLAG_SECP256K1,
+    generate_new_key_pair, ROOCH_SECRET_KEY_PREFIX,
 };
 use bitcoin::bech32::{encode, Bech32, Hrp};
+use rooch_types::crypto::SignatureScheme;
 use rooch_types::framework::session_key::SessionKey;
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
 use rooch_types::{
@@ -90,12 +91,20 @@ pub trait AccountKeystore {
         address: RoochAddress,
     ) -> Result<String, anyhow::Error> {
         // match the index of input address from the mnemonic data's addresses
-        let account_index = mnemonic
+        let account_index = match mnemonic
             .mnemonic_data
             .addresses
             .iter()
             .position(|&target_address| target_address == address)
-            .expect("Address not found") as u32;
+        {
+            Some(index) => index as u32,
+            None => {
+                return Err(anyhow::anyhow!(
+                    "Address {} not found in the mnemonic data",
+                    address
+                ));
+            }
+        };
         // get derivation path and seed
         let derivation_path = generate_derivation_path(account_index)?;
         let seed = derive_seed_from_mnemonic(Some(mnemonic_phrase), None)?; // assume word length is none
@@ -104,7 +113,8 @@ pub trait AccountKeystore {
         let sk_bytes = sk.secret.as_ref();
         // get 33 bytes flag and secret key
         let mut priv_key_bytes = Vec::with_capacity(sk_bytes.len() + 1);
-        priv_key_bytes.push(SIGNATURE_SCHEME_FLAG_SECP256K1);
+        // supports secp256k1 signature scheme
+        priv_key_bytes.push(SignatureScheme::Secp256k1.flag());
         priv_key_bytes.extend_from_slice(sk_bytes);
         // init `roochsecretkey` as HRP
         let hrp = Hrp::parse(ROOCH_SECRET_KEY_PREFIX)?;
