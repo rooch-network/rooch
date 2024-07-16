@@ -514,7 +514,7 @@ fn gen_inscription_ids_update(
 }
 
 impl InscriptionSource {
-    pub fn get_rooch_address(mut self) -> Result<AccountAddress> {
+    pub fn derive_rooch_address(mut self) -> Result<AccountAddress> {
         if self.address == *ADDRESS_UNBOUND.to_string()
             || self.address == *ADDRESS_NON_STANDARD.to_string()
         {
@@ -567,7 +567,7 @@ impl InscriptionSource {
 
 fn gen_ord_update(src: InscriptionSource) -> Result<(FieldKey, ObjectState, InscriptionID)> {
     let inscription = src.clone().to_inscription();
-    let address = src.clone().get_rooch_address()?;
+    let address = src.clone().derive_rooch_address()?;
 
     let inscription_id = InscriptionID::new(inscription.txid, inscription.index);
     let obj_id = derive_inscription_id(&inscription_id);

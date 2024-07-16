@@ -874,7 +874,9 @@ impl ParsedAddress {
 #[cfg(test)]
 mod test {
     use super::*;
+    use bitcoin::address::Payload;
     use bitcoin::hex::DisplayHex;
+    use bitcoin::ScriptBuf;
     use std::{fmt::Debug, vec};
 
     #[test]
@@ -1173,5 +1175,19 @@ mod test {
         );
 
         Ok(())
+    }
+
+    #[test]
+    fn test_p2ms_script_to_bitcoin_address() {
+        // not for all p2ms script, some of them could derive its address
+        // https://ordinals.com/inscription/72552729
+        let script = "0014f29f9316f0f1e48116958216a8babd353b491dae";
+        let script_buf = ScriptBuf::from_hex(script).unwrap();
+        let payload = Payload::from_script(&script_buf).unwrap();
+        let address: BitcoinAddress = BitcoinAddress::from(&payload);
+        assert_eq!(
+            "bc1q720ex9hs78jgz954sgt23w4ax5a5j8dwjj5kkm",
+            address.to_string()
+        )
     }
 }
