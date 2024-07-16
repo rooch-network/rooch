@@ -110,29 +110,6 @@ pub(crate) fn generate_derivation_path(account_index: u32) -> Result<DerivationP
     .map_err(|_| RoochError::SignatureKeyGenError("Cannot parse derivation path".to_owned()))
 }
 
-pub(crate) fn derive_mnemonic_from_mnemonic_phrase(
-    mnemonic_phrase: Option<String>,
-    word_length: Option<String>,
-) -> Result<Mnemonic, anyhow::Error> {
-    let mnemonic = match mnemonic_phrase {
-        Some(phrase) => {
-            Mnemonic::validate(phrase.as_str(), Language::English)?;
-            Mnemonic::from_phrase(phrase.as_str(), Language::English)?
-        }
-        None => Mnemonic::new(parse_word_length(word_length)?, Language::English),
-    };
-    Ok(mnemonic)
-}
-
-pub(crate) fn derive_seed_from_mnemonic(
-    mnemonic_phrase: Option<String>,
-    word_length: Option<String>,
-) -> Result<Seed, anyhow::Error> {
-    let mnemonic = derive_mnemonic_from_mnemonic_phrase(mnemonic_phrase, word_length)?;
-    let seed = Seed::new(&mnemonic, "");
-    Ok(seed)
-}
-
 pub(crate) fn generate_new_key_pair(
     mnemonic_phrase: Option<String>,
     derivation_path: DerivationPath,

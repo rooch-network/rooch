@@ -41,11 +41,9 @@ impl CommandAction<Option<String>> for ExportCommand {
                     RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
                 })?;
             println!("Address to be exported: {:?}", rooch_address);
-            let mnemonic = context.keystore.get_mnemonic(password)?;
-            let mnemonic_phrase = mnemonic.clone().mnemonic_phrase;
-            context
-                .keystore
-                .export_private_key(mnemonic, mnemonic_phrase, rooch_address)?
+            let kp = context.keystore.get_key_pair(&rooch_address, password)?;
+            let sk_bytes = kp.private();
+            context.keystore.export_private_key(sk_bytes)?
         };
 
         if self.json {

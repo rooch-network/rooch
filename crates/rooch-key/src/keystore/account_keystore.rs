@@ -2,10 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::types::LocalAccount;
-use crate::key_derive::{
-    derive_bitcoin_private_key_from_path, derive_seed_from_mnemonic, generate_derivation_path,
-    generate_new_key_pair, ROOCH_SECRET_KEY_PREFIX,
-};
+use crate::key_derive::{generate_derivation_path, generate_new_key_pair, ROOCH_SECRET_KEY_PREFIX};
 use bitcoin::bech32::{encode, Bech32, Hrp};
 use rooch_types::crypto::SignatureScheme;
 use rooch_types::framework::session_key::SessionKey;
@@ -84,33 +81,7 @@ pub trait AccountKeystore {
         Ok(mnemonic_phrase)
     }
 
-    fn export_private_key(
-        &mut self,
-        mnemonic: MnemonicResult,
-        mnemonic_phrase: String,
-        address: RoochAddress,
-    ) -> Result<String, anyhow::Error> {
-        // match the index of input address from the mnemonic data's addresses
-        let account_index = match mnemonic
-            .mnemonic_data
-            .addresses
-            .iter()
-            .position(|&target_address| target_address == address)
-        {
-            Some(index) => index as u32,
-            None => {
-                return Err(anyhow::anyhow!(
-                    "Address {} not found in the mnemonic data",
-                    address
-                ));
-            }
-        };
-        // get derivation path and seed
-        let derivation_path = generate_derivation_path(account_index)?;
-        let seed = derive_seed_from_mnemonic(Some(mnemonic_phrase), None)?; // assume word length is none
-                                                                            // derive 32 length secp256k1 key pair
-        let sk = derive_bitcoin_private_key_from_path(seed.as_bytes(), derivation_path)?;
-        let sk_bytes = sk.secret.as_ref();
+    fn export_private_key(&mut self, sk_bytes: &[u8]) -> Result<String, anyhow::Error> {
         // get 33 bytes flag and secret key
         let mut priv_key_bytes = Vec::with_capacity(sk_bytes.len() + 1);
         // supports secp256k1 signature scheme
