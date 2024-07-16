@@ -13,7 +13,7 @@ use std::time::SystemTime;
 
 use anyhow::Result;
 use bitcoin::hashes::Hash;
-use bitcoin::{OutPoint, PublicKey, ScriptBuf};
+use bitcoin::{OutPoint, PublicKey};
 use bitcoin_move::natives::ord::inscription_id::InscriptionId;
 use chrono::{DateTime, Local};
 use clap::Parser;

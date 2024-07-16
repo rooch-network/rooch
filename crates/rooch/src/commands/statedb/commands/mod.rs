@@ -142,7 +142,7 @@ pub fn drive_bitcoin_address(
         let pubkey_hash = pubkey.pubkey_hash();
         return Some(BitcoinAddress::new_p2pkh(&pubkey_hash));
     };
-    return None;
+    None
 }
 
 #[cfg(test)]
