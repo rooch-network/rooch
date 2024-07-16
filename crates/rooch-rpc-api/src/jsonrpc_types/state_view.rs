@@ -293,6 +293,7 @@ pub enum ObjectStateFilterView {
     /// Query by object value type and owner.
     ObjectTypeWithOwner {
         object_type: StructTagView,
+        filter_out: bool,
         owner: RoochOrBitcoinAddressView,
     },
     /// Query by object value type.
@@ -308,12 +309,15 @@ impl ObjectStateFilterView {
         state_filter: ObjectStateFilterView,
     ) -> Result<ObjectStateFilter> {
         Ok(match state_filter {
-            ObjectStateFilterView::ObjectTypeWithOwner { object_type, owner } => {
-                ObjectStateFilter::ObjectTypeWithOwner {
-                    object_type: object_type.into(),
-                    owner: owner.into(),
-                }
-            }
+            ObjectStateFilterView::ObjectTypeWithOwner {
+                object_type,
+                filter_out,
+                owner,
+            } => ObjectStateFilter::ObjectTypeWithOwner {
+                object_type: object_type.into(),
+                filter_out,
+                owner: owner.into(),
+            },
             ObjectStateFilterView::ObjectType(object_type) => {
                 ObjectStateFilter::ObjectType(object_type.into())
             }

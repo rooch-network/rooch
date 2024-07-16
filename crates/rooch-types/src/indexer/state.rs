@@ -134,6 +134,7 @@ pub enum ObjectStateFilter {
     /// Query by object type and owner.
     ObjectTypeWithOwner {
         object_type: StructTag,
+        filter_out: bool,
         owner: RoochAddress,
     },
     /// Query by object type.
@@ -147,9 +148,9 @@ pub enum ObjectStateFilter {
 impl ObjectStateFilter {
     fn try_matches(&self, item: &IndexerObjectState) -> Result<bool> {
         Ok(match self {
-            ObjectStateFilter::ObjectTypeWithOwner { object_type, owner } => {
-                object_type == item.object_struct_tag() && owner == &item.metadata.owner
-            }
+            ObjectStateFilter::ObjectTypeWithOwner {
+                object_type, owner, ..
+            } => object_type == item.object_struct_tag() && owner == &item.metadata.owner,
             ObjectStateFilter::ObjectType(object_type) => object_type == item.object_struct_tag(),
             ObjectStateFilter::Owner(owner) => owner == &item.metadata.owner,
             ObjectStateFilter::ObjectId(object_ids) => {
