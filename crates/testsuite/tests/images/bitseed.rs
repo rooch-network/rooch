@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use testcontainers::{core::WaitFor, Image, ImageArgs};
 
 const NAME: &str = "bitseed/bitseed";
-const TAG: &str = "0.1.6";
+const TAG: &str = "0.1.7";
 
 #[derive(Debug, Default, Clone)]
 pub struct BitseedImageArgs {
@@ -21,9 +21,9 @@ impl ImageArgs for BitseedImageArgs {
     fn into_iterator(self) -> Box<dyn Iterator<Item = String>> {
         let mut args = vec![
             "--regtest".to_string(),
-            format!("--rpc-url={}", self.bitcoin_rpc_url),
-            format!("--bitcoin-rpc-user={}", self.bitcoin_rpc_user),
-            format!("--bitcoin-rpc-pass={}", self.bitcoin_rpc_pass),
+            format!("--bitcoin-rpc-url={}", self.bitcoin_rpc_url),
+            format!("--bitcoin-rpc-username={}", self.bitcoin_rpc_user),
+            format!("--bitcoin-rpc-password={}", self.bitcoin_rpc_pass),
             format!("--server-url={}", self.ord_server_url),
         ];
 
