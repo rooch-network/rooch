@@ -954,6 +954,22 @@ module moveos_std::object {
         let TestStruct2 { count: _ } = remove(child2);
     }
 
+    #[test]
+    fun test_child_object_with_same_id_remove_and_add_again(){
+        let parent = new(TestParent {});
+        let parent_id = id(&parent);
+        to_shared(parent);
+        let parent_ref = borrow_mut_object_shared<TestParent>(parent_id);
+        let id = 1u64;
+        let child1 = new_with_parent_and_id(parent_ref, id, TestStruct { count: 1 });
+        let child_id1 = id(&child1);
+        let TestStruct { count: _ } = remove(child1);
+        let child2 = new_with_parent_and_id(parent_ref, id, TestStruct { count: 2 });
+        let child_id2 = id(&child2);
+        assert!(child_id1 == child_id2, 1000);
+        let TestStruct { count: _ } = remove(child2);
+    }
+
     #[test_only]
     fun field_key_derive_test<Name: store + copy + drop>(name: Name, expect_result: address){
         let key = derive_field_key(name);

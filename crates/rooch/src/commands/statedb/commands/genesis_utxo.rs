@@ -7,7 +7,7 @@ use crate::commands::statedb::commands::{
     get_ord_by_outpoint, UTXO_ORD_MAP_TABLE, UTXO_SEAL_INSCRIPTION_PROTOCOL,
 };
 use anyhow::{Error, Result};
-use bitcoin::{OutPoint, PublicKey, Txid};
+use bitcoin::{OutPoint, PublicKey, ScriptBuf, Txid};
 use chrono::{DateTime, Local};
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
@@ -490,11 +490,17 @@ fn gen_utxo_update(
         (address, address_mapping_data)
     } else {
         if SCRIPT_TYPE_P2PK.eq(utxo_data.script_type.as_str()) {
-            if let Ok(pubkey) = PublicKey::from_str(utxo_data.script.as_str()) {
-                let pubkey_hash = pubkey.pubkey_hash();
-                let bitcoin_address = BitcoinAddress::new_p2pkh(&pubkey_hash);
-                utxo_data.address = bitcoin_address.to_string();
-            }
+            let pubkey = match PublicKey::from_str(utxo_data.script.as_str()) {
+                Ok(pubkey) => pubkey,
+                Err(_) => {
+                    let script_buf = ScriptBuf::from_hex(utxo_data.script.as_str()).unwrap();
+                    script_buf.p2pk_public_key().unwrap()
+                }
+            };
+
+            let pubkey_hash = pubkey.pubkey_hash();
+            let bitcoin_address = BitcoinAddress::new_p2pkh(&pubkey_hash);
+            utxo_data.address = bitcoin_address.to_string();
         }
 
         if let Ok(bitcoin_address) = BitcoinAddress::from_str(utxo_data.address.as_str()) {

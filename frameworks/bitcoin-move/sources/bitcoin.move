@@ -36,10 +36,18 @@ module bitcoin_move::bitcoin{
     const ErrorReorgTooDeep:u64 = 3;
 
     const ORDINAL_GENESIS_HEIGHT:u64 = 767430;
+    /// https://github.com/bitcoin/bips/blob/master/bip-0034.mediawiki
+    const BIP_34_HEIGHT:u64 = 227835;
 
     struct TxProgressErrorLogEvent has copy, drop{
         txid: address,
         message: String,
+    }
+
+    struct RepeatCoinbaseTxEvent has copy, drop{
+        txid: address,
+        vout: u32,
+        block_height: u64,
     }
 
     struct BitcoinBlockStore has key{
@@ -109,11 +117,18 @@ module bitcoin_move::bitcoin{
     }
 
     fun process_coinbase_tx(btc_block_store: &mut BitcoinBlockStore, tx: &Transaction, flotsams: vector<Flotsam>, block_height: u64){
-        process_coinbase_utxo(tx, flotsams, block_height);
+        let repeat_txid = process_coinbase_utxo(tx, flotsams, block_height);
         let txid = types::tx_id(tx);
-        table::add(&mut btc_block_store.txs, txid, *tx);
-        table::add(&mut btc_block_store.tx_to_height, txid, block_height);
-        table_vec::push_back(&mut btc_block_store.tx_ids, txid);
+        if (repeat_txid) {
+            table::upsert(&mut btc_block_store.txs, txid, *tx);
+            table::upsert(&mut btc_block_store.tx_to_height, txid, block_height);
+            //We append the repeat txid, the developer want to scan the txs, need to handle the repeat txid
+            table_vec::push_back(&mut btc_block_store.tx_ids, txid);
+        }else{
+            table::add(&mut btc_block_store.txs, txid, *tx);
+            table::add(&mut btc_block_store.tx_to_height, txid, block_height);
+            table_vec::push_back(&mut btc_block_store.tx_ids, txid);
+        }
     }
 
     fun process_utxo(tx: &Transaction, block_height: u64): vector<Flotsam>{
@@ -186,13 +201,13 @@ module bitcoin_move::bitcoin{
         };
 
         // create new utxo
-        handle_new_utxo(tx, &mut output_seals);
+        handle_new_utxo(tx, &mut output_seals, false, block_height);
 
         simple_multimap::drop(output_seals);
         flotsams
     }
 
-    fun process_coinbase_utxo(tx: &Transaction, flotsams: vector<Flotsam>, block_height: u64){
+    fun process_coinbase_utxo(tx: &Transaction, flotsams: vector<Flotsam>, block_height: u64) : bool{
         let output_seals = simple_multimap::new<u32, UTXOSeal>();
         if(need_process_oridinals(block_height)) {
             let sat_points = ord::handle_coinbase_tx(tx, flotsams, block_height);
@@ -200,8 +215,9 @@ module bitcoin_move::bitcoin{
         };
 
         // create new utxo
-        handle_new_utxo(tx, &mut output_seals);
+        let repeat_txid = handle_new_utxo(tx, &mut output_seals, true, block_height);
         simple_multimap::drop(output_seals);
+        repeat_txid
     }
 
     fun handle_sat_point(sat_points: vector<SatPoint>, output_seals: &mut SimpleMultiMap<u32, UTXOSeal>) {
@@ -220,15 +236,33 @@ module bitcoin_move::bitcoin{
         // output_seals
     }
 
-    fun handle_new_utxo(tx: &Transaction, output_seals: &mut SimpleMultiMap<u32, UTXOSeal>) {
+    fun handle_new_utxo(tx: &Transaction, output_seals: &mut SimpleMultiMap<u32, UTXOSeal>, is_coinbase: bool, block_height: u64) :bool {
         let txid = types::tx_id(tx);
         let txoutput = types::tx_output(tx);
         let idx = 0;
         let txoutput_len = vector::length(txoutput);
+        let repeat_txid = false;
         while(idx < txoutput_len){
             let txout = vector::borrow(txoutput, idx);
             let vout = (idx as u32);
             let value = types::txout_value(txout);
+            if (is_coinbase &&  ((block_height < BIP_34_HEIGHT && network::is_mainnet()) || !network::is_mainnet())) {
+                let outpoint = types::new_outpoint(txid, vout);
+                let utxo_id = utxo::derive_utxo_id(outpoint);
+                //Before BIP34, some coinbase txid may be reused, we need to remove the old utxo
+                //https://github.com/rooch-network/rooch/issues/2178
+                if (object::exists_object(utxo_id)){
+                    let utxo = utxo::take(utxo_id);
+                    let seals = utxo::remove(utxo);
+                    simple_multimap::destroy_empty(seals);
+                    event::emit(RepeatCoinbaseTxEvent{
+                        txid: txid,
+                        vout: vout,
+                        block_height: block_height,
+                    });
+                    repeat_txid = true;
+                };
+            };
             let utxo_obj = utxo::new(txid, vout, value);
             let utxo = object::borrow_mut(&mut utxo_obj);
             let seal_index = (idx as u32);
@@ -250,6 +284,7 @@ module bitcoin_move::bitcoin{
             bind_bitcoin_address(owner_address, bitcoin_address_opt);
             idx = idx + 1;
         };
+        repeat_txid
     }
 
 
