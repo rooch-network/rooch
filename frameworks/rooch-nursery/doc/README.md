@@ -13,6 +13,7 @@ This is the reference documentation of the Rooch Nursery Framework.
 
 
 -  [`0xa::bitseed`](bitseed.md#0xa_bitseed)
+-  [`0xa::bitseed_on_l2`](bitseed_on_l2.md#0xa_bitseed_on_l2)
 -  [`0xa::brc20`](brc20.md#0xa_brc20)
 -  [`0xa::ethereum`](ethereum.md#0xa_ethereum)
 -  [`0xa::ethereum_validator`](ethereum_validator.md#0xa_ethereum_validator)
