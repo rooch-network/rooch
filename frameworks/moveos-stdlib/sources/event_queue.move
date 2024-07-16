@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module rooch_nursery::event_queue {
+module moveos_std::event_queue {
     
     use std::vector;
     use std::option::{Self, Option};
@@ -45,7 +45,7 @@ module rooch_nursery::event_queue {
             object::add_field(&mut event_queue_obj, SUBSCRIBERS_KEY, subscribers);
             //We transfer the display object to the moveos_std
             //And the caller do not need to care about the event queue object
-            object::transfer_extend(event_queue_obj, @rooch_nursery);
+            object::transfer_extend(event_queue_obj, @moveos_std);
         };
         object::borrow_mut_object_extend<EventQueue<E>>(object_id)
     }
@@ -221,7 +221,7 @@ module rooch_nursery::event_queue {
     }
 
     #[test]
-    fun test_many_subscribers(){
+    fun test_event_queue_many_subscribers(){
         let queue_name = std::string::utf8(b"test_many_subscribers");
         let i = 0;
         let subscriber_count = MAX_SUBSCRIBER_COUNT;
@@ -243,7 +243,7 @@ module rooch_nursery::event_queue {
         emit(queue_name, TestEvent{value: 2});
         i = 0;
         while(i < subscriber_count){
-            let subscriber = vector::remove(&mut subscribers, i);
+            let subscriber = vector::pop_back(&mut subscribers);
             unsubscribe(subscriber);
             i = i + 1;
         };

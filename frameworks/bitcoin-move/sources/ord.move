@@ -167,6 +167,12 @@ module bitcoin_move::ord {
         next_sequence_number: u32,
     }
 
+    struct NewInscriptionEvent has store, copy, drop {
+        metaprotocol: String,
+        sequence_number: u32,
+        inscription_obj_id: ObjectID,
+    }
+
     public(friend) fun genesis_init(_genesis_account: &signer){
         let store = InscriptionStore{
             cursed_inscription_count: 0,
@@ -286,8 +292,19 @@ module bitcoin_move::ord {
         let store_obj_id = object::named_object_id<InscriptionStore>();
         let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
         // record a sequence_number to InscriptionID mapping
-        object::add_field(store_obj, inscription.sequence_number, id);
+        let sequence_number = inscription.sequence_number;
+        let metaprotocol = inscription.metaprotocol;
+        object::add_field(store_obj, sequence_number, id);
         let object = object::new_with_parent_and_id(store_obj, id, inscription);
+        let obj_id = object::id(&object);
+        if (option::is_some(&metaprotocol)) {
+            let metaprotocol = option::destroy_some(metaprotocol);
+            moveos_std::event_queue::emit(metaprotocol, NewInscriptionEvent{
+                metaprotocol: metaprotocol,
+                sequence_number: sequence_number,
+                inscription_obj_id: obj_id,
+            });
+        };
         object
     }
     
@@ -967,6 +984,13 @@ module bitcoin_move::ord {
     /// Get the MetaprotocolValidity's invalid_reason
     public fun metaprotocol_validity_invalid_reason(validity: &MetaprotocolValidity): Option<String> {
         validity.invalid_reason
+    }
+
+    // ======================== Events =====================================
+
+    public fun upack_new_inscription_event(event: NewInscriptionEvent) : (String, u32, ObjectID) {
+        let NewInscriptionEvent{metaprotocol, sequence_number, inscription_obj_id} = event;
+        (metaprotocol, sequence_number, inscription_obj_id)
     }
 
     #[test_only]

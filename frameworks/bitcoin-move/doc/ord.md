@@ -14,6 +14,7 @@
 -  [Struct `InvalidInscriptionEvent`](#0x4_ord_InvalidInscriptionEvent)
 -  [Struct `MetaprotocolValidity`](#0x4_ord_MetaprotocolValidity)
 -  [Resource `InscriptionStore`](#0x4_ord_InscriptionStore)
+-  [Struct `NewInscriptionEvent`](#0x4_ord_NewInscriptionEvent)
 -  [Struct `InscriptionCharm`](#0x4_ord_InscriptionCharm)
 -  [Constants](#@Constants_0)
 -  [Function `curse_duplicate_field`](#0x4_ord_curse_duplicate_field)
@@ -77,6 +78,7 @@
 -  [Function `metaprotocol_validity_protocol_type`](#0x4_ord_metaprotocol_validity_protocol_type)
 -  [Function `metaprotocol_validity_is_valid`](#0x4_ord_metaprotocol_validity_is_valid)
 -  [Function `metaprotocol_validity_invalid_reason`](#0x4_ord_metaprotocol_validity_invalid_reason)
+-  [Function `upack_new_inscription_event`](#0x4_ord_upack_new_inscription_event)
 -  [Function `inscription_charm_burned`](#0x4_ord_inscription_charm_burned)
 -  [Function `exists_inscription_charm`](#0x4_ord_exists_inscription_charm)
 -  [Function `borrow_inscription_charm`](#0x4_ord_borrow_inscription_charm)
@@ -89,6 +91,7 @@
 <b>use</b> <a href="">0x2::bag</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::event</a>;
+<b>use</b> <a href="">0x2::event_queue</a>;
 <b>use</b> <a href="">0x2::json</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
@@ -197,6 +200,17 @@
 
 
 <pre><code><b>struct</b> <a href="ord.md#0x4_ord_InscriptionStore">InscriptionStore</a> <b>has</b> key
+</code></pre>
+
+
+
+<a name="0x4_ord_NewInscriptionEvent"></a>
+
+## Struct `NewInscriptionEvent`
+
+
+
+<pre><code><b>struct</b> <a href="ord.md#0x4_ord_NewInscriptionEvent">NewInscriptionEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -1053,6 +1067,17 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_metaprotocol_validity_invalid_reason">metaprotocol_validity_invalid_reason</a>(validity: &<a href="ord.md#0x4_ord_MetaprotocolValidity">ord::MetaprotocolValidity</a>): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_upack_new_inscription_event"></a>
+
+## Function `upack_new_inscription_event`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_upack_new_inscription_event">upack_new_inscription_event</a>(<a href="">event</a>: <a href="ord.md#0x4_ord_NewInscriptionEvent">ord::NewInscriptionEvent</a>): (<a href="_String">string::String</a>, u32, <a href="_ObjectID">object::ObjectID</a>)
 </code></pre>
 
 
