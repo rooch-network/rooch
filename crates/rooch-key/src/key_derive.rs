@@ -21,6 +21,7 @@ pub const DERIVATION_PATH_PURPOSE_SCHNORR: u32 = 44;
 pub const DERIVATION_PATH_PURPOSE_ECDSA: u32 = 54;
 pub const DERIVATION_PATH_PURPOSE_SECP256R1: u32 = 74;
 pub const DERIVATION_PATH_PURPOSE_BIP86: u32 = 86;
+pub const ROOCH_SECRET_KEY_PREFIX: &str = "roochsecretkey";
 
 pub fn verify_password(
     password: Option<String>,
