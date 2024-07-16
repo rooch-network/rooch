@@ -13,7 +13,7 @@ docker image prune -a -f
 docker ps | grep rooch | grep -v faucet | awk '{print \$1}' | xargs -r docker stop
 docker ps -a | grep rooch | grep -v faucet | awk '{print \$1}' | xargs -r docker rm -f
 docker pull "ghcr.io/rooch-network/rooch:\$REF"
-docker run -d --name rooch --restart unless-stopped -v /data:/root -p 6767:6767 "ghcr.io/rooch-network/rooch:\$REF" \
+docker run -d --name rooch --restart unless-stopped -v /data:/root -p 6767:6767 -p 9184:9184 "ghcr.io/rooch-network/rooch:\$REF" \
     server start -n test \
     --btc-rpc-url "\$BTC_TEST_RPC_URL" \
     --btc-rpc-username rooch-test \
