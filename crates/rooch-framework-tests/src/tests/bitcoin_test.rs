@@ -78,24 +78,24 @@ fn test_submit_block() {
     assert_eq!(now_milliseconds, duration.as_millis() as u64);
 }
 
-fn test_block_process(height: u64, block: Block) {
+fn test_block_process(blocks: Vec<(u64, Block)>) {
     let mut binding_test = binding_test::RustBindingTest::new().unwrap();
 
-    let block_hash = block.header.block_hash();
-    let move_block = rooch_types::bitcoin::types::Block::from(block.clone());
-
-    binding_test
-        .execute_l1_block_and_tx(L1BlockWithBody {
-            block: rooch_types::transaction::L1Block {
-                chain_id: RoochMultiChainID::Bitcoin.multichain_id(),
-                block_height: height,
-                block_hash: block_hash.to_byte_array().to_vec(),
-            },
-            block_body: move_block.encode(),
-        })
-        .unwrap();
-
-    check_utxo(block.txdata, &binding_test);
+    for (height, block) in blocks {
+        let block_hash = block.header.block_hash();
+        let move_block = rooch_types::bitcoin::types::Block::from(block.clone());
+        binding_test
+            .execute_l1_block_and_tx(L1BlockWithBody {
+                block: rooch_types::transaction::L1Block {
+                    chain_id: RoochMultiChainID::Bitcoin.multichain_id(),
+                    block_height: height,
+                    block_hash: block_hash.to_byte_array().to_vec(),
+                },
+                block_body: move_block.encode(),
+            })
+            .unwrap();
+        check_utxo(block.txdata, &binding_test);
+    }
 }
 
 fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTest) {
@@ -193,21 +193,25 @@ fn test_real_bocks() {
         return;
     }
     let cases = vec![
-        (Network::Bitcoin, 91812u64),
-        (Network::Bitcoin, 818677u64),
-        (Network::Testnet, 2821527u64),
+        (Network::Bitcoin, vec![91812u64, 91842u64]),
+        (Network::Bitcoin, vec![818677u64]),
+        (Network::Testnet, vec![2821527u64]),
     ];
-    for (network, height) in cases {
+    for (network, heights) in cases {
         info!(
-            "test_real_bocks: network: {:?}, height: {}",
-            network, height
+            "test_real_bocks: network: {:?}, height: {:?}",
+            network, heights
         );
-        let block = load_block(network, height);
-        test_block_process(height, block);
+        let blocks = heights
+            .into_iter()
+            .map(|height| (height, load_block(network, height)))
+            .collect();
+        test_block_process(blocks);
     }
 }
 // Download the bitcoin block via the following command:
 // curl -sSL "https://mempool.space/api/block/00000000000af0aed4792b1acee3d966af36cf5def14935db8de83d6f9306f2f/raw" > crates/rooch-framework-tests/blocks/bitcoin/91812.blob
+// curl -sSL "https://mempool.space/api/block/00000000000a4d0a398161ffc163c503763b1f4360639393e0e4c8e300e0caec/raw" > crates/rooch-framework-tests/blocks/bitcoin/91842.blob
 // curl -sSL "https://mempool.space/api/block/000000000000000000020750f322f4e72e99c2f0b9738fb4f46607860bd18c13/raw" > crates/rooch-framework-tests/blocks/bitcoin/818677.blob
 // curl -sSL "https://mempool.space/testnet/api/block/0000000016412abe1778a347da773ff8bc087ad1a91ae5daad349bc268285c2d/raw" > crates/rooch-framework-tests/blocks/testnet/2821527.blob
 pub(crate) const STATIC_BLOCK_DIR: Dir = include_dir!("blocks");

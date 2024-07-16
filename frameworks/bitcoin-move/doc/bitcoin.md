@@ -6,6 +6,7 @@
 
 
 -  [Struct `TxProgressErrorLogEvent`](#0x4_bitcoin_TxProgressErrorLogEvent)
+-  [Struct `RepeatCoinbaseTxEvent`](#0x4_bitcoin_RepeatCoinbaseTxEvent)
 -  [Resource `BitcoinBlockStore`](#0x4_bitcoin_BitcoinBlockStore)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_bitcoin_genesis_init)
@@ -56,6 +57,17 @@
 
 
 
+<a name="0x4_bitcoin_RepeatCoinbaseTxEvent"></a>
+
+## Struct `RepeatCoinbaseTxEvent`
+
+
+
+<pre><code><b>struct</b> <a href="bitcoin.md#0x4_bitcoin_RepeatCoinbaseTxEvent">RepeatCoinbaseTxEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
 <a name="0x4_bitcoin_BitcoinBlockStore"></a>
 
 ## Resource `BitcoinBlockStore`
@@ -77,6 +89,16 @@
 
 
 <pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ErrorBlockAlreadyProcessed">ErrorBlockAlreadyProcessed</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x4_bitcoin_BIP_34_HEIGHT"></a>
+
+https://github.com/bitcoin/bips/blob/master/bip-0034.mediawiki
+
+
+<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_BIP_34_HEIGHT">BIP_34_HEIGHT</a>: u64 = 227835;
 </code></pre>
 
 

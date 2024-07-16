@@ -172,6 +172,6 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             ),
             (ObjectState::new_module_store(), ModuleStore::type_layout()),
         ],
-        stdlib_version: StdlibVersion::Version(1),
+        stdlib_version: StdlibVersion::Version(2),
     }
 });

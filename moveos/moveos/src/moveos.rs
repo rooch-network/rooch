@@ -326,7 +326,8 @@ impl MoveOS {
                         need_respawn
                     );
                 }
-                if need_respawn {
+                // If it is a system call, we should not respawn the session.
+                if !is_system_call && need_respawn {
                     let mut s = session.respawn(system_env);
                     //Because the session is respawned, the pre_execute function should be called again.
                     s.execute_function_call(self.system_pre_execute_functions.clone(), false)
