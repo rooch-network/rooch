@@ -4,7 +4,6 @@
 use crate::into_address::FromAddress;
 use crate::{address::BitcoinAddress, addresses::BITCOIN_MOVE_ADDRESS, into_address::IntoAddress};
 use anyhow::Result;
-use bitcoin::address::Payload;
 use bitcoin::{hashes::Hash, BlockHash};
 use bitcoincore_rpc::bitcoincore_rpc_json::GetBlockHeaderResult;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
@@ -370,23 +369,10 @@ pub struct TxOut {
 
 impl From<bitcoin::TxOut> for TxOut {
     fn from(tx_out: bitcoin::TxOut) -> Self {
-        let address_opt = bitcoin::address::Payload::from_script(&tx_out.script_pubkey).ok();
-        let payload: Option<Payload> = match address_opt {
-            None => {
-                if tx_out.script_pubkey.is_p2pk() {
-                    let p2pk_pubkey = tx_out.script_pubkey.p2pk_public_key();
-                    p2pk_pubkey
-                        .map(|pubkey| bitcoin::address::Payload::PubkeyHash(pubkey.pubkey_hash()))
-                } else {
-                    None
-                }
-            }
-            Some(address_opt) => Some(address_opt),
-        };
         Self {
             value: tx_out.value.to_sat(),
-            script_pubkey: tx_out.script_pubkey.into(),
-            recipient_address: payload.map(|payload| payload.into()).unwrap_or_default(),
+            script_pubkey: tx_out.script_pubkey.clone().into(),
+            recipient_address: tx_out.script_pubkey.into(),
         }
     }
 }
@@ -444,7 +430,7 @@ mod tests {
     use bitcoin::{
         block::Version,
         consensus::{deserialize, serialize},
-        Amount, CompactTarget, ScriptBuf,
+        Amount, CompactTarget,
     };
     use hex::FromHex;
     use std::str::FromStr;
@@ -553,7 +539,7 @@ mod tests {
         // p2pk script(outpoint: e1be133be54851d21f34666ae45211d6e76d60491cecfef17bba90731eb8f42a:0)
         let tx_out = bitcoin::TxOut{
             value: Amount::from_sat(5000000000),
-            script_pubkey: ScriptBuf::from_hex("4104f254e36949ec1a7f6e9548f16d4788fb321f429b2c7d2eb44480b2ed0195cbf0c3875c767fe8abb2df6827c21392ea5cc934240b9ac46c6a56d2bd13dd0b17a9ac").unwrap(),
+            script_pubkey: bitcoin::ScriptBuf::from_hex("4104f254e36949ec1a7f6e9548f16d4788fb321f429b2c7d2eb44480b2ed0195cbf0c3875c767fe8abb2df6827c21392ea5cc934240b9ac46c6a56d2bd13dd0b17a9ac").unwrap(),
         };
         assert!(tx_out.script_pubkey.is_p2pk());
         let tx_out_rooch = TxOut::from(tx_out.clone());
@@ -564,8 +550,10 @@ mod tests {
         // p2ms script(outpoint: a353a7943a2b38318bf458b6af878b8384f48a6d10aad5b827d0550980abe3f0:0)
         let tx_out = bitcoin::TxOut {
             value: Amount::from_sat(5000000000),
-            script_pubkey: ScriptBuf::from_hex("0014f29f9316f0f1e48116958216a8babd353b491dae")
-                .unwrap(),
+            script_pubkey: bitcoin::ScriptBuf::from_hex(
+                "0014f29f9316f0f1e48116958216a8babd353b491dae",
+            )
+            .unwrap(),
         };
         let tx_out_rooch = TxOut::from(tx_out.clone());
         assert_eq!(

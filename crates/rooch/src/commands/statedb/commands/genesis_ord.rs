@@ -514,6 +514,7 @@ fn gen_inscription_ids_update(
 }
 
 impl InscriptionSource {
+    // derive account address from inscription source address(unbound/non-standard/p2pk_script/p2pk_pubkey/valid_address)
     pub fn derive_rooch_address(mut self) -> Result<AccountAddress> {
         if self.address == *ADDRESS_UNBOUND.to_string()
             || self.address == *ADDRESS_NON_STANDARD.to_string()

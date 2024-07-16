@@ -411,6 +411,13 @@ mod tests {
             BitcoinAddress::new_p2pkh(&pubkey.pubkey_hash()),
             bitcoin_address.unwrap()
         );
+        // invalid p2pk pubkey
+        let bitcoin_address = drive_bitcoin_address(
+            "".to_string(),
+            "036c6565662c206f6e7464656b2c2067656e6965742e2e2e202020202020202020".to_string(),
+            SCRIPT_TYPE_P2PK.to_string(),
+        );
+        assert_eq!(None, bitcoin_address);
         // special p2ms case: https://ordinals.com/inscription/72552729(
         // output: a353a7943a2b38318bf458b6af878b8384f48a6d10aad5b827d0550980abe3f0:0
         // script: 0014f29f9316f0f1e48116958216a8babd353b491dae

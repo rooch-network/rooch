@@ -8,6 +8,7 @@ use crate::{
 };
 use anyhow::{bail, Result};
 use bech32::{Bech32m, Hrp};
+use bitcoin::address::Payload;
 use bitcoin::bech32::segwit::encode_to_fmt_unchecked;
 use bitcoin::script::PushBytesBuf;
 use bitcoin::{
@@ -764,6 +765,31 @@ impl From<bitcoin::address::Payload> for BitcoinAddress {
     }
 }
 
+impl From<bitcoin::ScriptBuf> for BitcoinAddress {
+    fn from(script: bitcoin::ScriptBuf) -> Self {
+        Self::from(&script)
+    }
+}
+
+impl From<&bitcoin::ScriptBuf> for BitcoinAddress {
+    fn from(script: &bitcoin::ScriptBuf) -> Self {
+        let address_opt = bitcoin::address::Payload::from_script(script).ok();
+        let payload: Option<Payload> = match address_opt {
+            None => {
+                if script.is_p2pk() {
+                    let p2pk_pubkey = script.p2pk_public_key();
+                    p2pk_pubkey
+                        .map(|pubkey| bitcoin::address::Payload::PubkeyHash(pubkey.pubkey_hash()))
+                } else {
+                    None
+                }
+            }
+            Some(address_opt) => Some(address_opt),
+        };
+        payload.map(|payload| payload.into()).unwrap_or_default()
+    }
+}
+
 impl From<BitcoinAddress> for MultiChainAddress {
     fn from(address: BitcoinAddress) -> Self {
         Self::new(RoochMultiChainID::Bitcoin, address.bytes)
@@ -874,7 +900,6 @@ impl ParsedAddress {
 #[cfg(test)]
 mod test {
     use super::*;
-    use bitcoin::address::Payload;
     use bitcoin::hex::DisplayHex;
     use bitcoin::ScriptBuf;
     use std::{fmt::Debug, vec};
@@ -1178,16 +1203,40 @@ mod test {
     }
 
     #[test]
-    fn test_p2ms_script_to_bitcoin_address() {
-        // not for all p2ms script, some of them could derive its address
-        // https://ordinals.com/inscription/72552729
-        let script = "0014f29f9316f0f1e48116958216a8babd353b491dae";
-        let script_buf = ScriptBuf::from_hex(script).unwrap();
-        let payload = Payload::from_script(&script_buf).unwrap();
-        let address: BitcoinAddress = BitcoinAddress::from(&payload);
+    fn test_from_bitcoin_tx_out() {
+        // p2pk pubkey, not a script should return empty address
+        let script =  ScriptBuf::from_hex("04f254e36949ec1a7f6e9548f16d4788fb321f429b2c7d2eb44480b2ed0195cbf0c3875c767fe8abb2df6827c21392ea5cc934240b9ac46c6a56d2bd13dd0b17a9").unwrap();
+        let bitcoin_address = BitcoinAddress::from(script);
+        assert_eq!(BitcoinAddress::default(), bitcoin_address);
+        // p2pk script(outpoint: e1be133be54851d21f34666ae45211d6e76d60491cecfef17bba90731eb8f42a:0)
+        let script =  ScriptBuf::from_hex("4104f254e36949ec1a7f6e9548f16d4788fb321f429b2c7d2eb44480b2ed0195cbf0c3875c767fe8abb2df6827c21392ea5cc934240b9ac46c6a56d2bd13dd0b17a9ac").unwrap();
+        assert!(script.is_p2pk());
+        let bitcoin_address = BitcoinAddress::from(script);
+        assert_eq!(
+            "1DR5CqnzFLDmPZ7h94RHTxLV7u19xkS5rn",
+            bitcoin_address.to_string()
+        );
+        // p2ms script(outpoint: a353a7943a2b38318bf458b6af878b8384f48a6d10aad5b827d0550980abe3f0:0)
+        let script = ScriptBuf::from_hex("0014f29f9316f0f1e48116958216a8babd353b491dae").unwrap();
+        let bitcoin_address = BitcoinAddress::from(script);
         assert_eq!(
             "bc1q720ex9hs78jgz954sgt23w4ax5a5j8dwjj5kkm",
-            address.to_string()
+            bitcoin_address.to_string()
+        );
+        // invalid p2pk pubkey(outpoint: 41a3e9ee1910a2d40dd217bbc9fd3638c40d13c8fdda8a0aa9d49a2b4a199422:2)
+        let script = ScriptBuf::from_hex(
+            "036c6565662c206f6e7464656b2c2067656e6965742e2e2e202020202020202020",
         )
+        .unwrap();
+        let bitcoin_address = BitcoinAddress::from(script);
+        assert_eq!(BitcoinAddress::default(), bitcoin_address);
+        // invalid p2pk script(outpoint: 41a3e9ee1910a2d40dd217bbc9fd3638c40d13c8fdda8a0aa9d49a2b4a199422:2)
+        let script = ScriptBuf::from_hex(
+            "21036c6565662c206f6e7464656b2c2067656e6965742e2e2e202020202020202020ac",
+        )
+        .unwrap();
+        assert!(script.is_p2pk());
+        let bitcoin_address = BitcoinAddress::from(script);
+        assert_eq!(BitcoinAddress::default(), bitcoin_address);
     }
 }
