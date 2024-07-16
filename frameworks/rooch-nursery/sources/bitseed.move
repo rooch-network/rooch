@@ -21,6 +21,7 @@ module rooch_nursery::bitseed {
     use bitcoin_move::ord::{Self, Inscription, InscriptionID, MetaprotocolValidity};
     use bitcoin_move::bitcoin;
 
+    const METAPROTOCOL : vector<u8> = b"bitseed";
     const BIT_SEED_DEPLOY: vector<u8> = b"bitseed_deploy";
     const BIT_SEED_MINT: vector<u8> = b"bitseed_mint";
     const BIT_SEED_GENERATOR_TICK: vector<u8> = b"generator";
@@ -63,6 +64,10 @@ module rooch_nursery::bitseed {
 
         let obj = object::new_named_object(bitseed_store);
         object::to_shared(obj);
+    }
+
+    public fun metaprotocol(): String{
+        string::utf8(METAPROTOCOL)
     }
 
     fun borrow_store() : &mut BitseedStore {
@@ -133,7 +138,7 @@ module rooch_nursery::bitseed {
 
     fun is_bitseed(inscription: &Inscription) : bool {
         let metaprotocol = ord::metaprotocol(inscription);
-        option::is_some<String>(&metaprotocol) && option::borrow(&metaprotocol) == &string::utf8(b"bitseed")
+        option::is_some<String>(&metaprotocol) && option::borrow(&metaprotocol) == &Self::metaprotocol()
     }
 
     fun get_SFT_op(metadata: &SimpleMap<String,vector<u8>>) : Option<std::string::String> {

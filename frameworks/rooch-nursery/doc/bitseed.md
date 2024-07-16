@@ -12,6 +12,7 @@
 -  [Struct `InscribeGenerateOutput`](#0xa_bitseed_InscribeGenerateOutput)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0xa_bitseed_genesis_init)
+-  [Function `metaprotocol`](#0xa_bitseed_metaprotocol)
 -  [Function `bitseed_deploy_key`](#0xa_bitseed_bitseed_deploy_key)
 -  [Function `bitseed_mint_key`](#0xa_bitseed_bitseed_mint_key)
 -  [Function `get_coin_info`](#0xa_bitseed_get_coin_info)
@@ -136,6 +137,15 @@
 
 
 
+<a name="0xa_bitseed_METAPROTOCOL"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitseed.md#0xa_bitseed_METAPROTOCOL">METAPROTOCOL</a>: <a href="">vector</a>&lt;u8&gt; = [98, 105, 116, 115, 101, 101, 100];
+</code></pre>
+
+
+
 <a name="0xa_bitseed_genesis_init"></a>
 
 ## Function `genesis_init`
@@ -143,6 +153,17 @@
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bitseed.md#0xa_bitseed_genesis_init">genesis_init</a>(_genesis_account: &<a href="">signer</a>)
+</code></pre>
+
+
+
+<a name="0xa_bitseed_metaprotocol"></a>
+
+## Function `metaprotocol`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_metaprotocol">metaprotocol</a>(): <a href="_String">string::String</a>
 </code></pre>
 
 
