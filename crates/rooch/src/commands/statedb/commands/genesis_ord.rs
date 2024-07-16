@@ -215,9 +215,6 @@ fn index_utxo_ords(
 
     println!("indexing utxo:ords started at: {}", datetime);
 
-    let read_txn = utxo_ord_map.clone().begin_read().unwrap();
-    let read_table = Some(Arc::new(read_txn.open_table(UTXO_ORD_MAP_TABLE).unwrap()));
-
     let mut reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(ord_src_path).unwrap());
     let mut is_title_line = true;
 
@@ -250,6 +247,8 @@ fn index_utxo_ords(
     let utxo_count = sort_merge_utxo_ords(&mut utxo_ords) as u64;
 
     if deep_check && utxo_ord_map_existed {
+        let read_txn = utxo_ord_map.clone().begin_read().unwrap();
+        let read_table = Some(Arc::new(read_txn.open_table(UTXO_ORD_MAP_TABLE).unwrap()));
         for utxo_ord in utxo_ords.iter() {
             let ords_in_db = get_ord_by_outpoint(read_table.clone(), utxo_ord.utxo).unwrap();
             if ords_in_db != utxo_ord.ords {
