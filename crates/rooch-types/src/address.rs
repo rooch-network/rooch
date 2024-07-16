@@ -1216,6 +1216,13 @@ mod test {
             "1DR5CqnzFLDmPZ7h94RHTxLV7u19xkS5rn",
             bitcoin_address.to_string()
         );
+        // p2pk script(outpoint: a3b0e9e7cddbbe78270fa4182a7675ff00b92872d8df7d14265a2b1e379a9d33:0)
+        let script = ScriptBuf::from_hex("4104ea1feff861b51fe3f5f8a3b12d0f4712db80e919548a80839fc47c6a21e66d957e9c5d8cd108c7a2d2324bad71f9904ac0ae7336507d785b17a2c115e427a32fac").unwrap();
+        let bitcoin_address = BitcoinAddress::from(script);
+        assert_eq!(
+            "1BBz9Z15YpELQ4QP5sEKb1SwxkcmPb5TMs",
+            bitcoin_address.to_string()
+        );
         // p2ms script(outpoint: a353a7943a2b38318bf458b6af878b8384f48a6d10aad5b827d0550980abe3f0:0)
         let script = ScriptBuf::from_hex("0014f29f9316f0f1e48116958216a8babd353b491dae").unwrap();
         let bitcoin_address = BitcoinAddress::from(script);
