@@ -1,19 +1,22 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use bitcoin::OutPoint;
+use bitcoin::address::Payload;
+use bitcoin::{OutPoint, PublicKey, ScriptBuf};
 use chrono::{DateTime, Local};
 use moveos_store::MoveOSStore;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
 use redb::{ReadOnlyTable, TableDefinition};
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
+use rooch_types::address::BitcoinAddress;
 use rooch_types::bitcoin::ord::InscriptionStore;
 use rooch_types::bitcoin::utxo::BitcoinUTXOStore;
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::rooch_network::RoochChainID;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::time::SystemTime;
 
@@ -33,6 +36,10 @@ const UTXO_SEAL_INSCRIPTION_PROTOCOL: &str =
     "0000000000000000000000000000000000000000000000000000000000000004::ord::Inscription";
 
 const UTXO_ORD_MAP_TABLE: TableDefinition<&[u8], &[u8]> = TableDefinition::new("utxo_ord_map");
+
+pub const SCRIPT_TYPE_P2MS: &str = "p2ms";
+pub const SCRIPT_TYPE_P2PK: &str = "p2pk";
+pub const SCRIPT_TYPE_NON_STANDARD: &str = "non-standard";
 
 pub fn init_genesis_job(
     base_data_dir: Option<PathBuf>,
@@ -105,6 +112,41 @@ pub fn sort_merge_utxo_ords(kvs: &mut Vec<UTXOOrds>) -> usize {
     kvs.truncate(new_len);
     kvs.shrink_to_fit();
     new_len
+}
+
+// drive BitcoinAddress from data source
+pub fn drive_bitcoin_address(
+    origin_address: String,
+    script: String,
+    script_type: String,
+) -> Option<BitcoinAddress> {
+    if !origin_address.is_empty() {
+        return Some(BitcoinAddress::from_str(origin_address.as_str()).unwrap());
+    }
+    if SCRIPT_TYPE_NON_STANDARD.eq(script_type.as_str()) {
+        return None;
+    }
+    // Try to derive address from script
+    if SCRIPT_TYPE_P2PK.eq(script_type.as_str()) {
+        let pubkey = match PublicKey::from_str(script.as_str()) {
+            Ok(pubkey) => pubkey,
+            Err(_) => {
+                // is script
+                let script_buf = ScriptBuf::from_hex(script.as_str()).unwrap();
+                script_buf.p2pk_public_key().unwrap()
+            }
+        };
+        let pubkey_hash = pubkey.pubkey_hash();
+        return Some(BitcoinAddress::new_p2pkh(&pubkey_hash));
+    };
+    let script_buf = ScriptBuf::from_hex(script.as_str()).unwrap();
+    let payload = match Payload::from_script(&script_buf) {
+        Ok(payload) => payload,
+        Err(_) => {
+            return None;
+        }
+    };
+    Some(BitcoinAddress::from(&payload))
 }
 
 #[cfg(test)]
@@ -324,5 +366,73 @@ mod tests {
                 ords: vec![obj_ids[0].clone(), obj_ids[1].clone(), obj_ids[2].clone()],
             },]
         );
+    }
+
+    #[test]
+    fn test_drive_bitcoin_address() {
+        // non-empty address
+        let bitcoin_address = drive_bitcoin_address(
+            "bc1qsn7v0rwezflwd6pk7xxf25zhjw9wkvmympm7tk".to_string(),
+            "".to_string(),
+            SCRIPT_TYPE_NON_STANDARD.to_string(), // no matter what script type
+        );
+        assert_eq!(
+            "bc1qsn7v0rwezflwd6pk7xxf25zhjw9wkvmympm7tk",
+            bitcoin_address.unwrap().to_string()
+        );
+        // non-standard address
+        let bitcoin_address = drive_bitcoin_address(
+            "".to_string(),
+            "".to_string(),
+            SCRIPT_TYPE_NON_STANDARD.to_string(),
+        );
+        assert_eq!(None, bitcoin_address);
+        // p2pk script
+        let bitcoin_address = drive_bitcoin_address(
+            "".to_string(),
+            "41049434a2dd7c5b82df88f578f8d7fd14e8d36513aaa9c003eb5bd6cb56065e44b7e0227139e8a8e68e7de0a4ed32b8c90edc9673b8a7ea541b52f2a22196f7b8cfac".to_string(),
+            SCRIPT_TYPE_P2PK.to_string(),
+        );
+        assert_eq!(
+            "14vrCdzPtnHaXtDNLH4xNhceS7GV4GMw76",
+            bitcoin_address.unwrap().to_string()
+        );
+        // p2pk pubkey
+        let bitcoin_address = drive_bitcoin_address(
+            "".to_string(),
+            "04f254e36949ec1a7f6e9548f16d4788fb321f429b2c7d2eb44480b2ed0195cbf0c3875c767fe8abb2df6827c21392ea5cc934240b9ac46c6a56d2bd13dd0b17a9".to_string(),
+            SCRIPT_TYPE_P2PK.to_string(),
+        );
+        let pubkey = PublicKey::from_str(
+            "04f254e36949ec1a7f6e9548f16d4788fb321f429b2c7d2eb44480b2ed0195cbf0c3875c767fe8abb2df6827c21392ea5cc934240b9ac46c6a56d2bd13dd0b17a9",
+        )
+        .unwrap();
+        assert_eq!(
+            BitcoinAddress::new_p2pkh(&pubkey.pubkey_hash()),
+            bitcoin_address.unwrap()
+        );
+        // special p2ms case: https://ordinals.com/inscription/72552729(
+        // output: a353a7943a2b38318bf458b6af878b8384f48a6d10aad5b827d0550980abe3f0:0
+        // script: 0014f29f9316f0f1e48116958216a8babd353b491dae
+        // address: bc1q720ex9hs78jgz954sgt23w4ax5a5j8dwjj5kkm
+        // )
+        let script = "0014f29f9316f0f1e48116958216a8babd353b491dae";
+        let bitcoin_address = drive_bitcoin_address(
+            "".to_string(),
+            script.to_string(),
+            SCRIPT_TYPE_P2MS.to_string(),
+        );
+        assert_eq!(
+            "bc1q720ex9hs78jgz954sgt23w4ax5a5j8dwjj5kkm",
+            bitcoin_address.unwrap().to_string()
+        );
+        // normal p2ms
+        let script = "512102047da7156b82baaed491787e77a0d94cbc00ebdbd993639382b8a41d2f8d42dd2107000000000000000000000000000000000000000000000000000000000000000052ae";
+        let bitcoin_address = drive_bitcoin_address(
+            "".to_string(),
+            script.to_string(),
+            SCRIPT_TYPE_P2MS.to_string(),
+        );
+        assert_eq!(None, bitcoin_address);
     }
 }
