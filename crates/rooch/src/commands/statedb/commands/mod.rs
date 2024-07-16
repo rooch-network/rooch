@@ -426,7 +426,7 @@ mod tests {
             "bc1q720ex9hs78jgz954sgt23w4ax5a5j8dwjj5kkm",
             bitcoin_address.unwrap().to_string()
         );
-        // normal p2ms
+        // normal p2ms (cannot get payload)
         let script = "512102047da7156b82baaed491787e77a0d94cbc00ebdbd993639382b8a41d2f8d42dd2107000000000000000000000000000000000000000000000000000000000000000052ae";
         let bitcoin_address = drive_bitcoin_address(
             "".to_string(),
