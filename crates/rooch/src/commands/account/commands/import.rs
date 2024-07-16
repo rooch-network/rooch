@@ -4,18 +4,20 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use rooch_key::{key_derive::ROOCH_SECRET_KEY_PREFIX, keystore::account_keystore::AccountKeystore};
+use rooch_key::key_derive::ROOCH_SECRET_KEY_PREFIX;
+use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::{
     address::{ParsedAddress, RoochAddress},
     error::{RoochError, RoochResult},
 };
 
-/// Export an existing private key for one address or mnemonic for all addresses off-chain.
+/// Import an external account from an address and encoded private key into Rooch Key Store.
+/// The importing format should be the same as the exported addresses and private keys.
 ///
-/// Default to export all addresses with a mnemonic phrase but can be specified with -a or
-/// --address to export only one address with a private key.
+/// The command must be specified with -a or --address and -k or --private-key to import an
+/// external account into Rooch Key Store.
 #[derive(Debug, Parser)]
-pub struct ExportCommand {
+pub struct ImportCommand {
     #[clap(short = 'a', long = "address", value_parser=ParsedAddress::parse, default_value = "")]
     address: ParsedAddress,
     #[clap(flatten)]
@@ -27,7 +29,7 @@ pub struct ExportCommand {
 }
 
 #[async_trait]
-impl CommandAction<Option<String>> for ExportCommand {
+impl CommandAction<Option<String>> for ImportCommand {
     async fn execute(self) -> RoochResult<Option<String>> {
         let mut context = self.context_options.build_require_password()?;
         let password = context.get_password();
