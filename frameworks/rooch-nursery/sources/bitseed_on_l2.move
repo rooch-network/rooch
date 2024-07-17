@@ -11,7 +11,8 @@ module rooch_nursery::bitseed_on_l2 {
     const ErrorBitseedNotMergeable: u64 = 1;
     const ErrorBitseedNotSplittable: u64 = 2;
     const ErrorInvalidAmount: u64 = 3;
-    
+
+    friend rooch_nursery::tick_info;
 
     /// Bitseed is a SFT asset type.
     struct Bitseed has key,store{
@@ -31,7 +32,7 @@ module rooch_nursery::bitseed_on_l2 {
         body: vector<u8>,
     }
 
-    fun new(
+    public(friend) fun new(
         metaprotocol: String,
         tick: String,
         bid: address,
