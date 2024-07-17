@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use bitcoin::address::Payload;
 use bitcoin::{OutPoint, PublicKey, ScriptBuf};
 use chrono::{DateTime, Local};
 use moveos_store::MoveOSStore;
@@ -127,26 +126,23 @@ pub fn drive_bitcoin_address(
         return None;
     }
     // Try to derive address from script
+    let script_buf = ScriptBuf::from_hex(script.as_str()).unwrap();
+    let bitcoin_address: BitcoinAddress = BitcoinAddress::from(&script_buf);
+    if bitcoin_address != BitcoinAddress::default() {
+        return Some(bitcoin_address);
+    }
+    // Try to derive address from p2pk pubkey
     if SCRIPT_TYPE_P2PK.eq(script_type.as_str()) {
         let pubkey = match PublicKey::from_str(script.as_str()) {
             Ok(pubkey) => pubkey,
             Err(_) => {
-                // is script
-                let script_buf = ScriptBuf::from_hex(script.as_str()).unwrap();
-                script_buf.p2pk_public_key().unwrap()
+                return None;
             }
         };
         let pubkey_hash = pubkey.pubkey_hash();
         return Some(BitcoinAddress::new_p2pkh(&pubkey_hash));
     };
-    let script_buf = ScriptBuf::from_hex(script.as_str()).unwrap();
-    let payload = match Payload::from_script(&script_buf) {
-        Ok(payload) => payload,
-        Err(_) => {
-            return None;
-        }
-    };
-    Some(BitcoinAddress::from(&payload))
+    None
 }
 
 #[cfg(test)]
@@ -411,6 +407,20 @@ mod tests {
             BitcoinAddress::new_p2pkh(&pubkey.pubkey_hash()),
             bitcoin_address.unwrap()
         );
+        // invalid p2pk pubkey
+        let bitcoin_address = drive_bitcoin_address(
+            "".to_string(),
+            "036c6565662c206f6e7464656b2c2067656e6965742e2e2e202020202020202020".to_string(),
+            SCRIPT_TYPE_P2PK.to_string(),
+        );
+        assert_eq!(None, bitcoin_address);
+        // invalid p2pk script
+        let bitcoin_address = drive_bitcoin_address(
+            "".to_string(),
+            "21036c6565662c206f6e7464656b2c2067656e6965742e2e2e202020202020202020ac".to_string(),
+            SCRIPT_TYPE_P2PK.to_string(),
+        );
+        assert_eq!(None, bitcoin_address);
         // special p2ms case: https://ordinals.com/inscription/72552729(
         // output: a353a7943a2b38318bf458b6af878b8384f48a6d10aad5b827d0550980abe3f0:0
         // script: 0014f29f9316f0f1e48116958216a8babd353b491dae

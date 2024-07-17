@@ -13,7 +13,7 @@ use std::time::SystemTime;
 
 use anyhow::Result;
 use bitcoin::hashes::Hash;
-use bitcoin::{OutPoint, PublicKey, ScriptBuf};
+use bitcoin::{OutPoint, PublicKey};
 use bitcoin_move::natives::ord::inscription_id::InscriptionId;
 use chrono::{DateTime, Local};
 use clap::Parser;
@@ -514,7 +514,8 @@ fn gen_inscription_ids_update(
 }
 
 impl InscriptionSource {
-    pub fn derive_rooch_address(mut self) -> Result<AccountAddress> {
+    // derive account address from inscription source address(unbound/non-standard/p2pk_script/valid_address)
+    pub fn derive_account_address(mut self) -> Result<AccountAddress> {
         if self.address == *ADDRESS_UNBOUND.to_string()
             || self.address == *ADDRESS_NON_STANDARD.to_string()
         {
@@ -522,14 +523,7 @@ impl InscriptionSource {
         }
 
         if self.is_p2pk {
-            let pubkey = match PublicKey::from_str(self.address.as_str()) {
-                Ok(pubkey) => pubkey,
-                Err(_) => {
-                    // address is script
-                    let script_buf = ScriptBuf::from_hex(self.address.as_str()).unwrap();
-                    script_buf.p2pk_public_key().unwrap()
-                }
-            };
+            let pubkey = PublicKey::from_str(self.address.as_str()).unwrap();
             let pubkey_hash = pubkey.pubkey_hash();
             let bitcoin_address = BitcoinAddress::new_p2pkh(&pubkey_hash);
             self.address = bitcoin_address.to_string();
@@ -567,7 +561,7 @@ impl InscriptionSource {
 
 fn gen_ord_update(src: InscriptionSource) -> Result<(FieldKey, ObjectState, InscriptionID)> {
     let inscription = src.clone().to_inscription();
-    let address = src.clone().derive_rooch_address()?;
+    let address = src.clone().derive_account_address()?;
 
     let inscription_id = InscriptionID::new(inscription.txid, inscription.index);
     let obj_id = derive_inscription_id(&inscription_id);
