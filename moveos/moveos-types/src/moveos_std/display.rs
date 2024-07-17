@@ -180,7 +180,6 @@ impl RawDisplay {
         metadata: &ObjectMeta,
         annotated_obj: &AnnotatedMoveValue,
     ) -> BTreeMap<String, String> {
-        //TODO support access metadata via `metadata.x` in display template
         let fields = self.to_btree_map().into_iter().map(|entry| {
             match parse_template(&entry.1, annotated_obj, metadata) {
                 Ok(value) => (entry.0, value),
