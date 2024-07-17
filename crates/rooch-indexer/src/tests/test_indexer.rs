@@ -188,7 +188,7 @@ fn test_object_type_query() -> Result<()> {
     let owner = AccountAddress::random();
     let coin_store_obj = ObjectEntity::new(
         object_id.clone(),
-        owner.clone(),
+        owner,
         0,
         Some(H256::random()),
         0,
@@ -208,13 +208,13 @@ fn test_object_type_query() -> Result<()> {
     // filter by object type and owner
     let filter = ObjectStateFilter::ObjectTypeWithOwner {
         object_type: CoinStore::<GasCoin>::struct_tag(),
-        owner: owner.into(),
+        owner,
     };
     let query_object_states =
         indexer_reader.query_object_states_with_filter(filter, None, 1, true)?;
     assert_eq!(query_object_states.len(), 1);
     // filter by object owner
-    let filter = ObjectStateFilter::Owner(owner.into());
+    let filter = ObjectStateFilter::Owner(owner);
     let query_object_states =
         indexer_reader.query_object_states_with_filter(filter, None, 1, true)?;
     assert_eq!(query_object_states.len(), 1);
