@@ -13,7 +13,7 @@ use std::time::SystemTime;
 
 use anyhow::Result;
 use bitcoin::hashes::Hash;
-use bitcoin::{OutPoint, PublicKey};
+use bitcoin::OutPoint;
 use bitcoin_move::natives::ord::inscription_id::InscriptionId;
 use chrono::{DateTime, Local};
 use clap::Parser;
@@ -77,8 +77,7 @@ pub struct InscriptionSource {
     pub parent: Option<Vec<InscriptionId>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pointer: Option<u64>,
-    pub is_p2pk: bool,   // If true, address field is script
-    pub address: String, // <address>, "unbound", "non-standard", <script(p2pk)>
+    pub address: String, // <address>, "unbound", "non-standard"
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rune: Option<u128>,
 }
@@ -514,21 +513,15 @@ fn gen_inscription_ids_update(
 }
 
 impl InscriptionSource {
-    // derive account address from inscription source address(unbound/non-standard/p2pk_script/valid_address)
-    pub fn derive_account_address(mut self) -> Result<AccountAddress> {
+    // derive account address from inscription source address(unbound/non-standard/valid_address)
+    pub fn derive_account_address(self) -> Result<AccountAddress> {
         if self.address == *ADDRESS_UNBOUND.to_string()
             || self.address == *ADDRESS_NON_STANDARD.to_string()
         {
             return Ok(BITCOIN_MOVE_ADDRESS);
         }
 
-        if self.is_p2pk {
-            let pubkey = PublicKey::from_str(self.address.as_str()).unwrap();
-            let pubkey_hash = pubkey.pubkey_hash();
-            let bitcoin_address = BitcoinAddress::new_p2pkh(&pubkey_hash);
-            self.address = bitcoin_address.to_string();
-        }
-        let bitcoin_address = BitcoinAddress::from_str(self.address.as_str())?;
+        let bitcoin_address = BitcoinAddress::from_str(self.address.as_str()).unwrap();
         let address = AccountAddress::from(bitcoin_address.to_rooch_address());
         Ok(address)
     }
