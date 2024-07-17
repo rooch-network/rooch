@@ -150,6 +150,23 @@ impl AccountKeystore for BaseKeyStore {
 
     fn nullify(&mut self, address: &RoochAddress) -> Result<(), anyhow::Error> {
         self.keys.remove(address);
+        let mnemonic_data = match &self.mnemonic {
+            Some(mnemonic) => mnemonic,
+            None => return Err(anyhow::anyhow!("mnemonic data is empty")),
+        };
+        let index = match mnemonic_data
+            .addresses
+            .iter()
+            .position(|&target_address| target_address == *address)
+        {
+            Some(index) => index,
+            None => {
+                return Err(anyhow::anyhow!(
+                    "Could not find the address in mnemonic data"
+                ))
+            }
+        };
+        self.mnemonic.as_mut().unwrap().addresses.remove(index);
         Ok(())
     }
 

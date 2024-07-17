@@ -8,8 +8,10 @@ use crate::{
     address::{BitcoinAddress, RoochAddress},
     authentication_key::AuthenticationKey,
     error::{RoochError, RoochResult},
+    rooch_key::ROOCH_SECRET_KEY_HRP,
 };
 use anyhow::bail;
+use bech32::{encode, Bech32, EncodeError};
 use derive_more::{AsMut, AsRef, From};
 pub use enum_dispatch::enum_dispatch;
 use eyre::eyre;
@@ -109,7 +111,7 @@ impl RoochKeyPair {
     pub fn private(&self) -> &[u8] {
         match self {
             RoochKeyPair::Ed25519(kp) => kp.as_bytes(),
-            RoochKeyPair::Secp256k1(kp) => kp.as_bytes(),
+            RoochKeyPair::Secp256k1(kp) => kp.secret.as_bytes(),
         }
     }
 
@@ -123,6 +125,18 @@ impl RoochKeyPair {
             RoochKeyPair::Ed25519(kp) => RoochKeyPair::Ed25519(kp.copy()),
             RoochKeyPair::Secp256k1(kp) => RoochKeyPair::Secp256k1(kp.copy()),
         }
+    }
+
+    // Export Private Key method exports a private key in bech32 format
+    pub fn export_private_key(&self) -> Result<String, EncodeError> {
+        // get 33 bytes flag and secret key
+        let mut priv_key_bytes = Vec::with_capacity(self.private().len() + 1);
+        // supports secp256k1 signature scheme
+        priv_key_bytes.push(SignatureScheme::Secp256k1.flag());
+        priv_key_bytes.extend_from_slice(self.private());
+        // encode hrp and 33 bytes private key using bech32 method
+        let bech32_encoded = encode::<Bech32>(*ROOCH_SECRET_KEY_HRP, &priv_key_bytes)?;
+        Ok(bech32_encoded)
     }
 }
 

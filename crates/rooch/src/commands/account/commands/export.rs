@@ -4,10 +4,11 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use rooch_key::{key_derive::ROOCH_SECRET_KEY_PREFIX, keystore::account_keystore::AccountKeystore};
+use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::{
     address::{ParsedAddress, RoochAddress},
     error::{RoochError, RoochResult},
+    rooch_key::ROOCH_SECRET_KEY_HRP,
 };
 
 /// Export an existing private key for one address or mnemonic for all addresses off-chain.
@@ -39,16 +40,19 @@ impl CommandAction<Option<String>> for ExportCommand {
                 self.address.into_rooch_address(&mapping).map_err(|e| {
                     RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
                 })?;
-            println!("Address to be exported: {:?}", rooch_address);
             let kp = context.keystore.get_key_pair(&rooch_address, password)?;
-            let sk_bytes = kp.private();
-            context.keystore.export_private_key(sk_bytes)?
+            kp.export_private_key().map_err(|e| {
+                RoochError::CommandArgumentError(format!(
+                    "Failed to export private key due to the encoding error of the key: {}",
+                    e
+                ))
+            })?
         };
 
         if self.json {
             Ok(Some(result))
         } else {
-            if result.starts_with(ROOCH_SECRET_KEY_PREFIX) {
+            if result.starts_with(ROOCH_SECRET_KEY_HRP.as_str()) {
                 println!("Export succeeded with the encoded private key [{}]", result);
             } else {
                 println!("Export succeeded with the mnemonic phrase [{}]", result);
