@@ -48,7 +48,7 @@ impl UTXOFilterView {
         Ok(match filter_opt {
             UTXOFilterView::Owner(owner) => ObjectStateFilter::ObjectTypeWithOwner {
                 object_type: UTXO::struct_tag(),
-                owner: owner.0.rooch_address,
+                owner: owner.0.rooch_address.into(),
             },
             UTXOFilterView::OutPoint { txid, vout } => {
                 let txid = hex_to_txid(txid.as_str())?;

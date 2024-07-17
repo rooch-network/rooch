@@ -52,7 +52,7 @@ impl InscriptionFilterView {
         Ok(match filter {
             InscriptionFilterView::Owner(owner) => ObjectStateFilter::ObjectTypeWithOwner {
                 object_type: Inscription::struct_tag(),
-                owner: owner.0.rooch_address,
+                owner: owner.0.rooch_address.into(),
             },
             InscriptionFilterView::InscriptionId { txid, index } => {
                 let txid = hex_to_txid(txid.as_str())?;

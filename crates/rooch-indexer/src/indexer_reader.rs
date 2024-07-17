@@ -333,7 +333,7 @@ impl IndexerReader {
         Ok(result)
     }
 
-    fn query_stored_states_with_filter(
+    fn query_stored_object_states_with_filter(
         &self,
         filter: ObjectStateFilter,
         cursor: Option<IndexerStateID>,
@@ -414,10 +414,10 @@ impl IndexerReader {
         );
 
         tracing::debug!("query object states: {}", query);
-        let stored_states = self
+        let stored_object_states = self
             .get_inner_indexer_reader(INDEXER_OBJECT_STATES_TABLE_NAME)?
             .run_query(|conn| diesel::sql_query(query).load::<StoredObjectState>(conn))?;
-        Ok(stored_states)
+        Ok(stored_object_states)
     }
 
     pub fn query_object_states_with_filter(
@@ -427,9 +427,9 @@ impl IndexerReader {
         limit: usize,
         descending_order: bool,
     ) -> IndexerResult<Vec<IndexerObjectState>> {
-        let stored_states =
-            self.query_stored_states_with_filter(filter, cursor, limit, descending_order)?;
-        let result = stored_states
+        let stored_object_states =
+            self.query_stored_object_states_with_filter(filter, cursor, limit, descending_order)?;
+        let result = stored_object_states
             .into_iter()
             .map(|v| v.try_parse_indexer_object_state())
             .collect::<Result<Vec<_>>>()
@@ -447,9 +447,9 @@ impl IndexerReader {
         limit: usize,
         descending_order: bool,
     ) -> IndexerResult<Vec<(ObjectID, IndexerStateID)>> {
-        let stored_states =
-            self.query_stored_states_with_filter(filter, cursor, limit, descending_order)?;
-        let result = stored_states
+        let stored_object_states =
+            self.query_stored_object_states_with_filter(filter, cursor, limit, descending_order)?;
+        let result = stored_object_states
             .into_iter()
             .map(|v| v.try_parse_id())
             .collect::<Result<Vec<_>>>()
@@ -474,13 +474,13 @@ impl IndexerReader {
         );
 
         tracing::debug!("query last state index by tx order: {}", query);
-        let stored_states = self
+        let stored_object_states = self
             .get_inner_indexer_reader(INDEXER_OBJECT_STATES_TABLE_NAME)?
             .run_query(|conn| diesel::sql_query(query).load::<StoredObjectState>(conn))?;
-        let last_state_index = if stored_states.is_empty() {
+        let last_state_index = if stored_object_states.is_empty() {
             0
         } else {
-            stored_states[0].state_index as u64 + 1
+            stored_object_states[0].state_index as u64 + 1
         };
         Ok(last_state_index)
     }

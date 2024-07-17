@@ -197,7 +197,7 @@ fn test_object_type_query() -> Result<()> {
         CoinStore::<GasCoin>::new(100u64.into(), false),
     );
     let raw_obj = coin_store_obj.into_state();
-    let state = IndexerObjectState::new(raw_obj.metadata, 1, 0);
+    let state = IndexerObjectState::new(raw_obj.metadata, 0, 0);
     let object_states = vec![state];
     indexer_store.persist_or_update_object_states(object_states.clone())?;
     // filter by exact object type
@@ -208,8 +208,13 @@ fn test_object_type_query() -> Result<()> {
     // filter by object type and owner
     let filter = ObjectStateFilter::ObjectTypeWithOwner {
         object_type: CoinStore::<GasCoin>::struct_tag(),
-        owner: owner.into(),
+        owner,
     };
+    let query_object_states =
+        indexer_reader.query_object_states_with_filter(filter, None, 1, true)?;
+    assert_eq!(query_object_states.len(), 1);
+    // filter by object owner
+    let filter = ObjectStateFilter::Owner(owner);
     let query_object_states =
         indexer_reader.query_object_states_with_filter(filter, None, 1, true)?;
     assert_eq!(query_object_states.len(), 1);

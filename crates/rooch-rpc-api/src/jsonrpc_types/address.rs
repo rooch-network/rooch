@@ -104,6 +104,12 @@ impl From<RoochOrBitcoinAddressView> for RoochAddress {
     }
 }
 
+impl From<RoochOrBitcoinAddressView> for AccountAddress {
+    fn from(value: RoochOrBitcoinAddressView) -> Self {
+        AccountAddress::from(value.0.rooch_address.0 .0)
+    }
+}
+
 impl From<RoochAddressView> for RoochOrBitcoinAddressView {
     fn from(value: RoochAddressView) -> Self {
         StrView(RoochOrBitcoinAddress {
