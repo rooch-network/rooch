@@ -56,7 +56,7 @@ impl Handler<UpdateIndexerMessage> for IndexerActor {
         let transactions = vec![indexer_transaction];
         self.indexer_store.persist_transactions(transactions)?;
 
-        // 2. update indexer state
+        // 2. update indexer event
         let events: Vec<_> = events
             .into_iter()
             .map(|event| {
@@ -69,8 +69,8 @@ impl Handler<UpdateIndexerMessage> for IndexerActor {
             .collect();
         self.indexer_store.persist_events(events)?;
 
-        // 3. update indexer state
-        // indexer state index generator
+        // 3. update indexer object state
+        // indexer object state index generator
         let mut state_index_generator = 0u64;
         let mut indexer_object_state_changes = IndexerObjectStateChanges::default();
 
