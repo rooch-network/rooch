@@ -513,7 +513,7 @@ fn gen_inscription_ids_update(
 }
 
 impl InscriptionSource {
-    // derive account address from inscription source address(unbound/non-standard/p2pk_script/valid_address)
+    // derive account address from inscription source address(unbound/non-standard/valid_address)
     pub fn derive_account_address(self) -> Result<AccountAddress> {
         if self.address == *ADDRESS_UNBOUND.to_string()
             || self.address == *ADDRESS_NON_STANDARD.to_string()
