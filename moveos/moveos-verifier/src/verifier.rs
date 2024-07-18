@@ -2041,7 +2041,7 @@ pub fn check_metadata_compatibility(
         None => {
             return generate_vm_error(
                 ErrorCode::MALFORMED_METADATA,
-                "function should not return values".to_string(),
+                "malformed metadata format".to_string(),
                 None,
                 old_module,
             );
@@ -2053,7 +2053,7 @@ pub fn check_metadata_compatibility(
         None => {
             return generate_vm_error(
                 ErrorCode::MALFORMED_METADATA,
-                "function should not return values".to_string(),
+                "malformed metadata format".to_string(),
                 None,
                 new_module,
             );
