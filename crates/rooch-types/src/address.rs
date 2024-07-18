@@ -33,6 +33,7 @@ use moveos_types::{
     h256::H256,
     state::{MoveStructState, MoveStructType},
 };
+use nostr::prelude::ToBech32;
 use nostr::secp256k1::XOnlyPublicKey;
 use nostr::Keys;
 use once_cell::sync::Lazy;
@@ -810,19 +811,29 @@ impl TryFrom<MultiChainAddress> for BitcoinAddress {
     }
 }
 
+// TODO: rename NostrAddress to NostrPublicKey? https://github.com/nostr-protocol/nips/blob/master/19.md
 /// Nostr address type
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct NostrAddress(pub XOnlyPublicKey);
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct NostrAddress {
+    pub hex: XOnlyPublicKey,
+    pub bech32: String,
+}
 
 impl RoochSupportedAddress for NostrAddress {
     fn random() -> Self {
-        Self(Keys::generate().public_key())
+        Self {
+            hex: Keys::generate().public_key(),
+            bech32: Keys::generate()
+                .public_key()
+                .to_bech32()
+                .expect("XOnlyPublicKey should convert to bech32 address"),
+        }
     }
 }
 
 impl From<NostrAddress> for MultiChainAddress {
     fn from(address: NostrAddress) -> Self {
-        Self::new(RoochMultiChainID::Nostr, address.0.serialize().to_vec())
+        Self::new(RoochMultiChainID::Nostr, address.hex.serialize().to_vec())
     }
 }
 
@@ -836,8 +847,12 @@ impl TryFrom<MultiChainAddress> for NostrAddress {
                 value.multichain_id
             ));
         }
-        let addr = XOnlyPublicKey::from_slice(&value.raw_address)?;
-        Ok(Self(addr))
+        let hex_addr = XOnlyPublicKey::from_slice(&value.raw_address)?;
+        let bech32_addr = hex_addr.to_bech32()?;
+        Ok(Self {
+            hex: hex_addr,
+            bech32: bech32_addr,
+        })
     }
 }
 
@@ -845,14 +860,18 @@ impl FromStr for NostrAddress {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let address = XOnlyPublicKey::from_str(s)?;
-        Ok(Self(address))
+        let hex_address = XOnlyPublicKey::from_str(s)?;
+        let bech32_address = hex_address.to_bech32()?;
+        Ok(Self {
+            hex: hex_address,
+            bech32: bech32_address,
+        })
     }
 }
 
 impl fmt::Display for NostrAddress {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "hex: {}, bech32: {}", self.hex, self.bech32)
     }
 }
 

@@ -74,10 +74,12 @@ impl AccountKeystore for BaseKeyStore {
             let keypair: RoochKeyPair = encryption.decrypt_with_type(password.clone())?;
             let public_key = keypair.public();
             let bitcoin_address = public_key.bitcoin_address()?;
+            let nostr_address = public_key.nostr_address()?;
             let has_session_key = self.session_keys.contains_key(address);
             let local_account = LocalAccount {
                 address: *address,
                 bitcoin_address,
+                nostr_address,
                 public_key,
                 has_session_key,
             };
