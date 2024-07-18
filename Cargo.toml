@@ -198,7 +198,7 @@ strum_macros = "^0.26"
 sha2 = "0.10.2"
 sha3 = "0.10.8"
 smallvec = "1.6.1"
-thiserror = "1.0.62"
+thiserror = "1.0.63"
 tiny-keccak = { version = "2", features = ["keccak", "sha3"] }
 tiny-bip39 = "1.0.0"
 tokio = { version = "1.38.1", features = ["full"] }
