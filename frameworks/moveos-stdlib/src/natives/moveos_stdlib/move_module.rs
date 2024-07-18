@@ -28,6 +28,7 @@ use move_vm_types::{
 };
 use moveos_compiler::dependency_order::sort_by_dependency_order;
 use moveos_types::moveos_std::move_module::MoveModuleId;
+use moveos_verifier::verifier::check_metadata_compatibility;
 use smallvec::smallvec;
 use std::collections::{BTreeSet, HashMap, VecDeque};
 use std::hash::Hash;
@@ -304,6 +305,11 @@ fn check_compatibililty_inner(
         match compat.check(&old_m, &new_m) {
             Ok(_) => {}
             Err(_) => return Ok(NativeResult::err(cost, E_MODULE_INCOMPATIBLE)),
+        }
+
+        match check_metadata_compatibility(&old_module, &new_module) {
+            Ok(_) => {}
+            Err(e) => return Ok(NativeResult::err(cost, e.sub_status().unwrap_or(0))),
         }
     }
     Ok(NativeResult::ok(cost, smallvec![]))
