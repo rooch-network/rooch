@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use rooch_types::{
-    address::{BitcoinAddress, NostrAddress, RoochAddress},
+    address::{BitcoinAddress, RoochAddress},
     crypto::PublicKey,
     framework::session_key::SessionKey,
     key_struct::EncryptionData,
@@ -19,7 +19,7 @@ pub struct LocalSessionKey {
 pub struct LocalAccount {
     pub address: RoochAddress,
     pub bitcoin_address: BitcoinAddress,
-    pub nostr_address: NostrAddress,
+    pub nostr_bech32_public_key: String,
     pub public_key: PublicKey,
     pub has_session_key: bool,
 }

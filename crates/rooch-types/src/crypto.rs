@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    address::{BitcoinAddress, NostrAddress, RoochAddress},
+    address::{BitcoinAddress, RoochAddress},
     authentication_key::AuthenticationKey,
     error::{RoochError, RoochResult},
     rooch_key::ROOCH_SECRET_KEY_HRP,
@@ -327,18 +327,15 @@ impl PublicKey {
         }
     }
 
-    pub fn nostr_address(&self) -> Result<NostrAddress, anyhow::Error> {
+    pub fn nostr_bech32_public_key(&self) -> Result<String, anyhow::Error> {
         match self {
             PublicKey::Secp256k1(pk) => {
                 let xonly_pubkey = nostr::secp256k1::XOnlyPublicKey::from(
                     nostr::secp256k1::PublicKey::from_slice(&pk.0)?,
                 );
-                Ok(NostrAddress {
-                    hex: xonly_pubkey,
-                    bech32: xonly_pubkey.to_bech32()?,
-                })
+                Ok(xonly_pubkey.to_bech32()?)
             }
-            _ => bail!("Only secp256k1 public key can be converted to nostr address"),
+            _ => bail!("Only secp256k1 public key can be converted to nostr bech32 public key"),
         }
     }
 }
