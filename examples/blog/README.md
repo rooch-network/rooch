@@ -16,7 +16,7 @@ So before you start experiencing, you need to:
 
 * Install [Docker](https://docs.docker.com/engine/install/).
 
-* Install `curl` and `jp` commands (jp - commandline JSON processor). We can use `jp` to process JSON RPC returned JSON results when testing contracts.
+* Install `curl` and `jq` commands (jq - commandline JSON processor). We can use `jq` to process JSON RPC returned JSON results when testing contracts.
 
 * (Optional) Install MySQL database. Can be used to deploy and test off-chain services.
 
@@ -269,9 +269,9 @@ You can add a pipe operation (` | jq '.result.data[0].parsed_event_data.value.id
 
 > **Tip**
 >
-> Before using the `jp` command (jq - commandline JSON processor), you may need to install it on your machine first.
+> Before using the `jq` command (jq - commandline JSON processor), you may need to install it on your machine first.
 
-The command with `jp` processing looks like this:
+The command with `jq` processing looks like this:
 
 ```shell
 curl --location --request POST 'http://localhost:6767' \
@@ -450,7 +450,7 @@ The returned transaction execution status should be failed:
 
 ## Using the Off-chain Service
 
-By querying the RESTful API of the off-chain service, you can easily get the detailed information of articles and comments, without using the `curl` and `jp` commands introduced above.
+By querying the RESTful API of the off-chain service, you can easily get the detailed information of articles and comments, without using the `curl` and `jq` commands introduced above.
 
 > **Tip**
 >
