@@ -18,6 +18,8 @@ module rooch_nursery::tick_info {
     const ErrorInvalidMintFactory: u64 = 4;
     const ErrorMaxSupplyReached: u64 = 5;
 
+    friend rooch_nursery::bitseed;
+
     /// Store the tick -> TickInfo ObjectID mapping in Object<TickInfoStore> dynamic fields.
     struct TickInfoStore has key {
     }
@@ -83,6 +85,7 @@ module rooch_nursery::tick_info {
         generator: Option<InscriptionID>,
         factory: Option<String>,
         max: u64,
+        repeat: u64,
         deploy_args: Option<vector<u8>>,
     ) : ObjectID {
         let store = borrow_mut_tick_info_store(metaprotocol);
@@ -92,7 +95,7 @@ module rooch_nursery::tick_info {
             generator,
             factory,
             max,
-            repeat: 0,
+            repeat,
             deploy_args,
             supply: 0,
         };
@@ -146,5 +149,19 @@ module rooch_nursery::tick_info {
 
     public fun deploy_args(tick_info: &TickInfo) : Option<vector<u8>> {
         tick_info.deploy_args
+    }
+
+    #[test_only]
+    public fun deploy_for_testing(
+        metaprotocol: String,
+        tick: String,
+        generator: Option<InscriptionID>,
+        factory: Option<String>,
+        max: u64,
+        repeat: u64,
+        deploy_args: Option<vector<u8>>,
+    ) : ObjectID {
+        std::debug::print(&factory);
+        deploy_tick(metaprotocol, tick, generator, factory, max, repeat, deploy_args)
     }
 }

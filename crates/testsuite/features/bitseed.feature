@@ -86,3 +86,59 @@ Feature: Rooch CLI bitseed tests
       Then stop the server
       Then stop the ord server 
       Then stop the bitcoind server
+
+    @serial
+    Scenario: rooch bitseed_on_rooch test
+      Then cmd: "init --skip-password"
+      Then cmd: "env switch --alias local"
+
+      # prepare servers
+      Given a bitcoind server for bitseed_on_rooch
+      Given a ord server for bitseed_on_rooch
+      Given a server for bitseed_on_rooch
+
+      Then cmd: "account list --json"
+
+      # init wallet
+      Then cmd ord: "wallet create"
+      Then cmd ord: "wallet receive"
+
+      # mint utxos
+      Then cmd bitcoin-cli: "generatetoaddress 101 {{$.wallet[-1].addresses[0]}}"
+      Then sleep: "10" # wait ord sync and index
+      Then cmd ord: "wallet balance"
+      Then assert: "{{$.wallet[-1].total}} == 5000000000"
+
+      # publish bitseed runner
+      Then cmd: "move publish -p ../../examples/bitseed_runner  --named-addresses rooch_examples=default"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # Sync bitseed
+      Then cmd: "move run --function default::bitseed_runner::run"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # deploy
+      Then cmd bitseed: "deploy --fee-rate 1 --factory 000000000000000000000000000000000000000000000000000000000000000a::mint_get_factory::MintGetFactory --tick test --amount 210000000000"
+      Then assert: "'{{$.deploy[-1]}}' not_contains error"
+
+      # mine a block
+      Then cmd ord: "wallet receive"
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].addresses[0]}}"
+      Then sleep: "10"
+
+      # Sync bitseed
+      Then cmd: "move run --function default::bitseed_runner::run"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # Check deploy validity
+      Then cmd: "move view --function 0xa::bitseed::view_validity --args string:{{$.deploy[-1].inscriptions[0].Id}} "
+      Then assert: "{{$.move[-1].vm_status}} == Executed"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
+
+      # mint on rooch
+      Then cmd: "move run --function 0xa::mint_get_factory::mint --args string:bitseed --args string:test" 
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      Then cmd: "object -t 0xa::bitseed_on_l2::Bitseed -o {{$.account[-1].default.address}}"
+      Then assert: "{{$.object[-1].data[0].owner}} == {{$.account[-1].default.address}}"
+

@@ -8,6 +8,7 @@ module rooch_nursery::mint_get_factory {
     use moveos_std::object::{Self, Object};
     use moveos_std::tx_context;
     use moveos_std::bcs;
+    use moveos_std::type_info;
     use rooch_nursery::tick_info;
     use rooch_nursery::bitseed_on_l2::{Bitseed};
 
@@ -48,5 +49,16 @@ module rooch_nursery::mint_get_factory {
             DEFAULT_AMOUNT_PER_MINT
         };
         tick_info::mint<MintGetFactory>(metaprotocol, tick, amount_per_mint)
+    }
+
+    public fun factory_type(): String {
+        type_info::type_name<MintGetFactory>()
+    }
+
+    #[test]
+    fun test_mint(){
+        tick_info::deploy_for_testing(std::string::utf8(b"bitseed"), std::string::utf8(b"test"), option::none(), option::some(factory_type()), 100000, 0, option::none());
+        let bitseed = do_mint(std::string::utf8(b"bitseed"), std::string::utf8(b"test"));
+        object::transfer(bitseed, tx_context::sender());
     }
 }

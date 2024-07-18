@@ -21,6 +21,8 @@ module rooch_nursery::bitseed {
     use bitcoin_move::ord::{Self, Inscription, InscriptionID, MetaprotocolValidity};
     use bitcoin_move::bitcoin;
 
+    use rooch_nursery::tick_info;
+
     const METAPROTOCOL : vector<u8> = b"bitseed";
     const BIT_SEED_DEPLOY: vector<u8> = b"bitseed_deploy";
     const BIT_SEED_MINT: vector<u8> = b"bitseed_mint";
@@ -267,15 +269,25 @@ module rooch_nursery::bitseed {
         let attributes = get_SFT_attributes(metadata);
 
         let generator = get_SFT_string_attribute(&attributes, b"generator");
-        if (option::is_none(&generator)) {
+        let factory = get_SFT_string_attribute(&attributes, b"factory");
+        if (option::is_none(&generator) && option::is_none(&factory)) {
             simple_map::drop(attributes);
-            return (false, option::some(std::string::utf8(b"metadata.attributes.generator is required")))
+            return (false, option::some(std::string::utf8(b"metadata.attributes.generator or metadata.attributes.factory is required")))
         };
 
-        let (is_valid, reason) = is_valid_generator_uri(option::borrow(&generator));
-        if (!is_valid) {
+        if (option::is_some(&generator) && option::is_some(&factory)) {
             simple_map::drop(attributes);
-            return (false, reason)
+            return (false, option::some(std::string::utf8(b"metadata.attributes.generator and metadata.attributes.factory can not exist at the same time")))
+        };
+        if (option::is_some(&generator)) {
+            let (is_valid, reason) = is_valid_generator_uri(option::borrow(&generator));
+            if (!is_valid) {
+                simple_map::drop(attributes);
+                return (false, reason)
+            };
+        };
+        if (option::is_some(&factory)) {
+            //TODO check factory
         };
 
         simple_map::drop(attributes);
@@ -336,12 +348,18 @@ module rooch_nursery::bitseed {
         if (option::is_some(&repeat_option)) {
             repeat = option::destroy_some(repeat_option);
         };
+        let generator_uri_option = get_SFT_string_attribute(&attributes, b"generator");
+        
+        let inscription_id_option = if (option::is_some(&generator_uri_option)) {
+            let generator_uri = option::destroy_some(generator_uri_option);
+            let inscription_id_str = string::sub_string(&generator_uri, vector::length(&b"/inscription/"), string::length(&generator_uri));
+            ord::parse_inscription_id(&inscription_id_str)
+        }else{
+            option::none()
+        };
 
-        let generator_uri = option::destroy_some(get_SFT_string_attribute(&attributes, b"generator"));
-        let inscription_id_str = string::sub_string(&generator_uri, vector::length(&b"/inscription/"), string::length(&generator_uri));
-        let inscription_id_option = ord::parse_inscription_id(&inscription_id_str);
-        let inscription_id = option::destroy_some(inscription_id_option);
-
+        let factory_option = get_SFT_string_attribute(&attributes, b"factory");
+        
         let has_user_input = true;
         let has_user_input_option = get_SFT_bool_attribute(&attributes, b"has_user_input");
         if (option::is_some(&has_user_input_option)) {
@@ -352,7 +370,7 @@ module rooch_nursery::bitseed {
 
         let coin_info = BitseedCoinInfo{ 
             tick, 
-            generator: option::some(inscription_id),
+            generator: inscription_id_option,
             max,
             repeat,
             has_user_input,
@@ -361,6 +379,8 @@ module rooch_nursery::bitseed {
         };
 
         table::add(&mut bitseed_store.coins, tick, coin_info);
+
+        tick_info::deploy_tick(Self::metaprotocol(), tick, inscription_id_option, factory_option, max, repeat, deploy_args);
 
         simple_map::drop(attributes);
         (true, option::none<String>())
@@ -733,9 +753,9 @@ module rooch_nursery::bitseed {
         let metadata = cbor::to_map(metadata_bytes);
         let (is_valid, reason) = is_valid_bitseed_deploy(&metadata);
         simple_map::drop(metadata);
-
+        std::debug::print(&reason);
         assert!(!is_valid, 1);
-        assert!(option::borrow(&reason) == &std::string::utf8(b"metadata.attributes.generator is required"), 1);
+        assert!(option::borrow(&reason) == &std::string::utf8(b"metadata.attributes.generator or metadata.attributes.factory is required"), 1);
     }
 
     #[test]

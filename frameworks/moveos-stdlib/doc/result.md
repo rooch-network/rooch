@@ -6,6 +6,7 @@
 
 
 -  [Struct `Result`](#0x2_result_Result)
+<<<<<<< HEAD
 -  [Constants](#@Constants_0)
 -  [Function `ok`](#0x2_result_ok)
 -  [Function `is_ok`](#0x2_result_is_ok)
@@ -25,6 +26,18 @@
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
+=======
+-  [Function `ok`](#0x2_result_ok)
+-  [Function `is_ok`](#0x2_result_is_ok)
+-  [Function `err`](#0x2_result_err)
+-  [Function `is_err`](#0x2_result_is_err)
+-  [Function `unpack`](#0x2_result_unpack)
+-  [Function `and_then`](#0x2_result_and_then)
+-  [Function `assert_ok`](#0x2_result_assert_ok)
+
+
+<pre><code><b>use</b> <a href="">0x1::option</a>;
+>>>>>>> 8a16bd56 ([bitseed] Implememnt mint on l2 and add tests)
 </code></pre>
 
 
@@ -38,6 +51,7 @@ Most of the time, we do not need the Result type in smart contract, we can direc
 But in some cases, we need to return a result to ensure the caller can handle the error.
 
 
+<<<<<<< HEAD
 <pre><code><b>struct</b> <a href="result.md#0x2_result_Result">Result</a>&lt;T&gt; <b>has</b> <b>copy</b>, drop
 </code></pre>
 
@@ -64,6 +78,9 @@ Expected the result is ok but the result is err.
 
 
 <pre><code><b>const</b> <a href="result.md#0x2_result_ErrorExpectOk">ErrorExpectOk</a>: u64 = 1;
+=======
+<pre><code><b>struct</b> <a href="result.md#0x2_result_Result">Result</a>&lt;T&gt;
+>>>>>>> 8a16bd56 ([bitseed] Implememnt mint on l2 and add tests)
 </code></pre>
 
 
@@ -90,6 +107,7 @@ Expected the result is ok but the result is err.
 
 
 
+<<<<<<< HEAD
 <a name="0x2_result_get"></a>
 
 ## Function `get`
@@ -101,12 +119,15 @@ Expected the result is ok but the result is err.
 
 
 
+=======
+>>>>>>> 8a16bd56 ([bitseed] Implememnt mint on l2 and add tests)
 <a name="0x2_result_err"></a>
 
 ## Function `err`
 
 
 
+<<<<<<< HEAD
 <pre><code><b>public</b> <b>fun</b> <a href="result.md#0x2_result_err">err</a>&lt;T&gt;(err: <a href="">vector</a>&lt;u8&gt;): <a href="result.md#0x2_result_Result">result::Result</a>&lt;T&gt;
 </code></pre>
 
@@ -119,6 +140,9 @@ Expected the result is ok but the result is err.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="result.md#0x2_result_err_string">err_string</a>&lt;T&gt;(err: <a href="_String">string::String</a>): <a href="result.md#0x2_result_Result">result::Result</a>&lt;T&gt;
+=======
+<pre><code><b>public</b> <b>fun</b> <a href="result.md#0x2_result_err">err</a>&lt;T&gt;(abort_code: u64): <a href="result.md#0x2_result_Result">result::Result</a>&lt;T&gt;
+>>>>>>> 8a16bd56 ([bitseed] Implememnt mint on l2 and add tests)
 </code></pre>
 
 
@@ -134,6 +158,7 @@ Expected the result is ok but the result is err.
 
 
 
+<<<<<<< HEAD
 <a name="0x2_result_get_err"></a>
 
 ## Function `get_err`
@@ -157,13 +182,19 @@ Convert an error Result<T> to error Result<U>.
 
 
 
+=======
+>>>>>>> 8a16bd56 ([bitseed] Implememnt mint on l2 and add tests)
 <a name="0x2_result_unpack"></a>
 
 ## Function `unpack`
 
 
 
+<<<<<<< HEAD
 <pre><code><b>public</b> <b>fun</b> <a href="result.md#0x2_result_unpack">unpack</a>&lt;T&gt;(<a href="result.md#0x2_result">result</a>: <a href="result.md#0x2_result_Result">result::Result</a>&lt;T&gt;): (<a href="_Option">option::Option</a>&lt;T&gt;, <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;)
+=======
+<pre><code><b>public</b> <b>fun</b> <a href="result.md#0x2_result_unpack">unpack</a>&lt;T&gt;(<a href="result.md#0x2_result">result</a>: <a href="result.md#0x2_result_Result">result::Result</a>&lt;T&gt;): (<a href="_Option">option::Option</a>&lt;T&gt;, u64)
+>>>>>>> 8a16bd56 ([bitseed] Implememnt mint on l2 and add tests)
 </code></pre>
 
 
@@ -179,6 +210,7 @@ Convert an error Result<T> to error Result<U>.
 
 
 
+<<<<<<< HEAD
 <a name="0x2_result_unwrap"></a>
 
 ## Function `unwrap`
@@ -201,6 +233,8 @@ Convert an error Result<T> to error Result<U>.
 
 
 
+=======
+>>>>>>> 8a16bd56 ([bitseed] Implememnt mint on l2 and add tests)
 <a name="0x2_result_assert_ok"></a>
 
 ## Function `assert_ok`
@@ -211,6 +245,7 @@ This function is inline, so it will be expanded in the caller.
 This ensures the abort_code is the caller's location.
 
 
+<<<<<<< HEAD
 <pre><code><b>public</b> <b>fun</b> <a href="result.md#0x2_result_assert_ok">assert_ok</a>&lt;T&gt;(<a href="result.md#0x2_result">result</a>: <a href="result.md#0x2_result_Result">result::Result</a>&lt;T&gt;, abort_code: u64): T
 </code></pre>
 
@@ -223,4 +258,7 @@ This ensures the abort_code is the caller's location.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="result.md#0x2_result_assert_err">assert_err</a>&lt;T&gt;(<a href="result.md#0x2_result">result</a>: <a href="result.md#0x2_result_Result">result::Result</a>&lt;T&gt;, abort_code: u64): <a href="_String">string::String</a>
+=======
+<pre><code><b>public</b> <b>fun</b> <a href="result.md#0x2_result_assert_ok">assert_ok</a>&lt;T&gt;(<a href="result.md#0x2_result">result</a>: <a href="result.md#0x2_result_Result">result::Result</a>&lt;T&gt;): T
+>>>>>>> 8a16bd56 ([bitseed] Implememnt mint on l2 and add tests)
 </code></pre>

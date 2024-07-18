@@ -8,6 +8,7 @@ Bitseed on L2, in the future, this module will merge into the bitseed module.
 
 -  [Resource `Bitseed`](#0xa_bitseed_on_l2_Bitseed)
 -  [Constants](#@Constants_0)
+-  [Function `new`](#0xa_bitseed_on_l2_new)
 -  [Function `is_same_type`](#0xa_bitseed_on_l2_is_same_type)
 -  [Function `is_mergeable`](#0xa_bitseed_on_l2_is_mergeable)
 -  [Function `merge`](#0xa_bitseed_on_l2_merge)
@@ -62,6 +63,17 @@ Bitseed is a SFT asset type.
 
 
 <pre><code><b>const</b> <a href="bitseed_on_l2.md#0xa_bitseed_on_l2_ErrorInvalidAmount">ErrorInvalidAmount</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="0xa_bitseed_on_l2_new"></a>
+
+## Function `new`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bitseed_on_l2.md#0xa_bitseed_on_l2_new">new</a>(metaprotocol: <a href="_String">string::String</a>, tick: <a href="_String">string::String</a>, bid: <b>address</b>, amount: u64, content_type: <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, body: <a href="">vector</a>&lt;u8&gt;): <a href="_Object">object::Object</a>&lt;<a href="bitseed_on_l2.md#0xa_bitseed_on_l2_Bitseed">bitseed_on_l2::Bitseed</a>&gt;
 </code></pre>
 
 

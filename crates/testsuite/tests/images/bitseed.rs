@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use testcontainers::{core::WaitFor, Image, ImageArgs};
 
 const NAME: &str = "bitseed/bitseed";
-const TAG: &str = "0.1.7";
+const TAG: &str = "latest";
 
 #[derive(Debug, Default, Clone)]
 pub struct BitseedImageArgs {

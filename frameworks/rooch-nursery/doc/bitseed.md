@@ -45,6 +45,7 @@
 <b>use</b> <a href="">0x4::bitcoin</a>;
 <b>use</b> <a href="">0x4::ord</a>;
 <b>use</b> <a href="">0x4::types</a>;
+<b>use</b> <a href="tick_info.md#0xa_tick_info">0xa::tick_info</a>;
 </code></pre>
 
 
