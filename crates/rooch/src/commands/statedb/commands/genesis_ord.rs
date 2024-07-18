@@ -214,7 +214,7 @@ fn index_utxo_ords(
     println!("indexing utxo:ords started at: {}", datetime);
 
     let mut ord_src_reader =
-        BufReader::with_capacity(8 * 1024 * 1024, File::open(ord_src_path).unwrap());
+        BufReader::with_capacity(8 * 1024 * 1024, File::open(ord_src_path.clone()).unwrap());
     let mut is_title_line = true;
 
     let mut ord_count: u64 = 0;
@@ -244,7 +244,7 @@ fn index_utxo_ords(
     }
 
     // too big file load in cache
-    let file_cache_manager = FileCacheManager::new(ord_src_path.clone()).unwrap();
+    let file_cache_manager = FileCacheManager::new(ord_src_path).unwrap();
     let _ = file_cache_manager.drop_cache_range(0, 1024 * 1024 * 1024 * 1024);
 
     let utxo_count = sort_merge_utxo_ords(&mut utxo_ords) as u64;
