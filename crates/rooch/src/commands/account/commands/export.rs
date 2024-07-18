@@ -5,6 +5,7 @@ use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
 use rooch_key::keystore::account_keystore::AccountKeystore;
+use rooch_rpc_api::jsonrpc_types::export_view::ExportInfoView;
 use rooch_types::{
     address::{ParsedAddress, RoochAddress},
     error::{RoochError, RoochResult},
@@ -28,8 +29,8 @@ pub struct ExportCommand {
 }
 
 #[async_trait]
-impl CommandAction<Option<String>> for ExportCommand {
-    async fn execute(self) -> RoochResult<Option<String>> {
+impl CommandAction<Option<ExportInfoView>> for ExportCommand {
+    async fn execute(self) -> RoochResult<Option<ExportInfoView>> {
         let mut context = self.context_options.build_require_password()?;
         let password = context.get_password();
         let result = if self.address == ParsedAddress::Named("".to_owned()) {
@@ -50,7 +51,11 @@ impl CommandAction<Option<String>> for ExportCommand {
         };
 
         if self.json {
-            Ok(Some(result))
+            if result.starts_with(ROOCH_SECRET_KEY_HRP.as_str()) {
+                Ok(Some(ExportInfoView::new_encoded_private_key(result)))
+            } else {
+                Ok(Some(ExportInfoView::new_mnemonic_phrase(result)))
+            }
         } else {
             if result.starts_with(ROOCH_SECRET_KEY_HRP.as_str()) {
                 println!("Export succeeded with the encoded private key [{}]", result);

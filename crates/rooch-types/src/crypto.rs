@@ -110,8 +110,8 @@ impl RoochKeyPair {
 
     pub fn private(&self) -> &[u8] {
         match self {
-            RoochKeyPair::Ed25519(kp) => kp.as_ref(),
-            RoochKeyPair::Secp256k1(kp) => kp.secret.as_ref(),
+            RoochKeyPair::Ed25519(kp) => kp.as_bytes(),
+            RoochKeyPair::Secp256k1(kp) => kp.as_bytes(),
         }
     }
 
