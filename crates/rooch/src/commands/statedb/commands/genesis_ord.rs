@@ -214,13 +214,14 @@ fn index_utxo_ords(
 
     println!("indexing utxo:ords started at: {}", datetime);
 
-    let mut reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(ord_src_path).unwrap());
+    let mut ord_src_reader =
+        BufReader::with_capacity(8 * 1024 * 1024, File::open(ord_src_path).unwrap());
     let mut is_title_line = true;
 
     let mut ord_count: u64 = 0;
 
     let mut utxo_ords = Vec::with_capacity(80 * 1024 * 1024);
-    for line in reader.by_ref().lines() {
+    for line in ord_src_reader.by_ref().lines() {
         let line = line.unwrap();
         if is_title_line {
             is_title_line = false;
@@ -257,6 +258,7 @@ fn index_utxo_ords(
                 );
             }
         }
+        _ = read_txn.close();
         println!("deep check passed");
     } else {
         let write_txn = utxo_ord_map.clone().begin_write().unwrap();
@@ -317,9 +319,7 @@ fn apply_ord_updates_to_state(
 ) {
     let mut inscription_store_state_root = *GENESIS_STATE_ROOT;
     let mut last_inscription_store_state_root = inscription_store_state_root;
-    let mut inscription_ids_state_root = *GENESIS_STATE_ROOT;
-    let mut last_inscription_ids_state_root = inscription_ids_state_root;
-    let mut ord_count = 0u32;
+    let mut inscritpion_store_filed_count = 0u32;
     let mut cursed_inscription_count = 0u32;
     let mut blessed_inscription_count = 0u32;
     let moveos_store = moveos_store_arc.as_ref();
@@ -335,26 +335,19 @@ fn apply_ord_updates_to_state(
             batch.ord_updates,
         )
         .unwrap();
-        let mut inscription_ids_tree_change_set = apply_fields(
-            moveos_store,
-            inscription_ids_state_root,
-            batch.inscription_ids_updates,
-        )
-        .unwrap();
         nodes.append(&mut ord_tree_change_set.nodes);
-        nodes.append(&mut inscription_ids_tree_change_set.nodes);
 
         inscription_store_state_root = ord_tree_change_set.state_root;
-        inscription_ids_state_root = inscription_ids_tree_change_set.state_root;
-        ord_count += cnt as u32;
         cursed_inscription_count += batch.cursed_inscription_count;
         blessed_inscription_count += batch.blessed_inscription_count;
 
         apply_nodes(moveos_store, nodes).expect("failed to apply ord nodes");
 
+        inscritpion_store_filed_count += cnt as u32;
+
         println!(
             "{} ord applied ({} cursed, {} blessed). this batch: value size: {}, cost: {:?}",
-            ord_count,
+            inscritpion_store_filed_count / 2, // both ord and ord_id as field
             cursed_inscription_count,
             blessed_inscription_count,
             humanize::human_readable_bytes(batch.ord_value_bytes),
@@ -362,15 +355,12 @@ fn apply_ord_updates_to_state(
         );
 
         log::debug!(
-            "last inscription_store_state_root: {:?}, new inscription_store_state_root: {:?}, last inscription_ids_state_root: {:?}, new inscription_ids_state_root: {:?}",
+            "last inscription_store_state_root: {:?}, new inscription_store_state_root: {:?}",
             last_inscription_store_state_root,
             inscription_store_state_root,
-            last_inscription_ids_state_root,
-            inscription_ids_state_root,
         );
 
         last_inscription_store_state_root = inscription_store_state_root;
-        last_inscription_ids_state_root = inscription_ids_state_root;
     }
 
     drop(rx);
@@ -378,8 +368,7 @@ fn apply_ord_updates_to_state(
     update_startup_ord(
         startup_update_set,
         inscription_store_state_root,
-        inscription_ids_state_root,
-        ord_count,
+        inscritpion_store_filed_count,
         cursed_inscription_count,
         blessed_inscription_count,
     );
@@ -387,48 +376,18 @@ fn apply_ord_updates_to_state(
 
 fn update_startup_ord(
     mut startup_update_set: UpdateSet<FieldKey, ObjectState>,
-    ord_store_state_root: H256,
-    inscription_ids_state_root: H256,
-    ord_count: u32,
+    inscription_store_state_root: H256,
+    inscritpion_store_filed_count: u32,
     cursed_inscription_count: u32,
     blessed_inscription_count: u32,
 ) {
-    let mut inscriptions_update_set = UpdateSet::new();
-
-    let inscription_ids_content_table = ObjectEntity::new_table_object(
-        ObjectID::random(),
-        inscription_ids_state_root,
-        (cursed_inscription_count + blessed_inscription_count) as u64,
-    );
-    inscriptions_update_set.put(
-        inscription_ids_content_table.clone().id.field_key(),
-        inscription_ids_content_table.clone().into_state(),
-    );
-
-    let inscription_ids_table_vec_obj_id = ObjectID::random();
-    let inscription_ids_table_vec = ObjectEntity::new(
-        inscription_ids_table_vec_obj_id.clone(),
-        SYSTEM_OWNER_ADDRESS,
-        SHARED_OBJECT_FLAG_MASK,
-        None,
-        0,
-        0,
-        0,
-        inscription_ids_content_table.id,
-    );
-    startup_update_set.put(
-        inscription_ids_table_vec.id.field_key(),
-        inscription_ids_table_vec.into_state(),
-    );
-
     let mut genesis_inscription_store_object = create_genesis_inscription_store_object(
-        inscription_ids_table_vec_obj_id,
         cursed_inscription_count,
         blessed_inscription_count,
-        ord_count,
+        inscritpion_store_filed_count / 2,
     );
-    genesis_inscription_store_object.size += ord_count as u64;
-    genesis_inscription_store_object.state_root = Some(ord_store_state_root);
+    genesis_inscription_store_object.size += inscritpion_store_filed_count as u64;
+    genesis_inscription_store_object.state_root = Some(inscription_store_state_root);
     let parent_id = InscriptionStore::object_id();
     startup_update_set.put(
         parent_id.field_key(),
@@ -438,7 +397,6 @@ fn update_startup_ord(
 
 struct BatchUpdatesOrd {
     ord_updates: UpdateSet<FieldKey, ObjectState>,
-    inscription_ids_updates: UpdateSet<FieldKey, ObjectState>,
     cursed_inscription_count: u32,
     blessed_inscription_count: u32,
 
@@ -447,22 +405,21 @@ struct BatchUpdatesOrd {
 
 fn produce_ord_updates(tx: SyncSender<BatchUpdatesOrd>, input: PathBuf, batch_size: usize) {
     let file_cache_mgr = FileCacheManager::new(input.clone()).unwrap();
-    let mut reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
+    let mut src_reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
     let mut is_title_line = true;
-    let mut index: u64 = 0;
+    let mut sequence_number: u32 = 0;
 
     let mut cache_drop_offset: u64 = 0;
     loop {
         let mut bytes_read = 0;
         let mut updates = BatchUpdatesOrd {
             ord_updates: UpdateSet::new(),
-            inscription_ids_updates: UpdateSet::new(),
             cursed_inscription_count: 0,
             blessed_inscription_count: 0,
             ord_value_bytes: 0,
         };
 
-        for line in reader.by_ref().lines().take(batch_size) {
+        for line in src_reader.by_ref().lines().take(batch_size) {
             let line = line.unwrap();
             bytes_read += line.len() as u64 + 1; // Add line.len() + 1, assuming that the line terminator is '\n'
 
@@ -483,9 +440,9 @@ fn produce_ord_updates(tx: SyncSender<BatchUpdatesOrd>, input: PathBuf, batch_si
             let (key, state, inscription_id) = gen_ord_update(source).unwrap();
             updates.ord_value_bytes += state.value.len() as u64;
             updates.ord_updates.put(key, state);
-            let (key2, state2) = gen_inscription_ids_update(index, inscription_id);
-            updates.inscription_ids_updates.put(key2, state2);
-            index += 1;
+            let (key2, state2) = gen_inscription_ids_update(sequence_number, inscription_id);
+            updates.ord_updates.put(key2, state2);
+            sequence_number += 1;
         }
         let _ = file_cache_mgr.drop_cache_range(cache_drop_offset, bytes_read);
         cache_drop_offset += bytes_read;
@@ -500,13 +457,11 @@ fn produce_ord_updates(tx: SyncSender<BatchUpdatesOrd>, input: PathBuf, batch_si
 }
 
 fn gen_inscription_ids_update(
-    index: u64,
+    sequence_number: u32,
     inscription_id: InscriptionID,
 ) -> (FieldKey, ObjectState) {
-    //let key = bcs::to_bytes(&index).expect("bcs to_bytes u64 must success.");
-    //TODO we need to get the TableVec object id from args
-    let parent_id = ObjectID::random();
-    let field = ObjectEntity::new_dynamic_field(parent_id, index, inscription_id);
+    let parent_id = InscriptionStore::object_id();
+    let field = ObjectEntity::new_dynamic_field(parent_id, sequence_number, inscription_id);
     let state = field.into_state();
     let key = state.id().field_key();
     (key, state)
@@ -595,13 +550,11 @@ fn derive_rooch_inscription_id(id: InscriptionId) -> InscriptionID {
 }
 
 fn create_genesis_inscription_store_object(
-    inscriptions_object_id: ObjectID,
     cursed_inscription_count: u32,
     blessed_inscription_count: u32,
     next_sequence_number: u32, // ord count
 ) -> ObjectEntity<InscriptionStore> {
     let inscription_store = InscriptionStore {
-        inscriptions: inscriptions_object_id,
         cursed_inscription_count,
         blessed_inscription_count,
         next_sequence_number,

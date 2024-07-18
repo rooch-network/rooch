@@ -192,8 +192,6 @@ impl MoveStructState for InscriptionRecord {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InscriptionStore {
-    /// The inscriptions ids table_vec object id
-    pub inscriptions: ObjectID,
     /// cursed inscription number generator
     pub cursed_inscription_count: u32,
     /// blessed inscription number generator
@@ -217,7 +215,6 @@ impl MoveStructType for InscriptionStore {
 impl MoveStructState for InscriptionStore {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
-            ObjectID::type_layout(),
             u32::type_layout(),
             u32::type_layout(),
             u32::type_layout(),
