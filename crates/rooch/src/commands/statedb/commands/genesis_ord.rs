@@ -243,6 +243,10 @@ fn index_utxo_ords(
         ord_count += 1;
     }
 
+    // too big file load in cache
+    let file_cache_manager = FileCacheManager::new(ord_src_path.clone()).unwrap();
+    let _ = file_cache_manager.drop_cache_range(0, 1024 * 1024 * 1024 * 1024);
+
     let utxo_count = sort_merge_utxo_ords(&mut utxo_ords) as u64;
 
     if deep_check && utxo_ord_map_existed {
