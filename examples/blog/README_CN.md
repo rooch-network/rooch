@@ -16,7 +16,7 @@
 
 * 安装 [Docker](https://docs.docker.com/engine/install/)。
 
-* 安装 curl 以及 jp 命令（jp - commandline JSON processor）。我们在测试合约的时候可以使用 jp 来处理 JSON RPC 返回的 JSON 结果。
+* 安装 curl 以及 jq 命令（jq - commandline JSON processor）。我们在测试合约的时候可以使用 jq 来处理 JSON RPC 返回的 JSON 结果。
 
 * （可选）安装 MySQL 数据库。可用于部署和测试链下服务。
 
@@ -269,9 +269,9 @@ curl --location --request POST 'http://localhost:6767' \
 
 > **提示**
 >
-> 在使用 `jp` 命令（jq - commandline JSON processor）之前，你可能需要在本机上先安装它。
+> 在使用 `jq` 命令（jq - commandline JSON processor）之前，你可能需要在本机上先安装它。
 
-添加 `jp` 处理后的命令像下面这样：
+添加 `jq` 处理后的命令像下面这样：
 
 ```shell
 curl --location --request POST 'http://localhost:6767' \
@@ -450,7 +450,7 @@ rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::delete --sender-
 
 ## 使用链下服务
 
-通过查询链下服务的 RESTful API，你可以更容易地查询到文章和评论的具体信息，而不需要使用上面介绍的 curl 和 jp 命令。
+通过查询链下服务的 RESTful API，你可以更容易地查询到文章和评论的具体信息，而不需要使用上面介绍的 curl 和 jq 命令。
 
 > **提示**
 >
