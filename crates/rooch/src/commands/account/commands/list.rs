@@ -69,9 +69,11 @@ impl CommandAction<Option<AccountsView>> for ListCommand {
         let password = if context.keystore.get_if_password_is_empty() {
             None
         } else {
-            Some(
+            let password = Some(
                 prompt_password("Enter the password to create a new key pair:").unwrap_or_default(),
-            )
+            );
+            println!();
+            password
         };
 
         let accounts: Vec<LocalAccount> = context.keystore.get_accounts(password)?;
