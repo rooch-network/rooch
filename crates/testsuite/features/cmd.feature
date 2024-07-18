@@ -37,9 +37,12 @@ Feature: Rooch CLI integration tests
       Then cmd: "account create"
       Then cmd: "account list --json"
       Then cmd: "account export"
-      Then cmd: "account export -a {{$.account[-1].account0.address}}"
+      Then cmd: "account export -a {{$.account[-1].account0.address}} --json"
       # use bitcoin_address
-      Then cmd: "account nullify -a {{$.account[-1].account0.bitcoin_address}}"
+      Then cmd: "account nullify -a {{$.account[-2].account0.bitcoin_address}}"
+      Then cmd: "account import -k {{$.account[-1].encoded_private_key}}"
+      # use rooch address
+      Then cmd: "account nullify -a {{$.account[-2].account0.address}}"
 
       Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::GasCoin"]' --json"
       Then assert: "'{{$.rpc[-1].coin_type}}' == '0x3::gas_coin::GasCoin'"

@@ -3,7 +3,7 @@
 
 use super::types::{LocalAccount, LocalSessionKey};
 use crate::keystore::account_keystore::AccountKeystore;
-use anyhow::ensure;
+use anyhow::{ensure, Ok};
 use rooch_types::framework::session_key::SessionKey;
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
 use rooch_types::{
@@ -150,6 +150,20 @@ impl AccountKeystore for BaseKeyStore {
 
     fn nullify(&mut self, address: &RoochAddress) -> Result<(), anyhow::Error> {
         self.keys.remove(address);
+        let mnemonic_data = match &self.mnemonic {
+            Some(mnemonic) => mnemonic,
+            // For None, this could be indicating that there's no internal account address in the mnemonic addresses
+            None => return Ok(()),
+        };
+        match mnemonic_data
+            .addresses
+            .iter()
+            .position(|&target_address| target_address == *address)
+        {
+            Some(index) => self.mnemonic.as_mut().unwrap().addresses.remove(index),
+            // For None, this could be either non-existing address in keystore or the external account address
+            None => return Ok(()),
+        };
         Ok(())
     }
 
