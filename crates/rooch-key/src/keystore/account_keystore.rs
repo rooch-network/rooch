@@ -86,7 +86,6 @@ pub trait AccountKeystore {
         password: Option<String>,
     ) -> Result<(), anyhow::Error> {
         let private_key_encryption = EncryptionData::encrypt_with_type(&kp, password)?;
-        // TODO: whether to add address to mnemonic data? It's either associated with the same mnemonic or not. There needs a check if the imported account is from the same mnemonic phrase.
         self.add_address_encryption_data_to_keys(address, private_key_encryption)?;
         Ok(())
     }

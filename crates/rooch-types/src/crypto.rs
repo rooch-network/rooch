@@ -110,8 +110,8 @@ impl RoochKeyPair {
 
     pub fn private(&self) -> &[u8] {
         match self {
-            RoochKeyPair::Ed25519(kp) => kp.as_bytes(),
-            RoochKeyPair::Secp256k1(kp) => kp.secret.as_bytes(),
+            RoochKeyPair::Ed25519(kp) => kp.as_ref(),
+            RoochKeyPair::Secp256k1(kp) => kp.secret.as_ref(),
         }
     }
 
@@ -129,10 +129,12 @@ impl RoochKeyPair {
 
     // Export Private Key method exports a private key in bech32 format
     pub fn export_private_key(&self) -> Result<String, EncodeError> {
+        println!("{:?}", self.public().flag() as usize);
         // get 33 bytes flag and secret key
-        let mut priv_key_bytes = Vec::with_capacity(self.private().len() + 1);
+        let mut priv_key_bytes =
+            Vec::with_capacity(self.public().flag() as usize + self.private().len());
         // supports secp256k1 signature scheme
-        priv_key_bytes.push(SignatureScheme::Secp256k1.flag());
+        priv_key_bytes.push(self.public().flag());
         priv_key_bytes.extend_from_slice(self.private());
         // encode hrp and 33 bytes private key using bech32 method
         let bech32_encoded = encode::<Bech32>(*ROOCH_SECRET_KEY_HRP, &priv_key_bytes)?;
