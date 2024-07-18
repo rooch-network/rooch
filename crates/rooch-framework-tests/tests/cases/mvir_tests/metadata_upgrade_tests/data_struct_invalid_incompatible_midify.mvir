@@ -1,0 +1,22 @@
+//# publish
+module 0x11.TestModule1 {
+    struct S0 has copy,drop {v: u64}
+
+    metadata {
+        data_struct {
+            0x11::TestModule1::S0 -> true;
+        }
+    }
+}
+
+//# publish
+module 0x11.TestModule1 {
+    struct S0 has copy,drop {v: u64}
+
+    metadata {
+        data_struct {
+            // error code 13002: INVALID_DATA_STRUCT_INCOMPATIBLE_MODIFY
+            0x11::TestModule1::S0 -> false;
+        }
+    }
+}

@@ -2031,3 +2031,211 @@ impl TypeDepthFormula {
         Ok(TypeDepthFormula::normalize(formulas))
     }
 }
+
+/// Check the metadata compatibility between the new and old modules.
+pub fn check_metadata_compatibility(
+    old_module: &CompiledModule,
+    new_module: &CompiledModule,
+) -> VMResult<bool> {
+    let old_module_metadata = match get_metadata_from_compiled_module(old_module) {
+        None => {
+            return generate_vm_error(
+                ErrorCode::MALFORMED_METADATA,
+                "malformed metadata format".to_string(),
+                None,
+                old_module,
+            );
+        }
+        Some(metadata) => metadata,
+    };
+
+    let new_module_metadata = match get_metadata_from_compiled_module(new_module) {
+        None => {
+            return generate_vm_error(
+                ErrorCode::MALFORMED_METADATA,
+                "malformed metadata format".to_string(),
+                None,
+                new_module,
+            );
+        }
+        Some(metadata) => metadata,
+    };
+
+    for (struct_name, is_data_struct) in old_module_metadata.data_struct_map.iter() {
+        match new_module_metadata.data_struct_map.get(struct_name) {
+            None => {
+                return generate_vm_error(
+                    ErrorCode::INVALID_DATA_STRUCT_INCOMPATIBLE_REMOVE,
+                    "data struct in module is not compatibility with the old one.".to_string(),
+                    None,
+                    new_module,
+                )
+            }
+            Some(v) => {
+                if *v != *is_data_struct {
+                    return generate_vm_error(
+                        ErrorCode::INVALID_DATA_STRUCT_INCOMPATIBLE_MODIFY,
+                        "data struct in module is not compatibility with the old one".to_string(),
+                        None,
+                        new_module,
+                    );
+                }
+            }
+        }
+    }
+
+    for (struct_name, data_struct_type_parameters_indicies) in
+        old_module_metadata.data_struct_func_map.iter()
+    {
+        match new_module_metadata.data_struct_func_map.get(struct_name) {
+            None => {
+                return generate_vm_error(
+                    ErrorCode::INVALID_DATA_STRUCT_FUNC_INCOMPATIBLE_REMOVE,
+                    "data struct func in module is not compatibility with the old one.".to_string(),
+                    None,
+                    new_module,
+                )
+            }
+            Some(v) => {
+                if *v != *data_struct_type_parameters_indicies {
+                    return generate_vm_error(
+                        ErrorCode::INVALID_DATA_STRUCT_FUNC_INCOMPATIBLE_MODIFY,
+                        "data struct in module is not compatibility with the old one".to_string(),
+                        None,
+                        new_module,
+                    );
+                }
+            }
+        }
+    }
+
+    for (struct_name, private_generics_type_parameters_indicies) in
+        old_module_metadata.private_generics_indices.iter()
+    {
+        match new_module_metadata
+            .private_generics_indices
+            .get(struct_name)
+        {
+            None => {
+                return generate_vm_error(
+                    ErrorCode::INVALID_PRIVATE_GENERICS_INCOMPATIBLE_REMOVE,
+                    "private generics in module is not compatibility with the old one.".to_string(),
+                    None,
+                    new_module,
+                )
+            }
+            Some(v) => {
+                if *v != *private_generics_type_parameters_indicies {
+                    return generate_vm_error(
+                        ErrorCode::INVALID_PRIVATE_GENERICS_INCOMPATIBLE_MODIFY,
+                        "private generics in module is not compatibility with the old one"
+                            .to_string(),
+                        None,
+                        new_module,
+                    );
+                }
+            }
+        }
+    }
+
+    let mut data_struct_difference = BTreeMap::new();
+    let mut data_struct_func_difference = BTreeMap::new();
+    let mut private_generics_difference = BTreeMap::new();
+
+    for (struct_name, is_data_struct) in new_module_metadata.data_struct_map.iter() {
+        if old_module_metadata.data_struct_map.get(struct_name) != Some(is_data_struct) {
+            data_struct_difference.insert(struct_name.clone(), *is_data_struct);
+        }
+    }
+
+    for (func_name, data_struct_type_parameters_indicies) in
+        new_module_metadata.data_struct_func_map.iter()
+    {
+        if old_module_metadata.data_struct_func_map.get(func_name)
+            != Some(data_struct_type_parameters_indicies)
+        {
+            data_struct_func_difference.insert(
+                func_name.clone(),
+                data_struct_type_parameters_indicies.clone(),
+            );
+        }
+    }
+
+    for (struct_name, private_generics_type_parameters_indicies) in
+        new_module_metadata.private_generics_indices.iter()
+    {
+        if old_module_metadata
+            .private_generics_indices
+            .get(struct_name)
+            != Some(private_generics_type_parameters_indicies)
+        {
+            private_generics_difference.insert(
+                struct_name.clone(),
+                private_generics_type_parameters_indicies.clone(),
+            );
+        }
+    }
+
+    for (struct_name, _) in data_struct_difference {
+        if struct_in_module(old_module, struct_name.as_str()) {
+            return generate_vm_error(
+                ErrorCode::INVALID_DATA_STRUCT_INCOMPATIBLE_WITH_EXISTS,
+                "cannot add data_struct to the exist struct".to_string(),
+                None,
+                new_module,
+            );
+        }
+    }
+
+    for (func_name, _) in data_struct_func_difference {
+        if func_in_module(old_module, func_name.as_str()) {
+            return generate_vm_error(
+                ErrorCode::INVALID_DATA_STRUCT_FUNC_INCOMPATIBLE_WITH_EXISTS,
+                "cannot add data_struct_func to the exist function".to_string(),
+                None,
+                new_module,
+            );
+        }
+    }
+
+    for (func_name, _) in private_generics_difference {
+        if func_in_module(old_module, func_name.as_str()) {
+            return generate_vm_error(
+                ErrorCode::INVALID_PRIVATE_GENERICS_INCOMPATIBLE_WITH_EXISTS,
+                "cannot add private_generics to the exist function".to_string(),
+                None,
+                new_module,
+            );
+        }
+    }
+
+    Ok(true)
+}
+
+fn struct_in_module(module: &CompiledModule, other_struct_name: &str) -> bool {
+    let module_name_address = module.self_id().short_str_lossless();
+    for struct_def in module.struct_defs.iter() {
+        let struct_handle = module.struct_handle_at(struct_def.struct_handle);
+        let struct_name = module.identifier_at(struct_handle.name).to_string();
+        let struct_full_name = format!("{}::{}", module_name_address.clone(), struct_name);
+        if other_struct_name == struct_full_name {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn func_in_module(module: &CompiledModule, other_func_name: &str) -> bool {
+    let module_name_address = module.self_id().short_str_lossless();
+    for func_def in module.function_defs.iter() {
+        let func_handle = module.function_handle_at(func_def.function);
+        let func_name = module.identifier_at(func_handle.name).to_string();
+        let full_func_name = format!("{}::{}", module_name_address.clone(), func_name);
+        if other_func_name == full_func_name {
+            return true;
+        }
+    }
+
+    false
+}

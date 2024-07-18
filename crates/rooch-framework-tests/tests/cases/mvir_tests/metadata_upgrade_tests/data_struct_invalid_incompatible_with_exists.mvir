@@ -1,0 +1,16 @@
+//# publish
+module 0x11.TestModule1 {
+    struct S0 has copy,drop {v: u64}
+}
+
+//# publish
+module 0x11.TestModule1 {
+    struct S0 has copy,drop {v: u64}
+
+    metadata {
+        data_struct {
+            // error code 13007: INVALID_DATA_STRUCT_INCOMPATIBLE_WITH_EXISTS
+            0x11::TestModule1::S0 -> true;
+        }
+    }
+}
