@@ -12,7 +12,6 @@ use std::thread;
 use std::time::SystemTime;
 
 use anyhow::Result;
-use bitcoin::hashes::Hash;
 use bitcoin::OutPoint;
 use bitcoin_move::natives::ord::inscription_id::InscriptionId;
 use chrono::{DateTime, Local};
@@ -437,7 +436,7 @@ fn produce_ord_updates(tx: SyncSender<BatchUpdatesOrd>, input: PathBuf, batch_si
             } else {
                 updates.blessed_inscription_count += 1;
             }
-            let (key, state, inscription_id) = gen_ord_update(source).unwrap();
+            let (key, state, inscription_id) = gen_inscription_update(source).unwrap();
             updates.ord_value_bytes += state.value.len() as u64;
             updates.ord_updates.put(key, state);
             let (key2, state2) = gen_inscription_ids_update(sequence_number, inscription_id);
@@ -507,7 +506,9 @@ impl InscriptionSource {
     }
 }
 
-fn gen_ord_update(src: InscriptionSource) -> Result<(FieldKey, ObjectState, InscriptionID)> {
+fn gen_inscription_update(
+    src: InscriptionSource,
+) -> Result<(FieldKey, ObjectState, InscriptionID)> {
     let inscription = src.clone().to_inscription();
     let address = src.clone().derive_account_address()?;
 
@@ -515,20 +516,11 @@ fn gen_ord_update(src: InscriptionSource) -> Result<(FieldKey, ObjectState, Insc
     let obj_id = derive_inscription_id(&inscription_id);
     let ord_obj = ObjectEntity::new(obj_id.clone(), address, 0u8, None, 0, 0, 0, inscription);
 
-    let satpoint_output_str = src.satpoint_outpoint.clone();
-    let satpoint_output = OutPoint::from_str(satpoint_output_str.as_str()).unwrap();
-
-    let _ = is_unbound_outpoint(satpoint_output); // TODO may count it later
-
     Ok((ord_obj.id.field_key(), ord_obj.into_state(), inscription_id))
 }
 
 fn convert_option_string_to_move_type(opt: Option<String>) -> MoveOption<MoveString> {
     opt.map(MoveString::from).into()
-}
-
-fn is_unbound_outpoint(outpoint: OutPoint) -> bool {
-    outpoint.txid == Hash::all_zeros() && outpoint.vout == 0
 }
 
 fn derive_obj_ids_by_inscription_ids(ids: Option<Vec<InscriptionId>>) -> Vec<ObjectID> {
