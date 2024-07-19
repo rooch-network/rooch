@@ -438,6 +438,9 @@ pub fn produce_utxo_updates(
             utxo_updates: UpdateSet::new(),
             rooch_to_bitcoin_mapping_updates: UpdateSet::new(),
         };
+
+        let loop_start_time = SystemTime::now();
+
         for line in csv_reader.by_ref().lines().take(batch_size) {
             let line = line.unwrap();
             bytes_read += line.len() as u64 + 1; // Add line.len() + 1, assuming that the line terminator is '\n'
@@ -475,6 +478,11 @@ pub fn produce_utxo_updates(
                 }
             }
         }
+        println!(
+            "produce utxo updates batch, count: {}. cost: {:?}",
+            updates.utxo_updates.len(),
+            loop_start_time.elapsed().unwrap()
+        );
         let _ = file_cache_mgr.drop_cache_range(cache_drop_offset, bytes_read);
         cache_drop_offset += bytes_read;
         if updates.utxo_updates.is_empty() {

@@ -425,6 +425,7 @@ fn produce_ord_updates(tx: SyncSender<BatchUpdatesOrd>, input: PathBuf, batch_si
             blessed_inscription_count: 0,
             ord_value_bytes: 0,
         };
+        let loop_start_time = SystemTime::now();
 
         for line in src_reader.by_ref().lines().take(batch_size) {
             let line = line.unwrap();
@@ -451,12 +452,18 @@ fn produce_ord_updates(tx: SyncSender<BatchUpdatesOrd>, input: PathBuf, batch_si
             updates.ord_updates.put(key2, state2);
             sequence_number += 1;
         }
+        println!(
+            "produce inscription updates batch, count: {}. cost: {:?}",
+            updates.blessed_inscription_count + updates.cursed_inscription_count,
+            loop_start_time.elapsed().unwrap()
+        );
         let _ = file_cache_mgr.drop_cache_range(cache_drop_offset, bytes_read);
         cache_drop_offset += bytes_read;
 
         if updates.ord_updates.is_empty() {
             break;
         }
+
         tx.send(updates).expect("failed to send updates");
     }
 
