@@ -37,6 +37,7 @@ use fastcrypto::{
     secp256k1::{Secp256k1PublicKey, Secp256k1Signature, Secp256k1SignatureAsBytes},
 };
 use moveos_types::serde::Readable;
+use nostr::prelude::ToBech32;
 use schemars::JsonSchema;
 use serde::ser::Serializer;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -323,6 +324,18 @@ impl PublicKey {
                 )))
             }
             _ => bail!("Only secp256k1 public key can be converted to bitcoin address"),
+        }
+    }
+
+    pub fn nostr_bech32_public_key(&self) -> Result<String, anyhow::Error> {
+        match self {
+            PublicKey::Secp256k1(pk) => {
+                let xonly_pubkey = nostr::secp256k1::XOnlyPublicKey::from(
+                    nostr::secp256k1::PublicKey::from_slice(&pk.0)?,
+                );
+                Ok(xonly_pubkey.to_bech32()?)
+            }
+            _ => bail!("Only secp256k1 public key can be converted to nostr bech32 public key"),
         }
     }
 }
