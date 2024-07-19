@@ -119,10 +119,11 @@ impl WalletContextOptions {
         if ctx.keystore.get_if_password_is_empty() {
             Ok(ctx)
         } else {
-            let password = self
-                .password
-                .clone()
-                .or_else(|| prompt_password("Enter the keystore password:").ok());
+            let password = self.password.clone().or_else(|| {
+                let password = prompt_password("Enter the keystore password:").ok();
+                println!();
+                password
+            });
             let is_verified = verify_password(password.clone(), ctx.keystore.get_password_hash())?;
             if !is_verified {
                 return Err(RoochError::InvalidPasswordError(
