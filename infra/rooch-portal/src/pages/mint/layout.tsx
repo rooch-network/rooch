@@ -1,9 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-// import { MintTabsLayout } from './list/layout'
+import { MintTabsLayout } from './list/layout'
 import {useTranslation} from 'react-i18next';
-import { ComingSoon } from '@/components/coming-soon'
 
 export const MintLayout = () => {
   const { t } = useTranslation()
@@ -16,8 +15,8 @@ export const MintLayout = () => {
           <p className="text-muted-foreground text-wrap">{t('Mint.subTitle')}</p>
         </span>
       </div>
-      <ComingSoon />
-      {/*<MintTabsLayout />*/}
+      {/*<ComingSoon />*/}
+      <MintTabsLayout />
     </div>
   )
 }

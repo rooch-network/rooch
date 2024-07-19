@@ -1,8 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import React, { useState, useEffect } from 'react'
-import Skeleton, { SkeletonTheme } from 'react-loading-skeleton'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 
 import { Transaction, Args } from '@roochnetwork/rooch-sdk'
 import {
@@ -18,72 +17,130 @@ import { useToast } from '@/components/ui/use-toast'
 import { ToastAction } from '@/components/ui/toast'
 import { TokenInfo } from '@/pages/mint/util/get-token-info'
 import { UtxoCard } from './utxo-card.tsx'
+import CustomPagination from '@/components/custom-pagination.tsx'
+import { CursorType } from 'src/common/interface.ts'
 
 type StakeCardProps = {
   tokenInfo: TokenInfo | undefined,
   tokenAddress: string
 }
 
+type StakeInfo = {
+  stake: boolean,
+  amount: number
+}
+
 export const ActionCard: React.FC<StakeCardProps> = ({ tokenInfo, tokenAddress }) => {
   const { toast } = useToast()
   const { wallet } = useCurrentWallet()
-
   const client = useRoochClient()
-
   const { mutateAsync: signAndExecuteTransaction } = UseSignAndExecuteTransaction()
-  const [award, setAward] = useState(0)
-  const [fetchAwardStatus, setFetchAwardStatus] = useState(false)
+
+  const [loading, setLoading] = useState(false)
+  const [curUTXOStakeInfo, setCurUTXOStakeInfo] = useState<StakeInfo | undefined>(undefined)
   const [selectedUTXO, setSelectUTXO] = useState('')
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 })
+  const mapPageToNextCursor = useRef<{ [page: number]: CursorType }>({})
+
+  const queryOptions = useMemo(
+    () => ({
+      cursor: mapPageToNextCursor.current[paginationModel.page - 1] || undefined,
+      pageSize: paginationModel.pageSize.toString(),
+    }),
+    [paginationModel],
+  )
+  console.log(tokenInfo)
+
+  const { data: utxos, isPending: utxosIsPending } = useRoochClientQuery('queryUTXO', {
+    filter: {
+      owner: wallet!.getBitcoinAddress().toStr(),
+    },
+    cursor: queryOptions.cursor,
+    limit: queryOptions.pageSize,
+  })
+
+  const handlePageChange = (selectedPage: number) => {
+    if (selectedPage < 0) return
+
+    setPaginationModel({
+      page: selectedPage,
+      pageSize: paginationModel.pageSize,
+    })
+  }
 
   const toggleUTXOSelected = (utxoId: string) => {
     if (utxoId !== selectedUTXO) {
       setSelectUTXO(utxoId)
-      setAward(0)
+      setCurUTXOStakeInfo(undefined)
     }
   }
 
   const handleStakeOrClaim = async () => {
+
+    setLoading(true)
     const tx = new Transaction()
     tx.callFunction({
-      target: `${tokenAddress}::hold_farmer::${award > 0 ? 'harvest' : 'stake'}`,
+      target: `${tokenAddress}::hold_farmer::${curUTXOStakeInfo ? 'harvest' : 'stake'}`,
       args: [Args.objectId(selectedUTXO)],
     })
 
-    const result = await signAndExecuteTransaction({
-      transaction: tx,
-    })
-
-    if (result.execution_info.status.type === 'executed') {
-      toast({
-        title: `${award > 0 ? 'Claim' : 'Stake'} Successful ✅`,
-        description: (
-          // eslint-disable-next-line jsx-a11y/anchor-is-valid
-          <a className="text-muted-foreground hover:underline cursor-pointer">
-            See the transaction on explorer
-          </a>
-        ),
-        action: <ToastAction altText="Confirm">Confirm</ToastAction>,
+    try {
+      const result = await signAndExecuteTransaction({
+        transaction: tx,
       })
+
+      if (result.execution_info.status.type === 'executed') {
+        setSelectUTXO('')
+        toast({
+          title: `${curUTXOStakeInfo ? 'Claim' : 'Stake'} Successful ✅`,
+          description: (
+            // eslint-disable-next-line jsx-a11y/anchor-is-valid
+            <a className="text-muted-foreground hover:underline cursor-pointer">
+              See the transaction on explorer
+            </a>
+          ),
+          action: <ToastAction altText="Confirm">Confirm</ToastAction>,
+        })
+      }
+    } finally {
+      setLoading(false)
     }
   }
 
-  const { data: utxos, isPending: utxosIsPending } = useRoochClientQuery('queryUTXO', {
-    filter: {
-      owner: wallet?.getBitcoinAddress().toStr() || '',
-    },
-  })
+  useEffect(() => {
+    if (!utxos) {
+      return
+    }
+
+    if (utxos) {
+      mapPageToNextCursor.current[paginationModel.page] = utxos.next_cursor ?? null
+    }
+  }, [paginationModel, utxos])
 
   useEffect(() => {
 
-    setFetchAwardStatus(true)
+    if (selectedUTXO === '') {
+      return
+    }
+
+    setLoading(true)
     client.executeViewFunction({
-      target: `${tokenAddress}::hold_farmer::query_gov_token_amount`,
+      target: `${tokenAddress}::hold_farmer::check_asset_is_staked`,
       args: [Args.objectId(selectedUTXO)],
     }).then((s) => {
       if (s.vm_status === 'Executed') {
-        setAward(s.return_values![0].decoded_value as number)
+        const result = s.return_values as any[]
+        const stake = result[0].decoded_value as boolean
+        const amount = result[1].decoded_value as number
+
+        if (stake) {
+          setCurUTXOStakeInfo({
+            stake: stake,
+            amount: amount,
+          })
+        }
       }
-    }).finally(() => setFetchAwardStatus(false))
+    }).finally(() => setLoading(false))
 
   }, [client, selectedUTXO, tokenAddress])
 
@@ -118,11 +175,10 @@ export const ActionCard: React.FC<StakeCardProps> = ({ tokenInfo, tokenAddress }
   //   })
   //
   // }, [wallet, tokenAddress, client])
-
   return (
     <div className="mt-6">
       <div className="h-full w-full">
-        <Card className="h-full border-border/40 shadow-inner bg-border/10 dark:bg-border/60">
+        <Card key="info" className="h-full border-border/40 shadow-inner bg-border/10 dark:bg-border/60">
           <CardHeader className="dark:text-zinc-100 flex flex-row items-center justify-between">
             <div>
               <CardTitle>My Bitcoin UTXO</CardTitle>
@@ -132,45 +188,54 @@ export const ActionCard: React.FC<StakeCardProps> = ({ tokenInfo, tokenAddress }
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {utxos && tokenInfo ? utxos.data.map((utxo) =>
-                <UtxoCard utxo={utxo} selected={utxo.id === selectedUTXO} selectedCallback={toggleUTXOSelected}
-                          noData={false} />,
-              ) : <UtxoCard utxo={undefined} selected={false} selectedCallback={toggleUTXOSelected}
+            {utxos && tokenInfo ? <>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {
+                  utxos.data.map((utxo) =>
+                    <UtxoCard key={utxo.tx_order} utxo={utxo} selected={utxo.id === selectedUTXO}
+                              selectedCallback={toggleUTXOSelected}
+                              noData={false} />,
+                  )
+                }
+              </div>
+              <CustomPagination
+                currentPage={paginationModel.page}
+                hasNextPage={utxos.has_next_page}
+                onPageChange={handlePageChange}
+              />
+            </> : <UtxoCard key="loading-utxo" utxo={undefined} selected={false} selectedCallback={toggleUTXOSelected}
                             noData={!utxosIsPending && tokenInfo !== undefined} />}
-            </div>
           </CardContent>
+
         </Card>
         {
           selectedUTXO ? <>
               {
-                award > 0 ? <Card className="border-border/40 shadow-inner bg-border/10 dark:bg-border/60 mt-6">
-                  <CardHeader className="dark:text-zinc-100">
-                    <CardTitle>Claim Overview</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-sm dark:text-primary w-full px-6">
-                    <SkeletonTheme baseColor="#27272A" highlightColor="#444">
-                      <div className="flex flex-col items-start justify-start gap-3">
-                        <div
-                          className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
-                          <div className="w-36">
-                            <span>Amount:</span>
+                curUTXOStakeInfo ?
+                  <Card key="clam info" className="border-border/40 shadow-inner bg-border/10 dark:bg-border/60 mt-6">
+                    <CardHeader className="dark:text-zinc-100">
+                      <CardTitle>Claim Overview</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-sm dark:text-primary w-full px-6">
+                        <div className="flex flex-col items-start justify-start gap-3">
+                          <div
+                            className="flex items-center justify-start gap-6 text-sm text-muted-foreground/75 dark:text-muted-foreground">
+                            <div className="w-36">
+                              <span>Amount:</span>
+                            </div>
+                            <span
+                              className="border border-accent dark:border-none dark:bg-zinc-800 py-0.5 px-2 rounded-lg text-gray-800 dark:text-gray-50 tracking-tight ">
+                {curUTXOStakeInfo.amount}
+              </span>
                           </div>
-                          {!fetchAwardStatus ? <span
-                            className="border border-accent dark:border-none dark:bg-zinc-800 py-0.5 px-2 rounded-lg text-gray-800 dark:text-gray-50 tracking-tight ">
-                {award}
-              </span> : <Skeleton width={150} />}
                         </div>
-                      </div>
-                    </SkeletonTheme>
-                  </CardContent>
-                </Card> : <></>
+                    </CardContent>
+                  </Card> : <></>
               }
-              {fetchAwardStatus ? <></> :
                 <Button className="rounded-lg w-full mt-4 mb-2 md:mt-8"
-                        onClick={handleStakeOrClaim}>{tokenInfo!.endTime > Date.now() / 1000 && award <= 0 ? 'Mint' : 'Claim'}
+                        disabled={(tokenInfo?.finished && !curUTXOStakeInfo) || loading}
+                        onClick={handleStakeOrClaim}>{ loading ? 'Loading' : curUTXOStakeInfo ? 'Claim' : tokenInfo?.finished ? 'Finished' : 'Stake'}
                 </Button>
-              }
             </>
             : <></>
         }
