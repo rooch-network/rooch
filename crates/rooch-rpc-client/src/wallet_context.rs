@@ -144,7 +144,7 @@ impl WalletContext {
             sender,
             sequence_number,
             chain_id,
-            max_gas_amount.unwrap_or(GasScheduleConfig::INITIAL_MAX_GAS_AMOUNT),
+            max_gas_amount.unwrap_or(GasScheduleConfig::CLI_DEFAULT_MAX_GAS_AMOUNT),
             action,
         );
         Ok(tx_data)
