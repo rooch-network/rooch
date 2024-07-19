@@ -322,7 +322,10 @@ fn finish_task(
     let mut update_set = startup_update_set.unwrap_or_default();
     let parent_id = BitcoinUTXOStore::object_id();
     update_set.put(parent_id.field_key(), genesis_utxostore_object.into_state());
-
+    println!(
+        "genesis BitcoinUTXOStore object updated, utxo_store_state_root: {:?}, utxo count: {}",
+        utxo_store_state_root, utxo_count
+    );
     // Update Address Mapping Object
 
     let mut genesis_rooch_to_bitcoin_address_mapping_object =
@@ -338,6 +341,12 @@ fn finish_task(
             .field_key(),
         genesis_rooch_to_bitcoin_address_mapping_object.into_state(),
     );
+
+    println!(
+        "genesis RoochToBitcoinAddressMapping object updated, rooch_to_bitcoin_address_mapping_state_root: {:?}, address_mapping count: {}",
+        rooch_to_bitcoin_address_mapping_state_root, address_mapping_count
+    );
+
     let tree_change_set = apply_fields(moveos_store, root_state_root, update_set).unwrap();
     apply_nodes(moveos_store, tree_change_set.nodes).unwrap();
     root_state_root = tree_change_set.state_root;

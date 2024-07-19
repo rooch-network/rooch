@@ -396,6 +396,10 @@ fn update_startup_ord(
         parent_id.field_key(),
         genesis_inscription_store_object.into_state(),
     );
+    println!(
+        "genesis InscriptionStore object updated, inscription_store_state_root: {:?}, cursed: {}, blessed: {}, total: {}",
+        inscription_store_state_root, cursed_inscription_count, blessed_inscription_count, inscritpion_store_filed_count / 2
+    );
 }
 
 struct BatchUpdatesOrd {
