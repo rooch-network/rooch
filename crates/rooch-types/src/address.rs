@@ -33,9 +33,9 @@ use moveos_types::{
     h256::H256,
     state::{MoveStructState, MoveStructType},
 };
-use nostr::bech32::FromBase32;
+use nostr::bech32::{FromBase32, Variant};
 use nostr::prelude::{ToBech32, PREFIX_BECH32_PUBLIC_KEY};
-use nostr::secp256k1::XOnlyPublicKey;
+use nostr::secp256k1::{constants, XOnlyPublicKey};
 use nostr::Keys;
 use once_cell::sync::Lazy;
 #[cfg(any(test, feature = "fuzzing"))]
@@ -229,14 +229,6 @@ impl RoochAddress {
         moveos_types::addresses::is_vm_or_system_reserved_address((*self).into())
     }
 
-    pub fn from_bech32<T: Bech32Decode>(bech32: &str) -> Result<Self> {
-        let (hrp, data) = T::decode(bech32)?;
-        anyhow::ensure!(hrp == T::hrp(), "invalid hrp");
-        anyhow::ensure!(data.len() == T::LENGTH, "invalid address length");
-        let hash = H256::from_slice(data.as_slice());
-        Ok(Self(hash))
-    }
-
     pub fn to_bech32(&self) -> String {
         let data = self.0.as_bytes();
         bech32::encode::<Bech32m>(*ROOCH_HRP, data).expect("bech32 encode should success")
@@ -286,23 +278,17 @@ impl RoochAddress {
     }
 }
 
-pub trait Bech32Decode {
-    const LENGTH: usize;
-
-    fn hrp() -> &'static str;
-    fn decode(bech32: &str) -> Result<(String, Vec<u8>)>;
+pub trait FromBech32 {
+    fn from_bech32(bech32: &str) -> Result<RoochAddress>;
 }
 
-impl Bech32Decode for RoochAddress {
-    const LENGTH: usize = 32;
-
-    fn hrp() -> &'static str {
-        ROOCH_HRP.as_str()
-    }
-
-    fn decode(bech32: &str) -> Result<(String, Vec<u8>)> {
+impl FromBech32 for RoochAddress {
+    fn from_bech32(bech32: &str) -> Result<RoochAddress> {
         let (hrp, data) = bech32::decode(bech32)?;
-        Ok((hrp.to_string(), data))
+        anyhow::ensure!(hrp == *ROOCH_HRP, "invalid rooch hrp");
+        anyhow::ensure!(data.len() == Self::LENGTH, "invalid rooch address length");
+        let hash = H256::from_slice(data.as_slice());
+        Ok(Self(hash))
     }
 }
 
@@ -407,7 +393,7 @@ impl FromStr for RoochAddress {
         if s.starts_with("0x") {
             RoochAddress::from_hex_literal(s)
         } else {
-            RoochAddress::from_bech32::<RoochAddress>(s)
+            RoochAddress::from_bech32(s)
         }
     }
 }
@@ -879,17 +865,18 @@ impl fmt::Display for NostrPublicKey {
     }
 }
 
-impl Bech32Decode for NostrPublicKey {
-    const LENGTH: usize = 32;
-
-    fn hrp() -> &'static str {
-        PREFIX_BECH32_PUBLIC_KEY
-    }
-
-    fn decode(bech32: &str) -> Result<(String, Vec<u8>)> {
-        let (hrp, data_u5, _variation) = nostr::bech32::decode(bech32)?;
+impl FromBech32 for NostrPublicKey {
+    fn from_bech32(bech32: &str) -> Result<RoochAddress> {
+        let (hrp, data_u5, variant) = nostr::bech32::decode(bech32)?;
         let data = Vec::from_base32(&data_u5)?;
-        Ok((hrp, data))
+        anyhow::ensure!(hrp == PREFIX_BECH32_PUBLIC_KEY, "invalid nostr hrp");
+        anyhow::ensure!(variant == Variant::Bech32, "invalid nostr variant");
+        anyhow::ensure!(
+            data.len() == constants::SCHNORR_PUBLIC_KEY_SIZE,
+            "invalid nostr public key length"
+        );
+        let hash = H256::from_slice(data.as_slice());
+        Ok(RoochAddress(hash))
     }
 }
 
@@ -924,13 +911,9 @@ impl ParsedAddress {
         if s.starts_with("0x") {
             Ok(Self::Numerical(RoochAddress::from_hex_literal(s)?))
         } else if s.starts_with(ROOCH_HRP.as_str()) && s.len() == RoochAddress::LENGTH_BECH32 {
-            Ok(Self::Numerical(RoochAddress::from_bech32::<RoochAddress>(
-                s,
-            )?))
+            Ok(Self::Numerical(RoochAddress::from_bech32(s)?))
         } else if s.starts_with(PREFIX_BECH32_PUBLIC_KEY) {
-            Ok(Self::Numerical(
-                RoochAddress::from_bech32::<NostrPublicKey>(s)?,
-            ))
+            Ok(Self::Numerical(NostrPublicKey::from_bech32(s)?))
         } else {
             match BitcoinAddress::from_str(s) {
                 Ok(a) => Ok(Self::Numerical(a.to_rooch_address())),
@@ -954,7 +937,7 @@ mod test {
         let bech32 = address.to_bech32();
         println!("bech32: {}, hex: {}", bech32, hex);
         assert_eq!(bech32.len(), RoochAddress::LENGTH_BECH32);
-        let address2 = RoochAddress::from_bech32::<RoochAddress>(&bech32).unwrap();
+        let address2 = RoochAddress::from_bech32(&bech32).unwrap();
         assert_eq!(address, address2);
         let address3 = RoochAddress::from_hex_literal(&hex).unwrap();
         assert_eq!(address, address3);
@@ -1066,8 +1049,7 @@ mod test {
 
         let rooch_bech32_str = rooch_address.to_bech32();
         assert_eq!(rooch_bech32_str.len(), RoochAddress::LENGTH_BECH32);
-        let rooch_address_from_bech32 =
-            RoochAddress::from_bech32::<RoochAddress>(&rooch_bech32_str).unwrap();
+        let rooch_address_from_bech32 = RoochAddress::from_bech32(&rooch_bech32_str).unwrap();
         assert_eq!(rooch_address, rooch_address_from_bech32);
 
         let json_str = serde_json::to_string(&rooch_address).unwrap();
