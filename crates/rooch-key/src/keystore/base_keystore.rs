@@ -74,10 +74,12 @@ impl AccountKeystore for BaseKeyStore {
             let keypair: RoochKeyPair = encryption.decrypt_with_type(password.clone())?;
             let public_key = keypair.public();
             let bitcoin_address = public_key.bitcoin_address()?;
+            let nostr_bech32_public_key = public_key.nostr_bech32_public_key()?;
             let has_session_key = self.session_keys.contains_key(address);
             let local_account = LocalAccount {
                 address: *address,
                 bitcoin_address,
+                nostr_bech32_public_key,
                 public_key,
                 has_session_key,
             };
@@ -86,6 +88,7 @@ impl AccountKeystore for BaseKeyStore {
         Ok(accounts.into_values().collect())
     }
 
+    // TODO: deal with the Rooch and Nostr's get_key_pair() function. Consider Nostr scenario
     fn get_key_pair(
         &self,
         address: &RoochAddress,
