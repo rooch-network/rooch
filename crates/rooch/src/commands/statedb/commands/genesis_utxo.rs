@@ -187,7 +187,7 @@ impl AddressMappingData {
 }
 
 // csv format: count,txid,vout,height,coinbase,amount,script,type,address
-fn gen_utxo_data_from_csv_line(line: &str) -> Result<UTXOData> {
+fn gen_utxo_data_from_csv_line(line: &str) -> Result<(UTXOData, u64)> {
     let str_list: Vec<&str> = line.trim().split(',').collect();
     if str_list.len() != 9 {
         return Err(Error::from(RoochError::from(Error::msg(format!(
@@ -199,6 +199,9 @@ fn gen_utxo_data_from_csv_line(line: &str) -> Result<UTXOData> {
     let vout = str_list[2]
         .parse::<u32>()
         .map_err(|e| RoochError::from(Error::msg(format!("Invalid vout format: {}", e))))?;
+    let height = str_list[3]
+        .parse::<u64>()
+        .map_err(|e| RoochError::from(Error::msg(format!("Invalid height format: {}", e))))?;
     let amount = str_list[5]
         .parse::<u64>()
         .map_err(|e| RoochError::from(Error::msg(format!("Invalid amount format: {}", e))))?;
@@ -212,7 +215,7 @@ fn gen_utxo_data_from_csv_line(line: &str) -> Result<UTXOData> {
             utxo_data
         )))));
     }
-    Ok(utxo_data)
+    Ok((utxo_data, height))
 }
 
 pub fn apply_utxo_updates_to_state(
@@ -427,6 +430,7 @@ pub fn produce_utxo_updates(
             Some(Arc::new(read_txn.open_table(UTXO_ORD_MAP_TABLE).unwrap()))
         }
     };
+    let mut max_height = 0;
     loop {
         let mut bytes_read = 0;
 
@@ -445,7 +449,7 @@ pub fn produce_utxo_updates(
                 }
             }
 
-            let utxo_data = gen_utxo_data_from_csv_line(&line).unwrap();
+            let (utxo_data, height) = gen_utxo_data_from_csv_line(&line).unwrap();
             let (key, state, address_mapping_data) =
                 match gen_utxo_update(utxo_data.clone(), utxo_ord_map.clone()) {
                     Ok((key, state, address_mapping_data)) => (key, state, address_mapping_data),
@@ -457,6 +461,9 @@ pub fn produce_utxo_updates(
                     }
                 };
             updates.utxo_updates.put(key, state);
+            if height > max_height {
+                max_height = height;
+            }
 
             if let Some(address_mapping_data) = address_mapping_data {
                 let address_mapping_update =
@@ -477,6 +484,7 @@ pub fn produce_utxo_updates(
     }
 
     drop(tx);
+    println!("utxo max_height: {}", max_height);
 }
 
 fn gen_utxo_update(
