@@ -99,7 +99,7 @@ pub struct TransactionOptions {
     pub(crate) session_key: Option<AuthenticationKey>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Parser)]
 pub struct WalletContextOptions {
     /// The key store password
     #[clap(long)]
