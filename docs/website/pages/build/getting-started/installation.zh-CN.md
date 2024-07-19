@@ -78,9 +78,54 @@ mkdir ~/.local/bin/
 export PATH="$PATH:$HOME/.local/bin"
 ```
 
-第三步，从 [github release page](https://github.com/rooch-network/rooch/releases) 下载 `rooch-macos-latest.zip`，解压文件并将二进制文件移动到 `~/.local/bin/` 中
+第三步，从 [github release page](https://github.com/rooch-network/rooch/releases) 下载 
+`rooch-macos-latest.zip`，解压文件并将二进制文件移动到 `~/.local/bin/` 中
+
+第四步，克隆源码
+
+```shell
+git clone https://github.com/rooch-network/rooch.git
+```
+
+第五步，先到`rooch`目录下面，执行下面命令(会进行下载，时间比较久)
+```shell
+cargo build
+```
+如果遇到报错
+```shell
+Error: Could not find `protoc`. If `protoc` is installed, try setting the `PROTOC` environment variable to the path of the `protoc` binary. To install it on macOS, run `brew install protobuf`. It is also available at https://github.com/protocolbuffers/protobuf/releases  For more information: https://docs.rs/prost-build/#sourcing-protoc
+```
+执行命令下载`protobuf`，下载成功后重新执行`cargo build`
+```shell
+brew install protobuf
+```
 
 最后，打开一个新的终端窗口并运行 `rooch` 检查是否工作
+```shell
+rooch
+```
+如果运行的时候出现下面报错
+```shell
+zsh: command not found: rooch
+```
+大概率是在第三步出现的问题，可能是由于路径问题或者是忘记保存配置问题，可以参考这几个命令进行解决
+```shell
+# 确认 rooch 文件已存在
+ls ~/.local/bin/rooch
+
+# 确认 ~/.zshrc 文件中包含以下行
+echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.zshrc
+
+# 重新加载 ~/.zshrc 文件
+source ~/.zshrc
+
+# 验证 PATH 环境变量
+echo $PATH
+
+# 运行 rooch
+rooch
+
+```
 
 ## 二进制安装
 
