@@ -33,9 +33,8 @@ use moveos_types::{
     h256::H256,
     state::{MoveStructState, MoveStructType},
 };
-use nostr::bech32::{FromBase32, Variant};
-use nostr::prelude::{ToBech32, PREFIX_BECH32_PUBLIC_KEY};
-use nostr::secp256k1::{constants, XOnlyPublicKey};
+use nostr::prelude::{FromBech32, ToBech32, PREFIX_BECH32_PUBLIC_KEY};
+use nostr::secp256k1::XOnlyPublicKey;
 use nostr::Keys;
 use once_cell::sync::Lazy;
 #[cfg(any(test, feature = "fuzzing"))]
@@ -242,6 +241,14 @@ impl RoochAddress {
         self.0.to_fixed_bytes()
     }
 
+    pub fn from_bech32(bech32: &str) -> Result<Self> {
+        let (hrp, data) = bech32::decode(bech32)?;
+        anyhow::ensure!(hrp == *ROOCH_HRP, "invalid rooch hrp");
+        anyhow::ensure!(data.len() == Self::LENGTH, "invalid rooch address length");
+        let hash = H256::from_slice(data.as_slice());
+        Ok(Self(hash))
+    }
+
     /// RoochAddress from_hex_literal support short hex string, such as 0x1, 0x2, 0x3
     pub fn from_hex_literal(literal: &str) -> Result<Self> {
         anyhow::ensure!(literal.starts_with("0x"), "Hex literal must start with 0x");
@@ -275,20 +282,6 @@ impl RoochAddress {
 
     pub fn to_hex(&self) -> String {
         format!("{:x}", self.0)
-    }
-}
-
-pub trait FromBech32 {
-    fn from_bech32(bech32: &str) -> Result<RoochAddress>;
-}
-
-impl FromBech32 for RoochAddress {
-    fn from_bech32(bech32: &str) -> Result<RoochAddress> {
-        let (hrp, data) = bech32::decode(bech32)?;
-        anyhow::ensure!(hrp == *ROOCH_HRP, "invalid rooch hrp");
-        anyhow::ensure!(data.len() == Self::LENGTH, "invalid rooch address length");
-        let hash = H256::from_slice(data.as_slice());
-        Ok(Self(hash))
     }
 }
 
@@ -875,11 +868,12 @@ impl TryFrom<MultiChainAddress> for NostrPublicKey {
     }
 }
 
+/// FromStr is FromBech32 here for NostrPublicKey
 impl FromStr for NostrPublicKey {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let pk = XOnlyPublicKey::from_str(s)?;
+        let pk = XOnlyPublicKey::from_bech32(s)?;
         Ok(Self(pk))
     }
 }
@@ -887,22 +881,6 @@ impl FromStr for NostrPublicKey {
 impl fmt::Display for NostrPublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0.to_bech32().map_err(|_| fmt::Error)?)
-    }
-}
-
-// TODO: add comments about converting to RoochAddress for impl FromBech32 for NostrPublicKey
-impl FromBech32 for NostrPublicKey {
-    fn from_bech32(bech32: &str) -> Result<RoochAddress> {
-        let (hrp, data_u5, variant) = nostr::bech32::decode(bech32)?;
-        let data = Vec::from_base32(&data_u5)?;
-        anyhow::ensure!(hrp == PREFIX_BECH32_PUBLIC_KEY, "invalid nostr hrp");
-        anyhow::ensure!(variant == Variant::Bech32, "invalid nostr variant");
-        anyhow::ensure!(
-            data.len() == constants::SCHNORR_PUBLIC_KEY_SIZE,
-            "invalid nostr public key length"
-        );
-        let hash = H256::from_slice(data.as_slice());
-        Ok(RoochAddress(hash))
     }
 }
 
@@ -939,7 +917,12 @@ impl ParsedAddress {
         } else if s.starts_with(ROOCH_HRP.as_str()) && s.len() == RoochAddress::LENGTH_BECH32 {
             Ok(Self::Numerical(RoochAddress::from_bech32(s)?))
         } else if s.starts_with(PREFIX_BECH32_PUBLIC_KEY) {
-            Ok(Self::Numerical(NostrPublicKey::from_bech32(s)?))
+            Ok(Self::Numerical(BitcoinAddress::to_rooch_address(
+                &NostrPublicKey::to_bitcoin_address(
+                    &NostrPublicKey::from_str(s)?,
+                    network::Network::Bitcoin.to_num(), // TODO: use network variable?
+                )?,
+            )))
         } else {
             match BitcoinAddress::from_str(s) {
                 Ok(a) => Ok(Self::Numerical(a.to_rooch_address())),
