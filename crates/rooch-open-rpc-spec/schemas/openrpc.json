@@ -145,7 +145,7 @@
           "name": "account_addr",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress"
+            "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::UnitedAddress"
           }
         },
         {
@@ -172,7 +172,7 @@
           "name": "account_addr",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress"
+            "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::UnitedAddress"
           }
         },
         {
@@ -853,7 +853,7 @@
             ],
             "properties": {
               "sender": {
-                "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress"
+                "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::UnitedAddress"
               }
             },
             "additionalProperties": false
@@ -1255,7 +1255,7 @@
             ],
             "properties": {
               "owner": {
-                "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress"
+                "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::UnitedAddress"
               }
             },
             "additionalProperties": false
@@ -2041,7 +2041,7 @@
                     "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
                   },
                   "owner": {
-                    "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress"
+                    "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::UnitedAddress"
                   }
                 }
               }
@@ -2069,7 +2069,7 @@
             ],
             "properties": {
               "owner": {
-                "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress"
+                "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::UnitedAddress"
               }
             },
             "additionalProperties": false
@@ -2577,7 +2577,7 @@
             ],
             "properties": {
               "sender": {
-                "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress"
+                "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::UnitedAddress"
               }
             },
             "additionalProperties": false
@@ -2777,7 +2777,7 @@
             ],
             "properties": {
               "owner": {
-                "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress"
+                "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::UnitedAddress"
               }
             },
             "additionalProperties": false
@@ -3072,7 +3072,7 @@
       "primitive_types::H256": {
         "type": "string"
       },
-      "rooch_rpc_api::jsonrpc_types::address::RoochOrBitcoinAddress": {
+      "rooch_rpc_api::jsonrpc_types::address::UnitedAddress": {
         "type": "string"
       },
       "rooch_rpc_api::jsonrpc_types::module_abi_view::MoveABIType": {
