@@ -100,7 +100,7 @@ impl FromStr for UnitedAddressView {
                 Ok(x_only_pk) => {
                     let nostr_public_key = NostrPublicKey::new(x_only_pk);
                     let bitcoin_address =
-                        nostr_public_key.to_bitcoin_address(Network::Bitcoin.to_num())?; // TODO: use network variable?
+                        nostr_public_key.to_bitcoin_address(Network::Bitcoin.to_num())?;
                     let rooch_address = bitcoin_address.to_rooch_address();
                     Ok(StrView(UnitedAddress {
                         rooch_address,

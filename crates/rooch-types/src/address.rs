@@ -837,7 +837,7 @@ impl NostrPublicKey {
             bitcoin::network::Network::from(network),
         );
         // give it to rooch bitcoin struct
-        Ok(BitcoinAddress::new(address.to_string().as_bytes().to_vec()))
+        Ok(BitcoinAddress::from(address))
     }
 }
 
@@ -920,7 +920,7 @@ impl ParsedAddress {
             Ok(Self::Numerical(BitcoinAddress::to_rooch_address(
                 &NostrPublicKey::to_bitcoin_address(
                     &NostrPublicKey::from_str(s)?,
-                    network::Network::Bitcoin.to_num(), // TODO: use network variable?
+                    network::Network::Bitcoin.to_num(),
                 )?,
             )))
         } else {
