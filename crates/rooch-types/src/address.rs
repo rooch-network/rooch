@@ -828,11 +828,23 @@ impl NostrPublicKey {
         Self(x_only_pk)
     }
 
-    /// Convert from the Nostr XOnlyPublicKey to Bitcoin address
-    pub fn to_bitcoin_address(&self) -> BitcoinAddress {
-        let x_only_pk_bytes = self.0.serialize().to_vec();
-        let bitcoin_address = BitcoinAddress::new(x_only_pk_bytes);
-        bitcoin_address
+    /// Convert from the Nostr XOnlyPublicKey to Bitcoin Taproot address. BIP-086.
+    pub fn to_bitcoin_address(&self, network: u8) -> Result<BitcoinAddress, anyhow::Error> {
+        // get the network
+        let network = network::Network::try_from(network)?;
+        // change use of XOnlyPublicKey from nostr to bitcoin lib
+        let internal_key = bitcoin::XOnlyPublicKey::from_slice(&self.0.serialize())?;
+        // new verification crypto
+        let secp = Secp256k1::verification_only();
+        // new bitcoin taproot address
+        let address = Address::p2tr(
+            &secp,
+            internal_key,
+            None,
+            bitcoin::network::Network::from(network),
+        );
+        // give it to rooch bitcoin struct
+        Ok(BitcoinAddress::new(address.to_string().as_bytes().to_vec()))
     }
 }
 
@@ -937,6 +949,7 @@ impl ParsedAddress {
     }
 }
 
+// TODO: Need a testcase to use the nostr address.
 #[cfg(test)]
 mod test {
     use super::*;
