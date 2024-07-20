@@ -464,21 +464,18 @@ where
             }
         };
 
-        match action_result {
-            Ok(_) => {
-                self.resolve_pending_init_functions()?;
-                // Check if there are modules upgrading
-                let module_flag = self.tx_context().get::<ModuleUpgradeFlag>().map_err(|e| {
-                    PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
-                        .with_message(e.to_string())
-                        .finish(Location::Undefined)
-                })?;
-                let is_upgrade = module_flag.map_or(false, |flag| flag.is_upgrade);
-                if is_upgrade {
-                    self.vm.mark_loader_cache_as_invalid();
-                };
-            }
-            Err(_) => {}
+        if action_result.is_ok() {
+            self.resolve_pending_init_functions()?;
+            // Check if there are modules upgrading
+            let module_flag = self.tx_context().get::<ModuleUpgradeFlag>().map_err(|e| {
+                PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
+                    .with_message(e.to_string())
+                    .finish(Location::Undefined)
+            })?;
+            let is_upgrade = module_flag.map_or(false, |flag| flag.is_upgrade);
+            if is_upgrade {
+                self.vm.mark_loader_cache_as_invalid();
+            };
         }
 
         action_result
