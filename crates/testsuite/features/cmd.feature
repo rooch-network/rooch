@@ -41,8 +41,8 @@ Feature: Rooch CLI integration tests
       # use bitcoin_address
       Then cmd: "account nullify -a {{$.account[-2].account0.bitcoin_address}}"
       Then cmd: "account import -k {{$.account[-1].encoded_private_key}}"
-      # use rooch address
-      Then cmd: "account nullify -a {{$.account[-2].account0.address}}"
+      # use nostr_public_key
+      Then cmd: "account nullify -a {{$.account[-2].account0.nostr_public_key}}"
 
       Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::GasCoin"]' --json"
       Then assert: "'{{$.rpc[-1].coin_type}}' == '0x3::gas_coin::GasCoin'"
@@ -263,11 +263,17 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       
       Then cmd: "account list --json"
+
       Then cmd: "rpc request --method rooch_getBalance --params '["{{$.account[-1].default.bitcoin_address}}", "{{$.account[-1].default.hex_address}}::fixed_supply_coin::FSC"]' --json"
       Then assert: "'{{$.rpc[-1].coin_type}}' == '{{$.address_mapping.default}}::fixed_supply_coin::FSC'"
       Then assert: "'{{$.rpc[-1].balance}}' != '0'"
 
+      Then cmd: "rpc request --method rooch_getBalance --params '["{{$.account[-1].default.nostr_public_key}}", "{{$.account[-1].default.hex_address}}::fixed_supply_coin::FSC"]' --json"
+      Then assert: "'{{$.rpc[-1].coin_type}}' == '{{$.address_mapping.default}}::fixed_supply_coin::FSC'"
+      Then assert: "'{{$.rpc[-1].balance}}' != '0'"
+
       Then cmd: "account transfer --coin-type default::fixed_supply_coin::FSC --to {{$.account[-1].account0.bitcoin_address}} --amount 1"
+
       Then assert: "{{$.account[-1].execution_info.status.type}} == executed"
       Then stop the server
 
