@@ -821,7 +821,20 @@ impl TryFrom<MultiChainAddress> for BitcoinAddress {
 // Ref: https://github.com/nostr-protocol/nips/blob/master/19.md
 /// Nostr public key type
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct NostrPublicKey(pub XOnlyPublicKey);
+pub struct NostrPublicKey(XOnlyPublicKey);
+
+impl NostrPublicKey {
+    pub fn new(x_only_pk: XOnlyPublicKey) -> Self {
+        Self(x_only_pk)
+    }
+
+    /// Convert from the Nostr XOnlyPublicKey to Bitcoin address
+    pub fn to_bitcoin_address(&self) -> BitcoinAddress {
+        let x_only_pk_bytes = self.0.serialize().to_vec();
+        let bitcoin_address = BitcoinAddress::new(x_only_pk_bytes);
+        bitcoin_address
+    }
+}
 
 impl RoochSupportedAddress for NostrPublicKey {
     fn random() -> Self {
