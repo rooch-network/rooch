@@ -7,12 +7,15 @@ pub mod api;
 pub mod jsonrpc_types;
 
 pub type RpcResult<T> = Result<T, RpcError>;
-use jsonrpsee::types::{ErrorObject, ErrorObjectOwned};
+use jsonrpsee::types::{ErrorCode, ErrorObject, ErrorObjectOwned};
 use rooch_types::error::RoochError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum RpcError {
+    #[error("Service unavailable")]
+    ServiceUnavailable,
+
     #[error(transparent)]
     RoochError(#[from] RoochError),
 
@@ -29,6 +32,11 @@ pub enum RpcError {
 impl From<RpcError> for ErrorObjectOwned {
     fn from(err: RpcError) -> Self {
         match err {
+            RpcError::ServiceUnavailable => ErrorObject::owned(
+                ErrorCode::ServerIsBusy.code(),
+                "Service unavailable".to_string(),
+                None::<()>,
+            ),
             RpcError::RoochError(err) => ErrorObject::owned(1, err.to_string(), None::<()>),
             RpcError::InternalError(err) => ErrorObject::owned(2, err.to_string(), None::<()>),
             RpcError::BcsError(err) => ErrorObject::owned(3, err.to_string(), None::<()>),

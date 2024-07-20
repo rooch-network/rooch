@@ -23,6 +23,7 @@ pub struct PipelineProcessorActor {
     pub(crate) proposer: ProposerProxy,
     pub(crate) indexer: IndexerProxy,
     pub(crate) data_import_flag: bool,
+    pub(crate) read_only: bool,
 }
 
 impl PipelineProcessorActor {
@@ -32,6 +33,7 @@ impl PipelineProcessorActor {
         proposer: ProposerProxy,
         indexer: IndexerProxy,
         data_import_flag: bool,
+        read_only: bool,
     ) -> Self {
         Self {
             executor,
@@ -39,6 +41,7 @@ impl PipelineProcessorActor {
             proposer,
             indexer,
             data_import_flag,
+            read_only,
         }
     }
 
@@ -193,6 +196,9 @@ impl PipelineProcessorActor {
 #[async_trait]
 impl Actor for PipelineProcessorActor {
     async fn started(&mut self, _ctx: &mut ActorContext) {
+        if self.read_only {
+            return;
+        }
         if let Err(e) = self.process_sequenced_tx_on_startup().await {
             log::error!("Process sequenced tx on startup error: {}", e);
         }

@@ -25,10 +25,15 @@ pub struct SequencerActor {
     tx_accumulator: MerkleAccumulator,
     sequencer_key: RoochKeyPair,
     rooch_store: RoochStore,
+    read_only: bool,
 }
 
 impl SequencerActor {
-    pub fn new(sequencer_key: RoochKeyPair, rooch_store: RoochStore) -> Result<Self> {
+    pub fn new(
+        sequencer_key: RoochKeyPair,
+        rooch_store: RoochStore,
+        read_only: bool,
+    ) -> Result<Self> {
         // The sequencer info would be inited when genesis, so the sequencer info should not be None
         let last_sequencer_info = rooch_store
             .get_meta_store()
@@ -53,6 +58,7 @@ impl SequencerActor {
             tx_accumulator,
             sequencer_key,
             rooch_store,
+            read_only,
         })
     }
 
@@ -61,6 +67,9 @@ impl SequencerActor {
     }
 
     pub fn sequence(&mut self, mut tx_data: LedgerTxData) -> Result<LedgerTransaction> {
+        if self.read_only {
+            return Err(anyhow::anyhow!("The service is read only"));
+        }
         let now = SystemTime::now();
         let tx_timestamp = now.duration_since(SystemTime::UNIX_EPOCH)?.as_millis() as u64;
 
