@@ -26,7 +26,7 @@ async fn test_sequencer() -> Result<()> {
     {
         let rooch_db = init_rooch_db(&opt)?;
         let sequencer_key = RoochKeyPair::generate_secp256k1();
-        let mut sequencer = SequencerActor::new(sequencer_key, rooch_db.rooch_store)?;
+        let mut sequencer = SequencerActor::new(sequencer_key, rooch_db.rooch_store, false)?;
         assert_eq!(sequencer.last_order(), last_tx_order);
         for _ in 0..10 {
             let tx_data = LedgerTxData::L2Tx(RoochTransaction::mock());
@@ -40,7 +40,7 @@ async fn test_sequencer() -> Result<()> {
     {
         let rooch_db = RoochDB::init(opt.store_config())?;
         let sequencer_key = RoochKeyPair::generate_secp256k1();
-        let mut sequencer = SequencerActor::new(sequencer_key, rooch_db.rooch_store)?;
+        let mut sequencer = SequencerActor::new(sequencer_key, rooch_db.rooch_store, false)?;
         assert_eq!(sequencer.last_order(), last_tx_order);
         let tx_data = LedgerTxData::L2Tx(RoochTransaction::mock());
         let ledger_tx = sequencer.sequence(tx_data)?;
@@ -59,7 +59,7 @@ async fn test_sequencer_concurrent() -> Result<()> {
 
     let actor_system = ActorSystem::global_system();
 
-    let sequencer = SequencerActor::new(sequencer_key, rooch_db.rooch_store)?
+    let sequencer = SequencerActor::new(sequencer_key, rooch_db.rooch_store, false)?
         .into_actor(Some("Sequencer"), &actor_system)
         .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());

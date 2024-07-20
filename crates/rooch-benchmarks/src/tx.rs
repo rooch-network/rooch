@@ -25,7 +25,7 @@ pub const EXAMPLE_SIMPLE_BLOG_PACKAGE_NAME: &str = "simple_blog";
 pub const EXAMPLE_SIMPLE_BLOG_NAMED_ADDRESS: &str = "simple_blog";
 
 pub fn gen_sequencer(keypair: RoochKeyPair, rooch_store: RoochStore) -> Result<SequencerActor> {
-    SequencerActor::new(keypair, rooch_store.clone())
+    SequencerActor::new(keypair, rooch_store.clone(), false)
 }
 
 pub fn create_publish_transaction(
