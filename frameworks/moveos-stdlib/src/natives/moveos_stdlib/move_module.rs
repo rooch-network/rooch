@@ -163,7 +163,7 @@ fn native_sort_and_verify_modules_inner(
         .collect();
 
     // move verifier
-    context
+    let verify_result = context
         .verify_module_bundle_for_publication(&compiled_modules)
         .map_err(|e| {
             let modules = compiled_modules
@@ -171,7 +171,14 @@ fn native_sort_and_verify_modules_inner(
                 .map(|m| m.self_id().short_str_lossless())
                 .collect::<Vec<_>>();
             e.append_message_with_separator('|', format!("modules: {:?}", modules))
-        })?;
+        });
+    match verify_result {
+        Ok(_) => {}
+        Err(e) => {
+            log::info!("modules verification error: {:?}", e);
+            return Ok(NativeResult::err(cost, E_MODULE_VERIFICATION_ERROR));
+        }
+    }
     // moveos verifier
     let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
     let mut module_names = vec![];
