@@ -865,6 +865,7 @@ impl fmt::Display for NostrPublicKey {
     }
 }
 
+// TODO: add comments about converting to RoochAddress for impl FromBech32 for NostrPublicKey
 impl FromBech32 for NostrPublicKey {
     fn from_bech32(bech32: &str) -> Result<RoochAddress> {
         let (hrp, data_u5, variant) = nostr::bech32::decode(bech32)?;

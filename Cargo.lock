@@ -9973,6 +9973,7 @@ dependencies = [
  "move-core-types",
  "move-resource-viewer",
  "moveos-types",
+ "nostr",
  "rand 0.8.5",
  "rooch-config",
  "rooch-open-rpc",

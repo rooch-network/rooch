@@ -4,8 +4,10 @@
 use crate::jsonrpc_types::StrView;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
+use moveos_types::state::MoveState;
+use nostr::{key::XOnlyPublicKey, prelude::FromBech32};
 use rooch_types::address::{BitcoinAddress, NostrPublicKey, RoochAddress};
-use std::str::FromStr;
+use std::{io::Read, str::FromStr};
 
 pub type BitcoinAddressView = StrView<BitcoinAddress>;
 
@@ -92,15 +94,26 @@ impl FromStr for UnitedAddressView {
                 bitcoin_address: None,
                 nostr_public_key: None,
             })),
-            Err(_) => {
-                let bitcoin_address = BitcoinAddress::from_str(s)?;
-                let nostr_public_key = NostrPublicKey::from_str(s)?;
-                Ok(StrView(UnitedAddress {
-                    rooch_address: bitcoin_address.to_rooch_address(),
-                    bitcoin_address: Some(bitcoin_address),
-                    nostr_public_key: Some(nostr_public_key),
-                }))
-            }
+            Err(_) => match XOnlyPublicKey::from_bech32(s) {
+                Ok(x_only_pk) => {
+                    let pk_bytes = x_only_pk.serialize();
+                    let bitcoin_address = BitcoinAddress::new(pk_bytes.to_vec());
+                    let rooch_address = bitcoin_address.to_rooch_address();
+                    Ok(StrView(UnitedAddress {
+                        rooch_address,
+                        bitcoin_address: Some(bitcoin_address),
+                        nostr_public_key: Some(NostrPublicKey(x_only_pk)),
+                    }))
+                }
+                Err(_) => {
+                    let bitcoin_address = BitcoinAddress::from_str(s)?;
+                    Ok(StrView(UnitedAddress {
+                        rooch_address: bitcoin_address.to_rooch_address(),
+                        bitcoin_address: Some(bitcoin_address),
+                        nostr_public_key: None,
+                    }))
+                }
+            },
         }
     }
 }
