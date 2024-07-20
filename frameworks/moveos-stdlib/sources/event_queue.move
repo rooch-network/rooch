@@ -9,23 +9,23 @@ module moveos_std::event_queue {
     use moveos_std::timestamp;
     use moveos_std::object::{Self, Object, ObjectID};
 
-    const MAX_SUBSCRIBER_COUNT: u64 = 100;
-    const MAX_EVENT_HISTORY: u64 = 1000;
+    const EVENT_EXPIRE_TIME: u64 = 1000 * 60 * 60 * 24 * 31; // 31 days
+    const REMOVE_EXPIRED_EVENT_BATCH_SIZE: u64 = 100;
     const SUBSCRIBERS_KEY: vector<u8> = b"subscribers";
 
     const ErrorTooManySubscribers: u64 = 1;
     const ErrorSubscriberNotFound: u64 = 2;
     const ErrorEventNotFound: u64 = 3;
+    const ErrorInvalidSequenceNumber: u64 = 4;
 
     struct EventQueue<phantom E> has key{
-        sequence_number: u64,
+        head_sequence_number: u64,
+        tail_sequence_number: u64,
     }
 
     struct OnChainEvent<E> has store, drop {
         event: E,
         emit_time: u64,
-        subscriber_count: u64,
-        consumed_count: u64,
     }
 
     struct Subscriber<phantom E> has key{
@@ -39,7 +39,8 @@ module moveos_std::event_queue {
         let object_id = object::custom_object_id<String, EventQueue<E>>(name);
         if (!object::exists_object(object_id)) {
             let event_queue_obj = object::new_with_id(name, EventQueue<E> {
-                sequence_number: 0,
+                head_sequence_number: 0,
+                tail_sequence_number: 0,
             });
             let subscribers : vector<ObjectID> = vector::empty();
             object::add_field(&mut event_queue_obj, SUBSCRIBERS_KEY, subscribers);
@@ -61,61 +62,61 @@ module moveos_std::event_queue {
     #[private_generics(E)]
     public fun emit<E : copy + drop + store>(name: String, event: E) {
         let event_queue_obj = event_queue<E>(name);
-        let sequence_number = object::borrow(event_queue_obj).sequence_number;
-        let subscribers = borrow_subscribers(event_queue_obj);
-        //If there is no subscriber, we do not need to store the event
-        if (!vector::is_empty(subscribers)) {
-            let now = timestamp::now_milliseconds();
-            let on_chain_event = OnChainEvent {
-                event: event,
-                emit_time: now,
-                subscriber_count: vector::length(subscribers),
-                consumed_count: 0,
-            };
-            object::add_field(event_queue_obj, sequence_number, on_chain_event);
-            //Remove the oldest event if the event history is full
-            if (sequence_number > MAX_EVENT_HISTORY) {
-                let oldest_sequence_number = sequence_number - MAX_EVENT_HISTORY;
-                if (object::contains_field(event_queue_obj, oldest_sequence_number)) {
-                    let _event: OnChainEvent<E> = object::remove_field(event_queue_obj, oldest_sequence_number);
-                }
-            };
+        let head_sequence_number = object::borrow(event_queue_obj).head_sequence_number;
+        let now = timestamp::now_milliseconds();
+        let on_chain_event = OnChainEvent {
+            event: event,
+            emit_time: now,
         };
-        object::borrow_mut(event_queue_obj).sequence_number = sequence_number + 1;
+        object::add_field(event_queue_obj, head_sequence_number, on_chain_event);
+        object::borrow_mut(event_queue_obj).head_sequence_number = head_sequence_number + 1;
+        remove_expired_events(event_queue_obj);    
     }
 
     public fun consume<E: copy + drop + store>(subscriber_obj: &mut Object<Subscriber<E>>) : Option<E> {
         let subscriber = object::borrow_mut(subscriber_obj);
         let subscriber_sequence_number = subscriber.sequence_number;
         let event_queue_obj = event_queue<E>(subscriber.queue_name);
-        let sequence_number = object::borrow(event_queue_obj).sequence_number;
+        let head_sequence_number = object::borrow(event_queue_obj).head_sequence_number;
+        let tail_sequence_number = object::borrow(event_queue_obj).tail_sequence_number;
         
-        if (subscriber_sequence_number >= sequence_number) {
+        if (subscriber_sequence_number >= head_sequence_number) {
             return option::none()
         };
-        subscriber_sequence_number = if (sequence_number - subscriber_sequence_number > MAX_EVENT_HISTORY) {
-            sequence_number - MAX_EVENT_HISTORY
+        //If the subscriber sequence number is less than the tail sequence number,
+        //It means the subscriber is too slow to consume the event
+        //We should update the subscriber sequence number to the tail sequence number
+        subscriber_sequence_number = if (tail_sequence_number > subscriber_sequence_number) {
+            tail_sequence_number
         } else {
             subscriber_sequence_number
         };
         assert!(object::contains_field(event_queue_obj, subscriber_sequence_number), ErrorEventNotFound);
         let on_chain_event: &mut OnChainEvent<E> = object::borrow_mut_field(event_queue_obj, subscriber_sequence_number);
-        let consumed_count = on_chain_event.consumed_count;
         subscriber.sequence_number = subscriber_sequence_number + 1;
-        on_chain_event.consumed_count = consumed_count + 1;
-        if (on_chain_event.consumed_count == on_chain_event.subscriber_count) {
-            let on_chain_event: OnChainEvent<E> = object::remove_field(event_queue_obj, subscriber_sequence_number);
-            option::some(on_chain_event.event)
-        }else{
-            option::some(on_chain_event.event)
-        }
+        let event = option::some(on_chain_event.event);
+        remove_expired_events(event_queue_obj);
+        event
     }
 
     public fun subscribe<E: copy + drop + store>(queue_name: String) : Object<Subscriber<E>> {
         let event_queue_obj = event_queue<E>(queue_name);
-        let sequence_number = object::borrow(event_queue_obj).sequence_number;
+        let head_sequence_number = object::borrow(event_queue_obj).head_sequence_number;
         let subscribers = borrow_mut_subscribers(event_queue_obj);
-        assert!(vector::length(subscribers) < MAX_SUBSCRIBER_COUNT, ErrorTooManySubscribers);
+        let subscriber = object::new(Subscriber {
+            queue_name,
+            sequence_number: head_sequence_number,
+        });
+        vector::push_back(subscribers, object::id(&subscriber));
+        subscriber
+    }
+
+    public fun subscribe_with_sequence_number<E: copy + drop + store>(queue_name: String, sequence_number: u64) : Object<Subscriber<E>> {
+        let event_queue_obj = event_queue<E>(queue_name);
+        let head_sequence_number = object::borrow(event_queue_obj).head_sequence_number;
+        let tail_sequence_number = object::borrow(event_queue_obj).tail_sequence_number;
+        assert!(sequence_number >= tail_sequence_number && sequence_number <= head_sequence_number, ErrorInvalidSequenceNumber);
+        let subscribers = borrow_mut_subscribers(event_queue_obj);
         let subscriber = object::new(Subscriber {
             queue_name,
             sequence_number,
@@ -125,8 +126,6 @@ module moveos_std::event_queue {
     }
 
     public fun unsubscribe<E: copy + drop + store>(subscriber: Object<Subscriber<E>>) {
-        //Consume all events before unsubscribe
-        consumer_all(&mut subscriber);
         let subscriber_id = object::id(&subscriber);
         let Subscriber{sequence_number:_, queue_name} = object::remove(subscriber);
         let event_queue_obj = event_queue<E>(queue_name);
@@ -137,11 +136,28 @@ module moveos_std::event_queue {
         vector::remove(subscribers, index);
     }
 
-    fun consumer_all<E: copy + drop + store>(subscriber: &mut Object<Subscriber<E>>){
-        let event = consume(subscriber);
-        while (option::is_some(&event)){
-            event = consume(subscriber);
-        }
+    /// Remove the expired events from the event queue
+    /// Anyone can call this function to remove the expired events
+    public fun remove_expired_events<E: copy + drop + store>(event_queue_obj: &mut Object<EventQueue<E>>){
+        let head_sequence_number = object::borrow(event_queue_obj).head_sequence_number;
+        let tail_sequence_number = object::borrow(event_queue_obj).tail_sequence_number;
+        let now = timestamp::now_milliseconds();
+        let remove_sequence_number = tail_sequence_number;
+        while (remove_sequence_number < head_sequence_number){
+            if (object::contains_field(event_queue_obj, remove_sequence_number)){
+                let on_chain_event: &OnChainEvent<E> = object::borrow_field(event_queue_obj, remove_sequence_number);
+                if (now - on_chain_event.emit_time > EVENT_EXPIRE_TIME){
+                    let _event: OnChainEvent<E> = object::remove_field(event_queue_obj, remove_sequence_number);
+                }else{
+                    break
+                }
+            };
+            remove_sequence_number = remove_sequence_number + 1;
+            if (remove_sequence_number - tail_sequence_number >= REMOVE_EXPIRED_EVENT_BATCH_SIZE){
+                break
+            }
+        };
+        object::borrow_mut(event_queue_obj).tail_sequence_number = remove_sequence_number;
     }
 
     #[test_only]
@@ -194,67 +210,17 @@ module moveos_std::event_queue {
     }
 
     #[test]
-    fun test_event_queue_many_events(){
-        let queue_name = std::string::utf8(b"test_event_queue_many_events");
+    fun test_event_queue_expired_events(){
+        let queue_name = std::string::utf8(b"test_event_queue_expired_events");
         let subscriber = subscribe<TestEvent>(queue_name);
-        let i = 0;
-        let event_count = MAX_EVENT_HISTORY + 1;
-        while(i < event_count){
-            emit(queue_name, TestEvent{value: i});
-            i = i + 1;
-        };
+        emit(queue_name, TestEvent{value: 1});
+        moveos_std::timestamp::fast_forward_milliseconds_for_test(EVENT_EXPIRE_TIME + 1);
+        emit(queue_name, TestEvent{value: 2});
         let event = consume(&mut subscriber);
         assert!(option::is_some(&event), 1000);
-        //The value == 0 event was removed because the event history is full,
-        //So the first event is 1
-        assert!(option::destroy_some(event).value == 1, 1001);
-        i = 2;
-        while(i < event_count){
-            let event = consume(&mut subscriber);
-            assert!(option::is_some(&event), 1000 + i);
-            assert!(option::destroy_some(event).value == i, 1001 + i);
-            i = i + 1;
-        };
-        let event = consume(&mut subscriber);
-        assert!(option::is_none(&event), 1002);
+        //The first event should be expired
+        assert!(option::destroy_some(event).value == 2, 1001);
         unsubscribe(subscriber);
     }
 
-    #[test]
-    fun test_event_queue_many_subscribers(){
-        let queue_name = std::string::utf8(b"test_many_subscribers");
-        let i = 0;
-        let subscriber_count = MAX_SUBSCRIBER_COUNT;
-        let subscribers: vector<Object<Subscriber<TestEvent>>> = vector::empty();
-        while(i < subscriber_count){
-            let subscriber = subscribe<TestEvent>(queue_name);
-            vector::push_back(&mut subscribers, subscriber);
-            i = i + 1;
-        };
-        emit(queue_name, TestEvent{value: 1});
-        i = 0;
-        while(i < subscriber_count){
-            let subscriber = vector::borrow_mut(&mut subscribers, i);
-            let event = consume(subscriber);
-            assert!(option::is_some(&event), 1000 + i);
-            assert!(option::destroy_some(event).value == 1, 1001 + i);
-            i = i + 1;
-        };
-        emit(queue_name, TestEvent{value: 2});
-        i = 0;
-        while(i < subscriber_count){
-            let subscriber = vector::pop_back(&mut subscribers);
-            unsubscribe(subscriber);
-            i = i + 1;
-        };
-        vector::destroy_empty(subscribers);
-        let event_queue = event_queue<TestEvent>(queue_name);
-        assert!(object::borrow(event_queue).sequence_number == 2, 1002);
-        
-        let subscribers:vector<ObjectID> = object::remove_field(event_queue, SUBSCRIBERS_KEY);
-        assert!(vector::is_empty(&subscribers), 1003);
-
-        //If all subscribers are removed, the event queue should be empty
-        assert!(object::field_size(event_queue) == 0, 1004);
-    }
 }
