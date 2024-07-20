@@ -386,7 +386,7 @@ module rooch_nursery::bitseed {
         (true, option::none<String>())
     }
     
-    fun is_valid_bitseed_mint(metadata: &SimpleMap<String,vector<u8>>, seed: vector<u8>, content_type: Option<String>, body: vector<u8>) : (bool, Option<String>) {
+    fun mint_bitseed(metadata: &SimpleMap<String,vector<u8>>, seed: vector<u8>, content_type: Option<String>, body: vector<u8>) : Result<Object<Bitseed>> {
         let (is_valid, reason) = is_valid_bitseed(metadata);
         if (!is_valid) {
             return (false, reason)
