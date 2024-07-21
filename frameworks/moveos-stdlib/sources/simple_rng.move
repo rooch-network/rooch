@@ -5,23 +5,22 @@
 module moveos_std::simple_rng {
     use moveos_std::tx_context;
     use moveos_std::timestamp;
+    use moveos_std::bcs;
+    use std::vector;
+    use std::hash;
 
-    // TODO: review
+    const ErrorInvalidArg: u64 = 0;
+    const ErrorInvalidU64: u64 = 1;
+    const ErrorInvalidU128: u64 = 2;
+    const ErrorInvalidSeed: u64 = 3;
 
-    // const EINVALID_ARG: u64 = 101;
-
-    // fun generate_magic_number(): u128 {
-    //     // generate a random number from tx_context
-    //     let bytes = vector::empty<u8>();
-    //     vector::append(&mut bytes, bcs::to_bytes(&tx_context::sequence_number()));
-    //     vector::append(&mut bytes, bcs::to_bytes(&tx_context::sender()));
-    //     vector::append(&mut bytes, bcs::to_bytes(&tx_context::tx_hash()));
-    //     vector::append(&mut bytes, bcs::to_bytes(&timestamp::now_milliseconds()));
-
-    //     let seed = hash::sha3_256(bytes);
-    //     let magic_number = bytes_to_u128(seed);
-    //     magic_number
-    // }
+    // data from rooch_framework::transaction
+    struct TransactionSequenceInfo has copy, drop, store {
+        tx_order: u64,
+        tx_order_signature: vector<u8>,
+        tx_accumulator_root: vector<u8>,
+        tx_timestamp: u64,
+    }
 
     fun seed(): vector<u8> {
         // get sequence number
@@ -30,14 +29,16 @@ module moveos_std::simple_rng {
 
         // get sender address
         let sender_addr = tx_context::sender();
-        let sender_addr_bytes = bcs::to_bytes(&addr);
+        let sender_addr_bytes = bcs::to_bytes(&sender_addr);
 
         // get now milliseconds timestamp
         let timestamp_ms = timestamp::now_milliseconds();
-        let timestamp_ms_bytes = bcs::to_bytes(&timestamp);
+        let timestamp_ms_bytes = bcs::to_bytes(&timestamp_ms);
         
         // get tx accumulator root
-        let tx_accumulator_root_bytes = tx_context::tx_accumulator_root();
+        let tx_sequence_info_opt = tx_context::get_attribute<TransactionSequenceInfo>(); 
+        let tx_sequence_info = option::extract(&mut tx_sequence_info_opt);
+        let tx_accumulator_root_bytes = tx_sequence_info.tx_accumulator_root;
 
         // construct a seed
         let seed_bytes = vector::empty<u8>();
@@ -51,51 +52,49 @@ module moveos_std::simple_rng {
         seed
     }
 
-    // TODO: review
-    
-    fun bytes_to_u128(bytes: vector<u8>): u128 {
-        let value = 0u128;
-        let i = 0u64;
-        while (i < 16) {
-            value = value | ((*Vector::borrow(&bytes, i) as u128) << ((8 * (15 - i)) as u8));
-            i = i + 1;
-        };
-        return value
-    }
-
     fun bytes_to_u64(bytes: vector<u8>): u64 {
         let value = 0u64;
         let i = 0u64;
         while (i < 8) {
-            value = value | ((*Vector::borrow(&bytes, i) as u64) << ((8 * (7 - i)) as u8));
+            value = value | ((*vector::borrow(&bytes, i) as u64) << ((8 * (7 - i)) as u8));
             i = i + 1;
         };
         return value
     }
 
-    /// Generate a random u128
-    public fun rand_u128(addr: &address): u128 acquires Counter {
-        let _seed: vector<u8> = seed(addr);
-        bytes_to_u128(_seed)
+    fun bytes_to_u128(bytes: vector<u8>): u128 {
+        let value = 0u128;
+        let i = 0u64;
+        while (i < 16) {
+            value = value | ((*vector::borrow(&bytes, i) as u128) << ((8 * (15 - i)) as u8));
+            i = i + 1;
+        };
+        return value
     }
 
-    /// Generate a random integer range in [low, high).
-    public fun rand_u128_range(addr: &address, low: u128, high: u128): u128 acquires Counter {
-        assert!(high > low, EINVALID_ARG);
-        let value = rand_u128(addr);
+    /// Generate a random u64 from seed
+    public fun rand_u64(): u64 {
+        let seed_bytes = seed();
+        bytes_to_u64(seed_bytes)
+    }
+
+    /// Generate a random u128 from seed
+    public fun rand_u128(): u128 {
+        let seed_bytes = seed();
+        bytes_to_u128(seed_bytes)
+    }
+
+    /// Generate a random integer range in [low, high] for u64.
+    public fun rand_u64_range(low: u64, high: u64): u64 {
+        assert!(high > low, ErrorInvalidArg);
+        let value = rand_u64();
         (value % (high - low)) + low
     }
 
-    /// Generate a random u64
-    public fun rand_u64(addr: &address): u64 acquires Counter {
-        let _seed: vector<u8> = seed(addr);
-        bytes_to_u64(_seed)
-    }
-
-    /// Generate a random integer range in [low, high).
-    public fun rand_u64_range(addr: &address, low: u64, high: u64): u64 acquires Counter {
-        assert!(high > low, EINVALID_ARG);
-        let value = rand_u64(addr);
+    /// Generate a random integer range in [low, high] for u128.
+    public fun rand_u128_range(low: u128, high: u128): u128 {
+        assert!(high > low, ErrorInvalidArg);
+        let value = rand_u128();
         (value % (high - low)) + low
     }
 
@@ -103,19 +102,93 @@ module moveos_std::simple_rng {
     fun test_bytes_to_u64() {
         // binary: 01010001 11010011 10101111 11001100 11111101 00001001 10001110 11001101
         // bytes = [81, 211, 175, 204, 253, 9, 142, 205];
-        let dec = 5896249632111562445;
+        let dec: u64 = 5896249632111562445;
 
-        let bytes = Vector::empty<u8>();
-        Vector::push_back(&mut bytes, 81);
-        Vector::push_back(&mut bytes, 211);
-        Vector::push_back(&mut bytes, 175);
-        Vector::push_back(&mut bytes, 204);
-        Vector::push_back(&mut bytes, 253);
-        Vector::push_back(&mut bytes, 9);
-        Vector::push_back(&mut bytes, 142);
-        Vector::push_back(&mut bytes, 205);
+        let bytes = vector::empty<u8>();
+        vector::push_back(&mut bytes, 81);
+        vector::push_back(&mut bytes, 211);
+        vector::push_back(&mut bytes, 175);
+        vector::push_back(&mut bytes, 204);
+        vector::push_back(&mut bytes, 253);
+        vector::push_back(&mut bytes, 9);
+        vector::push_back(&mut bytes, 142);
+        vector::push_back(&mut bytes, 205);
 
         let value = bytes_to_u64(bytes);
-        assert!(value == dec, 101);
+        assert!(value == dec, ErrorInvalidU64);
+    }
+
+    #[test]
+    fun test_bytes_to_u128() {
+        // Example binary: 00000001 00100011 01000101 01100111 10001001 10101011 11001101 11101111
+        //                00000000 00100010 01000100 01100110 10001000 10101010 11001100 11101110
+        // bytes = [1, 35, 69, 103, 137, 171, 205, 239, 0, 34, 68, 102, 136, 170, 204, 238];
+        let dec: u128 = 0x0123456789abcdef0022446688aaccee;
+
+        let bytes = vector::empty<u8>();
+        vector::push_back(&mut bytes, 1);
+        vector::push_back(&mut bytes, 35);
+        vector::push_back(&mut bytes, 69);
+        vector::push_back(&mut bytes, 103);
+        vector::push_back(&mut bytes, 137);
+        vector::push_back(&mut bytes, 171);
+        vector::push_back(&mut bytes, 205);
+        vector::push_back(&mut bytes, 239);
+        vector::push_back(&mut bytes, 0);
+        vector::push_back(&mut bytes, 34);
+        vector::push_back(&mut bytes, 68);
+        vector::push_back(&mut bytes, 102);
+        vector::push_back(&mut bytes, 136);
+        vector::push_back(&mut bytes, 170);
+        vector::push_back(&mut bytes, 204);
+        vector::push_back(&mut bytes, 238);
+
+        let value = bytes_to_u128(bytes);
+        assert!(value == dec, ErrorInvalidU128);
+    }
+
+    #[test]
+    fun test_generate_seed() {
+        // Mocking the input values for the seed function
+        
+        // Mock sequence number
+        let sequence_number: u64 = 12345;
+        let sequence_number_bytes = bcs::to_bytes(&sequence_number);
+        
+        // Mock sender address
+        let sender_addr = @0x1;
+        let sender_addr_bytes = bcs::to_bytes(&sender_addr);
+        
+        // Mock timestamp
+        let timestamp_ms: u64 = 1609459200000; // Mock timestamp, e.g., 2021-01-01 00:00:00 UTC
+        let timestamp_ms_bytes = bcs::to_bytes(&timestamp_ms);
+        
+        // Mock tx accumulator root
+        let tx_accumulator_root_bytes = vector::empty<u8>();
+        vector::push_back(&mut tx_accumulator_root_bytes, 0);
+        vector::push_back(&mut tx_accumulator_root_bytes, 1);
+        vector::push_back(&mut tx_accumulator_root_bytes, 2);
+        vector::push_back(&mut tx_accumulator_root_bytes, 3);
+        vector::push_back(&mut tx_accumulator_root_bytes, 4);
+        vector::push_back(&mut tx_accumulator_root_bytes, 5);
+        vector::push_back(&mut tx_accumulator_root_bytes, 6);
+        vector::push_back(&mut tx_accumulator_root_bytes, 7);
+        vector::push_back(&mut tx_accumulator_root_bytes, 8);
+        vector::push_back(&mut tx_accumulator_root_bytes, 9);
+        vector::push_back(&mut tx_accumulator_root_bytes, 10);
+
+        // Constructing the expected seed bytes
+        let expected_seed_bytes = vector::empty<u8>();
+        vector::append(&mut expected_seed_bytes, tx_accumulator_root_bytes);
+        vector::append(&mut expected_seed_bytes, timestamp_ms_bytes);
+        vector::append(&mut expected_seed_bytes, sender_addr_bytes);
+        vector::append(&mut expected_seed_bytes, sequence_number_bytes);
+
+        // Hashing the expected seed bytes to get the expected seed
+        let expected_seed = hash::sha3_256(expected_seed_bytes);
+
+        // Call the seed function and check the result
+        let seed_bytes = seed();
+        assert!(seed_bytes == expected_seed, ErrorInvalidSeed);
     }
 }
