@@ -8,19 +8,13 @@ module moveos_std::simple_rng {
     use moveos_std::bcs;
     use std::vector;
     use std::hash;
+    use std::option;
+    use rooch_framework::transaction::{Self, TransactionSequenceInfo};
 
     const ErrorInvalidArg: u64 = 0;
     const ErrorInvalidU64: u64 = 1;
     const ErrorInvalidU128: u64 = 2;
     const ErrorInvalidSeed: u64 = 3;
-
-    // data from rooch_framework::transaction
-    struct TransactionSequenceInfo has copy, drop, store {
-        tx_order: u64,
-        tx_order_signature: vector<u8>,
-        tx_accumulator_root: vector<u8>,
-        tx_timestamp: u64,
-    }
 
     fun seed(): vector<u8> {
         // get sequence number
@@ -36,7 +30,8 @@ module moveos_std::simple_rng {
         let timestamp_ms_bytes = bcs::to_bytes(&timestamp_ms);
         
         // get tx accumulator root
-        let tx_sequence_info_opt = tx_context::get_attribute<TransactionSequenceInfo>(); 
+        let tx_sequence_info_opt = tx_context::get_attribute<TransactionSequenceInfo>();
+        std::debug::print(&tx_sequence_info_opt);
         let tx_sequence_info = option::extract(&mut tx_sequence_info_opt);
         let tx_accumulator_root_bytes = tx_sequence_info.tx_accumulator_root;
 
@@ -156,7 +151,7 @@ module moveos_std::simple_rng {
         let sequence_number_bytes = bcs::to_bytes(&sequence_number);
         
         // Mock sender address
-        let sender_addr = @0x1;
+        let sender_addr = tx_context::sender();
         let sender_addr_bytes = bcs::to_bytes(&sender_addr);
         
         // Mock timestamp
