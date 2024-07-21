@@ -510,16 +510,21 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use move_core_types::effects::Op;
     use move_core_types::identifier::Identifier;
     use move_core_types::language_storage::ModuleId;
     use move_core_types::resolver::ModuleResolver;
+    use moveos_store::config_store::ConfigStore;
     use moveos_types::moveos_std::module_store::{ModuleStore, Package};
+    use moveos_types::startup_info::StartupInfo;
+    use moveos_types::state::{ObjectChange, StateChangeSet};
     use moveos_types::state_resolver::{RootObjectResolver, StateResolver};
     use rooch_config::RoochOpt;
     use rooch_db::RoochDB;
     use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
     use rooch_types::bitcoin::network::BitcoinNetwork;
-    use rooch_types::rooch_network::RoochNetwork;
+    use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
+    use rooch_types::rooch_network::{RoochChainID, RoochNetwork};
     use tracing::info;
 
     fn genesis_init_test_case(network: RoochNetwork, genesis: RoochGenesis) {
