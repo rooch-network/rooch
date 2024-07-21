@@ -9,7 +9,7 @@ use std::str::FromStr;
 use std::sync::mpsc::{Receiver, SyncSender};
 use std::sync::{mpsc, Arc};
 use std::thread;
-use std::time::SystemTime;
+use std::time::{Instant, SystemTime};
 
 use anyhow::Result;
 use bitcoin::OutPoint;
@@ -47,7 +47,7 @@ use crate::commands::statedb::commands::genesis_utxo::{
 };
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
 use crate::commands::statedb::commands::{
-    get_ord_by_outpoint, init_genesis_job, sort_merge_utxo_ords, UTXOOrds, UTXO_ORD_MAP_TABLE,
+    get_ord_by_outpoint, init_job, sort_merge_utxo_ords, UTXOOrds, UTXO_ORD_MAP_TABLE,
 };
 
 pub const ADDRESS_UNBOUND: &str = "unbound";
@@ -137,7 +137,7 @@ impl GenesisOrdCommand {
     pub async fn execute(self) -> RoochResult<()> {
         // 1. init import job
         let (root, moveos_store, start_time) =
-            init_genesis_job(self.base_data_dir.clone(), self.chain_id.clone());
+            init_job(self.base_data_dir.clone(), self.chain_id.clone());
         let pre_root_state_root = root.state_root();
 
         let utxo_ord_map_existed = self.utxo_ord_map.exists(); // check if utxo:ords map db existed before create db
@@ -295,7 +295,7 @@ fn import_utxo(
     startup_update_set: UpdateSet<FieldKey, ObjectState>,
     root_size: u64,
     root_state_root: H256,
-    startup_time: SystemTime,
+    startup_time: Instant,
 ) {
     let (tx, rx) = mpsc::sync_channel(2);
     let produce_updates_thread = thread::spawn(move || {
