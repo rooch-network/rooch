@@ -22,7 +22,7 @@ use rooch_types::rooch_network::RoochChainID;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::time::SystemTime;
+use std::time::{Instant, SystemTime};
 
 /// Export statedb
 
@@ -167,7 +167,7 @@ impl ExportCommand {
         })?;
         println!("root object: {:?}", root);
 
-        let mut _start_time = SystemTime::now();
+        let start_time = Instant::now();
         let file_name = self.output.display().to_string();
         let mut writer_builder = csv::WriterBuilder::new();
         let writer_builder = writer_builder.delimiter(b',').double_quote(false);
@@ -198,7 +198,7 @@ impl ExportCommand {
             }
         }
 
-        println!("Finish export task.");
+        println!("Finish export task in {}." start_time.elapsed());
         Ok(())
     }
 
