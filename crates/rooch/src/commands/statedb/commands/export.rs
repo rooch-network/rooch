@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::state::{FieldKey, ObjectState};
 use moveos_types::state_resolver::StatelessResolver;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::bitcoin::ord::InscriptionStore;
@@ -191,7 +192,7 @@ impl ExportCommand {
             }
         }
 
-        println!("Finish export task in {:?}.", start_time.elapsed());
+        log::info!("Done in {:?}.", start_time.elapsed(),);
         Ok(())
     }
 
@@ -204,15 +205,6 @@ impl ExportCommand {
         let utxo_store_id = BitcoinUTXOStore::object_id();
         let inscription_store_id = InscriptionStore::object_id();
         let rooch_to_bitcoin_address_mapping_id = RoochToBitcoinAddressMapping::object_id();
-        println!("export_genesis utxo_store_id: {:?}", utxo_store_id);
-        println!(
-            "export_genesis inscription_store_id: {:?}",
-            inscription_store_id
-        );
-        println!(
-            "export_genesis rooch_to_bitcoin_address_mapping_id: {:?}",
-            rooch_to_bitcoin_address_mapping_id
-        );
 
         let genesis_object_ids = vec![
             utxo_store_id.clone(),
@@ -220,50 +212,25 @@ impl ExportCommand {
             rooch_to_bitcoin_address_mapping_id,
         ];
 
-        //let mut genesis_objects = vec![];
-        let mut genesis_states = vec![];
+        let mut genesis_states: Vec<(FieldKey, ObjectState)> = vec![];
         for object_id in genesis_object_ids.into_iter() {
             let state = moveos_store
                 .get_field_at(root_state_root, &object_id.field_key())?
                 .expect("state should exist.");
-            //TODO
-            //let object = state.clone().as_raw_object()?;
             genesis_states.push((object_id.field_key(), state));
-            //genesis_objects.push(object);
         }
 
-        // write csv field states
-        // for obj in genesis_objects.into_iter() {
-        //     Self::export_field_states(
-        //         moveos_store,
-        //         H256::from(obj.state_root.into_bytes()),
-        //         root_state_root,
-        //         obj.id,
-        //         false,
-        //         true,
-        //         writer,
-        //     )?;
-        // }
-
-        // write csv object states.
+        // write root state
         {
             let root_export_id =
                 ExportID::new(ObjectID::root(), root_state_root, root_state_root, 0);
-            writer.write_field(GLOBAL_STATE_TYPE_ROOT)?;
-            writer.write_field(root_export_id.to_string())?;
-            writer.write_record(None::<&[u8]>)?;
+            writer.write_record([GLOBAL_STATE_TYPE_ROOT, root_export_id.to_string().as_str()])?;
         }
-        for (k, _v) in genesis_states.into_iter() {
-            writer.write_field(k.to_string())?;
-            //TODO write ObjectState csv
-            //writer.write_field(v.to_string())?;
-            writer.write_record(None::<&[u8]>)?;
+        for (k, v) in genesis_states.into_iter() {
+            writer.write_record([k.to_string().as_str(), v.to_string().as_str()])?;
         }
 
-        // flush csv writer
         writer.flush()?;
-        println!("export_genesis root state_root: {:?}", root_state_root);
-
         Ok(())
     }
 
