@@ -6,9 +6,12 @@ module rooch_nursery::tick_info {
     use std::option::{Self, Option};
     use std::string::String;
     use std::vector;
+    
     use moveos_std::object::{Self, Object, ObjectID};
     use moveos_std::type_info;
     use moveos_std::tx_context;
+    use moveos_std::result::{Result, ok};
+    
     use bitcoin_move::ord::{InscriptionID};
     use rooch_nursery::bitseed_on_l2::{Self, Bitseed};
 
@@ -123,6 +126,17 @@ module rooch_nursery::tick_info {
         let bitseed = bitseed_on_l2::new(metaprotocol, tick, bid, real_amount, option::none(), vector::empty());
         tick_info.supply = tick_info.supply + amount;
         bitseed
+    }
+
+    public(friend) fun mint_on_bitcoin(metaprotocol: String, tick: String, amount: u64) : Result<Object<Bitseed>>{
+        let tick_info = borrow_mut_tick_info(metaprotocol, tick);
+        //TODO make sure this function should not abort, it should return a result.
+        //assert!(option::is_some(&tick_info.generator), ErrorNoMintFactory);
+        //let generator = option::destroy_some(tick_info.generator);
+        assert!(tick_info.supply + amount < tick_info.max, ErrorMaxSupplyReached);
+        let bid = tx_context::fresh_address();
+        let bitseed = bitseed_on_l2::new(metaprotocol, tick, bid, amount, option::none(), vector::empty());
+        ok(bitseed)
     }
 
     // ================== TickInfo Get functions ==========================

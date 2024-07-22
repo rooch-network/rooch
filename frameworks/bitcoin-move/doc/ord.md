@@ -72,6 +72,7 @@
 -  [Function `remove_temp_state`](#0x4_ord_remove_temp_state)
 -  [Function `drop_temp_area`](#0x4_ord_drop_temp_area)
 -  [Function `seal_metaprotocol_validity`](#0x4_ord_seal_metaprotocol_validity)
+-  [Function `add_metaprotocol_attachment`](#0x4_ord_add_metaprotocol_attachment)
 -  [Function `exists_metaprotocol_validity`](#0x4_ord_exists_metaprotocol_validity)
 -  [Function `borrow_metaprotocol_validity`](#0x4_ord_borrow_metaprotocol_validity)
 -  [Function `metaprotocol_validity_protocol_match`](#0x4_ord_metaprotocol_validity_protocol_match)
@@ -995,6 +996,17 @@ Seal the metaprotocol validity for the given inscription_id.
 
 <pre><code>#[private_generics(#[T])]
 <b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_seal_metaprotocol_validity">seal_metaprotocol_validity</a>&lt;T&gt;(inscription_id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>, is_valid: bool, invalid_reason: <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;)
+</code></pre>
+
+
+
+<a name="0x4_ord_add_metaprotocol_attachment"></a>
+
+## Function `add_metaprotocol_attachment`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_add_metaprotocol_attachment">add_metaprotocol_attachment</a>&lt;T&gt;(inscription_id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>, attachment: <a href="_Object">object::Object</a>&lt;T&gt;)
 </code></pre>
 
 

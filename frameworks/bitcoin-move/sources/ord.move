@@ -935,6 +935,7 @@ module bitcoin_move::ord {
         let inscription_object_id = derive_inscription_id(inscription_id);
         let inscription_obj = object::borrow_mut_object_extend<Inscription>(inscription_object_id);
 
+        //TODO check the metaprotocol validity protocol type, make sure it's has bean registered
         let protocol_type = type_info::type_name<T>();
         let validity = MetaprotocolValidity {
             protocol_type,
@@ -943,6 +944,15 @@ module bitcoin_move::ord {
         };
 
         object::upsert_field(inscription_obj, METAPROTOCOL_VALIDITY, validity);
+    }
+
+    //#[private_generics(T)]
+    //TODO make this function private_generics, and maybe a better name
+    public fun add_metaprotocol_attachment<T>(inscription_id: InscriptionID, attachment: Object<T>){
+        let inscription_object_id = derive_inscription_id(inscription_id);
+        let inscription_obj = object::borrow_mut_object_extend<Inscription>(inscription_object_id);
+        let protocol_type = type_info::type_name<T>();
+        object::add_field(inscription_obj, protocol_type, attachment);
     }
 
     /// Returns true if Inscription `object` contains metaprotocol validity

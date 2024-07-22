@@ -11,6 +11,7 @@
 -  [Function `borrow_tick_info`](#0xa_tick_info_borrow_tick_info)
 -  [Function `deploy_tick`](#0xa_tick_info_deploy_tick)
 -  [Function `mint`](#0xa_tick_info_mint)
+-  [Function `mint_on_bitcoin`](#0xa_tick_info_mint_on_bitcoin)
 -  [Function `metaprotocol`](#0xa_tick_info_metaprotocol)
 -  [Function `tick`](#0xa_tick_info_tick)
 -  [Function `generator`](#0xa_tick_info_generator)
@@ -22,6 +23,7 @@
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::result</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x4::ord</a>;
@@ -133,6 +135,17 @@ Store the tick -> TickInfo ObjectID mapping in Object<TickInfoStore> dynamic fie
 
 <pre><code>#[private_generics(#[F])]
 <b>public</b> <b>fun</b> <a href="tick_info.md#0xa_tick_info_mint">mint</a>&lt;F&gt;(metaprotocol: <a href="_String">string::String</a>, tick: <a href="_String">string::String</a>, amount: u64): <a href="_Object">object::Object</a>&lt;<a href="bitseed_on_l2.md#0xa_bitseed_on_l2_Bitseed">bitseed_on_l2::Bitseed</a>&gt;
+</code></pre>
+
+
+
+<a name="0xa_tick_info_mint_on_bitcoin"></a>
+
+## Function `mint_on_bitcoin`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tick_info.md#0xa_tick_info_mint_on_bitcoin">mint_on_bitcoin</a>(metaprotocol: <a href="_String">string::String</a>, tick: <a href="_String">string::String</a>, amount: u64): <a href="_Result">result::Result</a>&lt;<a href="_Object">object::Object</a>&lt;<a href="bitseed_on_l2.md#0xa_bitseed_on_l2_Bitseed">bitseed_on_l2::Bitseed</a>&gt;&gt;
 </code></pre>
 
 
