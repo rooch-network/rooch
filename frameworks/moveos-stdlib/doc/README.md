@@ -41,7 +41,6 @@ This is the reference documentation of the MoveOS standard library.
 -  [`0x2::signer`](signer.md#0x2_signer)
 -  [`0x2::simple_map`](simple_map.md#0x2_simple_map)
 -  [`0x2::simple_multimap`](simple_multimap.md#0x2_simple_multimap)
--  [`0x2::simple_rng`](simple_rng.md#0x2_simple_rng)
 -  [`0x2::string_utils`](string_utils.md#0x2_string_utils)
 -  [`0x2::table`](table.md#0x2_table)
 -  [`0x2::table_vec`](table_vec.md#0x2_table_vec)

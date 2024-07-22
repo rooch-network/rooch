@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// A simple random number generator in Move language.
-module moveos_std::simple_rng {
+module rooch_framework::simple_rng {
     use moveos_std::tx_context;
     use moveos_std::timestamp;
     use moveos_std::bcs;
@@ -28,16 +28,24 @@ module moveos_std::simple_rng {
         // get now milliseconds timestamp
         let timestamp_ms = timestamp::now_milliseconds();
         let timestamp_ms_bytes = bcs::to_bytes(&timestamp_ms);
-        
-        // get tx accumulator root
-        let tx_sequence_info_opt = tx_context::get_attribute<TransactionSequenceInfo>();
-        std::debug::print(&tx_sequence_info_opt);
-        let tx_sequence_info = option::extract(&mut tx_sequence_info_opt);
-        let tx_accumulator_root_bytes = tx_sequence_info.tx_accumulator_root;
 
         // construct a seed
         let seed_bytes = vector::empty<u8>();
-        vector::append(&mut seed_bytes, tx_accumulator_root_bytes);
+        
+        // get the tx accumulator root if exists
+        let tx_sequence_info_opt = tx_context::get_attribute<TransactionSequenceInfo>();
+        if (option::is_some(&tx_sequence_info_opt)) {
+            let tx_sequence_info = option::extract(&mut tx_sequence_info_opt);
+            let tx_accumulator_root = transaction::tx_accumulator_root(&tx_sequence_info);
+            let tx_accumulator_root_bytes = bcs::to_bytes(&tx_accumulator_root);
+            vector::append(&mut seed_bytes, tx_accumulator_root_bytes);
+        } else {
+            // if it doesn't exist, get the tx hash
+            let tx_hash = tx_context::tx_hash();
+            let tx_hash_bytes = bcs::to_bytes(&tx_hash);
+            vector::append(&mut seed_bytes, tx_hash_bytes);
+        };
+
         vector::append(&mut seed_bytes, timestamp_ms_bytes);
         vector::append(&mut seed_bytes, sender_addr_bytes);
         vector::append(&mut seed_bytes, sequence_number_bytes);
@@ -147,7 +155,7 @@ module moveos_std::simple_rng {
         // Mocking the input values for the seed function
         
         // Mock sequence number
-        let sequence_number: u64 = 12345;
+        let sequence_number = 0;
         let sequence_number_bytes = bcs::to_bytes(&sequence_number);
         
         // Mock sender address
@@ -155,26 +163,16 @@ module moveos_std::simple_rng {
         let sender_addr_bytes = bcs::to_bytes(&sender_addr);
         
         // Mock timestamp
-        let timestamp_ms: u64 = 1609459200000; // Mock timestamp, e.g., 2021-01-01 00:00:00 UTC
+        let timestamp_ms = 0;
         let timestamp_ms_bytes = bcs::to_bytes(&timestamp_ms);
         
-        // Mock tx accumulator root
-        let tx_accumulator_root_bytes = vector::empty<u8>();
-        vector::push_back(&mut tx_accumulator_root_bytes, 0);
-        vector::push_back(&mut tx_accumulator_root_bytes, 1);
-        vector::push_back(&mut tx_accumulator_root_bytes, 2);
-        vector::push_back(&mut tx_accumulator_root_bytes, 3);
-        vector::push_back(&mut tx_accumulator_root_bytes, 4);
-        vector::push_back(&mut tx_accumulator_root_bytes, 5);
-        vector::push_back(&mut tx_accumulator_root_bytes, 6);
-        vector::push_back(&mut tx_accumulator_root_bytes, 7);
-        vector::push_back(&mut tx_accumulator_root_bytes, 8);
-        vector::push_back(&mut tx_accumulator_root_bytes, 9);
-        vector::push_back(&mut tx_accumulator_root_bytes, 10);
+        // Mock tx hash
+        let tx_hash = tx_context::tx_hash();
+        let tx_hash_bytes = bcs::to_bytes(&tx_hash);
 
         // Constructing the expected seed bytes
         let expected_seed_bytes = vector::empty<u8>();
-        vector::append(&mut expected_seed_bytes, tx_accumulator_root_bytes);
+        vector::append(&mut expected_seed_bytes, tx_hash_bytes);
         vector::append(&mut expected_seed_bytes, timestamp_ms_bytes);
         vector::append(&mut expected_seed_bytes, sender_addr_bytes);
         vector::append(&mut expected_seed_bytes, sequence_number_bytes);
@@ -184,6 +182,7 @@ module moveos_std::simple_rng {
 
         // Call the seed function and check the result
         let seed_bytes = seed();
+
         assert!(seed_bytes == expected_seed, ErrorInvalidSeed);
     }
 }
