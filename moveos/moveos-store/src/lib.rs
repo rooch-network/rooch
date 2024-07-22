@@ -25,7 +25,6 @@ use moveos_types::state_resolver::{StateKV, StatelessResolver};
 use moveos_types::transaction::{TransactionExecutionInfo, TransactionOutput};
 use once_cell::sync::Lazy;
 use prometheus::Registry;
-use raw_store::metrics::DBMetrics;
 use raw_store::rocks::RocksDB;
 use raw_store::{ColumnFamilyName, StoreInstance};
 use smt::NodeReader;
@@ -92,27 +91,20 @@ impl MoveOSStore {
         Self::new_with_instance(instance)
     }
 
-    pub fn new_with_metrics(
-        db_path: &Path,
-        registry: &Registry,
-        db_metrics: Arc<DBMetrics>,
-    ) -> Result<Self> {
-        let instance = StoreInstance::new_db_instance_with_metrics(
-            RocksDB::new(
-                db_path,
-                StoreMeta::get_column_family_names().to_vec(),
-                RocksdbConfig::default(),
-            )?,
-            db_metrics,
-        );
-        Self::new_with_instance_with_metrics(instance, registry)
+    pub fn new_with_metrics_registry(db_path: &Path, registry: &Registry) -> Result<Self> {
+        let instance = StoreInstance::new_db_instance(RocksDB::new(
+            db_path,
+            StoreMeta::get_column_family_names().to_vec(),
+            RocksdbConfig::default(),
+        )?);
+        Self::new_with_instance_with_metrics_registry(instance, registry)
     }
 
     pub fn new_with_instance(instance: StoreInstance) -> Result<Self> {
-        Self::new_with_instance_with_metrics(instance, prometheus::default_registry())
+        Self::new_with_instance_with_metrics_registry(instance, prometheus::default_registry())
     }
 
-    pub fn new_with_instance_with_metrics(
+    pub fn new_with_instance_with_metrics_registry(
         instance: StoreInstance,
         registry: &Registry,
     ) -> Result<Self> {
@@ -134,11 +126,10 @@ impl MoveOSStore {
     pub fn mock_moveos_store() -> Result<(Self, DataDirPath)> {
         let tmpdir = moveos_config::temp_dir();
         let registry = prometheus::Registry::new();
-        let db_metrics = DBMetrics::new(&registry);
 
         //The testcases should hold the tmpdir to prevent the tmpdir from being deleted.
         Ok((
-            Self::new_with_metrics(tmpdir.path(), &registry, Arc::new(db_metrics))?,
+            Self::new_with_metrics_registry(tmpdir.path(), &registry)?,
             tmpdir,
         ))
     }

@@ -43,7 +43,6 @@ use rooch_genesis::{FrameworksGasParameters, RoochGenesis};
 use rooch_types::framework::auth_validator::TxValidateResult;
 use rooch_types::function_arg::FunctionArg;
 use std::path::PathBuf;
-use std::sync::Arc;
 use std::{collections::BTreeMap, path::Path};
 use tracing::debug;
 
@@ -113,10 +112,9 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         };
         let temp_dir = moveos_config::temp_dir();
         let registry = prometheus::Registry::new();
-        let db_metrics = DBMetrics::new(&registry);
+        let _db_metrics = DBMetrics::init(&registry);
         let moveos_store =
-            MoveOSStore::new_with_metrics(temp_dir.path(), &registry, Arc::new(db_metrics))
-                .unwrap();
+            MoveOSStore::new_with_metrics_registry(temp_dir.path(), &registry).unwrap();
         let genesis_gas_parameter = FrameworksGasParameters::initial();
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_LOCAL_GENESIS;
         let moveos = MoveOS::new(

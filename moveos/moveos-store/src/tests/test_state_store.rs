@@ -13,13 +13,13 @@ use std::sync::Arc;
 async fn test_reopen() {
     let temp_dir = moveos_config::temp_dir();
     let registry = prometheus::Registry::new();
-    let db_metrics = Arc::new(DBMetrics::new(&registry));
+    let _db_metrics = Arc::new(DBMetrics::new(&registry));
 
     let key = H256::random();
     let node = b"testnode".to_vec();
     {
         let moveos_store =
-            MoveOSStore::new_with_metrics(temp_dir.path(), &registry, db_metrics.clone()).unwrap();
+            MoveOSStore::new_with_metrics_registry(temp_dir.path(), &registry).unwrap();
         let node_store = moveos_store.get_state_node_store();
         node_store
             .put(key, node.clone())
@@ -30,7 +30,7 @@ async fn test_reopen() {
     {
         let registry = prometheus::Registry::new();
         let moveos_store =
-            MoveOSStore::new_with_metrics(temp_dir.path(), &registry, db_metrics).unwrap();
+            MoveOSStore::new_with_metrics_registry(temp_dir.path(), &registry).unwrap();
         let node_store = moveos_store.get_state_node_store();
         assert_eq!(node_store.get(&key).unwrap(), Some(node));
     }

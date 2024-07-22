@@ -52,11 +52,6 @@ unsafe impl Send for StoreInstance {}
 impl StoreInstance {
     pub fn new_db_instance(db: RocksDB) -> Self {
         let db_metrics = DBMetrics::get().clone();
-        Self::new_db_instance_with_metrics(db, db_metrics)
-    }
-
-    // pub fn new_db_instance_with_metrics(db: RocksDB, db_metrics: Arc<DBMetrics>) -> Self {
-    pub fn new_db_instance_with_metrics(db: RocksDB, db_metrics: Arc<DBMetrics>) -> Self {
         let db_arc = Arc::new(db);
         // let db_metrics = Arc::new(DBMetrics::new(registry));
         // let db_clone = db_arc.clone();

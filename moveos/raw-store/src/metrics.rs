@@ -407,6 +407,7 @@ impl DBMetrics {
             .with_label_values(&[cf_name])
             .inc();
     }
+
     pub fn decrement_num_active_dbs(&self, cf_name: &str) {
         self.raw_store_metrics
             .raw_store_num_active_cf_handles
