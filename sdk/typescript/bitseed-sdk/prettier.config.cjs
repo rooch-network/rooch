@@ -1,4 +1,11 @@
-// eslint-disable-next-line no-undef
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module.exports = {
-  proseWrap: "always",
-};
+  printWidth: 100,
+  semi: false,
+  singleQuote: true,
+  tabWidth: 2,
+  trailingComma: 'all',
+  useTabs: false,
+}
