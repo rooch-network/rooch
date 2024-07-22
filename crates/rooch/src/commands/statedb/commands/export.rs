@@ -12,8 +12,8 @@ use serde::{Deserialize, Serialize};
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::state::{FieldKey, ObjectState};
-use moveos_types::state_resolver::StatelessResolver;
+use moveos_types::state::FieldKey;
+use moveos_types::state_resolver::{StateKV, StatelessResolver};
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::bitcoin::ord::InscriptionStore;
 use rooch_types::bitcoin::utxo::BitcoinUTXOStore;
@@ -205,21 +205,47 @@ impl ExportCommand {
         let utxo_store_id = BitcoinUTXOStore::object_id();
         let inscription_store_id = InscriptionStore::object_id();
         let rooch_to_bitcoin_address_mapping_id = RoochToBitcoinAddressMapping::object_id();
-
-        let genesis_object_ids = vec![
-            utxo_store_id.clone(),
-            inscription_store_id.clone(),
-            rooch_to_bitcoin_address_mapping_id,
+        let genesis_object_ids_field_keys = vec![
+            utxo_store_id.clone().field_key(),
+            inscription_store_id.clone().field_key(),
+            rooch_to_bitcoin_address_mapping_id.clone().field_key(),
         ];
 
-        let mut genesis_states: Vec<(FieldKey, ObjectState)> = vec![];
-        for object_id in genesis_object_ids.into_iter() {
-            let state = moveos_store
-                .get_field_at(root_state_root, &object_id.field_key())?
-                .expect("state should exist.");
-            genesis_states.push((object_id.field_key(), state));
-        }
+        Self::export_genesis_fields(
+            moveos_store,
+            root_state_root,
+            writer,
+            genesis_object_ids_field_keys,
+        )
+    }
 
+    fn export_indexer<W: std::io::Write>(
+        moveos_store: &MoveOSStore,
+        root_state_root: H256,
+        writer: &mut Writer<W>,
+    ) -> Result<()> {
+        let utxo_store_id = BitcoinUTXOStore::object_id();
+        let inscription_store_id = InscriptionStore::object_id();
+        let genesis_object_ids_field_keys = vec![
+            utxo_store_id.clone().field_key(),
+            inscription_store_id.clone().field_key(),
+        ];
+
+        Self::export_genesis_fields(
+            moveos_store,
+            root_state_root,
+            writer,
+            genesis_object_ids_field_keys,
+        )
+    }
+
+    fn export_genesis_fields<W: std::io::Write>(
+        moveos_store: &MoveOSStore,
+        root_state_root: H256,
+        writer: &mut Writer<W>,
+        field_keys: Vec<FieldKey>,
+    ) -> Result<()> {
+        let genesis_states = get_object_states(moveos_store, root_state_root, field_keys);
         // write root state
         {
             let root_export_id =
@@ -351,66 +377,20 @@ impl ExportCommand {
         );
         Ok(())
     }
+}
 
-    fn export_indexer<W: std::io::Write>(
-        moveos_store: &MoveOSStore,
-        root_state_root: H256,
-        writer: &mut Writer<W>,
-    ) -> Result<()> {
-        let utxo_store_id = BitcoinUTXOStore::object_id();
-        let inscription_store_id = InscriptionStore::object_id();
-        println!("export_indexer utxo_store_id: {:?}", utxo_store_id);
-        println!(
-            "export_indexer inscription_store_id: {:?}",
-            inscription_store_id
-        );
-
-        let genesis_object_ids = vec![utxo_store_id.clone(), inscription_store_id.clone()];
-
-        //let mut genesis_objects = vec![];
-        let mut genesis_states = vec![];
-        for object_id in genesis_object_ids.into_iter() {
-            let state = moveos_store
-                .get_field_at(root_state_root, &object_id.field_key())?
-                .expect("state should exist.");
-            //let object = state.clone().as_raw_object()?;
-            genesis_states.push((object_id.field_key(), state));
-            //genesis_objects.push(object);
-        }
-
-        // write csv field states
-        //TODO
-        // for obj in genesis_objects.into_iter() {
-        //     Self::export_field_states(
-        //         moveos_store,
-        //         H256::from(obj.state_root.into_bytes()),
-        //         root_state_root,
-        //         obj.id,
-        //         true,
-        //         false,
-        //         writer,
-        //     )?;
-        // }
-
-        // write csv object states.
-        {
-            let root_export_id =
-                ExportID::new(ObjectID::root(), root_state_root, root_state_root, 0);
-            writer.write_field(GLOBAL_STATE_TYPE_ROOT)?;
-            writer.write_field(root_export_id.to_string())?;
-            writer.write_record(None::<&[u8]>)?;
-        }
-        for (k, _v) in genesis_states.into_iter() {
-            writer.write_field(k.to_string())?;
-            //TODO
-            //writer.write_field(v.to_string())?;
-            writer.write_record(None::<&[u8]>)?;
-        }
-
-        // flush csv writer
-        writer.flush()?;
-        println!("export_genesis root state_root: {:?}", root_state_root);
-
-        Ok(())
+fn get_object_states(
+    moveos_store: &MoveOSStore,
+    state_root: H256,
+    object_field_keys: Vec<FieldKey>,
+) -> Vec<StateKV> {
+    let mut kvs: Vec<StateKV> = Vec::with_capacity(object_field_keys.len());
+    for object_field_key in object_field_keys.into_iter() {
+        let state = moveos_store
+            .get_field_at(state_root, &object_field_key)
+            .unwrap()
+            .expect("state should exist.");
+        kvs.push((object_field_key, state));
     }
+    kvs
 }
