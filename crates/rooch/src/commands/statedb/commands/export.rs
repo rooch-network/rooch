@@ -1,28 +1,30 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_types::WalletContextOptions;
-use crate::commands::statedb::commands::{
-    BATCH_SIZE, GLOBAL_STATE_TYPE_FIELD, GLOBAL_STATE_TYPE_OBJECT, GLOBAL_STATE_TYPE_ROOT,
-};
+use std::path::PathBuf;
+use std::str::FromStr;
+
 use anyhow::Result;
 use clap::Parser;
 use csv::Writer;
+use serde::{Deserialize, Serialize};
+
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::state::{FieldKey, ObjectState};
 use moveos_types::state_resolver::StatelessResolver;
-use rooch_config::{RoochOpt, R_OPT_NET_HELP};
-use rooch_db::RoochDB;
+use rooch_config::R_OPT_NET_HELP;
 use rooch_types::bitcoin::ord::InscriptionStore;
 use rooch_types::bitcoin::utxo::BitcoinUTXOStore;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::rooch_network::RoochChainID;
-use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
-use std::str::FromStr;
-use std::time::SystemTime;
+
+use crate::cli_types::WalletContextOptions;
+use crate::commands::statedb::commands::{
+    init_job, GLOBAL_STATE_TYPE_FIELD, GLOBAL_STATE_TYPE_OBJECT, GLOBAL_STATE_TYPE_ROOT,
+};
 
 /// Export statedb
 
@@ -157,17 +159,9 @@ pub struct ExportCommand {
 
 impl ExportCommand {
     pub async fn execute(self) -> RoochResult<()> {
-        println!("Start statedb export task, batch_size: {:?}", BATCH_SIZE);
-        let opt = RoochOpt::new_with_default(self.base_data_dir, self.chain_id, None)?;
-        let rooch_db = RoochDB::init(opt.store_config())?;
-        let root = rooch_db.latest_root()?.ok_or_else(|| {
-            RoochError::from(anyhow::Error::msg(
-                "The statedb is empty, please init genesis first.",
-            ))
-        })?;
-        println!("root object: {:?}", root);
+        let (root, moveos_store, start_time) =
+            init_job(self.base_data_dir.clone(), self.chain_id.clone());
 
-        let mut _start_time = SystemTime::now();
         let file_name = self.output.display().to_string();
         let mut writer_builder = csv::WriterBuilder::new();
         let writer_builder = writer_builder.delimiter(b',').double_quote(false);
@@ -179,7 +173,7 @@ impl ExportCommand {
         let mode = ExportMode::try_from(self.mode.unwrap_or(ExportMode::Genesis.to_num()))?;
         match mode {
             ExportMode::Genesis => {
-                Self::export_genesis(&rooch_db.moveos_store, root_state_root, &mut writer)?;
+                Self::export_genesis(&moveos_store, root_state_root, &mut writer)?;
             }
             ExportMode::Full => {
                 todo!()
@@ -188,17 +182,17 @@ impl ExportCommand {
                 todo!()
             }
             ExportMode::Indexer => {
-                Self::export_indexer(&rooch_db.moveos_store, root_state_root, &mut writer)?;
+                Self::export_indexer(&moveos_store, root_state_root, &mut writer)?;
             }
             ExportMode::Object => {
                 let obj_id = self
                     .object_id
                     .expect("Object id should exist in object mode");
-                Self::export_object(&rooch_db.moveos_store, root_state_root, obj_id, &mut writer)?;
+                Self::export_object(&moveos_store, root_state_root, obj_id, &mut writer)?;
             }
         }
 
-        println!("Finish export task.");
+        log::info!("Done in {:?}.", start_time.elapsed(),);
         Ok(())
     }
 
@@ -211,15 +205,6 @@ impl ExportCommand {
         let utxo_store_id = BitcoinUTXOStore::object_id();
         let inscription_store_id = InscriptionStore::object_id();
         let rooch_to_bitcoin_address_mapping_id = RoochToBitcoinAddressMapping::object_id();
-        println!("export_genesis utxo_store_id: {:?}", utxo_store_id);
-        println!(
-            "export_genesis inscription_store_id: {:?}",
-            inscription_store_id
-        );
-        println!(
-            "export_genesis rooch_to_bitcoin_address_mapping_id: {:?}",
-            rooch_to_bitcoin_address_mapping_id
-        );
 
         let genesis_object_ids = vec![
             utxo_store_id.clone(),
@@ -227,50 +212,25 @@ impl ExportCommand {
             rooch_to_bitcoin_address_mapping_id,
         ];
 
-        //let mut genesis_objects = vec![];
-        let mut genesis_states = vec![];
+        let mut genesis_states: Vec<(FieldKey, ObjectState)> = vec![];
         for object_id in genesis_object_ids.into_iter() {
             let state = moveos_store
                 .get_field_at(root_state_root, &object_id.field_key())?
                 .expect("state should exist.");
-            //TODO
-            //let object = state.clone().as_raw_object()?;
             genesis_states.push((object_id.field_key(), state));
-            //genesis_objects.push(object);
         }
 
-        // write csv field states
-        // for obj in genesis_objects.into_iter() {
-        //     Self::export_field_states(
-        //         moveos_store,
-        //         H256::from(obj.state_root.into_bytes()),
-        //         root_state_root,
-        //         obj.id,
-        //         false,
-        //         true,
-        //         writer,
-        //     )?;
-        // }
-
-        // write csv object states.
+        // write root state
         {
             let root_export_id =
                 ExportID::new(ObjectID::root(), root_state_root, root_state_root, 0);
-            writer.write_field(GLOBAL_STATE_TYPE_ROOT)?;
-            writer.write_field(root_export_id.to_string())?;
-            writer.write_record(None::<&[u8]>)?;
+            writer.write_record([GLOBAL_STATE_TYPE_ROOT, root_export_id.to_string().as_str()])?;
         }
-        for (k, _v) in genesis_states.into_iter() {
-            writer.write_field(k.to_string())?;
-            //TODO write ObjectState csv
-            //writer.write_field(v.to_string())?;
-            writer.write_record(None::<&[u8]>)?;
+        for (k, v) in genesis_states.into_iter() {
+            writer.write_record([k.to_string().as_str(), v.to_string().as_str()])?;
         }
 
-        // flush csv writer
         writer.flush()?;
-        println!("export_genesis root state_root: {:?}", root_state_root);
-
         Ok(())
     }
 
