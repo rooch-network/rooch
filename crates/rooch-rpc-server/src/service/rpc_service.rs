@@ -356,7 +356,6 @@ impl RpcService {
             .collect::<Vec<_>>();
 
         let access_path = AccessPath::fields(mapping_object_id, owner_keys);
-        let bitcoin_network = self.bitcoin_network;
         let address_mapping = self
             .get_states(access_path)
             .await?
