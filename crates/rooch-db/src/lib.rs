@@ -7,6 +7,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use moveos_store::MoveOSStore;
 use moveos_types::moveos_std::object::ObjectMeta;
+use prometheus::Registry;
 use raw_store::metrics::DBMetrics;
 use raw_store::{rocks::RocksDB, StoreInstance};
 use rooch_config::store_config::StoreConfig;
@@ -23,11 +24,19 @@ pub struct RoochDB {
 
 impl RoochDB {
     pub fn init(config: &StoreConfig) -> Result<Self> {
-        let db_metrics = DBMetrics::get().clone();
-        Self::init_with_metrics(config, db_metrics)
+        Self::init_with_metrics_registry(config, &prometheus::Registry::new())
     }
 
-    pub fn init_with_metrics(config: &StoreConfig, db_metrics: Arc<DBMetrics>) -> Result<Self> {
+    pub fn init_with_metrics_registry(config: &StoreConfig, registry: &Registry) -> Result<Self> {
+        let db_metrics = DBMetrics::get().clone();
+        Self::init_with_metrics(config, registry, db_metrics)
+    }
+
+    pub fn init_with_metrics(
+        config: &StoreConfig,
+        registry: &Registry,
+        db_metrics: Arc<DBMetrics>,
+    ) -> Result<Self> {
         let (store_dir, indexer_dir) = (config.get_store_dir(), config.get_indexer_dir());
 
         let mut column_families = moveos_store::StoreMeta::get_column_family_names().to_vec();
@@ -47,9 +56,9 @@ impl RoochDB {
             db_metrics,
         );
 
-        let moveos_store = MoveOSStore::new_with_instance(instance.clone())?;
+        let moveos_store = MoveOSStore::new_with_instance_with_metrics(instance.clone(), registry)?;
 
-        let rooch_store = RoochStore::new_with_instance(instance)?;
+        let rooch_store = RoochStore::new_with_instance_with_metrics(instance, registry)?;
 
         let indexer_store = IndexerStore::new(indexer_dir.clone())?;
         let indexer_reader = IndexerReader::new(indexer_dir)?;
@@ -63,9 +72,9 @@ impl RoochDB {
     }
 
     pub fn init_with_mock_metrics_for_test(config: &StoreConfig) -> Result<Self> {
-        let db_registry = prometheus::Registry::new();
-        let db_metrics = DBMetrics::new(&db_registry);
-        Self::init_with_metrics(config, Arc::new(db_metrics))
+        let registry = prometheus::Registry::new();
+        let db_metrics = DBMetrics::new(&registry);
+        Self::init_with_metrics(config, &registry, Arc::new(db_metrics))
     }
 
     pub fn latest_root(&self) -> Result<Option<ObjectMeta>> {

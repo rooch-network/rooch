@@ -112,10 +112,11 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             None => BTreeMap::new(),
         };
         let temp_dir = moveos_config::temp_dir();
-        let db_registry = prometheus::Registry::new();
-        let db_metrics = DBMetrics::new(&db_registry);
+        let registry = prometheus::Registry::new();
+        let db_metrics = DBMetrics::new(&registry);
         let moveos_store =
-            MoveOSStore::new_with_metrics(temp_dir.path(), Arc::new(db_metrics)).unwrap();
+            MoveOSStore::new_with_metrics(temp_dir.path(), &registry, Arc::new(db_metrics))
+                .unwrap();
         let genesis_gas_parameter = FrameworksGasParameters::initial();
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_LOCAL_GENESIS;
         let moveos = MoveOS::new(

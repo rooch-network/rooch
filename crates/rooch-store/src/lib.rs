@@ -10,6 +10,7 @@ use moveos_config::store_config::RocksdbConfig;
 use moveos_config::DataDirPath;
 use moveos_types::h256::H256;
 use once_cell::sync::Lazy;
+use prometheus::Registry;
 use raw_store::metrics::DBMetrics;
 use raw_store::rocks::RocksDB;
 use raw_store::{ColumnFamilyName, StoreInstance};
@@ -69,19 +70,30 @@ impl RoochStore {
         Self::new_with_instance(instance)
     }
 
-    pub fn new_with_metrics(db_path: &Path, db_metrics: DBMetrics) -> Result<Self> {
+    pub fn new_with_metrics(
+        db_path: &Path,
+        registry: &Registry,
+        db_metrics: Arc<DBMetrics>,
+    ) -> Result<Self> {
         let instance = StoreInstance::new_db_instance_with_metrics(
             RocksDB::new(
                 db_path,
                 StoreMeta::get_column_family_names().to_vec(),
                 RocksdbConfig::default(),
             )?,
-            Arc::new(db_metrics),
+            db_metrics,
         );
-        Self::new_with_instance(instance)
+        Self::new_with_instance_with_metrics(instance, registry)
     }
 
     pub fn new_with_instance(instance: StoreInstance) -> Result<Self> {
+        Self::new_with_instance_with_metrics(instance, prometheus::default_registry())
+    }
+
+    pub fn new_with_instance_with_metrics(
+        instance: StoreInstance,
+        _registry: &Registry,
+    ) -> Result<Self> {
         let store = Self {
             transaction_store: TransactionDBStore::new(instance.clone()),
             meta_store: MetaDBStore::new(instance.clone()),
@@ -94,11 +106,14 @@ impl RoochStore {
 
     pub fn mock_rooch_store() -> Result<(Self, DataDirPath)> {
         let tmpdir = moveos_config::temp_dir();
-        let db_registry = prometheus::Registry::new();
-        let db_metrics = DBMetrics::new(&db_registry);
+        let registry = prometheus::Registry::new();
+        let db_metrics = DBMetrics::new(&registry);
 
         //The testcases should hold the tmpdir to prevent the tmpdir from being deleted.
-        Ok((Self::new_with_metrics(tmpdir.path(), db_metrics)?, tmpdir))
+        Ok((
+            Self::new_with_metrics(tmpdir.path(), &registry, Arc::new(db_metrics))?,
+            tmpdir,
+        ))
     }
 
     pub fn get_transaction_store(&self) -> &TransactionDBStore {

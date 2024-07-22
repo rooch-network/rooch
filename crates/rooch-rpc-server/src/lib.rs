@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::metrics_server::start_basic_prometheus_server;
+use crate::metrics_server::{init_metrics, start_basic_prometheus_server};
 use crate::server::btc_server::BtcServer;
 use crate::server::rooch_server::RoochServer;
 use crate::service::aggregate_service::AggregateService;
@@ -15,7 +15,6 @@ use jsonrpsee::server::middleware::rpc::RpcServiceBuilder;
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
 use raw_store::errors::RawStoreError;
-use raw_store::metrics::DBMetrics;
 use rooch_config::server_config::ServerConfig;
 use rooch_config::{RoochOpt, ServerOpt};
 use rooch_da::actor::da::DAActor;
@@ -181,13 +180,13 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
 
     // start prometheus server
     let prometheus_registry = start_basic_prometheus_server();
-    // Initialize metrics to track db usage before creating any stores
-    DBMetrics::init(&prometheus_registry);
+    // Initialize metrics before creating any stores
+    init_metrics(&prometheus_registry);
 
     //Init store
     let store_config = opt.store_config();
 
-    let rooch_db = RoochDB::init(store_config)?;
+    let rooch_db = RoochDB::init_with_metrics_registry(store_config, &prometheus_registry)?;
     let (rooch_store, moveos_store, indexer_store, indexer_reader) = (
         rooch_db.rooch_store.clone(),
         rooch_db.moveos_store.clone(),
