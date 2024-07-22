@@ -346,20 +346,22 @@ impl RpcService {
         rooch_addresses: Vec<RoochAddress>,
     ) -> Result<HashMap<RoochAddress, Option<BitcoinAddress>>> {
         let mapping_object_id = RoochToBitcoinAddressMapping::object_id();
-        let owner_keys = rooch_addresses
+        let user_addresses = rooch_addresses
+            .into_iter()
+            .filter(|addr| !addr.is_vm_or_system_reserved_address())
+            .collect::<Vec<_>>();
+        let owner_keys = user_addresses
             .iter()
-            .filter(|addr|
-                //skip vm and system reserved addresses
-                !addr.is_vm_or_system_reserved_address())
             .map(|addr| FieldKey::derive_from_address(&(*addr).into()))
             .collect::<Vec<_>>();
 
         let access_path = AccessPath::fields(mapping_object_id, owner_keys);
+        let bitcoin_network = self.bitcoin_network;
         let address_mapping = self
             .get_states(access_path)
             .await?
             .into_iter()
-            .zip(rooch_addresses)
+            .zip(user_addresses)
             .map(|(state_opt, owner)| {
                 Ok((
                     owner,
