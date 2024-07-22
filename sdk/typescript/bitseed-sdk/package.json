@@ -2,10 +2,11 @@
   "name": "@roochnetowrk/bitseed-sdk",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "build-package",
+    "test": "pnpm test:unit && pnpm test:e2e",
+    "test:unit": "jest src",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
@@ -31,6 +32,7 @@
     "randomstring": "^1.2.3"
   },
   "devDependencies": {
+    "@roochnetwork/build-scripts": "workspace:*",
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
     "@typescript-eslint/eslint-plugin": "^6.1.0",
@@ -38,6 +40,7 @@
     "@vitejs/plugin-react-swc": "^3.3.2",
     "typescript": "^5.1.6",
     "vite": "^4.4.4",
+    "vitest": "^1.6.0",
     "@babel/core": "^7.23.9",
     "@babel/preset-env": "^7.23.9",
     "@playwright/experimental-ct-react": "^1.41.2",

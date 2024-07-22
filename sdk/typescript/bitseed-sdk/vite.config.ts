@@ -1,6 +1,22 @@
-import { defineConfig } from "vite";
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 
-// https://vitejs.dev/config/
+import * as path from 'path'
+import { defineConfig } from 'vitest/config'
+
 export default defineConfig({
-  plugins: [],
-});
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+  test: {
+    minThreads: 1,
+    maxThreads: 8,
+    hookTimeout: 1000000,
+    testTimeout: 1000000,
+    env: {
+      NODE_ENV: 'test',
+    },
+  },
+})

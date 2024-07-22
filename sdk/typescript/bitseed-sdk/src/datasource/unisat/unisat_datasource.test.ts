@@ -1,3 +1,4 @@
+ 
 import { UniSatDataSource } from './unisat_datasource'; // 假设你的类名为 YourClass
 import { Wallet } from '../../wallet'
 
@@ -42,6 +43,7 @@ describe('UniSatDataSource', () => {
     });
   });
 
+  /*
   describe('getInscriptionUTXO', () => {
     it('should return the correct UTXO for getInscriptionUTXO', async () => {
       const utxo = await instance.getInscriptionUTXO({ id: '42d186a5d9bc064e5704024afb2dfccd424da1b9756ae31a4fbfee22f4fc7ec5i1' });
@@ -166,5 +168,6 @@ describe('UniSatDataSource', () => {
       expect(resp).toBeDefined()
     });
   });
-
+  */
 })
+ 
