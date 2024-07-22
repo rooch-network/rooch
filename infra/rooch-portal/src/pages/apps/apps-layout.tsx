@@ -1,19 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 import { useState } from 'react'
-import { AppsItem } from './components/apps-item'
+import { AppsItem, AppItemProps } from './components/apps-item'
 import {useTranslation} from 'react-i18next';
 
-interface App {
-  id: number
-  name: string
-  description: string
-  profileUrl: string
-  logoUrl: string
-  type: string
-}
-
-const mockApps: App[] = [
+const mockApps: AppItemProps[] = [
   {
     id: 1,
     name: 'Rooch Clicker',
@@ -22,11 +13,12 @@ const mockApps: App[] = [
       'https://cdn.lxdao.io/bafkreig3psglqxqiejrcokqwcoucbv4i2nkp4rumqawok2vjvhey5ps63i.png',
     logoUrl: 'clicker-app.jpg',
     type: 'Clicker',
+    url: 'https://rooch-clicker.vercel.app'
   }
 ]
 
 export const AppsLayout = () => {
-  const [apps] = useState<App[]>(mockApps)
+  const [apps] = useState<AppItemProps[]>(mockApps)
   const { t } = useTranslation()
 
   const renderContent = () => {
@@ -41,6 +33,7 @@ export const AppsLayout = () => {
             profileUrl={app.profileUrl}
             logoUrl={app.logoUrl}
             type={app.type}
+            url={app.url}
           />
         ))}
       </div>

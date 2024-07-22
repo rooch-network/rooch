@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { AppItemProps } from '@/common/interface'
 import { AspectRatio } from '@/components/ui/aspect-ratio'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -14,10 +13,19 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Send } from 'lucide-react'
 import { Separator } from '@/components/ui/separator.tsx'
 
-export const AppsItem = ({ id, name, description, profileUrl, logoUrl, type }: AppItemProps) => {
+export interface AppItemProps {
+  id: number
+  name: string
+  description: string
+  profileUrl: string
+  logoUrl: string
+  type: string
+  url: string
+}
+
+export const AppsItem = ({ id, name, description, profileUrl, logoUrl, type, url }: AppItemProps) => {
   return (
     <Card
       key={id}
@@ -67,12 +75,13 @@ export const AppsItem = ({ id, name, description, profileUrl, logoUrl, type }: A
         </div>
       </CardContent>
       <CardFooter className="p-4">
+        <a href={url} className="w-full" target="_blank" rel="noopener noreferrer">
         <Button variant="default" size="default" className="w-full">
           <div className="flex items-center justify-center gap-x-2">
-            <Send className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all" />
             {type}
           </div>
         </Button>
+        </a>
       </CardFooter>
     </Card>
   )
