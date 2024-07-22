@@ -7,6 +7,8 @@ A simple random number generator in Move language.
 
 
 -  [Constants](#@Constants_0)
+-  [Function `bytes_to_u64`](#0x3_simple_rng_bytes_to_u64)
+-  [Function `bytes_to_u128`](#0x3_simple_rng_bytes_to_u128)
 -  [Function `rand_u64`](#0x3_simple_rng_rand_u64)
 -  [Function `rand_u128`](#0x3_simple_rng_rand_u128)
 -  [Function `rand_u64_range`](#0x3_simple_rng_rand_u64_range)
@@ -61,6 +63,28 @@ A simple random number generator in Move language.
 
 
 <pre><code><b>const</b> <a href="simple_rng.md#0x3_simple_rng_ErrorInvalidU64">ErrorInvalidU64</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_simple_rng_bytes_to_u64"></a>
+
+## Function `bytes_to_u64`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="simple_rng.md#0x3_simple_rng_bytes_to_u64">bytes_to_u64</a>(bytes: <a href="">vector</a>&lt;u8&gt;): u64
+</code></pre>
+
+
+
+<a name="0x3_simple_rng_bytes_to_u128"></a>
+
+## Function `bytes_to_u128`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="simple_rng.md#0x3_simple_rng_bytes_to_u128">bytes_to_u128</a>(bytes: <a href="">vector</a>&lt;u8&gt;): u128
 </code></pre>
 
 

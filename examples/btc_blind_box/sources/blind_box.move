@@ -22,8 +22,7 @@ module btc_blind_box::blind_box {
     use moveos_std::tx_context;
     use moveos_std::object::{Self, Object};
     use moveos_std::account as moveos_account;
-    use moveos_std::timestamp;
-    use moveos_std::simple_rng;
+    use rooch_framework::simple_rng;
     use bitcoin_move::bitcoin;
     use bitcoin_move::types::{Self, Header};
 
@@ -104,8 +103,7 @@ module btc_blind_box::blind_box {
 
     fun generate_magic_number(): u128 {
         // generate a simple random number from tx_context
-        let seed = simple_rng::seed();
-        let magic_number = simple_rng::bytes_to_u128(seed);
+        let magic_number = simple_rng::rand_u128();
         magic_number
     }
 

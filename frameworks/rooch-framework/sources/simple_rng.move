@@ -55,7 +55,7 @@ module rooch_framework::simple_rng {
         seed
     }
 
-    fun bytes_to_u64(bytes: vector<u8>): u64 {
+    public fun bytes_to_u64(bytes: vector<u8>): u64 {
         let value = 0u64;
         let i = 0u64;
         while (i < 8) {
@@ -65,7 +65,7 @@ module rooch_framework::simple_rng {
         return value
     }
 
-    fun bytes_to_u128(bytes: vector<u8>): u128 {
+    public fun bytes_to_u128(bytes: vector<u8>): u128 {
         let value = 0u128;
         let i = 0u64;
         while (i < 16) {
