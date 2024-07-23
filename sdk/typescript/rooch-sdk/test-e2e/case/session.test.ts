@@ -3,7 +3,6 @@
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import { setup, TestBox } from '../setup.js'
-import { bytes } from '../../src/utils/bytes.js'
 import { Transaction } from '../../src/transactions/index.js'
 
 describe('Checkpoints Session API', () => {
