@@ -1,14 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::hash_map::Entry;
 use std::collections::{BTreeMap, HashMap};
+use std::collections::hash_map::Entry;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::{Arc, mpsc};
 use std::sync::mpsc::{Receiver, SyncSender};
-use std::sync::{mpsc, Arc};
 use std::thread;
 use std::time::{Instant, SystemTime};
 
@@ -24,7 +24,7 @@ use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::{
-    ObjectEntity, ObjectID, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
+    GENESIS_STATE_ROOT, ObjectEntity, ObjectID, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
 };
 use moveos_types::moveos_std::simple_multimap::{Element, SimpleMultiMap};
 use moveos_types::startup_info::StartupInfo;
@@ -33,8 +33,8 @@ use rooch_common::fs::file_cache::FileCacheManager;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::address::BitcoinAddress;
 use rooch_types::addresses::BITCOIN_MOVE_ADDRESS;
-use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
 use rooch_types::bitcoin::{types, utxo};
+use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::into_address::IntoAddress;
@@ -42,11 +42,11 @@ use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
 use crate::cli_types::WalletContextOptions;
-use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
 use crate::commands::statedb::commands::{
     drive_bitcoin_address, get_ord_by_outpoint, init_job, SCRIPT_TYPE_NON_STANDARD,
     SCRIPT_TYPE_P2MS, SCRIPT_TYPE_P2PK, UTXO_ORD_MAP_TABLE, UTXO_SEAL_INSCRIPTION_PROTOCOL,
 };
+use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
 
 /// Genesis Import UTXO
 #[derive(Debug, Parser)]
@@ -272,7 +272,7 @@ pub fn apply_utxo_updates_to_state(
             rooch_to_bitcoin_address_mapping_state_root;
     }
 
-    finish_task(
+    finish_job(
         utxo_count,
         address_mapping_count,
         moveos_store,
@@ -285,7 +285,7 @@ pub fn apply_utxo_updates_to_state(
     );
 }
 
-fn finish_task(
+fn finish_job(
     utxo_count: u64,
     address_mapping_count: u64,
 

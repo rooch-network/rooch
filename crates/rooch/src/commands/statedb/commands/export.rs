@@ -102,7 +102,7 @@ impl FromStr for ExportObjectName {
 pub struct ExportID {
     pub object_id: ObjectID,
     pub state_root: H256,
-    pub parent_state_root: H256,    // If object has no parent, it'll be itself state root.
+    pub parent_state_root: H256, // If object has no parent, it'll be itself state root.
     pub timestamp: u64,
 }
 
@@ -286,7 +286,6 @@ impl ExportCommand {
             .expect("state should exist.");
         let obj_state_root = obj_state.state_root();
         let obj_timestamp = obj_state.updated_at();
-        obj_state.metadata.id.parent()
 
         // 1. export object fields
         Self::export_object_fields(
