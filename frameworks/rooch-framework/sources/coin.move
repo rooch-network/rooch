@@ -87,8 +87,6 @@ module rooch_framework::coin {
         decimals: u8,
         /// The total value for the coin represented by coin type. Mutable.
         supply: u256,
-        /// URL for the token logo
-        icon_url: Option<string::String>
     }
 
     /// Event emitted when coin minted.
@@ -158,8 +156,8 @@ module rooch_framework::coin {
     }
 
     /// Returns the amount of coin.
-    public fun icon_url<CoinType: key>(coin_info: &CoinInfo<CoinType>): Option<String> {
-        coin_info.icon_url
+    public fun icon_url<CoinType: key>(coin_info: &Object<CoinInfo<CoinType>>): Option<String> {
+        *object::borrow_field<CoinInfo<CoinType>, String, Option<String>>(coin_info, string::utf8(b"icon_url"))
     }
 
     /// Return true if the type `CoinType1` is same with `CoinType2`
@@ -245,9 +243,10 @@ module rooch_framework::coin {
             symbol,
             decimals,
             supply: 0u256,
-            icon_url
         };
-        object::new_named_object(coin_info)
+        let coin_info_obj = object::new_named_object(coin_info);
+        object::add_field(&mut coin_info_obj, string::utf8(b"icon_url"), icon_url);
+        coin_info_obj
     }
 
     /// Public coin can mint by anyone with the mutable Object<CoinInfo<CoinType>>
