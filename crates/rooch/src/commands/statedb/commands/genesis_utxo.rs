@@ -19,6 +19,7 @@ use move_core_types::account_address::AccountAddress;
 use redb::{Database, ReadOnlyTable};
 use serde::{Deserialize, Serialize};
 
+use framework_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::move_std::string::MoveString;
@@ -157,7 +158,7 @@ impl AddressMappingData {
 
     pub fn into_state(self) -> ObjectState {
         let parent_id = RoochToBitcoinAddressMapping::object_id();
-        //Rooch address to bitcoin address dynamic field: name is rooch address, value is bitcoin address
+        // Rooch address to bitcoin address dynamic field: name is rooch address, value is bitcoin address
         ObjectEntity::new_dynamic_field(parent_id, self.address, self.baddress).into_state()
     }
 }
@@ -308,7 +309,7 @@ fn finish_task(
     // Update Address Mapping Object
 
     let mut genesis_rooch_to_bitcoin_address_mapping_object =
-        create_genesis_rooch_to_bitcoin_address_mapping_object().unwrap();
+        create_genesis_rooch_to_bitcoin_address_mapping_object();
 
     genesis_rooch_to_bitcoin_address_mapping_object.size += address_mapping_count;
     genesis_rooch_to_bitcoin_address_mapping_object.state_root =
@@ -362,19 +363,18 @@ fn create_genesis_utxostore_object() -> Result<ObjectEntity<BitcoinUTXOStore>> {
 }
 
 fn create_genesis_rooch_to_bitcoin_address_mapping_object(
-) -> Result<ObjectEntity<RoochToBitcoinAddressMapping>> {
+) -> ObjectEntity<RoochToBitcoinAddressMapping> {
     let object_id = RoochToBitcoinAddressMapping::object_id();
-    let reverse_address_mapping_object = ObjectEntity::new(
+    ObjectEntity::new(
         object_id,
-        SYSTEM_OWNER_ADDRESS,
+        ROOCH_FRAMEWORK_ADDRESS,
         0u8,
         None,
         0,
         0,
         0,
         RoochToBitcoinAddressMapping::default(),
-    );
-    Ok(reverse_address_mapping_object)
+    )
 }
 
 struct AddressMappingUpdate {
