@@ -3,7 +3,9 @@ import { Network } from '../../types'
 import {
   GetBalanceOptions,
   GetInscriptionOptions,
-  Inscription
+  Inscription,
+  GetInscriptionUTXOOptions,
+  UTXO
 } from "@sadoprotocol/ordit-sdk";
 import { 
   getRoochNodeUrl, 
@@ -12,7 +14,9 @@ import {
   PaginatedUTXOStateViews, 
   RoochTransport,
   PaginatedInscriptionStateViews,
-  InscriptionStateView
+  InscriptionStateView,
+  UTXOStateView,
+  UTXOView,
 } from '@roochnetwork/rooch-sdk';
 
 interface RoochDataSourceOptions {
@@ -114,6 +118,62 @@ export class RoochDataSource /*implements IDatasource*/ {
     }
 
     return inscription;
+  }
+
+  async getInscriptionUTXO({ id }: GetInscriptionUTXOOptions): Promise<UTXO> {
+    // Get inscription information first
+    const inscription = await this.getInscription({ id, decodeMetadata: false });
+  
+    // Parse the outpoint from the inscription
+    const [txid, voutStr] = inscription.outpoint.split(':');
+    const vout = parseInt(voutStr, 10);
+  
+    // Query UTXO using Rooch SDK with out_point filter
+    const response = await this.roochClient.queryUTXO({
+      filter: {
+        out_point: {
+          txid,
+          vout
+        }
+      },
+      limit: "1"
+    });
+  
+    if (response.data.length === 0) {
+      throw new Error(`UTXO for inscription ${id} not found`);
+    }
+  
+    const utxoState: UTXOStateView = response.data[0];
+    const utxoValue: UTXOView = utxoState.value;
+  
+    let sats: number;
+    try {
+      const bigIntValue = BigInt(utxoValue.value);
+      if (bigIntValue > BigInt(Number.MAX_SAFE_INTEGER)) {
+        throw new Error("UTXO value exceeds safe integer range");
+      }
+      sats = Number(bigIntValue);
+    } catch (error) {
+      throw new Error(`Failed to convert UTXO value to number: ${error}`);
+    }
+
+    // Convert Rooch UTXO data to required UTXO type
+    const utxo: UTXO = {
+      n: utxoValue.vout,
+      txid: utxoValue.bitcoin_txid,
+      sats,
+      scriptPubKey: {
+        asm: "", // Rooch does not provide this information
+        desc: "",
+        hex: "",
+        address: utxoState.owner_bitcoin_address || utxoState.owner,
+        type: "p2tr", // Assuming all inscriptions use Taproot
+      },
+      safeToSpend: true, // Assuming all queried UTXOs are safe to spend
+      confirmation: -1, // Rooch does not provide this information
+    };
+  
+    return utxo;
   }
 }
 

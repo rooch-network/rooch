@@ -5,6 +5,7 @@ import {
   RoochTransport, 
   PaginatedUTXOStateViews, 
   PaginatedInscriptionStateViews,
+  UTXOStateView,
 } from '@roochnetwork/rooch-sdk';
 
 class MockRoochTransport implements RoochTransport {
@@ -291,10 +292,8 @@ describe('RoochDataSource', () => {
         fee: 0,
         height: 0,
         sat: 0,
-        // 注意：meta 字段应该不存在，因为解码失败
       });
   
-      // 验证控制台警告信息
       expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('Failed to decode CBOR metadata for inscription mocktxidi0'));
     });
   
@@ -313,7 +312,7 @@ describe('RoochDataSource', () => {
               content_type: 'text/plain',
               txid: 'mocktxid',
               offset: '0',
-              metadata: "", // 注意这里的 metadata 为 null
+              metadata: "", 
               parents: '',
               is_curse: false,
               sequence_number: 0,
@@ -349,8 +348,195 @@ describe('RoochDataSource', () => {
         fee: 0,
         height: 0,
         sat: 0,
-        // 注意：meta 字段应该不存在，因为没有元数据
       });
+    });
+  });
+
+  describe('getInscriptionUTXO', () => {
+    it('should successfully get an inscription UTXO', async () => {
+      const mockInscriptionId = 'mocktxidi0';
+      const mockUTXOState: UTXOStateView = {
+        created_at: '2023-01-01T00:00:00Z',
+        flag: 0,
+        id: 'mock_id',
+        object_type: 'mock_type',
+        owner: 'mock_owner',
+        owner_bitcoin_address: 'mock_bitcoin_address',
+        size: '100',
+        state_index: '0',
+        tx_order: '0',
+        updated_at: '2023-01-01T00:00:00Z',
+        value: {
+          bitcoin_txid: 'mocktxid',
+          seals: 'mock_seals',
+          txid: 'mocktxid',
+          value: '1000',
+          vout: 0
+        }
+      };
+
+      mockTransport.setMockResponse('btc_queryInscriptions', {
+        data: [{
+          value: {
+            bitcoin_txid: 'mocktxid',
+            index: 0,
+            outpoint: 'mocktxid:0'
+          }
+        }],
+        has_next_page: false,
+        next_cursor: null
+      });
+
+      mockTransport.setMockResponse('btc_queryUTXOs', {
+        data: [mockUTXOState],
+        has_next_page: false,
+        next_cursor: null
+      });
+
+      const result = await instance.getInscriptionUTXO({ id: mockInscriptionId });
+
+      expect(result).toEqual({
+        n: 0,
+        txid: 'mocktxid',
+        sats: 1000,
+        scriptPubKey: {
+          asm: '',
+          desc: '',
+          hex: '',
+          address: 'mock_bitcoin_address',
+          type: 'p2tr',
+        },
+        safeToSpend: true,
+        confirmation: -1,
+      });
+    });
+
+    it('should throw an error when inscription does not exist', async () => {
+      const mockInscriptionId = 'nonexistenttxidi0';
+    
+      // Mock empty response for inscription query
+      mockTransport.setMockResponse('btc_queryInscriptions', {
+        data: [],
+        has_next_page: false,
+        next_cursor: null
+      });
+    
+      await expect(instance.getInscriptionUTXO({ id: mockInscriptionId }))
+        .rejects.toThrow(`Inscription with id ${mockInscriptionId} not found`);
+    });
+
+    it('should throw an error when UTXO does not exist', async () => {
+      const mockInscriptionId = 'mocktxidi0';
+    
+      mockTransport.setMockResponse('btc_queryInscriptions', {
+        data: [{
+          value: {
+            bitcoin_txid: 'mocktxid',
+            index: 0,
+            outpoint: 'mocktxid:0'
+          }
+        }],
+        has_next_page: false,
+        next_cursor: null
+      });
+    
+      // Mock empty response for UTXO query
+      mockTransport.setMockResponse('btc_queryUTXOs', {
+        data: [],
+        has_next_page: false,
+        next_cursor: null
+      });
+    
+      await expect(instance.getInscriptionUTXO({ id: mockInscriptionId }))
+        .rejects.toThrow(`UTXO for inscription ${mockInscriptionId} not found`);
+    });
+
+    it('should throw an error when UTXO value exceeds safe integer range', async () => {
+      const mockInscriptionId = 'mocktxidi0';
+      const mockUTXOState: UTXOStateView = {
+        created_at: '2023-01-01T00:00:00Z',
+        flag: 0,
+        id: 'mock_id',
+        object_type: 'mock_type',
+        owner: 'mock_owner',
+        owner_bitcoin_address: 'mock_bitcoin_address',
+        size: '100',
+        state_index: '0',
+        tx_order: '0',
+        updated_at: '2023-01-01T00:00:00Z',
+        value: {
+          bitcoin_txid: 'mocktxid',
+          seals: 'mock_seals',
+          txid: 'mocktxid',
+          value: '9007199254740992', // Exceeds Number.MAX_SAFE_INTEGER
+          vout: 0
+        }
+      };
+    
+      mockTransport.setMockResponse('btc_queryInscriptions', {
+        data: [{
+          value: {
+            bitcoin_txid: 'mocktxid',
+            index: 0,
+            outpoint: 'mocktxid:0'
+          }
+        }],
+        has_next_page: false,
+        next_cursor: null
+      });
+    
+      mockTransport.setMockResponse('btc_queryUTXOs', {
+        data: [mockUTXOState],
+        has_next_page: false,
+        next_cursor: null
+      });
+    
+      await expect(instance.getInscriptionUTXO({ id: mockInscriptionId }))
+        .rejects.toThrow('Failed to convert UTXO value to number: Error: UTXO value exceeds safe integer range');
+    });
+
+    it('should throw an error when UTXO value cannot be converted to a number', async () => {
+      const mockInscriptionId = 'mocktxidi0';
+      const mockUTXOState: UTXOStateView = {
+        created_at: '2023-01-01T00:00:00Z',
+        flag: 0,
+        id: 'mock_id',
+        object_type: 'mock_type',
+        owner: 'mock_owner',
+        owner_bitcoin_address: 'mock_bitcoin_address',
+        size: '100',
+        state_index: '0',
+        tx_order: '0',
+        updated_at: '2023-01-01T00:00:00Z',
+        value: {
+          bitcoin_txid: 'mocktxid',
+          seals: 'mock_seals',
+          txid: 'mocktxid',
+          value: 'not-a-number', // Invalid value
+          vout: 0
+        }
+      };
+    
+      mockTransport.setMockResponse('btc_queryInscriptions', {
+        data: [{
+          value: {
+            bitcoin_txid: 'mocktxid',
+            index: 0,
+            outpoint: 'mocktxid:0'
+          }
+        }],
+        has_next_page: false,
+        next_cursor: null
+      });
+    
+      mockTransport.setMockResponse('btc_queryUTXOs', {
+        data: [mockUTXOState],
+        has_next_page: false,
+        next_cursor: null
+      });
+    
+      await expect(instance.getInscriptionUTXO({ id: mockInscriptionId }))
+        .rejects.toThrow('Failed to convert UTXO value to number: SyntaxError: Cannot convert not-a-number to a BigInt');
     });
   });
 
