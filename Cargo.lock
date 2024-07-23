@@ -14,7 +14,7 @@ dependencies = [
 
 [[package]]
 name = "accumulator"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -1110,7 +1110,7 @@ dependencies = [
 
 [[package]]
 name = "bitcoin-move"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "axum 0.7.5",
@@ -2705,7 +2705,7 @@ dependencies = [
 
 [[package]]
 name = "data-verify"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -2901,9 +2901,9 @@ checksum = "339544cc9e2c4dc3fc7149fd630c5f22263a4fdf18a98afd0075784968b5cf00"
 
 [[package]]
 name = "diesel"
-version = "2.2.1"
+version = "2.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62d6dcd069e7b5fe49a302411f759d4cf1cf2c27fe798ef46fb8baefc053dd2b"
+checksum = "bf97ee7261bb708fa3402fa9c17a54b70e90e3cb98afb3dc8999d5512cb03f94"
 dependencies = [
  "chrono",
  "diesel_derives",
@@ -4073,7 +4073,7 @@ dependencies = [
 
 [[package]]
 name = "framework-builder"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -4115,7 +4115,7 @@ dependencies = [
 
 [[package]]
 name = "framework-release"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -4138,7 +4138,7 @@ dependencies = [
 
 [[package]]
 name = "framework-types"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "clap 4.5.9",
@@ -6013,7 +6013,7 @@ dependencies = [
 
 [[package]]
 name = "metrics"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6783,7 +6783,7 @@ dependencies = [
 
 [[package]]
 name = "moveos"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -6836,7 +6836,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-common"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6848,7 +6848,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-compiler"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -6862,7 +6862,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-config"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "clap 4.5.9",
@@ -6879,7 +6879,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-object-runtime"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "better_any",
@@ -6916,7 +6916,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-stdlib"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "bech32 0.11.0",
@@ -6966,7 +6966,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-store"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -7000,7 +7000,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-types"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -7029,7 +7029,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-verifier"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -7056,7 +7056,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-wasm"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "ciborium",
@@ -8710,7 +8710,7 @@ dependencies = [
 
 [[package]]
 name = "raw-store"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9197,7 +9197,7 @@ dependencies = [
 
 [[package]]
 name = "rooch"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9279,7 +9279,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-benchmarks"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9354,14 +9354,14 @@ dependencies = [
 
 [[package]]
 name = "rooch-common"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "libc",
 ]
 
 [[package]]
 name = "rooch-config"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "clap 4.5.9",
@@ -9387,7 +9387,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-da"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9408,7 +9408,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-db"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9435,7 +9435,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-executor"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9477,7 +9477,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-faucet"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9510,7 +9510,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-framework"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9547,7 +9547,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-framework-tests"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9604,7 +9604,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-genesis"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9658,7 +9658,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-indexer"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9704,7 +9704,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-integration-test-runner"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9749,7 +9749,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-key"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "argon2",
@@ -9781,7 +9781,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9798,7 +9798,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-macros"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "derive-syn-parse",
  "itertools 0.13.0",
@@ -9810,7 +9810,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-spec"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9831,7 +9831,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-spec-builder"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9851,7 +9851,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-pipeline-processor"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9889,7 +9889,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-proposer"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9922,7 +9922,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-relayer"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9966,7 +9966,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-api"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9991,6 +9991,7 @@ dependencies = [
  "move-core-types",
  "move-resource-viewer",
  "moveos-types",
+ "nostr",
  "rand 0.8.5",
  "rooch-config",
  "rooch-open-rpc",
@@ -10010,7 +10011,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-client"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -10040,7 +10041,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-server"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -10104,7 +10105,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-sequencer"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -10143,7 +10144,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-store"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -10168,7 +10169,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-test-transaction-builder"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -10204,7 +10205,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-types"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -11407,7 +11408,7 @@ checksum = "b7c388c1b5e93756d0c740965c41e8822f866621d41acbdf6336a6a168f8840c"
 
 [[package]]
 name = "smt"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -11921,7 +11922,7 @@ dependencies = [
 
 [[package]]
 name = "testsuite"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -11964,18 +11965,18 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.62"
+version = "1.0.63"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2675633b1499176c2dff06b0856a27976a8f9d436737b4cf4f312d4d91d8bbb"
+checksum = "c0342370b38b6a11b6cc11d6a805569958d54cfa061a29969c3b5ce2ea405724"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.62"
+version = "1.0.63"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d20468752b09f49e909e55a5d338caa8bedf615594e9d80bc4c565d30faf798c"
+checksum = "a4558b58466b9ad7ca0f102865eccc95938dca1a74a856f2b57b6629050da261"
 dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
@@ -12034,7 +12035,7 @@ dependencies = [
 
 [[package]]
 name = "timeout-join-handler"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "thiserror",

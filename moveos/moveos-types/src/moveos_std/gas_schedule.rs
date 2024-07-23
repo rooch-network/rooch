@@ -45,6 +45,8 @@ impl GasScheduleConfig {
     pub const INITIAL_MAX_GAS_AMOUNT: u64 = 1_000_000_000u64;
     /// The maximum gas amount that can be used for a read-only function call
     pub const READONLY_MAX_GAS_AMOUNT: u64 = 5_000_000_000u64;
+    /// The default maximum gas amount for the CLI to use
+    pub const CLI_DEFAULT_MAX_GAS_AMOUNT: u64 = 100_000_000u64;
 }
 
 impl MoveStructType for GasScheduleConfig {

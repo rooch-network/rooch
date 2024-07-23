@@ -122,38 +122,3 @@ impl StateDBMetrics {
         }
     }
 }
-
-// #[derive(Debug)]
-// pub struct StoreMetrics {
-//     pub statedb_metrics: StateDBMetrics,
-// }
-//
-// // static ONCE: OnceCell<Arc<StoreMetrics>> = OnceCell::new();
-//
-// impl StoreMetrics {
-//     pub fn new(registry: &Registry) -> Self {
-//         StoreMetrics {
-//             statedb_metrics: StateDBMetrics::new(registry),
-//         }
-//     }
-//
-//     // pub fn init(registry: &Registry) -> &'static Arc<StoreMetrics> {
-//     //     // Initialize this before creating any instance of StoreInstance
-//     //     // TODO: Remove static initialization because this basically means we can
-//     //     // only ever initialize db metrics once with a registry whereas
-//     //     // in the code we might want to initialize it with different
-//     //     // registries. The problem is underlying metrics cannot be re-initialized
-//     //     // or prometheus complains. We essentially need to pass in StoreMetrics
-//     //     // everywhere we create StoreInstance as the right fix
-//     //     let _ = ONCE
-//     //         .set(Arc::new(StoreMetrics::new(registry)))
-//     //         // this happens many times during tests
-//     //         .tap_err(|_| warn!("StoreMetrics registry overwritten"));
-//     //     ONCE.get().unwrap()
-//     // }
-//
-//     // pub fn get() -> &'static Arc<StoreMetrics> {
-//     //     ONCE.get()
-//     //         .unwrap_or_else(|| StoreMetrics::init(prometheus::default_registry()))
-//     // }
-// }

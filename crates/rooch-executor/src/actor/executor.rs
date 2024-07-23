@@ -38,6 +38,7 @@ pub struct ExecutorActor {
     moveos: MoveOS,
     moveos_store: MoveOSStore,
     rooch_store: RoochStore,
+    read_only: bool,
 }
 
 type ValidateAuthenticatorResult =
@@ -48,6 +49,7 @@ impl ExecutorActor {
         root: ObjectMeta,
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
+        read_only: bool,
     ) -> Result<Self> {
         let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
         let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
@@ -65,6 +67,7 @@ impl ExecutorActor {
             moveos,
             moveos_store,
             rooch_store,
+            read_only,
         })
     }
 
@@ -81,6 +84,9 @@ impl ExecutorActor {
     }
 
     pub fn execute(&mut self, tx: VerifiedMoveOSTransaction) -> Result<ExecuteTransactionResult> {
+        if self.read_only {
+            return Err(anyhow::anyhow!("The service is read only"));
+        }
         let tx_hash = tx.ctx.tx_hash();
         let output = self.moveos.execute_and_apply(tx)?;
         let execution_info = self

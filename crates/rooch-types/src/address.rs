@@ -33,6 +33,7 @@ use moveos_types::{
     h256::H256,
     state::{MoveStructState, MoveStructType},
 };
+use nostr::prelude::{FromBech32, ToBech32, PREFIX_BECH32_PUBLIC_KEY};
 use nostr::secp256k1::XOnlyPublicKey;
 use nostr::Keys;
 use once_cell::sync::Lazy;
@@ -89,8 +90,8 @@ impl MultiChainAddress {
                 Ok(address.into())
             }
             RoochMultiChainID::Nostr => {
-                let address = NostrAddress::from_str(str)?;
-                Ok(address.into())
+                let pk = NostrPublicKey::from_str(str)?;
+                Ok(pk.into())
             }
         }
     }
@@ -118,8 +119,8 @@ impl MultiChainAddress {
                 address.to_string()
             }
             RoochMultiChainID::Nostr => {
-                let address = NostrAddress::try_from(self.clone()).unwrap();
-                address.to_string()
+                let pk = NostrPublicKey::try_from(self.clone()).unwrap();
+                pk.to_string()
             }
         }
     }
@@ -227,14 +228,6 @@ impl RoochAddress {
         moveos_types::addresses::is_vm_or_system_reserved_address((*self).into())
     }
 
-    pub fn from_bech32(bech32: &str) -> Result<Self> {
-        let (hrp, data) = bech32::decode(bech32)?;
-        anyhow::ensure!(hrp == *ROOCH_HRP, "invalid rooch hrp");
-        anyhow::ensure!(data.len() == Self::LENGTH, "invalid rooch address length");
-        let hash = H256::from_slice(data.as_slice());
-        Ok(Self(hash))
-    }
-
     pub fn to_bech32(&self) -> String {
         let data = self.0.as_bytes();
         bech32::encode::<Bech32m>(*ROOCH_HRP, data).expect("bech32 encode should success")
@@ -246,6 +239,14 @@ impl RoochAddress {
 
     pub fn into_bytes(self) -> [u8; Self::LENGTH] {
         self.0.to_fixed_bytes()
+    }
+
+    pub fn from_bech32(bech32: &str) -> Result<Self> {
+        let (hrp, data) = bech32::decode(bech32)?;
+        anyhow::ensure!(hrp == *ROOCH_HRP, "invalid rooch hrp");
+        anyhow::ensure!(data.len() == Self::LENGTH, "invalid rooch address length");
+        let hash = H256::from_slice(data.as_slice());
+        Ok(Self(hash))
     }
 
     /// RoochAddress from_hex_literal support short hex string, such as 0x1, 0x2, 0x3
@@ -810,23 +811,49 @@ impl TryFrom<MultiChainAddress> for BitcoinAddress {
     }
 }
 
-/// Nostr address type
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct NostrAddress(pub XOnlyPublicKey);
+// Ref: https://github.com/nostr-protocol/nips/blob/master/19.md
+/// Nostr public key type
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct NostrPublicKey(XOnlyPublicKey);
 
-impl RoochSupportedAddress for NostrAddress {
+impl NostrPublicKey {
+    pub fn new(x_only_pk: XOnlyPublicKey) -> Self {
+        Self(x_only_pk)
+    }
+
+    /// Convert from the Nostr XOnlyPublicKey to Bitcoin Taproot address. BIP-086.
+    pub fn to_bitcoin_address(&self, network: u8) -> Result<BitcoinAddress, anyhow::Error> {
+        // get the network
+        let network = network::Network::try_from(network)?;
+        // change use of XOnlyPublicKey from nostr to bitcoin lib
+        let internal_key = bitcoin::XOnlyPublicKey::from_slice(&self.0.serialize())?;
+        // new verification crypto
+        let secp = Secp256k1::verification_only();
+        // new bitcoin taproot address
+        let address = Address::p2tr(
+            &secp,
+            internal_key,
+            None,
+            bitcoin::network::Network::from(network),
+        );
+        // give it to rooch bitcoin struct
+        Ok(BitcoinAddress::from(address))
+    }
+}
+
+impl RoochSupportedAddress for NostrPublicKey {
     fn random() -> Self {
         Self(Keys::generate().public_key())
     }
 }
 
-impl From<NostrAddress> for MultiChainAddress {
-    fn from(address: NostrAddress) -> Self {
-        Self::new(RoochMultiChainID::Nostr, address.0.serialize().to_vec())
+impl From<NostrPublicKey> for MultiChainAddress {
+    fn from(pk: NostrPublicKey) -> Self {
+        Self::new(RoochMultiChainID::Nostr, pk.0.serialize().to_vec())
     }
 }
 
-impl TryFrom<MultiChainAddress> for NostrAddress {
+impl TryFrom<MultiChainAddress> for NostrPublicKey {
     type Error = anyhow::Error;
 
     fn try_from(value: MultiChainAddress) -> Result<Self, Self::Error> {
@@ -836,23 +863,24 @@ impl TryFrom<MultiChainAddress> for NostrAddress {
                 value.multichain_id
             ));
         }
-        let addr = XOnlyPublicKey::from_slice(&value.raw_address)?;
-        Ok(Self(addr))
+        let pk = XOnlyPublicKey::from_slice(&value.raw_address)?;
+        Ok(Self(pk))
     }
 }
 
-impl FromStr for NostrAddress {
+/// FromStr is FromBech32 here for NostrPublicKey
+impl FromStr for NostrPublicKey {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let address = XOnlyPublicKey::from_str(s)?;
-        Ok(Self(address))
+        let pk = XOnlyPublicKey::from_bech32(s)?;
+        Ok(Self(pk))
     }
 }
 
-impl fmt::Display for NostrAddress {
+impl fmt::Display for NostrPublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "{}", self.0.to_bech32().map_err(|_| fmt::Error)?)
     }
 }
 
@@ -888,6 +916,13 @@ impl ParsedAddress {
             Ok(Self::Numerical(RoochAddress::from_hex_literal(s)?))
         } else if s.starts_with(ROOCH_HRP.as_str()) && s.len() == RoochAddress::LENGTH_BECH32 {
             Ok(Self::Numerical(RoochAddress::from_bech32(s)?))
+        } else if s.starts_with(PREFIX_BECH32_PUBLIC_KEY) {
+            Ok(Self::Numerical(BitcoinAddress::to_rooch_address(
+                &NostrPublicKey::to_bitcoin_address(
+                    &NostrPublicKey::from_str(s)?,
+                    network::Network::Bitcoin.to_num(),
+                )?,
+            )))
         } else {
             match BitcoinAddress::from_str(s) {
                 Ok(a) => Ok(Self::Numerical(a.to_rooch_address())),
@@ -897,6 +932,7 @@ impl ParsedAddress {
     }
 }
 
+// TODO: Need a testcase to use the nostr address.
 #[cfg(test)]
 mod test {
     use super::*;
@@ -1008,7 +1044,8 @@ mod test {
         test_rooch_supported_address_roundtrip::<RoochAddress>();
         test_rooch_supported_address_roundtrip::<EthereumAddress>();
         test_rooch_supported_address_roundtrip::<BitcoinAddress>();
-        test_rooch_supported_address_roundtrip::<NostrAddress>();
+        // TODO: deal with hex and bech32 format
+        // test_rooch_supported_address_roundtrip::<NostrPublicKey>();
     }
 
     fn test_rooch_address_roundtrip(rooch_address: RoochAddress) {

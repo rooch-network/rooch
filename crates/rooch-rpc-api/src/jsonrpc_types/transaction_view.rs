@@ -3,8 +3,8 @@
 
 use super::{BytesView, StrView};
 use crate::jsonrpc_types::{
-    H256View, RoochOrBitcoinAddressView, TransactionExecutionInfoView, TransactionSequenceInfoView,
-    TransactionView,
+    H256View, TransactionExecutionInfoView, TransactionSequenceInfoView, TransactionView,
+    UnitedAddressView,
 };
 use bitcoin::hashes::Hash;
 use rooch_types::indexer::transaction::TransactionFilter;
@@ -130,7 +130,7 @@ impl TransactionWithInfoView {
 #[serde(rename_all = "snake_case")]
 pub enum TransactionFilterView {
     /// Query by sender address.
-    Sender(RoochOrBitcoinAddressView),
+    Sender(UnitedAddressView),
     /// Query by multi chain original address.
     OriginalAddress(String),
     /// Query by the given transaction hash.

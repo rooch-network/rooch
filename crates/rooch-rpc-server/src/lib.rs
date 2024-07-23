@@ -206,6 +206,8 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let sequencer_bitcoin_address = sequencer_keypair.public().bitcoin_address()?;
 
     let data_import_flag = opt.data_import_flag;
+    let read_only = opt.read_only;
+
     let mut network = opt.network();
     if network.chain_id == BuiltinChainID::Local.chain_id() {
         // local chain use current active account as sequencer account
@@ -231,8 +233,12 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         root.size()
     );
 
-    let executor_actor =
-        ExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store.clone())?;
+    let executor_actor = ExecutorActor::new(
+        root.clone(),
+        moveos_store.clone(),
+        rooch_store.clone(),
+        read_only,
+    )?;
     let reader_executor =
         ReaderExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store.clone())?
             .into_actor(Some("ReaderExecutor"), &actor_system)
@@ -244,7 +250,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
 
     // Init sequencer
     info!("RPC Server sequencer address: {:?}", sequencer_account);
-    let sequencer = SequencerActor::new(sequencer_keypair.copy(), rooch_store)?
+    let sequencer = SequencerActor::new(sequencer_keypair.copy(), rooch_store, read_only)?
         .into_actor(Some("Sequencer"), &actor_system)
         .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
@@ -293,6 +299,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         proposer_proxy.clone(),
         indexer_proxy.clone(),
         data_import_flag,
+        read_only,
     )
     .into_actor(Some("PipelineProcessor"), &actor_system)
     .await?;
@@ -311,7 +318,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let ethereum_relayer_config = opt.ethereum_relayer_config();
     let bitcoin_relayer_config = opt.bitcoin_relayer_config();
 
-    if ethereum_relayer_config.is_some() || bitcoin_relayer_config.is_some() {
+    if !read_only && (ethereum_relayer_config.is_some() || bitcoin_relayer_config.is_some()) {
         let relayer = RelayerActor::new(
             executor_proxy,
             processor_proxy.clone(),
@@ -368,6 +375,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     rpc_module_builder.register_module(RoochServer::new(
         rpc_service.clone(),
         aggregate_service.clone(),
+        read_only,
     ))?;
     rpc_module_builder.register_module(BtcServer::new(rpc_service.clone()).await?)?;
     rpc_module_builder

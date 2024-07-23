@@ -208,7 +208,6 @@ impl StatelessResolver for StateDBStore {
         if state_root == *GENESIS_STATE_ROOT {
             return Ok(None);
         }
-        // self.smt.get(state_root, *key)
         let result = self.smt.get(state_root, *key)?;
         if log::log_enabled!(log::Level::Trace) {
             let result_info = match &result {

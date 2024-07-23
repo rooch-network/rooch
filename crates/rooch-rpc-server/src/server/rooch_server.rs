@@ -22,9 +22,9 @@ use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, BalanceInfoPageView, EventOptions, EventPageView,
     ExecuteTransactionResponseView, FunctionCallView, H256View, IndexerEventPageView,
     IndexerObjectStatePageView, IndexerStateIDView, ModuleABIView, ObjectIDVecView,
-    ObjectStateFilterView, ObjectStateView, QueryOptions, RoochAddressView,
-    RoochOrBitcoinAddressView, StateKVView, StateOptions, StatePageView, StrView, StructTagView,
-    TransactionWithInfoPageView, TxOptions,
+    ObjectStateFilterView, ObjectStateView, QueryOptions, RoochAddressView, StateKVView,
+    StateOptions, StatePageView, StrView, StructTagView, TransactionWithInfoPageView, TxOptions,
+    UnitedAddressView,
 };
 use rooch_rpc_api::{
     api::rooch_api::RoochAPIServer,
@@ -39,18 +39,24 @@ use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::transaction::{RoochTransaction, TransactionWithInfo};
 use std::cmp::min;
 use std::str::FromStr;
-use tracing::info;
+use tracing::{debug, info};
 
 pub struct RoochServer {
     rpc_service: RpcService,
     aggregate_service: AggregateService,
+    read_only: bool,
 }
 
 impl RoochServer {
-    pub fn new(rpc_service: RpcService, aggregate_service: AggregateService) -> Self {
+    pub fn new(
+        rpc_service: RpcService,
+        aggregate_service: AggregateService,
+        read_only: bool,
+    ) -> Self {
         Self {
             rpc_service,
             aggregate_service,
+            read_only,
         }
     }
 
@@ -96,9 +102,16 @@ impl RoochAPIServer for RoochServer {
     }
 
     async fn send_raw_transaction(&self, payload: BytesView) -> RpcResult<H256View> {
-        info!("send_raw_transaction payload: {:?}", payload);
+        if self.read_only {
+            return Err(RpcError::ServiceUnavailable);
+        }
+        debug!("send_raw_transaction payload: {:?}", payload);
         let mut tx = bcs::from_bytes::<RoochTransaction>(&payload.0)?;
-        info!("send_raw_transaction tx: {:?}", tx);
+        info!(
+            "send_raw_transaction tx sender:{:?}, hash:{}",
+            tx.sender(),
+            tx.tx_hash()
+        );
 
         let hash = tx.tx_hash();
         self.rpc_service.queue_tx(tx).await?;
@@ -504,7 +517,7 @@ impl RoochAPIServer for RoochServer {
 
     async fn get_balance(
         &self,
-        account_addr: RoochOrBitcoinAddressView,
+        account_addr: UnitedAddressView,
         coin_type: StructTagView,
     ) -> RpcResult<BalanceInfoView> {
         Ok(self
@@ -517,7 +530,7 @@ impl RoochAPIServer for RoochServer {
     /// get account balances by RoochAddress
     async fn get_balances(
         &self,
-        account_addr: RoochOrBitcoinAddressView,
+        account_addr: UnitedAddressView,
         cursor: Option<IndexerStateIDView>,
         limit: Option<StrView<u64>>,
     ) -> RpcResult<BalanceInfoPageView> {

@@ -29,7 +29,7 @@ invalid `<h+1>` block:
 bitcoin-cli -datadir=<datadir> -conf=<datadir/bitcoin.conf> -rpccookiefile=<datadir/.cookie> invalidateblock <h+1 block hash>
 ```
 
-check block height:
+check block height is expected:
 
 ```shell
 bitcoin-cli -datadir=<datadir> -conf=<datadir/bitcoin.conf> -rpccookiefile=<datadir/.cookie> getblockcount
@@ -53,23 +53,57 @@ rsync --delete -av <datadir/chainstate/> <chainstate_clone_path>
 bitcoin-utxo-dump -f count,txid,vout,height,coinbase,amount,script,type,address -db <chainstate_clone_path> -o <output>
 ```
 
-> - check max height of dump file is <h> by python script:
+> - check max height of utxo dump file is <h> by python script:
 
 ```python
 import pandas as pd
+import argparse
 import sys
 
-if len(sys.argv) != 2:
-    print("Usage: python max_height.py filename")
-    sys.exit(1)
+def find_max_column_value_in_chunks(filename, column_name='height', chunksize=10000):
+    """
+    Read a CSV file in chunks and find the maximum value in the specified column
 
-filename = sys.argv[1]
+    :param filename: Path to the CSV file
+    :param column_name: Name of the column to find the maximum value
+    :param chunksize: Number of rows to read at a time
+    :return: Maximum value in the specified column
+    """
+    try:
+        max_value = None
+        for chunk in pd.read_csv(filename, chunksize=chunksize):
+            if column_name not in chunk.columns:
+                raise ValueError(f"Column '{column_name}' does not exist in the file '{filename}'")
+            current_max = chunk[column_name].max()
+            if max_value is None or current_max > max_value:
+                max_value = current_max
+        return max_value
 
-df = pd.read_csv(filename)
+    except FileNotFoundError:
+        print(f"The file '{filename}' does not exist")
+        sys.exit(1)
+    except pd.errors.EmptyDataError:
+        print(f"The file '{filename}' is empty")
+        sys.exit(1)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        sys.exit(1)
 
-max_height = df['height'].max()
+if __name__ == "__main__":
+    # Set up argument parser
+    parser = argparse.ArgumentParser(description='Find the maximum value in a specified column of a CSV file')
+    parser.add_argument('filename', type=str, help='Path to the CSV file')
+    parser.add_argument('--column_name', type=str, default='height', help='Name of the column to find the maximum value (default is height)')
+    parser.add_argument('--chunksize', type=int, default=10000, help='Number of rows to read at a time (default is 10000)')
 
-print(f"The maximum height is: {max_height}")
+    # Parse arguments
+    args = parser.parse_args()
+
+    # Find the maximum value in the specified column
+    max_value = find_max_column_value_in_chunks(args.filename, args.column_name, args.chunksize)
+
+    # Print the result
+    print(f"The maximum value in column '{args.column_name}' is: {max_value}")
 ```
 
 4. prepare ord source file(if needed):
@@ -77,10 +111,6 @@ print(f"The maximum height is: {max_height}")
 > - start bitcoind again
 > - dump ord source file by
     [ord](https://github.com/popcnt1/ord):
-
-```shell
-ord --index=<ord_dump_dir/index.redb> --cookie-file=<bitcoincore_dir/.cookie> index export --output <output>
-```
 
 5. prepare genesis env:
 

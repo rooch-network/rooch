@@ -135,6 +135,10 @@ pub struct RoochOpt {
     /// The data import flag. If true, may be ignore the indexer write
     pub data_import_flag: bool,
 
+    #[clap(long)]
+    /// The read only flag. If true, the service will only provide read only rpc method.
+    pub read_only: bool,
+
     #[serde(skip)]
     #[clap(skip)]
     base: Option<Arc<BaseConfig>>,
@@ -168,6 +172,7 @@ impl RoochOpt {
             proposer_account: None,
             da: DAConfig::default(),
             data_import_flag: false,
+            read_only: false,
             base: None,
         };
         opt.init()?;

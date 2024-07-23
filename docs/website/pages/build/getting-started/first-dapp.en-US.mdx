@@ -1,85 +1,121 @@
-# The first DApp
+# The First Rooch dApp
 
-This tutorial mainly introduces how to use the DApp front-end template tool provided by Rooch to create a counter program.
+This tutorial primarily introduces how to use the front-end template provided by Rooch to implement a simple counter dApp.
 
-## Create project
+![](/docs/first-dapp/dapp-main.png)
 
-```bash
-pnpm create @roochnetwork/create-rooch
-```
+[Teplate Repo](https://github.com/rooch-network/my-first-rooch-dapp)
 
-## Initialize project
-
-Dependencies required to install DApp:
+## Clone the source code of the template.
 
 ```bash
-pnpm install
+git clone https://github.com/rooch-network/my-first-rooch-dapp.git
 ```
 
-Run DApp：
+## Initialize the project.
+
+Install the dependencies required for the dApp:
 
 ```bash
-pnpm dev
+cd my-first-rooch-dapp
+bun install
+## if you are using yarn
+yarn install
 ```
 
-When everything goes well, you will see the following in the browser:
+Run dApp：
+```bash
+bun dev
+```
+
+Once everything is successfully completed, access the local preview link in the browser and you will see the following interface:
 
 ![](/docs/first-dapp/dapp-counter.png)
 
-This step shows that the front end is working normally. Next, the contract needs to be deployed so that the DApp can interact with the contract.
+Congratulations! After completing the above steps, it indicates that your dApp is running successfully. To complete the full on-chain interaction, we still need to deploy the contract.
 
-## Switch network
+## Confirm the Current Network in Rooch CLI
 
-Currently, the Counter DApp application is created in the local network demonstration and uses `rooch env switch` to switch the network:
-
-```bash
-rooch env switch --alias local
-
-The active environment was successfully switched to `local`
-```
-
-## Start the Rooch local node
+We use the Testnet to deploy the Counter dApp, and use `rooch env switch` to switch the network:
 
 ```bash
-rooch server start
+rooch env switch --alias test
+
+The active environment was successfully switched to `test`
 ```
 
-## Deploy contract
+## Publish the contract.
 
-We use the `examples/counter` contract for deployment.
+In the `counter_contract` directory, you can see the contract source code of the Counter dApp.
+
+Navigate to the `counter_contract` directory and use the following command to deploy the contract.
+
+Please note, before deployment, ensure that you have sufficient Gas Fee in your account. We can use the following command to check:
 
 ```bash
-rooch move publish --named-addresses rooch_examples=default
+rooch account balance
+
+## output
+
+      Coin Type        |      Symbol      | Decimals |  Balance              
+--------------------------------------------------------------------
+0x3::gas_coin::GasCoin |       RGC        |     8    | 1939625968 
 ```
 
-## Modify front-end configuration
+[Get Rooch Gas Coin](./get-gas-coin.en-US)
 
-Find the `src/App.tsx` file in the front-end project and modify the `devCounterAddress` constant:
+After confirming that there is enough Gas Fee, you can publish the contract using the following command.
+
+```bash
+## in counter_contract directory
+rooch move publish --named-addresses quick_start_counter=default
+```
+
+After the deployment is completed, we can see the output in the command line:
+
+```bash
+BUILDING quick_start_counter
+Publish modules to address: rooch1e7qm7jqangukl37qs49ckv7j4w47zyu5cr2gd9tmzal89q9sudqqzhy92t
+(0xcf81bf481d9a396fc7c0854b8b33d2ababe11394c0d486957b177e7280b0e340)
+...
+```
+
+As the output of the command line above, the Counter has been published to the address `0xcf81bf481d9a396fc7c0854b8b33d2ababe11394c0d486957b177e7280b0e340`.
+
+
+## Modify the front-end configuration.
+
+Find the `src/App.tsx` file in the front-end project and modify the constant `counterAddress`:
 
 ```tsx
-// Your publish counter contract address
-const devCounterAddress = ""
-const devCounterModule = `${devCounterAddress}::counter`
+// Publish address of the counter contract
+const counterAddress = "YOUR_COUNTER_ADDRESS";
 ```
 
-Add the address where the Counter contract is deployed:
+Replace with the Counter contract address published in the previous step:
 
 ```bash
-const devCounterAddress = "0x634e4b692ac7873bb937af3f0ac9bc63c4c6ead3f857c5bbc92e3ff41f756651"
+const counterAddress = "0xcf81bf481d9a396fc7c0854b8b33d2ababe11394c0d486957b177e7280b0e340"
 ```
 
-> Note: Modify according to the actual deployment address!
+> Note: The contract address here will be related to the publisher's address, please confirm.
 
-## Call contract
+## Contract Interaction
 
-After connecting to the wallet, you will be prompted to create a session key:
+Connect the wallet, and we can click the `Create` button in the Session Key area to create a session key:
 
-![](/docs/first-dapp/dapp-create-sk.png)
+[About Session Key](../../../archives/session-key)
 
-After everything is ready, you can call the Counter contract in the DApp. Click the `Increment` button to increase the value of the counter:
+After the creation is complete, you can see the relevant information of the Session Key:
 
-![](/docs/first-dapp/dapp-ok.png)
+![](/docs/first-dapp/dapp-integration.png)
 
-## Summarize
+After replacing the contract address, you can also see the count of `Counter Value` in the dApp Integration area.
 
-At this point, you have mastered how to create a DApp, complete the initialization work on the front end and contract side, and perform basic interactions.
+![](/docs/first-dapp/dapp-counter-value.png)
+
+After completing the above steps, you can click the `Increase Counter Value` button in the dApp Integration area to call the contract and increase the counter value.
+
+## Summary
+
+After completing the above steps, you have mastered the skills of **creating a dApp**, **deploying contracts**, and performing **basic interactions between the front-end and the contract**.
