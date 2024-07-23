@@ -4,7 +4,6 @@
 #[test_only]
 /// This test module is used to test the coin logic in coin and account module.
 module rooch_framework::coin_test{
-    use std::option::none;
     use std::string;
     
     use moveos_std::object::{Self, Object};

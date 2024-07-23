@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module btc_holder_farmer::hold_farmer {
-    use std::option::none;
     use std::string;
     use moveos_std::event::emit;
     use bitcoin_move::utxo;

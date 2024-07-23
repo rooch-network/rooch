@@ -7,7 +7,6 @@ module rooch_framework::transfer_test{
 
     use std::string;
     use std::option;
-    use std::option::none;
     use moveos_std::object::{Self, Object};
     use rooch_framework::transfer;
     use rooch_framework::gas_coin::{Self, GasCoin};

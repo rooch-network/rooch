@@ -3,7 +3,6 @@
 
 module template::coin_module_identifier_placeholder {
 
-    use std::option::none;
     use std::string;
     use moveos_std::signer;
     

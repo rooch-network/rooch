@@ -3,7 +3,6 @@
 
 module btc_holder_coin::holder_coin {
 
-    use std::option::none;
     use std::string;
     use moveos_std::timestamp;
     use moveos_std::tx_context;

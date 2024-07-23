@@ -3,7 +3,6 @@
 
 /// This module defines Rooch Gas Coin.
 module rooch_framework::gas_coin {
-    use std::option::none;
     use std::string;
     use moveos_std::signer;
     use moveos_std::object::{Self, Object};

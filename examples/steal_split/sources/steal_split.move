@@ -4,7 +4,7 @@
 module rooch_examples::rooch_examples {
     use std::bcs;
     use std::hash;
-    use std::option::{Self, Option, none};
+    use std::option::{Self, Option};
     use std::signer;
     use std::string::{Self, String};
     use std::vector;

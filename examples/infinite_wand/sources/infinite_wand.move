@@ -3,7 +3,6 @@
 
 module infinite_wand::infinite_wand {
 
-    use std::option::none;
     use std::string;
     use moveos_std::timestamp::now_milliseconds;
     use moveos_std::table::Table;
