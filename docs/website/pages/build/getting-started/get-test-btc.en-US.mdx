@@ -1,0 +1,54 @@
+# Get tBTC
+
+Rooch now provides some applications that interact with Bitcoin, such as staking, games, etc. We need to use `tBTC` as the interactive asset.
+
+Therefore, you need to obtain some `BTC` on the Bitcoin test network through some ways.
+
+- You can get it through certain Bitcoin faucets.
+- You can get it through Rooch's Discord, and we'll explain how to get it in detail below.
+
+## Get it via Rooch Discord
+
+1. Enter the `testnet-faucet` channel on Rooch Discord:
+
+Rooch’s Discord address: https://discord.gg/rooch
+
+![](/docs/portal/discord-gas-channel.png)
+
+2. Set Bitcoin testnet address:
+
+Enter `!setaddress <BTC_ADDRESS>` in the input box to set the address to obtain `tBTC`.
+
+Demo:
+
+```
+!setaddress tb1p8e5wrjksara963wm27lppr9z8wcfsj2htzdjgutp3rsx2lt0gd4smrdnn5
+```
+
+Receiving the following prompt indicates that it has been added successfully:
+
+```
+testnet-btc-faucet
+
+Address tb1p8e5wrjksara963wm27lppr9z8wcfsj2htzdjgutp3rsx2lt0gd4smrdnn5 has been set successfully.
+```
+
+![](/docs/get-test-coin/get-rbtc/set-address.png)
+
+3. Ask the Discord bot for `tBTC`:
+
+Enter `!claim` in the input box to get `0.01 BTC`.
+
+```
+testnet-btc-faucet
+
+Sent 0.01 BTC to address tb1p8e5wrjksara963wm27lppr9z8wcfsj2htzdjgutp3rsx2lt0gd4smrdnn5. Transaction ID: fd8f295c6fe4ee9841997e04b883a49c5ce2eeeaa8f74ad84376f854d3c92ff4
+```
+
+![](/docs/get-test-coin/get-rbtc/claim-btc.png)
+
+You will receive `0.01` BTC in your account, start interacting in the [Rooch Portal](https://portal.rooch.network/)!
+
+For detailed usage of Rooch Portal, please refer to [this](https://rooch.network/learn/miscellaneous/portal) document.
+
+> Tip: You can claim `tBTC` once every hour!
