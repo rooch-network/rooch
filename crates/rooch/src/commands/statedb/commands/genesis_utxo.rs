@@ -143,15 +143,19 @@ impl UTXOData {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct AddressMappingData {
     pub origin_address: String,
-    pub baddress: BitcoinAddress,
+    pub bitcoin_address: BitcoinAddress,
     pub address: AccountAddress,
 }
 
 impl AddressMappingData {
-    pub fn new(origin_address: String, baddress: BitcoinAddress, address: AccountAddress) -> Self {
+    pub fn new(
+        origin_address: String,
+        bitcoin_address: BitcoinAddress,
+        address: AccountAddress,
+    ) -> Self {
         Self {
             origin_address,
-            baddress,
+            bitcoin_address,
             address,
         }
     }
@@ -159,7 +163,7 @@ impl AddressMappingData {
     pub fn into_state(self) -> ObjectState {
         let parent_id = RoochToBitcoinAddressMapping::object_id();
         // Rooch address to bitcoin address dynamic field: name is rooch address, value is bitcoin address
-        ObjectEntity::new_dynamic_field(parent_id, self.address, self.baddress).into_state()
+        ObjectEntity::new_dynamic_field(parent_id, self.address, self.bitcoin_address).into_state()
     }
 }
 
@@ -296,7 +300,7 @@ fn finish_task(
     startup_update_set: Option<UpdateSet<FieldKey, ObjectState>>,
 ) {
     // Update UTXOStore Object
-    let mut genesis_utxostore_object = create_genesis_utxostore_object().unwrap();
+    let mut genesis_utxostore_object = create_genesis_utxostore_object();
     genesis_utxostore_object.size += utxo_count;
     genesis_utxostore_object.state_root = Some(utxo_store_state_root);
     let mut update_set = startup_update_set.unwrap_or_default();
@@ -344,37 +348,6 @@ fn finish_task(
         task_start_time.elapsed(),
         startup_info
     );
-}
-
-fn create_genesis_utxostore_object() -> Result<ObjectEntity<BitcoinUTXOStore>> {
-    let utxostore_object = BitcoinUTXOStore { next_tx_index: 0 };
-    let utxostore_id = BitcoinUTXOStore::object_id();
-    let utxostore_object = ObjectEntity::new(
-        utxostore_id,
-        SYSTEM_OWNER_ADDRESS,
-        SHARED_OBJECT_FLAG_MASK,
-        None,
-        0,
-        0,
-        0,
-        utxostore_object,
-    );
-    Ok(utxostore_object)
-}
-
-fn create_genesis_rooch_to_bitcoin_address_mapping_object(
-) -> ObjectEntity<RoochToBitcoinAddressMapping> {
-    let object_id = RoochToBitcoinAddressMapping::object_id();
-    ObjectEntity::new(
-        object_id,
-        ROOCH_FRAMEWORK_ADDRESS,
-        0u8,
-        None,
-        0,
-        0,
-        0,
-        RoochToBitcoinAddressMapping::default(),
-    )
 }
 
 struct AddressMappingUpdate {
@@ -541,4 +514,34 @@ fn gen_address_mapping_update(
         return Some(AddressMappingUpdate { key, state });
     }
     None
+}
+
+fn create_genesis_utxostore_object() -> ObjectEntity<BitcoinUTXOStore> {
+    let utxostore_object = BitcoinUTXOStore { next_tx_index: 0 };
+    let utxostore_id = BitcoinUTXOStore::object_id();
+    ObjectEntity::new(
+        utxostore_id,
+        SYSTEM_OWNER_ADDRESS,
+        SHARED_OBJECT_FLAG_MASK,
+        None,
+        0,
+        0,
+        0,
+        utxostore_object,
+    )
+}
+
+fn create_genesis_rooch_to_bitcoin_address_mapping_object(
+) -> ObjectEntity<RoochToBitcoinAddressMapping> {
+    let object_id = RoochToBitcoinAddressMapping::object_id();
+    ObjectEntity::new(
+        object_id,
+        ROOCH_FRAMEWORK_ADDRESS,
+        0u8,
+        None,
+        0,
+        0,
+        0,
+        RoochToBitcoinAddressMapping::default(),
+    )
 }
