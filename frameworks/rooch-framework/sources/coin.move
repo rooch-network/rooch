@@ -251,8 +251,7 @@ module rooch_framework::coin {
             decimals,
             supply: 0u256,
         };
-        let coin_info_obj = object::new_named_object(coin_info);
-        coin_info_obj
+        object::new_named_object(coin_info)
     }
 
     /// Public coin can mint by anyone with the mutable Object<CoinInfo<CoinType>>
