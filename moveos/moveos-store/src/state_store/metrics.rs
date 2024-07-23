@@ -12,6 +12,7 @@ pub struct StateDBMetrics {
     pub state_update_nodes_bytes: HistogramVec,
     pub state_apply_change_set_latency: HistogramVec,
     pub state_apply_change_set_bytes: HistogramVec,
+    pub state_iter_latency: HistogramVec,
     pub state_get_field_at_latency: HistogramVec,
     pub state_get_field_at_bytes: HistogramVec,
     pub state_list_fields_at_latency: HistogramVec,
@@ -74,6 +75,14 @@ impl StateDBMetrics {
                 registry,
             )
             .unwrap(),
+            state_iter_latency: register_histogram_vec_with_registry!(
+                "state_iter_latency",
+                "State iter latency in seconds",
+                &["fn_name"],
+                LATENCY_SEC_BUCKETS.to_vec(),
+                registry,
+            )
+            .unwrap(),
             state_get_field_at_latency: register_histogram_vec_with_registry!(
                 "state_get_field_at_latency",
                 "State get field latency in seconds",
@@ -114,37 +123,37 @@ impl StateDBMetrics {
     }
 }
 
-#[derive(Debug)]
-pub struct StateMetrics {
-    pub statedb_metrics: StateDBMetrics,
-}
-
-// static ONCE: OnceCell<Arc<StateMetrics>> = OnceCell::new();
-
-impl StateMetrics {
-    pub fn new(registry: &Registry) -> Self {
-        StateMetrics {
-            statedb_metrics: StateDBMetrics::new(registry),
-        }
-    }
-
-    // pub fn init(registry: &Registry) -> &'static Arc<StateMetrics> {
-    //     // Initialize this before creating any instance of StoreInstance
-    //     // TODO: Remove static initialization because this basically means we can
-    //     // only ever initialize db metrics once with a registry whereas
-    //     // in the code we might want to initialize it with different
-    //     // registries. The problem is underlying metrics cannot be re-initialized
-    //     // or prometheus complains. We essentially need to pass in StateMetrics
-    //     // everywhere we create StoreInstance as the right fix
-    //     let _ = ONCE
-    //         .set(Arc::new(StateMetrics::new(registry)))
-    //         // this happens many times during tests
-    //         .tap_err(|_| warn!("StateMetrics registry overwritten"));
-    //     ONCE.get().unwrap()
-    // }
-
-    // pub fn get() -> &'static Arc<StateMetrics> {
-    //     ONCE.get()
-    //         .unwrap_or_else(|| StateMetrics::init(prometheus::default_registry()))
-    // }
-}
+// #[derive(Debug)]
+// pub struct StoreMetrics {
+//     pub statedb_metrics: StateDBMetrics,
+// }
+//
+// // static ONCE: OnceCell<Arc<StoreMetrics>> = OnceCell::new();
+//
+// impl StoreMetrics {
+//     pub fn new(registry: &Registry) -> Self {
+//         StoreMetrics {
+//             statedb_metrics: StateDBMetrics::new(registry),
+//         }
+//     }
+//
+//     // pub fn init(registry: &Registry) -> &'static Arc<StoreMetrics> {
+//     //     // Initialize this before creating any instance of StoreInstance
+//     //     // TODO: Remove static initialization because this basically means we can
+//     //     // only ever initialize db metrics once with a registry whereas
+//     //     // in the code we might want to initialize it with different
+//     //     // registries. The problem is underlying metrics cannot be re-initialized
+//     //     // or prometheus complains. We essentially need to pass in StoreMetrics
+//     //     // everywhere we create StoreInstance as the right fix
+//     //     let _ = ONCE
+//     //         .set(Arc::new(StoreMetrics::new(registry)))
+//     //         // this happens many times during tests
+//     //         .tap_err(|_| warn!("StoreMetrics registry overwritten"));
+//     //     ONCE.get().unwrap()
+//     // }
+//
+//     // pub fn get() -> &'static Arc<StoreMetrics> {
+//     //     ONCE.get()
+//     //         .unwrap_or_else(|| StoreMetrics::init(prometheus::default_registry()))
+//     // }
+// }

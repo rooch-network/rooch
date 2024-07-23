@@ -6,7 +6,6 @@
 
 use crate::config_store::{ConfigDBStore, ConfigStore};
 use crate::event_store::{EventDBStore, EventStore};
-use crate::metrics::StateMetrics;
 use crate::state_store::statedb::StateDBStore;
 use crate::state_store::NodeDBStore;
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
@@ -34,7 +33,6 @@ use std::sync::Arc;
 
 pub mod config_store;
 pub mod event_store;
-pub mod metrics;
 pub mod state_store;
 #[cfg(test)]
 mod tests;
@@ -78,7 +76,7 @@ pub struct MoveOSStore {
     pub transaction_store: TransactionDBStore,
     pub config_store: ConfigDBStore,
     pub state_store: StateDBStore,
-    pub state_metrics: Arc<StateMetrics>,
+    // pub store_metrics: Arc<StoreMetrics>,
 }
 
 impl MoveOSStore {
@@ -109,16 +107,14 @@ impl MoveOSStore {
         registry: &Registry,
     ) -> Result<Self> {
         let node_store = NodeDBStore::new(instance.clone());
-        let state_store = StateDBStore::new(node_store.clone());
+        let state_store = StateDBStore::new(node_store.clone(), registry);
 
-        let state_metrics = Arc::new(StateMetrics::new(registry));
         let store = Self {
             node_store,
             event_store: EventDBStore::new(instance.clone()),
             transaction_store: TransactionDBStore::new(instance.clone()),
             config_store: ConfigDBStore::new(instance),
             state_store,
-            state_metrics,
         };
         Ok(store)
     }
