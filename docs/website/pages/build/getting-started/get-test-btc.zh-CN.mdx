@@ -1,0 +1,54 @@
+# 获取 tBTC
+
+Rooch 现在已经提供了一些与 Bitcoin 交互的应用，比如质押、游戏等，我们需要使用 `tBTC` 作为交互的资产。
+
+因此你需要通过一些途径获取一些 Bitcoin 测试网络上的 `BTC`。
+
+- 你可以通过某些 Bitcoin 水龙头获取。
+- 你可以通过 Rooch's Discord 获取，接下来将详细介绍这个获取方法。
+
+## 通过 Rooch Discord 获取
+
+1. 进入 Rooch Discord 的 `testnet-faucet` 频道：
+
+Rooch 的 Discord 地址：https://discord.gg/rooch
+
+![](/docs/portal/discord-gas-channel.png)
+
+2. 设置 Bitcoin 测试网地址：
+
+在输入框输入 `!setaddress <BTC_ADDRESS>` 来设置获取 `tBTC` 的地址。
+
+演示：
+
+```
+!setaddress tb1p8e5wrjksara963wm27lppr9z8wcfsj2htzdjgutp3rsx2lt0gd4smrdnn5
+```
+
+收到下面的提示表示已成功添加：
+
+```
+testnet-btc-faucet
+
+Address tb1p8e5wrjksara963wm27lppr9z8wcfsj2htzdjgutp3rsx2lt0gd4smrdnn5 has been set successfully.
+```
+
+[](/docs/get-test-coin/get-rbtc/set-address.png)
+
+3. 向 Discord 机器人索要 `tBTC`：
+
+在输入框输入 `!claim` 即可获取 `0.01 BTC`。
+
+```
+testnet-btc-faucet
+
+Sent 0.01 BTC to address tb1p8e5wrjksara963wm27lppr9z8wcfsj2htzdjgutp3rsx2lt0gd4smrdnn5. Transaction ID: fd8f295c6fe4ee9841997e04b883a49c5ce2eeeaa8f74ad84376f854d3c92ff4
+```
+
+[](/docs/get-test-coin/get-rbtc/claim-btc.png)
+
+你的账户将收到 `0.01` 个 BTC，开始在 [Rooch Portal](https://portal.rooch.network/) 进行交互吧！
+
+Rooch Portal 的详细使用，请参考[这篇](https://rooch.network/zh-CN/learn/miscellaneous/portal)文档。
+
+> 提示：你每个小时可以领一次 `tBTC`！
