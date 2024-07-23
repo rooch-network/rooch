@@ -1,10 +1,53 @@
-# Distributed State Tree protocol (DSTP)
+# 分布式状态树协议（Distributed State Tree Protocol）
 
-import { Callout } from 'nextra/components'
+分布式状态树协议,简称**DSTP**,旨在通过将状态树分层并将全局状态树的子树分散到P2P网络的不同节点上,从而提高系统的可扩展性。尽管这些节点在物理上是分散的,但它们仍然可以通过全局状态树实现互操作性。
+
+## 动机与目标
+
+区块链系统的扩展性一直是业界面临的主要挑战之一。为解决这一问题,业界已经提出了多种探索路径,而DSTP是其中一种创新尝试。区块链系统通常采用状态树来保存状态,以便快速校验状态的一致性。DSTP的核心思想是将状态树分层,并将全局状态树的子树分散到不同的节点上,从而实现状态的分布式存储,进而提高系统的可扩展性。这一目标决定了DSTP的关键特性,也使其与现有解决方案有所不同。
+
+DSTP的主要特点包括:
+
+1. 数据性质: DSTP主要用于存储智能合约的状态,而非文件。这是它与IPFS等分布式文件系统的根本区别。DSTP中的所有数据都经过智能合约的生成或验证。
+
+2. 全局状态保证: DSTP会生成一个全局状态树,其根节点会定期提交到比特币网络,为所有状态提供时间戳证明。
+
+3. 安全机制: DSTP子树的更新权限和安全机制由智能合约定义,而非由协议本身提供统一的共识机制。这是DSTP与区块链分片等扩容方案的主要区别。
+
+4. 一致性模型: DSTP采用最终一致性设计,子树的根节点不会实时提交到全局状态树,因此不保证强一致性。
+
+## DSTP的设计
+
+为实现上述目标,DSTP的设计需要解决以下几个关键挑战:
+
+1. 状态树的分层设计
+2. 在智能合约中表达状态树
+3. 在智能合约中实现状态树的安全机制
+4. 设计P2P网络中的状态读取和同步协议
+
+### 状态树的分层设计及其在智能合约中的表达
+
+Rooch平台采用Object模型来表达应用状态,每个Object可以包含子Object,从而形成树状结构。这种设计为DSTP的实现提供了基础。具体来说:
+
+* ObjectID: 作为Object的唯一标识符。子Object的ObjectID由其父ObjectID和子Object的Key共同生成。
+* StateRoot: 每个Object都包含一个StateRoot字段,用于存储该Object子树的根节点信息。
+
+关于Object模型的更多细节,请参考[存储抽象](/learn/core-concepts/objects/storage-abstraction)和[Object模型](/learn/core-concepts/objects/object)文档。
+
+![statedb](/docs/rooch-design-statedb.svg)
+
+### 状态树安全机制在智能合约中的实现
+
+不同应用在不同发展阶段对安全性的要求各不相同。DSTP支持多种安全模式,主要包括:
+
+1. PoA (Proof of Authority) 模式: 状态树根的更新由特定账户执行,通常是开发者账户。VApp节点也由开发者运营。这种模式适合应用的开发和概念验证阶段,或作为Web2应用向Web3过渡的桥梁。
+
+2. PoS (Proof of Stake) 模式: 状态树根的更新由通过PoS机制选出的账户执行。该模式包含轮替机制和针对欺诈行为的惩罚机制,以确保安全性。
+
+3. 多方协作模式: 状态树根的更新需要多个协作者共同签名。智能合约中需要包含处理不合作情况的机制。这种模式适用于需要多方共同管理的应用,也可用于实现状态通道。
+
+### P2P网络中的状态读取和同步协议
 
 <Callout>
-TODO: This section of the document needs improvement
-
-1. Explaination of DSTP and its importance.
-2. Specifications of DSTP.
+RoochNetwork的P2P通信协议目前仍在设计开发中。这部分内容将在未来版本中逐步完善和更新。
 </Callout>

@@ -1,10 +1,53 @@
-# Distributed State Tree protocol (DSTP)
+# Distributed State Tree Protocol (DSTP)
 
-import { Callout } from 'nextra/components'
+The Distributed State Tree Protocol, abbreviated as **DSTP**, aims to improve system scalability by layering the state tree and distributing subtrees of the global state tree to different nodes in a P2P network. Despite the physical distribution of these nodes, they can still achieve interoperability through the global state tree.
+
+## Motivation and Goals
+
+Scalability of blockchain systems has long been a major challenge in the industry. To address this issue, various approaches have been proposed, and DSTP is one such innovative attempt. Blockchain systems typically use state trees to store states for quick verification of state consistency. The core idea of DSTP is to layer the state tree and distribute subtrees of the global state tree to different nodes, thereby achieving distributed storage of states and improving system scalability. This goal determines the key features of DSTP and distinguishes it from existing solutions.
+
+The main characteristics of DSTP include:
+
+1. Data Nature: DSTP is primarily used to store states of smart contracts, not files. This is the fundamental difference between it and distributed file systems like IPFS. All data in DSTP is generated or verified by smart contracts.
+
+2. Global State Guarantee: DSTP generates a global state tree, with its root node periodically committed to the Bitcoin network, providing timestamp proofs for all states.
+
+3. Security Mechanism: The update permissions and security mechanisms for DSTP subtrees are defined by smart contracts, rather than a unified consensus mechanism provided by the protocol itself. This is the main difference between DSTP and blockchain sharding or other scaling solutions.
+
+4. Consistency Model: DSTP adopts an eventual consistency design. The root nodes of subtrees are not committed to the global state tree in real-time, thus not guaranteeing strong consistency.
+
+## DSTP Design
+
+To achieve the above goals, the design of DSTP needs to address the following key challenges:
+
+1. Layered design of the state tree
+2. Expressing the state tree in smart contracts
+3. Implementing the state tree's security mechanism in smart contracts
+4. Designing state reading and synchronization protocols in P2P networks
+
+### Layered Design of the State Tree and Its Expression in Smart Contracts
+
+The Rooch platform uses an Object model to express application states, where each Object can contain child Objects, forming a tree structure. This design provides the foundation for implementing DSTP. Specifically:
+
+* ObjectID: Serves as the unique identifier of an Object. The ObjectID of a child Object is generated from its parent ObjectID and the child Object's Key.
+* StateRoot: Each Object contains a StateRoot field, used to store the root node information of that Object's subtree.
+
+For more details about the Object model, please refer to the [Storage Abstraction](/learn/core-concepts/objects/storage-abstraction) and [Object Model](/learn/core-concepts/objects/object) documentation.
+
+![statedb](/docs/rooch-design-statedb.svg)
+
+### Implementation of State Tree Security Mechanisms in Smart Contracts
+
+Different applications have varying security requirements at different stages of development. DSTP supports multiple security modes, mainly including:
+
+1. PoA (Proof of Authority) Mode: Updates to the state tree root are executed by a specific account, typically the developer's account. VApp nodes are also operated by developers. This mode is suitable for application development and proof-of-concept stages, or as a bridge for transitioning from Web2 to Web3 applications.
+
+2. PoS (Proof of Stake) Mode: Updates to the state tree root are executed by an account selected through a PoS mechanism. This mode includes rotation mechanisms and penalty mechanisms for fraudulent behavior to ensure security.
+
+3. Multi-party Cooperation Mode: Updates to the state tree root require joint signatures from multiple collaborators. Smart contracts need to include mechanisms for handling non-cooperation scenarios. This mode is suitable for applications that require multi-party management and can also be used to implement state channels.
+
+### State Reading and Synchronization Protocols in P2P Networks
 
 <Callout>
-TODO: This section of the document needs improvement
-
-1. Explaination of DSTP and its importance.
-2. Specifications of DSTP.
+The P2P communication protocol for RoochNetwork is currently still in the design and development phase. This part of the content will be gradually improved and updated in future versions.
 </Callout>
