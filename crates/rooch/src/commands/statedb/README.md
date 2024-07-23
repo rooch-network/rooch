@@ -138,6 +138,14 @@ rooch statedb genesis-ord --utxo-source <utxo_src_path> --ord-source <ord_src_pa
 > - `--batch-size`/`--utxo-batch-size` is optional, default is 2M. Set it smaller if memory is limited.
 > - `--ord-batch-size` is optional, default is 1M. Set it smaller if memory is limited.
 
+##### Export & Import
+
+**TODO**:
+
+1. export mode: full, indexer, genesis, snapshot are unfinished
+2. recursion object export(export mode: object): export object and its children is supported; children's children cannot
+   be exported
+
 **rooch statedb export**:
 
 ```shell

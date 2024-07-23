@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::fmt::Display;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -14,6 +15,7 @@ use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::FieldKey;
 use moveos_types::state_resolver::{StateKV, StatelessResolver};
+use rooch_config::da_config::OpenDAScheme;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::bitcoin::ord::InscriptionStore;
 use rooch_types::bitcoin::utxo::BitcoinUTXOStore;
@@ -23,46 +25,76 @@ use rooch_types::rooch_network::RoochChainID;
 
 use crate::cli_types::WalletContextOptions;
 use crate::commands::statedb::commands::{
-    init_job, GLOBAL_STATE_TYPE_FIELD, GLOBAL_STATE_TYPE_OBJECT, GLOBAL_STATE_TYPE_ROOT,
+    GLOBAL_STATE_TYPE_FIELD, GLOBAL_STATE_TYPE_OBJECT, GLOBAL_STATE_TYPE_ROOT, init_job,
 };
 
-/// Export statedb
-
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
-#[repr(u8)]
 #[serde(rename_all = "lowercase")]
 pub enum ExportMode {
-    // dump UTXO, Inscription and relative Objects, including RoochToBitcoinAddressMapping object
     #[default]
-    Genesis = 0,
-    Full = 1,
-    Snapshot = 2,
-    // rebuild indexer, including UTXO and Inscription
-    Indexer = 3,
-    Object = 4,
+    Genesis, // InscriptionStore, BitcoinUTXOStore, RoochToBitcoinAddressMapping
+    Full,
+    Snapshot,
+    Indexer, // InscriptionStore, BitcoinUTXOStore for rebuild indexer
+    Object,
 }
 
-impl TryFrom<u8> for ExportMode {
-    type Error = anyhow::Error;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(ExportMode::Genesis),
-            1 => Ok(ExportMode::Full),
-            2 => Ok(ExportMode::Snapshot),
-            3 => Ok(ExportMode::Indexer),
-            4 => Ok(ExportMode::Object),
-            _ => Err(anyhow::anyhow!(
-                "Statedb cli export mode {} is invalid",
-                value
-            )),
+impl Display for ExportMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ExportMode::Genesis => write!(f, "genesis"),
+            ExportMode::Full => write!(f, "full"),
+            ExportMode::Snapshot => write!(f, "snapshot"),
+            ExportMode::Indexer => write!(f, "indexer"),
+            ExportMode::Object => write!(f, "object"),
         }
     }
 }
 
-impl ExportMode {
-    pub fn to_num(self) -> u8 {
-        self as u8
+impl FromStr for ExportMode {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "genesis" => Ok(ExportMode::Genesis),
+            "full" => Ok(ExportMode::Full),
+            "snapshot" => Ok(ExportMode::Snapshot),
+            "indexer" => Ok(ExportMode::Indexer),
+            "object" => Ok(ExportMode::Object),
+            _ => Err("export-mode no match"),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ExportObjectName {
+    #[default]
+    UtxoStore,
+    InscriptionStore,
+    AddressMap,
+}
+
+impl Display for ExportObjectName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ExportObjectName::UtxoStore => write!(f, "utxo-store"),
+            ExportObjectName::InscriptionStore => write!(f, "inscription-store"),
+            ExportObjectName::AddressMap => write!(f, "address-map"),
+        }
+    }
+}
+
+impl FromStr for ExportObjectName {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "utxo-store" => Ok(ExportObjectName::UtxoStore),
+            "inscription-store" => Ok(ExportObjectName::InscriptionStore),
+            "address-map" => Ok(ExportObjectName::AddressMap),
+            _ => Err("object-name no match"),
+        }
     }
 }
 
@@ -70,7 +102,7 @@ impl ExportMode {
 pub struct ExportID {
     pub object_id: ObjectID,
     pub state_root: H256,
-    pub parent_state_root: H256,
+    pub parent_state_root: H256,    // If object has no parent, it'll be itself state root.
     pub timestamp: u64,
 }
 
@@ -90,7 +122,7 @@ impl ExportID {
     }
 }
 
-impl std::fmt::Display for ExportID {
+impl Display for ExportID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let state_root_str = format!("{:?}", self.state_root);
         let parent_state_root_str = format!("{:?}", self.parent_state_root);
@@ -142,11 +174,15 @@ pub struct ExportCommand {
     // #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long, short = 'm')]
     /// statedb export mode, default is genesis mode
-    pub mode: Option<u8>,
+    pub mode: Option<ExportMode>,
 
     /// export object id, for object mode
     #[clap(long, short = 'i')]
     pub object_id: Option<ObjectID>,
+
+    /// export object name, for human-readable object mode
+    #[clap(long)]
+    pub object_name: Option<ExportObjectName>,
 
     /// If local chainid, start the service with a temporary data store.
     /// All data will be deleted when the service is stopped.
@@ -170,7 +206,7 @@ impl ExportCommand {
         })?;
         let root_state_root = self.state_root.unwrap_or(root.state_root());
 
-        let mode = ExportMode::try_from(self.mode.unwrap_or(ExportMode::Genesis.to_num()))?;
+        let mode = self.mode.unwrap_or_default();
         match mode {
             ExportMode::Genesis => {
                 Self::export_genesis(&moveos_store, root_state_root, &mut writer)?;
@@ -185,38 +221,41 @@ impl ExportCommand {
                 Self::export_indexer(&moveos_store, root_state_root, &mut writer)?;
             }
             ExportMode::Object => {
-                let obj_id = self
-                    .object_id
-                    .expect("Object id should exist in object mode");
+                let obj_id = self.object_id.unwrap_or_else(|| {
+                    match self
+                        .object_name
+                        .expect("object name must be existed if object id not provided")
+                    {
+                        ExportObjectName::UtxoStore => BitcoinUTXOStore::object_id(),
+                        ExportObjectName::InscriptionStore => InscriptionStore::object_id(),
+                        ExportObjectName::AddressMap => RoochToBitcoinAddressMapping::object_id(),
+                    }
+                });
                 Self::export_object(&moveos_store, root_state_root, obj_id, &mut writer)?;
             }
         }
 
         log::info!("Done in {:?}.", start_time.elapsed(),);
+
+        writer.flush()?;
+
         Ok(())
     }
 
-    /// Field state must be export first, and then object state
     fn export_genesis<W: std::io::Write>(
         moveos_store: &MoveOSStore,
         root_state_root: H256,
         writer: &mut Writer<W>,
     ) -> Result<()> {
-        let utxo_store_id = BitcoinUTXOStore::object_id();
-        let inscription_store_id = InscriptionStore::object_id();
-        let rooch_to_bitcoin_address_mapping_id = RoochToBitcoinAddressMapping::object_id();
-        let genesis_object_ids_field_keys = vec![
-            utxo_store_id.clone().field_key(),
-            inscription_store_id.clone().field_key(),
-            rooch_to_bitcoin_address_mapping_id.clone().field_key(),
-        ];
+        export_root_export_id(root_state_root, writer)?;
 
-        Self::export_genesis_fields(
-            moveos_store,
-            root_state_root,
-            writer,
-            genesis_object_ids_field_keys,
-        )
+        let field_keys = vec![
+            BitcoinUTXOStore::object_id().field_key(),
+            InscriptionStore::object_id().field_key(),
+            RoochToBitcoinAddressMapping::object_id().field_key(),
+        ];
+        export_fields(moveos_store, root_state_root, writer, field_keys)
+        // TODO export objects in fields
     }
 
     fn export_indexer<W: std::io::Write>(
@@ -224,40 +263,14 @@ impl ExportCommand {
         root_state_root: H256,
         writer: &mut Writer<W>,
     ) -> Result<()> {
-        let utxo_store_id = BitcoinUTXOStore::object_id();
-        let inscription_store_id = InscriptionStore::object_id();
-        let genesis_object_ids_field_keys = vec![
-            utxo_store_id.clone().field_key(),
-            inscription_store_id.clone().field_key(),
+        export_root_export_id(root_state_root, writer)?;
+
+        let field_keys = vec![
+            BitcoinUTXOStore::object_id().field_key(),
+            InscriptionStore::object_id().field_key(),
         ];
-
-        Self::export_genesis_fields(
-            moveos_store,
-            root_state_root,
-            writer,
-            genesis_object_ids_field_keys,
-        )
-    }
-
-    fn export_genesis_fields<W: std::io::Write>(
-        moveos_store: &MoveOSStore,
-        root_state_root: H256,
-        writer: &mut Writer<W>,
-        field_keys: Vec<FieldKey>,
-    ) -> Result<()> {
-        let genesis_states = get_object_states(moveos_store, root_state_root, field_keys);
-        // write root state
-        {
-            let root_export_id =
-                ExportID::new(ObjectID::root(), root_state_root, root_state_root, 0);
-            writer.write_record([GLOBAL_STATE_TYPE_ROOT, root_export_id.to_string().as_str()])?;
-        }
-        for (k, v) in genesis_states.into_iter() {
-            writer.write_record([k.to_string().as_str(), v.to_string().as_str()])?;
-        }
-
-        writer.flush()?;
-        Ok(())
+        export_fields(moveos_store, root_state_root, writer, field_keys)
+        // TODO export objects in fields
     }
 
     fn export_object<W: std::io::Write>(
@@ -266,29 +279,32 @@ impl ExportCommand {
         object_id: ObjectID,
         writer: &mut Writer<W>,
     ) -> Result<()> {
-        println!("export_object object_id: {:?}", object_id);
+        export_root_export_id(root_state_root, writer)?;
 
-        let obj = moveos_store
+        let obj_state = moveos_store
             .get_field_at(root_state_root, &object_id.field_key())?
             .expect("state should exist.");
+        let obj_state_root = obj_state.state_root();
+        let obj_timestamp = obj_state.updated_at();
+        obj_state.metadata.id.parent()
 
-        let state_root = obj.state_root();
-        let timestamp = obj.updated_at();
-        // write csv field states
-        Self::export_field_states(
+        // 1. export object fields
+        Self::export_object_fields(
             moveos_store,
-            state_root,
+            obj_state_root,
             root_state_root,
             object_id.clone(),
-            false,
-            true,
             writer,
         )?;
 
-        // write csv object states.
+        // 2. export object state root
         {
-            let export_id =
-                ExportID::new(object_id.clone(), state_root, root_state_root, timestamp);
+            let export_id = ExportID::new(
+                object_id.clone(),
+                obj_state_root,
+                root_state_root,
+                obj_timestamp,
+            );
             writer.write_field(GLOBAL_STATE_TYPE_OBJECT)?;
             writer.write_field(export_id.to_string())?;
             writer.write_record(None::<&[u8]>)?;
@@ -298,21 +314,15 @@ impl ExportCommand {
         //writer.write_field(obj.to_string())?;
         writer.write_record(None::<&[u8]>)?;
 
-        // flush csv writer
-        writer.flush()?;
-        println!("export_object root state_root: {:?}", root_state_root);
-
         Ok(())
     }
 
-    fn export_field_states<W: std::io::Write>(
+    // export object's fields, won't search fields' children
+    fn export_object_fields<W: std::io::Write>(
         moveos_store: &MoveOSStore,
         state_root: H256,
         parent_state_root: H256,
         object_id: ObjectID,
-        // export child field as object state under indexer mode
-        is_child_field_as_object_state: bool,
-        is_recursive_export_child_field: bool,
         writer: &mut Writer<W>,
     ) -> Result<()> {
         let starting_key = None;
@@ -379,7 +389,41 @@ impl ExportCommand {
     }
 }
 
-fn get_object_states(
+// export root's export id for further checking in import job.
+fn export_root_export_id<W: std::io::Write>(
+    root_state_root: H256,
+    writer: &mut Writer<W>,
+) -> Result<()> {
+    let root_export_id = ExportID::new(ObjectID::root(), root_state_root, root_state_root, 0);
+    writer.write_record([GLOBAL_STATE_TYPE_ROOT, root_export_id.to_string().as_str()])?;
+    Ok(())
+}
+
+// export root's export id for further checking in import job.
+fn export_object_export_id<W: std::io::Write>(
+    state_root: H256,
+    writer: &mut Writer<W>,
+) -> Result<()> {
+    let root_export_id = ExportID::new(ObjectID::root(), root_state_root, root_state_root, 0);
+    writer.write_record([GLOBAL_STATE_TYPE_ROOT, root_export_id.to_string().as_str()])?;
+    Ok(())
+}
+
+fn export_fields<W: std::io::Write>(
+    moveos_store: &MoveOSStore,
+    state_root: H256,
+    writer: &mut Writer<W>,
+    field_keys: Vec<FieldKey>,
+) -> Result<()> {
+    let state_kvs = get_fields_at(moveos_store, state_root, field_keys);
+    for (k, v) in state_kvs.into_iter() {
+        writer.write_record([k.to_string().as_str(), v.to_string().as_str()])?;
+    }
+    Ok(())
+}
+
+// get fields by object_field_keys at state_root.
+fn get_fields_at(
     moveos_store: &MoveOSStore,
     state_root: H256,
     object_field_keys: Vec<FieldKey>,
@@ -389,7 +433,7 @@ fn get_object_states(
         let state = moveos_store
             .get_field_at(state_root, &object_field_key)
             .unwrap()
-            .expect("state should exist.");
+            .expect("state root must be existed.");
         kvs.push((object_field_key, state));
     }
     kvs
