@@ -5,6 +5,7 @@ use crate::state_store::metrics::StateDBMetrics;
 use crate::state_store::NodeDBStore;
 use anyhow::{Error, Ok, Result};
 use function_name::named;
+use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::GENESIS_STATE_ROOT;
@@ -157,6 +158,15 @@ impl StateDBStore {
             )?;
         }
 
+        // Only statistics object value bytes to avoid performance loss caused by serialization
+        let size = update_set
+            .iter()
+            .map(|(_k, v)| {
+                let k_len = AccountAddress::LENGTH;
+                let v_len = v.clone().map(|state| state.value.len()).unwrap_or(0);
+                k_len + v_len
+            })
+            .sum::<usize>();
         let mut tree_change_set = self.update_fields(pre_state_root, update_set)?;
         let new_state_root = tree_change_set.state_root;
         nodes.append(&mut tree_change_set.nodes);
@@ -168,7 +178,6 @@ impl StateDBStore {
                 global_size
             );
         }
-        let size = nodes.values().map(|v| 32 + v.len()).sum::<usize>();
         self.node_store.write_nodes(nodes)?;
         state_change_set.update_state_root(new_state_root);
 
@@ -221,13 +230,12 @@ impl StatelessResolver for StateDBStore {
                 result_info
             );
         }
-        //TODO Add perf mode, only output bytes statistics in perf mode,
-        // there will be performance loss
-        // let size = result.map(|v| v.to_bytes()?.len()).unwrap_or(0);
-        // self.metrics
-        //     .state_get_field_at_bytes
-        //     .with_label_values(&[fn_name])
-        //     .observe(size as f64);
+        // Only statistics object value bytes to avoid performance loss caused by serialization
+        let size = result.clone().map(|v| v.value.len()).unwrap_or(0);
+        self.metrics
+            .state_get_field_at_bytes
+            .with_label_values(&[fn_name])
+            .observe(size as f64);
         Ok(result)
     }
 
@@ -246,17 +254,19 @@ impl StatelessResolver for StateDBStore {
             .start_timer();
         let result = self.smt.list(state_root, cursor, limit)?;
 
-        //TODO Add perf mode, only output bytes statistics in perf mode,
-        // there will be performance loss
-        // let size = result.iter().map(|(_k,v)| {
-        //     let k_len = AccountAddress::LENGTH;
-        //     let v_len = v.to_bytes()?.len();
-        //     k_len + v_len
-        // }).sum::<usize>();
-        // self.metrics
-        //     .state_list_fields_at_bytes
-        //     .with_label_values(&[fn_name])
-        //     .observe(size as f64);
+        // Only statistics object value bytes to avoid performance loss caused by serialization
+        let size = result
+            .iter()
+            .map(|(_k, v)| {
+                let k_len = AccountAddress::LENGTH;
+                let v_len = v.value.len();
+                k_len + v_len
+            })
+            .sum::<usize>();
+        self.metrics
+            .state_list_fields_at_bytes
+            .with_label_values(&[fn_name])
+            .observe(size as f64);
         Ok(result)
     }
 }
