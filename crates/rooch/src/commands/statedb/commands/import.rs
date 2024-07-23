@@ -22,6 +22,7 @@ use moveos_types::moveos_std::object::{GENESIS_STATE_ROOT, ObjectID, ObjectMeta}
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{FieldKey, ObjectState};
 use moveos_types::state_resolver::StatelessResolver;
+use rooch_common::fs::file_cache::FileCacheManager;
 use rooch_config::{R_OPT_NET_HELP, RoochOpt};
 use rooch_db::RoochDB;
 use rooch_genesis::RoochGenesis;
@@ -116,27 +117,34 @@ fn produce_updates(
     input: PathBuf,
     root_state_root: H256,
     batch_size: usize,
-) -> Result<()> {
-    let mut csv_reader = BufReader::new(File::open(input).unwrap());
+) {
+    let file_cache_mgr = FileCacheManager::new(input.clone()).unwrap();
+    let mut cache_drop_offset: u64 = 0;
+
+    let mut csv_reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
     let mut last_state_id = None;
     loop {
+        let mut bytes_read = 0;
+
         let mut updates = BatchUpdates {
             states: BTreeMap::new(),
         };
         for line in csv_reader.by_ref().lines().take(batch_size) {
-            let line = line?;
+            let line = line.unwrap();
+            bytes_read += line.len() as u64 + 1; // Add line.len() + 1, assuming that the line terminator is '\n'
 
             if line.starts_with(GLOBAL_STATE_TYPE_PREFIX) {
                 // TODO check current statedb root state root
                 if line.starts_with(GLOBAL_STATE_TYPE_ROOT) {
                     break;
                 }
-                let (_c1, c2) = parse_state_data_from_csv_line(&line)?;
-                let export_id = ExportID::from_str(&c2)?;
+                let (_c1, c2) = parse_state_data_from_csv_line(&line).unwrap();
+                let export_id = ExportID::from_str(&c2).unwrap();
                 // let eventual_state_root = export_id.parent_state_root;
                 // // TODO add cache to avoid duplicate read smt
                 let pre_state_root =
-                    get_pre_state_root(moveos_store, root_state_root, export_id.object_id.clone())?;
+                    get_pre_state_root(moveos_store, root_state_root, export_id.object_id.clone())
+                        .unwrap();
 
                 let state_id = StateID::new(export_id, pre_state_root);
                 updates.states.insert(state_id.clone(), UpdateSet::new());
@@ -144,13 +152,15 @@ fn produce_updates(
                 continue;
             }
 
-            let (c1, c2) = parse_state_data_from_csv_line(&line)?;
-            let key_state = FieldKey::from_str(&c1)?;
-            let state = ObjectState::from_str(&c2)?;
+            let (c1, c2) = parse_state_data_from_csv_line(&line).unwrap();
+            let key_state = FieldKey::from_str(&c1).unwrap();
+            let state = ObjectState::from_str(&c2).unwrap();
             let state_id = last_state_id.clone().expect("State ID should have value");
             let update_set = updates.states.entry(state_id).or_default();
             update_set.put(key_state, state);
         }
+        let _ = file_cache_mgr.drop_cache_range(cache_drop_offset, bytes_read);
+        cache_drop_offset += bytes_read;
         if updates.states.is_empty() {
             break;
         }
@@ -158,7 +168,6 @@ fn produce_updates(
     }
 
     drop(tx);
-    Ok(())
 }
 
 // csv format: c1,c2
@@ -181,7 +190,7 @@ fn apply_updates_to_state(
     root_state_root: H256,
     root_size: u64,
     task_start_time: Instant,
-) -> Result<()> {
+) {
     // let mut _count = 0;
     let mut last_state_root = root_state_root;
     while let Ok(batch) = rx.recv() {
@@ -189,7 +198,7 @@ fn apply_updates_to_state(
 
         for (state_id, update_set) in batch.states.into_iter() {
             let mut tree_change_set =
-                apply_fields(&moveos_store, state_id.pre_state_root, update_set)?;
+                apply_fields(&moveos_store, state_id.pre_state_root, update_set).unwrap();
             let mut nodes: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
             nodes.append(&mut tree_change_set.nodes);
             last_state_root = tree_change_set.state_root;
@@ -208,7 +217,6 @@ fn apply_updates_to_state(
     }
 
     finish_import_job(&moveos_store, last_state_root, root_size, task_start_time);
-    Ok(())
 }
 
 fn finish_import_job(
