@@ -22,7 +22,7 @@ module btc_blind_box::blind_box {
     use moveos_std::tx_context;
     use moveos_std::object::{Self, Object};
     use moveos_std::account as moveos_account;
-    use moveos_std::timestamp;
+    use rooch_framework::simple_rng;
     use bitcoin_move::bitcoin;
     use bitcoin_move::types::{Self, Header};
 
@@ -102,15 +102,8 @@ module btc_blind_box::blind_box {
     }
 
     fun generate_magic_number(): u128 {
-        // generate a random number from tx_context
-        let bytes = vector::empty<u8>();
-        vector::append(&mut bytes, bcs::to_bytes(&tx_context::sequence_number()));
-        vector::append(&mut bytes, bcs::to_bytes(&tx_context::sender()));
-        vector::append(&mut bytes, bcs::to_bytes(&tx_context::tx_hash()));
-        vector::append(&mut bytes, bcs::to_bytes(&timestamp::now_milliseconds()));
-
-        let seed = hash::sha3_256(bytes);
-        let magic_number = bytes_to_u128(seed);
+        // generate a simple random number from tx_context
+        let magic_number = simple_rng::rand_u128();
         magic_number
     }
 
@@ -124,7 +117,7 @@ module btc_blind_box::blind_box {
         vector::append(&mut bytes, bcs::to_bytes(&tx_context::tx_hash()));
 
         let seed = hash::sha3_256(bytes);
-        let value = bytes_to_u128(seed);
+        let value = simple_rng::bytes_to_u128(seed);
 
         let rand_value = value % 10000; // An uniform distribution random number range in [0, 10000)
 
@@ -140,16 +133,6 @@ module btc_blind_box::blind_box {
         } else {
             Box { rarity: 1 }
         }
-    }
-
-    fun bytes_to_u128(bytes: vector<u8>): u128 {
-        let value = 0u128;
-        let i = 0u64;
-        while (i < 16) {
-            value = value | ((*vector::borrow(&bytes, i) as u128) << ((8 * (15 - i)) as u8));
-            i = i + 1;
-        };
-        return value
     }
 
     #[test_only]
