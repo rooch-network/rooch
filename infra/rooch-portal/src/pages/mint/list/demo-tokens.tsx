@@ -19,7 +19,7 @@ import { useNavigate } from 'react-router-dom'
 import { getTokenInfo, TokenInfo } from '@/pages/mint/util/get-token-info'
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton'
 
-export const AllTokens = () => {
+export const DemoTokens = () => {
   const navigate = useNavigate()
   const [tokens, setTokens] = useState<TokenInfo[]>([])
 
@@ -50,6 +50,7 @@ export const AllTokens = () => {
               {tokens.length > 0 ? <>
                 <TableHead className="w-[150px]">Symbol</TableHead>
                 <TableHead className="w-[150px]">Name</TableHead>
+                <TableHead className="w-[200px]">Distribution Mechanism</TableHead>
                 <TableHead>Progress</TableHead>
                 <TableHead className="text-center w-[250px]" >Action</TableHead>
               </> : <TableHead className="w-full"><Skeleton/></TableHead>}
@@ -61,6 +62,7 @@ export const AllTokens = () => {
                   <TableRow key={token.starTime}>
                     <TableCell className="font-medium">{token.coin.symbol}</TableCell>
                     <TableCell className="font-medium">{token.coin.name}</TableCell>
+                    <TableCell className="font-medium">Self-Staking (without Lock)</TableCell>
                     <TableCell>
                       <div className="flex items-center justify-start gap-1">
                         <Progress value={token.progress} className="w-[60%]" />

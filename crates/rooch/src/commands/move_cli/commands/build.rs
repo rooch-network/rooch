@@ -71,13 +71,17 @@ impl CommandAction<Option<Value>> for BuildCommand {
 
         let mut package = config.compile_package_no_exit(&rerooted_path, &mut std::io::stdout())?;
 
-        run_verifier(rerooted_path.clone(), config_cloned, &mut package)?;
+        run_verifier(rerooted_path.clone(), config_cloned.clone(), &mut package)?;
 
         if self.export {
-            let export_path = rerooted_path
-                .join("build")
-                .join(package.compiled_package_info.package_name.as_str())
-                .join("package.blob");
+            let export_path = match &config_cloned.install_dir {
+                None => rerooted_path
+                    .join("build")
+                    .join(package.compiled_package_info.package_name.as_str())
+                    .join("package.blob"),
+                Some(value) => value.clone().join("package.blob"),
+            };
+
             let blob = package
                 .root_compiled_units
                 .iter()

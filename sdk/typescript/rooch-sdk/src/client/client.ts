@@ -42,6 +42,8 @@ import {
   GetEventsByEventHandleParams,
   QueryEventsParams,
   PaginatedIndexerEventViews,
+  ModuleABIView,
+  GetModuleABIParams,
 } from './types/index.js'
 
 /**
@@ -85,6 +87,15 @@ export class RoochClient {
    */
   constructor(options: RoochClientOptions) {
     this.transport = options.transport ?? new RoochHTTPTransport({ url: options.url })
+  }
+
+  async getRpcApiVersion(): Promise<string | undefined> {
+    const resp = await this.transport.request<{ info: { version: string } }>({
+      method: 'rpc.discover',
+      params: [],
+    })
+
+    return resp.info.version
   }
 
   async getChainId(): Promise<u64> {
@@ -165,6 +176,12 @@ export class RoochClient {
     })
   }
 
+  async getModuleAbi(params: GetModuleABIParams): Promise<ModuleABIView> {
+    return await this.transport.request({
+      method: 'rooch_getModuleABI',
+      params: [params.moduleAddr, params.moduleName],
+    })
+  }
   async getEvents(input: GetEventsByEventHandleParams): Promise<PaginatedEventViews> {
     return await this.transport.request({
       method: 'rooch_getEventsByEventHandle',
