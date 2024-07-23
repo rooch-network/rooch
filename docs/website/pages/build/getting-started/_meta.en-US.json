@@ -3,6 +3,7 @@
   "connect-to-rooch": "Connect to Rooch",
   "first-account": "First account",
   "get-gas-coin": "Get Rooch Gas Coin",
+  "get-test-btc": "Get tBTC",
   "first-contract": "First contract",
   "first-dapp": "First dApp",
   "first-token": "First token"
