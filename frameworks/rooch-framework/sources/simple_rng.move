@@ -87,14 +87,14 @@ module rooch_framework::simple_rng {
         bytes_to_u128(seed_bytes)
     }
 
-    /// Generate a random integer range in [low, high] for u64.
+    /// Generate a random integer range in [low, high) for u64.
     public fun rand_u64_range(low: u64, high: u64): u64 {
         assert!(high > low, ErrorInvalidArg);
         let value = rand_u64();
         (value % (high - low)) + low
     }
 
-    /// Generate a random integer range in [low, high] for u128.
+    /// Generate a random integer range in [low, high) for u128.
     public fun rand_u128_range(low: u128, high: u128): u128 {
         assert!(high > low, ErrorInvalidArg);
         let value = rand_u128();

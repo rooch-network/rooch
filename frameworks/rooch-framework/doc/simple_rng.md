@@ -117,7 +117,7 @@ Generate a random u128 from seed
 
 ## Function `rand_u64_range`
 
-Generate a random integer range in [low, high] for u64.
+Generate a random integer range in [low, high) for u64.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="simple_rng.md#0x3_simple_rng_rand_u64_range">rand_u64_range</a>(low: u64, high: u64): u64
@@ -129,7 +129,7 @@ Generate a random integer range in [low, high] for u64.
 
 ## Function `rand_u128_range`
 
-Generate a random integer range in [low, high] for u128.
+Generate a random integer range in [low, high) for u128.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="simple_rng.md#0x3_simple_rng_rand_u128_range">rand_u128_range</a>(low: u128, high: u128): u128
