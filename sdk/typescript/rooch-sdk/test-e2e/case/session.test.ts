@@ -13,11 +13,6 @@ describe('Checkpoints Session API', () => {
     testBox = await setup()
   })
 
-  it('', () => {
-    const aa = '18426974636f696e205369676e6564204d6573736167653a0a353631'
-    console.log(bytes('hex', aa))
-  })
-
   it('Create session should be success', async () => {
     const session = await testBox.client.createSession({
       sessionArgs: {
