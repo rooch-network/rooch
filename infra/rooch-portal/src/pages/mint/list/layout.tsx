@@ -2,18 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useState } from 'react'
-import { AllTokens } from './all-tokens'
+import { DemoTokens } from './demo-tokens'
+import { ComingSoon } from './coming-soon'
 import { TabItem } from '@/common/interface'
 import { useCurrentWallet } from '@roochnetwork/rooch-sdk-kit'
 import { ConnectWalletHint } from '@/components/connect-wallet-hint'
 
 const mintTabItems: TabItem[] = [
-  { id: 'allTokens', label: 'All Tokens', available: false },
+  { id: 'DemoTokens', label: 'Demo Tokens', available: true },
+  { id: 'ComingSoon', label: 'Coming Soon', available: true },
 ]
 
 export const MintTabsLayout = () => {
   const { isConnected } = useCurrentWallet()
-  const [activeId, setActiveId] = useState<string>('allTokens')
+  const [activeId, setActiveId] = useState<string>('DemoTokens')
 
   const handleTabClick = (id: string, available: boolean) => {
     if (available) {
@@ -23,8 +25,10 @@ export const MintTabsLayout = () => {
 
   const renderTabContent = () => {
     switch (activeId) {
-      case 'allTokens':
-        return <AllTokens />
+      case 'DemoTokens':
+        return <DemoTokens />
+      case 'ComingSoon':
+        return <ComingSoon />
     }
   }
 
