@@ -3,6 +3,7 @@
 
 /// This module defines Rooch Gas Coin.
 module rooch_framework::gas_coin {
+    use std::option::none;
     use std::string;
     use moveos_std::signer;
     use moveos_std::object::{Self, Object};
@@ -78,6 +79,7 @@ module rooch_framework::gas_coin {
             string::utf8(b"Rooch Gas Coin"),
             string::utf8(b"RGC"),
             DECIMALS, // decimals
+            none(),
         );
         object::transfer(coin_info_obj, @rooch_framework);
     }

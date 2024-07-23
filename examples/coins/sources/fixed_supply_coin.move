@@ -3,6 +3,7 @@
 
 module coins::fixed_supply_coin {
 
+    use std::option::none;
     use std::string;
     use moveos_std::signer;
     
@@ -29,6 +30,7 @@ module coins::fixed_supply_coin {
             string::utf8(b"Fixed Supply Coin"),
             string::utf8(b"FSC"),
             DECIMALS,
+            none()
         );
         // Mint the total supply of coins, and store it to the treasury
         let coin = coin::mint_extend<FSC>(&mut coin_info_obj, TOTAL_SUPPLY);

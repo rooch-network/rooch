@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module btc_holder_farmer::hold_farmer {
+    use std::option::none;
     use std::string;
     use moveos_std::event::emit;
     use bitcoin_move::utxo;
@@ -177,6 +178,7 @@ module btc_holder_farmer::hold_farmer {
             string::utf8(name),
             string::utf8(symbol),
             decimals,
+            none()
         );
         account::move_resource_to(signer, FarmingAsset {
             asset_total_weight: 0,

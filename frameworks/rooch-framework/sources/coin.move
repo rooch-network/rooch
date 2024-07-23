@@ -3,7 +3,9 @@
 
 /// This module provides the foundation for typesafe Coins.
 module rooch_framework::coin {
+    use std::option::Option;
     use std::string;
+    use std::string::String;
     use moveos_std::object::{Self, ObjectID, Object};
     
     use moveos_std::event;
@@ -85,6 +87,8 @@ module rooch_framework::coin {
         decimals: u8,
         /// The total value for the coin represented by coin type. Mutable.
         supply: u256,
+        /// URL for the token logo
+        icon_url: Option<string::String>
     }
 
     /// Event emitted when coin minted.
@@ -153,6 +157,11 @@ module rooch_framework::coin {
         coin_info.supply
     }
 
+    /// Returns the amount of coin.
+    public fun icon_url<CoinType: key>(coin_info: &CoinInfo<CoinType>): Option<String> {
+        coin_info.icon_url
+    }
+
     /// Return true if the type `CoinType1` is same with `CoinType2`
     public fun is_same_coin<CoinType1, CoinType2>(): bool {
         return type_info::type_of<CoinType1>() == type_info::type_of<CoinType2>()
@@ -218,6 +227,7 @@ module rooch_framework::coin {
         name: string::String,
         symbol: string::String,
         decimals: u8,
+        icon_url: Option<String>
     ): Object<CoinInfo<CoinType>> {
         assert!(
             !is_registered<CoinType>(),
@@ -235,6 +245,7 @@ module rooch_framework::coin {
             symbol,
             decimals,
             supply: 0u256,
+            icon_url
         };
         object::new_named_object(coin_info)
     }
