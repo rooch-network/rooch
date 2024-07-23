@@ -5,11 +5,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_binary_format::errors::PartialVMResult;
+use move_core_types::gas_algebra::InternalGas;
+use move_core_types::vm_status::VMStatus;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, values::Value,
 };
 use std::{collections::VecDeque, sync::Arc};
+
+pub const E_NATIVE_FUNCTION_EXECUTING_PANIC: u64 = 13;
 
 pub fn make_module_natives(
     natives: impl IntoIterator<Item = (impl Into<String>, NativeFunction)>,
@@ -58,7 +62,22 @@ where
                     },
                 }
             }
-            result
+            if let Err(err) = &result {
+                let status = err.major_status();
+                let vm_status = VMStatus::error(status, Some("".to_string()));
+                match vm_status.keep_or_discard() {
+                    Ok(_) => result,
+                    Err(_) => {
+                        log::error!("Native function execution failed {}", err.to_string());
+                        Ok(NativeResult::err(
+                            InternalGas::new(3000),
+                            E_NATIVE_FUNCTION_EXECUTING_PANIC,
+                        ))
+                    }
+                }
+            } else {
+                result
+            }
         },
     )
 }

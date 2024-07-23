@@ -7,6 +7,7 @@
 // Source code from https://github.com/aptos-labs/aptos-core/blob/c76c6b0fc3a1b8e21b6ba2f77151ca20ea31ca32/aptos-move/moveos_stdlib/src/natives/type_info.rs#L1
 // TODO use the SafeNativeContext
 
+use crate::natives::helpers;
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::{
     gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
@@ -110,7 +111,10 @@ impl GasParameters {
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
-    let natives = [("type_of", make_native_type_of(gas_params.type_of))];
+    let natives = [(
+        "type_of",
+        helpers::make_native(gas_params.type_of, native_type_of),
+    )];
 
     crate::natives::helpers::make_module_natives(natives)
 }

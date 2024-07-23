@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::natives::helpers;
 use log::info;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::account_address::AccountAddress;
@@ -290,8 +291,14 @@ impl GasParameters {
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [
-        ("to_bytes", make_native_to_bytes(gas_params.to_bytes)),
-        ("from_bytes", make_native_from_bytes(gas_params.from_bytes)),
+        (
+            "to_bytes",
+            helpers::make_native(gas_params.to_bytes, native_to_bytes),
+        ),
+        (
+            "from_bytes",
+            helpers::make_native(gas_params.from_bytes, native_from_bytes),
+        ),
     ];
 
     make_module_natives(natives)
