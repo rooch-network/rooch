@@ -661,6 +661,9 @@ impl BitcoinAddress {
 
     ///  Format the base58 as a hexadecimal string
     pub fn format(&self, network: u8) -> Result<String, anyhow::Error> {
+        if self.bytes.is_empty() {
+            anyhow::bail!("bitcoin address is empty");
+        }
         let payload_type = BitcoinAddressPayloadType::try_from(self.bytes[0])?;
         match payload_type {
             BitcoinAddressPayloadType::PubkeyHash => {
