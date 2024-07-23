@@ -108,7 +108,7 @@ module rooch_examples::rooch_examples {
         // Get address of account
         let account_address = signer::address_of(account);
         // Register and mint WGBCOIN
-        let coin_info = coin::register_extend<WGBCOIN>(string::utf8(b"WGBCOIN"),string::utf8(b"WGB"), 8, none());
+        let coin_info = coin::register_extend<WGBCOIN>(string::utf8(b"WGBCOIN"),string::utf8(b"WGB"), 8);
         let coin = coin::mint_extend<WGBCOIN>(&mut coin_info, 1000 * 1000 * 1000);
         account_coin_store::do_accept_coin<WGBCOIN>(account);
         account_coin_store::deposit_extend(account_address, coin);

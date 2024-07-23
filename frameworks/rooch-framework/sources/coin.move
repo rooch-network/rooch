@@ -155,7 +155,7 @@ module rooch_framework::coin {
         coin_info.supply
     }
 
-    /// Returns the amount of coin.
+    /// Returns the icon url of coin.
     public fun icon_url<CoinType: key>(coin_info: &Object<CoinInfo<CoinType>>): Option<String> {
         *object::borrow_field<CoinInfo<CoinType>, String, Option<String>>(coin_info, string::utf8(b"icon_url"))
     }
@@ -218,6 +218,14 @@ module rooch_framework::coin {
     //
 
     #[private_generics(CoinType)]
+    /// Upsert icon_url as`CoinType` dynamic field
+    /// This function is protected by `private_generics`, so it can only be called by the `CoinType` module.
+    public fun upsert_icon_url<CoinType: key>(coin_info_obj: &mut Object<CoinInfo<CoinType>>, icon_url: String){
+        object::upsert_field(coin_info_obj, string::utf8(b"icon_url"), icon_url);
+    }
+
+
+    #[private_generics(CoinType)]
     /// Creates a new Coin with given `CoinType`
     /// This function is protected by `private_generics`, so it can only be called by the `CoinType` module.
     public fun register_extend<CoinType: key>(
@@ -225,7 +233,6 @@ module rooch_framework::coin {
         name: string::String,
         symbol: string::String,
         decimals: u8,
-        icon_url: Option<String>
     ): Object<CoinInfo<CoinType>> {
         assert!(
             !is_registered<CoinType>(),
@@ -245,7 +252,6 @@ module rooch_framework::coin {
             supply: 0u256,
         };
         let coin_info_obj = object::new_named_object(coin_info);
-        object::add_field(&mut coin_info_obj, string::utf8(b"icon_url"), icon_url);
         coin_info_obj
     }
 

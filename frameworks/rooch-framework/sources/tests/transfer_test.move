@@ -96,7 +96,6 @@ module rooch_framework::transfer_test{
             string::utf8(b"Fake coin"),
             string::utf8(b"FCD"),
             decimals,
-            none()
         )
     }
 

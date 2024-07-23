@@ -39,7 +39,6 @@ module btc_holder_coin::holder_coin {
             string::utf8(b"BTC Holder Coin"),
             string::utf8(b"HDC"),
             DECIMALS,
-            none()
         );
         let coin_info_holder_obj = object::new_named_object(CoinInfoHolder { coin_info: coin_info_obj });
         // Make the coin info holder object to shared, so anyone can get mutable CoinInfoHolder object

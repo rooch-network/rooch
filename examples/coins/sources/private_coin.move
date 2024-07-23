@@ -27,7 +27,6 @@ module coins::private_coin {
             string::utf8(b"Private Coin"),
             string::utf8(b"PRC"),
             1,
-            none()
         );
         object::transfer(coin_info_obj, @coins);
         let coin_store = coin_store::create_coin_store_extend<PRC>();

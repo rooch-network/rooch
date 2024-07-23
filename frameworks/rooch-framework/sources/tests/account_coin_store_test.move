@@ -28,7 +28,6 @@ module rooch_framework::account_coin_store_test{
             string::utf8(b"Fake coin"),
             string::utf8(b"FCD"),
             decimals,
-            none()
         )
     }
 

@@ -79,7 +79,6 @@ module rooch_framework::gas_coin {
             string::utf8(b"Rooch Gas Coin"),
             string::utf8(b"RGC"),
             DECIMALS, // decimals
-            none(),
         );
         object::transfer(coin_info_obj, @rooch_framework);
     }

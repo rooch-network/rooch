@@ -29,7 +29,6 @@ module template::coin_module_identifier_placeholder {
             string::utf8(b"COIN_NAME_PLACEHOLDER"),
             string::utf8(b"COIN_SYMBOL_PLACEHOLDER"),
             DECIMALS,
-            none()
         );
         // Mint the total supply of coins, and store it to the treasury
         let coin = coin::mint_extend<COIN_STRUCT_IDENTIFIER_PLACEHOLDER>(&mut coin_info_obj, TOTAL_SUPPLY);

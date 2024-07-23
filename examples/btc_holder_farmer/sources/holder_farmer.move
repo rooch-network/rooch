@@ -178,7 +178,6 @@ module btc_holder_farmer::hold_farmer {
             string::utf8(name),
             string::utf8(symbol),
             decimals,
-            none()
         );
         account::move_resource_to(signer, FarmingAsset {
             asset_total_weight: 0,

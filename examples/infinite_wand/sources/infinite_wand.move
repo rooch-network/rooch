@@ -55,7 +55,6 @@ module infinite_wand::infinite_wand {
             string::utf8(b"PreToken of InfiniteGames DAO"),
             string::utf8(b"InfiniteGold"),
             DECIMALS,
-            none()
         );
         let admin_cap = object::new_named_object(AdminCap {});
         let global_obj = object::new_named_object(Global {
