@@ -27,6 +27,7 @@ pub mod histogram;
 pub mod metered_channel;
 pub mod monitored_mpsc;
 pub use guards::*;
+pub mod metrics_util;
 #[cfg(test)]
 mod tests;
 
