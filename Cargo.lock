@@ -1869,9 +1869,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.9"
+version = "4.5.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64acc1846d54c1fe936a78dc189c34e28d3f5afc348403f28ecf53660b9b8462"
+checksum = "8f6b81fb3c84f5563d509c59b5a48d935f689e993afa90fe39047f05adef9142"
 dependencies = [
  "clap_builder",
  "clap_derive 4.5.8",
@@ -1879,9 +1879,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.9"
+version = "4.5.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6fb8393d67ba2e7bfaf28a23458e4e2b543cc73a99595511eb207fdb8aede942"
+checksum = "5ca6706fd5224857d9ac5eb9355f6683563cc0541c7cd9d014043b57cbec78ac"
 dependencies = [
  "anstream",
  "anstyle",
@@ -2311,7 +2311,7 @@ dependencies = [
  "anes",
  "cast",
  "ciborium",
- "clap 4.5.9",
+ "clap 4.5.10",
  "criterion-plot",
  "futures",
  "is-terminal",
@@ -2383,7 +2383,7 @@ dependencies = [
  "bitflags 1.3.2",
  "crossterm_winapi",
  "libc",
- "mio",
+ "mio 0.8.11",
  "parking_lot 0.12.3",
  "signal-hook",
  "signal-hook-mio",
@@ -2399,7 +2399,7 @@ dependencies = [
  "bitflags 1.3.2",
  "crossterm_winapi",
  "libc",
- "mio",
+ "mio 0.8.11",
  "parking_lot 0.12.3",
  "signal-hook",
  "signal-hook-mio",
@@ -2493,7 +2493,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6cd12917efc3a8b069a4975ef3cb2f2d835d42d04b3814d90838488f9dd9bf69"
 dependencies = [
  "anyhow",
- "clap 4.5.9",
+ "clap 4.5.10",
  "console",
  "cucumber-codegen",
  "cucumber-expressions",
@@ -2727,7 +2727,7 @@ name = "datatest-stable"
 version = "0.1.1"
 source = "git+https://github.com/rooch-network/diem-devtools?branch=feature/pub-test-opts#c65933ee5aa5721ca0e6602995f1464ce0a93a53"
 dependencies = [
- "clap 4.5.9",
+ "clap 4.5.10",
  "regex",
  "termcolor",
  "walkdir",
@@ -3358,9 +3358,9 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.11.3"
+version = "0.11.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38b35839ba51819680ba087cd351788c9a3c476841207e0b8cee0b04722343b9"
+checksum = "06676b12debf7bba6903559720abca942d3a66b8acb88815fd2c7c6537e9ade1"
 dependencies = [
  "anstream",
  "anstyle",
@@ -4120,7 +4120,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "bitcoin-move",
- "clap 4.5.9",
+ "clap 4.5.10",
  "framework-builder",
  "framework-types",
  "include_dir",
@@ -4141,7 +4141,7 @@ name = "framework-types"
 version = "0.6.3"
 dependencies = [
  "anyhow",
- "clap 4.5.9",
+ "clap 4.5.10",
  "move-core-types",
  "moveos-stdlib",
  "moveos-types",
@@ -6097,6 +6097,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "mio"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4569e456d394deccd22ce1c1913e6ea0e54519f577285001215d33557431afe4"
+dependencies = [
+ "hermit-abi 0.3.9",
+ "libc",
+ "wasi 0.11.0+wasi-snapshot-preview1",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
 name = "mirai-annotations"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6198,7 +6210,7 @@ version = "0.1.0"
 source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
- "clap 4.5.9",
+ "clap 4.5.10",
  "crossterm 0.26.1",
  "move-binary-format",
  "move-bytecode-source-map",
@@ -6216,7 +6228,7 @@ source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a37
 dependencies = [
  "anyhow",
  "bcs",
- "clap 4.5.9",
+ "clap 4.5.10",
  "codespan-reporting",
  "colored",
  "difference",
@@ -6277,7 +6289,7 @@ source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a37
 dependencies = [
  "anyhow",
  "bcs",
- "clap 4.5.9",
+ "clap 4.5.10",
  "codespan-reporting",
  "difference",
  "hex",
@@ -6328,7 +6340,7 @@ source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a37
 dependencies = [
  "anyhow",
  "bcs",
- "clap 4.5.9",
+ "clap 4.5.10",
  "codespan",
  "colored",
  "move-binary-format",
@@ -6347,7 +6359,7 @@ version = "0.1.0"
 source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
- "clap 4.5.9",
+ "clap 4.5.10",
  "colored",
  "move-binary-format",
  "move-bytecode-source-map",
@@ -6399,7 +6411,7 @@ source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a37
 dependencies = [
  "anyhow",
  "bcs",
- "clap 4.5.9",
+ "clap 4.5.10",
  "move-binary-format",
  "move-bytecode-source-map",
  "move-bytecode-verifier",
@@ -6491,7 +6503,7 @@ source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a37
 dependencies = [
  "anyhow",
  "bcs",
- "clap 4.5.9",
+ "clap 4.5.10",
  "colored",
  "dirs-next",
  "itertools 0.10.5",
@@ -6528,7 +6540,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "atty",
- "clap 4.5.9",
+ "clap 4.5.10",
  "codespan",
  "codespan-reporting",
  "futures",
@@ -6682,7 +6694,7 @@ version = "0.1.0"
 source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
 dependencies = [
  "anyhow",
- "clap 4.5.9",
+ "clap 4.5.10",
  "colored",
  "move-binary-format",
  "move-bytecode-source-map",
@@ -6714,7 +6726,7 @@ source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a37
 dependencies = [
  "anyhow",
  "better_any",
- "clap 4.5.9",
+ "clap 4.5.10",
  "codespan-reporting",
  "colored",
  "itertools 0.10.5",
@@ -6789,7 +6801,7 @@ dependencies = [
  "backtrace",
  "bcs",
  "ciborium",
- "clap 4.5.9",
+ "clap 4.5.10",
  "codespan",
  "codespan-reporting",
  "framework-builder",
@@ -6865,7 +6877,7 @@ name = "moveos-config"
 version = "0.6.3"
 dependencies = [
  "anyhow",
- "clap 4.5.9",
+ "clap 4.5.10",
  "coerce",
  "dirs",
  "once_cell",
@@ -9206,7 +9218,7 @@ dependencies = [
  "bitcoin 0.31.2",
  "bitcoin-move",
  "chrono",
- "clap 4.5.9",
+ "clap 4.5.10",
  "codespan-reporting",
  "csv",
  "datatest-stable 0.1.1",
@@ -9288,7 +9300,7 @@ dependencies = [
  "bitcoincore-rpc",
  "bitcoincore-rpc-json",
  "chrono",
- "clap 4.5.9",
+ "clap 4.5.10",
  "coerce",
  "criterion",
  "derive_builder 0.20.0",
@@ -9364,7 +9376,7 @@ name = "rooch-config"
 version = "0.6.3"
 dependencies = [
  "anyhow",
- "clap 4.5.9",
+ "clap 4.5.10",
  "coerce",
  "dirs",
  "dirs-next",
@@ -9442,7 +9454,7 @@ dependencies = [
  "async-trait",
  "bcs",
  "chrono",
- "clap 4.5.9",
+ "clap 4.5.10",
  "coerce",
  "derive_builder 0.20.0",
  "futures",
@@ -9483,7 +9495,7 @@ dependencies = [
  "async-trait",
  "axum 0.7.5",
  "axum-server",
- "clap 4.5.9",
+ "clap 4.5.10",
  "eyre",
  "futures",
  "move-core-types",
@@ -9611,7 +9623,7 @@ dependencies = [
  "bcs",
  "better_any",
  "bitcoin-move",
- "clap 4.5.9",
+ "clap 4.5.10",
  "coerce",
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "framework-builder",
@@ -9665,7 +9677,7 @@ dependencies = [
  "bcs",
  "cached",
  "chrono",
- "clap 4.5.9",
+ "clap 4.5.10",
  "coerce",
  "diesel",
  "diesel-derive-enum",
@@ -9708,7 +9720,7 @@ version = "0.6.3"
 dependencies = [
  "anyhow",
  "bcs",
- "clap 4.5.9",
+ "clap 4.5.10",
  "codespan-reporting",
  "datatest-stable 0.1.3",
  "framework-builder",
@@ -9756,7 +9768,7 @@ dependencies = [
  "bip32",
  "bitcoin 0.31.2",
  "chacha20poly1305",
- "clap 4.5.9",
+ "clap 4.5.10",
  "derive_more",
  "enum_dispatch",
  "ethers",
@@ -9785,7 +9797,7 @@ version = "0.6.3"
 dependencies = [
  "anyhow",
  "bcs",
- "clap 4.5.9",
+ "clap 4.5.10",
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "pretty_assertions",
  "rand 0.8.5",
@@ -9814,7 +9826,7 @@ version = "0.6.3"
 dependencies = [
  "anyhow",
  "bcs",
- "clap 4.5.9",
+ "clap 4.5.10",
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "pretty_assertions",
  "rand 0.8.5",
@@ -9835,7 +9847,7 @@ version = "0.6.3"
 dependencies = [
  "anyhow",
  "bcs",
- "clap 4.5.9",
+ "clap 4.5.10",
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "pretty_assertions",
  "rand 0.8.5",
@@ -9857,7 +9869,7 @@ dependencies = [
  "async-trait",
  "bcs",
  "chrono",
- "clap 4.5.9",
+ "clap 4.5.10",
  "coerce",
  "derive_builder 0.20.0",
  "futures",
@@ -9895,7 +9907,7 @@ dependencies = [
  "async-trait",
  "bcs",
  "chrono",
- "clap 4.5.9",
+ "clap 4.5.10",
  "coerce",
  "derive_builder 0.20.0",
  "futures",
@@ -9930,7 +9942,7 @@ dependencies = [
  "bitcoin 0.31.2",
  "bitcoincore-rpc",
  "chrono",
- "clap 4.5.9",
+ "clap 4.5.10",
  "coerce",
  "derive_builder 0.20.0",
  "ethers",
@@ -9976,7 +9988,7 @@ dependencies = [
  "bitcoincore-rpc",
  "bytes",
  "chrono",
- "clap 4.5.9",
+ "clap 4.5.10",
  "coerce",
  "const-hex",
  "derive_builder 0.20.0",
@@ -10015,7 +10027,7 @@ version = "0.6.3"
 dependencies = [
  "anyhow",
  "bcs",
- "clap 4.5.9",
+ "clap 4.5.10",
  "dirs",
  "ethers",
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
@@ -10049,7 +10061,7 @@ dependencies = [
  "axum 0.7.5",
  "bcs",
  "chrono",
- "clap 4.5.9",
+ "clap 4.5.10",
  "coerce",
  "derive_builder 0.20.0",
  "ethers",
@@ -10112,7 +10124,7 @@ dependencies = [
  "async-trait",
  "bcs",
  "chrono",
- "clap 4.5.9",
+ "clap 4.5.10",
  "coerce",
  "derive_builder 0.20.0",
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
@@ -10217,7 +10229,7 @@ dependencies = [
  "bitcoincore-rpc",
  "bs58 0.5.1",
  "chacha20poly1305",
- "clap 4.5.9",
+ "clap 4.5.10",
  "derive_more",
  "enum_dispatch",
  "ethers",
@@ -11271,7 +11283,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29ad2e15f37ec9a6cc544097b78a1ec90001e9f71b81338ca39f430adaca99af"
 dependencies = [
  "libc",
- "mio",
+ "mio 0.8.11",
  "signal-hook",
 ]
 
@@ -11927,7 +11939,7 @@ dependencies = [
  "anyhow",
  "assert_cmd",
  "backtrace",
- "clap 4.5.9",
+ "clap 4.5.10",
  "cucumber",
  "env_logger",
  "futures",
@@ -12105,21 +12117,20 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.38.1"
+version = "1.39.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb2caba9f80616f438e09748d5acda951967e1ea58508ef53d9c6402485a46df"
+checksum = "d040ac2b29ab03b09d4129c2f5bbd012a3ac2f79d38ff506a4bf8dd34b0eac8a"
 dependencies = [
  "backtrace",
  "bytes",
  "libc",
- "mio",
- "num_cpus",
+ "mio 1.0.1",
  "parking_lot 0.12.3",
  "pin-project-lite",
  "signal-hook-registry",
  "socket2",
  "tokio-macros",
- "windows-sys 0.48.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -12134,9 +12145,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-macros"
-version = "2.3.0"
+version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f5ae998a069d4b5aba8ee9dad856af7d520c3699e6159b185c2acd48155d39a"
+checksum = "693d596312e88961bc67d7f1f97af8a70227d9f90c31bba5806eec004978d752"
 dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
