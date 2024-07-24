@@ -126,10 +126,10 @@ rooch genesis init -n main -d <rooch_datadir>
 rooch statedb genesis-utxo --input <utxo_src_path> -d <rooch_datadir> -n main --batch-size <utxo_batch_size>
 ```
 
-**genesis-ord**:
+**genesis**:
 
 ```shell
-rooch statedb genesis-ord --utxo-source <utxo_src_path> --ord-source <ord_src_path> -d <rooch_datadir> -n main --utxo-ord-map <db_dir> --utxo-batch-size <utxo_batch_size> --ord-batch-size <ord_batch_size>
+rooch statedb genesis --utxo-source <utxo_src_path> --ord-source <ord_src_path> -d <rooch_datadir> -n main --utxo-ord-map <db_dir> --utxo-batch-size <utxo_batch_size> --ord-batch-size <ord_batch_size>
 ```
 
 ***tips***:

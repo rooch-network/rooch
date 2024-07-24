@@ -27,7 +27,6 @@ use crate::commands::statedb::commands::{
 };
 
 /// Export statedb
-
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 #[repr(u8)]
 #[serde(rename_all = "lowercase")]

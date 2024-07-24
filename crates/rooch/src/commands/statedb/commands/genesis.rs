@@ -6,26 +6,26 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::{Arc, mpsc};
 use std::sync::mpsc::{Receiver, SyncSender};
-use std::sync::{mpsc, Arc};
 use std::thread;
 use std::time::{Instant, SystemTime};
 
 use anyhow::Result;
 use bitcoin::OutPoint;
-use bitcoin_move::natives::ord::inscription_id::InscriptionId;
 use chrono::{DateTime, Local};
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use redb::Database;
 use serde::{Deserialize, Serialize};
 
+use bitcoin_move::natives::ord::inscription_id::InscriptionId;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::move_std::option::MoveOption;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::{
-    ObjectEntity, ObjectID, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
+    GENESIS_STATE_ROOT, ObjectEntity, ObjectID, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
 };
 use moveos_types::state::{FieldKey, ObjectState};
 use rooch_common::fs::file_cache::FileCacheManager;
@@ -42,13 +42,13 @@ use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
 use crate::cli_types::WalletContextOptions;
+use crate::commands::statedb::commands::{
+    get_ord_by_outpoint, init_job, sort_merge_utxo_ords, UTXO_ORD_MAP_TABLE, UTXOOrds,
+};
 use crate::commands::statedb::commands::genesis_utxo::{
     apply_utxo_updates_to_state, produce_utxo_updates,
 };
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
-use crate::commands::statedb::commands::{
-    get_ord_by_outpoint, init_job, sort_merge_utxo_ords, UTXOOrds, UTXO_ORD_MAP_TABLE,
-};
 
 pub const ADDRESS_UNBOUND: &str = "unbound";
 pub const ADDRESS_NON_STANDARD: &str = "non-standard";
@@ -81,9 +81,9 @@ pub struct InscriptionSource {
     pub rune: Option<u128>,
 }
 
-/// Genesis Import BTC(utxo, ord)
+/// Import BTC ordinals & UTXO for genesis
 #[derive(Debug, Parser)]
-pub struct GenesisOrdCommand {
+pub struct GenesisCommand {
     #[clap(long, short = 'i')]
     /// utxo source data file. like ~/.rooch/local/utxo.csv or utxo.csv
     /// The file format is csv, and the first line is the header, the header is as follows:
@@ -128,7 +128,7 @@ pub struct GenesisOrdCommand {
     pub context_options: WalletContextOptions,
 }
 
-impl GenesisOrdCommand {
+impl GenesisCommand {
     // 1. init import job
     // 2. import ord (record utxo_seal)
     // 3. import utxo with utxo_seal
@@ -182,7 +182,7 @@ impl GenesisOrdCommand {
         let input_path = self.ord_source.clone();
         let batch_size = self.ord_batch_size.unwrap();
 
-        let (tx, rx) = mpsc::sync_channel(2);
+        let (tx, rx) = mpsc::sync_channel(1);
         let produce_updates_thread =
             thread::spawn(move || produce_ord_updates(tx, input_path, batch_size));
         let apply_updates_thread = thread::spawn(move || {

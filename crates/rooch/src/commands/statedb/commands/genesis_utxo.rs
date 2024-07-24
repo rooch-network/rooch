@@ -27,7 +27,6 @@ use moveos_types::moveos_std::object::{
     ObjectEntity, ObjectID, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
 };
 use moveos_types::moveos_std::simple_multimap::{Element, SimpleMultiMap};
-use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{FieldKey, ObjectState};
 use rooch_common::fs::file_cache::FileCacheManager;
 use rooch_config::R_OPT_NET_HELP;
@@ -44,11 +43,11 @@ use smt::UpdateSet;
 use crate::cli_types::WalletContextOptions;
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
 use crate::commands::statedb::commands::{
-    drive_bitcoin_address, get_ord_by_outpoint, init_job, SCRIPT_TYPE_NON_STANDARD,
+    drive_bitcoin_address, finish_job, get_ord_by_outpoint, init_job, SCRIPT_TYPE_NON_STANDARD,
     SCRIPT_TYPE_P2MS, SCRIPT_TYPE_P2PK, UTXO_ORD_MAP_TABLE, UTXO_SEAL_INSCRIPTION_PROTOCOL,
 };
 
-/// Genesis Import UTXO
+/// Import UTXO for development and testing.
 #[derive(Debug, Parser)]
 pub struct GenesisUTXOCommand {
     // #[clap(long, short = 'i', parse(from_os_str))]
@@ -204,7 +203,7 @@ pub fn apply_utxo_updates_to_state(
     moveos_store: Arc<MoveOSStore>,
 
     root_size: u64,
-    root_state_root: H256,
+    pre_root_state_root: H256,
 
     startup_update_set: Option<UpdateSet<FieldKey, ObjectState>>,
 
@@ -272,81 +271,43 @@ pub fn apply_utxo_updates_to_state(
             rooch_to_bitcoin_address_mapping_state_root;
     }
 
-    finish_task(
-        utxo_count,
-        address_mapping_count,
-        moveos_store,
-        root_size,
-        root_state_root,
-        utxo_store_state_root,
-        rooch_to_bitcoin_address_mapping_state_root,
-        task_start_time,
-        startup_update_set,
-    );
-}
+    let mut new_startup_update_set = startup_update_set.unwrap_or_default();
 
-fn finish_task(
-    utxo_count: u64,
-    address_mapping_count: u64,
-
-    moveos_store: &MoveOSStore,
-
-    root_size: u64,
-    mut root_state_root: H256,
-    utxo_store_state_root: H256,
-    rooch_to_bitcoin_address_mapping_state_root: H256,
-
-    task_start_time: Instant,
-    startup_update_set: Option<UpdateSet<FieldKey, ObjectState>>,
-) {
     // Update UTXOStore Object
     let mut genesis_utxostore_object = create_genesis_utxostore_object();
     genesis_utxostore_object.size += utxo_count;
     genesis_utxostore_object.state_root = Some(utxo_store_state_root);
-    let mut update_set = startup_update_set.unwrap_or_default();
-    let parent_id = BitcoinUTXOStore::object_id();
-    update_set.put(parent_id.field_key(), genesis_utxostore_object.into_state());
+    new_startup_update_set.put(
+        BitcoinUTXOStore::object_id().field_key(),
+        genesis_utxostore_object.into_state(),
+    );
     println!(
         "genesis BitcoinUTXOStore object updated, utxo_store_state_root: {:?}, utxo count: {}",
         utxo_store_state_root, utxo_count
     );
     // Update Address Mapping Object
-
     let mut genesis_rooch_to_bitcoin_address_mapping_object =
         create_genesis_rooch_to_bitcoin_address_mapping_object();
-
     genesis_rooch_to_bitcoin_address_mapping_object.size += address_mapping_count;
     genesis_rooch_to_bitcoin_address_mapping_object.state_root =
         Some(rooch_to_bitcoin_address_mapping_state_root);
-
-    update_set.put(
+    new_startup_update_set.put(
         genesis_rooch_to_bitcoin_address_mapping_object
             .id
             .field_key(),
         genesis_rooch_to_bitcoin_address_mapping_object.into_state(),
     );
-
     println!(
         "genesis RoochToBitcoinAddressMapping object updated, rooch_to_bitcoin_address_mapping_state_root: {:?}, address_mapping count: {}",
         rooch_to_bitcoin_address_mapping_state_root, address_mapping_count
     );
 
-    let tree_change_set = apply_fields(moveos_store, root_state_root, update_set).unwrap();
-    apply_nodes(moveos_store, tree_change_set.nodes).unwrap();
-    root_state_root = tree_change_set.state_root;
-
-    // Update Startup Info
-    let new_startup_info = StartupInfo::new(root_state_root, root_size);
-    moveos_store
-        .get_config_store()
-        .save_startup_info(new_startup_info)
-        .unwrap();
-
-    let startup_info = moveos_store.get_config_store().get_startup_info().unwrap();
-    println!(
-        "Done in {:?}. New startup_info: {:?}",
-        task_start_time.elapsed(),
-        startup_info
+    finish_job(
+        moveos_store,
+        root_size,
+        pre_root_state_root,
+        task_start_time,
+        Some(new_startup_update_set),
     );
 }
 
