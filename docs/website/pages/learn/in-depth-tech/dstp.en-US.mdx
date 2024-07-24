@@ -1,5 +1,7 @@
 # Distributed State Tree Protocol (DSTP)
 
+import { Callout, FileTree } from 'nextra/components'
+
 The Distributed State Tree Protocol, abbreviated as **DSTP**, aims to improve system scalability by layering the state tree and distributing subtrees of the global state tree to different nodes in a P2P network. Despite the physical distribution of these nodes, they can still achieve interoperability through the global state tree.
 
 ![Distributed State Tree Protocol](/blog/bitcoin-application-layer/dstp.svg)
@@ -49,8 +51,6 @@ Different applications have varying security requirements at different stages of
 3. Multi-party Cooperation Mode: Updates to the state tree root require joint signatures from multiple collaborators. Smart contracts need to include mechanisms for handling non-cooperation scenarios. This mode is suitable for applications that require multi-party management and can also be used to implement state channels.
 
 ### State Reading and Synchronization Protocols in P2P Networks
-
-import { Callout, FileTree } from 'nextra/components'
 
 <Callout>
 The P2P communication protocol for RoochNetwork is currently still in the design and development phase. This part of the content will be gradually improved and updated in future versions.
