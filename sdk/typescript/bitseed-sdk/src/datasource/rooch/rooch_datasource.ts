@@ -6,7 +6,9 @@ import {
   Inscription,
   GetInscriptionUTXOOptions,
   UTXO,
-  GetInscriptionsOptions
+  GetInscriptionsOptions,
+  GetTransactionOptions,
+  Transaction
 } from "@sadoprotocol/ordit-sdk";
 import { 
   getRoochNodeUrl, 
@@ -18,8 +20,12 @@ import {
   InscriptionStateView,
   UTXOStateView,
   UTXOView,
-  QueryInscriptionsParams
+  QueryInscriptionsParams,
+  Args
 } from '@roochnetwork/rooch-sdk';
+import {
+  RoochBTCTransaction
+} from './bitcoin_types';
 
 interface RoochDataSourceOptions {
   network: Network;
@@ -246,6 +252,97 @@ export class RoochDataSource /*implements IDatasource*/ {
   
     return inscription;
   }
+
+  async getTransaction({ txId, ordinals, hex, witness, decodeMetadata }: GetTransactionOptions): Promise<{
+    tx: Transaction;
+  }> {
+    // Get transaction information
+    const txResult = await this.roochClient.executeViewFunction({
+      target: '0x1::bitcoin::get_tx',
+      typeArgs: [],
+      args: [Args.address(txId)],
+    });
+
+    if (!txResult.return_values || txResult.return_values.length === 0) {
+      throw new Error(`Transaction with id ${txId} not found`);
+    }
+
+    const btcTx = txResult.return_values[0].decoded_value as any;
+
+    // Convert Rooch BTC transaction to the required Transaction type
+    const tx: Transaction = {
+      txid: btcTx.id,
+      version: Number(btcTx.version),
+      locktime: Number(btcTx.lock_time),
+      vin: btcTx.input.map((input: any) => ({
+        txid: input.previous_output.txid,
+        vout: Number(input.previous_output.vout),
+        scriptSig: {
+          asm: "", // Not available in Rooch BTC tx
+          hex: Buffer.from(input.script_sig).toString('hex')
+        },
+        sequence: Number(input.sequence),
+        witness: input.witness.witness.map((w: any) => Buffer.from(w).toString('hex'))
+      })),
+      vout: btcTx.output.map((output: any, index: number) => ({
+        value: Number(output.value),
+        n: index,
+        scriptPubKey: {
+          asm: "", // Not available in Rooch BTC tx
+          hex: Buffer.from(output.script_pubkey).toString('hex'),
+          address: output.recipient_address // Assuming this is available
+        }
+      })),
+      size: 0, // Not available in Rooch BTC tx
+      weight: 0, // Not available in Rooch BTC tx
+      fee: BigInt(0), // Not available in Rooch BTC tx
+      status: {
+        confirmed: true, // Assuming all returned transactions are confirmed
+        block_height: undefined,
+        block_hash: undefined,
+        block_time: undefined
+      }
+    };
+
+    if (decodeMetadata && btcTx.metadata) {
+      try {
+        const metadataBuffer = Buffer.from(btcTx.metadata, 'base64');
+        tx.meta = cbor.decode(metadataBuffer);
+      } catch (error) {
+        console.warn(`Failed to decode CBOR metadata for transaction ${txId}: ${error}`);
+      }
+    }
+
+    // Get transaction height
+    const txHeightResult = await this.roochClient.executeViewFunction({
+      target: '0x1::bitcoin::get_tx_height',
+      typeArgs: [],
+      args: [Args.address(txId)],
+    });
+
+    if (txHeightResult.return_values && txHeightResult.return_values.length > 0) {
+      const blockHeight = Number(txHeightResult.return_values[0].decoded_value);
+      tx.status.block_height = blockHeight;
+
+      // Get block information
+      const blockResult = await this.roochClient.executeViewFunction({
+        target: '0x1::bitcoin::get_block_by_height',
+        typeArgs: [],
+        args: [Args.u64(BigInt(blockHeight))],
+      });
+
+      if (blockResult.return_values && blockResult.return_values.length > 0) {
+        const block = blockResult.return_values[0].decoded_value;
+        tx.status.block_hash = block.prev_blockhash;
+        tx.status.block_time = Number(block.time);
+      }
+    }
+
+    // Note: We can't provide hex or witness information as it's not available in the Rooch BTC tx representation
+
+    return { tx };
+  }
+
 }
 
 function bitcoinNetworkToRooch(network: Network): 'testnet' | 'devnet' | 'localnet' {
