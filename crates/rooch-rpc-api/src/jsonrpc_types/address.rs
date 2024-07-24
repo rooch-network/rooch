@@ -130,7 +130,7 @@ impl From<UnitedAddressView> for RoochAddress {
 
 impl From<UnitedAddressView> for AccountAddress {
     fn from(value: UnitedAddressView) -> Self {
-        AccountAddress::from(value.0.rooch_address.0 .0)
+        value.0.rooch_address.into()
     }
 }
 

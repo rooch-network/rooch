@@ -13,7 +13,7 @@ export function toB64(bytes: Uint8Array): string {
   }
 
   let output = ''
-  for (var i = 0; i < bytes.length; i += CHUNK_SIZE) {
+  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
     const chunk = bytes.slice(i, i + CHUNK_SIZE)
     output += String.fromCharCode(...chunk)
   }

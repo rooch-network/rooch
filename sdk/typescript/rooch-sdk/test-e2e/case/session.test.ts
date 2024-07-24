@@ -3,7 +3,6 @@
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import { setup, TestBox } from '../setup.js'
-import { bytes } from '../../src/utils/bytes.js'
 import { Transaction } from '../../src/transactions/index.js'
 
 describe('Checkpoints Session API', () => {
@@ -11,11 +10,6 @@ describe('Checkpoints Session API', () => {
 
   beforeAll(async () => {
     testBox = await setup()
-  })
-
-  it('', () => {
-    const aa = '18426974636f696e205369676e6564204d6573736167653a0a353631'
-    console.log(bytes('hex', aa))
   })
 
   it('Create session should be success', async () => {

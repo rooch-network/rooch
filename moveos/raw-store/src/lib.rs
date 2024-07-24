@@ -51,12 +51,9 @@ unsafe impl Send for StoreInstance {}
 
 impl StoreInstance {
     pub fn new_db_instance(db: RocksDB) -> Self {
-        let db_metrics_arc = DBMetrics::get().clone();
-        Self::new_db_instance_with_metrics(db, db_metrics_arc)
-    }
-
-    pub fn new_db_instance_with_metrics(db: RocksDB, db_metrics: Arc<DBMetrics>) -> Self {
+        let db_metrics = DBMetrics::get().clone();
         let db_arc = Arc::new(db);
+        // let db_metrics = Arc::new(DBMetrics::new(registry));
         // let db_clone = db_arc.clone();
         // let db_metrics_clone = db_metrics.clone();
         // let (sender, mut recv) = tokio::sync::oneshot::channel();
@@ -76,11 +73,11 @@ impl StoreInstance {
         //                     let db_clone_clone = db_clone.clone();
         //                     let db_metrics_clone_clone = db_metrics_clone.clone();
         //                     if let Err(e) = tokio::task::spawn_blocking(move || {
-        //                         Self::report_cf_metrics(&db_clone_clone, cf_name, &db_metrics_clone_clone);
+        //                         Self::report_rocksdb_metrics(&db_clone_clone, cf_name, &db_metrics_clone_clone);
         //                     }).await {
         //                         error!("Failed to report cf metrics with error: {}", e);
         //                     }
-        //                     // Self::report_cf_metrics(&db_clone_clone, cf_name, &db_metrics_clone);
+        //                     // Self::report_rocksdb_metrics(&db_clone_clone, cf_name, &db_metrics_clone);
         //                 }
         //             }
         //             _ = &mut recv => break,
@@ -154,10 +151,10 @@ impl StoreInstance {
     }
 
     #[allow(dead_code)]
-    fn report_cf_metrics(rocksdb: &Arc<RocksDB>, cf_name: &str, db_metrics: &Arc<DBMetrics>) {
+    fn report_rocksdb_metrics(rocksdb: &Arc<RocksDB>, cf_name: &str, db_metrics: &Arc<DBMetrics>) {
         let cf = rocksdb.get_cf_handle(cf_name);
         db_metrics
-            .cf_metrics
+            .rocksdb_metrics
             .rocksdb_total_sst_files_size
             .with_label_values(&[cf_name])
             .set(
@@ -165,7 +162,7 @@ impl StoreInstance {
                     .unwrap_or(METRICS_ERROR),
             );
         db_metrics
-            .cf_metrics
+            .rocksdb_metrics
             .rocksdb_total_blob_files_size
             .with_label_values(&[cf_name])
             .set(
@@ -173,7 +170,7 @@ impl StoreInstance {
                     .unwrap_or(METRICS_ERROR),
             );
         db_metrics
-            .cf_metrics
+            .rocksdb_metrics
             .rocksdb_size_all_mem_tables
             .with_label_values(&[cf_name])
             .set(
@@ -181,7 +178,7 @@ impl StoreInstance {
                     .unwrap_or(METRICS_ERROR),
             );
         db_metrics
-            .cf_metrics
+            .rocksdb_metrics
             .rocksdb_num_snapshots
             .with_label_values(&[cf_name])
             .set(
@@ -189,7 +186,7 @@ impl StoreInstance {
                     .unwrap_or(METRICS_ERROR),
             );
         db_metrics
-            .cf_metrics
+            .rocksdb_metrics
             .rocksdb_oldest_snapshot_time
             .with_label_values(&[cf_name])
             .set(
@@ -197,7 +194,7 @@ impl StoreInstance {
                     .unwrap_or(METRICS_ERROR),
             );
         db_metrics
-            .cf_metrics
+            .rocksdb_metrics
             .rocksdb_actual_delayed_write_rate
             .with_label_values(&[cf_name])
             .set(
@@ -205,7 +202,7 @@ impl StoreInstance {
                     .unwrap_or(METRICS_ERROR),
             );
         db_metrics
-            .cf_metrics
+            .rocksdb_metrics
             .rocksdb_is_write_stopped
             .with_label_values(&[cf_name])
             .set(
@@ -213,7 +210,7 @@ impl StoreInstance {
                     .unwrap_or(METRICS_ERROR),
             );
         db_metrics
-            .cf_metrics
+            .rocksdb_metrics
             .rocksdb_block_cache_capacity
             .with_label_values(&[cf_name])
             .set(
@@ -221,7 +218,7 @@ impl StoreInstance {
                     .unwrap_or(METRICS_ERROR),
             );
         db_metrics
-            .cf_metrics
+            .rocksdb_metrics
             .rocksdb_block_cache_usage
             .with_label_values(&[cf_name])
             .set(
@@ -229,7 +226,7 @@ impl StoreInstance {
                     .unwrap_or(METRICS_ERROR),
             );
         db_metrics
-            .cf_metrics
+            .rocksdb_metrics
             .rocksdb_block_cache_pinned_usage
             .with_label_values(&[cf_name])
             .set(
@@ -237,7 +234,7 @@ impl StoreInstance {
                     .unwrap_or(METRICS_ERROR),
             );
         db_metrics
-            .cf_metrics
+            .rocksdb_metrics
             .rocskdb_estimate_table_readers_mem
             .with_label_values(&[cf_name])
             .set(
@@ -245,7 +242,7 @@ impl StoreInstance {
                     .unwrap_or(METRICS_ERROR),
             );
         db_metrics
-            .cf_metrics
+            .rocksdb_metrics
             .rocksdb_estimated_num_keys
             .with_label_values(&[cf_name])
             .set(
@@ -253,7 +250,7 @@ impl StoreInstance {
                     .unwrap_or(METRICS_ERROR),
             );
         db_metrics
-            .cf_metrics
+            .rocksdb_metrics
             .rocksdb_mem_table_flush_pending
             .with_label_values(&[cf_name])
             .set(
@@ -261,7 +258,7 @@ impl StoreInstance {
                     .unwrap_or(METRICS_ERROR),
             );
         db_metrics
-            .cf_metrics
+            .rocksdb_metrics
             .rocskdb_compaction_pending
             .with_label_values(&[cf_name])
             .set(
@@ -269,7 +266,7 @@ impl StoreInstance {
                     .unwrap_or(METRICS_ERROR),
             );
         db_metrics
-            .cf_metrics
+            .rocksdb_metrics
             .rocskdb_num_running_compactions
             .with_label_values(&[cf_name])
             .set(
@@ -277,7 +274,7 @@ impl StoreInstance {
                     .unwrap_or(METRICS_ERROR),
             );
         db_metrics
-            .cf_metrics
+            .rocksdb_metrics
             .rocksdb_num_running_flushes
             .with_label_values(&[cf_name])
             .set(
@@ -285,7 +282,7 @@ impl StoreInstance {
                     .unwrap_or(METRICS_ERROR),
             );
         db_metrics
-            .cf_metrics
+            .rocksdb_metrics
             .rocksdb_estimate_oldest_key_time
             .with_label_values(&[cf_name])
             .set(
@@ -293,7 +290,7 @@ impl StoreInstance {
                     .unwrap_or(METRICS_ERROR),
             );
         db_metrics
-            .cf_metrics
+            .rocksdb_metrics
             .rocskdb_background_errors
             .with_label_values(&[cf_name])
             .set(
@@ -326,14 +323,14 @@ impl DBStore for StoreInstance {
                 // metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
-                    .op_metrics
-                    .rocksdb_get_latency_seconds
+                    .raw_store_metrics
+                    .raw_store_get_latency_seconds
                     .with_label_values(&[cf_name])
                     .start_timer();
                 let res = db.get(cf_name, key)?;
                 db_metrics
-                    .op_metrics
-                    .rocksdb_get_bytes
+                    .raw_store_metrics
+                    .raw_store_get_bytes
                     .with_label_values(&[cf_name])
                     .observe(res.as_ref().map_or(0.0, |v| v.len() as f64));
                 Ok(res)
@@ -349,15 +346,15 @@ impl DBStore for StoreInstance {
                 // metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
-                    .op_metrics
-                    .rocksdb_put_latency_seconds
+                    .raw_store_metrics
+                    .raw_store_put_latency_seconds
                     .with_label_values(&[cf_name])
                     .start_timer();
                 let put_bytes = key.len() + value.len();
                 db.put(cf_name, key, value)?;
                 db_metrics
-                    .op_metrics
-                    .rocksdb_put_bytes
+                    .raw_store_metrics
+                    .raw_store_put_bytes
                     .with_label_values(&[cf_name])
                     .observe(put_bytes as f64);
                 Ok(())
@@ -373,8 +370,8 @@ impl DBStore for StoreInstance {
                 // metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
-                    .op_metrics
-                    .rocksdb_get_latency_seconds
+                    .raw_store_metrics
+                    .raw_store_get_latency_seconds
                     .with_label_values(&[cf_name])
                     .start_timer();
                 let res = db.contains_key(cf_name, key)?;
@@ -391,14 +388,14 @@ impl DBStore for StoreInstance {
                 // metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
-                    .op_metrics
-                    .rocksdb_get_latency_seconds
+                    .raw_store_metrics
+                    .raw_store_get_latency_seconds
                     .with_label_values(&[cf_name])
                     .start_timer();
                 db.remove(cf_name, key)?;
                 db_metrics
-                    .op_metrics
-                    .rocksdb_deletes
+                    .raw_store_metrics
+                    .raw_store_deletes
                     .with_label_values(&[cf_name])
                     .inc();
                 Ok(())
@@ -414,15 +411,15 @@ impl DBStore for StoreInstance {
                 // metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
-                    .op_metrics
-                    .rocksdb_write_batch_latency_seconds
+                    .raw_store_metrics
+                    .raw_store_write_batch_latency_seconds
                     .with_label_values(&[cf_name])
                     .start_timer();
                 let write_batch_bytes = batch.size_in_bytes();
                 db.write_batch(cf_name, batch)?;
                 db_metrics
-                    .op_metrics
-                    .rocksdb_write_batch_bytes
+                    .raw_store_metrics
+                    .raw_store_write_batch_bytes
                     .with_label_values(&[cf_name])
                     .observe(write_batch_bytes as f64);
                 Ok(())
@@ -446,15 +443,15 @@ impl DBStore for StoreInstance {
                 // metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
-                    .op_metrics
-                    .rocksdb_put_sync_latency_seconds
+                    .raw_store_metrics
+                    .raw_store_put_sync_latency_seconds
                     .with_label_values(&[cf_name])
                     .start_timer();
                 let put_bytes = key.len() + value.len();
                 db.put_sync(cf_name, key, value)?;
                 db_metrics
-                    .op_metrics
-                    .rocksdb_put_sync_bytes
+                    .raw_store_metrics
+                    .raw_store_put_sync_bytes
                     .with_label_values(&[cf_name])
                     .observe(put_bytes as f64);
                 Ok(())
@@ -470,15 +467,15 @@ impl DBStore for StoreInstance {
                 // metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
-                    .op_metrics
-                    .rocksdb_write_batch_sync_latency_seconds
+                    .raw_store_metrics
+                    .raw_store_write_batch_sync_latency_seconds
                     .with_label_values(&[cf_name])
                     .start_timer();
                 let write_batch_bytes = batch.size_in_bytes();
                 db.write_batch_sync(cf_name, batch)?;
                 db_metrics
-                    .op_metrics
-                    .rocksdb_write_batch_sync_bytes
+                    .raw_store_metrics
+                    .raw_store_write_batch_sync_bytes
                     .with_label_values(&[cf_name])
                     .observe(write_batch_bytes as f64);
                 Ok(())
@@ -494,15 +491,15 @@ impl DBStore for StoreInstance {
                 // metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
-                    .op_metrics
-                    .rocksdb_multiget_latency_seconds
+                    .raw_store_metrics
+                    .raw_store_multiget_latency_seconds
                     .with_label_values(&[cf_name])
                     .start_timer();
                 let res = db.multi_get(cf_name, keys)?;
                 let res_size = res.iter().flatten().map(|entry| entry.len()).sum::<usize>();
                 db_metrics
-                    .op_metrics
-                    .rocksdb_multiget_bytes
+                    .raw_store_metrics
+                    .raw_store_multiget_bytes
                     .with_label_values(&[cf_name])
                     .observe(res_size as f64);
                 Ok(res)
