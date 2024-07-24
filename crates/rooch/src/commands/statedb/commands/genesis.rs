@@ -6,8 +6,8 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::sync::{Arc, mpsc};
 use std::sync::mpsc::{Receiver, SyncSender};
+use std::sync::{mpsc, Arc};
 use std::thread;
 use std::time::{Instant, SystemTime};
 
@@ -25,7 +25,7 @@ use moveos_types::h256::H256;
 use moveos_types::move_std::option::MoveOption;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::{
-    GENESIS_STATE_ROOT, ObjectEntity, ObjectID, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
+    ObjectEntity, ObjectID, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
 };
 use moveos_types::state::{FieldKey, ObjectState};
 use rooch_common::fs::file_cache::FileCacheManager;
@@ -42,13 +42,13 @@ use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
 use crate::cli_types::WalletContextOptions;
-use crate::commands::statedb::commands::{
-    get_ord_by_outpoint, init_job, sort_merge_utxo_ords, UTXO_ORD_MAP_TABLE, UTXOOrds,
-};
 use crate::commands::statedb::commands::genesis_utxo::{
     apply_utxo_updates_to_state, produce_utxo_updates,
 };
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
+use crate::commands::statedb::commands::{
+    get_ord_by_outpoint, init_job, sort_merge_utxo_ords, UTXOOrds, UTXO_ORD_MAP_TABLE,
+};
 
 pub const ADDRESS_UNBOUND: &str = "unbound";
 pub const ADDRESS_NON_STANDARD: &str = "non-standard";
