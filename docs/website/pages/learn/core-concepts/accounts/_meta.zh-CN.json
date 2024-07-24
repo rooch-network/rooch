@@ -1,6 +1,7 @@
 {
   "account-address": "账户与地址",
   "account-abstraction": "账户抽象",
+  "session-key": "会话密钥",
   "account-abstraction-implementation": {
     "title":"账户抽象的设计与实现",
     "display": "hidden"
