@@ -3,6 +3,7 @@
 
 use std::{collections::VecDeque, sync::Arc};
 
+use crate::natives::helpers;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{gas_algebra::InternalGas, language_storage::TypeTag, vm_status::StatusCode};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
@@ -77,7 +78,7 @@ impl GasParameters {
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [(
         "module_signer",
-        make_native_module_signer(gas_params.module_signer),
+        helpers::make_native(gas_params.module_signer, native_module_signer),
     )];
 
     make_module_natives(natives)

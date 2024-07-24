@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::natives::helpers;
 use crate::natives::helpers::make_module_natives;
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::InternalGas;
@@ -111,10 +112,13 @@ impl GasParameters {
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [
-        ("borrow_inner", make_native_borrow(gas_params.borrow_inner)),
+        (
+            "borrow_inner",
+            helpers::make_native(gas_params.borrow_inner, native_borrow),
+        ),
         (
             "borrow_mut_inner",
-            make_native_borrow_mut(gas_params.borrow_mut_inner),
+            helpers::make_native(gas_params.borrow_mut_inner, native_borrow_mut),
         ),
     ];
 

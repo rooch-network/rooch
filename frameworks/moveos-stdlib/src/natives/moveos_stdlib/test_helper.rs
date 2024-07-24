@@ -3,6 +3,7 @@
 
 use crate::natives::helpers::make_module_natives;
 
+use crate::natives::helpers;
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::InternalGas;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
@@ -56,7 +57,10 @@ impl GasParameters {
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
-    let natives = [("destroy", make_native_destroy(gas_params.destroy))];
+    let natives = [(
+        "destroy",
+        helpers::make_native(gas_params.destroy, native_destroy),
+    )];
 
     make_module_natives(natives)
 }
