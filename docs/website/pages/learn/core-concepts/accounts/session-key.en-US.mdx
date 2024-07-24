@@ -20,6 +20,10 @@ The authentication key is the public key hash corresponding to the private key, 
 
 ```move
 struct SessionKey has store,copy,drop {
+    /// App name
+    app_name: std::string::String,
+    /// app website url
+    app_url: std::string::String,
     /// The session key's authentication key, it also is the session key's id
     authentication_key: vector<u8>,
     /// The session key's scopes
