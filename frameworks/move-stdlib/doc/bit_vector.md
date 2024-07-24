@@ -42,7 +42,7 @@
 The provided index is out of bounds
 
 
-<pre><code><b>const</b> <a href="bit_vector.md#0x1_bit_vector_EINDEX">EINDEX</a>: u64 = 131072;
+<pre><code><b>const</b> <a href="bit_vector.md#0x1_bit_vector_EINDEX">EINDEX</a>: <a href="u64.md#0x1_u64">u64</a> = 131072;
 </code></pre>
 
 
@@ -52,7 +52,7 @@ The provided index is out of bounds
 An invalid length of bitvector was given
 
 
-<pre><code><b>const</b> <a href="bit_vector.md#0x1_bit_vector_ELENGTH">ELENGTH</a>: u64 = 131073;
+<pre><code><b>const</b> <a href="bit_vector.md#0x1_bit_vector_ELENGTH">ELENGTH</a>: <a href="u64.md#0x1_u64">u64</a> = 131073;
 </code></pre>
 
 
@@ -62,7 +62,7 @@ An invalid length of bitvector was given
 The maximum allowed bitvector size
 
 
-<pre><code><b>const</b> <a href="bit_vector.md#0x1_bit_vector_MAX_SIZE">MAX_SIZE</a>: u64 = 1024;
+<pre><code><b>const</b> <a href="bit_vector.md#0x1_bit_vector_MAX_SIZE">MAX_SIZE</a>: <a href="u64.md#0x1_u64">u64</a> = 1024;
 </code></pre>
 
 
@@ -71,7 +71,7 @@ The maximum allowed bitvector size
 
 
 
-<pre><code><b>const</b> <a href="bit_vector.md#0x1_bit_vector_WORD_SIZE">WORD_SIZE</a>: u64 = 1;
+<pre><code><b>const</b> <a href="bit_vector.md#0x1_bit_vector_WORD_SIZE">WORD_SIZE</a>: <a href="u64.md#0x1_u64">u64</a> = 1;
 </code></pre>
 
 
@@ -82,7 +82,7 @@ The maximum allowed bitvector size
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bit_vector.md#0x1_bit_vector_new">new</a>(length: u64): <a href="bit_vector.md#0x1_bit_vector_BitVector">bit_vector::BitVector</a>
+<pre><code><b>public</b> <b>fun</b> <a href="bit_vector.md#0x1_bit_vector_new">new</a>(length: <a href="u64.md#0x1_u64">u64</a>): <a href="bit_vector.md#0x1_bit_vector_BitVector">bit_vector::BitVector</a>
 </code></pre>
 
 
@@ -94,7 +94,7 @@ The maximum allowed bitvector size
 Set the bit at <code>bit_index</code> in the <code>bitvector</code> regardless of its previous state.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bit_vector.md#0x1_bit_vector_set">set</a>(bitvector: &<b>mut</b> <a href="bit_vector.md#0x1_bit_vector_BitVector">bit_vector::BitVector</a>, bit_index: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="bit_vector.md#0x1_bit_vector_set">set</a>(bitvector: &<b>mut</b> <a href="bit_vector.md#0x1_bit_vector_BitVector">bit_vector::BitVector</a>, bit_index: <a href="u64.md#0x1_u64">u64</a>)
 </code></pre>
 
 
@@ -106,7 +106,7 @@ Set the bit at <code>bit_index</code> in the <code>bitvector</code> regardless o
 Unset the bit at <code>bit_index</code> in the <code>bitvector</code> regardless of its previous state.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bit_vector.md#0x1_bit_vector_unset">unset</a>(bitvector: &<b>mut</b> <a href="bit_vector.md#0x1_bit_vector_BitVector">bit_vector::BitVector</a>, bit_index: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="bit_vector.md#0x1_bit_vector_unset">unset</a>(bitvector: &<b>mut</b> <a href="bit_vector.md#0x1_bit_vector_BitVector">bit_vector::BitVector</a>, bit_index: <a href="u64.md#0x1_u64">u64</a>)
 </code></pre>
 
 
@@ -119,7 +119,7 @@ Shift the <code>bitvector</code> left by <code>amount</code>. If <code>amount</c
 bitvector's length the bitvector will be zeroed out.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bit_vector.md#0x1_bit_vector_shift_left">shift_left</a>(bitvector: &<b>mut</b> <a href="bit_vector.md#0x1_bit_vector_BitVector">bit_vector::BitVector</a>, amount: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="bit_vector.md#0x1_bit_vector_shift_left">shift_left</a>(bitvector: &<b>mut</b> <a href="bit_vector.md#0x1_bit_vector_BitVector">bit_vector::BitVector</a>, amount: <a href="u64.md#0x1_u64">u64</a>)
 </code></pre>
 
 
@@ -132,7 +132,7 @@ Return the value of the bit at <code>bit_index</code> in the <code>bitvector</co
 represents "1" and <code><b>false</b></code> represents a 0
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bit_vector.md#0x1_bit_vector_is_index_set">is_index_set</a>(bitvector: &<a href="bit_vector.md#0x1_bit_vector_BitVector">bit_vector::BitVector</a>, bit_index: u64): bool
+<pre><code><b>public</b> <b>fun</b> <a href="bit_vector.md#0x1_bit_vector_is_index_set">is_index_set</a>(bitvector: &<a href="bit_vector.md#0x1_bit_vector_BitVector">bit_vector::BitVector</a>, bit_index: <a href="u64.md#0x1_u64">u64</a>): bool
 </code></pre>
 
 
@@ -144,7 +144,7 @@ represents "1" and <code><b>false</b></code> represents a 0
 Return the length (number of usable bits) of this bitvector
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bit_vector.md#0x1_bit_vector_length">length</a>(bitvector: &<a href="bit_vector.md#0x1_bit_vector_BitVector">bit_vector::BitVector</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="bit_vector.md#0x1_bit_vector_length">length</a>(bitvector: &<a href="bit_vector.md#0x1_bit_vector_BitVector">bit_vector::BitVector</a>): <a href="u64.md#0x1_u64">u64</a>
 </code></pre>
 
 
@@ -158,7 +158,7 @@ including) <code>start_index</code> in the <code>bitvector</code>. If there is n
 sequence, then <code>0</code> is returned.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bit_vector.md#0x1_bit_vector_longest_set_sequence_starting_at">longest_set_sequence_starting_at</a>(bitvector: &<a href="bit_vector.md#0x1_bit_vector_BitVector">bit_vector::BitVector</a>, start_index: u64): u64
+<pre><code><b>public</b> <b>fun</b> <a href="bit_vector.md#0x1_bit_vector_longest_set_sequence_starting_at">longest_set_sequence_starting_at</a>(bitvector: &<a href="bit_vector.md#0x1_bit_vector_BitVector">bit_vector::BitVector</a>, start_index: <a href="u64.md#0x1_u64">u64</a>): <a href="u64.md#0x1_u64">u64</a>
 </code></pre>
 
 
@@ -170,5 +170,5 @@ sequence, then <code>0</code> is returned.
 
 
 <pre><code>#[verify_only]
-<b>public</b> <b>fun</b> <a href="bit_vector.md#0x1_bit_vector_shift_left_for_verification_only">shift_left_for_verification_only</a>(bitvector: &<b>mut</b> <a href="bit_vector.md#0x1_bit_vector_BitVector">bit_vector::BitVector</a>, amount: u64)
+<b>public</b> <b>fun</b> <a href="bit_vector.md#0x1_bit_vector_shift_left_for_verification_only">shift_left_for_verification_only</a>(bitvector: &<b>mut</b> <a href="bit_vector.md#0x1_bit_vector_BitVector">bit_vector::BitVector</a>, amount: <a href="u64.md#0x1_u64">u64</a>)
 </code></pre>
