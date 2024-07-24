@@ -5,7 +5,8 @@ import {
   GetInscriptionOptions,
   Inscription,
   GetInscriptionUTXOOptions,
-  UTXO
+  UTXO,
+  GetInscriptionsOptions
 } from "@sadoprotocol/ordit-sdk";
 import { 
   getRoochNodeUrl, 
@@ -17,6 +18,7 @@ import {
   InscriptionStateView,
   UTXOStateView,
   UTXOView,
+  QueryInscriptionsParams
 } from '@roochnetwork/rooch-sdk';
 
 interface RoochDataSourceOptions {
@@ -174,6 +176,75 @@ export class RoochDataSource /*implements IDatasource*/ {
     };
   
     return utxo;
+  }
+
+  async getInscriptions({ creator, owner, mimeType, mimeSubType, outpoint, sort, limit, next, decodeMetadata }: GetInscriptionsOptions): Promise<Inscription[]> {
+    const inscriptions: Inscription[] = [];
+    let cursor: IndexerStateIDView | null = next 
+      ? { state_index: next.split(':')[0], tx_order: next.split(':')[1] } 
+      : null;
+    const pageLimit = Math.min(limit || 100, 100); // Max 100 per page
+  
+    // Check for unsupported filter types
+    if (creator || mimeType || mimeSubType || outpoint) {
+      throw new Error("Unsupported filter types: creator, mimeType, mimeSubType, and outpoint are not supported by Rooch");
+    }
+  
+    while (inscriptions.length < (limit || Infinity)) {
+      const queryParams: QueryInscriptionsParams = {
+        filter: 'all',
+        cursor,
+        limit: pageLimit.toString(),
+        descendingOrder: sort === 'desc'
+      };
+  
+      if (owner) {
+        queryParams.filter = { owner };
+      }
+  
+      const response = await this.roochClient.queryInscriptions(queryParams);
+  
+      for (const inscriptionState of response.data) {
+        const inscription = this.convertToInscription(inscriptionState, decodeMetadata);
+        inscriptions.push(inscription);
+  
+        if (inscriptions.length >= (limit || Infinity)) break;
+      }
+  
+      if (!response.has_next_page || !response.next_cursor) break;
+      cursor = response.next_cursor;
+    }
+  
+    return inscriptions;
+  }
+  
+  private convertToInscription(inscriptionState: InscriptionStateView, decodeMetadata: boolean | undefined): Inscription {
+    const inscriptionView = inscriptionState.value;
+    const inscription: Inscription = {
+      id: `${inscriptionView.bitcoin_txid}i${inscriptionView.index}`,
+      outpoint: `${inscriptionView.txid}:${inscriptionView.offset}`,
+      owner: inscriptionState.owner ?? "",
+      genesis: inscriptionView.bitcoin_txid,
+      fee: 0, // Rooch doesn't provide this information
+      height: 0, // Rooch doesn't provide this information
+      number: inscriptionView.inscription_number,
+      sat: 0, // Rooch doesn't provide this information
+      timestamp: new Date(inscriptionState.created_at).getTime(),
+      mediaType: inscriptionView.content_type ?? "",
+      mediaSize: inscriptionView.body ? Buffer.from(inscriptionView.body, 'base64').length : 0,
+      mediaContent: inscriptionView.body ?? "",
+    };
+  
+    if (decodeMetadata && inscriptionView.metadata) {
+      try {
+        const metadataBuffer = Buffer.from(inscriptionView.metadata, 'base64');
+        inscription.meta = cbor.decode(metadataBuffer);
+      } catch (error) {
+        console.warn(`Failed to decode CBOR metadata for inscription ${inscription.id}: ${error}`);
+      }
+    }
+  
+    return inscription;
   }
 }
 

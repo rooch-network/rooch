@@ -9,18 +9,31 @@ import {
 } from '@roochnetwork/rooch-sdk';
 
 class MockRoochTransport implements RoochTransport {
-  private mockResponses: Map<string, any> = new Map();
+  private mockResponses: Map<string, any[]> = new Map();
+  private callCounts: Map<string, number> = new Map();
 
   setMockResponse(method: string, response: any) {
-    this.mockResponses.set(method, response);
+    if (!this.mockResponses.has(method)) {
+      this.mockResponses.set(method, []);
+    }
+    this.mockResponses.get(method)!.push(response);
+    this.callCounts.set(method, 0);
   }
 
   async request<T>({ method }: { method: string; params: unknown[] }): Promise<T> {
-    const response = this.mockResponses.get(method);
-    if (response) {
+    const responses = this.mockResponses.get(method);
+    if (responses && responses.length > 0) {
+      const callCount = this.callCounts.get(method) || 0;
+      const response = responses[callCount % responses.length];
+      this.callCounts.set(method, callCount + 1);
       return response as T;
     }
     throw new Error(`No mock response set for method: ${method}`);
+  }
+
+  resetMocks() {
+    this.mockResponses.clear();
+    this.callCounts.clear();
   }
 }
 
@@ -538,6 +551,367 @@ describe('RoochDataSource', () => {
       await expect(instance.getInscriptionUTXO({ id: mockInscriptionId }))
         .rejects.toThrow('Failed to convert UTXO value to number: SyntaxError: Cannot convert not-a-number to a BigInt');
     });
+  });
+
+  describe('getInscriptions', () => {
+    it('should successfully get inscriptions filtered by owner', async () => {
+      const mockOwner = 'mockOwner1';
+      const mockInscriptions = [
+        {
+          owner: mockOwner,
+          value: {
+            bitcoin_txid: 'mocktxid1',
+            index: 0,
+            inscription_number: 1,
+            body: 'bW9ja0JvZHkx', // base64 encoded 'mockBody1'
+            content_type: 'text/plain',
+            txid: 'mocktxid1',
+            offset: '0',
+            metadata: '',
+            parents: '',
+            is_curse: false,
+            sequence_number: 0,
+          },
+          created_at: '2023-01-01T00:00:00Z',
+          flag: 0,
+          id: 'mock_id1',
+          object_type: 'mock_type',
+          size: '1',
+          state_index: '0',
+          tx_order: '0',
+          updated_at: '2023-01-01T00:00:00Z'
+        }
+      ];
+  
+      const mockResponse: PaginatedInscriptionStateViews = {
+        data: mockInscriptions,
+        has_next_page: false,
+        next_cursor: null
+      };
+  
+      mockTransport.setMockResponse('btc_queryInscriptions', mockResponse);
+  
+      const result = await instance.getInscriptions({
+        owner: mockOwner,
+        limit: 10,
+        decodeMetadata: false,
+        sort: 'asc'
+      });
+  
+      expect(result).toEqual([
+        {
+          id: 'mocktxid1i0',
+          number: 1,
+          owner: mockOwner,
+          mediaContent: 'bW9ja0JvZHkx',
+          mediaSize: 9,
+          mediaType: 'text/plain',
+          timestamp: new Date('2023-01-01T00:00:00Z').getTime(),
+          genesis: 'mocktxid1',
+          outpoint: 'mocktxid1:0',
+          fee: 0,
+          height: 0,
+          sat: 0,
+        }
+      ]);
+    });
+
+    it('should successfully get inscriptions with pagination', async () => {
+      const mockOwner = 'mockOwner1';
+      const mockInscriptionsPage1 = [
+        {
+          owner: mockOwner,
+          value: {
+            bitcoin_txid: 'mocktxid1',
+            index: 0,
+            inscription_number: 1,
+            body: 'bW9ja0JvZHkx', // base64 encoded 'mockBody1'
+            content_type: 'text/plain',
+            txid: 'mocktxid1',
+            offset: '0',
+            metadata: '',
+            parents: '',
+            is_curse: false,
+            sequence_number: 0,
+          },
+          created_at: '2023-01-01T00:00:00Z',
+          flag: 0,
+          id: 'mock_id1',
+          object_type: 'mock_type',
+          size: '1',
+          state_index: '0',
+          tx_order: '0',
+          updated_at: '2023-01-01T00:00:00Z'
+        }
+      ];
+  
+      const mockInscriptionsPage2 = [
+        {
+          owner: mockOwner,
+          value: {
+            bitcoin_txid: 'mocktxid2',
+            index: 1,
+            inscription_number: 2,
+            body: 'bW9ja0JvZHky', // base64 encoded 'mockBody2'
+            content_type: 'text/plain',
+            txid: 'mocktxid2',
+            offset: '0',
+            metadata: '',
+            parents: '',
+            is_curse: false,
+            sequence_number: 0,
+          },
+          created_at: '2023-01-02T00:00:00Z',
+          flag: 0,
+          id: 'mock_id2',
+          object_type: 'mock_type',
+          size: '1',
+          state_index: '1',
+          tx_order: '1',
+          updated_at: '2023-01-02T00:00:00Z'
+        }
+      ];
+  
+      const mockResponsePage1: PaginatedInscriptionStateViews = {
+        data: mockInscriptionsPage1,
+        has_next_page: true,
+        next_cursor: { state_index: '1', tx_order: '1' }
+      };
+  
+      const mockResponsePage2: PaginatedInscriptionStateViews = {
+        data: mockInscriptionsPage2,
+        has_next_page: false,
+        next_cursor: null
+      };
+  
+      mockTransport.setMockResponse('btc_queryInscriptions', mockResponsePage1);
+      mockTransport.setMockResponse('btc_queryInscriptions', mockResponsePage2);
+  
+      const result = await instance.getInscriptions({
+        owner: mockOwner,
+        limit: 2,
+        decodeMetadata: false,
+        sort: 'asc'
+      });
+  
+      expect(result).toEqual([
+        {
+          id: 'mocktxid1i0',
+          number: 1,
+          owner: 'mockOwner1',
+          mediaContent: 'bW9ja0JvZHkx',
+          mediaSize: 9,
+          mediaType: 'text/plain',
+          timestamp: new Date('2023-01-01T00:00:00Z').getTime(),
+          genesis: 'mocktxid1',
+          outpoint: 'mocktxid1:0',
+          fee: 0,
+          height: 0,
+          sat: 0,
+        },
+        {
+          id: 'mocktxid2i1',
+          number: 2,
+          owner: 'mockOwner1',
+          mediaContent: 'bW9ja0JvZHky',
+          mediaSize: 9,
+          mediaType: 'text/plain',
+          timestamp: new Date('2023-01-02T00:00:00Z').getTime(),
+          genesis: 'mocktxid2',
+          outpoint: 'mocktxid2:0',
+          fee: 0,
+          height: 0,
+          sat: 0,
+        }
+      ]);
+    });
+
+    it('should successfully get inscriptions and decode metadata', async () => {
+      const mockOwner = 'mockOwner1';
+      const mockMetadata = {
+        name: "Test Inscription",
+        description: "This is a test inscription"
+      };
+      
+      // Encode the metadata using CBOR
+      const encodedMetadata = cbor.encode(mockMetadata);
+      const base64EncodedMetadata = Buffer.from(encodedMetadata).toString('base64');
+  
+      const mockInscriptions = [
+        {
+          owner: mockOwner,
+          value: {
+            bitcoin_txid: 'mocktxid1',
+            index: 0,
+            inscription_number: 1,
+            body: 'bW9ja0JvZHkx', // base64 encoded 'mockBody1'
+            content_type: 'text/plain',
+            txid: 'mocktxid1',
+            offset: '0',
+            metadata: base64EncodedMetadata,
+            parents: '',
+            is_curse: false,
+            sequence_number: 0,
+          },
+          created_at: '2023-01-01T00:00:00Z',
+          flag: 0,
+          id: 'mock_id1',
+          object_type: 'mock_type',
+          size: '1',
+          state_index: '0',
+          tx_order: '0',
+          updated_at: '2023-01-01T00:00:00Z'
+        }
+      ];
+  
+      const mockResponse: PaginatedInscriptionStateViews = {
+        data: mockInscriptions,
+        has_next_page: false,
+        next_cursor: null
+      };
+  
+      mockTransport.setMockResponse('btc_queryInscriptions', mockResponse);
+  
+      const result = await instance.getInscriptions({
+        limit: 10,
+        decodeMetadata: true,
+        sort: 'asc',
+        owner: mockOwner,
+      });
+  
+      expect(result).toEqual([
+        {
+          id: 'mocktxid1i0',
+          number: 1,
+          owner: mockOwner,
+          mediaContent: 'bW9ja0JvZHkx',
+          mediaSize: 9,
+          mediaType: 'text/plain',
+          timestamp: new Date('2023-01-01T00:00:00Z').getTime(),
+          genesis: 'mocktxid1',
+          outpoint: 'mocktxid1:0',
+          fee: 0,
+          height: 0,
+          sat: 0,
+          meta: mockMetadata
+        }
+      ]);
+    });
+
+    it('should throw an error when using unsupported filter conditions', async () => {
+      await expect(instance.getInscriptions({
+        creator: 'mockCreator', // Unsupported filter
+        limit: 10,
+        decodeMetadata: false,
+        sort: 'asc'
+      })).rejects.toThrow('Unsupported filter types: creator, mimeType, mimeSubType, and outpoint are not supported by Rooch');
+  
+      await expect(instance.getInscriptions({
+        mimeType: 'image', // Unsupported filter
+        limit: 10,
+        decodeMetadata: false,
+        sort: 'asc'
+      })).rejects.toThrow('Unsupported filter types: creator, mimeType, mimeSubType, and outpoint are not supported by Rooch');
+  
+      await expect(instance.getInscriptions({
+        mimeSubType: 'jpeg', // Unsupported filter
+        limit: 10,
+        decodeMetadata: false,
+        sort: 'asc'
+      })).rejects.toThrow('Unsupported filter types: creator, mimeType, mimeSubType, and outpoint are not supported by Rooch');
+  
+      await expect(instance.getInscriptions({
+        outpoint: 'mocktxid:0', // Unsupported filter
+        limit: 10,
+        decodeMetadata: false,
+        sort: 'asc'
+      })).rejects.toThrow('Unsupported filter types: creator, mimeType, mimeSubType, and outpoint are not supported by Rooch');
+    });
+
+    it('should handle empty result set', async () => {
+      const mockResponse: PaginatedInscriptionStateViews = {
+        data: [],
+        has_next_page: false,
+        next_cursor: null
+      };
+  
+      mockTransport.setMockResponse('btc_queryInscriptions', mockResponse);
+  
+      const result = await instance.getInscriptions({
+        owner: 'nonExistentOwner',
+        limit: 10,
+        decodeMetadata: false,
+        sort: 'asc'
+      });
+  
+      expect(result).toEqual([]);
+    });
+
+    it('should handle metadata decoding failure', async () => {
+      const mockOwner = 'mockOwner1';
+      const invalidEncodedMetadata = 'invalidBase64String';
+  
+      const mockInscriptions = [
+        {
+          owner: mockOwner,
+          value: {
+            bitcoin_txid: 'mocktxid1',
+            index: 0,
+            inscription_number: 1,
+            body: 'bW9ja0JvZHkx', // base64 encoded 'mockBody1'
+            content_type: 'text/plain',
+            txid: 'mocktxid1',
+            offset: '0',
+            metadata: invalidEncodedMetadata,
+            parents: '',
+            is_curse: false,
+            sequence_number: 0,
+          },
+          created_at: '2023-01-01T00:00:00Z',
+          flag: 0,
+          id: 'mock_id1',
+          object_type: 'mock_type',
+          size: '1',
+          state_index: '0',
+          tx_order: '0',
+          updated_at: '2023-01-01T00:00:00Z'
+        }
+      ];
+  
+      const mockResponse: PaginatedInscriptionStateViews = {
+        data: mockInscriptions,
+        has_next_page: false,
+        next_cursor: null
+      };
+  
+      mockTransport.setMockResponse('btc_queryInscriptions', mockResponse);
+  
+      const result = await instance.getInscriptions({
+        limit: 10,
+        decodeMetadata: true,
+        sort: 'asc',
+        owner: mockOwner
+      });
+  
+      expect(result).toEqual([
+        {
+          id: 'mocktxid1i0',
+          number: 1,
+          owner: 'mockOwner1',
+          mediaContent: 'bW9ja0JvZHkx',
+          mediaSize: 9,
+          mediaType: 'text/plain',
+          timestamp: new Date('2023-01-01T00:00:00Z').getTime(),
+          genesis: 'mocktxid1',
+          outpoint: 'mocktxid1:0',
+          fee: 0,
+          height: 0,
+          sat: 0,
+          // Note: 'meta' field should not be present due to decoding failure
+        }
+      ]);
+    });
+
   });
 
 });
