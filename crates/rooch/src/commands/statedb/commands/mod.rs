@@ -11,14 +11,20 @@ use redb::{ReadOnlyTable, TableDefinition};
 use serde::{Deserialize, Serialize};
 
 use moveos_store::MoveOSStore;
+use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
+use moveos_types::startup_info::StartupInfo;
+use moveos_types::state::{FieldKey, ObjectState};
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
 use rooch_types::address::BitcoinAddress;
 use rooch_types::rooch_network::RoochChainID;
+use smt::UpdateSet;
+
+use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
 
 pub mod export;
-pub mod genesis_ord;
+pub mod genesis;
 pub mod genesis_utxo;
 pub mod import;
 
@@ -55,6 +61,35 @@ fn init_job(
     log::info!("job progress started");
 
     (root, rooch_db.moveos_store, start_time)
+}
+
+fn finish_job(
+    moveos_store: &MoveOSStore,
+    root_size: u64,
+    pre_root_state_root: H256,
+    task_start_time: Instant,
+    new_startup_update_set: Option<UpdateSet<FieldKey, ObjectState>>,
+) {
+    let root_state_root = match new_startup_update_set {
+        Some(new_startup_update_set) => {
+            let tree_change_set =
+                apply_fields(moveos_store, pre_root_state_root, new_startup_update_set).unwrap();
+            apply_nodes(moveos_store, tree_change_set.nodes).unwrap();
+            tree_change_set.state_root
+        }
+        None => pre_root_state_root,
+    };
+    // Update Startup Info
+    let new_startup_info = StartupInfo::new(root_state_root, root_size);
+    moveos_store
+        .get_config_store()
+        .save_startup_info(new_startup_info.clone())
+        .unwrap();
+    println!(
+        "Done in {:?}. New startup_info: {:?}",
+        task_start_time.elapsed(),
+        new_startup_info
+    );
 }
 
 pub fn get_ord_by_outpoint(

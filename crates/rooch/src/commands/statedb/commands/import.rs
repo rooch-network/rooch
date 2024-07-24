@@ -1,12 +1,21 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_types::WalletContextOptions;
-use crate::commands::statedb::commands::export::ExportID;
-use crate::commands::statedb::commands::{GLOBAL_STATE_TYPE_PREFIX, GLOBAL_STATE_TYPE_ROOT};
+use std::collections::BTreeMap;
+use std::fs::File;
+use std::io::{BufRead, BufReader, Read};
+use std::path::PathBuf;
+use std::str::FromStr;
+use std::sync::mpsc::{Receiver, SyncSender};
+use std::sync::{mpsc, Arc};
+use std::thread;
+use std::time::SystemTime;
+
 use anyhow::{Error, Result};
 use chrono::{DateTime, Local};
 use clap::Parser;
+use serde::{Deserialize, Serialize};
+
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta, GENESIS_STATE_ROOT};
@@ -18,19 +27,13 @@ use rooch_db::RoochDB;
 use rooch_genesis::RoochGenesis;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::rooch_network::RoochChainID;
-use serde::{Deserialize, Serialize};
 use smt::{TreeChangeSet, UpdateSet};
-use std::collections::BTreeMap;
-use std::fs::File;
-use std::io::{BufRead, BufReader, Read};
-use std::path::PathBuf;
-use std::str::FromStr;
-use std::sync::mpsc::{Receiver, SyncSender};
-use std::sync::{mpsc, Arc};
-use std::thread;
-use std::time::SystemTime;
 
-/// Import statedb
+use crate::cli_types::WalletContextOptions;
+use crate::commands::statedb::commands::export::ExportID;
+use crate::commands::statedb::commands::{GLOBAL_STATE_TYPE_PREFIX, GLOBAL_STATE_TYPE_ROOT};
+
+/// Import state data exported by export command.
 #[derive(Debug, Parser)]
 pub struct ImportCommand {
     #[clap(long, short = 'i')]
