@@ -7,6 +7,8 @@ module rooch_nursery::bitseed_on_l2 {
     use std::option::{Option};
     use std::string::String;
     use moveos_std::object::{Self, Object};
+    use moveos_std::simple_map::SimpleMap;
+    use moveos_std::any::Any;
 
     const ErrorBitseedNotMergeable: u64 = 1;
     const ErrorBitseedNotSplittable: u64 = 2;
@@ -22,7 +24,8 @@ module rooch_nursery::bitseed_on_l2 {
         /// The tick of the bitseed.
         tick: String,
         /// A unique identifier for the bitseed.
-        /// Bitseed leap between L1 and L2, the container is changed, but the bid is still the same.
+        /// Bitseed leap between L1 and L2
+        /// the container is changed, but the bid is still the same.
         bid: address,
         /// The amount of the bitseed.
         amount: u64,
@@ -30,6 +33,8 @@ module rooch_nursery::bitseed_on_l2 {
         content_type: Option<String>,
         /// The body of the bitseed.
         body: vector<u8>,
+        /// The attributes of the bitseed.
+        attributes: SimpleMap<String, Any>,
     }
 
     public(friend) fun new(
