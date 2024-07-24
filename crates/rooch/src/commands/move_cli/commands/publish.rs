@@ -277,7 +277,10 @@ impl Publish {
                         };
                         let object_state = ObjectState::new(metadata, bytes);
                         let module = object_state.value_as_df::<MoveString, MoveModule>()?;
-                        let module_id = format!("{}::{}", package_owner, module.name);
+                        let module_id = ModuleId::new(
+                            package_owner.into(),
+                            Identifier::new(format!("{}", module.name))?,
+                        );
                         if flag == 0 {
                             new_modules.push(module_id);
                         } else {
@@ -292,7 +295,7 @@ impl Publish {
                 output.push_str("\n    None");
             } else {
                 for module in new_modules {
-                    output.push_str(&format!("\n    {}", module));
+                    output.push_str(&format!("\n    {}", module.short_str_lossless()));
                 }
             };
             output.push_str("\n\nUpdated modules:");
@@ -300,7 +303,7 @@ impl Publish {
                 output.push_str("\n    None");
             } else {
                 for module in updated_modules {
-                    output.push_str(&format!("\n    {}", module));
+                    output.push_str(&format!("\n    {}", module.short_str_lossless()));
                 }
             };
         }
