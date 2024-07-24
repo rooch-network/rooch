@@ -8,32 +8,72 @@
 module std::u128 {
     /// Return the larger of `x` and `y`
     public fun max(x: u128, y: u128): u128 {
-        std::macros::num_max!(x, y)
+        if (x > y) {
+            x
+        } else {
+            y
+        }
     }
 
     /// Return the smaller of `x` and `y`
     public fun min(x: u128, y: u128): u128 {
-        std::macros::num_min!(x, y)
+        if (x < y) {
+            x
+        } else {
+            y
+        }
     }
 
     /// Return the absolute value of x - y
     public fun diff(x: u128, y: u128): u128 {
-        std::macros::num_diff!(x, y)
+        if (x > y) {
+            x - y
+        } else {
+            y - x
+        }
     }
 
     /// Calculate x / y, but round up the result.
     public fun divide_and_round_up(x: u128, y: u128): u128 {
-        std::macros::num_divide_and_round_up!(x, y)
+        if (x % y == 0) {
+            x / y
+        } else {
+            x / y + 1
+        }
     }
 
     /// Returns x * y / z with as little loss of precision as possible and avoid overflow
     public fun multiple_and_divide(x: u128, y: u128, z: u128): u128 {
-        std::macros::num_multiple_and_divide!(x, y, z)
+        if (y == z) {
+            x
+        }
+        if (x == z) {
+            y
+        }
+
+        let a = x / z;
+        let b = x % z;
+        let c = y / z;
+        let d = y % z;
+        let res = a * c * z + a * d + b * c + b * d / z
+
+        res
     }
 
     /// Return the value of a base raised to a power
     public fun pow(base: u128, exponent: u8): u128 {
-        std::macros::num_pow!(base, exponent)
+        let res = 1;
+        while (exponent >= 1) {
+            if (exponent % 2 == 0) {
+                base = base * base;
+                exponent = exponent / 2;
+            } else {
+                res = res * base;
+                exponent = exponent - 1;
+            }
+        };
+
+        res
     }
 
     /// Get a nearest lower integer Square Root for `x`. Given that this
@@ -62,43 +102,37 @@ module std::u128 {
     /// math::sqrt(8 * 1000000) => 2828; // same as above, 2828 / 1000 (2.828)
     /// ```
     public fun sqrt(x: u128): u128 {
-        std::macros::num_sqrt!<u128, u256>(x, 128)
+        let bit = 1u256 << 128;
+        let res = 0u256;
+        let x = (x as u256);
+
+        while (bit != 0) {
+            if (x >= res + bit) {
+                x = x - (res + bit);
+                res = (res >> 1) + bit;
+            } else {
+                res = res >> 1;
+            };
+            bit = bit >> 2;
+        };
+
+        (res as u128)
     }
 
-    /// Loops applying `$f` to each number from `$start` to `$stop` (exclusive)
-    public macro fun range_do($start: u128, $stop: u128, $f: |u128|) {
-        std::macros::range_do!($start, $stop, $f)
-    }
-
-    /// Loops applying `$f` to each number from `$start` to `$stop` (inclusive)
-    public macro fun range_do_eq($start: u128, $stop: u128, $f: |u128|) {
-        std::macros::range_do_eq!($start, $stop, $f)
-    }
-
-    /// Loops applying `$f` to each number from `0` to `$stop` (exclusive)
-    public macro fun do($stop: u128, $f: |u128|) {
-        std::macros::do!($stop, $f)
-    }
-
-    /// Loops applying `$f` to each number from `0` to `$stop` (inclusive)
-    public macro fun do_eq($stop: u128, $f: |u128|) {
-        std::macros::do_eq!($stop, $f)
-    }
-
-
+    // TODO: add test cases to other files
     #[test]
-    public entry fun test_mul_div() {
+    public entry fun test_multiple_and_divide() {
         let tmp: u128 = 1<<127;
-        assert!(mul_div(tmp,tmp,tmp) == tmp, 0);
+        assert!(multiple_and_divide(tmp,tmp,tmp) == tmp, 0);
 
-        assert!(mul_div(tmp,5,5) == tmp, 0);
+        assert!(multiple_and_divide(tmp,5,5) == tmp, 0);
         // Note that ordering other way is imprecise.
         assert!((tmp / 5) * 5 != tmp, 0);
     }
 
     #[test]
-    #[expected_failure(abort_code = 0x10004, location = aptos_std::math128)]
-    public entry fun test_mul_div_by_zero() {
-        mul_div(1, 1, 0);
+    #[expected_failure(abort_code = 0x10004, location = std::u128)]
+    public entry fun test_multiple_and_divide_by_zero() {
+        multiple_and_divide(1, 1, 0);
     }
 }
