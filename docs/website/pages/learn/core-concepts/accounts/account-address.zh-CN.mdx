@@ -6,11 +6,15 @@
 
 ```mermaid
 graph LR;
+  nostr_kp(Nostr PrivateKey)
+  nostr_address(Nostr Address)
   bkp(Bitcoin PrivateKey)
   baddress(Bitcoin Address)
   raddress(Rooch Address)
   contract(Move Contract)
   
+  nostr_kp --> nostr_address
+  nostr_address --> baddress
   bkp-->baddress
   baddress-->|hash|raddress
   contract-->|create account|raddress
@@ -20,12 +24,15 @@ graph LR;
 
 Rooch 地址是一个 32 字节的数组，可以表示为以 `0x` 开头的十六进制字符串，或使用 bech32 编码。在面向最终用户的场景中，我们推荐使用 bech32 编码，因为这种编码更友好，且可以减少用户输入错误。
 
-地址示例如下：
+地址示例如下，以下地址都是同一个地址在不同网络或者不同编码下的表示：
 
 ```txt
-Bitcoin: bc1q262qeyyhdakrje5qaux8m2a3r4z8sw8vu5mysh
-Rooch bech32: rooch10lnft7hhq37vl0y97lwvkmzqt48fk76y0z88rfcu8zg6qm8qegfqx0rq2h
-Rooch hex: 0x7fe695faf7047ccfbc85f7dccb6c405d4e9b7b44788e71a71c3891a06ce0ca12
+Bitcoin: bc1pxvkmv75yg6k0n84ypmak8ecclsnnpzq5qlf6r6nfjau2wp40cr6q2erlqm
+Bitcoin testnet: tb1pxvkmv75yg6k0n84ypmak8ecclsnnpzq5qlf6r6nfjau2wp40cr6qa34s65
+Bitcoin regnet: bcrt1pxvkmv75yg6k0n84ypmak8ecclsnnpzq5qlf6r6nfjau2wp40cr6qsglk0w
+Rooch bech32: rooch17ctexjpxpgeeu9txdss4aayar5244yhxl33m3w5fvvhn6f0x0t7sq20maz
+Rooch hex: 0xf6179348260a339e15666c215ef49d1d155a92e6fc63b8ba89632f3d25e67afd
+Nostr address: npub1gxhzh89u420kjvwxxytzpnp4gzd7h9vl7krv9cvugpzdxqt0r2wql0ksrg
 ```
 
 ## 系统预留地址空间
