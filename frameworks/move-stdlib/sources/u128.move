@@ -118,21 +118,4 @@ module std::u128 {
 
         (res as u128)
     }
-
-    // TODO: add test cases to other files
-    #[test]
-    public entry fun test_multiple_and_divide() {
-        let tmp: u128 = 1<<127;
-        assert!(multiple_and_divide(tmp,tmp,tmp) == tmp, 0);
-
-        assert!(multiple_and_divide(tmp,5,5) == tmp, 0);
-        // Note that ordering other way is imprecise.
-        assert!((tmp / 5) * 5 != tmp, 0);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = 0x10004, location = std::u128)]
-    public entry fun test_multiple_and_divide_by_zero() {
-        multiple_and_divide(1, 1, 0);
-    }
 }
