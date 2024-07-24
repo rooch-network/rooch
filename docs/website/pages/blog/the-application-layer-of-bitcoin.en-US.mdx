@@ -89,7 +89,7 @@ Further exploration of these models is needed. We refer to this approach as the 
 
 VApp containers are independent, so how can they be connected into a network? And how can the state and assets be interoperable? This is the challenge that the Distributed State Tree Protocol aims to solve.
 
-The idea behind the DSTP is to distribute different sub-trees of the stackable state tree across nodes in a P2P network, achieving scalability and parallel processing. Through the DSTP, the entire network can support an unlimited number of applications with parallel scalability, while still using a global state to share data and assets and enable interoperability of applications.
+The idea behind the [DSTP](/learn/in-depth-tech/dstp) is to distribute different sub-trees of the stackable state tree across nodes in a P2P network, achieving scalability and parallel processing. Through the DSTP, the entire network can support an unlimited number of applications with parallel scalability, while still using a global state to share data and assets and enable interoperability of applications.
 
 In the "stackable" state model, each VApp node contains the state of both Bitcoin and Rooch, which are the global state. The state of individual applications is a sub-tree of the global state tree and can only exist on specific nodes. If a transaction only modifies the state of an application without altering the global state, it does not need to be broadcast to the network; the application only needs to periodically sync its state root to the global state, essentially acting as application-specific sharding.
 
