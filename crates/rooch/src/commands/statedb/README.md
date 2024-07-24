@@ -157,3 +157,5 @@ rooch statedb export --output {your file} -d {your rooch data dir} -n main -m {e
 ```shell
 rooch statedb import --input {your file} -d {your rooch data dir} -n main
 ```
+
+More details is [here](./export_import.md).

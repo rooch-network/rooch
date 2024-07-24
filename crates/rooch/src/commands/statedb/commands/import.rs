@@ -133,31 +133,44 @@ fn produce_updates(
             let line = line.unwrap();
             bytes_read += line.len() as u64 + 1; // Add line.len() + 1, assuming that the line terminator is '\n'
 
-            if line.starts_with(GLOBAL_STATE_TYPE_PREFIX) {
-                // TODO check current statedb root state root
-                if line.starts_with(GLOBAL_STATE_TYPE_ROOT) {
-                    break;
+            let (v0, v1) = parse_vals_from_line(&line).unwrap();
+            match v0 {
+                StrOrFieldKey::Str(v0) => {
+                    if v0 == GLOBAL_STATE_TYPE_ROOT {
+                        // TODO check current statedb root state root
+                        continue;
+                    }
+                    // object or field
+                    let export_id: ExportID = match v1 {
+                        ExportIdOrObjState::ExportId(export_id) => export_id,
+                        _ => panic!("Invalid combination: If v0 is String, v1 must be ExportId"),
+                    };
+                    // let eventual_state_root = export_id.parent_state_root;
+                    // // TODO add cache to avoid duplicate read smt
+                    let pre_state_root = get_pre_state_root(
+                        moveos_store,
+                        root_state_root,
+                        export_id.object_id.clone(),
+                    )
+                    .unwrap();
+
+                    let state_id = StateID::new(export_id, pre_state_root);
+                    updates.states.insert(state_id.clone(), UpdateSet::new());
+                    last_state_id = Some(state_id);
+                    continue;
                 }
-                let (_c1, c2) = parse_state_data_from_csv_line(&line).unwrap();
-                let export_id = ExportID::from_str(&c2).unwrap();
-                // let eventual_state_root = export_id.parent_state_root;
-                // // TODO add cache to avoid duplicate read smt
-                let pre_state_root =
-                    get_pre_state_root(moveos_store, root_state_root, export_id.object_id.clone())
-                        .unwrap();
-
-                let state_id = StateID::new(export_id, pre_state_root);
-                updates.states.insert(state_id.clone(), UpdateSet::new());
-                last_state_id = Some(state_id);
-                continue;
+                StrOrFieldKey::FieldKey(field_key) => {
+                    let state: ObjectState = match v1 {
+                        ExportIdOrObjState::ObjState(state) => state,
+                        _ => {
+                            panic!("Invalid combination: If v0 is FieldKey, v1 must be ObjectState")
+                        }
+                    };
+                    let state_id = last_state_id.clone().expect("State ID should have value");
+                    let update_set = updates.states.entry(state_id).or_default();
+                    update_set.put(field_key, state);
+                }
             }
-
-            let (c1, c2) = parse_state_data_from_csv_line(&line).unwrap();
-            let key_state = FieldKey::from_str(&c1).unwrap();
-            let state = ObjectState::from_str(&c2).unwrap();
-            let state_id = last_state_id.clone().expect("State ID should have value");
-            let update_set = updates.states.entry(state_id).or_default();
-            update_set.put(key_state, state);
         }
         let _ = file_cache_mgr.drop_cache_range(cache_drop_offset, bytes_read);
         cache_drop_offset += bytes_read;
@@ -168,20 +181,6 @@ fn produce_updates(
     }
 
     drop(tx);
-}
-
-// csv format: c1,c2
-pub fn parse_state_data_from_csv_line(line: &str) -> Result<(String, String)> {
-    let str_list: Vec<&str> = line.trim().split(',').collect();
-    if str_list.len() != 2 {
-        return Err(Error::from(RoochError::from(Error::msg(format!(
-            "Invalid csv line: {}",
-            line
-        )))));
-    }
-    let c1 = str_list[0].to_string();
-    let c2 = str_list[1].to_string();
-    Ok((c1, c2))
 }
 
 fn apply_updates_to_state(
@@ -240,14 +239,15 @@ fn finish_import_job(
     );
 }
 
-/// Get current pre state root of object id for import node
-pub fn get_pre_state_root(
+// get previous state root for updating fields:
+// update_set(objects) + pre_state_root(parent_state_root*) -> new_state_root
+// parent_state_root*: if parent state root is empty, use root_state_root/*GENESIS_STATE_ROOT
+fn get_pre_state_root(
     moveos_store: &MoveOSStore,
     root_state_root: H256,
-    // state_root: H256,
-    // parent_state_root: H256,
     object_id: ObjectID,
 ) -> Result<H256> {
+    // try to get previous state root from object's parent
     let parent_state_root_opt = match object_id.parent() {
         Some(parent_id) => {
             let state_opt = moveos_store.get_field_at(root_state_root, &parent_id.field_key())?;
@@ -286,4 +286,59 @@ where
 pub fn apply_nodes(moveos_store: &MoveOSStore, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
     moveos_store.state_store.node_store.write_nodes(nodes)?;
     Ok(())
+}
+
+enum StrOrFieldKey {
+    Str(String),
+    FieldKey(FieldKey),
+}
+
+enum ExportIdOrObjState {
+    ExportId(ExportID),
+    ObjState(ObjectState),
+}
+
+pub fn parse_vals_from_line(line: &str) -> Result<(StrOrFieldKey, ExportIdOrObjState)> {
+    let (c0, c1) = parse_raw_strings_from_line(line)?;
+    let v0 = c0.as_str();
+    let v1 = c1.as_str();
+    match FieldKey::from_str(v0) {
+        Ok(v) => match ObjectState::from_str(v1) {
+            Ok(w) => Ok((StrOrFieldKey::FieldKey(v), ExportIdOrObjState::ObjState(w))),
+            Err(_) => Err(anyhow::anyhow!(
+                "Invalid combination: If v0 is FieldKey, v1 must be ObjectState"
+            )),
+        },
+        Err(_) => {
+            if !v0.starts_with(GLOBAL_STATE_TYPE_PREFIX) {
+                return Err(anyhow::anyhow!(
+                    "Invalid format: If v0 is String, must has prefix {}",
+                    GLOBAL_STATE_TYPE_PREFIX
+                ));
+            }
+            match ExportID::from_str(v1) {
+                Ok(w) => Ok((
+                    StrOrFieldKey::Str(v0.to_string()),
+                    ExportIdOrObjState::ExportId(w),
+                )),
+                Err(_) => Err(anyhow::anyhow!(
+                    "Invalid combination: If v0 is String, v1 must be ExportId"
+                )),
+            }
+        }
+    }
+}
+
+// csv line format: c1,c2
+pub fn parse_raw_strings_from_line(line: &str) -> Result<(String, String)> {
+    let str_list: Vec<&str> = line.trim().split(',').collect();
+    if str_list.len() != 2 {
+        return Err(Error::from(RoochError::from(Error::msg(format!(
+            "Invalid csv line: {}",
+            line
+        )))));
+    }
+    let c1 = str_list[0].to_string();
+    let c2 = str_list[1].to_string();
+    Ok((c1, c2))
 }

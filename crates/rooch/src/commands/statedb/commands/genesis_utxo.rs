@@ -339,14 +339,13 @@ fn finish_job(
     let new_startup_info = StartupInfo::new(root_state_root, root_size);
     moveos_store
         .get_config_store()
-        .save_startup_info(new_startup_info)
+        .save_startup_info(new_startup_info.clone())
         .unwrap();
 
-    let startup_info = moveos_store.get_config_store().get_startup_info().unwrap();
     println!(
         "Done in {:?}. New startup_info: {:?}",
         task_start_time.elapsed(),
-        startup_info
+        new_startup_info
     );
 }
 

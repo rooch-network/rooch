@@ -403,7 +403,7 @@ fn export_object_export_id<W: std::io::Write>(
     state_root: H256,
     writer: &mut Writer<W>,
 ) -> Result<()> {
-    let root_export_id = ExportID::new(ObjectID::root(), root_state_root, root_state_root, 0);
+    let root_export_id = ExportID::new(ObjectID::root(), state_root, state_root, 0);
     writer.write_record([GLOBAL_STATE_TYPE_ROOT, root_export_id.to_string().as_str()])?;
     Ok(())
 }
