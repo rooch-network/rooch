@@ -297,7 +297,7 @@ fn import_utxo(
     root_state_root: H256,
     startup_time: Instant,
 ) {
-    let (tx, rx) = mpsc::sync_channel(2);
+    let (tx, rx) = mpsc::sync_channel(1);
     let produce_updates_thread = thread::spawn(move || {
         produce_utxo_updates(tx, input_path, batch_size, Some(utxo_ord_map_db))
     });
