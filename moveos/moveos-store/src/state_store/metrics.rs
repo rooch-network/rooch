@@ -6,24 +6,24 @@ use prometheus::{register_histogram_vec_with_registry, HistogramVec, Registry};
 
 #[derive(Debug)]
 pub struct StateDBMetrics {
-    pub state_update_fields_latency: HistogramVec,
+    pub state_update_fields_latency_seconds: HistogramVec,
     pub state_update_fields_bytes: HistogramVec,
-    pub state_update_nodes_latency: HistogramVec,
+    pub state_update_nodes_latency_seconds: HistogramVec,
     pub state_update_nodes_bytes: HistogramVec,
-    pub state_apply_change_set_latency: HistogramVec,
+    pub state_apply_change_set_latency_seconds: HistogramVec,
     pub state_apply_change_set_bytes: HistogramVec,
-    pub state_iter_latency: HistogramVec,
-    pub state_get_field_at_latency: HistogramVec,
+    pub state_iter_latency_seconds: HistogramVec,
+    pub state_get_field_at_latency_seconds: HistogramVec,
     pub state_get_field_at_bytes: HistogramVec,
-    pub state_list_fields_at_latency: HistogramVec,
+    pub state_list_fields_at_latency_seconds: HistogramVec,
     pub state_list_fields_at_bytes: HistogramVec,
 }
 
 impl StateDBMetrics {
     pub(crate) fn new(registry: &Registry) -> Self {
         StateDBMetrics {
-            state_update_fields_latency: register_histogram_vec_with_registry!(
-                "state_update_fields_latency",
+            state_update_fields_latency_seconds: register_histogram_vec_with_registry!(
+                "state_update_fields_latency_seconds",
                 "State update fields latency in seconds",
                 &["fn_name"],
                 LATENCY_SEC_BUCKETS.to_vec(),
@@ -40,8 +40,8 @@ impl StateDBMetrics {
                 registry,
             )
             .unwrap(),
-            state_update_nodes_latency: register_histogram_vec_with_registry!(
-                "state_update_nodes_latency",
+            state_update_nodes_latency_seconds: register_histogram_vec_with_registry!(
+                "state_update_nodes_latency_seconds",
                 "State update nodes latency in seconds",
                 &["fn_name"],
                 registry,
@@ -57,8 +57,8 @@ impl StateDBMetrics {
                 registry
             )
             .unwrap(),
-            state_apply_change_set_latency: register_histogram_vec_with_registry!(
-                "state_apply_change_set_latency",
+            state_apply_change_set_latency_seconds: register_histogram_vec_with_registry!(
+                "state_apply_change_set_latency_seconds",
                 "State apply change set latency in seconds",
                 &["fn_name"],
                 LATENCY_SEC_BUCKETS.to_vec(),
@@ -75,16 +75,16 @@ impl StateDBMetrics {
                 registry,
             )
             .unwrap(),
-            state_iter_latency: register_histogram_vec_with_registry!(
-                "state_iter_latency",
+            state_iter_latency_seconds: register_histogram_vec_with_registry!(
+                "state_iter_latency_seconds",
                 "State iter latency in seconds",
                 &["fn_name"],
                 LATENCY_SEC_BUCKETS.to_vec(),
                 registry,
             )
             .unwrap(),
-            state_get_field_at_latency: register_histogram_vec_with_registry!(
-                "state_get_field_at_latency",
+            state_get_field_at_latency_seconds: register_histogram_vec_with_registry!(
+                "state_get_field_at_latency_seconds",
                 "State get field latency in seconds",
                 &["fn_name"],
                 LATENCY_SEC_BUCKETS.to_vec(),
@@ -101,8 +101,8 @@ impl StateDBMetrics {
                 registry,
             )
             .unwrap(),
-            state_list_fields_at_latency: register_histogram_vec_with_registry!(
-                "state_list_fields_at_latency",
+            state_list_fields_at_latency_seconds: register_histogram_vec_with_registry!(
+                "state_list_fields_at_latency_seconds",
                 "State list fields latency in seconds",
                 &["fn_name"],
                 LATENCY_SEC_BUCKETS.to_vec(),

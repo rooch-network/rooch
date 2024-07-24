@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use function_name::named;
 use jellyfish_merkle::hash::SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE;
 use jellyfish_merkle::{
     iterator::JellyfishMerkleIterator,
@@ -10,17 +11,20 @@ use jellyfish_merkle::{
 };
 use parking_lot::RwLock;
 use primitive_types::H256;
+use prometheus::Registry;
 use std::{
     collections::{BTreeMap, HashMap},
     marker::PhantomData,
     sync::Arc,
 };
 
+use crate::metrics::SMTMetrics;
 pub use jellyfish_merkle::{hash::SPARSE_MERKLE_PLACEHOLDER_HASH, proof::SparseMerkleProof};
 pub use smt_object::{DecodeToObject, EncodeToObject, Key, SMTObject, Value};
 pub use update_set::UpdateSet;
 
 pub(crate) mod jellyfish_merkle;
+pub mod metrics;
 mod smt_object;
 #[cfg(test)]
 pub(crate) mod tests;
@@ -110,6 +114,7 @@ pub struct SMTree<K, V, NR> {
     node_reader: NR,
     key: PhantomData<K>,
     value: PhantomData<V>,
+    metrics: Arc<SMTMetrics>,
 }
 
 impl<K, V, NR> SMTree<K, V, NR>
@@ -119,28 +124,62 @@ where
     NR: NodeReader,
 {
     /// Construct a new smt tree with a tree reader.
-    pub fn new(node_reader: NR) -> Self {
+    pub fn new(node_reader: NR, registry: &Registry) -> Self {
         SMTree {
             node_reader,
             key: PhantomData,
             value: PhantomData,
+            metrics: Arc::new(SMTMetrics::new(registry)),
         }
     }
 
     /// Put a kv pair into tree and generate new state_root.
-    /// If need to put many kvs, please use `puts` method.
+    /// If need to put many kvs, please use `puts` method
+    #[named]
     pub fn put(&self, state_root: H256, key: K, value: V) -> Result<TreeChangeSet> {
-        self.puts(state_root, (key, Some(value)))
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .smt_put_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
+        let result = self.puts(state_root, (key, Some(value)))?;
+        let size = result.nodes.values().map(|v| v.len()).sum::<usize>();
+        self.metrics
+            .smt_put_bytes
+            .with_label_values(&[fn_name])
+            .observe(size as f64);
+        Ok(result)
     }
 
     /// Remove key_hash's data.
     /// Same as put(K,None)
+    #[named]
     pub fn remove(&self, state_root: H256, key: K) -> Result<TreeChangeSet> {
-        self.puts(state_root, (key, None))
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .smt_remove_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
+        let result = self.puts(state_root, (key, None))?;
+        let size = result.nodes.values().map(|v| v.len()).sum::<usize>();
+        self.metrics
+            .smt_remove_bytes
+            .with_label_values(&[fn_name])
+            .observe(size as f64);
+        Ok(result)
     }
 
     /// Get the value of the key from the tree.
+    #[named]
     pub fn get(&self, state_root: H256, key: K) -> Result<Option<V>> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .smt_get_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         Ok(self.get_with_proof(state_root, key)?.0)
     }
 
@@ -150,13 +189,26 @@ where
 
     /// Returns the value and the corresponding merkle proof.
     /// if the value is not applicable, return None and non-inclusion proof.
+    #[named]
     pub fn get_with_proof(
         &self,
         state_root: H256,
         key: K,
     ) -> Result<(Option<V>, SparseMerkleProof)> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .smt_get_with_proof_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let tree: JellyfishMerkleTree<K, V, NR> = JellyfishMerkleTree::new(&self.node_reader);
         let (data, proof) = tree.get_with_proof(state_root.into(), key)?;
+
+        let size = data.clone().map(|v| v.raw.len()).unwrap_or(0);
+        self.metrics
+            .smt_get_with_proof_bytes
+            .with_label_values(&[fn_name])
+            .observe(size as f64);
         match data {
             Some(b) => Ok((Some(b.origin), proof)),
             None => Ok((None, proof)),
@@ -164,12 +216,19 @@ where
     }
 
     /// List the (key, value) from the tree.
+    #[named]
     pub fn list(
         &self,
         state_root: H256,
         starting_key: Option<K>,
         limit: usize,
     ) -> Result<Vec<(K, V)>> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .smt_list_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let mut iter = self.iter(state_root, starting_key)?;
 
         let mut data = Vec::new();
@@ -177,8 +236,8 @@ where
         if Option::is_some(&starting_key) {
             let _item = iter.next();
         }
-        for (data_size, item) in iter.enumerate() {
-            if data_size >= limit {
+        for (data_idx, item) in iter.enumerate() {
+            if data_idx >= limit {
                 break;
             }
             let (k, v) = item?;
@@ -190,18 +249,38 @@ where
     /// Returns the iterator of the tree for scan the tree.
     /// Note: the key in the tree is sorted by the hash of the key, not origin key.
     /// So the iterator will return the key in the hash order, the starting_key is the first key to start scan.
+    #[named]
     pub fn iter(&self, state_root: H256, starting_key: Option<K>) -> Result<SMTIterator<K, V, NR>> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .smt_iter_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let iterator = SMTIterator::new(&self.node_reader, state_root, starting_key)?;
         Ok(iterator)
     }
 
     /// Put kv pairs into tree and generate new state_root.
+    #[named]
     pub fn puts<I: Into<UpdateSet<K, V>>>(
         &self,
         state_root: H256,
         update_set: I,
     ) -> Result<TreeChangeSet> {
-        self.updates(state_root, update_set)
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .smt_puts_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
+        let result = self.updates(state_root, update_set)?;
+        let size = result.nodes.values().map(|v| v.len()).sum::<usize>();
+        self.metrics
+            .smt_puts_bytes
+            .with_label_values(&[fn_name])
+            .observe(size as f64);
+        Ok(result)
     }
 
     fn updates<I: Into<UpdateSet<K, V>>>(

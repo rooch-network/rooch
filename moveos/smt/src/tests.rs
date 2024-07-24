@@ -6,7 +6,8 @@ use super::*;
 #[test]
 fn test_smt() {
     let node_store = InMemoryNodeStore::default();
-    let smt = SMTree::new(node_store.clone());
+    let registry = prometheus::Registry::new();
+    let smt = SMTree::new(node_store.clone(), &registry);
     let key = H256::random();
     let value = "value";
     let genesis_root = *SPARSE_MERKLE_PLACEHOLDER_HASH;
