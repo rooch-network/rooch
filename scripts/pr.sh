@@ -83,6 +83,7 @@ EOF
 done
 
 MOVE_TEST_CRATES="\
+  frameworks/move-stdlib\
   frameworks/moveos-stdlib\
   frameworks/rooch-framework\
   frameworks/bitcoin-move\
