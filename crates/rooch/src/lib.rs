@@ -11,7 +11,7 @@ use commands::{
     object::ObjectCommand, resource::ResourceCommand, rpc::Rpc, server::Server,
     session_key::SessionKey, state::StateCommand, transaction::Transaction,
 };
-use git2::{Oid, Repository};
+use once_cell::sync::Lazy;
 use rooch_types::error::RoochResult;
 
 pub mod cli_types;
@@ -19,7 +19,7 @@ pub mod commands;
 pub mod utils;
 
 #[derive(clap::Parser)]
-#[clap(author, long_version(get_latest_tag_and_commit_hash().unwrap().commit_hash_str().unwrap()), about, long_about = None,
+#[clap(author, long_version = LONG_VERSION.as_str(), about, long_about = None,
 styles = Styles::styled()
 .header(AnsiColor::Green.on_default() | Effects::BOLD)
 .usage(AnsiColor::Green.on_default() | Effects::BOLD)
@@ -29,6 +29,12 @@ pub struct RoochCli {
     #[clap(subcommand)]
     pub cmd: Command,
 }
+
+static LONG_VERSION: Lazy<String> = Lazy::new(|| {
+    let cargo_version = env!("CARGO_PKG_VERSION");
+    let git_commit_hash = env!("GIT_COMMIT_HASH");
+    format!("{} (git commit {})", cargo_version, git_commit_hash)
+});
 
 #[allow(clippy::large_enum_variant)]
 #[derive(clap::Parser)]
@@ -49,66 +55,6 @@ pub enum Command {
     Statedb(Statedb),
     Indexer(Indexer),
     Genesis(Genesis),
-}
-
-struct TagData<'a> {
-    latest_tag_name: Option<String>,
-    commit_hash_str: Option<String>,
-    _phantom: std::marker::PhantomData<&'a ()>,
-}
-
-impl<'a> TagData<'a> {
-    fn latest_tag_name(&self) -> Option<&str> {
-        self.latest_tag_name.as_deref()
-    }
-
-    fn commit_hash_str(&self) -> Option<&str> {
-        self.commit_hash_str.as_deref()
-    }
-}
-
-fn get_latest_tag_and_commit_hash() -> Result<TagData<'static>, anyhow::Error> {
-    // Open the repository
-    let repo = Repository::open(".")?;
-
-    // Get all tag names with a specific pattern
-    let tag_names = repo.tag_names(Some("v*.*.*"))?;
-
-    // Collect tags with their commit OIDs
-    let mut tags_with_commits: Vec<(String, Oid)> = vec![];
-
-    for name in tag_names.iter().flatten() {
-        if let Ok(reference) = repo.find_reference(name) {
-            if let Ok(tag) = reference.peel_to_tag() {
-                let target_commit = tag
-                    .target()
-                    .map_err(|_| anyhow::anyhow!("Tag has no target commit"))?;
-                tags_with_commits.push((name.to_string(), target_commit.id()));
-            }
-        }
-    }
-
-    // Sort tags by their commit OID in descending order
-    tags_with_commits.sort_by(|a, b| b.1.cmp(&a.1));
-
-    // Create a TagData struct to hold the results
-    let tag_data =
-        if let Some((latest_tag_name, commit_hash)) = tags_with_commits.into_iter().next() {
-            let commit_hash_str = commit_hash.to_string();
-            TagData {
-                latest_tag_name: Some(latest_tag_name),
-                commit_hash_str: Some(commit_hash_str),
-                _phantom: std::marker::PhantomData,
-            }
-        } else {
-            TagData {
-                latest_tag_name: None,
-                commit_hash_str: None,
-                _phantom: std::marker::PhantomData,
-            }
-        };
-
-    Ok(tag_data)
 }
 
 pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
