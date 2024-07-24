@@ -42,17 +42,17 @@ module std::u32 {
     /// Returns x * y / z with as little loss of precision as possible and avoid overflow
     public fun multiple_and_divide(x: u32, y: u32, z: u32): u32 {
         if (y == z) {
-            x
-        }
+            return x
+        };
         if (x == z) {
-            y
-        }
+            return y
+        };
 
         let a = x / z;
         let b = x % z;
         let c = y / z;
         let d = y % z;
-        let res = a * c * z + a * d + b * c + b * d / z
+        let res = a * c * z + a * d + b * c + b * d / z;
 
         res
     }
@@ -67,7 +67,7 @@ module std::u32 {
             } else {
                 res = res * base;
                 exponent = exponent - 1;
-            }
+            };
         };
 
         res

@@ -23,7 +23,7 @@ Utilities for comparing Move values based on their representation in BCS.
 
 
 
-<pre><code><b>const</b> <a href="compare.md#0x1_compare_EQUAL">EQUAL</a>: u8 = 0;
+<pre><code><b>const</b> <a href="compare.md#0x1_compare_EQUAL">EQUAL</a>: <a href="u8.md#0x1_u8">u8</a> = 0;
 </code></pre>
 
 
@@ -32,7 +32,7 @@ Utilities for comparing Move values based on their representation in BCS.
 
 
 
-<pre><code><b>const</b> <a href="compare.md#0x1_compare_GREATER_THAN">GREATER_THAN</a>: u8 = 2;
+<pre><code><b>const</b> <a href="compare.md#0x1_compare_GREATER_THAN">GREATER_THAN</a>: <a href="u8.md#0x1_u8">u8</a> = 2;
 </code></pre>
 
 
@@ -41,7 +41,7 @@ Utilities for comparing Move values based on their representation in BCS.
 
 
 
-<pre><code><b>const</b> <a href="compare.md#0x1_compare_LESS_THAN">LESS_THAN</a>: u8 = 1;
+<pre><code><b>const</b> <a href="compare.md#0x1_compare_LESS_THAN">LESS_THAN</a>: <a href="u8.md#0x1_u8">u8</a> = 1;
 </code></pre>
 
 
@@ -63,7 +63,7 @@ following guarantees w.r.t the original values t1 and t2:
 <code>compare::cmp&lt;T&gt;(t1, t2) != <a href="compare.md#0x1_compare_EQUAL">EQUAL</a></code> iff <code>t1 != t2</code>, where <code>==</code> and <code>!=</code> denote the Move
 bytecode operations for polymorphic equality.
 - for all primitive types <code>T</code> with <code>&lt;</code> and <code>&gt;</code> comparison operators exposed in Move bytecode
-(<code>u8</code>, <code>u16</code>, <code>u32</code>, <code>u64</code>, <code>u128</code>, <code>u256</code>), we have
+(<code><a href="u8.md#0x1_u8">u8</a></code>, <code><a href="u16.md#0x1_u16">u16</a></code>, <code><a href="u32.md#0x1_u32">u32</a></code>, <code><a href="u64.md#0x1_u64">u64</a></code>, <code><a href="u128.md#0x1_u128">u128</a></code>, <code><a href="u256.md#0x1_u256">u256</a></code>), we have
 <code>compare_bcs_bytes(<a href="bcs.md#0x1_bcs">bcs</a>(t1), <a href="bcs.md#0x1_bcs">bcs</a>(t2)) == <a href="compare.md#0x1_compare_LESS_THAN">LESS_THAN</a></code> iff <code>t1 &lt; t2</code> and (similarly)
 <code>compare_bcs_bytes(<a href="bcs.md#0x1_bcs">bcs</a>(t1), <a href="bcs.md#0x1_bcs">bcs</a>(t2)) == <a href="compare.md#0x1_compare_LESS_THAN">LESS_THAN</a></code> iff <code>t1 &gt; t2</code>.
 
@@ -81,5 +81,5 @@ Keep this in mind when using this function to compare addresses.
 > native abstraction is needed in the prover framework.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="compare.md#0x1_compare_cmp_bcs_bytes">cmp_bcs_bytes</a>(v1: &<a href="vector.md#0x1_vector">vector</a>&lt;u8&gt;, v2: &<a href="vector.md#0x1_vector">vector</a>&lt;u8&gt;): u8
+<pre><code><b>public</b> <b>fun</b> <a href="compare.md#0x1_compare_cmp_bcs_bytes">cmp_bcs_bytes</a>(v1: &<a href="vector.md#0x1_vector">vector</a>&lt;<a href="u8.md#0x1_u8">u8</a>&gt;, v2: &<a href="vector.md#0x1_vector">vector</a>&lt;<a href="u8.md#0x1_u8">u8</a>&gt;): <a href="u8.md#0x1_u8">u8</a>
 </code></pre>

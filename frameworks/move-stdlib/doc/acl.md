@@ -45,7 +45,7 @@ use a "set" instead when it's available in the language in the future.
 The ACL already contains the address.
 
 
-<pre><code><b>const</b> <a href="acl.md#0x1_acl_ECONTAIN">ECONTAIN</a>: u64 = 0;
+<pre><code><b>const</b> <a href="acl.md#0x1_acl_ECONTAIN">ECONTAIN</a>: <a href="u64.md#0x1_u64">u64</a> = 0;
 </code></pre>
 
 
@@ -55,7 +55,7 @@ The ACL already contains the address.
 The ACL does not contain the address.
 
 
-<pre><code><b>const</b> <a href="acl.md#0x1_acl_ENOT_CONTAIN">ENOT_CONTAIN</a>: u64 = 1;
+<pre><code><b>const</b> <a href="acl.md#0x1_acl_ENOT_CONTAIN">ENOT_CONTAIN</a>: <a href="u64.md#0x1_u64">u64</a> = 1;
 </code></pre>
 
 

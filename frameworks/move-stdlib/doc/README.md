@@ -25,6 +25,12 @@ This is the reference documentation of the Move standard library.
 -  [`0x1::signer`](signer.md#0x1_signer)
 -  [`0x1::string`](string.md#0x1_string)
 -  [`0x1::type_name`](type_name.md#0x1_type_name)
+-  [`0x1::u128`](u128.md#0x1_u128)
+-  [`0x1::u16`](u16.md#0x1_u16)
+-  [`0x1::u256`](u256.md#0x1_u256)
+-  [`0x1::u32`](u32.md#0x1_u32)
+-  [`0x1::u64`](u64.md#0x1_u64)
+-  [`0x1::u8`](u8.md#0x1_u8)
 -  [`0x1::vector`](vector.md#0x1_vector)
 
 
