@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -79,24 +82,8 @@ module std::u8 {
     ///
     /// Example:
     /// ```
-    /// math::sqrt(9) => 3
-    /// math::sqrt(8) => 2 // the nearest lower square root is 4;
-    /// ```
-    ///
-    /// In integer math, one of the possible ways to get results with more
-    /// precision is to use higher values or temporarily multiply the
-    /// value by some bigger number. Ideally if this is a square of 10 or 100.
-    ///
-    /// Example:
-    /// ```
-    /// math::sqrt(8) => 2;
-    /// math::sqrt(8 * 10000) => 282;
-    /// // now we can use this value as if it was 2.82;
-    /// // but to get the actual result, this value needs
-    /// // to be divided by 100 (because sqrt(10000)).
-    ///
-    ///
-    /// math::sqrt(8 * 1000000) => 2828; // same as above, 2828 / 1000 (2.828)
+    /// u8::sqrt(9) => 3
+    /// u8::sqrt(8) => 2 // the nearest lower square root is 4;
     /// ```
     public fun sqrt(x: u8): u8 {
         let bit = 1u16 << 8;
