@@ -1,9 +1,9 @@
 class Rooch < Formula
     desc "VApp Container with Move Language"
     homepage "https://rooch.network/"
-    url "https://github.com/rooch-network/rooch/releases/download/v0.5.5/rooch-macos-latest.zip"
-    sha256 "a48d6a9efca83c604701975846215a478868565de1f47d8060539522d2fee2a7"
-    version "v0.5.5"
+    url "https://github.com/rooch-network/rooch/releases/download/v0.6.3/rooch-macos-latest.zip"
+    sha256 "cf30b4a77eb636d11ec99899cc33ca965ca13534be764fa93c2c070c39e30cef"
+    version "v0.6.3"
 
     def install
       bin.install "rooch"
