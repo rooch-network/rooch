@@ -20,6 +20,7 @@ This module provides the foundation for typesafe Coins.
 -  [Function `symbol`](#0x3_coin_symbol)
 -  [Function `decimals`](#0x3_coin_decimals)
 -  [Function `supply`](#0x3_coin_supply)
+-  [Function `icon_url`](#0x3_coin_icon_url)
 -  [Function `is_same_coin`](#0x3_coin_is_same_coin)
 -  [Function `destroy_zero`](#0x3_coin_destroy_zero)
 -  [Function `extract`](#0x3_coin_extract)
@@ -28,6 +29,7 @@ This module provides the foundation for typesafe Coins.
 -  [Function `value`](#0x3_coin_value)
 -  [Function `zero`](#0x3_coin_zero)
 -  [Function `coin_info`](#0x3_coin_coin_info)
+-  [Function `upsert_icon_url`](#0x3_coin_upsert_icon_url)
 -  [Function `register_extend`](#0x3_coin_register_extend)
 -  [Function `mint`](#0x3_coin_mint)
 -  [Function `mint_extend`](#0x3_coin_mint_extend)
@@ -37,7 +39,8 @@ This module provides the foundation for typesafe Coins.
 -  [Function `pack`](#0x3_coin_pack)
 
 
-<pre><code><b>use</b> <a href="">0x1::string</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
@@ -339,6 +342,18 @@ Returns the amount of coin in existence.
 
 
 
+<a name="0x3_coin_icon_url"></a>
+
+## Function `icon_url`
+
+Returns the icon url of coin.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_icon_url">icon_url</a>&lt;CoinType: key&gt;(coin_info: &<a href="_Object">object::Object</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;&gt;): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
+</code></pre>
+
+
+
 <a name="0x3_coin_is_same_coin"></a>
 
 ## Function `is_same_coin`
@@ -433,6 +448,20 @@ Borrow the CoinInfo<CoinType>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_info">coin_info</a>&lt;CoinType: key&gt;(): &<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;
+</code></pre>
+
+
+
+<a name="0x3_coin_upsert_icon_url"></a>
+
+## Function `upsert_icon_url`
+
+Upsert icon_url as<code>CoinType</code> dynamic field
+This function is protected by <code>private_generics</code>, so it can only be called by the <code>CoinType</code> module.
+
+
+<pre><code>#[private_generics(#[CoinType])]
+<b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_upsert_icon_url">upsert_icon_url</a>&lt;CoinType: key&gt;(coin_info_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;&gt;, icon_url: <a href="_String">string::String</a>)
 </code></pre>
 
 
