@@ -134,7 +134,7 @@ where
     }
 
     /// Put a kv pair into tree and generate new state_root.
-    /// If need to put many kvs, please use `puts`
+    /// If need to put many kvs, please use `puts` method
     #[named]
     pub fn put(&self, state_root: H256, key: K, value: V) -> Result<TreeChangeSet> {
         let fn_name = function_name!();
