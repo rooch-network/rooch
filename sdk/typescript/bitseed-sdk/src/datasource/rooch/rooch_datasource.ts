@@ -10,7 +10,10 @@ import {
   GetTransactionOptions,
   Transaction,
   Vin,
-  Vout
+  Vout,
+  GetSpendablesOptions,
+  UTXOLimited,
+  Rarity,
 } from "@sadoprotocol/ordit-sdk";
 import { 
   getRoochNodeUrl, 
@@ -345,6 +348,122 @@ export class RoochDataSource /*implements IDatasource*/ {
     }
 
     return { tx };
+  }
+
+  async getSpendables({ address, value, type = "all", rarity, filter, limit = 100 }: GetSpendablesOptions): Promise<UTXOLimited[]> {
+    if (!address || typeof address !== 'string') {
+      throw new Error('Invalid address provided');
+    }
+
+    if (typeof value !== 'number' || value < 0) {
+      throw new Error('Invalid value provided');
+    }
+
+    const spendables: UTXOLimited[] = [];
+    let cursor: IndexerStateIDView | null = null;
+    let totalSats = 0;
+
+    while (totalSats < value && spendables.length < limit) {
+      const response: PaginatedUTXOStateViews = await this.roochClient.queryUTXO({
+        filter: {
+          owner: address,
+        },
+        cursor: cursor,
+        limit: Math.min(limit - spendables.length, 100).toString(),
+      });
+
+      for (const utxoState of response.data) {
+        const utxo = this.convertToUTXOLimited(utxoState);
+
+        if (this.isSpendable(utxo, type, rarity, filter)) {
+          spendables.push(utxo);
+          totalSats += utxo.sats;
+
+          if (totalSats >= value || spendables.length >= limit) {
+            break;
+          }
+        }
+      }
+
+      if (!response.has_next_page || !response.next_cursor) {
+        break;
+      }
+
+      cursor = response.next_cursor;
+    }
+
+    return spendables;
+  }
+
+  private convertToUTXOLimited(utxoState: UTXOStateView): UTXOLimited {
+    const utxoValue: UTXOView = utxoState.value;
+    
+    if (!utxoValue.bitcoin_txid || !utxoValue.value || typeof utxoValue.vout !== 'number') {
+      throw new Error('Invalid UTXO data');
+    }
+
+    return {
+      txid: utxoValue.bitcoin_txid,
+      n: utxoValue.vout,
+      sats: this.safeParseBigInt(utxoValue.value),
+      scriptPubKey: {
+        asm: "", // Rooch does not provide this information
+        desc: "", // Rooch does not provide this information
+        hex: "", // Rooch does not provide script_pubkey in the current structure
+        address: utxoState.owner_bitcoin_address || utxoState.owner,
+        type: "p2tr", // Assuming all UTXOs use Taproot
+      }
+    };
+  }
+
+  private safeParseBigInt(value: string): number {
+    try {
+      const bigIntValue = BigInt(value);
+      if (bigIntValue > BigInt(Number.MAX_SAFE_INTEGER)) {
+        throw new Error("UTXO value exceeds safe integer range");
+      }
+      return Number(bigIntValue);
+    } catch (error) {
+      console.error(`Failed to parse UTXO value: ${value}`);
+      throw new Error(`Invalid UTXO value: ${value}`);
+    }
+  }
+
+  private isSpendable(utxo: UTXOLimited, type: "all" | "spendable", rarity?: Rarity[], filter?: string[]): boolean {
+    if (type === "spendable" && !this.isUTXOSpendable(utxo)) {
+      return false;
+    }
+
+    if (rarity && !this.matchesRarity(utxo, rarity)) {
+      return false;
+    }
+
+    if (filter && !this.matchesFilter(utxo, filter)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  private isUTXOSpendable(utxo: UTXOLimited): boolean {
+    // Implement logic to determine if a UTXO is spendable
+    // This might involve checking if it's not an inscription UTXO, etc.
+    // For now, we'll assume all UTXOs are spendable
+    return true;
+  }
+
+  private matchesRarity(utxo: UTXOLimited, rarity: Rarity[]): boolean {
+    // Implement logic to check if the UTXO matches the specified rarity
+    // This might involve checking the satoshi range or other criteria
+    // For now, we'll assume all UTXOs match any rarity
+    return true;
+  }
+
+  private matchesFilter(utxo: UTXOLimited, filter: string[]): boolean {
+    // Implement logic to check if the UTXO matches the specified filter
+    // This might involve checking specific attributes of the UTXO
+    // For now, we'll assume all UTXOs match any filter
+    return true;
   }
 }
 
