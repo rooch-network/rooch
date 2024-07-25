@@ -3,7 +3,7 @@
 
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use std::time::Instant;
 
 use bitcoin::{OutPoint, PublicKey, ScriptBuf};
@@ -64,17 +64,19 @@ fn init_job(
 }
 
 fn finish_job(
-    moveos_store: &MoveOSStore,
+    moveos_store: Arc<MoveOSStore>,
     root_size: u64,
     pre_root_state_root: H256,
     task_start_time: Instant,
-    new_startup_update_set: Option<UpdateSet<FieldKey, ObjectState>>,
+    new_startup_update_set: Option<Arc<RwLock<UpdateSet<FieldKey, ObjectState>>>>,
 ) {
     let root_state_root = match new_startup_update_set {
         Some(new_startup_update_set) => {
+            let new_startup_update_set = new_startup_update_set.read().unwrap();
+            let new_startup_update_set = new_startup_update_set.clone();
             let tree_change_set =
-                apply_fields(moveos_store, pre_root_state_root, new_startup_update_set).unwrap();
-            apply_nodes(moveos_store, tree_change_set.nodes).unwrap();
+                apply_fields(&moveos_store, pre_root_state_root, new_startup_update_set).unwrap();
+            apply_nodes(&moveos_store, tree_change_set.nodes).unwrap();
             tree_change_set.state_root
         }
         None => pre_root_state_root,
