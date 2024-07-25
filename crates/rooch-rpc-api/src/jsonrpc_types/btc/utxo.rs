@@ -86,7 +86,7 @@ impl UTXOView {
         let mut seals_view: HashMap<String, Vec<ObjectIDView>> = HashMap::new();
         utxo.seals.data.into_iter().for_each(|element| {
             seals_view.insert(
-                format!("{}", element.key),
+                format!("0x{}", element.key),
                 element
                     .value
                     .into_iter()
