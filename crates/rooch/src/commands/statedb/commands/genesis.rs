@@ -6,10 +6,10 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::{Arc, mpsc};
 use std::sync::mpsc::{Receiver, SyncSender};
-use std::sync::{mpsc, Arc};
 use std::thread;
-use std::time::{Instant, SystemTime};
+use std::time::SystemTime;
 
 use anyhow::Result;
 use bitcoin::OutPoint;
@@ -25,7 +25,7 @@ use moveos_types::h256::H256;
 use moveos_types::move_std::option::MoveOption;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::{
-    ObjectEntity, ObjectID, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
+    GENESIS_STATE_ROOT, ObjectEntity, ObjectID, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
 };
 use moveos_types::state::{FieldKey, ObjectState};
 use rooch_common::fs::file_cache::FileCacheManager;
@@ -42,13 +42,10 @@ use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
 use crate::cli_types::WalletContextOptions;
-use crate::commands::statedb::commands::genesis_utxo::{
-    apply_utxo_updates_to_state, produce_utxo_updates,
+use crate::commands::statedb::commands::{
+    get_ord_by_outpoint, init_job, sort_merge_utxo_ords, UTXO_ORD_MAP_TABLE, UTXOOrds,
 };
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
-use crate::commands::statedb::commands::{
-    get_ord_by_outpoint, init_job, sort_merge_utxo_ords, UTXOOrds, UTXO_ORD_MAP_TABLE,
-};
 
 pub const ADDRESS_UNBOUND: &str = "unbound";
 pub const ADDRESS_NON_STANDARD: &str = "non-standard";
@@ -136,9 +133,9 @@ impl GenesisCommand {
     // 5. print job stats, clean env
     pub async fn execute(self) -> RoochResult<()> {
         // 1. init import job
-        let (root, moveos_store, start_time) =
+        let (root, moveos_store, _start_time) =
             init_job(self.base_data_dir.clone(), self.chain_id.clone());
-        let pre_root_state_root = root.state_root();
+        let _pre_root_state_root = root.state_root();
 
         let utxo_ord_map_existed = self.utxo_ord_map.exists(); // check if utxo:ords map db existed before create db
         let utxo_ord_map_db = Database::create(self.utxo_ord_map.clone()).unwrap(); // create db if not existed
@@ -153,23 +150,23 @@ impl GenesisCommand {
         let moveos_store = Arc::new(moveos_store);
         let startup_update_set = UpdateSet::new();
 
-        let utxo_input_path = self.utxo_source.clone();
-        let utxo_batch_size = self.utxo_batch_size.unwrap();
+        // let utxo_input_path = self.utxo_source.clone();
+        // let utxo_batch_size = self.utxo_batch_size.unwrap();
 
         // 2. import od
         self.import_ord(moveos_store.clone(), startup_update_set.clone());
 
         // 3. import utxo
-        import_utxo(
-            utxo_input_path,
-            utxo_batch_size,
-            utxo_ord_map.clone(),
-            moveos_store.clone(),
-            startup_update_set.clone(),
-            root.size(),
-            pre_root_state_root,
-            start_time,
-        );
+        // import_utxo(
+        //     utxo_input_path,
+        //     utxo_batch_size,
+        //     utxo_ord_map.clone(),
+        //     moveos_store.clone(),
+        //     startup_update_set.clone(),
+        //     root.size(),
+        //     pre_root_state_root,
+        //     start_time,
+        // );
 
         Ok(())
     }
@@ -287,33 +284,33 @@ fn index_utxo_ords(
     );
 }
 
-fn import_utxo(
-    input_path: PathBuf,
-    batch_size: usize,
-    utxo_ord_map_db: Arc<Database>,
-    moveos_store: Arc<MoveOSStore>,
-    startup_update_set: UpdateSet<FieldKey, ObjectState>,
-    root_size: u64,
-    root_state_root: H256,
-    startup_time: Instant,
-) {
-    let (tx, rx) = mpsc::sync_channel(1);
-    let produce_updates_thread = thread::spawn(move || {
-        produce_utxo_updates(tx, input_path, batch_size, Some(utxo_ord_map_db))
-    });
-    let apply_updates_thread = thread::spawn(move || {
-        apply_utxo_updates_to_state(
-            rx,
-            moveos_store,
-            root_size,
-            root_state_root,
-            Some(startup_update_set),
-            startup_time,
-        );
-    });
-    produce_updates_thread.join().unwrap();
-    apply_updates_thread.join().unwrap();
-}
+// fn import_utxo(
+//     input_path: PathBuf,
+//     batch_size: usize,
+//     utxo_ord_map_db: Arc<Database>,
+//     moveos_store: Arc<MoveOSStore>,
+//     startup_update_set: UpdateSet<FieldKey, ObjectState>,
+//     root_size: u64,
+//     root_state_root: H256,
+//     startup_time: Instant,
+// ) {
+//     let (tx, rx) = mpsc::sync_channel(1);
+//     let produce_updates_thread = thread::spawn(move || {
+//         produce_utxo_updates(tx, input_path, batch_size, Some(utxo_ord_map_db))
+//     });
+//     let apply_updates_thread = thread::spawn(move || {
+//         apply_utxo_updates_to_state(
+//             rx,
+//             moveos_store,
+//             root_size,
+//             root_state_root,
+//             Some(startup_update_set),
+//             startup_time,
+//         );
+//     });
+//     produce_updates_thread.join().unwrap();
+//     apply_updates_thread.join().unwrap();
+// }
 
 fn apply_ord_updates_to_state(
     rx: Receiver<BatchUpdatesOrd>,
