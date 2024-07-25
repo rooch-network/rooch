@@ -2,10 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::messages::{ExecuteL1BlockMessage, ExecuteL1TxMessage, ExecuteL2TxMessage};
+use crate::metrics::TxMetrics;
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
+use function_name::named;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
+use prometheus::Registry;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_proposer::proxy::ProposerProxy;
@@ -14,6 +17,7 @@ use rooch_types::transaction::{
     ExecuteTransactionResponse, L1BlockWithBody, L1Transaction, LedgerTransaction, LedgerTxData,
     RoochTransaction,
 };
+use std::sync::Arc;
 use tracing::{debug, info};
 
 /// PipelineProcessor aggregates the executor, sequencer, proposer, and indexer to process transactions.
@@ -24,6 +28,7 @@ pub struct PipelineProcessorActor {
     pub(crate) indexer: IndexerProxy,
     pub(crate) data_import_flag: bool,
     pub(crate) read_only: bool,
+    metrics: Arc<TxMetrics>,
 }
 
 impl PipelineProcessorActor {
@@ -34,6 +39,7 @@ impl PipelineProcessorActor {
         indexer: IndexerProxy,
         data_import_flag: bool,
         read_only: bool,
+        registry: &Registry,
     ) -> Self {
         Self {
             executor,
@@ -42,6 +48,7 @@ impl PipelineProcessorActor {
             indexer,
             data_import_flag,
             read_only,
+            metrics: Arc::new(TxMetrics::new(registry)),
         }
     }
 
@@ -107,50 +114,100 @@ impl PipelineProcessorActor {
         Ok(())
     }
 
+    #[named]
     pub async fn execute_l1_block(
         &mut self,
         l1_block: L1BlockWithBody,
     ) -> Result<ExecuteTransactionResponse> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .tx_execution_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let moveos_tx = self.executor.validate_l1_block(l1_block.clone()).await?;
         let ledger_tx = self
             .sequencer
             .sequence_transaction(LedgerTxData::L1Block(l1_block.block))
             .await?;
-        self.execute_tx(ledger_tx, moveos_tx).await
+        let size = moveos_tx.ctx.tx_size;
+        let result = self.execute_tx(ledger_tx, moveos_tx).await?;
+
+        self.metrics
+            .tx_execution_bytes
+            .with_label_values(&[fn_name])
+            .observe(size as f64);
+        Ok(result)
     }
 
+    #[named]
     pub async fn execute_l1_tx(
         &mut self,
         l1_tx: L1Transaction,
     ) -> Result<ExecuteTransactionResponse> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .tx_execution_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let moveos_tx = self.executor.validate_l1_tx(l1_tx.clone()).await?;
         let ledger_tx = self
             .sequencer
             .sequence_transaction(LedgerTxData::L1Tx(l1_tx))
             .await?;
-        self.execute_tx(ledger_tx, moveos_tx).await
+        let size = moveos_tx.ctx.tx_size;
+        let result = self.execute_tx(ledger_tx, moveos_tx).await?;
+
+        self.metrics
+            .tx_execution_bytes
+            .with_label_values(&[fn_name])
+            .observe(size as f64);
+        Ok(result)
     }
 
+    #[named]
     pub async fn execute_l2_tx(
         &mut self,
         mut tx: RoochTransaction,
     ) -> Result<ExecuteTransactionResponse> {
         debug!("pipeline execute_l2_tx: {:?}", tx.tx_hash());
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .tx_execution_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let moveos_tx = self.executor.validate_l2_tx(tx.clone()).await?;
         let ledger_tx = self
             .sequencer
             .sequence_transaction(LedgerTxData::L2Tx(tx))
             .await?;
-        self.execute_tx(ledger_tx, moveos_tx).await
+        let size = moveos_tx.ctx.tx_size;
+        let result = self.execute_tx(ledger_tx, moveos_tx).await?;
+
+        self.metrics
+            .tx_execution_bytes
+            .with_label_values(&[fn_name])
+            .observe(size as f64);
+        Ok(result)
     }
 
+    #[named]
     pub async fn execute_tx(
         &mut self,
         tx: LedgerTransaction,
         mut moveos_tx: VerifiedMoveOSTransaction,
     ) -> Result<ExecuteTransactionResponse> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .tx_execution_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         // Add sequence info to tx context, let the Move contract can get the sequence info
         moveos_tx.ctx.add(tx.sequence_info.clone())?;
+        let size = moveos_tx.ctx.tx_size;
         // Then execute
         let (output, execution_info) = self.executor.execute_transaction(moveos_tx.clone()).await?;
         self.proposer
@@ -184,6 +241,11 @@ impl PipelineProcessorActor {
                 Err(error) => log::error!("Update indexer error: {}", error),
             };
         };
+
+        self.metrics
+            .tx_execution_bytes
+            .with_label_values(&[fn_name])
+            .observe(size as f64);
 
         Ok(ExecuteTransactionResponse {
             sequence_info,

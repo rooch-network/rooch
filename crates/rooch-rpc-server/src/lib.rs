@@ -300,6 +300,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         indexer_proxy.clone(),
         data_import_flag,
         read_only,
+        &prometheus_registry,
     )
     .into_actor(Some("PipelineProcessor"), &actor_system)
     .await?;
