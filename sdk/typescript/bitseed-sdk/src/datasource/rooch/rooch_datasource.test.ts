@@ -911,7 +911,303 @@ describe('RoochDataSource', () => {
         }
       ]);
     });
-
   });
 
+  describe('getTransaction', () => {
+    it('should successfully get transaction information including block data', async () => {
+      const mockTxId = '0x1234567890123456789012345678901234567890123456789012345678901234';
+      const mockTx = {
+        id: mockTxId,
+        version: 1,
+        lock_time: 0,
+        input: [
+          {
+            previous_output: { 
+              txid: '0x2345678901234567890123456789012345678901234567890123456789012345', 
+              vout: 0 
+            },
+            script_sig: Buffer.from('script_sig').toString('base64'),
+            sequence: 4294967295,
+            witness: { witness: ['witness_data'] }
+          }
+        ],
+        output: [
+          {
+            value: '100000000',
+            script_pubkey: Buffer.from('script_pubkey').toString('base64'),
+            recipient_address: 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx'
+          }
+        ]
+      };
+
+      // Set mock responses for all three executeViewFunction calls
+      mockTransport.setMockResponse('rooch_executeViewFunction', { return_values: [{ decoded_value: mockTx }] });
+      mockTransport.setMockResponse('rooch_executeViewFunction', { return_values: [{ decoded_value: 12345 }] });
+      mockTransport.setMockResponse('rooch_executeViewFunction', { 
+        return_values: [{ 
+          decoded_value: { 
+            prev_blockhash: '0x3456789012345678901234567890123456789012345678901234567890123456',
+            time: 1623456789
+          } 
+        }] 
+      });
+
+      const result = await instance.getTransaction({ txId: mockTxId });
+
+      expect(result.tx).toEqual({
+        txid: mockTxId,
+        hash: mockTxId,
+        version: 1,
+        size: 0,
+        vsize: 0,
+        weight: 0,
+        locktime: 0,
+        vin: [
+          {
+            txid: '0x2345678901234567890123456789012345678901234567890123456789012345',
+            vout: 0,
+            scriptSig: {
+              asm: '',
+              hex: '7363726970745f736967'
+            },
+            txinwitness: ['witness_data'],
+            sequence: 4294967295,
+            value: 0
+          }
+        ],
+        vout: [
+          {
+            value: 100000000,
+            n: 0,
+            ordinals: [],
+            inscriptions: [],
+            spent: false,
+            sats: 100000000,
+            scriptPubKey: {
+              asm: '',
+              desc: '',
+              hex: '7363726970745f7075626b6579',
+              type: 'unknown',
+              address: 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx'
+            }
+          }
+        ],
+        blockhash: '0x3456789012345678901234567890123456789012345678901234567890123456',
+        blockheight: 12345,
+        blocktime: 1623456789,
+        confirmations: 0,
+        time: 0,
+        fee: 0
+      });
+    });
+
+    it('should throw an error when transaction is not found', async () => {
+      const mockTxId = '0x1234567890123456789012345678901234567890123456789012345678901234';
+
+      // Mock an empty response to simulate a not found transaction
+      mockTransport.setMockResponse('rooch_executeViewFunction', { return_values: [] });
+
+      await expect(instance.getTransaction({ txId: mockTxId }))
+        .rejects.toThrow(`Transaction with id ${mockTxId} not found`);
+    });
+
+    it('should return transaction without block information when getting transaction height fails', async () => {
+      const mockTxId = '0x1234567890123456789012345678901234567890123456789012345678901234';
+      const mockTx = {
+        id: mockTxId,
+        version: 1,
+        lock_time: 0,
+        input: [],
+        output: []
+      };
+
+      // Mock successful response for getting transaction
+      mockTransport.setMockResponse('rooch_executeViewFunction', { return_values: [{ decoded_value: mockTx }] });
+      
+      // Mock empty response for getting transaction height to simulate failure
+      mockTransport.setMockResponse('rooch_executeViewFunction', { return_values: [] });
+
+      const result = await instance.getTransaction({ txId: mockTxId });
+
+      expect(result.tx).toEqual(expect.objectContaining({
+        txid: mockTxId,
+        hash: mockTxId,
+        version: 1,
+        locktime: 0,
+        blockhash: "",
+        blockheight: 0,
+        blocktime: 0
+      }));
+    });
+
+    it('should return transaction with empty hex when hex parameter is true', async () => {
+      const mockTxId = '0x1234567890123456789012345678901234567890123456789012345678901234';
+      const mockTx = {
+        id: mockTxId,
+        version: 1,
+        lock_time: 0,
+        input: [],
+        output: []
+      };
+
+      // Mock successful response for getting transaction
+      mockTransport.setMockResponse('rooch_executeViewFunction', { return_values: [{ decoded_value: mockTx }] });
+      
+      // Mock successful response for getting transaction height
+      mockTransport.setMockResponse('rooch_executeViewFunction', { return_values: [{ decoded_value: 12345 }] });
+
+      // Mock successful response for getting block information
+      mockTransport.setMockResponse('rooch_executeViewFunction', { 
+        return_values: [{ 
+          decoded_value: { 
+            prev_blockhash: '0x3456789012345678901234567890123456789012345678901234567890123456',
+            time: 1623456789
+          } 
+        }] 
+      });
+
+      const result = await instance.getTransaction({ txId: mockTxId, hex: true });
+
+      expect(result.tx).toEqual(expect.objectContaining({
+        txid: mockTxId,
+        hash: mockTxId,
+        version: 1,
+        locktime: 0,
+        blockheight: 12345,
+        blockhash: '0x3456789012345678901234567890123456789012345678901234567890123456',
+        blocktime: 1623456789,
+        hex: ""
+      }));
+    });
+
+    it('should correctly handle transactions with multiple inputs and outputs', async () => {
+      const mockTxId = '0x1234567890123456789012345678901234567890123456789012345678901234';
+      const mockTx = {
+        id: mockTxId,
+        version: 1,
+        lock_time: 0,
+        input: [
+          {
+            previous_output: { 
+              txid: '0x2345678901234567890123456789012345678901234567890123456789012345', 
+              vout: 0 
+            },
+            script_sig: Buffer.from('script_sig_1').toString('base64'),
+            sequence: 4294967295,
+            witness: { witness: ['witness_data_1'] }
+          },
+          {
+            previous_output: { 
+              txid: '0x3456789012345678901234567890123456789012345678901234567890123456', 
+              vout: 1 
+            },
+            script_sig: Buffer.from('script_sig_2').toString('base64'),
+            sequence: 4294967294,
+            witness: { witness: ['witness_data_2a', 'witness_data_2b'] }
+          }
+        ],
+        output: [
+          {
+            value: '50000000',
+            script_pubkey: Buffer.from('script_pubkey_1').toString('base64'),
+            recipient_address: 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx'
+          },
+          {
+            value: '49000000',
+            script_pubkey: Buffer.from('script_pubkey_2').toString('base64'),
+            recipient_address: 'tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7'
+          }
+        ]
+      };
+
+      // Mock successful response for getting transaction
+      mockTransport.setMockResponse('rooch_executeViewFunction', { return_values: [{ decoded_value: mockTx }] });
+      
+      // Mock successful response for getting transaction height
+      mockTransport.setMockResponse('rooch_executeViewFunction', { return_values: [{ decoded_value: 12345 }] });
+
+      // Mock successful response for getting block information
+      mockTransport.setMockResponse('rooch_executeViewFunction', { 
+        return_values: [{ 
+          decoded_value: { 
+            prev_blockhash: '0x4567890123456789012345678901234567890123456789012345678901234567',
+            time: 1623456789
+          } 
+        }] 
+      });
+
+      const result = await instance.getTransaction({ txId: mockTxId });
+
+      expect(result.tx).toEqual(expect.objectContaining({
+        txid: mockTxId,
+        hash: mockTxId,
+        version: 1,
+        locktime: 0,
+        vin: [
+          {
+            txid: '0x2345678901234567890123456789012345678901234567890123456789012345',
+            vout: 0,
+            scriptSig: {
+              asm: '',
+              hex: '7363726970745f7369675f31'
+            },
+            txinwitness: ['witness_data_1'],
+            sequence: 4294967295,
+            value: 0
+          },
+          {
+            txid: '0x3456789012345678901234567890123456789012345678901234567890123456',
+            vout: 1,
+            scriptSig: {
+              asm: '',
+              hex: '7363726970745f7369675f32'
+            },
+            txinwitness: ['witness_data_2a', 'witness_data_2b'],
+            sequence: 4294967294,
+            value: 0
+          }
+        ],
+        vout: [
+          {
+            value: 50000000,
+            n: 0,
+            ordinals: [],
+            inscriptions: [],
+            spent: false,
+            sats: 50000000,
+            scriptPubKey: {
+              asm: '',
+              desc: '',
+              hex: '7363726970745f7075626b65795f31',
+              type: 'unknown',
+              address: 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx'
+            }
+          },
+          {
+            value: 49000000,
+            n: 1,
+            ordinals: [],
+            inscriptions: [],
+            spent: false,
+            sats: 49000000,
+            scriptPubKey: {
+              asm: '',
+              desc: '',
+              hex: '7363726970745f7075626b65795f32',
+              type: 'unknown',
+              address: 'tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7'
+            }
+          }
+        ],
+        blockheight: 12345,
+        blockhash: '0x4567890123456789012345678901234567890123456789012345678901234567',
+        blocktime: 1623456789,
+        confirmations: 0,
+        fee: 0,
+        size: 0,
+        time: 0
+      }));
+    });
+
+  });
 });
