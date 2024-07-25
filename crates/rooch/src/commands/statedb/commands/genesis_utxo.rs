@@ -6,8 +6,8 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::sync::{Arc, mpsc, RwLock};
 use std::sync::mpsc::{Receiver, SyncSender};
+use std::sync::{mpsc, Arc, RwLock};
 use std::thread;
 use std::time::SystemTime;
 
@@ -18,13 +18,14 @@ use fastbloom::BloomFilter;
 use move_core_types::account_address::AccountAddress;
 use redb::{Database, ReadOnlyTable};
 use serde::{Deserialize, Serialize};
+use tokio::time::Instant;
 
 use framework_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::{
-    GENESIS_STATE_ROOT, ObjectEntity, ObjectID, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
+    ObjectEntity, ObjectID, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
 };
 use moveos_types::moveos_std::simple_multimap::{Element, SimpleMultiMap};
 use moveos_types::state::{FieldKey, ObjectState};
@@ -32,8 +33,8 @@ use rooch_common::fs::file_cache::FileCacheManager;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::address::BitcoinAddress;
 use rooch_types::addresses::BITCOIN_MOVE_ADDRESS;
-use rooch_types::bitcoin::{types, utxo};
 use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
+use rooch_types::bitcoin::{types, utxo};
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::into_address::IntoAddress;
@@ -41,11 +42,11 @@ use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
 use crate::cli_types::WalletContextOptions;
+use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
 use crate::commands::statedb::commands::{
     drive_bitcoin_address, finish_job, get_ord_by_outpoint, init_job, SCRIPT_TYPE_NON_STANDARD,
     SCRIPT_TYPE_P2MS, SCRIPT_TYPE_P2PK, UTXO_ORD_MAP_TABLE, UTXO_SEAL_INSCRIPTION_PROTOCOL,
 };
-use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
 
 /// Import UTXO for development and testing.
 #[derive(Debug, Parser)]
@@ -80,7 +81,7 @@ impl GenesisUTXOCommand {
         let (root, moveos_store, start_time) =
             init_job(self.base_data_dir.clone(), self.chain_id.clone());
         let pre_root_state_root = root.state_root();
-        let (utxo_tx, utxo_rx) = mpsc::sync_channel(1);
+        let (utxo_tx, utxo_rx) = mpsc::sync_channel(3);
         let (addr_tx, addr_rx) = mpsc::sync_channel(1);
         let moveos_store = Arc::new(moveos_store);
         let produce_updates_thread = thread::spawn(move || {
@@ -115,9 +116,7 @@ impl GenesisUTXOCommand {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct UTXOData {
-    /// The txid of the UTXO
     pub txid: String,
-    /// The vout of the UTXO
     pub vout: u32,
     pub value: u64,
     pub script: String,
@@ -239,8 +238,9 @@ pub fn apply_address_updates(
         apply_nodes(&moveos_store, nodes).expect("failed to apply nodes");
 
         println!(
-            "{} addr_mapping applied. This bacth cost: {:?}",
+            "{} addr_mapping applied. this batch: {}, cost: {:?}",
             address_mapping_count,
+            cnt,
             loop_start_time.elapsed().unwrap()
         );
 
@@ -267,7 +267,7 @@ pub fn apply_address_updates(
         genesis_rooch_to_bitcoin_address_mapping_object.into_state(),
     );
     println!(
-        "genesis RoochToBitcoinAddressMapping object updated, rooch_to_bitcoin_address_mapping_state_root: {:?}, address_mapping count: {}",
+        "genesis RoochToBitcoinAddressMapping object updated, state_root: {:?}, count: {}",
         rooch_to_bitcoin_address_mapping_state_root, address_mapping_count
     );
 }
@@ -299,12 +299,12 @@ pub fn apply_utxo_updates(
         apply_nodes(moveos_store, nodes).expect("failed to apply nodes");
 
         println!(
-            "{} utxo applied. This bacth cost: {:?}",
+            "{} utxo applied. this bacth: {}, cost: {:?}",
             // because we may skip the first line of data source, count result keep missing one.
             // e.g. batch_size = 8192:
-            // 8191 utxo applied in: 1.000000000s
-            // 16383 utxo  applied in: 1.000000000s
+            // 8191 utxo applied ...
             utxo_count,
+            cnt,
             loop_start_time.elapsed().unwrap()
         );
 
@@ -327,102 +327,9 @@ pub fn apply_utxo_updates(
         genesis_utxostore_object.into_state(),
     );
     println!(
-        "genesis BitcoinUTXOStore object updated, utxo_store_state_root: {:?}, utxo count: {}",
+        "genesis BitcoinUTXOStore object updated, state_root: {:?}, count: {}",
         utxo_store_state_root, utxo_count
     );
-}
-
-pub fn apply_utxo_updates_to_state(
-    rx: Receiver<BatchUpdates>,
-    moveos_store: Arc<MoveOSStore>,
-    startup_update_set: Option<UpdateSet<FieldKey, ObjectState>>,
-) {
-    let moveos_store = &moveos_store.clone();
-    let mut utxo_count = 0;
-    let mut address_mapping_count = 0;
-
-    let mut utxo_store_state_root = *GENESIS_STATE_ROOT;
-    let mut rooch_to_bitcoin_address_mapping_state_root = *GENESIS_STATE_ROOT;
-
-    let mut last_utxo_store_state_root = utxo_store_state_root;
-    let mut last_rooch_to_bitcoin_address_mapping_state_root =
-        rooch_to_bitcoin_address_mapping_state_root;
-
-    while let Ok(batch) = rx.recv() {
-        let loop_start_time = SystemTime::now();
-
-        let mut nodes: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
-
-        let cnt = batch.utxo_updates.len();
-        let mut utxo_tree_change_set =
-            apply_fields(moveos_store, utxo_store_state_root, batch.utxo_updates).unwrap();
-        nodes.append(&mut utxo_tree_change_set.nodes);
-        utxo_store_state_root = utxo_tree_change_set.state_root;
-        utxo_count += cnt as u64;
-
-        if !batch.rooch_to_bitcoin_mapping_updates.is_empty() {
-            let cnt = batch.rooch_to_bitcoin_mapping_updates.len();
-            let mut rooch_to_bitcoin_address_mapping_tree_change_set = apply_fields(
-                moveos_store,
-                rooch_to_bitcoin_address_mapping_state_root,
-                batch.rooch_to_bitcoin_mapping_updates,
-            )
-            .unwrap();
-            nodes.append(&mut rooch_to_bitcoin_address_mapping_tree_change_set.nodes);
-            rooch_to_bitcoin_address_mapping_state_root =
-                rooch_to_bitcoin_address_mapping_tree_change_set.state_root;
-            address_mapping_count += cnt as u64;
-        }
-
-        apply_nodes(moveos_store, nodes).expect("failed to apply nodes");
-
-        println!(
-            "{} utxo, {} addr_mapping applied. This bacth cost: {:?}",
-            // because we skip the first line, count result keep missing one.
-            // e.g. batch_size = 8192:
-            // 8191 utxo applied in: 1.000000000s
-            // 16383 utxo applied in: 1.000000000s
-            utxo_count,
-            address_mapping_count,
-            loop_start_time.elapsed().unwrap()
-        );
-
-        log::debug!(
-            "last_utxo_store_state_root: {:?}, new utxo_store_state_root: {:?}; \
-            last_rooch_to_bitcoin_address_mapping_state_root: {:?}, new rooch_to_bitcoin_address_mapping_state_root: {:?}",
-            last_utxo_store_state_root,utxo_store_state_root,
-            last_rooch_to_bitcoin_address_mapping_state_root,rooch_to_bitcoin_address_mapping_state_root
-        );
-
-        last_utxo_store_state_root = utxo_store_state_root;
-        last_rooch_to_bitcoin_address_mapping_state_root =
-            rooch_to_bitcoin_address_mapping_state_root;
-    }
-
-    let mut new_startup_update_set = startup_update_set.unwrap_or_default();
-
-    // Update UTXOStore Object
-    let mut genesis_utxostore_object = create_genesis_utxostore_object();
-    genesis_utxostore_object.size += utxo_count;
-    genesis_utxostore_object.state_root = Some(utxo_store_state_root);
-    new_startup_update_set.put(
-        BitcoinUTXOStore::object_id().field_key(),
-        genesis_utxostore_object.into_state(),
-    );
-    println!(
-        "genesis BitcoinUTXOStore object updated, utxo_store_state_root: {:?}, utxo count: {}",
-        utxo_store_state_root, utxo_count
-    );
-}
-
-struct AddressMappingUpdate {
-    key: FieldKey,
-    state: ObjectState,
-}
-
-pub struct BatchUpdates {
-    utxo_updates: UpdateSet<FieldKey, ObjectState>,
-    rooch_to_bitcoin_mapping_updates: UpdateSet<FieldKey, ObjectState>,
 }
 
 pub fn produce_utxo_updates(
@@ -438,7 +345,7 @@ pub fn produce_utxo_updates(
     let mut csv_reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
     let mut is_title_line = true;
     let mut added_address_set = HashSet::with_capacity(60_000_000);
-    let mut added_address_filter = BloomFilter::with_false_pos(0.01).expected_items(60_000_000);
+    let mut added_address_filter = BloomFilter::with_num_bits(64).expected_items(60_000_000);
     let utxo_ord_map = match utxo_ord_map_db {
         None => None,
         Some(utxo_ord_map_db) => {
@@ -453,7 +360,7 @@ pub fn produce_utxo_updates(
         let mut utxo_updates = UpdateSet::new();
         let mut rooch_to_bitcoin_mapping_updates = UpdateSet::new();
 
-        let loop_start_time = SystemTime::now();
+        let loop_start_time = Instant::now();
 
         for line in csv_reader.by_ref().lines().take(batch_size) {
             let line = line.unwrap();
@@ -488,16 +395,16 @@ pub fn produce_utxo_updates(
                     &mut added_address_set,
                     &mut added_address_filter,
                 );
-                if let Some(address_mapping_update) = address_mapping_update {
-                    rooch_to_bitcoin_mapping_updates
-                        .put(address_mapping_update.key, address_mapping_update.state);
+                if let Some((field_key, object_state)) = address_mapping_update {
+                    rooch_to_bitcoin_mapping_updates.put(field_key, object_state);
                 }
             }
         }
         println!(
-            "produce utxo updates batch, count: {}. cost: {:?}",
+            "{} utxo + {} addr_mapping updates produced, cost: {:?}",
             utxo_updates.len(),
-            loop_start_time.elapsed().unwrap()
+            rooch_to_bitcoin_mapping_updates.len(),
+            loop_start_time.elapsed(),
         );
         let _ = file_cache_mgr.drop_cache_range(cache_drop_offset, bytes_read);
         cache_drop_offset += bytes_read;
@@ -578,7 +485,7 @@ fn gen_address_mapping_update(
     address_mapping_data: AddressMappingData,
     added_address_set: &mut HashSet<String>,
     added_address_filter: &mut BloomFilter,
-) -> Option<AddressMappingUpdate> {
+) -> Option<(FieldKey, ObjectState)> {
     let address = address_mapping_data.origin_address.clone();
 
     if !added_address_filter.contains(address.as_bytes()) {
@@ -586,7 +493,7 @@ fn gen_address_mapping_update(
         added_address_filter.insert(address.as_bytes());
         let state = address_mapping_data.into_state();
         let key = state.id().field_key();
-        return Some(AddressMappingUpdate { key, state });
+        return Some((key, state));
     } else {
         // may false-positive, check in hashset
         if !added_address_set.contains(&address) {
@@ -594,7 +501,7 @@ fn gen_address_mapping_update(
             added_address_filter.insert(address.as_bytes());
             let state = address_mapping_data.into_state();
             let key = state.id().field_key();
-            return Some(AddressMappingUpdate { key, state });
+            return Some((key, state));
         }
     }
     None
@@ -642,8 +549,7 @@ mod tests {
             address: AccountAddress::random(),
         };
         let mut added_address_set = HashSet::new();
-        let mut added_address_filter = BloomFilter::with_false_pos(0.01).expected_items(60_000_000);
-
+        let mut added_address_filter = BloomFilter::with_num_bits(64).expected_items(60_000_000);
         let result = gen_address_mapping_update(
             address_mapping_data.clone(),
             &mut added_address_set,
