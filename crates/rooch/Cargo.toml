@@ -1,5 +1,6 @@
 [package]
 name = "rooch"
+build = "build.rs"
 
 # Workspace inherited keys
 version = { workspace = true }
