@@ -1,8 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::hash_map::Entry;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
@@ -15,6 +14,7 @@ use std::time::{Instant, SystemTime};
 use anyhow::{Error, Result};
 use bitcoin::{OutPoint, Txid};
 use clap::Parser;
+use fastbloom::BloomFilter;
 use move_core_types::account_address::AccountAddress;
 use redb::{Database, ReadOnlyTable};
 use serde::{Deserialize, Serialize};
@@ -332,7 +332,8 @@ pub fn produce_utxo_updates(
 
     let mut csv_reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
     let mut is_title_line = true;
-    let mut address_mapping_checker = HashMap::new();
+    let mut added_address_set = HashSet::with_capacity(60_000_000);
+    let mut added_address_filter = BloomFilter::with_false_pos(0.01).expected_items(60_000_000);
     let utxo_ord_map = match utxo_ord_map_db {
         None => None,
         Some(utxo_ord_map_db) => {
@@ -379,8 +380,11 @@ pub fn produce_utxo_updates(
             }
 
             if let Some(address_mapping_data) = address_mapping_data {
-                let address_mapping_update =
-                    gen_address_mapping_update(address_mapping_data, &mut address_mapping_checker);
+                let address_mapping_update = gen_address_mapping_update(
+                    address_mapping_data,
+                    &mut added_address_set,
+                    &mut added_address_filter,
+                );
                 if let Some(address_mapping_update) = address_mapping_update {
                     updates
                         .rooch_to_bitcoin_mapping_updates
@@ -461,18 +465,29 @@ fn inscription_object_ids_to_utxo_seal(
     }
 }
 
+#[allow(clippy::collapsible_else_if)]
 fn gen_address_mapping_update(
     address_mapping_data: AddressMappingData,
-    address_mapping_checker: &mut HashMap<String, bool>,
+    added_address_set: &mut HashSet<String>,
+    added_address_filter: &mut BloomFilter,
 ) -> Option<AddressMappingUpdate> {
-    if let Entry::Vacant(e) =
-        address_mapping_checker.entry(address_mapping_data.origin_address.clone())
-    {
+    let address = address_mapping_data.origin_address.clone();
+
+    if !added_address_filter.contains(address.as_bytes()) {
+        added_address_set.insert(address.clone());
+        added_address_filter.insert(address.as_bytes());
         let state = address_mapping_data.into_state();
         let key = state.id().field_key();
-        e.insert(true);
-
         return Some(AddressMappingUpdate { key, state });
+    } else {
+        // may false-positive, check in hashset
+        if !added_address_set.contains(&address) {
+            added_address_set.insert(address.clone());
+            added_address_filter.insert(address.as_bytes());
+            let state = address_mapping_data.into_state();
+            let key = state.id().field_key();
+            return Some(AddressMappingUpdate { key, state });
+        }
     }
     None
 }
@@ -505,4 +520,34 @@ fn create_genesis_rooch_to_bitcoin_address_mapping_object(
         0,
         RoochToBitcoinAddressMapping::default(),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_gen_address_mapping_update() {
+        let address_mapping_data = AddressMappingData {
+            origin_address: "123 Main St".to_string(),
+            bitcoin_address: Default::default(),
+            address: AccountAddress::random(),
+        };
+        let mut added_address_set = HashSet::new();
+        let mut added_address_filter = BloomFilter::with_false_pos(0.01).expected_items(60_000_000);
+
+        let result = gen_address_mapping_update(
+            address_mapping_data.clone(),
+            &mut added_address_set,
+            &mut added_address_filter,
+        );
+        assert!(result.is_some());
+
+        let result2 = gen_address_mapping_update(
+            address_mapping_data.clone(),
+            &mut added_address_set,
+            &mut added_address_filter,
+        );
+        assert!(result2.is_none());
+    }
 }
