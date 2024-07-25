@@ -12,7 +12,7 @@ fn main() {
 
     // Get the commit hash for the version specified in CARGO_PKG_VERSION
     let git_commit_output = Command::new("git")
-        .args(&["rev-list", "-n", "1", &version_with_v])
+        .args(["rev-list", "-n", "1", &version_with_v])
         .output()
         .expect("Failed to get git commit hash for version");
     let git_commit_hash = String::from_utf8(git_commit_output.stdout)
