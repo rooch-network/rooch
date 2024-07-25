@@ -96,14 +96,14 @@ pub struct GenesisCommand {
     pub ord_source: PathBuf,
     #[clap(
         long,
-        default_value = "262144",
-        help = "batch size submited to state db, default 262144. Set it smaller if memory is limited."
+        default_value = "1048576",
+        help = "batch size submited to state db, default 1M. Set it smaller if memory is limited."
     )]
     pub utxo_batch_size: Option<usize>,
     #[clap(
         long,
-        default_value = "1048576",
-        help = "batch size submited to state db, default 1M. Set it smaller if memory is limited."
+        default_value = "262144",
+        help = "batch size submited to state db, default 262144. Set it smaller if memory is limited."
     )] // ord may have large body, so set a smaller batch
     pub ord_batch_size: Option<usize>,
     #[clap(long, help = "utxo:ords map db path, will create new one if not exist")]
