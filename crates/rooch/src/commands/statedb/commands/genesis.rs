@@ -163,7 +163,7 @@ impl GenesisCommand {
             thread::spawn(move || produce_ord_updates(ord_tx, input_path, batch_size));
         let moveos_store_clone = Arc::clone(&moveos_store);
         let startup_update_set_clone = Arc::clone(&startup_update_set);
-        let apply_updates_thread = thread::spawn(move || {
+        let apply_ord_updates_thread = thread::spawn(move || {
             apply_ord_updates(ord_rx, moveos_store_clone, startup_update_set_clone);
         });
 
@@ -194,7 +194,7 @@ impl GenesisCommand {
 
         produce_ord_updates_thread.join().unwrap();
         produce_utxo_updates_thread.join().unwrap();
-        apply_updates_thread.join().unwrap();
+        apply_ord_updates_thread.join().unwrap();
         apply_addr_updates_thread.join().unwrap();
         apply_utxo_updates_thread.join().unwrap();
 
