@@ -39,7 +39,6 @@ impl CommandAction<ExecuteTransactionResponseView> for UpgradeGasConfigCommand {
         let gas_schedule_module =
             client.as_module_binding::<moveos_types::moveos_std::gas_schedule::GasScheduleModule>();
         let gas_schedule_opt = gas_schedule_module.gas_schedule();
-        // println!("0000000000 {:?}", gas_schedule_opt);
 
         let onchain_gas_schedule = match gas_schedule_opt {
             Ok(gas_schedule) => {
@@ -55,7 +54,6 @@ impl CommandAction<ExecuteTransactionResponseView> for UpgradeGasConfigCommand {
         };
 
         let local_latest_gas_parameters = FrameworksGasParameters::latest();
-        // let local_gas_config_version = LATEST_GAS_SCHEDULE_VERSION;
 
         match onchain_gas_schedule {
             None => {
