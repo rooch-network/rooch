@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
@@ -16,6 +16,7 @@ use bitcoin::{OutPoint, Txid};
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use redb::{Database, ReadOnlyTable};
+use rustc_hash::FxHashSet;
 use serde::{Deserialize, Serialize};
 use tokio::time::Instant;
 
@@ -343,7 +344,8 @@ pub fn produce_utxo_updates(
 
     let mut csv_reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
     let mut is_title_line = true;
-    let mut added_address_set = HashSet::with_capacity(60_000_000);
+    let mut added_address_set: FxHashSet<String> =
+        FxHashSet::with_capacity_and_hasher(60_000_000, Default::default());
     let utxo_ord_map = match utxo_ord_map_db {
         None => None,
         Some(utxo_ord_map_db) => {
@@ -477,11 +479,10 @@ fn inscription_object_ids_to_utxo_seal(
 
 fn gen_address_mapping_update(
     address_mapping_data: AddressMappingData,
-    added_address_set: &mut HashSet<String>,
+    added_address_set: &mut FxHashSet<String>,
 ) -> Option<(FieldKey, ObjectState)> {
     let address = address_mapping_data.origin_address.clone();
-    if !added_address_set.contains(&address) {
-        added_address_set.insert(address);
+    if added_address_set.insert(address) {
         let state = address_mapping_data.into_state();
         let key = state.id().field_key();
         return Some((key, state));
@@ -530,7 +531,8 @@ mod tests {
             bitcoin_address: Default::default(),
             address: AccountAddress::random(),
         };
-        let mut added_address_set = HashSet::new();
+        let mut added_address_set: FxHashSet<String> =
+            FxHashSet::with_capacity_and_hasher(60_000_000, Default::default());
         let result =
             gen_address_mapping_update(address_mapping_data.clone(), &mut added_address_set);
         assert!(result.is_some());
