@@ -9211,6 +9211,7 @@ dependencies = [
 name = "rooch"
 version = "0.6.3"
 dependencies = [
+ "accumulator",
  "anyhow",
  "async-trait",
  "bcs",
@@ -9274,6 +9275,8 @@ dependencies = [
  "rooch-rpc-api",
  "rooch-rpc-client",
  "rooch-rpc-server",
+ "rooch-sequencer",
+ "rooch-store",
  "rooch-types",
  "rpassword",
  "serde 1.0.204",

@@ -24,6 +24,8 @@ derive_store!(
 
 pub trait TransactionStore {
     fn save_transaction(&self, transaction: LedgerTransaction) -> Result<()>;
+
+    fn remove_transaction(&self, tx_hash: H256, tx_order: u64) -> Result<()>;
     fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<LedgerTransaction>>;
     fn get_transactions_by_hash(
         &self,
@@ -66,6 +68,11 @@ impl TransactionDBStore {
         self.tx_store.kv_put(tx_hash, transaction)?;
         self.tx_sequence_info_mapping_store
             .kv_put(tx_order, tx_hash)
+    }
+
+    pub fn remove_transaction(&self, tx_hash: H256, tx_order: u64) -> Result<()> {
+        self.tx_store.remove(tx_hash)?;
+        self.tx_sequence_info_mapping_store.remove(tx_order)
     }
 
     pub fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<LedgerTransaction>> {
