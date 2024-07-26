@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::sync::Arc;
 use super::messages::{
     ExecuteTransactionMessage, ExecuteTransactionResult, GetRootMessage, ValidateL1BlockMessage,
     ValidateL1TxMessage, ValidateL2TxMessage,
@@ -8,7 +9,9 @@ use super::messages::{
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
+use function_name::named;
 use move_core_types::vm_status::VMStatus;
+use prometheus::Registry;
 use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_store::MoveOSStore;
@@ -32,6 +35,7 @@ use rooch_types::transaction::{
     AuthenticatorInfo, L1Block, L1BlockWithBody, L1Transaction, RoochTransaction,
 };
 use tracing::{debug, warn};
+use crate::metrics::ExecutorMetrics;
 
 pub struct ExecutorActor {
     root: ObjectMeta,
@@ -39,6 +43,7 @@ pub struct ExecutorActor {
     moveos_store: MoveOSStore,
     rooch_store: RoochStore,
     read_only: bool,
+    metrics: Arc<ExecutorMetrics>,
 }
 
 type ValidateAuthenticatorResult =
@@ -50,6 +55,7 @@ impl ExecutorActor {
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
         read_only: bool,
+        registry: &Registry,
     ) -> Result<Self> {
         let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
         let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
@@ -68,6 +74,7 @@ impl ExecutorActor {
             moveos_store,
             rooch_store,
             read_only,
+            metrics: Arc::new(ExecutorMetrics::new(registry)),
         })
     }
 
@@ -83,27 +90,46 @@ impl ExecutorActor {
         &self.moveos
     }
 
+    #[named]
     pub fn execute(&mut self, tx: VerifiedMoveOSTransaction) -> Result<ExecuteTransactionResult> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .executor_execute_tx_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         if self.read_only {
             return Err(anyhow::anyhow!("The service is read only"));
         }
         let tx_hash = tx.ctx.tx_hash();
+        let size = tx.ctx.tx_size;
         let output = self.moveos.execute_and_apply(tx)?;
         let execution_info = self
             .moveos_store
             .handle_tx_output(tx_hash, output.clone())?;
 
         self.root = execution_info.root_metadata();
+        self.metrics
+            .executor_execute_tx_bytes
+            .with_label_values(&[fn_name])
+            .observe(size as f64);
         Ok(ExecuteTransactionResult {
             output,
             transaction_info: execution_info,
         })
     }
 
+    #[named]
     pub fn validate_l1_block(
         &self,
         l1_block: L1BlockWithBody,
     ) -> Result<VerifiedMoveOSTransaction> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .executor_validate_tx_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let tx_hash = l1_block.block.tx_hash();
         let tx_size = l1_block.block.tx_size();
         let ctx = TxContext::new_system_call_ctx(tx_hash, tx_size);
@@ -118,7 +144,7 @@ impl ExecutorActor {
                 },
             block_body,
         } = l1_block;
-        match RoochMultiChainID::try_from(chain_id.id())? {
+        let result  = match RoochMultiChainID::try_from(chain_id.id())? {
             RoochMultiChainID::Bitcoin => {
                 let action = VerifiedMoveAction::Function {
                     call: BitcoinModule::create_execute_l1_block_call_bytes(
@@ -146,10 +172,23 @@ impl ExecutorActor {
                 ))
             }
             id => Err(anyhow::anyhow!("Chain {} not supported yet", id)),
-        }
+        };
+
+        self.metrics
+            .executor_validate_tx_bytes
+            .with_label_values(&[fn_name])
+            .observe(tx_size as f64);
+        result
     }
 
+    #[named]
     pub fn validate_l1_tx(&self, l1_tx: L1Transaction) -> Result<VerifiedMoveOSTransaction> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .executor_validate_tx_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let tx_hash = l1_tx.tx_hash();
         let tx_size = l1_tx.tx_size();
         let ctx = TxContext::new_system_call_ctx(tx_hash, tx_size);
@@ -168,9 +207,21 @@ impl ExecutorActor {
             }
             id => Err(anyhow::anyhow!("Chain {} not supported yet", id)),
         }
+
+        self.metrics
+            .executor_validate_tx_bytes
+            .with_label_values(&[fn_name])
+            .observe(size as f64);
     }
 
+    #[named]
     pub fn validate_l2_tx(&self, mut tx: RoochTransaction) -> Result<VerifiedMoveOSTransaction> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .executor_validate_tx_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let sender = tx.sender();
         let tx_hash = tx.tx_hash();
 
@@ -224,13 +275,25 @@ impl ExecutorActor {
                 Err(e)
             }
         }
+
+        self.metrics
+            .executor_validate_tx_bytes
+            .with_label_values(&[fn_name])
+            .observe(size as f64);
     }
 
+    #[named]
     pub fn validate_authenticator(
         &self,
         ctx: &TxContext,
         authenticator: AuthenticatorInfo,
     ) -> Result<ValidateAuthenticatorResult> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .executor_validate_tx_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let tx_validator = self.as_module_binding::<TransactionValidator>();
         let tx_validate_function_result = tx_validator
             .validate(ctx, authenticator.clone())?
@@ -275,6 +338,11 @@ impl ExecutorActor {
             }
             Err(vm_status) => Err(vm_status),
         };
+
+        // self.metrics
+        //     .executor_validate_tx_bytes
+        //     .with_label_values(&[fn_name])
+        //     .observe(size as f64);
         Ok(vm_result)
     }
 }

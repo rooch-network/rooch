@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::messages::{ExecuteL1BlockMessage, ExecuteL1TxMessage, ExecuteL2TxMessage};
-use crate::metrics::TxMetrics;
+use crate::metrics::PipelineProcessorMetrics;
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
@@ -28,7 +28,7 @@ pub struct PipelineProcessorActor {
     pub(crate) indexer: IndexerProxy,
     pub(crate) data_import_flag: bool,
     pub(crate) read_only: bool,
-    metrics: Arc<TxMetrics>,
+    pub(crate) metrics: Arc<PipelineProcessorMetrics>,
 }
 
 impl PipelineProcessorActor {
@@ -48,7 +48,7 @@ impl PipelineProcessorActor {
             indexer,
             data_import_flag,
             read_only,
-            metrics: Arc::new(TxMetrics::new(registry)),
+            metrics: Arc::new(PipelineProcessorMetrics::new(registry)),
         }
     }
 
@@ -122,7 +122,7 @@ impl PipelineProcessorActor {
         let fn_name = function_name!();
         let _timer = self
             .metrics
-            .tx_execution_latency_seconds
+            .pipeline_processor_execution_tx_latency_seconds
             .with_label_values(&[fn_name])
             .start_timer();
         let moveos_tx = self.executor.validate_l1_block(l1_block.clone()).await?;
@@ -134,7 +134,7 @@ impl PipelineProcessorActor {
         let result = self.execute_tx(ledger_tx, moveos_tx).await?;
 
         self.metrics
-            .tx_execution_bytes
+            .pipeline_processor_execution_tx_bytes
             .with_label_values(&[fn_name])
             .observe(size as f64);
         Ok(result)
@@ -148,7 +148,7 @@ impl PipelineProcessorActor {
         let fn_name = function_name!();
         let _timer = self
             .metrics
-            .tx_execution_latency_seconds
+            .pipeline_processor_execution_tx_latency_seconds
             .with_label_values(&[fn_name])
             .start_timer();
         let moveos_tx = self.executor.validate_l1_tx(l1_tx.clone()).await?;
@@ -160,7 +160,7 @@ impl PipelineProcessorActor {
         let result = self.execute_tx(ledger_tx, moveos_tx).await?;
 
         self.metrics
-            .tx_execution_bytes
+            .pipeline_processor_execution_tx_bytes
             .with_label_values(&[fn_name])
             .observe(size as f64);
         Ok(result)
@@ -175,7 +175,7 @@ impl PipelineProcessorActor {
         let fn_name = function_name!();
         let _timer = self
             .metrics
-            .tx_execution_latency_seconds
+            .pipeline_processor_execution_tx_latency_seconds
             .with_label_values(&[fn_name])
             .start_timer();
         let moveos_tx = self.executor.validate_l2_tx(tx.clone()).await?;
@@ -187,7 +187,7 @@ impl PipelineProcessorActor {
         let result = self.execute_tx(ledger_tx, moveos_tx).await?;
 
         self.metrics
-            .tx_execution_bytes
+            .pipeline_processor_execution_tx_bytes
             .with_label_values(&[fn_name])
             .observe(size as f64);
         Ok(result)
@@ -202,7 +202,7 @@ impl PipelineProcessorActor {
         let fn_name = function_name!();
         let _timer = self
             .metrics
-            .tx_execution_latency_seconds
+            .pipeline_processor_execution_tx_latency_seconds
             .with_label_values(&[fn_name])
             .start_timer();
         // Add sequence info to tx context, let the Move contract can get the sequence info
@@ -243,7 +243,7 @@ impl PipelineProcessorActor {
         };
 
         self.metrics
-            .tx_execution_bytes
+            .pipeline_processor_execution_tx_bytes
             .with_label_values(&[fn_name])
             .observe(size as f64);
 

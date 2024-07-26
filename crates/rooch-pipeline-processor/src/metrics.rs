@@ -5,25 +5,25 @@ use metrics::metrics_util::LATENCY_SEC_BUCKETS;
 use prometheus::{register_histogram_vec_with_registry, HistogramVec, Registry};
 
 #[derive(Debug)]
-pub struct TxMetrics {
-    pub tx_execution_latency_seconds: HistogramVec,
-    pub tx_execution_bytes: HistogramVec,
+pub struct PipelineProcessorMetrics {
+    pub pipeline_processor_execution_tx_latency_seconds: HistogramVec,
+    pub pipeline_processor_execution_tx_bytes: HistogramVec,
 }
 
-impl TxMetrics {
+impl PipelineProcessorMetrics {
     pub(crate) fn new(registry: &Registry) -> Self {
-        TxMetrics {
-            tx_execution_latency_seconds: register_histogram_vec_with_registry!(
-                "tx_execution_latency_seconds",
-                "Tx execution latency in seconds",
+        PipelineProcessorMetrics {
+            pipeline_processor_execution_tx_latency_seconds: register_histogram_vec_with_registry!(
+                "pipeline_processor_execution_tx_latency_seconds",
+                "Pipeline processor execution tx latency in seconds",
                 &["fn_name"],
                 LATENCY_SEC_BUCKETS.to_vec(),
                 registry,
             )
             .unwrap(),
-            tx_execution_bytes: register_histogram_vec_with_registry!(
-                "tx_execution_bytes",
-                "Tx execution size in bytes",
+            pipeline_processor_execution_tx_bytes: register_histogram_vec_with_registry!(
+                "pipeline_processor_execution_tx_bytes",
+                "Pipeline processor execution tx size in bytes",
                 &["fn_name"],
                 prometheus::exponential_buckets(1.0, 4.0, 15)
                     .unwrap()
