@@ -63,11 +63,11 @@ Rooch 内置了 [bitcoin-move](https://github.com/rooch-network/rooch/tree/main/
 
         - `Option<Header>`: 如果区块存在，则返回区块头，否则返回 none。
 
-- `get_latest_block_height`: 于获取最新区块的高度。
+- `get_latest_block`: 于获取最新区块的高度以及 Hash。
 
     - 返回值
 
-        - `Option<u64>`: 如果存在最新区块，则返回区块高度，否则返回 none。
+        - `Option<BlockHeightHash>`: 如果存在最新区块，则返回区块高度和 Hash，否则返回 none。
 
 ### 2. `Header` 结构体与读取接口
 

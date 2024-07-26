@@ -1,18 +1,18 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{error_to_abort_code, CommonGasParameters};
+use super::{error_to_abort_code, CommonGasParameters, GasParameters};
 use crate::natives::moveos_stdlib::object::pop_object_id;
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::InternalGas;
-use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
+use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, values::Value,
 };
 use moveos_object_runtime::{runtime::ObjectRuntimeContext, runtime_object::RuntimeObject};
 use moveos_types::moveos_std::object::ObjectID;
 use smallvec::smallvec;
-use std::{collections::VecDeque, sync::Arc};
+use std::collections::VecDeque;
 
 /// All ObjectMeta functions use the same gas parameters
 #[derive(Debug, Clone)]
@@ -33,9 +33,8 @@ impl ObjectMetaGasParameters {
  **************************************************************************************************/
 
 #[inline]
-fn native_object_owner(
-    common_gas_params: &CommonGasParameters,
-    gas_params: &ObjectMetaGasParameters,
+pub(crate) fn native_object_owner(
+    gas_parameter: &GasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -43,19 +42,17 @@ fn native_object_owner(
     debug_assert!(ty_args.is_empty());
     debug_assert!(args.len() == 1);
 
-    let obj_id = pop_object_id(&mut args)?;
-    object_meta_fn_dispatch(common_gas_params, gas_params.base, context, obj_id, |obj| {
-        Ok(Value::address(obj.metadata()?.owner))
-    })
-}
+    let common_gas_params = gas_parameter.common.clone();
+    let object_meta_gas_params = gas_parameter.native_object_meta.clone();
 
-pub fn make_native_object_owner(
-    common_gas_params: CommonGasParameters,
-    gas_params: ObjectMetaGasParameters,
-) -> NativeFunction {
-    Arc::new(move |context, ty_args, args| {
-        native_object_owner(&common_gas_params, &gas_params, context, ty_args, args)
-    })
+    let obj_id = pop_object_id(&mut args)?;
+    object_meta_fn_dispatch(
+        &common_gas_params,
+        object_meta_gas_params.base,
+        context,
+        obj_id,
+        |obj| Ok(Value::address(obj.metadata()?.owner)),
+    )
 }
 
 /***************************************************************************************************
@@ -63,9 +60,8 @@ pub fn make_native_object_owner(
  **************************************************************************************************/
 
 #[inline]
-fn native_object_size(
-    common_gas_params: &CommonGasParameters,
-    gas_params: &ObjectMetaGasParameters,
+pub(crate) fn native_object_size(
+    gas_parameters: &GasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -73,19 +69,17 @@ fn native_object_size(
     debug_assert!(ty_args.is_empty());
     debug_assert!(args.len() == 1);
 
-    let obj_id = pop_object_id(&mut args)?;
-    object_meta_fn_dispatch(common_gas_params, gas_params.base, context, obj_id, |obj| {
-        Ok(Value::u64(obj.metadata()?.size))
-    })
-}
+    let common_gas_params = gas_parameters.common.clone();
+    let object_meta_gas_params = gas_parameters.native_object_meta.clone();
 
-pub fn make_native_object_size(
-    common_gas_params: CommonGasParameters,
-    gas_params: ObjectMetaGasParameters,
-) -> NativeFunction {
-    Arc::new(move |context, ty_args, args| {
-        native_object_size(&common_gas_params, &gas_params, context, ty_args, args)
-    })
+    let obj_id = pop_object_id(&mut args)?;
+    object_meta_fn_dispatch(
+        &common_gas_params,
+        object_meta_gas_params.base,
+        context,
+        obj_id,
+        |obj| Ok(Value::u64(obj.metadata()?.size)),
+    )
 }
 
 /***************************************************************************************************
@@ -93,9 +87,8 @@ pub fn make_native_object_size(
  **************************************************************************************************/
 
 #[inline]
-fn native_object_flag(
-    common_gas_params: &CommonGasParameters,
-    gas_params: &ObjectMetaGasParameters,
+pub(crate) fn native_object_flag(
+    gas_parameters: &GasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -103,19 +96,17 @@ fn native_object_flag(
     debug_assert!(ty_args.is_empty());
     debug_assert!(args.len() == 1);
 
-    let obj_id = pop_object_id(&mut args)?;
-    object_meta_fn_dispatch(common_gas_params, gas_params.base, context, obj_id, |obj| {
-        Ok(Value::u8(obj.metadata()?.flag))
-    })
-}
+    let common_gas_params = gas_parameters.common.clone();
+    let object_meta_gas_params = gas_parameters.native_object_meta.clone();
 
-pub fn make_native_object_flag(
-    common_gas_params: CommonGasParameters,
-    gas_params: ObjectMetaGasParameters,
-) -> NativeFunction {
-    Arc::new(move |context, ty_args, args| {
-        native_object_flag(&common_gas_params, &gas_params, context, ty_args, args)
-    })
+    let obj_id = pop_object_id(&mut args)?;
+    object_meta_fn_dispatch(
+        &common_gas_params,
+        object_meta_gas_params.base,
+        context,
+        obj_id,
+        |obj| Ok(Value::u8(obj.metadata()?.flag)),
+    )
 }
 
 /***************************************************************************************************
@@ -123,9 +114,8 @@ pub fn make_native_object_flag(
  **************************************************************************************************/
 
 #[inline]
-fn native_object_created_at(
-    common_gas_params: &CommonGasParameters,
-    gas_params: &ObjectMetaGasParameters,
+pub(crate) fn native_object_created_at(
+    gas_parameters: &GasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -133,19 +123,17 @@ fn native_object_created_at(
     debug_assert!(ty_args.is_empty());
     debug_assert!(args.len() == 1);
 
-    let obj_id = pop_object_id(&mut args)?;
-    object_meta_fn_dispatch(common_gas_params, gas_params.base, context, obj_id, |obj| {
-        Ok(Value::u64(obj.metadata()?.created_at))
-    })
-}
+    let common_gas_params = gas_parameters.common.clone();
+    let object_meta_gas_params = gas_parameters.native_object_meta.clone();
 
-pub fn make_native_object_created_at(
-    common_gas_params: CommonGasParameters,
-    gas_params: ObjectMetaGasParameters,
-) -> NativeFunction {
-    Arc::new(move |context, ty_args, args| {
-        native_object_created_at(&common_gas_params, &gas_params, context, ty_args, args)
-    })
+    let obj_id = pop_object_id(&mut args)?;
+    object_meta_fn_dispatch(
+        &common_gas_params,
+        object_meta_gas_params.base,
+        context,
+        obj_id,
+        |obj| Ok(Value::u64(obj.metadata()?.created_at)),
+    )
 }
 
 /***************************************************************************************************
@@ -153,9 +141,8 @@ pub fn make_native_object_created_at(
  **************************************************************************************************/
 
 #[inline]
-fn native_object_updated_at(
-    common_gas_params: &CommonGasParameters,
-    gas_params: &ObjectMetaGasParameters,
+pub(crate) fn native_object_updated_at(
+    gas_parameters: &GasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -163,19 +150,17 @@ fn native_object_updated_at(
     debug_assert!(ty_args.is_empty());
     debug_assert!(args.len() == 1);
 
-    let obj_id = pop_object_id(&mut args)?;
-    object_meta_fn_dispatch(common_gas_params, gas_params.base, context, obj_id, |obj| {
-        Ok(Value::u64(obj.metadata()?.updated_at))
-    })
-}
+    let common_gas_params = gas_parameters.common.clone();
+    let object_meta_gas_params = gas_parameters.native_object_meta.clone();
 
-pub fn make_native_object_updated_at(
-    common_gas_params: CommonGasParameters,
-    gas_params: ObjectMetaGasParameters,
-) -> NativeFunction {
-    Arc::new(move |context, ty_args, args| {
-        native_object_updated_at(&common_gas_params, &gas_params, context, ty_args, args)
-    })
+    let obj_id = pop_object_id(&mut args)?;
+    object_meta_fn_dispatch(
+        &common_gas_params,
+        object_meta_gas_params.base,
+        context,
+        obj_id,
+        |obj| Ok(Value::u64(obj.metadata()?.updated_at)),
+    )
 }
 
 fn object_meta_fn_dispatch(

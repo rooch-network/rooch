@@ -58,10 +58,8 @@ fn test_submit_block() {
         bitcoin_module.get_block_by_height(height).unwrap().unwrap(),
         block_header
     );
-    assert_eq!(
-        bitcoin_module.get_latest_block_height().unwrap().unwrap(),
-        height
-    );
+    let latest_block = bitcoin_module.get_latest_block().unwrap().unwrap();
+    assert_eq!(height, latest_block.block_height,);
     info!("txdata len: {}", bitcoin_txdata.len());
 
     check_utxo(bitcoin_txdata, &binding_test);

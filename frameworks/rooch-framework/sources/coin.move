@@ -3,7 +3,9 @@
 
 /// This module provides the foundation for typesafe Coins.
 module rooch_framework::coin {
+    use std::option::Option;
     use std::string;
+    use std::string::String;
     use moveos_std::object::{Self, ObjectID, Object};
     
     use moveos_std::event;
@@ -153,6 +155,11 @@ module rooch_framework::coin {
         coin_info.supply
     }
 
+    /// Returns the icon url of coin.
+    public fun icon_url<CoinType: key>(coin_info: &Object<CoinInfo<CoinType>>): Option<String> {
+        *object::borrow_field<CoinInfo<CoinType>, String, Option<String>>(coin_info, string::utf8(b"icon_url"))
+    }
+
     /// Return true if the type `CoinType1` is same with `CoinType2`
     public fun is_same_coin<CoinType1, CoinType2>(): bool {
         return type_info::type_of<CoinType1>() == type_info::type_of<CoinType2>()
@@ -209,6 +216,14 @@ module rooch_framework::coin {
     //
     // Extend functions
     //
+
+    #[private_generics(CoinType)]
+    /// Upsert icon_url as`CoinType` dynamic field
+    /// This function is protected by `private_generics`, so it can only be called by the `CoinType` module.
+    public fun upsert_icon_url<CoinType: key>(coin_info_obj: &mut Object<CoinInfo<CoinType>>, icon_url: String){
+        object::upsert_field(coin_info_obj, string::utf8(b"icon_url"), icon_url);
+    }
+
 
     #[private_generics(CoinType)]
     /// Creates a new Coin with given `CoinType`

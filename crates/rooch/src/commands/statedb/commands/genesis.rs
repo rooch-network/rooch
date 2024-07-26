@@ -7,19 +7,19 @@ use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::mpsc::{Receiver, SyncSender};
-use std::sync::{mpsc, Arc};
+use std::sync::{mpsc, Arc, RwLock};
 use std::thread;
 use std::time::SystemTime;
 
 use anyhow::Result;
 use bitcoin::OutPoint;
-use bitcoin_move::natives::ord::inscription_id::InscriptionId;
 use chrono::{DateTime, Local};
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use redb::Database;
 use serde::{Deserialize, Serialize};
 
+use bitcoin_move::natives::ord::inscription_id::InscriptionId;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::move_std::option::MoveOption;
@@ -43,11 +43,11 @@ use smt::UpdateSet;
 
 use crate::cli_types::WalletContextOptions;
 use crate::commands::statedb::commands::genesis_utxo::{
-    apply_utxo_updates_to_state, produce_utxo_updates,
+    apply_address_updates, apply_utxo_updates, produce_utxo_updates,
 };
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
 use crate::commands::statedb::commands::{
-    get_ord_by_outpoint, init_genesis_job, sort_merge_utxo_ords, UTXOOrds, UTXO_ORD_MAP_TABLE,
+    finish_job, get_ord_by_outpoint, init_job, sort_merge_utxo_ords, UTXOOrds, UTXO_ORD_MAP_TABLE,
 };
 
 pub const ADDRESS_UNBOUND: &str = "unbound";
@@ -81,9 +81,9 @@ pub struct InscriptionSource {
     pub rune: Option<u128>,
 }
 
-/// Genesis Import BTC(utxo, ord)
+/// Import BTC ordinals & UTXO for genesis
 #[derive(Debug, Parser)]
-pub struct GenesisOrdCommand {
+pub struct GenesisCommand {
     #[clap(long, short = 'i')]
     /// utxo source data file. like ~/.rooch/local/utxo.csv or utxo.csv
     /// The file format is csv, and the first line is the header, the header is as follows:
@@ -96,14 +96,14 @@ pub struct GenesisOrdCommand {
     pub ord_source: PathBuf,
     #[clap(
         long,
-        default_value = "2097152",
-        help = "batch size submited to state db, default 2M. Set it smaller if memory is limited."
+        default_value = "1048576",
+        help = "batch size submited to state db, default 1M. Set it smaller if memory is limited."
     )]
     pub utxo_batch_size: Option<usize>,
     #[clap(
         long,
-        default_value = "1048576",
-        help = "batch size submited to state db, default 1M. Set it smaller if memory is limited."
+        default_value = "262144",
+        help = "batch size submited to state db, default 262144. Set it smaller if memory is limited."
     )] // ord may have large body, so set a smaller batch
     pub ord_batch_size: Option<usize>,
     #[clap(long, help = "utxo:ords map db path, will create new one if not exist")]
@@ -128,7 +128,7 @@ pub struct GenesisOrdCommand {
     pub context_options: WalletContextOptions,
 }
 
-impl GenesisOrdCommand {
+impl GenesisCommand {
     // 1. init import job
     // 2. import ord (record utxo_seal)
     // 3. import utxo with utxo_seal
@@ -137,7 +137,7 @@ impl GenesisOrdCommand {
     pub async fn execute(self) -> RoochResult<()> {
         // 1. init import job
         let (root, moveos_store, start_time) =
-            init_genesis_job(self.base_data_dir.clone(), self.chain_id.clone());
+            init_job(self.base_data_dir.clone(), self.chain_id.clone());
         let pre_root_state_root = root.state_root();
 
         let utxo_ord_map_existed = self.utxo_ord_map.exists(); // check if utxo:ords map db existed before create db
@@ -151,45 +151,62 @@ impl GenesisOrdCommand {
         );
 
         let moveos_store = Arc::new(moveos_store);
-        let startup_update_set = UpdateSet::new();
+        let startup_update_set = Arc::new(RwLock::new(UpdateSet::new()));
 
-        let utxo_input_path = self.utxo_source.clone();
-        let utxo_batch_size = self.utxo_batch_size.unwrap();
-
-        // 2. import od
-        self.import_ord(moveos_store.clone(), startup_update_set.clone());
-
-        // 3. import utxo
-        import_utxo(
-            utxo_input_path,
-            utxo_batch_size,
-            utxo_ord_map.clone(),
-            moveos_store.clone(),
-            startup_update_set.clone(),
-            root.size(),
-            pre_root_state_root,
-            start_time,
-        );
-
-        Ok(())
-    }
-
-    fn import_ord(
-        self,
-        moveos_store: Arc<MoveOSStore>,
-        startup_update_set: UpdateSet<FieldKey, ObjectState>,
-    ) {
+        // import inscriptions and utxo parallel
+        // import inscriptions
         let input_path = self.ord_source.clone();
         let batch_size = self.ord_batch_size.unwrap();
 
-        let (tx, rx) = mpsc::sync_channel(2);
-        let produce_updates_thread =
-            thread::spawn(move || produce_ord_updates(tx, input_path, batch_size));
-        let apply_updates_thread = thread::spawn(move || {
-            apply_ord_updates_to_state(rx, moveos_store, startup_update_set);
+        let (ord_tx, ord_rx) = mpsc::sync_channel(2);
+        let produce_ord_updates_thread =
+            thread::spawn(move || produce_ord_updates(ord_tx, input_path, batch_size));
+        let moveos_store_clone = Arc::clone(&moveos_store);
+        let startup_update_set_clone = Arc::clone(&startup_update_set);
+        let apply_ord_updates_thread = thread::spawn(move || {
+            apply_ord_updates(ord_rx, moveos_store_clone, startup_update_set_clone);
         });
-        produce_updates_thread.join().unwrap();
-        apply_updates_thread.join().unwrap();
+
+        // import utxo
+        let utxo_input_path = self.utxo_source.clone();
+        let utxo_batch_size = self.utxo_batch_size.unwrap();
+        let (utxo_tx, utxo_rx) = mpsc::sync_channel(2);
+        let (addr_tx, addr_rx) = mpsc::sync_channel(1);
+        let produce_utxo_updates_thread = thread::spawn(move || {
+            produce_utxo_updates(
+                utxo_tx,
+                addr_tx,
+                utxo_input_path,
+                utxo_batch_size,
+                Some(utxo_ord_map),
+            )
+        });
+        let moveos_store_clone = Arc::clone(&moveos_store);
+        let startup_update_set_clone = Arc::clone(&startup_update_set);
+        let apply_addr_updates_thread = thread::spawn(move || {
+            apply_address_updates(addr_rx, moveos_store_clone, startup_update_set_clone);
+        });
+        let moveos_store_clone = Arc::clone(&moveos_store);
+        let startup_update_set_clone = Arc::clone(&startup_update_set);
+        let apply_utxo_updates_thread = thread::spawn(move || {
+            apply_utxo_updates(utxo_rx, moveos_store_clone, startup_update_set_clone);
+        });
+
+        produce_ord_updates_thread.join().unwrap();
+        produce_utxo_updates_thread.join().unwrap();
+        apply_ord_updates_thread.join().unwrap();
+        apply_addr_updates_thread.join().unwrap();
+        apply_utxo_updates_thread.join().unwrap();
+
+        finish_job(
+            Arc::clone(&moveos_store),
+            root.size(),
+            pre_root_state_root,
+            start_time,
+            Some(Arc::clone(&startup_update_set)),
+        );
+
+        Ok(())
     }
 }
 
@@ -287,38 +304,10 @@ fn index_utxo_ords(
     );
 }
 
-fn import_utxo(
-    input_path: PathBuf,
-    batch_size: usize,
-    utxo_ord_map_db: Arc<Database>,
-    moveos_store: Arc<MoveOSStore>,
-    startup_update_set: UpdateSet<FieldKey, ObjectState>,
-    root_size: u64,
-    root_state_root: H256,
-    startup_time: SystemTime,
-) {
-    let (tx, rx) = mpsc::sync_channel(2);
-    let produce_updates_thread = thread::spawn(move || {
-        produce_utxo_updates(tx, input_path, batch_size, Some(utxo_ord_map_db))
-    });
-    let apply_updates_thread = thread::spawn(move || {
-        apply_utxo_updates_to_state(
-            rx,
-            moveos_store,
-            root_size,
-            root_state_root,
-            Some(startup_update_set),
-            startup_time,
-        );
-    });
-    produce_updates_thread.join().unwrap();
-    apply_updates_thread.join().unwrap();
-}
-
-fn apply_ord_updates_to_state(
+fn apply_ord_updates(
     rx: Receiver<BatchUpdatesOrd>,
     moveos_store_arc: Arc<MoveOSStore>,
-    startup_update_set: UpdateSet<FieldKey, ObjectState>,
+    startup_update_set: Arc<RwLock<UpdateSet<FieldKey, ObjectState>>>,
 ) {
     let mut inscription_store_state_root = *GENESIS_STATE_ROOT;
     let mut last_inscription_store_state_root = inscription_store_state_root;
@@ -368,22 +357,8 @@ fn apply_ord_updates_to_state(
 
     drop(rx);
 
-    update_startup_ord(
-        startup_update_set,
-        inscription_store_state_root,
-        inscritpion_store_filed_count,
-        cursed_inscription_count,
-        blessed_inscription_count,
-    );
-}
+    let mut startup_update_set = startup_update_set.write().unwrap();
 
-fn update_startup_ord(
-    mut startup_update_set: UpdateSet<FieldKey, ObjectState>,
-    inscription_store_state_root: H256,
-    inscritpion_store_filed_count: u32,
-    cursed_inscription_count: u32,
-    blessed_inscription_count: u32,
-) {
     let mut genesis_inscription_store_object = create_genesis_inscription_store_object(
         cursed_inscription_count,
         blessed_inscription_count,
@@ -397,7 +372,7 @@ fn update_startup_ord(
         genesis_inscription_store_object.into_state(),
     );
     println!(
-        "genesis InscriptionStore object updated, inscription_store_state_root: {:?}, cursed: {}, blessed: {}, total: {}",
+        "genesis InscriptionStore object updated, state_root: {:?}, cursed: {}, blessed: {}, total: {}",
         inscription_store_state_root, cursed_inscription_count, blessed_inscription_count, inscritpion_store_filed_count / 2
     );
 }
@@ -453,7 +428,7 @@ fn produce_ord_updates(tx: SyncSender<BatchUpdatesOrd>, input: PathBuf, batch_si
             sequence_number += 1;
         }
         println!(
-            "produce inscription updates batch, count: {}. cost: {:?}",
+            "{} inscription updates produced, cost: {:?}",
             updates.blessed_inscription_count + updates.cursed_inscription_count,
             loop_start_time.elapsed().unwrap()
         );

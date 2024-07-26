@@ -25,7 +25,7 @@ Feature: Rooch CLI bitseed tests
       Then assert: "{{$.wallet[-1].total}} == 5000000000"
 
       # publish bitseed runner
-      Then cmd: "move publish -p ../../examples/bitseed_runner  --named-addresses rooch_examples=default"
+      Then cmd: "move publish -p ../../examples/bitseed_runner  --named-addresses rooch_examples=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # generator

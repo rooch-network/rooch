@@ -87,8 +87,7 @@ impl<'a> BitcoinModule<'a> {
     pub const GET_BLOCK_BY_HEIGHT_FUNCTION_NAME: &'static IdentStr =
         ident_str!("get_block_by_height");
     pub const GET_BLOCK_HEIGHT_FUNCTION_NAME: &'static IdentStr = ident_str!("get_block_height");
-    pub const GET_LATEST_BLOCK_HEIGHT_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("get_latest_block_height");
+    pub const GET_LATEST_BLOCK_FUNCTION_NAME: &'static IdentStr = ident_str!("get_latest_block");
     pub const GET_UTXO_FUNCTION_NAME: &'static IdentStr = ident_str!("get_utxo");
     pub const EXECUTE_L1_BLOCK_FUNCTION_NAME: &'static IdentStr = ident_str!("execute_l1_block");
     pub const GET_GENESIS_BLOCK_FUNCTION_NAME: &'static IdentStr = ident_str!("get_genesis_block");
@@ -151,20 +150,19 @@ impl<'a> BitcoinModule<'a> {
         Ok(height.into())
     }
 
-    pub fn get_latest_block_height(&self) -> Result<Option<u64>> {
-        let call =
-            Self::create_function_call(Self::GET_LATEST_BLOCK_HEIGHT_FUNCTION_NAME, vec![], vec![]);
+    pub fn get_latest_block(&self) -> Result<Option<BlockHeightHash>> {
+        let call = Self::create_function_call(Self::GET_LATEST_BLOCK_FUNCTION_NAME, vec![], vec![]);
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
-        let height = self
-            .caller
-            .call_function(&ctx, call)?
-            .into_result()
-            .map(|mut values| {
-                let value = values.pop().expect("should have one return value");
-                bcs::from_bytes::<MoveOption<u64>>(&value.value)
-                    .expect("should be a valid MoveOption<u64>")
-            })?;
-        Ok(height.into())
+        let height_hash =
+            self.caller
+                .call_function(&ctx, call)?
+                .into_result()
+                .map(|mut values| {
+                    let value = values.pop().expect("should have one return value");
+                    bcs::from_bytes::<MoveOption<BlockHeightHash>>(&value.value)
+                        .expect("should be a valid MoveOption<BlockHeightHash>")
+                })?;
+        Ok(height_hash.into())
     }
 
     pub fn get_genesis_block(&self) -> Result<BlockHeightHash> {

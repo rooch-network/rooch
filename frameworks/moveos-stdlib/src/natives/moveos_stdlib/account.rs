@@ -75,7 +75,7 @@ impl GasParameters {
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [(
         "create_signer",
-        make_native_create_signer(gas_params.create_signer),
+        helpers::make_native(gas_params.create_signer, native_create_signer),
     )];
 
     helpers::make_module_natives(natives)

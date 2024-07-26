@@ -28,15 +28,6 @@ export interface SidebarProps {
   onClose: () => void
 }
 
-export interface AppItemProps {
-  id: number
-  name: string
-  description: string
-  profileUrl: string
-  logoUrl: string
-  type: string
-}
-
 export interface SftsProps {
   id: number
   sftName: string

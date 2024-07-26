@@ -39,6 +39,11 @@ serde = { workspace = true, features = ["derive", "rc"] }
 serde_bytes = { workspace = true }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
-#sha3 = "0.9.1"
 thiserror = { workspace = true }
 tiny-keccak = { workspace = true, features = ["keccak", "sha3"] }
+tracing = { workspace = true }
+tap = { workspace = true }
+prometheus = { workspace = true }
+function_name = { workspace = true }
+
+metrics = { workspace = true }

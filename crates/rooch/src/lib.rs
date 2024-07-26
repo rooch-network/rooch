@@ -11,6 +11,7 @@ use commands::{
     object::ObjectCommand, resource::ResourceCommand, rpc::Rpc, server::Server,
     session_key::SessionKey, state::StateCommand, transaction::Transaction, upgrade::Upgrade,
 };
+use once_cell::sync::Lazy;
 use rooch_types::error::RoochResult;
 
 pub mod cli_types;
@@ -18,7 +19,7 @@ pub mod commands;
 pub mod utils;
 
 #[derive(clap::Parser)]
-#[clap(author, version, about, long_about = None,
+#[clap(author, long_version = LONG_VERSION.as_str(), about, long_about = None,
 styles = Styles::styled()
 .header(AnsiColor::Green.on_default() | Effects::BOLD)
 .usage(AnsiColor::Green.on_default() | Effects::BOLD)
@@ -28,6 +29,12 @@ pub struct RoochCli {
     #[clap(subcommand)]
     pub cmd: Command,
 }
+
+static LONG_VERSION: Lazy<String> = Lazy::new(|| {
+    let cargo_version = env!("CARGO_PKG_VERSION");
+    let git_commit_hash = env!("GIT_COMMIT_HASH");
+    format!("{} (git commit {})", cargo_version, git_commit_hash)
+});
 
 #[allow(clippy::large_enum_variant)]
 #[derive(clap::Parser)]

@@ -1,26 +1,30 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::path::PathBuf;
+use std::str::FromStr;
+use std::sync::{Arc, RwLock};
+use std::time::Instant;
+
 use bitcoin::{OutPoint, PublicKey, ScriptBuf};
-use chrono::{DateTime, Local};
-use moveos_store::MoveOSStore;
-use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
 use redb::{ReadOnlyTable, TableDefinition};
+use serde::{Deserialize, Serialize};
+
+use moveos_store::MoveOSStore;
+use moveos_types::h256::H256;
+use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
+use moveos_types::startup_info::StartupInfo;
+use moveos_types::state::{FieldKey, ObjectState};
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
 use rooch_types::address::BitcoinAddress;
-use rooch_types::bitcoin::ord::InscriptionStore;
-use rooch_types::bitcoin::utxo::BitcoinUTXOStore;
-use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::rooch_network::RoochChainID;
-use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
-use std::str::FromStr;
-use std::sync::Arc;
-use std::time::SystemTime;
+use smt::UpdateSet;
+
+use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
 
 pub mod export;
-pub mod genesis_ord;
+pub mod genesis;
 pub mod genesis_utxo;
 pub mod import;
 
@@ -40,30 +44,54 @@ pub const SCRIPT_TYPE_P2MS: &str = "p2ms";
 pub const SCRIPT_TYPE_P2PK: &str = "p2pk";
 pub const SCRIPT_TYPE_NON_STANDARD: &str = "non-standard";
 
-pub fn init_genesis_job(
+fn init_job(
     base_data_dir: Option<PathBuf>,
     chain_id: Option<RoochChainID>,
-) -> (ObjectMeta, MoveOSStore, SystemTime) {
-    let start_time = SystemTime::now();
-    let datetime: DateTime<Local> = start_time.into();
+) -> (ObjectMeta, MoveOSStore, Instant) {
+    let start_time = Instant::now();
 
     let opt = RoochOpt::new_with_default(base_data_dir.clone(), chain_id.clone(), None).unwrap();
     let rooch_db = RoochDB::init(opt.store_config()).unwrap();
-    let root = rooch_db.latest_root().unwrap().unwrap();
+    let root = rooch_db
+        .latest_root()
+        .unwrap()
+        .expect("statedb is empty, genesis must be initialed.");
+    log::info!("original root object: {:?}", root);
 
-    let utxo_store_id = BitcoinUTXOStore::object_id();
-    let address_mapping_id = RoochToBitcoinAddressMapping::object_id();
-    let inscription_store_id = InscriptionStore::object_id();
+    log::info!("job progress started");
 
-    println!("task progress started at {}", datetime,);
-    println!("root object: {:?}", root);
-    println!("utxo_store_id: {:?}", utxo_store_id);
-    println!(
-        "rooch to bitcoin address_mapping_id: {:?}",
-        address_mapping_id
-    );
-    println!("inscription_store_id: {:?}", inscription_store_id);
     (root, rooch_db.moveos_store, start_time)
+}
+
+fn finish_job(
+    moveos_store: Arc<MoveOSStore>,
+    root_size: u64,
+    pre_root_state_root: H256,
+    task_start_time: Instant,
+    new_startup_update_set: Option<Arc<RwLock<UpdateSet<FieldKey, ObjectState>>>>,
+) {
+    let root_state_root = match new_startup_update_set {
+        Some(new_startup_update_set) => {
+            let new_startup_update_set = new_startup_update_set.read().unwrap();
+            let new_startup_update_set = new_startup_update_set.clone();
+            let tree_change_set =
+                apply_fields(&moveos_store, pre_root_state_root, new_startup_update_set).unwrap();
+            apply_nodes(&moveos_store, tree_change_set.nodes).unwrap();
+            tree_change_set.state_root
+        }
+        None => pre_root_state_root,
+    };
+    // Update Startup Info
+    let new_startup_info = StartupInfo::new(root_state_root, root_size);
+    moveos_store
+        .get_config_store()
+        .save_startup_info(new_startup_info.clone())
+        .unwrap();
+    println!(
+        "Done in {:?}. New startup_info: {:?}",
+        task_start_time.elapsed(),
+        new_startup_info
+    );
 }
 
 pub fn get_ord_by_outpoint(
@@ -147,12 +175,14 @@ pub fn drive_bitcoin_address(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::iter;
+
     use bitcoin::hashes::Hash;
     use bitcoin::OutPoint;
     use redb::Database;
-    use std::iter;
     use tempfile::NamedTempFile;
+
+    use super::*;
 
     #[test]
     fn test_get_ord_by_outpoint() {

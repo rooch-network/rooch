@@ -1,20 +1,24 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{error_to_abort_code, CommonGasParameters};
-use crate::natives::moveos_stdlib::object::{pop_object_id, read_object_id};
+use std::collections::VecDeque;
+
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::{
     account_address::AccountAddress, gas_algebra::InternalGas, language_storage::TypeTag,
 };
-use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
+use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, pop_arg, values::Value,
 };
+use smallvec::smallvec;
+
 use moveos_object_runtime::{runtime::ObjectRuntimeContext, runtime_object::RuntimeObject};
 use moveos_types::moveos_std::object::ObjectID;
-use smallvec::smallvec;
-use std::{collections::VecDeque, sync::Arc};
+
+use crate::natives::moveos_stdlib::object::{pop_object_id, read_object_id};
+
+use super::{error_to_abort_code, CommonGasParameters, GasParameters};
 
 /***************************************************************************************************
  * native fun native_borrow_object<T: key>(object_id: ObjectID): &Object<T>;
@@ -34,9 +38,8 @@ impl BorrowObjectGasParameters {
 }
 
 #[inline]
-fn native_borrow_object(
-    common_gas_params: &CommonGasParameters,
-    gas_params: &BorrowObjectGasParameters,
+pub(crate) fn native_borrow_object(
+    gas_parameters: &GasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -44,24 +47,18 @@ fn native_borrow_object(
     debug_assert!(ty_args.len() == 1);
     debug_assert!(args.len() == 1);
 
+    let common_gas_parameter = gas_parameters.common.clone();
+    let borrow_object_gas_parameter = gas_parameters.native_borrow_object.clone();
+
     let obj_id = pop_object_id(&mut args)?;
     object_fn_dispatch(
-        common_gas_params,
-        gas_params.base,
+        &common_gas_parameter,
+        borrow_object_gas_parameter.base,
         context,
         obj_id,
         &ty_args[0],
         |obj, ty| obj.borrow_object(Some(ty)).map(Some),
     )
-}
-
-pub fn make_native_borrow_object(
-    common_gas_params: CommonGasParameters,
-    gas_params: BorrowObjectGasParameters,
-) -> NativeFunction {
-    Arc::new(move |context, ty_args, args| {
-        native_borrow_object(&common_gas_params, &gas_params, context, ty_args, args)
-    })
 }
 
 /***************************************************************************************************
@@ -82,9 +79,8 @@ impl TakeObjectGasParameters {
 }
 
 #[inline]
-fn native_take_object(
-    common_gas_params: &CommonGasParameters,
-    gas_params: &TakeObjectGasParameters,
+pub(crate) fn native_take_object(
+    gas_parameters: &GasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -92,24 +88,18 @@ fn native_take_object(
     debug_assert!(ty_args.len() == 1);
     debug_assert!(args.len() == 1);
 
+    let common_gas_parameter = gas_parameters.common.clone();
+    let take_object_gas_parameter = gas_parameters.native_take_object.clone();
+
     let obj_id = pop_object_id(&mut args)?;
     object_fn_dispatch(
-        common_gas_params,
-        gas_params.base,
+        &common_gas_parameter,
+        take_object_gas_parameter.base,
         context,
         obj_id,
         &ty_args[0],
         |obj, ty| obj.take_object(Some(ty)).map(Some),
     )
-}
-
-pub fn make_native_take_object(
-    common_gas_params: CommonGasParameters,
-    gas_params: TakeObjectGasParameters,
-) -> NativeFunction {
-    Arc::new(move |context, ty_args, args| {
-        native_take_object(&common_gas_params, &gas_params, context, ty_args, args)
-    })
 }
 
 /***************************************************************************************************
@@ -130,21 +120,24 @@ impl TransferObjectGasParameters {
 }
 
 #[inline]
-fn native_transfer_object(
-    common_gas_params: &CommonGasParameters,
-    gas_params: &TransferObjectGasParameters,
+pub(crate) fn native_transfer_object(
+    gas_parameters: &GasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     debug_assert!(ty_args.len() == 1);
     debug_assert!(args.len() == 2);
+
+    let common_gas_parameter = gas_parameters.common.clone();
+    let transfer_object_gas_parameter = gas_parameters.native_transfer_object.clone();
+
     let new_owner = pop_arg!(args, AccountAddress);
     let obj = args.pop_back().unwrap();
     let obj_id = read_object_id(&obj)?;
     object_fn_dispatch(
-        common_gas_params,
-        gas_params.base,
+        &common_gas_parameter,
+        transfer_object_gas_parameter.base,
         context,
         obj_id,
         &ty_args[0],
@@ -154,15 +147,6 @@ fn native_transfer_object(
                 .map(|_| None)
         },
     )
-}
-
-pub fn make_native_transfer_object(
-    common_gas_params: CommonGasParameters,
-    gas_params: TransferObjectGasParameters,
-) -> NativeFunction {
-    Arc::new(move |context, ty_args, args| {
-        native_transfer_object(&common_gas_params, &gas_params, context, ty_args, args)
-    })
 }
 
 /***************************************************************************************************
@@ -183,34 +167,28 @@ impl ToSharedObjectGasParameters {
 }
 
 #[inline]
-fn native_to_shared_object(
-    common_gas_params: &CommonGasParameters,
-    gas_params: &ToSharedObjectGasParameters,
+pub(crate) fn native_to_shared_object(
+    gas_parameters: &GasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     debug_assert!(ty_args.len() == 1);
     debug_assert!(args.len() == 1);
+
+    let common_gas_parameter = gas_parameters.common.clone();
+    let to_shared_object_gas_parameter = gas_parameters.native_to_shared_object.clone();
+
     let obj = args.pop_back().unwrap();
     let obj_id = read_object_id(&obj)?;
     object_fn_dispatch(
-        common_gas_params,
-        gas_params.base,
+        &common_gas_parameter,
+        to_shared_object_gas_parameter.base,
         context,
         obj_id,
         &ty_args[0],
         |rt_obj, ty| rt_obj.to_shared_object(obj, Some(ty)).map(|_| None),
     )
-}
-
-pub fn make_native_to_shared_object(
-    common_gas_params: CommonGasParameters,
-    gas_params: ToSharedObjectGasParameters,
-) -> NativeFunction {
-    Arc::new(move |context, ty_args, args| {
-        native_to_shared_object(&common_gas_params, &gas_params, context, ty_args, args)
-    })
 }
 
 /***************************************************************************************************
@@ -231,9 +209,8 @@ impl ToFrozenObjectGasParameters {
 }
 
 #[inline]
-fn native_to_frozen_object(
-    common_gas_params: &CommonGasParameters,
-    gas_params: &ToFrozenObjectGasParameters,
+pub(crate) fn native_to_frozen_object(
+    gas_parameters: &GasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -242,23 +219,18 @@ fn native_to_frozen_object(
     debug_assert!(args.len() == 1);
     let obj = args.pop_back().unwrap();
     let obj_id = read_object_id(&obj)?;
+
+    let common_gas_parameter = gas_parameters.common.clone();
+    let to_frozen_object_gas_parameter = gas_parameters.native_to_frozen_object.clone();
+
     object_fn_dispatch(
-        common_gas_params,
-        gas_params.base,
+        &common_gas_parameter,
+        to_frozen_object_gas_parameter.base,
         context,
         obj_id,
         &ty_args[0],
         |rt_obj, ty| rt_obj.to_frozen_object(obj, Some(ty)).map(|_| None),
     )
-}
-
-pub fn make_native_to_frozen_object(
-    common_gas_params: CommonGasParameters,
-    gas_params: ToFrozenObjectGasParameters,
-) -> NativeFunction {
-    Arc::new(move |context, ty_args, args| {
-        native_to_frozen_object(&common_gas_params, &gas_params, context, ty_args, args)
-    })
 }
 
 #[inline]

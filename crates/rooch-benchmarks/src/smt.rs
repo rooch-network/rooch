@@ -31,7 +31,8 @@ pub fn gen_kv_from_seed(seed: H256, num_keys: usize) -> Vec<(H256, Option<Blob>)
 
 pub fn prepare_change_set(state_root: H256, num_keys: usize) -> Result<(Vec<H256>, TreeChangeSet)> {
     let store = InMemoryNodeStore::default();
-    let tree: SMTree<H256, Blob, InMemoryNodeStore> = SMTree::new(store);
+    let registry = prometheus::Registry::new();
+    let tree: SMTree<H256, Blob, InMemoryNodeStore> = SMTree::new(store, &registry);
     let kvs = gen_kv_from_seed(state_root, num_keys);
     let ks = kvs.iter().map(|(k, _v)| *k).collect();
     let tree_change_set = tree.puts(state_root, kvs)?;

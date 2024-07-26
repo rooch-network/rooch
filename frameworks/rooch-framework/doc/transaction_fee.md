@@ -9,6 +9,7 @@
 -  [Function `genesis_init`](#0x3_transaction_fee_genesis_init)
 -  [Function `get_gas_factor`](#0x3_transaction_fee_get_gas_factor)
 -  [Function `calculate_gas`](#0x3_transaction_fee_calculate_gas)
+-  [Function `withdraw_fee`](#0x3_transaction_fee_withdraw_fee)
 -  [Function `deposit_fee`](#0x3_transaction_fee_deposit_fee)
 
 
@@ -61,6 +62,17 @@ Returns the gas factor of gas.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x3_transaction_fee_calculate_gas">calculate_gas</a>(gas_amount: u64): u256
+</code></pre>
+
+
+
+<a name="0x3_transaction_fee_withdraw_fee"></a>
+
+## Function `withdraw_fee`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x3_transaction_fee_withdraw_fee">withdraw_fee</a>(amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">gas_coin::GasCoin</a>&gt;
 </code></pre>
 
 
