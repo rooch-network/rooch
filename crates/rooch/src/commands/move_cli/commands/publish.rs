@@ -5,10 +5,16 @@ use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
 use move_cli::Move;
+use move_core_types::effects::Op;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
 use moveos_compiler::dependency_order::sort_by_dependency_order;
+use moveos_types::move_std::string::MoveString;
+use moveos_types::moveos_std::module_store::ModuleStore;
+use moveos_types::moveos_std::move_module::MoveModule;
+use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::{
-    addresses::MOVEOS_STD_ADDRESS, move_types::FunctionId, transaction::MoveAction,
+    addresses::MOVEOS_STD_ADDRESS, move_types::FunctionId, state::ObjectState,
+    transaction::MoveAction,
 };
 use moveos_verifier::build::run_verifier;
 use moveos_verifier::verifier;
@@ -49,6 +55,10 @@ pub struct Publish {
     /// For now, the option is kept for test only.
     #[clap(long)]
     pub by_move_action: bool,
+
+    /// Return command outputs in json format
+    #[clap(long, default_value = "false")]
+    json: bool,
 }
 
 #[async_trait]
@@ -198,5 +208,106 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         //Directly return the result, the publish transaction may be failed.
         //Caller need to check the `execution_info.status` field.
         Ok(tx_result)
+    }
+
+    /// Executes the command, and serializes it to the common JSON output type
+    async fn execute_serialized(self) -> RoochResult<String> {
+        let json = self.json;
+        let result = self.execute().await?;
+
+        if json {
+            let output = serde_json::to_string_pretty(&result).unwrap();
+            if output == "null" {
+                return Ok("".to_string());
+            }
+            Ok(output)
+        } else {
+            Self::pretty_transaction_response(&result)
+        }
+    }
+}
+
+impl Publish {
+    fn pretty_transaction_response(
+        txn_response: &ExecuteTransactionResponseView,
+    ) -> RoochResult<String> {
+        let mut output = String::new();
+
+        // print execution info
+        let exe_info = &txn_response.execution_info;
+        output.push_str(&format!(
+            r#"Execution info:
+    status: {:?}
+    gas used: {}
+    tx hash: {}
+    state root: {}
+    event root: {}"#,
+            exe_info.status,
+            exe_info.gas_used,
+            exe_info.tx_hash,
+            exe_info.state_root,
+            exe_info.event_root
+        ));
+
+        if let Some(txn_output) = &txn_response.output {
+            // print modules
+            let changes = &txn_output.changeset.changes;
+            let module_store_id = ModuleStore::object_id();
+            let mut new_modules = vec![];
+            let mut updated_modules = vec![];
+            for change in changes {
+                if change.metadata.id != module_store_id {
+                    continue;
+                };
+
+                for package_change in &change.fields {
+                    let package_owner = package_change.metadata.owner.0;
+                    for module_change in &package_change.fields {
+                        let metadata = ObjectMeta::from(module_change.metadata.clone());
+
+                        let value = module_change.value.clone().map(Op::<Vec<u8>>::from).ok_or(
+                            RoochError::TransactionError(
+                                "Module change value is missing".to_owned(),
+                            ),
+                        )?;
+                        let (flag, bytes) = match value {
+                            Op::New(bytes) => (0, bytes),
+                            Op::Modify(bytes) => (1, bytes),
+                            Op::Delete => unreachable!("Module will never be deleted"),
+                        };
+                        let object_state = ObjectState::new(metadata, bytes);
+                        let module = object_state.value_as_df::<MoveString, MoveModule>()?;
+                        let module_id = ModuleId::new(
+                            package_owner.into(),
+                            Identifier::new(format!("{}", module.name))?,
+                        );
+                        if flag == 0 {
+                            new_modules.push(module_id);
+                        } else {
+                            updated_modules.push(module_id);
+                        }
+                    }
+                }
+            }
+
+            output.push_str("\n\nNew modules:");
+            if new_modules.is_empty() {
+                output.push_str("\n    None");
+            } else {
+                for module in new_modules {
+                    output.push_str(&format!("\n    {}", module.short_str_lossless()));
+                }
+            };
+            output.push_str("\n\nUpdated modules:");
+            if updated_modules.is_empty() {
+                output.push_str("\n    None");
+            } else {
+                for module in updated_modules {
+                    output.push_str(&format!("\n    {}", module.short_str_lossless()));
+                }
+            };
+        }
+
+        Ok(output)
     }
 }
