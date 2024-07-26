@@ -9,7 +9,7 @@ use cli_types::CommandAction;
 use commands::{
     abi::ABI, account::Account, env::Env, genesis::Genesis, init::Init, move_cli::MoveCli,
     object::ObjectCommand, resource::ResourceCommand, rpc::Rpc, server::Server,
-    session_key::SessionKey, state::StateCommand, transaction::Transaction,
+    session_key::SessionKey, state::StateCommand, transaction::Transaction, upgrade::Upgrade,
 };
 use once_cell::sync::Lazy;
 use rooch_types::error::RoochResult;
@@ -55,6 +55,7 @@ pub enum Command {
     Statedb(Statedb),
     Indexer(Indexer),
     Genesis(Genesis),
+    Upgrade(Upgrade),
 }
 
 pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
@@ -75,5 +76,6 @@ pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
         Command::Statedb(statedb) => statedb.execute().await,
         Command::Indexer(indexer) => indexer.execute().await,
         Command::Genesis(genesis) => genesis.execute().await,
+        Command::Upgrade(upgrade) => upgrade.execute().await,
     }
 }
