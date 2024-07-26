@@ -13,7 +13,6 @@ import {
   Vout,
   GetSpendablesOptions,
   UTXOLimited,
-  Rarity,
 } from "@sadoprotocol/ordit-sdk";
 import { 
   getRoochNodeUrl, 
@@ -351,6 +350,10 @@ export class RoochDataSource /*implements IDatasource*/ {
   }
 
   async getSpendables({ address, value, type = "all", rarity, filter, limit = 100 }: GetSpendablesOptions): Promise<UTXOLimited[]> {
+    if (rarity !== undefined || filter !== undefined) {
+      throw new Error('Rarity and filter options are not supported for Rooch getSpendables');
+    }
+
     if (!address || typeof address !== 'string') {
       throw new Error('Invalid address provided');
     }
@@ -359,7 +362,7 @@ export class RoochDataSource /*implements IDatasource*/ {
       throw new Error('Invalid value provided');
     }
 
-    const spendables: UTXOLimited[] = [];
+    const spendables: ExtendedUTXOLimited[] = [];
     let cursor: IndexerStateIDView | null = null;
     let totalSats = 0;
 
@@ -375,7 +378,7 @@ export class RoochDataSource /*implements IDatasource*/ {
       for (const utxoState of response.data) {
         const utxo = this.convertToUTXOLimited(utxoState);
 
-        if (this.isSpendable(utxo, type, rarity, filter)) {
+        if (this.isSpendable(utxo, type)) {
           spendables.push(utxo);
           totalSats += utxo.sats;
 
@@ -395,7 +398,7 @@ export class RoochDataSource /*implements IDatasource*/ {
     return spendables;
   }
 
-  private convertToUTXOLimited(utxoState: UTXOStateView): UTXOLimited {
+  private convertToUTXOLimited(utxoState: UTXOStateView): ExtendedUTXOLimited {
     const utxoValue: UTXOView = utxoState.value;
     
     if (!utxoValue.bitcoin_txid || !utxoValue.value || typeof utxoValue.vout !== 'number') {
@@ -412,7 +415,8 @@ export class RoochDataSource /*implements IDatasource*/ {
         hex: "", // Rooch does not provide script_pubkey in the current structure
         address: utxoState.owner_bitcoin_address || utxoState.owner,
         type: "p2tr", // Assuming all UTXOs use Taproot
-      }
+      },
+      seals: utxoValue.seals
     };
   }
 
@@ -429,41 +433,15 @@ export class RoochDataSource /*implements IDatasource*/ {
     }
   }
 
-  private isSpendable(utxo: UTXOLimited, type: "all" | "spendable", rarity?: Rarity[], filter?: string[]): boolean {
-    if (type === "spendable" && !this.isUTXOSpendable(utxo)) {
-      return false;
+  private isSpendable(utxo: ExtendedUTXOLimited, type: "all" | "spendable"): boolean {
+    if (type === "spendable") {
+      return this.isUTXOSpendable(utxo);
     }
-
-    if (rarity && !this.matchesRarity(utxo, rarity)) {
-      return false;
-    }
-
-    if (filter && !this.matchesFilter(utxo, filter)) {
-      return false;
-    }
-
     return true;
   }
 
-  private isUTXOSpendable(utxo: UTXOLimited): boolean {
-    // Implement logic to determine if a UTXO is spendable
-    // This might involve checking if it's not an inscription UTXO, etc.
-    // For now, we'll assume all UTXOs are spendable
-    return true;
-  }
-
-  private matchesRarity(utxo: UTXOLimited, rarity: Rarity[]): boolean {
-    // Implement logic to check if the UTXO matches the specified rarity
-    // This might involve checking the satoshi range or other criteria
-    // For now, we'll assume all UTXOs match any rarity
-    return true;
-  }
-
-  private matchesFilter(utxo: UTXOLimited, filter: string[]): boolean {
-    // Implement logic to check if the UTXO matches the specified filter
-    // This might involve checking specific attributes of the UTXO
-    // For now, we'll assume all UTXOs match any filter
-    return true;
+  private isUTXOSpendable(utxo: ExtendedUTXOLimited): boolean {
+    return utxo.seals === "" || utxo.seals === null || utxo.seals === undefined;
   }
 }
 
@@ -476,4 +454,8 @@ function bitcoinNetworkToRooch(network: Network): 'testnet' | 'devnet' | 'localn
     default:
       throw new Error(`Unknown network: ${network}`)
   }
+}
+
+interface ExtendedUTXOLimited extends UTXOLimited {
+  seals: string;
 }

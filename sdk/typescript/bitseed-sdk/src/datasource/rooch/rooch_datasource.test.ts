@@ -1210,4 +1210,414 @@ describe('RoochDataSource', () => {
     });
 
   });
+
+  describe('getSpendables', () => {
+    it('should successfully get spendable UTXOs', async () => {
+      const mockAddress = 'mockAddress';
+      const mockUTXOs: PaginatedUTXOStateViews = {
+        data: [
+          {
+            value: {
+              bitcoin_txid: 'txid1',
+              seals: '',
+              txid: 'txid1',
+              value: '1000000',
+              vout: 0
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id1',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '0',
+            tx_order: '0',
+            updated_at: 'mock_date'
+          },
+          {
+            value: {
+              bitcoin_txid: 'txid2',
+              seals: '',
+              txid: 'txid2',
+              value: '2000000',
+              vout: 1
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id2',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '1',
+            tx_order: '1',
+            updated_at: 'mock_date'
+          }
+        ],
+        has_next_page: false,
+        next_cursor: null
+      };
+
+      mockTransport.setMockResponse('btc_queryUTXOs', mockUTXOs);
+
+      const result = await instance.getSpendables({ address: mockAddress, value: 1500000 });
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual({
+        txid: 'txid1',
+        n: 0,
+        sats: 1000000,
+        scriptPubKey: {
+          asm: '',
+          desc: '',
+          hex: '',
+          address: mockAddress,
+          type: 'p2tr'
+        },
+        seals: ""
+      });
+      expect(result[1]).toEqual({
+        txid: 'txid2',
+        n: 1,
+        sats: 2000000,
+        scriptPubKey: {
+          asm: '',
+          desc: '',
+          hex: '',
+          address: mockAddress,
+          type: 'p2tr'
+        },
+        seals: ""
+      });
+    });
+
+    it('should return an empty array when no spendable UTXOs are available', async () => {
+      const mockAddress = 'mockAddress';
+      const mockUTXOs: PaginatedUTXOStateViews = {
+        data: [],
+        has_next_page: false,
+        next_cursor: null
+      };
+
+      mockTransport.setMockResponse('btc_queryUTXOs', mockUTXOs);
+
+      const result = await instance.getSpendables({ address: mockAddress, value: 1000000 });
+
+      expect(result).toHaveLength(0);
+    });
+
+    it('should return all available UTXOs when requested value exceeds total available', async () => {
+      const mockAddress = 'mockAddress';
+      const mockUTXOs: PaginatedUTXOStateViews = {
+        data: [
+          {
+            value: {
+              bitcoin_txid: 'txid1',
+              seals: '',
+              txid: 'txid1',
+              value: '1000000',
+              vout: 0
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id1',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '0',
+            tx_order: '0',
+            updated_at: 'mock_date'
+          },
+          {
+            value: {
+              bitcoin_txid: 'txid2',
+              seals: '',
+              txid: 'txid2',
+              value: '2000000',
+              vout: 1
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id2',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '1',
+            tx_order: '1',
+            updated_at: 'mock_date'
+          }
+        ],
+        has_next_page: false,
+        next_cursor: null
+      };
+
+      mockTransport.setMockResponse('btc_queryUTXOs', mockUTXOs);
+
+      const result = await instance.getSpendables({ address: mockAddress, value: 5000000 });
+
+      expect(result).toHaveLength(2);
+      expect(result[0].sats).toBe(1000000);
+      expect(result[1].sats).toBe(2000000);
+    });
+
+    it('should correctly handle pagination when fetching UTXOs', async () => {
+      const mockAddress = 'mockAddress';
+      const mockUTXOsPage1: PaginatedUTXOStateViews = {
+        data: [
+          {
+            value: {
+              bitcoin_txid: 'txid1',
+              seals: '',
+              txid: 'txid1',
+              value: '1000000',
+              vout: 0
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id1',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '0',
+            tx_order: '0',
+            updated_at: 'mock_date'
+          }
+        ],
+        has_next_page: true,
+        next_cursor: { state_index: '1', tx_order: '1' }
+      };
+
+      const mockUTXOsPage2: PaginatedUTXOStateViews = {
+        data: [
+          {
+            value: {
+              bitcoin_txid: 'txid2',
+              seals: '',
+              txid: 'txid2',
+              value: '2000000',
+              vout: 1
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id2',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '1',
+            tx_order: '1',
+            updated_at: 'mock_date'
+          }
+        ],
+        has_next_page: false,
+        next_cursor: null
+      };
+
+      mockTransport.setMockResponse('btc_queryUTXOs', mockUTXOsPage1);
+      mockTransport.setMockResponse('btc_queryUTXOs', mockUTXOsPage2);
+
+      const result = await instance.getSpendables({ address: mockAddress, value: 3000000 });
+
+      expect(result).toHaveLength(2);
+      expect(result[0].txid).toBe('txid1');
+      expect(result[0].sats).toBe(1000000);
+      expect(result[1].txid).toBe('txid2');
+      expect(result[1].sats).toBe(2000000);
+    });
+
+    it('should correctly limit the number of returned UTXOs based on the limit parameter', async () => {
+      const mockAddress = 'mockAddress';
+      const mockUTXOs: PaginatedUTXOStateViews = {
+        data: [
+          {
+            value: {
+              bitcoin_txid: 'txid1',
+              seals: '',
+              txid: 'txid1',
+              value: '1000000',
+              vout: 0
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id1',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '0',
+            tx_order: '0',
+            updated_at: 'mock_date'
+          },
+          {
+            value: {
+              bitcoin_txid: 'txid2',
+              seals: '',
+              txid: 'txid2',
+              value: '2000000',
+              vout: 1
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id2',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '1',
+            tx_order: '1',
+            updated_at: 'mock_date'
+          },
+          {
+            value: {
+              bitcoin_txid: 'txid3',
+              seals: '',
+              txid: 'txid3',
+              value: '3000000',
+              vout: 2
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id3',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '2',
+            tx_order: '2',
+            updated_at: 'mock_date'
+          }
+        ],
+        has_next_page: false,
+        next_cursor: null
+      };
+
+      mockTransport.setMockResponse('btc_queryUTXOs', mockUTXOs);
+
+      const result = await instance.getSpendables({ address: mockAddress, value: 10000000, limit: 2 });
+
+      expect(result).toHaveLength(2);
+      expect(result[0].txid).toBe('txid1');
+      expect(result[0].sats).toBe(1000000);
+      expect(result[1].txid).toBe('txid2');
+      expect(result[1].sats).toBe(2000000);
+    });
+
+    it('should throw an error when rarity parameter is provided', async () => {
+      const mockAddress = 'mockAddress';
+      
+      await expect(instance.getSpendables({ 
+        address: mockAddress, 
+        value: 1000000, 
+        rarity: ['common']  // Providing a rarity parameter
+      })).rejects.toThrow('Rarity and filter options are not supported for Rooch getSpendables');
+    });
+
+    it('should throw an error when filter parameter is provided', async () => {
+      const mockAddress = 'mockAddress';
+      
+      await expect(instance.getSpendables({ 
+        address: mockAddress, 
+        value: 1000000, 
+        filter: ['some_filter']  // Providing a filter parameter
+      })).rejects.toThrow('Rarity and filter options are not supported for Rooch getSpendables');
+    });
+
+    it('should throw an error when invalid address is provided', async () => {
+      await expect(instance.getSpendables({ 
+        address: '', 
+        value: 1000000
+      })).rejects.toThrow('Invalid address provided');
+
+      await expect(instance.getSpendables({ 
+        address: 123 as any, 
+        value: 1000000
+      })).rejects.toThrow('Invalid address provided');
+    });
+
+    it('should throw an error when invalid value is provided', async () => {
+      const mockAddress = 'mockAddress';
+
+      await expect(instance.getSpendables({ 
+        address: mockAddress, 
+        value: -1000
+      })).rejects.toThrow('Invalid value provided');
+
+      await expect(instance.getSpendables({ 
+        address: mockAddress, 
+        value: 'not a number' as any
+      })).rejects.toThrow('Invalid value provided');
+    });
+
+    it('should correctly handle "all" and "spendable" type parameter', async () => {
+      const mockAddress = 'mockAddress';
+      const mockUTXOs: PaginatedUTXOStateViews = {
+        data: [
+          {
+            value: {
+              bitcoin_txid: 'txid1',
+              seals: '',
+              txid: 'txid1',
+              value: '1000000',
+              vout: 0
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id1',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '0',
+            tx_order: '0',
+            updated_at: 'mock_date'
+          },
+          {
+            value: {
+              bitcoin_txid: 'txid2',
+              seals: 'some_seal_data',
+              txid: 'txid2',
+              value: '2000000',
+              vout: 1
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id2',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '1',
+            tx_order: '1',
+            updated_at: 'mock_date'
+          }
+        ],
+        has_next_page: false,
+        next_cursor: null
+      };
+
+      mockTransport.setMockResponse('btc_queryUTXOs', mockUTXOs);
+
+      const resultAll = await instance.getSpendables({ 
+        address: mockAddress, 
+        value: 3000000, 
+        type: 'all'
+      });
+
+      expect(resultAll).toHaveLength(2);
+
+      const resultSpendable = await instance.getSpendables({ 
+        address: mockAddress, 
+        value: 3000000, 
+        type: 'spendable'
+      });
+
+      expect(resultSpendable).toHaveLength(1);
+      expect(resultSpendable[0].txid).toBe('txid1');
+    });
+    
+  });
 });
