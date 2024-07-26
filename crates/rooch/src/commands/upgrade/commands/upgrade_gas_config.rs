@@ -67,11 +67,8 @@ impl CommandAction<ExecuteTransactionResponseView> for UpgradeGasConfigCommand {
         };
 
         let onchain_gas_schedule = match gas_schedule_opt {
-            Some(gas_schedule) => match gas_schedule {
-                Struct(gas_schedule_struct_) => Some(extract_gas_schedule(gas_schedule_struct_)),
-                _ => None,
-            },
-            None => None,
+            Some(Struct(gas_schedule_struct_)) => Some(extract_gas_schedule(gas_schedule_struct_)),
+            _ => None,
         };
 
         let local_latest_gas_parameters = FrameworksGasParameters::latest();
@@ -124,10 +121,10 @@ impl CommandAction<ExecuteTransactionResponseView> for UpgradeGasConfigCommand {
 
                 for (gas_key, gas_value) in local_gas_schedule_map.iter() {
                     match onchain_gas_schedule_map.get(gas_key) {
-                        None => added_gas_entries.push((gas_key.clone(), gas_value.clone())),
+                        None => added_gas_entries.push((gas_key.clone(), *gas_value)),
                         Some(onchain_gas_value) => {
                             if *onchain_gas_value != *gas_value {
-                                modified_gas_entries.push((gas_key.clone(), gas_value.clone()))
+                                modified_gas_entries.push((gas_key.clone(), *gas_value))
                             }
                         }
                     }
@@ -241,38 +238,29 @@ fn extract_gas_schedule(
         let key = Identifier::from_str("entries").unwrap();
         let gas_entries = value.get(&key).unwrap();
 
-        match gas_entries {
-            Vector(vector) => {
-                for gas_item in vector.iter() {
-                    match gas_item {
-                        Struct(gas_entry_struct) => {
-                            let AnnotatedMoveStructView {
-                                abilities: _,
-                                type_: _,
-                                value,
-                            } = gas_entry_struct;
+        if let Vector(vector) = gas_entries {
+            for gas_item in vector.iter() {
+                if let Struct(gas_entry_struct) = gas_item {
+                    let AnnotatedMoveStructView {
+                        abilities: _,
+                        type_: _,
+                        value,
+                    } = gas_entry_struct;
 
-                            let gas_entry_key =
-                                value.get(&Identifier::from_str("key").unwrap()).unwrap();
-                            let gas_entry_value =
-                                value.get(&Identifier::from_str("val").unwrap()).unwrap();
+                    let gas_entry_key = value.get(&Identifier::from_str("key").unwrap()).unwrap();
+                    let gas_entry_value = value.get(&Identifier::from_str("val").unwrap()).unwrap();
 
-                            if let SpecificStruct(special_struct) = gas_entry_key {
-                                if let SpecificStructView::MoveString(move_string) = special_struct
-                                {
-                                    let gas_key = move_string.to_string();
-                                    if let U64(u64_val) = gas_entry_value {
-                                        let gas_val = u64_val.0;
-                                        gas_entries_map.insert(gas_key, gas_val);
-                                    }
-                                }
-                            }
+                    if let SpecificStruct(SpecificStructView::MoveString(move_string)) =
+                        gas_entry_key
+                    {
+                        let gas_key = move_string.to_string();
+                        if let U64(u64_val) = gas_entry_value {
+                            let gas_val = u64_val.0;
+                            gas_entries_map.insert(gas_key, gas_val);
                         }
-                        _ => {}
                     }
                 }
             }
-            _ => {}
         }
     }
 
