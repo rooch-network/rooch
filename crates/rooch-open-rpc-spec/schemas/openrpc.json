@@ -2916,7 +2916,13 @@
           },
           "seals": {
             "description": "Protocol seals",
-            "type": "string"
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ObjectID"
+              }
+            }
           },
           "txid": {
             "description": "The txid of the UTXO",
