@@ -14,7 +14,6 @@
 -  [Function `genesis_init`](#0x2_gas_schedule_genesis_init)
 -  [Function `new_gas_schedule_config`](#0x2_gas_schedule_new_gas_schedule_config)
 -  [Function `new_gas_entry`](#0x2_gas_schedule_new_gas_entry)
--  [Function `check_gas_schedule_version`](#0x2_gas_schedule_check_gas_schedule_version)
 -  [Function `update_gas_schedule`](#0x2_gas_schedule_update_gas_schedule)
 -  [Function `gas_schedule`](#0x2_gas_schedule_gas_schedule)
 -  [Function `gas_schedule_max_gas_amount`](#0x2_gas_schedule_gas_schedule_max_gas_amount)
@@ -141,17 +140,6 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="gas_schedule.md#0x2_gas_schedule_new_gas_entry">new_gas_entry</a>(key: <a href="_String">string::String</a>, val: u64): <a href="gas_schedule.md#0x2_gas_schedule_GasEntry">gas_schedule::GasEntry</a>
-</code></pre>
-
-
-
-<a name="0x2_gas_schedule_check_gas_schedule_version"></a>
-
-## Function `check_gas_schedule_version`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="gas_schedule.md#0x2_gas_schedule_check_gas_schedule_version">check_gas_schedule_version</a>(gas_schedule_config_version: u64)
 </code></pre>
 
 

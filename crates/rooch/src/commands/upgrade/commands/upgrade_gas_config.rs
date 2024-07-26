@@ -1,26 +1,20 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{collections::BTreeMap, str::FromStr};
+use std::collections::BTreeMap;
 
 use async_trait::async_trait;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::ModuleId;
-use rpassword::prompt_password;
 
 use framework_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
+use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::move_types::FunctionId;
 use moveos_types::state::MoveState;
 use moveos_types::transaction::MoveAction;
-use moveos_types::{move_types::FunctionId, transaction::FunctionCall};
 use rooch_framework::natives::gas_parameter::gas_member::ToOnChainGasSchedule;
 use rooch_genesis::{FrameworksGasParameters, LATEST_GAS_SCHEDULE_VERSION};
-use rooch_key::key_derive::verify_password;
-use rooch_key::keystore::account_keystore::AccountKeystore;
-use rooch_rpc_api::jsonrpc_types::{
-    AnnotatedMoveStructView, AnnotatedMoveValueView::SpecificStruct,
-    AnnotatedMoveValueView::Struct, AnnotatedMoveValueView::Vector, AnnotatedMoveValueView::U64,
-};
-use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, SpecificStructView};
+use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::RoochTransaction;
 
@@ -39,35 +33,24 @@ pub struct UpgradeGasConfigCommand {
 #[async_trait]
 impl CommandAction<ExecuteTransactionResponseView> for UpgradeGasConfigCommand {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
-        let context = self.context_options.build()?;
-        let gas_schedule_function_id = FunctionId::from_str("0x2::gas_schedule::gas_schedule")?;
-        let function_call = FunctionCall::new(gas_schedule_function_id, vec![], vec![]);
+        let context = self.context_options.build_require_password()?;
 
         let client = context.get_client().await?;
-        let gas_schedule_result = client
-            .rooch
-            .execute_view_function(function_call)
-            .await
-            .map_err(|e| RoochError::ViewFunctionError(e.to_string()));
-
-        let gas_schedule_opt = match gas_schedule_result {
-            Ok(gas_schedule_opt) => match gas_schedule_opt.return_values {
-                Some(return_value_vec) => {
-                    if !return_value_vec.is_empty() {
-                        let return_value = return_value_vec.first().unwrap();
-                        let decode_return_value = return_value.decoded_value.clone();
-                        Some(decode_return_value)
-                    } else {
-                        None
-                    }
-                }
-                None => None,
-            },
-            Err(_) => None,
-        };
+        let gas_schedule_module =
+            client.as_module_binding::<moveos_types::moveos_std::gas_schedule::GasScheduleModule>();
+        let gas_schedule_opt = gas_schedule_module.gas_schedule();
+        // println!("0000000000 {:?}", gas_schedule_opt);
 
         let onchain_gas_schedule = match gas_schedule_opt {
-            Some(Struct(gas_schedule_struct_)) => Some(extract_gas_schedule(gas_schedule_struct_)),
+            Ok(gas_schedule) => {
+                let mut entries_map = BTreeMap::new();
+                let _: Vec<_> = gas_schedule
+                    .entries
+                    .iter()
+                    .map(|gas_entry| entries_map.insert(gas_entry.key.to_string(), gas_entry.val))
+                    .collect();
+                Some((gas_schedule.schedule_version, entries_map))
+            }
             _ => None,
         };
 
@@ -186,83 +169,10 @@ impl CommandAction<ExecuteTransactionResponseView> for UpgradeGasConfigCommand {
                 context.execute(tx).await
             }
             None => {
-                if context.keystore.get_if_password_is_empty() {
-                    context
-                        .sign_and_execute(sender, action, None, max_gas_amount)
-                        .await
-                } else {
-                    let password =
-                        prompt_password("Enter the password to publish:").unwrap_or_default();
-                    let is_verified = verify_password(
-                        Some(password.clone()),
-                        context.keystore.get_password_hash(),
-                    )?;
-
-                    if !is_verified {
-                        return Err(RoochError::InvalidPasswordError(
-                            "Password is invalid".to_owned(),
-                        ));
-                    }
-
-                    context
-                        .sign_and_execute(sender, action, Some(password), max_gas_amount)
-                        .await
-                }
+                context
+                    .sign_and_execute(sender, action, context.get_password(), max_gas_amount)
+                    .await
             }
         }
     }
-}
-
-fn extract_gas_schedule(
-    gas_schedule_struct_: AnnotatedMoveStructView,
-) -> (u64, BTreeMap<String, u64>) {
-    let AnnotatedMoveStructView {
-        abilities: _,
-        type_,
-        value,
-    } = gas_schedule_struct_;
-
-    let struct_name = type_.0.to_string();
-
-    let mut gas_entries_map = BTreeMap::new();
-    let mut gas_config_version = 0;
-
-    if struct_name == "0x2::gas_schedule::GasSchedule" {
-        let key = Identifier::from_str("schedule_version").unwrap();
-        let gas_config_version_value = value.get(&key).unwrap();
-
-        if let U64(u64_val) = gas_config_version_value {
-            gas_config_version = u64_val.0;
-        }
-
-        let key = Identifier::from_str("entries").unwrap();
-        let gas_entries = value.get(&key).unwrap();
-
-        if let Vector(vector) = gas_entries {
-            for gas_item in vector.iter() {
-                if let Struct(gas_entry_struct) = gas_item {
-                    let AnnotatedMoveStructView {
-                        abilities: _,
-                        type_: _,
-                        value,
-                    } = gas_entry_struct;
-
-                    let gas_entry_key = value.get(&Identifier::from_str("key").unwrap()).unwrap();
-                    let gas_entry_value = value.get(&Identifier::from_str("val").unwrap()).unwrap();
-
-                    if let SpecificStruct(SpecificStructView::MoveString(move_string)) =
-                        gas_entry_key
-                    {
-                        let gas_key = move_string.to_string();
-                        if let U64(u64_val) = gas_entry_value {
-                            let gas_val = u64_val.0;
-                            gas_entries_map.insert(gas_key, gas_val);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    (gas_config_version, gas_entries_map)
 }
