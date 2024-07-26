@@ -10,9 +10,9 @@ const mockApps: AppItemProps[] = [
     name: 'Rooch Clicker',
     description: 'Join our Click Challenge! You\'re in for 1,000 RCC!',
     profileUrl:
-      'https://cdn.lxdao.io/bafkreig3psglqxqiejrcokqwcoucbv4i2nkp4rumqawok2vjvhey5ps63i.png',
+      './logo-single.png',
     logoUrl: 'clicker-app.jpg',
-    type: 'Clicker',
+    type: 'Demo',
     url: 'https://rooch-clicker.vercel.app'
   }
 ]

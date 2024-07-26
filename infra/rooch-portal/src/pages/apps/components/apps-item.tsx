@@ -31,10 +31,10 @@ export const AppsItem = ({ id, name, description, profileUrl, logoUrl, type, url
       key={id}
       className="h-full w-full transition-all border-border/40 dark:bg-zinc-800/90 dark:hover:border-primary/20 hover:shadow-md overflow-hidden"
     >
-      <CardHeader className="p-4">
+      <CardHeader className="p-4 pb-2">
         <div className="flex items-center justify-start gap-x-3">
           <div>
-            <Avatar>
+            <Avatar className='bg-white'>
               <AvatarImage src={profileUrl} alt={description} />
               <AvatarFallback />
             </Avatar>
@@ -49,13 +49,14 @@ export const AppsItem = ({ id, name, description, profileUrl, logoUrl, type, url
                 {type}
               </Badge>
             </div>
-            <CardDescription>{description}</CardDescription>
+            <CardDescription className='mt-1'>{description}</CardDescription>
           </div>
         </div>
       </CardHeader>
       <div className="w-full">
         <Separator className="bg-accent dark:bg-accent/75" />
       </div>
+      <a href={url} className="w-full" target="_blank" rel="noopener noreferrer">
       <CardContent className="p-0">
         <div className="mx-4 border-none rounded-lg overflow-hidden">
           <AspectRatio
@@ -64,16 +65,10 @@ export const AppsItem = ({ id, name, description, profileUrl, logoUrl, type, url
           >
             <img src={logoUrl} alt="Website" className="rounded-md object-cover transition-all" />
 
-            {/*<iframe*/}
-            {/*  src={'https://rooch-clicker-five.vercel.app'}*/}
-            {/*  title="Website Preview"*/}
-            {/*  className="w-full h-full"*/}
-            {/*  style={{ border: 'none', transform: 'scale(1)' }}*/}
-            {/*  scrolling="no"*/}
-            {/*></iframe>*/}
           </AspectRatio>
         </div>
       </CardContent>
+      </a>
       <CardFooter className="p-4">
         <a href={url} className="w-full" target="_blank" rel="noopener noreferrer">
         <Button variant="default" size="default" className="w-full">
