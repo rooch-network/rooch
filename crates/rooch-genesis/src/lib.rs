@@ -7,6 +7,7 @@ use anyhow::{ensure, Result};
 use framework_builder::stdlib_version::StdlibVersion;
 use framework_builder::Stdlib;
 use include_dir::{include_dir, Dir};
+use move_core_types::gas_algebra::{InternalGas, InternalGasPerArg};
 use move_core_types::value::MoveTypeLayout;
 use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use move_vm_runtime::native_functions::NativeFunction;
@@ -54,6 +55,9 @@ pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
     network.set_sequencer_account(sequencer_account);
     RoochGenesis::build(network).expect("build rooch genesis failed")
 });
+pub const LATEST_GAS_SCHEDULE_VERSION: u64 = GAS_SCHEDULE_RELEASE_V1;
+// update the gas config for function calling
+pub const GAS_SCHEDULE_RELEASE_V1: u64 = 1;
 
 pub(crate) const STATIC_GENESIS_DIR: Dir = include_dir!("released");
 
@@ -90,6 +94,48 @@ impl FrameworksGasParameters {
             rooch_framework_gas_params: rooch_framework::natives::NativeGasParameters::initial(),
             bitcoin_move_gas_params: bitcoin_move::natives::GasParameters::initial(),
         }
+    }
+
+    pub fn latest() -> Self {
+        let mut gas_parameter = Self {
+            max_gas_amount: GasScheduleConfig::INITIAL_MAX_GAS_AMOUNT,
+            vm_gas_params: VMGasParameters::initial(),
+            rooch_framework_gas_params: rooch_framework::natives::NativeGasParameters::initial(),
+            bitcoin_move_gas_params: bitcoin_move::natives::GasParameters::initial(),
+        };
+
+        if LATEST_GAS_SCHEDULE_VERSION >= GAS_SCHEDULE_RELEASE_V1 {
+            gas_parameter
+                .vm_gas_params
+                .instruction_gas_parameter
+                .call_base = InternalGas::new(167);
+            gas_parameter
+                .vm_gas_params
+                .instruction_gas_parameter
+                .call_per_arg = InternalGasPerArg::new(15);
+            gas_parameter
+                .vm_gas_params
+                .instruction_gas_parameter
+                .call_per_local = InternalGasPerArg::new(15);
+            gas_parameter
+                .vm_gas_params
+                .instruction_gas_parameter
+                .call_generic_base = InternalGas::new(167);
+            gas_parameter
+                .vm_gas_params
+                .instruction_gas_parameter
+                .call_generic_per_arg = InternalGasPerArg::new(15);
+            gas_parameter
+                .vm_gas_params
+                .instruction_gas_parameter
+                .call_generic_per_local = InternalGasPerArg::new(15);
+            gas_parameter
+                .vm_gas_params
+                .instruction_gas_parameter
+                .call_generic_per_ty_arg = InternalGasPerArg::new(15);
+        }
+
+        gas_parameter
     }
 
     pub fn to_gas_schedule_config(&self) -> GasScheduleConfig {
@@ -201,7 +247,15 @@ impl RoochGenesis {
             .clone()
             .into_moveos_transaction(ObjectMeta::genesis_root());
 
-        let gas_parameter = FrameworksGasParameters::initial();
+        let gas_parameter = {
+            if network.chain_id == BuiltinChainID::Dev.chain_id()
+                || network.chain_id == BuiltinChainID::Local.chain_id()
+            {
+                FrameworksGasParameters::latest()
+            } else {
+                FrameworksGasParameters::initial()
+            }
+        };
         let gas_config = gas_parameter.to_gas_schedule_config();
         genesis_moveos_tx.ctx.add(genesis_ctx.clone())?;
         genesis_moveos_tx.ctx.add(moveos_genesis_ctx.clone())?;

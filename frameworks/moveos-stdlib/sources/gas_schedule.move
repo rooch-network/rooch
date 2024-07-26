@@ -57,6 +57,15 @@ module moveos_std::gas_schedule {
         GasEntry {key, val}
     }
 
+    public fun check_gas_schedule_version(gas_schedule_config_version: u64) {
+        let object_id = object::named_object_id<GasSchedule>();
+        let obj = object::borrow_mut_object_extend<GasSchedule>(object_id);
+        let gas_schedule = object::borrow_mut(obj);
+
+        assert!(gas_schedule_config_version > gas_schedule.schedule_version, ErrorInvalidGasScheduleEntries);
+        assert!(gas_schedule_config_version == gas_schedule.schedule_version + 1, ErrorInvalidGasScheduleEntries);
+    }
+
     public fun update_gas_schedule(account: &signer, gas_schedule_config: vector<u8>) {
         core_addresses::assert_system_reserved(account);
         assert!(vector::length(&gas_schedule_config) > 0, ErrorInvalidGasScheduleEntries);
