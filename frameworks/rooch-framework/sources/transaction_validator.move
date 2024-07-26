@@ -121,8 +121,8 @@ module rooch_framework::transaction_validator {
             account_entry::create_account(sender);
             //if the chain is local or dev, give the sender some RGC
             if (chain_id::is_local_or_dev()) {
-                //100 RGC
-                let init_gas = 1_00_000_000u256;
+                //10000 RGC
+                let init_gas = 1000_000_000_000u256;
                 gas_coin::faucet(sender, init_gas); 
             };
         };

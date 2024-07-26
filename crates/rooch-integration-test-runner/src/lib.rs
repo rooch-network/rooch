@@ -122,9 +122,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             genesis_gas_parameter.all_natives(),
             MoveOSConfig::default(),
             rooch_types::framework::system_pre_execute_functions(),
-            vec![],
-            //TODO FIXME https://github.com/rooch-network/rooch/issues/1137
-            //rooch_types::framework::system_post_execute_functions(),
+            rooch_types::framework::system_post_execute_functions(),
         )
         .unwrap();
 
