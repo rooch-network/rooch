@@ -14,7 +14,6 @@ use std::time::SystemTime;
 use anyhow::{Error, Result};
 use bitcoin::{OutPoint, Txid};
 use clap::Parser;
-use fastbloom::BloomFilter;
 use move_core_types::account_address::AccountAddress;
 use redb::{Database, ReadOnlyTable};
 use serde::{Deserialize, Serialize};
@@ -345,7 +344,6 @@ pub fn produce_utxo_updates(
     let mut csv_reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
     let mut is_title_line = true;
     let mut added_address_set = HashSet::with_capacity(60_000_000);
-    let mut added_address_filter = BloomFilter::with_num_bits(64).expected_items(60_000_000);
     let utxo_ord_map = match utxo_ord_map_db {
         None => None,
         Some(utxo_ord_map_db) => {
@@ -390,11 +388,8 @@ pub fn produce_utxo_updates(
             }
 
             if let Some(address_mapping_data) = address_mapping_data {
-                let address_mapping_update = gen_address_mapping_update(
-                    address_mapping_data,
-                    &mut added_address_set,
-                    &mut added_address_filter,
-                );
+                let address_mapping_update =
+                    gen_address_mapping_update(address_mapping_data, &mut added_address_set);
                 if let Some((field_key, object_state)) = address_mapping_update {
                     rooch_to_bitcoin_mapping_updates.put(field_key, object_state);
                 }
@@ -480,29 +475,16 @@ fn inscription_object_ids_to_utxo_seal(
     }
 }
 
-#[allow(clippy::collapsible_else_if)]
 fn gen_address_mapping_update(
     address_mapping_data: AddressMappingData,
     added_address_set: &mut HashSet<String>,
-    added_address_filter: &mut BloomFilter,
 ) -> Option<(FieldKey, ObjectState)> {
     let address = address_mapping_data.origin_address.clone();
-
-    if !added_address_filter.contains(address.as_bytes()) {
-        added_address_set.insert(address.clone());
-        added_address_filter.insert(address.as_bytes());
+    if !added_address_set.contains(&address) {
+        added_address_set.insert(address);
         let state = address_mapping_data.into_state();
         let key = state.id().field_key();
         return Some((key, state));
-    } else {
-        // may false-positive, check in hashset
-        if !added_address_set.contains(&address) {
-            added_address_set.insert(address.clone());
-            added_address_filter.insert(address.as_bytes());
-            let state = address_mapping_data.into_state();
-            let key = state.id().field_key();
-            return Some((key, state));
-        }
     }
     None
 }
@@ -549,19 +531,12 @@ mod tests {
             address: AccountAddress::random(),
         };
         let mut added_address_set = HashSet::new();
-        let mut added_address_filter = BloomFilter::with_num_bits(64).expected_items(60_000_000);
-        let result = gen_address_mapping_update(
-            address_mapping_data.clone(),
-            &mut added_address_set,
-            &mut added_address_filter,
-        );
+        let result =
+            gen_address_mapping_update(address_mapping_data.clone(), &mut added_address_set);
         assert!(result.is_some());
 
-        let result2 = gen_address_mapping_update(
-            address_mapping_data.clone(),
-            &mut added_address_set,
-            &mut added_address_filter,
-        );
+        let result2 =
+            gen_address_mapping_update(address_mapping_data.clone(), &mut added_address_set);
         assert!(result2.is_none());
     }
 }
