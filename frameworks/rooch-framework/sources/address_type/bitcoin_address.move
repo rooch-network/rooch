@@ -114,10 +114,10 @@ module rooch_framework::bitcoin_address {
     public native fun verify_bitcoin_address_with_public_key(bitcoin_addr: &BitcoinAddress, pk: &vector<u8>): bool;
 
     // derive multisig xonly public key from public keys
-    public native fun derive_multisig_xonly_pubkey_from_xonly_pubkeys(public_keys: vector<vector<u8>>, threshold: u64): vector<u8>;
+    public native fun derive_multisig_pubkey_from_pubkeys(public_keys: vector<vector<u8>>, threshold: u64): vector<u8>;
  
     // derive bitcoin taproot address from the multisig xonly public key
-    public native fun derive_bitcoin_taproot_address_from_multisig_xonly_pubkey(xonly_pubkey: &vector<u8>): BitcoinAddress;
+    public native fun derive_bitcoin_taproot_address_from_pubkey(xonly_pubkey: &vector<u8>): BitcoinAddress;
 
     /// Parse the Bitcoin address string bytes to Move BitcoinAddress
     native fun parse(raw_addr: &vector<u8>): BitcoinAddress;
@@ -172,7 +172,7 @@ module rooch_framework::bitcoin_address {
         vector::push_back(&mut pk_list, pk_1);
         vector::push_back(&mut pk_list, pk_2);
 
-        let xonly_pubkey = derive_multisig_xonly_pubkey_from_xonly_pubkeys(pk_list, 2);
+        let xonly_pubkey = derive_multisig_pubkey_from_pubkeys(pk_list, 2);
 
         assert!(expected_xonly_pubkey == xonly_pubkey, ErrorInvalidKeyEggContext);
     }
@@ -188,7 +188,7 @@ module rooch_framework::bitcoin_address {
         vector::push_back(&mut pk_list, pk_1);
         vector::push_back(&mut pk_list, pk_2);
 
-        derive_multisig_xonly_pubkey_from_xonly_pubkeys(pk_list, 3);
+        derive_multisig_pubkey_from_pubkeys(pk_list, 3);
     }
 
     #[test]
@@ -202,14 +202,14 @@ module rooch_framework::bitcoin_address {
         vector::push_back(&mut pk_list, pk_1);
         vector::push_back(&mut pk_list, pk_2);
 
-        derive_multisig_xonly_pubkey_from_xonly_pubkeys(pk_list, 2);
+        derive_multisig_pubkey_from_pubkeys(pk_list, 2);
     }
 
     #[test]
     fun test_derive_bitcoin_taproot_address_from_multisig_xonly_pubkey_success() {
         let xonly_pubkey = x"7b6474bd9206ad07c0bc6b0ac90d43f6f232235c9e9cbf0c47775bf47ca9c402";
 
-        let bitcoin_addr = derive_bitcoin_taproot_address_from_multisig_xonly_pubkey(&xonly_pubkey);
+        let bitcoin_addr = derive_bitcoin_taproot_address_from_pubkey(&xonly_pubkey);
 
         let expected_bitcoin_addr = BitcoinAddress {
             bytes: x"020102f97a0a664c8493bfa28cfcf3450628bdc0ba7b3b0af2b57d4d057f15cb41f9",
@@ -223,6 +223,6 @@ module rooch_framework::bitcoin_address {
     fun test_derive_bitcoin_taproot_address_from_multisig_xonly_pubkey_fail() {
         let xonly_pubkey = x"038e3d29b653e40f5b620f9443ee05222d1e40be58f544b6fed3d464edd54db883";
 
-        derive_bitcoin_taproot_address_from_multisig_xonly_pubkey(&xonly_pubkey);
+        derive_bitcoin_taproot_address_from_pubkey(&xonly_pubkey);
     }
 }

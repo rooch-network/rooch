@@ -169,7 +169,7 @@ pub fn verify_bitcoin_address_with_public_key(
 }
 
 // optional function
-pub fn derive_multisig_xonly_pubkey_from_xonly_pubkeys(
+pub fn derive_multisig_pubkey_from_pubkeys(
     gas_params: &FromBytesGasParametersOptional,
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,
@@ -190,7 +190,7 @@ pub fn derive_multisig_xonly_pubkey_from_xonly_pubkeys(
         let value = arg_value.copy_value()?;
         match value.value_as::<Vec<u8>>() {
             Ok(v) => {
-                match Point::lift_x_hex(&v.as_hex().to_string()) {
+                match Point::from_slice(&v) {
                     Ok(pk_args) => {
                         cost += gas_params.per_byte.unwrap() * NumBytes::new(v.len() as u64);
                         pubkeys.push(pk_args);
@@ -215,34 +215,36 @@ pub fn derive_multisig_xonly_pubkey_from_xonly_pubkeys(
 
     let aggregated_pubkey: Point = key_agg_ctx.aggregated_pubkey();
 
-    let xonly_pubkey = aggregated_pubkey.serialize_xonly();
+    let pubkey = aggregated_pubkey.serialize();
 
-    Ok(NativeResult::ok(
-        cost,
-        smallvec![Value::vector_u8(xonly_pubkey)],
-    ))
+    Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(pubkey)]))
 }
 
 // optional function
-pub fn derive_bitcoin_taproot_address_from_multisig_xonly_pubkey(
+pub fn derive_bitcoin_taproot_address_from_pubkey(
     gas_params: &FromBytesGasParametersOptional,
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    let xonly_pubkey_bytes = pop_arg!(args, VectorRef);
+    let pubkey_bytes = pop_arg!(args, VectorRef);
 
-    let xonly_pubkey_ref = xonly_pubkey_bytes.as_bytes_ref();
+    let pubkey_ref = pubkey_bytes.as_bytes_ref();
 
     let cost = gas_params.base.unwrap()
-        + gas_params.per_byte.unwrap() * NumBytes::new(xonly_pubkey_ref.len() as u64);
-
-    let internal_key = match XOnlyPublicKey::from_slice(&xonly_pubkey_ref) {
-        Ok(xonly_pubkey) => xonly_pubkey,
-        Err(_) => {
-            return Ok(NativeResult::err(cost, E_INVALID_XONLY_PUBLIC_KEY));
+        + gas_params.per_byte.unwrap() * NumBytes::new(pubkey_ref.len() as u64);
+    let bitcoin_pubkey = match bitcoin::PublicKey::from_slice(&pubkey_ref) {
+        Ok(pubkey) => pubkey,
+        Err(e) => {
+            tracing::debug!(
+                "Failed to parse public key:{:?}, error: {:?}",
+                pubkey_ref.as_hex(),
+                e
+            );
+            return Ok(NativeResult::err(cost, E_INVALID_PUBLIC_KEY));
         }
     };
+    let internal_key = XOnlyPublicKey::from(bitcoin_pubkey);
 
     let secp = bitcoin::secp256k1::Secp256k1::verification_only();
     let bitcoin_addr = BitcoinAddress::from(bitcoin::Address::p2tr(
@@ -289,8 +291,8 @@ pub struct GasParameters {
     pub new: FromBytesGasParameters,
     pub verify_with_pk: FromBytesGasParameters,
     pub verify_bitcoin_address_with_public_key: FromBytesGasParametersOptional,
-    pub derive_multisig_xonly_pubkey_from_xonly_pubkeys: FromBytesGasParametersOptional,
-    pub derive_bitcoin_taproot_address_from_multisig_xonly_pubkey: FromBytesGasParametersOptional,
+    pub derive_multisig_pubkey_from_pubkeys: FromBytesGasParametersOptional,
+    pub derive_bitcoin_taproot_address_from_pubkey: FromBytesGasParametersOptional,
 }
 
 impl GasParameters {
@@ -299,10 +301,8 @@ impl GasParameters {
             new: FromBytesGasParameters::zeros(),
             verify_with_pk: FromBytesGasParameters::zeros(),
             verify_bitcoin_address_with_public_key: FromBytesGasParametersOptional::zeros(),
-            derive_multisig_xonly_pubkey_from_xonly_pubkeys: FromBytesGasParametersOptional::zeros(
-            ),
-            derive_bitcoin_taproot_address_from_multisig_xonly_pubkey:
-                FromBytesGasParametersOptional::zeros(),
+            derive_multisig_pubkey_from_pubkeys: FromBytesGasParametersOptional::zeros(),
+            derive_bitcoin_taproot_address_from_pubkey: FromBytesGasParametersOptional::zeros(),
         }
     }
 }
@@ -327,28 +327,25 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         ));
     }
 
-    if !gas_params
-        .derive_multisig_xonly_pubkey_from_xonly_pubkeys
-        .is_empty()
-    {
+    if !gas_params.derive_multisig_pubkey_from_pubkeys.is_empty() {
         natives.push((
-            "derive_multisig_xonly_pubkey_from_xonly_pubkeys",
+            "derive_multisig_pubkey_from_pubkeys",
             make_native(
-                gas_params.derive_multisig_xonly_pubkey_from_xonly_pubkeys,
-                derive_multisig_xonly_pubkey_from_xonly_pubkeys,
+                gas_params.derive_multisig_pubkey_from_pubkeys,
+                derive_multisig_pubkey_from_pubkeys,
             ),
         ));
     }
 
     if !gas_params
-        .derive_bitcoin_taproot_address_from_multisig_xonly_pubkey
+        .derive_bitcoin_taproot_address_from_pubkey
         .is_empty()
     {
         natives.push((
-            "derive_bitcoin_taproot_address_from_multisig_xonly_pubkey",
+            "derive_bitcoin_taproot_address_from_pubkey",
             make_native(
-                gas_params.derive_bitcoin_taproot_address_from_multisig_xonly_pubkey,
-                derive_bitcoin_taproot_address_from_multisig_xonly_pubkey,
+                gas_params.derive_bitcoin_taproot_address_from_pubkey,
+                derive_bitcoin_taproot_address_from_pubkey,
             ),
         ));
     }
