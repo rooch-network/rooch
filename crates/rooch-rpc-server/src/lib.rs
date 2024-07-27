@@ -306,15 +306,6 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         .await?;
     let processor_proxy = PipelineProcessorProxy::new(processor_actor.into());
 
-    let rpc_service = RpcService::new(
-        network.chain_id.id,
-        network.genesis_config.bitcoin_network,
-        executor_proxy.clone(),
-        sequencer_proxy,
-        indexer_proxy,
-        processor_proxy.clone(),
-    );
-    let aggregate_service = AggregateService::new(rpc_service.clone());
 
     let ethereum_relayer_config = opt.ethereum_relayer_config();
     let bitcoin_relayer_config = opt.bitcoin_relayer_config();
@@ -339,6 +330,24 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         );
         timers.push(relayer_timer);
     }
+
+
+    let bitcoin_client = BitcoinClientActor::new(bitcoin_config.clone())?;
+    let bitcoin_client_actor_ref =
+        ctx.spawn("bitcoin_client".into(), bitcoin_client).await?;
+    let bitcoin_client_proxy = BitcoinClientProxy::new(bitcoin_client_actor_ref.into());
+
+    let rpc_service = RpcService::new(
+        network.chain_id.id,
+        network.genesis_config.bitcoin_network,
+        executor_proxy.clone(),
+        sequencer_proxy,
+        indexer_proxy,
+        processor_proxy.clone(),
+        bitcoin_client_proxy,
+    );
+    let aggregate_service = AggregateService::new(rpc_service.clone());
+
 
     let acl = match env::var("ACCESS_CONTROL_ALLOW_ORIGIN") {
         Ok(value) => {

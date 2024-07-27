@@ -3,6 +3,7 @@
 
 use anyhow::Result;
 use bitcoincore_rpc::json;
+use bitcoincore_rpc::bitcoin::Txid;
 use coerce::actor::{message::Message, scheduler::timer::TimerTick};
 use rooch_types::transaction::{L1BlockWithBody, L1Transaction};
 use serde::{Deserialize, Serialize};
@@ -74,4 +75,15 @@ pub struct SyncTick {}
 
 impl Message for SyncTick {
     type Result = ();
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BroadcastTransactionMessage {
+    pub hex: String,
+    pub maxfeerate: Option<f64>,
+    pub maxburnamount: Option<u64>,
+}
+
+impl Message for BroadcastTransactionMessage {
+    type Result = Result<Txid>;
 }

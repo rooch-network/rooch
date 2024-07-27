@@ -25,6 +25,8 @@ use rooch_types::indexer::state::{IndexerStateID, ObjectStateFilter};
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::transaction::{ExecuteTransactionResponse, LedgerTransaction, RoochTransaction};
 use std::collections::{BTreeMap, HashMap};
+use bitcoincore_rpc::bitcoin::Txid;
+use crate::actor::bitcoin_client_proxy::BitcoinClientProxy;
 
 /// RpcService is the implementation of the RPC service.
 /// It is the glue between the RPC server(EthAPIServer,RoochApiServer) and the rooch's actors.
@@ -37,6 +39,7 @@ pub struct RpcService {
     pub(crate) sequencer: SequencerProxy,
     pub(crate) indexer: IndexerProxy,
     pub(crate) pipeline_processor: PipelineProcessorProxy,
+    pub(crate) bitcoin_client: BitcoinClientProxy,
 }
 
 impl RpcService {
@@ -47,6 +50,7 @@ impl RpcService {
         sequencer: SequencerProxy,
         indexer: IndexerProxy,
         pipeline_processor: PipelineProcessorProxy,
+        bitcoin_client: BitcoinClientProxy,
     ) -> Self {
         Self {
             chain_id,
@@ -55,6 +59,7 @@ impl RpcService {
             sequencer,
             indexer,
             pipeline_processor,
+            bitcoin_client,
         }
     }
 }
@@ -427,4 +432,14 @@ impl RpcService {
         }
         Ok(display_field_views)
     }
+
+    pub async fn broadcast_bitcoin_transaction(
+        &self,
+        hex: String,
+        maxfeerate: Option<f64>,
+        maxburnamount: Option<u64>,
+    ) -> Result<Txid> {
+        self.bitcoin_client.broadcast_transaction(hex, maxfeerate, maxburnamount).await
+    }
+    
 }

@@ -10,9 +10,12 @@ use rooch_rpc_api::jsonrpc_types::btc::ord::{InscriptionFilterView, InscriptionS
 use rooch_rpc_api::jsonrpc_types::btc::utxo::{UTXOFilterView, UTXOStateView};
 use rooch_rpc_api::jsonrpc_types::{
     IndexerStateIDView, InscriptionPageView, StrView, UTXOPageView,
+    BytesView, H256View
 };
 use rooch_rpc_api::RpcResult;
 use std::cmp::min;
+use ethers::types::H256;
+use bitcoincore_rpc::bitcoin::Txid;
 
 pub struct BtcServer {
     rpc_service: RpcService,
@@ -111,6 +114,22 @@ impl BtcAPIServer for BtcServer {
             has_next_page,
         })
     }
+
+    async fn broadcast_tx(
+        &self,
+        hex: BytesView,
+        maxfeerate: Option<f64>,
+        maxburnamount: Option<u64>,
+    ) -> RpcResult<H256View> {
+        let tx_hex = hex::encode(hex.0);
+        let txid: Txid = self.rpc_service
+            .broadcast_bitcoin_transaction(tx_hex, maxfeerate, maxburnamount)
+            .await?;
+        
+        let h256 = H256::from_slice(&txid.as_byte_array());
+        Ok(StrView(h256))
+    }
+
 }
 
 impl RoochRpcModule for BtcServer {
