@@ -20,6 +20,8 @@
 -  [Function `from_string`](#0x3_bitcoin_address_from_string)
 -  [Function `verify_with_public_key`](#0x3_bitcoin_address_verify_with_public_key)
 -  [Function `to_rooch_address`](#0x3_bitcoin_address_to_rooch_address)
+-  [Function `verify_bitcoin_address_with_public_key`](#0x3_bitcoin_address_verify_bitcoin_address_with_public_key)
+-  [Function `derive_multi_sign_address`](#0x3_bitcoin_address_derive_multi_sign_address)
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
@@ -270,4 +272,26 @@ Empty address is a special address that is used to if we parse address failed fr
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_to_rooch_address">to_rooch_address</a>(addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>): <b>address</b>
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_verify_bitcoin_address_with_public_key"></a>
+
+## Function `verify_bitcoin_address_with_public_key`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_verify_bitcoin_address_with_public_key">verify_bitcoin_address_with_public_key</a>(bitcoin_addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>, pk: &<a href="">vector</a>&lt;u8&gt;): bool
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_derive_multi_sign_address"></a>
+
+## Function `derive_multi_sign_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_derive_multi_sign_address">derive_multi_sign_address</a>(public_keys: &<a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, threshold: u64): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
 </code></pre>

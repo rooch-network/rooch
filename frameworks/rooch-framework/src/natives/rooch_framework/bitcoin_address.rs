@@ -6,17 +6,20 @@ use bitcoin::{
     secp256k1::Secp256k1,
     PublicKey, XOnlyPublicKey,
 };
-use move_binary_format::errors::PartialVMResult;
-use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
+use move_binary_format::errors::{PartialVMError, PartialVMResult};
+use move_core_types::{
+    gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
+    vm_status::StatusCode,
+};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
     loaded_data::runtime_types::Type,
     natives::function::NativeResult,
     pop_arg,
-    values::{Value, VectorRef},
+    values::{StructRef, Value, VectorRef},
 };
 use moveos_stdlib::natives::helpers::{make_module_natives, make_native};
-use moveos_types::state::MoveStructState;
+use moveos_types::state::{MoveState, MoveStructState};
 use rooch_types::address::BitcoinAddress;
 use smallvec::smallvec;
 use std::{collections::VecDeque, str::FromStr};
@@ -51,31 +54,34 @@ pub fn parse(
     ))
 }
 
-/// Returns true if the given pubkey is directly related to the address payload.
-pub fn verify_with_pk(
+/// Returns true if the given pubkey's bitcoin address is equal to the input bitcoin address.
+pub fn verify_bitcoin_address_with_public_key(
     gas_params: &FromBytesGasParameters,
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     let pk_bytes = pop_arg!(args, VectorRef);
-    let addr_bytes = pop_arg!(args, VectorRef);
+    let addr_bytes = pop_arg!(args, StructRef);
 
     let pk_ref = pk_bytes.as_bytes_ref();
-    let addr_ref = addr_bytes.as_bytes_ref();
+    let addr_value = addr_bytes.read_ref()?;
 
+    let bitcoin_addr = BitcoinAddress::from_runtime_value(addr_value).map_err(|e| {
+        PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+            .with_message(format!("Failed to parse bitcoin address: {}", e))
+    })?;
     let cost = gas_params.base
-        + gas_params.per_byte * NumBytes::new((pk_ref.len() + addr_ref.len()) as u64);
+        + gas_params.per_byte
+            * NumBytes::new((pk_ref.len() + bitcoin_addr.to_bytes().len()) as u64);
 
+    // TODO: convert to internal rooch public key and to bitcoin address?
     let Ok(pk) = PublicKey::from_slice(&pk_ref) else {
         return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
     };
 
-    let Ok(addr_str) = std::str::from_utf8(&addr_ref) else {
-        return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
-    };
-
-    let addr = match Address::from_str(addr_str) {
+    // TODO: compare the input bitcoin address with the converted bitcoin address
+    let addr = match Address::from_str(&bitcoin_addr.to_string()) {
         Ok(addr) => addr.assume_checked(),
         Err(_) => {
             return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
@@ -117,14 +123,14 @@ impl FromBytesGasParameters {
 #[derive(Debug, Clone)]
 pub struct GasParameters {
     pub new: FromBytesGasParameters,
-    pub verify_with_pk: FromBytesGasParameters,
+    pub verify_bitcoin_address_with_public_key: FromBytesGasParameters,
 }
 
 impl GasParameters {
     pub fn zeros() -> Self {
         Self {
             new: FromBytesGasParameters::zeros(),
-            verify_with_pk: FromBytesGasParameters::zeros(),
+            verify_bitcoin_address_with_public_key: FromBytesGasParameters::zeros(),
         }
     }
 }
@@ -133,8 +139,11 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
     let natives = [
         ("parse", make_native(gas_params.new, parse)),
         (
-            "verify_with_pk",
-            make_native(gas_params.verify_with_pk, verify_with_pk),
+            "verify_bitcoin_address_with_public_key",
+            make_native(
+                gas_params.verify_bitcoin_address_with_public_key,
+                verify_bitcoin_address_with_public_key,
+            ),
         ),
     ];
 

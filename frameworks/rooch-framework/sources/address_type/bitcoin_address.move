@@ -96,8 +96,8 @@ module rooch_framework::bitcoin_address {
     }
 
     public fun verify_with_public_key(addr: &String, pk: &vector<u8>): bool {
-        let raw_bytes = string::bytes(addr);
-        verify_with_pk(raw_bytes, pk)
+        let bitcoin_addr = from_string(addr);
+        verify_bitcoin_address_with_public_key(&bitcoin_addr, pk)
     }
 
     public fun to_rooch_address(addr: &BitcoinAddress): address{
@@ -105,9 +105,14 @@ module rooch_framework::bitcoin_address {
         moveos_std::bcs::to_address(hash)
     }
 
+    // verify bitcoin address according to the pk bytes
+    public native fun verify_bitcoin_address_with_public_key(bitcoin_addr: &BitcoinAddress, pk: &vector<u8>): bool;
+
+    // derive multi signature address from public keys
+    public native fun derive_multi_sign_address(public_keys: &vector<vector<u8>>, threshold: u64): BitcoinAddress;
+
     /// Parse the Bitcoin address string bytes to Move BitcoinAddress
     native fun parse(raw_addr: &vector<u8>): BitcoinAddress;
-    native fun verify_with_pk (addr: &vector<u8>, pk: &vector<u8>): bool;
 
     #[test_only]
     public fun random_address_for_testing(): BitcoinAddress {
@@ -116,7 +121,7 @@ module rooch_framework::bitcoin_address {
     }
 
     #[test]
-    fun test_verify_with_pk_success() {
+    fun test_verify_with_public_key_success() {
         // p2tr
         let addr = string::utf8(b"bc1p8xpjpkc9uzj2dexcxjg9sw8lxje85xa4070zpcys589e3rf6k20qm6gjrt");
         let pk = x"038e3d29b653e40f5b620f9443ee05222d1e40be58f544b6fed3d464edd54db883";
@@ -141,8 +146,8 @@ module rooch_framework::bitcoin_address {
 
     #[test]
     fun test_validate_signature_fail() {
-        let addr = string::utf8(b"ac1p8xpjpkc9uzj2dexcxjg9sw8lxje85xa4070zpcys589e3rf6k20qm6gjrt");
-        let pk = x"038e3d29b653e40f5b620f9443ee05222d1e40be58f544b6fed3d464edd54db883";
+        let addr = string::utf8(b"bc1p8xpjpkc9uzj2dexcxjg9sw8lxje85xa4070zpcys589e3rf6k20qm6gjrt");
+        let pk = x"038e3d29b653e40f5b620f9443ee05222d1e40be58f544b6fed3d464edd54db884";
         assert!(!verify_with_public_key(&addr, &pk), 1004);
     }
 }
