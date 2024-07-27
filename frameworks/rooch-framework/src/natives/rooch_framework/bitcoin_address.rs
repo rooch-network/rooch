@@ -101,6 +101,16 @@ pub fn verify_bitcoin_address_with_public_key(
     Ok(NativeResult::ok(cost, smallvec![Value::bool(is_ok)]))
 }
 
+// TODO: derive_multi_sign_address
+pub fn derive_multi_sign_address(
+    _gas_params: &FromBytesGasParameters,
+    _context: &mut NativeContext,
+    _ty_args: Vec<Type>,
+    mut _args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    todo!();
+}
+
 #[derive(Debug, Clone)]
 pub struct FromBytesGasParameters {
     pub base: InternalGas,
@@ -122,27 +132,36 @@ impl FromBytesGasParameters {
 
 #[derive(Debug, Clone)]
 pub struct GasParameters {
-    pub new: FromBytesGasParameters,
+    pub parse: FromBytesGasParameters,
     pub verify_bitcoin_address_with_public_key: FromBytesGasParameters,
+    pub derive_multi_sign_address: FromBytesGasParameters,
 }
 
 impl GasParameters {
     pub fn zeros() -> Self {
         Self {
-            new: FromBytesGasParameters::zeros(),
+            parse: FromBytesGasParameters::zeros(),
             verify_bitcoin_address_with_public_key: FromBytesGasParameters::zeros(),
+            derive_multi_sign_address: FromBytesGasParameters::zeros(),
         }
     }
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [
-        ("parse", make_native(gas_params.new, parse)),
+        ("parse", make_native(gas_params.parse, parse)),
         (
             "verify_bitcoin_address_with_public_key",
             make_native(
                 gas_params.verify_bitcoin_address_with_public_key,
                 verify_bitcoin_address_with_public_key,
+            ),
+        ),
+        (
+            "derive_multi_sign_address",
+            make_native(
+                gas_params.derive_multi_sign_address,
+                derive_multi_sign_address,
             ),
         ),
     ];
