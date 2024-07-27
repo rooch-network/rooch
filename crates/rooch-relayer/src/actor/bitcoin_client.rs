@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{
-    GetBestBlockHashMessage, GetBlockHashMessage, GetBlockHeaderInfoMessage, GetBlockMessage, BroadcastTransactionMessage,
+    BroadcastTransactionMessage, GetBestBlockHashMessage, GetBlockHashMessage,
+    GetBlockHeaderInfoMessage, GetBlockMessage,
 };
 use anyhow::Result;
 use async_trait::async_trait;
-use bitcoincore_rpc::{json, Auth, Client, RpcApi, bitcoin::Txid};
+use bitcoincore_rpc::{bitcoin::Txid, json, Auth, Client, RpcApi};
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use rooch_config::BitcoinRelayerConfig;
 
@@ -98,7 +99,11 @@ impl Handler<BroadcastTransactionMessage> for BitcoinClientActor {
         msg: BroadcastTransactionMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Txid> {
-        let BroadcastTransactionMessage { hex, maxfeerate, maxburnamount } = msg;
+        let BroadcastTransactionMessage {
+            hex,
+            maxfeerate,
+            maxburnamount,
+        } = msg;
 
         // Prepare the parameters for the RPC call
         let mut params = vec![hex.into()];

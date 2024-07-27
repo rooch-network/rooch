@@ -3,7 +3,9 @@
 
 use crate::jsonrpc_types::btc::ord::InscriptionFilterView;
 use crate::jsonrpc_types::btc::utxo::UTXOFilterView;
-use crate::jsonrpc_types::{IndexerStateIDView, InscriptionPageView, StrView, UTXOPageView, BytesView, H256View};
+use crate::jsonrpc_types::{
+    BytesView, H256View, IndexerStateIDView, InscriptionPageView, StrView, UTXOPageView,
+};
 use crate::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 use rooch_open_rpc_macros::open_rpc;
