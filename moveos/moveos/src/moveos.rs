@@ -139,13 +139,7 @@ impl MoveOS {
         tx: MoveOSTransaction,
         genesis_objects: Vec<(ObjectState, MoveTypeLayout)>,
     ) -> Result<TransactionOutput> {
-        let MoveOSTransaction {
-            root,
-            ctx,
-            action,
-            pre_execute_functions: _,
-            post_execute_functions: _,
-        } = tx;
+        let MoveOSTransaction { root, ctx, action } = tx;
 
         let resolver = RootObjectResolver::new(root, &self.db);
         let mut session = self.vm.new_genesis_session(&resolver, ctx, genesis_objects);
@@ -231,13 +225,7 @@ impl MoveOS {
     }
 
     pub fn verify(&self, tx: MoveOSTransaction) -> VMResult<VerifiedMoveOSTransaction> {
-        let MoveOSTransaction {
-            root,
-            ctx,
-            action,
-            pre_execute_functions,
-            post_execute_functions,
-        } = tx;
+        let MoveOSTransaction { root, ctx, action } = tx;
         let cost_table = self.load_cost_table(&root)?;
         let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
         gas_meter.set_metering(false);
@@ -253,19 +241,11 @@ impl MoveOS {
             root,
             ctx,
             action: verified_action,
-            pre_execute_functions,
-            post_execute_functions,
         })
     }
 
     pub fn execute(&self, tx: VerifiedMoveOSTransaction) -> Result<RawTransactionOutput> {
-        let VerifiedMoveOSTransaction {
-            root,
-            ctx,
-            action,
-            pre_execute_functions,
-            post_execute_functions,
-        } = tx;
+        let VerifiedMoveOSTransaction { root, ctx, action } = tx;
         let tx_hash = ctx.tx_hash();
         if log::log_enabled!(log::Level::Debug) {
             log::debug!(
@@ -296,17 +276,9 @@ impl MoveOS {
             session
                 .execute_function_call(self.system_pre_execute_functions.clone(), false)
                 .expect("system_pre_execute should not fail.");
-        } else {
-            debug_assert!(pre_execute_functions.is_empty());
-            debug_assert!(post_execute_functions.is_empty());
         }
 
-        match self.execute_action(
-            &mut session,
-            action.clone(),
-            pre_execute_functions.clone(),
-            post_execute_functions.clone(),
-        ) {
+        match self.execute_action(&mut session, action.clone()) {
             Ok(status) => {
                 if log::log_enabled!(log::Level::Debug) {
                     log::debug!(
@@ -317,30 +289,20 @@ impl MoveOS {
                 }
                 self.execution_cleanup(is_system_call, session, status)
             }
-            Err((vm_err, need_respawn)) => {
+            Err(vm_err) => {
                 if log::log_enabled!(log::Level::Warn) {
                     log::warn!(
-                        "execute_action error tx(hash:{}) vm_err:{:?} need_respawn:{}",
+                        "execute_action error tx(hash:{}) vm_err:{:?} need respawn session.",
                         tx_hash,
-                        vm_err,
-                        need_respawn
+                        vm_err
                     );
                 }
                 // If it is a system call, we should not respawn the session.
-                if !is_system_call && need_respawn {
+                if !is_system_call {
                     let mut s = session.respawn(system_env);
                     //Because the session is respawned, the pre_execute function should be called again.
                     s.execute_function_call(self.system_pre_execute_functions.clone(), false)
                         .expect("system_pre_execute should not fail.");
-                    let _ = self.execute_pre_and_post(
-                        &mut s,
-                        pre_execute_functions,
-                        post_execute_functions,
-                    );
-                    // when respawn session, VM error occurs in user move action or post execution.
-                    // We just cleanup with the VM error return by `execute_action`, ignore
-                    // the result of `execute_pre_and_post`
-                    // TODO: do we need to handle the result of `execute_pre_and_post` after respawn?
                     self.execution_cleanup(is_system_call, s, vm_err.into_vm_status())
                 } else {
                     self.execution_cleanup(is_system_call, session, vm_err.into_vm_status())
@@ -468,30 +430,19 @@ impl MoveOS {
         &self,
         session: &mut MoveOSSession<'_, '_, RootObjectResolver<MoveOSStore>, MoveOSGasMeter>,
         action: VerifiedMoveAction,
-        pre_execute_functions: Vec<FunctionCall>,
-        post_execute_functions: Vec<FunctionCall>,
-    ) -> Result<VMStatus, (VMError, bool)> {
-        // user pre_execute
-        // If the pre_execute failed, we finish the session directly and return the TransactionOutput.
-        session
-            .execute_function_call(pre_execute_functions, true)
-            .map_err(|e| (e, false))?;
-
+    ) -> Result<VMStatus, VMError> {
         // execute main tx
         let execute_result = session.execute_move_action(action);
         let vm_status = vm_status_of_result(execute_result.clone());
 
-        // If the user action or post_execute failed, we need respawn the session,
-        // and execute system_pre_execute, system_post_execute and user pre_execute, user post_execute.
+        // If the user action failed, we need respawn the session,
+        // then execute system_pre_execute, system_post_execute.
         let status = match vm_status.clone().keep_or_discard() {
             Ok(status) => {
                 if status != KeptVMStatus::Executed {
                     debug_assert!(execute_result.is_err());
-                    return Err((execute_result.unwrap_err(), true));
+                    return Err(execute_result.unwrap_err());
                 }
-                session
-                    .execute_function_call(post_execute_functions, true)
-                    .map_err(|e| (e, true))?;
                 vm_status
             }
             Err(discard_status) => {
@@ -504,18 +455,6 @@ impl MoveOS {
             }
         };
         Ok(status)
-    }
-
-    // Execute pre_execute and post_execute only.
-    fn execute_pre_and_post(
-        &self,
-        session: &mut MoveOSSession<'_, '_, RootObjectResolver<MoveOSStore>, MoveOSGasMeter>,
-        pre_execute_functions: Vec<FunctionCall>,
-        post_execute_functions: Vec<FunctionCall>,
-    ) -> VMResult<()> {
-        session.execute_function_call(pre_execute_functions, true)?;
-        session.execute_function_call(post_execute_functions, true)?;
-        Ok(())
     }
 
     fn execution_cleanup(

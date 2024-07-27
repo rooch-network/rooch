@@ -243,10 +243,6 @@ pub struct MoveOSTransaction {
     pub root: ObjectMeta,
     pub ctx: TxContext,
     pub action: MoveAction,
-    /// if the pre_execute_functions is not empty, the MoveOS will call the functions before the transaction is executed.
-    pub pre_execute_functions: Vec<FunctionCall>,
-    /// if the post_execute_functions is not empty, the MoveOS will call the functions after the transaction is executed.
-    pub post_execute_functions: Vec<FunctionCall>,
 }
 
 impl MoveOSTransaction {
@@ -269,21 +265,7 @@ impl MoveOSTransaction {
     pub fn new(root: ObjectMeta, mut ctx: TxContext, action: MoveAction) -> Self {
         ctx.add(TxMeta::new_from_move_action(&action))
             .expect("add TxMeta to TxContext should success");
-        Self {
-            root,
-            ctx,
-            action,
-            pre_execute_functions: vec![],
-            post_execute_functions: vec![],
-        }
-    }
-
-    pub fn append_pre_execute_functions(&mut self, functions: Vec<FunctionCall>) {
-        self.pre_execute_functions.extend(functions);
-    }
-
-    pub fn append_post_execute_functions(&mut self, functions: Vec<FunctionCall>) {
-        self.post_execute_functions.extend(functions);
+        Self { root, ctx, action }
     }
 }
 
@@ -298,19 +280,11 @@ pub struct VerifiedMoveOSTransaction {
     pub root: ObjectMeta,
     pub ctx: TxContext,
     pub action: VerifiedMoveAction,
-    pub pre_execute_functions: Vec<FunctionCall>,
-    pub post_execute_functions: Vec<FunctionCall>,
 }
 
 impl VerifiedMoveOSTransaction {
     pub fn new(root: ObjectMeta, ctx: TxContext, action: VerifiedMoveAction) -> Self {
-        Self {
-            root,
-            ctx,
-            action,
-            pre_execute_functions: vec![],
-            post_execute_functions: vec![],
-        }
+        Self { root, ctx, action }
     }
 }
 

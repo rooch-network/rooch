@@ -90,9 +90,4 @@ module rooch_framework::session_validator {
         assert!(session_key::in_session_scope(&session_key), auth_validator::error_validate_function_call_beyond_session_scope());
         auth_key
     }
-
-    fun pre_execute() {}
-
-    fun post_execute() {}
-
 }
