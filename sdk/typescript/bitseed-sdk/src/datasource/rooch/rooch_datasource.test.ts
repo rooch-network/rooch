@@ -1620,4 +1620,551 @@ describe('RoochDataSource', () => {
     });
     
   });
+
+  describe('getUnspents', () => {
+    it('should successfully get unspent UTXOs', async () => {
+      const mockAddress = 'mockAddress';
+      const mockUTXOs: PaginatedUTXOStateViews = {
+        data: [
+          {
+            value: {
+              bitcoin_txid: 'txid1',
+              seals: '',
+              txid: 'txid1',
+              value: '1000000',
+              vout: 0
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id1',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '0',
+            tx_order: '0',
+            updated_at: 'mock_date'
+          },
+          {
+            value: {
+              bitcoin_txid: 'txid2',
+              seals: 'some_seal_data',
+              txid: 'txid2',
+              value: '2000000',
+              vout: 1
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id2',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '1',
+            tx_order: '1',
+            updated_at: 'mock_date'
+          }
+        ],
+        has_next_page: false,
+        next_cursor: null
+      };
+
+      mockTransport.setMockResponse('btc_queryUTXOs', mockUTXOs);
+
+      const result = await instance.getUnspents({ address: mockAddress });
+
+      expect(result.totalUTXOs).toBe(2);
+      expect(result.spendableUTXOs).toHaveLength(1);
+      expect(result.unspendableUTXOs).toHaveLength(1);
+
+      expect(result.spendableUTXOs[0]).toEqual({
+        n: 0,
+        txid: 'txid1',
+        sats: 1000000,
+        scriptPubKey: {
+          asm: '',
+          desc: '',
+          hex: '',
+          address: mockAddress,
+          type: 'p2tr'
+        },
+        safeToSpend: true,
+        confirmation: -1,
+        seals: ""
+      });
+
+      expect(result.unspendableUTXOs[0]).toEqual({
+        n: 1,
+        txid: 'txid2',
+        sats: 2000000,
+        scriptPubKey: {
+          asm: '',
+          desc: '',
+          hex: '',
+          address: mockAddress,
+          type: 'p2tr'
+        },
+        safeToSpend: false,
+        confirmation: -1,
+        seals: "some_seal_data"
+      });
+    });
+
+    it('should handle pagination correctly', async () => {
+      const mockAddress = 'mockAddress';
+      const mockUTXOsPage1: PaginatedUTXOStateViews = {
+        data: [
+          {
+            value: {
+              bitcoin_txid: 'txid1',
+              seals: '',
+              txid: 'txid1',
+              value: '1000000',
+              vout: 0
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id1',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '0',
+            tx_order: '0',
+            updated_at: 'mock_date'
+          }
+        ],
+        has_next_page: true,
+        next_cursor: { state_index: '1', tx_order: '1' }
+      };
+    
+      const mockUTXOsPage2: PaginatedUTXOStateViews = {
+        data: [
+          {
+            value: {
+              bitcoin_txid: 'txid2',
+              seals: 'some_seal_data',
+              txid: 'txid2',
+              value: '2000000',
+              vout: 1
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id2',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '1',
+            tx_order: '1',
+            updated_at: 'mock_date'
+          }
+        ],
+        has_next_page: false,
+        next_cursor: null
+      };
+    
+      mockTransport.setMockResponse('btc_queryUTXOs', mockUTXOsPage1);
+      mockTransport.setMockResponse('btc_queryUTXOs', mockUTXOsPage2);
+    
+      const result = await instance.getUnspents({ address: mockAddress, limit: 2 });
+    
+      expect(result.totalUTXOs).toBe(2);
+      expect(result.spendableUTXOs).toHaveLength(1);
+      expect(result.unspendableUTXOs).toHaveLength(1);
+    
+      expect(result.spendableUTXOs[0]).toEqual({
+        n: 0,
+        txid: 'txid1',
+        sats: 1000000,
+        scriptPubKey: {
+          asm: '',
+          desc: '',
+          hex: '',
+          address: mockAddress,
+          type: 'p2tr'
+        },
+        safeToSpend: true,
+        confirmation: -1,
+        seals: ""
+      });
+    
+      expect(result.unspendableUTXOs[0]).toEqual({
+        n: 1,
+        txid: 'txid2',
+        sats: 2000000,
+        scriptPubKey: {
+          asm: '',
+          desc: '',
+          hex: '',
+          address: mockAddress,
+          type: 'p2tr'
+        },
+        safeToSpend: false,
+        confirmation: -1,
+        seals: "some_seal_data"
+      });
+    });
+
+    it('should handle empty result set', async () => {
+      const mockAddress = 'mockAddress';
+      const mockEmptyUTXOs: PaginatedUTXOStateViews = {
+        data: [],
+        has_next_page: false,
+        next_cursor: null
+      };
+    
+      mockTransport.setMockResponse('btc_queryUTXOs', mockEmptyUTXOs);
+    
+      const result = await instance.getUnspents({ address: mockAddress });
+    
+      expect(result.totalUTXOs).toBe(0);
+      expect(result.spendableUTXOs).toHaveLength(0);
+      expect(result.unspendableUTXOs).toHaveLength(0);
+    });
+
+    it('should correctly handle "all" and "spendable" type parameter', async () => {
+      const mockAddress = 'mockAddress';
+      const mockUTXOs: PaginatedUTXOStateViews = {
+        data: [
+          {
+            value: {
+              bitcoin_txid: 'txid1',
+              seals: '',
+              txid: 'txid1',
+              value: '1000000',
+              vout: 0
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id1',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '0',
+            tx_order: '0',
+            updated_at: 'mock_date'
+          },
+          {
+            value: {
+              bitcoin_txid: 'txid2',
+              seals: 'some_seal_data',
+              txid: 'txid2',
+              value: '2000000',
+              vout: 1
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id2',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '1',
+            tx_order: '1',
+            updated_at: 'mock_date'
+          }
+        ],
+        has_next_page: false,
+        next_cursor: null
+      };
+    
+      mockTransport.setMockResponse('btc_queryUTXOs', mockUTXOs);
+    
+      const resultAll = await instance.getUnspents({ 
+        address: mockAddress, 
+        type: 'all'
+      });
+    
+      expect(resultAll.totalUTXOs).toBe(2);
+      expect(resultAll.spendableUTXOs).toHaveLength(1);
+      expect(resultAll.unspendableUTXOs).toHaveLength(1);
+    
+      const resultSpendable = await instance.getUnspents({ 
+        address: mockAddress, 
+        type: 'spendable'
+      });
+    
+      expect(resultSpendable.totalUTXOs).toBe(2);
+      expect(resultSpendable.spendableUTXOs).toHaveLength(1);
+      expect(resultSpendable.unspendableUTXOs).toHaveLength(0);
+      expect(resultSpendable.spendableUTXOs[0].txid).toBe('txid1');
+    });
+
+    it('should correctly handle ascending and descending sorting', async () => {
+      const mockAddress = 'mockAddress';
+      const mockUTXOs: PaginatedUTXOStateViews = {
+        data: [
+          {
+            value: {
+              bitcoin_txid: 'txid1',
+              seals: '',
+              txid: 'txid1',
+              value: '1000000',
+              vout: 0
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id1',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '0',
+            tx_order: '0',
+            updated_at: 'mock_date'
+          },
+          {
+            value: {
+              bitcoin_txid: 'txid2',
+              seals: '',
+              txid: 'txid2',
+              value: '2000000',
+              vout: 1
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id2',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '1',
+            tx_order: '1',
+            updated_at: 'mock_date'
+          }
+        ],
+        has_next_page: false,
+        next_cursor: null
+      };
+    
+      mockTransport.setMockResponse('btc_queryUTXOs', mockUTXOs);
+    
+      const resultAsc = await instance.getUnspents({ 
+        address: mockAddress, 
+        sort: 'asc'
+      });
+    
+      expect(resultAsc.spendableUTXOs[0].sats).toBe(1000000);
+      expect(resultAsc.spendableUTXOs[1].sats).toBe(2000000);
+    
+      const resultDesc = await instance.getUnspents({ 
+        address: mockAddress, 
+        sort: 'desc'
+      });
+    
+      expect(resultDesc.spendableUTXOs[0].sats).toBe(2000000);
+      expect(resultDesc.spendableUTXOs[1].sats).toBe(1000000);
+    });
+    
+    it('should correctly apply limit parameter', async () => {
+      const mockAddress = 'mockAddress';
+      const mockUTXOs: PaginatedUTXOStateViews = {
+        data: [
+          {
+            value: {
+              bitcoin_txid: 'txid1',
+              seals: '',
+              txid: 'txid1',
+              value: '1000000',
+              vout: 0
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id1',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '0',
+            tx_order: '0',
+            updated_at: 'mock_date'
+          },
+          {
+            value: {
+              bitcoin_txid: 'txid2',
+              seals: '',
+              txid: 'txid2',
+              value: '2000000',
+              vout: 1
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id2',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '1',
+            tx_order: '1',
+            updated_at: 'mock_date'
+          }
+        ],
+        has_next_page: false,
+        next_cursor: null
+      };
+    
+      mockTransport.setMockResponse('btc_queryUTXOs', mockUTXOs);
+    
+      const result = await instance.getUnspents({ 
+        address: mockAddress, 
+        limit: 1
+      });
+    
+      expect(result.totalUTXOs).toBe(1);
+      expect(result.spendableUTXOs).toHaveLength(1);
+      expect(result.spendableUTXOs[0].sats).toBe(1000000);
+    });
+    
+    it('should correctly use next parameter for pagination', async () => {
+      const mockAddress = 'mockAddress';
+      const mockUTXOsPage1: PaginatedUTXOStateViews = {
+        data: [
+          {
+            value: {
+              bitcoin_txid: 'txid1',
+              seals: '',
+              txid: 'txid1',
+              value: '1000000',
+              vout: 0
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id1',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '0',
+            tx_order: '0',
+            updated_at: 'mock_date'
+          }
+        ],
+        has_next_page: true,
+        next_cursor: { state_index: '1', tx_order: '1' }
+      };
+    
+      mockTransport.setMockResponse('btc_queryUTXOs', mockUTXOsPage1);
+    
+      const result1 = await instance.getUnspents({ 
+        address: mockAddress, 
+        limit: 1
+      });
+    
+      expect(result1.totalUTXOs).toBe(1);
+      expect(result1.spendableUTXOs).toHaveLength(1);
+      expect(result1.spendableUTXOs[0].sats).toBe(1000000);
+    
+      mockTransport.resetMocks();
+
+      const mockUTXOsPage2: PaginatedUTXOStateViews = {
+        data: [
+          {
+            value: {
+              bitcoin_txid: 'txid2',
+              seals: '',
+              txid: 'txid2',
+              value: '2000000',
+              vout: 1
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id2',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '1',
+            tx_order: '1',
+            updated_at: 'mock_date'
+          }
+        ],
+        has_next_page: false,
+        next_cursor: null
+      };
+    
+      mockTransport.setMockResponse('btc_queryUTXOs', mockUTXOsPage2);
+    
+      const result2 = await instance.getUnspents({ 
+        address: mockAddress, 
+        limit: 1,
+        next: JSON.stringify(mockUTXOsPage1.next_cursor)
+      });
+    
+      expect(result2.totalUTXOs).toBe(1);
+      expect(result2.spendableUTXOs).toHaveLength(1);
+      expect(result2.spendableUTXOs[0].sats).toBe(2000000);
+    });
+    
+    it('should throw an error for invalid address', async () => {
+      await expect(instance.getUnspents({ address: '' }))
+        .rejects.toThrow('Invalid address provided');
+    
+      await expect(instance.getUnspents({ address: 123 as any }))
+        .rejects.toThrow('Invalid address provided');
+    });
+    
+    it('should throw an error for unsupported rarity parameter', async () => {
+      await expect(instance.getUnspents({ 
+        address: 'mockAddress', 
+        rarity: ['common'] as any
+      })).rejects.toThrow('Rarity options are not supported for Rooch getUnspents');
+    });
+    
+    it('should handle large UTXO values and throw error for values exceeding safe integer range', async () => {
+      const mockAddress = 'mockAddress';
+      const largeValue = '9007199254740992'; // Number.MAX_SAFE_INTEGER + 1
+      const mockUTXOs: PaginatedUTXOStateViews = {
+        data: [
+          {
+            value: {
+              bitcoin_txid: 'txid1',
+              seals: '',
+              txid: 'txid1',
+              value: largeValue,
+              vout: 0
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id1',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '0',
+            tx_order: '0',
+            updated_at: 'mock_date'
+          },
+          {
+            value: {
+              bitcoin_txid: 'txid2',
+              seals: '',
+              txid: 'txid2',
+              value: largeValue,
+              vout: 1
+            },
+            created_at: 'mock_date',
+            flag: 0,
+            id: 'mock_id2',
+            object_type: 'mock_type',
+            owner: mockAddress,
+            owner_bitcoin_address: mockAddress,
+            size: '1',
+            state_index: '1',
+            tx_order: '1',
+            updated_at: 'mock_date'
+          }
+        ],
+        has_next_page: false,
+        next_cursor: null
+      };
+
+      mockTransport.setMockResponse('btc_queryUTXOs', mockUTXOs);
+
+      await expect(instance.getUnspents({ address: mockAddress }))
+        .rejects.toThrow('Invalid UTXO value: 9007199254740992');
+    });
+  });
+
 });

@@ -13,6 +13,8 @@ import {
   Vout,
   GetSpendablesOptions,
   UTXOLimited,
+  GetUnspentsOptions,
+  GetUnspentsResponse
 } from "@sadoprotocol/ordit-sdk";
 import { 
   getRoochNodeUrl, 
@@ -442,6 +444,80 @@ export class RoochDataSource /*implements IDatasource*/ {
 
   private isUTXOSpendable(utxo: ExtendedUTXOLimited): boolean {
     return utxo.seals === "" || utxo.seals === null || utxo.seals === undefined;
+  }
+
+  async getUnspents({ address, type = "all", rarity, sort = "desc", limit = 100, next }: GetUnspentsOptions): Promise<GetUnspentsResponse> {
+    if (rarity !== undefined) {
+      throw new Error('Rarity options are not supported for Rooch getUnspents');
+    }
+
+    if (!address || typeof address !== 'string') {
+      throw new Error('Invalid address provided');
+    }
+  
+    let spendableUTXOs: UTXO[] = [];
+    let unspendableUTXOs: UTXO[] = [];
+    let totalUTXOs = 0;
+    let cursor: IndexerStateIDView | null = next ? JSON.parse(next) : null;
+  
+    while ((spendableUTXOs.length + unspendableUTXOs.length) < limit) {
+      const response: PaginatedUTXOStateViews = await this.roochClient.queryUTXO({
+        filter: { owner: address },
+        cursor,
+        limit: Math.min(limit - (spendableUTXOs.length + unspendableUTXOs.length), 100).toString(),
+      });
+
+      for (const utxoState of response.data) {
+        const utxo = this.convertToUTXO(utxoState);
+        
+        if (utxo.safeToSpend) {
+          spendableUTXOs.push(utxo);
+        } else {
+          unspendableUTXOs.push(utxo);
+        }
+
+        totalUTXOs++;
+
+        if ((spendableUTXOs.length + unspendableUTXOs.length) >= limit) {
+          break;
+        }
+      }
+
+      if (!response.has_next_page || !response.next_cursor) {
+        break;
+      }
+
+      cursor = response.next_cursor;
+    }
+  
+    // Apply sorting
+    const sortFunction = (a: UTXO, b: UTXO) => {
+      return sort === "asc" ? a.sats - b.sats : b.sats - a.sats;
+    };
+  
+    spendableUTXOs.sort(sortFunction);
+    unspendableUTXOs.sort(sortFunction);
+  
+    // Apply type filter
+    if (type === "spendable") {
+      unspendableUTXOs = [];
+    }
+  
+    return {
+      totalUTXOs,
+      spendableUTXOs,
+      unspendableUTXOs,
+    };
+  }
+  
+  private convertToUTXO(utxoState: UTXOStateView): UTXO {
+    const limitedUTXO = this.convertToUTXOLimited(utxoState);
+    
+    return {
+      ...limitedUTXO,
+      safeToSpend: this.isUTXOSpendable(limitedUTXO),
+      confirmation: -1, // Not available in Rooch
+    };
   }
 }
 
