@@ -8,8 +8,8 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Instant;
 
-use bitcoin::{OutPoint, Txid};
 use bitcoin::hashes::Hash;
+use bitcoin::OutPoint;
 use move_core_types::account_address::AccountAddress;
 use xorf::{BinaryFuse8, Filter};
 use xxhash_rust::xxh3::xxh3_64;
@@ -135,14 +135,21 @@ pub(crate) struct OutpointInscriptionsMap {
     key_filter: Option<BinaryFuse8>,
 }
 
+fn unbound_outpoint() -> OutPoint {
+    OutPoint {
+        txid: Hash::all_zeros(),
+        vout: 0,
+    }
+}
+
 impl OutpointInscriptionsMap {
     fn index(src: PathBuf) -> (Self, usize, usize) {
         let buf_size = 8 * 1024 * 1024; // inscription maybe large, using larger buffer than usual
         let mut reader = BufReader::with_capacity(buf_size, File::open(src.clone()).unwrap());
         let mut is_title_line = true;
 
-        // collect all outpoint:inscription pairs
-        let mut inscription_count: usize = 0;
+        // collect all outpoint:inscription pairs except unbounded
+        let mut has_outpoint_count: usize = 0;
         let mut items = Vec::with_capacity(80 * 1024 * 1024);
         for line in reader.by_ref().lines() {
             let line = line.unwrap();
@@ -156,21 +163,21 @@ impl OutpointInscriptionsMap {
             let txid: AccountAddress = src.id.txid.into_address();
             let inscription_id = InscriptionID::new(txid, src.id.index);
             let obj_id = derive_inscription_id(&inscription_id);
-            inscription_count += 1;
             let satpoint_output = OutPoint::from_str(src.satpoint_outpoint.as_str()).unwrap();
-            if satpoint_output.vout == 0 && satpoint_output.txid == Txid::all_zeros() {
-                continue; // skip coinbase
+            if satpoint_output == unbound_outpoint() {
+                continue; // skip unbounded outpoint
             }
             items.push(OutpointInscriptions {
                 outpoint: satpoint_output,
                 inscriptions: vec![obj_id.clone()],
             });
+            has_outpoint_count += 1;
         }
 
         let map = Self::new_with_unsorted(items);
         let (mapped_outpoint_count, mapped_inscription_count) = map.stats();
         assert_eq!(
-            inscription_count, mapped_inscription_count,
+            has_outpoint_count, mapped_inscription_count,
             "Inscription count mismatch after mapping"
         );
         (map, mapped_outpoint_count, mapped_inscription_count)
