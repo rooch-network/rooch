@@ -1,24 +1,27 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::natives::moveos_stdlib::object::pop_object_id;
+use std::collections::VecDeque;
+
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::{
     account_address::AccountAddress,
     gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
 };
-use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
+use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, pop_arg, values::Value,
 };
+use smallvec::smallvec;
+
 use moveos_object_runtime::{
     runtime::ObjectRuntimeContext, runtime_object::RuntimeObject, TypeLayoutLoader,
 };
 use moveos_types::{
     moveos_std::object::ObjectID, state::FieldKey, state_resolver::StatelessResolver,
 };
-use smallvec::smallvec;
-use std::{collections::VecDeque, sync::Arc};
+
+use crate::natives::moveos_stdlib::object::{pop_object_id, GasParameters};
 
 use super::{error_to_abort_code, CommonGasParameters};
 
@@ -33,9 +36,8 @@ pub struct AddFieldGasParameters {
 }
 
 #[inline]
-fn native_add_field(
-    common_gas_params: &CommonGasParameters,
-    gas_params: &AddFieldGasParameters,
+pub(crate) fn native_add_field(
+    gas_parameters: &GasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -45,29 +47,21 @@ fn native_add_field(
     debug_assert_eq!(ty_args.len(), 1);
     debug_assert_eq!(args.len(), 3);
 
+    let common_gas_parameter = gas_parameters.common.clone();
+    let add_field_gas_parameter = gas_parameters.native_add_field.clone();
+
     let value = args.pop_back().unwrap();
     let field_key: FieldKey = pop_arg!(args, AccountAddress).into();
     let obj_id = pop_object_id(&mut args)?;
 
     object_field_fn_dispatch(
-        common_gas_params,
-        gas_params.base,
-        gas_params.per_byte_serialized,
+        &common_gas_parameter,
+        add_field_gas_parameter.base,
+        add_field_gas_parameter.per_byte_serialized,
         context,
         obj_id,
         move |layout_loader, resolver, rt_obj| {
             rt_obj.add_field(layout_loader, resolver, field_key, &ty_args[0], value)
-        },
-    )
-}
-
-pub fn make_native_add_field(
-    common_gas_params: CommonGasParameters,
-    gas_params: AddFieldGasParameters,
-) -> NativeFunction {
-    Arc::new(
-        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_add_field(&common_gas_params, &gas_params, context, ty_args, args)
         },
     )
 }
@@ -83,9 +77,8 @@ pub struct BorrowFieldGasParameters {
 }
 
 #[inline]
-fn native_borrow_field(
-    common_gas_params: &CommonGasParameters,
-    gas_params: &BorrowFieldGasParameters,
+pub(crate) fn native_borrow_field(
+    gas_parameters: &GasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -96,25 +89,17 @@ fn native_borrow_field(
     let field_key: FieldKey = pop_arg!(args, AccountAddress).into();
     let obj_id = pop_object_id(&mut args)?;
 
+    let common_gas_parameter = gas_parameters.common.clone();
+    let borrow_field_gas_parameter = gas_parameters.native_borrow_field.clone();
+
     object_field_fn_dispatch(
-        common_gas_params,
-        gas_params.base,
-        gas_params.per_byte_serialized,
+        &common_gas_parameter,
+        borrow_field_gas_parameter.base,
+        borrow_field_gas_parameter.per_byte_serialized,
         context,
         obj_id,
         |layout_loader, resolver, rt_obj| {
             rt_obj.borrow_field(layout_loader, resolver, field_key, &ty_args[0])
-        },
-    )
-}
-
-pub fn make_native_borrow_field(
-    common_gas_params: CommonGasParameters,
-    gas_params: BorrowFieldGasParameters,
-) -> NativeFunction {
-    Arc::new(
-        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_borrow_field(&common_gas_params, &gas_params, context, ty_args, args)
         },
     )
 }
@@ -129,9 +114,8 @@ pub struct ContainsFieldGasParameters {
     pub per_byte_serialized: InternalGasPerByte,
 }
 
-fn native_contains_field(
-    common_gas_params: &CommonGasParameters,
-    gas_params: &ContainsFieldGasParameters,
+pub(crate) fn native_contains_field(
+    gas_parameters: &GasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -142,10 +126,13 @@ fn native_contains_field(
     let field_key: FieldKey = pop_arg!(args, AccountAddress).into();
     let obj_id = pop_object_id(&mut args)?;
 
+    let common_gas_parameter = gas_parameters.common.clone();
+    let contains_field_gas_parameter = gas_parameters.native_contains_field.clone();
+
     object_field_fn_dispatch(
-        common_gas_params,
-        gas_params.base,
-        gas_params.per_byte_serialized,
+        &common_gas_parameter,
+        contains_field_gas_parameter.base,
+        contains_field_gas_parameter.per_byte_serialized,
         context,
         obj_id,
         |layout_loader, resolver, rt_obj| {
@@ -155,24 +142,12 @@ fn native_contains_field(
     )
 }
 
-pub fn make_native_contains_field(
-    common_gas_params: CommonGasParameters,
-    gas_params: ContainsFieldGasParameters,
-) -> NativeFunction {
-    Arc::new(
-        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_contains_field(&common_gas_params, &gas_params, context, ty_args, args)
-        },
-    )
-}
-
 /***************************************************************************************************
  * native fun native_contains_field_with_value_type<V>(obj_id: ObjectID, key: address): bool;
  **************************************************************************************************/
 
-fn native_contains_field_with_value_type(
-    common_gas_params: &CommonGasParameters,
-    gas_params: &ContainsFieldGasParameters,
+pub(crate) fn native_contains_field_with_value_type(
+    gas_parameters: &GasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -183,10 +158,13 @@ fn native_contains_field_with_value_type(
     let field_key: FieldKey = pop_arg!(args, AccountAddress).into();
     let obj_id = pop_object_id(&mut args)?;
 
+    let common_gas_parameter = gas_parameters.common.clone();
+    let contains_field_gas_parameter = gas_parameters.native_contains_field_with_value_type.clone();
+
     object_field_fn_dispatch(
-        common_gas_params,
-        gas_params.base,
-        gas_params.per_byte_serialized,
+        &common_gas_parameter,
+        contains_field_gas_parameter.base,
+        contains_field_gas_parameter.per_byte_serialized,
         context,
         obj_id,
         |layout_loader, resolver, rt_obj| {
@@ -196,23 +174,6 @@ fn native_contains_field_with_value_type(
                 Value::bool(rt_field.exists_with_type(&value_type)?),
                 loaded_gas,
             ))
-        },
-    )
-}
-
-pub fn make_native_contains_field_with_value_type(
-    common_gas_params: CommonGasParameters,
-    gas_params: ContainsFieldGasParameters,
-) -> NativeFunction {
-    Arc::new(
-        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_contains_field_with_value_type(
-                &common_gas_params,
-                &gas_params,
-                context,
-                ty_args,
-                args,
-            )
         },
     )
 }
@@ -227,9 +188,8 @@ pub struct RemoveFieldGasParameters {
     pub per_byte_serialized: InternalGasPerByte,
 }
 
-fn native_remove_field(
-    common_gas_params: &CommonGasParameters,
-    gas_params: &RemoveFieldGasParameters,
+pub(crate) fn native_remove_field(
+    gas_parameters: &GasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -240,25 +200,17 @@ fn native_remove_field(
     let field_key: FieldKey = pop_arg!(args, AccountAddress).into();
     let obj_id = pop_object_id(&mut args)?;
 
+    let common_gas_parameter = gas_parameters.common.clone();
+    let remove_field_gas_parameter = gas_parameters.native_remove_field.clone();
+
     object_field_fn_dispatch(
-        common_gas_params,
-        gas_params.base,
-        gas_params.per_byte_serialized,
+        &common_gas_parameter,
+        remove_field_gas_parameter.base,
+        remove_field_gas_parameter.per_byte_serialized,
         context,
         obj_id,
         |layout_loader, resolver, rt_obj| {
             rt_obj.remove_field(layout_loader, resolver, field_key, &ty_args[0])
-        },
-    )
-}
-
-pub fn make_native_remove_field(
-    common_gas_params: CommonGasParameters,
-    gas_params: RemoveFieldGasParameters,
-) -> NativeFunction {
-    Arc::new(
-        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_remove_field(&common_gas_params, &gas_params, context, ty_args, args)
         },
     )
 }

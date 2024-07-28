@@ -49,11 +49,13 @@
     "@roochnetwork/build-scripts": "workspace:*",
     "@iarna/toml": "^2.2.5",
     "@types/node": "^20.4.2",
+    "@types/tmp": "^0.2.1",
     "ts-retry-promise": "^0.7.0",
     "typescript": "^5.3.3",
     "vite": "^4.4.4",
     "vitest": "^1.6.0",
-    "wait-on": "^7.0.1"
+    "wait-on": "^7.0.1",
+    "tmp": "^0.2.1"
   },
   "dependencies": {
     "@noble/hashes": "~1.4.0",

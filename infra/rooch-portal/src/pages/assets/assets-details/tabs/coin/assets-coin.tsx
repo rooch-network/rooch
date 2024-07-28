@@ -344,7 +344,7 @@ export const AssetsCoin: React.FC = () => {
 
       <CustomPagination
         currentPage={paginationModel.page}
-        hasNextPage={!!data?.has_next_page}
+        hasNextPage={data?.has_next_page}
         onPageChange={handlePageChange}
       />
     </>

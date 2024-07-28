@@ -1,7 +1,11 @@
 {
   "account-address": "Accounts and Addresses",
   "account-abstraction": "Account abstraction",
-  "account-abstraction-implementation": "Design and implementation of account abstraction",
+  "session-key": "Session key",
+  "account-abstraction-implementation": {
+    "title":"Design and implementation of account abstraction",
+    "display": "hidden"
+  },
   "multi-chain-account": {
     "title": "Multi-chain account",
     "display": "hidden"

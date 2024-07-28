@@ -15,6 +15,7 @@ use rooch_store::RoochStore;
 use rooch_test_transaction_builder::TestTransactionBuilder;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::multichain_id::RoochMultiChainID;
+use rooch_types::service_status::ServiceStatus;
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::L1BlockWithBody;
 use std::fs;
@@ -25,7 +26,7 @@ pub const EXAMPLE_SIMPLE_BLOG_PACKAGE_NAME: &str = "simple_blog";
 pub const EXAMPLE_SIMPLE_BLOG_NAMED_ADDRESS: &str = "simple_blog";
 
 pub fn gen_sequencer(keypair: RoochKeyPair, rooch_store: RoochStore) -> Result<SequencerActor> {
-    SequencerActor::new(keypair, rooch_store.clone())
+    SequencerActor::new(keypair, rooch_store.clone(), ServiceStatus::Active)
 }
 
 pub fn create_publish_transaction(

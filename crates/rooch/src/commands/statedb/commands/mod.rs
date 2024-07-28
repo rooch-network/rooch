@@ -1,24 +1,30 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use bitcoin::OutPoint;
-use chrono::{DateTime, Local};
-use moveos_store::MoveOSStore;
-use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
+use std::path::PathBuf;
+use std::str::FromStr;
+use std::sync::{Arc, RwLock};
+use std::time::Instant;
+
+use bitcoin::{OutPoint, PublicKey, ScriptBuf};
 use redb::{ReadOnlyTable, TableDefinition};
+use serde::{Deserialize, Serialize};
+
+use moveos_store::MoveOSStore;
+use moveos_types::h256::H256;
+use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
+use moveos_types::startup_info::StartupInfo;
+use moveos_types::state::{FieldKey, ObjectState};
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
-use rooch_types::bitcoin::ord::InscriptionStore;
-use rooch_types::bitcoin::utxo::BitcoinUTXOStore;
-use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
+use rooch_types::address::BitcoinAddress;
 use rooch_types::rooch_network::RoochChainID;
-use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
-use std::sync::Arc;
-use std::time::SystemTime;
+use smt::UpdateSet;
+
+use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
 
 pub mod export;
-pub mod genesis_ord;
+pub mod genesis;
 pub mod genesis_utxo;
 pub mod import;
 
@@ -34,30 +40,58 @@ const UTXO_SEAL_INSCRIPTION_PROTOCOL: &str =
 
 const UTXO_ORD_MAP_TABLE: TableDefinition<&[u8], &[u8]> = TableDefinition::new("utxo_ord_map");
 
-pub fn init_genesis_job(
+pub const SCRIPT_TYPE_P2MS: &str = "p2ms";
+pub const SCRIPT_TYPE_P2PK: &str = "p2pk";
+pub const SCRIPT_TYPE_NON_STANDARD: &str = "non-standard";
+
+fn init_job(
     base_data_dir: Option<PathBuf>,
     chain_id: Option<RoochChainID>,
-) -> (ObjectMeta, MoveOSStore, SystemTime) {
-    let start_time = SystemTime::now();
-    let datetime: DateTime<Local> = start_time.into();
+) -> (ObjectMeta, MoveOSStore, Instant) {
+    let start_time = Instant::now();
 
     let opt = RoochOpt::new_with_default(base_data_dir.clone(), chain_id.clone(), None).unwrap();
     let rooch_db = RoochDB::init(opt.store_config()).unwrap();
-    let root = rooch_db.latest_root().unwrap().unwrap();
+    let root = rooch_db
+        .latest_root()
+        .unwrap()
+        .expect("statedb is empty, genesis must be initialed.");
+    log::info!("original root object: {:?}", root);
 
-    let utxo_store_id = BitcoinUTXOStore::object_id();
-    let address_mapping_id = RoochToBitcoinAddressMapping::object_id();
-    let inscription_store_id = InscriptionStore::object_id();
+    log::info!("job progress started");
 
-    println!("task progress started at {}", datetime,);
-    println!("root object: {:?}", root);
-    println!("utxo_store_id: {:?}", utxo_store_id);
-    println!(
-        "rooch to bitcoin address_mapping_id: {:?}",
-        address_mapping_id
-    );
-    println!("inscription_store_id: {:?}", inscription_store_id);
     (root, rooch_db.moveos_store, start_time)
+}
+
+fn finish_job(
+    moveos_store: Arc<MoveOSStore>,
+    root_size: u64,
+    pre_root_state_root: H256,
+    task_start_time: Instant,
+    new_startup_update_set: Option<Arc<RwLock<UpdateSet<FieldKey, ObjectState>>>>,
+) {
+    let root_state_root = match new_startup_update_set {
+        Some(new_startup_update_set) => {
+            let new_startup_update_set = new_startup_update_set.read().unwrap();
+            let new_startup_update_set = new_startup_update_set.clone();
+            let tree_change_set =
+                apply_fields(&moveos_store, pre_root_state_root, new_startup_update_set).unwrap();
+            apply_nodes(&moveos_store, tree_change_set.nodes).unwrap();
+            tree_change_set.state_root
+        }
+        None => pre_root_state_root,
+    };
+    // Update Startup Info
+    let new_startup_info = StartupInfo::new(root_state_root, root_size);
+    moveos_store
+        .get_config_store()
+        .save_startup_info(new_startup_info.clone())
+        .unwrap();
+    println!(
+        "Done in {:?}. New startup_info: {:?}",
+        task_start_time.elapsed(),
+        new_startup_info
+    );
 }
 
 pub fn get_ord_by_outpoint(
@@ -107,14 +141,48 @@ pub fn sort_merge_utxo_ords(kvs: &mut Vec<UTXOOrds>) -> usize {
     new_len
 }
 
+// drive BitcoinAddress from data source
+pub fn drive_bitcoin_address(
+    origin_address: String,
+    script: String,
+    script_type: String,
+) -> Option<BitcoinAddress> {
+    if !origin_address.is_empty() {
+        return Some(BitcoinAddress::from_str(origin_address.as_str()).unwrap());
+    }
+    if SCRIPT_TYPE_NON_STANDARD.eq(script_type.as_str()) {
+        return None;
+    }
+    // Try to derive address from script
+    let script_buf = ScriptBuf::from_hex(script.as_str()).unwrap();
+    let bitcoin_address: BitcoinAddress = BitcoinAddress::from(&script_buf);
+    if bitcoin_address != BitcoinAddress::default() {
+        return Some(bitcoin_address);
+    }
+    // Try to derive address from p2pk pubkey
+    if SCRIPT_TYPE_P2PK.eq(script_type.as_str()) {
+        let pubkey = match PublicKey::from_str(script.as_str()) {
+            Ok(pubkey) => pubkey,
+            Err(_) => {
+                return None;
+            }
+        };
+        let pubkey_hash = pubkey.pubkey_hash();
+        return Some(BitcoinAddress::new_p2pkh(&pubkey_hash));
+    };
+    None
+}
+
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::iter;
+
     use bitcoin::hashes::Hash;
     use bitcoin::OutPoint;
     use redb::Database;
-    use std::iter;
     use tempfile::NamedTempFile;
+
+    use super::*;
 
     #[test]
     fn test_get_ord_by_outpoint() {
@@ -324,5 +392,87 @@ mod tests {
                 ords: vec![obj_ids[0].clone(), obj_ids[1].clone(), obj_ids[2].clone()],
             },]
         );
+    }
+
+    #[test]
+    fn test_drive_bitcoin_address() {
+        // non-empty address
+        let bitcoin_address = drive_bitcoin_address(
+            "bc1qsn7v0rwezflwd6pk7xxf25zhjw9wkvmympm7tk".to_string(),
+            "".to_string(),
+            SCRIPT_TYPE_NON_STANDARD.to_string(), // no matter what script type
+        );
+        assert_eq!(
+            "bc1qsn7v0rwezflwd6pk7xxf25zhjw9wkvmympm7tk",
+            bitcoin_address.unwrap().to_string()
+        );
+        // non-standard address
+        let bitcoin_address = drive_bitcoin_address(
+            "".to_string(),
+            "".to_string(),
+            SCRIPT_TYPE_NON_STANDARD.to_string(),
+        );
+        assert_eq!(None, bitcoin_address);
+        // p2pk script
+        let bitcoin_address = drive_bitcoin_address(
+            "".to_string(),
+            "41049434a2dd7c5b82df88f578f8d7fd14e8d36513aaa9c003eb5bd6cb56065e44b7e0227139e8a8e68e7de0a4ed32b8c90edc9673b8a7ea541b52f2a22196f7b8cfac".to_string(),
+            SCRIPT_TYPE_P2PK.to_string(),
+        );
+        assert_eq!(
+            "14vrCdzPtnHaXtDNLH4xNhceS7GV4GMw76",
+            bitcoin_address.unwrap().to_string()
+        );
+        // p2pk pubkey
+        let bitcoin_address = drive_bitcoin_address(
+            "".to_string(),
+            "04f254e36949ec1a7f6e9548f16d4788fb321f429b2c7d2eb44480b2ed0195cbf0c3875c767fe8abb2df6827c21392ea5cc934240b9ac46c6a56d2bd13dd0b17a9".to_string(),
+            SCRIPT_TYPE_P2PK.to_string(),
+        );
+        let pubkey = PublicKey::from_str(
+            "04f254e36949ec1a7f6e9548f16d4788fb321f429b2c7d2eb44480b2ed0195cbf0c3875c767fe8abb2df6827c21392ea5cc934240b9ac46c6a56d2bd13dd0b17a9",
+        )
+        .unwrap();
+        assert_eq!(
+            BitcoinAddress::new_p2pkh(&pubkey.pubkey_hash()),
+            bitcoin_address.unwrap()
+        );
+        // invalid p2pk pubkey
+        let bitcoin_address = drive_bitcoin_address(
+            "".to_string(),
+            "036c6565662c206f6e7464656b2c2067656e6965742e2e2e202020202020202020".to_string(),
+            SCRIPT_TYPE_P2PK.to_string(),
+        );
+        assert_eq!(None, bitcoin_address);
+        // invalid p2pk script
+        let bitcoin_address = drive_bitcoin_address(
+            "".to_string(),
+            "21036c6565662c206f6e7464656b2c2067656e6965742e2e2e202020202020202020ac".to_string(),
+            SCRIPT_TYPE_P2PK.to_string(),
+        );
+        assert_eq!(None, bitcoin_address);
+        // special p2ms case: https://ordinals.com/inscription/72552729(
+        // output: a353a7943a2b38318bf458b6af878b8384f48a6d10aad5b827d0550980abe3f0:0
+        // script: 0014f29f9316f0f1e48116958216a8babd353b491dae
+        // address: bc1q720ex9hs78jgz954sgt23w4ax5a5j8dwjj5kkm
+        // )
+        let script = "0014f29f9316f0f1e48116958216a8babd353b491dae";
+        let bitcoin_address = drive_bitcoin_address(
+            "".to_string(),
+            script.to_string(),
+            SCRIPT_TYPE_P2MS.to_string(),
+        );
+        assert_eq!(
+            "bc1q720ex9hs78jgz954sgt23w4ax5a5j8dwjj5kkm",
+            bitcoin_address.unwrap().to_string()
+        );
+        // normal p2ms (cannot get payload)
+        let script = "512102047da7156b82baaed491787e77a0d94cbc00ebdbd993639382b8a41d2f8d42dd2107000000000000000000000000000000000000000000000000000000000000000052ae";
+        let bitcoin_address = drive_bitcoin_address(
+            "".to_string(),
+            script.to_string(),
+            SCRIPT_TYPE_P2MS.to_string(),
+        );
+        assert_eq!(None, bitcoin_address);
     }
 }

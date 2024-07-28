@@ -76,12 +76,17 @@ impl<'r> ObjectRuntimeContext<'r> {
     }
 }
 
+pub(crate) enum RuntimeObjectArg {
+    Ref(Value),
+    Value(Value),
+}
+
 /// A structure representing mutable data of the ObjectRuntimeContext. This is in a RefCell
 /// of the overall context so we can mutate while still accessing the overall context.
 pub struct ObjectRuntime<'r> {
     pub(crate) tx_context: TxContextValue,
     pub(crate) root: RuntimeObject,
-    pub(crate) object_pointer_in_args: BTreeMap<ObjectID, Value>,
+    pub(crate) object_pointer_in_args: BTreeMap<ObjectID, RuntimeObjectArg>,
     resolver: &'r dyn StatelessResolver,
 }
 
@@ -383,7 +388,7 @@ impl<'r> ObjectRuntime<'r> {
                         //We cache the object pointer value in the object_pointer_in_args
                         //Ensure the reference count and the object can not be borrowed in Move
                         self.object_pointer_in_args
-                            .insert(object_id.clone(), pointer_value);
+                            .insert(object_id.clone(), RuntimeObjectArg::Ref(pointer_value));
                     }
                     ObjectArg::Value(_obj) => {
                         let pointer_value = rt_obj
@@ -392,8 +397,27 @@ impl<'r> ObjectRuntime<'r> {
                         //We cache the object pointer value in the object_pointer_in_args
                         //Ensure the reference count and the object can not be borrowed in Move
                         self.object_pointer_in_args
-                            .insert(object_id.clone(), pointer_value);
+                            .insert(object_id.clone(), RuntimeObjectArg::Value(pointer_value));
                     }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// We need to release the Object pointer reference after executing the user function
+    /// Because the system post function maybe need to access the object
+    pub fn release_arguments(&mut self) -> PartialVMResult<()> {
+        let object_pointer_in_args = std::mem::take(&mut self.object_pointer_in_args);
+        for (_object_id, obj_arg) in object_pointer_in_args {
+            match obj_arg {
+                RuntimeObjectArg::Ref(_pointer) => {
+                    // Just drop the reference
+                }
+                RuntimeObjectArg::Value(_pointer) => {
+                    // The object is taken out when resolving the arguments
+                    // and it should already be handle(transfer or remove) in the Move code
+                    // So we just drop the object
                 }
             }
         }

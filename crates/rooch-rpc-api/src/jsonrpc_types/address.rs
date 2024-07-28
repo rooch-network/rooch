@@ -4,7 +4,11 @@
 use crate::jsonrpc_types::StrView;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
-use rooch_types::address::{BitcoinAddress, RoochAddress};
+use nostr::{key::XOnlyPublicKey, prelude::FromBech32};
+use rooch_types::{
+    address::{BitcoinAddress, NostrPublicKey, RoochAddress},
+    bitcoin::network::Network,
+};
 use std::str::FromStr;
 
 pub type BitcoinAddressView = StrView<BitcoinAddress>;
@@ -63,63 +67,101 @@ impl From<RoochAddressView> for AccountAddress {
 }
 
 #[derive(Debug, Clone)]
-pub struct RoochOrBitcoinAddress {
+pub struct UnitedAddress {
     pub rooch_address: RoochAddress,
     pub bitcoin_address: Option<BitcoinAddress>,
+    pub nostr_public_key: Option<NostrPublicKey>,
 }
 
-pub type RoochOrBitcoinAddressView = StrView<RoochOrBitcoinAddress>;
+pub type UnitedAddressView = StrView<UnitedAddress>;
 
-impl std::fmt::Display for RoochOrBitcoinAddressView {
+impl std::fmt::Display for UnitedAddressView {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.0.bitcoin_address.is_some() {
-            return write!(f, "{}", self.0.bitcoin_address.as_ref().unwrap());
+        if let Some(bitcoin_address) = &self.0.bitcoin_address {
+            return write!(f, "{}", bitcoin_address);
+        }
+        if let Some(nostr_public_key) = &self.0.nostr_public_key {
+            return write!(f, "{}", nostr_public_key);
         }
         write!(f, "{}", self.0.rooch_address)
     }
 }
 
-impl FromStr for RoochOrBitcoinAddressView {
+impl FromStr for UnitedAddressView {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match RoochAddress::from_str(s) {
-            Ok(rooch_address) => Ok(StrView(RoochOrBitcoinAddress {
+            Ok(rooch_address) => Ok(StrView(UnitedAddress {
                 rooch_address,
                 bitcoin_address: None,
+                nostr_public_key: None,
             })),
-            Err(_) => {
-                let bitcoin_address = BitcoinAddress::from_str(s)?;
-                Ok(StrView(RoochOrBitcoinAddress {
-                    rooch_address: bitcoin_address.to_rooch_address(),
-                    bitcoin_address: Some(bitcoin_address),
-                }))
-            }
+            Err(_) => match XOnlyPublicKey::from_bech32(s) {
+                Ok(x_only_pk) => {
+                    let nostr_public_key = NostrPublicKey::new(x_only_pk);
+                    let bitcoin_address =
+                        nostr_public_key.to_bitcoin_address(Network::Bitcoin.to_num())?;
+                    let rooch_address = bitcoin_address.to_rooch_address();
+                    Ok(StrView(UnitedAddress {
+                        rooch_address,
+                        bitcoin_address: Some(bitcoin_address),
+                        nostr_public_key: Some(nostr_public_key),
+                    }))
+                }
+                Err(_) => {
+                    let bitcoin_address = BitcoinAddress::from_str(s)?;
+                    let rooch_address = bitcoin_address.to_rooch_address();
+                    Ok(StrView(UnitedAddress {
+                        rooch_address,
+                        bitcoin_address: Some(bitcoin_address),
+                        nostr_public_key: None,
+                    }))
+                }
+            },
         }
     }
 }
 
-impl From<RoochOrBitcoinAddressView> for RoochAddress {
-    fn from(value: RoochOrBitcoinAddressView) -> Self {
+impl From<UnitedAddressView> for RoochAddress {
+    fn from(value: UnitedAddressView) -> Self {
         value.0.rooch_address
     }
 }
 
-impl From<RoochAddressView> for RoochOrBitcoinAddressView {
+impl From<UnitedAddressView> for AccountAddress {
+    fn from(value: UnitedAddressView) -> Self {
+        value.0.rooch_address.into()
+    }
+}
+
+impl From<RoochAddressView> for UnitedAddressView {
     fn from(value: RoochAddressView) -> Self {
-        StrView(RoochOrBitcoinAddress {
+        StrView(UnitedAddress {
             rooch_address: value.into(),
             bitcoin_address: None,
+            nostr_public_key: None,
         })
     }
 }
 
-impl TryFrom<RoochOrBitcoinAddressView> for BitcoinAddress {
+impl TryFrom<UnitedAddressView> for BitcoinAddress {
     type Error = anyhow::Error;
 
-    fn try_from(value: RoochOrBitcoinAddressView) -> Result<Self, Self::Error> {
+    fn try_from(value: UnitedAddressView) -> Result<Self, Self::Error> {
         match value.0.bitcoin_address {
             Some(bitcoin_address) => Ok(bitcoin_address),
             None => Err(anyhow::anyhow!("No Bitcoin address found")),
+        }
+    }
+}
+
+impl TryFrom<UnitedAddressView> for NostrPublicKey {
+    type Error = anyhow::Error;
+
+    fn try_from(value: UnitedAddressView) -> Result<Self, Self::Error> {
+        match value.0.nostr_public_key {
+            Some(nostr_public_key) => Ok(nostr_public_key),
+            None => Err(anyhow::anyhow!("No Nostr public key found")),
         }
     }
 }

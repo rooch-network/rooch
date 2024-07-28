@@ -8,6 +8,7 @@ use once_cell::sync::Lazy;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::genesis_config::GenesisConfig;
 use rooch_types::rooch_network::{BuiltinChainID, RoochChainID, RoochNetwork};
+use rooch_types::service_status::ServiceStatus;
 use serde::{Deserialize, Serialize};
 use std::fs::create_dir_all;
 use std::str::FromStr;
@@ -131,9 +132,8 @@ pub struct RoochOpt {
     #[clap(long, default_value_t)]
     pub da: DAConfig,
 
-    #[clap(long)]
-    /// The data import flag. If true, may be ignore the indexer write
-    pub data_import_flag: bool,
+    #[clap(long, default_value_t, value_enum)]
+    pub service_status: ServiceStatus,
 
     #[serde(skip)]
     #[clap(skip)]
@@ -167,7 +167,7 @@ impl RoochOpt {
             sequencer_account: None,
             proposer_account: None,
             da: DAConfig::default(),
-            data_import_flag: false,
+            service_status: ServiceStatus::default(),
             base: None,
         };
         opt.init()?;

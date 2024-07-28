@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::addresses::MOVEOS_STD_ADDRESS;
+use crate::module_binding::{ModuleBinding, MoveFunctionCaller};
+use crate::moveos_std::tx_context::TxContext;
+use crate::transaction::FunctionCall;
 use crate::{
     move_std::string::MoveString,
     moveos_std::object::{self, ObjectID},
@@ -45,6 +48,8 @@ impl GasScheduleConfig {
     pub const INITIAL_MAX_GAS_AMOUNT: u64 = 1_000_000_000u64;
     /// The maximum gas amount that can be used for a read-only function call
     pub const READONLY_MAX_GAS_AMOUNT: u64 = 5_000_000_000u64;
+    /// The default maximum gas amount for the CLI to use
+    pub const CLI_DEFAULT_MAX_GAS_AMOUNT: u64 = 100_000_000u64;
 }
 
 impl MoveStructType for GasScheduleConfig {
@@ -107,5 +112,46 @@ impl MoveStructState for GasScheduleUpdated {
         move_core_types::value::MoveStructLayout::new(vec![
             move_core_types::value::MoveTypeLayout::U64,
         ])
+    }
+}
+
+pub struct GasScheduleModule<'a> {
+    caller: &'a dyn MoveFunctionCaller,
+}
+
+impl<'a> GasScheduleModule<'a> {
+    pub const GAS_SCHEDULE_FUNCTION_NAME: &'static IdentStr = ident_str!("gas_schedule");
+
+    pub fn gas_schedule(&self) -> anyhow::Result<GasSchedule> {
+        let call = FunctionCall::new(
+            Self::function_id(Self::GAS_SCHEDULE_FUNCTION_NAME),
+            vec![],
+            vec![],
+        );
+        let ctx = TxContext::zero();
+
+        let gas_schedule =
+            self.caller
+                .call_function(&ctx, call)?
+                .into_result()
+                .map(|mut values| {
+                    let value = values.pop().expect("should have one return value");
+                    bcs::from_bytes::<GasSchedule>(&value.value)
+                        .expect("should be a valid GasSchedule")
+                })?;
+
+        Ok(gas_schedule)
+    }
+}
+
+impl<'a> ModuleBinding<'a> for GasScheduleModule<'a> {
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const MODULE_ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
+
+    fn new(caller: &'a impl MoveFunctionCaller) -> Self
+    where
+        Self: Sized,
+    {
+        Self { caller }
     }
 }

@@ -3,7 +3,8 @@
   "connect-to-rooch": "连接 Rooch",
   "first-account": "第一个账户",
   "get-gas-coin": "获取 Rooch Gas Coin",
+  "get-test-btc": "获取 tBTC",
   "first-contract": "第一个合约",
-  "first-dapp": "第一个 DApp",
+  "first-dapp": "第一个 dApp",
   "first-token": "第一个代币"
 }

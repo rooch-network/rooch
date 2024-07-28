@@ -3,7 +3,7 @@
 
 use super::{
     AnnotatedMoveStructView, BytesView, H256View, HumanReadableDisplay, ObjectIDVecView,
-    RoochAddressView, RoochOrBitcoinAddressView, StrView, StructTagView, TypeTagView,
+    RoochAddressView, StrView, StructTagView, TypeTagView, UnitedAddressView,
 };
 use anyhow::Result;
 use move_core_types::effects::Op;
@@ -294,12 +294,12 @@ pub enum ObjectStateFilterView {
     ObjectTypeWithOwner {
         object_type: StructTagView,
         filter_out: bool,
-        owner: RoochOrBitcoinAddressView,
+        owner: UnitedAddressView,
     },
     /// Query by object value type.
     ObjectType(StructTagView),
     /// Query by owner.
-    Owner(RoochOrBitcoinAddressView),
+    Owner(UnitedAddressView),
     /// Query by object ids.
     ObjectId(ObjectIDVecView),
 }

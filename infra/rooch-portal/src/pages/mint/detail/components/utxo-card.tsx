@@ -18,7 +18,7 @@ type UtxoCardProps = {
 export const UtxoCard: React.FC<UtxoCardProps> = ({utxo, selected, noData, selectedCallback}) => {
   return (
     <Card
-      key={utxo?.id || ''}
+      key={utxo?.id}
       onClick={() => utxo && selectedCallback(utxo.id)}
       className={cn(
         'relative rounded-lg border border-border/40 dark:bg-zinc-800/90 overflow-hidden select-none',

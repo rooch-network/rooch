@@ -8,8 +8,10 @@ use crate::{
     address::{BitcoinAddress, RoochAddress},
     authentication_key::AuthenticationKey,
     error::{RoochError, RoochResult},
+    rooch_key::ROOCH_SECRET_KEY_HRP,
 };
 use anyhow::bail;
+use bech32::{encode, Bech32, EncodeError};
 use derive_more::{AsMut, AsRef, From};
 pub use enum_dispatch::enum_dispatch;
 use eyre::eyre;
@@ -35,6 +37,7 @@ use fastcrypto::{
     secp256k1::{Secp256k1PublicKey, Secp256k1Signature, Secp256k1SignatureAsBytes},
 };
 use moveos_types::serde::Readable;
+use nostr::prelude::ToBech32;
 use schemars::JsonSchema;
 use serde::ser::Serializer;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -123,6 +126,17 @@ impl RoochKeyPair {
             RoochKeyPair::Ed25519(kp) => RoochKeyPair::Ed25519(kp.copy()),
             RoochKeyPair::Secp256k1(kp) => RoochKeyPair::Secp256k1(kp.copy()),
         }
+    }
+
+    // Export Private Key method exports a private key in bech32 format
+    pub fn export_private_key(&self) -> Result<String, EncodeError> {
+        let mut priv_key_bytes =
+            Vec::with_capacity(self.public().flag() as usize + self.private().len());
+        priv_key_bytes.push(self.public().flag());
+        priv_key_bytes.extend_from_slice(self.private());
+        // encode hrp and private key bytes using bech32 method
+        let bech32_encoded = encode::<Bech32>(*ROOCH_SECRET_KEY_HRP, &priv_key_bytes)?;
+        Ok(bech32_encoded)
     }
 }
 
@@ -310,6 +324,18 @@ impl PublicKey {
                 )))
             }
             _ => bail!("Only secp256k1 public key can be converted to bitcoin address"),
+        }
+    }
+
+    pub fn nostr_bech32_public_key(&self) -> Result<String, anyhow::Error> {
+        match self {
+            PublicKey::Secp256k1(pk) => {
+                let xonly_pubkey = nostr::secp256k1::XOnlyPublicKey::from(
+                    nostr::secp256k1::PublicKey::from_slice(&pk.0)?,
+                );
+                Ok(xonly_pubkey.to_bech32()?)
+            }
+            _ => bail!("Only secp256k1 public key can be converted to nostr bech32 public key"),
         }
     }
 }

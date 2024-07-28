@@ -143,7 +143,6 @@ fn parse_template(
     let mut var_name = String::new();
     let mut in_braces = false;
     let mut escaped = false;
-
     for ch in template.chars() {
         match ch {
             '{' if !escaped => {
@@ -152,8 +151,10 @@ fn parse_template(
             }
             '}' if !escaped => {
                 in_braces = false;
-                let value = get_value_from_move_struct(move_value, &var_name, metadata)?;
-                output = output.replace(&format!("{{{}}}", var_name), &value);
+                let value = get_value_from_move_struct(move_value, &var_name, metadata);
+                if value.is_ok() {
+                    output = output.replace(&format!("{{{}}}", var_name), &value.unwrap());
+                }
             }
             _ if !escaped => {
                 if in_braces {

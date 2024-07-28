@@ -20,8 +20,6 @@ export const DetailView: React.FC<DetailViewProps> = ({back, title, children}) =
   const navigate = useNavigate()
   const {isConnected} = useCurrentWallet()
 
-  console.log(isConnected)
-
   return (
     <div className="h-full flex-1 flex-col space-y-4 flex p-4 rounded-lg shadow-custom dark:shadow-muted">
       <Button

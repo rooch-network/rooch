@@ -6,6 +6,7 @@ export type TokenInfo =
   {
     address: string,
     coin: {
+      type: string,
       name: string,
       symbol: string,
       decimals: number,
@@ -15,7 +16,19 @@ export type TokenInfo =
     endTime: number,
     progress: number,
     releasePerSecond: number,
+    finished: boolean
   }
+
+function extractCoinInfoContent(input: string): string | null {
+  const regex = /CoinInfo<([^>]+)>/;
+  const match = input.match(regex);
+
+  if (match && match[1]) {
+    return match[1];
+  }
+
+  return null;
+}
 
 export async function getTokenInfo(client: RoochClient, address: string): Promise<TokenInfo | undefined> {
   const data = await client.getStates({
@@ -26,7 +39,10 @@ export async function getTokenInfo(client: RoochClient, address: string): Promis
     },
   })
   const decode = (((data[0].decoded_value as any).value as any).value as any).value as any
-  const coinId = (decode['coin_info'] as AnnotatedMoveStructView).value['id'] as string
+  const coinInfo = decode['coin_info'] as AnnotatedMoveStructView
+  const coinId = coinInfo.value['id'] as string
+
+  const coinType = extractCoinInfoContent(coinInfo.type)!
 
   return client.getStates({
     accessPath: `/object/${coinId}`,
@@ -44,6 +60,7 @@ export async function getTokenInfo(client: RoochClient, address: string): Promis
     return {
       address: address,
       coin: {
+        type: coinType,
         name: coinView.name,
         decimals: coinView.decimals,
         symbol: coinView.symbol
@@ -51,6 +68,7 @@ export async function getTokenInfo(client: RoochClient, address: string): Promis
       starTime,
       endTime,
       progress,
+      finished: endTime < now,
       assetTotalWeight: decode['asset_total_weight'] as number,
       releasePerSecond: decode['release_per_second'] as number,
     }

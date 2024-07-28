@@ -3,7 +3,7 @@
 
 use super::types::{LocalAccount, LocalSessionKey};
 use crate::keystore::account_keystore::AccountKeystore;
-use anyhow::ensure;
+use anyhow::{ensure, Ok};
 use rooch_types::framework::session_key::SessionKey;
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
 use rooch_types::{
@@ -74,10 +74,12 @@ impl AccountKeystore for BaseKeyStore {
             let keypair: RoochKeyPair = encryption.decrypt_with_type(password.clone())?;
             let public_key = keypair.public();
             let bitcoin_address = public_key.bitcoin_address()?;
+            let nostr_bech32_public_key = public_key.nostr_bech32_public_key()?;
             let has_session_key = self.session_keys.contains_key(address);
             let local_account = LocalAccount {
                 address: *address,
                 bitcoin_address,
+                nostr_bech32_public_key,
                 public_key,
                 has_session_key,
             };
@@ -86,6 +88,7 @@ impl AccountKeystore for BaseKeyStore {
         Ok(accounts.into_values().collect())
     }
 
+    // TODO: deal with the Rooch and Nostr's get_key_pair() function. Consider Nostr scenario
     fn get_key_pair(
         &self,
         address: &RoochAddress,
@@ -150,6 +153,20 @@ impl AccountKeystore for BaseKeyStore {
 
     fn nullify(&mut self, address: &RoochAddress) -> Result<(), anyhow::Error> {
         self.keys.remove(address);
+        let mnemonic_data = match &self.mnemonic {
+            Some(mnemonic) => mnemonic,
+            // For None, this could be indicating that there's no internal account address in the mnemonic addresses
+            None => return Ok(()),
+        };
+        match mnemonic_data
+            .addresses
+            .iter()
+            .position(|&target_address| target_address == *address)
+        {
+            Some(index) => self.mnemonic.as_mut().unwrap().addresses.remove(index),
+            // For None, this could be either non-existing address in keystore or the external account address
+            None => return Ok(()),
+        };
         Ok(())
     }
 

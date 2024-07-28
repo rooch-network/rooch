@@ -67,7 +67,7 @@ The <code><a href="option.md#0x1_option_Option">Option</a></code> is in an inval
 The <code><a href="option.md#0x1_option_Option">Option</a></code> is <code>Some</code> while it should be <code>None</code>.
 
 
-<pre><code><b>const</b> <a href="option.md#0x1_option_EOPTION_IS_SET">EOPTION_IS_SET</a>: u64 = 262144;
+<pre><code><b>const</b> <a href="option.md#0x1_option_EOPTION_IS_SET">EOPTION_IS_SET</a>: <a href="u64.md#0x1_u64">u64</a> = 262144;
 </code></pre>
 
 
@@ -78,7 +78,7 @@ The <code><a href="option.md#0x1_option_Option">Option</a></code> is in an inval
 The <code><a href="option.md#0x1_option_Option">Option</a></code> is <code>None</code> while it should be <code>Some</code>.
 
 
-<pre><code><b>const</b> <a href="option.md#0x1_option_EOPTION_NOT_SET">EOPTION_NOT_SET</a>: u64 = 262145;
+<pre><code><b>const</b> <a href="option.md#0x1_option_EOPTION_NOT_SET">EOPTION_NOT_SET</a>: <a href="u64.md#0x1_u64">u64</a> = 262145;
 </code></pre>
 
 
@@ -88,7 +88,7 @@ The <code><a href="option.md#0x1_option_Option">Option</a></code> is <code>None<
 Cannot construct an option from a vector with 2 or more elements.
 
 
-<pre><code><b>const</b> <a href="option.md#0x1_option_EOPTION_VEC_TOO_LONG">EOPTION_VEC_TOO_LONG</a>: u64 = 262146;
+<pre><code><b>const</b> <a href="option.md#0x1_option_EOPTION_VEC_TOO_LONG">EOPTION_VEC_TOO_LONG</a>: <a href="u64.md#0x1_u64">u64</a> = 262146;
 </code></pre>
 
 

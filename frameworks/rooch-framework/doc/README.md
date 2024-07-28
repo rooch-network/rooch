@@ -36,6 +36,7 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::onchain_config`](onchain_config.md#0x3_onchain_config)
 -  [`0x3::session_key`](session_key.md#0x3_session_key)
 -  [`0x3::session_validator`](session_validator.md#0x3_session_validator)
+-  [`0x3::simple_rng`](simple_rng.md#0x3_simple_rng)
 -  [`0x3::timestamp`](timestamp.md#0x3_timestamp)
 -  [`0x3::transaction`](transaction.md#0x3_transaction)
 -  [`0x3::transaction_fee`](transaction_fee.md#0x3_transaction_fee)

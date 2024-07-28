@@ -3,8 +3,8 @@
 
 use crate::jsonrpc_types::btc::transaction::{hex_to_txid, TxidView};
 use crate::jsonrpc_types::{
-    H256View, IndexerObjectStateView, IndexerStateIDView, ObjectMetaView,
-    RoochOrBitcoinAddressView, StrView,
+    H256View, IndexerObjectStateView, IndexerStateIDView, ObjectIDView, ObjectMetaView, StrView,
+    UnitedAddressView,
 };
 use anyhow::Result;
 use bitcoin::hashes::Hash;
@@ -17,6 +17,7 @@ use rooch_types::indexer::state::ObjectStateFilter;
 use rooch_types::into_address::IntoAddress;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, JsonSchema)]
 pub struct BitcoinOutPointView {
@@ -34,7 +35,7 @@ impl From<BitcoinOutPointView> for bitcoin::OutPoint {
 #[serde(rename_all = "snake_case")]
 pub enum UTXOFilterView {
     /// Query by owner, support rooch address and bitcoin address
-    Owner(RoochOrBitcoinAddressView),
+    Owner(UnitedAddressView),
     /// Query by bitcoin outpoint, represent by bitcoin txid and vout
     OutPoint { txid: String, vout: u32 },
     /// Query by object id.
@@ -49,7 +50,7 @@ impl UTXOFilterView {
             UTXOFilterView::Owner(owner) => ObjectStateFilter::ObjectTypeWithOwner {
                 object_type: UTXO::struct_tag(),
                 filter_out: false,
-                owner: owner.0.rooch_address,
+                owner: owner.0.rooch_address.into(),
             },
             UTXOFilterView::OutPoint { txid, vout } => {
                 let txid = hex_to_txid(txid.as_str())?;
@@ -75,21 +76,32 @@ pub struct UTXOView {
     /// The value of the UTXO
     value: StrView<u64>,
     /// Protocol seals
-    seals: String,
+    seals: HashMap<String, Vec<ObjectIDView>>,
 }
 
 impl UTXOView {
     pub fn try_new_from_utxo(utxo: UTXO) -> Result<UTXOView, anyhow::Error> {
         // reversed bytes of txid
         let bitcoin_txid = Txid::from_byte_array(utxo.txid.into_bytes());
-        let seals_str = serde_json::to_string(&utxo.seals)?;
+
+        let mut seals_view: HashMap<String, Vec<ObjectIDView>> = HashMap::new();
+        utxo.seals.data.into_iter().for_each(|element| {
+            seals_view.insert(
+                format!("0x{}", element.key),
+                element
+                    .value
+                    .into_iter()
+                    .map(|id| id.into())
+                    .collect::<Vec<_>>(),
+            );
+        });
 
         Ok(UTXOView {
             txid: utxo.txid.into(),
             bitcoin_txid: bitcoin_txid.into(),
             vout: utxo.vout,
             value: utxo.value.into(),
-            seals: seals_str,
+            seals: seals_view,
         })
     }
 }

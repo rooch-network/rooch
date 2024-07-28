@@ -32,6 +32,7 @@ pub struct LocalAccountView {
     pub address: String,
     pub hex_address: String,
     pub bitcoin_address: String,
+    pub nostr_public_key: String,
     pub public_key: String,
     pub has_session_key: bool,
 }
@@ -45,6 +46,7 @@ impl LocalAccountView {
                 .bitcoin_address
                 .format(btc_network)
                 .expect("Failed to format bitcoin address"),
+            nostr_public_key: account.nostr_bech32_public_key,
             public_key: account.public_key.encode_base64(),
             has_session_key: account.has_session_key,
         }
@@ -69,9 +71,11 @@ impl CommandAction<Option<AccountsView>> for ListCommand {
         let password = if context.keystore.get_if_password_is_empty() {
             None
         } else {
-            Some(
+            let password = Some(
                 prompt_password("Enter the password to create a new key pair:").unwrap_or_default(),
-            )
+            );
+            println!();
+            password
         };
 
         let accounts: Vec<LocalAccount> = context.keystore.get_accounts(password)?;
@@ -109,18 +113,20 @@ impl CommandAction<Option<AccountsView>> for ListCommand {
         } else {
             let mut output = String::new();
 
+            // TODO: remove non-json print as it goes too long?
             output.push_str(&format!(
-                "{:^66} | {:^66} | {:^48} | {:^10}\n",
-                "Address", "Hex Address", "Bitcoin Address", "Active"
+                "{:^66} | {:^66} | {:^48} | {:^47} | {:^10}\n",
+                "Address", "Hex Address", "Bitcoin Address", "Nostr Public Key", "Active"
             ));
-            output.push_str(&format!("{}\n", ["-"; 190].join("")));
+            output.push_str(&format!("{}\n", ["-"; 270].join("")));
 
             for account in account_views {
                 output.push_str(&format!(
-                    "{:^66} | {:^66} | {:^48} | {:^10}\n",
+                    "{:^66} | {:^66} | {:^48} | {:^47} | {:^10}\n",
                     account.local_account.address,
                     account.local_account.hex_address,
                     account.local_account.bitcoin_address,
+                    account.local_account.nostr_public_key,
                     account.active
                 ));
             }

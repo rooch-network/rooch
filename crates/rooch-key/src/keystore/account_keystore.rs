@@ -2,9 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::types::LocalAccount;
-use crate::key_derive::{generate_derivation_path, generate_new_key_pair, ROOCH_SECRET_KEY_PREFIX};
-use bitcoin::bech32::{encode, Bech32, Hrp};
-use rooch_types::crypto::SignatureScheme;
+use crate::key_derive::{generate_derivation_path, generate_new_key_pair};
 use rooch_types::framework::session_key::SessionKey;
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
 use rooch_types::{
@@ -81,17 +79,15 @@ pub trait AccountKeystore {
         Ok(mnemonic_phrase)
     }
 
-    fn export_private_key(&mut self, sk_bytes: &[u8]) -> Result<String, anyhow::Error> {
-        // get 33 bytes flag and secret key
-        let mut priv_key_bytes = Vec::with_capacity(sk_bytes.len() + 1);
-        // supports secp256k1 signature scheme
-        priv_key_bytes.push(SignatureScheme::Secp256k1.flag());
-        priv_key_bytes.extend_from_slice(sk_bytes);
-        // init `roochsecretkey` as HRP
-        let hrp = Hrp::parse(ROOCH_SECRET_KEY_PREFIX)?;
-        // encode hrp and 33 bytes private key using bech32 method
-        let bech32_encoded = encode::<Bech32>(hrp, &priv_key_bytes)?;
-        Ok(bech32_encoded)
+    fn import_external_account(
+        &mut self,
+        address: RoochAddress,
+        kp: RoochKeyPair,
+        password: Option<String>,
+    ) -> Result<(), anyhow::Error> {
+        let private_key_encryption = EncryptionData::encrypt_with_type(&kp, password)?;
+        self.add_address_encryption_data_to_keys(address, private_key_encryption)?;
+        Ok(())
     }
 
     fn get_accounts(&self, password: Option<String>) -> Result<Vec<LocalAccount>, anyhow::Error>;

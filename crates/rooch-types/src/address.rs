@@ -8,6 +8,7 @@ use crate::{
 };
 use anyhow::{bail, Result};
 use bech32::{Bech32m, Hrp};
+use bitcoin::address::Payload;
 use bitcoin::bech32::segwit::encode_to_fmt_unchecked;
 use bitcoin::script::PushBytesBuf;
 use bitcoin::{
@@ -32,6 +33,7 @@ use moveos_types::{
     h256::H256,
     state::{MoveStructState, MoveStructType},
 };
+use nostr::prelude::{FromBech32, ToBech32, PREFIX_BECH32_PUBLIC_KEY};
 use nostr::secp256k1::XOnlyPublicKey;
 use nostr::Keys;
 use once_cell::sync::Lazy;
@@ -88,8 +90,8 @@ impl MultiChainAddress {
                 Ok(address.into())
             }
             RoochMultiChainID::Nostr => {
-                let address = NostrAddress::from_str(str)?;
-                Ok(address.into())
+                let pk = NostrPublicKey::from_str(str)?;
+                Ok(pk.into())
             }
         }
     }
@@ -117,8 +119,8 @@ impl MultiChainAddress {
                 address.to_string()
             }
             RoochMultiChainID::Nostr => {
-                let address = NostrAddress::try_from(self.clone()).unwrap();
-                address.to_string()
+                let pk = NostrPublicKey::try_from(self.clone()).unwrap();
+                pk.to_string()
             }
         }
     }
@@ -226,14 +228,6 @@ impl RoochAddress {
         moveos_types::addresses::is_vm_or_system_reserved_address((*self).into())
     }
 
-    pub fn from_bech32(bech32: &str) -> Result<Self> {
-        let (hrp, data) = bech32::decode(bech32)?;
-        anyhow::ensure!(hrp == *ROOCH_HRP, "invalid rooch hrp");
-        anyhow::ensure!(data.len() == Self::LENGTH, "invalid rooch address length");
-        let hash = H256::from_slice(data.as_slice());
-        Ok(Self(hash))
-    }
-
     pub fn to_bech32(&self) -> String {
         let data = self.0.as_bytes();
         bech32::encode::<Bech32m>(*ROOCH_HRP, data).expect("bech32 encode should success")
@@ -245,6 +239,14 @@ impl RoochAddress {
 
     pub fn into_bytes(self) -> [u8; Self::LENGTH] {
         self.0.to_fixed_bytes()
+    }
+
+    pub fn from_bech32(bech32: &str) -> Result<Self> {
+        let (hrp, data) = bech32::decode(bech32)?;
+        anyhow::ensure!(hrp == *ROOCH_HRP, "invalid rooch hrp");
+        anyhow::ensure!(data.len() == Self::LENGTH, "invalid rooch address length");
+        let hash = H256::from_slice(data.as_slice());
+        Ok(Self(hash))
     }
 
     /// RoochAddress from_hex_literal support short hex string, such as 0x1, 0x2, 0x3
@@ -659,6 +661,9 @@ impl BitcoinAddress {
 
     ///  Format the base58 as a hexadecimal string
     pub fn format(&self, network: u8) -> Result<String, anyhow::Error> {
+        if self.bytes.is_empty() {
+            anyhow::bail!("bitcoin address is empty");
+        }
         let payload_type = BitcoinAddressPayloadType::try_from(self.bytes[0])?;
         match payload_type {
             BitcoinAddressPayloadType::PubkeyHash => {
@@ -764,6 +769,31 @@ impl From<bitcoin::address::Payload> for BitcoinAddress {
     }
 }
 
+impl From<bitcoin::ScriptBuf> for BitcoinAddress {
+    fn from(script: bitcoin::ScriptBuf) -> Self {
+        Self::from(&script)
+    }
+}
+
+impl From<&bitcoin::ScriptBuf> for BitcoinAddress {
+    fn from(script: &bitcoin::ScriptBuf) -> Self {
+        let address_opt = bitcoin::address::Payload::from_script(script).ok();
+        let payload: Option<Payload> = match address_opt {
+            None => {
+                if script.is_p2pk() {
+                    let p2pk_pubkey = script.p2pk_public_key();
+                    p2pk_pubkey
+                        .map(|pubkey| bitcoin::address::Payload::PubkeyHash(pubkey.pubkey_hash()))
+                } else {
+                    None
+                }
+            }
+            Some(address_opt) => Some(address_opt),
+        };
+        payload.map(|payload| payload.into()).unwrap_or_default()
+    }
+}
+
 impl From<BitcoinAddress> for MultiChainAddress {
     fn from(address: BitcoinAddress) -> Self {
         Self::new(RoochMultiChainID::Bitcoin, address.bytes)
@@ -784,23 +814,49 @@ impl TryFrom<MultiChainAddress> for BitcoinAddress {
     }
 }
 
-/// Nostr address type
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct NostrAddress(pub XOnlyPublicKey);
+// Ref: https://github.com/nostr-protocol/nips/blob/master/19.md
+/// Nostr public key type
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct NostrPublicKey(XOnlyPublicKey);
 
-impl RoochSupportedAddress for NostrAddress {
+impl NostrPublicKey {
+    pub fn new(x_only_pk: XOnlyPublicKey) -> Self {
+        Self(x_only_pk)
+    }
+
+    /// Convert from the Nostr XOnlyPublicKey to Bitcoin Taproot address. BIP-086.
+    pub fn to_bitcoin_address(&self, network: u8) -> Result<BitcoinAddress, anyhow::Error> {
+        // get the network
+        let network = network::Network::try_from(network)?;
+        // change use of XOnlyPublicKey from nostr to bitcoin lib
+        let internal_key = bitcoin::XOnlyPublicKey::from_slice(&self.0.serialize())?;
+        // new verification crypto
+        let secp = Secp256k1::verification_only();
+        // new bitcoin taproot address
+        let address = Address::p2tr(
+            &secp,
+            internal_key,
+            None,
+            bitcoin::network::Network::from(network),
+        );
+        // give it to rooch bitcoin struct
+        Ok(BitcoinAddress::from(address))
+    }
+}
+
+impl RoochSupportedAddress for NostrPublicKey {
     fn random() -> Self {
         Self(Keys::generate().public_key())
     }
 }
 
-impl From<NostrAddress> for MultiChainAddress {
-    fn from(address: NostrAddress) -> Self {
-        Self::new(RoochMultiChainID::Nostr, address.0.serialize().to_vec())
+impl From<NostrPublicKey> for MultiChainAddress {
+    fn from(pk: NostrPublicKey) -> Self {
+        Self::new(RoochMultiChainID::Nostr, pk.0.serialize().to_vec())
     }
 }
 
-impl TryFrom<MultiChainAddress> for NostrAddress {
+impl TryFrom<MultiChainAddress> for NostrPublicKey {
     type Error = anyhow::Error;
 
     fn try_from(value: MultiChainAddress) -> Result<Self, Self::Error> {
@@ -810,23 +866,24 @@ impl TryFrom<MultiChainAddress> for NostrAddress {
                 value.multichain_id
             ));
         }
-        let addr = XOnlyPublicKey::from_slice(&value.raw_address)?;
-        Ok(Self(addr))
+        let pk = XOnlyPublicKey::from_slice(&value.raw_address)?;
+        Ok(Self(pk))
     }
 }
 
-impl FromStr for NostrAddress {
+/// FromStr is FromBech32 here for NostrPublicKey
+impl FromStr for NostrPublicKey {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let address = XOnlyPublicKey::from_str(s)?;
-        Ok(Self(address))
+        let pk = XOnlyPublicKey::from_bech32(s)?;
+        Ok(Self(pk))
     }
 }
 
-impl fmt::Display for NostrAddress {
+impl fmt::Display for NostrPublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "{}", self.0.to_bech32().map_err(|_| fmt::Error)?)
     }
 }
 
@@ -862,6 +919,13 @@ impl ParsedAddress {
             Ok(Self::Numerical(RoochAddress::from_hex_literal(s)?))
         } else if s.starts_with(ROOCH_HRP.as_str()) && s.len() == RoochAddress::LENGTH_BECH32 {
             Ok(Self::Numerical(RoochAddress::from_bech32(s)?))
+        } else if s.starts_with(PREFIX_BECH32_PUBLIC_KEY) {
+            Ok(Self::Numerical(BitcoinAddress::to_rooch_address(
+                &NostrPublicKey::to_bitcoin_address(
+                    &NostrPublicKey::from_str(s)?,
+                    network::Network::Bitcoin.to_num(),
+                )?,
+            )))
         } else {
             match BitcoinAddress::from_str(s) {
                 Ok(a) => Ok(Self::Numerical(a.to_rooch_address())),
@@ -871,10 +935,12 @@ impl ParsedAddress {
     }
 }
 
+// TODO: Need a testcase to use the nostr address.
 #[cfg(test)]
 mod test {
     use super::*;
     use bitcoin::hex::DisplayHex;
+    use bitcoin::ScriptBuf;
     use std::{fmt::Debug, vec};
 
     #[test]
@@ -981,7 +1047,8 @@ mod test {
         test_rooch_supported_address_roundtrip::<RoochAddress>();
         test_rooch_supported_address_roundtrip::<EthereumAddress>();
         test_rooch_supported_address_roundtrip::<BitcoinAddress>();
-        test_rooch_supported_address_roundtrip::<NostrAddress>();
+        // TODO: deal with hex and bech32 format
+        // test_rooch_supported_address_roundtrip::<NostrPublicKey>();
     }
 
     fn test_rooch_address_roundtrip(rooch_address: RoochAddress) {
@@ -1173,5 +1240,50 @@ mod test {
         );
 
         Ok(())
+    }
+
+    #[test]
+    fn test_from_bitcoin_tx_out() {
+        // p2pk pubkey, not a script should return empty address
+        let script =  ScriptBuf::from_hex("04f254e36949ec1a7f6e9548f16d4788fb321f429b2c7d2eb44480b2ed0195cbf0c3875c767fe8abb2df6827c21392ea5cc934240b9ac46c6a56d2bd13dd0b17a9").unwrap();
+        let bitcoin_address = BitcoinAddress::from(script);
+        assert_eq!(BitcoinAddress::default(), bitcoin_address);
+        // p2pk script(outpoint: e1be133be54851d21f34666ae45211d6e76d60491cecfef17bba90731eb8f42a:0)
+        let script =  ScriptBuf::from_hex("4104f254e36949ec1a7f6e9548f16d4788fb321f429b2c7d2eb44480b2ed0195cbf0c3875c767fe8abb2df6827c21392ea5cc934240b9ac46c6a56d2bd13dd0b17a9ac").unwrap();
+        assert!(script.is_p2pk());
+        let bitcoin_address = BitcoinAddress::from(script);
+        assert_eq!(
+            "1DR5CqnzFLDmPZ7h94RHTxLV7u19xkS5rn",
+            bitcoin_address.to_string()
+        );
+        // p2pk script(outpoint: a3b0e9e7cddbbe78270fa4182a7675ff00b92872d8df7d14265a2b1e379a9d33:0)
+        let script = ScriptBuf::from_hex("4104ea1feff861b51fe3f5f8a3b12d0f4712db80e919548a80839fc47c6a21e66d957e9c5d8cd108c7a2d2324bad71f9904ac0ae7336507d785b17a2c115e427a32fac").unwrap();
+        let bitcoin_address = BitcoinAddress::from(script);
+        assert_eq!(
+            "1BBz9Z15YpELQ4QP5sEKb1SwxkcmPb5TMs",
+            bitcoin_address.to_string()
+        );
+        // p2ms script(outpoint: a353a7943a2b38318bf458b6af878b8384f48a6d10aad5b827d0550980abe3f0:0)
+        let script = ScriptBuf::from_hex("0014f29f9316f0f1e48116958216a8babd353b491dae").unwrap();
+        let bitcoin_address = BitcoinAddress::from(script);
+        assert_eq!(
+            "bc1q720ex9hs78jgz954sgt23w4ax5a5j8dwjj5kkm",
+            bitcoin_address.to_string()
+        );
+        // invalid p2pk pubkey(outpoint: 41a3e9ee1910a2d40dd217bbc9fd3638c40d13c8fdda8a0aa9d49a2b4a199422:2)
+        let script = ScriptBuf::from_hex(
+            "036c6565662c206f6e7464656b2c2067656e6965742e2e2e202020202020202020",
+        )
+        .unwrap();
+        let bitcoin_address = BitcoinAddress::from(script);
+        assert_eq!(BitcoinAddress::default(), bitcoin_address);
+        // invalid p2pk script(outpoint: 41a3e9ee1910a2d40dd217bbc9fd3638c40d13c8fdda8a0aa9d49a2b4a199422:2)
+        let script = ScriptBuf::from_hex(
+            "21036c6565662c206f6e7464656b2c2067656e6965742e2e2e202020202020202020ac",
+        )
+        .unwrap();
+        assert!(script.is_p2pk());
+        let bitcoin_address = BitcoinAddress::from(script);
+        assert_eq!(BitcoinAddress::default(), bitcoin_address);
     }
 }

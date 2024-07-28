@@ -45,13 +45,16 @@ export const SessionGuard = (props: SessionGuardProps) => {
     )
   }, [isConnected, location, sessionKey])
 
+  const allScope = defaultScope.concat(mintAddress.map((address) => `${address}::*::*`))
+
   const handleAuth = async () => {
     setError(null)
     try {
       await createSessionKey({
         appName: 'rooch-portal',
         appUrl: 'portal.rooch.network',
-        scopes: defaultScope.concat(mintAddress.map((address) => `${address}::*::*`)),
+        scopes: allScope,
+        maxInactiveInterval: 60 * 60 * 8
       })
     } catch (e) {
       console.log(e)
@@ -63,7 +66,7 @@ export const SessionGuard = (props: SessionGuardProps) => {
 
   return (
     <>
-      <SessionKeyModal isOpen={open} onAuthorize={handleAuth} scopes={defaultScope} error={error} />
+      <SessionKeyModal isOpen={open} onAuthorize={handleAuth} scopes={allScope} error={error} />
       {children}
     </>
   )

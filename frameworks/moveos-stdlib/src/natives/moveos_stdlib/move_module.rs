@@ -28,6 +28,7 @@ use move_vm_types::{
 };
 use moveos_compiler::dependency_order::sort_by_dependency_order;
 use moveos_types::moveos_std::move_module::MoveModuleId;
+use moveos_verifier::verifier::check_metadata_compatibility;
 use smallvec::smallvec;
 use std::collections::{BTreeSet, HashMap, VecDeque};
 use std::hash::Hash;
@@ -162,7 +163,7 @@ fn native_sort_and_verify_modules_inner(
         .collect();
 
     // move verifier
-    context
+    let verify_result = context
         .verify_module_bundle_for_publication(&compiled_modules)
         .map_err(|e| {
             let modules = compiled_modules
@@ -170,7 +171,14 @@ fn native_sort_and_verify_modules_inner(
                 .map(|m| m.self_id().short_str_lossless())
                 .collect::<Vec<_>>();
             e.append_message_with_separator('|', format!("modules: {:?}", modules))
-        })?;
+        });
+    match verify_result {
+        Ok(_) => {}
+        Err(e) => {
+            log::info!("modules verification error: {:?}", e);
+            return Ok(NativeResult::err(cost, E_MODULE_VERIFICATION_ERROR));
+        }
+    }
     // moveos verifier
     let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
     let mut module_names = vec![];
@@ -304,6 +312,11 @@ fn check_compatibililty_inner(
         match compat.check(&old_m, &new_m) {
             Ok(_) => {}
             Err(_) => return Ok(NativeResult::err(cost, E_MODULE_INCOMPATIBLE)),
+        }
+
+        match check_metadata_compatibility(&old_module, &new_module) {
+            Ok(_) => {}
+            Err(e) => return Ok(NativeResult::err(cost, e.sub_status().unwrap_or(0))),
         }
     }
     Ok(NativeResult::ok(cost, smallvec![]))

@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::metrics_server::start_basic_prometheus_server;
+use crate::metrics_server::{init_metrics, start_basic_prometheus_server};
 use crate::server::btc_server::BtcServer;
 use crate::server::rooch_server::RoochServer;
 use crate::service::aggregate_service::AggregateService;
@@ -15,7 +15,6 @@ use jsonrpsee::server::middleware::rpc::RpcServiceBuilder;
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
 use raw_store::errors::RawStoreError;
-use raw_store::metrics::DBMetrics;
 use rooch_config::server_config::ServerConfig;
 use rooch_config::{RoochOpt, ServerOpt};
 use rooch_da::actor::da::DAActor;
@@ -181,13 +180,13 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
 
     // start prometheus server
     let prometheus_registry = start_basic_prometheus_server();
-    // Initialize metrics to track db usage before creating any stores
-    DBMetrics::init(&prometheus_registry);
+    // Initialize metrics before creating any stores
+    init_metrics(&prometheus_registry);
 
     //Init store
     let store_config = opt.store_config();
 
-    let rooch_db = RoochDB::init(store_config)?;
+    let rooch_db = RoochDB::init_with_metrics_registry(store_config, &prometheus_registry)?;
     let (rooch_store, moveos_store, indexer_store, indexer_reader) = (
         rooch_db.rooch_store.clone(),
         rooch_db.moveos_store.clone(),
@@ -206,7 +205,8 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let sequencer_account = sequencer_keypair.public().rooch_address()?;
     let sequencer_bitcoin_address = sequencer_keypair.public().bitcoin_address()?;
 
-    let data_import_flag = opt.data_import_flag;
+    let service_status = opt.service_status;
+
     let mut network = opt.network();
     if network.chain_id == BuiltinChainID::Local.chain_id() {
         // local chain use current active account as sequencer account
@@ -245,7 +245,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
 
     // Init sequencer
     info!("RPC Server sequencer address: {:?}", sequencer_account);
-    let sequencer = SequencerActor::new(sequencer_keypair.copy(), rooch_store)?
+    let sequencer = SequencerActor::new(sequencer_keypair.copy(), rooch_store, service_status)?
         .into_actor(Some("Sequencer"), &actor_system)
         .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
@@ -288,16 +288,23 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         .await?;
     let indexer_proxy = IndexerProxy::new(indexer_executor.into(), indexer_reader_executor.into());
 
-    let processor = PipelineProcessorActor::new(
+    let mut processor = PipelineProcessorActor::new(
         executor_proxy.clone(),
         sequencer_proxy.clone(),
         proposer_proxy.clone(),
         indexer_proxy.clone(),
-        data_import_flag,
-    )
-    .into_actor(Some("PipelineProcessor"), &actor_system)
-    .await?;
-    let processor_proxy = PipelineProcessorProxy::new(processor.into());
+        service_status,
+    );
+
+    // Only process sequenced tx on startup when service is active
+    if service_status.is_active() {
+        processor.process_sequenced_tx_on_startup().await?;
+    }
+
+    let processor_actor = processor
+        .into_actor(Some("PipelineProcessor"), &actor_system)
+        .await?;
+    let processor_proxy = PipelineProcessorProxy::new(processor_actor.into());
 
     let rpc_service = RpcService::new(
         network.chain_id.id,
@@ -312,7 +319,9 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let ethereum_relayer_config = opt.ethereum_relayer_config();
     let bitcoin_relayer_config = opt.bitcoin_relayer_config();
 
-    if ethereum_relayer_config.is_some() || bitcoin_relayer_config.is_some() {
+    if service_status.is_active()
+        && (ethereum_relayer_config.is_some() || bitcoin_relayer_config.is_some())
+    {
         let relayer = RelayerActor::new(
             executor_proxy,
             processor_proxy.clone(),

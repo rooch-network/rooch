@@ -9,8 +9,9 @@ use cli_types::CommandAction;
 use commands::{
     abi::ABI, account::Account, env::Env, genesis::Genesis, init::Init, move_cli::MoveCli,
     object::ObjectCommand, resource::ResourceCommand, rpc::Rpc, server::Server,
-    session_key::SessionKey, state::StateCommand, transaction::Transaction,
+    session_key::SessionKey, state::StateCommand, transaction::Transaction, upgrade::Upgrade,
 };
+use once_cell::sync::Lazy;
 use rooch_types::error::RoochResult;
 
 pub mod cli_types;
@@ -18,7 +19,7 @@ pub mod commands;
 pub mod utils;
 
 #[derive(clap::Parser)]
-#[clap(author, version, about, long_about = None,
+#[clap(author, long_version = LONG_VERSION.as_str(), about, long_about = None,
 styles = Styles::styled()
 .header(AnsiColor::Green.on_default() | Effects::BOLD)
 .usage(AnsiColor::Green.on_default() | Effects::BOLD)
@@ -28,6 +29,12 @@ pub struct RoochCli {
     #[clap(subcommand)]
     pub cmd: Command,
 }
+
+static LONG_VERSION: Lazy<String> = Lazy::new(|| {
+    let cargo_version = env!("CARGO_PKG_VERSION");
+    let git_commit_hash = env!("GIT_COMMIT_HASH");
+    format!("{} (git commit {})", cargo_version, git_commit_hash)
+});
 
 #[allow(clippy::large_enum_variant)]
 #[derive(clap::Parser)]
@@ -48,6 +55,7 @@ pub enum Command {
     Statedb(Statedb),
     Indexer(Indexer),
     Genesis(Genesis),
+    Upgrade(Upgrade),
 }
 
 pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
@@ -68,5 +76,6 @@ pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
         Command::Statedb(statedb) => statedb.execute().await,
         Command::Indexer(indexer) => indexer.execute().await,
         Command::Genesis(genesis) => genesis.execute().await,
+        Command::Upgrade(upgrade) => upgrade.execute().await,
     }
 }

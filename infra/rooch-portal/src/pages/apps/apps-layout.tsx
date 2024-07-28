@@ -1,84 +1,27 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 import { useState } from 'react'
-import { AppsItem } from './components/apps-item'
-import { ComingSoon } from '@/components/coming-soon'
+import { AppsItem, AppItemProps } from './components/apps-item'
 import {useTranslation} from 'react-i18next';
 
-interface App {
-  id: number
-  name: string
-  description: string
-  profileUrl: string
-  logoUrl: string
-  type: string
-}
-
-const mockApps: App[] = [
-  // {
-  //   id: 1,
-  //   name: 'App One',
-  //   description: 'Description for App One.',
-  //   profileUrl:
-  //     'https://cdn.lxdao.io/bafkreig3psglqxqiejrcokqwcoucbv4i2nkp4rumqawok2vjvhey5ps63i.png',
-  //   logoUrl: 'https://cdn.lxdao.io/bafybeibietdc7lxki2jeggdu5namnyisuujhgej2zsq26nn7orn2cngm6y.png',
-  //   type: 'Tag',
-  // },
-  // {
-  //   id: 2,
-  //   name: 'App Two',
-  //   description: 'Description for App Two.',
-  //   profileUrl:
-  //     'https://cdn.lxdao.io/bafkreib5gpyab5fipyk7mvs3sbbcophl2gwpldoal3mt7hwzxgbu6pdjpq.png',
-  //   logoUrl: 'https://cdn.lxdao.io/bafkreifmpi4vszs4zqvm25us2omgpfr6gkxmc7cwvmle6xph6d5axsm4jm.png',
-  //   type: 'Bridge',
-  // },
-  // {
-  //   id: 3,
-  //   name: 'App One',
-  //   description: 'Description for App One.',
-  //   profileUrl:
-  //     'https://cdn.lxdao.io/bafkreig3psglqxqiejrcokqwcoucbv4i2nkp4rumqawok2vjvhey5ps63i.png',
-  //   logoUrl: 'https://cdn.lxdao.io/bafybeibietdc7lxki2jeggdu5namnyisuujhgej2zsq26nn7orn2cngm6y.png',
-  //   type: 'Game',
-  // },
-  // {
-  //   id: 4,
-  //   name: 'App One',
-  //   description: 'Description for App One.',
-  //   profileUrl:
-  //     'https://cdn.lxdao.io/bafkreig3psglqxqiejrcokqwcoucbv4i2nkp4rumqawok2vjvhey5ps63i.png',
-  //   logoUrl: 'https://cdn.lxdao.io/bafybeibietdc7lxki2jeggdu5namnyisuujhgej2zsq26nn7orn2cngm6y.png',
-  //   type: 'Tag',
-  // },
-  // {
-  //   id: 5,
-  //   name: 'App Two',
-  //   description: 'Description for App Two.',
-  //   profileUrl:
-  //     'https://cdn.lxdao.io/bafkreib5gpyab5fipyk7mvs3sbbcophl2gwpldoal3mt7hwzxgbu6pdjpq.png',
-  //   logoUrl: 'https://cdn.lxdao.io/bafkreifmpi4vszs4zqvm25us2omgpfr6gkxmc7cwvmle6xph6d5axsm4jm.png',
-  //   type: 'Bridge',
-  // },
-  // {
-  //   id: 6,
-  //   name: 'App One',
-  //   description: 'Description for App One.',
-  //   profileUrl:
-  //     'https://cdn.lxdao.io/bafkreig3psglqxqiejrcokqwcoucbv4i2nkp4rumqawok2vjvhey5ps63i.png',
-  //   logoUrl: 'https://cdn.lxdao.io/bafybeibietdc7lxki2jeggdu5namnyisuujhgej2zsq26nn7orn2cngm6y.png',
-  //   type: 'Game',
-  // },
+const mockApps: AppItemProps[] = [
+  {
+    id: 1,
+    name: 'Rooch Clicker',
+    description: 'Join our Click Challenge! You\'re in for 1,000 RCC!',
+    profileUrl:
+      './logo-single.png',
+    logoUrl: 'clicker-app.jpg',
+    type: 'Demo',
+    url: 'https://rooch-clicker.vercel.app'
+  }
 ]
 
 export const AppsLayout = () => {
-  const [apps] = useState<App[]>(mockApps)
+  const [apps] = useState<AppItemProps[]>(mockApps)
   const { t } = useTranslation()
 
   const renderContent = () => {
-    if (apps.length === 0) {
-      return <ComingSoon />
-    }
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full place-items-center">
         {apps.map((app) => (
@@ -90,6 +33,7 @@ export const AppsLayout = () => {
             profileUrl={app.profileUrl}
             logoUrl={app.logoUrl}
             type={app.type}
+            url={app.url}
           />
         ))}
       </div>
