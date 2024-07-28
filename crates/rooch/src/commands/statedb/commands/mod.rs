@@ -8,8 +8,8 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Instant;
 
+use bitcoin::{OutPoint, Txid};
 use bitcoin::hashes::Hash;
-use bitcoin::OutPoint;
 use move_core_types::account_address::AccountAddress;
 use xorf::{BinaryFuse8, Filter};
 use xxhash_rust::xxh3::xxh3_64;
@@ -152,18 +152,19 @@ impl OutpointInscriptionsMap {
                     continue; // skip block height info
                 }
             }
-
-            let src: InscriptionSource = serde_json::from_str(&line).unwrap();
+            let src: InscriptionSource = InscriptionSource::from_str(&line);
             let txid: AccountAddress = src.id.txid.into_address();
             let inscription_id = InscriptionID::new(txid, src.id.index);
             let obj_id = derive_inscription_id(&inscription_id);
+            inscription_count += 1;
             let satpoint_output = OutPoint::from_str(src.satpoint_outpoint.as_str()).unwrap();
-
+            if satpoint_output.vout == 0 && satpoint_output.txid == Txid::all_zeros() {
+                continue; // skip coinbase
+            }
             items.push(OutpointInscriptions {
                 outpoint: satpoint_output,
                 inscriptions: vec![obj_id.clone()],
             });
-            inscription_count += 1;
         }
 
         let map = Self::new_with_unsorted(items);
