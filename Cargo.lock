@@ -8784,15 +8784,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "redb"
-version = "2.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6dd20d3cdeb9c7d2366a0b16b93b35b75aec15309fbeb7ce477138c9f68c8c0"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "redox_syscall"
 version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9260,8 +9251,8 @@ dependencies = [
  "parking_lot 0.12.3",
  "proptest",
  "proptest-derive",
+ "rand 0.8.5",
  "raw-store",
- "redb",
  "regex",
  "rooch-common",
  "rooch-config",
@@ -9288,6 +9279,8 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "xorf",
+ "xxhash-rust",
 ]
 
 [[package]]
@@ -13677,10 +13670,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "xxhash-rust"
-version = "0.8.11"
+name = "xorf"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63658493314859b4dfdf3fb8c1defd61587839def09582db50b8a4e93afca6bb"
+checksum = "cf24c008fe464f5d8f58b8d16a1ab7e930bd73b2a6933ff8704c414b2bed7f92"
+dependencies = [
+ "libm",
+ "rand 0.8.5",
+]
+
+[[package]]
+name = "xxhash-rust"
+version = "0.8.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a5cbf750400958819fb6178eaa83bee5cd9c29a26a40cc241df8c70fdd46984"
 
 [[package]]
 name = "yaml-rust"

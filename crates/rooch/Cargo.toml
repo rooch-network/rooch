@@ -45,10 +45,12 @@ proptest = { optional = true, workspace = true }
 proptest-derive = { optional = true, workspace = true }
 csv = { workspace = true }
 tempfile = { workspace = true }
-redb = { workspace = true }
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 jemallocator = { version = "0.5.4", features = ["unprefixed_malloc_on_supported_platforms", "profiling"] }
 rustc-hash = { workspace = true }
+rand = { workspace = true }
+xorf = { workspace = true }
+xxhash-rust = { workspace = true, features = ["xxh3"] }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }
