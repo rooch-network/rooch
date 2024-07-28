@@ -120,6 +120,18 @@ pub enum RoochError {
     #[error("Invalid sequencer or proposer or relayer key pair")]
     InvalidSequencerOrProposerOrRelayerKeyPair,
 
+    #[error("The local gas_config version {0} is lower than the onchain version {1}")]
+    InvalidLocalGasVersion(u64, u64),
+
+    #[error("The content length of local gas schedule is less")]
+    LessLocalGasScheduleLength,
+
+    #[error("The content of local gas schedule must be subset of onchain gas schedule")]
+    LocalIncorrectGasSchedule,
+
+    #[error("The onchain gas schedule is empty.")]
+    OnchainGasScheduleIsEmpty,
+
     #[error("VM error: {0}")]
     VMError(VMError),
 }

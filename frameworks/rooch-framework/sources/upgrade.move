@@ -3,6 +3,7 @@
 
 module rooch_framework::upgrade {
 
+    use moveos_std::gas_schedule::update_gas_schedule;
     use moveos_std::signer::module_signer;
     use moveos_std::signer;
     use moveos_std::event;
@@ -47,5 +48,14 @@ module rooch_framework::upgrade {
 
         onchain_config::update_framework_version();
         event::emit<FrameworkUpgradeEvent>(FrameworkUpgradeEvent { version: onchain_config::framework_version() });
+    }
+
+    entry fun upgrade_gas_schedule(account: &signer, gas_schedule_config: vector<u8>) {
+        let sender_address = signer::address_of(account);
+        assert!(sender_address == onchain_config::sequencer(), ErrorNotSequencer);
+
+        let system = module_signer<FrameworkUpgradeEvent>();
+        let moveos_std_signer = create_signer_for_system(&system, MoveosStdAccount);
+        update_gas_schedule(&moveos_std_signer, gas_schedule_config);
     }
 }
