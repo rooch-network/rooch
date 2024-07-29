@@ -21,7 +21,8 @@
 -  [Function `verify_with_public_key`](#0x3_bitcoin_address_verify_with_public_key)
 -  [Function `to_rooch_address`](#0x3_bitcoin_address_to_rooch_address)
 -  [Function `verify_bitcoin_address_with_public_key`](#0x3_bitcoin_address_verify_bitcoin_address_with_public_key)
--  [Function `derive_multi_sign_address`](#0x3_bitcoin_address_derive_multi_sign_address)
+-  [Function `derive_multisig_xonly_pubkey_from_public_keys`](#0x3_bitcoin_address_derive_multisig_xonly_pubkey_from_public_keys)
+-  [Function `derive_bitcoin_taproot_address_from_multisig_xonly_pubkey`](#0x3_bitcoin_address_derive_bitcoin_taproot_address_from_multisig_xonly_pubkey)
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
@@ -287,11 +288,22 @@ Empty address is a special address that is used to if we parse address failed fr
 
 
 
-<a name="0x3_bitcoin_address_derive_multi_sign_address"></a>
+<a name="0x3_bitcoin_address_derive_multisig_xonly_pubkey_from_public_keys"></a>
 
-## Function `derive_multi_sign_address`
+## Function `derive_multisig_xonly_pubkey_from_public_keys`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_derive_multi_sign_address">derive_multi_sign_address</a>(public_keys: &<a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, threshold: u64): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_derive_multisig_xonly_pubkey_from_public_keys">derive_multisig_xonly_pubkey_from_public_keys</a>(public_keys: &<a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, threshold: u64): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_derive_bitcoin_taproot_address_from_multisig_xonly_pubkey"></a>
+
+## Function `derive_bitcoin_taproot_address_from_multisig_xonly_pubkey`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_derive_bitcoin_taproot_address_from_multisig_xonly_pubkey">derive_bitcoin_taproot_address_from_multisig_xonly_pubkey</a>(xonly_pubkey: &<a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
 </code></pre>

@@ -108,8 +108,11 @@ module rooch_framework::bitcoin_address {
     // verify bitcoin address according to the pk bytes
     public native fun verify_bitcoin_address_with_public_key(bitcoin_addr: &BitcoinAddress, pk: &vector<u8>): bool;
 
-    // derive multi signature address from public keys
-    public native fun derive_multi_sign_address(public_keys: &vector<vector<u8>>, threshold: u64): BitcoinAddress;
+    // derive multisig xonly public key from public keys
+    public native fun derive_multisig_xonly_pubkey_from_public_keys(public_keys: &vector<vector<u8>>, threshold: u64): vector<u8>;
+ 
+    // derive bitcoin taproot address from the multisig xonly public key
+    public native fun derive_bitcoin_taproot_address_from_multisig_xonly_pubkey(xonly_pubkey: &vector<u8>): BitcoinAddress;
 
     /// Parse the Bitcoin address string bytes to Move BitcoinAddress
     native fun parse(raw_addr: &vector<u8>): BitcoinAddress;
@@ -149,5 +152,38 @@ module rooch_framework::bitcoin_address {
         let addr = string::utf8(b"bc1p8xpjpkc9uzj2dexcxjg9sw8lxje85xa4070zpcys589e3rf6k20qm6gjrt");
         let pk = x"038e3d29b653e40f5b620f9443ee05222d1e40be58f544b6fed3d464edd54db884";
         assert!(!verify_with_public_key(&addr, &pk), 1004);
+    }
+
+    #[test]
+    fun test_derive_multisig_xonly_pubkey_from_public_keys_success() {
+        let expected_xonly_pubkey = x"ffa540e2d3df158dfb202fc1a2cbb20c4920ba35e8f75bb11101bfa47d71449a";
+        let pk_list = vector::empty<vector<u8>>();
+
+        let pk_1 = x"038e3d29b653e40f5b620f9443ee05222d1e40be58f544b6fed3d464edd54db883";
+        let pk_2 = x"02481521eb57656db4bc9ec81857e105cc7853fe8cad61be23667bb401840fc7f8";
+        let pk_3 = x"02c3bc6ff4dec7f43dd4f587d4dc227fb171755779425ca032e0fcb2f0bb639cc2";
+        let pk_4 = x"02ebdc1107552f81d188a2c63806cb6fa5d734eaa7316a85dc1f608fcaee412b72";
+
+        vector::push_back(&mut pk_list, pk_1);
+        vector::push_back(&mut pk_list, pk_2);
+        vector::push_back(&mut pk_list, pk_3);
+        vector::push_back(&mut pk_list, pk_4);
+
+        let xonly_pubkey = derive_multisig_xonly_pubkey_from_public_keys(&pk_list, 4);
+
+        assert!(expected_xonly_pubkey == xonly_pubkey, 1005);
+    }
+
+    #[test]
+    fun test_derive_bitcoin_taproot_address_from_multisig_xonly_pubkey_success() {
+        let xonly_pubkey = x"ffa540e2d3df158dfb202fc1a2cbb20c4920ba35e8f75bb11101bfa47d71449a";
+
+        let bitcoin_addr = derive_bitcoin_taproot_address_from_multisig_xonly_pubkey(&xonly_pubkey);
+
+        let expected_bitcoin_addr = BitcoinAddress {
+            bytes: b"bc1p8xpjpkc9uzj2dexcxjg9sw8lxje85xa4070zpcys589e3rf6k20qm6gjrt",
+        };
+
+        assert!(expected_bitcoin_addr.bytes == bitcoin_addr.bytes, 1006);
     }
 }
