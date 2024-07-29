@@ -93,7 +93,8 @@ impl SequencerActor {
             tx_timestamp,
             tx_order,
             tx_order_signature,
-            tx_accumulator_info.clone(),
+            tx_accumulator_info.accumulator_root,
+            Some(tx_accumulator_info.clone()),
         );
 
         let sequencer_info = SequencerInfo::new(tx.sequence_info.tx_order, tx_accumulator_info);

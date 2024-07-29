@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use accumulator::accumulator_info::AccumulatorInfo;
 use accumulator::{Accumulator, MerkleAccumulator};
 use anyhow::{ensure, Result};
 use framework_builder::stdlib_version::StdlibVersion;
@@ -16,6 +15,7 @@ use moveos_store::MoveOSStore;
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
 use moveos_types::move_std::string::MoveString;
+use moveos_types::moveos_std::accumulator::AccumulatorInfo;
 use moveos_types::moveos_std::gas_schedule::{GasEntry, GasSchedule, GasScheduleConfig};
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::state::ObjectState;
@@ -357,7 +357,8 @@ impl RoochGenesis {
             moveos_genesis_context.timestamp,
             genesis_tx_order,
             vec![],
-            genesis_tx_accmulator_info.clone(),
+            genesis_tx_accmulator_info.accumulator_root,
+            Some(genesis_tx_accmulator_info.clone()),
         );
         let sequencer_info = SequencerInfo::new(genesis_tx_order, genesis_tx_accmulator_info);
         rooch_db.rooch_store.save_sequencer_info(sequencer_info)?;

@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use accumulator::accumulator_info::AccumulatorInfo;
 use anyhow::Result;
 use framework_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use move_core_types::account_address::AccountAddress;
@@ -22,6 +21,8 @@ pub use authenticator::Authenticator;
 pub use ledger_transaction::{
     L1Block, L1BlockWithBody, L1Transaction, LedgerTransaction, LedgerTxData,
 };
+use moveos_types::move_std::option::MoveOption;
+use moveos_types::moveos_std::accumulator::AccumulatorInfo;
 pub use rooch::{RoochTransaction, RoochTransactionData};
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
@@ -68,39 +69,43 @@ pub struct TransactionSequenceInfo {
     /// The timestamp of the sequencer when the tx is sequenced, in millisecond.
     pub tx_timestamp: u64,
 
-    /// Frozen subtree roots of the accumulator.
-    pub tx_accumulator_frozen_subtree_roots: Vec<H256>,
-    /// The total number of leaves in the accumulator.
-    pub tx_accumulator_num_leaves: u64,
-    /// The total number of nodes in the accumulator.
-    pub tx_accumulator_num_nodes: u64,
+    // /// Frozen subtree roots of the accumulator.
+    // pub tx_accumulator_frozen_subtree_roots: Vec<H256>,
+    // /// The total number of leaves in the accumulator.
+    // pub tx_accumulator_num_leaves: u64,
+    // /// The total number of nodes in the accumulator.
+    // pub tx_accumulator_num_nodes: u64,
+    pub tx_accumulator_info: MoveOption<AccumulatorInfo>,
 }
 
 impl TransactionSequenceInfo {
     pub fn new(
         tx_order: u64,
         tx_order_signature: Vec<u8>,
-        tx_accumulator_info: AccumulatorInfo,
+        tx_accumulator_root: H256,
         tx_timestamp: u64,
+        tx_accumulator_info: Option<AccumulatorInfo>,
     ) -> TransactionSequenceInfo {
         TransactionSequenceInfo {
             tx_order,
             tx_order_signature,
-            tx_accumulator_root: tx_accumulator_info.accumulator_root,
+            tx_accumulator_root,
             tx_timestamp,
-            tx_accumulator_frozen_subtree_roots: tx_accumulator_info.frozen_subtree_roots,
-            tx_accumulator_num_leaves: tx_accumulator_info.num_leaves,
-            tx_accumulator_num_nodes: tx_accumulator_info.num_nodes,
+            // tx_accumulator_frozen_subtree_roots: tx_accumulator_info.frozen_subtree_roots,
+            // tx_accumulator_num_leaves: tx_accumulator_info.num_leaves,
+            // tx_accumulator_num_nodes: tx_accumulator_info.num_nodes,
+            tx_accumulator_info: tx_accumulator_info.into(),
         }
     }
 
-    pub fn tx_accumulator_info(&self) -> AccumulatorInfo {
-        AccumulatorInfo::new(
-            self.tx_accumulator_root,
-            self.tx_accumulator_frozen_subtree_roots.clone(),
-            self.tx_accumulator_num_leaves,
-            self.tx_accumulator_num_nodes,
-        )
+    pub fn tx_accumulator_info(&self) -> Option<AccumulatorInfo> {
+        self.tx_accumulator_info.clone().into()
+        // AccumulatorInfo::new(
+        //     self.tx_accumulator_root,
+        //     self.tx_accumulator_frozen_subtree_roots.clone(),
+        //     self.tx_accumulator_num_leaves,
+        //     self.tx_accumulator_num_nodes,
+        // )
     }
 }
 
@@ -121,14 +126,15 @@ impl MoveStructState for TransactionSequenceInfo {
                 move_core_types::value::MoveTypeLayout::U8,
             )),
             move_core_types::value::MoveTypeLayout::U64,
+            MoveOption::<AccumulatorInfo>::type_layout(),
             // move_core_types::value::MoveTypeLayout::Vector(Box::new(
             //     move_core_types::value::MoveTypeLayout::Vector(Box::new(
             //         move_core_types::value::MoveTypeLayout::U8,
             //     )),
             // )),
-            Vec::<Vec<u8>>::type_layout(),
-            move_core_types::value::MoveTypeLayout::U64,
-            move_core_types::value::MoveTypeLayout::U64,
+            // Vec::<Vec<u8>>::type_layout(),
+            // move_core_types::value::MoveTypeLayout::U64,
+            // move_core_types::value::MoveTypeLayout::U64,
         ])
     }
 }

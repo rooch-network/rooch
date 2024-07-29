@@ -3,6 +3,9 @@
 
 module rooch_framework::transaction {
 
+    use std::option;
+    use moveos_std::accumulator::AccumulatorInfo;
+
     #[deprecated]
     #[data_struct]
     struct TransactionSequenceInfo has copy, drop, store{
@@ -27,12 +30,14 @@ module rooch_framework::transaction {
         /// The timestamp of the sequencer when the tx is sequenced, in millisecond.
         tx_timestamp: u64,
 
-        /// Frozen subtree roots of the accumulator.
-        tx_accumulator_frozen_subtree_roots: vector<vector<u8>>,
-        /// The total number of leaves in the accumulator.
-        tx_accumulator_num_leaves: u64,
-        /// The total number of nodes in the accumulator.
-        tx_accumulator_num_nodes: u64,
+        // /// Frozen subtree roots of the accumulator.
+        // tx_accumulator_frozen_subtree_roots: vector<vector<u8>>,
+        // /// The total number of leaves in the accumulator.
+        // tx_accumulator_num_leaves: u64,
+        // /// The total number of nodes in the accumulator.
+        // tx_accumulator_num_nodes: u64,
+
+        tx_accumulator_info: option::Option<AccumulatorInfo>,
     }
 
     #[deprecated]

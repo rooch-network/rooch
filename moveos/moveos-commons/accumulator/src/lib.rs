@@ -4,12 +4,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::accumulator_info::AccumulatorInfo;
 use crate::node_index::NodeIndex;
 use crate::proof::AccumulatorProof;
 use crate::tree::AccumulatorTree;
 use anyhow::{format_err, Result};
 use moveos_types::h256::H256;
+use moveos_types::moveos_std::accumulator::AccumulatorInfo;
 pub use node::AccumulatorNode;
 use parking_lot::Mutex;
 #[cfg(test)]
@@ -17,7 +17,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 pub use tree_store::AccumulatorTreeStore;
 
-pub mod accumulator_info;
 pub mod inmemory;
 pub mod node;
 pub mod node_index;

@@ -13,6 +13,7 @@ This is the reference documentation of the MoveOS standard library.
 
 
 -  [`0x2::account`](account.md#0x2_account)
+-  [`0x2::accumulator`](accumulator.md#0x2_accumulator)
 -  [`0x2::address`](address.md#0x2_address)
 -  [`0x2::any`](any.md#0x2_any)
 -  [`0x2::bag`](bag.md#0x2_bag)
