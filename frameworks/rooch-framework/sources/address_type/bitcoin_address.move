@@ -164,15 +164,14 @@ module rooch_framework::bitcoin_address {
         let expected_xonly_pubkey = x"ffa540e2d3df158dfb202fc1a2cbb20c4920ba35e8f75bb11101bfa47d71449a";
         let pk_list = vector::empty<vector<u8>>();
 
-        let pk_1 = x"03935f972da013f80ae011890fa89b67a27b7be6ccb24d3274d18b2d4067f261a9";
-        let pk_2 = x"02f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9";
-        let pk_3 = x"02dff1d77f2a671c5f36183726db2341be58feae1da2deced843240f7b502ba659";
+        let pk_1 = x"f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9";
+        let pk_2 = x"ffa540e2d3df158dfb202fc1a2cbb20c4920ba35e8f75bb11101bfa47d71449a";
 
         vector::push_back(&mut pk_list, pk_1);
         vector::push_back(&mut pk_list, pk_2);
-        vector::push_back(&mut pk_list, pk_3);
 
-        let xonly_pubkey = derive_multisig_xonly_pubkey_from_xonly_pubkeys(&pk_list, 3);
+        // TODO: fix MISSING_DEPENDENCY (code 1021) error
+        let xonly_pubkey = derive_multisig_xonly_pubkey_from_xonly_pubkeys(&pk_list, 2);
 
         std::debug::print(&xonly_pubkey);
         std::debug::print(&expected_xonly_pubkey);

@@ -19,10 +19,7 @@ use move_vm_types::{
     pop_arg,
     values::{StructRef, Value, VectorRef},
 };
-use moveos_stdlib::natives::{
-    helpers::{make_module_natives, make_native},
-    moveos_stdlib::move_module::ConstantOps,
-};
+use moveos_stdlib::natives::helpers::{make_module_natives, make_native};
 use moveos_types::state::{MoveState, MoveStructState};
 use musig2::{secp::Point, KeyAggContext};
 use rooch_types::address::BitcoinAddress;
@@ -120,7 +117,7 @@ pub fn derive_multisig_xonly_pubkey_from_xonly_pubkeys(
     let threshold_bytes = pop_arg!(args, u64);
     let pk_list = pop_arg!(args, Vec<Value>);
 
-    let cost = gas_params.base + gas_params.per_byte * NumBytes::new(threshold_bytes);
+    let mut cost = gas_params.base + gas_params.per_byte * NumBytes::new(threshold_bytes);
 
     if pk_list.len() < threshold_bytes as usize {
         return Ok(NativeResult::err(cost, E_INVALID_THRESHOLD));
@@ -133,6 +130,7 @@ pub fn derive_multisig_xonly_pubkey_from_xonly_pubkeys(
             Ok(v) => {
                 match Point::lift_x_hex(&v.as_hex().to_string()) {
                     Ok(pk_args) => {
+                        cost += gas_params.per_byte * NumBytes::new(v.len() as u64);
                         pubkeys.push(pk_args);
                     }
                     Err(_) => {
@@ -217,7 +215,7 @@ impl FromBytesGasParameters {
 
 #[derive(Debug, Clone)]
 pub struct GasParameters {
-    pub parse: FromBytesGasParameters,
+    pub new: FromBytesGasParameters,
     pub verify_bitcoin_address_with_public_key: FromBytesGasParameters,
     pub derive_multisig_xonly_pubkey_from_xonly_pubkeys: FromBytesGasParameters,
     pub derive_bitcoin_taproot_address_from_multisig_xonly_pubkey: FromBytesGasParameters,
@@ -226,7 +224,7 @@ pub struct GasParameters {
 impl GasParameters {
     pub fn zeros() -> Self {
         Self {
-            parse: FromBytesGasParameters::zeros(),
+            new: FromBytesGasParameters::zeros(),
             verify_bitcoin_address_with_public_key: FromBytesGasParameters::zeros(),
             derive_multisig_xonly_pubkey_from_xonly_pubkeys: FromBytesGasParameters::zeros(),
             derive_bitcoin_taproot_address_from_multisig_xonly_pubkey:
@@ -237,7 +235,7 @@ impl GasParameters {
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [
-        ("parse", make_native(gas_params.parse, parse)),
+        ("parse", make_native(gas_params.new, parse)),
         (
             "verify_bitcoin_address_with_public_key",
             make_native(
