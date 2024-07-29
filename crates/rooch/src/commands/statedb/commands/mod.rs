@@ -319,6 +319,7 @@ mod tests {
 
     use bitcoin::Txid;
     use rand::Rng;
+    use tempfile::tempdir;
 
     use super::*;
 
@@ -512,7 +513,10 @@ mod tests {
         let map = OutpointInscriptionsMap::new_with_unsorted(items.clone());
         let (mapped_outpoint_count, mapped_inscription_count) = map.stats();
 
-        let dump_path = PathBuf::from("outpoint_inscriptions_map_index_and_dump_test");
+        let dump_path = tempdir()
+            .unwrap()
+            .path()
+            .join("outpoint_inscriptions_map_index_and_dump");
         map.dump(dump_path.clone());
         let map_from_load = OutpointInscriptionsMap::load(dump_path.clone());
         assert!(map_from_load.is_sorted_and_merged());

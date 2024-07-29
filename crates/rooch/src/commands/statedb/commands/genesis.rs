@@ -5,8 +5,8 @@ use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
-use std::sync::{Arc, mpsc, RwLock};
 use std::sync::mpsc::{Receiver, SyncSender};
+use std::sync::{mpsc, Arc, RwLock};
 use std::thread;
 use std::time::SystemTime;
 
@@ -25,7 +25,6 @@ use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
 use crate::cli_types::WalletContextOptions;
-use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 use crate::commands::statedb::commands::genesis_utxo::{
     apply_address_updates, apply_utxo_updates, produce_utxo_updates,
 };
@@ -33,6 +32,7 @@ use crate::commands::statedb::commands::import::{apply_fields, apply_nodes, fini
 use crate::commands::statedb::commands::inscription::{
     create_genesis_inscription_store_object, gen_inscription_ids_update, InscriptionSource,
 };
+use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 
 /// Import BTC ordinals & UTXO for genesis
 #[derive(Debug, Parser)]
