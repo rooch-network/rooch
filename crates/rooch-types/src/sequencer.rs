@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use moveos_types::moveos_std::accumulator::AccumulatorInfo;
+use accumulator::accumulator_info::AccumulatorInfo;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 

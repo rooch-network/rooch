@@ -5,8 +5,8 @@ use crate::address::{RoochAddress, RoochSupportedAddress};
 use crate::transaction::authenticator::Authenticator;
 use crate::transaction::rooch::{RoochTransaction, RoochTransactionData};
 use crate::transaction::{LedgerTransaction, TransactionSequenceInfo};
+use accumulator::accumulator_info::AccumulatorInfo;
 use ethers::types::H256;
-use moveos_types::moveos_std::accumulator::AccumulatorInfo;
 use rand::{thread_rng, Rng};
 
 pub use moveos_types::test_utils::*;
@@ -21,13 +21,8 @@ pub fn random_ledger_transaction() -> LedgerTransaction {
 
     let tx_order_signature = random_bytes();
     let accumulator_info = random_accumulator_info();
-    let random_sequence_info = TransactionSequenceInfo::new(
-        rand::random(),
-        tx_order_signature,
-        accumulator_info.accumulator_root,
-        0,
-        Some(accumulator_info),
-    );
+    let random_sequence_info =
+        TransactionSequenceInfo::new(rand::random(), tx_order_signature, accumulator_info, 0);
     LedgerTransaction::new_l2_tx(rooch_transaction, random_sequence_info)
 }
 

@@ -17,9 +17,7 @@
 -  [Function `get_tx_timestamp`](#0x3_transaction_get_tx_timestamp)
 
 
-<pre><code><b>use</b> <a href="">0x1::option</a>;
-<b>use</b> <a href="">0x2::accumulator</a>;
-</code></pre>
+<pre><code></code></pre>
 
 
 

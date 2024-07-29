@@ -125,11 +125,11 @@ impl RevertTxCommand {
             )));
         }
         let previous_sequencer_info = previous_ledger_tx_opt.unwrap().sequence_info;
-        let previous_accumulator_info = previous_sequencer_info
-            .tx_accumulator_info()
-            .ok_or(anyhow::anyhow!("Accumulator info should exist"))?;
-        let revert_sequencer_info =
-            SequencerInfo::new(previous_tx_order, previous_accumulator_info);
+
+        let revert_sequencer_info = SequencerInfo::new(
+            previous_tx_order,
+            previous_sequencer_info.tx_accumulator_info(),
+        );
         rooch_store.save_sequencer_info(revert_sequencer_info)?;
         rooch_store.remove_transaction(tx_hash, tx_order)?;
 

@@ -4,7 +4,6 @@
 // This mod contains all the Rust to Move type mapping that are used in MoveosStd
 
 pub mod account;
-pub mod accumulator;
 pub mod any;
 pub mod copyable_any;
 pub mod display;

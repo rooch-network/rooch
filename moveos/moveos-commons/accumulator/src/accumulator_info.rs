@@ -4,13 +4,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::addresses::MOVEOS_STD_ADDRESS;
-use crate::h256::{ACCUMULATOR_PLACEHOLDER_HASH, H256};
-use crate::state::{MoveState, MoveStructState, MoveStructType};
 use bcs_ext::Sample;
-use move_core_types::account_address::AccountAddress;
-use move_core_types::ident_str;
-use move_core_types::identifier::IdentStr;
+use moveos_types::h256::{ACCUMULATOR_PLACEHOLDER_HASH, H256};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -57,30 +52,6 @@ impl AccumulatorInfo {
 
     pub fn get_num_nodes(&self) -> u64 {
         self.num_nodes
-    }
-}
-
-impl MoveStructType for AccumulatorInfo {
-    const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = ident_str!("accumulator");
-    const STRUCT_NAME: &'static IdentStr = ident_str!("AccumulatorInfo");
-}
-
-impl MoveStructState for AccumulatorInfo {
-    fn struct_layout() -> move_core_types::value::MoveStructLayout {
-        move_core_types::value::MoveStructLayout::new(vec![
-            move_core_types::value::MoveTypeLayout::Vector(Box::new(
-                move_core_types::value::MoveTypeLayout::U8,
-            )),
-            // move_core_types::value::MoveTypeLayout::Vector(Box::new(
-            //     move_core_types::value::MoveTypeLayout::Vector(Box::new(
-            //         move_core_types::value::MoveTypeLayout::U8,
-            //     )),
-            // )),
-            Vec::<Vec<u8>>::type_layout(),
-            move_core_types::value::MoveTypeLayout::U64,
-            move_core_types::value::MoveTypeLayout::U64,
-        ])
     }
 }
 
