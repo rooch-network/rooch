@@ -51,6 +51,7 @@ rustc-hash = { workspace = true }
 rand = { workspace = true }
 xorf = { workspace = true }
 xxhash-rust = { workspace = true, features = ["xxh3"] }
+vergen-pretty = { workspace = true }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }
@@ -101,3 +102,6 @@ rooch-common = { workspace = true }
 
 framework-release = { workspace = true }
 
+[build-dependencies]
+anyhow = { workspace = true }
+vergen-git2 = { workspace = true }
