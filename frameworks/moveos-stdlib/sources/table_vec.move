@@ -105,4 +105,9 @@ module moveos_std::table_vec {
         swap(t, i, last_idx);
         pop_back(t)
     }
+
+    /// Return if the TableVec `t` contains the element at index `i`.
+    public fun contains<Element: store>(t: &TableVec<Element>, i: u64): bool {
+        length(t) > i
+    }
 }
