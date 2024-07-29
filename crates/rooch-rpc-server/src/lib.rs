@@ -32,6 +32,7 @@ use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
 use rooch_proposer::proxy::ProposerProxy;
+use rooch_relayer::actor::bitcoin_client::BitcoinClientActor;
 use rooch_relayer::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use rooch_relayer::actor::messages::RelayTick;
 use rooch_relayer::actor::relayer::RelayerActor;
@@ -45,7 +46,6 @@ use rooch_types::rooch_network::BuiltinChainID;
 use serde_json::json;
 use std::fmt::Debug;
 use std::net::SocketAddr;
-use std::sync::Arc;
 use std::time::Duration;
 use std::{env, panic, process};
 use tower_http::cors::{AllowOrigin, CorsLayer};
@@ -333,12 +333,11 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     }
 
     let bitcoin_client_proxy = if service_status.is_active() && bitcoin_relayer_config.is_some() {
-        let bitcoin_coin_actor_id: Arc<str> = Arc::from("bitcoin_client");
-        let bitcoin_client_actor_ref = actor_system
-            .get_tracked_actor(bitcoin_coin_actor_id)
-            .await
-            .ok_or_else(|| anyhow::anyhow!("Bitcoin client actor not found"))?;
-        Some(BitcoinClientProxy::new(bitcoin_client_actor_ref.into()))
+        let bitcoin_client = BitcoinClientActor::new(bitcoin_relayer_config.unwrap())?;
+        let bitcoin_client_actor_ref =
+            bitcoin_client.into_actor(Some("bitcoin_client_for_rpc_service"), &actor_system).await?;
+        let bitcoin_client_proxy = BitcoinClientProxy::new(bitcoin_client_actor_ref.into());
+        Some(bitcoin_client_proxy)
     } else {
         None
     };
