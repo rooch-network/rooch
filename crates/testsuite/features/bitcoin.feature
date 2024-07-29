@@ -22,6 +22,9 @@ Feature: Rooch Bitcoin tests
 
     @serial
     Scenario: btc_api test
+      Then cmd: "init --skip-password"
+      Then cmd: "env switch --alias local"
+
       # prepare servers
       Given a bitcoind server for rooch_bitcoin_test
       Given a server for rooch_bitcoin_test
@@ -46,6 +49,16 @@ Feature: Rooch Bitcoin tests
 
       # Broadcast transaction using Rooch RPC
       Then cmd: "rpc request --method btc_broadcastTX --params '["{{$.signrawtransactionwithwallet[-1].hex}}"]' --json"
+
+      # Verify transaction broadcast
+      Then cmd bitcoin-cli: "getrawmempool"
+      Then assert: "{{$.getrawmempool[-1][0]}} == {{$.rpc[-1]}}"
+      
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.getnewaddress[-1]}}"
+      Then sleep: "10" # wait for the transaction to be confirmed
+      
+      Then cmd bitcoin-cli: "gettransaction {{$.rpc[-1]}}"
+      Then assert: "{{$.gettransaction[-1].confirmations}} == 1"
 
       # release servers
       Then stop the server

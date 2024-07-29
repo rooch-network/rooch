@@ -4,7 +4,7 @@
 use crate::jsonrpc_types::btc::ord::InscriptionFilterView;
 use crate::jsonrpc_types::btc::utxo::UTXOFilterView;
 use crate::jsonrpc_types::{
-    BytesView, H256View, IndexerStateIDView, InscriptionPageView, StrView, UTXOPageView,
+    BytesView, IndexerStateIDView, InscriptionPageView, StrView, UTXOPageView,
 };
 use crate::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -43,5 +43,5 @@ pub trait BtcAPI {
         hex: BytesView,
         maxfeerate: Option<f64>,
         maxburnamount: Option<u64>,
-    ) -> RpcResult<H256View>;
+    ) -> RpcResult<String>;
 }

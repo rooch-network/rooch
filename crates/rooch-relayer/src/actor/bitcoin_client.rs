@@ -111,8 +111,6 @@ impl Handler<BroadcastTransactionMessage> for BitcoinClientActor {
         // Add maxfeerate and maxburnamount to the params if they are Some
         if let Some(feerate) = maxfeerate {
             params.push(serde_json::to_value(feerate).unwrap());
-        } else {
-            params.push(serde_json::to_value(0.10).unwrap());
         }
 
         if let Some(burnamount) = maxburnamount {

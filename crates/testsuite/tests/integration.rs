@@ -519,7 +519,7 @@ fn bitcoincli_run_cmd(w: &mut World, input_tpl: String) {
         }
     };
 
-    info!("run cmd: {}, stdout: {}", joined_args, stdout_string);
+    debug!("run cmd: {}, stdout: {}", joined_args, stdout_string);
 
     // Check if stderr_string is not empty and panic if it contains any content.
     if !stderr_string.is_empty() {

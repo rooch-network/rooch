@@ -43,10 +43,10 @@
         }
       ],
       "result": {
-        "name": "H256View",
+        "name": "String",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/primitive_types::H256"
+          "type": "string"
         }
       }
     },
