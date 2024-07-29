@@ -143,13 +143,14 @@ fn unbound_outpoint() -> OutPoint {
 }
 
 impl OutpointInscriptionsMap {
-    fn index(src: PathBuf) -> (Self, usize, usize) {
+    fn index(src: PathBuf) -> (Self, usize, usize, usize) {
         let buf_size = 8 * 1024 * 1024; // inscription maybe large, using larger buffer than usual
         let mut reader = BufReader::with_capacity(buf_size, File::open(src.clone()).unwrap());
         let mut is_title_line = true;
 
         // collect all outpoint:inscription pairs except unbounded
         let mut has_outpoint_count: usize = 0;
+        let mut unbound_count: usize = 0;
         let mut items = Vec::with_capacity(80 * 1024 * 1024);
         for line in reader.by_ref().lines() {
             let line = line.unwrap();
@@ -165,6 +166,7 @@ impl OutpointInscriptionsMap {
             let obj_id = derive_inscription_id(&inscription_id);
             let satpoint_output = OutPoint::from_str(src.satpoint_outpoint.as_str()).unwrap();
             if satpoint_output == unbound_outpoint() {
+                unbound_count += 1;
                 continue; // skip unbounded outpoint
             }
             items.push(OutpointInscriptions {
@@ -180,15 +182,26 @@ impl OutpointInscriptionsMap {
             has_outpoint_count, mapped_inscription_count,
             "Inscription count mismatch after mapping"
         );
-        (map, mapped_outpoint_count, mapped_inscription_count)
+        (
+            map,
+            mapped_outpoint_count,
+            mapped_inscription_count,
+            unbound_count,
+        )
     }
 
-    fn index_and_dump(src: PathBuf, dump_path: Option<PathBuf>) -> (Self, usize, usize) {
-        let (map, mapped_outpoint_count, mapped_inscription_count) = Self::index(src.clone());
+    fn index_and_dump(src: PathBuf, dump_path: Option<PathBuf>) -> (Self, usize, usize, usize) {
+        let (map, mapped_outpoint_count, mapped_inscription_count, unbound_count) =
+            Self::index(src.clone());
         if let Some(dump_path) = dump_path {
             map.dump(dump_path);
         }
-        (map, mapped_outpoint_count, mapped_inscription_count)
+        (
+            map,
+            mapped_outpoint_count,
+            mapped_inscription_count,
+            unbound_count,
+        )
     }
 
     fn new_with_unsorted(items: Vec<OutpointInscriptions>) -> Self {
@@ -306,6 +319,7 @@ mod tests {
 
     use bitcoin::Txid;
     use rand::Rng;
+    use tempfile::tempdir;
 
     use super::*;
 
@@ -499,7 +513,10 @@ mod tests {
         let map = OutpointInscriptionsMap::new_with_unsorted(items.clone());
         let (mapped_outpoint_count, mapped_inscription_count) = map.stats();
 
-        let dump_path = PathBuf::from("outpoint_inscriptions_map_index_and_dump_test");
+        let dump_path = tempdir()
+            .unwrap()
+            .path()
+            .join("outpoint_inscriptions_map_index_and_dump");
         map.dump(dump_path.clone());
         let map_from_load = OutpointInscriptionsMap::load(dump_path.clone());
         assert!(map_from_load.is_sorted_and_merged());

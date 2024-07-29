@@ -91,16 +91,17 @@ impl GenesisCommand {
         let pre_root_state_root = root.state_root();
 
         log::info!("indexing and dumping outpoint_inscriptions_map...");
-        let (outpoint_inscriptions_map, mapped_outpoint, mapped_inscription) =
+        let (outpoint_inscriptions_map, mapped_outpoint, mapped_inscription, unbound_count) =
             OutpointInscriptionsMap::index_and_dump(
                 self.ord_source.clone(),
                 self.outpoint_inscriptions_map_dump_path.clone(),
             );
         println!(
-            "{} outpoints : {} inscriptions mapped in: {:?}",
+            "{} outpoints : {} inscriptions mapped in: {:?} ({} unbound inscriptions ignored)",
             mapped_outpoint,
             mapped_inscription,
             start_time.elapsed(),
+            unbound_count
         );
 
         // import inscriptions and utxo parallel
@@ -251,21 +252,21 @@ fn apply_inscription_updates(
         let mut nodes: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
 
         let cnt = batch.update_set.len();
-        let mut ord_tree_change_set =
+        let mut tree_change_set =
             apply_fields(moveos_store, inscription_store_state_root, batch.update_set).unwrap();
-        nodes.append(&mut ord_tree_change_set.nodes);
+        nodes.append(&mut tree_change_set.nodes);
 
-        inscription_store_state_root = ord_tree_change_set.state_root;
+        inscription_store_state_root = tree_change_set.state_root;
         cursed_inscription_count += batch.cursed_inscription_count;
         blessed_inscription_count += batch.blessed_inscription_count;
 
-        apply_nodes(moveos_store, nodes).expect("failed to apply ord nodes");
+        apply_nodes(moveos_store, nodes).expect("failed to apply inscription nodes");
 
         inscritpion_store_filed_count += cnt as u32;
 
         println!(
             "{} inscription applied ({} cursed, {} blessed). this batch: value size: {}, cost: {:?}",
-            inscritpion_store_filed_count / 2, // both ord and ord_id as field
+            inscritpion_store_filed_count / 2, // both inscription and inscription_id as field
             cursed_inscription_count,
             blessed_inscription_count,
             humanize::human_readable_bytes(batch.updates_value_bytes),
