@@ -32,7 +32,7 @@ export const WalletConnect = () => {
   const [selectWalletDialog, setSelectWalletDialog] = useState(false)
   const { mutateAsync: connectWallet } = useConnectWallet()
   const wallets = useWallets()
-  const {isConnecting, wallet} = useCurrentWallet()
+  const { isConnecting, wallet } = useCurrentWallet()
 
   // ** Connect specific wallet
   const handleConnectSpecificWallet = async (wallet: Wallet) => {
