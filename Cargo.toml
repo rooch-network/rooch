@@ -227,7 +227,7 @@ prometheus-http-query = { version = "0.6.6", default_features = false, features 
 prometheus-parse = { git = "https://github.com/asonnino/prometheus-parser.git", rev = "75334db" }
 coarsetime = "0.1.22"
 hyper = { version = "0.14.12", features = ["full"] }
-num_enum = "0.7.2"
+num_enum = "0.7.3"
 libc = "^0.2"
 include_dir = { version = "0.6.2" }
 nostr = "0.22"
