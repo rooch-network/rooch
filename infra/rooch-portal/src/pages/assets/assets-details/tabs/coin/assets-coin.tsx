@@ -2,14 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  BalanceInfoView,
-  IndexerStateIDView,
-  isValidAddress,
-} from '@roochnetwork/rooch-sdk'
+import { BalanceInfoView, IndexerStateIDView, isValidAddress } from '@roochnetwork/rooch-sdk'
 import {
   useCurrentSession,
-  useRoochClientQuery, useTransferCoin,
+  useRoochClientQuery,
+  useTransferCoin,
 } from '@roochnetwork/rooch-sdk-kit'
 import { AlertCircle, ArrowLeft } from 'lucide-react'
 import {
@@ -197,8 +194,8 @@ export const AssetsCoin: React.FC = () => {
         recipient: recipient,
         amount: amountNumber,
         coinType: {
-          target: selectedCoin.coin_type
-        }
+          target: selectedCoin.coin_type,
+        },
       })
       await refetch()
       toast({
@@ -210,8 +207,7 @@ export const AssetsCoin: React.FC = () => {
       //   description: 'The transfer could not be completed. Please try again later.',
       //   action: <ToastAction altText="Close">Close</ToastAction>,
       // })
-    }
-    finally {
+    } finally {
       setTransferLoading(false)
       handleClose()
       setError('')
@@ -280,8 +276,7 @@ export const AssetsCoin: React.FC = () => {
               className="fixed inset-0 bg-opacity-70 dark:bg-opacity-75 flex justify-center items-center z-50 bg-black"
               onClick={handleCloseModal}
             >
-              <div
-                className="bg-background dark:bg-zinc-900 rounded-none md:rounded-lg flex flex-col items-start justify-center p-6 w-full h-full md:w-auto md:h-auto overflow-auto max-w-lg mx-auto">
+              <div className="bg-background dark:bg-zinc-900 rounded-none md:rounded-lg flex flex-col items-start justify-center p-6 w-full h-full md:w-auto md:h-auto overflow-auto max-w-lg mx-auto">
                 {/* Back */}
                 <div className="mb-4">
                   <Button

@@ -25,7 +25,15 @@ export interface AppItemProps {
   url: string
 }
 
-export const AppsItem = ({ id, name, description, profileUrl, logoUrl, type, url }: AppItemProps) => {
+export const AppsItem = ({
+  id,
+  name,
+  description,
+  profileUrl,
+  logoUrl,
+  type,
+  url,
+}: AppItemProps) => {
   return (
     <Card
       key={id}
@@ -34,7 +42,7 @@ export const AppsItem = ({ id, name, description, profileUrl, logoUrl, type, url
       <CardHeader className="p-4 pb-2">
         <div className="flex items-center justify-start gap-x-3">
           <div>
-            <Avatar className='bg-white'>
+            <Avatar className="bg-white">
               <AvatarImage src={profileUrl} alt={description} />
               <AvatarFallback />
             </Avatar>
@@ -49,7 +57,7 @@ export const AppsItem = ({ id, name, description, profileUrl, logoUrl, type, url
                 {type}
               </Badge>
             </div>
-            <CardDescription className='mt-1'>{description}</CardDescription>
+            <CardDescription className="mt-1">{description}</CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -57,25 +65,22 @@ export const AppsItem = ({ id, name, description, profileUrl, logoUrl, type, url
         <Separator className="bg-accent dark:bg-accent/75" />
       </div>
       <a href={url} className="w-full" target="_blank" rel="noopener noreferrer">
-      <CardContent className="p-0">
-        <div className="mx-4 border-none rounded-lg overflow-hidden">
-          <AspectRatio
-            ratio={16 / 9}
-            className="flex items-center justify-center overflow-hidden cursor-pointer"
-          >
-            <img src={logoUrl} alt="Website" className="rounded-md object-cover transition-all" />
-
-          </AspectRatio>
-        </div>
-      </CardContent>
+        <CardContent className="p-0">
+          <div className="mx-4 border-none rounded-lg overflow-hidden">
+            <AspectRatio
+              ratio={16 / 9}
+              className="flex items-center justify-center overflow-hidden cursor-pointer"
+            >
+              <img src={logoUrl} alt="Website" className="rounded-md object-cover transition-all" />
+            </AspectRatio>
+          </div>
+        </CardContent>
       </a>
       <CardFooter className="p-4">
         <a href={url} className="w-full" target="_blank" rel="noopener noreferrer">
-        <Button variant="default" size="default" className="w-full">
-          <div className="flex items-center justify-center gap-x-2">
-            {type}
-          </div>
-        </Button>
+          <Button variant="default" size="default" className="w-full">
+            <div className="flex items-center justify-center gap-x-2">{type}</div>
+          </Button>
         </a>
       </CardFooter>
     </Card>
