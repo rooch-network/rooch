@@ -3,6 +3,7 @@
 
 use bitcoin::{
     address::{Address, AddressType},
+    hex::DisplayHex,
     secp256k1::Secp256k1,
     PublicKey, XOnlyPublicKey,
 };
@@ -18,14 +19,22 @@ use move_vm_types::{
     pop_arg,
     values::{StructRef, Value, VectorRef},
 };
-use moveos_stdlib::natives::helpers::{make_module_natives, make_native};
+use moveos_stdlib::natives::{
+    helpers::{make_module_natives, make_native},
+    moveos_stdlib::move_module::ConstantOps,
+};
 use moveos_types::state::{MoveState, MoveStructState};
-use musig2::{secp::Point, secp256k1, KeyAggContext};
+use musig2::{secp::Point, KeyAggContext};
 use rooch_types::address::BitcoinAddress;
 use smallvec::smallvec;
 use std::{collections::VecDeque, str::FromStr};
 
 pub const E_INVALID_ADDRESS: u64 = 1;
+pub const E_ARG_NOT_VECTOR_U8: u64 = 2;
+pub const E_INVALID_PUBLIC_KEY: u64 = 3;
+pub const E_INVALID_THRESHOLD: u64 = 4;
+pub const E_INVALID_KEY_EGG_CONTEXT: u64 = 5;
+pub const E_INVALID_XONLY_PUBKEY: u64 = 6;
 
 pub fn parse(
     gas_params: &FromBytesGasParameters,
@@ -102,35 +111,47 @@ pub fn verify_bitcoin_address_with_public_key(
     Ok(NativeResult::ok(cost, smallvec![Value::bool(is_ok)]))
 }
 
-pub fn derive_multisig_xonly_pubkey_from_public_keys(
+pub fn derive_multisig_xonly_pubkey_from_xonly_pubkeys(
     gas_params: &FromBytesGasParameters,
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     let threshold_bytes = pop_arg!(args, u64);
-    let pk_vec_bytes = pop_arg!(args, VectorRef);
+    let pk_list = pop_arg!(args, Vec<Value>);
 
-    let pk_vec_ref = pk_vec_bytes.as_bytes_ref();
+    let cost = gas_params.base + gas_params.per_byte * NumBytes::new(threshold_bytes);
 
-    let cost = gas_params.base
-        + gas_params.per_byte * NumBytes::new(threshold_bytes + pk_vec_ref.len() as u64);
-
-    println!("{:?}", pk_vec_ref);
-
-    if pk_vec_ref.len() >= threshold_bytes as usize {
-        return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
+    if pk_list.len() < threshold_bytes as usize {
+        return Ok(NativeResult::err(cost, E_INVALID_THRESHOLD));
     }
 
-    let pk = secp256k1::PublicKey::from_slice(&pk_vec_ref).expect("msg");
+    let mut pubkeys = Vec::new();
+    for arg_value in pk_list.iter() {
+        let value = arg_value.copy_value()?;
+        match value.value_as::<Vec<u8>>() {
+            Ok(v) => {
+                match Point::lift_x_hex(&v.as_hex().to_string()) {
+                    Ok(pk_args) => {
+                        pubkeys.push(pk_args);
+                    }
+                    Err(_) => {
+                        return Ok(NativeResult::err(cost, E_INVALID_PUBLIC_KEY));
+                    }
+                };
+            }
+            Err(_) => {
+                return Ok(NativeResult::err(cost, E_ARG_NOT_VECTOR_U8));
+            }
+        }
+    }
 
-    println!("{:?}", pk);
-
-    let pks = vec![pk];
-
-    println!("{:?}", pks);
-
-    let key_agg_ctx = KeyAggContext::new(pks).unwrap();
+    let key_agg_ctx = match KeyAggContext::new(pubkeys) {
+        Ok(key_agg_ctx) => key_agg_ctx,
+        Err(_) => {
+            return Ok(NativeResult::err(cost, E_INVALID_KEY_EGG_CONTEXT));
+        }
+    };
 
     let aggregated_pubkey: Point = key_agg_ctx.aggregated_pubkey();
 
@@ -154,7 +175,13 @@ pub fn derive_bitcoin_taproot_address_from_multisig_xonly_pubkey(
 
     let cost = gas_params.base + gas_params.per_byte * NumBytes::new(xonly_pubkey_ref.len() as u64);
 
-    let internal_key = XOnlyPublicKey::from_slice(&xonly_pubkey_ref).unwrap();
+    let internal_key = match XOnlyPublicKey::from_slice(&xonly_pubkey_ref) {
+        Ok(xonly_pubkey) => xonly_pubkey,
+        Err(_) => {
+            return Ok(NativeResult::err(cost, E_INVALID_XONLY_PUBKEY));
+        }
+    };
+
     let secp = bitcoin::secp256k1::Secp256k1::verification_only();
     let bitcoin_addr = BitcoinAddress::from(bitcoin::Address::p2tr(
         &secp,
@@ -162,8 +189,6 @@ pub fn derive_bitcoin_taproot_address_from_multisig_xonly_pubkey(
         None,
         bitcoin::Network::Bitcoin,
     ));
-
-    println!("{:?}", bitcoin_addr);
 
     Ok(NativeResult::ok(
         cost,
@@ -194,7 +219,7 @@ impl FromBytesGasParameters {
 pub struct GasParameters {
     pub parse: FromBytesGasParameters,
     pub verify_bitcoin_address_with_public_key: FromBytesGasParameters,
-    pub derive_multisig_xonly_pubkey_from_public_keys: FromBytesGasParameters,
+    pub derive_multisig_xonly_pubkey_from_xonly_pubkeys: FromBytesGasParameters,
     pub derive_bitcoin_taproot_address_from_multisig_xonly_pubkey: FromBytesGasParameters,
 }
 
@@ -203,7 +228,7 @@ impl GasParameters {
         Self {
             parse: FromBytesGasParameters::zeros(),
             verify_bitcoin_address_with_public_key: FromBytesGasParameters::zeros(),
-            derive_multisig_xonly_pubkey_from_public_keys: FromBytesGasParameters::zeros(),
+            derive_multisig_xonly_pubkey_from_xonly_pubkeys: FromBytesGasParameters::zeros(),
             derive_bitcoin_taproot_address_from_multisig_xonly_pubkey:
                 FromBytesGasParameters::zeros(),
         }
@@ -221,10 +246,10 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
             ),
         ),
         (
-            "derive_multisig_xonly_pubkey_from_public_keys",
+            "derive_multisig_xonly_pubkey_from_xonly_pubkeys",
             make_native(
-                gas_params.derive_multisig_xonly_pubkey_from_public_keys,
-                derive_multisig_xonly_pubkey_from_public_keys,
+                gas_params.derive_multisig_xonly_pubkey_from_xonly_pubkeys,
+                derive_multisig_xonly_pubkey_from_xonly_pubkeys,
             ),
         ),
         (

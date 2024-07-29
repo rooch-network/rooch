@@ -14,7 +14,12 @@ module rooch_framework::bitcoin_address {
     const P2SH_ADDR_BYTE_LEN: u64 = 21;
 
     // error code
-    const ErrorAddressBytesLen: u64 = 1;
+    const E_INVALID_ADDRESS: u64 = 1;
+    const E_ARG_NOT_VECTOR_U8: u64 = 2;
+    const E_INVALID_PUBLIC_KEY: u64 = 3;
+    const E_INVALID_THRESHOLD: u64 = 4;
+    const E_INVALID_KEY_EGG_CONTEXT: u64 = 5;
+    const E_INVALID_XONLY_PUBKEY: u64 = 6;
 
     // P2PKH address decimal prefix
     const P2PKH_ADDR_DECIMAL_PREFIX_MAIN: u8 = 0; // 0x00
@@ -32,7 +37,7 @@ module rooch_framework::bitcoin_address {
     }
 
     public fun new_p2pkh(pubkey_hash: vector<u8>): BitcoinAddress{
-        assert!(vector::length(&pubkey_hash) == PUBKEY_HASH_LEN, ErrorAddressBytesLen);
+        assert!(vector::length(&pubkey_hash) == PUBKEY_HASH_LEN, E_INVALID_ADDRESS);
         //we do not distinguish between mainnet and testnet in Move
         let bytes = vector::singleton<u8>(P2PKH_ADDR_DECIMAL_PREFIX_MAIN);
         vector::append(&mut bytes, pubkey_hash);
@@ -42,7 +47,7 @@ module rooch_framework::bitcoin_address {
     }
 
     public fun new_p2sh(script_hash: vector<u8>): BitcoinAddress{
-        assert!(vector::length(&script_hash) == SCRIPT_HASH_LEN, ErrorAddressBytesLen);
+        assert!(vector::length(&script_hash) == SCRIPT_HASH_LEN, E_INVALID_ADDRESS);
         let bytes = vector::singleton<u8>(P2SH_ADDR_DECIMAL_PREFIX_MAIN);
         vector::append(&mut bytes, script_hash);
         BitcoinAddress {
@@ -109,7 +114,7 @@ module rooch_framework::bitcoin_address {
     public native fun verify_bitcoin_address_with_public_key(bitcoin_addr: &BitcoinAddress, pk: &vector<u8>): bool;
 
     // derive multisig xonly public key from public keys
-    public native fun derive_multisig_xonly_pubkey_from_public_keys(public_keys: &vector<vector<u8>>, threshold: u64): vector<u8>;
+    public native fun derive_multisig_xonly_pubkey_from_xonly_pubkeys(public_keys: &vector<vector<u8>>, threshold: u64): vector<u8>;
  
     // derive bitcoin taproot address from the multisig xonly public key
     public native fun derive_bitcoin_taproot_address_from_multisig_xonly_pubkey(xonly_pubkey: &vector<u8>): BitcoinAddress;
@@ -155,25 +160,27 @@ module rooch_framework::bitcoin_address {
     }
 
     #[test]
-    fun test_derive_multisig_xonly_pubkey_from_public_keys_success() {
+    fun test_derive_multisig_xonly_pubkey_from_xonly_pubkeys_success() {
         let expected_xonly_pubkey = x"ffa540e2d3df158dfb202fc1a2cbb20c4920ba35e8f75bb11101bfa47d71449a";
         let pk_list = vector::empty<vector<u8>>();
 
-        let pk_1 = x"038e3d29b653e40f5b620f9443ee05222d1e40be58f544b6fed3d464edd54db883";
-        let pk_2 = x"02481521eb57656db4bc9ec81857e105cc7853fe8cad61be23667bb401840fc7f8";
-        let pk_3 = x"02c3bc6ff4dec7f43dd4f587d4dc227fb171755779425ca032e0fcb2f0bb639cc2";
-        let pk_4 = x"02ebdc1107552f81d188a2c63806cb6fa5d734eaa7316a85dc1f608fcaee412b72";
+        let pk_1 = x"03935f972da013f80ae011890fa89b67a27b7be6ccb24d3274d18b2d4067f261a9";
+        let pk_2 = x"02f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9";
+        let pk_3 = x"02dff1d77f2a671c5f36183726db2341be58feae1da2deced843240f7b502ba659";
 
         vector::push_back(&mut pk_list, pk_1);
         vector::push_back(&mut pk_list, pk_2);
         vector::push_back(&mut pk_list, pk_3);
-        vector::push_back(&mut pk_list, pk_4);
 
-        let xonly_pubkey = derive_multisig_xonly_pubkey_from_public_keys(&pk_list, 4);
+        let xonly_pubkey = derive_multisig_xonly_pubkey_from_xonly_pubkeys(&pk_list, 3);
 
-        assert!(expected_xonly_pubkey == xonly_pubkey, 1005);
+        std::debug::print(&xonly_pubkey);
+        std::debug::print(&expected_xonly_pubkey);
+
+        assert!(expected_xonly_pubkey == xonly_pubkey, E_INVALID_KEY_EGG_CONTEXT);
     }
 
+    // test covered from https://slowli.github.io/bech32-buffer/ using script version 1
     #[test]
     fun test_derive_bitcoin_taproot_address_from_multisig_xonly_pubkey_success() {
         let xonly_pubkey = x"ffa540e2d3df158dfb202fc1a2cbb20c4920ba35e8f75bb11101bfa47d71449a";
@@ -181,9 +188,9 @@ module rooch_framework::bitcoin_address {
         let bitcoin_addr = derive_bitcoin_taproot_address_from_multisig_xonly_pubkey(&xonly_pubkey);
 
         let expected_bitcoin_addr = BitcoinAddress {
-            bytes: b"bc1p8xpjpkc9uzj2dexcxjg9sw8lxje85xa4070zpcys589e3rf6k20qm6gjrt",
+            bytes: x"02010ca8363b3e074be0697eb46b5ac5a291d06ecbeb95cf16f685735147753f8b45",
         };
 
-        assert!(expected_bitcoin_addr.bytes == bitcoin_addr.bytes, 1006);
+        assert!(expected_bitcoin_addr.bytes == bitcoin_addr.bytes, E_INVALID_XONLY_PUBKEY);
     }
 }
