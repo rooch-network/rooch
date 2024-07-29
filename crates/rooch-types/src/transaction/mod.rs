@@ -1,13 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use accumulator::accumulator_info::AccumulatorInfo;
 use anyhow::Result;
 use framework_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_core_types::vm_status::KeptVMStatus;
-use moveos_types::state::{MoveStructState, MoveStructType};
+use moveos_types::state::{MoveState, MoveStructState, MoveStructType};
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::{h256::H256, transaction::TransactionOutput};
 use serde::{Deserialize, Serialize};
@@ -62,30 +63,51 @@ pub struct TransactionSequenceInfo {
     pub tx_order_signature: Vec<u8>,
     /// The tx accumulator root after the tx is append to the accumulator.
     pub tx_accumulator_root: H256,
+    /// The tx accumulator info after the tx is append to the accumulator.
+    // pub tx_accumulator_info: Option<AccumulatorInfo>,
     /// The timestamp of the sequencer when the tx is sequenced, in millisecond.
     pub tx_timestamp: u64,
+
+    /// Frozen subtree roots of the accumulator.
+    pub tx_accumulator_frozen_subtree_roots: Vec<H256>,
+    /// The total number of leaves in the accumulator.
+    pub tx_accumulator_num_leaves: u64,
+    /// The total number of nodes in the accumulator.
+    pub tx_accumulator_num_nodes: u64,
 }
 
 impl TransactionSequenceInfo {
     pub fn new(
         tx_order: u64,
         tx_order_signature: Vec<u8>,
-        tx_accumulator_root: H256,
+        tx_accumulator_info: AccumulatorInfo,
         tx_timestamp: u64,
     ) -> TransactionSequenceInfo {
         TransactionSequenceInfo {
             tx_order,
             tx_order_signature,
-            tx_accumulator_root,
+            tx_accumulator_root: tx_accumulator_info.accumulator_root,
             tx_timestamp,
+            tx_accumulator_frozen_subtree_roots: tx_accumulator_info.frozen_subtree_roots,
+            tx_accumulator_num_leaves: tx_accumulator_info.num_leaves,
+            tx_accumulator_num_nodes: tx_accumulator_info.num_nodes,
         }
+    }
+
+    pub fn tx_accumulator_info(&self) -> AccumulatorInfo {
+        AccumulatorInfo::new(
+            self.tx_accumulator_root,
+            self.tx_accumulator_frozen_subtree_roots.clone(),
+            self.tx_accumulator_num_leaves,
+            self.tx_accumulator_num_nodes,
+        )
     }
 }
 
 impl MoveStructType for TransactionSequenceInfo {
     const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
     const MODULE_NAME: &'static IdentStr = ident_str!("transaction");
-    const STRUCT_NAME: &'static IdentStr = ident_str!("TransactionSequenceInfo");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("TransactionSequenceInfoV2");
 }
 
 impl MoveStructState for TransactionSequenceInfo {
@@ -98,6 +120,14 @@ impl MoveStructState for TransactionSequenceInfo {
             move_core_types::value::MoveTypeLayout::Vector(Box::new(
                 move_core_types::value::MoveTypeLayout::U8,
             )),
+            move_core_types::value::MoveTypeLayout::U64,
+            // move_core_types::value::MoveTypeLayout::Vector(Box::new(
+            //     move_core_types::value::MoveTypeLayout::Vector(Box::new(
+            //         move_core_types::value::MoveTypeLayout::U8,
+            //     )),
+            // )),
+            Vec::<Vec<u8>>::type_layout(),
+            move_core_types::value::MoveTypeLayout::U64,
             move_core_types::value::MoveTypeLayout::U64,
         ])
     }

@@ -3,6 +3,7 @@
 
 use super::{RoochTransaction, TransactionSequenceInfo};
 use crate::{address::RoochAddress, multichain_id::MultiChainID};
+use accumulator::accumulator_info::AccumulatorInfo;
 use anyhow::Result;
 use bitcoin::hashes::Hash;
 use core::fmt;
@@ -174,14 +175,14 @@ impl LedgerTransaction {
         tx_timestamp: u64,
         tx_order: u64,
         tx_order_signature: Vec<u8>,
-        tx_accumulator_root: H256,
+        tx_accumulator_info: AccumulatorInfo,
     ) -> LedgerTransaction {
-        let tx_sequence_info = TransactionSequenceInfo {
+        let tx_sequence_info = TransactionSequenceInfo::new(
             tx_order,
             tx_order_signature,
-            tx_accumulator_root,
+            tx_accumulator_info,
             tx_timestamp,
-        };
+        );
 
         LedgerTransaction::new(tx_data, tx_sequence_info)
     }
