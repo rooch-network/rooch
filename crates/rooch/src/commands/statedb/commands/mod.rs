@@ -512,9 +512,8 @@ mod tests {
         let items = random_items_default(10);
         let map = OutpointInscriptionsMap::new_with_unsorted(items.clone());
         let (mapped_outpoint_count, mapped_inscription_count) = map.stats();
-
-        let dump_path = tempdir()
-            .unwrap()
+        let tempdir = tempdir().unwrap();
+        let dump_path = tempdir
             .path()
             .join("outpoint_inscriptions_map_index_and_dump");
         map.dump(dump_path.clone());
