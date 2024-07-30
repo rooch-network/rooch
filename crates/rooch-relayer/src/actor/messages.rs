@@ -81,7 +81,7 @@ impl Message for SyncTick {
 pub struct BroadcastTransactionMessage {
     pub hex: String,
     pub maxfeerate: Option<f64>,
-    pub maxburnamount: Option<u64>,
+    pub maxburnamount: Option<f64>,
 }
 
 impl Message for BroadcastTransactionMessage {

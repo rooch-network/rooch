@@ -117,7 +117,7 @@ impl BtcAPIServer for BtcServer {
         &self,
         hex: BytesView,
         maxfeerate: Option<f64>,
-        maxburnamount: Option<u64>,
+        maxburnamount: Option<f64>,
     ) -> RpcResult<String> {
         let tx_hex = hex::encode(hex.0);
         let txid: Txid = self

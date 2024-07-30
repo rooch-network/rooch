@@ -44,11 +44,11 @@ Feature: Rooch Bitcoin tests
       Then cmd bitcoin-cli: "listunspent 1 9999999 [\"{{$.getnewaddress[-1]}}\"] true"
 
       # Create a Bitcoin transaction
-      Then cmd bitcoin-cli: "createrawtransaction [{\"txid\":\"{{$.listunspent[-1][0].txid}}\",\"vout\":{{$.listunspent[-1][0].vout}}}] {\"{{$.getnewaddress[-1]}}\":0.1}"
+      Then cmd bitcoin-cli: "createrawtransaction [{\"txid\":\"{{$.listunspent[-1][0].txid}}\",\"vout\":{{$.listunspent[-1][0].vout}}}] {\"{{$.getnewaddress[-1]}}\":49.999}"
       Then cmd bitcoin-cli: "signrawtransactionwithwallet {{$.createrawtransaction[-1]}}"
 
       # Broadcast transaction using Rooch RPC
-      Then cmd: "rpc request --method btc_broadcastTX --params '["{{$.signrawtransactionwithwallet[-1].hex}}"]' --json"
+      Then cmd: "rpc request --method btc_broadcastTX --params '["{{$.signrawtransactionwithwallet[-1].hex}}", 0.1, 0.1]' --json"
 
       # Verify transaction broadcast
       Then cmd bitcoin-cli: "getrawmempool"

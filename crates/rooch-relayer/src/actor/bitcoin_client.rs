@@ -10,6 +10,7 @@ use async_trait::async_trait;
 use bitcoincore_rpc::{bitcoin::Txid, json, Auth, Client, RpcApi};
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use rooch_config::BitcoinRelayerConfig;
+use tracing::info;
 
 use super::messages::GetChainTipsMessage;
 
@@ -111,6 +112,8 @@ impl Handler<BroadcastTransactionMessage> for BitcoinClientActor {
         // Add maxfeerate and maxburnamount to the params if they are Some
         if let Some(feerate) = maxfeerate {
             params.push(serde_json::to_value(feerate).unwrap());
+        } else {
+            params.push(serde_json::to_value(0.10).unwrap());
         }
 
         if let Some(burnamount) = maxburnamount {
@@ -118,6 +121,8 @@ impl Handler<BroadcastTransactionMessage> for BitcoinClientActor {
         } else {
             params.push(serde_json::to_value(0.0).unwrap());
         }
+
+        info!("Handler<BroadcastTransactionMessage> params: {:?}", &params);
 
         // Make the RPC call
         let tx_id: bitcoin::Txid = self.rpc_client.call("sendrawtransaction", &params)?;

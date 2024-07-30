@@ -42,6 +42,6 @@ pub trait BtcAPI {
         &self,
         hex: BytesView,
         maxfeerate: Option<f64>,
-        maxburnamount: Option<u64>,
+        maxburnamount: Option<f64>,
     ) -> RpcResult<String>;
 }

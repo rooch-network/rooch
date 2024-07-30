@@ -437,7 +437,7 @@ impl RpcService {
         &self,
         hex: String,
         maxfeerate: Option<f64>,
-        maxburnamount: Option<u64>,
+        maxburnamount: Option<f64>,
     ) -> Result<Txid> {
         let bitcoin_client = self
             .bitcoin_client

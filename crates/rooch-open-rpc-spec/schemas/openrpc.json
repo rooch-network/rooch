@@ -36,9 +36,8 @@
         {
           "name": "maxburnamount",
           "schema": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "type": "number",
+            "format": "double"
           }
         }
       ],
