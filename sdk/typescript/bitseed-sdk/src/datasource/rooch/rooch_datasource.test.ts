@@ -65,7 +65,7 @@ describe('RoochDataSource', () => {
             value: {
               value: '1000000',
               bitcoin_txid: 'mock_txid',
-              seals: 'mock_seals',
+              seals: {'mock_seals':[]},
               txid: 'mock_txid',
               vout: 0
             },
@@ -381,7 +381,7 @@ describe('RoochDataSource', () => {
         updated_at: '2023-01-01T00:00:00Z',
         value: {
           bitcoin_txid: 'mocktxid',
-          seals: 'mock_seals',
+          seals: {'mock_seals':[]},
           txid: 'mocktxid',
           value: '1000',
           vout: 0
@@ -479,7 +479,7 @@ describe('RoochDataSource', () => {
         updated_at: '2023-01-01T00:00:00Z',
         value: {
           bitcoin_txid: 'mocktxid',
-          seals: 'mock_seals',
+          seals: {'mock_seals':[]},
           txid: 'mocktxid',
           value: '9007199254740992', // Exceeds Number.MAX_SAFE_INTEGER
           vout: 0
@@ -523,7 +523,7 @@ describe('RoochDataSource', () => {
         updated_at: '2023-01-01T00:00:00Z',
         value: {
           bitcoin_txid: 'mocktxid',
-          seals: 'mock_seals',
+          seals: {'mock_seals':[]},
           txid: 'mocktxid',
           value: 'not-a-number', // Invalid value
           vout: 0
@@ -1219,7 +1219,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid1',
-              seals: '',
+              seals: {},
               txid: 'txid1',
               value: '1000000',
               vout: 0
@@ -1238,7 +1238,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid2',
-              seals: '',
+              seals: {},
               txid: 'txid2',
               value: '2000000',
               vout: 1
@@ -1275,7 +1275,7 @@ describe('RoochDataSource', () => {
           address: mockAddress,
           type: 'p2tr'
         },
-        seals: ""
+        seals: {}
       });
       expect(result[1]).toEqual({
         txid: 'txid2',
@@ -1288,7 +1288,7 @@ describe('RoochDataSource', () => {
           address: mockAddress,
           type: 'p2tr'
         },
-        seals: ""
+        seals: {}
       });
     });
 
@@ -1314,7 +1314,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid1',
-              seals: '',
+              seals: {},
               txid: 'txid1',
               value: '1000000',
               vout: 0
@@ -1333,7 +1333,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid2',
-              seals: '',
+              seals: {},
               txid: 'txid2',
               value: '2000000',
               vout: 1
@@ -1370,7 +1370,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid1',
-              seals: '',
+              seals: {},
               txid: 'txid1',
               value: '1000000',
               vout: 0
@@ -1396,7 +1396,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid2',
-              seals: '',
+              seals: {},
               txid: 'txid2',
               value: '2000000',
               vout: 1
@@ -1436,7 +1436,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid1',
-              seals: '',
+              seals: {},
               txid: 'txid1',
               value: '1000000',
               vout: 0
@@ -1455,7 +1455,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid2',
-              seals: '',
+              seals: {},
               txid: 'txid2',
               value: '2000000',
               vout: 1
@@ -1474,7 +1474,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid3',
-              seals: '',
+              seals: {},
               txid: 'txid3',
               value: '3000000',
               vout: 2
@@ -1559,7 +1559,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid1',
-              seals: '',
+              seals: {},
               txid: 'txid1',
               value: '1000000',
               vout: 0
@@ -1578,7 +1578,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid2',
-              seals: 'some_seal_data',
+              seals: {'some_seal_data':[]},
               txid: 'txid2',
               value: '2000000',
               vout: 1
@@ -1629,7 +1629,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid1',
-              seals: '',
+              seals: {},
               txid: 'txid1',
               value: '1000000',
               vout: 0
@@ -1648,7 +1648,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid2',
-              seals: 'some_seal_data',
+              seals: {'some_seal_data':[]},
               txid: 'txid2',
               value: '2000000',
               vout: 1
@@ -1690,7 +1690,7 @@ describe('RoochDataSource', () => {
         },
         safeToSpend: true,
         confirmation: -1,
-        seals: ""
+        seals: {}
       });
 
       expect(result.unspendableUTXOs[0]).toEqual({
@@ -1706,7 +1706,7 @@ describe('RoochDataSource', () => {
         },
         safeToSpend: false,
         confirmation: -1,
-        seals: "some_seal_data"
+        seals: {"some_seal_data":[]}
       });
     });
 
@@ -1717,7 +1717,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid1',
-              seals: '',
+              seals: {},
               txid: 'txid1',
               value: '1000000',
               vout: 0
@@ -1743,7 +1743,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid2',
-              seals: 'some_seal_data',
+              seals: {'some_seal_data':[]},
               txid: 'txid2',
               value: '2000000',
               vout: 1
@@ -1786,7 +1786,7 @@ describe('RoochDataSource', () => {
         },
         safeToSpend: true,
         confirmation: -1,
-        seals: ""
+        seals: {}
       });
     
       expect(result.unspendableUTXOs[0]).toEqual({
@@ -1802,7 +1802,7 @@ describe('RoochDataSource', () => {
         },
         safeToSpend: false,
         confirmation: -1,
-        seals: "some_seal_data"
+        seals: {"some_seal_data":[]}
       });
     });
 
@@ -1830,7 +1830,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid1',
-              seals: '',
+              seals: {},
               txid: 'txid1',
               value: '1000000',
               vout: 0
@@ -1849,7 +1849,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid2',
-              seals: 'some_seal_data',
+              seals: {'some_seal_data':[]},
               txid: 'txid2',
               value: '2000000',
               vout: 1
@@ -1899,7 +1899,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid1',
-              seals: '',
+              seals: {},
               txid: 'txid1',
               value: '1000000',
               vout: 0
@@ -1918,7 +1918,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid2',
-              seals: '',
+              seals: {},
               txid: 'txid2',
               value: '2000000',
               vout: 1
@@ -1965,7 +1965,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid1',
-              seals: '',
+              seals: {},
               txid: 'txid1',
               value: '1000000',
               vout: 0
@@ -1984,7 +1984,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid2',
-              seals: '',
+              seals: {},
               txid: 'txid2',
               value: '2000000',
               vout: 1
@@ -2024,7 +2024,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid1',
-              seals: '',
+              seals: {},
               txid: 'txid1',
               value: '1000000',
               vout: 0
@@ -2063,7 +2063,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid2',
-              seals: '',
+              seals: {},
               txid: 'txid2',
               value: '2000000',
               vout: 1
@@ -2120,7 +2120,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid1',
-              seals: '',
+              seals: {},
               txid: 'txid1',
               value: largeValue,
               vout: 0
@@ -2139,7 +2139,7 @@ describe('RoochDataSource', () => {
           {
             value: {
               bitcoin_txid: 'txid2',
-              seals: '',
+              seals: {},
               txid: 'txid2',
               value: largeValue,
               vout: 1

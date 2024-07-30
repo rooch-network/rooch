@@ -14,7 +14,8 @@ import {
   GetSpendablesOptions,
   UTXOLimited,
   GetUnspentsOptions,
-  GetUnspentsResponse
+  GetUnspentsResponse,
+  RelayOptions
 } from "@sadoprotocol/ordit-sdk";
 import { 
   getRoochNodeUrl, 
@@ -443,7 +444,7 @@ export class RoochDataSource /*implements IDatasource*/ {
   }
 
   private isUTXOSpendable(utxo: ExtendedUTXOLimited): boolean {
-    return utxo.seals === "" || utxo.seals === null || utxo.seals === undefined;
+    return utxo.seals === null || utxo.seals === undefined || Object.keys(utxo.seals).length === 0;
   }
 
   async getUnspents({ address, type = "all", rarity, sort = "desc", limit = 100, next }: GetUnspentsOptions): Promise<GetUnspentsResponse> {
@@ -519,6 +520,29 @@ export class RoochDataSource /*implements IDatasource*/ {
       confirmation: -1, // Not available in Rooch
     };
   }
+
+  async relay({ hex, maxFeeRate, validate }: RelayOptions): Promise<string> {
+    if (validate !== undefined) {
+      throw new Error('validate options are not supported for Rooch broadcastBitcoinTX');
+    }
+
+    if (!hex || typeof hex !== 'string') {
+        throw new Error('Invalid transaction hex provided');
+    }
+
+    try {
+        const response = await this.roochClient.broadcastBitcoinTX({
+            hex,
+            maxfeerate: maxFeeRate ?? undefined,
+            maxburnamount: undefined,
+        });
+
+        return response;
+    } catch (error) {
+        throw new Error(`Failed to broadcast transaction: ${error}`);
+    }
+  }
+
 }
 
 function bitcoinNetworkToRooch(network: Network): 'testnet' | 'devnet' | 'localnet' {
@@ -533,5 +557,5 @@ function bitcoinNetworkToRooch(network: Network): 'testnet' | 'devnet' | 'localn
 }
 
 interface ExtendedUTXOLimited extends UTXOLimited {
-  seals: string;
+  seals: { [key: string]: string[]; };
 }
