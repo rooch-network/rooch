@@ -16,7 +16,7 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
     vm_status::KeptVMStatus,
 };
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt::Display;
 
 #[cfg(any(test, feature = "fuzzing"))]
@@ -238,7 +238,7 @@ impl Display for VerifiedMoveAction {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize)]
 pub struct MoveOSTransaction {
     pub root: ObjectMeta,
     pub ctx: TxContext,
@@ -266,6 +266,47 @@ impl MoveOSTransaction {
         ctx.add(TxMeta::new_from_move_action(&action))
             .expect("add TxMeta to TxContext should success");
         Self { root, ctx, action }
+    }
+}
+
+/// Custom deserialization logic for MoveOSTransaction
+/// `MoveOSTransaction` has been changed from a struct with 5 fields to a struct with 3 fields.
+/// The old one was defined:
+/// ```rust
+/// pub struct MoveOSTransaction {
+///     pub root: ObjectMeta,
+///     pub ctx: TxContext,
+///     pub action: MoveAction,
+///     pub pre_execute_functions: Option<Vec<FunctionCall>>,
+///     pub post_execute_functions: Option<Vec<FunctionCall>>,
+/// }
+/// ```
+/// Some old transactions are still stored in the database or genesis file,
+/// so we need to support deserializing the old format.
+impl<'de> Deserialize<'de> for MoveOSTransaction {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(::serde::Deserialize)]
+        struct OldValue(
+            (
+                ObjectMeta,
+                TxContext,
+                MoveAction,
+                Option<Vec<FunctionCall>>,
+                Option<Vec<FunctionCall>>,
+            ),
+        );
+
+        // FIXME: This is a hack to deserialize the old MoveOSTransaction format.
+        // We need compatible deserialization logic to support both old and new formats.
+        let value = OldValue::deserialize(deserializer)?;
+        Ok(MoveOSTransaction {
+            root: value.0 .0,
+            ctx: value.0 .1,
+            action: value.0 .2,
+        })
     }
 }
 
