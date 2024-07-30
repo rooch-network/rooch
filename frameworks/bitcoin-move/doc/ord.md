@@ -12,9 +12,10 @@
 -  [Struct `Envelope`](#0x4_ord_Envelope)
 -  [Struct `InscriptionRecord`](#0x4_ord_InscriptionRecord)
 -  [Struct `InvalidInscriptionEvent`](#0x4_ord_InvalidInscriptionEvent)
+-  [Resource `MetaprotocolRegistry`](#0x4_ord_MetaprotocolRegistry)
 -  [Struct `MetaprotocolValidity`](#0x4_ord_MetaprotocolValidity)
 -  [Resource `InscriptionStore`](#0x4_ord_InscriptionStore)
--  [Struct `NewInscriptionEvent`](#0x4_ord_NewInscriptionEvent)
+-  [Struct `InscriptionEvent`](#0x4_ord_InscriptionEvent)
 -  [Struct `InscriptionCharm`](#0x4_ord_InscriptionCharm)
 -  [Constants](#@Constants_0)
 -  [Function `curse_duplicate_field`](#0x4_ord_curse_duplicate_field)
@@ -71,6 +72,7 @@
 -  [Function `borrow_mut_temp_state`](#0x4_ord_borrow_mut_temp_state)
 -  [Function `remove_temp_state`](#0x4_ord_remove_temp_state)
 -  [Function `drop_temp_area`](#0x4_ord_drop_temp_area)
+-  [Function `register_metaprotocol_via_system`](#0x4_ord_register_metaprotocol_via_system)
 -  [Function `seal_metaprotocol_validity`](#0x4_ord_seal_metaprotocol_validity)
 -  [Function `add_metaprotocol_attachment`](#0x4_ord_add_metaprotocol_attachment)
 -  [Function `exists_metaprotocol_validity`](#0x4_ord_exists_metaprotocol_validity)
@@ -79,7 +81,9 @@
 -  [Function `metaprotocol_validity_protocol_type`](#0x4_ord_metaprotocol_validity_protocol_type)
 -  [Function `metaprotocol_validity_is_valid`](#0x4_ord_metaprotocol_validity_is_valid)
 -  [Function `metaprotocol_validity_invalid_reason`](#0x4_ord_metaprotocol_validity_invalid_reason)
--  [Function `upack_new_inscription_event`](#0x4_ord_upack_new_inscription_event)
+-  [Function `upack_inscription_event`](#0x4_ord_upack_inscription_event)
+-  [Function `inscription_event_type_new`](#0x4_ord_inscription_event_type_new)
+-  [Function `inscription_event_type_burn`](#0x4_ord_inscription_event_type_burn)
 -  [Function `inscription_charm_burned`](#0x4_ord_inscription_charm_burned)
 -  [Function `exists_inscription_charm`](#0x4_ord_exists_inscription_charm)
 -  [Function `borrow_inscription_charm`](#0x4_ord_borrow_inscription_charm)
@@ -91,6 +95,7 @@
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bag</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
+<b>use</b> <a href="">0x2::core_addresses</a>;
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::event_queue</a>;
 <b>use</b> <a href="">0x2::json</a>;
@@ -183,6 +188,17 @@
 
 
 
+<a name="0x4_ord_MetaprotocolRegistry"></a>
+
+## Resource `MetaprotocolRegistry`
+
+
+
+<pre><code><b>struct</b> <a href="ord.md#0x4_ord_MetaprotocolRegistry">MetaprotocolRegistry</a> <b>has</b> key
+</code></pre>
+
+
+
 <a name="0x4_ord_MetaprotocolValidity"></a>
 
 ## Struct `MetaprotocolValidity`
@@ -205,13 +221,13 @@
 
 
 
-<a name="0x4_ord_NewInscriptionEvent"></a>
+<a name="0x4_ord_InscriptionEvent"></a>
 
-## Struct `NewInscriptionEvent`
+## Struct `InscriptionEvent`
 
 
 
-<pre><code><b>struct</b> <a href="ord.md#0x4_ord_NewInscriptionEvent">NewInscriptionEvent</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="ord.md#0x4_ord_InscriptionEvent">InscriptionEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -334,6 +350,24 @@ Curse Inscription
 
 
 
+<a name="0x4_ord_ErrorMetaprotocolAlreadyRegistered"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_ErrorMetaprotocolAlreadyRegistered">ErrorMetaprotocolAlreadyRegistered</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x4_ord_ErrorMetaprotocolProtocolMismatch"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_ErrorMetaprotocolProtocolMismatch">ErrorMetaprotocolProtocolMismatch</a>: u64 = 2;
+</code></pre>
+
+
+
 <a name="0x4_ord_FIRST_POST_SUBSIDY_EPOCH"></a>
 
 
@@ -348,6 +382,24 @@ Curse Inscription
 
 
 <pre><code><b>const</b> <a href="ord.md#0x4_ord_INSCRIPTION_CHARM">INSCRIPTION_CHARM</a>: <a href="">vector</a>&lt;u8&gt; = [105, 110, 115, 99, 114, 105, 112, 116, 105, 111, 110, 95, 99, 104, 97, 114, 109];
+</code></pre>
+
+
+
+<a name="0x4_ord_InscriptionEventTypeBurn"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_InscriptionEventTypeBurn">InscriptionEventTypeBurn</a>: u8 = 1;
+</code></pre>
+
+
+
+<a name="0x4_ord_InscriptionEventTypeNew"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_InscriptionEventTypeNew">InscriptionEventTypeNew</a>: u8 = 0;
 </code></pre>
 
 
@@ -987,6 +1039,19 @@ Drop the bag, whether it's empty or not
 
 
 
+<a name="0x4_ord_register_metaprotocol_via_system"></a>
+
+## Function `register_metaprotocol_via_system`
+
+Currently, Only the framework can register metaprotocol.
+We need to find a way to allow the user to register metaprotocol.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_register_metaprotocol_via_system">register_metaprotocol_via_system</a>&lt;T&gt;(system: &<a href="">signer</a>, metaprotocol: <a href="_String">string::String</a>)
+</code></pre>
+
+
+
 <a name="0x4_ord_seal_metaprotocol_validity"></a>
 
 ## Function `seal_metaprotocol_validity`
@@ -1006,7 +1071,8 @@ Seal the metaprotocol validity for the given inscription_id.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_add_metaprotocol_attachment">add_metaprotocol_attachment</a>&lt;T&gt;(inscription_id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>, attachment: <a href="_Object">object::Object</a>&lt;T&gt;)
+<pre><code>#[private_generics(#[T])]
+<b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_add_metaprotocol_attachment">add_metaprotocol_attachment</a>&lt;T&gt;(inscription_id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>, attachment: <a href="_Object">object::Object</a>&lt;T&gt;)
 </code></pre>
 
 
@@ -1083,13 +1149,35 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_upack_new_inscription_event"></a>
+<a name="0x4_ord_upack_inscription_event"></a>
 
-## Function `upack_new_inscription_event`
+## Function `upack_inscription_event`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_upack_new_inscription_event">upack_new_inscription_event</a>(<a href="">event</a>: <a href="ord.md#0x4_ord_NewInscriptionEvent">ord::NewInscriptionEvent</a>): (<a href="_String">string::String</a>, u32, <a href="_ObjectID">object::ObjectID</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_upack_inscription_event">upack_inscription_event</a>(<a href="">event</a>: <a href="ord.md#0x4_ord_InscriptionEvent">ord::InscriptionEvent</a>): (<a href="_String">string::String</a>, u32, <a href="_ObjectID">object::ObjectID</a>, u8)
+</code></pre>
+
+
+
+<a name="0x4_ord_inscription_event_type_new"></a>
+
+## Function `inscription_event_type_new`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_inscription_event_type_new">inscription_event_type_new</a>(): u8
+</code></pre>
+
+
+
+<a name="0x4_ord_inscription_event_type_burn"></a>
+
+## Function `inscription_event_type_burn`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_inscription_event_type_burn">inscription_event_type_burn</a>(): u8
 </code></pre>
 
 
