@@ -526,8 +526,8 @@ export class RoochDataSource /*implements IDatasource*/ {
       throw new Error('validate options are not supported for Rooch broadcastBitcoinTX');
     }
 
-    if (!hex || typeof hex !== 'string') {
-        throw new Error('Invalid transaction hex provided');
+    if (!hex || typeof hex !== 'string' || !isValidHex(hex)) {
+      throw new Error('Invalid transaction hex');
     }
 
     try {
@@ -554,6 +554,11 @@ function bitcoinNetworkToRooch(network: Network): 'testnet' | 'devnet' | 'localn
     default:
       throw new Error(`Unknown network: ${network}`)
   }
+}
+
+function isValidHex(hex: string): boolean {
+  const hexRegex = /^[0-9A-Fa-f]+$/;
+  return hexRegex.test(hex);
 }
 
 interface ExtendedUTXOLimited extends UTXOLimited {

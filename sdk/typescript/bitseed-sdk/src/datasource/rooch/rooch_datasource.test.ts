@@ -10,6 +10,7 @@ import {
 
 class MockRoochTransport implements RoochTransport {
   private mockResponses: Map<string, any[]> = new Map();
+  private mockErrors: Map<string, Error[]> = new Map();
   private callCounts: Map<string, number> = new Map();
 
   setMockResponse(method: string, response: any) {
@@ -20,19 +21,36 @@ class MockRoochTransport implements RoochTransport {
     this.callCounts.set(method, 0);
   }
 
+  setMockErrorResponse(method: string, error: Error) {
+    if (!this.mockErrors.has(method)) {
+      this.mockErrors.set(method, []);
+    }
+    this.mockErrors.get(method)!.push(error);
+    this.callCounts.set(method, 0);
+  }
+
   async request<T>({ method }: { method: string; params: unknown[] }): Promise<T> {
+    const callCount = this.callCounts.get(method) || 0;
+    this.callCounts.set(method, callCount + 1);
+
+    const errors = this.mockErrors.get(method);
+    if (errors && errors.length > 0) {
+      const error = errors[callCount % errors.length];
+      throw error;
+    }
+
     const responses = this.mockResponses.get(method);
     if (responses && responses.length > 0) {
-      const callCount = this.callCounts.get(method) || 0;
       const response = responses[callCount % responses.length];
-      this.callCounts.set(method, callCount + 1);
       return response as T;
     }
-    throw new Error(`No mock response set for method: ${method}`);
+
+    throw new Error(`No mock response or error set for method: ${method}`);
   }
 
   resetMocks() {
     this.mockResponses.clear();
+    this.mockErrors.clear();
     this.callCounts.clear();
   }
 }
@@ -2165,6 +2183,57 @@ describe('RoochDataSource', () => {
       await expect(instance.getUnspents({ address: mockAddress }))
         .rejects.toThrow('Invalid UTXO value: 9007199254740992');
     });
+  });
+
+  describe('relay', () => {
+    it('should successfully send a transaction and return the transaction hash', async () => {
+      const mockTxHex = '0123456789abcdef';
+      const mockTxHash = '9876543210fedcba';
+
+      mockTransport.setMockResponse('btc_broadcastTX', mockTxHash);
+
+      const result = await instance.relay({ hex: mockTxHex });
+
+      expect(result).toBe(mockTxHash);
+    });
+
+    it('should throw an error for invalid transaction hex', async () => {
+      const invalidTxHex = 'invalid_hex';
+  
+      await expect(instance.relay({ hex: invalidTxHex }))
+        .rejects.toThrow('Invalid transaction hex');
+    });
+
+    it('should successfully send a transaction with maxFeeRate', async () => {
+      const mockTxHex = '0123456789abcdef';
+      const mockTxHash = 'fedcba9876543210';
+      const mockMaxFeeRate = 10;
+  
+      mockTransport.setMockResponse('btc_broadcastTX', mockTxHash);
+  
+      const result = await instance.relay({ hex: mockTxHex, maxFeeRate: mockMaxFeeRate });
+  
+      expect(result).toBe(mockTxHash);
+    });
+
+    it('should throw an error when broadcastBitcoinTX fails', async () => {
+      const mockTxHex = '0123456789abcdef';
+      const mockError = new Error('Network error');
+  
+      mockTransport.setMockErrorResponse('btc_broadcastTX', mockError);
+  
+      await expect(instance.relay({ hex: mockTxHex }))
+        .rejects.toThrow('Failed to broadcast transaction: Error: Network error');
+
+    });
+    
+    it('should throw an error when validate option is provided', async () => {
+      const mockTxHex = '0123456789abcdef';
+  
+      await expect(instance.relay({ hex: mockTxHex, validate: true }))
+        .rejects.toThrow('validate options are not supported for Rooch broadcastBitcoinTX');
+    });
+
   });
 
 });
