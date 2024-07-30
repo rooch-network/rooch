@@ -122,8 +122,6 @@ impl Handler<BroadcastTransactionMessage> for BitcoinClientActor {
             params.push(serde_json::to_value(0.0).unwrap());
         }
 
-        info!("Handler<BroadcastTransactionMessage> params: {:?}", &params);
-
         // Make the RPC call
         let tx_id: bitcoin::Txid = self.rpc_client.call("sendrawtransaction", &params)?;
         Ok(tx_id)
