@@ -10,7 +10,6 @@ use async_trait::async_trait;
 use bitcoincore_rpc::{bitcoin::Txid, json, Auth, Client, RpcApi};
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use rooch_config::BitcoinRelayerConfig;
-use tracing::info;
 
 use super::messages::GetChainTipsMessage;
 
