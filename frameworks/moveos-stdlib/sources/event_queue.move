@@ -62,6 +62,11 @@ module moveos_std::event_queue {
     #[private_generics(E)]
     public fun emit<E : copy + drop + store>(name: String, event: E) {
         let event_queue_obj = event_queue<E>(name);
+        let subscribers = borrow_subscribers(event_queue_obj);
+        //We only write the event to the event queue when there are subscribers
+        if(vector::is_empty(subscribers)){
+            return
+        };
         let head_sequence_number = object::borrow(event_queue_obj).head_sequence_number;
         let now = timestamp::now_milliseconds();
         let on_chain_event = OnChainEvent {
@@ -106,20 +111,6 @@ module moveos_std::event_queue {
         let subscriber = object::new(Subscriber {
             queue_name,
             sequence_number: head_sequence_number,
-        });
-        vector::push_back(subscribers, object::id(&subscriber));
-        subscriber
-    }
-
-    public fun subscribe_with_sequence_number<E: copy + drop + store>(queue_name: String, sequence_number: u64) : Object<Subscriber<E>> {
-        let event_queue_obj = event_queue<E>(queue_name);
-        let head_sequence_number = object::borrow(event_queue_obj).head_sequence_number;
-        let tail_sequence_number = object::borrow(event_queue_obj).tail_sequence_number;
-        assert!(sequence_number >= tail_sequence_number && sequence_number <= head_sequence_number, ErrorInvalidSequenceNumber);
-        let subscribers = borrow_mut_subscribers(event_queue_obj);
-        let subscriber = object::new(Subscriber {
-            queue_name,
-            sequence_number,
         });
         vector::push_back(subscribers, object::id(&subscriber));
         subscriber

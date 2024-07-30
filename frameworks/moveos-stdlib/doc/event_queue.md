@@ -12,7 +12,6 @@
 -  [Function `emit`](#0x2_event_queue_emit)
 -  [Function `consume`](#0x2_event_queue_consume)
 -  [Function `subscribe`](#0x2_event_queue_subscribe)
--  [Function `subscribe_with_sequence_number`](#0x2_event_queue_subscribe_with_sequence_number)
 -  [Function `unsubscribe`](#0x2_event_queue_unsubscribe)
 -  [Function `remove_expired_events`](#0x2_event_queue_remove_expired_events)
 
@@ -157,17 +156,6 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="event_queue.md#0x2_event_queue_subscribe">subscribe</a>&lt;E: <b>copy</b>, drop, store&gt;(queue_name: <a href="_String">string::String</a>): <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="event_queue.md#0x2_event_queue_Subscriber">event_queue::Subscriber</a>&lt;E&gt;&gt;
-</code></pre>
-
-
-
-<a name="0x2_event_queue_subscribe_with_sequence_number"></a>
-
-## Function `subscribe_with_sequence_number`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="event_queue.md#0x2_event_queue_subscribe_with_sequence_number">subscribe_with_sequence_number</a>&lt;E: <b>copy</b>, drop, store&gt;(queue_name: <a href="_String">string::String</a>, sequence_number: u64): <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="event_queue.md#0x2_event_queue_Subscriber">event_queue::Subscriber</a>&lt;E&gt;&gt;
 </code></pre>
 
 
