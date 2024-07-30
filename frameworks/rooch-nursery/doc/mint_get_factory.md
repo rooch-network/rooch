@@ -19,7 +19,7 @@
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
-<b>use</b> <a href="bitseed_on_l2.md#0xa_bitseed_on_l2">0xa::bitseed_on_l2</a>;
+<b>use</b> <a href="bitseed.md#0xa_bitseed">0xa::bitseed</a>;
 <b>use</b> <a href="tick_info.md#0xa_tick_info">0xa::tick_info</a>;
 </code></pre>
 
@@ -97,7 +97,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="mint_get_factory.md#0xa_mint_get_factory_do_mint">do_mint</a>(metaprotocol: <a href="_String">string::String</a>, tick: <a href="_String">string::String</a>): <a href="_Object">object::Object</a>&lt;<a href="bitseed_on_l2.md#0xa_bitseed_on_l2_Bitseed">bitseed_on_l2::Bitseed</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="mint_get_factory.md#0xa_mint_get_factory_do_mint">do_mint</a>(metaprotocol: <a href="_String">string::String</a>, tick: <a href="_String">string::String</a>): <a href="_Object">object::Object</a>&lt;<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>&gt;
 </code></pre>
 
 

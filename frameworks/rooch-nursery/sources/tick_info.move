@@ -4,16 +4,16 @@
 module rooch_nursery::tick_info {
 
     use std::option::{Self, Option};
-    use std::string::String;
+    use std::string::{Self, String};
     use std::vector;
     
     use moveos_std::object::{Self, Object, ObjectID};
     use moveos_std::type_info;
     use moveos_std::tx_context;
-    use moveos_std::result::{Result, ok};
+    use moveos_std::result::{Result, ok, err};
     
     use bitcoin_move::ord::{InscriptionID};
-    use rooch_nursery::bitseed_on_l2::{Self, Bitseed};
+    use rooch_nursery::bitseed::{Self, Bitseed};
 
     const ErrorMetaprotocolNotFound: u64 = 1;
     const ErrorTickNotFound: u64 = 2;
@@ -21,13 +21,16 @@ module rooch_nursery::tick_info {
     const ErrorInvalidMintFactory: u64 = 4;
     const ErrorMaxSupplyReached: u64 = 5;
 
-    friend rooch_nursery::bitseed;
+    friend rooch_nursery::inscribe_factory;
+    friend rooch_nursery::genesis;
+
+    const BIT_SEED_GENERATOR_TICK: vector<u8> = b"generator";
 
     /// Store the tick -> TickInfo ObjectID mapping in Object<TickInfoStore> dynamic fields.
     struct TickInfoStore has key {
     }
 
-    struct TickInfo has key{
+    struct TickInfo has key {
         /// The metaprotocol of the tick.
         metaprotocol: String,
         /// The tick name
@@ -44,12 +47,34 @@ module rooch_nursery::tick_info {
         // TODO should we support repeat?
         repeat: u64,
         //TODO the has_user_input should be the generator's attribute. 
-        //has_user_input: bool,
+        has_user_input: bool,
         /// The generator or factory deploy arguments.
         deploy_args: Option<vector<u8>>,
         /// The current supply of the tick.
         supply: u64,
     }
+
+    public(friend) fun genesis_init(){
+        // init built-in generator tick
+        let tick = string::utf8(BIT_SEED_GENERATOR_TICK);
+        let repeat = 0;
+        let has_user_input = false;
+        //u64max
+        let max = 18_446_744_073_709_551_615u64;
+        
+        deploy_tick(bitseed::metaprotocol(), tick, option::none(), option::none(), max, repeat, has_user_input, option::none());
+    }
+    
+    /// Check if the tick is deployed.
+    public fun is_deployed(metaprotocol: String, tick: String) : bool {
+        let store_id = object::custom_object_id<String, TickInfoStore>(metaprotocol);
+        if (!object::exists_object(store_id)){
+            return false
+        };
+        let store = borrow_tick_info_store(metaprotocol);
+        object::contains_field(store, tick)
+    }
+
 
     public fun borrow_tick_info(metaprotocol: String, tick: String) : &TickInfo {
         let store = borrow_tick_info_store(metaprotocol);
@@ -71,7 +96,7 @@ module rooch_nursery::tick_info {
         object::borrow_object<TickInfoStore>(store_id)
     }
 
-    fun borrow_mut_tick_info_store(metaprotocol: String) : &mut Object<TickInfoStore>{
+    fun borrow_mut_or_create_tick_info_store(metaprotocol: String) : &mut Object<TickInfoStore>{
         let store_id = object::custom_object_id<String, TickInfoStore>(metaprotocol);
         if (!object::exists_object(store_id)){
             let store = TickInfoStore{};
@@ -89,9 +114,10 @@ module rooch_nursery::tick_info {
         factory: Option<String>,
         max: u64,
         repeat: u64,
+        has_user_input: bool,
         deploy_args: Option<vector<u8>>,
     ) : ObjectID {
-        let store = borrow_mut_tick_info_store(metaprotocol);
+        let store = borrow_mut_or_create_tick_info_store(metaprotocol);
         let tick_info = TickInfo {
             metaprotocol,
             tick,
@@ -99,6 +125,7 @@ module rooch_nursery::tick_info {
             factory,
             max,
             repeat,
+            has_user_input,
             deploy_args,
             supply: 0,
         };
@@ -123,7 +150,7 @@ module rooch_nursery::tick_info {
             amount
         };
         let bid = tx_context::fresh_address();
-        let bitseed = bitseed_on_l2::new(metaprotocol, tick, bid, real_amount, option::none(), vector::empty());
+        let bitseed = bitseed::new(metaprotocol, tick, bid, real_amount, option::none(), vector::empty());
         tick_info.supply = tick_info.supply + amount;
         bitseed
     }
@@ -133,9 +160,11 @@ module rooch_nursery::tick_info {
         //TODO make sure this function should not abort, it should return a result.
         //assert!(option::is_some(&tick_info.generator), ErrorNoMintFactory);
         //let generator = option::destroy_some(tick_info.generator);
-        assert!(tick_info.supply + amount < tick_info.max, ErrorMaxSupplyReached);
+        if (tick_info.supply + amount > tick_info.max){
+            return err(b"maximum supply exceeded")
+        };
         let bid = tx_context::fresh_address();
-        let bitseed = bitseed_on_l2::new(metaprotocol, tick, bid, amount, option::none(), vector::empty());
+        let bitseed = bitseed::new(metaprotocol, tick, bid, amount, option::none(), vector::empty());
         ok(bitseed)
     }
 
@@ -165,6 +194,20 @@ module rooch_nursery::tick_info {
         tick_info.deploy_args
     }
 
+    public fun supply(tick_info: &TickInfo) : u64 {
+        tick_info.supply
+    }
+
+    public fun repeat(tick_info: &TickInfo) : u64 {
+        tick_info.repeat
+    }
+
+    public fun has_user_input(tick_info: &TickInfo) : bool {
+        tick_info.has_user_input
+    }
+
+
+
     #[test_only]
     public fun deploy_for_testing(
         metaprotocol: String,
@@ -176,6 +219,11 @@ module rooch_nursery::tick_info {
         deploy_args: Option<vector<u8>>,
     ) : ObjectID {
         std::debug::print(&factory);
-        deploy_tick(metaprotocol, tick, generator, factory, max, repeat, deploy_args)
+        deploy_tick(metaprotocol, tick, generator, factory, max, repeat, false, deploy_args)
+    }
+
+    #[test_only]
+    public fun init_for_testing() {
+        Self::genesis_init()
     }
 }

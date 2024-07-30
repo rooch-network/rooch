@@ -10,7 +10,7 @@ module rooch_nursery::mint_get_factory {
     use moveos_std::bcs;
     use moveos_std::type_info;
     use rooch_nursery::tick_info;
-    use rooch_nursery::bitseed_on_l2::{Bitseed};
+    use rooch_nursery::bitseed::{Bitseed};
 
 
     const DEFAULT_AMOUNT_PER_MINT: u64 = 10000;

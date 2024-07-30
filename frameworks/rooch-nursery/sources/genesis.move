@@ -4,7 +4,7 @@
 module rooch_nursery::genesis {
     use rooch_framework::chain_id;
     use rooch_nursery::ethereum;
-    use rooch_nursery::bitseed;
+    use rooch_nursery::tick_info;
 
     const ErrorInvalidChainId: u64 = 1;
 
@@ -13,6 +13,6 @@ module rooch_nursery::genesis {
         // nursery can running on a local or dev chain or custom chain
         assert!(!chain_id::is_test() && !chain_id::is_main(), ErrorInvalidChainId);
         ethereum::genesis_init(genesis_account);
-        bitseed::genesis_init(genesis_account);
+        tick_info::genesis_init();
     }
 }

@@ -7,14 +7,15 @@ module rooch_examples::bitseed_runner {
    use moveos_std::object::{Self, Object};
    use moveos_std::event_queue::{Self, Subscriber};
    use bitcoin_move::ord::{Self, Inscription};
+   use rooch_nursery::inscribe_factory;
    use rooch_nursery::bitseed;
 
    struct BitseedRunnerStore has key {
-      subscriber: Object<Subscriber<ord::NewInscriptionEvent>>,
+      subscriber: Object<Subscriber<ord::InscriptionEvent>>,
    }
 
    fun init() {
-      let subscriber = event_queue::subscribe<ord::NewInscriptionEvent>(bitseed::metaprotocol());
+      let subscriber = event_queue::subscribe<ord::InscriptionEvent>(bitseed::metaprotocol());
       let store = BitseedRunnerStore {
          subscriber,
       };
@@ -31,10 +32,10 @@ module rooch_examples::bitseed_runner {
       
       if (option::is_some(&event_opt)){
          let event = option::destroy_some(event_opt);
-         let (_metaprotocol, _sequence_number, inscription_obj_id) = ord::upack_new_inscription_event(event);
+         let (_metaprotocol, _sequence_number, inscription_obj_id, _event_type) = ord::upack_inscription_event(event);
          let inscription_obj = object::borrow_object<Inscription>(inscription_obj_id);
          let inscription = object::borrow(inscription_obj);
-         bitseed::process_inscription(inscription);
+         inscribe_factory::process_inscription(inscription);
       };
    }
 }
