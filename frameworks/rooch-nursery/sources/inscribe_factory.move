@@ -17,7 +17,7 @@ module rooch_nursery::inscribe_factory {
     use moveos_std::result::{Self, Result, err, ok, is_err, as_err};
 
     use bitcoin_move::types;
-    use bitcoin_move::ord::{Self, Inscription, MetaprotocolValidity};
+    use bitcoin_move::ord::{Self, Inscription};
     use bitcoin_move::bitcoin;
 
     use rooch_nursery::bitseed::{Self, Bitseed};
@@ -229,7 +229,6 @@ module rooch_nursery::inscribe_factory {
     
         let tick = get_SFT_tick(metadata);
         let tick = string_utils::to_lower_case(&tick);
-
         
         let max = get_SFT_amount(metadata);
         let attributes = get_SFT_attributes(metadata);
@@ -292,30 +291,31 @@ module rooch_nursery::inscribe_factory {
 
             user_input = *option::borrow(&user_input_option);
         };
+        // The generator tick has no generator, so we skip the inscribe verify
+        if(tick != utf8(BIT_SEED_GENERATOR_TICK)) {
+            let generator_inscription_id_option = tick_info::generator(tick_info);
+            if (option::is_none(&generator_inscription_id_option)) {
+                return err(b"the tick can not mint on Bitcoin")
+            };
 
-        let generator_inscription_id_option = tick_info::generator(tick_info);
-        if (option::is_none(&generator_inscription_id_option)) {
-            return err(b"the tick can not mint on Bitcoin")
-        };
+            let generator_inscription_id = option::destroy_some(generator_inscription_id_option);
+            if (!ord::exists_metaprotocol_validity(generator_inscription_id)) {
+                return err(b"generator_inscription_id is not validity bitseed")
+            };
 
-        let generator_inscription_id = option::destroy_some(generator_inscription_id_option);
-        if (!ord::exists_metaprotocol_validity(generator_inscription_id)) {
-            return err(b"generator_inscription_id is not validity bitseed")
-        };
+            let generator_txid = ord::inscription_id_txid(&generator_inscription_id);
+            let generator_index = ord::inscription_id_index(&generator_inscription_id);
+            let inscription_obj = ord::borrow_inscription(generator_txid, generator_index);
 
-        let generator_txid = ord::inscription_id_txid(&generator_inscription_id);
-        let generator_index = ord::inscription_id_index(&generator_inscription_id);
-        let inscription_obj = ord::borrow_inscription(generator_txid, generator_index);
+            let inscrption = object::borrow(inscription_obj);
+            let wasm_bytes = ord::body(inscrption);
 
-        let inscrption = object::borrow(inscription_obj);
-        let wasm_bytes = ord::body(inscrption);
-
-        let (is_valid, reason) = inscribe_verify(wasm_bytes, deploy_args, seed, user_input, metadata, content_type, body);
-        if (!is_valid) {
-            return result::err_string(option::destroy_with_default(reason, utf8(b"inscribe verify fail")))
+            let (is_valid, reason) = inscribe_verify(wasm_bytes, deploy_args, seed, user_input, metadata, content_type, body);
+            if (!is_valid) {
+                return result::err_string(option::destroy_with_default(reason, utf8(b"inscribe verify fail")))
+            };
         };
         let bitseed_result = tick_info::mint_on_bitcoin(bitseed::metaprotocol(), tick, amount);
-        simple_map::drop(attributes);
         bitseed_result
     }
 
@@ -541,22 +541,6 @@ module rooch_nursery::inscribe_factory {
 
             simple_map::drop(metadata)
         }
-    }
-
-    public fun view_validity(inscription_id_str: String) : Option<MetaprotocolValidity> {
-        let inscription_id_option = ord::parse_inscription_id(&inscription_id_str);
-        if (option::is_none(&inscription_id_option)) {
-            return option::none()
-        };
-
-        let inscription_id = option::destroy_some(inscription_id_option);
-        if (!ord::exists_metaprotocol_validity(inscription_id)) {
-            return option::none()
-        };
-
-        let validity = ord::borrow_metaprotocol_validity(inscription_id);
-
-        option::some(*validity)
     }
 
     #[test_only]
@@ -850,11 +834,10 @@ module rooch_nursery::inscribe_factory {
     #[test(genesis_account=@0x4)]
     fun test_is_valid_bitseed_mint_fail_with_wasm_verify_fail(genesis_account: &signer){
         features::init_and_enable_all_features_for_test();
-        
+        tick_info::init_for_testing();
+
         let (_test_address, test_inscription_id) = ord::setup_inscription_for_test<Bitseed>(genesis_account, bitseed::metaprotocol());
         bitseed::seal_metaprotocol_validity(test_inscription_id, true, option::none());
-
-        tick_info::init_for_testing();
 
         let metadata_bytes = x"a4626f70666465706c6f79647469636b646d6f766566616d6f756e741927106a61747472696275746573a466726570656174056967656e657261746f72784f2f696e736372697074696f6e2f3737646663326665353938343139623030363431633239363138316139366366313639343336393766353733343830623032336237376363653832616461323169306e6861735f757365725f696e707574f56b6465706c6f795f617267738178377b22686569676874223a7b2274797065223a2272616e6765222c2264617461223a7b226d696e223a312c226d6178223a313030307d7d7d";
         let metadata = cbor::to_map(metadata_bytes);

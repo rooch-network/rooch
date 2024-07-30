@@ -42,7 +42,7 @@ Feature: Rooch CLI bitseed tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # Check mint generator validity
-      Then cmd: "move view --function 0xa::bitseed::view_validity --args string:{{$.generator[-1].inscriptions[0].Id}} "
+      Then cmd: "move view --function 0x4::ord::view_validity --args string:{{$.generator[-1].inscriptions[0].Id}} "
       Then assert: "{{$.move[-1].vm_status}} == Executed"
       Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
 
@@ -60,7 +60,7 @@ Feature: Rooch CLI bitseed tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # Check deploy validity
-      Then cmd: "move view --function 0xa::bitseed::view_validity --args string:{{$.deploy[-1].inscriptions[0].Id}} "
+      Then cmd: "move view --function 0x4::ord::view_validity --args string:{{$.deploy[-1].inscriptions[0].Id}} "
       Then assert: "{{$.move[-1].vm_status}} == Executed"
       Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
 
@@ -78,7 +78,7 @@ Feature: Rooch CLI bitseed tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # Check mint bits validity
-      Then cmd: "move view --function 0xa::bitseed::view_validity --args string:{{$.mint[-1].inscriptions[0].Id}} "
+      Then cmd: "move view --function 0x4::ord::view_validity --args string:{{$.mint[-1].inscriptions[0].Id}} "
       Then assert: "{{$.move[-1].vm_status}} == Executed"
       Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
       
@@ -110,7 +110,7 @@ Feature: Rooch CLI bitseed tests
       Then assert: "{{$.wallet[-1].total}} == 5000000000"
 
       # publish bitseed runner
-      Then cmd: "move publish -p ../../examples/bitseed_runner  --named-addresses rooch_examples=default"
+      Then cmd: "move publish -p ../../examples/bitseed_runner  --named-addresses rooch_examples=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # Sync bitseed
@@ -131,7 +131,7 @@ Feature: Rooch CLI bitseed tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # Check deploy validity
-      Then cmd: "move view --function 0xa::bitseed::view_validity --args string:{{$.deploy[-1].inscriptions[0].Id}} "
+      Then cmd: "move view --function 0x4::ord::view_validity --args string:{{$.deploy[-1].inscriptions[0].Id}} "
       Then assert: "{{$.move[-1].vm_status}} == Executed"
       Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
 
@@ -139,6 +139,6 @@ Feature: Rooch CLI bitseed tests
       Then cmd: "move run --function 0xa::mint_get_factory::mint --args string:bitseed --args string:test" 
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
-      Then cmd: "object -t 0xa::bitseed_on_l2::Bitseed -o {{$.account[-1].default.address}}"
+      Then cmd: "object -t 0xa::bitseed::Bitseed -o {{$.account[-1].default.address}}"
       Then assert: "{{$.object[-1].data[0].owner}} == {{$.account[-1].default.address}}"
 

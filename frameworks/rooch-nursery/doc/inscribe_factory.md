@@ -13,7 +13,6 @@ Bitseed inscribe inscription factory
 -  [Function `bitseed_mint_key`](#0xa_inscribe_factory_bitseed_mint_key)
 -  [Function `inscribe_verify`](#0xa_inscribe_factory_inscribe_verify)
 -  [Function `process_inscription`](#0xa_inscribe_factory_process_inscription)
--  [Function `view_validity`](#0xa_inscribe_factory_view_validity)
 
 
 <pre><code><b>use</b> <a href="">0x1::bcs</a>;
@@ -133,15 +132,4 @@ Bitseed inscribe inscription factory
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="inscribe_factory.md#0xa_inscribe_factory_process_inscription">process_inscription</a>(inscription: &<a href="_Inscription">ord::Inscription</a>)
-</code></pre>
-
-
-
-<a name="0xa_inscribe_factory_view_validity"></a>
-
-## Function `view_validity`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="inscribe_factory.md#0xa_inscribe_factory_view_validity">view_validity</a>(inscription_id_str: <a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="_MetaprotocolValidity">ord::MetaprotocolValidity</a>&gt;
 </code></pre>

@@ -11,8 +11,9 @@ module rooch_nursery::tick_info {
     use moveos_std::type_info;
     use moveos_std::tx_context;
     use moveos_std::result::{Result, ok, err};
+    use moveos_std::string_utils;
     
-    use bitcoin_move::ord::{InscriptionID};
+    use bitcoin_move::ord::{Self, InscriptionID};
     use rooch_nursery::bitseed::{Self, Bitseed};
 
     const ErrorMetaprotocolNotFound: u64 = 1;
@@ -63,10 +64,13 @@ module rooch_nursery::tick_info {
         let max = 18_446_744_073_709_551_615u64;
         
         deploy_tick(bitseed::metaprotocol(), tick, option::none(), option::none(), max, repeat, has_user_input, option::none());
+        let module_signer = moveos_std::signer::module_signer<TickInfoStore>();
+        ord::register_metaprotocol_via_system<Bitseed>(&module_signer, bitseed::metaprotocol());
     }
     
     /// Check if the tick is deployed.
     public fun is_deployed(metaprotocol: String, tick: String) : bool {
+        let tick = string_utils::to_lower_case(&tick);
         let store_id = object::custom_object_id<String, TickInfoStore>(metaprotocol);
         if (!object::exists_object(store_id)){
             return false
@@ -77,6 +81,7 @@ module rooch_nursery::tick_info {
 
 
     public fun borrow_tick_info(metaprotocol: String, tick: String) : &TickInfo {
+        let tick = string_utils::to_lower_case(&tick);
         let store = borrow_tick_info_store(metaprotocol);
         let tick_info_obj_id: ObjectID = *object::borrow_field(store, tick);
         let tick_info_obj = object::borrow_object(tick_info_obj_id);
@@ -117,6 +122,7 @@ module rooch_nursery::tick_info {
         has_user_input: bool,
         deploy_args: Option<vector<u8>>,
     ) : ObjectID {
+        let tick = string_utils::to_lower_case(&tick);
         let store = borrow_mut_or_create_tick_info_store(metaprotocol);
         let tick_info = TickInfo {
             metaprotocol,

@@ -29,6 +29,8 @@
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::result</a>;
+<b>use</b> <a href="">0x2::signer</a>;
+<b>use</b> <a href="">0x2::string_utils</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x4::ord</a>;
