@@ -11,7 +11,9 @@ use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::state::{MoveState, MoveStructState, MoveStructType};
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::{h256::H256, transaction::TransactionOutput};
+use serde::de::{MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
+use std::fmt;
 
 pub mod authenticator;
 mod ledger_transaction;
@@ -136,44 +138,200 @@ impl MoveStructState for TransactionSequenceInfo {
     }
 }
 
+// // Implement custom Deserialize for TransactionSequenceInfo
+// impl<'de> Deserialize<'de> for TransactionSequenceInfo {
+//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+//     where
+//         D: Deserializer<'de>,
+//     {
+//         struct TransactionSequenceInfoVisitor;
+//
+//         impl<'de> serde::de::Visitor<'de> for TransactionSequenceInfoVisitor {
+//             type Value = TransactionSequenceInfo;
+//
+//             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+//                 formatter.write_str("Expect TransactionSequenceInfo")
+//             }
+//
+//             // To be compatible with old data, tx_accumulator_frozen_subtree_roots, tx_accumulator_num_leaves,
+//             // and tx_accumulator_num_nodes are allowed to be missing.
+//             fn visit_seq<S>(self, mut seq: S) -> Result<Self::Value, S::Error>
+//             where
+//                 S: serde::de::SeqAccess<'de>,
+//             {
+//                 let size_hint = seq.size_hint();
+//                 println!(
+//                     "[DEBUG] TransactionSequenceInfo Deserializer size_hint {:?} ",
+//                     size_hint
+//                 );
+//                 // println!(
+//                 //     "[DEBUG] TransactionSequenceInfo Deserializer seq {:?} ",
+//                 //     seq.next_element()?
+//                 // );
+//                 let tx_order: u64 = seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_order field when deserialize TransactionSequenceInfo"))?;
+//                 let tx_order_signature: Vec<u8> = seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_order_signature field when deserialize TransactionSequenceInfo"))?;
+//                 let tx_accumulator_root_bytes: Vec<u8> = seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_accumulator_root field when deserialize TransactionSequenceInfo"))?;
+//                 let tx_timestamp: u64 = seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_timestamp field when deserialize TransactionSequenceInfo"))?;
+//                 let tx_accumulator_frozen_subtree_roots_bytes: Vec<Vec<u8>> =
+//                     seq.next_element()?.unwrap_or(vec![]);
+//                 let tx_accumulator_num_leaves: u64 = seq.next_element()?.unwrap_or(0u64);
+//                 let tx_accumulator_num_nodes: u64 = seq.next_element()?.unwrap_or(0u64);
+//
+//                 let tx_accumulator_root = H256::from_slice(tx_accumulator_root_bytes.as_slice());
+//                 let tx_accumulator_frozen_subtree_roots = tx_accumulator_frozen_subtree_roots_bytes
+//                     .into_iter()
+//                     .map(|v| H256::from_slice(v.as_slice()))
+//                     .collect();
+//                 Ok(TransactionSequenceInfo {
+//                     tx_order,
+//                     tx_order_signature,
+//                     tx_accumulator_root,
+//                     tx_timestamp,
+//                     tx_accumulator_frozen_subtree_roots,
+//                     tx_accumulator_num_leaves,
+//                     tx_accumulator_num_nodes,
+//                 })
+//             }
+//         }
+//
+//         deserializer.deserialize_seq(TransactionSequenceInfoVisitor)
+//         // deserializer.deserialize_struct(TransactionSequenceInfoVisitor)
+//     }
+// }
+
 // Implement custom Deserialize for TransactionSequenceInfo
 impl<'de> Deserialize<'de> for TransactionSequenceInfo {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
+        enum Field {
+            TxOrder,
+            TxOrderSignature,
+            TxAccumulatorRoot,
+            TxTimestamp,
+            TxAccumulatorFrozenSubtreeRoots,
+            TxAccumulatorNumLeaves,
+            TxAccumulatorNumNodes,
+        }
+
+        impl<'de> Deserialize<'de> for Field {
+            fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                struct FieldVisitor;
+
+                impl<'de> Visitor<'de> for FieldVisitor {
+                    type Value = Field;
+
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                        formatter.write_str("Invalid field`")
+                    }
+
+                    fn visit_str<E>(self, value: &str) -> Result<Field, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "tx_order" => Ok(Field::TxOrder),
+                            "tx_order_signature" => Ok(Field::TxOrderSignature),
+                            "tx_accumulator_root" => Ok(Field::TxAccumulatorRoot),
+                            "tx_timestamp" => Ok(Field::TxTimestamp),
+                            "tx_accumulator_frozen_subtree_roots" => {
+                                Ok(Field::TxAccumulatorFrozenSubtreeRoots)
+                            }
+                            "tx_accumulator_num_leaves" => Ok(Field::TxAccumulatorNumLeaves),
+                            "tx_accumulator_num_nodes" => Ok(Field::TxAccumulatorNumNodes),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+
+                deserializer.deserialize_identifier(FieldVisitor)
+            }
+        }
+
         struct TransactionSequenceInfoVisitor;
 
-        impl<'de> serde::de::Visitor<'de> for TransactionSequenceInfoVisitor {
+        impl<'de> Visitor<'de> for TransactionSequenceInfoVisitor {
             type Value = TransactionSequenceInfo;
 
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("Expect TransactionSequenceInfo")
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("Expect TransactionSequenceInfo Struct")
             }
 
-            // To be compatible with old data, tx_accumulator_frozen_subtree_roots, tx_accumulator_num_leaves,
-            // and tx_accumulator_num_nodes are allowed to be missing.
-            fn visit_seq<S>(self, mut seq: S) -> Result<Self::Value, S::Error>
+            fn visit_seq<V>(self, mut seq: V) -> Result<TransactionSequenceInfo, V::Error>
             where
-                S: serde::de::SeqAccess<'de>,
+                V: SeqAccess<'de>,
             {
+                // let secs = seq
+                //     .next_element()?
+                //     .ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
+                // let nanos = seq
+                //     .next_element()?
+                //     .ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
+                // Ok(TransactionSequenceInfo::new(secs, nanos))
+
                 let size_hint = seq.size_hint();
                 println!(
                     "[DEBUG] TransactionSequenceInfo Deserializer size_hint {:?} ",
                     size_hint
                 );
-                // println!(
-                //     "[DEBUG] TransactionSequenceInfo Deserializer seq {:?} ",
-                //     seq.next_element()?
-                // );
                 let tx_order: u64 = seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_order field when deserialize TransactionSequenceInfo"))?;
+
+                println!("[Debug] visit_seq tx_order {:?}", tx_order);
                 let tx_order_signature: Vec<u8> = seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_order_signature field when deserialize TransactionSequenceInfo"))?;
+                println!(
+                    "[Debug] visit_seq tx_order_signature {:?}",
+                    tx_order_signature
+                );
                 let tx_accumulator_root_bytes: Vec<u8> = seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_accumulator_root field when deserialize TransactionSequenceInfo"))?;
                 let tx_timestamp: u64 = seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_timestamp field when deserialize TransactionSequenceInfo"))?;
-                let tx_accumulator_frozen_subtree_roots_bytes: Vec<Vec<u8>> =
-                    seq.next_element()?.unwrap_or(vec![]);
-                let tx_accumulator_num_leaves: u64 = seq.next_element()?.unwrap_or(0u64);
-                let tx_accumulator_num_nodes: u64 = seq.next_element()?.unwrap_or(0u64);
+                println!("[Debug] visit_seq tx_timestamp {:?}", tx_timestamp);
+                println!(
+                    "[Debug] visit_seq size_hint  {}",
+                    seq.size_hint().unwrap_or(0)
+                );
+                let tx_accumulator_frozen_subtree_roots_bytes = if seq.size_hint().unwrap_or(0) > 0
+                {
+                    // let tx_accumulator_frozen_subtree_roots_opt = seq.next_element()?;
+                    // println!(
+                    //     "[Debug] visit_seq tx_accumulator_frozen_subtree_roots_opt {:?}",
+                    //     tx_accumulator_frozen_subtree_roots_opt
+                    // );
+                    // let tx_accumulator_frozen_subtree_roots_bytes: Vec<Vec<u8>> =
+                    //     tx_accumulator_frozen_subtree_roots_opt.unwrap_or(vec![]);
+                    // println!(
+                    //     "[Debug] visit_seq tx_accumulator_frozen_subtree_roots_bytes {:?}",
+                    //     tx_accumulator_frozen_subtree_roots_bytes
+                    // );
+
+                    println!("[Debug] visit_seq tx_accumulator_frozen_subtree_roots_bytes 00",);
+                    let tx_accumulator_frozen_subtree_roots_bytes =
+                        seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_accumulator_root field when deserialize TransactionSequenceInfo"))?;
+                    println!(
+                        "[Debug] visit_seq tx_accumulator_frozen_subtree_roots_bytes 01 {:?}",
+                        tx_accumulator_frozen_subtree_roots_bytes
+                    );
+                    // tx_accumulator_frozen_subtree_roots_bytes
+                    vec![vec![0, 1]]
+                } else {
+                    println!("[Debug] visit_seq tx_accumulator_frozen_subtree_roots_bytes 02",);
+                    vec![]
+                };
+                let tx_accumulator_num_leaves = if seq.size_hint().unwrap_or(0) > 0 {
+                    seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_accumulator_num_leaves field when deserialize TransactionSequenceInfo"))?
+                } else {
+                    0u64
+                };
+                let tx_accumulator_num_nodes = if seq.size_hint().unwrap_or(0) > 0 {
+                    seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_accumulator_num_nodes field when deserialize TransactionSequenceInfo"))?
+                } else {
+                    0u64
+                };
+                // let tx_accumulator_num_leaves: u64 = seq.next_element()?.unwrap_or(0u64);
+                // let tx_accumulator_num_nodes: u64 = seq.next_element()?.unwrap_or(0u64);
 
                 let tx_accumulator_root = H256::from_slice(tx_accumulator_root_bytes.as_slice());
                 let tx_accumulator_frozen_subtree_roots = tx_accumulator_frozen_subtree_roots_bytes
@@ -190,10 +348,140 @@ impl<'de> Deserialize<'de> for TransactionSequenceInfo {
                     tx_accumulator_num_nodes,
                 })
             }
+
+            fn visit_map<V>(self, mut map: V) -> Result<TransactionSequenceInfo, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let mut tx_order = None;
+                let mut tx_order_signature = None;
+                let mut tx_accumulator_root = None;
+                let mut tx_timestamp = None;
+                let mut tx_accumulator_frozen_subtree_roots = None;
+                let mut tx_accumulator_num_leaves = None;
+                let mut tx_accumulator_num_nodes = None;
+
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::TxOrder => {
+                            if tx_order.is_some() {
+                                return Err(serde::de::Error::duplicate_field("tx_order"));
+                            }
+                            tx_order = Some(map.next_value()?);
+                            println!("[Debug] visit_map tx_order {:?}", tx_order);
+                        }
+                        Field::TxOrderSignature => {
+                            if tx_order_signature.is_some() {
+                                return Err(serde::de::Error::duplicate_field(
+                                    "tx_order_signature",
+                                ));
+                            }
+                            tx_order_signature = Some(map.next_value()?);
+                        }
+                        Field::TxAccumulatorRoot => {
+                            if tx_accumulator_root.is_some() {
+                                return Err(serde::de::Error::duplicate_field(
+                                    "tx_accumulator_root",
+                                ));
+                            }
+                            tx_accumulator_root = Some(map.next_value()?);
+                        }
+                        Field::TxTimestamp => {
+                            if tx_timestamp.is_some() {
+                                return Err(serde::de::Error::duplicate_field("tx_timestamp"));
+                            }
+                            tx_timestamp = Some(map.next_value()?);
+
+                            println!("[Debug] visit_map tx_timestamp {:?}", tx_timestamp);
+                        }
+                        Field::TxAccumulatorFrozenSubtreeRoots => {
+                            if tx_accumulator_frozen_subtree_roots.is_some() {
+                                return Err(serde::de::Error::duplicate_field(
+                                    "tx_accumulator_frozen_subtree_roots",
+                                ));
+                            }
+
+                            // tx_accumulator_frozen_subtree_roots =
+                            //     map.next_entry()?.map(|(k, v)| v);
+                            if map.size_hint().unwrap_or(0) > 0 {
+                                tx_accumulator_frozen_subtree_roots = Some(map.next_value()?);
+                                println!(
+                                    "[Debug] visit_map tx_accumulator_frozen_subtree_roots {:?}",
+                                    tx_accumulator_frozen_subtree_roots
+                                );
+                            }
+                            // _tx_accumulator_frozen_subtree_roots = Some(vec![]);
+                        }
+                        Field::TxAccumulatorNumLeaves => {
+                            if tx_accumulator_num_leaves.is_some() {
+                                return Err(serde::de::Error::duplicate_field(
+                                    "tx_accumulator_num_leaves",
+                                ));
+                            }
+                            // tx_accumulator_num_leaves = map.next_entry()?.map(|(_k, v)| v);
+                            if map.size_hint().unwrap_or(0) > 0 {
+                                tx_accumulator_num_leaves = Some(map.next_value()?);
+                            }
+                        }
+                        Field::TxAccumulatorNumNodes => {
+                            if tx_accumulator_num_nodes.is_some() {
+                                return Err(serde::de::Error::duplicate_field(
+                                    "tx_accumulator_num_nodes",
+                                ));
+                            }
+                            // tx_accumulator_num_nodes = map.next_entry()?.map(|(_k, v)| v);
+                            if map.size_hint().unwrap_or(0) > 0 {
+                                tx_accumulator_num_nodes = Some(map.next_value()?);
+                            }
+                        }
+                    }
+                }
+
+                // let tx_accumulator_root = H256::from_slice(tx_accumulator_root_bytes.as_slice());
+                // let tx_accumulator_frozen_subtree_roots = tx_accumulator_frozen_subtree_roots_bytes
+                //     .into_iter()
+                //     .map(|v| H256::from_slice(v.as_slice()))
+                //     .collect();
+
+                let tx_order =
+                    tx_order.ok_or_else(|| serde::de::Error::missing_field("tx_order"))?;
+                let tx_order_signature = tx_order_signature
+                    .ok_or_else(|| serde::de::Error::missing_field("tx_order_signature"))?;
+                let tx_accumulator_root = tx_accumulator_root
+                    .ok_or_else(|| serde::de::Error::missing_field("tx_accumulator_root"))?;
+                let tx_timestamp =
+                    tx_timestamp.ok_or_else(|| serde::de::Error::missing_field("tx_timestamp"))?;
+
+                let tx_accumulator_frozen_subtree_roots =
+                    tx_accumulator_frozen_subtree_roots.unwrap_or(vec![]);
+                let tx_accumulator_num_leaves = tx_accumulator_num_leaves.unwrap_or(0u64);
+                let tx_accumulator_num_nodes = tx_accumulator_num_nodes.unwrap_or(0u64);
+                Ok(TransactionSequenceInfo {
+                    tx_order,
+                    tx_order_signature,
+                    tx_accumulator_root,
+                    tx_timestamp,
+                    tx_accumulator_frozen_subtree_roots,
+                    tx_accumulator_num_leaves,
+                    tx_accumulator_num_nodes,
+                })
+            }
         }
 
-        deserializer.deserialize_seq(TransactionSequenceInfoVisitor)
-        // deserializer.deserialize_struct(TransactionSequenceInfoVisitor)
+        const FIELDS: &[&str] = &[
+            "tx_order",
+            "tx_order_signature",
+            "tx_accumulator_root",
+            "tx_timestamp",
+            "tx_accumulator_frozen_subtree_roots",
+            "tx_accumulator_num_leaves",
+            "tx_accumulator_num_nodes",
+        ];
+        deserializer.deserialize_struct(
+            "TransactionSequenceInfo",
+            FIELDS,
+            TransactionSequenceInfoVisitor,
+        )
     }
 }
 
