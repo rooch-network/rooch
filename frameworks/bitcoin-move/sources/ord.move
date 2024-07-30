@@ -965,11 +965,26 @@ module bitcoin_move::ord {
         object::add_field(metaprotocol_registry_obj, metaprotocol, protocol_type); 
     }
 
-    /// Borrow the metaprotocol Move type for the given metaprotocol.
-    fun get_metaprotocol_type(metaprotocol: String) : String {
+    public fun is_metaprotocol_register(metaprotocol: String) : bool {
         let registry_object_id = object::named_object_id<MetaprotocolRegistry>();
+        if(!object::exists_object(registry_object_id)){
+            return false
+        };
         let metaprotocol_registry_obj = object::borrow_object<MetaprotocolRegistry>(registry_object_id);
-        *object::borrow_field(metaprotocol_registry_obj, metaprotocol)
+        object::contains_field(metaprotocol_registry_obj, metaprotocol)
+    }
+
+    /// Borrow the metaprotocol Move type for the given metaprotocol.
+    fun get_metaprotocol_type(metaprotocol: String) : Option<String> {
+        let registry_object_id = object::named_object_id<MetaprotocolRegistry>();
+        if(!object::exists_object(registry_object_id)){
+            return option::none()
+        };
+        let metaprotocol_registry_obj = object::borrow_object<MetaprotocolRegistry>(registry_object_id);
+        if(!object::contains_field(metaprotocol_registry_obj, metaprotocol)){
+            return option::none()
+        };
+        option::some(*object::borrow_field(metaprotocol_registry_obj, metaprotocol))
     }
 
     #[private_generics(T)]
@@ -1025,7 +1040,10 @@ module bitcoin_move::ord {
         };
         let metaprotocol = option::destroy_some(*&inscription.metaprotocol);
         let protocol_type_in_registry = get_metaprotocol_type(metaprotocol);
-        protocol_type == protocol_type_in_registry
+        if (option::is_none(&protocol_type_in_registry)) {
+            return false
+        };
+        protocol_type == option::destroy_some(protocol_type_in_registry)
     }
 
     /// Check the MetaprotocolValidity's protocol_type whether match
@@ -1047,6 +1065,22 @@ module bitcoin_move::ord {
     /// Get the MetaprotocolValidity's invalid_reason
     public fun metaprotocol_validity_invalid_reason(validity: &MetaprotocolValidity): Option<String> {
         validity.invalid_reason
+    }
+
+    public fun view_validity(inscription_id_str: String) : Option<MetaprotocolValidity> {
+        let inscription_id_option = parse_inscription_id(&inscription_id_str);
+        if (option::is_none(&inscription_id_option)) {
+            return option::none()
+        };
+
+        let inscription_id = option::destroy_some(inscription_id_option);
+        if (!exists_metaprotocol_validity(inscription_id)) {
+            return option::none()
+        };
+
+        let validity = borrow_metaprotocol_validity(inscription_id);
+
+        option::some(*validity)
     }
 
     // ======================== Events =====================================
@@ -1291,9 +1325,10 @@ module bitcoin_move::ord {
 
         let content_type = b"application/wasm";
         let body = x"0061736d0100000001080260017f00600000020f0107636f6e736f6c65036c6f670000030201010503010001071702066d656d6f727902000a68656c6c6f576f726c6400010a08010600410010000b0b14010041000b0e48656c6c6f2c20576f726c642100";
-        register_metaprotocol_for_test<T>(metaprotocol);
-        
-        
+        if(!is_metaprotocol_register(metaprotocol)){
+            register_metaprotocol_for_test<T>(metaprotocol);
+        };
+    
         let test_inscription = new_inscription_for_test(
             test_txid,
             0,

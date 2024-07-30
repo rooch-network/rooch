@@ -73,6 +73,7 @@
 -  [Function `remove_temp_state`](#0x4_ord_remove_temp_state)
 -  [Function `drop_temp_area`](#0x4_ord_drop_temp_area)
 -  [Function `register_metaprotocol_via_system`](#0x4_ord_register_metaprotocol_via_system)
+-  [Function `is_metaprotocol_register`](#0x4_ord_is_metaprotocol_register)
 -  [Function `seal_metaprotocol_validity`](#0x4_ord_seal_metaprotocol_validity)
 -  [Function `add_metaprotocol_attachment`](#0x4_ord_add_metaprotocol_attachment)
 -  [Function `exists_metaprotocol_validity`](#0x4_ord_exists_metaprotocol_validity)
@@ -81,6 +82,7 @@
 -  [Function `metaprotocol_validity_protocol_type`](#0x4_ord_metaprotocol_validity_protocol_type)
 -  [Function `metaprotocol_validity_is_valid`](#0x4_ord_metaprotocol_validity_is_valid)
 -  [Function `metaprotocol_validity_invalid_reason`](#0x4_ord_metaprotocol_validity_invalid_reason)
+-  [Function `view_validity`](#0x4_ord_view_validity)
 -  [Function `upack_inscription_event`](#0x4_ord_upack_inscription_event)
 -  [Function `inscription_event_type_new`](#0x4_ord_inscription_event_type_new)
 -  [Function `inscription_event_type_burn`](#0x4_ord_inscription_event_type_burn)
@@ -1052,6 +1054,17 @@ We need to find a way to allow the user to register metaprotocol.
 
 
 
+<a name="0x4_ord_is_metaprotocol_register"></a>
+
+## Function `is_metaprotocol_register`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_is_metaprotocol_register">is_metaprotocol_register</a>(metaprotocol: <a href="_String">string::String</a>): bool
+</code></pre>
+
+
+
 <a name="0x4_ord_seal_metaprotocol_validity"></a>
 
 ## Function `seal_metaprotocol_validity`
@@ -1145,6 +1158,17 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_metaprotocol_validity_invalid_reason">metaprotocol_validity_invalid_reason</a>(validity: &<a href="ord.md#0x4_ord_MetaprotocolValidity">ord::MetaprotocolValidity</a>): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_view_validity"></a>
+
+## Function `view_validity`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_view_validity">view_validity</a>(inscription_id_str: <a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="ord.md#0x4_ord_MetaprotocolValidity">ord::MetaprotocolValidity</a>&gt;
 </code></pre>
 
 
