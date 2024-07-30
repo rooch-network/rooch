@@ -556,7 +556,10 @@ export interface UTXOView {
   /** The txid of the UTXO */
   bitcoin_txid: string
   /** Protocol seals */
-  seals: string
+  seals: /** Protocol seals */
+  {
+    [key: string]: string[]
+  }
   /** The txid of the UTXO */
   txid: string
   /** The value of the UTXO */
