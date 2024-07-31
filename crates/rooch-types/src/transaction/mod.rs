@@ -150,21 +150,7 @@ impl MoveStructState for TransactionSequenceInfo {
     }
 }
 
-// impl Serialize for FieldKey {
-//     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-//     where
-//         S: Serializer,
-//     {
-//         if serializer.is_human_readable() {
-//             self.to_hex_literal().serialize(serializer)
-//         } else {
-//             // See comment in deserialize.
-//             serializer.serialize_newtype_struct("FieldKey", &self.0)
-//         }
-//     }
-// }
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 struct TransactionSequenceInfoWrapper {
     tx_order: u64,
     tx_order_signature: Vec<u8>,
@@ -180,17 +166,6 @@ impl Serialize for TransactionSequenceInfo {
     where
         S: Serializer,
     {
-        // #[derive(Deserialize)]
-        // struct TransactionSequenceInfoWrapper {
-        //     tx_order: u64,
-        //     tx_order_signature: Vec<u8>,
-        //     tx_accumulator_root: H256,
-        //     tx_timestamp: u64,
-        //
-        //     #[serde(default)]
-        //     tx_accumulator_info: Option<AccumulatorInfo>,
-        // }
-
         let tx_accumulator_info = AccumulatorInfo::new(
             self.tx_accumulator_root,
             self.tx_accumulator_frozen_subtree_roots.clone(),
@@ -214,18 +189,9 @@ impl<'de> Deserialize<'de> for TransactionSequenceInfo {
     where
         D: Deserializer<'de>,
     {
-        // #[derive(Deserialize)]
-        // struct TransactionSequenceInfoWrapper {
-        //     tx_order: u64,
-        //     tx_order_signature: Vec<u8>,
-        //     tx_accumulator_root: H256,
-        //     tx_timestamp: u64,
-        //
-        //     #[serde(default)]
-        //     tx_accumulator_info: Option<AccumulatorInfo>,
-        // }
-
+        println!("[Debug] Deserialize deserialize start");
         let wrapper = TransactionSequenceInfoWrapper::deserialize(deserializer)?;
+        println!("[Debug] Deserialize deserialize 01");
         let tx_accumulator_info = wrapper.tx_accumulator_info.unwrap_or_default();
         Ok(TransactionSequenceInfo {
             tx_order: wrapper.tx_order,
