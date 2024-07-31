@@ -20,7 +20,7 @@
 -  [Function `from_string`](#0x3_bitcoin_address_from_string)
 -  [Function `verify_with_public_key`](#0x3_bitcoin_address_verify_with_public_key)
 -  [Function `to_rooch_address`](#0x3_bitcoin_address_to_rooch_address)
--  [Function `verify_with_pk`](#0x3_bitcoin_address_verify_with_pk)
+-  [Function `verify_bitcoin_address_with_public_key`](#0x3_bitcoin_address_verify_bitcoin_address_with_public_key)
 -  [Function `derive_multisig_xonly_pubkey_from_xonly_pubkeys`](#0x3_bitcoin_address_derive_multisig_xonly_pubkey_from_xonly_pubkeys)
 -  [Function `derive_bitcoin_taproot_address_from_multisig_xonly_pubkey`](#0x3_bitcoin_address_derive_bitcoin_taproot_address_from_multisig_xonly_pubkey)
 
@@ -52,56 +52,56 @@ We just keep the raw bytes of the address and do care about the network.
 ## Constants
 
 
-<a name="0x3_bitcoin_address_E_ARG_NOT_VECTOR_U8"></a>
+<a name="0x3_bitcoin_address_ErrorArgNotVectorU8"></a>
 
 
 
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_E_ARG_NOT_VECTOR_U8">E_ARG_NOT_VECTOR_U8</a>: u64 = 2;
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorArgNotVectorU8">ErrorArgNotVectorU8</a>: u64 = 2;
 </code></pre>
 
 
 
-<a name="0x3_bitcoin_address_E_INVALID_ADDRESS"></a>
+<a name="0x3_bitcoin_address_ErrorInvalidAddress"></a>
 
 
 
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_E_INVALID_ADDRESS">E_INVALID_ADDRESS</a>: u64 = 1;
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidAddress">ErrorInvalidAddress</a>: u64 = 1;
 </code></pre>
 
 
 
-<a name="0x3_bitcoin_address_E_INVALID_KEY_EGG_CONTEXT"></a>
+<a name="0x3_bitcoin_address_ErrorInvalidKeyEggContext"></a>
 
 
 
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_E_INVALID_KEY_EGG_CONTEXT">E_INVALID_KEY_EGG_CONTEXT</a>: u64 = 5;
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidKeyEggContext">ErrorInvalidKeyEggContext</a>: u64 = 5;
 </code></pre>
 
 
 
-<a name="0x3_bitcoin_address_E_INVALID_PUBLIC_KEY"></a>
+<a name="0x3_bitcoin_address_ErrorInvalidPublicKey"></a>
 
 
 
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_E_INVALID_PUBLIC_KEY">E_INVALID_PUBLIC_KEY</a>: u64 = 3;
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidPublicKey">ErrorInvalidPublicKey</a>: u64 = 3;
 </code></pre>
 
 
 
-<a name="0x3_bitcoin_address_E_INVALID_THRESHOLD"></a>
+<a name="0x3_bitcoin_address_ErrorInvalidThreshold"></a>
 
 
 
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_E_INVALID_THRESHOLD">E_INVALID_THRESHOLD</a>: u64 = 4;
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidThreshold">ErrorInvalidThreshold</a>: u64 = 4;
 </code></pre>
 
 
 
-<a name="0x3_bitcoin_address_E_INVALID_XONLY_PUBKEY"></a>
+<a name="0x3_bitcoin_address_ErrorInvalidXOnlyPublicKey"></a>
 
 
 
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_E_INVALID_XONLY_PUBKEY">E_INVALID_XONLY_PUBKEY</a>: u64 = 6;
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidXOnlyPublicKey">ErrorInvalidXOnlyPublicKey</a>: u64 = 6;
 </code></pre>
 
 
@@ -322,13 +322,13 @@ Empty address is a special address that is used to if we parse address failed fr
 
 
 
-<a name="0x3_bitcoin_address_verify_with_pk"></a>
+<a name="0x3_bitcoin_address_verify_bitcoin_address_with_public_key"></a>
 
-## Function `verify_with_pk`
+## Function `verify_bitcoin_address_with_public_key`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_verify_with_pk">verify_with_pk</a>(bitcoin_addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>, pk: &<a href="">vector</a>&lt;u8&gt;): bool
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_verify_bitcoin_address_with_public_key">verify_bitcoin_address_with_public_key</a>(bitcoin_addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>, pk: &<a href="">vector</a>&lt;u8&gt;): bool
 </code></pre>
 
 
