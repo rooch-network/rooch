@@ -7167,6 +7167,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "defc4c55412d89136f966bbb339008b474350e5e6e78d2714439c386b3137a03"
 
 [[package]]
+name = "musig2"
+version = "0.0.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bed08befaac75bfb31ca5e87678c4e8490bcd21d0c98ccb4f12f4065a7567e83"
+dependencies = [
+ "base16ct 0.2.0",
+ "hmac",
+ "once_cell",
+ "secp",
+ "secp256k1 0.28.2",
+ "sha2 0.10.8",
+ "subtle",
+]
+
+[[package]]
 name = "named-lock"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9595,6 +9610,7 @@ dependencies = [
  "moveos-stdlib",
  "moveos-types",
  "moveos-verifier",
+ "musig2",
  "once_cell",
  "rooch-types",
  "serde 1.0.204",
@@ -10807,6 +10823,18 @@ dependencies = [
  "pkcs8 0.10.2",
  "subtle",
  "zeroize",
+]
+
+[[package]]
+name = "secp"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c4754628ff9006f80c6abd1cd1e88c5ca6f5a60eab151ad2e16268aab3514d0"
+dependencies = [
+ "base16ct 0.2.0",
+ "once_cell",
+ "secp256k1 0.28.2",
+ "subtle",
 ]
 
 [[package]]
