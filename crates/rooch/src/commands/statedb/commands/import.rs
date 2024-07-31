@@ -14,6 +14,7 @@ use std::time::{Instant, SystemTime};
 use anyhow::{Error, Result};
 use chrono::{DateTime, Local};
 use clap::Parser;
+use metrics::RegistryService;
 use serde::{Deserialize, Serialize};
 
 use moveos_store::MoveOSStore;
@@ -92,7 +93,9 @@ impl ImportCommand {
         let datetime: DateTime<Local> = start_time.into();
 
         let opt = RoochOpt::new_with_default(self.base_data_dir, self.chain_id, None).unwrap();
-        let rooch_db = RoochDB::init(opt.store_config()).unwrap();
+        let registry_service = RegistryService::default();
+        let rooch_db =
+            RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
         let genesis = RoochGenesis::load_or_init(opt.network(), &rooch_db).unwrap();
         let root = genesis.genesis_root().clone();
         println!(

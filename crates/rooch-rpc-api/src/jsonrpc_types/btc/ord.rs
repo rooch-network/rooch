@@ -52,6 +52,7 @@ impl InscriptionFilterView {
         Ok(match filter {
             InscriptionFilterView::Owner(owner) => ObjectStateFilter::ObjectTypeWithOwner {
                 object_type: Inscription::struct_tag(),
+                filter_out: false,
                 owner: owner.0.rooch_address.into(),
             },
             InscriptionFilterView::InscriptionId { txid, index } => {

@@ -3522,7 +3522,7 @@ dependencies = [
  "serde 1.0.204",
  "serde_json",
  "syn 2.0.65",
- "toml 0.8.16",
+ "toml 0.8.17",
  "walkdir",
 ]
 
@@ -6077,7 +6077,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd01039851e82f8799046eabbb354056283fb265c8ec0996af940f4e85a380ff"
 dependencies = [
  "serde 1.0.204",
- "toml 0.8.16",
+ "toml 0.8.17",
 ]
 
 [[package]]
@@ -7460,18 +7460,18 @@ dependencies = [
 
 [[package]]
 name = "num_enum"
-version = "0.7.2"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02339744ee7253741199f897151b38e72257d13802d4ee837285cc2990a90845"
+checksum = "4e613fc340b2220f734a8595782c551f1250e969d87d3be1ae0579e8d4065179"
 dependencies = [
  "num_enum_derive",
 ]
 
 [[package]]
 name = "num_enum_derive"
-version = "0.7.2"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "681030a937600a36906c185595136d26abfebb4aa9c65701cefcaf8578bb982b"
+checksum = "af1844ef2428cc3e1cb900be36181049ef3d3193c63e43026cfe202983b27a56"
 dependencies = [
  "proc-macro-crate 3.1.0",
  "proc-macro2 1.0.86",
@@ -8780,6 +8780,7 @@ dependencies = [
  "futures",
  "hex",
  "itertools 0.13.0",
+ "lazy_static 1.5.0",
  "metrics",
  "move-core-types",
  "move-resource-viewer",
@@ -9269,6 +9270,7 @@ dependencies = [
  "itertools 0.13.0",
  "jemallocator",
  "log",
+ "metrics",
  "move-binary-format",
  "move-bytecode-utils",
  "move-bytecode-verifier",
@@ -9296,6 +9298,7 @@ dependencies = [
  "moveos-verifier",
  "once_cell",
  "parking_lot 0.12.3",
+ "prometheus",
  "proptest",
  "proptest-derive",
  "rand 0.8.5",
@@ -9400,7 +9403,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tokio",
- "toml 0.8.16",
+ "toml 0.8.17",
  "tonic",
  "tower",
  "tower-http",
@@ -9618,6 +9621,7 @@ dependencies = [
  "include_dir",
  "lazy_static 1.5.0",
  "linked-hash-map",
+ "metrics",
  "move-binary-format",
  "move-bytecode-utils",
  "move-bytecode-verifier",
@@ -10175,12 +10179,15 @@ dependencies = [
  "futures",
  "jsonrpsee 0.23.2",
  "log",
+ "metrics",
  "move-core-types",
  "move-resource-viewer",
  "moveos",
  "moveos-store",
  "moveos-types",
  "parking_lot 0.12.3",
+ "prometheus",
+ "raw-store",
  "rooch-config",
  "rooch-db",
  "rooch-genesis",
@@ -11053,12 +11060,13 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.120"
+version = "1.0.121"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e0d21c9a8cae1235ad58a00c11cb40d4b1e5c784f1ef2c537876ed6ffd8b7c5"
+checksum = "4ab380d7d9f22ef3f21ad3e6c1ebe8e4fc7a2000ccba2e4d71fc96f15b2cb609"
 dependencies = [
  "indexmap 2.2.6",
  "itoa",
+ "memchr",
  "ryu",
  "serde 1.0.204",
 ]
@@ -12348,21 +12356,21 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.8.16"
+version = "0.8.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81967dd0dd2c1ab0bc3468bd7caecc32b8a4aa47d0c8c695d8c2b2108168d62c"
+checksum = "7a44eede9b727419af8095cb2d72fab15487a541f54647ad4414b34096ee4631"
 dependencies = [
  "serde 1.0.204",
  "serde_spanned",
  "toml_datetime",
- "toml_edit 0.22.17",
+ "toml_edit 0.22.18",
 ]
 
 [[package]]
 name = "toml_datetime"
-version = "0.6.7"
+version = "0.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8fb9f64314842840f1d940ac544da178732128f1c78c21772e876579e0da1db"
+checksum = "0dd7358ecb8fc2f8d014bf86f6f638ce72ba252a2c3a2572f2a795f1d23efb41"
 dependencies = [
  "serde 1.0.204",
 ]
@@ -12405,15 +12413,15 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.22.17"
+version = "0.22.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d9f8729f5aea9562aac1cc0441f5d6de3cff1ee0c5d67293eeca5eb36ee7c16"
+checksum = "1490595c74d930da779e944f5ba2ecdf538af67df1a9848cbd156af43c1b7cf0"
 dependencies = [
  "indexmap 2.2.6",
  "serde 1.0.204",
  "serde_spanned",
  "toml_datetime",
- "winnow 0.6.8",
+ "winnow 0.6.16",
 ]
 
 [[package]]
@@ -13303,7 +13311,7 @@ dependencies = [
  "serde_json",
  "serde_yaml 0.9.34+deprecated",
  "thiserror",
- "toml 0.8.16",
+ "toml 0.8.17",
  "url",
 ]
 
@@ -13704,9 +13712,9 @@ dependencies = [
 
 [[package]]
 name = "winnow"
-version = "0.6.8"
+version = "0.6.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3c52e9c97a68071b23e836c9380edae937f17b9c4667bd021973efc689f618d"
+checksum = "b480ae9340fc261e6be3e95a1ba86d54ae3f9171132a73ce8d4bbaf68339507c"
 dependencies = [
  "memchr",
 ]

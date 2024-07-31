@@ -186,7 +186,7 @@ schemars = { version = "0.8.21", features = ["either"] }
 serde = { version = "1.0.204", features = ["derive", "rc"] }
 serde_bytes = "0.11.15"
 #serde_json = { version = "1.0.111", features = ["preserve_order", "arbitrary_precision"] }
-serde_json = { version = "1.0.120", features = ["preserve_order"] }
+serde_json = { version = "1.0.121", features = ["preserve_order"] }
 serde_yaml = "0.9"
 serde_repr = "0.1"
 serde-name = "0.2"
@@ -227,7 +227,7 @@ prometheus-http-query = { version = "0.6.6", default_features = false, features 
 prometheus-parse = { git = "https://github.com/asonnino/prometheus-parser.git", rev = "75334db" }
 coarsetime = "0.1.22"
 hyper = { version = "0.14.12", features = ["full"] }
-num_enum = "0.7.2"
+num_enum = "0.7.3"
 libc = "^0.2"
 include_dir = { version = "0.6.2" }
 nostr = "0.22"
@@ -302,7 +302,7 @@ celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = 
 celestia-types = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
 opendal = { version = "0.47.3", features = ["services-fs", "services-gcs"] }
 bitcoincore-rpc-json = "0.18.0"
-toml = "0.8.16"
+toml = "0.8.17"
 csv = "1.2.1"
 revm-precompile = "7.0.0"
 revm-primitives = "4.0.0"
