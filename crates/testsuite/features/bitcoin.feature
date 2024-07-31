@@ -57,9 +57,12 @@ Feature: Rooch Bitcoin tests
 
     @serial
     Scenario: rooch bitcoin api test
+      Then cmd: "init --skip-password"
+      Then cmd: "env switch --alias local"
+
       # prepare servers
-      Given a bitcoind server for rooch_bitcoin_test
-      Given a server for rooch_bitcoin_test
+      Given a bitcoind server for rooch_bitcoin_api_test
+      Given a server for rooch_bitcoin_api_test
 
       # Create and load a wallet
       Then cmd bitcoin-cli: "createwallet \"test_wallet\""
