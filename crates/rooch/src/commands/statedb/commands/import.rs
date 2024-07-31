@@ -94,11 +94,8 @@ impl ImportCommand {
 
         let opt = RoochOpt::new_with_default(self.base_data_dir, self.chain_id, None).unwrap();
         let registry_service = RegistryService::default();
-        let rooch_db = RoochDB::init_with_metrics_registry(
-            opt.store_config(),
-            &registry_service.default_registry(),
-        )
-        .unwrap();
+        let rooch_db =
+            RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
         let genesis = RoochGenesis::load_or_init(opt.network(), &rooch_db).unwrap();
         let root = genesis.genesis_root().clone();
         println!(

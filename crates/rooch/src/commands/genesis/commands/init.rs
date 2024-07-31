@@ -33,10 +33,7 @@ impl InitCommand {
             RoochOpt::new_with_default(self.base_data_dir, self.chain_id, self.genesis_config)?;
         let store_config = opt.store_config();
         let registry_service = RegistryService::default();
-        let rooch_db = RoochDB::init_with_metrics_registry(
-            store_config,
-            &registry_service.default_registry(),
-        )?;
+        let rooch_db = RoochDB::init(store_config, &registry_service.default_registry())?;
         let network = opt.network();
         let genesis = RoochGenesis::load_or_init(network, &rooch_db)?;
         println!(

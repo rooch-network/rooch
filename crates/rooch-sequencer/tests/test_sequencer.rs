@@ -18,7 +18,7 @@ use rooch_types::{
 
 fn init_rooch_db(opt: &RoochOpt, registry: &Registry) -> Result<RoochDB> {
     DBMetrics::init(registry);
-    let rooch_db = RoochDB::init_with_metrics_registry(opt.store_config(), registry)?;
+    let rooch_db = RoochDB::init(opt.store_config(), registry)?;
     let network = opt.network();
     let _genesis = RoochGenesis::load_or_init(network, &rooch_db)?;
     Ok(rooch_db)
@@ -47,7 +47,7 @@ async fn test_sequencer() -> Result<()> {
     {
         // To aviod AlreadyReg for re init the same db
         let new_registry = prometheus::Registry::new();
-        let rooch_db = RoochDB::init_with_metrics_registry(opt.store_config(), &new_registry)?;
+        let rooch_db = RoochDB::init(opt.store_config(), &new_registry)?;
         let sequencer_key = RoochKeyPair::generate_secp256k1();
         let mut sequencer =
             SequencerActor::new(sequencer_key, rooch_db.rooch_store, ServiceStatus::Active)?;

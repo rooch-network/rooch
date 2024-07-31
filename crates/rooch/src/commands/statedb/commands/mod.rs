@@ -52,11 +52,7 @@ fn init_job(
 
     let opt = RoochOpt::new_with_default(base_data_dir.clone(), chain_id.clone(), None).unwrap();
     let registry_service = RegistryService::default();
-    let rooch_db = RoochDB::init_with_metrics_registry(
-        opt.store_config(),
-        &registry_service.default_registry(),
-    )
-    .unwrap();
+    let rooch_db = RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
     let root = rooch_db
         .latest_root()
         .unwrap()

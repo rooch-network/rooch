@@ -55,10 +55,7 @@ impl RustBindingTest {
         let opt = RoochOpt::new_with_temp_store()?;
         let store_config = opt.store_config();
         let registry_service = metrics::RegistryService::default();
-        let rooch_db = RoochDB::init_with_metrics_registry(
-            store_config,
-            &registry_service.default_registry(),
-        )?;
+        let rooch_db = RoochDB::init(store_config, &registry_service.default_registry())?;
 
         let mut network: RoochNetwork = BuiltinChainID::Local.into();
 
