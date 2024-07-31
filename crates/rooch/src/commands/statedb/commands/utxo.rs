@@ -20,7 +20,7 @@ use rooch_types::bitcoin::{types, utxo};
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::into_address::IntoAddress;
 
-use crate::commands::statedb::commands::{derive_utxo_seal, OutpointInscriptionsMap};
+use crate::commands::statedb::commands::{derive_utxo_inscription_seal, OutpointInscriptionsMap};
 
 const SCRIPT_TYPE_P2MS: &str = "p2ms";
 const SCRIPT_TYPE_P2PK: &str = "p2pk";
@@ -101,7 +101,7 @@ impl UTXORawData {
             Some(outpoint_inscriptions_map) => {
                 let inscriptions =
                     outpoint_inscriptions_map.search(&OutPoint::new(self.txid, self.vout));
-                derive_utxo_seal(inscriptions)
+                derive_utxo_inscription_seal(inscriptions)
             }
             None => SimpleMultiMap::create(),
         };
