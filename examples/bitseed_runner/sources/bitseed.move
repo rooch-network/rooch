@@ -32,10 +32,16 @@ module rooch_examples::bitseed_runner {
       
       if (option::is_some(&event_opt)){
          let event = option::destroy_some(event_opt);
-         let (_metaprotocol, _sequence_number, inscription_obj_id, _event_type) = ord::upack_inscription_event(event);
+         let (_metaprotocol, _sequence_number, inscription_obj_id, event_type) = ord::unpack_inscription_event(event);
+         
          let inscription_obj = object::borrow_object<Inscription>(inscription_obj_id);
          let inscription = object::borrow(inscription_obj);
-         inscribe_factory::process_inscription(inscription);
+         if (event_type == ord::inscription_event_type_new()){
+            inscribe_factory::process_inscription(inscription);
+         }else {
+            //TODO handle burn event.
+            std::debug::print(&event);
+         };
       };
    }
 }

@@ -144,6 +144,7 @@ module rooch_nursery::tick_info {
 
     #[private_generics(F)]
     public fun mint<F>(metaprotocol: String, tick: String, amount: u64) : Object<Bitseed>{
+        let tick = string_utils::to_lower_case(&tick);
         let factory_type = type_info::type_name<F>();
         let tick_info = borrow_mut_tick_info(metaprotocol, tick);
         assert!(option::is_some(&tick_info.factory), ErrorNoMintFactory);
@@ -162,10 +163,8 @@ module rooch_nursery::tick_info {
     }
 
     public(friend) fun mint_on_bitcoin(metaprotocol: String, tick: String, amount: u64) : Result<Object<Bitseed>>{
+        let tick = string_utils::to_lower_case(&tick);
         let tick_info = borrow_mut_tick_info(metaprotocol, tick);
-        //TODO make sure this function should not abort, it should return a result.
-        //assert!(option::is_some(&tick_info.generator), ErrorNoMintFactory);
-        //let generator = option::destroy_some(tick_info.generator);
         if (tick_info.supply + amount > tick_info.max){
             return err(b"maximum supply exceeded")
         };
