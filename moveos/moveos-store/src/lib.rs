@@ -24,6 +24,7 @@ use moveos_types::state_resolver::{StateKV, StatelessResolver};
 use moveos_types::transaction::{TransactionExecutionInfo, TransactionOutput};
 use once_cell::sync::Lazy;
 use prometheus::Registry;
+use raw_store::metrics::DBMetrics;
 use raw_store::rocks::RocksDB;
 use raw_store::{ColumnFamilyName, StoreInstance};
 use smt::NodeReader;
@@ -76,36 +77,23 @@ pub struct MoveOSStore {
     pub transaction_store: TransactionDBStore,
     pub config_store: ConfigDBStore,
     pub state_store: StateDBStore,
-    // pub store_metrics: Arc<StoreMetrics>,
 }
 
 impl MoveOSStore {
-    pub fn new(db_path: &Path) -> Result<Self> {
-        let instance = StoreInstance::new_db_instance(RocksDB::new(
-            db_path,
-            StoreMeta::get_column_family_names().to_vec(),
-            RocksdbConfig::default(),
-        )?);
-        Self::new_with_instance(instance)
+    pub fn new(db_path: &Path, registry: &Registry) -> Result<Self> {
+        let db_metrics = DBMetrics::get_or_init(registry).clone();
+        let instance = StoreInstance::new_db_instance(
+            RocksDB::new(
+                db_path,
+                StoreMeta::get_column_family_names().to_vec(),
+                RocksdbConfig::default(),
+            )?,
+            db_metrics,
+        );
+        Self::new_with_instance(instance, registry)
     }
 
-    pub fn new_with_metrics_registry(db_path: &Path, registry: &Registry) -> Result<Self> {
-        let instance = StoreInstance::new_db_instance(RocksDB::new(
-            db_path,
-            StoreMeta::get_column_family_names().to_vec(),
-            RocksdbConfig::default(),
-        )?);
-        Self::new_with_instance_with_metrics_registry(instance, registry)
-    }
-
-    pub fn new_with_instance(instance: StoreInstance) -> Result<Self> {
-        Self::new_with_instance_with_metrics_registry(instance, prometheus::default_registry())
-    }
-
-    pub fn new_with_instance_with_metrics_registry(
-        instance: StoreInstance,
-        registry: &Registry,
-    ) -> Result<Self> {
+    pub fn new_with_instance(instance: StoreInstance, registry: &Registry) -> Result<Self> {
         let node_store = NodeDBStore::new(instance.clone());
         let state_store = StateDBStore::new(node_store.clone(), registry);
 
@@ -124,10 +112,7 @@ impl MoveOSStore {
         let registry = prometheus::Registry::new();
 
         //The testcases should hold the tmpdir to prevent the tmpdir from being deleted.
-        Ok((
-            Self::new_with_metrics_registry(tmpdir.path(), &registry)?,
-            tmpdir,
-        ))
+        Ok((Self::new(tmpdir.path(), &registry)?, tmpdir))
     }
 
     pub fn get_event_store(&self) -> &EventDBStore {
