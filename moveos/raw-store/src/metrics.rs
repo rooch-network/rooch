@@ -390,12 +390,9 @@ impl DBMetrics {
         // Initialize this before creating any instance of StoreInstance
         // only ever initialize db metrics once with a registry whereas
         // in the code we might want to initialize it with different
-        // registries. The problem is underlying metrics cannot be re-initialized
-        // or prometheus complains. We essentially need to pass in DBMetrics
-        // everywhere we create StoreInstance as the right fix
+        // registries.
         let _ = ONCE
-            .set(Arc::new(DBMetrics::new(registry)))
-            // this happens many times during tests
+            .set(Self::inner_init(registry))
             .tap_err(|_| warn!("DBMetrics registry overwritten"));
         ONCE.get().unwrap()
     }
