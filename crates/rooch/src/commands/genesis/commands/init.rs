@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Parser;
+use metrics::RegistryService;
 use rooch_config::{RoochOpt, R_OPT_NET_HELP};
 use rooch_db::RoochDB;
 use rooch_genesis::RoochGenesis;
@@ -31,7 +32,11 @@ impl InitCommand {
         let opt =
             RoochOpt::new_with_default(self.base_data_dir, self.chain_id, self.genesis_config)?;
         let store_config = opt.store_config();
-        let rooch_db = RoochDB::init(store_config)?;
+        let registry_service = RegistryService::default();
+        let rooch_db = RoochDB::init_with_metrics_registry(
+            store_config,
+            &registry_service.default_registry(),
+        )?;
         let network = opt.network();
         let genesis = RoochGenesis::load_or_init(network, &rooch_db)?;
         println!(

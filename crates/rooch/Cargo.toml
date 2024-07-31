@@ -52,6 +52,7 @@ rand = { workspace = true }
 xorf = { workspace = true }
 xxhash-rust = { workspace = true, features = ["xxh3"] }
 vergen-pretty = { workspace = true }
+prometheus = { workspace = true }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }
@@ -79,6 +80,7 @@ moveos-verifier = { workspace = true }
 moveos-object-runtime = { workspace = true }
 moveos-compiler = { workspace = true }
 moveos-config = { workspace = true }
+metrics = { workspace = true }
 
 framework-builder = { workspace = true }
 framework-types = { workspace = true }

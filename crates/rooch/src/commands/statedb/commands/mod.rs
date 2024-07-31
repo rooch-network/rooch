@@ -10,6 +10,7 @@ use std::time::Instant;
 
 use bitcoin::hashes::Hash;
 use bitcoin::OutPoint;
+use metrics::RegistryService;
 use move_core_types::account_address::AccountAddress;
 use xorf::{BinaryFuse8, Filter};
 use xxhash_rust::xxh3::xxh3_64;
@@ -50,7 +51,12 @@ fn init_job(
     let start_time = Instant::now();
 
     let opt = RoochOpt::new_with_default(base_data_dir.clone(), chain_id.clone(), None).unwrap();
-    let rooch_db = RoochDB::init(opt.store_config()).unwrap();
+    let registry_service = RegistryService::default();
+    let rooch_db = RoochDB::init_with_metrics_registry(
+        opt.store_config(),
+        &registry_service.default_registry(),
+    )
+    .unwrap();
     let root = rooch_db
         .latest_root()
         .unwrap()

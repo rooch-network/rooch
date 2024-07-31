@@ -388,7 +388,6 @@ impl DBMetrics {
 
     pub fn init(registry: &Registry) -> &'static Arc<DBMetrics> {
         // Initialize this before creating any instance of StoreInstance
-        // TODO: Remove static initialization because this basically means we can
         // only ever initialize db metrics once with a registry whereas
         // in the code we might want to initialize it with different
         // registries. The problem is underlying metrics cannot be re-initialized
@@ -399,6 +398,10 @@ impl DBMetrics {
             // this happens many times during tests
             .tap_err(|_| warn!("DBMetrics registry overwritten"));
         ONCE.get().unwrap()
+    }
+
+    fn inner_init(registry: &Registry) -> Arc<DBMetrics> {
+        Arc::new(DBMetrics::new(registry))
     }
 
     pub fn increment_num_active_dbs(&self, cf_name: &str) {
@@ -415,8 +418,11 @@ impl DBMetrics {
             .dec();
     }
 
-    pub fn get() -> &'static Arc<DBMetrics> {
+    pub fn get() -> Option<&'static Arc<DBMetrics>> {
         ONCE.get()
-            .unwrap_or_else(|| DBMetrics::init(prometheus::default_registry()))
+    }
+
+    pub fn get_or_init(registry: &Registry) -> &'static Arc<DBMetrics> {
+        ONCE.get_or_init(|| Self::inner_init(registry).clone())
     }
 }

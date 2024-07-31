@@ -3,6 +3,9 @@
 
 use anyhow::Result;
 use coerce::actor::{system::ActorSystem, IntoActor};
+use metrics::RegistryService;
+use prometheus::Registry;
+use raw_store::metrics::DBMetrics;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
 use rooch_genesis::RoochGenesis;
@@ -13,8 +16,9 @@ use rooch_types::{
     transaction::{LedgerTxData, RoochTransaction},
 };
 
-fn init_rooch_db(opt: &RoochOpt) -> Result<RoochDB> {
-    let rooch_db = RoochDB::init(opt.store_config())?;
+fn init_rooch_db(opt: &RoochOpt, registry: &Registry) -> Result<RoochDB> {
+    DBMetrics::init(registry);
+    let rooch_db = RoochDB::init_with_metrics_registry(opt.store_config(), registry)?;
     let network = opt.network();
     let _genesis = RoochGenesis::load_or_init(network, &rooch_db)?;
     Ok(rooch_db)
@@ -24,8 +28,9 @@ fn init_rooch_db(opt: &RoochOpt) -> Result<RoochDB> {
 async fn test_sequencer() -> Result<()> {
     let opt = RoochOpt::new_with_temp_store()?;
     let mut last_tx_order = 0;
+    let registry_service = RegistryService::default();
     {
-        let rooch_db = init_rooch_db(&opt)?;
+        let rooch_db = init_rooch_db(&opt, &registry_service.default_registry())?;
         let sequencer_key = RoochKeyPair::generate_secp256k1();
         let mut sequencer =
             SequencerActor::new(sequencer_key, rooch_db.rooch_store, ServiceStatus::Active)?;
@@ -40,7 +45,9 @@ async fn test_sequencer() -> Result<()> {
     }
     // load from db again
     {
-        let rooch_db = RoochDB::init(opt.store_config())?;
+        // To aviod AlreadyReg for re init the same db
+        let new_registry = prometheus::Registry::new();
+        let rooch_db = RoochDB::init_with_metrics_registry(opt.store_config(), &new_registry)?;
         let sequencer_key = RoochKeyPair::generate_secp256k1();
         let mut sequencer =
             SequencerActor::new(sequencer_key, rooch_db.rooch_store, ServiceStatus::Active)?;
@@ -57,7 +64,8 @@ async fn test_sequencer() -> Result<()> {
 #[tokio::test]
 async fn test_sequencer_concurrent() -> Result<()> {
     let opt = RoochOpt::new_with_temp_store()?;
-    let rooch_db = init_rooch_db(&opt)?;
+    let registry_service = RegistryService::default();
+    let rooch_db = init_rooch_db(&opt, &registry_service.default_registry())?;
     let sequencer_key = RoochKeyPair::generate_secp256k1();
 
     let actor_system = ActorSystem::global_system();
