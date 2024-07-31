@@ -10,12 +10,11 @@ use std::time::Instant;
 
 use bitcoin::hashes::Hash;
 use bitcoin::OutPoint;
-use metrics::RegistryService;
-use move_core_types::account_address::AccountAddress;
 use xorf::{BinaryFuse8, Filter};
 use xxhash_rust::xxh3::xxh3_64;
 
 use bitcoin_move::natives::ord::inscription_id::InscriptionId;
+use metrics::RegistryService;
 use moveos_store::MoveOSStore;
 use moveos_types::move_std::option::MoveOption;
 use moveos_types::move_std::string::MoveString;
