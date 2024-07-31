@@ -186,7 +186,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     //Init store
     let store_config = opt.store_config();
 
-    let rooch_db = RoochDB::init_with_metrics_registry(store_config, &prometheus_registry)?;
+    let rooch_db = RoochDB::init(store_config, &prometheus_registry)?;
     let (rooch_store, moveos_store, indexer_store, indexer_reader) = (
         rooch_db.rooch_store.clone(),
         rooch_db.moveos_store.clone(),

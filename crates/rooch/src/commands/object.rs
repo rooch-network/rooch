@@ -41,6 +41,10 @@ pub struct ObjectCommand {
     #[clap(long, default_value = "false")]
     pub show_display: bool,
 
+    /// Is filter not object_type
+    #[clap(long, default_value = "false")]
+    pub filter_out: bool,
+
     #[clap(flatten)]
     pub(crate) context_options: WalletContextOptions,
 }
@@ -69,6 +73,7 @@ impl CommandAction<IndexerObjectStatePageView> for ObjectCommand {
             let owner_addr: RoochAddressView = owner.into_rooch_address(&address_mapping)?.into();
             filter = Some(ObjectStateFilterView::ObjectTypeWithOwner {
                 object_type: obj_type.into(),
+                filter_out: self.filter_out,
                 owner: owner_addr.into(),
             });
         } else if self.owner.is_some() {

@@ -118,6 +118,7 @@ impl AggregateService {
             .query_object_states(
                 ObjectStateFilter::ObjectTypeWithOwner {
                     object_type: CoinStore::struct_tag_without_coin_type(),
+                    filter_out: false,
                     owner,
                 },
                 cursor,
