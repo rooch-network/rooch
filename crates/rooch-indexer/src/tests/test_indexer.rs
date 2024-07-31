@@ -208,6 +208,7 @@ fn test_object_type_query() -> Result<()> {
     // filter by object type and owner
     let filter = ObjectStateFilter::ObjectTypeWithOwner {
         object_type: CoinStore::<GasCoin>::struct_tag(),
+        filter_out: false,
         owner,
     };
     let query_object_states =

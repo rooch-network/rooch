@@ -364,8 +364,16 @@ impl IndexerReader {
         };
 
         let main_where_clause = match filter {
-            ObjectStateFilter::ObjectTypeWithOwner { object_type, owner } => {
-                let object_query = object_type_query(&object_type);
+            ObjectStateFilter::ObjectTypeWithOwner {
+                object_type,
+                owner,
+                filter_out,
+            } => {
+                let object_query = if filter_out {
+                    not_object_type_query(&object_type)
+                } else {
+                    object_type_query(&object_type)
+                };
                 format!(
                     "{} AND {STATE_OWNER_STR} = \"{}\"",
                     object_query,
@@ -373,6 +381,7 @@ impl IndexerReader {
                 )
             }
             ObjectStateFilter::ObjectType(object_type) => object_type_query(&object_type),
+
             ObjectStateFilter::Owner(owner) => {
                 format!("{STATE_OWNER_STR} = \"{}\"", owner.to_hex_literal())
             }
@@ -493,5 +502,15 @@ fn object_type_query(object_type: &StructTag) -> String {
         format!("{STATE_OBJECT_TYPE_STR} like \"{}%\"", object_type_str)
     } else {
         format!("{STATE_OBJECT_TYPE_STR} = \"{}\"", object_type_str)
+    }
+}
+
+fn not_object_type_query(object_type: &StructTag) -> String {
+    let object_type_str = object_type.to_string();
+    // if the caller does not specify the type parameters, we will use the prefix match
+    if object_type.type_params.is_empty() {
+        format!("{STATE_OBJECT_TYPE_STR} not like \"{}%\"", object_type_str)
+    } else {
+        format!("{STATE_OBJECT_TYPE_STR} != \"{}\"", object_type_str)
     }
 }
