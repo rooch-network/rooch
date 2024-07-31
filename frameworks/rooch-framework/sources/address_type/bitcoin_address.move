@@ -102,7 +102,7 @@ module rooch_framework::bitcoin_address {
 
     public fun verify_with_public_key(addr: &String, pk: &vector<u8>): bool {
         let bitcoin_addr = from_string(addr);
-        verify_bitcoin_address_with_public_key(&bitcoin_addr, pk)
+        verify_with_pk(&bitcoin_addr, pk)
     }
 
     public fun to_rooch_address(addr: &BitcoinAddress): address{
@@ -111,7 +111,7 @@ module rooch_framework::bitcoin_address {
     }
 
     // verify bitcoin address according to the pk bytes
-    public native fun verify_bitcoin_address_with_public_key(bitcoin_addr: &BitcoinAddress, pk: &vector<u8>): bool;
+    public native fun verify_with_pk(bitcoin_addr: &BitcoinAddress, pk: &vector<u8>): bool;
 
     // derive multisig xonly public key from public keys
     public native fun derive_multisig_xonly_pubkey_from_xonly_pubkeys(public_keys: &vector<vector<u8>>, threshold: u64): vector<u8>;
