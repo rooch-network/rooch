@@ -2033,10 +2033,14 @@
               "object_type_with_owner": {
                 "type": "object",
                 "required": [
+                  "filter_out",
                   "object_type",
                   "owner"
                 ],
                 "properties": {
+                  "filter_out": {
+                    "type": "boolean"
+                  },
                   "object_type": {
                     "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
                   },
