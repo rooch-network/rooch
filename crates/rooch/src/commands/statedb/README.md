@@ -129,7 +129,7 @@ rooch statedb genesis-utxo --input <utxo_src_path> -d <rooch_datadir> -n main --
 **genesis**:
 
 ```shell
-rooch statedb genesis --utxo-source <utxo_src_path> --ord-source <ord_src_path> -d <rooch_datadir> -n main --utxo-ord-map <db_dir> --utxo-batch-size <utxo_batch_size> --ord-batch-size <ord_batch_size>
+rooch statedb genesis --utxo-source <utxo_src_path> --ord-source <ord_src_path> -d <rooch_datadir> -n main --outpoint-inscriptions-map-dump-path <dump_path> --utxo-batch-size <utxo_batch_size> --ord-batch-size <ord_batch_size>
 ```
 
 ***tips***:

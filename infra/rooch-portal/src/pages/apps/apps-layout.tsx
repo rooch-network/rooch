@@ -2,19 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useState } from 'react'
 import { AppsItem, AppItemProps } from './components/apps-item'
-import {useTranslation} from 'react-i18next';
+import { useTranslation } from 'react-i18next'
 
 const mockApps: AppItemProps[] = [
   {
     id: 1,
     name: 'Rooch Clicker',
-    description: 'Join our Click Challenge! You\'re in for 1,000 RCC!',
-    profileUrl:
-      './logo-single.png',
+    description: "Join our Click Challenge! You're in for 1,000 RCC!",
+    profileUrl: './logo-single.png',
     logoUrl: 'clicker-app.jpg',
     type: 'Demo',
-    url: 'https://rooch-clicker.vercel.app'
-  }
+    url: 'https://rooch-clicker.vercel.app',
+  },
 ]
 
 export const AppsLayout = () => {
@@ -45,9 +44,7 @@ export const AppsLayout = () => {
       <div className="flex items-center justify-between space-y-2">
         <span>
           <h1 className="text-3xl font-bold tracking-tight">{t('Apps.title')}</h1>
-          <p className="text-muted-foreground text-wrap">
-            {t('Apps.subTitle')}
-          </p>
+          <p className="text-muted-foreground text-wrap">{t('Apps.subTitle')}</p>
         </span>
       </div>
       {renderContent()}
