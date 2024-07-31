@@ -5,8 +5,8 @@ use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
+use std::sync::{Arc, mpsc, RwLock};
 use std::sync::mpsc::{Receiver, SyncSender};
-use std::sync::{mpsc, Arc, RwLock};
 use std::thread;
 use std::time::SystemTime;
 
@@ -25,6 +25,7 @@ use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
 use crate::cli_types::WalletContextOptions;
+use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 use crate::commands::statedb::commands::genesis_utxo::{
     apply_address_updates, apply_utxo_updates, produce_utxo_updates,
 };
@@ -32,7 +33,6 @@ use crate::commands::statedb::commands::import::{apply_fields, apply_nodes, fini
 use crate::commands::statedb::commands::inscription::{
     create_genesis_inscription_store_object, gen_inscription_ids_update, InscriptionSource,
 };
-use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 
 /// Import BTC ordinals & UTXO for genesis
 #[derive(Debug, Parser)]
@@ -49,7 +49,7 @@ pub struct GenesisCommand {
     pub ord_source: PathBuf,
     #[clap(
         long,
-        default_value = "1048576",
+        default_value = "524288",
         help = "batch size submited to state db. Set it smaller if memory is limited."
     )]
     pub utxo_batch_size: Option<usize>,
@@ -64,6 +64,11 @@ pub struct GenesisCommand {
         help = "outpoint(original):inscriptions(object_id) map dump path, for debug"
     )]
     pub outpoint_inscriptions_map_dump_path: Option<PathBuf>,
+    #[clap(
+        long,
+        help = "only map outpoint to inscriptions, do not import inscriptions"
+    )]
+    pub map_outpoint_inscriptions_only: bool,
 
     #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
@@ -103,6 +108,9 @@ impl GenesisCommand {
             start_time.elapsed(),
             unbound_count
         );
+        if self.map_outpoint_inscriptions_only {
+            return Ok(());
+        }
 
         // import inscriptions and utxo parallel
         let outpoint_inscriptions_map = Arc::new(outpoint_inscriptions_map);
@@ -124,7 +132,7 @@ impl GenesisCommand {
         let utxo_input_path = self.utxo_source.clone();
         let utxo_batch_size = self.utxo_batch_size.unwrap();
         let (utxo_tx, utxo_rx) = mpsc::sync_channel(4);
-        let (addr_tx, addr_rx) = mpsc::sync_channel(2);
+        let (addr_tx, addr_rx) = mpsc::sync_channel(4);
         let produce_utxo_updates_thread = thread::spawn(move || {
             produce_utxo_updates(
                 utxo_tx,
