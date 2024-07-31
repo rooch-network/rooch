@@ -11,14 +11,14 @@ import { Button } from '@/components/ui/button.tsx'
 import { ConnectWalletHint } from '@/components/connect-wallet-hint'
 
 type DetailViewProps = {
-  back: string,
+  back: string
   title: string
   children: ReactNode
 }
 
-export const DetailView: React.FC<DetailViewProps> = ({back, title, children}) => {
+export const DetailView: React.FC<DetailViewProps> = ({ back, title, children }) => {
   const navigate = useNavigate()
-  const {isConnected} = useCurrentWallet()
+  const { isConnected } = useCurrentWallet()
 
   return (
     <div className="h-full flex-1 flex-col space-y-4 flex p-4 rounded-lg shadow-custom dark:shadow-muted">
@@ -33,10 +33,7 @@ export const DetailView: React.FC<DetailViewProps> = ({back, title, children}) =
         <ArrowLeft className="w-4 h-4 mr-1" />
         {title}
       </Button>
-      {
-        isConnected ?
-        children: <ConnectWalletHint/>
-      }
+      {isConnected ? children : <ConnectWalletHint />}
     </div>
   )
 }

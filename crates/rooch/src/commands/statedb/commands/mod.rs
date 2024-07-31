@@ -10,6 +10,8 @@ use std::time::Instant;
 
 use bitcoin::hashes::Hash;
 use bitcoin::OutPoint;
+use metrics::RegistryService;
+use move_core_types::account_address::AccountAddress;
 use xorf::{BinaryFuse8, Filter};
 use xxhash_rust::xxh3::xxh3_64;
 
@@ -48,7 +50,8 @@ fn init_job(
     let start_time = Instant::now();
 
     let opt = RoochOpt::new_with_default(base_data_dir.clone(), chain_id.clone(), None).unwrap();
-    let rooch_db = RoochDB::init(opt.store_config()).unwrap();
+    let registry_service = RegistryService::default();
+    let rooch_db = RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
     let root = rooch_db
         .latest_root()
         .unwrap()
@@ -517,9 +520,8 @@ mod tests {
         let items = random_items_default(10);
         let map = OutpointInscriptionsMap::new_with_unsorted(items.clone());
         let (mapped_outpoint_count, mapped_inscription_count) = map.stats();
-
-        let dump_path = tempdir()
-            .unwrap()
+        let tempdir = tempdir().unwrap();
+        let dump_path = tempdir
             .path()
             .join("outpoint_inscriptions_map_index_and_dump");
         map.dump(dump_path.clone());
