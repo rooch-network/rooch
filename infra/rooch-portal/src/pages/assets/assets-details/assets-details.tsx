@@ -8,14 +8,16 @@ import { AssetsBitcoinAssets } from '@/pages/assets/assets-details/tabs/bitcoin-
 import { TabView } from '@/view/tab-view.tsx'
 
 const assetsTabItems: TabItem[] = [
-  { id: 'coin', label: 'Coin', available: true, children: <AssetsCoin/> },
-  { id: 'nft', label: 'NFT', available: true, children: <AssetsNft/> },
-  { id: 'bitcoin_assets', label: 'Bitcoin Assets', available: true, children: <AssetsBitcoinAssets/> },
+  { id: 'coin', label: 'Coin', available: true, children: <AssetsCoin /> },
+  { id: 'nft', label: 'NFT', available: true, children: <AssetsNft /> },
+  {
+    id: 'bitcoin_assets',
+    label: 'Bitcoin Assets',
+    available: true,
+    children: <AssetsBitcoinAssets />,
+  },
 ]
 
 export const AssetsDetails = () => {
-
-  return (
-    <TabView items={ assetsTabItems}/>
-  )
+  return <TabView items={assetsTabItems} />
 }
