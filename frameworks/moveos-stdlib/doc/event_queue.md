@@ -111,7 +111,7 @@
 
 
 
-<pre><code><b>const</b> <a href="event_queue.md#0x2_event_queue_REMOVE_EXPIRED_EVENT_BATCH_SIZE">REMOVE_EXPIRED_EVENT_BATCH_SIZE</a>: u64 = 100;
+<pre><code><b>const</b> <a href="event_queue.md#0x2_event_queue_REMOVE_EXPIRED_EVENT_BATCH_SIZE">REMOVE_EXPIRED_EVENT_BATCH_SIZE</a>: u64 = 10;
 </code></pre>
 
 
@@ -184,5 +184,5 @@ Remove the expired events from the event queue
 Anyone can call this function to remove the expired events
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="event_queue.md#0x2_event_queue_remove_expired_events">remove_expired_events</a>&lt;E: <b>copy</b>, drop, store&gt;(event_queue_obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="event_queue.md#0x2_event_queue_EventQueue">event_queue::EventQueue</a>&lt;E&gt;&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="event_queue.md#0x2_event_queue_remove_expired_events">remove_expired_events</a>&lt;E: <b>copy</b>, drop, store&gt;(<a href="event_queue.md#0x2_event_queue">event_queue</a>: <a href="_String">string::String</a>)
 </code></pre>

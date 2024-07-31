@@ -10,7 +10,7 @@ module moveos_std::event_queue {
     use moveos_std::object::{Self, Object, ObjectID};
 
     const EVENT_EXPIRE_TIME: u64 = 1000 * 60 * 60 * 24 * 31; // 31 days
-    const REMOVE_EXPIRED_EVENT_BATCH_SIZE: u64 = 100;
+    const REMOVE_EXPIRED_EVENT_BATCH_SIZE: u64 = 10;
     const SUBSCRIBERS_KEY: vector<u8> = b"subscribers";
 
     const ErrorTooManySubscribers: u64 = 1;
@@ -46,7 +46,7 @@ module moveos_std::event_queue {
             });
             let subscribers : vector<ObjectID> = vector::empty();
             object::add_field(&mut event_queue_obj, SUBSCRIBERS_KEY, subscribers);
-            //We transfer the display object to the moveos_std
+            //We transfer the event queue object to the moveos_std
             //And the caller do not need to care about the event queue object
             object::transfer_extend(event_queue_obj, @moveos_std);
         };
@@ -72,7 +72,7 @@ module moveos_std::event_queue {
         };
         object::add_field(event_queue_obj, head_sequence_number, on_chain_event);
         object::borrow_mut(event_queue_obj).head_sequence_number = head_sequence_number + 1;
-        remove_expired_events(event_queue_obj);    
+        internal_remove_expired_events(event_queue_obj);    
     }
 
     /// Consume the event from the event queue
@@ -80,9 +80,13 @@ module moveos_std::event_queue {
         let subscriber = object::borrow_mut(subscriber_obj);
         let subscriber_sequence_number = subscriber.sequence_number;
         let event_queue_obj = event_queue<E>(subscriber.queue_name);
+        internal_remove_expired_events(event_queue_obj);
         let head_sequence_number = object::borrow(event_queue_obj).head_sequence_number;
         let tail_sequence_number = object::borrow(event_queue_obj).tail_sequence_number;
-        
+        // The event queue is empty
+        if(head_sequence_number == tail_sequence_number){
+            return option::none()
+        };
         if (subscriber_sequence_number >= head_sequence_number) {
             return option::none()
         };
@@ -98,7 +102,7 @@ module moveos_std::event_queue {
         let on_chain_event: &mut OnChainEvent<E> = object::borrow_mut_field(event_queue_obj, subscriber_sequence_number);
         subscriber.sequence_number = subscriber_sequence_number + 1;
         let event = option::some(on_chain_event.event);
-        remove_expired_events(event_queue_obj);
+        
         event
     }
 
@@ -126,12 +130,17 @@ module moveos_std::event_queue {
 
     /// Remove the expired events from the event queue
     /// Anyone can call this function to remove the expired events
-    public fun remove_expired_events<E: copy + drop + store>(event_queue_obj: &mut Object<EventQueue<E>>){
+    public fun remove_expired_events<E: copy + drop + store>(event_queue: String){
+        let event_queue_obj = event_queue<E>(event_queue);
+        internal_remove_expired_events(event_queue_obj);
+    }
+    
+    fun internal_remove_expired_events<E: copy + drop + store>(event_queue_obj: &mut Object<EventQueue<E>>){
         let head_sequence_number = object::borrow(event_queue_obj).head_sequence_number;
         let tail_sequence_number = object::borrow(event_queue_obj).tail_sequence_number;
         let now = timestamp::now_milliseconds();
         let remove_sequence_number = tail_sequence_number;
-        while (remove_sequence_number < head_sequence_number){
+        while (remove_sequence_number <= head_sequence_number){
             if (object::contains_field(event_queue_obj, remove_sequence_number)){
                 let on_chain_event: &OnChainEvent<E> = object::borrow_field(event_queue_obj, remove_sequence_number);
                 if (now - on_chain_event.emit_time > EVENT_EXPIRE_TIME){
@@ -145,7 +154,12 @@ module moveos_std::event_queue {
                 break
             }
         };
-        object::borrow_mut(event_queue_obj).tail_sequence_number = remove_sequence_number;
+        let new_tail_sequence_number = if(remove_sequence_number > head_sequence_number){
+            head_sequence_number
+        }else{
+            remove_sequence_number
+        };
+        object::borrow_mut(event_queue_obj).tail_sequence_number = new_tail_sequence_number;
     }
 
     #[test_only]
@@ -201,6 +215,7 @@ module moveos_std::event_queue {
     fun test_event_queue_expired_events(){
         let queue_name = std::string::utf8(b"test_event_queue_expired_events");
         let subscriber = subscribe<TestEvent>(queue_name);
+        let subscriber2 = subscribe<TestEvent>(queue_name);
         emit(queue_name, TestEvent{value: 1});
         moveos_std::timestamp::fast_forward_milliseconds_for_test(EVENT_EXPIRE_TIME + 1);
         emit(queue_name, TestEvent{value: 2});
@@ -208,7 +223,12 @@ module moveos_std::event_queue {
         assert!(option::is_some(&event), 1000);
         //The first event should be expired
         assert!(option::destroy_some(event).value == 2, 1001);
+        moveos_std::timestamp::fast_forward_milliseconds_for_test(EVENT_EXPIRE_TIME + 1);
+        //All the events should be expired
+        let event = consume(&mut subscriber2);
+        assert!(option::is_none(&event), 1002);
         unsubscribe(subscriber);
+        unsubscribe(subscriber2);
     }
 
 }
