@@ -83,7 +83,7 @@
 -  [Function `metaprotocol_validity_is_valid`](#0x4_ord_metaprotocol_validity_is_valid)
 -  [Function `metaprotocol_validity_invalid_reason`](#0x4_ord_metaprotocol_validity_invalid_reason)
 -  [Function `view_validity`](#0x4_ord_view_validity)
--  [Function `upack_inscription_event`](#0x4_ord_upack_inscription_event)
+-  [Function `unpack_inscription_event`](#0x4_ord_unpack_inscription_event)
 -  [Function `inscription_event_type_new`](#0x4_ord_inscription_event_type_new)
 -  [Function `inscription_event_type_burn`](#0x4_ord_inscription_event_type_burn)
 -  [Function `inscription_charm_burned`](#0x4_ord_inscription_charm_burned)
@@ -1173,13 +1173,13 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_upack_inscription_event"></a>
+<a name="0x4_ord_unpack_inscription_event"></a>
 
-## Function `upack_inscription_event`
+## Function `unpack_inscription_event`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_upack_inscription_event">upack_inscription_event</a>(<a href="">event</a>: <a href="ord.md#0x4_ord_InscriptionEvent">ord::InscriptionEvent</a>): (<a href="_String">string::String</a>, u32, <a href="_ObjectID">object::ObjectID</a>, u8)
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_unpack_inscription_event">unpack_inscription_event</a>(<a href="">event</a>: <a href="ord.md#0x4_ord_InscriptionEvent">ord::InscriptionEvent</a>): (<a href="_String">string::String</a>, u32, <a href="_ObjectID">object::ObjectID</a>, u8)
 </code></pre>
 
 

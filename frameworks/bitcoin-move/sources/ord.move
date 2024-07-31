@@ -1085,7 +1085,7 @@ module bitcoin_move::ord {
 
     // ======================== Events =====================================
 
-    public fun upack_inscription_event(event: InscriptionEvent) : (String, u32, ObjectID, u8) {
+    public fun unpack_inscription_event(event: InscriptionEvent) : (String, u32, ObjectID, u8) {
         let InscriptionEvent{metaprotocol, sequence_number, inscription_obj_id, event_type} = event;
         (metaprotocol, sequence_number, inscription_obj_id, event_type)
     }

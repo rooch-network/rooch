@@ -120,7 +120,7 @@ module moveos_std::timestamp {
     }
 
     #[test_only]
-    public fun fast_forward_milliseconds_for_test(timestamp_seconds: u64) {
-        fast_forward_milliseconds(timestamp_seconds)
+    public fun fast_forward_milliseconds_for_test(timestamp_milliseconds: u64) {
+        fast_forward_milliseconds(timestamp_milliseconds)
     }
 }

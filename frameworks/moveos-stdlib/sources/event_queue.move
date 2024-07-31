@@ -21,6 +21,7 @@ module moveos_std::event_queue {
     struct EventQueue<phantom E> has key{
         head_sequence_number: u64,
         tail_sequence_number: u64,
+        subscriber_count: u64,
     }
 
     struct OnChainEvent<E> has store, drop {
@@ -41,6 +42,7 @@ module moveos_std::event_queue {
             let event_queue_obj = object::new_with_id(name, EventQueue<E> {
                 head_sequence_number: 0,
                 tail_sequence_number: 0,
+                subscriber_count: 0,
             });
             let subscribers : vector<ObjectID> = vector::empty();
             object::add_field(&mut event_queue_obj, SUBSCRIBERS_KEY, subscribers);
@@ -51,23 +53,18 @@ module moveos_std::event_queue {
         object::borrow_mut_object_extend<EventQueue<E>>(object_id)
     }
 
-    fun borrow_subscribers<E>(event_queue_obj: &Object<EventQueue<E>>) : &vector<ObjectID>{
-        object::borrow_field(event_queue_obj, SUBSCRIBERS_KEY)
-    }
-
-    fun borrow_mut_subscribers<E>(event_queue_obj: &mut Object<EventQueue<E>>) : &mut vector<ObjectID>{
-        object::borrow_mut_field(event_queue_obj, SUBSCRIBERS_KEY)
-    }
-
     #[private_generics(E)]
+    /// Emit an event to the event queue, the event will be stored in the event queue
+    /// But if there are no subscribers, we do not store the event
     public fun emit<E : copy + drop + store>(name: String, event: E) {
         let event_queue_obj = event_queue<E>(name);
-        let subscribers = borrow_subscribers(event_queue_obj);
+        let event_queue = object::borrow(event_queue_obj);
+        let subscriber_count = event_queue.subscriber_count;
         //We only write the event to the event queue when there are subscribers
-        if(vector::is_empty(subscribers)){
+        if(subscriber_count == 0){
             return
         };
-        let head_sequence_number = object::borrow(event_queue_obj).head_sequence_number;
+        let head_sequence_number = event_queue.head_sequence_number;
         let now = timestamp::now_milliseconds();
         let on_chain_event = OnChainEvent {
             event: event,
@@ -78,6 +75,7 @@ module moveos_std::event_queue {
         remove_expired_events(event_queue_obj);    
     }
 
+    /// Consume the event from the event queue
     public fun consume<E: copy + drop + store>(subscriber_obj: &mut Object<Subscriber<E>>) : Option<E> {
         let subscriber = object::borrow_mut(subscriber_obj);
         let subscriber_sequence_number = subscriber.sequence_number;
@@ -104,27 +102,26 @@ module moveos_std::event_queue {
         event
     }
 
+    /// Subscribe the event queue of `E` and the given queue name
+    /// Return the subscriber object
     public fun subscribe<E: copy + drop + store>(queue_name: String) : Object<Subscriber<E>> {
         let event_queue_obj = event_queue<E>(queue_name);
-        let head_sequence_number = object::borrow(event_queue_obj).head_sequence_number;
-        let subscribers = borrow_mut_subscribers(event_queue_obj);
+        let event_queue = object::borrow_mut(event_queue_obj);
+        let head_sequence_number = event_queue.head_sequence_number;
         let subscriber = object::new(Subscriber {
             queue_name,
             sequence_number: head_sequence_number,
         });
-        vector::push_back(subscribers, object::id(&subscriber));
+        event_queue.subscriber_count = event_queue.subscriber_count + 1;
         subscriber
     }
 
+    /// Unsubscribe the subscriber
     public fun unsubscribe<E: copy + drop + store>(subscriber: Object<Subscriber<E>>) {
-        let subscriber_id = object::id(&subscriber);
         let Subscriber{sequence_number:_, queue_name} = object::remove(subscriber);
         let event_queue_obj = event_queue<E>(queue_name);
-        let subscribers = borrow_mut_subscribers(event_queue_obj);
-        
-        let (find,index) = vector::index_of(subscribers, &subscriber_id);
-        assert!(find, ErrorSubscriberNotFound);
-        vector::remove(subscribers, index);
+        let event_queue = object::borrow_mut(event_queue_obj);
+        event_queue.subscriber_count = event_queue.subscriber_count - 1;
     }
 
     /// Remove the expired events from the event queue

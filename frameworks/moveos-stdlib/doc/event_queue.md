@@ -18,7 +18,6 @@
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="timestamp.md#0x2_timestamp">0x2::timestamp</a>;
 </code></pre>
@@ -130,6 +129,8 @@
 
 ## Function `emit`
 
+Emit an event to the event queue, the event will be stored in the event queue
+But if there are no subscribers, we do not store the event
 
 
 <pre><code>#[private_generics(#[E])]
@@ -142,6 +143,7 @@
 
 ## Function `consume`
 
+Consume the event from the event queue
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="event_queue.md#0x2_event_queue_consume">consume</a>&lt;E: <b>copy</b>, drop, store&gt;(subscriber_obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="event_queue.md#0x2_event_queue_Subscriber">event_queue::Subscriber</a>&lt;E&gt;&gt;): <a href="_Option">option::Option</a>&lt;E&gt;
@@ -153,6 +155,8 @@
 
 ## Function `subscribe`
 
+Subscribe the event queue of <code>E</code> and the given queue name
+Return the subscriber object
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="event_queue.md#0x2_event_queue_subscribe">subscribe</a>&lt;E: <b>copy</b>, drop, store&gt;(queue_name: <a href="_String">string::String</a>): <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="event_queue.md#0x2_event_queue_Subscriber">event_queue::Subscriber</a>&lt;E&gt;&gt;
@@ -164,6 +168,7 @@
 
 ## Function `unsubscribe`
 
+Unsubscribe the subscriber
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="event_queue.md#0x2_event_queue_unsubscribe">unsubscribe</a>&lt;E: <b>copy</b>, drop, store&gt;(subscriber: <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="event_queue.md#0x2_event_queue_Subscriber">event_queue::Subscriber</a>&lt;E&gt;&gt;)
