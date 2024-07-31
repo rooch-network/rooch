@@ -339,7 +339,7 @@ Empty address is a special address that is used to if we parse address failed fr
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_derive_multisig_xonly_pubkey_from_xonly_pubkeys">derive_multisig_xonly_pubkey_from_xonly_pubkeys</a>(public_keys: &<a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, threshold: u64): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_derive_multisig_xonly_pubkey_from_xonly_pubkeys">derive_multisig_xonly_pubkey_from_xonly_pubkeys</a>(public_keys: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, threshold: u64): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 

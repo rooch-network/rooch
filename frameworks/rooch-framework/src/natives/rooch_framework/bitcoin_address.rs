@@ -133,7 +133,8 @@ pub fn derive_multisig_xonly_pubkey_from_xonly_pubkeys(
     let threshold_bytes = pop_arg!(args, u64);
     let pk_list = pop_arg!(args, Vec<Value>);
 
-    let mut cost = gas_params.base.unwrap() + gas_params.per_byte.unwrap() * NumBytes::new(threshold_bytes);
+    let mut cost =
+        gas_params.base.unwrap() + gas_params.per_byte.unwrap() * NumBytes::new(threshold_bytes);
 
     if pk_list.len() < threshold_bytes as usize {
         return Ok(NativeResult::err(cost, E_INVALID_THRESHOLD));
@@ -188,7 +189,8 @@ pub fn derive_bitcoin_taproot_address_from_multisig_xonly_pubkey(
 
     let xonly_pubkey_ref = xonly_pubkey_bytes.as_bytes_ref();
 
-    let cost = gas_params.base.unwrap() + gas_params.per_byte.unwrap() * NumBytes::new(xonly_pubkey_ref.len() as u64);
+    let cost = gas_params.base.unwrap()
+        + gas_params.per_byte.unwrap() * NumBytes::new(xonly_pubkey_ref.len() as u64);
 
     let internal_key = match XOnlyPublicKey::from_slice(&xonly_pubkey_ref) {
         Ok(xonly_pubkey) => xonly_pubkey,
@@ -250,7 +252,8 @@ impl GasParameters {
         Self {
             new: FromBytesGasParameters::zeros(),
             verify_with_pk: FromBytesGasParameters::zeros(),
-            derive_multisig_xonly_pubkey_from_xonly_pubkeys: FromBytesGasParametersOptional::zeros(),
+            derive_multisig_xonly_pubkey_from_xonly_pubkeys: FromBytesGasParametersOptional::zeros(
+            ),
             derive_bitcoin_taproot_address_from_multisig_xonly_pubkey:
                 FromBytesGasParametersOptional::zeros(),
         }
@@ -262,14 +265,15 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         ("parse", make_native(gas_params.new, parse)),
         (
             "verify_with_pk",
-            make_native(
-                gas_params.verify_with_pk,
-                verify_with_pk,
-            ),
+            make_native(gas_params.verify_with_pk, verify_with_pk),
         ),
-    ].to_vec();
+    ]
+    .to_vec();
 
-    if !gas_params.derive_multisig_xonly_pubkey_from_xonly_pubkeys.is_empty() {
+    if !gas_params
+        .derive_multisig_xonly_pubkey_from_xonly_pubkeys
+        .is_empty()
+    {
         natives.push((
             "derive_multisig_xonly_pubkey_from_xonly_pubkeys",
             make_native(
@@ -279,7 +283,10 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         ));
     }
 
-    if !gas_params.derive_bitcoin_taproot_address_from_multisig_xonly_pubkey.is_empty() {
+    if !gas_params
+        .derive_bitcoin_taproot_address_from_multisig_xonly_pubkey
+        .is_empty()
+    {
         natives.push((
             "derive_bitcoin_taproot_address_from_multisig_xonly_pubkey",
             make_native(
