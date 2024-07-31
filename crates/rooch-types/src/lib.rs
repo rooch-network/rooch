@@ -19,5 +19,6 @@ pub mod multichain_id;
 pub mod rooch_key;
 pub mod rooch_network;
 pub mod sequencer;
+pub mod service_status;
 pub mod test_utils;
 pub mod transaction;

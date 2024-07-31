@@ -50,8 +50,8 @@ pub enum StoreInstance {
 unsafe impl Send for StoreInstance {}
 
 impl StoreInstance {
-    pub fn new_db_instance(db: RocksDB) -> Self {
-        let db_metrics = DBMetrics::get().clone();
+    pub fn new_db_instance(db: RocksDB, db_metrics: Arc<DBMetrics>) -> Self {
+        // let db_metrics = DBMetrics::get().clone();
         let db_arc = Arc::new(db);
         // let db_metrics = Arc::new(DBMetrics::new(registry));
         // let db_clone = db_arc.clone();

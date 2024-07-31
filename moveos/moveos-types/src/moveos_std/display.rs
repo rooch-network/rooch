@@ -84,10 +84,22 @@ fn get_string_from_valid_move_struct(move_struct: &AnnotatedMoveStruct) -> Resul
     }
 }
 
-fn get_value_from_move_struct(move_value: &AnnotatedMoveValue, var_name: &str) -> Result<String> {
+fn get_value_from_move_struct(
+    move_value: &AnnotatedMoveValue,
+    var_name: &str,
+    metadata: &ObjectMeta,
+) -> Result<String> {
     let parts: Vec<&str> = var_name.split('.').collect();
     if parts.is_empty() {
         anyhow::bail!("Display template value cannot be empty");
+    } else if parts.len() == 2 && parts[0] == "metadata" {
+        match parts[1] {
+            "id" => return Ok(metadata.id.to_hex()),
+            "owner" => return Ok(metadata.owner.to_hex()),
+            &_ => {
+                anyhow::bail!("metadata display only support id and owner {}", var_name);
+            }
+        }
     }
     let mut current_value = move_value;
     // iterate over the parts and try to access the corresponding field
@@ -122,12 +134,15 @@ fn get_value_from_move_struct(move_value: &AnnotatedMoveValue, var_name: &str) -
     }
 }
 
-fn parse_template(template: &str, move_value: &AnnotatedMoveValue) -> Result<String> {
+fn parse_template(
+    template: &str,
+    move_value: &AnnotatedMoveValue,
+    metadata: &ObjectMeta,
+) -> Result<String> {
     let mut output = template.to_string();
     let mut var_name = String::new();
     let mut in_braces = false;
     let mut escaped = false;
-
     for ch in template.chars() {
         match ch {
             '{' if !escaped => {
@@ -136,8 +151,10 @@ fn parse_template(template: &str, move_value: &AnnotatedMoveValue) -> Result<Str
             }
             '}' if !escaped => {
                 in_braces = false;
-                let value = get_value_from_move_struct(move_value, &var_name)?;
-                output = output.replace(&format!("{{{}}}", var_name), &value);
+                let value = get_value_from_move_struct(move_value, &var_name, metadata);
+                if value.is_ok() {
+                    output = output.replace(&format!("{{{}}}", var_name), &value.unwrap());
+                }
             }
             _ if !escaped => {
                 if in_braces {
@@ -161,12 +178,11 @@ impl RawDisplay {
     /// Render the display with given MoveStruct instance.
     pub fn render(
         &self,
-        _metadata: &ObjectMeta,
+        metadata: &ObjectMeta,
         annotated_obj: &AnnotatedMoveValue,
     ) -> BTreeMap<String, String> {
-        //TODO support access metadata via `metadata.x` in display template
         let fields = self.to_btree_map().into_iter().map(|entry| {
-            match parse_template(&entry.1, annotated_obj) {
+            match parse_template(&entry.1, annotated_obj, metadata) {
                 Ok(value) => (entry.0, value),
                 Err(err) => {
                     tracing::debug!("Display template render error: {:?}", err);

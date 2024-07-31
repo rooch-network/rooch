@@ -114,6 +114,18 @@ impl LedgerTxData {
             LedgerTxData::L1Tx(_) => None,
         }
     }
+
+    pub fn is_l1_block(&self) -> bool {
+        matches!(self, LedgerTxData::L1Block(_))
+    }
+
+    pub fn is_l1_tx(&self) -> bool {
+        matches!(self, LedgerTxData::L1Tx(_))
+    }
+
+    pub fn is_l2_tx(&self) -> bool {
+        matches!(self, LedgerTxData::L2Tx(_))
+    }
 }
 
 /// The transaction which is recorded in the L2 DA ledger.

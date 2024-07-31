@@ -1,7 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
+import { useTranslation } from 'react-i18next'
 import { ComingSoon } from '@/components/coming-soon.tsx'
-import {useTranslation} from 'react-i18next';
 
 export const LeapLayout = () => {
   const { t } = useTranslation()
@@ -10,9 +11,7 @@ export const LeapLayout = () => {
       <div className="flex items-center justify-between space-y-2">
         <span>
           <h1 className="text-3xl font-bold tracking-tight">{t('Leap.title')}</h1>
-          <p className="text-muted-foreground text-wrap">
-            {t('Leap.subTitle')}
-          </p>
+          <p className="text-muted-foreground text-wrap">{t('Leap.subTitle')}</p>
         </span>
       </div>
       <ComingSoon />

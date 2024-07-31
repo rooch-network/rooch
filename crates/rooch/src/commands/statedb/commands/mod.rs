@@ -1,34 +1,40 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::fmt::Display;
+use std::fs::File;
+use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::sync::{Arc, RwLock};
 use std::time::Instant;
 
-use bitcoin::{OutPoint, PublicKey, ScriptBuf};
-use redb::{ReadOnlyTable, TableDefinition};
-use serde::{Deserialize, Serialize};
+use bitcoin::hashes::Hash;
+use bitcoin::OutPoint;
+use metrics::RegistryService;
+use move_core_types::account_address::AccountAddress;
+use xorf::{BinaryFuse8, Filter};
+use xxhash_rust::xxh3::xxh3_64;
 
 use moveos_store::MoveOSStore;
-use moveos_types::h256::H256;
+use moveos_types::move_std::option::MoveOption;
+use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
-use moveos_types::startup_info::StartupInfo;
-use moveos_types::state::{FieldKey, ObjectState};
+use moveos_types::moveos_std::simple_multimap::{Element, SimpleMultiMap};
+use rooch_common::fs::file_cache::FileCacheManager;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
-use rooch_types::address::BitcoinAddress;
+use rooch_types::bitcoin::ord::{derive_inscription_id, InscriptionID};
+use rooch_types::into_address::IntoAddress;
 use rooch_types::rooch_network::RoochChainID;
-use smt::UpdateSet;
 
-use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
+use crate::commands::statedb::commands::inscription::InscriptionSource;
 
 pub mod export;
 pub mod genesis;
 pub mod genesis_utxo;
 pub mod import;
-
-pub const BATCH_SIZE: usize = 5000;
+mod inscription;
+mod utxo;
 
 pub const GLOBAL_STATE_TYPE_PREFIX: &str = "states";
 pub const GLOBAL_STATE_TYPE_ROOT: &str = "states_root";
@@ -38,12 +44,6 @@ pub const GLOBAL_STATE_TYPE_FIELD: &str = "states_field";
 const UTXO_SEAL_INSCRIPTION_PROTOCOL: &str =
     "0000000000000000000000000000000000000000000000000000000000000004::ord::Inscription";
 
-const UTXO_ORD_MAP_TABLE: TableDefinition<&[u8], &[u8]> = TableDefinition::new("utxo_ord_map");
-
-pub const SCRIPT_TYPE_P2MS: &str = "p2ms";
-pub const SCRIPT_TYPE_P2PK: &str = "p2pk";
-pub const SCRIPT_TYPE_NON_STANDARD: &str = "non-standard";
-
 fn init_job(
     base_data_dir: Option<PathBuf>,
     chain_id: Option<RoochChainID>,
@@ -51,7 +51,8 @@ fn init_job(
     let start_time = Instant::now();
 
     let opt = RoochOpt::new_with_default(base_data_dir.clone(), chain_id.clone(), None).unwrap();
-    let rooch_db = RoochDB::init(opt.store_config()).unwrap();
+    let registry_service = RegistryService::default();
+    let rooch_db = RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
     let root = rooch_db
         .latest_root()
         .unwrap()
@@ -63,416 +64,466 @@ fn init_job(
     (root, rooch_db.moveos_store, start_time)
 }
 
-fn finish_job(
-    moveos_store: Arc<MoveOSStore>,
-    root_size: u64,
-    pre_root_state_root: H256,
-    task_start_time: Instant,
-    new_startup_update_set: Option<Arc<RwLock<UpdateSet<FieldKey, ObjectState>>>>,
-) {
-    let root_state_root = match new_startup_update_set {
-        Some(new_startup_update_set) => {
-            let new_startup_update_set = new_startup_update_set.read().unwrap();
-            let new_startup_update_set = new_startup_update_set.clone();
-            let tree_change_set =
-                apply_fields(&moveos_store, pre_root_state_root, new_startup_update_set).unwrap();
-            apply_nodes(&moveos_store, tree_change_set.nodes).unwrap();
-            tree_change_set.state_root
-        }
-        None => pre_root_state_root,
-    };
-    // Update Startup Info
-    let new_startup_info = StartupInfo::new(root_state_root, root_size);
-    moveos_store
-        .get_config_store()
-        .save_startup_info(new_startup_info.clone())
-        .unwrap();
-    println!(
-        "Done in {:?}. New startup_info: {:?}",
-        task_start_time.elapsed(),
-        new_startup_info
-    );
+fn convert_option_string_to_move_type(opt: Option<String>) -> MoveOption<MoveString> {
+    opt.map(MoveString::from).into()
 }
 
-pub fn get_ord_by_outpoint(
-    utxo_ord_map: Option<Arc<ReadOnlyTable<&[u8], &[u8]>>>,
+#[derive(Clone, Default, PartialEq, Debug)]
+pub(crate) struct OutpointInscriptions {
     outpoint: OutPoint,
-) -> Option<Vec<ObjectID>> {
-    if let Some(db) = utxo_ord_map {
-        let key = bcs::to_bytes(&outpoint).unwrap();
-        let value = db.get(key.as_slice()).unwrap();
-        value.map(|value| bcs::from_bytes(value.value()).unwrap())
+    inscriptions: Vec<ObjectID>,
+}
+
+impl OutpointInscriptions {
+    fn hash_key(&self) -> u64 {
+        xxh3_outpoint(&self.outpoint)
+    }
+}
+
+fn xxh3_outpoint(outpoint: &OutPoint) -> u64 {
+    let mut bytes: Vec<u8> = Vec::with_capacity(32 + 4);
+    bytes.extend(outpoint.txid.to_byte_array());
+    bytes.extend(&outpoint.vout.to_le_bytes());
+    xxh3_64(&bytes)
+}
+
+impl Display for OutpointInscriptions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let inscriptions = self
+            .inscriptions
+            .iter()
+            .map(|inscription| inscription.to_string())
+            .collect::<Vec<String>>()
+            .join(",");
+        write!(f, "{}-{}", self.outpoint, inscriptions)
+    }
+}
+
+impl FromStr for OutpointInscriptions {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<&str> = s.splitn(2, '-').collect();
+        if parts.len() != 2 {
+            return Err(anyhow::anyhow!("Invalid OutpointInscriptions format"));
+        }
+        let outpoint = OutPoint::from_str(parts[0])?;
+        let inscriptions = parts[1]
+            .split(',')
+            .map(ObjectID::from_str)
+            .collect::<Result<Vec<ObjectID>, _>>()?;
+        Ok(OutpointInscriptions {
+            outpoint,
+            inscriptions,
+        })
+    }
+}
+
+fn derive_utxo_seal(inscriptions: Option<Vec<ObjectID>>) -> SimpleMultiMap<MoveString, ObjectID> {
+    if let Some(obj_ids) = inscriptions {
+        SimpleMultiMap {
+            data: vec![Element {
+                key: MoveString::from_str(UTXO_SEAL_INSCRIPTION_PROTOCOL).unwrap(),
+                value: obj_ids,
+            }],
+        }
     } else {
-        None
+        SimpleMultiMap::create()
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Default)]
-pub struct UTXOOrds {
-    pub utxo: OutPoint,
-    pub ords: Vec<ObjectID>,
+pub(crate) struct OutpointInscriptionsMap {
+    items: Vec<OutpointInscriptions>,
+    key_filter: Option<BinaryFuse8>,
 }
 
-pub fn sort_merge_utxo_ords(kvs: &mut Vec<UTXOOrds>) -> usize {
-    if kvs.is_empty() {
-        return 0;
+fn unbound_outpoint() -> OutPoint {
+    OutPoint {
+        txid: Hash::all_zeros(),
+        vout: 0,
     }
+}
 
-    // Step 1: Sort by utxo
-    kvs.sort_by(|a, b| a.utxo.cmp(&b.utxo));
-    // Step 2: Merge in place
-    let mut write_index = 0;
-    for read_index in 1..kvs.len() {
-        if kvs[write_index].utxo == kvs[read_index].utxo {
-            let drained_ords: Vec<ObjectID> = kvs[read_index].ords.drain(..).collect();
-            kvs[write_index].ords.extend(drained_ords);
-        } else {
-            write_index += 1;
-            if write_index != read_index {
-                kvs[write_index] = std::mem::take(&mut kvs[read_index]);
+impl OutpointInscriptionsMap {
+    fn index(src: PathBuf) -> (Self, usize, usize, usize) {
+        let buf_size = 8 * 1024 * 1024; // inscription maybe large, using larger buffer than usual
+        let mut reader = BufReader::with_capacity(buf_size, File::open(src.clone()).unwrap());
+        let mut is_title_line = true;
+
+        // collect all outpoint:inscription pairs except unbounded
+        let mut has_outpoint_count: usize = 0;
+        let mut unbound_count: usize = 0;
+        let mut items = Vec::with_capacity(80 * 1024 * 1024);
+        for line in reader.by_ref().lines() {
+            let line = line.unwrap();
+            if is_title_line {
+                is_title_line = false;
+                if line.starts_with("# export at") {
+                    continue; // skip block height info
+                }
             }
+            let src: InscriptionSource = InscriptionSource::from_str(&line);
+            let txid: AccountAddress = src.id.txid.into_address();
+            let inscription_id = InscriptionID::new(txid, src.id.index);
+            let obj_id = derive_inscription_id(&inscription_id);
+            let satpoint_output = OutPoint::from_str(src.satpoint_outpoint.as_str()).unwrap();
+            if satpoint_output == unbound_outpoint() {
+                unbound_count += 1;
+                continue; // skip unbounded outpoint
+            }
+            items.push(OutpointInscriptions {
+                outpoint: satpoint_output,
+                inscriptions: vec![obj_id.clone()],
+            });
+            has_outpoint_count += 1;
+        }
+
+        let map = Self::new_with_unsorted(items);
+        let (mapped_outpoint_count, mapped_inscription_count) = map.stats();
+        assert_eq!(
+            has_outpoint_count, mapped_inscription_count,
+            "Inscription count mismatch after mapping"
+        );
+        (
+            map,
+            mapped_outpoint_count,
+            mapped_inscription_count,
+            unbound_count,
+        )
+    }
+
+    fn index_and_dump(src: PathBuf, dump_path: Option<PathBuf>) -> (Self, usize, usize, usize) {
+        let (map, mapped_outpoint_count, mapped_inscription_count, unbound_count) =
+            Self::index(src.clone());
+        if let Some(dump_path) = dump_path {
+            map.dump(dump_path);
+        }
+        (
+            map,
+            mapped_outpoint_count,
+            mapped_inscription_count,
+            unbound_count,
+        )
+    }
+
+    fn new_with_unsorted(items: Vec<OutpointInscriptions>) -> Self {
+        Self::new(items, false)
+    }
+
+    fn new(items: Vec<OutpointInscriptions>, sorted: bool) -> Self {
+        let mut map = OutpointInscriptionsMap {
+            items,
+            key_filter: None,
+        };
+        if !sorted {
+            map.sort_and_merge();
+        }
+        map.add_outpoint_filter();
+        map
+    }
+
+    fn sort_and_merge(&mut self) -> usize {
+        let items = &mut self.items;
+        if items.is_empty() {
+            return 0;
+        }
+        // sort by outpoint
+        items.sort_by(|a, b| a.outpoint.cmp(&b.outpoint));
+        // merge inscriptions with same outpoint in place
+        let mut write_index = 0;
+        for read_index in 1..items.len() {
+            if items[write_index].outpoint == items[read_index].outpoint {
+                let drained_inscriptions: Vec<ObjectID> =
+                    items[read_index].inscriptions.drain(..).collect();
+                items[write_index].inscriptions.extend(drained_inscriptions);
+            } else {
+                write_index += 1;
+                if write_index != read_index {
+                    items[write_index] = std::mem::take(&mut items[read_index]);
+                }
+            }
+        }
+        // truncate the vector to remove the unused elements
+        let new_len = write_index + 1;
+        items.truncate(new_len);
+        items.shrink_to_fit();
+        new_len
+    }
+
+    fn add_outpoint_filter(&mut self) {
+        let keys: Vec<u64> = self.items.iter().map(|item| item.hash_key()).collect();
+        let filter = BinaryFuse8::try_from(&keys).unwrap();
+        self.key_filter = Some(filter);
+    }
+
+    // check if the outpoint is in the filter, false positive is allowed
+    fn contains(&self, outpoint: &OutPoint) -> bool {
+        match &self.key_filter {
+            Some(filter) => filter.contains(&xxh3_outpoint(outpoint)),
+            None => true,
         }
     }
 
-    // Truncate the vector to remove the unused elements
-    let new_len = write_index + 1;
-    kvs.truncate(new_len);
-    kvs.shrink_to_fit();
-    new_len
-}
+    fn search(&self, outpoint: &OutPoint) -> Option<Vec<ObjectID>> {
+        if !self.contains(outpoint) {
+            return None;
+        }
 
-// drive BitcoinAddress from data source
-pub fn drive_bitcoin_address(
-    origin_address: String,
-    script: String,
-    script_type: String,
-) -> Option<BitcoinAddress> {
-    if !origin_address.is_empty() {
-        return Some(BitcoinAddress::from_str(origin_address.as_str()).unwrap());
+        let items = &self.items;
+        items
+            .binary_search_by_key(outpoint, |x| x.outpoint)
+            .ok()
+            .map(|index| items[index].inscriptions.clone())
     }
-    if SCRIPT_TYPE_NON_STANDARD.eq(script_type.as_str()) {
-        return None;
+
+    #[allow(dead_code)]
+    fn load(path: PathBuf) -> Self {
+        let file = File::open(path.clone()).expect("Unable to open the file");
+        let reader = BufReader::new(file);
+        let mut items = Vec::new();
+
+        for line in reader.lines() {
+            let line = line.expect("Unable to read line");
+            let item: OutpointInscriptions = line.parse().expect("Unable to parse line");
+            items.push(item);
+        }
+
+        let file_cache_manager = FileCacheManager::new(path).unwrap();
+        let _ = file_cache_manager.drop_cache_range(0, 1 << 40);
+
+        OutpointInscriptionsMap::new(items, true)
     }
-    // Try to derive address from script
-    let script_buf = ScriptBuf::from_hex(script.as_str()).unwrap();
-    let bitcoin_address: BitcoinAddress = BitcoinAddress::from(&script_buf);
-    if bitcoin_address != BitcoinAddress::default() {
-        return Some(bitcoin_address);
+
+    fn dump(&self, path: PathBuf) {
+        let file = File::create(path.clone()).expect("Unable to create the file");
+        let mut writer = BufWriter::new(file.try_clone().unwrap());
+
+        for item in &self.items {
+            writeln!(writer, "{}", item).expect("Unable to write line");
+        }
+
+        writer.flush().expect("Unable to flush writer");
+        file.sync_data().expect("Unable to sync file");
+        let file_cache_manager = FileCacheManager::new(path).unwrap();
+        let _ = file_cache_manager.drop_cache_range(0, 1 << 40);
     }
-    // Try to derive address from p2pk pubkey
-    if SCRIPT_TYPE_P2PK.eq(script_type.as_str()) {
-        let pubkey = match PublicKey::from_str(script.as_str()) {
-            Ok(pubkey) => pubkey,
-            Err(_) => {
-                return None;
-            }
-        };
-        let pubkey_hash = pubkey.pubkey_hash();
-        return Some(BitcoinAddress::new_p2pkh(&pubkey_hash));
-    };
-    None
+
+    fn stats(&self) -> (usize, usize) {
+        let outpoint_count = self.items.len();
+        let inscription_count = self.items.iter().map(|item| item.inscriptions.len()).sum();
+        (outpoint_count, inscription_count)
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::iter;
+    use std::collections::HashSet;
 
-    use bitcoin::hashes::Hash;
-    use bitcoin::OutPoint;
-    use redb::Database;
-    use tempfile::NamedTempFile;
+    use bitcoin::Txid;
+    use rand::Rng;
+    use tempfile::tempdir;
 
     use super::*;
 
-    #[test]
-    fn test_get_ord_by_outpoint() {
-        let obj_ids: Vec<ObjectID> = iter::repeat_with(ObjectID::random).take(3).collect();
+    impl OutpointInscriptionsMap {
+        fn is_sorted_and_merged(&self) -> bool {
+            let items = &self.items;
 
-        let db_path = NamedTempFile::new().unwrap();
-        let utxo_ord_map_db = Database::create(db_path).unwrap();
-        let utxo_ord_map = Arc::new(utxo_ord_map_db);
-
-        let outpoint = OutPoint {
-            txid: Hash::all_zeros(),
-            vout: 1,
-        };
-        let write_txn = utxo_ord_map.clone().begin_write().unwrap();
-
-        {
-            let mut table = write_txn.open_table(UTXO_ORD_MAP_TABLE).unwrap();
-            table
-                .insert(
-                    bcs::to_bytes(&outpoint).unwrap().as_slice(),
-                    bcs::to_bytes(&obj_ids).unwrap().as_slice(),
-                )
-                .unwrap();
+            if items.is_empty() {
+                return true;
+            }
+            items
+                .windows(2)
+                .all(|item| item[0].outpoint < item[1].outpoint) // using '<' here to ensure the order is strictly increasing
         }
-        write_txn.commit().unwrap();
+    }
 
-        let read_txn = utxo_ord_map.begin_read().unwrap();
-        let read_table = read_txn.open_table(UTXO_ORD_MAP_TABLE).unwrap();
-        assert_eq!(
-            None,
-            get_ord_by_outpoint(
-                Some(Arc::new(read_table)),
-                OutPoint {
-                    txid: Hash::all_zeros(),
-                    vout: 0,
-                }
-            )
-        );
+    fn random_outpoint() -> OutPoint {
+        let mut rng = rand::thread_rng();
+        let txid: Txid = Txid::from_slice(&rng.gen::<[u8; 32]>()).unwrap();
+        let vout: u32 = rng.gen();
 
-        let read_txn = utxo_ord_map.begin_read().unwrap();
-        let read_table = read_txn.open_table(UTXO_ORD_MAP_TABLE).unwrap();
-        assert_eq!(
-            obj_ids.clone(),
-            get_ord_by_outpoint(Some(Arc::new(read_table)), outpoint).unwrap()
-        );
+        OutPoint { txid, vout }
+    }
+
+    // all outpoints are unique
+    fn random_outpoints(n: usize) -> Vec<OutPoint> {
+        let mut outpoints = HashSet::new();
+        while outpoints.len() < n {
+            outpoints.insert(random_outpoint());
+        }
+        outpoints.into_iter().collect()
+    }
+
+    // all inscriptions are unique
+    fn random_inscriptions(n: usize) -> Vec<ObjectID> {
+        let mut inscriptions = HashSet::new();
+        while inscriptions.len() < n {
+            inscriptions.insert(ObjectID::random());
+        }
+        inscriptions.into_iter().collect()
     }
 
     #[test]
-    fn test_sort_merge_utxo_ords() {
-        let obj_ids: Vec<ObjectID> = iter::repeat_with(ObjectID::random).take(3).collect();
+    fn outpoint_inscriptions_display() {
+        let outpoint = random_outpoint();
+        let inscriptions = random_inscriptions(2);
+        let outpoint_inscriptions = OutpointInscriptions {
+            outpoint,
+            inscriptions: inscriptions.clone(),
+        };
 
-        let mut kvs = vec![
-            UTXOOrds {
-                utxo: OutPoint {
-                    txid: Hash::all_zeros(),
-                    vout: 0,
-                },
-                ords: vec![obj_ids[0].clone()],
-            },
-            UTXOOrds {
-                utxo: OutPoint {
-                    txid: Hash::all_zeros(),
-                    vout: 1,
-                },
-                ords: vec![obj_ids[1].clone()],
-            },
-            UTXOOrds {
-                utxo: OutPoint {
-                    txid: Hash::all_zeros(),
-                    vout: 0,
-                },
-                ords: vec![obj_ids[2].clone()],
-            },
-        ];
-
-        let new_len = sort_merge_utxo_ords(&mut kvs);
-
-        assert_eq!(new_len, 2);
-        assert_eq!(
-            kvs,
-            vec![
-                UTXOOrds {
-                    utxo: OutPoint {
-                        txid: Hash::all_zeros(),
-                        vout: 0,
-                    },
-                    ords: vec![obj_ids[0].clone(), obj_ids[2].clone()],
-                },
-                UTXOOrds {
-                    utxo: OutPoint {
-                        txid: Hash::all_zeros(),
-                        vout: 1,
-                    },
-                    ords: vec![obj_ids[1].clone()],
-                },
-            ]
-        );
+        let expected = format!("{}-{},{}", outpoint, inscriptions[0], inscriptions[1]);
+        assert_eq!(outpoint_inscriptions.to_string(), expected);
     }
 
     #[test]
-    fn test_sort_merge_utxo_ords_empty() {
-        let mut kvs: Vec<UTXOOrds> = Vec::new();
+    fn outpoint_inscriptions_from_str() {
+        let outpoint = random_outpoint();
+        let exp = OutpointInscriptions {
+            outpoint,
+            inscriptions: random_inscriptions(3),
+        };
 
-        let new_len = sort_merge_utxo_ords(&mut kvs);
+        let act = OutpointInscriptions::from_str(&exp.to_string()).unwrap();
+        assert_eq!(exp, act);
+    }
 
-        assert_eq!(new_len, 0);
-        assert!(kvs.is_empty());
+    fn random_items_default(n: usize) -> Vec<OutpointInscriptions> {
+        random_items(n, 2)
+    }
+
+    fn random_items(n: usize, inscriptions_per_outpoint: usize) -> Vec<OutpointInscriptions> {
+        let mut items = Vec::new();
+        let outpoints = random_outpoints(n);
+        if inscriptions_per_outpoint == 0 {
+            for outpoint in outpoints {
+                items.push(OutpointInscriptions {
+                    outpoint,
+                    inscriptions: vec![],
+                });
+            }
+            return items;
+        }
+
+        let inscriptions = random_inscriptions(n * inscriptions_per_outpoint);
+        for (i, outpoint) in outpoints.iter().enumerate() {
+            let start = i * inscriptions_per_outpoint;
+            let end = start + inscriptions_per_outpoint;
+            items.push(OutpointInscriptions {
+                outpoint: *outpoint,
+                inscriptions: inscriptions[start..end].to_vec(),
+            });
+        }
+        items
     }
 
     #[test]
-    fn test_sort_merge_utxo_ords_no_merge_needed() {
-        let obj_ids: Vec<ObjectID> = iter::repeat_with(ObjectID::random).take(3).collect();
-
-        let mut kvs = vec![
-            UTXOOrds {
-                utxo: OutPoint {
-                    txid: Hash::all_zeros(),
-                    vout: 0,
-                },
-                ords: vec![obj_ids[0].clone()],
-            },
-            UTXOOrds {
-                utxo: OutPoint {
-                    txid: Hash::all_zeros(),
-                    vout: 1,
-                },
-                ords: vec![obj_ids[1].clone()],
-            },
-            UTXOOrds {
-                utxo: OutPoint {
-                    txid: Hash::all_zeros(),
-                    vout: 2,
-                },
-                ords: vec![obj_ids[2].clone()],
-            },
-        ];
-
-        let new_len = sort_merge_utxo_ords(&mut kvs);
-
-        assert_eq!(new_len, 3);
-        assert_eq!(
-            kvs,
-            vec![
-                UTXOOrds {
-                    utxo: OutPoint {
-                        txid: Hash::all_zeros(),
-                        vout: 0,
-                    },
-                    ords: vec![obj_ids[0].clone()],
-                },
-                UTXOOrds {
-                    utxo: OutPoint {
-                        txid: Hash::all_zeros(),
-                        vout: 1,
-                    },
-                    ords: vec![obj_ids[1].clone()],
-                },
-                UTXOOrds {
-                    utxo: OutPoint {
-                        txid: Hash::all_zeros(),
-                        vout: 2,
-                    },
-                    ords: vec![obj_ids[2].clone()],
-                },
-            ]
-        );
+    fn outpoint_inscriptions_map_stats() {
+        let items = random_items_default(10);
+        let map = OutpointInscriptionsMap::new_with_unsorted(items);
+        let (outpoint_count, inscription_count) = map.stats();
+        assert_eq!(outpoint_count, 10);
+        assert_eq!(inscription_count, 20);
     }
 
     #[test]
-    fn test_sort_merge_utxo_ords_all_merge() {
-        let obj_ids: Vec<ObjectID> = iter::repeat_with(ObjectID::random).take(3).collect();
+    fn outpoint_inscriptions_map_is_sorted_and_merged() {
+        let mut items = random_items_default(10);
+        items[0] = items[9].clone(); // make it unmerged
+        let mut map = OutpointInscriptionsMap {
+            items,
+            key_filter: None,
+        };
+        assert!(!map.is_sorted_and_merged());
 
-        let mut kvs = vec![
-            UTXOOrds {
-                utxo: OutPoint {
-                    txid: Hash::all_zeros(),
-                    vout: 0,
-                },
-                ords: vec![obj_ids[0].clone()],
-            },
-            UTXOOrds {
-                utxo: OutPoint {
-                    txid: Hash::all_zeros(),
-                    vout: 0,
-                },
-                ords: vec![obj_ids[1].clone()],
-            },
-            UTXOOrds {
-                utxo: OutPoint {
-                    txid: Hash::all_zeros(),
-                    vout: 0,
-                },
-                ords: vec![obj_ids[2].clone()],
-            },
-        ];
-
-        let new_len = sort_merge_utxo_ords(&mut kvs);
-
-        assert_eq!(new_len, 1);
-        assert_eq!(
-            kvs,
-            vec![UTXOOrds {
-                utxo: OutPoint {
-                    txid: Hash::all_zeros(),
-                    vout: 0,
-                },
-                ords: vec![obj_ids[0].clone(), obj_ids[1].clone(), obj_ids[2].clone()],
-            },]
-        );
+        map.sort_and_merge();
+        assert!(map.is_sorted_and_merged());
+        assert_eq!((9, 20), map.stats());
+        // check items is sorted manually
+        let items = &map.items;
+        for i in 0..8 {
+            assert!(items[i].outpoint < items[i + 1].outpoint);
+        }
     }
 
     #[test]
-    fn test_drive_bitcoin_address() {
-        // non-empty address
-        let bitcoin_address = drive_bitcoin_address(
-            "bc1qsn7v0rwezflwd6pk7xxf25zhjw9wkvmympm7tk".to_string(),
-            "".to_string(),
-            SCRIPT_TYPE_NON_STANDARD.to_string(), // no matter what script type
-        );
-        assert_eq!(
-            "bc1qsn7v0rwezflwd6pk7xxf25zhjw9wkvmympm7tk",
-            bitcoin_address.unwrap().to_string()
-        );
-        // non-standard address
-        let bitcoin_address = drive_bitcoin_address(
-            "".to_string(),
-            "".to_string(),
-            SCRIPT_TYPE_NON_STANDARD.to_string(),
-        );
-        assert_eq!(None, bitcoin_address);
-        // p2pk script
-        let bitcoin_address = drive_bitcoin_address(
-            "".to_string(),
-            "41049434a2dd7c5b82df88f578f8d7fd14e8d36513aaa9c003eb5bd6cb56065e44b7e0227139e8a8e68e7de0a4ed32b8c90edc9673b8a7ea541b52f2a22196f7b8cfac".to_string(),
-            SCRIPT_TYPE_P2PK.to_string(),
-        );
-        assert_eq!(
-            "14vrCdzPtnHaXtDNLH4xNhceS7GV4GMw76",
-            bitcoin_address.unwrap().to_string()
-        );
-        // p2pk pubkey
-        let bitcoin_address = drive_bitcoin_address(
-            "".to_string(),
-            "04f254e36949ec1a7f6e9548f16d4788fb321f429b2c7d2eb44480b2ed0195cbf0c3875c767fe8abb2df6827c21392ea5cc934240b9ac46c6a56d2bd13dd0b17a9".to_string(),
-            SCRIPT_TYPE_P2PK.to_string(),
-        );
-        let pubkey = PublicKey::from_str(
-            "04f254e36949ec1a7f6e9548f16d4788fb321f429b2c7d2eb44480b2ed0195cbf0c3875c767fe8abb2df6827c21392ea5cc934240b9ac46c6a56d2bd13dd0b17a9",
-        )
-        .unwrap();
-        assert_eq!(
-            BitcoinAddress::new_p2pkh(&pubkey.pubkey_hash()),
-            bitcoin_address.unwrap()
-        );
-        // invalid p2pk pubkey
-        let bitcoin_address = drive_bitcoin_address(
-            "".to_string(),
-            "036c6565662c206f6e7464656b2c2067656e6965742e2e2e202020202020202020".to_string(),
-            SCRIPT_TYPE_P2PK.to_string(),
-        );
-        assert_eq!(None, bitcoin_address);
-        // invalid p2pk script
-        let bitcoin_address = drive_bitcoin_address(
-            "".to_string(),
-            "21036c6565662c206f6e7464656b2c2067656e6965742e2e2e202020202020202020ac".to_string(),
-            SCRIPT_TYPE_P2PK.to_string(),
-        );
-        assert_eq!(None, bitcoin_address);
-        // special p2ms case: https://ordinals.com/inscription/72552729(
-        // output: a353a7943a2b38318bf458b6af878b8384f48a6d10aad5b827d0550980abe3f0:0
-        // script: 0014f29f9316f0f1e48116958216a8babd353b491dae
-        // address: bc1q720ex9hs78jgz954sgt23w4ax5a5j8dwjj5kkm
-        // )
-        let script = "0014f29f9316f0f1e48116958216a8babd353b491dae";
-        let bitcoin_address = drive_bitcoin_address(
-            "".to_string(),
-            script.to_string(),
-            SCRIPT_TYPE_P2MS.to_string(),
-        );
-        assert_eq!(
-            "bc1q720ex9hs78jgz954sgt23w4ax5a5j8dwjj5kkm",
-            bitcoin_address.unwrap().to_string()
-        );
-        // normal p2ms (cannot get payload)
-        let script = "512102047da7156b82baaed491787e77a0d94cbc00ebdbd993639382b8a41d2f8d42dd2107000000000000000000000000000000000000000000000000000000000000000052ae";
-        let bitcoin_address = drive_bitcoin_address(
-            "".to_string(),
-            script.to_string(),
-            SCRIPT_TYPE_P2MS.to_string(),
-        );
-        assert_eq!(None, bitcoin_address);
+    fn contains_false_positive() {
+        let sample_size = 1024 * 1024;
+        let items = random_items(sample_size, 0);
+        // won't search later, so it's ok to not sort and merge
+        let mut map = OutpointInscriptionsMap::new(items.clone(), true);
+        map.add_outpoint_filter();
+        // ensure no false negative
+        for item in items.iter() {
+            assert!(map.contains(&item.outpoint));
+        }
+        // false positive rate
+        let false_positives: usize = (0..sample_size)
+            .map(|_| random_outpoint())
+            .filter(|n| map.contains(n))
+            .count();
+        let fp_rate: f64 = false_positives as f64 / sample_size as f64;
+        assert!(fp_rate < 0.1, "False positive rate is {}", fp_rate); // < 10% is acceptable
+    }
+
+    #[test]
+    fn outpoint_inscriptions_map_search_not_found() {
+        let map = OutpointInscriptionsMap::new_with_unsorted(Vec::new());
+        let utxo = random_outpoint();
+        assert!(map.search(&utxo).is_none());
+    }
+
+    #[test]
+    fn outpoint_inscriptions_map_search_found() {
+        let items = random_items_default(10);
+
+        let map = OutpointInscriptionsMap::new_with_unsorted(items.clone());
+        for item in items.iter() {
+            let inscriptions = map.search(&item.outpoint).unwrap();
+            assert_eq!(inscriptions, item.inscriptions);
+        }
+    }
+
+    #[test]
+    fn outpoint_inscriptions_map_search_found_merged() {
+        let items = random_items_default(10);
+        let mut unmerged_items = Vec::new();
+        for item in items.iter() {
+            let outpoint_inscriptions = OutpointInscriptions {
+                outpoint: item.outpoint,
+                inscriptions: vec![item.inscriptions[0].clone()],
+            };
+            unmerged_items.push(outpoint_inscriptions);
+            let outpoint_inscriptions = OutpointInscriptions {
+                outpoint: item.outpoint,
+                inscriptions: vec![item.inscriptions[1].clone()],
+            };
+            unmerged_items.push(outpoint_inscriptions);
+        }
+
+        let map = OutpointInscriptionsMap::new_with_unsorted(unmerged_items);
+        for item in items.iter() {
+            let inscriptions = map.search(&item.outpoint).unwrap();
+            assert_eq!(inscriptions, item.inscriptions);
+        }
+    }
+
+    #[test]
+    fn outpoint_inscriptions_map_index_and_dump() {
+        let items = random_items_default(10);
+        let map = OutpointInscriptionsMap::new_with_unsorted(items.clone());
+        let (mapped_outpoint_count, mapped_inscription_count) = map.stats();
+        let tempdir = tempdir().unwrap();
+        let dump_path = tempdir
+            .path()
+            .join("outpoint_inscriptions_map_index_and_dump");
+        map.dump(dump_path.clone());
+        let map_from_load = OutpointInscriptionsMap::load(dump_path.clone());
+        assert!(map_from_load.is_sorted_and_merged());
+        let (mapped_outpoint_count2, mapped_inscription_count2) = map_from_load.stats();
+        assert_eq!(mapped_outpoint_count, mapped_outpoint_count2);
+        assert_eq!(mapped_inscription_count, mapped_inscription_count2);
+        assert_eq!(map.items, map_from_load.items);
     }
 }

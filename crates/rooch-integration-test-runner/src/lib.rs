@@ -37,7 +37,6 @@ use moveos_types::{
 use moveos_verifier::build::build_model;
 use moveos_verifier::metadata::run_extended_checks;
 use once_cell::sync::Lazy;
-use raw_store::metrics::DBMetrics;
 use regex::Regex;
 use rooch_genesis::{FrameworksGasParameters, RoochGenesis};
 use rooch_types::framework::auth_validator::TxValidateResult;
@@ -112,9 +111,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         };
         let temp_dir = moveos_config::temp_dir();
         let registry = prometheus::Registry::new();
-        let _db_metrics = DBMetrics::init(&registry);
-        let moveos_store =
-            MoveOSStore::new_with_metrics_registry(temp_dir.path(), &registry).unwrap();
+        let moveos_store = MoveOSStore::new(temp_dir.path(), &registry).unwrap();
         let genesis_gas_parameter = FrameworksGasParameters::initial();
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_LOCAL_GENESIS;
         let moveos = MoveOS::new(
@@ -122,9 +119,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             genesis_gas_parameter.all_natives(),
             MoveOSConfig::default(),
             rooch_types::framework::system_pre_execute_functions(),
-            vec![],
-            //TODO FIXME https://github.com/rooch-network/rooch/issues/1137
-            //rooch_types::framework::system_post_execute_functions(),
+            rooch_types::framework::system_post_execute_functions(),
         )
         .unwrap();
 

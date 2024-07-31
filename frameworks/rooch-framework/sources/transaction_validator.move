@@ -21,6 +21,7 @@ module rooch_framework::transaction_validator {
     use rooch_framework::session_validator;
     use rooch_framework::bitcoin_validator;
     use rooch_framework::address_mapping;
+    use rooch_framework::account_coin_store;
 
     const MAX_U64: u128 = 18446744073709551615;
 
@@ -120,8 +121,8 @@ module rooch_framework::transaction_validator {
             account_entry::create_account(sender);
             //if the chain is local or dev, give the sender some RGC
             if (chain_id::is_local_or_dev()) {
-                //100 RGC
-                let init_gas = 1_00_000_000u256;
+                //10000 RGC
+                let init_gas = 1000_000_000_000u256;
                 gas_coin::faucet(sender, init_gas); 
             };
         };
@@ -134,6 +135,11 @@ module rooch_framework::transaction_validator {
             let module_signer = module_signer<TransactionValidatorPlaceholder>();
             timestamp::try_update_global_time(&module_signer, tx_timestamp);
         };
+        let gas_payment_account = tx_context::tx_gas_payment_account();
+        let max_gas_amount = tx_context::max_gas_amount();
+        let gas = transaction_fee::calculate_gas(max_gas_amount);
+        let gas_coin = gas_coin::deduct_gas(gas_payment_account, gas);
+        transaction_fee::deposit_fee(gas_coin);
     }
 
     /// Transaction post_execute function.
@@ -157,8 +163,15 @@ module rooch_framework::transaction_validator {
         let tx_result = tx_context::tx_result();
         let gas_payment_account = tx_context::tx_gas_payment_account();
         let gas_used = tx_result::gas_used(&tx_result);
-        let gas = transaction_fee::calculate_gas(gas_used);
-        let gas_coin = gas_coin::deduct_gas(gas_payment_account, gas);
-        transaction_fee::deposit_fee(gas_coin);
+        let gas_used_after_scale = transaction_fee::calculate_gas(gas_used);
+
+        let max_gas_amount = tx_context::max_gas_amount();
+        let paid_gas = transaction_fee::calculate_gas(max_gas_amount);
+
+        if (gas_used_after_scale < paid_gas) {
+            let refund_gas = paid_gas - gas_used_after_scale;
+            let refund_gas_coin = transaction_fee::withdraw_fee(refund_gas);
+            account_coin_store::deposit(gas_payment_account, refund_gas_coin);
+        };
     }
 }

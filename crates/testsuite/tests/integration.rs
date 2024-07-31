@@ -72,7 +72,6 @@ async fn start_server(w: &mut World, _scenario: String) {
             w.opt.btc_rpc_url = Some(bitcoin_rpc_url);
             w.opt.btc_rpc_username = Some(RPC_USER.to_string());
             w.opt.btc_rpc_password = Some(RPC_PASS.to_string());
-            w.opt.data_import_flag = false; // Enable data import without writing indexes
             w.opt.btc_sync_block_interval = Some(1u64); // Update sync interval as 1s
 
             info!("config btc rpc ok");

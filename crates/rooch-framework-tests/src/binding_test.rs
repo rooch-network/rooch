@@ -54,7 +54,8 @@ impl RustBindingTest {
     pub fn new() -> Result<Self> {
         let opt = RoochOpt::new_with_temp_store()?;
         let store_config = opt.store_config();
-        let rooch_db = RoochDB::init(store_config)?;
+        let registry_service = metrics::RegistryService::default();
+        let rooch_db = RoochDB::init(store_config, &registry_service.default_registry())?;
 
         let mut network: RoochNetwork = BuiltinChainID::Local.into();
 
@@ -70,7 +71,6 @@ impl RustBindingTest {
             root.clone(),
             rooch_db.moveos_store.clone(),
             rooch_db.rooch_store.clone(),
-            false,
         )?;
 
         let reader_executor = ReaderExecutorActor::new(

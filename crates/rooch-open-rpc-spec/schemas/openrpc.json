@@ -12,7 +12,7 @@
       "name": "Apache-2.0",
       "url": "https://raw.githubusercontent.com/rooch-network/rooch/main/LICENSE"
     },
-    "version": "0.6.3"
+    "version": "0.6.4"
   },
   "methods": [
     {
@@ -2033,10 +2033,14 @@
               "object_type_with_owner": {
                 "type": "object",
                 "required": [
+                  "filter_out",
                   "object_type",
                   "owner"
                 ],
                 "properties": {
+                  "filter_out": {
+                    "type": "boolean"
+                  },
                   "object_type": {
                     "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
                   },

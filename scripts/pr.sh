@@ -99,7 +99,8 @@ cargo build
 
 if [ ! -z "$ALSO_TEST" ]; then
     cargo nextest run --workspace --all-features --exclude rooch-framework-tests --exclude rooch-integration-test-runner -v
-    cargo test --release run -p rooch-framework-tests -p rooch-integration-test-runner
+    cargo test -p rooch-framework-tests -p rooch-integration-test-runner
+    cargo test --release -p rooch-framework-tests bitcoin_test
     RUST_LOG=warn cargo test -p testsuite --test integration
 fi
 

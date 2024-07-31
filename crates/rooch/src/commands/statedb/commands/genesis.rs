@@ -5,39 +5,22 @@ use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
-use std::str::FromStr;
 use std::sync::mpsc::{Receiver, SyncSender};
 use std::sync::{mpsc, Arc, RwLock};
 use std::thread;
 use std::time::SystemTime;
 
-use anyhow::Result;
-use bitcoin::OutPoint;
-use chrono::{DateTime, Local};
 use clap::Parser;
-use move_core_types::account_address::AccountAddress;
-use redb::Database;
-use serde::{Deserialize, Serialize};
 
-use bitcoin_move::natives::ord::inscription_id::InscriptionId;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
-use moveos_types::move_std::option::MoveOption;
-use moveos_types::move_std::string::MoveString;
-use moveos_types::moveos_std::object::{
-    ObjectEntity, ObjectID, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
-};
+use moveos_types::moveos_std::object::GENESIS_STATE_ROOT;
 use moveos_types::state::{FieldKey, ObjectState};
 use rooch_common::fs::file_cache::FileCacheManager;
 use rooch_common::utils::humanize;
 use rooch_config::R_OPT_NET_HELP;
-use rooch_types::address::BitcoinAddress;
-use rooch_types::addresses::BITCOIN_MOVE_ADDRESS;
-use rooch_types::bitcoin::ord::{
-    derive_inscription_id, Inscription, InscriptionID, InscriptionStore,
-};
+use rooch_types::bitcoin::ord::InscriptionStore;
 use rooch_types::error::RoochResult;
-use rooch_types::into_address::IntoAddress;
 use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
@@ -45,41 +28,11 @@ use crate::cli_types::WalletContextOptions;
 use crate::commands::statedb::commands::genesis_utxo::{
     apply_address_updates, apply_utxo_updates, produce_utxo_updates,
 };
-use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
-use crate::commands::statedb::commands::{
-    finish_job, get_ord_by_outpoint, init_job, sort_merge_utxo_ords, UTXOOrds, UTXO_ORD_MAP_TABLE,
+use crate::commands::statedb::commands::import::{apply_fields, apply_nodes, finish_import_job};
+use crate::commands::statedb::commands::inscription::{
+    create_genesis_inscription_store_object, gen_inscription_ids_update, InscriptionSource,
 };
-
-pub const ADDRESS_UNBOUND: &str = "unbound";
-pub const ADDRESS_NON_STANDARD: &str = "non-standard";
-
-// import data from ord
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct InscriptionSource {
-    pub sequence_number: u32,
-    pub inscription_number: i32,
-    pub id: InscriptionId,
-    // ord crate has different version of bitcoin dependency, using string for compatibility
-    pub satpoint_outpoint: String, // txid:vout
-    pub satpoint_offset: u64,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub body: Option<Vec<u8>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub content_encoding: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub content_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<Vec<u8>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub metaprotocol: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub parent: Option<Vec<InscriptionId>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub pointer: Option<u64>,
-    pub address: String, // <address>, "unbound", "non-standard"
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rune: Option<u128>,
-}
+use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 
 /// Import BTC ordinals & UTXO for genesis
 #[derive(Debug, Parser)]
@@ -97,23 +50,20 @@ pub struct GenesisCommand {
     #[clap(
         long,
         default_value = "1048576",
-        help = "batch size submited to state db, default 1M. Set it smaller if memory is limited."
+        help = "batch size submited to state db. Set it smaller if memory is limited."
     )]
     pub utxo_batch_size: Option<usize>,
     #[clap(
         long,
-        default_value = "262144",
-        help = "batch size submited to state db, default 262144. Set it smaller if memory is limited."
+        default_value = "524288",
+        help = "batch size submited to state db. Set it smaller if memory is limited."
     )] // ord may have large body, so set a smaller batch
     pub ord_batch_size: Option<usize>,
-    #[clap(long, help = "utxo:ords map db path, will create new one if not exist")]
-    pub utxo_ord_map: PathBuf,
     #[clap(
         long,
-        help = "deep check utxo:ords map db integrity",
-        default_value = "false"
+        help = "outpoint(original):inscriptions(object_id) map dump path, for debug"
     )]
-    pub deep_check_utxo_ord_map: Option<bool>,
+    pub outpoint_inscriptions_map_dump_path: Option<PathBuf>,
 
     #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
@@ -140,45 +90,48 @@ impl GenesisCommand {
             init_job(self.base_data_dir.clone(), self.chain_id.clone());
         let pre_root_state_root = root.state_root();
 
-        let utxo_ord_map_existed = self.utxo_ord_map.exists(); // check if utxo:ords map db existed before create db
-        let utxo_ord_map_db = Database::create(self.utxo_ord_map.clone()).unwrap(); // create db if not existed
-        let utxo_ord_map = Arc::new(utxo_ord_map_db);
-        index_utxo_ords(
-            self.ord_source.clone(),
-            utxo_ord_map.clone(),
-            utxo_ord_map_existed,
-            self.deep_check_utxo_ord_map.unwrap(),
+        log::info!("indexing and dumping outpoint_inscriptions_map...");
+        let (outpoint_inscriptions_map, mapped_outpoint, mapped_inscription, unbound_count) =
+            OutpointInscriptionsMap::index_and_dump(
+                self.ord_source.clone(),
+                self.outpoint_inscriptions_map_dump_path.clone(),
+            );
+        println!(
+            "{} outpoints : {} inscriptions mapped in: {:?} ({} unbound inscriptions ignored)",
+            mapped_outpoint,
+            mapped_inscription,
+            start_time.elapsed(),
+            unbound_count
         );
 
+        // import inscriptions and utxo parallel
+        let outpoint_inscriptions_map = Arc::new(outpoint_inscriptions_map);
         let moveos_store = Arc::new(moveos_store);
         let startup_update_set = Arc::new(RwLock::new(UpdateSet::new()));
-
-        // import inscriptions and utxo parallel
         // import inscriptions
         let input_path = self.ord_source.clone();
         let batch_size = self.ord_batch_size.unwrap();
-
-        let (ord_tx, ord_rx) = mpsc::sync_channel(2);
+        let (ord_tx, ord_rx) = mpsc::sync_channel(3);
         let produce_ord_updates_thread =
-            thread::spawn(move || produce_ord_updates(ord_tx, input_path, batch_size));
+            thread::spawn(move || produce_inscription_updates(ord_tx, input_path, batch_size));
         let moveos_store_clone = Arc::clone(&moveos_store);
         let startup_update_set_clone = Arc::clone(&startup_update_set);
         let apply_ord_updates_thread = thread::spawn(move || {
-            apply_ord_updates(ord_rx, moveos_store_clone, startup_update_set_clone);
+            apply_inscription_updates(ord_rx, moveos_store_clone, startup_update_set_clone);
         });
 
         // import utxo
         let utxo_input_path = self.utxo_source.clone();
         let utxo_batch_size = self.utxo_batch_size.unwrap();
-        let (utxo_tx, utxo_rx) = mpsc::sync_channel(2);
-        let (addr_tx, addr_rx) = mpsc::sync_channel(1);
+        let (utxo_tx, utxo_rx) = mpsc::sync_channel(4);
+        let (addr_tx, addr_rx) = mpsc::sync_channel(2);
         let produce_utxo_updates_thread = thread::spawn(move || {
             produce_utxo_updates(
                 utxo_tx,
                 addr_tx,
                 utxo_input_path,
                 utxo_batch_size,
-                Some(utxo_ord_map),
+                Some(outpoint_inscriptions_map),
             )
         });
         let moveos_store_clone = Arc::clone(&moveos_store);
@@ -198,7 +151,7 @@ impl GenesisCommand {
         apply_addr_updates_thread.join().unwrap();
         apply_utxo_updates_thread.join().unwrap();
 
-        finish_job(
+        finish_import_job(
             Arc::clone(&moveos_store),
             root.size(),
             pre_root_state_root,
@@ -210,102 +163,80 @@ impl GenesisCommand {
     }
 }
 
-// indexing steps:
-// 1. load all ords for ord_src_path (may cost 10GiB memory)
-// 2. sort merge ords by utxo
-// 3. insert utxo:ords into db
-fn index_utxo_ords(
-    ord_src_path: PathBuf,
-    utxo_ord_map: Arc<Database>,
-    utxo_ord_map_existed: bool,
-    deep_check: bool,
-) {
-    if !deep_check && utxo_ord_map_existed {
-        println!("utxo:ords map db existed, skip indexing");
-        return;
-    }
+struct InscriptionUpdates {
+    update_set: UpdateSet<FieldKey, ObjectState>,
+    cursed_inscription_count: u32,
+    blessed_inscription_count: u32,
 
-    let start_time = SystemTime::now();
-    let datetime: DateTime<Local> = start_time.into();
-
-    println!("indexing utxo:ords started at: {}", datetime);
-
-    let mut ord_src_reader =
-        BufReader::with_capacity(8 * 1024 * 1024, File::open(ord_src_path.clone()).unwrap());
-    let mut is_title_line = true;
-
-    let mut ord_count: u64 = 0;
-
-    let mut utxo_ords = Vec::with_capacity(80 * 1024 * 1024);
-    for line in ord_src_reader.by_ref().lines() {
-        let line = line.unwrap();
-        if is_title_line {
-            is_title_line = false;
-            if line.starts_with("# export at") {
-                // skip block height info
-                continue;
-            }
-        }
-
-        let src: InscriptionSource = serde_json::from_str(&line).unwrap();
-        let txid: AccountAddress = src.id.txid.into_address();
-        let inscription_id = InscriptionID::new(txid, src.id.index);
-        let obj_id = derive_inscription_id(&inscription_id);
-        let satpoint_output = OutPoint::from_str(src.satpoint_outpoint.as_str()).unwrap();
-
-        utxo_ords.push(UTXOOrds {
-            utxo: satpoint_output,
-            ords: vec![obj_id.clone()], // only one ord for one utxo at most time
-        });
-        ord_count += 1;
-    }
-
-    // too big file load in cache
-    let file_cache_manager = FileCacheManager::new(ord_src_path).unwrap();
-    let _ = file_cache_manager.drop_cache_range(0, 1024 * 1024 * 1024 * 1024);
-
-    let utxo_count = sort_merge_utxo_ords(&mut utxo_ords) as u64;
-
-    if deep_check && utxo_ord_map_existed {
-        let read_txn = utxo_ord_map.clone().begin_read().unwrap();
-        let read_table = Some(Arc::new(read_txn.open_table(UTXO_ORD_MAP_TABLE).unwrap()));
-        for utxo_ord in utxo_ords.iter() {
-            let ords_in_db = get_ord_by_outpoint(read_table.clone(), utxo_ord.utxo).unwrap();
-            if ords_in_db != utxo_ord.ords {
-                panic!(
-                    "failed to deep check: utxo: {} ords not match, expected: {:?}, actual: {:?}",
-                    utxo_ord.utxo, utxo_ord.ords, ords_in_db
-                );
-            }
-        }
-        _ = read_txn.close();
-        println!("deep check passed");
-    } else {
-        let write_txn = utxo_ord_map.clone().begin_write().unwrap();
-        {
-            let mut table = write_txn.open_table(UTXO_ORD_MAP_TABLE).unwrap();
-            for utxo_ord in utxo_ords {
-                table
-                    .insert(
-                        bcs::to_bytes(&utxo_ord.utxo).unwrap().as_slice(),
-                        bcs::to_bytes(&utxo_ord.ords).unwrap().as_slice(),
-                    )
-                    .unwrap();
-            }
-        }
-        write_txn.commit().unwrap();
-    }
-
-    println!(
-        "{} utxo : {} ords indexed in: {:?}",
-        utxo_count,
-        ord_count,
-        start_time.elapsed().unwrap(),
-    );
+    updates_value_bytes: u64, // stat for optimization
 }
 
-fn apply_ord_updates(
-    rx: Receiver<BatchUpdatesOrd>,
+fn produce_inscription_updates(
+    tx: SyncSender<InscriptionUpdates>,
+    input: PathBuf,
+    batch_size: usize,
+) {
+    let file_cache_mgr = FileCacheManager::new(input.clone()).unwrap();
+    let mut src_reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
+    let mut is_title_line = true;
+    let mut sequence_number: u32 = 0;
+
+    let mut cache_drop_offset: u64 = 0;
+    loop {
+        let mut bytes_read = 0;
+        let mut updates = InscriptionUpdates {
+            update_set: UpdateSet::new(),
+            cursed_inscription_count: 0,
+            blessed_inscription_count: 0,
+            updates_value_bytes: 0,
+        };
+        let loop_start_time = SystemTime::now();
+
+        for line in src_reader.by_ref().lines().take(batch_size) {
+            let line = line.unwrap();
+            bytes_read += line.len() as u64 + 1; // Add line.len() + 1, assuming that the line terminator is '\n'
+
+            if is_title_line {
+                is_title_line = false;
+                if line.starts_with("# export at") {
+                    // skip block height info
+                    continue;
+                }
+            }
+
+            let source: InscriptionSource = InscriptionSource::from_str(&line);
+            if source.inscription_number < 0 {
+                updates.cursed_inscription_count += 1;
+            } else {
+                updates.blessed_inscription_count += 1;
+            }
+            let (key, state, inscription_id) = source.gen_update();
+            updates.updates_value_bytes += state.value.len() as u64;
+            updates.update_set.put(key, state);
+            let (key2, state2) = gen_inscription_ids_update(sequence_number, inscription_id);
+            updates.update_set.put(key2, state2);
+            sequence_number += 1;
+        }
+        println!(
+            "{} inscription updates produced, cost: {:?}",
+            updates.blessed_inscription_count + updates.cursed_inscription_count,
+            loop_start_time.elapsed().unwrap()
+        );
+        let _ = file_cache_mgr.drop_cache_range(cache_drop_offset, bytes_read);
+        cache_drop_offset += bytes_read;
+
+        if updates.update_set.is_empty() {
+            break;
+        }
+
+        tx.send(updates).expect("failed to send updates");
+    }
+
+    drop(tx);
+}
+
+fn apply_inscription_updates(
+    rx: Receiver<InscriptionUpdates>,
     moveos_store_arc: Arc<MoveOSStore>,
     startup_update_set: Arc<RwLock<UpdateSet<FieldKey, ObjectState>>>,
 ) {
@@ -320,29 +251,25 @@ fn apply_ord_updates(
 
         let mut nodes: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
 
-        let cnt = batch.ord_updates.len();
-        let mut ord_tree_change_set = apply_fields(
-            moveos_store,
-            inscription_store_state_root,
-            batch.ord_updates,
-        )
-        .unwrap();
-        nodes.append(&mut ord_tree_change_set.nodes);
+        let cnt = batch.update_set.len();
+        let mut tree_change_set =
+            apply_fields(moveos_store, inscription_store_state_root, batch.update_set).unwrap();
+        nodes.append(&mut tree_change_set.nodes);
 
-        inscription_store_state_root = ord_tree_change_set.state_root;
+        inscription_store_state_root = tree_change_set.state_root;
         cursed_inscription_count += batch.cursed_inscription_count;
         blessed_inscription_count += batch.blessed_inscription_count;
 
-        apply_nodes(moveos_store, nodes).expect("failed to apply ord nodes");
+        apply_nodes(moveos_store, nodes).expect("failed to apply inscription nodes");
 
         inscritpion_store_filed_count += cnt as u32;
 
         println!(
-            "{} ord applied ({} cursed, {} blessed). this batch: value size: {}, cost: {:?}",
-            inscritpion_store_filed_count / 2, // both ord and ord_id as field
+            "{} inscription applied ({} cursed, {} blessed). this batch: value size: {}, cost: {:?}",
+            inscritpion_store_filed_count / 2, // both inscription and inscription_id as field
             cursed_inscription_count,
             blessed_inscription_count,
-            humanize::human_readable_bytes(batch.ord_value_bytes),
+            humanize::human_readable_bytes(batch.updates_value_bytes),
             loop_start_time.elapsed().unwrap()
         );
 
@@ -375,181 +302,4 @@ fn apply_ord_updates(
         "genesis InscriptionStore object updated, state_root: {:?}, cursed: {}, blessed: {}, total: {}",
         inscription_store_state_root, cursed_inscription_count, blessed_inscription_count, inscritpion_store_filed_count / 2
     );
-}
-
-struct BatchUpdatesOrd {
-    ord_updates: UpdateSet<FieldKey, ObjectState>,
-    cursed_inscription_count: u32,
-    blessed_inscription_count: u32,
-
-    ord_value_bytes: u64, // for optimization
-}
-
-fn produce_ord_updates(tx: SyncSender<BatchUpdatesOrd>, input: PathBuf, batch_size: usize) {
-    let file_cache_mgr = FileCacheManager::new(input.clone()).unwrap();
-    let mut src_reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
-    let mut is_title_line = true;
-    let mut sequence_number: u32 = 0;
-
-    let mut cache_drop_offset: u64 = 0;
-    loop {
-        let mut bytes_read = 0;
-        let mut updates = BatchUpdatesOrd {
-            ord_updates: UpdateSet::new(),
-            cursed_inscription_count: 0,
-            blessed_inscription_count: 0,
-            ord_value_bytes: 0,
-        };
-        let loop_start_time = SystemTime::now();
-
-        for line in src_reader.by_ref().lines().take(batch_size) {
-            let line = line.unwrap();
-            bytes_read += line.len() as u64 + 1; // Add line.len() + 1, assuming that the line terminator is '\n'
-
-            if is_title_line {
-                is_title_line = false;
-                if line.starts_with("# export at") {
-                    // skip block height info
-                    continue;
-                }
-            }
-
-            let source: InscriptionSource = serde_json::from_str(&line).unwrap();
-            if source.inscription_number < 0 {
-                updates.cursed_inscription_count += 1;
-            } else {
-                updates.blessed_inscription_count += 1;
-            }
-            let (key, state, inscription_id) = gen_inscription_update(source).unwrap();
-            updates.ord_value_bytes += state.value.len() as u64;
-            updates.ord_updates.put(key, state);
-            let (key2, state2) = gen_inscription_ids_update(sequence_number, inscription_id);
-            updates.ord_updates.put(key2, state2);
-            sequence_number += 1;
-        }
-        println!(
-            "{} inscription updates produced, cost: {:?}",
-            updates.blessed_inscription_count + updates.cursed_inscription_count,
-            loop_start_time.elapsed().unwrap()
-        );
-        let _ = file_cache_mgr.drop_cache_range(cache_drop_offset, bytes_read);
-        cache_drop_offset += bytes_read;
-
-        if updates.ord_updates.is_empty() {
-            break;
-        }
-
-        tx.send(updates).expect("failed to send updates");
-    }
-
-    drop(tx);
-}
-
-fn gen_inscription_ids_update(
-    sequence_number: u32,
-    inscription_id: InscriptionID,
-) -> (FieldKey, ObjectState) {
-    let parent_id = InscriptionStore::object_id();
-    let field = ObjectEntity::new_dynamic_field(parent_id, sequence_number, inscription_id);
-    let state = field.into_state();
-    let key = state.id().field_key();
-    (key, state)
-}
-
-impl InscriptionSource {
-    // derive account address from inscription source address(unbound/non-standard/valid_address)
-    pub fn derive_account_address(self) -> Result<AccountAddress> {
-        if self.address == *ADDRESS_UNBOUND.to_string()
-            || self.address == *ADDRESS_NON_STANDARD.to_string()
-        {
-            return Ok(BITCOIN_MOVE_ADDRESS);
-        }
-
-        let bitcoin_address = BitcoinAddress::from_str(self.address.as_str()).unwrap();
-        let address = AccountAddress::from(bitcoin_address.to_rooch_address());
-        Ok(address)
-    }
-
-    pub fn to_inscription(self) -> Inscription {
-        let src = self;
-
-        let txid: AccountAddress = src.id.txid.into_address();
-
-        let parents = derive_obj_ids_by_inscription_ids(src.parent);
-
-        Inscription {
-            txid,
-            index: src.id.index,
-            offset: src.satpoint_offset,
-            sequence_number: src.sequence_number,
-            inscription_number: src.inscription_number.unsigned_abs(),
-            is_curse: src.inscription_number.is_negative(),
-            body: src.body.unwrap_or_default(),
-            content_encoding: convert_option_string_to_move_type(src.content_encoding),
-            content_type: convert_option_string_to_move_type(src.content_type),
-            metadata: src.metadata.unwrap_or_default(),
-            metaprotocol: convert_option_string_to_move_type(src.metaprotocol),
-            pointer: src.pointer.into(),
-            parents,
-            rune: src.rune.into(),
-        }
-    }
-}
-
-fn gen_inscription_update(
-    src: InscriptionSource,
-) -> Result<(FieldKey, ObjectState, InscriptionID)> {
-    let inscription = src.clone().to_inscription();
-    let address = src.clone().derive_account_address()?;
-
-    let inscription_id = InscriptionID::new(inscription.txid, inscription.index);
-    let obj_id = derive_inscription_id(&inscription_id);
-    let ord_obj = ObjectEntity::new(obj_id.clone(), address, 0u8, None, 0, 0, 0, inscription);
-
-    Ok((ord_obj.id.field_key(), ord_obj.into_state(), inscription_id))
-}
-
-fn convert_option_string_to_move_type(opt: Option<String>) -> MoveOption<MoveString> {
-    opt.map(MoveString::from).into()
-}
-
-fn derive_obj_ids_by_inscription_ids(ids: Option<Vec<InscriptionId>>) -> Vec<ObjectID> {
-    if let Some(ids) = ids {
-        let mut obj_ids = Vec::with_capacity(ids.len());
-        for id in ids {
-            let obj_id = derive_inscription_id(&derive_rooch_inscription_id(id));
-            obj_ids.push(obj_id)
-        }
-        obj_ids
-    } else {
-        vec![]
-    }
-}
-
-fn derive_rooch_inscription_id(id: InscriptionId) -> InscriptionID {
-    let txid: AccountAddress = id.txid.into_address();
-    InscriptionID::new(txid, id.index)
-}
-
-fn create_genesis_inscription_store_object(
-    cursed_inscription_count: u32,
-    blessed_inscription_count: u32,
-    next_sequence_number: u32, // ord count
-) -> ObjectEntity<InscriptionStore> {
-    let inscription_store = InscriptionStore {
-        cursed_inscription_count,
-        blessed_inscription_count,
-        next_sequence_number,
-    };
-    let obj_id = InscriptionStore::object_id();
-    ObjectEntity::new(
-        obj_id,
-        SYSTEM_OWNER_ADDRESS,
-        SHARED_OBJECT_FLAG_MASK,
-        None,
-        0,
-        0,
-        0,
-        inscription_store,
-    )
 }

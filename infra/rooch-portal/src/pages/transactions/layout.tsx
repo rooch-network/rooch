@@ -18,9 +18,7 @@ export const TransactionsLayout = () => {
           <p className="text-muted-foreground text-wrap">{t('Transactions.subTitle')}</p>
         </span>
       </div>
-      {
-        isConnected ? <TransactionsList />: <ConnectWalletHint/>
-      }
+      {isConnected ? <TransactionsList /> : <ConnectWalletHint />}
     </div>
   )
 }

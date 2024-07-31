@@ -17,6 +17,7 @@ use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
 use rooch_types::crypto::{RoochKeyPair, Signature};
 use rooch_types::sequencer::SequencerInfo;
+use rooch_types::service_status::ServiceStatus;
 use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
 use tracing::info;
 
@@ -25,14 +26,14 @@ pub struct SequencerActor {
     tx_accumulator: MerkleAccumulator,
     sequencer_key: RoochKeyPair,
     rooch_store: RoochStore,
-    read_only: bool,
+    service_status: ServiceStatus,
 }
 
 impl SequencerActor {
     pub fn new(
         sequencer_key: RoochKeyPair,
         rooch_store: RoochStore,
-        read_only: bool,
+        service_status: ServiceStatus,
     ) -> Result<Self> {
         // The sequencer info would be inited when genesis, so the sequencer info should not be None
         let last_sequencer_info = rooch_store
@@ -58,7 +59,7 @@ impl SequencerActor {
             tx_accumulator,
             sequencer_key,
             rooch_store,
-            read_only,
+            service_status,
         })
     }
 
@@ -67,9 +68,30 @@ impl SequencerActor {
     }
 
     pub fn sequence(&mut self, mut tx_data: LedgerTxData) -> Result<LedgerTransaction> {
-        if self.read_only {
-            return Err(anyhow::anyhow!("The service is read only"));
+        match self.service_status {
+            ServiceStatus::ReadOnlyMode => {
+                return Err(anyhow::anyhow!("The service is in read-only mode"));
+            }
+            ServiceStatus::DateImportMode => {
+                if !tx_data.is_l1_block() && !tx_data.is_l1_tx() {
+                    return Err(anyhow::anyhow!(
+                        "The service is in date import mode, only allow l1 block and l1 tx"
+                    ));
+                }
+            }
+            ServiceStatus::Maintenance => {
+                // Only the sequencer can send transactions in maintenance mode
+                if let Some(sender) = tx_data.sender() {
+                    if sender != self.sequencer_key.public().rooch_address()? {
+                        return Err(anyhow::anyhow!("The service is in maintenance mode"));
+                    }
+                } else {
+                    return Err(anyhow::anyhow!("The service is in maintenance mode"));
+                }
+            }
+            _ => {}
         }
+
         let now = SystemTime::now();
         let tx_timestamp = now.duration_since(SystemTime::UNIX_EPOCH)?.as_millis() as u64;
 

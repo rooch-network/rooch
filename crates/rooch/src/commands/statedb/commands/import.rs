@@ -7,13 +7,14 @@ use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::mpsc::{Receiver, SyncSender};
-use std::sync::{mpsc, Arc};
+use std::sync::{mpsc, Arc, RwLock};
 use std::thread;
-use std::time::SystemTime;
+use std::time::{Instant, SystemTime};
 
 use anyhow::{Error, Result};
 use chrono::{DateTime, Local};
 use clap::Parser;
+use metrics::RegistryService;
 use serde::{Deserialize, Serialize};
 
 use moveos_store::MoveOSStore;
@@ -92,7 +93,9 @@ impl ImportCommand {
         let datetime: DateTime<Local> = start_time.into();
 
         let opt = RoochOpt::new_with_default(self.base_data_dir, self.chain_id, None).unwrap();
-        let rooch_db = RoochDB::init(opt.store_config()).unwrap();
+        let registry_service = RegistryService::default();
+        let rooch_db =
+            RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
         let genesis = RoochGenesis::load_or_init(opt.network(), &rooch_db).unwrap();
         let root = genesis.genesis_root().clone();
         println!(
@@ -293,4 +296,36 @@ where
 pub fn apply_nodes(moveos_store: &MoveOSStore, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
     moveos_store.state_store.node_store.write_nodes(nodes)?;
     Ok(())
+}
+
+// finish import job with new startup update set
+pub fn finish_import_job(
+    moveos_store: Arc<MoveOSStore>,
+    root_size: u64,
+    pre_root_state_root: H256,
+    task_start_time: Instant,
+    new_startup_update_set: Option<Arc<RwLock<UpdateSet<FieldKey, ObjectState>>>>,
+) {
+    let root_state_root = match new_startup_update_set {
+        Some(new_startup_update_set) => {
+            let new_startup_update_set = new_startup_update_set.read().unwrap();
+            let new_startup_update_set = new_startup_update_set.clone();
+            let tree_change_set =
+                apply_fields(&moveos_store, pre_root_state_root, new_startup_update_set).unwrap();
+            apply_nodes(&moveos_store, tree_change_set.nodes).unwrap();
+            tree_change_set.state_root
+        }
+        None => pre_root_state_root,
+    };
+    // Update Startup Info
+    let new_startup_info = StartupInfo::new(root_state_root, root_size);
+    moveos_store
+        .get_config_store()
+        .save_startup_info(new_startup_info.clone())
+        .unwrap();
+    println!(
+        "Done in {:?}. New startup_info: {:?}",
+        task_start_time.elapsed(),
+        new_startup_info
+    );
 }

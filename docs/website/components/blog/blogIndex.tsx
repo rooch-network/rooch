@@ -1,10 +1,34 @@
 import { getPagesUnderRoute } from 'nextra/context'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/router'
 import { FilterButton } from './filterButton'
 import ROOCH_TEAM from '../../data/team'
 import Image from 'next/image'
+import { Page } from 'nextra'
+
+const blogDateFormat = (pages:Page[])=>{
+  let _pages = []
+  _pages = pages.map((page: any) => {
+    let _page = page
+
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }
+    let dateObject = new Date(page.frontMatter?.date)
+    _page.dateNumber = dateObject.getTime()
+
+    const formattedDate = dateObject.toLocaleDateString(page.locale, options)
+
+    _page.frontMatter.date =
+      formattedDate != 'Invalid Date' ? formattedDate : _page.frontMatter.date
+
+    return _page
+  })
+  return _pages
+}
 
 export default function BlogIndex({
   textAllCategories = 'All Categories',
@@ -16,64 +40,37 @@ export default function BlogIndex({
   const [selectedAuthor, setSelectedAuthor] = useState(textAllAuthors)
 
   const rawPages = getPagesUnderRoute('/blog')
-  const [pages, SetPages] = useState(rawPages)
-  const [pagesFiltered, setPagesFiltered] = useState(pages)
 
   // get all the authors
-  const [authors, __] = useState(() => {
+  const authors = useMemo(()=>{
     let _authors = [textAllAuthors]
 
-    pages.forEach((page) => {
+    rawPages.forEach((page) => {
       _authors = _authors.concat(page.frontMatter.author)
     })
 
     return Array.from(new Set(_authors))
-  })
+  },[rawPages])
 
   // get all the categories
-  const [categories, ___] = useState(() => {
+  const categories = useMemo(()=>{
     let _categories = [textAllCategories]
-
-    pages.forEach((page) => {
+    rawPages.forEach((page) => {
       if (page.frontMatter.category) {
         _categories = _categories.concat(page.frontMatter.category)
       }
     })
-
     return Array.from(new Set(_categories))
-  })
+  },[rawPages])
 
-  // process date
-  useEffect(() => {
-    let _pages = []
-    _pages = pages.map((page: any) => {
-      let _page = page
-
-      const options: Intl.DateTimeFormatOptions = {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }
-      let dateObject = new Date(page.frontMatter?.date)
-      _page.dateNumber = dateObject.getTime()
-
-      const formmatedDate = dateObject.toLocaleDateString(page.locale, options)
-
-      _page.frontMatter.date =
-        formmatedDate != 'Invalid Date' ? formmatedDate : _page.frontMatter.date
-
-      return _page
-    })
-    SetPages(_pages)
-  }, [])
+  const renderBlogList = useMemo(()=>{
+    let blog = blogDateFormat(rawPages)
+    return blog.filter((page: any) => page.locale === locale)
+  },[rawPages,locale])
 
   // filter pages
-  useEffect(() => {
-    let _pages = []
-
-    // filter based on locale
-    _pages = pages.filter((page: any) => page.locale === locale)
-
+  const pagesFiltered = useMemo(()=>{
+    let _pages = renderBlogList
     // filter based on selected author and category
     if (selectedAuthor === textAllAuthors && selectedCategory == textAllCategories) {
       _pages = _pages
@@ -88,8 +85,8 @@ export default function BlogIndex({
         )
       })
     }
-    setPagesFiltered(_pages)
-  }, [selectedCategory, selectedAuthor])
+    return _pages
+  },[selectedCategory, selectedAuthor, renderBlogList])
 
   return (
     <div className="mt-10">

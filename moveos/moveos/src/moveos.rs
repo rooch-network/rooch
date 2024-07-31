@@ -543,11 +543,18 @@ impl MoveOS {
         // update txn result to TxContext
         let gas_used = session.query_gas_used();
         let tx_result = TxResult::new(&kept_status, gas_used);
-        session
-            .object_runtime
-            .write()
-            .add_to_tx_context(tx_result)
-            .expect("Add tx_result to TxContext should always success");
+        {
+            let mut runtime = session.object_runtime.write();
+
+            runtime
+                .add_to_tx_context(tx_result)
+                .expect("Add tx_result to TxContext should always success");
+            //We need to release the arguments before the post_execute function.
+            //Because the post_execute function may use the Object in the argument.
+            runtime
+                .release_arguments()
+                .expect("release_arguments should always success");
+        }
 
         // We do not execute post_execute function for system call
         if !is_system_call {
