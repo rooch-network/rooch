@@ -5,8 +5,8 @@ use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
-use std::sync::{Arc, mpsc, RwLock};
 use std::sync::mpsc::{Receiver, SyncSender};
+use std::sync::{mpsc, Arc, RwLock};
 use std::thread;
 use std::time::SystemTime;
 
@@ -26,12 +26,12 @@ use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
 use crate::cli_types::WalletContextOptions;
-use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes, finish_import_job};
 use crate::commands::statedb::commands::utxo::{
     create_genesis_rooch_to_bitcoin_address_mapping_object, create_genesis_utxo_store_object,
     UTXORawData,
 };
+use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 
 /// Import UTXO for development and testing.
 #[derive(Debug, Parser)]
