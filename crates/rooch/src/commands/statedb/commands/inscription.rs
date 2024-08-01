@@ -106,7 +106,7 @@ impl InscriptionSource {
 }
 
 // sequence_number:inscription_id
-pub fn gen_inscription_ids_update(
+pub(crate) fn gen_inscription_ids_update(
     sequence_number: u32,
     inscription_id: InscriptionID,
 ) -> (FieldKey, ObjectState) {
@@ -117,7 +117,7 @@ pub fn gen_inscription_ids_update(
     (key, state)
 }
 
-fn derive_inscription_ids(ids: Option<Vec<InscriptionId>>) -> Vec<ObjectID> {
+pub(crate) fn derive_inscription_ids(ids: Option<Vec<InscriptionId>>) -> Vec<ObjectID> {
     if let Some(ids) = ids {
         let mut obj_ids = Vec::with_capacity(ids.len());
         for id in ids {
@@ -135,7 +135,7 @@ fn convert_to_rooch_inscription_id(id: InscriptionId) -> InscriptionID {
     InscriptionID::new(txid, id.index)
 }
 
-pub fn create_genesis_inscription_store_object(
+pub(crate) fn create_genesis_inscription_store_object(
     cursed_inscription_count: u32,
     blessed_inscription_count: u32,
     next_sequence_number: u32, // ord count

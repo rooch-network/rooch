@@ -342,6 +342,13 @@ impl RegistryService {
     }
 }
 
+impl Default for RegistryService {
+    fn default() -> Self {
+        let default_registry = Registry::new();
+        Self::new(default_registry)
+    }
+}
+
 /// Create a metric that measures the uptime from when this metric was constructed.
 /// The metric is labeled with:
 /// - 'process': the process type, differentiating between validator and fullnode

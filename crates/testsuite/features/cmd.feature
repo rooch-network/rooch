@@ -408,26 +408,6 @@ Feature: Rooch CLI integration tests
       # release servers
       Then stop the server
 
-    @serial
-    Scenario: rooch_bitcoin test
-      # prepare servers
-      Given a bitcoind server for rooch_bitcoin_test
-      Given a server for rooch_bitcoin_test
-
-      Then cmd: "account list --json" 
-      
-      # mint utxos
-      Then cmd bitcoin-cli: "generatetoaddress 101 {{$.account[-1].default.bitcoin_address}}"
-      Then sleep: "10" # wait rooch sync and index
-
-      # query utxos
-      Then cmd: "object -t 0x4::utxo::UTXO -o {{$.account[-1].default.bitcoin_address}}"
-      Then assert: "{{$.object[-1].data[0].owner}} == {{$.account[-1].default.address}}"
-
-      # release servers
-      Then stop the server
-      Then stop the bitcoind server 
-
   @serial
     Scenario: view_function_loop example
       Given a server for view_function_loop

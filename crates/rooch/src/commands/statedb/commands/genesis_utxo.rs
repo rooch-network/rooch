@@ -52,7 +52,7 @@ pub struct GenesisUTXOCommand {
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
     pub chain_id: Option<RoochChainID>,
 
-    #[clap(long, short = 'b', default_value = "1048576")]
+    #[clap(long, short = 'b', default_value = "524288")]
     pub batch_size: Option<usize>,
 
     #[clap(flatten)]
@@ -69,7 +69,7 @@ impl GenesisUTXOCommand {
         let moveos_store_arc = Arc::new(moveos_store);
 
         let (utxo_tx, utxo_rx) = mpsc::sync_channel(4);
-        let (addr_tx, addr_rx) = mpsc::sync_channel(2);
+        let (addr_tx, addr_rx) = mpsc::sync_channel(4);
         let produce_updates_thread = thread::spawn(move || {
             produce_utxo_updates(
                 utxo_tx,
