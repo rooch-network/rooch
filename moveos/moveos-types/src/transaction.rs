@@ -16,8 +16,11 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
     vm_status::KeptVMStatus,
 };
-use serde::{Deserialize, Deserializer, Serialize};
-use std::fmt::Display;
+use serde::{
+    de::{self, Visitor},
+    Deserialize, Deserializer, Serialize,
+};
+use std::fmt::{self, Display};
 
 #[cfg(any(test, feature = "fuzzing"))]
 use crate::move_types::type_tag_prop_strategy;
@@ -277,8 +280,8 @@ impl MoveOSTransaction {
 ///     pub root: ObjectMeta,
 ///     pub ctx: TxContext,
 ///     pub action: MoveAction,
-///     pub pre_execute_functions: Option<Vec<FunctionCall>>,
-///     pub post_execute_functions: Option<Vec<FunctionCall>>,
+///     pub pre_execute_functions: Vec<FunctionCall>,
+///     pub post_execute_functions: Vec<FunctionCall>,
 /// }
 /// ```
 /// Some old transactions are still stored in the database or genesis file,
@@ -288,25 +291,60 @@ impl<'de> Deserialize<'de> for MoveOSTransaction {
     where
         D: Deserializer<'de>,
     {
-        #[derive(::serde::Deserialize)]
-        struct OldValue(
-            (
-                ObjectMeta,
-                TxContext,
-                MoveAction,
-                Option<Vec<FunctionCall>>,
-                Option<Vec<FunctionCall>>,
-            ),
-        );
+        struct MoveOSTransactionVisitor;
 
-        // FIXME: This is a hack to deserialize the old MoveOSTransaction format.
-        // We need compatible deserialization logic to support both old and new formats.
-        let value = OldValue::deserialize(deserializer)?;
-        Ok(MoveOSTransaction {
-            root: value.0 .0,
-            ctx: value.0 .1,
-            action: value.0 .2,
-        })
+        impl<'de> Visitor<'de> for MoveOSTransactionVisitor {
+            type Value = MoveOSTransaction;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct MoveOSTransaction with 5 or 3 fields")
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: de::SeqAccess<'de>,
+            {
+                let root = seq
+                    .next_element::<ObjectMeta>()?
+                    .ok_or_else(|| de::Error::invalid_length(0, &self))?;
+                let ctx = seq
+                    .next_element::<TxContext>()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let action = seq
+                    .next_element::<MoveAction>()?
+                    .ok_or_else(|| de::Error::invalid_length(2, &self))?;
+
+                let _pre_execution_functions: Vec<FunctionCall> =
+                    match seq.next_element::<Vec<FunctionCall>>() {
+                        Ok(Some(pre_execution_functions)) => pre_execution_functions,
+                        Ok(None) => vec![],
+                        Err(_e) => {
+                            vec![]
+                        }
+                    };
+                let _post_execution_functions: Vec<FunctionCall> =
+                    match seq.next_element::<Vec<FunctionCall>>() {
+                        Ok(Some(post_execution_functions)) => post_execution_functions,
+                        Ok(None) => vec![],
+                        Err(_e) => {
+                            vec![]
+                        }
+                    };
+                Ok(MoveOSTransaction { root, ctx, action })
+            }
+        }
+
+        deserializer.deserialize_struct(
+            "MoveOSTransaction",
+            &[
+                "root",
+                "ctx",
+                "action",
+                "pre_execution_functions",
+                "post_execution_functions",
+            ],
+            MoveOSTransactionVisitor,
+        )
     }
 }
 
