@@ -48,8 +48,9 @@ impl ParsedSecretKey {
             };
             Ok(Self(SecretKey::from_slice(&data[1..])?))
         } else {
+            let s = s.strip_prefix("0x").unwrap_or(s);
             match hex::decode(s) {
-                Ok(data) => match SecretKey::from_slice(&data.to_bytes()) {
+                Ok(data) => match SecretKey::from_slice(&data) {
                     Ok(a) => Ok(Self(a)),
                     Err(_) => Err(anyhow::Error::new(RoochError::CommandArgumentError(
                         "Parse from a raw material key failed".to_owned(),
