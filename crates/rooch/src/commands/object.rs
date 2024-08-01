@@ -10,10 +10,7 @@ use rooch_rpc_api::jsonrpc_types::{
     IndexerObjectStatePageView, ObjectStateFilterView, QueryOptions, RoochAddressView,
 };
 use rooch_types::address::ParsedAddress;
-use rooch_types::{
-    error::{RoochError, RoochResult},
-    function_arg::ParsedObjectID,
-};
+use rooch_types::{error::RoochResult, function_arg::ParsedObjectID};
 
 #[derive(Parser)]
 pub struct ObjectCommand {
