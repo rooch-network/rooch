@@ -642,5 +642,8 @@ mod tests {
         assert!(load_genesis_from_binary(BuiltinChainID::Test)
             .unwrap()
             .is_some());
+        assert!(load_genesis_from_binary(BuiltinChainID::Main)
+            .unwrap()
+            .is_some());
     }
 }

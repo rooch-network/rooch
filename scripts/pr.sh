@@ -95,8 +95,6 @@ if [ ! -z "$CHECK" ]; then
   cargo clippy --workspace --all-targets --all-features --tests --benches -- -D warnings
 fi
 
-cargo build
-
 if [ ! -z "$ALSO_TEST" ]; then
     cargo nextest run --workspace --all-features --exclude rooch-framework-tests --exclude rooch-integration-test-runner -v
     cargo test -p rooch-framework-tests -p rooch-integration-test-runner
