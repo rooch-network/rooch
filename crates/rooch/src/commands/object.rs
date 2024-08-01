@@ -95,7 +95,10 @@ impl CommandAction<IndexerObjectStatePageView> for ObjectCommand {
         };
 
         if filter.is_none() {
-            return Err(RoochError::from(anyhow::anyhow!("No filter provided")));
+            let context = self.context_options.build()?;
+            let active_address: RoochAddressView =
+                context.client_config.active_address.unwrap().into();
+            filter = Some(ObjectStateFilterView::Owner(active_address.into()));
         }
 
         Ok(client
