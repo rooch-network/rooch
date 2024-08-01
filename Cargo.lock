@@ -5871,7 +5871,7 @@ dependencies = [
 [[package]]
 name = "librocksdb-sys"
 version = "0.17.0+9.0.0"
-source = "git+https://github.com/rooch-network/rust-rocksdb.git?branch=build/sched_getcpu#da9c9db1c1ebe7f11dc9b5e10cd6a7cb444475bd"
+source = "git+https://github.com/rooch-network/rust-rocksdb.git?rev=41d102327ba3cf9a2335d1192e8312c92bc3d6f9#41d102327ba3cf9a2335d1192e8312c92bc3d6f9"
 dependencies = [
  "bindgen",
  "bzip2-sys",
@@ -9253,7 +9253,7 @@ dependencies = [
 [[package]]
 name = "rocksdb"
 version = "0.22.0"
-source = "git+https://github.com/rooch-network/rust-rocksdb.git?branch=build/sched_getcpu#da9c9db1c1ebe7f11dc9b5e10cd6a7cb444475bd"
+source = "git+https://github.com/rooch-network/rust-rocksdb.git?rev=41d102327ba3cf9a2335d1192e8312c92bc3d6f9#41d102327ba3cf9a2335d1192e8312c92bc3d6f9"
 dependencies = [
  "libc",
  "librocksdb-sys",
