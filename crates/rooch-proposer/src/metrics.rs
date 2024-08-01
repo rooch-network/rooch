@@ -9,7 +9,7 @@ pub struct ProposerMetrics {
     pub proposer_transaction_propose_latency_seconds: HistogramVec,
     pub proposer_transaction_propose_bytes: HistogramVec,
     pub proposer_propose_block_latency_seconds: HistogramVec,
-    pub proposer_propose_block_bytes: HistogramVec,
+    pub proposer_propose_block_batch_size: HistogramVec,
 }
 
 impl ProposerMetrics {
@@ -41,9 +41,9 @@ impl ProposerMetrics {
                 registry,
             )
             .unwrap(),
-            proposer_propose_block_bytes: register_histogram_vec_with_registry!(
-                "proposer_propose_block_bytes",
-                "Proposer propose block size in bytes",
+            proposer_propose_block_batch_size: register_histogram_vec_with_registry!(
+                "proposer_propose_block_batch_size",
+                "Proposer propose block contains how many transactions",
                 &["fn_name"],
                 prometheus::exponential_buckets(1.0, 4.0, 15)
                     .unwrap()

@@ -78,10 +78,10 @@ impl Handler<ProposeBlock> for ProposerActor {
         };
         //TODO submit to the on-chain SCC contract use the proposer key
         let _proposer_key = &self.proposer_key;
-        let size = 0u64;
+        let batch_size = block.map(|v| v.batch_size).unwrap_or(0u64);
         self.metrics
-            .proposer_propose_block_bytes
+            .proposer_propose_block_batch_size
             .with_label_values(&[fn_name])
-            .observe(size as f64);
+            .observe(batch_size as f64);
     }
 }

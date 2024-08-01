@@ -22,7 +22,6 @@ use rooch_types::{
 };
 use std::sync::Arc;
 use tracing::{debug, info};
-use tracing_subscriber::Registry;
 
 /// PipelineProcessor aggregates the executor, sequencer, proposer, and indexer to process transactions.
 pub struct PipelineProcessorActor {
