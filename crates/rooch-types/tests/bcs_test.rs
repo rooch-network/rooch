@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use anyhow::Result;
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId, u256::U256,
@@ -7,60 +10,11 @@ use moveos_types::{
     moveos_std::{object::ObjectMeta, tx_context::TxContext},
     transaction::{FunctionCall, VerifiedMoveAction, VerifiedMoveOSTransaction},
 };
-use serde::de::{self, Visitor};
+use serde::de::Visitor;
 use serde::Deserializer;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
-
-fn consume_any<'de, D>(deserializer: D) -> Result<(), D::Error>
-where
-    D: Deserializer<'de>,
-{
-    struct AnyVisitor;
-
-    impl<'de> Visitor<'de> for AnyVisitor {
-        type Value = ();
-
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("any value")
-        }
-
-        fn visit_bool<E>(self, _: bool) -> Result<Self::Value, E>
-        where
-            E: de::Error,
-        {
-            Ok(())
-        }
-
-        fn visit_i64<E>(self, _: i64) -> Result<Self::Value, E>
-        where
-            E: de::Error,
-        {
-            Ok(())
-        }
-
-        // 实现其他 visit_* 方法...
-
-        fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-        where
-            A: de::MapAccess<'de>,
-        {
-            while let Some((_, _)) = map.next_entry::<de::IgnoredAny, de::IgnoredAny>()? {}
-            Ok(())
-        }
-
-        fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-        where
-            A: de::SeqAccess<'de>,
-        {
-            while let Some(_) = seq.next_element::<de::IgnoredAny>()? {}
-            Ok(())
-        }
-    }
-
-    deserializer.deserialize_any(AnyVisitor)
-}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct NewVerifiedMoveOSTransaction {
@@ -74,43 +28,56 @@ impl<'de> Deserialize<'de> for NewVerifiedMoveOSTransaction {
     where
         D: Deserializer<'de>,
     {
-        #[allow(unused_variables)]
-        #[allow(dead_code)]
-        #[derive(Deserialize)]
-        struct Old {
-            root: ObjectMeta,
-            ctx: TxContext,
-            action: VerifiedMoveAction,
-            // #[serde(deserialize_with = "consume_any", default)]
-            // skipped_field1: (),
-            // #[serde(deserialize_with = "consume_any", default)]
-            // skipped_field2: (),
-            #[serde(skip_deserializing, skip_serializing)]
-            pre_execute_functions: Option<Vec<FunctionCall>>,
-            #[serde(skip_deserializing, skip_serializing)]
-            post_execute_functions: Option<Vec<FunctionCall>>,
-        }
-        // let old = Old::deserialize(deserializer)?;
-        // Ok(NewVerifiedMoveOSTransaction {
-        //     root: old.root,
-        //     ctx: old.ctx,
-        //     action: old.action,
-        // })
-        #[derive(Deserialize)]
-        enum Compat {
-            New(NewVerifiedMoveOSTransaction),
-            Old(Old),
+        struct NewVerifiedMoveOSTransactionVisitor;
+
+        impl<'de> Visitor<'de> for NewVerifiedMoveOSTransactionVisitor {
+            type Value = NewVerifiedMoveOSTransaction;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct NewVerifiedMoveOSTransaction")
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::SeqAccess<'de>,
+            {
+                //let object_id = seq.next_element::<ObjectID>()?.unwrap();
+                let root = seq.next_element::<ObjectMeta>()?.unwrap();
+                let ctx = seq.next_element::<TxContext>()?.unwrap();
+                let action = seq.next_element::<VerifiedMoveAction>()?.unwrap();
+                let _pre_execution_functions: Vec<FunctionCall> =
+                    match seq.next_element::<Vec<FunctionCall>>() {
+                        Ok(Some(pre_execution_functions)) => pre_execution_functions,
+                        Ok(None) => vec![],
+                        Err(e) => {
+                            println!("error: {:?}", e);
+                            vec![]
+                        }
+                    };
+                let _post_execution_functions: Vec<FunctionCall> =
+                    match seq.next_element::<Vec<FunctionCall>>() {
+                        Ok(Some(post_execution_functions)) => post_execution_functions,
+                        Ok(None) => vec![],
+                        Err(e) => {
+                            println!("error: {:?}", e);
+                            vec![]
+                        }
+                    };
+                Ok(NewVerifiedMoveOSTransaction { root, ctx, action })
+            }
         }
 
-        let compat = Compat::deserialize(deserializer)?;
-        match compat {
-            Compat::New(new) => Ok(new),
-            Compat::Old(old) => Ok(NewVerifiedMoveOSTransaction {
-                root: old.root,
-                ctx: old.ctx,
-                action: old.action,
-            }),
-        }
+        deserializer.deserialize_struct(
+            "NewVerifiedMoveOSTransaction",
+            &[
+                "root",
+                "ctx",
+                "action",
+                "pre_execution_functions",
+                "post_execution_functions",
+            ],
+            NewVerifiedMoveOSTransactionVisitor,
+        )
     }
 }
 
@@ -145,7 +112,7 @@ struct OldStruct {
 struct NewStruct {
     value: u64,
     #[serde(default)]
-    hash: Option<U256>,
+    hash: U256,
 }
 
 impl<'de> Deserialize<'de> for NewStruct {
@@ -162,53 +129,35 @@ impl<'de> Deserialize<'de> for NewStruct {
                 formatter.write_str("struct NewStruct")
             }
 
-            fn visit_u64<E>(self, v: u64) -> std::result::Result<Self::Value, E>
-                where
-                    E: de::Error, {
-                println!("visit_u64");
-                unimplemented!()
-            }
-
-            fn visit_map<A>(self, map: A) -> std::result::Result<Self::Value, A::Error>
-                where
-                    A: de::MapAccess<'de>, {
-                println!("visit_map");
-                unimplemented!()
-            }
-
             fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
             where
                 A: serde::de::SeqAccess<'de>,
             {
                 println!("visit_seq");
                 println!("seq_size: {:?}", seq.size_hint());
-                let value = match seq
-                    .next_element(){
-                        Ok(Some(value)) => value,
-                        Ok(None) => 0,
-                        Err(e) => {
-                            println!("error: {:?}", e);
-                            0
-                        },
+                let value = match seq.next_element() {
+                    Ok(Some(value)) => value,
+                    Ok(None) => 0,
+                    Err(e) => {
+                        println!("error: {:?}", e);
+                        0
+                    }
                 };
                 println!("value: {:?}", value);
                 let hash = match seq.next_element() {
-                    Ok(Some(hash)) => Some(hash),
-                    Ok(None) => None,
-                    Err(_) => None,
+                    Ok(Some(hash)) => hash,
+                    Ok(None) => U256::default(),
+                    Err(e) => {
+                        println!("error: {:?}", e);
+                        U256::default()
+                    }
                 };
+                println!("hash: {:?}", hash);
                 Ok(NewStruct { value, hash })
-            }
-
-            fn visit_newtype_struct<D>(self, deserializer: D) -> std::result::Result<Self::Value, D::Error>
-                where
-                    D: Deserializer<'de>, {
-                println!("visit_newtype_struct");
-                deserializer.deserialize_seq(NewStructVisitor)
             }
         }
 
-        deserializer.deserialize_newtype_struct("NewStruct", NewStructVisitor)
+        deserializer.deserialize_struct("NewStruct", &["value", "hash"], NewStructVisitor)
     }
 }
 
@@ -217,7 +166,7 @@ fn test2() {
     let old = OldStruct { value: 1 };
     let old_bytes = bcs::to_bytes(&old).unwrap();
     let mut new: NewStruct = bcs::from_bytes(&old_bytes).unwrap();
-    new.hash = Some(U256::from(2u64));
+    new.hash = U256::from(2u64);
     let new_bytes = bcs::to_bytes(&new).unwrap();
     let _new2: NewStruct = bcs::from_bytes(&new_bytes).unwrap();
 }
