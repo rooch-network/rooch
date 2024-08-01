@@ -61,7 +61,7 @@ if [ ! -z "$WASM_INT_TEST" ]; then
 fi
 
 if [ ! -z "$BITCOIN_INT_TEST" ]; then
-  cargo test -p testsuite --test integration -- --name "rooch_bitcoin test"
+  cargo test -p testsuite --test integration -- --name "rooch bitcoin api test"
 fi
 
 if [ ! -z "$ORD_INT_TEST" ]; then

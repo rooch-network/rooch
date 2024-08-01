@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Ok, Result};
+use bitcoincore_rpc::bitcoin::Txid;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{ModuleId, StructTag};
 use moveos_types::access_path::AccessPath;
@@ -16,6 +17,7 @@ use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
+use rooch_relayer::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use rooch_rpc_api::jsonrpc_types::{DisplayFieldsView, IndexerObjectStateView, ObjectMetaView};
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::address::{BitcoinAddress, RoochAddress};
@@ -37,6 +39,7 @@ pub struct RpcService {
     pub(crate) sequencer: SequencerProxy,
     pub(crate) indexer: IndexerProxy,
     pub(crate) pipeline_processor: PipelineProcessorProxy,
+    pub(crate) bitcoin_client: Option<BitcoinClientProxy>,
 }
 
 impl RpcService {
@@ -47,6 +50,7 @@ impl RpcService {
         sequencer: SequencerProxy,
         indexer: IndexerProxy,
         pipeline_processor: PipelineProcessorProxy,
+        bitcoin_client: Option<BitcoinClientProxy>,
     ) -> Self {
         Self {
             chain_id,
@@ -55,6 +59,7 @@ impl RpcService {
             sequencer,
             indexer,
             pipeline_processor,
+            bitcoin_client,
         }
     }
 }
@@ -426,5 +431,21 @@ impl RpcService {
             });
         }
         Ok(display_field_views)
+    }
+
+    pub async fn broadcast_bitcoin_transaction(
+        &self,
+        hex: String,
+        maxfeerate: Option<f64>,
+        maxburnamount: Option<f64>,
+    ) -> Result<Txid> {
+        let bitcoin_client = self
+            .bitcoin_client
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Bitcoin client is not configured"))?;
+
+        bitcoin_client
+            .broadcast_transaction(hex, maxfeerate, maxburnamount)
+            .await
     }
 }

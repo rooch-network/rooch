@@ -10,10 +10,7 @@ use rooch_rpc_api::jsonrpc_types::{
     IndexerObjectStatePageView, ObjectStateFilterView, QueryOptions, RoochAddressView,
 };
 use rooch_types::address::ParsedAddress;
-use rooch_types::{
-    error::{RoochError, RoochResult},
-    function_arg::ParsedObjectID,
-};
+use rooch_types::{error::RoochResult, function_arg::ParsedObjectID};
 
 #[derive(Parser)]
 pub struct ObjectCommand {
@@ -95,7 +92,10 @@ impl CommandAction<IndexerObjectStatePageView> for ObjectCommand {
         };
 
         if filter.is_none() {
-            return Err(RoochError::from(anyhow::anyhow!("No filter provided")));
+            let context = self.context_options.build()?;
+            let active_address: RoochAddressView =
+                context.client_config.active_address.unwrap().into();
+            filter = Some(ObjectStateFilterView::Owner(active_address.into()));
         }
 
         Ok(client

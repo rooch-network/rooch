@@ -35,6 +35,8 @@ import { MenuSquare, ExternalLink } from 'lucide-react'
 import { SkeletonList } from '@/components/skeleton-list'
 import { formatAddress, formatTimestamp } from '@/utils/format.ts'
 
+const DEFAULT_LIMIT = '10000000'; // Default to fetch all data
+
 export const TransactionsList = () => {
   const navigate = useNavigate()
   const account = useCurrentAddress()
@@ -45,7 +47,7 @@ export const TransactionsList = () => {
   const queryOptions = useMemo(
     () => ({
       cursor: mapPageToNextCursor.current[paginationModel.index - 1]?.toString(),
-      limit: paginationModel.limit.toString(),
+      limit: DEFAULT_LIMIT
     }),
     [paginationModel],
   )
@@ -69,8 +71,7 @@ export const TransactionsList = () => {
   }, [paginationModel, transactionsResult])
 
   const paginate = (index: number): void => {
-    console.log(index)
-    if (index < 0) {
+    if (index < 0 || index > Math.ceil(transactionsResult?.data?.length || 0 / paginationModel.limit) - 1) {
       return
     }
     setPaginationModel({
@@ -82,6 +83,47 @@ export const TransactionsList = () => {
   const handleToTransactionDetail = (hash: string) => {
     navigate(`/transactions/detail/${hash}`)
   }
+
+  const totalPages = transactionsResult ? Math.ceil(transactionsResult.data.length / paginationModel.limit) : 0
+
+  const renderPaginationItems = () => {
+    const items = [];
+    const startEllipsisIndex = 2;
+    const endEllipsisIndex = totalPages - 3;
+
+    for (let i = 0; i < totalPages; i++) {
+      if (
+        i === 0 ||
+        i === totalPages - 1 ||
+        (i >= paginationModel.index - 1 && i <= paginationModel.index + 1) ||
+        (i < startEllipsisIndex) ||
+        (i > endEllipsisIndex)
+      ) {
+        items.push(
+          <PaginationItem key={i}>
+            <PaginationLink
+              onClick={() => paginate(i)}
+              isActive={paginationModel.index === i}
+              className="cursor-pointer"
+            >
+              {i + 1}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      } else if (
+        (i === startEllipsisIndex && paginationModel.index > startEllipsisIndex) ||
+        (i === endEllipsisIndex && paginationModel.index < endEllipsisIndex)
+      ) {
+        items.push(
+          <PaginationItem key={i}>
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+      }
+    }
+
+    return items;
+  };
 
   return isPending ? (
     <SkeletonList />
@@ -104,7 +146,7 @@ export const TransactionsList = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {transactionsResult.data.map((tx) => (
+            {transactionsResult.data.slice(paginationModel.index * paginationModel.limit, (paginationModel.index + 1) * paginationModel.limit).map((tx) => (
               <TableRow key={tx.execution_info.tx_hash}>
                 <TableCell className="font-medium">
                   <Button variant="ghost" size="icon" className="cursor-default bg-accent">
@@ -159,34 +201,36 @@ export const TransactionsList = () => {
           </TableBody>
         </Table>
       </div>
-      <Pagination className="mt-4 justify-end">
+      
+      <Pagination className="mt-4 justify-between">
+      <div>
+        <label htmlFor="pageLimit" className="mr-2">rows per page:</label>
+        <select
+          id="pageLimit"
+          value={paginationModel.limit}
+          className='bg-transparent'
+          onChange={(e) => setPaginationModel({ ...paginationModel, limit: parseInt(e.target.value), index: 0 })}
+        >
+          <option value={5}>5</option>
+          <option value={10}>10</option>
+          <option value={15}>15</option>
+          <option value={20}>20</option>
+          <option value={50}>50</option>
+          <option value={100}>100</option>
+        </select>
+      </div>
         <PaginationContent>
-          <PaginationItem>
-            {paginationModel.index !== 0 ? (
+          {paginationModel.index !== 0 && (
+            <PaginationItem>
               <PaginationPrevious href="#" onClick={() => paginate(paginationModel.index - 1)} />
-            ) : (
-              <PaginationPrevious href="#" />
-            )}
-          </PaginationItem>
-          {Array.from({ length: paginationModel.index + 1 }, (_, i) => (
-            <PaginationItem key={i}>
-              <PaginationLink
-                onClick={() => paginate(i)}
-                isActive={paginationModel.index === i}
-                className="cursor-pointer"
-              >
-                {i + 1}
-              </PaginationLink>
             </PaginationItem>
-          ))}
-          <PaginationItem>
-            <PaginationEllipsis />
-          </PaginationItem>
-          <PaginationItem>
-            {transactionsResult.has_next_page && (
+          )}
+          {renderPaginationItems()}
+          {paginationModel.index !== totalPages - 1 && (
+            <PaginationItem>
               <PaginationNext href="#" onClick={() => paginate(paginationModel.index + 1)} />
-            )}
-          </PaginationItem>
+            </PaginationItem>
+          )}
         </PaginationContent>
       </Pagination>
     </div>
