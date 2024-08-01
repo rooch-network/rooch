@@ -56,11 +56,9 @@ impl ParsedSecretKey {
                         "Parse from a raw material key failed".to_owned(),
                     ))),
                 },
-                Err(_) => {
-                    return Err(anyhow::Error::new(RoochError::CommandArgumentError(
-                        "Secret hex decode failed".to_owned(),
-                    )))
-                }
+                Err(_) => Err(anyhow::Error::new(RoochError::CommandArgumentError(
+                    "Secret hex decode failed".to_owned(),
+                ))),
             }
         }
     }
