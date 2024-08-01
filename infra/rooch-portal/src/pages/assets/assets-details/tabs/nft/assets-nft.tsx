@@ -71,8 +71,6 @@ export const AssetsNft = () => {
     descending_order: true,
   })
 
-  console.log(nfts)
-
   // fetch collection info
   useEffect(() => {
     const fetchCollectionInfo = async () => {
@@ -164,7 +162,7 @@ export const AssetsNft = () => {
       recipient: toAddress,
       objectId: nft.id,
       objectType: {
-        target: nft.object_type
+        target: nft.object_type,
       },
     })
 

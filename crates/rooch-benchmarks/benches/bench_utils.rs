@@ -1,12 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::time::Duration;
-
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use serde::Serialize;
 
-use rooch_benchmarks::config::configure_criterion;
 use rooch_types::transaction::L1Block;
 
 pub struct BcsSerializeSizeFunContainer<T: ?Sized + Serialize> {
@@ -59,9 +56,7 @@ pub fn bcs_serialized_size_benchmark(c: &mut Criterion) {
 }
 
 criterion_group! {
-    name = bcs_serialized_size_bench;
-    config = configure_criterion(None).warm_up_time(Duration::from_millis(10));
-    targets = bcs_serialized_size_benchmark
+    benchs, bcs_serialized_size_benchmark
 }
 
-criterion_main!(bcs_serialized_size_bench);
+criterion_main!(benchs);

@@ -96,7 +96,7 @@ Feature: Rooch CLI integration tests
     Scenario: event
     Given a server for event
     # event example and event prc
-    Then cmd: "move publish -p ../../examples/event  --named-addresses rooch_examples=default"
+    Then cmd: "move publish -p ../../examples/event  --named-addresses rooch_examples=default --json"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
     Then cmd: "move run --function default::event_test::emit_event  --args 10u64"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
@@ -121,7 +121,7 @@ Feature: Rooch CLI integration tests
   @serial
   Scenario: indexer
     Given a server for indexer
-    Then cmd: "move publish -p ../../examples/event  --named-addresses rooch_examples=default"
+    Then cmd: "move publish -p ../../examples/event  --named-addresses rooch_examples=default --json"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
     Then cmd: "move run --function default::event_test::emit_event  --args 10u64"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
@@ -164,7 +164,7 @@ Feature: Rooch CLI integration tests
   @serial
     Scenario: kv_store example
       Given a server for kv_store
-      Then cmd: "move publish -p ../../examples/kv_store  --named-addresses rooch_examples=default"
+      Then cmd: "move publish -p ../../examples/kv_store  --named-addresses rooch_examples=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function default::kv_store::add_value --args string:key1 --args string:value1"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
@@ -183,7 +183,7 @@ Feature: Rooch CLI integration tests
     Scenario: entry_function example
       Given a server for entry_function
 
-      Then cmd: "move publish -p ../../examples/entry_function_arguments/  --named-addresses rooch_examples=default"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments/  --named-addresses rooch_examples=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function default::entry_function::emit_bool --args bool:true "
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
@@ -217,7 +217,7 @@ Feature: Rooch CLI integration tests
       Given a server for publish_through_move_action
 
       # The counter example
-      Then cmd: "move publish -p ../../examples/counter  --named-addresses rooch_examples=default --by-move-action"
+      Then cmd: "move publish -p ../../examples/counter  --named-addresses rooch_examples=default --by-move-action --json"
       Then assert: "'{{$.move[-1]}}' contains INVALID_MODULE_PUBLISHER"
 
       Then stop the server
@@ -227,7 +227,7 @@ Feature: Rooch CLI integration tests
       Given a server for publish_through_entry_function
 
       # The counter example
-      Then cmd: "move publish -p ../../examples/counter  --named-addresses rooch_examples=default"
+      Then cmd: "move publish -p ../../examples/counter  --named-addresses rooch_examples=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move view --function default::counter::value"
       Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 0"
@@ -238,17 +238,17 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.resource[-1].decoded_value.value.value.value.value}} == 1"
 
       # The entry_function_arguments example
-      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 --args "vector<object_id>:0x2342,0x3132" "
       Then assert: "'{{$.move[-1]}}' contains FUNCTION_RESOLUTION_FAILURE"
-      Then cmd: "move publish -p ../../examples/entry_function_arguments/  --named-addresses rooch_examples=default"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments/  --named-addresses rooch_examples=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 --args "vector<object_id>:0x2342,0x3132" "
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # check compatibility
-      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default --json"
       Then assert: "'{{$.move[-1].execution_info.status.type}}' == 'moveabort'"
 
       Then stop the server
@@ -257,7 +257,7 @@ Feature: Rooch CLI integration tests
   Scenario: coins example
       Given a server for coins
       Then cmd: "account create --json"
-      Then cmd: "move publish -p ../../examples/coins  --named-addresses coins=default"
+      Then cmd: "move publish -p ../../examples/coins  --named-addresses coins=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function default::fixed_supply_coin::faucet --args object:default::fixed_supply_coin::Treasury"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
@@ -280,7 +280,7 @@ Feature: Rooch CLI integration tests
   @serial
   Scenario: Issue a coin through module_template
     Given a server for issue_coin
-    Then cmd: "move publish -p ../../examples/module_template/  --named-addresses rooch_examples=default"
+    Then cmd: "move publish -p ../../examples/module_template/  --named-addresses rooch_examples=default --json"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
     
     #TODO: uncomment this once move_module::binding_module_address is ready
@@ -301,7 +301,7 @@ Feature: Rooch CLI integration tests
       Given a server for basic_object
       Then cmd: "account create"
       Then cmd: "account list --json"
-      Then cmd: "move publish -p ../../examples/basic_object  --named-addresses basic_object=default"
+      Then cmd: "move publish -p ../../examples/basic_object  --named-addresses basic_object=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       
       #object pub transfer
@@ -351,7 +351,7 @@ Feature: Rooch CLI integration tests
   Scenario: object display example
       Given a server for object_display
       Then cmd: "account create"
-      Then cmd: "move publish -p ../../examples/display  --named-addresses display=default"
+      Then cmd: "move publish -p ../../examples/display  --named-addresses display=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       Then cmd: "move run --function default::display::create_object --sender default --args 'string:test_object' --args 'address:default' --args 'string:test object description'"
@@ -382,7 +382,7 @@ Feature: Rooch CLI integration tests
       Given a server for wasm_test
 
       # publish wasm execution
-      Then cmd: "move publish -p ../../examples/wasm_execution  --named-addresses rooch_examples=default"
+      Then cmd: "move publish -p ../../examples/wasm_execution  --named-addresses rooch_examples=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # test wasm trap
@@ -408,31 +408,11 @@ Feature: Rooch CLI integration tests
       # release servers
       Then stop the server
 
-    @serial
-    Scenario: rooch_bitcoin test
-      # prepare servers
-      Given a bitcoind server for rooch_bitcoin_test
-      Given a server for rooch_bitcoin_test
-
-      Then cmd: "account list --json" 
-      
-      # mint utxos
-      Then cmd bitcoin-cli: "generatetoaddress 101 {{$.account[-1].default.bitcoin_address}}"
-      Then sleep: "10" # wait rooch sync and index
-
-      # query utxos
-      Then cmd: "object -t 0x4::utxo::UTXO -o {{$.account[-1].default.bitcoin_address}}"
-      Then assert: "{{$.object[-1].data[0].owner}} == {{$.account[-1].default.address}}"
-
-      # release servers
-      Then stop the server
-      Then stop the bitcoind server 
-
   @serial
     Scenario: view_function_loop example
       Given a server for view_function_loop
       Then cmd: "account create"
-      Then cmd: "move publish -p ../../examples/view_function_loop  --named-addresses rooch_examples=default"
+      Then cmd: "move publish -p ../../examples/view_function_loop  --named-addresses rooch_examples=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move view --function default::out_of_gas_loop::out_of_gas"
       Then assert: "{{$.move[-1].vm_status.ExecutionFailure.status_code}} == 4002"

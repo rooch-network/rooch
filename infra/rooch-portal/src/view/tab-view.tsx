@@ -10,11 +10,11 @@ import { ReactNode } from 'react'
 
 type TabViewProps = {
   items: TabItem[]
-  tabClick? : (id: string) => void
+  tabClick?: (id: string) => void
   renderContent?: (id: string) => ReactNode
 }
 
-export const TabView: React.FC<TabViewProps> = ({items, tabClick, renderContent}) => {
+export const TabView: React.FC<TabViewProps> = ({ items, tabClick, renderContent }) => {
   const navigate = useNavigate()
   const location = useLocation()
   const searchParams = new URLSearchParams(location.search)
@@ -27,16 +27,16 @@ export const TabView: React.FC<TabViewProps> = ({items, tabClick, renderContent}
 
   const renderTabContent = () => {
     if (!isConnected) {
-      return <ConnectWalletHint/>
+      return <ConnectWalletHint />
     }
 
     if (renderContent) {
       return renderContent(activeTabId)
     }
 
-    const find =  items.find((item) => item.id === activeTabId && item.children !== undefined)
+    const find = items.find((item) => item.id === activeTabId && item.children !== undefined)
 
-    return find? find.children : <></>
+    return find ? find.children : <></>
   }
 
   return (
@@ -50,7 +50,7 @@ export const TabView: React.FC<TabViewProps> = ({items, tabClick, renderContent}
                 ? 'border-b-2 border-blue-500 text-blue-500'
                 : 'border-b-2 border-transparent text-muted-foreground'
             } hover:text-blue-500 transition-all`}
-            onClick={() => tabClick ? tabClick(item.id) : handleTabClick(item.id)}
+            onClick={() => (tabClick ? tabClick(item.id) : handleTabClick(item.id))}
           >
             <p className="font-semibold text-sm">{item.label}</p>
           </button>

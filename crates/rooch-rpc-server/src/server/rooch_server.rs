@@ -44,19 +44,13 @@ use tracing::{debug, info};
 pub struct RoochServer {
     rpc_service: RpcService,
     aggregate_service: AggregateService,
-    read_only: bool,
 }
 
 impl RoochServer {
-    pub fn new(
-        rpc_service: RpcService,
-        aggregate_service: AggregateService,
-        read_only: bool,
-    ) -> Self {
+    pub fn new(rpc_service: RpcService, aggregate_service: AggregateService) -> Self {
         Self {
             rpc_service,
             aggregate_service,
-            read_only,
         }
     }
 
@@ -102,9 +96,6 @@ impl RoochAPIServer for RoochServer {
     }
 
     async fn send_raw_transaction(&self, payload: BytesView) -> RpcResult<H256View> {
-        if self.read_only {
-            return Err(RpcError::ServiceUnavailable);
-        }
         debug!("send_raw_transaction payload: {:?}", payload);
         let mut tx = bcs::from_bytes::<RoochTransaction>(&payload.0)?;
         info!(

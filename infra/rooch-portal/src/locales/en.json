@@ -22,6 +22,9 @@
     "title": "Mint",
     "subTitle": "Deploy and mint Bitcoin assets."
   },
+  "UTXO": {
+    "null": "Here you can find your Bitcoin assets.\nIt may takes time for them to show up here as Rooch Network recognize assets after its related transactions receives 3 confirmations.\nPlease visit the Bitcoin explorer to check the status of your transactions."
+  },
   "Trade": {
     "title": "Trade",
     "subTitle": "Trade your Bitcoin assets with ease."

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { MintTabsLayout } from './list/layout'
-import {useTranslation} from 'react-i18next';
+import { useTranslation } from 'react-i18next'
 
 export const MintLayout = () => {
   const { t } = useTranslation()

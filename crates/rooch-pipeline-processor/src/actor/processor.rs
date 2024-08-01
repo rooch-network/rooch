@@ -13,12 +13,16 @@ use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::proxy::SequencerProxy;
-use rooch_types::transaction::{
-    ExecuteTransactionResponse, L1BlockWithBody, L1Transaction, LedgerTransaction, LedgerTxData,
-    RoochTransaction,
+use rooch_types::{
+    service_status::ServiceStatus,
+    transaction::{
+        ExecuteTransactionResponse, L1BlockWithBody, L1Transaction, LedgerTransaction,
+        LedgerTxData, RoochTransaction,
+    },
 };
 use std::sync::Arc;
 use tracing::{debug, info};
+use tracing_subscriber::Registry;
 
 /// PipelineProcessor aggregates the executor, sequencer, proposer, and indexer to process transactions.
 pub struct PipelineProcessorActor {
@@ -26,8 +30,7 @@ pub struct PipelineProcessorActor {
     pub(crate) sequencer: SequencerProxy,
     pub(crate) proposer: ProposerProxy,
     pub(crate) indexer: IndexerProxy,
-    pub(crate) data_import_flag: bool,
-    pub(crate) read_only: bool,
+    pub(crate) service_status: ServiceStatus,
     pub(crate) metrics: Arc<PipelineProcessorMetrics>,
 }
 
@@ -37,8 +40,7 @@ impl PipelineProcessorActor {
         sequencer: SequencerProxy,
         proposer: ProposerProxy,
         indexer: IndexerProxy,
-        data_import_flag: bool,
-        read_only: bool,
+        service_status: ServiceStatus,
         registry: &Registry,
     ) -> Self {
         Self {
@@ -46,13 +48,12 @@ impl PipelineProcessorActor {
             sequencer,
             proposer,
             indexer,
-            data_import_flag,
-            read_only,
+            service_status,
             metrics: Arc::new(PipelineProcessorMetrics::new(registry)),
         }
     }
 
-    async fn process_sequenced_tx_on_startup(&mut self) -> Result<()> {
+    pub async fn process_sequenced_tx_on_startup(&mut self) -> Result<()> {
         let last_order = self.sequencer.get_sequencer_order().await.unwrap_or(0);
         debug!("process_sequenced_tx_on_startup last_order: {}", last_order);
         if last_order == 0 {
@@ -225,7 +226,7 @@ impl PipelineProcessorActor {
         let output_clone = output.clone();
 
         // If bitcoin block data import, don't write all indexer
-        if !self.data_import_flag {
+        if !self.service_status.is_date_import_mode() {
             //The update_indexer is a notify call, do not block current task
             let result = indexer
                 .update_indexer(
@@ -256,16 +257,7 @@ impl PipelineProcessorActor {
 }
 
 #[async_trait]
-impl Actor for PipelineProcessorActor {
-    async fn started(&mut self, _ctx: &mut ActorContext) {
-        if self.read_only {
-            return;
-        }
-        if let Err(e) = self.process_sequenced_tx_on_startup().await {
-            log::error!("Process sequenced tx on startup error: {}", e);
-        }
-    }
-}
+impl Actor for PipelineProcessorActor {}
 
 #[async_trait]
 impl Handler<ExecuteL2TxMessage> for PipelineProcessorActor {

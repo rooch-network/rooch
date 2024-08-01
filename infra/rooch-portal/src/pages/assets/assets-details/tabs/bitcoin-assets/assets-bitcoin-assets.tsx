@@ -1,8 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
+import { Badge } from '@/components/ui/badge.tsx'
 import { BitcoinAssetsBtc } from './components/bitcoin-assets-btc.tsx'
 import { BitcoinAssetsOrdi } from './components/bitcoin-assets-ordi.tsx'
-import { Badge } from '@/components/ui/badge.tsx'
 
 export const AssetsBitcoinAssets = () => {
   return (

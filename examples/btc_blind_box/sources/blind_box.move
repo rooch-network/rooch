@@ -55,7 +55,7 @@ module btc_blind_box::blind_box {
     /// The project owner who can open the sale of the blind box
     /// Players can request for the blind box before the given block height `request_deadline`,
     /// and then claim the blind box after the given block height `claimable_start`.
-    public fun opne_sale(owner: &signer, amount: u64, request_deadline: u64, claimable_start: u64) {
+    public fun open_sale(owner: &signer, amount: u64, request_deadline: u64, claimable_start: u64) {
         assert!(signer::address_of(owner) == @btc_blind_box, ErrorNoPermission);
 
         let status_obj = object::new_named_object<SaleStatus>(SaleStatus {
@@ -144,7 +144,7 @@ module btc_blind_box::blind_box {
         bitcoin_move::genesis::init_for_test();
         let module_owner = account::create_account_for_testing(@btc_blind_box);
 
-        opne_sale(&module_owner, 100, 5, 10);
+        open_sale(&module_owner, 100, 5, 10);
 
         let status_obj_id = object::named_object_id<SaleStatus>();
         let status_obj = object::borrow_mut_object_shared<SaleStatus>(status_obj_id);

@@ -42,7 +42,6 @@ pub struct ExecutorActor {
     moveos: MoveOS,
     moveos_store: MoveOSStore,
     rooch_store: RoochStore,
-    read_only: bool,
     metrics: Arc<ExecutorMetrics>,
 }
 
@@ -54,7 +53,6 @@ impl ExecutorActor {
         root: ObjectMeta,
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
-        read_only: bool,
         registry: &Registry,
     ) -> Result<Self> {
         let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
@@ -73,7 +71,6 @@ impl ExecutorActor {
             moveos,
             moveos_store,
             rooch_store,
-            read_only,
             metrics: Arc::new(ExecutorMetrics::new(registry)),
         })
     }
@@ -98,9 +95,6 @@ impl ExecutorActor {
             .executor_execute_tx_latency_seconds
             .with_label_values(&[fn_name])
             .start_timer();
-        if self.read_only {
-            return Err(anyhow::anyhow!("The service is read only"));
-        }
         let tx_hash = tx.ctx.tx_hash();
         let size = tx.ctx.tx_size;
         let output = self.moveos.execute_and_apply(tx)?;
@@ -211,7 +205,7 @@ impl ExecutorActor {
         self.metrics
             .executor_validate_tx_bytes
             .with_label_values(&[fn_name])
-            .observe(size as f64);
+            .observe(tx_size as f64);
     }
 
     #[named]
@@ -279,7 +273,7 @@ impl ExecutorActor {
         self.metrics
             .executor_validate_tx_bytes
             .with_label_values(&[fn_name])
-            .observe(size as f64);
+            .observe(tx_size as f64);
     }
 
     #[named]
