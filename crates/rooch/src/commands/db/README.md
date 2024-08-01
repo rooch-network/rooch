@@ -7,5 +7,5 @@ A tool to repair DB data.
 1. Revert tx when only write TransactionSequenceInfo succ:
 
 ```shell
-rooch db revert_tx {tx_hash}
+rooch db revert-tx  --tx-order {tx_order}   -d {data_dir} -n {network}
 ```

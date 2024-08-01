@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::path::PathBuf;
-use std::str::FromStr;
 use std::time::SystemTime;
 
 use anyhow::Error;
@@ -11,12 +10,10 @@ use metrics::RegistryService;
 
 use moveos_store::transaction_store::TransactionStore as TxExecutionInfoStore;
 use moveos_store::MoveOSStore;
-use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectMeta;
 use rooch_config::{RoochOpt, R_OPT_NET_HELP};
 use rooch_db::RoochDB;
 use rooch_genesis::RoochGenesis;
-use rooch_store::meta_store::MetaStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
 use rooch_types::error::{RoochError, RoochResult};
@@ -28,9 +25,9 @@ use crate::cli_types::WalletContextOptions;
 /// Revert tx by db command.
 #[derive(Debug, Parser)]
 pub struct RevertTxCommand {
-    #[clap(long, short = 'h')]
-    /// tx hash
-    pub tx_hash: String,
+    #[clap(long, short = 'o')]
+    /// tx order
+    pub tx_order: u64,
 
     #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
@@ -47,8 +44,7 @@ pub struct RevertTxCommand {
 
 impl RevertTxCommand {
     pub async fn execute(self) -> RoochResult<()> {
-        let tx_hash = H256::from_str(&self.tx_hash)
-            .map_err(|e| RoochError::from(Error::msg(format!("Invalid tx_hash format: {}", e))))?;
+        let tx_order = self.tx_order;
         let (_root, moveos_store, rooch_store, _start_time) = self.init();
 
         let last_sequencer_info = rooch_store
@@ -65,6 +61,16 @@ impl RevertTxCommand {
             last_accumulator_info
         );
 
+        let tx_hashes = rooch_store.transaction_store.get_tx_hashs(vec![tx_order])?;
+        // check tx hash exist via tx_order
+        if tx_hashes.is_empty() || tx_hashes[0].is_none() {
+            return Err(RoochError::from(Error::msg(format!(
+                "tx hash not exist via tx order {}",
+                tx_order
+            ))));
+        }
+        let tx_hash = tx_hashes[0].unwrap();
+
         let ledger_tx_opt = rooch_store
             .transaction_store
             .get_transaction_by_hash(tx_hash)?;
@@ -76,13 +82,10 @@ impl RevertTxCommand {
         let tx_order = sequencer_info.tx_order;
         // check last order equals to sequencer tx order via tx_hash
         if sequencer_info.tx_order != last_sequencer_info.last_order {
-            println!(
-                "the last order {} not match current sequencer info tx order {}, tx_hash {} ",
+            return Err(RoochError::from(Error::msg(format!(
+                "the last order {} not match current sequencer info tx order {}, tx_hash {}",
                 last_sequencer_info.last_order, sequencer_info.tx_order, tx_hash
-            );
-            return Err(RoochError::from(Error::msg(
-                "the last order not match current sequencer info tx order, revert tx failed",
-            )));
+            ))));
         }
 
         // check only write tx sequence info succ, but not write tx execution info
@@ -90,40 +93,31 @@ impl RevertTxCommand {
             .transaction_store
             .get_tx_execution_info(tx_hash)?;
         if execution_info.is_some() {
-            println!(
-                "the tx execution info already exist via tx_hash {}",
+            return Err(RoochError::from(Error::msg(format!(
+                "the tx execution info already exist via tx_hash {}, revert tx failed",
                 tx_hash
-            );
-            return Err(RoochError::from(Error::msg(
-                "the tx execution info already exist, revert tx failed",
-            )));
+            ))));
         }
 
         let previous_tx_order = last_order - 1;
         let previous_tx_hash_opt = rooch_store
             .transaction_store
             .get_tx_hashs(vec![previous_tx_order])?;
-        if previous_tx_hash_opt.len() == 0 || previous_tx_hash_opt[0].is_none() {
-            println!(
-                "the previous tx hash not exist via previous_tx_order {}",
+        if previous_tx_hash_opt.is_empty() || previous_tx_hash_opt[0].is_none() {
+            return Err(RoochError::from(Error::msg(format!(
+                "the previous tx hash not exist via previous_tx_order  {}",
                 previous_tx_order
-            );
-            return Err(RoochError::from(Error::msg(
-                "the previous tx hash not exist via previous_tx_order",
-            )));
+            ))));
         }
         let previous_tx_hash = previous_tx_hash_opt[0].unwrap();
         let previous_ledger_tx_opt = rooch_store
             .transaction_store
             .get_transaction_by_hash(previous_tx_hash)?;
         if previous_ledger_tx_opt.is_none() {
-            println!(
-                "the previous ledger tx not exist via tx_hash {}",
+            return Err(RoochError::from(Error::msg(format!(
+                "the previous ledger tx not exist via tx_hash {}, revert tx failed",
                 previous_tx_hash
-            );
-            return Err(RoochError::from(Error::msg(
-                "the previous ledger tx not exist via tx_hash, revert tx failed",
-            )));
+            ))));
         }
         let previous_sequencer_info = previous_ledger_tx_opt.unwrap().sequence_info;
 
@@ -131,9 +125,15 @@ impl RevertTxCommand {
             previous_tx_order,
             previous_sequencer_info.tx_accumulator_info(),
         );
-        rooch_store.save_sequencer_info(revert_sequencer_info)?;
+        rooch_store
+            .meta_store
+            .save_sequencer_info_ignore_check(revert_sequencer_info)?;
         rooch_store.remove_transaction(tx_hash, tx_order)?;
 
+        println!(
+            "revert tx succ, tx_hash: {:?}, tx_order {}",
+            tx_hash, tx_order
+        );
         Ok(())
     }
 
@@ -146,7 +146,6 @@ impl RevertTxCommand {
             RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
         let genesis = RoochGenesis::load_or_init(opt.network(), &rooch_db).unwrap();
         let root = genesis.genesis_root().clone();
-        println!("root object: {:?}", root);
         (
             root,
             rooch_db.moveos_store,
