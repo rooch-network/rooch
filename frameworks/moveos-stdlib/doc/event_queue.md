@@ -116,15 +116,6 @@
 
 
 
-<a name="0x2_event_queue_SUBSCRIBERS_KEY"></a>
-
-
-
-<pre><code><b>const</b> <a href="event_queue.md#0x2_event_queue_SUBSCRIBERS_KEY">SUBSCRIBERS_KEY</a>: <a href="">vector</a>&lt;u8&gt; = [115, 117, 98, 115, 99, 114, 105, 98, 101, 114, 115];
-</code></pre>
-
-
-
 <a name="0x2_event_queue_emit"></a>
 
 ## Function `emit`

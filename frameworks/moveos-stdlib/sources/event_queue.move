@@ -11,7 +11,6 @@ module moveos_std::event_queue {
 
     const EVENT_EXPIRE_TIME: u64 = 1000 * 60 * 60 * 24 * 31; // 31 days
     const REMOVE_EXPIRED_EVENT_BATCH_SIZE: u64 = 10;
-    const SUBSCRIBERS_KEY: vector<u8> = b"subscribers";
 
     const ErrorTooManySubscribers: u64 = 1;
     const ErrorSubscriberNotFound: u64 = 2;
@@ -44,8 +43,6 @@ module moveos_std::event_queue {
                 tail_sequence_number: 0,
                 subscriber_count: 0,
             });
-            let subscribers : vector<ObjectID> = vector::empty();
-            object::add_field(&mut event_queue_obj, SUBSCRIBERS_KEY, subscribers);
             //We transfer the event queue object to the moveos_std
             //And the caller do not need to care about the event queue object
             object::transfer_extend(event_queue_obj, @moveos_std);
