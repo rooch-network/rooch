@@ -3,11 +3,10 @@
 
 module moveos_std::event_queue {
     
-    use std::vector;
     use std::option::{Self, Option};
     use std::string::String;
     use moveos_std::timestamp;
-    use moveos_std::object::{Self, Object, ObjectID};
+    use moveos_std::object::{Self, Object};
 
     const EVENT_EXPIRE_TIME: u64 = 1000 * 60 * 60 * 24 * 31; // 31 days
     const REMOVE_EXPIRED_EVENT_BATCH_SIZE: u64 = 10;
