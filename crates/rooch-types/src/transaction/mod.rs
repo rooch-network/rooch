@@ -11,7 +11,7 @@ use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::state::{MoveState, MoveStructState, MoveStructType};
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::{h256::H256, transaction::TransactionOutput};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize};
 
 pub mod authenticator;
 mod ledger_transaction;
@@ -35,13 +35,6 @@ pub const TRANSACTION_SEQUENCE_INFO_FIELDS: &[&str] = &[
     "tx_accumulator_num_leaves",
     "tx_accumulator_num_nodes",
 ];
-// pub const TX_ORDER_STR: &str = "tx_order";
-// pub const TX_ORDER_SIGNATURE_STR: &str = "tx_order_signature";
-// pub const TX_ACCUMULATOR_ROOT_STR: &str = "tx_accumulator_root";
-// pub const TX_TIMESTAMP_STR: &str = "tx_timestamp";
-// pub const TX_ACCUMULATOR_FROZEN_SUBTREE_ROOTS_STR: &str = "tx_accumulator_frozen_subtree_roots";
-// pub const TX_ACCUMULATOR_NUM_LEAVES_STR: &str = "tx_accumulator_num_leaves";
-// pub const TX_ACCUMULATOR_NUM_NODES_STR: &str = "tx_accumulator_num_nodes";
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct RawTransaction {
@@ -74,7 +67,7 @@ impl From<AuthenticatorInfo> for Vec<u8> {
 }
 
 ///`TransactionSequenceInfo` represents the result of sequence a transaction.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct TransactionSequenceInfo {
     /// The tx order
     pub tx_order: u64,
@@ -88,13 +81,13 @@ pub struct TransactionSequenceInfo {
     pub tx_timestamp: u64,
 
     /// Frozen subtree roots of the accumulator.
-    // #[serde(default)]
+    #[serde(default)]
     pub tx_accumulator_frozen_subtree_roots: Vec<H256>,
     /// The total number of leaves in the accumulator.
-    // #[serde(default)]
+    #[serde(default)]
     pub tx_accumulator_num_leaves: u64,
     /// The total number of nodes in the accumulator.
-    // #[serde(default)]
+    #[serde(default)]
     pub tx_accumulator_num_nodes: u64,
 }
 
@@ -150,58 +143,130 @@ impl MoveStructState for TransactionSequenceInfo {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct TransactionSequenceInfoWrapper {
-    tx_order: u64,
-    tx_order_signature: Vec<u8>,
-    tx_accumulator_root: H256,
-    tx_timestamp: u64,
+// #[derive(Clone, Debug, Serialize, Deserialize)]
+// struct TransactionSequenceInfoWrapper {
+//     tx_order: u64,
+//     tx_order_signature: Vec<u8>,
+//     tx_accumulator_root: H256,
+//     tx_timestamp: u64,
+//
+//     #[serde(default)]
+//     tx_accumulator_info: Option<AccumulatorInfo>,
+// }
+//
+// impl Serialize for TransactionSequenceInfo {
+//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+//     where
+//         S: Serializer,
+//     {
+//         let tx_accumulator_info = AccumulatorInfo::new(
+//             self.tx_accumulator_root,
+//             self.tx_accumulator_frozen_subtree_roots.clone(),
+//             self.tx_accumulator_num_leaves,
+//             self.tx_accumulator_num_nodes,
+//         );
+//         let wrapper = TransactionSequenceInfoWrapper {
+//             tx_order: self.tx_order,
+//             tx_order_signature: self.tx_order_signature.clone(),
+//             tx_accumulator_root: self.tx_accumulator_root,
+//             tx_timestamp: self.tx_timestamp,
+//             tx_accumulator_info: Some(tx_accumulator_info),
+//         };
+//
+//         wrapper.serialize(serializer)
+//     }
+// }
+//
+// impl<'de> Deserialize<'de> for TransactionSequenceInfo {
+//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+//     where
+//         D: Deserializer<'de>,
+//     {
+//         println!("[Debug] Deserialize deserialize start");
+//         let wrapper = TransactionSequenceInfoWrapper::deserialize(deserializer)?;
+//         println!("[Debug] Deserialize deserialize 01");
+//         let tx_accumulator_info = wrapper.tx_accumulator_info.unwrap_or_default();
+//         Ok(TransactionSequenceInfo {
+//             tx_order: wrapper.tx_order,
+//             tx_order_signature: wrapper.tx_order_signature,
+//             tx_accumulator_root: wrapper.tx_accumulator_root,
+//             tx_timestamp: wrapper.tx_timestamp,
+//             tx_accumulator_frozen_subtree_roots: tx_accumulator_info.frozen_subtree_roots,
+//             tx_accumulator_num_leaves: tx_accumulator_info.num_leaves,
+//             tx_accumulator_num_nodes: tx_accumulator_info.num_nodes,
+//         })
+//     }
+// }
 
-    #[serde(default)]
-    tx_accumulator_info: Option<AccumulatorInfo>,
-}
-
-impl Serialize for TransactionSequenceInfo {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let tx_accumulator_info = AccumulatorInfo::new(
-            self.tx_accumulator_root,
-            self.tx_accumulator_frozen_subtree_roots.clone(),
-            self.tx_accumulator_num_leaves,
-            self.tx_accumulator_num_nodes,
-        );
-        let wrapper = TransactionSequenceInfoWrapper {
-            tx_order: self.tx_order,
-            tx_order_signature: self.tx_order_signature.clone(),
-            tx_accumulator_root: self.tx_accumulator_root,
-            tx_timestamp: self.tx_timestamp,
-            tx_accumulator_info: Some(tx_accumulator_info),
-        };
-
-        wrapper.serialize(serializer)
-    }
-}
-
+// Implement custom Deserialize for TransactionSequenceInfo
 impl<'de> Deserialize<'de> for TransactionSequenceInfo {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        println!("[Debug] Deserialize deserialize start");
-        let wrapper = TransactionSequenceInfoWrapper::deserialize(deserializer)?;
-        println!("[Debug] Deserialize deserialize 01");
-        let tx_accumulator_info = wrapper.tx_accumulator_info.unwrap_or_default();
-        Ok(TransactionSequenceInfo {
-            tx_order: wrapper.tx_order,
-            tx_order_signature: wrapper.tx_order_signature,
-            tx_accumulator_root: wrapper.tx_accumulator_root,
-            tx_timestamp: wrapper.tx_timestamp,
-            tx_accumulator_frozen_subtree_roots: tx_accumulator_info.frozen_subtree_roots,
-            tx_accumulator_num_leaves: tx_accumulator_info.num_leaves,
-            tx_accumulator_num_nodes: tx_accumulator_info.num_nodes,
-        })
+        struct TransactionSequenceInfoVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for TransactionSequenceInfoVisitor {
+            type Value = TransactionSequenceInfo;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("Expect TransactionSequenceInfo for deserializer")
+            }
+
+            // To be compatible with old data, tx_accumulator_frozen_subtree_roots, tx_accumulator_num_leaves,
+            // and tx_accumulator_num_nodes are allowed to be missing.
+            fn visit_seq<S>(self, mut seq: S) -> Result<Self::Value, S::Error>
+            where
+                S: serde::de::SeqAccess<'de>,
+            {
+                // let size_hint = seq.size_hint();
+                // println!(
+                //     "[DEBUG] TransactionSequenceInfo Deserializer size_hint {:?} ",
+                //     size_hint
+                // );
+                let tx_order = seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_order field when deserialize TransactionSequenceInfo"))?;
+                let tx_order_signature = seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_order_signature field when deserialize TransactionSequenceInfo"))?;
+                let tx_accumulator_root = seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_accumulator_root field when deserialize TransactionSequenceInfo"))?;
+                let tx_timestamp: u64 = seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_timestamp field when deserialize TransactionSequenceInfo"))?;
+
+                // Ignore deserialize error "unexpected end of input" for old data when missing field
+                let tx_accumulator_frozen_subtree_roots = seq
+                    .next_element()
+                    .unwrap_or_else(|e| None)
+                    .unwrap_or(vec![]);
+                // Ignore deserialize error "unexpected end of input" for old data when missing field
+                let tx_accumulator_num_leaves =
+                    seq.next_element().unwrap_or_else(|e| None).unwrap_or(0u64);
+                // Ignore deserialize error "unexpected end of input" for old data when missing field
+                let tx_accumulator_num_nodes =
+                    seq.next_element().unwrap_or_else(|e| None).unwrap_or(0u64);
+
+                Ok(TransactionSequenceInfo {
+                    tx_order,
+                    tx_order_signature,
+                    tx_accumulator_root,
+                    tx_timestamp,
+                    tx_accumulator_frozen_subtree_roots,
+                    tx_accumulator_num_leaves,
+                    tx_accumulator_num_nodes,
+                })
+            }
+        }
+
+        // deserializer.deserialize_seq(TransactionSequenceInfoVisitor)
+        deserializer.deserialize_struct(
+            TRANSACTION_SEQUENCE_INFO_STR,
+            TRANSACTION_SEQUENCE_INFO_FIELDS,
+            TransactionSequenceInfoVisitor,
+        )
+
+        // deserializer.deserialize_byte_buf()
+        // deserializer.deserialize_newtype_struct(
+        //     TRANSACTION_SEQUENCE_INFO_STR,
+        //     TransactionSequenceInfoVisitor,
+        // )
+
+        // let v: Vec<u8> = Deserialize::deserialize(deserializer)?;
     }
 }
 
@@ -231,24 +296,22 @@ impl<'de> Deserialize<'de> for TransactionSequenceInfo {
 //                     "[DEBUG] TransactionSequenceInfo Deserializer size_hint {:?} ",
 //                     size_hint
 //                 );
-//                 // println!(
-//                 //     "[DEBUG] TransactionSequenceInfo Deserializer seq {:?} ",
-//                 //     seq.next_element()?
-//                 // );
-//                 let tx_order: u64 = seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_order field when deserialize TransactionSequenceInfo"))?;
-//                 let tx_order_signature: Vec<u8> = seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_order_signature field when deserialize TransactionSequenceInfo"))?;
-//                 let tx_accumulator_root_bytes: Vec<u8> = seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_accumulator_root field when deserialize TransactionSequenceInfo"))?;
+//                 let tx_order = seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_order field when deserialize TransactionSequenceInfo"))?;
+//                 println!(
+//                     "[DEBUG] TransactionSequenceInfo Deserializer tx_order {:?} ",
+//                     tx_order
+//                 );
+//                 let tx_order_signature = seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_order_signature field when deserialize TransactionSequenceInfo"))?;
+//                 let tx_accumulator_root = seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_accumulator_root field when deserialize TransactionSequenceInfo"))?;
 //                 let tx_timestamp: u64 = seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_timestamp field when deserialize TransactionSequenceInfo"))?;
-//                 let tx_accumulator_frozen_subtree_roots_bytes: Vec<Vec<u8>> =
-//                     seq.next_element()?.unwrap_or(vec![]);
-//                 let tx_accumulator_num_leaves: u64 = seq.next_element()?.unwrap_or(0u64);
-//                 let tx_accumulator_num_nodes: u64 = seq.next_element()?.unwrap_or(0u64);
+//                 let tx_accumulator_frozen_subtree_roots = seq.next_element()?.unwrap_or(vec![]);
+//                 println!(
+//                     "[DEBUG] TransactionSequenceInfo Deserializer tx_accumulator_frozen_subtree_roots {:?} ",
+//                     tx_accumulator_frozen_subtree_roots
+//                 );
+//                 let tx_accumulator_num_leaves = seq.next_element()?.unwrap_or(0u64);
+//                 let tx_accumulator_num_nodes = seq.next_element()?.unwrap_or(0u64);
 //
-//                 let tx_accumulator_root = H256::from_slice(tx_accumulator_root_bytes.as_slice());
-//                 let tx_accumulator_frozen_subtree_roots = tx_accumulator_frozen_subtree_roots_bytes
-//                     .into_iter()
-//                     .map(|v| H256::from_slice(v.as_slice()))
-//                     .collect();
 //                 Ok(TransactionSequenceInfo {
 //                     tx_order,
 //                     tx_order_signature,
@@ -261,8 +324,7 @@ impl<'de> Deserialize<'de> for TransactionSequenceInfo {
 //             }
 //         }
 //
-//         deserializer.deserialize_seq(TransactionSequenceInfoVisitor)
-//         // deserializer.deserialize_struct(TransactionSequenceInfoVisitor)
+//         deserializer.deserialize_any(TransactionSequenceInfoVisitor)
 //     }
 // }
 
@@ -361,33 +423,42 @@ impl<'de> Deserialize<'de> for TransactionSequenceInfo {
 //                     "[Debug] visit_seq size_hint  {}",
 //                     seq.size_hint().unwrap_or(0)
 //                 );
-//                 let tx_accumulator_frozen_subtree_roots = if seq.size_hint().unwrap_or(0) > 0 {
-//                     let tx_accumulator_frozen_subtree_roots_opt = seq.next_element()?;
-//                     // println!(
-//                     //     "[Debug] visit_seq tx_accumulator_frozen_subtree_roots_opt {:?}",
-//                     //     tx_accumulator_frozen_subtree_roots_opt
-//                     // );
-//                     let tx_accumulator_frozen_subtree_roots_bytes: Vec<u8> =
-//                         tx_accumulator_frozen_subtree_roots_opt.unwrap_or(vec![]);
-//                     println!(
-//                         "[Debug] visit_seq tx_accumulator_frozen_subtree_roots_bytes 0000 {:?}",
-//                         tx_accumulator_frozen_subtree_roots_bytes
-//                     );
 //
-//                     // println!("[Debug] visit_seq tx_accumulator_frozen_subtree_roots 00",);
-//                     // let tx_accumulator_frozen_subtree_roots: Vec<H256> =
-//                     //     seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_accumulator_root field when deserialize TransactionSequenceInfo"))?;
-//                     // println!(
-//                     //     "[Debug] visit_seq tx_accumulator_frozen_subtree_roots 01 {:?}",
-//                     //     tx_accumulator_frozen_subtree_roots
-//                     // );
-//                     //
-//                     // tx_accumulator_frozen_subtree_roots
-//                     vec![H256::zero()]
-//                 } else {
-//                     println!("[Debug] visit_seq tx_accumulator_frozen_subtree_roots 02",);
-//                     vec![]
-//                 };
+//                 println!("[Debug] visit_seq tx_accumulator_frozen_subtree_roots 00",);
+//                 let tx_accumulator_frozen_subtree_roots =
+//                     seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_accumulator_root field when deserialize TransactionSequenceInfo"))?;
+//                 println!(
+//                     "[Debug] visit_seq tx_accumulator_frozen_subtree_roots 01 {:?}",
+//                     tx_accumulator_frozen_subtree_roots
+//                 );
+//
+//                 // let tx_accumulator_frozen_subtree_roots = if seq.size_hint().unwrap_or(0) > 0 {
+//                 // let tx_accumulator_frozen_subtree_roots_opt = seq.next_element()?;
+//                 // println!(
+//                 //     "[Debug] visit_seq tx_accumulator_frozen_subtree_roots_opt {:?}",
+//                 //     tx_accumulator_frozen_subtree_roots_opt
+//                 // );
+//                 // let tx_accumulator_frozen_subtree_roots_bytes: Vec<u8> =
+//                 //     tx_accumulator_frozen_subtree_roots_opt.unwrap_or(vec![]);
+//                 // println!(
+//                 //     "[Debug] visit_seq tx_accumulator_frozen_subtree_roots_bytes 0000 {:?}",
+//                 //     tx_accumulator_frozen_subtree_roots_bytes
+//                 // );
+//
+//                 // println!("[Debug] visit_seq tx_accumulator_frozen_subtree_roots 00",);
+//                 // let tx_accumulator_frozen_subtree_roots =
+//                 //     seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_accumulator_root field when deserialize TransactionSequenceInfo"))?;
+//                 // println!(
+//                 //     "[Debug] visit_seq tx_accumulator_frozen_subtree_roots 01 {:?}",
+//                 //     tx_accumulator_frozen_subtree_roots
+//                 // );
+//                 //
+//                 // tx_accumulator_frozen_subtree_roots
+//                 // vec![H256::zero()]
+//                 // } else {
+//                 //     println!("[Debug] visit_seq tx_accumulator_frozen_subtree_roots 02",);
+//                 //     vec![]
+//                 // };
 //                 let tx_accumulator_num_leaves = if seq.size_hint().unwrap_or(0) > 0 {
 //                     seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_accumulator_num_leaves field when deserialize TransactionSequenceInfo"))?
 //                 } else {
@@ -591,6 +662,11 @@ pub struct ExecuteTransactionResponse {
 #[cfg(test)]
 mod tests {
     use super::rooch::RoochTransaction;
+    use crate::test_utils::random_accumulator_info;
+    use crate::transaction::TransactionSequenceInfo;
+    use ethers::types::H256;
+    use moveos_types::state::MoveState;
+    use moveos_types::test_utils::random_bytes;
 
     fn test_serialize_deserialize_roundtrip(tx: RoochTransaction) {
         let bytes = tx.encode();
@@ -602,5 +678,22 @@ mod tests {
     fn test_serialize_deserialize() {
         let tx = RoochTransaction::mock();
         test_serialize_deserialize_roundtrip(tx)
+    }
+
+    #[test]
+    fn test_serialize_deserialize_transaction_sequence_info() {
+        let tx_order_signature = random_bytes();
+        let accumulator_info = random_accumulator_info();
+        let tx_sequence_info =
+            TransactionSequenceInfo::new(rand::random(), tx_order_signature, accumulator_info, 0);
+        let bcs_bytes = tx_sequence_info.to_bytes();
+        let h256_bcs_bytes =
+            bcs::to_bytes(&H256::random()).expect("Serialize the H256 should success");
+        println!("Serialize transaction sequence info: {:?}", bcs_bytes);
+        println!(
+            "Serialize transaction sequence info H256: {:?}, len: {}",
+            h256_bcs_bytes,
+            h256_bcs_bytes.len()
+        );
     }
 }

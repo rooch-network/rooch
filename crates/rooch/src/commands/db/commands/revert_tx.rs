@@ -7,6 +7,7 @@ use std::time::SystemTime;
 
 use anyhow::Error;
 use clap::Parser;
+use metrics::RegistryService;
 
 use moveos_store::transaction_store::TransactionStore as TxExecutionInfoStore;
 use moveos_store::MoveOSStore;
@@ -140,7 +141,9 @@ impl RevertTxCommand {
         let start_time = SystemTime::now();
 
         let opt = RoochOpt::new_with_default(self.base_data_dir, self.chain_id, None).unwrap();
-        let rooch_db = RoochDB::init(opt.store_config()).unwrap();
+        let registry_service = RegistryService::default();
+        let rooch_db =
+            RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
         let genesis = RoochGenesis::load_or_init(opt.network(), &rooch_db).unwrap();
         let root = genesis.genesis_root().clone();
         println!("root object: {:?}", root);
