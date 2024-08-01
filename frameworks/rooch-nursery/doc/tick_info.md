@@ -28,13 +28,13 @@
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::object</a>;
-<b>use</b> <a href="">0x2::result</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::string_utils</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x4::ord</a>;
 <b>use</b> <a href="bitseed.md#0xa_bitseed">0xa::bitseed</a>;
+<b>use</b> <a href="result.md#0xa_result">0xa::result</a>;
 </code></pre>
 
 
@@ -184,7 +184,7 @@ Check if the tick is deployed.
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tick_info.md#0xa_tick_info_mint_on_bitcoin">mint_on_bitcoin</a>(metaprotocol: <a href="_String">string::String</a>, tick: <a href="_String">string::String</a>, amount: u64): <a href="_Result">result::Result</a>&lt;<a href="_Object">object::Object</a>&lt;<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>&gt;&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tick_info.md#0xa_tick_info_mint_on_bitcoin">mint_on_bitcoin</a>(metaprotocol: <a href="_String">string::String</a>, tick: <a href="_String">string::String</a>, amount: u64): <a href="result.md#0xa_result_Result">result::Result</a>&lt;<a href="_Object">object::Object</a>&lt;<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>&gt;&gt;
 </code></pre>
 
 

@@ -1,9 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module moveos_std::result_test {
+module rooch_nursery::result_test {
 
-    use moveos_std::result::{Self, Result, ok, err, assert_ok};
+    use rooch_nursery::result::{Self, Result, ok, err, assert_ok};
 
     const ErrorForTest: u64 = 1;
 
