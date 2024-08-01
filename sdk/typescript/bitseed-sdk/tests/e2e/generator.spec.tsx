@@ -4,9 +4,22 @@ import path from 'path'
 import { fileURLToPath } from 'url';
 import { test, expect } from '@playwright/experimental-ct-react'
 import DeployGeneratorStory from './generator.story'
+import { BitseedTestEnv } from './commons/bitseed_test_env'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 test.use({ viewport: { width: 500, height: 500 } })
+
+var testEnv: BitseedTestEnv = new BitseedTestEnv();
+
+test.beforeAll(async () => {
+  console.log('Before tests');
+  await testEnv.start()
+});
+
+test.afterAll(async () => {
+  console.log('After tests');
+  await testEnv.stop()
+});
 
 test('Deploy generator', async ({ mount }) => {
   const component = await mount(<DeployGeneratorStory />)

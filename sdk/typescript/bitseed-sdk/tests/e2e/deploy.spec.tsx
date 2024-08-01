@@ -1,8 +1,21 @@
 import React from 'react'
 import { test, expect } from '@playwright/experimental-ct-react'
 import DeployStory from './deploy.story'
+import { BitseedTestEnv } from './commons/bitseed_test_env'
 
 test.use({ viewport: { width: 500, height: 500 } })
+
+var testEnv: BitseedTestEnv = new BitseedTestEnv();
+
+test.beforeAll(async () => {
+  console.log('Before tests');
+  await testEnv.start()
+});
+
+test.afterAll(async () => {
+  console.log('After tests');
+  await testEnv.stop()
+});
 
 test('Deploy move tick with simple generator', async ({ mount }) => {
   const component = await mount(<DeployStory />)
