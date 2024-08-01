@@ -1,0 +1,29 @@
+# getStates
+
+## 查看资源
+
+```ts
+import { getRoochNodeUrl, RoochClient } from "@roochnetwork/rooch-sdk";
+
+const neturl = getRoochNodeUrl('localnet');
+const mc = new RoochClient({url: neturl});
+
+const result = mc.getStates({accessPath: '/resource/0x05a646529424ac20ef3c4201e00d0da07e61a5523e5b652a674e163f820083f6/0x05a646529424ac20ef3c4201e00d0da07e61a5523e5b652a674e163f820083f6::quick_start_counter::Counter'})
+
+console.log(result);
+```
+
+```
+decoded_value
+: 
+null
+display_fields
+: 
+null
+value
+: 
+"0x0000000000000000"
+value_type
+: 
+"0x5a646529424ac20ef3c4201e00d0da07e61a5523e5b652a674e163f820083f6::quick_start_counter::Counter"
+```
