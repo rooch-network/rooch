@@ -5870,9 +5870,8 @@ dependencies = [
 
 [[package]]
 name = "librocksdb-sys"
-version = "0.16.0+8.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce3d60bc059831dc1c83903fb45c103f75db65c5a7bf22272764d9cc683e348c"
+version = "0.17.0+9.0.0"
+source = "git+https://github.com/rooch-network/rust-rocksdb.git?branch=build/sched_getcpu#da9c9db1c1ebe7f11dc9b5e10cd6a7cb444475bd"
 dependencies = [
  "bindgen",
  "bzip2-sys",
@@ -5965,9 +5964,9 @@ dependencies = [
 
 [[package]]
 name = "lz4-sys"
-version = "1.9.4"
+version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57d27b317e207b10f69f5e75494119e391a96f48861ae870d1da6edac98ca900"
+checksum = "109de74d5d2353660401699a4174a4ff23fcc649caf553df71933c7fb45ad868"
 dependencies = [
  "cc",
  "libc",
@@ -9254,8 +9253,7 @@ dependencies = [
 [[package]]
 name = "rocksdb"
 version = "0.22.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6bd13e55d6d7b8cd0ea569161127567cd587676c99f4472f779a0279aa60a7a7"
+source = "git+https://github.com/rooch-network/rust-rocksdb.git?branch=build/sched_getcpu#da9c9db1c1ebe7f11dc9b5e10cd6a7cb444475bd"
 dependencies = [
  "libc",
  "librocksdb-sys",
