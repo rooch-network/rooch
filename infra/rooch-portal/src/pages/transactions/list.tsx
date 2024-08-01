@@ -208,7 +208,7 @@ export const TransactionsList = () => {
         <select
           id="pageLimit"
           value={paginationModel.limit}
-          className='bg-black'
+          className='bg-transparent'
           onChange={(e) => setPaginationModel({ ...paginationModel, limit: parseInt(e.target.value), index: 0 })}
         >
           <option value={5}>5</option>
