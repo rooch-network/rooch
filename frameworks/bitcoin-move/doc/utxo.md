@@ -114,6 +114,15 @@ Event for remove UTXO
 ## Constants
 
 
+<a name="0x4_utxo_ErrorDeprecatedFunction"></a>
+
+
+
+<pre><code><b>const</b> <a href="utxo.md#0x4_utxo_ErrorDeprecatedFunction">ErrorDeprecatedFunction</a>: u64 = 1;
+</code></pre>
+
+
+
 <a name="0x4_utxo_TEMPORARY_AREA"></a>
 
 
@@ -262,11 +271,13 @@ Get the UTXO's vout
 
 ## Function `seal`
 
-Seal the UTXO with a protocol, the T is the protocol object
+This function is deprecated
+We can not provide a public function to seal UTXO now,
+Maybe we can provide a new way to seal UTXO in the future
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_seal">seal</a>&lt;T&gt;(<a href="utxo.md#0x4_utxo">utxo</a>: &<b>mut</b> <a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>, seal_obj: &<a href="_Object">object::Object</a>&lt;T&gt;)
+<b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_seal">seal</a>&lt;T&gt;(_utxo: &<b>mut</b> <a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>, _seal_obj: &<a href="_Object">object::Object</a>&lt;T&gt;)
 </code></pre>
 
 
