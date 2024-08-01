@@ -3,7 +3,9 @@
 
 use crate::jsonrpc_types::btc::ord::InscriptionFilterView;
 use crate::jsonrpc_types::btc::utxo::UTXOFilterView;
-use crate::jsonrpc_types::{IndexerStateIDView, InscriptionPageView, StrView, UTXOPageView};
+use crate::jsonrpc_types::{
+    BytesView, IndexerStateIDView, InscriptionPageView, StrView, UTXOPageView,
+};
 use crate::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 use rooch_open_rpc_macros::open_rpc;
@@ -33,4 +35,13 @@ pub trait BtcAPI {
         limit: Option<StrView<u64>>,
         descending_order: Option<bool>,
     ) -> RpcResult<InscriptionPageView>;
+
+    /// Broadcast a Bitcoin transaction
+    #[method(name = "broadcastTX")]
+    async fn broadcast_tx(
+        &self,
+        hex: BytesView,
+        maxfeerate: Option<f64>,
+        maxburnamount: Option<f64>,
+    ) -> RpcResult<String>;
 }

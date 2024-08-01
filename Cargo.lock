@@ -10124,6 +10124,7 @@ dependencies = [
  "async-trait",
  "axum 0.7.5",
  "bcs",
+ "bitcoincore-rpc",
  "chrono",
  "clap 4.5.12",
  "coerce",

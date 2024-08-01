@@ -32,6 +32,8 @@ use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
 use rooch_proposer::proxy::ProposerProxy;
+use rooch_relayer::actor::bitcoin_client::BitcoinClientActor;
+use rooch_relayer::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use rooch_relayer::actor::messages::RelayTick;
 use rooch_relayer::actor::relayer::RelayerActor;
 use rooch_rpc_api::api::RoochRpcModule;
@@ -306,16 +308,6 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         .await?;
     let processor_proxy = PipelineProcessorProxy::new(processor_actor.into());
 
-    let rpc_service = RpcService::new(
-        network.chain_id.id,
-        network.genesis_config.bitcoin_network,
-        executor_proxy.clone(),
-        sequencer_proxy,
-        indexer_proxy,
-        processor_proxy.clone(),
-    );
-    let aggregate_service = AggregateService::new(rpc_service.clone());
-
     let ethereum_relayer_config = opt.ethereum_relayer_config();
     let bitcoin_relayer_config = opt.bitcoin_relayer_config();
 
@@ -323,10 +315,10 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         && (ethereum_relayer_config.is_some() || bitcoin_relayer_config.is_some())
     {
         let relayer = RelayerActor::new(
-            executor_proxy,
+            executor_proxy.clone(),
             processor_proxy.clone(),
             ethereum_relayer_config,
-            bitcoin_relayer_config,
+            bitcoin_relayer_config.clone(),
         )
         .await?
         .into_actor(Some("Relayer"), &actor_system)
@@ -339,6 +331,28 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         );
         timers.push(relayer_timer);
     }
+
+    let bitcoin_client_proxy = if service_status.is_active() && bitcoin_relayer_config.is_some() {
+        let bitcoin_client = BitcoinClientActor::new(bitcoin_relayer_config.unwrap())?;
+        let bitcoin_client_actor_ref = bitcoin_client
+            .into_actor(Some("bitcoin_client_for_rpc_service"), &actor_system)
+            .await?;
+        let bitcoin_client_proxy = BitcoinClientProxy::new(bitcoin_client_actor_ref.into());
+        Some(bitcoin_client_proxy)
+    } else {
+        None
+    };
+
+    let rpc_service = RpcService::new(
+        network.chain_id.id,
+        network.genesis_config.bitcoin_network,
+        executor_proxy,
+        sequencer_proxy,
+        indexer_proxy,
+        processor_proxy,
+        bitcoin_client_proxy,
+    );
+    let aggregate_service = AggregateService::new(rpc_service.clone());
 
     let acl = match env::var("ACCESS_CONTROL_ALLOW_ORIGIN") {
         Ok(value) => {

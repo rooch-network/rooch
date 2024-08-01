@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{
-    GetBestBlockHashMessage, GetBlockHashMessage, GetBlockHeaderInfoMessage, GetBlockMessage,
+    BroadcastTransactionMessage, GetBestBlockHashMessage, GetBlockHashMessage,
+    GetBlockHeaderInfoMessage, GetBlockMessage,
 };
 use anyhow::Result;
 use async_trait::async_trait;
-use bitcoincore_rpc::{json, Auth, Client, RpcApi};
+use bitcoincore_rpc::{bitcoin::Txid, json, Auth, Client, RpcApi};
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use rooch_config::BitcoinRelayerConfig;
 
@@ -88,5 +89,40 @@ impl Handler<GetChainTipsMessage> for BitcoinClientActor {
         _ctx: &mut ActorContext,
     ) -> Result<json::GetChainTipsResult> {
         Ok(self.rpc_client.get_chain_tips()?)
+    }
+}
+
+#[async_trait]
+impl Handler<BroadcastTransactionMessage> for BitcoinClientActor {
+    async fn handle(
+        &mut self,
+        msg: BroadcastTransactionMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Txid> {
+        let BroadcastTransactionMessage {
+            hex,
+            maxfeerate,
+            maxburnamount,
+        } = msg;
+
+        // Prepare the parameters for the RPC call
+        let mut params = vec![hex.into()];
+
+        // Add maxfeerate and maxburnamount to the params if they are Some
+        if let Some(feerate) = maxfeerate {
+            params.push(serde_json::to_value(feerate).unwrap());
+        } else {
+            params.push(serde_json::to_value(0.10).unwrap());
+        }
+
+        if let Some(burnamount) = maxburnamount {
+            params.push(serde_json::to_value(burnamount).unwrap());
+        } else {
+            params.push(serde_json::to_value(0.0).unwrap());
+        }
+
+        // Make the RPC call
+        let tx_id: bitcoin::Txid = self.rpc_client.call("sendrawtransaction", &params)?;
+        Ok(tx_id)
     }
 }
