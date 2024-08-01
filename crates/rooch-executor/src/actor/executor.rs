@@ -1,17 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::sync::Arc;
 use super::messages::{
     ExecuteTransactionMessage, ExecuteTransactionResult, GetRootMessage, ValidateL1BlockMessage,
     ValidateL1TxMessage, ValidateL2TxMessage,
 };
+use crate::metrics::ExecutorMetrics;
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use function_name::named;
 use move_core_types::vm_status::VMStatus;
-use prometheus::Registry;
 use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_store::MoveOSStore;
@@ -23,6 +22,7 @@ use moveos_types::state::ObjectState;
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::transaction::{FunctionCall, MoveOSTransaction, VerifiedMoveAction};
+use prometheus::Registry;
 use rooch_genesis::FrameworksGasParameters;
 use rooch_store::RoochStore;
 use rooch_types::bitcoin::BitcoinModule;
@@ -34,8 +34,8 @@ use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::{
     AuthenticatorInfo, L1Block, L1BlockWithBody, L1Transaction, RoochTransaction,
 };
+use std::sync::Arc;
 use tracing::{debug, warn};
-use crate::metrics::ExecutorMetrics;
 
 pub struct ExecutorActor {
     root: ObjectMeta,
@@ -138,7 +138,7 @@ impl ExecutorActor {
                 },
             block_body,
         } = l1_block;
-        let result  = match RoochMultiChainID::try_from(chain_id.id())? {
+        let result = match RoochMultiChainID::try_from(chain_id.id())? {
             RoochMultiChainID::Bitcoin => {
                 let action = VerifiedMoveAction::Function {
                     call: BitcoinModule::create_execute_l1_block_call_bytes(
@@ -187,7 +187,7 @@ impl ExecutorActor {
         let tx_size = l1_tx.tx_size();
         let ctx = TxContext::new_system_call_ctx(tx_hash, tx_size);
         //TODO we should call the contract to validate the l1 tx has been executed
-        match RoochMultiChainID::try_from(l1_tx.chain_id.id())? {
+        let result = match RoochMultiChainID::try_from(l1_tx.chain_id.id())? {
             RoochMultiChainID::Bitcoin => {
                 let action = VerifiedMoveAction::Function {
                     call: BitcoinModule::create_execute_l1_tx_call(l1_tx.block_hash, l1_tx.txid)?,
@@ -200,12 +200,13 @@ impl ExecutorActor {
                 ))
             }
             id => Err(anyhow::anyhow!("Chain {} not supported yet", id)),
-        }
+        };
 
         self.metrics
             .executor_validate_tx_bytes
             .with_label_values(&[fn_name])
             .observe(tx_size as f64);
+        result
     }
 
     #[named]
@@ -218,14 +219,13 @@ impl ExecutorActor {
             .start_timer();
         let sender = tx.sender();
         let tx_hash = tx.tx_hash();
-
         debug!("executor validate_l2_tx: {:?}, sender: {}", tx_hash, sender);
 
         let authenticator = tx.authenticator_info();
-
         let mut moveos_tx: MoveOSTransaction = tx.into_moveos_transaction(self.root.clone());
-        let result = self.validate_authenticator(&moveos_tx.ctx, authenticator);
-        match result {
+        let tx_size = moveos_tx.ctx.tx_size;
+        let tx_result = self.validate_authenticator(&moveos_tx.ctx, authenticator);
+        let result = match tx_result {
             Ok(vm_result) => match vm_result {
                 Ok((tx_validate_result, pre_execute_functions, post_execute_functions)) => {
                     // Add the tx_validate_result to the context
@@ -268,12 +268,13 @@ impl ExecutorActor {
                 );
                 Err(e)
             }
-        }
+        };
 
         self.metrics
             .executor_validate_tx_bytes
             .with_label_values(&[fn_name])
             .observe(tx_size as f64);
+        result
     }
 
     #[named]
@@ -333,10 +334,6 @@ impl ExecutorActor {
             Err(vm_status) => Err(vm_status),
         };
 
-        // self.metrics
-        //     .executor_validate_tx_bytes
-        //     .with_label_values(&[fn_name])
-        //     .observe(size as f64);
         Ok(vm_result)
     }
 }
