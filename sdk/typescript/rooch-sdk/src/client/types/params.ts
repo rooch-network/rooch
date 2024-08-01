@@ -11,6 +11,12 @@
  */
 
 import type * as RpcTypes from './generated.js'
+/** Broadcast a Bitcoin transaction */
+export interface BroadcastTXParams {
+  hex: string
+  maxfeerate?: number | null | undefined
+  maxburnamount?: number | null | undefined
+}
 /** Query the Inscription via global index by Inscription filter */
 export interface QueryInscriptionsParams {
   filter: RpcTypes.InscriptionFilterView

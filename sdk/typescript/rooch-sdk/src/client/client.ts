@@ -44,6 +44,7 @@ import {
   PaginatedIndexerEventViews,
   ModuleABIView,
   GetModuleABIParams,
+  BroadcastTXParams,
 } from './types/index.js'
 
 /**
@@ -214,6 +215,13 @@ export class RoochClient {
     return this.transport.request({
       method: 'btc_queryUTXOs',
       params: [input.filter, input.cursor, input.limit, input.descendingOrder],
+    })
+  }
+
+  async broadcastBitcoinTX(input: BroadcastTXParams): Promise<string> {
+    return this.transport.request({
+      method: 'btc_broadcastTX',
+      params: [input.hex, input.maxfeerate, input.maxburnamount],
     })
   }
 

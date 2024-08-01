@@ -7,4 +7,5 @@ packages:
   - 'sdk/typescript/rooch-sdk-kit'
   - 'sdk/typescript/templates/**'
   - 'sdk/typescript/rooch-create'
+  - 'sdk/typescript/bitseed-sdk'
   - 'docs/**'

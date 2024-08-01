@@ -1,0 +1,13 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+{
+  "extends": "../build-scripts/tsconfig.shared.json",
+  "include": ["src"],
+  "compilerOptions": {
+    "module": "CommonJS",
+    "outDir": "dist/cjs",
+    "rootDir": "src",
+    "isolatedModules": true
+  }
+}

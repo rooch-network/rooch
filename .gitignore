@@ -36,3 +36,6 @@ sdk/typescript/dist/
 sdk/typescript/example/
 sdk/typescript/src/generated/
 *.out
+
+# pnpm store
+.pnpm-store/
