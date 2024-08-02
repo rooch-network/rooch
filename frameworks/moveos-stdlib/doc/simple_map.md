@@ -46,7 +46,7 @@ This module provides a solution for unsorted maps, that is it has the properties
 
 
 
-<pre><code><b>struct</b> <a href="simple_map.md#0x2_simple_map_SimpleMap">SimpleMap</a>&lt;Key, Value&gt; <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="simple_map.md#0x2_simple_map_SimpleMap">SimpleMap</a>&lt;Key, Value&gt; <b>has</b> store
 </code></pre>
 
 
@@ -57,7 +57,7 @@ This module provides a solution for unsorted maps, that is it has the properties
 
 
 
-<pre><code><b>struct</b> <a href="simple_map.md#0x2_simple_map_Element">Element</a>&lt;Key, Value&gt; <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="simple_map.md#0x2_simple_map_Element">Element</a>&lt;Key, Value&gt; <b>has</b> store
 </code></pre>
 
 
