@@ -5,9 +5,11 @@ use super::messages::{
     ExecuteTransactionMessage, ExecuteTransactionResult, GetRootMessage, ValidateL1BlockMessage,
     ValidateL1TxMessage, ValidateL2TxMessage,
 };
+use crate::metrics::ExecutorMetrics;
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
+use function_name::named;
 use move_core_types::vm_status::VMStatus;
 use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos::vm::vm_status_explainer::explain_vm_status;
@@ -20,6 +22,7 @@ use moveos_types::state::ObjectState;
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::transaction::{FunctionCall, MoveOSTransaction, VerifiedMoveAction};
+use prometheus::Registry;
 use rooch_genesis::FrameworksGasParameters;
 use rooch_store::RoochStore;
 use rooch_types::bitcoin::BitcoinModule;
@@ -31,6 +34,7 @@ use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::{
     AuthenticatorInfo, L1Block, L1BlockWithBody, L1Transaction, RoochTransaction,
 };
+use std::sync::Arc;
 use tracing::{debug, warn};
 
 pub struct ExecutorActor {
@@ -38,6 +42,7 @@ pub struct ExecutorActor {
     moveos: MoveOS,
     moveos_store: MoveOSStore,
     rooch_store: RoochStore,
+    metrics: Arc<ExecutorMetrics>,
 }
 
 type ValidateAuthenticatorResult = Result<TxValidateResult, VMStatus>;
@@ -47,6 +52,7 @@ impl ExecutorActor {
         root: ObjectMeta,
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
+        registry: &Registry,
     ) -> Result<Self> {
         let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
         let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
@@ -64,6 +70,7 @@ impl ExecutorActor {
             moveos,
             moveos_store,
             rooch_store,
+            metrics: Arc::new(ExecutorMetrics::new(registry)),
         })
     }
 
@@ -79,24 +86,43 @@ impl ExecutorActor {
         &self.moveos
     }
 
+    #[named]
     pub fn execute(&mut self, tx: VerifiedMoveOSTransaction) -> Result<ExecuteTransactionResult> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .executor_execute_tx_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let tx_hash = tx.ctx.tx_hash();
+        let size = tx.ctx.tx_size;
         let output = self.moveos.execute_and_apply(tx)?;
         let execution_info = self
             .moveos_store
             .handle_tx_output(tx_hash, output.clone())?;
 
         self.root = execution_info.root_metadata();
+        self.metrics
+            .executor_execute_tx_bytes
+            .with_label_values(&[fn_name])
+            .observe(size as f64);
         Ok(ExecuteTransactionResult {
             output,
             transaction_info: execution_info,
         })
     }
 
+    #[named]
     pub fn validate_l1_block(
         &self,
         l1_block: L1BlockWithBody,
     ) -> Result<VerifiedMoveOSTransaction> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .executor_validate_tx_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let tx_hash = l1_block.block.tx_hash();
         let tx_size = l1_block.block.tx_size();
         let ctx = TxContext::new_system_call_ctx(tx_hash, tx_size);
@@ -111,7 +137,7 @@ impl ExecutorActor {
                 },
             block_body,
         } = l1_block;
-        match RoochMultiChainID::try_from(chain_id.id())? {
+        let result = match RoochMultiChainID::try_from(chain_id.id())? {
             RoochMultiChainID::Bitcoin => {
                 let action = VerifiedMoveAction::Function {
                     call: BitcoinModule::create_execute_l1_block_call_bytes(
@@ -139,15 +165,28 @@ impl ExecutorActor {
                 ))
             }
             id => Err(anyhow::anyhow!("Chain {} not supported yet", id)),
-        }
+        };
+
+        self.metrics
+            .executor_validate_tx_bytes
+            .with_label_values(&[fn_name])
+            .observe(tx_size as f64);
+        result
     }
 
+    #[named]
     pub fn validate_l1_tx(&self, l1_tx: L1Transaction) -> Result<VerifiedMoveOSTransaction> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .executor_validate_tx_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let tx_hash = l1_tx.tx_hash();
         let tx_size = l1_tx.tx_size();
         let ctx = TxContext::new_system_call_ctx(tx_hash, tx_size);
         //TODO we should call the contract to validate the l1 tx has been executed
-        match RoochMultiChainID::try_from(l1_tx.chain_id.id())? {
+        let result = match RoochMultiChainID::try_from(l1_tx.chain_id.id())? {
             RoochMultiChainID::Bitcoin => {
                 let action = VerifiedMoveAction::Function {
                     call: BitcoinModule::create_execute_l1_tx_call(l1_tx.block_hash, l1_tx.txid)?,
@@ -160,20 +199,32 @@ impl ExecutorActor {
                 ))
             }
             id => Err(anyhow::anyhow!("Chain {} not supported yet", id)),
-        }
+        };
+
+        self.metrics
+            .executor_validate_tx_bytes
+            .with_label_values(&[fn_name])
+            .observe(tx_size as f64);
+        result
     }
 
+    #[named]
     pub fn validate_l2_tx(&self, mut tx: RoochTransaction) -> Result<VerifiedMoveOSTransaction> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .executor_validate_tx_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let sender = tx.sender();
         let tx_hash = tx.tx_hash();
-
         debug!("executor validate_l2_tx: {:?}, sender: {}", tx_hash, sender);
 
         let authenticator = tx.authenticator_info();
-
         let mut moveos_tx: MoveOSTransaction = tx.into_moveos_transaction(self.root.clone());
-        let result = self.validate_authenticator(&moveos_tx.ctx, authenticator);
-        match result {
+        let tx_size = moveos_tx.ctx.tx_size;
+        let tx_result = self.validate_authenticator(&moveos_tx.ctx, authenticator);
+        let result = match tx_result {
             Ok(vm_result) => match vm_result {
                 Ok(tx_validate_result) => {
                     // Add the tx_validate_result to the context
@@ -214,14 +265,27 @@ impl ExecutorActor {
                 );
                 Err(e)
             }
-        }
+        };
+
+        self.metrics
+            .executor_validate_tx_bytes
+            .with_label_values(&[fn_name])
+            .observe(tx_size as f64);
+        result
     }
 
+    #[named]
     pub fn validate_authenticator(
         &self,
         ctx: &TxContext,
         authenticator: AuthenticatorInfo,
     ) -> Result<ValidateAuthenticatorResult> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .executor_validate_tx_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let tx_validator = self.as_module_binding::<TransactionValidator>();
         let tx_validate_function_result = tx_validator
             .validate(ctx, authenticator.clone())?
@@ -246,6 +310,7 @@ impl ExecutorActor {
             }
             Err(vm_status) => Err(vm_status),
         };
+
         Ok(vm_result)
     }
 }

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, Result};
+use metrics::RegistryService;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_config::DataDirPath;
@@ -48,6 +49,7 @@ pub struct RustBindingTest {
     pub reader_executor: ReaderExecutorActor,
     root: ObjectMeta,
     rooch_db: RoochDB,
+    pub registry_service: RegistryService,
 }
 
 impl RustBindingTest {
@@ -71,6 +73,7 @@ impl RustBindingTest {
             root.clone(),
             rooch_db.moveos_store.clone(),
             rooch_db.rooch_store.clone(),
+            &registry_service.default_registry(),
         )?;
 
         let reader_executor = ReaderExecutorActor::new(
@@ -87,6 +90,7 @@ impl RustBindingTest {
             executor,
             reader_executor,
             rooch_db,
+            registry_service,
         })
     }
 
