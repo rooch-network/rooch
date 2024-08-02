@@ -260,7 +260,7 @@ module rooch_nursery::inscribe_factory {
 
         
         tick_info::deploy_tick(bitseed::metaprotocol(), tick, inscription_id_option, factory_option, max, repeat, has_user_input, deploy_args);
-
+        simple_map::drop(attributes);
         (true, option::none<String>())
     }
     
@@ -275,6 +275,7 @@ module rooch_nursery::inscribe_factory {
         let amount = get_SFT_amount(metadata);
 
         if (!tick_info::is_deployed(bitseed::metaprotocol(), tick)) {
+            simple_map::drop(attributes);
             return err(b"the tick is not deployed")
         };
         let tick_info = tick_info::borrow_tick_info(bitseed::metaprotocol(), tick);
@@ -286,6 +287,7 @@ module rooch_nursery::inscribe_factory {
             //TODO handle user input
             let user_input_option = get_SFT_string_attribute(&attributes, b"id");
             if (option::is_none(&user_input_option)) {
+                simple_map::drop(attributes);
                 return err(b"metadata.attributes.user_input is required")
             };
 
@@ -295,11 +297,13 @@ module rooch_nursery::inscribe_factory {
         if(tick != utf8(BIT_SEED_GENERATOR_TICK)) {
             let generator_inscription_id_option = tick_info::generator(tick_info);
             if (option::is_none(&generator_inscription_id_option)) {
+                simple_map::drop(attributes);
                 return err(b"the tick can not mint on Bitcoin")
             };
 
             let generator_inscription_id = option::destroy_some(generator_inscription_id_option);
             if (!ord::exists_metaprotocol_validity(generator_inscription_id)) {
+                simple_map::drop(attributes);
                 return err(b"generator_inscription_id is not validity bitseed")
             };
 
@@ -312,10 +316,12 @@ module rooch_nursery::inscribe_factory {
 
             let (is_valid, reason) = inscribe_verify(wasm_bytes, deploy_args, seed, user_input, metadata, content_type, body);
             if (!is_valid) {
+                simple_map::drop(attributes);
                 return result::err_string(option::destroy_with_default(reason, utf8(b"inscribe verify fail")))
             };
         };
         let bitseed_result = tick_info::mint_on_bitcoin(bitseed::metaprotocol(), tick, amount);
+        simple_map::drop(attributes);
         bitseed_result
     }
 

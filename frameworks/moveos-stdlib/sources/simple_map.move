@@ -18,11 +18,11 @@ module moveos_std::simple_map {
     /// Map key is not found
     const ErrorKeyNotFound: u64 = 2;
 
-    struct SimpleMap<Key, Value> has copy, drop, store {
+    struct SimpleMap<Key, Value> has store {
         data: vector<Element<Key, Value>>,
     }
 
-    struct Element<Key, Value> has copy, drop, store {
+    struct Element<Key, Value> has store {
         key: Key,
         value: Value,
     }
