@@ -14,11 +14,8 @@ rust-version = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 anyhow = { workspace = true }
-bitcoin = { workspace = true }
 bip32 = { workspace = true }
-enum_dispatch = {workspace = true }
-derive_more = { workspace = true }
-eyre = { workspace = true }
+enum_dispatch = { workspace = true }
 fastcrypto = { workspace = true, features = ["copy_key"] }
 rand = { workspace = true }
 serde = { workspace = true }
@@ -28,16 +25,13 @@ strum = { workspace = true }
 strum_macros = { workspace = true }
 schemars = { workspace = true }
 slip10_ed25519 = { workspace = true }
-signature = {workspace = true }
+signature = { workspace = true }
 tiny-bip39 = { workspace = true }
 rooch-types = { workspace = true }
 move-core-types = { workspace = true }
 moveos-types = { workspace = true }
-proptest = {optional = true, workspace = true }
-proptest-derive = {optional = true, workspace = true }
-ethers = { workspace = true }
-clap = { workspace = true }
-chacha20poly1305 = { workspace = true }
+proptest = { optional = true, workspace = true }
+proptest-derive = { optional = true, workspace = true }
 argon2 = { workspace = true }
 
 [dev-dependencies]

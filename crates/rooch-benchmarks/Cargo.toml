@@ -15,40 +15,17 @@ rust-version = { workspace = true }
 
 [dependencies]
 anyhow = { workspace = true }
-async-trait = { workspace = true }
 bcs = { workspace = true }
-chrono = { workspace = true }
 clap = { workspace = true }
-coerce = { workspace = true }
-derive_builder = { workspace = true }
 ethers = { workspace = true }
-futures = { workspace = true }
 hex = { workspace = true }
-rustc-hex = { workspace = true }
 serde = { workspace = true }
-serde_yaml = { workspace = true }
-serde_json = { workspace = true }
-tower = { workspace = true }
-tower-http = { workspace = true }
-thiserror = { workspace = true }
-tokio = { features = ["full"], workspace = true }
-tonic = { workspace = true }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
-schemars = { workspace = true }
-serde_with = { workspace = true }
 rand = { workspace = true }
-fastcrypto = { workspace = true, features = ["copy_key"] }
-hyper = { workspace = true }
 log = { workspace = true }
 lazy_static = { workspace = true }
-rpassword = { workspace = true }
-tempfile = { workspace = true }
 criterion = { workspace = true }
 pprof = { workspace = true, features = ["flamegraph", "criterion", "cpp", "frame-pointer", "protobuf-codec"] }
-parking_lot = { workspace = true }
-proptest = { workspace = true }
-rand_core = { default-features = false, workspace = true }
 bitcoincore-rpc-json = { workspace = true }
 bitcoincore-rpc = { workspace = true }
 bitcoin = { workspace = true }
