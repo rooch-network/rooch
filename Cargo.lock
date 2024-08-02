@@ -9373,6 +9373,7 @@ dependencies = [
  "jemallocator",
  "lazy_static 1.5.0",
  "log",
+ "metrics",
  "move-binary-format",
  "move-bytecode-utils",
  "move-core-types",

@@ -70,6 +70,7 @@ move-bytecode-utils = { workspace = true }
 raw-store = { workspace = true }
 moveos-config = { workspace = true }
 smt = { workspace = true }
+metrics = { workspace = true }
 
 rooch-config = { workspace = true }
 rooch-types = { workspace = true }

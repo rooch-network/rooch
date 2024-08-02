@@ -17,8 +17,12 @@ pub fn tx_sequence_benchmark(c: &mut Criterion) {
     let rooch_key_pair = binding_test.sequencer_kp().copy();
 
     let sequencer_keypair = rooch_key_pair.copy();
-    let mut sequencer =
-        gen_sequencer(sequencer_keypair, binding_test.executor().get_rooch_store()).unwrap();
+    let mut sequencer = gen_sequencer(
+        sequencer_keypair,
+        binding_test.executor().get_rooch_store(),
+        &binding_test.registry_service.default_registry(),
+    )
+    .unwrap();
 
     let tx_type = config.tx_type.unwrap().clone();
 

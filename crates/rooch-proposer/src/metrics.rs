@@ -2,14 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use metrics::metrics_util::LATENCY_SEC_BUCKETS;
-use prometheus::{register_histogram_vec_with_registry, HistogramVec, Registry};
+use prometheus::{
+    register_histogram_vec_with_registry, register_int_gauge_with_registry, HistogramVec, IntGauge,
+    Registry,
+};
 
 #[derive(Debug)]
 pub struct ProposerMetrics {
     pub proposer_transaction_propose_latency_seconds: HistogramVec,
     pub proposer_transaction_propose_bytes: HistogramVec,
     pub proposer_propose_block_latency_seconds: HistogramVec,
-    pub proposer_propose_block_batch_size: HistogramVec,
+    pub proposer_propose_block_batch_size: IntGauge,
 }
 
 impl ProposerMetrics {
@@ -41,13 +44,9 @@ impl ProposerMetrics {
                 registry,
             )
             .unwrap(),
-            proposer_propose_block_batch_size: register_histogram_vec_with_registry!(
+            proposer_propose_block_batch_size: register_int_gauge_with_registry!(
                 "proposer_propose_block_batch_size",
                 "Proposer propose block contains how many transactions",
-                &["fn_name"],
-                prometheus::exponential_buckets(1.0, 4.0, 15)
-                    .unwrap()
-                    .to_vec(),
                 registry,
             )
             .unwrap(),

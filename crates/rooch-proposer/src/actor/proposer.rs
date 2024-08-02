@@ -81,7 +81,6 @@ impl Handler<ProposeBlock> for ProposerActor {
         let batch_size = block.map(|v| v.batch_size).unwrap_or(0u64);
         self.metrics
             .proposer_propose_block_batch_size
-            .with_label_values(&[fn_name])
-            .observe(batch_size as f64);
+            .set(batch_size as i64);
     }
 }

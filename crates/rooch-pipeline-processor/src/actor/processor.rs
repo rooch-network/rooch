@@ -133,6 +133,10 @@ impl PipelineProcessorActor {
         let size = moveos_tx.ctx.tx_size;
         let result = self.execute_tx(ledger_tx, moveos_tx).await?;
 
+        let gas_used = result.output.gas_used;
+        self.metrics
+            .pipeline_processor_l1_block_gas_used
+            .inc_by(gas_used);
         self.metrics
             .pipeline_processor_execution_tx_bytes
             .with_label_values(&[fn_name])
@@ -159,6 +163,10 @@ impl PipelineProcessorActor {
         let size = moveos_tx.ctx.tx_size;
         let result = self.execute_tx(ledger_tx, moveos_tx).await?;
 
+        let gas_used = result.output.gas_used;
+        self.metrics
+            .pipeline_processor_l1_tx_gas_used
+            .inc_by(gas_used);
         self.metrics
             .pipeline_processor_execution_tx_bytes
             .with_label_values(&[fn_name])
@@ -186,10 +194,15 @@ impl PipelineProcessorActor {
         let size = moveos_tx.ctx.tx_size;
         let result = self.execute_tx(ledger_tx, moveos_tx).await?;
 
+        let gas_used = result.output.gas_used;
+        self.metrics
+            .pipeline_processor_l2_tx_gas_used
+            .inc_by(gas_used);
         self.metrics
             .pipeline_processor_execution_tx_bytes
             .with_label_values(&[fn_name])
             .observe(size as f64);
+
         Ok(result)
     }
 
