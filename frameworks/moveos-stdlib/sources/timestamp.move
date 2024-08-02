@@ -87,11 +87,15 @@ module moveos_std::timestamp {
         seconds * MILLI_CONVERSION_FACTOR
     }
 
-    fun fast_forward_seconds(timestamp_seconds: u64) {
+    fun fast_forward_milliseconds(milliseconds: u64) {
         let timestamp = timestamp();
         let now_milliseconds = milliseconds(timestamp);
 
-        update_global_time(now_milliseconds + (timestamp_seconds * MILLI_CONVERSION_FACTOR));
+        update_global_time(now_milliseconds + milliseconds);
+    }
+
+    fun fast_forward_seconds(timestamp_seconds: u64) {
+        fast_forward_milliseconds(timestamp_seconds * MILLI_CONVERSION_FACTOR);
     }
 
     public fun fast_forward_seconds_by_system(genesis_account: &signer, timestamp_seconds: u64) {
@@ -113,5 +117,10 @@ module moveos_std::timestamp {
     #[test_only]
     public fun fast_forward_seconds_for_test(timestamp_seconds: u64) {
         fast_forward_seconds(timestamp_seconds)
+    }
+
+    #[test_only]
+    public fun fast_forward_milliseconds_for_test(timestamp_milliseconds: u64) {
+        fast_forward_milliseconds(timestamp_milliseconds)
     }
 }

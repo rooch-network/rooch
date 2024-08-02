@@ -34,11 +34,9 @@ flowchart LR;
 
 ```move
 public fun validate(ctx: &Context, authenticator_payload: vector<u8>);
-fun pre_execute(ctx: &mut Context);
-fun post_execute(ctx: &mut Context);
 ```
 
-其中 `validate` 方法用来校验交易的合法性，`pre_execute` 和 `post_execute` 方法用来在交易执行前后做一些操作，比如初始化状态，或者更新状态。
+`validate` 方法用来校验交易的合法性。
 
 为了能在交易中表达，该交易使用的是那个 `validator`，Rooch 交易中包含了 `authenticator` 字段:
 

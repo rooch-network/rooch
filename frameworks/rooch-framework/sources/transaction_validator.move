@@ -17,7 +17,7 @@ module rooch_framework::transaction_validator {
     use rooch_framework::chain_id;
     use rooch_framework::transaction_fee;
     use rooch_framework::gas_coin;
-    use rooch_framework::transaction::{Self, TransactionSequenceInfo};
+    use rooch_framework::transaction::{Self, TransactionSequenceInfoV2};
     use rooch_framework::session_validator;
     use rooch_framework::bitcoin_validator;
     use rooch_framework::address_mapping;
@@ -128,10 +128,10 @@ module rooch_framework::transaction_validator {
         };
         let bitcoin_addr = auth_validator::get_bitcoin_address_from_ctx();
         address_mapping::bind_bitcoin_address(sender, bitcoin_addr); 
-        let tx_sequence_info = tx_context::get_attribute<TransactionSequenceInfo>();
+        let tx_sequence_info = tx_context::get_attribute<TransactionSequenceInfoV2>();
         if (option::is_some(&tx_sequence_info)) {
             let tx_sequence_info = option::extract(&mut tx_sequence_info);
-            let tx_timestamp = transaction::tx_timestamp(&tx_sequence_info);
+            let tx_timestamp = transaction::get_tx_timestamp(&tx_sequence_info);
             let module_signer = module_signer<TransactionValidatorPlaceholder>();
             timestamp::try_update_global_time(&module_signer, tx_timestamp);
         };

@@ -401,19 +401,19 @@ impl RoochGenesis {
             AccumulatorInfo::default(),
             rooch_db.rooch_store.get_transaction_accumulator_store(),
         );
-        let genesis_accumulator_root =
+        let _genesis_accumulator_root =
             genesis_tx_accumulator.append(vec![tx_ledger_data.clone().tx_hash()].as_slice())?;
         genesis_tx_accumulator.flush()?;
 
+        let genesis_tx_accmulator_info = genesis_tx_accumulator.get_info();
         let ledger_tx = LedgerTransaction::build_ledger_transaction(
             tx_ledger_data,
             moveos_genesis_context.timestamp,
             genesis_tx_order,
             vec![],
-            genesis_accumulator_root,
+            genesis_tx_accmulator_info.clone(),
         );
-        let sequencer_info =
-            SequencerInfo::new(genesis_tx_order, genesis_tx_accumulator.get_info());
+        let sequencer_info = SequencerInfo::new(genesis_tx_order, genesis_tx_accmulator_info);
         rooch_db.rooch_store.save_sequencer_info(sequencer_info)?;
         rooch_db.rooch_store.save_transaction(ledger_tx.clone())?;
 
@@ -428,7 +428,7 @@ impl RoochGenesis {
         let transactions = vec![indexer_transaction];
         rooch_db.indexer_store.persist_transactions(transactions)?;
 
-        // 2. update indexer state
+        // 2. update indexer event
         let events: Vec<_> = genesis_tx_output
             .events
             .into_iter()

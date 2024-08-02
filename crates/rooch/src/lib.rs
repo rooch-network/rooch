@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::commands::db::DB;
 use crate::commands::event::EventCommand;
 use crate::commands::indexer::Indexer;
 use crate::commands::statedb::Statedb;
@@ -58,6 +59,7 @@ pub enum Command {
     Indexer(Indexer),
     Genesis(Genesis),
     Upgrade(Upgrade),
+    DB(DB),
 }
 
 pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
@@ -80,5 +82,6 @@ pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
         Command::Indexer(indexer) => indexer.execute().await,
         Command::Genesis(genesis) => genesis.execute().await,
         Command::Upgrade(upgrade) => upgrade.execute().await,
+        Command::DB(db) => db.execute().await,
     }
 }

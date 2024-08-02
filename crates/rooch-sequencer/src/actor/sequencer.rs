@@ -121,19 +121,19 @@ impl SequencerActor {
             .to_vec();
 
         // Calc transaction accumulator
-        let tx_accumulator_root = self.tx_accumulator.append(vec![hash].as_slice())?;
+        let _tx_accumulator_root = self.tx_accumulator.append(vec![hash].as_slice())?;
         self.tx_accumulator.flush()?;
 
+        let tx_accumulator_info = self.tx_accumulator.get_info();
         let tx = LedgerTransaction::build_ledger_transaction(
             tx_data,
             tx_timestamp,
             tx_order,
             tx_order_signature,
-            tx_accumulator_root,
+            tx_accumulator_info.clone(),
         );
 
-        let sequencer_info =
-            SequencerInfo::new(tx.sequence_info.tx_order, self.tx_accumulator.get_info());
+        let sequencer_info = SequencerInfo::new(tx.sequence_info.tx_order, tx_accumulator_info);
         self.rooch_store
             .save_sequencer_info(sequencer_info.clone())?;
         self.rooch_store.save_transaction(tx.clone())?;
