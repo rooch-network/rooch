@@ -63,9 +63,4 @@ module rooch_nursery::ethereum_validator {
 
         multi_chain_addr
     }
-
-    fun pre_execute() {}
-
-    fun post_execute() {}
-
 }

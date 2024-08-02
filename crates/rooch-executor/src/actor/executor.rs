@@ -40,8 +40,7 @@ pub struct ExecutorActor {
     rooch_store: RoochStore,
 }
 
-type ValidateAuthenticatorResult =
-    Result<(TxValidateResult, Vec<FunctionCall>, Vec<FunctionCall>), VMStatus>;
+type ValidateAuthenticatorResult = Result<TxValidateResult, VMStatus>;
 
 impl ExecutorActor {
     pub fn new(
@@ -176,15 +175,13 @@ impl ExecutorActor {
         let result = self.validate_authenticator(&moveos_tx.ctx, authenticator);
         match result {
             Ok(vm_result) => match vm_result {
-                Ok((tx_validate_result, pre_execute_functions, post_execute_functions)) => {
+                Ok(tx_validate_result) => {
                     // Add the tx_validate_result to the context
                     moveos_tx
                         .ctx
                         .add(tx_validate_result)
                         .expect("add tx_validate_result failed");
 
-                    moveos_tx.append_pre_execute_functions(pre_execute_functions);
-                    moveos_tx.append_post_execute_functions(post_execute_functions);
                     let verify_result = self.moveos.verify(moveos_tx);
                     match verify_result {
                         Ok(verified_tx) => Ok(verified_tx),
@@ -240,31 +237,11 @@ impl ExecutorActor {
                             .validate(ctx, authenticator.authenticator.payload)?
                             .into_result();
                         match auth_validator_function_result {
-                            Ok(_) => {
-                                // pre_execute_function: AuthValidator
-                                let pre_execute_functions =
-                                    vec![auth_validator_caller.pre_execute_function_call()];
-                                // post_execute_function: AuthValidator
-                                let post_execute_functions =
-                                    vec![auth_validator_caller.post_execute_function_call()];
-                                Ok((
-                                    tx_validate_result,
-                                    pre_execute_functions,
-                                    post_execute_functions,
-                                ))
-                            }
+                            Ok(_) => Ok(tx_validate_result),
                             Err(vm_status) => Err(vm_status),
                         }
                     }
-                    None => {
-                        let pre_execute_functions = vec![];
-                        let post_execute_functions = vec![];
-                        Ok((
-                            tx_validate_result,
-                            pre_execute_functions,
-                            post_execute_functions,
-                        ))
-                    }
+                    None => Ok(tx_validate_result),
                 }
             }
             Err(vm_status) => Err(vm_status),

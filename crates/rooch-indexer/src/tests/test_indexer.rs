@@ -20,8 +20,7 @@ use rooch_types::indexer::event::{EventFilter, IndexerEvent};
 use rooch_types::indexer::state::{IndexerObjectState, ObjectStateFilter};
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::test_utils::{
-    random_event, random_function_calls, random_ledger_transaction, random_table_object,
-    random_verified_move_action,
+    random_event, random_ledger_transaction, random_table_object, random_verified_move_action,
 };
 
 fn random_update_object_states(states: Vec<IndexerObjectState>) -> Vec<IndexerObjectState> {
@@ -94,8 +93,6 @@ fn test_transaction_store() -> Result<()> {
         root: ObjectMeta::genesis_root(),
         ctx: tx_context,
         action: move_action,
-        pre_execute_functions: random_function_calls(),
-        post_execute_functions: random_function_calls(),
     };
 
     let indexer_transaction = IndexerTransaction::new(
@@ -130,8 +127,6 @@ fn test_event_store() -> Result<()> {
         root: ObjectMeta::genesis_root(),
         ctx: tx_context,
         action: move_action,
-        pre_execute_functions: random_function_calls(),
-        post_execute_functions: random_function_calls(),
     };
 
     let indexer_event = IndexerEvent::new(
@@ -251,8 +246,6 @@ fn test_escape_transaction() -> Result<()> {
         root: ObjectMeta::genesis_root(),
         ctx: tx_context,
         action: move_action,
-        pre_execute_functions: random_function_calls(),
-        post_execute_functions: random_function_calls(),
     };
 
     let mut indexer_transaction = IndexerTransaction::new(
