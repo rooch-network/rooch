@@ -31,7 +31,6 @@ pub const E_ARG_NOT_VECTOR_U8: u64 = 2;
 pub const E_INVALID_PUBLIC_KEY: u64 = 3;
 pub const E_INVALID_THRESHOLD: u64 = 4;
 pub const E_INVALID_KEY_EGG_CONTEXT: u64 = 5;
-pub const E_INVALID_XONLY_PUBLIC_KEY: u64 = 6;
 
 pub fn parse(
     gas_params: &FromBytesGasParameters,

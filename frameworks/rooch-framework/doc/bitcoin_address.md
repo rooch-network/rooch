@@ -97,15 +97,6 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_ErrorInvalidXOnlyPublicKey"></a>
-
-
-
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidXOnlyPublicKey">ErrorInvalidXOnlyPublicKey</a>: u64 = 6;
-</code></pre>
-
-
-
 <a name="0x3_bitcoin_address_P2PKH_ADDR_BYTE_LEN"></a>
 
 
@@ -337,6 +328,8 @@ Empty address is a special address that is used to if we parse address failed fr
 
 ## Function `derive_multisig_pubkey_from_pubkeys`
 
+derive multisig public key from public keys.
+the public keys and result are Secp256k1 public key format.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_derive_multisig_pubkey_from_pubkeys">derive_multisig_pubkey_from_pubkeys</a>(public_keys: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, threshold: u64): <a href="">vector</a>&lt;u8&gt;
