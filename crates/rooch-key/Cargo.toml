@@ -17,19 +17,12 @@ anyhow = { workspace = true }
 bip32 = { workspace = true }
 enum_dispatch = { workspace = true }
 fastcrypto = { workspace = true, features = ["copy_key"] }
-rand = { workspace = true }
 serde = { workspace = true }
 serde_with = { workspace = true }
 serde_json = { workspace = true }
-strum = { workspace = true }
-strum_macros = { workspace = true }
-schemars = { workspace = true }
-slip10_ed25519 = { workspace = true }
 signature = { workspace = true }
 tiny-bip39 = { workspace = true }
 rooch-types = { workspace = true }
-move-core-types = { workspace = true }
-moveos-types = { workspace = true }
 proptest = { optional = true, workspace = true }
 proptest-derive = { optional = true, workspace = true }
 argon2 = { workspace = true }

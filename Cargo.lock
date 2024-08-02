@@ -4613,12 +4613,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hmac-sha512"
-version = "0.1.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77e806677ce663d0a199541030c816847b36e8dc095f70dae4a4f4ad63da5383"
-
-[[package]]
 name = "home"
 version = "0.5.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9466,7 +9460,6 @@ dependencies = [
  "include_dir",
  "metrics",
  "move-core-types",
- "move-vm-test-utils",
  "moveos-config",
  "moveos-store",
  "moveos-types",
@@ -9551,10 +9544,8 @@ dependencies = [
  "move-compiler",
  "move-core-types",
  "move-package",
- "move-stdlib",
  "move-transactional-test-runner",
  "move-vm-runtime",
- "move-vm-types",
  "moveos",
  "moveos-config",
  "moveos-store",
@@ -9580,20 +9571,13 @@ dependencies = [
  "bip32",
  "enum_dispatch",
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
- "move-core-types",
- "moveos-types",
  "proptest",
  "proptest-derive",
- "rand 0.8.5",
  "rooch-types",
- "schemars",
  "serde 1.0.204",
  "serde_json",
  "serde_with 2.3.3",
  "signature 2.2.0",
- "slip10_ed25519",
- "strum",
- "strum_macros",
  "tiny-bip39",
 ]
 
@@ -9602,10 +9586,8 @@ name = "rooch-open-rpc"
 version = "0.6.5"
 dependencies = [
  "anyhow",
- "bcs",
  "clap 4.5.13",
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
- "pretty_assertions",
  "rand 0.8.5",
  "schemars",
  "serde 1.0.204",
@@ -9630,21 +9612,12 @@ dependencies = [
 name = "rooch-open-rpc-spec"
 version = "0.6.5"
 dependencies = [
- "anyhow",
- "bcs",
  "clap 4.5.13",
- "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "pretty_assertions",
- "rand 0.8.5",
- "rooch-open-rpc",
- "rooch-open-rpc-macros",
  "rooch-open-rpc-spec-builder",
  "rooch-rpc-api",
- "schemars",
- "serde 1.0.204",
  "serde_json",
  "tokio",
- "versions",
 ]
 
 [[package]]
@@ -9652,19 +9625,12 @@ name = "rooch-open-rpc-spec-builder"
 version = "0.6.5"
 dependencies = [
  "anyhow",
- "bcs",
  "clap 4.5.13",
- "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
- "pretty_assertions",
  "rand 0.8.5",
  "rooch-open-rpc",
- "rooch-open-rpc-macros",
  "rooch-rpc-api",
- "schemars",
  "serde 1.0.204",
  "serde_json",
- "tokio",
- "versions",
 ]
 
 [[package]]
@@ -9673,39 +9639,18 @@ version = "0.6.5"
 dependencies = [
  "anyhow",
  "async-trait",
- "bcs",
- "chrono",
- "clap 4.5.13",
  "coerce",
- "derive_builder 0.20.0",
  "function_name",
- "futures",
- "jsonrpsee 0.23.2",
  "log",
  "metrics",
- "move-core-types",
- "move-resource-viewer",
- "moveos",
- "moveos-store",
  "moveos-types",
  "prometheus",
- "rooch-config",
- "rooch-da",
  "rooch-executor",
  "rooch-indexer",
  "rooch-proposer",
  "rooch-sequencer",
  "rooch-types",
- "schemars",
- "serde 1.0.204",
- "serde_json",
- "serde_with 2.3.3",
- "serde_yaml 0.9.34+deprecated",
- "thiserror",
- "tokio",
- "tonic",
  "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -11214,15 +11159,6 @@ name = "slice-group-by"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "826167069c09b99d56f31e9ae5c99049e932a98c9dc2dac47645b08dbbf76ba7"
-
-[[package]]
-name = "slip10_ed25519"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4be0ff28bf14f9610a342169084e87a4f435ad798ec528dc7579a3678fa9dc9a"
-dependencies = [
- "hmac-sha512",
-]
 
 [[package]]
 name = "slug"
