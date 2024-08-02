@@ -20,6 +20,7 @@ A basic scalable vector library implemented using <code>Table</code>.
 -  [Function `drop`](#0x2_table_vec_drop)
 -  [Function `swap`](#0x2_table_vec_swap)
 -  [Function `swap_remove`](#0x2_table_vec_swap_remove)
+-  [Function `contains`](#0x2_table_vec_contains)
 
 
 <pre><code><b>use</b> <a href="table.md#0x2_table">0x2::table</a>;
@@ -209,4 +210,16 @@ Aborts if <code>i</code> is out of bounds.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="table_vec.md#0x2_table_vec_swap_remove">swap_remove</a>&lt;Element: store&gt;(t: &<b>mut</b> <a href="table_vec.md#0x2_table_vec_TableVec">table_vec::TableVec</a>&lt;Element&gt;, i: u64): Element
+</code></pre>
+
+
+
+<a name="0x2_table_vec_contains"></a>
+
+## Function `contains`
+
+Return if the TableVec <code>t</code> contains the element at index <code>i</code>.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="table_vec.md#0x2_table_vec_contains">contains</a>&lt;Element: store&gt;(t: &<a href="table_vec.md#0x2_table_vec_TableVec">table_vec::TableVec</a>&lt;Element&gt;, i: u64): bool
 </code></pre>
