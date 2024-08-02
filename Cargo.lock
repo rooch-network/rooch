@@ -981,18 +981,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bigdecimal"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6773ddc0eafc0e509fb60e48dff7f450f8e674a0686ae8605e8d9901bd5eefa"
-dependencies = [
- "num-bigint 0.4.5",
- "num-integer",
- "num-traits 0.2.19",
- "serde 1.0.204",
-]
-
-[[package]]
 name = "bincode"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9701,44 +9689,24 @@ name = "rooch-rpc-api"
 version = "0.6.5"
 dependencies = [
  "anyhow",
- "async-trait",
  "bcs",
- "bigdecimal",
  "bitcoin 0.31.2",
- "bitcoincore-rpc",
- "bytes",
- "chrono",
- "clap 4.5.13",
- "coerce",
- "const-hex",
- "derive_builder 0.20.0",
  "ethers",
- "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
- "fixed-hash 0.8.0",
- "futures",
  "hex",
  "jsonrpsee 0.23.2",
  "move-binary-format",
- "move-bytecode-utils",
  "move-core-types",
  "move-resource-viewer",
  "moveos-types",
  "nostr",
- "rand 0.8.5",
- "rooch-config",
  "rooch-open-rpc",
  "rooch-open-rpc-macros",
  "rooch-types",
- "rustc-hex",
  "schemars",
  "serde 1.0.204",
  "serde_json",
- "serde_with 2.3.3",
  "serde_yaml 0.9.34+deprecated",
  "thiserror",
- "tokio",
- "tonic",
- "uint",
 ]
 
 [[package]]
