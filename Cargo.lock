@@ -6684,7 +6684,6 @@ version = "0.6.5"
 dependencies = [
  "anyhow",
  "backtrace",
- "ciborium",
  "clap 4.5.13",
  "codespan",
  "codespan-reporting",
@@ -6702,7 +6701,6 @@ dependencies = [
  "move-symbol-pool",
  "move-transactional-test-runner",
  "move-vm-runtime",
- "move-vm-test-utils",
  "move-vm-types",
  "moveos-object-runtime",
  "moveos-stdlib",
@@ -6711,11 +6709,9 @@ dependencies = [
  "moveos-verifier",
  "once_cell",
  "parking_lot 0.12.3",
- "rand 0.8.5",
  "rayon",
  "regex",
  "serde 1.0.204",
- "serde_bytes",
  "tempfile",
  "tracing-subscriber",
 ]
