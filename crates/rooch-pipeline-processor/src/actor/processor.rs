@@ -10,6 +10,7 @@ use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::proxy::SequencerProxy;
+use rooch_types::transaction::TransactionSequenceInfoV1;
 use rooch_types::{
     service_status::ServiceStatus,
     transaction::{
@@ -151,6 +152,11 @@ impl PipelineProcessorActor {
     ) -> Result<ExecuteTransactionResponse> {
         // Add sequence info to tx context, let the Move contract can get the sequence info
         moveos_tx.ctx.add(tx.sequence_info.clone())?;
+        // We must add TransactionSequenceInfo and TransactionSequenceInfoV1 both to the tx_context because the rust code is upgraded first, then the framework is upgraded.
+        // The old framework will read the TransactionSequenceInfoV1.
+        let tx_sequence_info_v1 = TransactionSequenceInfoV1::from(tx.sequence_info.clone());
+        moveos_tx.ctx.add(tx_sequence_info_v1)?;
+
         // Then execute
         let (output, execution_info) = self.executor.execute_transaction(moveos_tx.clone()).await?;
         self.proposer

@@ -68,6 +68,54 @@ impl From<AuthenticatorInfo> for Vec<u8> {
     }
 }
 
+///`TransactionSequenceInfoV1` represents the result of sequence a transaction.
+// Can be cleanup after framework upgraded
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct TransactionSequenceInfoV1 {
+    /// The tx order
+    pub tx_order: u64,
+    /// The tx order signature, it is the signature of the sequencer to commit the tx order.
+    pub tx_order_signature: Vec<u8>,
+    /// The tx accumulator root after the tx is append to the accumulator.
+    pub tx_accumulator_root: H256,
+    /// The tx accumulator info after the tx is append to the accumulator.
+    // pub tx_accumulator_info: Option<AccumulatorInfo>,
+    /// The timestamp of the sequencer when the tx is sequenced, in millisecond.
+    pub tx_timestamp: u64,
+}
+
+impl MoveStructType for TransactionSequenceInfoV1 {
+    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = ident_str!("transaction");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("TransactionSequenceInfo");
+}
+
+impl MoveStructState for TransactionSequenceInfoV1 {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![
+            move_core_types::value::MoveTypeLayout::U64,
+            move_core_types::value::MoveTypeLayout::Vector(Box::new(
+                move_core_types::value::MoveTypeLayout::U8,
+            )),
+            move_core_types::value::MoveTypeLayout::Vector(Box::new(
+                move_core_types::value::MoveTypeLayout::U8,
+            )),
+            move_core_types::value::MoveTypeLayout::U64,
+        ])
+    }
+}
+
+impl From<TransactionSequenceInfo> for TransactionSequenceInfoV1 {
+    fn from(tx_sequence_info: TransactionSequenceInfo) -> Self {
+        Self {
+            tx_order: tx_sequence_info.tx_order,
+            tx_order_signature: tx_sequence_info.tx_order_signature,
+            tx_accumulator_root: tx_sequence_info.tx_accumulator_root,
+            tx_timestamp: tx_sequence_info.tx_timestamp,
+        }
+    }
+}
+
 ///`TransactionSequenceInfo` represents the result of sequence a transaction.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct TransactionSequenceInfo {
