@@ -5,6 +5,7 @@ use crate::address::{RoochAddress, RoochSupportedAddress};
 use crate::transaction::authenticator::Authenticator;
 use crate::transaction::rooch::{RoochTransaction, RoochTransactionData};
 use crate::transaction::{LedgerTransaction, TransactionSequenceInfo};
+use accumulator::accumulator_info::AccumulatorInfo;
 use ethers::types::H256;
 use rand::{thread_rng, Rng};
 
@@ -19,8 +20,9 @@ pub fn random_ledger_transaction() -> LedgerTransaction {
     let rooch_transaction = random_rooch_transaction();
 
     let tx_order_signature = random_bytes();
+    let accumulator_info = random_accumulator_info();
     let random_sequence_info =
-        TransactionSequenceInfo::new(rand::random(), tx_order_signature, H256::random(), 0);
+        TransactionSequenceInfo::new(rand::random(), tx_order_signature, accumulator_info, 0);
     LedgerTransaction::new_l2_tx(rooch_transaction, random_sequence_info)
 }
 
@@ -38,4 +40,11 @@ pub fn random_rooch_transaction_with_move_action(move_action: MoveActionType) ->
     let authenticator = Authenticator::new(auth_validator_id, random_bytes());
 
     RoochTransaction::new(tx_data, authenticator)
+}
+
+pub fn random_accumulator_info() -> AccumulatorInfo {
+    let mut rng = thread_rng();
+    let num_leaves = rng.gen_range(1..=100) as u64;
+    let num_nodes = rng.gen_range(1..=100) as u64;
+    AccumulatorInfo::new(H256::random(), vec![], num_leaves, num_nodes)
 }

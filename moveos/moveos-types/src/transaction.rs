@@ -25,12 +25,14 @@ use std::fmt::{self, Display};
 #[cfg(any(test, feature = "fuzzing"))]
 use crate::move_types::type_tag_prop_strategy;
 use crate::moveos_std::event::Event;
+use crate::test_utils::random_state_change_set;
 #[cfg(any(test, feature = "fuzzing"))]
 use move_core_types::identifier::Identifier;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::prelude::*;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
+use rand::random;
 
 /// Call a Move script
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -405,6 +407,16 @@ impl TransactionOutput {
             is_upgrade,
         }
     }
+
+    pub fn random() -> Self {
+        TransactionOutput::new(
+            KeptVMStatus::Executed,
+            random_state_change_set(),
+            vec![],
+            0,
+            false,
+        )
+    }
 }
 
 /// `TransactionExecutionInfo` represents the result of executing a transaction.
@@ -457,6 +469,17 @@ impl TransactionExecutionInfo {
 
     pub fn root_metadata(&self) -> ObjectMeta {
         ObjectMeta::root_metadata(self.state_root, self.size)
+    }
+
+    pub fn random() -> Self {
+        TransactionExecutionInfo::new(
+            H256::random(),
+            H256::random(),
+            random(),
+            H256::random(),
+            rand::random(),
+            KeptVMStatus::Executed,
+        )
     }
 }
 

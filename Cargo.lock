@@ -9263,6 +9263,7 @@ dependencies = [
 name = "rooch"
 version = "0.6.4"
 dependencies = [
+ "accumulator",
  "anyhow",
  "async-trait",
  "bcs",
@@ -9328,6 +9329,8 @@ dependencies = [
  "rooch-rpc-api",
  "rooch-rpc-client",
  "rooch-rpc-server",
+ "rooch-sequencer",
+ "rooch-store",
  "rooch-types",
  "rpassword",
  "rustc-hash 2.0.0",
