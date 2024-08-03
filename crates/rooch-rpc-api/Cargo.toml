@@ -13,34 +13,16 @@ rust-version = { workspace = true }
 
 [dependencies]
 anyhow = { workspace = true }
-async-trait = { workspace = true }
 bcs = { workspace = true }
-chrono = { workspace = true }
-clap = { workspace = true }
-coerce = { workspace = true }
-derive_builder = { workspace = true }
 ethers = { workspace = true }
-futures = { workspace = true }
 hex = { workspace = true }
-rustc-hex = { workspace = true }
 jsonrpsee = { workspace = true }
 serde = { workspace = true }
 serde_yaml = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
-tokio = { features = ["full"], workspace = true }
-tonic = { workspace = true }
 schemars = { workspace = true }
-serde_with = { workspace = true }
-rand = { workspace = true }
-fastcrypto = { workspace = true }
-bigdecimal = { workspace = true }
-fixed-hash = { workspace = true }
-uint = { workspace = true }
-bytes = { workspace = true }
-const-hex = { workspace = true }
 bitcoin = { workspace = true }
-bitcoincore-rpc = { workspace = true }
 nostr = { workspace = true }
 
 move-core-types = { workspace = true }
@@ -48,9 +30,7 @@ move-resource-viewer = { workspace = true }
 move-binary-format = { workspace = true }
 
 moveos-types = { workspace = true }
-move-bytecode-utils = { workspace = true }
 
 rooch-types = { workspace = true }
-rooch-config = { workspace = true }
 rooch-open-rpc = { workspace = true }
 rooch-open-rpc-macros = { workspace = true }

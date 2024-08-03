@@ -15,31 +15,14 @@ rust-version = { workspace = true }
 
 [dependencies]
 anyhow = { workspace = true }
-bcs = { workspace = true }
 serde = { workspace = true }
-serde_bytes = { workspace = true }
-hex = { workspace = true }
-parking_lot = { workspace = true }
 tap = { workspace = true }
 rocksdb = { workspace = true, features = ["lz4"] }
 
 prometheus = { workspace = true }
-tokio = { workspace = true }
 once_cell = { workspace = true }
-eyre = { workspace = true }
-rand = { workspace = true }
-async-trait = { workspace = true }
-itertools = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-futures = { workspace = true }
-tempfile = { workspace = true }
-byteorder = { workspace = true }
-coarsetime = { workspace = true }
-lazy_static = { workspace = true }
-
-move-core-types = { workspace = true }
-move-resource-viewer = { workspace = true }
 
 metrics = { workspace = true }
 moveos-common = { workspace = true }
