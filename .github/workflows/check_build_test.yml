@@ -63,7 +63,7 @@ jobs:
       - name: Framework compatibility
         run: cargo run --package framework-release --bin framework-release
       - name: Run Rooch init
-        run: cargo run --bin rooch init --skip-password
+        run: cargo run --profile ci-dev --bin rooch init --skip-password
       - name: Execute Move stdlib and framework tests
         run: ./scripts/pr.sh -m
       - name: Execute rust tests
