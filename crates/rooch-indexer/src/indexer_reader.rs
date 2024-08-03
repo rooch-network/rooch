@@ -7,6 +7,7 @@ use crate::models::states::StoredObjectState;
 use crate::models::transactions::StoredTransaction;
 use crate::schema::object_states;
 use crate::schema::{events, transactions};
+use crate::utils::escape_sql_string;
 use crate::{
     IndexerResult, IndexerStoreMeta, SqliteConnectionConfig, SqliteConnectionPoolConfig,
     SqlitePoolConnection, DEFAULT_BUSY_TIMEOUT, INDEXER_EVENTS_TABLE_NAME,
@@ -375,9 +376,9 @@ impl IndexerReader {
                     object_type_query(&object_type)
                 };
                 format!(
-                    "{} AND {STATE_OWNER_STR} = \"{}\"",
-                    object_query,
-                    owner.to_hex_literal()
+                    "{STATE_OWNER_STR} = \"{}\" AND {}",
+                    owner.to_hex_literal(),
+                    object_query
                 )
             }
             ObjectStateFilter::ObjectType(object_type) => object_type_query(&object_type),
@@ -499,7 +500,11 @@ fn object_type_query(object_type: &StructTag) -> String {
     let object_type_str = object_type.to_string();
     // if the caller does not specify the type parameters, we will use the prefix match
     if object_type.type_params.is_empty() {
-        format!("{STATE_OBJECT_TYPE_STR} like \"{}%\"", object_type_str)
+        let (origin_bound, upper_bound) = optimize_like_query(object_type_str);
+        format!(
+            "({STATE_OBJECT_TYPE_STR} >= \"{}\" AND {STATE_OBJECT_TYPE_STR} < \"{}\")",
+            origin_bound, upper_bound
+        )
     } else {
         format!("{STATE_OBJECT_TYPE_STR} = \"{}\"", object_type_str)
     }
@@ -509,8 +514,54 @@ fn not_object_type_query(object_type: &StructTag) -> String {
     let object_type_str = object_type.to_string();
     // if the caller does not specify the type parameters, we will use the prefix match
     if object_type.type_params.is_empty() {
-        format!("{STATE_OBJECT_TYPE_STR} not like \"{}%\"", object_type_str)
+        let (origin_bound, upper_bound) = optimize_like_query(object_type_str);
+        format!(
+            "({STATE_OBJECT_TYPE_STR} < \"{}\" OR {STATE_OBJECT_TYPE_STR} >= \"{}\")",
+            origin_bound, upper_bound
+        )
     } else {
         format!("{STATE_OBJECT_TYPE_STR} != \"{}\"", object_type_str)
+    }
+}
+
+fn optimize_like_query(query: String) -> (String, String) {
+    // Calculate the upper bound for BETWEEN AND or OR
+    let upper_bound = increment_query_string(query.as_str());
+    // Avoid potential SQL injection risks
+    (escape_sql_string(query), escape_sql_string(upper_bound))
+}
+
+pub fn increment_query_string(s: &str) -> String {
+    let mut chars: Vec<char> = s.chars().collect();
+    for i in (0..chars.len()).rev() {
+        if chars[i] < char::MAX {
+            chars[i] = char::from_u32(chars[i] as u32 + 1).unwrap_or(char::MAX);
+            break;
+        }
+        chars[i] = char::from_u32(0).unwrap_or('\0');
+    }
+
+    chars.into_iter().collect()
+}
+
+#[cfg(test)]
+mod test {
+    use crate::indexer_reader::optimize_like_query;
+
+    #[test]
+    fn test_optimize_like_query() {
+        let gas_coin_object_type = "0x3::coin_store::CoinStore";
+        let (origin_bound, upper_bound) = optimize_like_query(gas_coin_object_type.to_string());
+        assert_eq!(origin_bound, gas_coin_object_type);
+        assert_eq!(upper_bound, "0x3::coin_store::CoinStorf");
+
+        let object_type2 =
+            "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000::custom::CustomZZZ";
+        let (origin_bound, upper_bound) = optimize_like_query(object_type2.to_string());
+        assert_eq!(origin_bound, object_type2);
+        assert_eq!(
+            upper_bound,
+            "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000::custom::CustomZZ["
+        );
     }
 }
