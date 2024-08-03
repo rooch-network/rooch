@@ -16,40 +16,6 @@
   },
   "methods": [
     {
-      "name": "btc_broadcastTX",
-      "description": "Broadcast a Bitcoin transaction",
-      "params": [
-        {
-          "name": "hex",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
-          }
-        },
-        {
-          "name": "maxfeerate",
-          "schema": {
-            "type": "number",
-            "format": "double"
-          }
-        },
-        {
-          "name": "maxburnamount",
-          "schema": {
-            "type": "number",
-            "format": "double"
-          }
-        }
-      ],
-      "result": {
-        "name": "String",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    },
-    {
       "name": "btc_queryInscriptions",
       "description": "Query the Inscription via global index by Inscription filter",
       "params": [
