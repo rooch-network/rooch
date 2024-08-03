@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::errors::IndexerError;
+use crate::metrics::IndexerReaderMetrics;
 use crate::models::events::StoredEvent;
 use crate::models::states::StoredObjectState;
 use crate::models::transactions::StoredTransaction;
 use crate::schema::object_states;
 use crate::schema::{events, transactions};
+use crate::utils::escape_sql_string;
 use crate::{
     IndexerResult, IndexerStoreMeta, SqliteConnectionConfig, SqliteConnectionPoolConfig,
     SqlitePoolConnection, DEFAULT_BUSY_TIMEOUT, INDEXER_EVENTS_TABLE_NAME,
@@ -16,8 +18,10 @@ use anyhow::{anyhow, Result};
 use diesel::{
     r2d2::ConnectionManager, Connection, ExpressionMethods, QueryDsl, RunQueryDsl, SqliteConnection,
 };
+use function_name::named;
 use move_core_types::language_storage::StructTag;
 use moveos_types::moveos_std::object::ObjectID;
+use prometheus::Registry;
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{IndexerObjectState, IndexerStateID, ObjectStateFilter};
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
@@ -99,15 +103,20 @@ impl InnerIndexerReader {
 #[derive(Clone)]
 pub struct IndexerReader {
     pub(crate) inner_indexer_reader_mapping: HashMap<String, InnerIndexerReader>,
+    metrics: Arc<IndexerReaderMetrics>,
 }
 
 impl IndexerReader {
-    pub fn new(db_path: PathBuf) -> Result<Self> {
+    pub fn new(db_path: PathBuf, registry: &Registry) -> Result<Self> {
         let config = SqliteConnectionPoolConfig::default();
-        Self::new_with_config(db_path, config)
+        Self::new_with_config(db_path, config, registry)
     }
 
-    pub fn new_with_config(db_path: PathBuf, config: SqliteConnectionPoolConfig) -> Result<Self> {
+    pub fn new_with_config(
+        db_path: PathBuf,
+        config: SqliteConnectionPoolConfig,
+        registry: &Registry,
+    ) -> Result<Self> {
         let tables = IndexerStoreMeta::get_indexer_table_names().to_vec();
 
         let mut inner_indexer_reader_mapping = HashMap::<String, InnerIndexerReader>::new();
@@ -125,6 +134,7 @@ impl IndexerReader {
 
         Ok(IndexerReader {
             inner_indexer_reader_mapping,
+            metrics: Arc::new(IndexerReaderMetrics::new(registry)),
         })
     }
 
@@ -136,6 +146,7 @@ impl IndexerReader {
             .clone())
     }
 
+    #[named]
     pub fn query_transactions_with_filter(
         &self,
         filter: TransactionFilter,
@@ -143,6 +154,12 @@ impl IndexerReader {
         limit: usize,
         descending_order: bool,
     ) -> IndexerResult<Vec<IndexerTransaction>> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .indexer_reader_query_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let tx_order = if let Some(cursor) = cursor {
             cursor as i64
         } else if descending_order {
@@ -231,6 +248,7 @@ impl IndexerReader {
         Ok(result)
     }
 
+    #[named]
     pub fn query_events_with_filter(
         &self,
         filter: EventFilter,
@@ -238,6 +256,12 @@ impl IndexerReader {
         limit: usize,
         descending_order: bool,
     ) -> IndexerResult<Vec<IndexerEvent>> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .indexer_reader_query_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let (tx_order, event_index) = if let Some(cursor) = cursor {
             let IndexerEventID {
                 tx_order,
@@ -375,9 +399,9 @@ impl IndexerReader {
                     object_type_query(&object_type)
                 };
                 format!(
-                    "{} AND {STATE_OWNER_STR} = \"{}\"",
-                    object_query,
-                    owner.to_hex_literal()
+                    "{STATE_OWNER_STR} = \"{}\" AND {}",
+                    owner.to_hex_literal(),
+                    object_query
                 )
             }
             ObjectStateFilter::ObjectType(object_type) => object_type_query(&object_type),
@@ -429,6 +453,7 @@ impl IndexerReader {
         Ok(stored_object_states)
     }
 
+    #[named]
     pub fn query_object_states_with_filter(
         &self,
         filter: ObjectStateFilter,
@@ -436,6 +461,12 @@ impl IndexerReader {
         limit: usize,
         descending_order: bool,
     ) -> IndexerResult<Vec<IndexerObjectState>> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .indexer_reader_query_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let stored_object_states =
             self.query_stored_object_states_with_filter(filter, cursor, limit, descending_order)?;
         let result = stored_object_states
@@ -499,7 +530,11 @@ fn object_type_query(object_type: &StructTag) -> String {
     let object_type_str = object_type.to_string();
     // if the caller does not specify the type parameters, we will use the prefix match
     if object_type.type_params.is_empty() {
-        format!("{STATE_OBJECT_TYPE_STR} like \"{}%\"", object_type_str)
+        let (origin_bound, upper_bound) = optimize_like_query(object_type_str);
+        format!(
+            "({STATE_OBJECT_TYPE_STR} >= \"{}\" AND {STATE_OBJECT_TYPE_STR} < \"{}\")",
+            origin_bound, upper_bound
+        )
     } else {
         format!("{STATE_OBJECT_TYPE_STR} = \"{}\"", object_type_str)
     }
@@ -509,8 +544,55 @@ fn not_object_type_query(object_type: &StructTag) -> String {
     let object_type_str = object_type.to_string();
     // if the caller does not specify the type parameters, we will use the prefix match
     if object_type.type_params.is_empty() {
-        format!("{STATE_OBJECT_TYPE_STR} not like \"{}%\"", object_type_str)
+        let (origin_bound, upper_bound) = optimize_like_query(object_type_str);
+        format!(
+            "({STATE_OBJECT_TYPE_STR} < \"{}\" OR {STATE_OBJECT_TYPE_STR} >= \"{}\")",
+            origin_bound, upper_bound
+        )
     } else {
         format!("{STATE_OBJECT_TYPE_STR} != \"{}\"", object_type_str)
+    }
+}
+
+// Only take effect on the rightmost prefix
+fn optimize_like_query(query: String) -> (String, String) {
+    // Calculate the upper bound for BETWEEN AND or OR
+    let upper_bound = increment_query_string(query.as_str());
+    // Avoid potential SQL injection risks
+    (escape_sql_string(query), escape_sql_string(upper_bound))
+}
+
+pub fn increment_query_string(s: &str) -> String {
+    let mut chars: Vec<char> = s.chars().collect();
+    for i in (0..chars.len()).rev() {
+        if chars[i] < char::MAX {
+            chars[i] = char::from_u32(chars[i] as u32 + 1).unwrap_or(char::MAX);
+            break;
+        }
+        chars[i] = char::from_u32(0).unwrap_or('\0');
+    }
+
+    chars.into_iter().collect()
+}
+
+#[cfg(test)]
+mod test {
+    use crate::indexer_reader::optimize_like_query;
+
+    #[test]
+    fn test_optimize_like_query() {
+        let gas_coin_object_type = "0x3::coin_store::CoinStore";
+        let (origin_bound, upper_bound) = optimize_like_query(gas_coin_object_type.to_string());
+        assert_eq!(origin_bound, gas_coin_object_type);
+        assert_eq!(upper_bound, "0x3::coin_store::CoinStorf");
+
+        let object_type2 =
+            "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000::custom::CustomZZZ";
+        let (origin_bound, upper_bound) = optimize_like_query(object_type2.to_string());
+        assert_eq!(origin_bound, object_type2);
+        assert_eq!(
+            upper_bound,
+            "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000::custom::CustomZZ["
+        );
     }
 }

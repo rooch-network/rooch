@@ -5,6 +5,7 @@ use crate::indexer_reader::IndexerReader;
 use crate::store::traits::IndexerStoreTrait;
 use crate::IndexerStore;
 use anyhow::Result;
+use metrics::RegistryService;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::h256::H256;
@@ -71,10 +72,12 @@ fn random_remove_object_states() -> Vec<String> {
 
 #[test]
 fn test_transaction_store() -> Result<()> {
+    let registry_service = RegistryService::default();
     let tmpdir = moveos_config::temp_dir();
     let indexer_db = tmpdir.path().join(DEFAULT_DB_INDEXER_SUBDIR);
-    let indexer_store = IndexerStore::new(indexer_db.clone())?;
-    let indexer_reader = IndexerReader::new(indexer_db)?;
+    let indexer_store =
+        IndexerStore::new(indexer_db.clone(), &registry_service.default_registry())?;
+    let indexer_reader = IndexerReader::new(indexer_db, &registry_service.default_registry())?;
 
     let random_transaction = random_ledger_transaction();
 
@@ -113,10 +116,12 @@ fn test_transaction_store() -> Result<()> {
 
 #[test]
 fn test_event_store() -> Result<()> {
+    let registry_service = RegistryService::default();
     let tmpdir = moveos_config::temp_dir();
     let indexer_db = tmpdir.path().join(DEFAULT_DB_INDEXER_SUBDIR);
-    let indexer_store = IndexerStore::new(indexer_db.clone())?;
-    let indexer_reader = IndexerReader::new(indexer_db)?;
+    let indexer_store =
+        IndexerStore::new(indexer_db.clone(), &registry_service.default_registry())?;
+    let indexer_reader = IndexerReader::new(indexer_db, &registry_service.default_registry())?;
 
     let random_event = random_event();
     let random_transaction = random_ledger_transaction();
@@ -145,10 +150,12 @@ fn test_event_store() -> Result<()> {
 
 #[test]
 fn test_state_store() -> Result<()> {
+    let registry_service = RegistryService::default();
     let tmpdir = moveos_config::temp_dir();
     let indexer_db = tmpdir.path().join(DEFAULT_DB_INDEXER_SUBDIR);
-    let indexer_store = IndexerStore::new(indexer_db.clone())?;
-    let indexer_reader = IndexerReader::new(indexer_db)?;
+    let indexer_store =
+        IndexerStore::new(indexer_db.clone(), &registry_service.default_registry())?;
+    let indexer_reader = IndexerReader::new(indexer_db, &registry_service.default_registry())?;
 
     let mut new_object_states = random_new_object_states()?;
     let new_object_ids = new_object_states
@@ -175,10 +182,12 @@ fn test_state_store() -> Result<()> {
 
 #[test]
 fn test_object_type_query() -> Result<()> {
+    let registry_service = RegistryService::default();
     let tmpdir = moveos_config::temp_dir();
     let indexer_db = tmpdir.path().join(DEFAULT_DB_INDEXER_SUBDIR);
-    let indexer_store = IndexerStore::new(indexer_db.clone())?;
-    let indexer_reader = IndexerReader::new(indexer_db)?;
+    let indexer_store =
+        IndexerStore::new(indexer_db.clone(), &registry_service.default_registry())?;
+    let indexer_reader = IndexerReader::new(indexer_db, &registry_service.default_registry())?;
     let object_id = ObjectID::random();
     let owner = AccountAddress::random();
     let coin_store_obj = ObjectEntity::new(
@@ -224,10 +233,12 @@ fn test_object_type_query() -> Result<()> {
 
 #[test]
 fn test_escape_transaction() -> Result<()> {
+    let registry_service = RegistryService::default();
     let tmpdir = moveos_config::temp_dir();
     let indexer_db = tmpdir.path().join(DEFAULT_DB_INDEXER_SUBDIR);
-    let indexer_store = IndexerStore::new(indexer_db.clone())?;
-    let indexer_reader = IndexerReader::new(indexer_db)?;
+    let indexer_store =
+        IndexerStore::new(indexer_db.clone(), &registry_service.default_registry())?;
+    let indexer_reader = IndexerReader::new(indexer_db, &registry_service.default_registry())?;
 
     let random_transaction = random_ledger_transaction();
 

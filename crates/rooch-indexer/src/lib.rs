@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::store::metrics::IndexerDBMetrics;
 use crate::store::sqlite_store::SqliteIndexerStore;
 use crate::store::traits::IndexerStoreTrait;
 use crate::utils::create_all_tables_if_not_exists;
@@ -12,6 +13,7 @@ use diesel::ConnectionError::BadConnection;
 use diesel::RunQueryDsl;
 use errors::IndexerError;
 use once_cell::sync::Lazy;
+use prometheus::Registry;
 use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::indexer::state::{IndexerObjectState, IndexerObjectStateChanges};
 use rooch_types::indexer::transaction::IndexerTransaction;
@@ -25,6 +27,7 @@ use std::time::Duration;
 pub mod actor;
 pub mod errors;
 pub mod indexer_reader;
+pub mod metrics;
 pub mod models;
 pub mod proxy;
 pub mod schema;
@@ -69,12 +72,13 @@ pub struct IndexerStore {
 }
 
 impl IndexerStore {
-    pub fn new(db_path: PathBuf) -> Result<Self> {
+    pub fn new(db_path: PathBuf, registry: &Registry) -> Result<Self> {
         if !db_path.exists() {
             std::fs::create_dir_all(&db_path)?;
         }
         let tables = IndexerStoreMeta::get_indexer_table_names().to_vec();
 
+        let db_metrics = IndexerDBMetrics::get_or_init(registry).clone();
         let mut sqlite_store_mapping = HashMap::<String, SqliteIndexerStore>::new();
         for table in tables {
             let indexer_db_path = db_path.as_path().join(table);
@@ -86,7 +90,7 @@ impl IndexerStore {
                 .ok_or(anyhow::anyhow!("Invalid indexer db path"))?
                 .to_string();
             let sqlite_cp = new_sqlite_connection_pool(indexer_db_url.as_str())?;
-            let sqlite_store = SqliteIndexerStore::new(sqlite_cp);
+            let sqlite_store = SqliteIndexerStore::new(sqlite_cp, db_metrics.clone());
             sqlite_store_mapping.insert(table.to_string(), sqlite_store);
         }
 

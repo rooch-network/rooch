@@ -47,8 +47,8 @@ impl RoochDB {
 
         let rooch_store = RoochStore::new_with_instance(instance, registry)?;
 
-        let indexer_store = IndexerStore::new(indexer_dir.clone())?;
-        let indexer_reader = IndexerReader::new(indexer_dir)?;
+        let indexer_store = IndexerStore::new(indexer_dir.clone(), registry)?;
+        let indexer_reader = IndexerReader::new(indexer_dir, registry)?;
 
         Ok(Self {
             moveos_store,
