@@ -26,17 +26,10 @@ tower = { workspace = true }
 tower-http = { workspace = true }
 futures = { workspace = true }
 prometheus = { workspace = true }
-tap = { workspace = true }
-eyre = { workspace = true }
-tempfile = { workspace = true }
 
 anyhow = { workspace = true }
-async-trait = { workspace = true }
 clap = { workspace = true }
 serde = { workspace = true }
-serde_yaml = { workspace = true }
-serde_json = { workspace = true }
-serde_with = { workspace = true }
 
 thiserror = { workspace = true }
 tokio = { features = ["full"], workspace = true }
