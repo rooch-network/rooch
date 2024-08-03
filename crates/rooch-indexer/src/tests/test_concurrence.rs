@@ -10,6 +10,7 @@ mod tests {
     use crate::{get_sqlite_pool_connection, IndexerStore, INDEXER_EVENTS_TABLE_NAME};
     use anyhow::Result;
     use diesel::RunQueryDsl;
+    use metrics::RegistryService;
     use move_core_types::account_address::AccountAddress;
     use moveos_types::moveos_std::tx_context::TxContext;
     use moveos_types::test_utils::random_event;
@@ -46,10 +47,12 @@ mod tests {
     fn sqlite_writer_sqlite_reader_concurrence() -> Result<i64> {
         let sleep_duration = get_sleep_duration();
 
+        let registry_service = RegistryService::default();
         let tmpdir = moveos_config::temp_dir();
         let indexer_db = tmpdir.path().join(DEFAULT_DB_INDEXER_SUBDIR);
-        let indexer_store = IndexerStore::new(indexer_db.clone())?;
-        let indexer_reader = IndexerReader::new(indexer_db)?;
+        let indexer_store =
+            IndexerStore::new(indexer_db.clone(), &registry_service.default_registry())?;
+        let indexer_reader = IndexerReader::new(indexer_db, &registry_service.default_registry())?;
 
         let write_connection_pool = indexer_store
             .get_sqlite_store(INDEXER_EVENTS_TABLE_NAME)?

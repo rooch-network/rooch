@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::errors::IndexerError;
+use crate::metrics::IndexerReaderMetrics;
 use crate::models::events::StoredEvent;
 use crate::models::states::StoredObjectState;
 use crate::models::transactions::StoredTransaction;
@@ -17,8 +18,10 @@ use anyhow::{anyhow, Result};
 use diesel::{
     r2d2::ConnectionManager, Connection, ExpressionMethods, QueryDsl, RunQueryDsl, SqliteConnection,
 };
+use function_name::named;
 use move_core_types::language_storage::StructTag;
 use moveos_types::moveos_std::object::ObjectID;
+use prometheus::Registry;
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{IndexerObjectState, IndexerStateID, ObjectStateFilter};
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
@@ -100,15 +103,20 @@ impl InnerIndexerReader {
 #[derive(Clone)]
 pub struct IndexerReader {
     pub(crate) inner_indexer_reader_mapping: HashMap<String, InnerIndexerReader>,
+    metrics: Arc<IndexerReaderMetrics>,
 }
 
 impl IndexerReader {
-    pub fn new(db_path: PathBuf) -> Result<Self> {
+    pub fn new(db_path: PathBuf, registry: &Registry) -> Result<Self> {
         let config = SqliteConnectionPoolConfig::default();
-        Self::new_with_config(db_path, config)
+        Self::new_with_config(db_path, config, registry)
     }
 
-    pub fn new_with_config(db_path: PathBuf, config: SqliteConnectionPoolConfig) -> Result<Self> {
+    pub fn new_with_config(
+        db_path: PathBuf,
+        config: SqliteConnectionPoolConfig,
+        registry: &Registry,
+    ) -> Result<Self> {
         let tables = IndexerStoreMeta::get_indexer_table_names().to_vec();
 
         let mut inner_indexer_reader_mapping = HashMap::<String, InnerIndexerReader>::new();
@@ -126,6 +134,7 @@ impl IndexerReader {
 
         Ok(IndexerReader {
             inner_indexer_reader_mapping,
+            metrics: Arc::new(IndexerReaderMetrics::new(registry)),
         })
     }
 
@@ -137,6 +146,7 @@ impl IndexerReader {
             .clone())
     }
 
+    #[named]
     pub fn query_transactions_with_filter(
         &self,
         filter: TransactionFilter,
@@ -144,6 +154,12 @@ impl IndexerReader {
         limit: usize,
         descending_order: bool,
     ) -> IndexerResult<Vec<IndexerTransaction>> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .indexer_reader_query_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let tx_order = if let Some(cursor) = cursor {
             cursor as i64
         } else if descending_order {
@@ -232,6 +248,7 @@ impl IndexerReader {
         Ok(result)
     }
 
+    #[named]
     pub fn query_events_with_filter(
         &self,
         filter: EventFilter,
@@ -239,6 +256,12 @@ impl IndexerReader {
         limit: usize,
         descending_order: bool,
     ) -> IndexerResult<Vec<IndexerEvent>> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .indexer_reader_query_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let (tx_order, event_index) = if let Some(cursor) = cursor {
             let IndexerEventID {
                 tx_order,
@@ -430,6 +453,7 @@ impl IndexerReader {
         Ok(stored_object_states)
     }
 
+    #[named]
     pub fn query_object_states_with_filter(
         &self,
         filter: ObjectStateFilter,
@@ -437,6 +461,12 @@ impl IndexerReader {
         limit: usize,
         descending_order: bool,
     ) -> IndexerResult<Vec<IndexerObjectState>> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .indexer_reader_query_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let stored_object_states =
             self.query_stored_object_states_with_filter(filter, cursor, limit, descending_order)?;
         let result = stored_object_states
@@ -524,6 +554,7 @@ fn not_object_type_query(object_type: &StructTag) -> String {
     }
 }
 
+// Only take effect on the rightmost prefix
 fn optimize_like_query(query: String) -> (String, String) {
     // Calculate the upper bound for BETWEEN AND or OR
     let upper_bound = increment_query_string(query.as_str());
