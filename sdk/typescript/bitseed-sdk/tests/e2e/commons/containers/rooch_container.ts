@@ -1,10 +1,12 @@
 import { AbstractStartedContainer, GenericContainer, StartedTestContainer, Wait } from "testcontainers";
+import * as path from 'path';
 
 const ROOCH_PORT = 6767;
 
 export class RoochContainer extends GenericContainer {
   private networkName = "local";
-  private dataDir = "/tmp/rooch_data";
+  private dataDir = "TMP";
+  private accountDir = "/root/.rooch";
   private port = ROOCH_PORT;
   private ethRpcUrl?: string;
   private btcRpcUrl?: string;
@@ -12,12 +14,13 @@ export class RoochContainer extends GenericContainer {
   private btcRpcPassword?: string;
   private btcEndBlockHeight?: number;
   private btcSyncBlockInterval?: number;
+  private hostConfigPath?: string;
 
   constructor(image = "ghcr.io/rooch-network/rooch:main_debug") {
     super(image);
     this.withExposedPorts(this.port)
       .withStartupTimeout(120_000)
-      .withWaitStrategy(Wait.forLogMessage("Rooch server started"));
+      .withWaitStrategy(Wait.forLogMessage("JSON-RPC HTTP Server start listening"));
   }
 
   public withNetworkName(name: string): this {
@@ -65,9 +68,40 @@ export class RoochContainer extends GenericContainer {
     return this;
   }
 
+  public withHostConfigPath(hostPath: string): this {
+    this.hostConfigPath = hostPath;
+    return this;
+  }
+
+  public async initializeRooch(): Promise<void> {
+    if (!this.hostConfigPath) {
+      throw new Error("Host config path not set. Call withHostConfigPath() before initializing.");
+    }
+
+    await new GenericContainer(this.imageName.string)
+      .withStartupTimeout(10_000)
+      .withBindMounts([{ source: this.hostConfigPath, target: this.accountDir }])
+      .withCommand(["init", "--skip-password"])
+      .start();
+
+    await new GenericContainer(this.imageName.string)
+      .withStartupTimeout(10_000)
+      .withBindMounts([{ source: this.hostConfigPath, target: this.accountDir }])
+      .withCommand(["env", "switch", "--alias", "local"])
+      .start();
+
+    console.log('Rooch wallet initialized and environment switched to local');
+  }
+
   public override async start(): Promise<StartedRoochContainer> {
+    if (!this.hostConfigPath) {
+      throw new Error("Host config path not set. Call withHostConfigPath() before starting.");
+    }
+
+    this.withBindMounts([{ source: this.hostConfigPath, target: this.accountDir }]);
+
     const command = [
-      "cargo", "run", "--bin", "rooch", "server", "start",
+      "server", "start",
       "-n", this.networkName,
       "-d", this.dataDir,
       "--port", this.port.toString()
@@ -97,6 +131,7 @@ export class RoochContainer extends GenericContainer {
       command.push("--btc-sync-block-interval", this.btcSyncBlockInterval.toString());
     }
 
+    console.log("rooch server cmd:", command);
     this.withCommand(command);
 
     const startedContainer = await super.start();

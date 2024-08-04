@@ -1,24 +1,87 @@
-import {
-  TestContainer,
-  StartedTestContainer,
-  GenericContainer
-} from "testcontainers";
+import { BitcoinContainer, StartedBitcoinContainer } from "./containers/bitcoin_container";
+import { RoochContainer, StartedRoochContainer } from "./containers/rooch_container";
+import { Network, StartedNetwork } from "testcontainers";
 
 export class BitseedTestEnv {
-  container: TestContainer
-  startedContainer: StartedTestContainer
+  bitcoinContainer: BitcoinContainer;
+  startedBitcoinContainer: StartedBitcoinContainer | null = null;
+  roochContainer: RoochContainer;
+  startedRoochContainer: StartedRoochContainer | null = null;
+
+  private network: Network;
+  private startedNetwork: StartedNetwork;
+  private readonly bitcoinNetworkAlias = "bitcoind";
 
   constructor() {
-    this.container = new GenericContainer("alpine");
+    this.network = new Network();
+    this.bitcoinContainer = new BitcoinContainer();
+    this.roochContainer = new RoochContainer();
   }
 
   async start() {
-    console.log('container start');
-    this.startedContainer = await this.container.start();
+    console.log('Starting containers');
+
+    this.startedNetwork = await this.network.start();
+
+    // Start Bitcoin container
+    this.startedBitcoinContainer = await this.bitcoinContainer
+      .withNetwork(this.startedNetwork)
+      .withNetworkAliases(this.bitcoinNetworkAlias)
+      .start();
+
+    console.log('Bitcoin container started');
+
+    this.roochContainer.withHostConfigPath('/tmp/.rooch')
+    await this.roochContainer.initializeRooch();
+    console.log('Rooch container init');
+
+    // Start Rooch container with Bitcoin RPC configuration
+    this.roochContainer
+      .withNetwork(this.startedNetwork)
+      .withNetworkName("local")
+      .withDataDir("TMP")
+      .withPort(6767)
+      .withBtcRpcUrl("http://bitcoind:18443")
+      .withBtcRpcUsername(this.startedBitcoinContainer.getRpcUser())
+      .withBtcRpcPassword(this.startedBitcoinContainer.getRpcPass())
+      .withBtcSyncBlockInterval(1); // Set sync interval to 1 second
+
+    this.startedRoochContainer = await this.roochContainer.start();
+    console.log('Rooch container started');
   }
 
   async stop() {
-    console.log('container stop');
-    await this.startedContainer.stop();
+    console.log('Stopping containers');
+
+    // Stop Rooch container
+    if (this.startedRoochContainer) {
+      await this.startedRoochContainer.stop();
+      console.log('Rooch container stopped');
+    }
+
+    // Stop Bitcoin container
+    if (this.startedBitcoinContainer) {
+      await this.startedBitcoinContainer.stop();
+      console.log('Bitcoin container stopped');
+    }
+
+    // Stop the network
+    await this.startedNetwork.stop();
+    console.log('Network stopped');
+
+    // Reset container references
+    this.startedRoochContainer = null;
+    this.startedBitcoinContainer = null;
+  }
+
+  /**
+   * Get the Rooch server listening address
+   * @returns The URI of the Rooch server, or null if the server is not running
+   */
+  getRoochServerAddress(): string | null {
+    if (this.startedRoochContainer) {
+      return this.startedRoochContainer.getConnectionUri();
+    }
+    return null;
   }
 }

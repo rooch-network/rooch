@@ -4,9 +4,9 @@ import * as crypto from "crypto";
 const BITCOIN_PORTS = [18443, 18444, 28333, 28332];
 
 export class BitcoinContainer extends GenericContainer {
-  private rpcBind = "0.0.0.0";
-  private rpcUser = "user";
-  private rpcPass = "password";
+  private rpcBind = "0.0.0.0:18443";
+  private rpcUser = "roochuser";
+  private rpcPass = "roochpass";
 
   constructor(image = "lncm/bitcoind:v25.1") {
     super(image);
@@ -47,11 +47,7 @@ export class BitcoinContainer extends GenericContainer {
       RPC_AUTH: rpcauth,
     }).withWaitStrategy(Wait.forLogMessage("txindex thread start"));
 
-    const container = await super.start();
-
-    // Execute the command to start bitcoind with the required parameters
-    await container.exec([
-      "bitcoind",
+    this.withCommand([
       "-chain=regtest",
       "-txindex=1",
       "-fallbackfee=0.00001",
@@ -60,8 +56,9 @@ export class BitcoinContainer extends GenericContainer {
       "-rpcallowip=0.0.0.0/0",
       `-rpcbind=${this.rpcBind}`,
       `-rpcauth=${rpcauth}`,
-    ]);
+    ])
 
+    const container = await super.start();
     return new StartedBitcoinContainer(container, this.rpcBind, this.rpcUser, this.rpcPass);
   }
 }
@@ -99,7 +96,7 @@ export class StartedBitcoinContainer extends AbstractStartedContainer {
   }
 
   public getRpcUrl(): string {
-    return `http://${this.rpcUser}:${this.rpcPass}@${this.getHost()}:${this.getPort(18443)}`;
+    return `http://${this.getHost()}:${this.getPort(18443)}`;
   }
 
   public async executeRpcCommand(command: string, params: any[] = []): Promise<any> {
