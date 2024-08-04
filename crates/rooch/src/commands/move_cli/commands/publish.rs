@@ -20,7 +20,7 @@ use moveos_verifier::build::run_verifier;
 use moveos_verifier::verifier;
 use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
-use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
+use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, HumanReadableDisplay};
 use rooch_types::address::RoochAddress;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::rooch::RoochTransaction;
@@ -235,19 +235,7 @@ impl Publish {
 
         // print execution info
         let exe_info = &txn_response.execution_info;
-        output.push_str(&format!(
-            r#"Execution info:
-    status: {:?}
-    gas used: {}
-    tx hash: {}
-    state root: {}
-    event root: {}"#,
-            exe_info.status,
-            exe_info.gas_used,
-            exe_info.tx_hash,
-            exe_info.state_root,
-            exe_info.event_root
-        ));
+        output.push_str(&exe_info.to_human_readable_string(false, 0));
 
         if let Some(txn_output) = &txn_response.output {
             // print modules
@@ -306,6 +294,15 @@ impl Publish {
                     output.push_str(&format!("\n    {}", module.short_str_lossless()));
                 }
             };
+
+            // print objects changes
+            output.push_str("\n\n");
+            output.push_str(
+                txn_output
+                    .changeset
+                    .to_human_readable_string(false, 0)
+                    .as_str(),
+            );
         }
 
         Ok(output)

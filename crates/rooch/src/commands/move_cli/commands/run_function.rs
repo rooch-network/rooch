@@ -10,7 +10,7 @@ use move_core_types::language_storage::TypeTag;
 use moveos_types::transaction::MoveAction;
 use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
-use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
+use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, HumanReadableDisplay};
 use rooch_types::function_arg::parse_function_arg;
 use rooch_types::{
     address::RoochAddress,
@@ -52,6 +52,10 @@ pub struct RunFunction {
 
     #[clap(flatten)]
     tx_options: TransactionOptions,
+
+    /// Return command outputs in json format
+    #[clap(long, default_value = "false")]
+    json: bool,
 }
 
 #[async_trait]
@@ -146,6 +150,38 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                         .await
                 }
             }
+        }
+    }
+
+    /// Executes the command, and serializes it to the common JSON output type
+    async fn execute_serialized(self) -> RoochResult<String> {
+        let json = self.json;
+        let result = self.execute().await?;
+
+        if json {
+            let output = serde_json::to_string_pretty(&result).unwrap();
+            if output == "null" {
+                return Ok("".to_string());
+            }
+            Ok(output)
+        } else {
+            let mut output = String::new();
+            // print execution info
+            let exe_info = &result.execution_info;
+            output.push_str(&exe_info.to_human_readable_string(false, 0));
+
+            if let Some(txn_output) = &result.output {
+                // print objects changes
+                output.push_str("\n\n");
+                output.push_str(&txn_output.changeset.to_human_readable_string(false, 0));
+
+                // print events
+                output.push_str("\n\n");
+                output.push_str("Events:\n");
+                output.push_str(&txn_output.events.to_human_readable_string(false, 4));
+            };
+
+            Ok(output)
         }
     }
 }
