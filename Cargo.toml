@@ -212,7 +212,7 @@ codespan = "0.11.1"
 termcolor = "1.1.2"
 versions = "4.1.0"
 pretty_assertions = "1.2.0"
-syn = { version = "1.0.104", features = ["full", "extra-traits"] }
+syn = { version = "1.0.109", features = ["full", "extra-traits"] }
 quote = "1.0"
 proc-macro2 = "1.0.86"
 derive-syn-parse = "0.1.5"
@@ -406,3 +406,17 @@ codegen-units = 1 # Help to achieve better result with lto
 [profile.bench]
 inherits = "release"
 #debug = true
+
+[profile.ci-dev]
+inherits = "dev"
+incremental = false
+debug = "line-tables-only"
+opt-level = 1
+[profile.ci-dev.package."tokio"]
+opt-level = 3
+[profile.ci-dev.package."tiny-keccak"]
+opt-level = 3
+[profile.ci-dev.package."rocksdb"]
+opt-level = 3
+[profile.ci-dev.package."fastcrypto"]
+opt-level = 3
