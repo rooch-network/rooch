@@ -590,7 +590,6 @@ pub fn increment_query_string(s: &str) -> String {
 #[cfg(test)]
 mod test {
     use crate::indexer_reader::optimize_object_type_like_query;
-
     fn object_type_query_result(
         origin_object_type: String,
         match_object_type: String,
