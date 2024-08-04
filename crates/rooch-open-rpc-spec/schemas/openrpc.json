@@ -2798,6 +2798,11 @@
       "TxOptions": {
         "type": "object",
         "properties": {
+          "decode": {
+            "description": "If true, the event is decoded and the decoded value is returned in the response. Only valid when with_output is true.",
+            "default": false,
+            "type": "boolean"
+          },
           "withOutput": {
             "description": "If true, the TransactionOutput is returned in the response.",
             "default": false,

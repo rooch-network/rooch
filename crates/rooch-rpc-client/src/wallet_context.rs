@@ -169,7 +169,13 @@ impl WalletContext {
         let client = self.get_client().await?;
         client
             .rooch
-            .execute_tx(tx, Some(TxOptions { with_output: true }))
+            .execute_tx(
+                tx,
+                Some(TxOptions {
+                    with_output: true,
+                    decode: true,
+                }),
+            )
             .await
             .map_err(|e| RoochError::TransactionError(e.to_string()))
     }

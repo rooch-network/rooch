@@ -522,6 +522,8 @@ export interface TransactionWithInfoView {
 export interface TxOptions {
   /** If true, the TransactionOutput is returned in the response. */
   withOutput?: boolean
+  /** If true, the event is decoded in the response. Only valid when with_output is true.*/
+  decode?: boolean
 }
 export type UTXOFilterView =
   /** Query by owner, support rooch address and bitcoin address */
