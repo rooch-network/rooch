@@ -38,7 +38,7 @@ Feature: Rooch CLI bitseed tests
       Then sleep: "10"
 
       # Sync bitseed
-      Then cmd: "move run --function default::bitseed_runner::run"
+      Then cmd: "move run --function default::bitseed_runner::run --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # Check mint generator validity
@@ -56,7 +56,7 @@ Feature: Rooch CLI bitseed tests
       Then sleep: "10"
 
       # Sync bitseed
-      Then cmd: "move run --function default::bitseed_runner::run"
+      Then cmd: "move run --function default::bitseed_runner::run --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # Check deploy validity
@@ -74,7 +74,7 @@ Feature: Rooch CLI bitseed tests
       Then sleep: "10"
 
       # Sync bitseed
-      Then cmd: "move run --function default::bitseed_runner::run"
+      Then cmd: "move run --function default::bitseed_runner::run --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # Check mint bits validity
@@ -114,7 +114,7 @@ Feature: Rooch CLI bitseed tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # Sync bitseed
-      Then cmd: "move run --function default::bitseed_runner::run"
+      Then cmd: "move run --function default::bitseed_runner::run --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # deploy
@@ -127,7 +127,7 @@ Feature: Rooch CLI bitseed tests
       Then sleep: "10"
 
       # Sync bitseed
-      Then cmd: "move run --function default::bitseed_runner::run"
+      Then cmd: "move run --function default::bitseed_runner::run --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # Check deploy validity
@@ -136,7 +136,7 @@ Feature: Rooch CLI bitseed tests
       Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
 
       # mint on rooch
-      Then cmd: "move run --function 0xa::mint_get_factory::mint --args string:bitseed --args string:test" 
+      Then cmd: "move run --function 0xa::mint_get_factory::mint --args string:bitseed --args string:test --json" 
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       Then cmd: "object -t 0xa::bitseed::Bitseed -o {{$.account[-1].default.address}}"
