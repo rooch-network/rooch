@@ -530,10 +530,11 @@ fn object_type_query(object_type: &StructTag) -> String {
     let object_type_str = object_type.to_string();
     // if the caller does not specify the type parameters, we will use the prefix match
     if object_type.type_params.is_empty() {
-        let (origin_bound, upper_bound) = optimize_like_query(object_type_str);
+        let (first_bound, second_bound, upper_bound) =
+            optimize_object_type_like_query(object_type_str.as_str());
         format!(
-            "({STATE_OBJECT_TYPE_STR} >= \"{}\" AND {STATE_OBJECT_TYPE_STR} < \"{}\")",
-            origin_bound, upper_bound
+            "({STATE_OBJECT_TYPE_STR} = \"{}\" OR ({STATE_OBJECT_TYPE_STR} >= \"{}\" AND {STATE_OBJECT_TYPE_STR} < \"{}\" AND {STATE_OBJECT_TYPE_STR} < \"{}\"))",
+            object_type_str, first_bound, second_bound, upper_bound
         )
     } else {
         format!("{STATE_OBJECT_TYPE_STR} = \"{}\"", object_type_str)
@@ -544,22 +545,32 @@ fn not_object_type_query(object_type: &StructTag) -> String {
     let object_type_str = object_type.to_string();
     // if the caller does not specify the type parameters, we will use the prefix match
     if object_type.type_params.is_empty() {
-        let (origin_bound, upper_bound) = optimize_like_query(object_type_str);
+        let (first_bound, second_bound, upper_bound) =
+            optimize_object_type_like_query(object_type_str.as_str());
         format!(
-            "({STATE_OBJECT_TYPE_STR} < \"{}\" OR {STATE_OBJECT_TYPE_STR} >= \"{}\")",
-            origin_bound, upper_bound
+            "({STATE_OBJECT_TYPE_STR} != \"{}\" AND ({STATE_OBJECT_TYPE_STR} < \"{}\" OR {STATE_OBJECT_TYPE_STR} >= \"{}\" OR {STATE_OBJECT_TYPE_STR} >= \"{}\"))",
+            object_type_str, first_bound, second_bound, upper_bound
         )
     } else {
         format!("{STATE_OBJECT_TYPE_STR} != \"{}\"", object_type_str)
     }
 }
 
-// Only take effect on the rightmost prefix
-fn optimize_like_query(query: String) -> (String, String) {
+// Only take effect on the rightmost prefix,
+// and only include nest object type and object type itself
+fn optimize_object_type_like_query(query: &str) -> (String, String, String) {
+    // Nest struct start with ASCII `<`
+    let first_bound = format!("{}{}", query, "<");
+    // The ASCII `=` follows after the ASCII `<`
+    let second_bound = format!("{}{}", query, "=");
     // Calculate the upper bound for BETWEEN AND or OR
-    let upper_bound = increment_query_string(query.as_str());
+    let upper_bound = increment_query_string(query);
     // Avoid potential SQL injection risks
-    (escape_sql_string(query), escape_sql_string(upper_bound))
+    (
+        escape_sql_string(first_bound),
+        escape_sql_string(second_bound),
+        escape_sql_string(upper_bound),
+    )
 }
 
 pub fn increment_query_string(s: &str) -> String {
@@ -577,22 +588,121 @@ pub fn increment_query_string(s: &str) -> String {
 
 #[cfg(test)]
 mod test {
-    use crate::indexer_reader::optimize_like_query;
+    use crate::indexer_reader::optimize_object_type_like_query;
+    fn object_type_query_result(
+        origin_object_type: String,
+        match_object_type: String,
+        first_bound: String,
+        second_bound: String,
+        upper_bound: String,
+    ) -> bool {
+        origin_object_type == match_object_type
+            || (match_object_type >= first_bound
+                && match_object_type < second_bound
+                && match_object_type < upper_bound)
+    }
+
+    fn not_object_type_query_result(
+        origin_object_type: String,
+        match_object_type: String,
+        first_bound: String,
+        second_bound: String,
+        upper_bound: String,
+    ) -> bool {
+        origin_object_type != match_object_type
+            && (match_object_type < first_bound
+                || match_object_type >= second_bound
+                || match_object_type >= upper_bound)
+    }
 
     #[test]
-    fn test_optimize_like_query() {
+    fn test_optimize_object_type_like_query() {
         let gas_coin_object_type = "0x3::coin_store::CoinStore";
-        let (origin_bound, upper_bound) = optimize_like_query(gas_coin_object_type.to_string());
-        assert_eq!(origin_bound, gas_coin_object_type);
+        let (first_bound, second_bound, upper_bound) =
+            optimize_object_type_like_query(gas_coin_object_type);
+        assert_eq!(first_bound, "0x3::coin_store::CoinStore<");
+        assert_eq!(second_bound, "0x3::coin_store::CoinStore=");
         assert_eq!(upper_bound, "0x3::coin_store::CoinStorf");
 
         let object_type2 =
             "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000::custom::CustomZZZ";
-        let (origin_bound, upper_bound) = optimize_like_query(object_type2.to_string());
-        assert_eq!(origin_bound, object_type2);
+        let (first_bound, second_bound, upper_bound) =
+            optimize_object_type_like_query(object_type2);
+        assert_eq!(first_bound, "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000::custom::CustomZZZ<");
+        assert_eq!(second_bound, "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000::custom::CustomZZZ=");
         assert_eq!(
             upper_bound,
             "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000::custom::CustomZZ["
         );
+    }
+
+    #[test]
+    fn test_object_type_query() {
+        // assert object_type_query
+        let object_type = "0xabcd::test::Account";
+        let object_type_include = "0xabcd::test::Account<T>".to_string();
+        let object_type_exclude1 = "0xabcd::test::AccountABC".to_string();
+        let object_type_exclude2 = "0xabcd::test::Account123<T>".to_string();
+        let (first_bound, second_bound, upper_bound) = optimize_object_type_like_query(object_type);
+        assert!(object_type_query_result(
+            object_type.to_string(),
+            object_type_include,
+            first_bound.clone(),
+            second_bound.clone(),
+            upper_bound.clone()
+        ));
+        assert!(!object_type_query_result(
+            object_type.to_string(),
+            object_type_exclude1,
+            first_bound.clone(),
+            second_bound.clone(),
+            upper_bound.clone()
+        ));
+        assert!(!object_type_query_result(
+            object_type.to_string(),
+            object_type_exclude2,
+            first_bound,
+            second_bound,
+            upper_bound
+        ));
+    }
+
+    #[test]
+    fn test_not_object_type_query() {
+        // assert not_object_type_query
+        let object_type = "0xabcd::test::Account";
+        let object_type_exclude1 = "0xabcd::test::Account".to_string();
+        let object_type_exclude2 = "0xabcd::test::Account<T>".to_string();
+        let object_type_include1 = "0xabcd::test::AccountABC".to_string();
+        let object_type_include2 = "0xabcd::test::Account123<T>".to_string();
+        let (first_bound, second_bound, upper_bound) = optimize_object_type_like_query(object_type);
+        assert!(not_object_type_query_result(
+            object_type.to_string(),
+            object_type_include1,
+            first_bound.clone(),
+            second_bound.clone(),
+            upper_bound.clone()
+        ));
+        assert!(not_object_type_query_result(
+            object_type.to_string(),
+            object_type_include2,
+            first_bound.clone(),
+            second_bound.clone(),
+            upper_bound.clone()
+        ));
+        assert!(!not_object_type_query_result(
+            object_type.to_string(),
+            object_type_exclude1,
+            first_bound.clone(),
+            second_bound.clone(),
+            upper_bound.clone()
+        ));
+        assert!(!not_object_type_query_result(
+            object_type.to_string(),
+            object_type_exclude2,
+            first_bound,
+            second_bound,
+            upper_bound
+        ));
     }
 }
