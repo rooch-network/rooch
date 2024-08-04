@@ -135,12 +135,21 @@ fn derive_utxo_inscription_seal(
 pub(crate) struct OutpointInscriptionsMap {
     items: Vec<OutpointInscriptions>,
     key_filter: Option<BinaryFuse8>,
+    min: OutPoint,
+    max: OutPoint,
 }
 
 fn unbound_outpoint() -> OutPoint {
     OutPoint {
         txid: Hash::all_zeros(),
         vout: 0,
+    }
+}
+
+fn max_outpoint() -> OutPoint {
+    OutPoint {
+        txid: Hash::from_slice(&[0xff; 32]).unwrap(),
+        vout: u32::MAX,
     }
 }
 
@@ -211,12 +220,18 @@ impl OutpointInscriptionsMap {
         let mut map = OutpointInscriptionsMap {
             items,
             key_filter: None,
+            min: unbound_outpoint(),
+            max: max_outpoint(),
         };
         if !sorted {
             map.sort_and_merge();
         }
         map.add_outpoint_filter();
         map
+    }
+
+    fn is_in_range(&self, outpoint: &OutPoint) -> bool {
+        outpoint >= &self.min && outpoint <= &self.max
     }
 
     fn sort_and_merge(&mut self) -> usize {
@@ -244,6 +259,14 @@ impl OutpointInscriptionsMap {
         let new_len = write_index + 1;
         items.truncate(new_len);
         items.shrink_to_fit();
+        self.min = items
+            .first()
+            .map(|item| item.outpoint)
+            .unwrap_or(unbound_outpoint());
+        self.max = items
+            .last()
+            .map(|item| item.outpoint)
+            .unwrap_or(max_outpoint());
         new_len
     }
 
@@ -253,8 +276,12 @@ impl OutpointInscriptionsMap {
         self.key_filter = Some(filter);
     }
 
-    // check if the outpoint is in the filter, false positive is allowed
+    // check if outpoint is in the filter, false positive is allowed
     fn contains(&self, outpoint: &OutPoint) -> bool {
+        if !self.is_in_range(outpoint) {
+            return false;
+        }
+
         match &self.key_filter {
             Some(filter) => filter.contains(&xxh3_outpoint(outpoint)),
             None => true,
@@ -439,6 +466,8 @@ mod tests {
         let mut map = OutpointInscriptionsMap {
             items,
             key_filter: None,
+            min: unbound_outpoint(),
+            max: max_outpoint(),
         };
         assert!(!map.is_sorted_and_merged());
 
@@ -456,7 +485,7 @@ mod tests {
     fn contains_false_positive() {
         let sample_size = 1024 * 1024;
         let items = random_items(sample_size, 0);
-        // won't search later, so it's ok to not sort and merge
+        // won't search later, so it's OK to not sort and merge
         let mut map = OutpointInscriptionsMap::new(items.clone(), true);
         map.add_outpoint_filter();
         // ensure no false negative
