@@ -45,21 +45,22 @@ where
     T: HumanReadableDisplay,
     C: std::fmt::Display,
 {
-    fn to_human_readable_string(&self, verbose: bool) -> String {
+    fn to_human_readable_string(&self, verbose: bool, indent: usize) -> String {
         let _ = verbose;
         format!(
-            r#"Data: 
-{}
+            r#"{indent}Data: 
+{indent}{}
     
-Next cursor: 
-    {}
+{indent}Next cursor: 
+{indent}    {}
     
-Has next page: {:?}"#,
-            self.data.to_human_readable_string(verbose),
+{indent}Has next page: {:?}"#,
+            self.data.to_human_readable_string(verbose, 4),
             self.next_cursor
                 .as_ref()
                 .map_or("None".to_string(), |c| c.to_string()),
-            self.has_next_page
+            self.has_next_page,
+            indent = " ".repeat(indent)
         )
     }
 }

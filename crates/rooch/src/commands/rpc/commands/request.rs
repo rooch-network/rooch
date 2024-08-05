@@ -71,11 +71,11 @@ impl CommandAction<serde_json::Value> for RequestCommand {
                 .into_iter()
                 .flatten()
                 .collect::<Vec<_>>();
-            Ok(view.to_human_readable_string(false))
+            Ok(view.to_human_readable_string(true, 0))
         } else if method == "rooch_queryObjectStates" {
             Ok(
                 serde_json::from_value::<IndexerObjectStatePageView>(result.clone())?
-                    .to_human_readable_string(false),
+                    .to_human_readable_string(true, 0),
             )
         } else {
             // TODO: handle other rpc methods.

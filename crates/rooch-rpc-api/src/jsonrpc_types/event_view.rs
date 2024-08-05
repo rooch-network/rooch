@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::{
-    AnnotatedMoveStructView, H256View, RoochAddressView, StrView, StructTagView, UnitedAddressView,
+    AnnotatedMoveStructView, H256View, HumanReadableDisplay, RoochAddressView, StrView,
+    StructTagView, UnitedAddressView,
 };
 use moveos_types::moveos_std::{
     event::{AnnotatedEvent, Event, EventID, TransactionEvent},
@@ -100,6 +101,18 @@ impl From<AnnotatedEvent> for EventView {
             event_index: event.event.event_index.into(),
             decoded_event_data: Some(event.decoded_event_data.into()),
         }
+    }
+}
+
+impl HumanReadableDisplay for EventView {
+    fn to_human_readable_string(&self, _verbose: bool, indent: usize) -> String {
+        format!(
+            "{indent}event handle id: {}\n{indent}event seq      : {}\n{indent}event type     : {}",
+            self.event_id.event_handle_id,
+            self.event_id.event_seq.0,
+            self.event_type,
+            indent = " ".repeat(indent),
+        )
     }
 }
 

@@ -30,7 +30,7 @@ Feature: Rooch Bitcoin tests
       Then sleep: "10" # wait rooch sync and index
 
       # Update the reorg pending block count
-      Then cmd: "move run --function 0x4::pending_block::update_reorg_block_count_for_local --args u64:1"
+      Then cmd: "move run --function 0x4::pending_block::update_reorg_block_count_for_local --args u64:1 --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       Then cmd: "account list --json" 
