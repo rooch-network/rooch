@@ -126,6 +126,31 @@
       }
     },
     {
+      "name": "rooch_dryRunRawTransaction",
+      "params": [
+        {
+          "name": "tx_bcs_hex",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          }
+        },
+        {
+          "name": "tx_option",
+          "schema": {
+            "$ref": "#/components/schemas/TxOptions"
+          }
+        }
+      ],
+      "result": {
+        "name": "DryRunTransactionResponseView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/DryRunTransactionResponseView"
+        }
+      }
+    },
+    {
       "name": "rooch_executeRawTransaction",
       "description": "Send the signed transaction in bcs hex format This method blocks waiting for the transaction to be executed.",
       "params": [
@@ -861,6 +886,21 @@
             "additionalProperties": {
               "type": "string"
             }
+          }
+        }
+      },
+      "DryRunTransactionResponseView": {
+        "type": "object",
+        "required": [
+          "raw_output",
+          "vm_error_info"
+        ],
+        "properties": {
+          "raw_output": {
+            "$ref": "#/components/schemas/RawTransactionOutputView"
+          },
+          "vm_error_info": {
+            "$ref": "#/components/schemas/VMErrorInfo"
           }
         }
       },
@@ -2487,6 +2527,25 @@
           }
         }
       },
+      "RawTransactionOutputView": {
+        "type": "object",
+        "required": [
+          "gas_used",
+          "is_upgrade",
+          "status"
+        ],
+        "properties": {
+          "gas_used": {
+            "$ref": "#/components/schemas/u64"
+          },
+          "is_upgrade": {
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/KeptVMStatusView"
+          }
+        }
+      },
       "ScriptCallView": {
         "type": "object",
         "required": [
@@ -2988,6 +3047,24 @@
             "type": "integer",
             "format": "uint32",
             "minimum": 0.0
+          }
+        }
+      },
+      "VMErrorInfo": {
+        "type": "object",
+        "required": [
+          "error_message",
+          "execution_state"
+        ],
+        "properties": {
+          "error_message": {
+            "type": "string"
+          },
+          "execution_state": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
