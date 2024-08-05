@@ -37,15 +37,14 @@ use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 /// Import BTC ordinals & UTXO for genesis
 #[derive(Debug, Parser)]
 pub struct GenesisCommand {
-    #[clap(long, short = 'i')]
     /// utxo source data file. like ~/.rooch/local/utxo.csv or utxo.csv
     /// The file format is csv, and the first line is the header, the header is as follows:
-    /// count,txid,vout,height,coinbase,amount,script,type,address
+    /// count, txid, vout, height, coinbase, amount, script, type,address
     pub utxo_source: PathBuf,
     #[clap(long)]
     /// ord source data file. like ~/.rooch/local/ord or ord, ord_input must be sorted by sequence_number
-    /// The file format is json, and the first line is block height info: # export at block height <N>, ord range: [0, N).
-    /// ord_input & utxo_input must be in the same height
+    /// The file format is JSON, and the first line is block height info: # export at block height <N>, ord range: [0, N).
+    /// ord_input & utxo_input must be at the same height
     pub ord_source: PathBuf,
     #[clap(
         long,
@@ -61,7 +60,7 @@ pub struct GenesisCommand {
     pub ord_batch_size: Option<usize>,
     #[clap(
         long,
-        help = "outpoint(original):inscriptions(object_id) map dump path, for debug"
+        help = "outpoint(original):inscriptions(original inscription_id) map dump path, for debug"
     )]
     pub outpoint_inscriptions_map_dump_path: Option<PathBuf>,
     #[clap(
@@ -120,11 +119,11 @@ impl GenesisCommand {
         let input_path = self.ord_source.clone();
         let batch_size = self.ord_batch_size.unwrap();
         let (ord_tx, ord_rx) = mpsc::sync_channel(3);
-        let produce_ord_updates_thread =
+        let produce_inscription_updates_thread =
             thread::spawn(move || produce_inscription_updates(ord_tx, input_path, batch_size));
         let moveos_store_clone = Arc::clone(&moveos_store);
         let startup_update_set_clone = Arc::clone(&startup_update_set);
-        let apply_ord_updates_thread = thread::spawn(move || {
+        let apply_inscription_updates_thread = thread::spawn(move || {
             apply_inscription_updates(ord_rx, moveos_store_clone, startup_update_set_clone);
         });
 
@@ -153,9 +152,9 @@ impl GenesisCommand {
             apply_utxo_updates(utxo_rx, moveos_store_clone, startup_update_set_clone);
         });
 
-        produce_ord_updates_thread.join().unwrap();
+        produce_inscription_updates_thread.join().unwrap();
         produce_utxo_updates_thread.join().unwrap();
-        apply_ord_updates_thread.join().unwrap();
+        apply_inscription_updates_thread.join().unwrap();
         apply_addr_updates_thread.join().unwrap();
         apply_utxo_updates_thread.join().unwrap();
 

@@ -10,6 +10,7 @@ use rooch_types::error::RoochResult;
 use crate::cli_types::CommandAction;
 use crate::commands::statedb::commands::genesis::GenesisCommand;
 use crate::commands::statedb::commands::genesis_utxo::GenesisUTXOCommand;
+use crate::commands::statedb::commands::genesis_verify::GenesisVerifyCommand;
 use crate::commands::statedb::commands::import::ImportCommand;
 
 pub mod commands;
@@ -37,6 +38,11 @@ impl CommandAction<String> for Statedb {
             StatedbCommand::Genesis(genesis) => genesis.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
+            StatedbCommand::GenesisVerify(genesis_verify) => {
+                genesis_verify.execute().await.map(|resp| {
+                    serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
+                })
+            }
         }
     }
 }
@@ -48,4 +54,5 @@ pub enum StatedbCommand {
     Import(ImportCommand),
     GenesisUTXO(GenesisUTXOCommand),
     Genesis(GenesisCommand),
+    GenesisVerify(GenesisVerifyCommand),
 }
