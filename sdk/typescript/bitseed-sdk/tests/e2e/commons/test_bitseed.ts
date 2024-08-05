@@ -1,11 +1,12 @@
 import { Ordit } from '@sadoprotocol/ordit-sdk'
-import { BitSeed, GeneratorLoader, UniSatDataSource } from '../../../src'
+import { BitSeed, GeneratorLoader, RoochDataSource } from '../../../src'
 
-const network = 'testnet'
-const datasource = new UniSatDataSource({ network })
-const generatorLoader = new GeneratorLoader(datasource)
 
-export function createTestBitSeed(): BitSeed {
+export function createTestBitSeed(roochServerAddress: string): BitSeed {
+  const network = 'testnet'
+  const datasource = new RoochDataSource({ url: `http://${roochServerAddress}` })
+  const generatorLoader = new GeneratorLoader(datasource)
+
   // address: tb1pz9qq9gwemapvmpntw90ygalhnjzgy2d7tglts0a90avrre902z2sh3ew0h
   const primaryWallet = new Ordit({
     wif: 'cNGdjKojxE7nCcYdK34d12cdYTzBdDV4VdXdbpG7SHGTRWuCxpAW',

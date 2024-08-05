@@ -6,10 +6,12 @@ import { BitseedTestEnv } from './commons/bitseed_test_env'
 test.use({ viewport: { width: 500, height: 500 } })
 
 var testEnv: BitseedTestEnv = new BitseedTestEnv();
+let roochServerAddress: string | null;
 
 test.beforeAll(async () => {
   console.log('Before tests');
-  await testEnv.start()
+  await testEnv.start();
+  roochServerAddress = testEnv.getRoochServerAddress();
 });
 
 test.afterAll(async () => {
@@ -18,7 +20,11 @@ test.afterAll(async () => {
 });
 
 test('Deploy move tick with simple generator', async ({ mount }) => {
-  const component = await mount(<DeployStory />)
+  if (!roochServerAddress) {
+    throw new Error('Failed to get Rooch server address');
+  }
+  
+  const component = await mount(<DeployStory roochServerAddress={roochServerAddress} />)
 
   const generatorInscriptionId = '6f55475ce65054aa8371d618d217da8c9a764cecdaf4debcbce8d6312fe6b4d8i0'
   const deployArg = `{"height":{"type":"range","data":{"min":1,"max":1000}}}`
@@ -31,6 +37,9 @@ test('Deploy move tick with simple generator', async ({ mount }) => {
 
   // Click the deploy button
   await component.locator('button:has-text("Deploy")').click()
+
+  // Check for the presence of the Rooch server address in the component
+  await expect(component).toContainText(`Rooch Server: ${roochServerAddress}`)
 
   // Optionally, check for the presence of the inscriptionId in the output/result
   await expect(component).toContainText('Deploy Result: ')

@@ -1,6 +1,7 @@
 import cbor from 'cbor'
 import { Network } from '../../types'
 import {
+  IDatasource, 
   GetBalanceOptions,
   GetInscriptionOptions,
   Inscription,
@@ -35,12 +36,13 @@ import {
   TxOut
 } from './bitcoin_types';
 
-interface RoochDataSourceOptions {
-  network: Network;
+type RoochDataSourceOptions = {
+  network?: Network;
+  url?: string;
   transport?: RoochTransport
 }
 
-export class RoochDataSource /*implements IDatasource*/ {
+export class RoochDataSource implements IDatasource {
   private roochClient: RoochClient;
 
   constructor(opts: RoochDataSourceOptions) {
@@ -52,11 +54,21 @@ export class RoochDataSource /*implements IDatasource*/ {
       return
     }
 
-    let roochNetwork = bitcoinNetworkToRooch(opts.network)
-    let nodeURL = getRoochNodeUrl(roochNetwork);
-    this.roochClient = new RoochClient({
-      url: nodeURL,
-    });
+    if (opts.url != null) {
+      this.roochClient = new RoochClient({
+        url: opts.url,
+      });
+    }
+
+    if (opts.network != null) {
+      let roochNetwork = bitcoinNetworkToRooch(opts.network)
+      let nodeURL = getRoochNodeUrl(roochNetwork);
+      this.roochClient = new RoochClient({
+        url: nodeURL,
+      });
+    }
+
+    throw new Error('not support RoochDataSource Options')
   }
 
   async getBalance({ address }: GetBalanceOptions): Promise<number> {

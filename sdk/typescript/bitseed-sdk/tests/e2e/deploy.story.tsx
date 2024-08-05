@@ -9,7 +9,11 @@ import {
 } from '../../src'
 import { createTestBitSeed } from './commons/test_bitseed'
 
-export default function DeployStory() {
+interface DeployStoryProps {
+  roochServerAddress: string;
+}
+
+export default function DeployStory({ roochServerAddress }: DeployStoryProps) {
   const [bitseed, setBitseed] = useState<BitSeed | undefined>(undefined)
   const [tick, setTick] = useState<string>('')
   const [max, setMax] = useState<number>(0)
@@ -19,8 +23,8 @@ export default function DeployStory() {
   const [error, setError] = useState<string | undefined>(undefined)
 
   useEffect(() => {
-    setBitseed(createTestBitSeed())
-  }, [])
+    setBitseed(createTestBitSeed(roochServerAddress))
+  }, [roochServerAddress])
 
   const handleDeploy = async () => {
     if (!bitseed) return
@@ -49,7 +53,7 @@ export default function DeployStory() {
 
   return (
     <div>
-      <div>Deploy Tick</div>
+      <div>Deploy Tick (Rooch Server: {roochServerAddress})</div>
       <div>
         Tick: <input
           type="text"
