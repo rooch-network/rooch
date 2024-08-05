@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/experimental-ct-react'
 import DeployGeneratorStory from './generator.story'
 import { BitseedTestEnv } from './commons/bitseed_test_env'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+//const __dirname = path.dirname(fileURLToPath(import.meta.url));
 test.use({ viewport: { width: 500, height: 500 } })
 
 var testEnv: BitseedTestEnv = new BitseedTestEnv();
