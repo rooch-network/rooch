@@ -30,7 +30,9 @@ use crate::commands::statedb::commands::inscription::{derive_inscription_ids, In
 pub mod export;
 pub mod genesis;
 pub mod genesis_utxo;
+pub mod genesis_verify;
 pub mod import;
+
 mod inscription;
 mod utxo;
 
