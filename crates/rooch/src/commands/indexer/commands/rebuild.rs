@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_types::WalletContextOptions;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
@@ -18,17 +17,18 @@ use clap::Parser;
 use moveos_types::state::ObjectState;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_indexer::indexer_reader::IndexerReader;
-use rooch_indexer::store::traits::IndexerStoreTrait;
 use rooch_indexer::IndexerStore;
+use rooch_indexer::store::traits::IndexerStoreTrait;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::indexer::state::IndexerObjectState;
 use rooch_types::rooch_network::RoochChainID;
 
+use crate::cli_types::WalletContextOptions;
 use crate::commands::indexer::commands::init_indexer;
-use crate::commands::statedb::commands::import::parse_state_data_from_csv_line;
 use crate::commands::statedb::commands::{
     GLOBAL_STATE_TYPE_OBJECT, GLOBAL_STATE_TYPE_PREFIX, GLOBAL_STATE_TYPE_ROOT,
 };
+use crate::commands::statedb::commands::import::parse_raw_strings_from_line;
 
 /// Rebuild indexer
 #[derive(Debug, Parser)]
@@ -120,13 +120,13 @@ fn produce_updates(
             let line = line?;
 
             if line.starts_with(GLOBAL_STATE_TYPE_PREFIX) {
-                let (c1, _c2) = parse_state_data_from_csv_line(&line)?;
+                let (c1, _c2) = parse_raw_strings_from_line(&line)?;
                 let state_type = c1;
                 last_state_type = Some(state_type);
                 continue;
             }
 
-            let (_c1, c2) = parse_state_data_from_csv_line(&line)?;
+            let (_c1, c2) = parse_raw_strings_from_line(&line)?;
             let state = ObjectState::from_str(&c2)?;
 
             let state_type = last_state_type

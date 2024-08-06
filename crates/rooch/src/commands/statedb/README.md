@@ -137,7 +137,7 @@ rooch statedb genesis --utxo-source <utxo_src_path> --ord-source <ord_src_path> 
 > - `--utxo-ord-map` is redb database file path. We could reuse it in `genesis-utxo` command.
 > - `--batch-size`/`--utxo-batch-size` is optional, default is 2M. Set it smaller if memory is limited.
 > - `--ord-batch-size` is optional, default is 1M. Set it smaller if memory is limited.
-
+  
 **genesis-verify**:
 
 ```shell
@@ -148,6 +148,14 @@ rooch statedb genesis --utxo-source <utxo_src_path> --ord-source <ord_src_path> 
 
 > - `--random-mode` is optional, default is false. Set it true if you want a fast check. Highly recommend passing it if
     you have a big data set.
+
+##### Export & Import
+
+**TODO**:
+
+1. export mode: full, indexer, genesis, snapshot are unfinished
+2. recursion object export(export mode: object): export object and its children is supported; children's children cannot
+   be exported
 
 **rooch statedb export**:
 
@@ -160,3 +168,5 @@ rooch statedb export --output {your file} -d {your rooch data dir} -n main -m {e
 ```shell
 rooch statedb import --input {your file} -d {your rooch data dir} -n main
 ```
+
+More details is [here](./export_import.md).
