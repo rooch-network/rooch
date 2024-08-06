@@ -52,6 +52,7 @@ members = [
     "frameworks/framework-types",
     "frameworks/moveos-stdlib",
     "frameworks/rooch-framework",
+    "frameworks/rooch-nursery",
 ]
 
 default-members = [
@@ -130,6 +131,7 @@ framework-release = { path = "frameworks/framework-release" }
 moveos-stdlib = { path = "frameworks/moveos-stdlib" }
 rooch-framework = { path = "frameworks/rooch-framework" }
 bitcoin-move = { path = "frameworks/bitcoin-move" }
+rooch-nursery = { path = "frameworks/rooch-nursery" }
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.
@@ -322,6 +324,7 @@ xorf = { version = "0.11.0" }
 vergen-git2 = { version = "1.0.0", features = ["build", "cargo", "rustc"] }
 vergen-pretty = "0.3.4"
 musig2 = { version = "0.0.11" }
+miniscript = "12.1.0"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES
