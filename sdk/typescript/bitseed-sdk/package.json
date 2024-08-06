@@ -9,7 +9,7 @@
     "test:unit": "jest src",
     "test:unit:debug": "jest sdk/typescript/bitseed-sdk/src/datasource/rooch/rooch_datasource.test.ts",
     "test:e2e": "pnpm run build && playwright test -c playwright-ct.config.ts",
-    "test:e2e:debug": "pnpm run build && DEBUG=testcontainers* playwright test -c playwright-ct.config.ts --ui",
+    "test:e2e:debug": "pnpm run build && playwright test -c playwright-ct.config.ts --debug -g deploy",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
@@ -23,9 +23,9 @@
     "@sadoprotocol/ordit-sdk": "./libs/sadoprotocol-ordit-sdk-v2.4.9.tgz",
     "@tanstack/react-query": "^5.0.0",
     "@types/randomstring": "^1.1.11",
-    "@yubing744/rooch-sdk": "^0.1.0",
     "bip39": "^3.1.0",
     "bitcoinjs-lib": "^6.1.5",
+    "buffer": "6.0.0",
     "cbor": "^9.0.2",
     "commander": "^10.0.0",
     "decimal.js": "^10.4.3",
@@ -56,7 +56,7 @@
     "ts-jest": "^29.1.2",
     "typescript": "^5.1.6",
     "vite": "^4.4.4",
-    "vite-plugin-node-polyfills": "^0.21.0",
+    "vite-plugin-node-polyfills": "^0.22.0",
     "vite-plugin-wasm": "^3.3.0",
     "vitest": "^1.6.0"
   }

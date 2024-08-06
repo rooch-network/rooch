@@ -364,15 +364,15 @@ importers:
       '@types/randomstring':
         specifier: ^1.1.11
         version: 1.3.0
-      '@yubing744/rooch-sdk':
-        specifier: ^0.1.0
-        version: 0.1.0(bufferutil@4.0.8)
       bip39:
         specifier: ^3.1.0
         version: 3.1.0
       bitcoinjs-lib:
         specifier: ^6.1.5
         version: 6.1.6
+      buffer:
+        specifier: 6.0.0
+        version: 6.0.0
       cbor:
         specifier: ^9.0.2
         version: 9.0.2
@@ -453,8 +453,8 @@ importers:
         specifier: ^4.4.4
         version: 4.5.3(@types/node@20.14.2)(terser@5.31.1)
       vite-plugin-node-polyfills:
-        specifier: ^0.21.0
-        version: 0.21.0(rollup@4.19.0)(vite@4.5.3(@types/node@20.14.2)(terser@5.31.1))
+        specifier: ^0.22.0
+        version: 0.22.0(rollup@4.19.0)(vite@4.5.3(@types/node@20.14.2)(terser@5.31.1))
       vite-plugin-wasm:
         specifier: ^3.3.0
         version: 3.3.0(vite@4.5.3(@types/node@20.14.2)(terser@5.31.1))
@@ -2184,12 +2184,6 @@ packages:
     resolution: {integrity: sha512-Ys+3g2TaW7gADOJzPt83SJtCDhMjndcDMFVQ/Tj9iA1BfJzFKD9mAUXT3OenpuPHbI6P/myECxRJrofUsDx/5g==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
 
-  '@ethersproject/bytes@5.7.0':
-    resolution: {integrity: sha512-nsbxwgFXWh9NyYWo+U8atvmMsSdKJprTcICAkvbBffT75qDocbuggBU0SJiVK2MuTrp0q+xvLkTnGMPK1+uA9A==}
-
-  '@ethersproject/logger@5.7.0':
-    resolution: {integrity: sha512-0odtFdXu/XHtjQXJYA3u9G0G8btm0ND5Cu8M7i5vhEcE8/HmF4Lbdqanwyv4uQTr2tx6b7fQRmgLrsnpQlmnig==}
-
   '@faker-js/faker@8.4.1':
     resolution: {integrity: sha512-XQ3cU+Q8Uqmrbf2e0cIC/QN43sTBSC8KF12u29Mb47tWrt2hAgBXSgpZMj4Ao8Uk0iJcU99QsOCaIL8934obCg==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0, npm: '>=6.14.13'}
@@ -2361,9 +2355,6 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.25':
     resolution: {integrity: sha512-vNk6aEwybGtawWmy/PzwnGDOjCkLWSD2wqvjGGAgOAwCGWySYXfYoxt00IJkTF+8Lb57DwOb3Aa0o9CApepiYQ==}
-
-  '@kayahr/text-encoding@1.3.0':
-    resolution: {integrity: sha512-JjQVFXnN/ynXN+GDgpwNM+PJ4NwDFZwRolgSu4bYG1JKuRreVFY5uss5K/lsH6qY38+WgU7M40M2SHoiWQHKgQ==}
 
   '@manypkg/cli@0.21.4':
     resolution: {integrity: sha512-EACxxb+c/t6G0l1FrlyewZeBnyR5V1cLkXjnBfsay5TN1UgbilFpG6POglzn+lVJet9NqnEKe3RLHABzkIDZ0Q==}
@@ -2569,9 +2560,6 @@ packages:
   '@nodelib/fs.walk@1.2.8':
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
-
-  '@open-rpc/client-js@1.8.1':
-    resolution: {integrity: sha512-vV+Hetl688nY/oWI9IFY0iKDrWuLdYhf7OIKI6U1DcnJV7r4gAgwRJjEr1QVYszUc0gjkHoQJzqevmXMGLyA0g==}
 
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
@@ -4015,9 +4003,6 @@ packages:
   '@types/webxr@0.5.16':
     resolution: {integrity: sha512-0E0Cl84FECtzrB4qG19TNTqpunw0F1YF0QZZnFMF6pDw1kNKJtrlTKlVB34stGIsHbZsYQ7H0tNjPfZftkHHoA==}
 
-  '@types/ws@8.5.11':
-    resolution: {integrity: sha512-4+q7P5h3SpJxaBft0Dzpbr6lmMaqh0Jr2tbhJZ/luAwvD7ohSCniYkwz/pLxuT2h0EOa6QADgJj1Ko+TzRfZ+w==}
-
   '@types/yargs-parser@21.0.3':
     resolution: {integrity: sha512-I4q9QU9MQv4oEOz4tAHJtNz1cwuLxn2F3xcc2iV5WdqLPpUnj30aUuxt1mAxYTG+oe8CZMV/+6rU4S4gRDzqtQ==}
 
@@ -4240,10 +4225,6 @@ packages:
 
   '@vitest/utils@1.6.0':
     resolution: {integrity: sha512-21cPiuGMoMZwiOHa2i4LXkMkMkCGzA+MVFV70jRwHo95dL4x/ts5GZhML1QWuy7yfp3WzK3lRvZi3JnXTYqrBw==}
-
-  '@yubing744/rooch-sdk@0.1.0':
-    resolution: {integrity: sha512-pHgzJz1S+sevMmMvvN3Di7mIwJcftK2rsEl9+5v1kC6zv2UKQ81uKDnBuEBRlbfnCGpoPyS6NeZV1FC8G/HIOA==}
-    engines: {node: '>=18.0.0'}
 
   abort-controller@3.0.0:
     resolution: {integrity: sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==}
@@ -6784,17 +6765,9 @@ packages:
     resolution: {integrity: sha512-WhB9zCku7EGTj/HQQRz5aUQEUeoQZH2bWcltRErOpymJ4boYE6wL9Tbr23krRPSZ+C5zqNSrSw+Cc7sZZ4b7vg==}
     engines: {node: '>=0.10.0'}
 
-  isomorphic-fetch@3.0.0:
-    resolution: {integrity: sha512-qvUtwJ3j6qwsF3jLxkZ72qCgjMysPzDfeV240JHiGZsANBYd+EEuu35v7dfrJ9Up0Ak07D7GGSkGhCHTqg/5wA==}
-
   isomorphic-timers-promises@1.0.1:
     resolution: {integrity: sha512-u4sej9B1LPSxTGKB/HiuzvEQnXH0ECYkSVQU39koSwmFAxhlEAFl9RdTvLv4TOTQUgBS5O3O5fwUxk6byBZ+IQ==}
     engines: {node: '>=10'}
-
-  isomorphic-ws@5.0.0:
-    resolution: {integrity: sha512-muId7Zzn9ywDsyXgTIafTry2sV3nySZeUDe6YedVd1Hvuuep5AsIlqK+XefWpYTyJG5e503F2xIuT2lcU6rCSw==}
-    peerDependencies:
-      ws: '*'
 
   istanbul-lib-coverage@3.2.2:
     resolution: {integrity: sha512-O8dpsF+r0WV/8MNRKfnmrtCWhuKjxrq2w+jpzBL5UZKTi2LeVWnWOmWRxFlesJONmc+wLAGvKQZEOanko0LFTg==}
@@ -9091,9 +9064,6 @@ packages:
   streamx@2.18.0:
     resolution: {integrity: sha512-LLUC1TWdjVdn1weXGcSxyTR3T4+acB6tVGXT95y0nGbca4t4o/ng1wKAGTljm9VicuCVLvRlqFYXYy5GwgM7sQ==}
 
-  strict-event-emitter-types@2.0.0:
-    resolution: {integrity: sha512-Nk/brWYpD85WlOgzw5h173aci0Teyv8YdIAEtV+N88nDB0dLlazZyJMIsN6eo1/AR61l+p6CJTG1JIyFaoNEEA==}
-
   string-length@4.0.2:
     resolution: {integrity: sha512-+l6rNN5fYHNhZZy41RXsYptCjA2Igmq4EG7kZAYFQI1E1VTXarr6ZPXBg6eq7Y6eK4FEhY6AJlyuFIb/v/S0VQ==}
     engines: {node: '>=10'}
@@ -9222,10 +9192,6 @@ packages:
 
   sudo-prompt@9.2.1:
     resolution: {integrity: sha512-Mu7R0g4ig9TUuGSxJavny5Rv0egCEtpZRNMrZaYS1vxkiIxGiGUwoezU3LazIQ+KE04hTrTfNPgxU5gzi7F5Pw==}
-
-  superstruct@1.0.4:
-    resolution: {integrity: sha512-7JpaAoX2NGyoFlI9NBh66BQXGONc+uE+MRS5i2iOBKuS4e+ccgMDjATgZldkah+33DakBxDHiss9kvUcGAO8UQ==}
-    engines: {node: '>=14.0.0'}
 
   supports-color@4.5.0:
     resolution: {integrity: sha512-ycQR/UbvI9xIlEdQT1TQqwoXtEldExbCEAJgRo5YXlmSKjv6ThHnP9/vwGa1gr19Gfw+LkFd7KqYMhzrRC5JYw==}
@@ -9753,11 +9719,6 @@ packages:
     resolution: {integrity: sha512-de6HJgzC+TFzOu0NTC4RAIsyf/DY/ibWDYQUcuEA84EMHhcefTUGkjFHKKEJhQN4A+6I0u++kr3l36ZF2d7XRw==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
-
-  vite-plugin-node-polyfills@0.21.0:
-    resolution: {integrity: sha512-Sk4DiKnmxN8E0vhgEhzLudfJQfaT8k4/gJ25xvUPG54KjLJ6HAmDKbr4rzDD/QWEY+Lwg80KE85fGYBQihEPQA==}
-    peerDependencies:
-      vite: ^2.0.0 || ^3.0.0 || ^4.0.0 || ^5.0.0
 
   vite-plugin-node-polyfills@0.22.0:
     resolution: {integrity: sha512-F+G3LjiGbG8QpbH9bZ//GSBr9i1InSTkaulfUHFa9jkLqVGORFBoqc2A/Yu5Mmh1kNAbiAeKeK+6aaQUf3x0JA==}
@@ -11689,12 +11650,6 @@ snapshots:
 
   '@eslint/js@8.57.0': {}
 
-  '@ethersproject/bytes@5.7.0':
-    dependencies:
-      '@ethersproject/logger': 5.7.0
-
-  '@ethersproject/logger@5.7.0': {}
-
   '@faker-js/faker@8.4.1': {}
 
   '@fastify/busboy@2.1.1': {}
@@ -11972,10 +11927,6 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.4.15
 
-  '@kayahr/text-encoding@1.3.0':
-    dependencies:
-      tslib: 2.6.3
-
   '@manypkg/cli@0.21.4':
     dependencies:
       '@manypkg/get-packages': 2.2.1
@@ -12185,17 +12136,6 @@ snapshots:
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.17.1
-
-  '@open-rpc/client-js@1.8.1(bufferutil@4.0.8)':
-    dependencies:
-      isomorphic-fetch: 3.0.0
-      isomorphic-ws: 5.0.0(ws@7.5.10(bufferutil@4.0.8))
-      strict-event-emitter-types: 2.0.0
-      ws: 7.5.10(bufferutil@4.0.8)
-    transitivePeerDependencies:
-      - bufferutil
-      - encoding
-      - utf-8-validate
 
   '@pkgjs/parseargs@0.11.0':
     optional: true
@@ -13967,10 +13907,6 @@ snapshots:
 
   '@types/webxr@0.5.16': {}
 
-  '@types/ws@8.5.11':
-    dependencies:
-      '@types/node': 20.14.2
-
   '@types/yargs-parser@21.0.3': {}
 
   '@types/yargs@15.0.19':
@@ -14386,24 +14322,6 @@ snapshots:
       estree-walker: 3.0.3
       loupe: 2.3.7
       pretty-format: 29.7.0
-
-  '@yubing744/rooch-sdk@0.1.0(bufferutil@4.0.8)':
-    dependencies:
-      '@ethersproject/bytes': 5.7.0
-      '@kayahr/text-encoding': 1.3.0
-      '@noble/hashes': 1.4.0
-      '@open-rpc/client-js': 1.8.1(bufferutil@4.0.8)
-      '@scure/bip39': 1.3.0
-      '@suchipi/femver': 1.0.0
-      '@types/ws': 8.5.11
-      events: 3.3.0
-      isomorphic-fetch: 3.0.0
-      superstruct: 1.0.4
-      tweetnacl: 1.0.3
-    transitivePeerDependencies:
-      - bufferutil
-      - encoding
-      - utf-8-validate
 
   abort-controller@3.0.0:
     dependencies:
@@ -17559,18 +17477,7 @@ snapshots:
 
   isobject@3.0.1: {}
 
-  isomorphic-fetch@3.0.0:
-    dependencies:
-      node-fetch: 2.7.0
-      whatwg-fetch: 3.6.20
-    transitivePeerDependencies:
-      - encoding
-
   isomorphic-timers-promises@1.0.1: {}
-
-  isomorphic-ws@5.0.0(ws@7.5.10(bufferutil@4.0.8)):
-    dependencies:
-      ws: 7.5.10(bufferutil@4.0.8)
 
   istanbul-lib-coverage@3.2.2: {}
 
@@ -20698,8 +20605,6 @@ snapshots:
     optionalDependencies:
       bare-events: 2.4.2
 
-  strict-event-emitter-types@2.0.0: {}
-
   string-length@4.0.2:
     dependencies:
       char-regex: 1.0.2
@@ -20838,8 +20743,6 @@ snapshots:
       ts-interface-checker: 0.1.13
 
   sudo-prompt@9.2.1: {}
-
-  superstruct@1.0.4: {}
 
   supports-color@4.5.0:
     dependencies:
@@ -21459,7 +21362,7 @@ snapshots:
       - supports-color
       - terser
 
-  vite-plugin-node-polyfills@0.21.0(rollup@4.19.0)(vite@4.5.3(@types/node@20.14.2)(terser@5.31.1)):
+  vite-plugin-node-polyfills@0.22.0(rollup@4.19.0)(vite@4.5.3(@types/node@20.14.2)(terser@5.31.1)):
     dependencies:
       '@rollup/plugin-inject': 5.0.5(rollup@4.19.0)
       node-stdlib-browser: 1.2.0
