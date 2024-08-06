@@ -30,6 +30,7 @@ log = { workspace = true }
 tap = { workspace = true }
 prometheus = { workspace = true }
 function_name = { workspace = true }
+futures = { workspace = true }
 
 move-core-types = { workspace = true }
 

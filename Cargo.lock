@@ -9344,6 +9344,7 @@ dependencies = [
  "diesel",
  "diesel_migrations",
  "function_name",
+ "futures",
  "log",
  "metrics",
  "move-core-types",

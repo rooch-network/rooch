@@ -70,8 +70,8 @@ fn random_remove_object_states() -> Vec<String> {
     remove_object_states
 }
 
-#[test]
-fn test_transaction_store() -> Result<()> {
+#[tokio::test]
+async fn test_transaction_store() -> Result<()> {
     let registry_service = RegistryService::default();
     let tmpdir = moveos_config::temp_dir();
     let indexer_db = tmpdir.path().join(DEFAULT_DB_INDEXER_SUBDIR);
@@ -114,8 +114,8 @@ fn test_transaction_store() -> Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_event_store() -> Result<()> {
+#[tokio::test]
+async fn test_event_store() -> Result<()> {
     let registry_service = RegistryService::default();
     let tmpdir = moveos_config::temp_dir();
     let indexer_db = tmpdir.path().join(DEFAULT_DB_INDEXER_SUBDIR);
@@ -148,8 +148,8 @@ fn test_event_store() -> Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_state_store() -> Result<()> {
+#[tokio::test]
+async fn test_state_store() -> Result<()> {
     let registry_service = RegistryService::default();
     let tmpdir = moveos_config::temp_dir();
     let indexer_db = tmpdir.path().join(DEFAULT_DB_INDEXER_SUBDIR);
@@ -180,8 +180,8 @@ fn test_state_store() -> Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_object_type_query() -> Result<()> {
+#[tokio::test]
+async fn test_object_type_query() -> Result<()> {
     let registry_service = RegistryService::default();
     let tmpdir = moveos_config::temp_dir();
     let indexer_db = tmpdir.path().join(DEFAULT_DB_INDEXER_SUBDIR);
@@ -231,8 +231,8 @@ fn test_object_type_query() -> Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_escape_transaction() -> Result<()> {
+#[tokio::test]
+async fn test_escape_transaction() -> Result<()> {
     let registry_service = RegistryService::default();
     let tmpdir = moveos_config::temp_dir();
     let indexer_db = tmpdir.path().join(DEFAULT_DB_INDEXER_SUBDIR);
