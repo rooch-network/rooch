@@ -293,7 +293,7 @@ impl diesel::r2d2::CustomizeConnection<SqliteConnection, diesel::r2d2::Error>
             pragma_builder.push_str("PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL;");
         }
         // The mmap_size in SQLite is primarily associated with the database file, not the connection.
-        pragma_builder.push_str("PRAGMA mmap_size = 1073741824"); // 1GB
+        pragma_builder.push_str("PRAGMA mmap_size = 268435456"); // 256MB
         conn.batch_execute(&pragma_builder)
             .map_err(diesel::r2d2::Error::QueryError)?;
 
