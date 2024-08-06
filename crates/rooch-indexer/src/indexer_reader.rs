@@ -108,7 +108,7 @@ pub struct IndexerReader {
 
 impl IndexerReader {
     pub fn new(db_path: PathBuf, registry: &Registry) -> Result<Self> {
-        let config = SqliteConnectionPoolConfig::default();
+        let config = SqliteConnectionPoolConfig::pool_config(true);
         Self::new_with_config(db_path, config, registry)
     }
 
