@@ -50,8 +50,8 @@ pub enum StoreInstance {
 unsafe impl Send for StoreInstance {}
 
 impl StoreInstance {
-    pub fn new_db_instance(db: RocksDB) -> Self {
-        let db_metrics = DBMetrics::get().clone();
+    pub fn new_db_instance(db: RocksDB, db_metrics: Arc<DBMetrics>) -> Self {
+        // let db_metrics = DBMetrics::get().clone();
         let db_arc = Arc::new(db);
         // let db_metrics = Arc::new(DBMetrics::new(registry));
         // let db_clone = db_arc.clone();
@@ -306,7 +306,7 @@ impl StoreInstance {
         property_name: &'static std::ffi::CStr,
     ) -> Result<i64, anyhow::Error> {
         match rocksdb.property_int_value_cf(cf, property_name) {
-            Ok(Some(value)) => Ok(value.try_into().unwrap()),
+            Ok(Some(value)) => Ok(value as i64),
             Ok(None) => Ok(0),
             Err(e) => Err(anyhow::Error::new(e)),
             // Err(anyhow::Error::msg(format!("get_int_property error {}", e))),
@@ -723,6 +723,8 @@ where
     fn get_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
 
     fn iter(&self) -> Result<SchemaIterator<K, V>>;
+
+    fn multiple_get_raw(&self, keys: Vec<K>) -> Result<Vec<Option<Vec<u8>>>>;
 }
 
 impl<K, V, S> CodecKVStore<K, V> for S
@@ -742,8 +744,8 @@ where
     fn multiple_get(&self, keys: Vec<K>) -> Result<Vec<Option<V>>> {
         let encoded_keys = keys
             .into_iter()
-            .map(|key| to_bytes(&key).unwrap())
-            .collect::<Vec<_>>();
+            .map(|key| to_bytes(&key))
+            .collect::<Result<Vec<_>, _>>()?;
         let values = KVStore::multiple_get(self.get_store(), encoded_keys)?;
         values
             .into_iter()
@@ -788,10 +790,9 @@ where
 
     fn keys(&self) -> Result<Vec<K>> {
         let keys = KVStore::keys(self.get_store())?;
-        Ok(keys
-            .into_iter()
-            .map(|key| from_bytes::<K>(key.as_slice()).unwrap())
-            .collect())
+        keys.into_iter()
+            .map(|key| from_bytes::<K>(key.as_slice()))
+            .collect::<Result<Vec<_>, _>>()
     }
 
     fn put_raw(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
@@ -809,5 +810,13 @@ where
             .db()
             .ok_or_else(|| format_err!("Only support scan on db store instance"))?;
         db.iter::<K, V>(self.get_store().cf_name)
+    }
+
+    fn multiple_get_raw(&self, keys: Vec<K>) -> Result<Vec<Option<Vec<u8>>>> {
+        let encoded_keys = keys
+            .into_iter()
+            .map(|key| to_bytes(&key))
+            .collect::<Result<Vec<_>, _>>()?;
+        KVStore::multiple_get(self.get_store(), encoded_keys)
     }
 }

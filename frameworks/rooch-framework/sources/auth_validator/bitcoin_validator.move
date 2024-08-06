@@ -68,11 +68,6 @@ module rooch_framework::bitcoin_validator {
         bitcoin_addr
     }
 
-    fun pre_execute() {}
-
-    fun post_execute() {
-    }
-
     #[test]
     fun test_validate_signature_success() {
         let tx_hash = x"5415b18de0b880bb2af5dfe1ee27fd19ae8a0c99b5328e8b4b44f4c86cc7176a";

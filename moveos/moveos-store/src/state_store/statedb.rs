@@ -37,7 +37,7 @@ impl StateDBStore {
     pub fn new(node_store: NodeDBStore, registry: &Registry) -> Self {
         Self {
             node_store: node_store.clone(),
-            smt: SMTree::new(node_store),
+            smt: SMTree::new(node_store, registry),
             metrics: Arc::new(StateDBMetrics::new(registry)),
         }
     }
@@ -50,7 +50,7 @@ impl StateDBStore {
         let fn_name = function_name!();
         let _timer = self
             .metrics
-            .state_update_fields_latency
+            .state_update_fields_latency_seconds
             .with_label_values(&[fn_name])
             .start_timer();
         let change_set = self.smt.puts(pre_state_root, update_set)?;
@@ -69,7 +69,7 @@ impl StateDBStore {
         let fn_name = function_name!();
         let _timer = self
             .metrics
-            .state_update_nodes_latency
+            .state_update_nodes_latency_seconds
             .with_label_values(&[fn_name])
             .start_timer();
         let size = nodes.values().map(|v| 32 + v.len()).sum::<usize>();
@@ -136,7 +136,7 @@ impl StateDBStore {
         let fn_name = function_name!();
         let _timer = self
             .metrics
-            .state_apply_change_set_latency
+            .state_apply_change_set_latency_seconds
             .with_label_values(&[fn_name])
             .start_timer();
 
@@ -197,7 +197,7 @@ impl StateDBStore {
         let fn_name = function_name!();
         let _timer = self
             .metrics
-            .state_iter_latency
+            .state_iter_latency_seconds
             .with_label_values(&[fn_name])
             .start_timer();
         self.smt.iter(state_root, starting_key)
@@ -210,7 +210,7 @@ impl StatelessResolver for StateDBStore {
         let fn_name = function_name!();
         let _timer = self
             .metrics
-            .state_get_field_at_latency
+            .state_get_field_at_latency_seconds
             .with_label_values(&[fn_name])
             .start_timer();
 
@@ -249,7 +249,7 @@ impl StatelessResolver for StateDBStore {
         let fn_name = function_name!();
         let _timer = self
             .metrics
-            .state_list_fields_at_latency
+            .state_list_fields_at_latency_seconds
             .with_label_values(&[fn_name])
             .start_timer();
         let result = self.smt.list(state_root, cursor, limit)?;

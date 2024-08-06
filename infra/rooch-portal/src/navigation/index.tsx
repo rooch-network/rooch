@@ -80,9 +80,9 @@ export const navItems: NavItemsType = [
 export const routers = (): React.ReactElement => {
   return (
     <Routes>
-      {allRouter
-        .map((item) => <Route key={item.path} path={item.path} element={item.element} />)
-      }
+      {allRouter.map((item) => (
+        <Route key={item.path} path={item.path} element={item.element} />
+      ))}
     </Routes>
   )
 }

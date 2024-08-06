@@ -2,17 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_examples::bitseed_runner {
-   use moveos_std::object;
-   use bitcoin_move::ord;
+
+   use std::option;
+   use moveos_std::object::{Self, Object};
+   use moveos_std::event_queue::{Self, Subscriber};
+   use bitcoin_move::ord::{Self, Inscription};
+   use rooch_nursery::inscribe_factory;
    use rooch_nursery::bitseed;
 
-   struct BitseedRunnerStore has key,store,drop {
-      index: u32
+   struct BitseedRunnerStore has key {
+      subscriber: Object<Subscriber<ord::InscriptionEvent>>,
    }
 
    fun init() {
+      let subscriber = event_queue::subscribe<ord::InscriptionEvent>(bitseed::metaprotocol());
       let store = BitseedRunnerStore {
-         index: 0u32
+         subscriber,
       };
       let store_obj = object::new_named_object(store);
       object::to_shared(store_obj);
@@ -23,17 +28,20 @@ module rooch_examples::bitseed_runner {
       let bitseed_runner_store = object::borrow_mut_object_shared<BitseedRunnerStore>(object_id);
       let runner = object::borrow_mut(bitseed_runner_store);
      
-      let next_sequence_number = ord::get_inscription_next_sequence_number();
-      let current_index = runner.index;
-
-      if (current_index < next_sequence_number) {
-         // get a Inscription by InscriptionId
-         let inscription_id = ord::get_inscription_id_by_sequence_number(current_index);
-         let inscription = ord::borrow_inscription_by_id(*inscription_id);
-
-         bitseed::process_inscription(inscription);
-
-         runner.index = current_index + 1;
-      }
+      let event_opt = event_queue::consume(&mut runner.subscriber);
+      
+      if (option::is_some(&event_opt)){
+         let event = option::destroy_some(event_opt);
+         let (_metaprotocol, _sequence_number, inscription_obj_id, event_type) = ord::unpack_inscription_event(event);
+         
+         let inscription_obj = object::borrow_object<Inscription>(inscription_obj_id);
+         let inscription = object::borrow(inscription_obj);
+         if (event_type == ord::inscription_event_type_new()){
+            inscribe_factory::process_inscription(inscription);
+         }else {
+            //TODO handle burn event.
+            std::debug::print(&event);
+         };
+      };
    }
 }

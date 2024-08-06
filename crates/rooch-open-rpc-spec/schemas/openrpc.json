@@ -12,9 +12,43 @@
       "name": "Apache-2.0",
       "url": "https://raw.githubusercontent.com/rooch-network/rooch/main/LICENSE"
     },
-    "version": "0.6.3"
+    "version": "0.6.6"
   },
   "methods": [
+    {
+      "name": "btc_broadcastTX",
+      "description": "Broadcast a Bitcoin transaction",
+      "params": [
+        {
+          "name": "hex",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          }
+        },
+        {
+          "name": "maxfeerate",
+          "schema": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        {
+          "name": "maxburnamount",
+          "schema": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      ],
+      "result": {
+        "name": "String",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
     {
       "name": "btc_queryInscriptions",
       "description": "Query the Inscription via global index by Inscription filter",
@@ -2033,10 +2067,14 @@
               "object_type_with_owner": {
                 "type": "object",
                 "required": [
+                  "filter_out",
                   "object_type",
                   "owner"
                 ],
                 "properties": {
+                  "filter_out": {
+                    "type": "boolean"
+                  },
                   "object_type": {
                     "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
                   },
@@ -2760,6 +2798,11 @@
       "TxOptions": {
         "type": "object",
         "properties": {
+          "decode": {
+            "description": "If true, the event is decoded and the decoded value is returned in the response. Only valid when with_output is true.",
+            "default": false,
+            "type": "boolean"
+          },
           "withOutput": {
             "description": "If true, the TransactionOutput is returned in the response.",
             "default": false,
@@ -2916,7 +2959,13 @@
           },
           "seals": {
             "description": "Protocol seals",
-            "type": "string"
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ObjectID"
+              }
+            }
           },
           "txid": {
             "description": "The txid of the UTXO",

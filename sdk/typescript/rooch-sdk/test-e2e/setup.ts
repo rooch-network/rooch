@@ -104,7 +104,7 @@ export async function cmdPublishPackage(
   },
 ) {
   const result = await cmd(
-    `move publish -p ${packagePath} --named-addresses ${options.namedAddresses}`,
+    `move publish -p ${packagePath} --named-addresses ${options.namedAddresses} --json`,
   )
   const { execution_info } = JSON.parse(result)
 

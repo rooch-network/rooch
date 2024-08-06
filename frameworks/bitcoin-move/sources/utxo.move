@@ -17,6 +17,8 @@ module bitcoin_move::utxo{
 
     const TEMPORARY_AREA: vector<u8> = b"temporary_area";
 
+    const ErrorDeprecatedFunction: u64 = 1;
+
     /// The UTXO Object
     struct UTXO has key {
         /// The txid of the UTXO
@@ -129,15 +131,11 @@ module bitcoin_move::utxo{
     }
 
     #[private_generics(T)]
-    /// Seal the UTXO with a protocol, the T is the protocol object
-    public fun seal<T>(utxo: &mut UTXO, seal_obj: &Object<T>){
-        let protocol = type_info::type_name<T>();
-        let object_id = object::id(seal_obj);
-        let utxo_seal = UTXOSeal{
-            protocol,
-            object_id,
-        };
-        add_seal(utxo, utxo_seal);
+    /// This function is deprecated
+    /// We can not provide a public function to seal UTXO now,
+    /// Maybe we can provide a new way to seal UTXO in the future
+    public fun seal<T>(_utxo: &mut UTXO, _seal_obj: &Object<T>){
+        abort ErrorDeprecatedFunction
     }
 
     public fun has_seal<T>(utxo: &UTXO) : bool {

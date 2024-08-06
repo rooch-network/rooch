@@ -38,6 +38,9 @@ module bitcoin_move::ord {
     /// How many satoshis are in "one bitcoin".
     const COIN_VALUE: u64 = 100_000_000;
 
+    const ErrorMetaprotocolAlreadyRegistered: u64 = 1;
+    const ErrorMetaprotocolProtocolMismatch: u64 = 2;
+
     /// Curse Inscription
     const CURSE_DUPLICATE_FIELD: vector<u8> = b"DuplicateField";
     public fun curse_duplicate_field(): vector<u8> {
@@ -155,6 +158,8 @@ module bitcoin_move::ord {
         record: InscriptionRecord,
     }
 
+    struct MetaprotocolRegistry has key{}
+
     struct MetaprotocolValidity has store, copy, drop {
         protocol_type: String,
         is_valid: bool,
@@ -165,6 +170,16 @@ module bitcoin_move::ord {
         cursed_inscription_count: u32,
         blessed_inscription_count: u32,
         next_sequence_number: u32,
+    }
+
+    const InscriptionEventTypeNew: u8 = 0;
+    const InscriptionEventTypeBurn: u8 = 1;
+
+    struct InscriptionEvent has store, copy, drop {
+        metaprotocol: String,
+        sequence_number: u32,
+        inscription_obj_id: ObjectID,
+        event_type: u8,
     }
 
     public(friend) fun genesis_init(_genesis_account: &signer){
@@ -286,8 +301,20 @@ module bitcoin_move::ord {
         let store_obj_id = object::named_object_id<InscriptionStore>();
         let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
         // record a sequence_number to InscriptionID mapping
-        object::add_field(store_obj, inscription.sequence_number, id);
+        let sequence_number = inscription.sequence_number;
+        let metaprotocol = inscription.metaprotocol;
+        object::add_field(store_obj, sequence_number, id);
         let object = object::new_with_parent_and_id(store_obj, id, inscription);
+        let obj_id = object::id(&object);
+        if (option::is_some(&metaprotocol)) {
+            let metaprotocol = option::destroy_some(metaprotocol);
+            moveos_std::event_queue::emit(metaprotocol, InscriptionEvent{
+                metaprotocol: metaprotocol,
+                sequence_number: sequence_number,
+                inscription_obj_id: obj_id,
+                event_type: InscriptionEventTypeNew,
+            });
+        };
         object
     }
     
@@ -342,7 +369,9 @@ module bitcoin_move::ord {
             let inscription_obj = object::take_object_extend<Inscription>(seal_object_id);
             let origin_owner = object::owner(&inscription_obj);
             let inscription = object::borrow_mut(&mut inscription_obj);
-           
+            let sequence_number = inscription.sequence_number;
+            let metaprotocol = inscription.metaprotocol;
+
             let (is_match, new_sat_point) = match_utxo_and_generate_sat_point(inscription.offset, seal_object_id, tx, input_utxo_values, input_index);
             if(is_match){
                 let match_output_index = new_sat_point.output_index;
@@ -350,7 +379,7 @@ module bitcoin_move::ord {
                 let match_output = vector::borrow(outputs, (match_output_index as u64));
                 let to_address = types::txout_object_address(match_output);
                 inscription.offset = new_sat_point.offset;
-
+                
                 // drop the temporary area if inscription is transferred.
                 drop_temp_area(&mut inscription_obj);
                 vector::push_back(&mut new_sat_points, new_sat_point);
@@ -361,6 +390,15 @@ module bitcoin_move::ord {
                     let inscription_clarm = borrow_mut_inscription_charm_inner(&mut inscription_obj);
                     inscription_clarm.burned = true;
                     object::to_frozen(inscription_obj);
+                    if (option::is_some(&metaprotocol)) {
+                        let metaprotocol = option::destroy_some(metaprotocol);
+                        moveos_std::event_queue::emit(metaprotocol, InscriptionEvent{
+                            metaprotocol: metaprotocol,
+                            sequence_number: sequence_number,
+                            inscription_obj_id: seal_object_id,
+                            event_type: InscriptionEventTypeBurn,
+                        });
+                    };
                 } else {
                     object::transfer_extend(inscription_obj, to_address);
                 };
@@ -912,13 +950,51 @@ module bitcoin_move::ord {
 
     // ==== Inscription Metaprotocol Validity ==== //
 
+    /// Currently, Only the framework can register metaprotocol.
+    /// We need to find a way to allow the user to register metaprotocol.
+    public fun register_metaprotocol_via_system<T>(system: &signer, metaprotocol: String){
+        moveos_std::core_addresses::assert_system_reserved(system);
+        let registry_object_id = object::named_object_id<MetaprotocolRegistry>();
+        if(!object::exists_object(registry_object_id)){
+            let registry_obj = object::new_named_object(MetaprotocolRegistry{});
+            object::transfer_extend(registry_obj, @bitcoin_move);
+        };
+        let metaprotocol_registry_obj = object::borrow_mut_object_extend<MetaprotocolRegistry>(registry_object_id);
+        let protocol_type = type_info::type_name<T>();
+        assert!(!object::contains_field(metaprotocol_registry_obj, metaprotocol), ErrorMetaprotocolAlreadyRegistered);
+        object::add_field(metaprotocol_registry_obj, metaprotocol, protocol_type); 
+    }
+
+    public fun is_metaprotocol_register(metaprotocol: String) : bool {
+        let registry_object_id = object::named_object_id<MetaprotocolRegistry>();
+        if(!object::exists_object(registry_object_id)){
+            return false
+        };
+        let metaprotocol_registry_obj = object::borrow_object<MetaprotocolRegistry>(registry_object_id);
+        object::contains_field(metaprotocol_registry_obj, metaprotocol)
+    }
+
+    /// Borrow the metaprotocol Move type for the given metaprotocol.
+    fun get_metaprotocol_type(metaprotocol: String) : Option<String> {
+        let registry_object_id = object::named_object_id<MetaprotocolRegistry>();
+        if(!object::exists_object(registry_object_id)){
+            return option::none()
+        };
+        let metaprotocol_registry_obj = object::borrow_object<MetaprotocolRegistry>(registry_object_id);
+        if(!object::contains_field(metaprotocol_registry_obj, metaprotocol)){
+            return option::none()
+        };
+        option::some(*object::borrow_field(metaprotocol_registry_obj, metaprotocol))
+    }
+
     #[private_generics(T)]
     /// Seal the metaprotocol validity for the given inscription_id.
     public fun seal_metaprotocol_validity<T>(inscription_id: InscriptionID, is_valid: bool, invalid_reason: Option<String>) {
         let inscription_object_id = derive_inscription_id(inscription_id);
         let inscription_obj = object::borrow_mut_object_extend<Inscription>(inscription_object_id);
-
+        
         let protocol_type = type_info::type_name<T>();
+        assert!(metaprotocol_protocol_match(inscription_obj, protocol_type), ErrorMetaprotocolProtocolMismatch);
         let validity = MetaprotocolValidity {
             protocol_type,
             is_valid,
@@ -926,6 +1002,15 @@ module bitcoin_move::ord {
         };
 
         object::upsert_field(inscription_obj, METAPROTOCOL_VALIDITY, validity);
+    }
+
+    #[private_generics(T)]
+    public fun add_metaprotocol_attachment<T>(inscription_id: InscriptionID, attachment: Object<T>){
+        let inscription_object_id = derive_inscription_id(inscription_id);
+        let inscription_obj = object::borrow_mut_object_extend<Inscription>(inscription_object_id);
+        let protocol_type = type_info::type_name<T>();
+        assert!(metaprotocol_protocol_match(inscription_obj, protocol_type), ErrorMetaprotocolProtocolMismatch);
+        object::add_field(inscription_obj, protocol_type, attachment);
     }
 
     /// Returns true if Inscription `object` contains metaprotocol validity
@@ -948,6 +1033,19 @@ module bitcoin_move::ord {
         object::borrow_field(inscription_obj, METAPROTOCOL_VALIDITY)
     }
 
+    fun metaprotocol_protocol_match(inscription_obj: &Object<Inscription>, protocol_type: String): bool {
+        let inscription = object::borrow(inscription_obj);
+        if(option::is_none(&inscription.metaprotocol)){
+            return false
+        };
+        let metaprotocol = option::destroy_some(*&inscription.metaprotocol);
+        let protocol_type_in_registry = get_metaprotocol_type(metaprotocol);
+        if (option::is_none(&protocol_type_in_registry)) {
+            return false
+        };
+        protocol_type == option::destroy_some(protocol_type_in_registry)
+    }
+
     /// Check the MetaprotocolValidity's protocol_type whether match
     public fun metaprotocol_validity_protocol_match<T>(validity: &MetaprotocolValidity): bool {
         let protocol_type = type_info::type_name<T>();
@@ -967,6 +1065,37 @@ module bitcoin_move::ord {
     /// Get the MetaprotocolValidity's invalid_reason
     public fun metaprotocol_validity_invalid_reason(validity: &MetaprotocolValidity): Option<String> {
         validity.invalid_reason
+    }
+
+    public fun view_validity(inscription_id_str: String) : Option<MetaprotocolValidity> {
+        let inscription_id_option = parse_inscription_id(&inscription_id_str);
+        if (option::is_none(&inscription_id_option)) {
+            return option::none()
+        };
+
+        let inscription_id = option::destroy_some(inscription_id_option);
+        if (!exists_metaprotocol_validity(inscription_id)) {
+            return option::none()
+        };
+
+        let validity = borrow_metaprotocol_validity(inscription_id);
+
+        option::some(*validity)
+    }
+
+    // ======================== Events =====================================
+
+    public fun unpack_inscription_event(event: InscriptionEvent) : (String, u32, ObjectID, u8) {
+        let InscriptionEvent{metaprotocol, sequence_number, inscription_obj_id, event_type} = event;
+        (metaprotocol, sequence_number, inscription_obj_id, event_type)
+    }
+
+    public fun inscription_event_type_new() : u8 {
+        InscriptionEventTypeNew
+    }
+
+    public fun inscription_event_type_burn() : u8 {
+        InscriptionEventTypeBurn
     }
 
     #[test_only]
@@ -1180,7 +1309,13 @@ module bitcoin_move::ord {
     }
 
     #[test_only]
-    public fun setup_inscription_for_test(genesis_account: &signer) : (address, InscriptionID) {
+    public fun register_metaprotocol_for_test<T>(metaprotocol: String){
+        let system = moveos_std::signer::module_signer<TestProtocol>();
+        register_metaprotocol_via_system<T>(&system, metaprotocol);
+    }
+
+    #[test_only]
+    public fun setup_inscription_for_test<T>(genesis_account: &signer, metaprotocol: String) : (address, InscriptionID) {
         genesis_init(genesis_account);
 
         // prepare test inscription
@@ -1190,7 +1325,10 @@ module bitcoin_move::ord {
 
         let content_type = b"application/wasm";
         let body = x"0061736d0100000001080260017f00600000020f0107636f6e736f6c65036c6f670000030201010503010001071702066d656d6f727902000a68656c6c6f576f726c6400010a08010600410010000b0b14010041000b0e48656c6c6f2c20576f726c642100";
-
+        if(!is_metaprotocol_register(metaprotocol)){
+            register_metaprotocol_for_test<T>(metaprotocol);
+        };
+    
         let test_inscription = new_inscription_for_test(
             test_txid,
             0,
@@ -1199,7 +1337,7 @@ module bitcoin_move::ord {
             option::none(),
             option::some(string::utf8(content_type)),
             vector[],
-            option::none(),
+            option::some(metaprotocol),
             vector[],
             option::none(),
         );
@@ -1213,7 +1351,7 @@ module bitcoin_move::ord {
     #[test(genesis_account=@0x4)]
     fun test_metaprotocol_validity(genesis_account: &signer){
         // prepare test inscription
-        let (_test_address, test_inscription_id) = setup_inscription_for_test(genesis_account);
+        let (_test_address, test_inscription_id) = setup_inscription_for_test<TestProtocol>(genesis_account, string::utf8(b"TestProtocol"));
 
         // Check whether exists metaprotocol_validity
         let is_exists = exists_metaprotocol_validity(test_inscription_id);
@@ -1384,7 +1522,7 @@ module bitcoin_move::ord {
     #[test(genesis_account=@0x1)]
     fun test_inscription_charm(genesis_account: &signer) {
         // Setup
-        setup_inscription_for_test(genesis_account);
+        setup_inscription_for_test<TestProtocol>(genesis_account, string::utf8(b"TestProtocol"));
 
         // Test inscription ID
         let test_txid = @0x21da2ae8cc773b020b4873f597369416cf961a1896c24106b0198459fec2df77;
@@ -1428,7 +1566,7 @@ module bitcoin_move::ord {
     #[test(genesis_account=@0x1)]
     fun test_inscription_charm_edge_cases(genesis_account: &signer) {
         // Setup
-        setup_inscription_for_test(genesis_account);
+        setup_inscription_for_test<TestProtocol>(genesis_account, string::utf8(b"TestProtocol"));
 
         // Test with invalid inscription ID string
         let invalid_id_str = string::utf8(b"invalid_id");

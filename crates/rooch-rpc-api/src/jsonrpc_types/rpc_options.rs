@@ -52,6 +52,9 @@ impl EventOptions {
 pub struct TxOptions {
     /// If true, the TransactionOutput is returned in the response.
     pub with_output: bool,
+    /// If true, the event is decoded and the decoded value is returned in the response.
+    /// Only valid when with_output is true.
+    pub decode: bool,
 }
 
 impl TxOptions {

@@ -28,6 +28,7 @@ use crate::commands::statedb::commands::{
     GLOBAL_STATE_TYPE_FIELD, GLOBAL_STATE_TYPE_OBJECT, GLOBAL_STATE_TYPE_ROOT, init_job,
 };
 
+/// Export statedb
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum ExportMode {

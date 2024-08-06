@@ -6,14 +6,15 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::sync::{Arc, mpsc};
 use std::sync::mpsc::{Receiver, SyncSender};
+use std::sync::{mpsc, Arc, RwLock};
 use std::thread;
 use std::time::{Instant, SystemTime};
 
 use anyhow::{Error, Result};
 use chrono::{DateTime, Local};
 use clap::Parser;
+use metrics::RegistryService;
 use serde::{Deserialize, Serialize};
 
 use moveos_store::MoveOSStore;
@@ -36,7 +37,12 @@ use crate::commands::statedb::commands::{
 };
 use crate::commands::statedb::commands::export::ExportID;
 
-/// Import statedb
+
+use crate::cli_types::WalletContextOptions;
+use crate::commands::statedb::commands::export::ExportID;
+use crate::commands::statedb::commands::{GLOBAL_STATE_TYPE_PREFIX, GLOBAL_STATE_TYPE_ROOT};
+
+/// Import state data exported by export command.
 #[derive(Debug, Parser)]
 pub struct ImportCommand {
     #[clap(long, short = 'i')]
@@ -88,6 +94,25 @@ impl ImportCommand {
         apply_updates_thread.join().unwrap();
 
         Ok(())
+    }
+
+    fn init(self) -> (ObjectMeta, MoveOSStore, SystemTime) {
+        let start_time = SystemTime::now();
+        let datetime: DateTime<Local> = start_time.into();
+
+        let opt = RoochOpt::new_with_default(self.base_data_dir, self.chain_id, None).unwrap();
+        let registry_service = RegistryService::default();
+        let rooch_db =
+            RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
+        let genesis = RoochGenesis::load_or_init(opt.network(), &rooch_db).unwrap();
+        let root = genesis.genesis_root().clone();
+        println!(
+            "task progress started at {}, batch_size: {}",
+            datetime,
+            self.batch_size.unwrap()
+        );
+        println!("root object: {:?}", root);
+        (root, rooch_db.moveos_store, start_time)
     }
 }
 
@@ -341,4 +366,36 @@ pub fn parse_raw_strings_from_line(line: &str) -> Result<(String, String)> {
     let c1 = str_list[0].to_string();
     let c2 = str_list[1].to_string();
     Ok((c1, c2))
+}
+
+// finish import job with new startup update set
+pub fn finish_import_job(
+    moveos_store: Arc<MoveOSStore>,
+    root_size: u64,
+    pre_root_state_root: H256,
+    task_start_time: Instant,
+    new_startup_update_set: Option<Arc<RwLock<UpdateSet<FieldKey, ObjectState>>>>,
+) {
+    let root_state_root = match new_startup_update_set {
+        Some(new_startup_update_set) => {
+            let new_startup_update_set = new_startup_update_set.read().unwrap();
+            let new_startup_update_set = new_startup_update_set.clone();
+            let tree_change_set =
+                apply_fields(&moveos_store, pre_root_state_root, new_startup_update_set).unwrap();
+            apply_nodes(&moveos_store, tree_change_set.nodes).unwrap();
+            tree_change_set.state_root
+        }
+        None => pre_root_state_root,
+    };
+    // Update Startup Info
+    let new_startup_info = StartupInfo::new(root_state_root, root_size);
+    moveos_store
+        .get_config_store()
+        .save_startup_info(new_startup_info.clone())
+        .unwrap();z
+    println!(
+        "Done in {:?}. New startup_info: {:?}",
+        task_start_time.elapsed(),
+        new_startup_info
+    );
 }

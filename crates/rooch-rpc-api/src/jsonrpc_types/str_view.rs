@@ -312,15 +312,16 @@ impl std::fmt::Display for MoveStringView {
 
 /// This trait is used to convert a struct to a human readable string
 /// `verbose`: if true, the human readable string will be more detailed
+/// `indent`: indentation for each line
 pub trait HumanReadableDisplay {
-    fn to_human_readable_string(&self, verbose: bool) -> String;
+    fn to_human_readable_string(&self, verbose: bool, indent: usize) -> String;
 }
 
 impl<T> HumanReadableDisplay for StrView<T>
 where
     T: HumanReadableDisplay,
 {
-    fn to_human_readable_string(&self, verbose: bool) -> String {
-        self.0.to_human_readable_string(verbose)
+    fn to_human_readable_string(&self, verbose: bool, indent: usize) -> String {
+        self.0.to_human_readable_string(verbose, indent)
     }
 }

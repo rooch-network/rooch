@@ -1,14 +1,17 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_types::CommandAction;
-use crate::commands::statedb::commands::genesis_ord::GenesisOrdCommand;
-use crate::commands::statedb::commands::genesis_utxo::GenesisUTXOCommand;
-use crate::commands::statedb::commands::import::ImportCommand;
 use async_trait::async_trait;
 use clap::Parser;
+
 use commands::export::ExportCommand;
 use rooch_types::error::RoochResult;
+
+use crate::cli_types::CommandAction;
+use crate::commands::statedb::commands::genesis::GenesisCommand;
+use crate::commands::statedb::commands::genesis_utxo::GenesisUTXOCommand;
+use crate::commands::statedb::commands::genesis_verify::GenesisVerifyCommand;
+use crate::commands::statedb::commands::import::ImportCommand;
 
 pub mod commands;
 
@@ -32,9 +35,14 @@ impl CommandAction<String> for Statedb {
             StatedbCommand::GenesisUTXO(genesis_utxo) => genesis_utxo.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
-            StatedbCommand::GenesisORD(genesis_ord) => genesis_ord.execute().await.map(|resp| {
+            StatedbCommand::Genesis(genesis) => genesis.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
+            StatedbCommand::GenesisVerify(genesis_verify) => {
+                genesis_verify.execute().await.map(|resp| {
+                    serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
+                })
+            }
         }
     }
 }
@@ -45,5 +53,6 @@ pub enum StatedbCommand {
     Export(ExportCommand),
     Import(ImportCommand),
     GenesisUTXO(GenesisUTXOCommand),
-    GenesisORD(GenesisOrdCommand),
+    Genesis(GenesisCommand),
+    GenesisVerify(GenesisVerifyCommand),
 }

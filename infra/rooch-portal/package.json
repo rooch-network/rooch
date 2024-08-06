@@ -52,11 +52,12 @@
     "tailwind-merge": "^2.2.1",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.22.4",
-    "zustand": "^4.4.7"
+    "zustand": "^4.4.7",
+    "html-react-parser": "5.1.12"
   },
   "devDependencies": {
     "@faker-js/faker": "^8.4.1",
-    "@types/node": "^20.11.16",
+    "@types/node": "^20.14.10",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@types/react-syntax-highlighter": "^15.5.11",

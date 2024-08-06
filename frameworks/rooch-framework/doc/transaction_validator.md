@@ -19,6 +19,7 @@
 <b>use</b> <a href="">0x2::tx_result</a>;
 <b>use</b> <a href="account.md#0x3_account">0x3::account</a>;
 <b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
+<b>use</b> <a href="account_coin_store.md#0x3_account_coin_store">0x3::account_coin_store</a>;
 <b>use</b> <a href="address_mapping.md#0x3_address_mapping">0x3::address_mapping</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry">0x3::auth_validator_registry</a>;

@@ -63,11 +63,11 @@ The specific interfaces are as follows:
 
         - `Option<Header>`: If the block exists, return the block header; otherwise, return none.
 
-- `get_latest_block_height`: Get the height of the latest block.
+- `get_latest_block`: Get the height and hash of the latest block.
 
     - Return Value
 
-        - `Option<u64>`: If the latest block exists, return the block height; otherwise, return none.
+        - `Option<BlockHeightHash>`: If the latest block exists, return the block height; otherwise, return none.
 
 ### 2. `Header` Structure and Reading Interfaces
 

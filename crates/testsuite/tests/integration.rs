@@ -72,7 +72,6 @@ async fn start_server(w: &mut World, _scenario: String) {
             w.opt.btc_rpc_url = Some(bitcoin_rpc_url);
             w.opt.btc_rpc_username = Some(RPC_USER.to_string());
             w.opt.btc_rpc_password = Some(RPC_PASS.to_string());
-            w.opt.data_import_flag = false; // Enable data import without writing indexes
             w.opt.btc_sync_block_interval = Some(1u64); // Update sync interval as 1s
 
             info!("config btc rpc ok");
@@ -495,10 +494,10 @@ fn bitcoincli_run_cmd(w: &mut World, input_tpl: String) {
     bitcoincli_args.extend(args.iter().map(|&s| s.to_string()));
 
     let joined_args = bitcoincli_args.join(" ");
-    debug!("run cmd: {}", joined_args);
+    debug!("run cmd: {}", joined_args.clone());
 
     let exec_cmd = ExecCommand {
-        cmd: joined_args,
+        cmd: joined_args.clone(),
         ready_conditions: vec![WaitFor::Nothing],
     };
 
@@ -520,7 +519,7 @@ fn bitcoincli_run_cmd(w: &mut World, input_tpl: String) {
         }
     };
 
-    debug!("run cmd: bitcoincli stdout: {}", stdout_string);
+    debug!("run cmd: {}, stdout: {}", joined_args, stdout_string);
 
     // Check if stderr_string is not empty and panic if it contains any content.
     if !stderr_string.is_empty() {
@@ -535,7 +534,7 @@ fn bitcoincli_run_cmd(w: &mut World, input_tpl: String) {
         debug!("result_json not ok, output as string");
         tpl_ctx
             .entry(cmd_name)
-            .append::<Value>(Value::String(stdout_string));
+            .append::<Value>(Value::String(stdout_string.trim().to_string()));
     }
 
     debug!("current tpl_ctx: {:?}", tpl_ctx);
@@ -566,7 +565,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
         match (first, op, second) {
             (Some(first), Some(op), Some(second)) => match op.as_str() {
                 "==" => assert_eq!(first, second, "Assert {:?} == {:?} failed", first, second),
-                "!=" => assert_ne!(first, second, "Assert {:?} 1= {:?} failed", first, second),
+                "!=" => assert_ne!(first, second, "Assert {:?} != {:?} failed", first, second),
                 "contains" => assert!(
                     first.contains(&second),
                     "Assert {:?} contains {:?} failed",

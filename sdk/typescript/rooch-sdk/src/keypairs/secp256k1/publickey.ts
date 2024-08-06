@@ -78,7 +78,7 @@ export class Secp256k1PublicKey extends PublicKey<BitcoinAddress> {
     const Q = P.add(secp256k1.ProjectivePoint.fromPrivateKey(t)) // Q = point_add(P, point_mul(G, t))
     const tweakedPubkey = u.pointToBytes(Q)
 
-    /// bech32m version 1
+    /// default version = 1 & network = testnet
     return new BitcoinAddress(bech32m.encode('tb', [1].concat(bech32m.toWords(tweakedPubkey))))
   }
 

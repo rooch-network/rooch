@@ -49,7 +49,7 @@ Feature: Rooch CLI integration tests
       Then assert: "'{{$.rpc[-1].balance}}' == '0'"
 
       # Get gas
-      Then cmd: "move run --function rooch_framework::gas_coin::faucet_entry --args u256:10000000000"
+      Then cmd: "move run --function rooch_framework::gas_coin::faucet_entry --args u256:10000000000 --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       Then cmd: "rpc request --method rooch_getStates --params '["/object/0x4e8d2c243339c6e02f8b7dd34436a1b1eb541b0fe4d938f845f4dbb9d9f218a2",{"decode":true}]' --json"
@@ -61,7 +61,7 @@ Feature: Rooch CLI integration tests
       Then cmd: "session-key create  --app-name test --app-url https:://test.rooch.network --scope 0x3::empty::empty"
       Then cmd: "session-key list"
       Then assert: "'{{$.session-key[-1]}}' not_contains error"
-      Then cmd: "move run --function 0x3::empty::empty  --session-key {{$.session-key[-1][0].name}}"
+      Then cmd: "move run --function 0x3::empty::empty  --session-key {{$.session-key[-1][0].name}} --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # transaction
@@ -96,13 +96,13 @@ Feature: Rooch CLI integration tests
     Scenario: event
     Given a server for event
     # event example and event prc
-    Then cmd: "move publish -p ../../examples/event  --named-addresses rooch_examples=default"
+    Then cmd: "move publish -p ../../examples/event  --named-addresses rooch_examples=default --json"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-    Then cmd: "move run --function default::event_test::emit_event  --args 10u64"
+    Then cmd: "move run --function default::event_test::emit_event  --args 10u64 --json"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-    Then cmd: "move run --function default::event_test::emit_event  --args 11u64"
+    Then cmd: "move run --function default::event_test::emit_event  --args 11u64 --json"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-    Then cmd: "move run --function default::event_test::emit_event  --args 11u64"
+    Then cmd: "move run --function default::event_test::emit_event  --args 11u64 --json"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
     #cursor is None
     Then cmd: "event get-events-by-event-handle -t default::event_test::WithdrawEvent --limit 1  --descending-order false"
@@ -121,11 +121,11 @@ Feature: Rooch CLI integration tests
   @serial
   Scenario: indexer
     Given a server for indexer
-    Then cmd: "move publish -p ../../examples/event  --named-addresses rooch_examples=default"
+    Then cmd: "move publish -p ../../examples/event  --named-addresses rooch_examples=default --json"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-    Then cmd: "move run --function default::event_test::emit_event  --args 10u64"
+    Then cmd: "move run --function default::event_test::emit_event  --args 10u64 --json"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-    Then cmd: "move run --function default::event_test::emit_event  --args 11u64"
+    Then cmd: "move run --function default::event_test::emit_event  --args 11u64 --json"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
     
     # because the indexer is async update, so sleep 5 seconds to wait indexer update.
@@ -164,9 +164,9 @@ Feature: Rooch CLI integration tests
   @serial
     Scenario: kv_store example
       Given a server for kv_store
-      Then cmd: "move publish -p ../../examples/kv_store  --named-addresses rooch_examples=default"
+      Then cmd: "move publish -p ../../examples/kv_store  --named-addresses rooch_examples=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::kv_store::add_value --args string:key1 --args string:value1"
+      Then cmd: "move run --function default::kv_store::add_value --args string:key1 --args string:value1 --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move view --function default::kv_store::get_value --args string:key1"
       Then assert: "{{$.move[-1].vm_status}} == Executed"
@@ -183,31 +183,31 @@ Feature: Rooch CLI integration tests
     Scenario: entry_function example
       Given a server for entry_function
 
-      Then cmd: "move publish -p ../../examples/entry_function_arguments/  --named-addresses rooch_examples=default"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments/  --named-addresses rooch_examples=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::entry_function::emit_bool --args bool:true "
+      Then cmd: "move run --function default::entry_function::emit_bool --args bool:true  --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::entry_function::emit_u8 --args u8:3 "
+      Then cmd: "move run --function default::entry_function::emit_u8 --args u8:3 --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::entry_function::emit_u8 --args 4u8 "
+      Then cmd: "move run --function default::entry_function::emit_u8 --args 4u8  --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::entry_function::emit_address --args address:0x3242 "
+      Then cmd: "move run --function default::entry_function::emit_address --args address:0x3242  --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::entry_function::emit_address --args @0x3242 "
+      Then cmd: "move run --function default::entry_function::emit_address --args @0x3242  --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::entry_function::emit_object_id --args object_id:0x3134 "
+      Then cmd: "move run --function default::entry_function::emit_object_id --args object_id:0x3134  --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::entry_function::emit_string --args string:world "
+      Then cmd: "move run --function default::entry_function::emit_string --args string:world  --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::entry_function::emit_vec_u8 --args "vector<u8>:2,3,4" "
+      Then cmd: "move run --function default::entry_function::emit_vec_u8 --args "vector<u8>:2,3,4"  --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::entry_function::emit_vec_object_id --args "vector<object_id>:0x1324,0x41234,0x1234" "
+      Then cmd: "move run --function default::entry_function::emit_vec_object_id --args "vector<object_id>:0x1324,0x41234,0x1234"  --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 --args "vector<object_id>:0x2342,0x3132" "
+      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 --args "vector<object_id>:0x2342,0x3132"  --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::entry_function::emit_object --args "object:default::entry_function::TestStruct" "
+      Then cmd: "move run --function default::entry_function::emit_object --args "object:default::entry_function::TestStruct"  --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::entry_function::emit_object_mut --args "object:default::entry_function::TestStruct" "
+      Then cmd: "move run --function default::entry_function::emit_object_mut --args "object:default::entry_function::TestStruct"  --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       Then stop the server
@@ -217,7 +217,7 @@ Feature: Rooch CLI integration tests
       Given a server for publish_through_move_action
 
       # The counter example
-      Then cmd: "move publish -p ../../examples/counter  --named-addresses rooch_examples=default --by-move-action"
+      Then cmd: "move publish -p ../../examples/counter  --named-addresses rooch_examples=default --by-move-action --json"
       Then assert: "'{{$.move[-1]}}' contains INVALID_MODULE_PUBLISHER"
 
       Then stop the server
@@ -227,28 +227,28 @@ Feature: Rooch CLI integration tests
       Given a server for publish_through_entry_function
 
       # The counter example
-      Then cmd: "move publish -p ../../examples/counter  --named-addresses rooch_examples=default"
+      Then cmd: "move publish -p ../../examples/counter  --named-addresses rooch_examples=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move view --function default::counter::value"
       Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 0"
-      Then cmd: "move run --function default::counter::increase "
+      Then cmd: "move run --function default::counter::increase  --json"
       Then cmd: "move view --function default::counter::value"
       Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 1"
       Then cmd: "resource --address default --resource default::counter::Counter"
       Then assert: "{{$.resource[-1].decoded_value.value.value.value.value}} == 1"
 
       # The entry_function_arguments example
-      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 --args "vector<object_id>:0x2342,0x3132" "
+      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 --args "vector<object_id>:0x2342,0x3132"  --json"
       Then assert: "'{{$.move[-1]}}' contains FUNCTION_RESOLUTION_FAILURE"
-      Then cmd: "move publish -p ../../examples/entry_function_arguments/  --named-addresses rooch_examples=default"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments/  --named-addresses rooch_examples=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 --args "vector<object_id>:0x2342,0x3132" "
+      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 --args "vector<object_id>:0x2342,0x3132"  --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # check compatibility
-      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default --json"
       Then assert: "'{{$.move[-1].execution_info.status.type}}' == 'moveabort'"
 
       Then stop the server
@@ -257,9 +257,9 @@ Feature: Rooch CLI integration tests
   Scenario: coins example
       Given a server for coins
       Then cmd: "account create --json"
-      Then cmd: "move publish -p ../../examples/coins  --named-addresses coins=default"
+      Then cmd: "move publish -p ../../examples/coins  --named-addresses coins=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::fixed_supply_coin::faucet --args object:default::fixed_supply_coin::Treasury"
+      Then cmd: "move run --function default::fixed_supply_coin::faucet --args object:default::fixed_supply_coin::Treasury --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       
       Then cmd: "account list --json"
@@ -280,15 +280,15 @@ Feature: Rooch CLI integration tests
   @serial
   Scenario: Issue a coin through module_template
     Given a server for issue_coin
-    Then cmd: "move publish -p ../../examples/module_template/  --named-addresses rooch_examples=default"
+    Then cmd: "move publish -p ../../examples/module_template/  --named-addresses rooch_examples=default --json"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
     
     #TODO: uncomment this once move_module::binding_module_address is ready
-    #Then cmd: "move run --function default::coin_factory::issue_fixed_supply_coin --args string:my_coin  --args string:"My first coin" --args string:MyCoin --args 1010101u256 --args 8u8  "
+    #Then cmd: "move run --function default::coin_factory::issue_fixed_supply_coin --args string:my_coin  --args string:"My first coin" --args string:MyCoin --args 1010101u256 --args 8u8   --json"
     #Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
     # check module `my_coin` is published, the name `my_coin` is the first arg in the last `move run` cmd.
-    #Then cmd: "move run --function default::my_coin::faucet --args object:default::my_coin::Treasury"
+    #Then cmd: "move run --function default::my_coin::faucet --args object:default::my_coin::Treasury --json"
     #Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
     #Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "{{$.address_mapping.default}}::my_coin::MyCoin"]' --json"
@@ -301,14 +301,14 @@ Feature: Rooch CLI integration tests
       Given a server for basic_object
       Then cmd: "account create"
       Then cmd: "account list --json"
-      Then cmd: "move publish -p ../../examples/basic_object  --named-addresses basic_object=default"
+      Then cmd: "move publish -p ../../examples/basic_object  --named-addresses basic_object=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       
       #object pub transfer
-      Then cmd: "move run --function default::third_party_module::create_and_pub_transfer --args u64:1"
+      Then cmd: "move run --function default::third_party_module::create_and_pub_transfer --args u64:1 --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "event get-events-by-event-handle -t default::pub_transfer::NewPubEvent"
-      Then cmd: "move run --function 0x3::transfer::transfer_object --type-args default::pub_transfer::Pub --args address:{{$.account[-1].account0.hex_address}} --args object:{{$.event[-1].data[0].decoded_event_data.value.id}}"
+      Then cmd: "move run --function 0x3::transfer::transfer_object --type-args default::pub_transfer::Pub --args address:{{$.account[-1].account0.hex_address}} --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       #TODO FIXME the indexer do not update the owner after object transfer.
       Then sleep: "2"
@@ -316,14 +316,14 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.object[-1].data[0].owner}} == {{$.account[-1].account0.address}}"
       
       #child object
-      Then cmd: "move run --function default::third_party_module_for_child_object::create_child --args string:alice"
+      Then cmd: "move run --function default::third_party_module_for_child_object::create_child --args string:alice --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       
       Then cmd: "event get-events-by-event-handle -t default::child_object::NewChildEvent"
       Then cmd: "state --access-path /object/{{$.event[-1].data[0].decoded_event_data.value.id}}"
       Then assert: "{{$.state[-1][0].decoded_value.value.name}} == alice"
 
-      Then cmd: "move run --function default::third_party_module_for_child_object::update_child_name --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --args string:bob"
+      Then cmd: "move run --function default::third_party_module_for_child_object::update_child_name --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --args string:bob --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       
       Then cmd: "state --access-path /object/{{$.event[-1].data[0].decoded_event_data.value.id}}"
@@ -335,14 +335,14 @@ Feature: Rooch CLI integration tests
       Then cmd: "object -t {{$.address_mapping.default}}::child_object::Child --limit 10 -d"
       Then assert: "{{$.object[-1].data[0].id}} == {{$.event[-1].data[0].decoded_event_data.value.id}}"
 
-      Then cmd: "move run --function default::third_party_module_for_child_object::update_child_age --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --args u64:10"
+      Then cmd: "move run --function default::third_party_module_for_child_object::update_child_age --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --args u64:10 --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       Then cmd: "move view --function default::child_object::get_age --args object:{{$.event[-1].data[0].decoded_event_data.value.id}}"
       Then assert: "{{$.move[-1].vm_status}} == Executed"
       Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 10" 
        
-      Then cmd: "move run --function default::third_party_module_for_child_object::remove_child --args object:{{$.event[-1].data[0].decoded_event_data.value.id}}"
+      Then cmd: "move run --function default::third_party_module_for_child_object::remove_child --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       Then stop the server
@@ -351,10 +351,10 @@ Feature: Rooch CLI integration tests
   Scenario: object display example
       Given a server for object_display
       Then cmd: "account create"
-      Then cmd: "move publish -p ../../examples/display  --named-addresses display=default"
+      Then cmd: "move publish -p ../../examples/display  --named-addresses display=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
-      Then cmd: "move run --function default::display::create_object --sender default --args 'string:test_object' --args 'address:default' --args 'string:test object description'"
+      Then cmd: "move run --function default::display::create_object --sender default --args 'string:test_object' --args 'address:default' --args 'string:test object description' --json"
       
       Then cmd: "event get-events-by-event-handle -t default::display::NewObjectEvent"
       Then cmd: "state --access-path /object/{{$.event[-1].data[0].decoded_event_data.value.id}}"
@@ -382,57 +382,37 @@ Feature: Rooch CLI integration tests
       Given a server for wasm_test
 
       # publish wasm execution
-      Then cmd: "move publish -p ../../examples/wasm_execution  --named-addresses rooch_examples=default"
+      Then cmd: "move publish -p ../../examples/wasm_execution  --named-addresses rooch_examples=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # test wasm trap
-      Then cmd: "move run --function default::wasm_execution::run_trap"
+      Then cmd: "move run --function default::wasm_execution::run_trap --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # test wasm forever
-      Then cmd: "move run --function default::wasm_execution::run_infinite_loop"
+      Then cmd: "move run --function default::wasm_execution::run_infinite_loop --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # test wasm alloc
-      Then cmd: "move run --function default::wasm_execution::run_alloc"
+      Then cmd: "move run --function default::wasm_execution::run_alloc --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # run wasm cpp generator
-      Then cmd: "move run --function default::wasm_execution::run_generator_cpp"
+      Then cmd: "move run --function default::wasm_execution::run_generator_cpp --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # run wasm rust generator
-      Then cmd: "move run --function default::wasm_execution::run_generator_rust"
+      Then cmd: "move run --function default::wasm_execution::run_generator_rust --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # release servers
       Then stop the server
-
-    @serial
-    Scenario: rooch_bitcoin test
-      # prepare servers
-      Given a bitcoind server for rooch_bitcoin_test
-      Given a server for rooch_bitcoin_test
-
-      Then cmd: "account list --json" 
-      
-      # mint utxos
-      Then cmd bitcoin-cli: "generatetoaddress 101 {{$.account[-1].default.bitcoin_address}}"
-      Then sleep: "10" # wait rooch sync and index
-
-      # query utxos
-      Then cmd: "object -t 0x4::utxo::UTXO -o {{$.account[-1].default.bitcoin_address}}"
-      Then assert: "{{$.object[-1].data[0].owner}} == {{$.account[-1].default.address}}"
-
-      # release servers
-      Then stop the server
-      Then stop the bitcoind server 
 
   @serial
     Scenario: view_function_loop example
       Given a server for view_function_loop
       Then cmd: "account create"
-      Then cmd: "move publish -p ../../examples/view_function_loop  --named-addresses rooch_examples=default"
+      Then cmd: "move publish -p ../../examples/view_function_loop  --named-addresses rooch_examples=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move view --function default::out_of_gas_loop::out_of_gas"
       Then assert: "{{$.move[-1].vm_status.ExecutionFailure.status_code}} == 4002"

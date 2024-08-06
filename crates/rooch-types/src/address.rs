@@ -639,7 +639,7 @@ impl BitcoinAddress {
     pub fn new_witness_program(witness_program: &bitcoin::WitnessProgram) -> Self {
         // First byte is BitcoinAddress Payload type
         let mut bytes = vec![BitcoinAddressPayloadType::WitnessProgram.to_num()];
-        // Third byte represents Version 0 or PUSHNUM_1-PUSHNUM_16
+        // Second byte represents Version 0 or PUSHNUM_1-PUSHNUM_16
         bytes.push(witness_program.version().to_num());
         // Remain are Program data
         bytes.extend_from_slice(witness_program.program().as_bytes());
@@ -661,6 +661,9 @@ impl BitcoinAddress {
 
     ///  Format the base58 as a hexadecimal string
     pub fn format(&self, network: u8) -> Result<String, anyhow::Error> {
+        if self.bytes.is_empty() {
+            anyhow::bail!("bitcoin address is empty");
+        }
         let payload_type = BitcoinAddressPayloadType::try_from(self.bytes[0])?;
         match payload_type {
             BitcoinAddressPayloadType::PubkeyHash => {

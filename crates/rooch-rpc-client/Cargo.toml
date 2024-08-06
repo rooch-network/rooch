@@ -17,25 +17,15 @@ rust-version = { workspace = true }
 anyhow = { workspace = true }
 bcs = { workspace = true }
 tokio = { workspace = true }
-clap = { workspace = true }
-dirs = { workspace = true }
 futures = { workspace = true }
-tonic = { workspace = true }
 serde = { workspace = true }
-serde_with = { workspace = true }
 jsonrpsee = { workspace = true }
-rand = { workspace = true }
 serde_json = { workspace = true }
 log = { workspace = true }
-fastcrypto = { workspace = true }
-ethers = { workspace = true }
 
 move-core-types = { workspace = true }
-move-command-line-common = { workspace = true }
 
-moveos = { workspace = true }
 moveos-types = { workspace = true }
-moveos-common = { workspace = true }
 
 rooch-key = { workspace = true }
 rooch-types = { workspace = true }

@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::transaction_validator::TransactionValidator;
 use crate::address::{BitcoinAddress, RoochSupportedAddress};
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use crate::error::RoochError;
@@ -229,27 +228,5 @@ impl<'a> AuthValidatorCaller<'a> {
                 );
                 Ok(())
             })
-    }
-
-    pub fn pre_execute_function_id(&self) -> FunctionId {
-        FunctionId::new(
-            self.auth_validator.validator_module_id(),
-            TransactionValidator::PRE_EXECUTE_FUNCTION_NAME.to_owned(),
-        )
-    }
-
-    pub fn pre_execute_function_call(&self) -> FunctionCall {
-        FunctionCall::new(self.pre_execute_function_id(), vec![], vec![])
-    }
-
-    pub fn post_execute_function_id(&self) -> FunctionId {
-        FunctionId::new(
-            self.auth_validator.validator_module_id(),
-            TransactionValidator::POST_EXECUTE_FUNCTION_NAME.to_owned(),
-        )
-    }
-
-    pub fn post_execute_function_call(&self) -> FunctionCall {
-        FunctionCall::new(self.post_execute_function_id(), vec![], vec![])
     }
 }

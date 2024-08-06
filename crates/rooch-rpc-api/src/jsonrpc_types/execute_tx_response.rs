@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::BytesView;
-use super::{ModuleIdView, StateChangeSetView, StrView};
+use super::{HumanReadableDisplay, ModuleIdView, StateChangeSetView, StrView};
 use crate::jsonrpc_types::event_view::EventView;
 use crate::jsonrpc_types::H256View;
 use move_core_types::vm_status::{AbortLocation, KeptVMStatus};
@@ -132,6 +132,25 @@ impl From<TransactionExecutionInfo> for TransactionExecutionInfoView {
             gas_used: transaction_execution_info.gas_used.into(),
             status: KeptVMStatusView::from(transaction_execution_info.status),
         }
+    }
+}
+
+impl HumanReadableDisplay for TransactionExecutionInfoView {
+    fn to_human_readable_string(&self, _verbose: bool, indent: usize) -> String {
+        format!(
+            r#"{indent}Execution info:
+{indent}    status: {:?}
+{indent}    gas used: {}
+{indent}    tx hash: {}
+{indent}    state root: {}
+{indent}    event root: {}"#,
+            self.status,
+            self.gas_used,
+            self.tx_hash,
+            self.state_root,
+            self.event_root,
+            indent = " ".repeat(indent)
+        )
     }
 }
 

@@ -3,9 +3,11 @@
 
 use crate::actor::bitcoin_client::BitcoinClientActor;
 use crate::actor::messages::{
-    GetBestBlockHashMessage, GetBlockHashMessage, GetBlockHeaderInfoMessage, GetBlockMessage,
+    BroadcastTransactionMessage, GetBestBlockHashMessage, GetBlockHashMessage,
+    GetBlockHeaderInfoMessage, GetBlockMessage,
 };
 use anyhow::Result;
+use bitcoincore_rpc::bitcoin::Txid;
 use bitcoincore_rpc::json;
 use coerce::actor::ActorRef;
 
@@ -42,5 +44,20 @@ impl BitcoinClientProxy {
 
     pub async fn get_chain_tips(&self) -> Result<json::GetChainTipsResult> {
         self.actor.send(GetChainTipsMessage {}).await?
+    }
+
+    pub async fn broadcast_transaction(
+        &self,
+        hex: String,
+        maxfeerate: Option<f64>,
+        maxburnamount: Option<f64>,
+    ) -> Result<Txid> {
+        self.actor
+            .send(BroadcastTransactionMessage {
+                hex,
+                maxfeerate,
+                maxburnamount,
+            })
+            .await?
     }
 }

@@ -44,19 +44,13 @@ use tracing::{debug, info};
 pub struct RoochServer {
     rpc_service: RpcService,
     aggregate_service: AggregateService,
-    read_only: bool,
 }
 
 impl RoochServer {
-    pub fn new(
-        rpc_service: RpcService,
-        aggregate_service: AggregateService,
-        read_only: bool,
-    ) -> Self {
+    pub fn new(rpc_service: RpcService, aggregate_service: AggregateService) -> Self {
         Self {
             rpc_service,
             aggregate_service,
-            read_only,
         }
     }
 
@@ -102,9 +96,6 @@ impl RoochAPIServer for RoochServer {
     }
 
     async fn send_raw_transaction(&self, payload: BytesView) -> RpcResult<H256View> {
-        if self.read_only {
-            return Err(RpcError::ServiceUnavailable);
-        }
         debug!("send_raw_transaction payload: {:?}", payload);
         let mut tx = bcs::from_bytes::<RoochTransaction>(&payload.0)?;
         info!(
@@ -128,7 +119,39 @@ impl RoochAPIServer for RoochServer {
         let tx_response = self.rpc_service.execute_tx(tx).await?;
 
         let result = if tx_options.with_output {
-            ExecuteTransactionResponseView::from(tx_response)
+            let mut txn_resp_view = ExecuteTransactionResponseView::from(tx_response.clone());
+            if tx_options.decode {
+                let event_ids = tx_response
+                    .output
+                    .events
+                    .iter()
+                    .map(|e| e.event_id.clone())
+                    .collect();
+                let annotated_events = self.rpc_service.get_events_by_event_ids(event_ids).await?;
+                let event_views = annotated_events
+                    .into_iter()
+                    .map(|event| event.map(EventView::from))
+                    .collect::<Vec<Option<_>>>();
+                debug_assert!(
+                    txn_resp_view.output.is_some()
+                        && event_views.len() == txn_resp_view.output.as_ref().unwrap().events.len(),
+                    "event_views length should be equal to txn_resp_view.output.events length"
+                );
+                let output_view = txn_resp_view.output.clone().map(|mut output| {
+                    output.events.iter_mut().zip(event_views).for_each(
+                        |(event, event_view_opt)| {
+                            if let Some(decoded_event_view) = event_view_opt {
+                                event.decoded_event_data = decoded_event_view.decoded_event_data;
+                            }
+                        },
+                    );
+                    output
+                });
+                txn_resp_view.output = output_view;
+                txn_resp_view
+            } else {
+                txn_resp_view
+            }
         } else {
             ExecuteTransactionResponseView::new_without_output(tx_response)
         };
