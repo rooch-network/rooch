@@ -8,6 +8,7 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
 
+use bitcoin::OutPoint;
 use clap::Parser;
 use move_vm_types::values::Value;
 use rustc_hash::FxHashSet;
@@ -18,16 +19,17 @@ use moveos_types::state::MoveState;
 use moveos_types::state_resolver::{RootObjectResolver, StatelessResolver};
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::bitcoin::ord::InscriptionStore;
-use rooch_types::bitcoin::utxo::BitcoinUTXOStore;
+use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
 use rooch_types::error::RoochResult;
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
+use rooch_types::into_address::IntoAddress;
 use rooch_types::rooch_network::RoochChainID;
 
+use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 use crate::commands::statedb::commands::inscription::{
     gen_inscription_ids_update, InscriptionSource,
 };
 use crate::commands::statedb::commands::utxo::UTXORawData;
-use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 
 /// Import BTC ordinals & UTXO for genesis
 #[derive(Debug, Parser)]
@@ -172,7 +174,17 @@ fn verify_utxo(
                 .unwrap()
                 .unwrap();
             assert_eq!(act_utxo_state, state);
-
+            let act_utxo_value =
+                Value::simple_deserialize(&act_utxo_state.value, &UTXO::type_layout()).unwrap();
+            let act_utxo = UTXO::from_runtime_value(act_utxo_value).unwrap();
+            assert_eq!(utxo_raw.amount, act_utxo.value);
+            assert_eq!(utxo_raw.vout, act_utxo.vout);
+            assert_eq!(utxo_raw.txid.into_address(), act_utxo.txid);
+            let inscriptions =
+                outpoint_inscriptions_map.search(&OutPoint::new(utxo_raw.txid, utxo_raw.vout));
+            if inscriptions.is_some() {
+                let inscriptions = inscriptions.unwrap();
+            }
             if addr_updates.is_some() {
                 let (addr_key, addr_state) = addr_updates.unwrap();
                 let act_address_state = resolver

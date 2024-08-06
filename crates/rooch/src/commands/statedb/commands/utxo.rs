@@ -15,8 +15,8 @@ use moveos_types::moveos_std::object::{
 use moveos_types::moveos_std::simple_multimap::SimpleMultiMap;
 use moveos_types::state::{FieldKey, ObjectState};
 use rooch_types::address::BitcoinAddress;
-use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
 use rooch_types::bitcoin::{types, utxo};
+use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::into_address::IntoAddress;
 
@@ -28,9 +28,9 @@ const SCRIPT_TYPE_NON_STANDARD: &str = "non-standard";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UTXORawData {
-    txid: Txid,
-    vout: u32,
-    amount: u64,
+    pub(crate) txid: Txid,
+    pub(crate) vout: u32,
+    pub(crate) amount: u64,
     script: String,
     script_type: String,
     address: String,
