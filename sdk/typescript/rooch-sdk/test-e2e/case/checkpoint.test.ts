@@ -4,7 +4,8 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { Args } from '../../src/bcs/index.js'
 import { Secp256k1Keypair } from '../../src/keypairs/index.js'
-import { BitcoinAddress } from '../../src/address/index.js'
+import { BitcoinAddress, BitcoinNetowkType } from '../../src/address/index.js'
+import { Transaction } from '../../src/transactions/index.js'
 import { TARGETED_RPC_VERSION } from '../../src/version.js'
 
 import { setup, TestBox } from '../setup.js'
@@ -77,5 +78,26 @@ describe('Checkpoints Reading API', () => {
       const expectAddr = address.genRoochAddress().toHexAddress()
       expect(result.return_values![0].decoded_value).eq(expectAddr)
     }
+  })
+
+  it('resolve btc address should be ok', async () => {
+    const tx = new Transaction()
+    tx.callFunction({
+      target: '0x3::empty::empty_with_signer',
+    })
+
+    const result = await testBox.client.signAndExecuteTransaction({
+      transaction: tx,
+      signer: testBox.keypair,
+    })
+
+    expect(result.execution_info.status.type).eq('executed')
+
+    const result1 = await testBox.client.resolveBTCAddress({
+      roochAddress: testBox.keypair.getRoochAddress(),
+      network: BitcoinNetowkType.Testnet,
+    })
+
+    expect(result1?.toStr()).eq(testBox.keypair.getBitcoinAddress().toStr())
   })
 })

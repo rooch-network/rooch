@@ -34,6 +34,7 @@ module.exports = {
     'no-case-declarations': 'off',
     'no-implicit-coercion': [2, { number: true, string: true, boolean: false }],
     '@typescript-eslint/no-redeclare': 'off',
+    'import/no-useless-path-segments': 'off',
     '@typescript-eslint/ban-types': [
       'error',
       {
