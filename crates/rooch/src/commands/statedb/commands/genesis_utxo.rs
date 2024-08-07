@@ -25,7 +25,6 @@ use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
-use crate::cli_types::WalletContextOptions;
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes, finish_import_job};
 use crate::commands::statedb::commands::utxo::{
     create_genesis_rooch_to_bitcoin_address_mapping_object, create_genesis_utxo_store_object,
@@ -54,9 +53,6 @@ pub struct GenesisUTXOCommand {
 
     #[clap(long, short = 'b', default_value = "524288")]
     pub batch_size: Option<usize>,
-
-    #[clap(flatten)]
-    pub context_options: WalletContextOptions,
 }
 
 impl GenesisUTXOCommand {
