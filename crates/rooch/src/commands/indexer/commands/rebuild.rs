@@ -24,9 +24,6 @@ use rooch_types::rooch_network::RoochChainID;
 
 use crate::commands::indexer::commands::init_indexer;
 use crate::commands::statedb::commands::import::parse_csv_fields;
-use crate::commands::statedb::commands::{
-    GLOBAL_STATE_TYPE_OBJECT, GLOBAL_STATE_TYPE_PREFIX, GLOBAL_STATE_TYPE_ROOT,
-};
 
 /// Rebuild indexer
 #[derive(Debug, Parser)]
@@ -89,7 +86,7 @@ fn produce_updates(
     batch_size: usize,
 ) -> Result<()> {
     let mut csv_reader = BufReader::new(File::open(input).unwrap());
-    let mut last_state_type = None;
+    // let mut last_state_type = None;
 
     // set genesis tx_order and state_index_generator for indexer rebuild
     let tx_order: u64 = 0;
@@ -107,25 +104,24 @@ fn produce_updates(
         for line in csv_reader.by_ref().lines().take(batch_size) {
             let line = line?;
 
-            if line.starts_with(GLOBAL_STATE_TYPE_PREFIX) {
-                let (state_type, _) = parse_csv_fields(&line)?;
-                last_state_type = Some(state_type);
-                continue;
-            }
-
             let (_c1, state_str) = parse_csv_fields(&line)?;
-            let state = ObjectState::from_str(&state_str)?;
-
-            let state_type = last_state_type
-                .clone()
-                .expect("Last state type should have value");
-
-            if state_type.eq(GLOBAL_STATE_TYPE_OBJECT) || state_type.eq(GLOBAL_STATE_TYPE_ROOT) {
-                let indexer_state =
-                    IndexerObjectState::new(state.metadata, tx_order, state_index_generator);
-                state_index_generator += 1;
-                updates.object_states.push(indexer_state);
-            };
+            let state_result = ObjectState::from_str(&state_str);
+            match state_result {
+                Ok(state) => {
+                    let indexer_state =
+                        IndexerObjectState::new(state.metadata, tx_order, state_index_generator);
+                    state_index_generator += 1;
+                    updates.object_states.push(indexer_state);
+                }
+                Err(e) => {
+                    println!(
+                        "Parse object state error, state maybe not an object, line: {} , err: {}",
+                        line,
+                        e.to_string()
+                    );
+                    continue;
+                }
+            }
         }
         if updates.object_states.is_empty() {
             break;

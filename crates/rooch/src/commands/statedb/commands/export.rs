@@ -31,11 +31,12 @@ use crate::commands::statedb::commands::{
 #[serde(rename_all = "lowercase")]
 pub enum ExportMode {
     #[default]
-    Genesis = 0, // dump InscriptionStore, BitcoinUTXOStore, RoochToBitcoinAddressMapping for genesis start-up
-    Full = 1,
-    Snapshot = 2,
-    Indexer = 3, // dump InscriptionStore, BitcoinUTXOStore for rebuild indexer
-    Object = 4,
+    Genesis, // dump InscriptionStore, BitcoinUTXOStore, RoochToBitcoinAddressMapping for genesis start-up
+    Full,
+    Snapshot,
+    FullIndexer, // dump Full Objects, include InscriptionStore, BitcoinUTXOStore for rebuild indexer
+    Indexer,     // dump InscriptionStore, BitcoinUTXOStore for rebuild indexer
+    Object,
 }
 
 impl Display for ExportMode {
@@ -44,6 +45,7 @@ impl Display for ExportMode {
             ExportMode::Genesis => write!(f, "genesis"),
             ExportMode::Full => write!(f, "full"),
             ExportMode::Snapshot => write!(f, "snapshot"),
+            ExportMode::FullIndexer => write!(f, "fullindexer"),
             ExportMode::Indexer => write!(f, "indexer"),
             ExportMode::Object => write!(f, "object"),
         }
@@ -58,16 +60,11 @@ impl FromStr for ExportMode {
             "genesis" => Ok(ExportMode::Genesis),
             "full" => Ok(ExportMode::Full),
             "snapshot" => Ok(ExportMode::Snapshot),
+            "fullindexer" => Ok(ExportMode::FullIndexer),
             "indexer" => Ok(ExportMode::Indexer),
             "object" => Ok(ExportMode::Object),
             _ => Err("export-mode no match"),
         }
-    }
-}
-
-impl ExportMode {
-    pub fn to_num(self) -> u8 {
-        self as u8
     }
 }
 
@@ -218,6 +215,9 @@ impl ExportCommand {
             ExportMode::Snapshot => {
                 todo!()
             }
+            ExportMode::FullIndexer => {
+                Self::export_full_indexer(&moveos_store, root_state_root, &mut writer)?;
+            }
             ExportMode::Indexer => {
                 Self::export_indexer(&moveos_store, root_state_root, &mut writer)?;
             }
@@ -263,46 +263,54 @@ impl ExportCommand {
         )
     }
 
+    fn export_full_indexer<W: std::io::Write>(
+        moveos_store: &MoveOSStore,
+        root_state_root: H256,
+        writer: &mut Writer<W>,
+    ) -> Result<()> {
+        // export root object, utxo, inscription store object, exclude dynamic filed objects
+        let object_ids = vec![
+            ObjectID::root(),
+            BitcoinUTXOStore::object_id(),
+            InscriptionStore::object_id(),
+        ];
+
+        Self::internal_export_indexer(moveos_store, root_state_root, writer, object_ids)?;
+        writer.flush()?;
+        Ok(())
+    }
+
     fn export_indexer<W: std::io::Write>(
         moveos_store: &MoveOSStore,
         root_state_root: H256,
         writer: &mut Writer<W>,
     ) -> Result<()> {
-        // export root's ExportID
-        export_root_export_id(root_state_root, writer)?;
         // export utxo, inscription store object
-        let field_keys = vec![
-            BitcoinUTXOStore::object_id().field_key(),
-            InscriptionStore::object_id().field_key(),
+        let object_ids = vec![
+            ObjectID::root(),
+            BitcoinUTXOStore::object_id(),
+            InscriptionStore::object_id(),
         ];
-        export_fields(moveos_store, root_state_root, writer, field_keys)?;
-        // export utxo store fields
-        let utxo_store_state_root = get_state_root(
-            moveos_store,
-            root_state_root,
-            BitcoinUTXOStore::object_id().field_key(),
-        );
-        Self::export_top_level_fields(
-            moveos_store,
-            utxo_store_state_root,
-            BitcoinUTXOStore::object_id(),
-            Some(ExportObjectName::UtxoStore.to_string()),
-            writer,
-        )?;
-        // export inscription store fields
-        let inscription_store_state_root = get_state_root(
-            moveos_store,
-            root_state_root,
-            InscriptionStore::object_id().field_key(),
-        );
-        Self::export_top_level_fields(
-            moveos_store,
-            inscription_store_state_root,
-            BitcoinUTXOStore::object_id(),
-            Some(ExportObjectName::InscriptionStore.to_string()),
-            writer,
-        )?;
+
+        Self::internal_export_indexer(moveos_store, root_state_root, writer, object_ids)?;
         writer.flush()?;
+        Ok(())
+    }
+
+    fn internal_export_indexer<W: std::io::Write>(
+        moveos_store: &MoveOSStore,
+        root_state_root: H256,
+        writer: &mut Writer<W>,
+        object_ids: Vec<ObjectID>,
+    ) -> Result<()> {
+        for obj_id in object_ids.into_iter() {
+            let state_root = if obj_id == ObjectID::root() {
+                root_state_root
+            } else {
+                get_state_root(moveos_store, root_state_root, obj_id.field_key())
+            };
+            Self::export_top_level_fields(moveos_store, state_root, obj_id, None, writer)?;
+        }
         Ok(())
     }
 
