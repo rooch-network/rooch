@@ -287,11 +287,7 @@ impl ExportCommand {
         writer: &mut Writer<W>,
     ) -> Result<()> {
         // export utxo, inscription store object
-        let object_ids = vec![
-            ObjectID::root(),
-            BitcoinUTXOStore::object_id(),
-            InscriptionStore::object_id(),
-        ];
+        let object_ids = vec![BitcoinUTXOStore::object_id(), InscriptionStore::object_id()];
 
         Self::internal_export_indexer(moveos_store, root_state_root, writer, object_ids)?;
         writer.flush()?;
