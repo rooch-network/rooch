@@ -115,7 +115,7 @@ fn produce_updates(
                 }
                 Err(e) => {
                     println!(
-                        "Parse object state error, state maybe not an object, line: {} , err: {}",
+                        "Parse object state error, state maybe not an object, line: {} , err: {:?}",
                         line,
                         e.to_string()
                     );

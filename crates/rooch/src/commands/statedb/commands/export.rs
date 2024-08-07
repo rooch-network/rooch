@@ -159,6 +159,7 @@ impl FromStr for ExportObjectName {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Parser)]
 pub struct ExportCommand {
     /// export state root, default latest state root
@@ -485,6 +486,7 @@ impl ExportCommand {
     }
 }
 
+#[allow(dead_code)]
 // export root's export id for further checking in import job.
 fn export_root_export_id<W: std::io::Write>(
     root_state_root: H256,
@@ -495,6 +497,7 @@ fn export_root_export_id<W: std::io::Write>(
     Ok(())
 }
 
+#[allow(dead_code)]
 fn export_fields<W: std::io::Write>(
     moveos_store: &MoveOSStore,
     state_root: H256,
