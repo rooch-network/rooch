@@ -11,7 +11,7 @@ We can use any legal character as the project name, including `-`, but when we u
 For example:
 
 ```shell
-move rooch new hello-world
+rooch move new hello-world
 ```
 
 However, `-` is not a legal character for naming addresses (variables), so after we create the project using `rooch move new`, be sure to check the project address alias in the `Move.toml` file for illegal characters.
@@ -23,7 +23,7 @@ Another way is to directly use `_` as the hyphen for the project name word when 
 For example:
 
 ```shell
-move rooch new hello_world
+rooch move new hello_world
 ```
 
 In Rooch's `examples`, the names of the projects we create use `_` connection. As for the actual development, which style to use, please decide according to your preferences.
