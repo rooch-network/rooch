@@ -327,7 +327,7 @@ impl RoochGenesis {
                 if let Some(builtin_id) = network.chain_id.to_builtin() {
                     let genesis_from_binary = Self::load(builtin_id)?;
                     let genesis_info_from_binary = genesis_from_binary.genesis_info();
-                    if genesis_info_from_store != genesis_info_from_binary {
+                    if genesis_info_from_store.root != genesis_info_from_binary.root {
                         return Err(GenesisError::GenesisVersionMismatch {
                             from_store: Box::new(genesis_info_from_store),
                             from_binary: Box::new(genesis_info_from_binary),

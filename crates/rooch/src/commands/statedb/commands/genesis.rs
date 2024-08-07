@@ -24,7 +24,6 @@ use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
-use crate::cli_types::WalletContextOptions;
 use crate::commands::statedb::commands::genesis_utxo::{
     apply_address_updates, apply_utxo_updates, produce_utxo_updates,
 };
@@ -37,6 +36,7 @@ use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 /// Import BTC ordinals & UTXO for genesis
 #[derive(Debug, Parser)]
 pub struct GenesisCommand {
+    #[clap(long, short = 'i')]
     /// utxo source data file. like ~/.rooch/local/utxo.csv or utxo.csv
     /// The file format is csv, and the first line is the header, the header is as follows:
     /// count, txid, vout, height, coinbase, amount, script, type,address
@@ -77,9 +77,6 @@ pub struct GenesisCommand {
     /// All data will be deleted when the service is stopped.
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
     pub chain_id: Option<RoochChainID>,
-
-    #[clap(flatten)]
-    pub context_options: WalletContextOptions,
 }
 
 impl GenesisCommand {
