@@ -130,9 +130,10 @@ impl FromStr for ExportID {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, Default)]
 #[serde(rename_all = "kebab-case")]
 pub enum ExportObjectName {
+    #[default]
     UtxoStore,
     InscriptionStore,
     AddressMap,
@@ -184,6 +185,9 @@ pub struct ExportCommand {
     #[clap(long, short = 'i')]
     pub object_id: Option<ObjectID>,
 
+    #[clap(long)]
+    pub object_name: Option<ExportObjectName>,
+
     /// If local chainid, start the service with a temporary data store.
     /// All data will be deleted when the service is stopped.
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
@@ -218,9 +222,16 @@ impl ExportCommand {
                 Self::export_indexer(&moveos_store, root_state_root, &mut writer)?;
             }
             ExportMode::Object => {
-                let obj_id = self
-                    .object_id
-                    .expect("Object id should exist in object mode");
+                let obj_id = self.object_id.unwrap_or_else(|| {
+                    match self
+                        .object_name
+                        .expect("object name must be existed if object id not provided")
+                    {
+                        ExportObjectName::UtxoStore => BitcoinUTXOStore::object_id(),
+                        ExportObjectName::InscriptionStore => InscriptionStore::object_id(),
+                        ExportObjectName::AddressMap => RoochToBitcoinAddressMapping::object_id(),
+                    }
+                });
                 Self::export_object(&moveos_store, root_state_root, obj_id, &mut writer)?;
             }
         }
