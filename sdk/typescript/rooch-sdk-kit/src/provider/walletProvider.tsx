@@ -42,8 +42,8 @@ const DEFAULT_STORAGE_KEY = 'rooch-sdk-kit:wallet-connect-info'
 export const WalletContext = createContext<WalletStore | null>(null)
 
 export function WalletProvider({
-  preferredWallets = ['unisat', 'okx'],
-  chain = 'bitcoin',
+  preferredWallets = [SupportWallet.Unisat, SupportWallet.Okx],
+  chain = SupportChain.Bitcoin,
   storage,
   storageKey = DEFAULT_STORAGE_KEY,
   autoConnect = false,
