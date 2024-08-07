@@ -341,6 +341,21 @@ impl OutpointInscriptionsMap {
     }
 }
 
+pub(crate) fn get_values_by_key<Key, Value>(
+    map: SimpleMultiMap<Key, Value>,
+    key: Key,
+) -> Option<Vec<Value>>
+where
+    Key: PartialEq,
+{
+    for element in map.data {
+        if element.key == key {
+            return Some(element.value);
+        }
+    }
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
