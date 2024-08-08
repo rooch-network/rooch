@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::fs::File;
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -17,7 +17,7 @@ use rustc_hash::FxHashSet;
 use moveos_store::MoveOSStore;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::ObjectMeta;
-use moveos_types::state::MoveState;
+use moveos_types::state::{MoveState, ObjectState};
 use moveos_types::state_resolver::{RootObjectResolver, StatelessResolver};
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::bitcoin::ord::InscriptionStore;
@@ -27,13 +27,13 @@ use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::into_address::IntoAddress;
 use rooch_types::rooch_network::RoochChainID;
 
-use crate::commands::statedb::commands::{
-    get_values_by_key, init_job, OutpointInscriptionsMap, UTXO_SEAL_INSCRIPTION_PROTOCOL,
-};
 use crate::commands::statedb::commands::inscription::{
     derive_inscription_ids, gen_inscription_ids_update, InscriptionSource,
 };
 use crate::commands::statedb::commands::utxo::UTXORawData;
+use crate::commands::statedb::commands::{
+    get_values_by_key, init_job, OutpointInscriptionsMap, UTXO_SEAL_INSCRIPTION_PROTOCOL,
+};
 
 /// Import BTC ordinals & UTXO for genesis
 #[derive(Debug, Parser)]
@@ -58,6 +58,10 @@ pub struct GenesisVerifyCommand {
         help = "random mode, for randomly select 1/1000 inscriptions & utxos to verify"
     )]
     pub random_mode: bool,
+    #[clap(long, help = "mismatched utxo output path")]
+    pub utxo_mismatched_output: PathBuf,
+    #[clap(long, help = "mismatched ord output path")]
+    pub ord_mismatched_output: PathBuf,
 
     #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
@@ -89,6 +93,7 @@ impl GenesisVerifyCommand {
                     moveos_store_clone,
                     root_clone_0,
                     random_mode,
+                    self.ord_mismatched_output,
                 );
             })
             .unwrap();
@@ -102,6 +107,7 @@ impl GenesisVerifyCommand {
                     root.clone(),
                     outpoint_inscriptions_map,
                     random_mode,
+                    self.utxo_mismatched_output,
                 );
             })
             .unwrap();
@@ -154,6 +160,7 @@ fn verify_utxo(
     root: ObjectMeta,
     outpoint_inscriptions_map: Arc<OutpointInscriptionsMap>,
     random_mode: bool,
+    mismatched_output: PathBuf,
 ) {
     let start_time = Instant::now();
     let mut reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
@@ -181,8 +188,12 @@ fn verify_utxo(
     let utxo_store_state_root = act_utxo_store_state.metadata.state_root.unwrap();
     let address_mapping_state_root = act_address_mapping_state.metadata.state_root.unwrap();
 
-    let mut ok_count: u32 = 0;
+    let file = File::create(mismatched_output.clone()).expect("Unable to create utxo output file");
+    let mut output_writer = BufWriter::new(file.try_clone().unwrap());
 
+    let mut total: u32 = 0;
+    let mut checked_count: u32 = 0;
+    let mut mismatched_count: u32 = 0;
     for line in reader.by_ref().lines() {
         let line = line.unwrap();
         if is_title_line {
@@ -191,6 +202,7 @@ fn verify_utxo(
                 continue;
             }
         }
+        total += 1;
         let mut utxo_raw = UTXORawData::from_str(&line);
         let (key, state, address_mapping_data) =
             utxo_raw.gen_update(Some(outpoint_inscriptions_map.clone()));
@@ -199,67 +211,131 @@ fn verify_utxo(
         } else {
             None
         };
-        if random_mode && rand::random::<u32>() % 1000 == 0 {
-            let act_utxo_state = resolver.get_field_at(utxo_store_state_root, &key).unwrap();
-            if act_utxo_state.is_none() {
-                panic!("utxo not found: {:?}", utxo_raw);
-            }
-            let mut act_utxo_state = act_utxo_state.unwrap();
-            // clear metadata, because it's not deterministic in genesis cmd
-            act_utxo_state.metadata.state_root = None;
-            act_utxo_state.metadata.created_at = 0;
-            act_utxo_state.metadata.updated_at = 0;
-            assert_eq!(act_utxo_state, state);
-            let act_utxo_value =
-                Value::simple_deserialize(&act_utxo_state.value, &UTXO::type_layout()).unwrap();
-            let act_utxo = UTXO::from_runtime_value(act_utxo_value).unwrap();
-            assert_eq!(utxo_raw.amount, act_utxo.value);
-            assert_eq!(utxo_raw.vout, act_utxo.vout);
-            assert_eq!(utxo_raw.txid.into_address(), act_utxo.txid);
-            let inscriptions =
-                outpoint_inscriptions_map.search(&OutPoint::new(utxo_raw.txid, utxo_raw.vout));
-            let inscriptions_obj_ids = derive_inscription_ids(inscriptions);
-            let act_inscriptions = get_values_by_key(
-                act_utxo.seals,
-                MoveString::from_str(UTXO_SEAL_INSCRIPTION_PROTOCOL).unwrap(),
-            );
-            if inscriptions_obj_ids.is_empty() {
-                assert!(act_inscriptions.is_none());
-            } else {
-                let act_inscriptions = act_inscriptions.unwrap();
-                assert_eq!(act_inscriptions, inscriptions_obj_ids);
-            }
-            if addr_updates.is_some() {
-                let (addr_key, addr_state) = addr_updates.unwrap();
-                let mut act_address_state = resolver
-                    .get_field_at(address_mapping_state_root, &addr_key)
-                    .unwrap()
-                    .unwrap();
-                // clear metadata, because it's not deterministic in genesis cmd
-                act_address_state.metadata.state_root = None;
-                act_address_state.metadata.created_at = 0;
-                act_address_state.metadata.updated_at = 0;
-                assert_eq!(act_address_state, addr_state);
+        if random_mode && rand::random::<u32>() % 1000 != 0 {
+            continue;
+        }
+        checked_count += 1;
+        let act_utxo_state = resolver.get_field_at(utxo_store_state_root, &key).unwrap();
+        if act_utxo_state.is_none() {
+            writeln!(output_writer, "[utxo] not found: {:?}", utxo_raw)
+                .expect("Unable to write line");
+            mismatched_count += 1;
+            continue;
+        }
+        // compare utxo to state_db
+        let mut act_utxo_state = act_utxo_state.unwrap();
+        clear_metadata(&mut act_utxo_state);
+        if act_utxo_state != state {
+            writeln!(
+                output_writer,
+                "[utxo] mismatched state: exp: {:?}, act: {:?}",
+                state, act_utxo_state
+            )
+            .expect("Unable to write line");
+            mismatched_count += 1;
+            continue;
+        }
+        // compare basic value from state_db
+        let act_utxo_value =
+            Value::simple_deserialize(&act_utxo_state.value, &UTXO::type_layout()).unwrap();
+        let act_utxo = UTXO::from_runtime_value(act_utxo_value).unwrap();
+        if (utxo_raw.amount != act_utxo.value)
+            || (utxo_raw.vout != act_utxo.vout)
+            || (utxo_raw.txid.into_address() != act_utxo.txid)
+        {
+            writeln!(
+                output_writer,
+                "[utxo] mismatched value: exp: {:?}, act: {:?}",
+                utxo_raw, act_utxo
+            )
+            .expect("Unable to write line");
+            mismatched_count += 1;
+            continue;
+        }
+        // compare seals value from state_db
+        let inscriptions =
+            outpoint_inscriptions_map.search(&OutPoint::new(utxo_raw.txid, utxo_raw.vout));
+        let inscriptions_obj_ids = derive_inscription_ids(inscriptions.clone());
+        let act_inscriptions = get_values_by_key(
+            act_utxo.seals,
+            MoveString::from_str(UTXO_SEAL_INSCRIPTION_PROTOCOL).unwrap(),
+        );
+        let mismatched_inscription = if inscriptions_obj_ids.is_empty() {
+            act_inscriptions.is_some()
+        } else {
+            act_inscriptions.clone().unwrap() != inscriptions_obj_ids
+        };
+        if mismatched_inscription {
+            writeln!(
+                output_writer,
+                "[utxo] mismatched inscriptions: exp: {:?}(origin: {:?}), act: {:?}",
+                inscriptions_obj_ids, inscriptions, act_inscriptions
+            )
+            .expect("Unable to write line");
+            mismatched_count += 1;
+            continue;
+        }
+        if addr_updates.is_some() {
+            let (addr_key, addr_state) = addr_updates.unwrap();
+            let mut act_address_state = resolver
+                .get_field_at(address_mapping_state_root, &addr_key)
+                .unwrap()
+                .unwrap();
+            clear_metadata(&mut act_address_state);
+            if act_address_state != addr_state {
+                writeln!(
+                    output_writer,
+                    "[address_mapping] mismatched state: exp: {:?}, act: {:?}",
+                    addr_state, act_address_state
+                )
+                .expect("Unable to write line");
+                mismatched_count += 1;
+                continue;
             }
         }
 
-        ok_count += 1;
-        if ok_count % 1_000_000 == 0 {
-            println!("{} utxos verified in {:?}", ok_count, start_time.elapsed());
+        if total % 1_000_000 == 0 {
+            println!(
+                "utxo checking: total: {}, checked: {}, mismatched: {}. cost: {:?}",
+                total,
+                checked_count,
+                mismatched_count,
+                start_time.elapsed()
+            );
         }
     }
-    assert_eq!(act_utxo_store_state.metadata.size, ok_count as u64);
-    assert_eq!(
-        act_address_mapping_state.metadata.size,
-        added_address_set.len() as u64
-    );
+    output_writer.flush().expect("Unable to flush writer");
+
+    if act_utxo_store_state.metadata.size != total as u64 {
+        println!(
+            "[utxo_store] mismatched size: exp: {}, act: {}",
+            total, act_utxo_store_state.metadata.size
+        )
+    };
+    if act_address_mapping_state.metadata.size != added_address_set.len() as u64 {
+        println!(
+            "[address_mapping] mismatched size: exp: {}, act: {}",
+            added_address_set.len(),
+            act_address_mapping_state.metadata.size
+        )
+    };
+
     println!(
-        "{} utxos verified done in {:?}, utxo_store_meta: {:?}, address_mapping_meta: {:?}",
-        ok_count,
+        "utxo check done. total: {}, checked: {}, mismatched: {}. cost: {:?}, utxo_store_meta: {:?}, address_mapping_meta: {:?}",
+        total,
+        checked_count,
+        mismatched_count,
         start_time.elapsed(),
         act_utxo_store_state.metadata,
         act_address_mapping_state.metadata
     );
+}
+
+// clear metadata, because it's not deterministic in genesis cmd
+fn clear_metadata(state: &mut ObjectState) {
+    state.metadata.state_root = None;
+    state.metadata.created_at = 0;
+    state.metadata.updated_at = 0;
 }
 
 fn verify_inscription(
@@ -267,6 +343,7 @@ fn verify_inscription(
     moveos_store_arc: Arc<MoveOSStore>,
     root: ObjectMeta,
     random_mode: bool,
+    mismatched_output: PathBuf,
 ) {
     let start_time = Instant::now();
     let mut src_reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
@@ -291,6 +368,12 @@ fn verify_inscription(
     let act_inscription_store =
         InscriptionStore::from_runtime_value(act_inscription_store_value).unwrap();
 
+    let file = File::create(mismatched_output.clone()).expect("Unable to create utxo output file");
+    let mut output_writer = BufWriter::new(file.try_clone().unwrap());
+
+    let mut checked_count: u32 = 0;
+    let mut mismatched_count: u32 = 0;
+
     let inscription_store_state_root = act_inscription_store_state.metadata.state_root.unwrap();
     for line in src_reader.by_ref().lines() {
         let line = line.unwrap();
@@ -301,6 +384,7 @@ fn verify_inscription(
                 continue;
             }
         }
+        sequence_number += 1;
 
         let source: InscriptionSource = InscriptionSource::from_str(&line);
         if source.inscription_number < 0 {
@@ -309,61 +393,86 @@ fn verify_inscription(
             blessed_inscription_count += 1;
         }
 
-        if random_mode && rand::random::<u32>() % 1000 == 0 {
-            let (key, state, inscription_id) = source.gen_update();
-            let act_inscription_state = resolver
-                .get_field_at(inscription_store_state_root, &key)
-                .unwrap();
-            if act_inscription_state.is_none() {
-                panic!("inscription not found: {:?}", source);
-            }
-            let mut act_inscription_state = act_inscription_state.unwrap();
-            // clear metadata, because it's not deterministic in genesis cmd
-            act_inscription_state.metadata.state_root = None;
-            act_inscription_state.metadata.created_at = 0;
-            act_inscription_state.metadata.updated_at = 0;
-            assert_eq!(act_inscription_state, state);
-            let (key2, state2) = gen_inscription_ids_update(sequence_number, inscription_id);
-            let mut act_inscription_id_state = resolver
-                .get_field_at(inscription_store_state_root, &key2)
-                .unwrap()
-                .unwrap();
-            // clear metadata, because it's not deterministic in genesis cmd
-            act_inscription_id_state.metadata.state_root = None;
-            act_inscription_id_state.metadata.created_at = 0;
-            act_inscription_id_state.metadata.updated_at = 0;
-            assert_eq!(act_inscription_id_state, state2);
+        if random_mode && rand::random::<u32>() % 1000 != 0 {
+            continue;
         }
-
-        sequence_number += 1;
+        checked_count += 1;
+        let (key, state, inscription_id) = source.gen_update();
+        let act_inscription_state = resolver
+            .get_field_at(inscription_store_state_root, &key)
+            .unwrap();
+        if act_inscription_state.is_none() {
+            writeln!(output_writer, "[inscription] not found: {:?}", source)
+                .expect("Unable to write line");
+            mismatched_count += 1;
+            continue;
+        }
+        let mut act_inscription_state = act_inscription_state.unwrap();
+        clear_metadata(&mut act_inscription_state);
+        if act_inscription_state != state {
+            writeln!(
+                output_writer,
+                "[inscription] mismatched state: exp: {:?}, act: {:?}",
+                state, act_inscription_state
+            )
+            .expect("Unable to write line");
+            mismatched_count += 1;
+            continue;
+        }
+        let (key2, state2) = gen_inscription_ids_update(sequence_number, inscription_id);
+        let mut act_inscription_id_state = resolver
+            .get_field_at(inscription_store_state_root, &key2)
+            .unwrap()
+            .unwrap();
+        clear_metadata(&mut act_inscription_id_state);
+        if act_inscription_id_state != state2 {
+            writeln!(
+                output_writer,
+                "[inscription] mismatched inscription_id state: exp: {:?}, act: {:?}",
+                state2, act_inscription_id_state
+            )
+            .expect("Unable to write line");
+            mismatched_count += 1;
+            continue;
+        }
 
         if sequence_number % 1_000_000 == 0 {
             println!(
-                "{} inscriptions verified in: {:?}",
+                "inscription checking: total: {}, checked: {}, mismatched: {}. cost: {:?}",
                 sequence_number,
+                checked_count,
+                mismatched_count,
                 start_time.elapsed()
             );
         }
     }
 
-    assert_eq!(
-        act_inscription_store_state.metadata.size,
-        sequence_number as u64 * 2
-    );
-    assert_eq!(
-        act_inscription_store.cursed_inscription_count,
-        cursed_inscription_count
-    );
-    assert_eq!(
-        act_inscription_store.blessed_inscription_count,
-        blessed_inscription_count
-    );
-    assert_eq!(act_inscription_store.next_sequence_number, sequence_number);
+    output_writer.flush().expect("Unable to flush writer");
+
+    if act_inscription_store_state.metadata.size != sequence_number as u64 * 2
+        || act_inscription_store.cursed_inscription_count != cursed_inscription_count
+        || act_inscription_store.blessed_inscription_count != blessed_inscription_count
+        || act_inscription_store.next_sequence_number != sequence_number
+    {
+        println!(
+            "[inscription_store] mismatched size. metadata: exp: {}, act: {}; cursed: exp: {}, act: {}; blessed: exp: {}, act: {}; next_sequence_number: exp: {}, act: {}",
+            sequence_number * 2,
+            act_inscription_store_state.metadata.size,
+            cursed_inscription_count,
+            act_inscription_store.cursed_inscription_count,
+            blessed_inscription_count,
+            act_inscription_store.blessed_inscription_count,
+            sequence_number,
+            act_inscription_store.next_sequence_number
+        )
+    };
 
     println!(
-        "{} inscriptions verified done in {:?}, inscription_store_meta: {:?}",
+        "inscription check done. total: {}, checked: {}, mismatched: {}. cost: {:?}, inscription_store_meta: {:?}",
         sequence_number,
+        checked_count,
+        mismatched_count,
         start_time.elapsed(),
-        act_inscription_store_state.metadata
+        act_inscription_store_state.metadata,
     );
 }
