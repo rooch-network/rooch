@@ -15,8 +15,8 @@ use moveos_types::moveos_std::object::{
 use moveos_types::moveos_std::simple_multimap::SimpleMultiMap;
 use moveos_types::state::{FieldKey, ObjectState};
 use rooch_types::address::BitcoinAddress;
-use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
 use rooch_types::bitcoin::{types, utxo};
+use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::into_address::IntoAddress;
 
@@ -70,6 +70,30 @@ impl UTXORawData {
             "Invalid empty address"
         );
         raw_data
+    }
+
+    pub fn gen_address_map_update(&mut self) -> (AccountAddress, Option<(AddressMappingData)>) {
+        let bitcoin_address = drive_bitcoin_address(
+            self.address.clone(),
+            self.script.clone(),
+            self.script_type.clone(),
+        );
+        let (address, address_mapping_data) = match bitcoin_address {
+            Some(bitcoin_address) => {
+                let address = AccountAddress::from(bitcoin_address.to_rooch_address());
+                if self.address.is_empty() {
+                    self.address = bitcoin_address.to_string();
+                }
+                let address_mapping_data = Some(AddressMappingData::new(
+                    self.address.clone(),
+                    bitcoin_address,
+                    address,
+                ));
+                (address, address_mapping_data)
+            }
+            None => (BITCOIN_MOVE_ADDRESS, None),
+        };
+        (address, address_mapping_data)
     }
 
     pub fn gen_update(

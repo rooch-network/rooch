@@ -5,8 +5,8 @@ use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
+use std::sync::{Arc, mpsc, RwLock};
 use std::sync::mpsc::{Receiver, SyncSender};
-use std::sync::{mpsc, Arc, RwLock};
 use std::thread;
 use std::time::SystemTime;
 
@@ -25,12 +25,12 @@ use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
+use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes, finish_import_job};
 use crate::commands::statedb::commands::utxo::{
     create_genesis_rooch_to_bitcoin_address_mapping_object, create_genesis_utxo_store_object,
     UTXORawData,
 };
-use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 
 /// Import UTXO for development and testing.
 #[derive(Debug, Parser)]
@@ -98,6 +98,62 @@ impl GenesisUTXOCommand {
         );
         Ok(())
     }
+}
+
+pub(crate) fn produce_address_map_updates(
+    addr_tx: SyncSender<UpdateSet<FieldKey, ObjectState>>,
+    input: PathBuf,
+    batch_size: usize,
+    outpoint_inscriptions_map: Option<Arc<OutpointInscriptionsMap>>,
+) {
+    let mut reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
+    let mut is_title_line = true;
+    let mut added_address_set: FxHashSet<String> =
+        FxHashSet::with_capacity_and_hasher(60_000_000, Default::default());
+
+    loop {
+        let loop_start_time = Instant::now();
+        let mut bytes_read = 0;
+        let mut rooch_to_bitcoin_mapping_updates = UpdateSet::new();
+
+        for line in reader.by_ref().lines().take(batch_size) {
+            let line = line.unwrap();
+            bytes_read += line.len() as u64 + 1; // Add line.len() + 1, assuming that the line terminator is '\n'
+
+            if is_title_line {
+                is_title_line = false;
+                if line.starts_with("count") {
+                    continue;
+                }
+            }
+
+            let mut utxo_raw = UTXORawData::from_str(&line);
+            let (_key, _state, address_mapping_data) =
+                utxo_raw.gen_update(outpoint_inscriptions_map.clone());
+
+            if let Some(address_mapping_data) = address_mapping_data {
+                if let Some((field_key, object_state)) =
+                    address_mapping_data.gen_update(&mut added_address_set)
+                {
+                    rooch_to_bitcoin_mapping_updates.put(field_key, object_state);
+                }
+            }
+        }
+        println!(
+            "{} addr_mapping updates produced, cost: {:?}",
+            rooch_to_bitcoin_mapping_updates.len(),
+            loop_start_time.elapsed(),
+        );
+
+        if rooch_to_bitcoin_mapping_updates.is_empty() {
+            break;
+        }
+        addr_tx
+            .send(rooch_to_bitcoin_mapping_updates)
+            .expect("failed to send updates");
+    }
+
+    drop(addr_tx);
 }
 
 pub(crate) fn produce_utxo_updates(
