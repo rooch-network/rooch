@@ -41,14 +41,14 @@ export const walletsMaterialMap = new Map<string, WalletsMaterialProps>([
 
 export const FMNFT = {
   type: 'nft',
-  objType: '0x7212de6b5a22729276b4045b4dc8f9d9d80adfaf05dcf9efead7ba235959cba5::og_nft::NFT',
-  action: '/mint/free/nft/0x7212de6b5a22729276b4045b4dc8f9d9d80adfaf05dcf9efead7ba235959cba5',
+  objType: '0x4938919590105e18ca080eeaf39441400a4687aba0fe44ef00e136027cc54eb7::og_nft::NFT',
+  action: '/mint/free/nft/0x4938919590105e18ca080eeaf39441400a4687aba0fe44ef00e136027cc54eb7',
   name: 'Rooch Pioneer',
   symbol: 'FMNFT',
   distribution: 'Free Mint',
   progress: -1,
   data: {
-    address: '0x7212de6b5a22729276b4045b4dc8f9d9d80adfaf05dcf9efead7ba235959cba5',
+    address: '0x4938919590105e18ca080eeaf39441400a4687aba0fe44ef00e136027cc54eb7',
   },
 }
 

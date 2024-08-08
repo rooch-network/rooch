@@ -29,7 +29,7 @@ export const FreeMintLayout = () => {
   const { data } = useRoochClientQuery('getStates', {
     accessPath: `/resource/${address}/${address}::og_nft::Config`,
   })
-  const { data: nfts } = useRoochClientQuery('queryObjectStates', {
+  const { data: nfts, refetch } = useRoochClientQuery('queryObjectStates', {
     filter: {
       // object_type: `${address}::og_nft::NFT`
       object_type_with_owner: {
@@ -44,9 +44,6 @@ export const FreeMintLayout = () => {
       showDisplay: false,
     },
   })
-  console.log(wallet?.getBitcoinAddress().toStr())
-  console.log(wallet?.getRoochAddress().toBech32Address())
-  console.log(nfts)
 
   const handlerMint = () => {
     setLoading(true)
@@ -60,8 +57,8 @@ export const FreeMintLayout = () => {
       .catch((why) => {
         console.log(why)
       })
-      .then((r) => {
-        console.log(r)
+      .then((_) => {
+        refetch()
       })
       .finally(() => setLoading(false))
   }
@@ -108,15 +105,15 @@ export const FreeMintLayout = () => {
             ) : (
               <Skeleton width={150} />
             )}
-            <div dangerouslySetInnerHTML={{ __html: NFTSVG }} className="w-20"></div>
+            <div dangerouslySetInnerHTML={{ __html: NFTSVG }} className="w-40"></div>
           </div>
         </div>
         <Button
           className="rounded-lg w-full mt-4 mb-2 md:mt-8"
-          disabled={loading || nfts?.data != undefined}
+          disabled={loading || (nfts?.data != undefined && nfts.data.length > 0)}
           onClick={handlerMint}
         >
-          {nfts?.data !== undefined ? 'Your Minted' : 'Mint'}
+          {nfts?.data !== undefined && nfts.data.length > 0 ? 'Your Minted' : 'Mint'}
         </Button>
       </DetailView>
     </SkeletonTheme>
