@@ -134,12 +134,6 @@
           "schema": {
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
           }
-        },
-        {
-          "name": "tx_option",
-          "schema": {
-            "$ref": "#/components/schemas/TxOptions"
-          }
         }
       ],
       "result": {
@@ -1092,6 +1086,16 @@
           "sequence_info"
         ],
         "properties": {
+          "error_info": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DryRunTransactionResponseView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "execution_info": {
             "$ref": "#/components/schemas/TransactionExecutionInfoView"
           },
