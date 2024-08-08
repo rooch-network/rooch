@@ -302,7 +302,6 @@ impl OutpointInscriptionsMap {
             .map(|index| items[index].inscriptions.clone())
     }
 
-    #[allow(dead_code)]
     fn load(path: PathBuf) -> Self {
         let file = File::open(path.clone()).expect("Unable to open the file");
         let reader = BufReader::new(file);

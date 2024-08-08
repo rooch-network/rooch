@@ -27,13 +27,13 @@ use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::into_address::IntoAddress;
 use rooch_types::rooch_network::RoochChainID;
 
+use crate::commands::statedb::commands::{
+    get_values_by_key, init_job, OutpointInscriptionsMap, UTXO_SEAL_INSCRIPTION_PROTOCOL,
+};
 use crate::commands::statedb::commands::inscription::{
     derive_inscription_ids, gen_inscription_ids_update, InscriptionSource,
 };
 use crate::commands::statedb::commands::utxo::UTXORawData;
-use crate::commands::statedb::commands::{
-    get_values_by_key, init_job, OutpointInscriptionsMap, UTXO_SEAL_INSCRIPTION_PROTOCOL,
-};
 
 /// Import BTC ordinals & UTXO for genesis
 #[derive(Debug, Parser)]
@@ -50,9 +50,9 @@ pub struct GenesisVerifyCommand {
     pub ord_source: PathBuf,
     #[clap(
         long,
-        help = "outpoint(original):inscriptions(original inscription_id) map dump path, for debug"
+        help = "outpoint(original):inscriptions(original inscription_id) map dump path"
     )]
-    pub outpoint_inscriptions_map_dump_path: Option<PathBuf>,
+    pub outpoint_inscriptions_map_dump_path: PathBuf,
     #[clap(
         long,
         help = "random mode, for randomly select 1/1000 inscriptions & utxos to verify"
@@ -73,21 +73,7 @@ impl GenesisVerifyCommand {
     pub async fn execute(self) -> RoochResult<()> {
         let (root, moveos_store, start_time) =
             init_job(self.base_data_dir.clone(), self.chain_id.clone());
-
-        log::info!("indexing and dumping outpoint_inscriptions_map...");
-        let (outpoint_inscriptions_map, mapped_outpoint, mapped_inscription, unbound_count) =
-            OutpointInscriptionsMap::index_and_dump(
-                self.ord_source.clone(),
-                self.outpoint_inscriptions_map_dump_path.clone(),
-            );
-        println!(
-            "{} outpoints : {} inscriptions mapped in: {:?} ({} unbound inscriptions ignored)",
-            mapped_outpoint,
-            mapped_inscription,
-            start_time.elapsed(),
-            unbound_count
-        );
-
+        let outpoint_inscriptions_map = self.load_or_index_outpoint_inscription_map(start_time);
         let outpoint_inscriptions_map = Arc::new(outpoint_inscriptions_map);
         let random_mode = self.random_mode;
         let moveos_store = Arc::new(moveos_store);
@@ -95,29 +81,70 @@ impl GenesisVerifyCommand {
         // verify inscriptions
         let inscription_source_path = self.ord_source.clone();
         let root_clone_0 = root.clone();
-        let verify_inscription_thread = thread::spawn(move || {
-            verify_inscription(
-                inscription_source_path,
-                moveos_store_clone,
-                root_clone_0,
-                random_mode,
-            );
-        });
+        let verify_inscription_thread = thread::Builder::new()
+            .name("verify-inscription".to_string())
+            .spawn(move || {
+                verify_inscription(
+                    inscription_source_path,
+                    moveos_store_clone,
+                    root_clone_0,
+                    random_mode,
+                );
+            })
+            .unwrap();
         let moveos_store_clone = Arc::clone(&moveos_store);
-        let verify_utxo_thread = thread::spawn(move || {
-            verify_utxo(
-                self.utxo_source,
-                moveos_store_clone,
-                root.clone(),
-                outpoint_inscriptions_map,
-                random_mode,
-            );
-        });
+        let verify_utxo_thread = thread::Builder::new()
+            .name("verify-utxo".to_string())
+            .spawn(move || {
+                verify_utxo(
+                    self.utxo_source,
+                    moveos_store_clone,
+                    root.clone(),
+                    outpoint_inscriptions_map,
+                    random_mode,
+                );
+            })
+            .unwrap();
 
         verify_inscription_thread.join().unwrap();
         verify_utxo_thread.join().unwrap();
 
         Ok(())
+    }
+
+    fn load_or_index_outpoint_inscription_map(
+        &self,
+        start_time: Instant,
+    ) -> OutpointInscriptionsMap {
+        let map_existed = self.outpoint_inscriptions_map_dump_path.exists();
+        if map_existed {
+            log::info!("load outpoint_inscriptions_map...");
+            let outpoint_inscriptions_map =
+                OutpointInscriptionsMap::load(self.outpoint_inscriptions_map_dump_path.clone());
+            let (outpoint_count, inscription_count) = outpoint_inscriptions_map.stats();
+            println!(
+                "{} outpoints : {} inscriptions mapped in: {:?}",
+                outpoint_count,
+                inscription_count,
+                start_time.elapsed(),
+            );
+            outpoint_inscriptions_map
+        } else {
+            log::info!("indexing and dumping outpoint_inscriptions_map...");
+            let (outpoint_inscriptions_map, mapped_outpoint, mapped_inscription, unbound_count) =
+                OutpointInscriptionsMap::index_and_dump(
+                    self.ord_source.clone(),
+                    Some(self.outpoint_inscriptions_map_dump_path.clone()),
+                );
+            println!(
+                "{} outpoints : {} inscriptions mapped in: {:?} ({} unbound inscriptions ignored)",
+                mapped_outpoint,
+                mapped_inscription,
+                start_time.elapsed(),
+                unbound_count
+            );
+            outpoint_inscriptions_map
+        }
     }
 }
 
@@ -173,10 +200,15 @@ fn verify_utxo(
             None
         };
         if random_mode && rand::random::<u32>() % 1000 == 0 {
-            let act_utxo_state = resolver
-                .get_field_at(utxo_store_state_root, &key)
-                .unwrap()
-                .unwrap();
+            let act_utxo_state = resolver.get_field_at(utxo_store_state_root, &key).unwrap();
+            if act_utxo_state.is_none() {
+                panic!("utxo not found: {:?}", utxo_raw);
+            }
+            let mut act_utxo_state = act_utxo_state.unwrap();
+            // clear metadata, because it's not deterministic in genesis cmd
+            act_utxo_state.metadata.state_root = None;
+            act_utxo_state.metadata.created_at = 0;
+            act_utxo_state.metadata.updated_at = 0;
             assert_eq!(act_utxo_state, state);
             let act_utxo_value =
                 Value::simple_deserialize(&act_utxo_state.value, &UTXO::type_layout()).unwrap();
@@ -199,10 +231,14 @@ fn verify_utxo(
             }
             if addr_updates.is_some() {
                 let (addr_key, addr_state) = addr_updates.unwrap();
-                let act_address_state = resolver
+                let mut act_address_state = resolver
                     .get_field_at(address_mapping_state_root, &addr_key)
                     .unwrap()
                     .unwrap();
+                // clear metadata, because it's not deterministic in genesis cmd
+                act_address_state.metadata.state_root = None;
+                act_address_state.metadata.created_at = 0;
+                act_address_state.metadata.updated_at = 0;
                 assert_eq!(act_address_state, addr_state);
             }
         }
@@ -277,14 +313,25 @@ fn verify_inscription(
             let (key, state, inscription_id) = source.gen_update();
             let act_inscription_state = resolver
                 .get_field_at(inscription_store_state_root, &key)
-                .unwrap()
                 .unwrap();
+            if act_inscription_state.is_none() {
+                panic!("inscription not found: {:?}", source);
+            }
+            let mut act_inscription_state = act_inscription_state.unwrap();
+            // clear metadata, because it's not deterministic in genesis cmd
+            act_inscription_state.metadata.state_root = None;
+            act_inscription_state.metadata.created_at = 0;
+            act_inscription_state.metadata.updated_at = 0;
             assert_eq!(act_inscription_state, state);
             let (key2, state2) = gen_inscription_ids_update(sequence_number, inscription_id);
-            let act_inscription_id_state = resolver
+            let mut act_inscription_id_state = resolver
                 .get_field_at(inscription_store_state_root, &key2)
                 .unwrap()
                 .unwrap();
+            // clear metadata, because it's not deterministic in genesis cmd
+            act_inscription_id_state.metadata.state_root = None;
+            act_inscription_id_state.metadata.created_at = 0;
+            act_inscription_id_state.metadata.updated_at = 0;
             assert_eq!(act_inscription_id_state, state2);
         }
 
