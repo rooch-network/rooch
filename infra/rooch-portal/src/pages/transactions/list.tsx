@@ -147,7 +147,7 @@ export const TransactionsList = () => {
           </TableHeader>
           <TableBody>
             {transactionsResult.data.slice(paginationModel.index * paginationModel.limit, (paginationModel.index + 1) * paginationModel.limit).map((tx) => (
-              <TableRow key={tx.execution_info.tx_hash}>
+              <TableRow key={tx.execution_info?.tx_hash}>
                 <TableCell className="font-medium">
                   <Button variant="ghost" size="icon" className="cursor-default bg-accent">
                     <MenuSquare className="h-4 w-4" />
@@ -156,9 +156,9 @@ export const TransactionsList = () => {
                 <TableCell>
                   <div className="flex flex-col md:flex-row items-start md:items-center justify-start gap-1">
                     <span className="hover:no-underline text-blue-400 hover:text-blue-500 dark:text-blue-300 dark:hover:text-blue-200 transition-all cursor-pointer">
-                      <p className="hidden md:block">{tx.execution_info.tx_hash}</p>
+                      <p className="hidden md:block">{tx.execution_info?.tx_hash}</p>
                       <p className="md:hidden block">
-                        {tx.execution_info.tx_hash.substring(0, 15)}...
+                        {tx.execution_info?.tx_hash.substring(0, 15)}...
                       </p>
                     </span>
                   </div>
@@ -183,14 +183,14 @@ export const TransactionsList = () => {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="default">{tx.execution_info.gas_used}</Badge>
+                  <Badge variant="default">{tx.execution_info?.gas_used}</Badge>
                 </TableCell>
                 <TableCell className="text-center">
                   <Button
                     variant="link"
                     size="sm"
                     className="text-blue-400 hover:text-blue-500 dark:text-blue-300 dark:hover:text-blue-200 transition-all"
-                    onClick={() => handleToTransactionDetail(tx.execution_info.tx_hash)}
+                    onClick={() => handleToTransactionDetail(tx.execution_info!.tx_hash)}
                   >
                     <ExternalLink className="w-4 h-4 mr-1" />
                     View
