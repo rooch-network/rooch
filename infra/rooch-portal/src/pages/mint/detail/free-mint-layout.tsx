@@ -105,7 +105,7 @@ export const FreeMintLayout = () => {
           disabled={loading || !checkData?.return_values![0].decoded_value}
           onClick={handlerMint}
         >
-          {!checkData?.return_values![0].decoded_value ? 'Your Minted' : 'Mint'}
+          {!checkData?.return_values![0].decoded_value ? 'Minted' : 'Mint'}
         </Button>
       </DetailView>
     </SkeletonTheme>
