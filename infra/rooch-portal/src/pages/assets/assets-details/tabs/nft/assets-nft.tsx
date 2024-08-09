@@ -1,9 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
 import { useEffect, useMemo, useRef, useState } from 'react'
+
+import { IndexerObjectStateView, isValidAddress } from '@roochnetwork/rooch-sdk'
+
 import {
   useCurrentSession,
-  useRoochClient,
   useRoochClientQuery,
   useTransferObject,
 } from '@roochnetwork/rooch-sdk-kit'
@@ -19,23 +22,19 @@ import CustomPagination from '@/components/custom-pagination.tsx'
 import { LoadingSpinner } from '@/components/loading-spinner.tsx'
 
 import { formatAddress } from '@/utils/format'
-import { ROOCH_NFT_OPERATING_ADDRESS } from '@/common/constant.ts'
+import { FMNFT } from '@/common/constant.ts'
 
 export const AssetsNft = () => {
   const sessionKey = useCurrentSession()
   const [modalOpen, setModalOpen] = useState(false)
-  const [selectedNFTId, setSelectedNFTId] = useState('')
-  // const [curNFT, setCurNFT] = useState<ObjectStateView>()
-  const [images, setImages] = useState<Map<string, string>>(new Map())
+  const [selectedNFT, setSelectedNFT] = useState<IndexerObjectStateView | undefined>()
   const [toAddress, setToAddress] = useState('')
   const [transferLoading, setTransferLoading] = useState(false)
-
-  const client = useRoochClient()
 
   const { mutateAsync: transferObject } = useTransferObject()
 
   // PAGINATION
-  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 1 })
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 20 })
   const mapPageToNextCursor = useRef<{ [page: number]: string | null }>({})
   const handlePageChange = (selectedPage: number) => {
     if (selectedPage < 0) {
@@ -62,48 +61,52 @@ export const AssetsNft = () => {
     filter: {
       object_type_with_owner: {
         owner: sessionKey?.getRoochAddress().toHexAddress() || '',
-        object_type: `${ROOCH_NFT_OPERATING_ADDRESS}::nft::NFT`,
+        filter_out: false,
+        object_type: FMNFT.objType,
       },
     },
     // @ts-ignore
     cursor: queryOptions.cursor,
     limit: queryOptions.pageSize,
     descending_order: true,
+    queryOption: {
+      showDisplay: true,
+    },
   })
 
   // fetch collection info
-  useEffect(() => {
-    const fetchCollectionInfo = async () => {
-      if (!nfts || nfts.data.length === 0) {
-        return
-      }
-      const collectionInfo = await Promise.all(
-        nfts.data
-          .map((item) => ({
-            key: item.id,
-            collection: (item.value as any).value.value.value.collection,
-          }))
-          .map(async (obj) => {
-            const result = await client.getStates({ accessPath: `/object/${obj.collection}` })
-            console.log(result)
-            return {
-              key: obj.key,
-              image:
-                (result[0].decoded_value as any).value.value.value.url + '?auto=format&dpr=1&w=640',
-            }
-          }),
-      )
+  // useEffect(() => {
+  //   const fetchCollectionInfo = async () => {
+  //     if (!nfts || nfts.data.length === 0) {
+  //       return
+  //     }
+  //     const collectionInfo = await Promise.all(
+  //       nfts.data
+  //         .map((item) => ({
+  //           key: item.id,
+  //           collection: (item.value as any).value.value.value.collection,
+  //         }))
+  //         .map(async (obj) => {
+  //           const result = await client.getStates({ accessPath: `/object/${obj.collection}` })
+  //           console.log(result)
+  //           return {
+  //             key: obj.key,
+  //             image:
+  //               (result[0].decoded_value as any).value.value.value.url + '?auto=format&dpr=1&w=640',
+  //           }
+  //         }),
+  //     )
 
-      const map = collectionInfo.reduce((map, item) => {
-        map.set(item.key, item.image)
-        return map
-      }, new Map<string, string>())
+  //     const map = collectionInfo.reduce((map, item) => {
+  //       map.set(item.key, item.image)
+  //       return map
+  //     }, new Map<string, string>())
 
-      setImages(map)
-    }
+  //     setImages(map)
+  //   }
 
-    fetchCollectionInfo().then()
-  }, [client, nfts])
+  //   fetchCollectionInfo().then()
+  // }, [client, nfts])
 
   // ** modal 打开时，禁止父组件 scroll
   useEffect(() => {
@@ -133,8 +136,8 @@ export const AssetsNft = () => {
     }
   }, [])
 
-  const handleImageClick = (nftId: string) => {
-    setSelectedNFTId(nftId)
+  const handleImageClick = (nft: IndexerObjectStateView) => {
+    setSelectedNFT(nft)
     setModalOpen(true)
   }
 
@@ -149,26 +152,25 @@ export const AssetsNft = () => {
   }
 
   const handleTransferObject = async () => {
-    const nft = nfts?.data.find((item) => item.id === selectedNFTId)
-
-    if (!nft || toAddress === '') {
+    if (!selectedNFT || toAddress === '') {
       return
     }
 
     setTransferLoading(true)
 
-    await transferObject({
+    transferObject({
       signer: sessionKey!,
       recipient: toAddress,
-      objectId: nft.id,
+      objectId: selectedNFT.id,
       objectType: {
-        target: nft.object_type,
+        target: selectedNFT.object_type,
       },
     })
-
-    handleClose()
-    setTransferLoading(false)
-    reFetchNFTS()
+      .then((_) => {
+        handleClose()
+        reFetchNFTS()
+      })
+      .finally(() => setTransferLoading(false))
   }
 
   if (isLoading || isError) {
@@ -200,19 +202,18 @@ export const AssetsNft = () => {
           <Card
             key={nft.id}
             className="w-full transition-all border-border/40 dark:bg-zinc-800/90 dark:hover:border-primary/20 hover:shadow-md overflow-hidden"
-            onClick={() => handleImageClick(nft.id)}
+            onClick={() => handleImageClick(nft)}
           >
             <CardContent className="p-0">
               <AspectRatio ratio={1} className="flex items-center justify-center overflow-hidden">
-                <img
-                  src={images.get(nft.id)}
-                  alt="NFT"
-                  className="rounded-md object-cover hover:scale-110 transition-all ease-in-out duration-300"
-                />
+                <div
+                  dangerouslySetInnerHTML={{ __html: nft.display_fields!.fields['image_url'] }}
+                  className="w-80"
+                ></div>
               </AspectRatio>
             </CardContent>
             <CardHeader className="px-4 md:px-6">
-              <CardTitle>{(nft.value as any).value.name as string}</CardTitle>
+              <CardTitle>{nft.display_fields!.fields['name'] as string}</CardTitle>
               {/*<CardDescription>{nft.price}</CardDescription>*/}
             </CardHeader>
             <CardFooter className="px-4 md:px-6">
@@ -246,11 +247,16 @@ export const AssetsNft = () => {
                 <div className="flex flex-col md:flex-row h-full items-center justify-start md:items-start md:justify-start gap-6 md:gap-12 md:mr-6">
                   {/* NFT Image */}
                   <div>
-                    <img
-                      src={images.get(selectedNFTId)}
-                      alt="Selected NFT"
-                      className="w-full md:max-w-[420px] h-auto rounded-lg shadow-md"
-                    />
+                    {selectedNFT ? (
+                      <div
+                        dangerouslySetInnerHTML={{
+                          __html: selectedNFT.display_fields!.fields['image_url'],
+                        }}
+                        className="w-80"
+                      />
+                    ) : (
+                      <></>
+                    )}
                   </div>
 
                   {/* Transfer Description */}
@@ -270,7 +276,7 @@ export const AssetsNft = () => {
 
                     {/* NFT Name */}
                     <span className="text-gray-800 dark:text-gray-50 text-3xl font-normal tracking-wide">
-                      Rooch OG NFT
+                      {selectedNFT?.display_fields?.fields['name']}
                     </span>
 
                     {/* To */}
@@ -292,7 +298,7 @@ export const AssetsNft = () => {
                       variant="default"
                       size="default"
                       onClick={handleTransferObject}
-                      disabled={transferLoading}
+                      disabled={transferLoading || !isValidAddress(toAddress)}
                       className="w-full mt-6 md:mt-24 font-sans"
                     >
                       {transferLoading ? <LoadingSpinner /> : 'Transfer'}
@@ -307,7 +313,7 @@ export const AssetsNft = () => {
 
       <CustomPagination
         currentPage={paginationModel.page}
-        hasNextPage={!!nfts?.has_next_page}
+        hasNextPage={nfts?.has_next_page}
         onPageChange={handlePageChange}
       />
     </>
