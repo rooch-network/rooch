@@ -59,5 +59,8 @@ module og_nft::og_nft {
         object::transfer(nft_obj, sender());
     }
 
-
+    public fun check_mintable(account: address): bool {
+        let global = account::borrow_mut_resource<Config>(@og_nft);
+        !table::contains(&global.minted_address, account)
+    }
 }

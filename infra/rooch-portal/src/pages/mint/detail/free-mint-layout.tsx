@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton'
 
-import { Transaction } from '@roochnetwork/rooch-sdk'
+import { Args, Transaction } from '@roochnetwork/rooch-sdk'
 import {
   useCurrentWallet,
   useRoochClientQuery,
@@ -29,20 +29,12 @@ export const FreeMintLayout = () => {
   const { data } = useRoochClientQuery('getStates', {
     accessPath: `/resource/${address}/${address}::og_nft::Config`,
   })
-  const { data: nfts, refetch } = useRoochClientQuery('queryObjectStates', {
-    filter: {
-      // object_type: `${address}::og_nft::NFT`
-      object_type_with_owner: {
-        object_type: `${address}::og_nft::NFT`,
-        filter_out: false,
-        owner: wallet?.getRoochAddress().toHexAddress() || '',
-      },
-    },
-    limit: '1',
-    queryOption: {
-      decode: false,
-      showDisplay: false,
-    },
+
+  const {data: checkData} = useRoochClientQuery('executeViewFunction', {
+    target: `${address}::og_nft::check_mintable`,
+    args: [Args.address(wallet?.getRoochAddress().toHexAddress() || '')]
+  }, {
+    enabled: wallet !== undefined
   })
 
   const handlerMint = () => {
@@ -58,11 +50,11 @@ export const FreeMintLayout = () => {
         console.log(why)
       })
       .then((_) => {
-        refetch()
+        // refetch()
       })
       .finally(() => setLoading(false))
   }
-
+  
   return (
     <SkeletonTheme baseColor="#27272A" highlightColor="#444">
       <DetailView title={'Back to Mint page'} back={'/mint'}>
@@ -110,10 +102,10 @@ export const FreeMintLayout = () => {
         </div>
         <Button
           className="rounded-lg w-full mt-4 mb-2 md:mt-8"
-          disabled={loading || (nfts?.data != undefined && nfts.data.length > 0)}
+          disabled={loading || !checkData?.return_values![0].decoded_value}
           onClick={handlerMint}
         >
-          {nfts?.data !== undefined && nfts.data.length > 0 ? 'Your Minted' : 'Mint'}
+          {!checkData?.return_values![0].decoded_value ? 'Your Minted' : 'Mint'}
         </Button>
       </DetailView>
     </SkeletonTheme>
