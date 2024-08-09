@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{
-    IndexerEventsMessage, IndexerStatesMessage, IndexerTransactionMessage, UpdateIndexerMessage,
+    IndexerDeleteObjectStatesMessage, IndexerEventsMessage,
+    IndexerPersistOrUpdateObjectStatesMessage, IndexerStatesMessage, IndexerTransactionMessage,
+    UpdateIndexerMessage,
 };
 use crate::store::traits::IndexerStoreTrait;
 use crate::IndexerStore;
@@ -158,6 +160,35 @@ impl Handler<IndexerEventsMessage> for IndexerActor {
             .map(|event| IndexerEvent::new(event, ledger_transaction.clone(), tx_context.clone()))
             .collect();
         self.indexer_store.persist_events(events)?;
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl Handler<IndexerPersistOrUpdateObjectStatesMessage> for IndexerActor {
+    async fn handle(
+        &mut self,
+        msg: IndexerPersistOrUpdateObjectStatesMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<()> {
+        let IndexerPersistOrUpdateObjectStatesMessage { states } = msg;
+
+        self.indexer_store.persist_or_update_object_states(states)?;
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl Handler<IndexerDeleteObjectStatesMessage> for IndexerActor {
+    async fn handle(
+        &mut self,
+        msg: IndexerDeleteObjectStatesMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<()> {
+        let IndexerDeleteObjectStatesMessage { object_ids } = msg;
+
+        let state_pks = object_ids.into_iter().map(|v| v.to_string()).collect();
+        self.indexer_store.delete_object_states(state_pks)?;
         Ok(())
     }
 }
