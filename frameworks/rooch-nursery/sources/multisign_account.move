@@ -320,6 +320,7 @@ module rooch_nursery::multisign_account{
     }
 
     fun borrow_account(multisign_address: address) : &Object<Account>{
+        assert!(account::exists_at(multisign_address), ErrorMultisignAccountNotFound);
         account::borrow_account(multisign_address)
     }
 

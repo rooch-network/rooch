@@ -18,9 +18,9 @@ fn test_multisign_account() {
     let u2 = keystore.addresses()[1];
     let u3 = keystore.addresses()[2];
 
-    // println!("u1: {:?}", u1);
-    // println!("u2: {:?}", u2);
-    // println!("u3: {:?}", u3);
+    println!("u1: {:?}", u1);
+    println!("u2: {:?}", u2);
+    println!("u3: {:?}", u3);
 
     let kp1 = keystore.get_key_pair(&u1, None).unwrap();
     let kp2 = keystore.get_key_pair(&u2, None).unwrap();
@@ -31,9 +31,9 @@ fn test_multisign_account() {
         kp2.bitcoin_public_key().unwrap(),
         kp3.bitcoin_public_key().unwrap(),
     ];
-    // for pubkey in &pubkeys {
-    //     println!("pubkey: {}", pubkey);
-    // }
+    for pubkey in &pubkeys {
+        println!("pubkey: {}", pubkey);
+    }
 
     let pubkeys = pubkeys
         .into_iter()
@@ -42,7 +42,7 @@ fn test_multisign_account() {
 
     let bitcoin_address_from_rust =
         multisign_account::generate_multisign_address(2, pubkeys.clone()).unwrap();
-    //println!("bitcoin_address_from_rust: {}", bitcoin_address_from_rust);
+    println!("bitcoin_address_from_rust: {}", bitcoin_address_from_rust);
 
     let account_module = binding_test.as_module_binding::<MultisignAccountModule>();
 
