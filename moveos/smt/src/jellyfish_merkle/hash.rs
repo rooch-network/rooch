@@ -1,7 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::{
+    fmt::{self, Debug},
+    str::FromStr,
+};
+
 use bytes::Bytes;
+use fastcrypto::hash::{HashFunction, Sha256};
 use hex::FromHex;
 use more_asserts::debug_assert_lt;
 use once_cell::sync::Lazy;
@@ -10,16 +16,12 @@ use primitive_types::H256;
 use proptest_derive::Arbitrary;
 use rand::{rngs::OsRng, Rng};
 use serde::{de, ser};
-use std::{
-    fmt::{self, Debug},
-    str::FromStr,
-};
 use tiny_keccak::{Hasher, Sha3};
 
 pub(crate) fn merkle_hash(left: HashValue, right: HashValue) -> HashValue {
     let mut value = left.to_vec();
     value.extend(right.to_vec());
-    HashValue::sha3_256_of(&value)
+    HashValue::sha256_of(&value)
 }
 
 //TODO replace HashValue with H256
@@ -83,6 +85,11 @@ impl HashValue {
         let mut sha3 = Sha3::v256();
         sha3.update(buffer);
         HashValue::from_keccak(sha3)
+    }
+
+    pub fn sha256_of(buffer: &[u8]) -> Self {
+        let data = Sha256::digest(buffer);
+        HashValue::new(data.digest)
     }
 
     #[cfg(test)]

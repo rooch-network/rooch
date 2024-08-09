@@ -37,5 +37,6 @@ thiserror = { workspace = true }
 tiny-keccak = { workspace = true, features = ["keccak", "sha3"] }
 prometheus = { workspace = true }
 function_name = { workspace = true }
+fastcrypto = { workspace = true }
 
 metrics = { workspace = true }

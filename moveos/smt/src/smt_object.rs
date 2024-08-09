@@ -4,14 +4,16 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::jellyfish_merkle::hash::{HashValue, SMTHash};
+use std::{cell::Cell, fmt};
+
 use anyhow::Result;
 use primitive_types::H256;
 use serde::{
     de::{self, DeserializeOwned},
     Deserialize, Serialize,
 };
-use std::{cell::Cell, fmt};
+
+use crate::jellyfish_merkle::hash::{HashValue, SMTHash};
 
 pub trait Key: std::cmp::Ord + Copy + Into<H256> + From<H256> {}
 
@@ -197,7 +199,7 @@ impl<T> SMTHash for SMTObject<T> {
         match self.cached_hash.get() {
             Some(hash) => hash,
             None => {
-                let hash = HashValue::sha3_256_of(&self.raw);
+                let hash = HashValue::sha256_of(&self.raw);
                 self.cached_hash.set(Some(hash));
                 hash
             }
