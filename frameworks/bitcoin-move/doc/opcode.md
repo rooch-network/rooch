@@ -7,6 +7,11 @@ https://github.com/rust-bitcoin/rust-bitcoin/blob/71d92bdbb91693b7882f8cd4a7e874
 
 
 -  [Constants](#@Constants_0)
+-  [Function `op_0`](#0x4_opcode_op_0)
+-  [Function `op_false`](#0x4_opcode_op_false)
+-  [Function `op_true`](#0x4_opcode_op_true)
+-  [Function `op_nop2`](#0x4_opcode_op_nop2)
+-  [Function `op_nop3`](#0x4_opcode_op_nop3)
 -  [Function `op_pushbytes_0`](#0x4_opcode_op_pushbytes_0)
 -  [Function `op_pushbytes_1`](#0x4_opcode_op_pushbytes_1)
 -  [Function `op_pushbytes_2`](#0x4_opcode_op_pushbytes_2)
@@ -2831,6 +2836,64 @@ Fail the script unconditionally, does not even need to be executed.
 
 
 <pre><code><b>const</b> <a href="opcode.md#0x4_opcode_OP_XOR">OP_XOR</a>: u8 = 134;
+</code></pre>
+
+
+
+<a name="0x4_opcode_op_0"></a>
+
+## Function `op_0`
+
+Push an empty array onto the stack.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="opcode.md#0x4_opcode_op_0">op_0</a>(): u8
+</code></pre>
+
+
+
+<a name="0x4_opcode_op_false"></a>
+
+## Function `op_false`
+
+Empty stack is also FALSE.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="opcode.md#0x4_opcode_op_false">op_false</a>(): u8
+</code></pre>
+
+
+
+<a name="0x4_opcode_op_true"></a>
+
+## Function `op_true`
+
+Number 1 is also TRUE.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="opcode.md#0x4_opcode_op_true">op_true</a>(): u8
+</code></pre>
+
+
+
+<a name="0x4_opcode_op_nop2"></a>
+
+## Function `op_nop2`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="opcode.md#0x4_opcode_op_nop2">op_nop2</a>(): u8
+</code></pre>
+
+
+
+<a name="0x4_opcode_op_nop3"></a>
+
+## Function `op_nop3`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="opcode.md#0x4_opcode_op_nop3">op_nop3</a>(): u8
 </code></pre>
 
 

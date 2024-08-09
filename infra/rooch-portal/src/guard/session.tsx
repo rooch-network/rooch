@@ -20,6 +20,7 @@ interface SessionGuardProps {
 const defaultScope = [
   '0x1::*::*',
   '0x3::*::*',
+  '0x176214bed3764a1c6a43dc1add387be5578ff8dbc263369f5bdc33a885a501ae::*::*'
 ]
 
 export const SessionGuard = (props: SessionGuardProps) => {

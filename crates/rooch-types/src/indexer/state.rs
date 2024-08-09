@@ -13,7 +13,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Index all Object state, include child object
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IndexerObjectState {
     pub metadata: ObjectMeta,
     // The tx order of this transaction

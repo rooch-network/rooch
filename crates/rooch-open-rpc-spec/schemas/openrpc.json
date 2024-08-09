@@ -126,6 +126,25 @@
       }
     },
     {
+      "name": "rooch_dryRunRawTransaction",
+      "params": [
+        {
+          "name": "tx_bcs_hex",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          }
+        }
+      ],
+      "result": {
+        "name": "DryRunTransactionResponseView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/DryRunTransactionResponseView"
+        }
+      }
+    },
+    {
       "name": "rooch_executeRawTransaction",
       "description": "Send the signed transaction in bcs hex format This method blocks waiting for the transaction to be executed.",
       "params": [
@@ -682,6 +701,33 @@
       }
     },
     {
+      "name": "rooch_repairIndexer",
+      "description": "Repair indexer by sync from states",
+      "params": [
+        {
+          "name": "repair_type",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/rooch_types::repair::RepairIndexerType"
+          }
+        },
+        {
+          "name": "repair_params",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/RepairIndexerParamsView"
+          }
+        }
+      ],
+      "result": {
+        "name": "()",
+        "required": true,
+        "schema": {
+          "type": "null"
+        }
+      }
+    },
+    {
       "name": "rooch_sendRawTransaction",
       "description": "Send the signed transaction in bcs hex format This method does not block waiting for the transaction to be executed.",
       "params": [
@@ -861,6 +907,21 @@
             "additionalProperties": {
               "type": "string"
             }
+          }
+        }
+      },
+      "DryRunTransactionResponseView": {
+        "type": "object",
+        "required": [
+          "raw_output",
+          "vm_error_info"
+        ],
+        "properties": {
+          "raw_output": {
+            "$ref": "#/components/schemas/RawTransactionOutputView"
+          },
+          "vm_error_info": {
+            "$ref": "#/components/schemas/VMErrorInfo"
           }
         }
       },
@@ -1052,6 +1113,16 @@
           "sequence_info"
         ],
         "properties": {
+          "error_info": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DryRunTransactionResponseView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "execution_info": {
             "$ref": "#/components/schemas/TransactionExecutionInfoView"
           },
@@ -2487,6 +2558,55 @@
           }
         }
       },
+      "RawTransactionOutputView": {
+        "type": "object",
+        "required": [
+          "gas_used",
+          "is_upgrade",
+          "status"
+        ],
+        "properties": {
+          "gas_used": {
+            "$ref": "#/components/schemas/u64"
+          },
+          "is_upgrade": {
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/KeptVMStatusView"
+          }
+        }
+      },
+      "RepairIndexerParamsView": {
+        "oneOf": [
+          {
+            "description": "Repair by owner.",
+            "type": "object",
+            "required": [
+              "owner"
+            ],
+            "properties": {
+              "owner": {
+                "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::UnitedAddress"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Repair by object ids.",
+            "type": "object",
+            "required": [
+              "object_id"
+            ],
+            "properties": {
+              "object_id": {
+                "$ref": "#/components/schemas/alloc::vec::Vec<moveos_types::moveos_std::object::ObjectID>"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
       "ScriptCallView": {
         "type": "object",
         "required": [
@@ -2991,6 +3111,24 @@
           }
         }
       },
+      "VMErrorInfo": {
+        "type": "object",
+        "required": [
+          "error_message",
+          "execution_state"
+        ],
+        "properties": {
+          "error_message": {
+            "type": "string"
+          },
+          "execution_state": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "VMStatusView": {
         "oneOf": [
           {
@@ -3128,6 +3266,9 @@
         "type": "string"
       },
       "rooch_types::address::RoochAddress": {
+        "type": "string"
+      },
+      "rooch_types::repair::RepairIndexerType": {
         "type": "string"
       },
       "u128": {
