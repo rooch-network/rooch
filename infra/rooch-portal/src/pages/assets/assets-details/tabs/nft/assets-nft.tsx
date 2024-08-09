@@ -34,7 +34,7 @@ export const AssetsNft = () => {
   const { mutateAsync: transferObject } = useTransferObject()
 
   // PAGINATION
-  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 1 })
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 20 })
   const mapPageToNextCursor = useRef<{ [page: number]: string | null }>({})
   const handlePageChange = (selectedPage: number) => {
     if (selectedPage < 0) {
