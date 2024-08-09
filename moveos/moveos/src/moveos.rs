@@ -107,7 +107,7 @@ impl Clone for MoveOSConfig {
 pub struct MoveOS {
     vm: MoveOSVM,
     pub db: MoveOSStore,
-    cost_table: Arc<RwLock<Option<CostTable>>>,
+    pub cost_table: Arc<RwLock<Option<CostTable>>>,
     system_pre_execute_functions: Vec<FunctionCall>,
     system_post_execute_functions: Vec<FunctionCall>,
 }
