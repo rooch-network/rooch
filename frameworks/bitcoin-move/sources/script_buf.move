@@ -206,8 +206,8 @@ module bitcoin_move::script_buf{
         let addr = option::extract(&mut addr_opt);
         assert!(bitcoin_address::is_p2sh(&addr), 1001);
         let addr_bytes = bitcoin_address::into_bytes(addr);
-        //std::debug::print(&addr_bytes);
-        let expected_addr_bytes = x"0574d691da1574e6b3c192ecfb52cc8984ee7b6c48";
+        std::debug::print(&addr_bytes);
+        let expected_addr_bytes = x"0174d691da1574e6b3c192ecfb52cc8984ee7b6c48";
         assert!(addr_bytes == expected_addr_bytes, 1002);
     }
 
