@@ -6,8 +6,13 @@
 
 
 -  [Struct `ScriptBuf`](#0x4_script_buf_ScriptBuf)
+-  [Constants](#@Constants_0)
+-  [Function `empty`](#0x4_script_buf_empty)
 -  [Function `new`](#0x4_script_buf_new)
+-  [Function `single`](#0x4_script_buf_single)
+-  [Function `is_empty`](#0x4_script_buf_is_empty)
 -  [Function `bytes`](#0x4_script_buf_bytes)
+-  [Function `into_bytes`](#0x4_script_buf_into_bytes)
 -  [Function `is_p2sh`](#0x4_script_buf_is_p2sh)
 -  [Function `p2sh_script_hash`](#0x4_script_buf_p2sh_script_hash)
 -  [Function `is_p2pkh`](#0x4_script_buf_is_p2pkh)
@@ -16,9 +21,15 @@
 -  [Function `witness_program`](#0x4_script_buf_witness_program)
 -  [Function `get_address`](#0x4_script_buf_get_address)
 -  [Function `is_op_return`](#0x4_script_buf_is_op_return)
+-  [Function `push_opcode`](#0x4_script_buf_push_opcode)
+-  [Function `push_data`](#0x4_script_buf_push_data)
+-  [Function `push_int`](#0x4_script_buf_push_int)
+-  [Function `push_key`](#0x4_script_buf_push_key)
+-  [Function `push_x_only_key`](#0x4_script_buf_push_x_only_key)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
 <b>use</b> <a href="opcode.md#0x4_opcode">0x4::opcode</a>;
 </code></pre>
@@ -37,6 +48,49 @@
 
 
 
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x4_script_buf_BITCOIN_PUBKEY_SIZE"></a>
+
+
+
+<pre><code><b>const</b> <a href="script_buf.md#0x4_script_buf_BITCOIN_PUBKEY_SIZE">BITCOIN_PUBKEY_SIZE</a>: u64 = 33;
+</code></pre>
+
+
+
+<a name="0x4_script_buf_BITCOIN_X_ONLY_PUBKEY_SIZE"></a>
+
+
+
+<pre><code><b>const</b> <a href="script_buf.md#0x4_script_buf_BITCOIN_X_ONLY_PUBKEY_SIZE">BITCOIN_X_ONLY_PUBKEY_SIZE</a>: u64 = 32;
+</code></pre>
+
+
+
+<a name="0x4_script_buf_ErrorInvalidKeySize"></a>
+
+
+
+<pre><code><b>const</b> <a href="script_buf.md#0x4_script_buf_ErrorInvalidKeySize">ErrorInvalidKeySize</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x4_script_buf_empty"></a>
+
+## Function `empty`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_empty">empty</a>(): <a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>
+</code></pre>
+
+
+
 <a name="0x4_script_buf_new"></a>
 
 ## Function `new`
@@ -48,6 +102,28 @@
 
 
 
+<a name="0x4_script_buf_single"></a>
+
+## Function `single`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_single">single</a>(<a href="opcode.md#0x4_opcode">opcode</a>: u8): <a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>
+</code></pre>
+
+
+
+<a name="0x4_script_buf_is_empty"></a>
+
+## Function `is_empty`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_is_empty">is_empty</a>(self: &<a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>): bool
+</code></pre>
+
+
+
 <a name="0x4_script_buf_bytes"></a>
 
 ## Function `bytes`
@@ -55,6 +131,17 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_bytes">bytes</a>(self: &<a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>): &<a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_script_buf_into_bytes"></a>
+
+## Function `into_bytes`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_into_bytes">into_bytes</a>(self: <a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -152,4 +239,61 @@ Checks if the given script is an OP_RETURN script.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_is_op_return">is_op_return</a>(self: &<a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>): bool
+</code></pre>
+
+
+
+<a name="0x4_script_buf_push_opcode"></a>
+
+## Function `push_opcode`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_push_opcode">push_opcode</a>(self: &<b>mut</b> <a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>, <a href="opcode.md#0x4_opcode">opcode</a>: u8)
+</code></pre>
+
+
+
+<a name="0x4_script_buf_push_data"></a>
+
+## Function `push_data`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_push_data">push_data</a>(self: &<b>mut</b> <a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>, data: <a href="">vector</a>&lt;u8&gt;)
+</code></pre>
+
+
+
+<a name="0x4_script_buf_push_int"></a>
+
+## Function `push_int`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_push_int">push_int</a>(self: &<b>mut</b> <a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>, n: u64)
+</code></pre>
+
+
+
+<a name="0x4_script_buf_push_key"></a>
+
+## Function `push_key`
+
+Push a Bitcoin public key to the script
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_push_key">push_key</a>(self: &<b>mut</b> <a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>, key: <a href="">vector</a>&lt;u8&gt;)
+</code></pre>
+
+
+
+<a name="0x4_script_buf_push_x_only_key"></a>
+
+## Function `push_x_only_key`
+
+Push a Bitcoin x-only public key to the script
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_push_x_only_key">push_x_only_key</a>(self: &<b>mut</b> <a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>, key: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>

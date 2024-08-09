@@ -16,6 +16,7 @@ pub mod indexer;
 pub mod into_address;
 pub mod key_struct;
 pub mod multichain_id;
+pub mod nursery;
 pub mod repair;
 pub mod rooch_key;
 pub mod rooch_network;
