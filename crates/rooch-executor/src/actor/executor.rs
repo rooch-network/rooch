@@ -125,6 +125,20 @@ impl ExecutorActor {
             .moveos_store
             .handle_tx_output(tx_hash, output.clone())?;
 
+        // The cost table has been upgraded, we need to reload the native functions.
+        if self.moveos.cost_table.read().is_none() {
+            let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
+            let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
+
+            self.moveos = MoveOS::new(
+                self.moveos_store.clone(),
+                gas_parameters.all_natives(),
+                MoveOSConfig::default(),
+                system_pre_execute_functions(),
+                system_post_execute_functions(),
+            )?;
+        }
+
         self.root = execution_info.root_metadata();
         self.metrics
             .executor_execute_tx_bytes
