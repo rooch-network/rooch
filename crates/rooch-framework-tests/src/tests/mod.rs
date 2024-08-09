@@ -7,6 +7,7 @@ mod brc20_test;
 mod chain_id_test;
 mod empty_tests;
 mod ethereum_test;
+mod multisign_account_tests;
 mod ord_test;
 mod session_validator_tests;
 mod view_function_gas;

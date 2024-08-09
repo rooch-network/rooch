@@ -109,6 +109,15 @@ impl RoochKeyPair {
         }
     }
 
+    pub fn bitcoin_public_key(&self) -> Result<bitcoin::PublicKey, anyhow::Error> {
+        match self {
+            RoochKeyPair::Secp256k1(kp) => {
+                Ok(bitcoin::PublicKey::from_slice(kp.public().as_bytes())?)
+            }
+            _ => bail!("Only secp256k1 public key can be converted to bitcoin public key"),
+        }
+    }
+
     pub fn private(&self) -> &[u8] {
         match self {
             RoochKeyPair::Ed25519(kp) => kp.as_bytes(),
