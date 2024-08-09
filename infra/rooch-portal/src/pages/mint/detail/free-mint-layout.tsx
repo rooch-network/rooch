@@ -30,7 +30,7 @@ export const FreeMintLayout = () => {
     accessPath: `/resource/${address}/${address}::og_nft::Config`,
   })
 
-  const {data: checkData} = useRoochClientQuery('executeViewFunction', {
+  const {data: checkData, refetch} = useRoochClientQuery('executeViewFunction', {
     target: `${address}::og_nft::check_mintable`,
     args: [Args.address(wallet?.getRoochAddress().toHexAddress() || '')]
   }, {
@@ -50,7 +50,7 @@ export const FreeMintLayout = () => {
         console.log(why)
       })
       .then((_) => {
-        // refetch()
+        refetch()
       })
       .finally(() => setLoading(false))
   }
