@@ -17,6 +17,7 @@ use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::move_std::option::MoveOption;
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::ObjectState;
@@ -26,8 +27,11 @@ use moveos_types::transaction::{MoveAction, VerifiedMoveOSTransaction};
 use prometheus::Registry;
 use rooch_genesis::FrameworksGasParameters;
 use rooch_store::RoochStore;
+use rooch_types::address::{BitcoinAddress, MultiChainAddress};
 use rooch_types::bitcoin::BitcoinModule;
-use rooch_types::framework::auth_validator::{AuthValidatorCaller, TxValidateResult};
+use rooch_types::framework::auth_validator::{
+    AuthValidatorCaller, BuiltinAuthValidator, TxValidateResult,
+};
 use rooch_types::framework::ethereum::EthereumModule;
 use rooch_types::framework::transaction_validator::TransactionValidator;
 use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
@@ -36,6 +40,7 @@ use rooch_types::transaction::{
     AuthenticatorInfo, L1Block, L1BlockWithBody, L1Transaction, RoochTransaction,
     RoochTransactionData,
 };
+use std::str::FromStr;
 use std::sync::Arc;
 use tracing::{debug, warn};
 
@@ -347,7 +352,21 @@ impl ExecutorActor {
             tx_data.tx_size(),
         );
 
-        tx_ctx.add(TxValidateResult::new_for_test())?;
+        let mut bitcoin_address = BitcoinAddress::from_str("18cBEMRxXHqzWWCxZNtU91F5sbUNKhL5PX")?;
+
+        let user_multi_chain_address: MultiChainAddress = tx_data.sender.into();
+        if user_multi_chain_address.is_bitcoin_address() {
+            bitcoin_address = user_multi_chain_address.try_into()?;
+        }
+
+        let dummy_result = TxValidateResult {
+            auth_validator_id: BuiltinAuthValidator::Bitcoin.flag().into(),
+            auth_validator: MoveOption::none(),
+            session_key: MoveOption::none(),
+            bitcoin_address,
+        };
+
+        tx_ctx.add(dummy_result)?;
 
         let verified_action = match tx_data.action {
             MoveAction::Script(script_call) => VerifiedMoveAction::Script { call: script_call },

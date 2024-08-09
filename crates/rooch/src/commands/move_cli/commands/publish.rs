@@ -133,24 +133,6 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
 
         let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
 
-        /*
-        let output_dry_run_message = |dry_run_resp: DryRunTransactionResponseView| {
-            println!(
-                "Transaction dry run failed: {:?}",
-                dry_run_resp.vm_error_info.error_message
-            );
-            println!("\nStack trace:");
-            for (idx, item) in dry_run_resp
-                .vm_error_info
-                .execution_state
-                .iter()
-                .enumerate()
-            {
-                println!("{} {}", idx, item);
-            }
-        };
-         */
-
         // Prepare and execute the transaction based on the action type
         let tx_result = if !self.by_move_action {
             let args = bcs::to_bytes(&bundles).unwrap();
