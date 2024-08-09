@@ -8,7 +8,10 @@ MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "f
 RoochFramework = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/rooch-framework", rev = "main" }
 
 [addresses]
-og_nft = "_"
+rooch_examples = "_"
 std = "0x1"
 moveos_std = "0x2"
 rooch_framework = "0x3"
+
+[dev-addresses]
+rooch_examples = "0x42"

@@ -1,4 +1,4 @@
-module og_nft::og_nft {
+module rooch_examples::og_nft {
 
     use std::string::utf8;
     use moveos_std::event::emit;
@@ -45,7 +45,7 @@ module og_nft::og_nft {
     }
 
     public entry fun mint() {
-        let global = account::borrow_mut_resource<Config>(@og_nft);
+        let global = account::borrow_mut_resource<Config>(@rooch_examples);
         assert!(!table::contains(&global.minted_address, sender()),ErrorAddressAlreadyMint);
         let nft_obj = object::new(
             NFT{
@@ -60,7 +60,7 @@ module og_nft::og_nft {
     }
 
     public fun check_mintable(account: address): bool {
-        let global = account::borrow_mut_resource<Config>(@og_nft);
+        let global = account::borrow_mut_resource<Config>(@rooch_examples);
         !table::contains(&global.minted_address, account)
     }
 }
