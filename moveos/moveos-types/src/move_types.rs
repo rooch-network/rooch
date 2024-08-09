@@ -246,13 +246,283 @@ pub fn get_first_ty_as_struct_tag(struct_tag: StructTag) -> Result<StructTag> {
     }
 }
 
-#[test]
-fn test_type_tag() -> Result<()> {
-    let type_tag_str = "0x5::test::struct";
-    let type_tag_canonical_str =
-        "0000000000000000000000000000000000000000000000000000000000000005::test::struct";
-    let test_type_tag = TypeTag::from_str(type_tag_str)?;
-    assert_eq!(type_tag_str, test_type_tag.to_string());
-    assert_eq!(type_tag_canonical_str, test_type_tag.to_canonical_string());
-    Ok(())
+/// Parse a type tag from a canonical string
+/// This is the reverse of TypeTag::to_canonical_string()
+pub fn from_canonical_string(s: &str) -> Result<TypeTag> {
+    match s {
+        "bool" => Ok(TypeTag::Bool),
+        "u8" => Ok(TypeTag::U8),
+        "u16" => Ok(TypeTag::U16),
+        "u32" => Ok(TypeTag::U32),
+        "u64" => Ok(TypeTag::U64),
+        "u128" => Ok(TypeTag::U128),
+        "u256" => Ok(TypeTag::U256),
+        "address" => Ok(TypeTag::Address),
+        "signer" => Ok(TypeTag::Signer),
+        _ => {
+            if s.starts_with("vector<") && s.ends_with('>') {
+                let inner = &s[7..s.len() - 1];
+                let inner_type = from_canonical_string(inner)?;
+                Ok(TypeTag::Vector(Box::new(inner_type)))
+            } else {
+                struct_tag_from_canonical_string(s).map(|s| TypeTag::Struct(Box::new(s)))
+            }
+        }
+    }
+}
+
+fn struct_tag_from_canonical_string(s: &str) -> Result<StructTag> {
+    let parts: Vec<&str> = s.splitn(3, "::").collect();
+    if parts.len() < 3 {
+        return Err(anyhow::anyhow!("Invalid struct tag format"));
+    }
+
+    let first_double_colon = s
+        .find("::")
+        .ok_or_else(|| anyhow::anyhow!("Invalid struct tag format: missing first '::'"))?;
+    let second_double_colon = s[first_double_colon + 2..]
+        .find("::")
+        .map(|i| i + first_double_colon + 2)
+        .ok_or_else(|| anyhow::anyhow!("Invalid struct tag format: missing second '::'"))?;
+
+    let address = AccountAddress::from_hex(&s[..first_double_colon])?;
+    let module = Identifier::new(&s[first_double_colon + 2..second_double_colon])?;
+
+    let name_and_generics = &s[second_double_colon + 2..];
+    let name_end = name_and_generics
+        .find('<')
+        .unwrap_or(name_and_generics.len());
+    let name = Identifier::new(&name_and_generics[..name_end])?;
+
+    let type_params = if name_end < name_and_generics.len() {
+        // ensure the last char is '>' and params are not empty
+        if !name_and_generics.ends_with('>') || name_and_generics[name_end + 1..].trim() == ">" {
+            return Err(anyhow::anyhow!("Invalid generic parameters format"));
+        }
+        let generics = &name_and_generics[name_end + 1..name_and_generics.len() - 1];
+        parse_type_params(generics)?
+    } else {
+        vec![]
+    };
+
+    Ok(StructTag {
+        address,
+        module,
+        name,
+        type_params,
+    })
+}
+
+fn parse_type_params(s: &str) -> Result<Vec<TypeTag>, anyhow::Error> {
+    if s.trim().is_empty() {
+        return Err(anyhow::anyhow!("Empty type parameters are not allowed"));
+    }
+
+    let mut params = Vec::new();
+    let mut depth = 0;
+    let mut start = 0;
+
+    for (i, c) in s.char_indices() {
+        match c {
+            '<' => depth += 1,
+            '>' => depth -= 1,
+            ',' if depth == 0 => {
+                let param = from_canonical_string(s[start..i].trim())?;
+                params.push(param);
+                start = i + 1;
+            }
+            _ => {}
+        }
+    }
+
+    if start < s.len() {
+        let param = from_canonical_string(s[start..].trim())?;
+        params.push(param);
+    }
+
+    if params.is_empty() {
+        return Err(anyhow::anyhow!("Empty type parameters are not allowed"));
+    }
+
+    Ok(params)
+}
+
+/// Parse a type tag from a string
+/// This function support parse type tag from TypeTag::to_string() or TypeTag::to_canonical_string()
+/// The canonical string format is:
+/// `0000000000000000000000000000000a::module_name1::type_name1<0000000000000000000000000000000a::module_name2::type_name2<u64>>
+/// The non-canonical string format is:
+/// `0xa::module_name1::type_name1<0xa::module_name2::type_name2<u64>>`
+/// TODO: Should we unify the canonical and non-canonical string format?
+/// https://github.com/rooch-network/rooch/issues/2395
+pub fn parse_type_tag(s: &str) -> Result<TypeTag> {
+    let s = s.trim();
+    if s.starts_with("0x") {
+        TypeTag::from_str(s)
+    } else {
+        from_canonical_string(s)
+    }
+}
+
+/// Parse a struct tag from a string
+/// This function support parse struct tag from StructTag::to_string() or StructTag::to_canonical_string()
+pub fn parse_struct_tag(s: &str) -> Result<StructTag> {
+    let s = s.trim();
+    if s.starts_with("0x") {
+        StructTag::from_str(s)
+    } else {
+        struct_tag_from_canonical_string(s)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_type_tag() -> Result<()> {
+        let type_tag_str = "0x5::test::struct";
+        let type_tag_canonical_str =
+            "0000000000000000000000000000000000000000000000000000000000000005::test::struct";
+        let test_type_tag = TypeTag::from_str(type_tag_str)?;
+        assert_eq!(type_tag_str, test_type_tag.to_string());
+        assert_eq!(type_tag_canonical_str, test_type_tag.to_canonical_string());
+        Ok(())
+    }
+
+    #[test]
+    fn test_type_tag_from_canonical_string() {
+        // primitive types
+        assert_eq!(from_canonical_string("bool").unwrap(), TypeTag::Bool);
+        assert_eq!(from_canonical_string("u8").unwrap(), TypeTag::U8);
+        assert_eq!(from_canonical_string("u64").unwrap(), TypeTag::U64);
+        assert_eq!(from_canonical_string("u128").unwrap(), TypeTag::U128);
+        assert_eq!(from_canonical_string("address").unwrap(), TypeTag::Address);
+        assert_eq!(from_canonical_string("signer").unwrap(), TypeTag::Signer);
+
+        // Vector
+        assert_eq!(
+            from_canonical_string("vector<u8>").unwrap(),
+            TypeTag::Vector(Box::new(TypeTag::U8))
+        );
+        assert_eq!(
+            from_canonical_string("vector<vector<u64>>").unwrap(),
+            TypeTag::Vector(Box::new(TypeTag::Vector(Box::new(TypeTag::U64))))
+        );
+
+        // Struct
+        let struct_tag = from_canonical_string(
+            "0000000000000000000000000000000000000000000000000000000000000001::string::String",
+        )
+        .unwrap();
+        if let TypeTag::Struct(s) = struct_tag {
+            assert_eq!(s.address, AccountAddress::from_hex_literal("0x1").unwrap());
+            assert_eq!(s.module.as_str(), "string");
+            assert_eq!(s.name.as_str(), "String");
+            assert!(s.type_params.is_empty());
+        } else {
+            panic!("Expected Struct TypeTag");
+        }
+
+        // struct with type params
+        let complex_struct = from_canonical_string("0000000000000000000000000000000000000000000000000000000000000001::table::Table<0000000000000000000000000000000000000000000000000000000000000001::string::String,u64>").unwrap();
+        if let TypeTag::Struct(s) = complex_struct {
+            assert_eq!(s.address, AccountAddress::from_hex_literal("0x1").unwrap());
+            assert_eq!(s.module.as_str(), "table");
+            assert_eq!(s.name.as_str(), "Table");
+            assert_eq!(s.type_params.len(), 2);
+        } else {
+            panic!("Expected Struct TypeTag");
+        }
+
+        // error cases
+        assert!(from_canonical_string("invalid_type").is_err());
+        assert!(from_canonical_string("vector<>").is_err());
+        assert!(from_canonical_string(
+            "0000000000000000000000000000000000000000000000000000000000000001::module::"
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn test_struct_tag_from_canonical_string() {
+        // struct
+        let basic_struct = struct_tag_from_canonical_string(
+            "0000000000000000000000000000000000000000000000000000000000000001::module::Name",
+        )
+        .unwrap();
+        assert_eq!(
+            basic_struct.address,
+            AccountAddress::from_hex_literal("0x1").unwrap()
+        );
+        assert_eq!(basic_struct.module.as_str(), "module");
+        assert_eq!(basic_struct.name.as_str(), "Name");
+        assert!(basic_struct.type_params.is_empty());
+
+        // one type param
+        let single_generic = struct_tag_from_canonical_string(
+            "0000000000000000000000000000000000000000000000000000000000000001::vector::Vector<u8>",
+        )
+        .unwrap();
+        assert_eq!(
+            single_generic.address,
+            AccountAddress::from_hex_literal("0x1").unwrap()
+        );
+        assert_eq!(single_generic.module.as_str(), "vector");
+        assert_eq!(single_generic.name.as_str(), "Vector");
+        assert_eq!(single_generic.type_params.len(), 1);
+        assert_eq!(single_generic.type_params[0], TypeTag::U8);
+
+        // multiple type params
+        let multi_generic = struct_tag_from_canonical_string("0000000000000000000000000000000000000000000000000000000000000001::table::Table<0000000000000000000000000000000000000000000000000000000000000001::string::String,u64>").unwrap();
+        assert_eq!(
+            multi_generic.address,
+            AccountAddress::from_hex_literal("0x1").unwrap()
+        );
+        assert_eq!(multi_generic.module.as_str(), "table");
+        assert_eq!(multi_generic.name.as_str(), "Table");
+        assert_eq!(multi_generic.type_params.len(), 2);
+
+        // nested generic
+        let nested_generic = struct_tag_from_canonical_string("0000000000000000000000000000000000000000000000000000000000000001::complex::Type<vector<0000000000000000000000000000000000000000000000000000000000000001::coin::Coin<0000000000000000000000000000000000000000000000000000000000000001::gas_coin::GasCoin>>>").unwrap();
+        assert_eq!(
+            nested_generic.address,
+            AccountAddress::from_hex_literal("0x1").unwrap()
+        );
+        assert_eq!(nested_generic.module.as_str(), "complex");
+        assert_eq!(nested_generic.name.as_str(), "Type");
+        assert_eq!(nested_generic.type_params.len(), 1);
+
+        if let TypeTag::Vector(inner) = &nested_generic.type_params[0] {
+            if let TypeTag::Struct(coin_struct) = inner.as_ref() {
+                assert_eq!(coin_struct.module.as_str(), "coin");
+                assert_eq!(coin_struct.name.as_str(), "Coin");
+                assert_eq!(coin_struct.type_params.len(), 1);
+                if let TypeTag::Struct(gas_coin_struct) = &coin_struct.type_params[0] {
+                    assert_eq!(gas_coin_struct.module.as_str(), "gas_coin");
+                    assert_eq!(gas_coin_struct.name.as_str(), "GasCoin");
+                } else {
+                    panic!("Expected Struct TypeTag for GasCoin");
+                }
+            } else {
+                panic!("Expected Struct TypeTag for Coin");
+            }
+        } else {
+            panic!("Expected Vector TypeTag");
+        }
+
+        assert!(struct_tag_from_canonical_string(
+            "0000000000000000000000000000000000000000000000000000000000000001::module"
+        )
+        .is_err());
+        assert!(struct_tag_from_canonical_string(
+            "0000000000000000000000000000000000000000000000000000000000000001::module::Name<>"
+        )
+        .is_err());
+        assert!(struct_tag_from_canonical_string(
+            "0000000000000000000000000000000000000000000000000000000000000001::module::Name<u8"
+        )
+        .is_err());
+        assert!(struct_tag_from_canonical_string("invalid::module::Name").is_err());
+    }
 }
