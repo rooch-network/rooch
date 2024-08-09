@@ -5,8 +5,8 @@ use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
+use std::sync::{Arc, mpsc, RwLock};
 use std::sync::mpsc::{Receiver, SyncSender};
-use std::sync::{mpsc, Arc, RwLock};
 use std::thread;
 use std::time::SystemTime;
 
@@ -24,14 +24,14 @@ use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
+use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 use crate::commands::statedb::commands::genesis_utxo::{
-    apply_address_updates, apply_utxo_updates, produce_utxo_updates,
+    apply_address_updates, apply_utxo_updates, produce_address_map_updates, produce_utxo_updates,
 };
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes, finish_import_job};
 use crate::commands::statedb::commands::inscription::{
     create_genesis_inscription_store_object, gen_inscription_ids_update, InscriptionSource,
 };
-use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 
 /// Import BTC ordinals & UTXO for genesis
 #[derive(Debug, Parser)]
@@ -125,15 +125,19 @@ impl GenesisCommand {
         });
 
         // import utxo
-        let utxo_input_path = self.utxo_source.clone();
+        let utxo_input_path = Arc::new(self.utxo_source.clone());
+        let utxo_input_path_clone1 = Arc::clone(&utxo_input_path);
+        let utxo_input_path_clone2 = Arc::clone(&utxo_input_path);
         let utxo_batch_size = self.utxo_batch_size.unwrap();
-        let (utxo_tx, utxo_rx) = mpsc::sync_channel(4);
         let (addr_tx, addr_rx) = mpsc::sync_channel(4);
+        let produce_addr_updates_thread = thread::spawn(move || {
+            produce_address_map_updates(addr_tx, utxo_input_path_clone1, utxo_batch_size)
+        });
+        let (utxo_tx, utxo_rx) = mpsc::sync_channel(4);
         let produce_utxo_updates_thread = thread::spawn(move || {
             produce_utxo_updates(
                 utxo_tx,
-                addr_tx,
-                utxo_input_path,
+                utxo_input_path_clone2,
                 utxo_batch_size,
                 Some(outpoint_inscriptions_map),
             )
@@ -150,6 +154,7 @@ impl GenesisCommand {
         });
 
         produce_inscription_updates_thread.join().unwrap();
+        produce_addr_updates_thread.join().unwrap();
         produce_utxo_updates_thread.join().unwrap();
         apply_inscription_updates_thread.join().unwrap();
         apply_addr_updates_thread.join().unwrap();

@@ -72,54 +72,11 @@ impl UTXORawData {
         raw_data
     }
 
-    pub fn gen_address_map_update(&mut self) -> (AccountAddress, Option<(AddressMappingData)>) {
-        let bitcoin_address = drive_bitcoin_address(
-            self.address.clone(),
-            self.script.clone(),
-            self.script_type.clone(),
-        );
-        let (address, address_mapping_data) = match bitcoin_address {
-            Some(bitcoin_address) => {
-                let address = AccountAddress::from(bitcoin_address.to_rooch_address());
-                if self.address.is_empty() {
-                    self.address = bitcoin_address.to_string();
-                }
-                let address_mapping_data = Some(AddressMappingData::new(
-                    self.address.clone(),
-                    bitcoin_address,
-                    address,
-                ));
-                (address, address_mapping_data)
-            }
-            None => (BITCOIN_MOVE_ADDRESS, None),
-        };
-        (address, address_mapping_data)
-    }
-
-    pub fn gen_update(
+    pub fn gen_utxo_update(
         &mut self,
         outpoint_inscriptions_map: Option<Arc<OutpointInscriptionsMap>>,
-    ) -> (FieldKey, ObjectState, Option<AddressMappingData>) {
-        let bitcoin_address = drive_bitcoin_address(
-            self.address.clone(),
-            self.script.clone(),
-            self.script_type.clone(),
-        );
-        let (address, address_mapping_data) = match bitcoin_address {
-            Some(bitcoin_address) => {
-                let address = AccountAddress::from(bitcoin_address.to_rooch_address());
-                if self.address.is_empty() {
-                    self.address = bitcoin_address.to_string();
-                }
-                let address_mapping_data = Some(AddressMappingData::new(
-                    self.address.clone(),
-                    bitcoin_address,
-                    address,
-                ));
-                (address, address_mapping_data)
-            }
-            None => (BITCOIN_MOVE_ADDRESS, None),
-        };
+    ) -> (FieldKey, ObjectState) {
+        let (address, _address_mapping_data) = self.gen_address_mapping_data();
 
         let seals = match outpoint_inscriptions_map {
             Some(outpoint_inscriptions_map) => {
@@ -142,11 +99,30 @@ impl UTXORawData {
             0,
             UTXO::new(txid, self.vout, self.amount, seals),
         );
-        (
-            utxo_object.id.field_key(),
-            utxo_object.into_state(),
-            address_mapping_data,
-        )
+        (utxo_object.id.field_key(), utxo_object.into_state())
+    }
+
+    pub fn gen_address_mapping_data(&mut self) -> (AccountAddress, Option<AddressMappingData>) {
+        let bitcoin_address = derive_bitcoin_address(
+            self.address.clone(),
+            self.script.clone(),
+            self.script_type.clone(),
+        );
+        match bitcoin_address {
+            Some(bitcoin_address) => {
+                let address = AccountAddress::from(bitcoin_address.to_rooch_address());
+                if self.address.is_empty() {
+                    self.address = bitcoin_address.to_string();
+                }
+                let address_mapping_data = Some(AddressMappingData::new(
+                    self.address.clone(),
+                    bitcoin_address,
+                    address,
+                ));
+                (address, address_mapping_data)
+            }
+            None => (BITCOIN_MOVE_ADDRESS, None),
+        }
     }
 }
 
@@ -190,8 +166,8 @@ impl AddressMappingData {
     }
 }
 
-// drive BitcoinAddress from UTXO data source
-pub fn drive_bitcoin_address(
+// derive BitcoinAddress from UTXO data source
+fn derive_bitcoin_address(
     origin_address: String,
     script: String,
     script_type: String,
@@ -273,7 +249,7 @@ mod tests {
     #[test]
     fn test_drive_bitcoin_address() {
         // non-empty address
-        let bitcoin_address = drive_bitcoin_address(
+        let bitcoin_address = derive_bitcoin_address(
             "bc1qsn7v0rwezflwd6pk7xxf25zhjw9wkvmympm7tk".to_string(),
             "".to_string(),
             SCRIPT_TYPE_NON_STANDARD.to_string(), // no matter what script type
@@ -283,14 +259,14 @@ mod tests {
             bitcoin_address.unwrap().to_string()
         );
         // non-standard address
-        let bitcoin_address = drive_bitcoin_address(
+        let bitcoin_address = derive_bitcoin_address(
             "".to_string(),
             "".to_string(),
             SCRIPT_TYPE_NON_STANDARD.to_string(),
         );
         assert_eq!(None, bitcoin_address);
         // p2pk script
-        let bitcoin_address = drive_bitcoin_address(
+        let bitcoin_address = derive_bitcoin_address(
             "".to_string(),
             "41049434a2dd7c5b82df88f578f8d7fd14e8d36513aaa9c003eb5bd6cb56065e44b7e0227139e8a8e68e7de0a4ed32b8c90edc9673b8a7ea541b52f2a22196f7b8cfac".to_string(),
             SCRIPT_TYPE_P2PK.to_string(),
@@ -300,7 +276,7 @@ mod tests {
             bitcoin_address.unwrap().to_string()
         );
         // p2pk pubkey
-        let bitcoin_address = drive_bitcoin_address(
+        let bitcoin_address = derive_bitcoin_address(
             "".to_string(),
             "04f254e36949ec1a7f6e9548f16d4788fb321f429b2c7d2eb44480b2ed0195cbf0c3875c767fe8abb2df6827c21392ea5cc934240b9ac46c6a56d2bd13dd0b17a9".to_string(),
             SCRIPT_TYPE_P2PK.to_string(),
@@ -314,14 +290,14 @@ mod tests {
             bitcoin_address.unwrap()
         );
         // invalid p2pk pubkey
-        let bitcoin_address = drive_bitcoin_address(
+        let bitcoin_address = derive_bitcoin_address(
             "".to_string(),
             "036c6565662c206f6e7464656b2c2067656e6965742e2e2e202020202020202020".to_string(),
             SCRIPT_TYPE_P2PK.to_string(),
         );
         assert_eq!(None, bitcoin_address);
         // invalid p2pk script
-        let bitcoin_address = drive_bitcoin_address(
+        let bitcoin_address = derive_bitcoin_address(
             "".to_string(),
             "21036c6565662c206f6e7464656b2c2067656e6965742e2e2e202020202020202020ac".to_string(),
             SCRIPT_TYPE_P2PK.to_string(),
@@ -333,7 +309,7 @@ mod tests {
         // address: bc1q720ex9hs78jgz954sgt23w4ax5a5j8dwjj5kkm
         // )
         let script = "0014f29f9316f0f1e48116958216a8babd353b491dae";
-        let bitcoin_address = drive_bitcoin_address(
+        let bitcoin_address = derive_bitcoin_address(
             "".to_string(),
             script.to_string(),
             SCRIPT_TYPE_P2MS.to_string(),
@@ -344,7 +320,7 @@ mod tests {
         );
         // normal p2ms (cannot get payload)
         let script = "512102047da7156b82baaed491787e77a0d94cbc00ebdbd993639382b8a41d2f8d42dd2107000000000000000000000000000000000000000000000000000000000000000052ae";
-        let bitcoin_address = drive_bitcoin_address(
+        let bitcoin_address = derive_bitcoin_address(
             "".to_string(),
             script.to_string(),
             SCRIPT_TYPE_P2MS.to_string(),

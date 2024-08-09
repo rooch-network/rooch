@@ -17,7 +17,7 @@ use rustc_hash::FxHashSet;
 use moveos_store::MoveOSStore;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::ObjectMeta;
-use moveos_types::state::MoveState;
+use moveos_types::state::{FieldKey, MoveState, ObjectState};
 use moveos_types::state_resolver::{RootObjectResolver, StatelessResolver};
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::bitcoin::ord::InscriptionStore;
@@ -27,13 +27,13 @@ use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::into_address::IntoAddress;
 use rooch_types::rooch_network::RoochChainID;
 
+use crate::commands::statedb::commands::{
+    get_values_by_key, init_job, OutpointInscriptionsMap, UTXO_SEAL_INSCRIPTION_PROTOCOL,
+};
 use crate::commands::statedb::commands::inscription::{
     derive_inscription_ids, gen_inscription_ids_update, InscriptionSource,
 };
 use crate::commands::statedb::commands::utxo::UTXORawData;
-use crate::commands::statedb::commands::{
-    get_values_by_key, init_job, OutpointInscriptionsMap, UTXO_SEAL_INSCRIPTION_PROTOCOL,
-};
 
 /// Import BTC ordinals & UTXO for genesis
 #[derive(Debug, Parser)]
@@ -165,13 +165,14 @@ fn verify_utxo(
             }
         }
         let mut utxo_raw = UTXORawData::from_str(&line);
-        let (key, state, address_mapping_data) =
-            utxo_raw.gen_update(Some(outpoint_inscriptions_map.clone()));
-        let addr_updates = if let Some(address_mapping_data) = address_mapping_data {
-            address_mapping_data.gen_update(&mut added_address_set)
-        } else {
-            None
-        };
+        let (key, state) = utxo_raw.gen_utxo_update(Some(outpoint_inscriptions_map.clone()));
+        let (_, address_mapping_data) = utxo_raw.gen_address_mapping_data();
+        let addr_updates: Option<(FieldKey, ObjectState)> =
+            if let Some(address_mapping_data) = address_mapping_data {
+                address_mapping_data.gen_update(&mut added_address_set)
+            } else {
+                None
+            };
         if random_mode && rand::random::<u32>() % 1000 == 0 {
             let act_utxo_state = resolver
                 .get_field_at(utxo_store_state_root, &key)
