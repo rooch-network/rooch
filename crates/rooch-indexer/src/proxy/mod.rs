@@ -3,9 +3,10 @@
 
 use crate::actor::indexer::IndexerActor;
 use crate::actor::messages::{
-    IndexerEventsMessage, IndexerStatesMessage, IndexerTransactionMessage,
+    IndexerDeleteObjectStatesMessage, IndexerEventsMessage,
+    IndexerPersistOrUpdateObjectStatesMessage, IndexerStatesMessage, IndexerTransactionMessage,
     QueryIndexerEventsMessage, QueryIndexerObjectIdsMessage, QueryIndexerObjectStatesMessage,
-    QueryIndexerTransactionsMessage, UpdateIndexerMessage,
+    QueryIndexerTransactionsMessage, QueryLastStateIndexByTxOrderMessage, UpdateIndexerMessage,
 };
 use crate::actor::reader_indexer::IndexerReaderActor;
 use anyhow::{Ok, Result};
@@ -172,6 +173,27 @@ impl IndexerProxy {
                 limit,
                 descending_order,
             })
+            .await?
+    }
+
+    pub async fn persist_or_update_object_states(
+        &self,
+        states: Vec<IndexerObjectState>,
+    ) -> Result<()> {
+        self.actor
+            .send(IndexerPersistOrUpdateObjectStatesMessage { states })
+            .await?
+    }
+
+    pub async fn delete_object_states(&self, object_ids: Vec<ObjectID>) -> Result<()> {
+        self.actor
+            .send(IndexerDeleteObjectStatesMessage { object_ids })
+            .await?
+    }
+
+    pub async fn query_last_state_index_by_tx_order(&self, tx_order: u64) -> Result<u64> {
+        self.reader_actor
+            .send(QueryLastStateIndexByTxOrderMessage { tx_order })
             .await?
     }
 }

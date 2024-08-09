@@ -701,6 +701,33 @@
       }
     },
     {
+      "name": "rooch_repairIndexer",
+      "description": "Repair indexer by sync from states",
+      "params": [
+        {
+          "name": "repair_type",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/rooch_types::repair::RepairIndexerType"
+          }
+        },
+        {
+          "name": "repair_params",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/RepairIndexerParamsView"
+          }
+        }
+      ],
+      "result": {
+        "name": "()",
+        "required": true,
+        "schema": {
+          "type": "null"
+        }
+      }
+    },
+    {
       "name": "rooch_sendRawTransaction",
       "description": "Send the signed transaction in bcs hex format This method does not block waiting for the transaction to be executed.",
       "params": [
@@ -2550,6 +2577,36 @@
           }
         }
       },
+      "RepairIndexerParamsView": {
+        "oneOf": [
+          {
+            "description": "Repair by owner.",
+            "type": "object",
+            "required": [
+              "owner"
+            ],
+            "properties": {
+              "owner": {
+                "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::UnitedAddress"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Repair by object ids.",
+            "type": "object",
+            "required": [
+              "object_id"
+            ],
+            "properties": {
+              "object_id": {
+                "$ref": "#/components/schemas/alloc::vec::Vec<moveos_types::moveos_std::object::ObjectID>"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
       "ScriptCallView": {
         "type": "object",
         "required": [
@@ -3209,6 +3266,9 @@
         "type": "string"
       },
       "rooch_types::address::RoochAddress": {
+        "type": "string"
+      },
+      "rooch_types::repair::RepairIndexerType": {
         "type": "string"
       },
       "u128": {

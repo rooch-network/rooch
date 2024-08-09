@@ -15,6 +15,7 @@ use moveos_types::{
     moveos_std::{move_module::MoveModule, object::ObjectID},
     state::{AnnotatedState, FieldKey},
 };
+use rooch_rpc_api::jsonrpc_types::repair_view::{RepairIndexerParamsView, RepairIndexerTypeView};
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView,
     event_view::{EventFilterView, EventView, IndexerEventIDView, IndexerEventView},
@@ -758,6 +759,17 @@ impl RoochAPIServer for RoochServer {
             next_cursor,
             has_next_page,
         })
+    }
+
+    async fn repair_indexer(
+        &self,
+        repair_type: RepairIndexerTypeView,
+        repair_params: RepairIndexerParamsView,
+    ) -> RpcResult<()> {
+        self.rpc_service
+            .repair_indexer(repair_type.0, repair_params.into())
+            .await?;
+        Ok(())
     }
 }
 
