@@ -65,6 +65,10 @@ impl RoochTransactionData {
         moveos_types::h256::sha3_256_of(self.encode().as_slice())
     }
 
+    pub fn tx_size(&self) -> u64 {
+        bcs::serialized_size(self).expect("serialize transaction size should success") as u64
+    }
+
     pub fn sign(&self, kp: &RoochKeyPair) -> RoochTransaction {
         let auth = Authenticator::sign(kp, self);
         RoochTransaction::new(self.clone(), auth)

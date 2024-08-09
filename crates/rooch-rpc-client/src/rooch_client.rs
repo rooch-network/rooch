@@ -9,6 +9,7 @@ use moveos_types::{access_path::AccessPath, state::ObjectState, transaction::Fun
 use rooch_rpc_api::api::rooch_api::RoochAPIClient;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, transaction_view::TransactionWithInfoView,
+    DryRunTransactionResponseView,
 };
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, EventOptions, EventPageView,
@@ -20,6 +21,7 @@ use rooch_rpc_api::jsonrpc_types::{
 };
 use rooch_rpc_api::jsonrpc_types::{TransactionWithInfoPageView, TxOptions};
 use rooch_types::indexer::state::IndexerStateID;
+use rooch_types::transaction::RoochTransactionData;
 use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
 use std::sync::Arc;
 
@@ -48,6 +50,17 @@ impl RoochRpcClient {
         let tx_payload = bcs::to_bytes(&tx)?;
         self.http
             .execute_raw_transaction(tx_payload.into(), tx_option)
+            .await
+            .map_err(|e| anyhow::anyhow!(e))
+    }
+
+    pub async fn dry_run_tx(
+        &self,
+        tx: RoochTransactionData,
+    ) -> Result<DryRunTransactionResponseView> {
+        let tx_payload = bcs::to_bytes(&tx)?;
+        self.http
+            .dry_run(tx_payload.into())
             .await
             .map_err(|e| anyhow::anyhow!(e))
     }
