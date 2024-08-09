@@ -9,7 +9,6 @@ use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use function_name::named;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use prometheus::Registry;
-use rooch_executor::actor::messages::DryRunTransactionResult;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_proposer::proxy::ProposerProxy;
@@ -272,37 +271,6 @@ impl PipelineProcessorActor {
             execution_info,
             output,
         })
-    }
-
-    #[named]
-    pub async fn dry_run_tx(
-        &mut self,
-        tx: LedgerTransaction,
-        mut moveos_tx: VerifiedMoveOSTransaction,
-    ) -> Result<DryRunTransactionResult> {
-        let fn_name = function_name!();
-        let _timer = self
-            .metrics
-            .pipeline_processor_execution_tx_latency_seconds
-            .with_label_values(&[fn_name])
-            .start_timer();
-        // Add sequence info to tx context, let the Move contract can get the sequence info
-        moveos_tx.ctx.add(tx.sequence_info.clone())?;
-        // We must add TransactionSequenceInfo and TransactionSequenceInfoV1 both to the tx_context because the rust code is upgraded first, then the framework is upgraded.
-        // The old framework will read the TransactionSequenceInfoV1.
-        let tx_sequence_info_v1 = TransactionSequenceInfoV1::from(tx.sequence_info.clone());
-        moveos_tx.ctx.add(tx_sequence_info_v1)?;
-
-        // Then execute
-        let size = moveos_tx.ctx.tx_size;
-        let dry_run_tx_result = self.executor.dry_run_transaction(moveos_tx.clone()).await?;
-
-        self.metrics
-            .pipeline_processor_execution_tx_bytes
-            .with_label_values(&[fn_name])
-            .observe(size as f64);
-
-        Ok(dry_run_tx_result)
     }
 }
 
