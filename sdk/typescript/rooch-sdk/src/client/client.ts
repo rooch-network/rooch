@@ -317,7 +317,10 @@ export class RoochClient {
     })
   }
 
-  async resolveBTCAddress(input: { roochAddress: string | Address; network: BitcoinNetowkType }): Promise<BitcoinAddress | undefined> {
+  async resolveBTCAddress(input: {
+    roochAddress: string | Address
+    network: BitcoinNetowkType
+  }): Promise<BitcoinAddress | undefined> {
     const result = await this.executeViewFunction({
       target: '0x3::address_mapping::resolve_bitcoin',
       args: [Args.address(input.roochAddress)],

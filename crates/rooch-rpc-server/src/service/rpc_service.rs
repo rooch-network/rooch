@@ -14,6 +14,7 @@ use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::{AnnotatedState, FieldKey, ObjectState};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
+use rooch_executor::actor::messages::DryRunTransactionResult;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
@@ -26,7 +27,9 @@ use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{IndexerObjectState, IndexerStateID, ObjectStateFilter};
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::repair::{RepairIndexerParams, RepairIndexerType};
-use rooch_types::transaction::{ExecuteTransactionResponse, LedgerTransaction, RoochTransaction};
+use rooch_types::transaction::{
+    ExecuteTransactionResponse, LedgerTransaction, RoochTransaction, RoochTransactionData,
+};
 use std::collections::{BTreeMap, HashMap};
 
 /// RpcService is the implementation of the RPC service.
@@ -82,6 +85,11 @@ impl RpcService {
 
     pub async fn execute_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponse> {
         self.pipeline_processor.execute_l2_tx(tx).await
+    }
+
+    pub async fn dry_run_tx(&self, tx: RoochTransactionData) -> Result<DryRunTransactionResult> {
+        let verified_tx = self.executor.convert_to_verified_tx(tx).await?;
+        self.executor.dry_run_transaction(verified_tx).await
     }
 
     pub async fn execute_view_function(

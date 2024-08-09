@@ -15,7 +15,7 @@ import { TokenInfo, getTokenInfo } from '@/pages/mint/util/get-token-info'
 import { ActionCard } from './components/stake-card'
 import { formatTimestamp, formatCoin } from '@/utils/format.ts'
 
-export const MintDetailLayout = () => {
+export const SelfStakingLayout = () => {
   const [tokenInfo, setTokenInfo] = useState<TokenInfo>()
   const [balance, setBalance] = useState<BalanceInfoView>()
 

@@ -33,6 +33,7 @@ use proptest::prelude::*;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use rand::random;
+use schemars::JsonSchema;
 
 /// Call a Move script
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -366,6 +367,21 @@ pub struct VerifiedMoveOSTransaction {
 impl VerifiedMoveOSTransaction {
     pub fn new(root: ObjectMeta, ctx: TxContext, action: VerifiedMoveAction) -> Self {
         Self { root, ctx, action }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct VMErrorInfo {
+    pub error_message: String,
+    pub execution_state: Vec<String>,
+}
+
+impl Default for VMErrorInfo {
+    fn default() -> Self {
+        Self {
+            error_message: "".to_string(),
+            execution_state: vec![],
+        }
     }
 }
 

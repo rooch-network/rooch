@@ -19,24 +19,52 @@ import { useNetworkVariable } from '@/networks'
 import { useRoochClient } from '@roochnetwork/rooch-sdk-kit'
 import { useNavigate } from 'react-router-dom'
 import { getTokenInfo, TokenInfo } from '@/pages/mint/util/get-token-info'
+import { FMNFT } from '@/common/constant.ts'
+
+type NFTInfo = {
+  address: string
+}
+
+type MintType = {
+  type: 'nft' | 'self_staking'
+  name: string
+  symbol: string
+  distribution: string
+  progress: number
+  action: string
+  data: NFTInfo | TokenInfo
+}
 
 export const DemoTokens = () => {
   const navigate = useNavigate()
-  const [tokens, setTokens] = useState<TokenInfo[]>([])
+  const [data, setData] = useState<MintType[]>([])
 
   const client = useRoochClient()
   const addresses = useNetworkVariable('mintAddress')
 
   useEffect(() => {
-    let tokens: TokenInfo[] = []
+    let data: MintType[] = [
+      {
+        ...FMNFT,
+      } as MintType,
+    ]
 
     addresses.forEach((item) => {
-      getTokenInfo(client, item).then((token) => {
-        if (token) {
-          tokens = tokens.concat(token)
-          setTokens(tokens)
-        }
-      })
+      getTokenInfo(client, item)
+        .then((token) => {
+          if (token) {
+            data = data.concat({
+              type: 'self_staking',
+              action: `/mint/self/staking/${token.address}`,
+              name: token.coin.name,
+              symbol: token.coin.symbol,
+              distribution: 'Self-Staking (without Lock)',
+              progress: token.progress,
+              data: token,
+            })
+          }
+        })
+        .finally(() => setData(data))
     })
   }, [client, addresses])
 
@@ -46,7 +74,7 @@ export const DemoTokens = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              {tokens.length > 0 ? (
+              {data.length > 0 ? (
                 <>
                   <TableHead className="w-[150px]">Symbol</TableHead>
                   <TableHead className="w-[150px]">Name</TableHead>
@@ -62,16 +90,19 @@ export const DemoTokens = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {tokens.length > 0 ? (
-              tokens.map((token) => (
-                <TableRow key={token.starTime}>
-                  <TableCell className="font-medium">{token.coin.symbol}</TableCell>
-                  <TableCell className="font-medium">{token.coin.name}</TableCell>
-                  <TableCell className="font-medium">Self-Staking (without Lock)</TableCell>
+            {data.length > 0 ? (
+              data.map((item) => (
+                <TableRow key={item.name}>
+                  <TableCell className="font-medium">{item.symbol}</TableCell>
+                  <TableCell className="font-medium">{item.name}</TableCell>
+                  <TableCell className="font-medium">{item.distribution}</TableCell>
                   <TableCell>
                     <div className="flex items-center justify-start gap-1">
-                      <Progress value={token.progress} className="w-[60%]" />
-                      <span>{token.progress}%</span>
+                      <Progress
+                        value={item.progress === -1 ? 100 : item.progress}
+                        className="w-[60%]"
+                      />
+                      <span>{item.progress === -1 ? '∞' : `${item.progress}%`}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
@@ -79,7 +110,7 @@ export const DemoTokens = () => {
                       variant="link"
                       size="sm"
                       onClick={() => {
-                        navigate(`/mint/detail/${token.address}`)
+                        navigate(item.action)
                       }}
                     >
                       <span className="flex items-center justify-center">

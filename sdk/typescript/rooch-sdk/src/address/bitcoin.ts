@@ -11,6 +11,7 @@ import { Address, ROOCH_ADDRESS_LENGTH } from './address.js'
 import { RoochAddress } from './rooch.js'
 import { MultiChainID } from './types.js'
 import { ThirdPartyAddress } from './thirdparty-address.js'
+import { Buffer } from 'buffer'
 import bs58check from 'bs58check'
 
 export enum BitcoinNetowkType {
@@ -29,10 +30,10 @@ enum BitcoinAddressType {
   witness = 2,
 }
 
-const PUBKEY_ADDRESS_PREFIX_MAIN = 0    // 0x00
-const PUBKEY_ADDRESS_PREFIX_TEST = 111  // 0x6f
-const SCRIPT_ADDRESS_PREFIX_MAIN = 5    // 0x05
-const SCRIPT_ADDRESS_PREFIX_TEST = 196  // 0xc4
+const PUBKEY_ADDRESS_PREFIX_MAIN = 0 // 0x00
+const PUBKEY_ADDRESS_PREFIX_TEST = 111 // 0x6f
+const SCRIPT_ADDRESS_PREFIX_MAIN = 5 // 0x05
+const SCRIPT_ADDRESS_PREFIX_TEST = 196 // 0xc4
 
 export class BitcoinNetwork {
   private readonly network: BitcoinNetowkType
