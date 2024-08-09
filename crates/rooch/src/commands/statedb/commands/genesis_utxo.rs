@@ -5,8 +5,8 @@ use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
-use std::sync::{Arc, mpsc, RwLock};
 use std::sync::mpsc::{Receiver, SyncSender};
+use std::sync::{mpsc, Arc, RwLock};
 use std::thread;
 use std::time::SystemTime;
 
@@ -25,12 +25,12 @@ use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
-use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes, finish_import_job};
 use crate::commands::statedb::commands::utxo::{
     create_genesis_rooch_to_bitcoin_address_mapping_object, create_genesis_utxo_store_object,
     UTXORawData,
 };
+use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 
 /// Import UTXO for development and testing.
 #[derive(Debug, Parser)]
@@ -51,7 +51,7 @@ pub struct GenesisUTXOCommand {
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
     pub chain_id: Option<RoochChainID>,
 
-    #[clap(long, short = 'b', default_value = "524288")]
+    #[clap(long, short = 'b', default_value = "1048576")]
     pub batch_size: Option<usize>,
 }
 
@@ -67,11 +67,11 @@ impl GenesisUTXOCommand {
         let utxo_input_path = Arc::new(self.input.clone());
         let utxo_input_path_clone1 = Arc::clone(&utxo_input_path);
         let utxo_input_path_clone2 = Arc::clone(&utxo_input_path);
-        let (addr_tx, addr_rx) = mpsc::sync_channel(4);
+        let (addr_tx, addr_rx) = mpsc::sync_channel(2);
         let produce_addr_updates_thread = thread::spawn(move || {
             produce_address_map_updates(addr_tx, utxo_input_path_clone1, self.batch_size.unwrap())
         });
-        let (utxo_tx, utxo_rx) = mpsc::sync_channel(4);
+        let (utxo_tx, utxo_rx) = mpsc::sync_channel(2);
         let produce_utxo_updates_thread = thread::spawn(move || {
             produce_utxo_updates(
                 utxo_tx,

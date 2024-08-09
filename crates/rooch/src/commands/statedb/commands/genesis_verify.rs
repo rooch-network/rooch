@@ -27,13 +27,13 @@ use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::into_address::IntoAddress;
 use rooch_types::rooch_network::RoochChainID;
 
-use crate::commands::statedb::commands::{
-    get_values_by_key, init_job, OutpointInscriptionsMap, UTXO_SEAL_INSCRIPTION_PROTOCOL,
-};
 use crate::commands::statedb::commands::inscription::{
     derive_inscription_ids, gen_inscription_ids_update, InscriptionSource,
 };
 use crate::commands::statedb::commands::utxo::UTXORawData;
+use crate::commands::statedb::commands::{
+    get_values_by_key, init_job, OutpointInscriptionsMap, UTXO_SEAL_INSCRIPTION_PROTOCOL,
+};
 
 /// Import BTC ordinals & UTXO for genesis
 #[derive(Debug, Parser)]
