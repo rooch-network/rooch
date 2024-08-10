@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 
+console.log('deploy.story init 1');
+
 import {
   BitSeed,
   InscriptionID,
@@ -7,8 +9,11 @@ import {
   inscriptionIDToString,
   DeployOptions,
 } from '../../src'
+
+console.log('deploy.story init 2');
 import { createTestBitSeed } from './commons/test_bitseed'
 
+console.log('deploy.story init 3');
 interface DeployStoryProps {
   roochServerAddress: string;
 }
@@ -23,6 +28,7 @@ export default function DeployStory({ roochServerAddress }: DeployStoryProps) {
   const [error, setError] = useState<string | undefined>(undefined)
 
   useEffect(() => {
+    console.log('DeployStory useEffect run');
     setBitseed(createTestBitSeed(roochServerAddress))
   }, [roochServerAddress])
 

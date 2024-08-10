@@ -37,7 +37,16 @@ export default defineConfig({
       plugins: [
         react(),
         wasm(),
-        nodePolyfills(),
+        nodePolyfills({
+          // Whether to polyfill specific globals.
+          globals: {
+            Buffer: false, // can also be 'build', 'dev', or false
+            global: true,
+            process: true,
+          },
+          // Whether to polyfill `node:` protocol imports.
+          protocolImports: true,
+        }),
       ],
     },
   },
@@ -59,6 +68,4 @@ export default defineConfig({
     },
     */
   ],
-
-  globalSetup: './tests/global-setup',
 })

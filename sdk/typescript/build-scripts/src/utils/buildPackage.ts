@@ -5,7 +5,7 @@ import { execSync } from 'child_process'
 import { existsSync, promises as fs } from 'fs'
 import * as path from 'path'
 import { build, BuildOptions } from 'esbuild'
-// import { polyfillNode } from 'esbuild-plugin-polyfill-node'
+import { polyfillNode } from 'esbuild-plugin-polyfill-node'
 
 interface PackageJSON {
   name?: string
@@ -58,11 +58,14 @@ async function buildCJS(
     logLevel: 'error',
     target: 'es2020',
     entryPoints,
-    // plugins: [
-    //   polyfillNode({
-    //     globals: { process: true },
-    //   }),
-    // ],
+    plugins: [
+      polyfillNode({
+        globals: { buffer: true },
+      }),
+    ],
+    define: {
+      global: 'globalThis'
+    },
     outdir: 'dist/cjs',
     sourcemap: true,
     ...buildOptions,
@@ -93,11 +96,14 @@ async function buildESM(
     format: 'esm',
     logLevel: 'error',
     target: 'es2020',
-    // plugins: [
-    //   polyfillNode({
-    //     globals: { process: true },
-    //   }),
-    // ],
+    plugins: [
+      polyfillNode({
+        globals: { buffer: true },
+      }),
+    ],
+    define: {
+      global: 'globalThis'
+    },
     entryPoints,
     outdir: 'dist/esm',
     sourcemap: true,
