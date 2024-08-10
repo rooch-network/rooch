@@ -164,7 +164,7 @@ pub(crate) fn produce_utxo_updates(
 ) {
     let input = input.as_ref();
     // produce utxo updates is slower than produce address map updates, so we put cache manager to drop cache here
-    let file_cache_mgr = FileCacheManager::new(input).unwrap();
+    let file_cache_mgr = FileCacheManager::new(input.to_path_buf()).unwrap();
     let mut cache_drop_offset: u64 = 0;
     let mut reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
     let mut is_title_line = true;

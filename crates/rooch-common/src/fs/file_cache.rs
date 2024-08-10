@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::io::Result;
+#[cfg(target_os = "linux")]
 use std::path::Path;
+#[cfg(not(target_os = "linux"))]
+use std::path::PathBuf;
 
 pub struct FileCacheManager {
     #[cfg(target_os = "linux")]
