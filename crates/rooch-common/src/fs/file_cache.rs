@@ -2,10 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::io::Result;
-#[cfg(target_os = "linux")]
 use std::path::Path;
-#[cfg(not(target_os = "linux"))]
-use std::path::PathBuf;
 
 pub struct FileCacheManager {
     #[cfg(target_os = "linux")]
@@ -41,7 +38,7 @@ impl FileCacheManager {
     }
 
     #[cfg(not(target_os = "linux"))]
-    pub fn new(_: PathBuf) -> Result<Self> {
+    pub fn new<P: AsRef<Path>>(_path: P) -> Result<Self> {
         Ok(FileCacheManager {})
     }
 
