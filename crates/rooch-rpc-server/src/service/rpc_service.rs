@@ -239,8 +239,6 @@ impl RpcService {
         limit: usize,
         descending_order: bool,
     ) -> Result<Vec<IndexerEvent>> {
-        // ) -> Result<Vec<AnnotatedEvent>> {
-
         let resp = self
             .indexer
             .query_events(filter, cursor, limit, descending_order)

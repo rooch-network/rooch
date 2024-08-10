@@ -38,7 +38,7 @@ impl FileCacheManager {
     }
 
     #[cfg(not(target_os = "linux"))]
-    pub fn new(_: PathBuf) -> Result<Self> {
+    pub fn new<P: AsRef<Path>>(_path: P) -> Result<Self> {
         Ok(FileCacheManager {})
     }
 

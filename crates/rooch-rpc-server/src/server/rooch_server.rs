@@ -733,7 +733,8 @@ impl RoochAPIServer for RoochServer {
         let query_option = query_option.unwrap_or_default();
         let descending_order = query_option.descending;
 
-        let global_state_filter = ObjectStateFilterView::try_into_object_state_filter(filter)?;
+        let global_state_filter =
+            ObjectStateFilterView::try_into_object_state_filter(filter, query_option.clone())?;
         let mut object_states = self
             .rpc_service
             .query_object_states(

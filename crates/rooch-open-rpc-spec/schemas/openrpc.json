@@ -928,6 +928,31 @@
       "EventFilterView": {
         "oneOf": [
           {
+            "description": "Query by event type with sender",
+            "type": "object",
+            "required": [
+              "event_type_with_sender"
+            ],
+            "properties": {
+              "event_type_with_sender": {
+                "type": "object",
+                "required": [
+                  "event_type",
+                  "sender"
+                ],
+                "properties": {
+                  "event_type": {
+                    "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+                  },
+                  "sender": {
+                    "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::UnitedAddress"
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
             "description": "Query by event type.",
             "type": "object",
             "required": [
@@ -2138,14 +2163,10 @@
               "object_type_with_owner": {
                 "type": "object",
                 "required": [
-                  "filter_out",
                   "object_type",
                   "owner"
                 ],
                 "properties": {
-                  "filter_out": {
-                    "type": "boolean"
-                  },
                   "object_type": {
                     "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
                   },
@@ -2549,6 +2570,11 @@
           "descending": {
             "description": "If true, return query items in descending order.",
             "default": true,
+            "type": "boolean"
+          },
+          "filterOut": {
+            "description": "If true, filter out all match items.",
+            "default": false,
             "type": "boolean"
           },
           "showDisplay": {
