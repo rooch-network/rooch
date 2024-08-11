@@ -4,6 +4,7 @@
 use std::fmt::Display;
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::time::Instant;
 
 use anyhow::Result;
 use clap::Parser;
@@ -22,7 +23,7 @@ use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::rooch_network::RoochChainID;
 
-use crate::commands::statedb::commands::{init_job, GLOBAL_STATE_TYPE_ROOT};
+use crate::commands::statedb::commands::{GLOBAL_STATE_TYPE_ROOT, init_job};
 
 /// Export statedb
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
@@ -346,6 +347,8 @@ impl ExportCommand {
         object_name: Option<String>, // human-readable object name for debug
         writer: &mut Writer<W>,
     ) -> Result<()> {
+        let start_time = Instant::now();
+
         let starting_key = None;
         let mut count: u64 = 0;
 
@@ -356,24 +359,27 @@ impl ExportCommand {
             .get_state_store()
             .iter(obj_state_root, starting_key)?;
 
+        let mut loop_time = Instant::now();
         for item in iter {
             let (k, v) = item?;
             writer.write_record([k.to_string().as_str(), v.to_string().as_str()])?;
             count += 1;
             if count % 1_000_000 == 0 {
                 println!(
-                    "exporting top_level_fields of object_id: {:?}({}), exported count: {}",
-                    object_id, object_name, count
-                )
+                    "exporting top_level_fields of object_id: {:?}({}), exported count: {}. cost: {:?}",
+                    object_id, object_name, count, loop_time.elapsed()
+                );
+                loop_time = Instant::now();
             }
         }
 
         println!(
-            "Done. export_top_level_fields of object_id: {:?}({}), state_root: {:?}, exported count: {}",
+            "Done. export_top_level_fields of object_id: {:?}({}), state_root: {:?}, exported count: {}. cost: {:?}",
             object_id,
             object_name,
             obj_state_root,
-            count
+            count,
+            start_time.elapsed()
         );
         Ok(())
     }
