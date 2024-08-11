@@ -58,6 +58,8 @@ export class RoochDataSource implements IDatasource {
       this.roochClient = new RoochClient({
         url: opts.url,
       });
+
+      return
     }
 
     if (opts.network != null) {
@@ -66,6 +68,8 @@ export class RoochDataSource implements IDatasource {
       this.roochClient = new RoochClient({
         url: nodeURL,
       });
+
+      return
     }
 
     throw new Error('not support RoochDataSource Options')
@@ -365,8 +369,12 @@ export class RoochDataSource implements IDatasource {
   }
 
   async getSpendables({ address, value, type = "all", rarity, filter, limit = 100 }: GetSpendablesOptions): Promise<UTXOLimited[]> {
-    if (rarity !== undefined || filter !== undefined) {
-      throw new Error('Rarity and filter options are not supported for Rooch getSpendables');
+    if (rarity !== undefined) {
+      throw new Error('Rarity options are not supported for Rooch getSpendables');
+    }
+
+    if (filter !== undefined && filter.length>0) {
+      throw new Error('filter options are not supported for Rooch getSpendables');
     }
 
     if (!address || typeof address !== 'string') {

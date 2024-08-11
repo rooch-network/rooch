@@ -65,6 +65,7 @@ export class BitcoinContainer extends GenericContainer {
 
 export class StartedBitcoinContainer extends AbstractStartedContainer {
   private readonly ports: { [key: number]: number };
+  private preminedAddress: string | null = null;
 
   constructor(
     startedTestContainer: StartedTestContainer,
@@ -100,19 +101,50 @@ export class StartedBitcoinContainer extends AbstractStartedContainer {
   }
 
   public async executeRpcCommand(command: string, params: any[] = []): Promise<any> {
-    const result = await this.startedTestContainer.exec([
+    return this.executeRpcCommandRaw([], command, params.map(param => JSON.stringify(param)))
+  }
+
+  public async executeRpcCommandRaw(opts: string[], command: string, params: string[] = []): Promise<any> {
+    const cmd = [
       "bitcoin-cli",
       "-regtest",
-      "-rpcconnect=127.0.0.1",
-      `-rpcport=${this.getPort(18443)}`,
-      `-rpcuser=${this.rpcUser}`,
-      `-rpcpassword=${this.rpcPass}`,
+      ...opts,
       command,
-      ...params.map(param => JSON.stringify(param)),
-    ]);
+      ...params,
+    ]
+
+    const result = await this.startedTestContainer.exec(cmd);
+    console.log(`StartedBitcoinContainer#executeRpcCommand cmd: ${cmd.join(' ')}, result:${JSON.stringify(result)}`)
+
     if (result.exitCode !== 0) {
       throw new Error(`executeRpcCommand failed with exit code ${result.exitCode} for command: ${command}`);
     }
-    return JSON.parse(result.output);
+    return result.output;
   }
+
+  public async prepareFaucet() {
+    await this.executeRpcCommand("createwallet", ["faucet_wallet"])
+
+    const getnewaddressOutput = await this.executeRpcCommandRaw([`-rpcwallet="faucet_wallet"`], "getnewaddress", []);
+    this.preminedAddress = getnewaddressOutput.trim();
+
+    if (this.preminedAddress) {
+      await this.executeRpcCommandRaw([`-rpcwallet="faucet_wallet"`], "generatetoaddress", ["101", this.preminedAddress]);
+    }
+  }
+
+  public async getFaucetBTC(address: string, amount: number = 0.001): Promise<string> {
+    if (!this.preminedAddress) {
+      throw new Error("Failed to generate pre-mined address");
+    }
+
+    const txid = await this.executeRpcCommandRaw([`-rpcwallet="faucet_wallet"`], "sendtoaddress", [address, "" + amount]);
+    await this.executeRpcCommandRaw([`-rpcwallet="faucet_wallet"`], "generatetoaddress", ["1", this.preminedAddress]);
+
+    return txid;
+  }
+}
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }

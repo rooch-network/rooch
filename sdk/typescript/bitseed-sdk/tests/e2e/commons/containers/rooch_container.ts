@@ -206,7 +206,7 @@ export class StartedRoochContainer extends AbstractStartedContainer {
     return this.btcSyncBlockInterval;
   }
 
-  public getConnectionUri(): string {
-    return `http://${this.getHost()}:${this.getPort()}`;
+  public getConnectionAddress(): string {
+    return `${this.getHost()}:${this.getPort()}`;
   }
 }

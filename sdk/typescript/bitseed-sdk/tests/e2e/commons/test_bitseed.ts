@@ -3,7 +3,7 @@ import { BitSeed, GeneratorLoader, RoochDataSource } from '../../../src'
 
 
 export function createTestBitSeed(roochServerAddress: string): BitSeed {
-  const network = 'testnet'
+  const network = 'regtest'
   const datasource = new RoochDataSource({ url: `http://${roochServerAddress}` })
   const generatorLoader = new GeneratorLoader(datasource)
 

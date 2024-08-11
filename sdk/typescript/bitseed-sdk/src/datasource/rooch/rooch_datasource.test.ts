@@ -1531,7 +1531,7 @@ describe('RoochDataSource', () => {
         address: mockAddress, 
         value: 1000000, 
         rarity: ['common']  // Providing a rarity parameter
-      })).rejects.toThrow('Rarity and filter options are not supported for Rooch getSpendables');
+      })).rejects.toThrow('Rarity options are not supported for Rooch getSpendables');
     });
 
     it('should throw an error when filter parameter is provided', async () => {
@@ -1541,7 +1541,7 @@ describe('RoochDataSource', () => {
         address: mockAddress, 
         value: 1000000, 
         filter: ['some_filter']  // Providing a filter parameter
-      })).rejects.toThrow('Rarity and filter options are not supported for Rooch getSpendables');
+      })).rejects.toThrow('filter options are not supported for Rooch getSpendables');
     });
 
     it('should throw an error when invalid address is provided', async () => {

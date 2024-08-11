@@ -31,6 +31,9 @@ export class BitseedTestEnv {
 
     console.log('Bitcoin container started');
 
+    // Preprea Faucet
+    await this.startedBitcoinContainer.prepareFaucet();
+
     this.roochContainer.withHostConfigPath('/tmp/.rooch')
     await this.roochContainer.initializeRooch();
     console.log('Rooch container init');
@@ -80,8 +83,17 @@ export class BitseedTestEnv {
    */
   getRoochServerAddress(): string | null {
     if (this.startedRoochContainer) {
-      return this.startedRoochContainer.getConnectionUri();
+      return this.startedRoochContainer.getConnectionAddress();
     }
+
     return null;
+  }
+
+  async getFaucetBTC(address: string, amount: number = 0.001): Promise<string> {
+    if (!this.startedBitcoinContainer) {
+      throw new Error("bitcoin container not start")
+    }
+
+    return await this.startedBitcoinContainer.getFaucetBTC(address, amount);
   }
 }
