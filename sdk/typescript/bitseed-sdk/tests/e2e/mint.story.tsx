@@ -9,7 +9,11 @@ import {
 } from '../../src'
 import { createTestBitSeed } from './commons/test_bitseed'
 
-export default function MintStory() {
+interface MintStoryProps {
+  roochServerAddress: string;
+}
+
+export default function MintStory({ roochServerAddress }: MintStoryProps) {
   const [bitseed, setBitseed] = useState<BitSeed | undefined>(undefined)
 
   const [tickDeployInscriptionID, setTickDeployInscriptionID] = useState<string>('')
@@ -19,7 +23,7 @@ export default function MintStory() {
   const [error, setError] = useState<string | undefined>(undefined)
 
   useEffect(() => {
-    setBitseed(createTestBitSeed())
+    setBitseed(createTestBitSeed(roochServerAddress))
   }, [])
 
   const handleMint = async () => {

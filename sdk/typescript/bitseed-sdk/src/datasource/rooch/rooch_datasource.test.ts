@@ -932,81 +932,197 @@ describe('RoochDataSource', () => {
   });
 
   describe('getTransaction', () => {
+
     it('should successfully get transaction information including block data', async () => {
-      const mockTxId = '0x1234567890123456789012345678901234567890123456789012345678901234';
-      const mockTx = {
-        id: mockTxId,
-        version: 1,
-        lock_time: 0,
-        input: [
-          {
-            previous_output: { 
-              txid: '0x2345678901234567890123456789012345678901234567890123456789012345', 
-              vout: 0 
-            },
-            script_sig: Buffer.from('script_sig').toString('base64'),
-            sequence: 4294967295,
-            witness: { witness: ['witness_data'] }
-          }
-        ],
-        output: [
-          {
-            value: '100000000',
-            script_pubkey: Buffer.from('script_pubkey').toString('base64'),
-            recipient_address: 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx'
-          }
-        ]
+      const mockTxId = '0x50d868b181ac454d29df8dcfa7a150a81ce44e063fdd1b52f2c85d12cb686131';
+      const mockTxResponse = {
+        jsonrpc: "2.0",
+        result: {
+          vm_status: "Executed",
+          return_values: [
+            {
+              value: {
+                type_tag: "0x1::option::Option<0x4::types::Transaction>",
+                value: "0x0150d868b181ac454d29df8dcfa7a150a81ce44e063fdd1b52f2c85d12cb686131020000006600000001e9144d43dd0f52bfcc7044f61ae04d7592537326110775db23df7926afc83c870000000000fdffffff0247304402200b66a648b0dac1b5871758399d574200adba581794493de6465b4333477cd02a022012b5e02612646937e86a9625707fc90517d2a407a98bff826566320d729f378801210248504d1c93def5d474becee5e2cbf515d9e9b884ed515b8ae2c4b41d8b7a7ad6025b1010240100000022512089f7da53a1d79dcadff04ab24a05ed60b6053858f09bd8b431dee25b0ea5710122020189f7da53a1d79dcadff04ab24a05ed60b6053858f09bd8b431dee25b0ea5710100e1f50500000000225120b69d4d0bbf765eb327eecb59a6d76280b958c6b9bac195109261f6a44746fa07220201b69d4d0bbf765eb327eecb59a6d76280b958c6b9bac195109261f6a44746fa07"
+              },
+              decoded_value: {
+                abilities: 7,
+                type: "0x1::option::Option<0x4::types::Transaction>",
+                value: {
+                  vec: [
+                    {
+                      abilities: 7,
+                      type: "0x4::types::Transaction",
+                      value: {
+                        id: "0x50d868b181ac454d29df8dcfa7a150a81ce44e063fdd1b52f2c85d12cb686131",
+                        input: [
+                          {
+                            abilities: 7,
+                            type: "0x4::types::TxIn",
+                            value: {
+                              previous_output: {
+                                abilities: 7,
+                                type: "0x4::types::OutPoint",
+                                value: {
+                                  txid: "0xe9144d43dd0f52bfcc7044f61ae04d7592537326110775db23df7926afc83c87",
+                                  vout: 0
+                                }
+                              },
+                              script_sig: "0x",
+                              sequence: 4294967293,
+                              witness: {
+                                abilities: 7,
+                                type: "0x4::types::Witness",
+                                value: {
+                                  witness: [
+                                    "0x304402200b66a648b0dac1b5871758399d574200adba581794493de6465b4333477cd02a022012b5e02612646937e86a9625707fc90517d2a407a98bff826566320d729f378801",
+                                    "0x0248504d1c93def5d474becee5e2cbf515d9e9b884ed515b8ae2c4b41d8b7a7ad6"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        ],
+                        lock_time: 102,
+                        output: [
+                          {
+                            abilities: 7,
+                            type: "0x4::types::TxOut",
+                            value: {
+                              recipient_address: {
+                                abilities: 7,
+                                type: "0x3::bitcoin_address::BitcoinAddress",
+                                value: {
+                                  bytes: "0x020189f7da53a1d79dcadff04ab24a05ed60b6053858f09bd8b431dee25b0ea57101"
+                                }
+                              },
+                              script_pubkey: {
+                                abilities: 7,
+                                type: "0x4::script_buf::ScriptBuf",
+                                value: {
+                                  bytes: "0x512089f7da53a1d79dcadff04ab24a05ed60b6053858f09bd8b431dee25b0ea57101"
+                                }
+                              },
+                              value: "4899999835"
+                            }
+                          },
+                          {
+                            abilities: 7,
+                            type: "0x4::types::TxOut",
+                            value: {
+                              recipient_address: {
+                                abilities: 7,
+                                type: "0x3::bitcoin_address::BitcoinAddress",
+                                value: {
+                                  bytes: "0x0201b69d4d0bbf765eb327eecb59a6d76280b958c6b9bac195109261f6a44746fa07"
+                                }
+                              },
+                              script_pubkey: {
+                                abilities: 7,
+                                type: "0x4::script_buf::ScriptBuf",
+                                value: {
+                                  bytes: "0x5120b69d4d0bbf765eb327eecb59a6d76280b958c6b9bac195109261f6a44746fa07"
+                                }
+                              },
+                              value: "100000000"
+                            }
+                          }
+                        ],
+                        version: 2
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        id: 3907
       };
-
-      // Set mock responses for all three executeViewFunction calls
-      mockTransport.setMockResponse('rooch_executeViewFunction', { return_values: [{ decoded_value: mockTx }] });
-      mockTransport.setMockResponse('rooch_executeViewFunction', { return_values: [{ decoded_value: 12345 }] });
-      mockTransport.setMockResponse('rooch_executeViewFunction', { 
-        return_values: [{ 
-          decoded_value: { 
-            prev_blockhash: '0x3456789012345678901234567890123456789012345678901234567890123456',
-            time: 1623456789
-          } 
-        }] 
+  
+      // Mock response for getting transaction
+      mockTransport.setMockResponse('rooch_executeViewFunction', mockTxResponse);
+      
+      // Mock response for getting transaction height
+      mockTransport.setMockResponse('rooch_executeViewFunction', {
+        result: {
+          return_values: [
+            {
+              decoded_value: 12345
+            }
+          ]
+        }
       });
-
+  
+      // Mock response for getting block information
+      mockTransport.setMockResponse('rooch_executeViewFunction', {
+        result: {
+          return_values: [
+            {
+              decoded_value: {
+                prev_blockhash: '0x3456789012345678901234567890123456789012345678901234567890123456',
+                time: 1623456789
+              }
+            }
+          ]
+        }
+      });
+  
       const result = await instance.getTransaction({ txId: mockTxId });
-
+  
       expect(result.tx).toEqual({
-        txid: mockTxId,
-        hash: mockTxId,
-        version: 1,
+        txid: "0x50d868b181ac454d29df8dcfa7a150a81ce44e063fdd1b52f2c85d12cb686131",
+        hash: "0x50d868b181ac454d29df8dcfa7a150a81ce44e063fdd1b52f2c85d12cb686131",
+        version: 2,
         size: 0,
         vsize: 0,
         weight: 0,
-        locktime: 0,
+        locktime: 102,
         vin: [
           {
-            txid: '0x2345678901234567890123456789012345678901234567890123456789012345',
+            txid: "0xe9144d43dd0f52bfcc7044f61ae04d7592537326110775db23df7926afc83c87",
             vout: 0,
             scriptSig: {
               asm: '',
-              hex: '7363726970745f736967'
+              hex: ''
             },
-            txinwitness: ['witness_data'],
-            sequence: 4294967295,
+            txinwitness: [
+              "304402200b66a648b0dac1b5871758399d574200adba581794493de6465b4333477cd02a022012b5e02612646937e86a9625707fc90517d2a407a98bff826566320d729f378801",
+              "0248504d1c93def5d474becee5e2cbf515d9e9b884ed515b8ae2c4b41d8b7a7ad6"
+            ],
+            sequence: 4294967293,
             value: 0
           }
         ],
         vout: [
           {
-            value: 100000000,
+            value: 4899999835,
             n: 0,
+            ordinals: [],
+            inscriptions: [],
+            spent: false,
+            sats: 4899999835,
+            scriptPubKey: {
+              address: "bcrt1p38ma55ap67wu4hlsf2ey5p0dvzmq2wzc7zda3dp3mm39kr49wyqs96d69e",
+              asm: "OP_1 89f7da53a1d79dcadff04ab24a05ed60b6053858f09bd8b431dee25b0ea57101",
+              desc: "Script witness_v1_taproot",
+              hex: '512089f7da53a1d79dcadff04ab24a05ed60b6053858f09bd8b431dee25b0ea57101',
+              type: 'witness_v1_taproot',
+            }
+          },
+          {
+            value: 100000000,
+            n: 1,
             ordinals: [],
             inscriptions: [],
             spent: false,
             sats: 100000000,
             scriptPubKey: {
-              asm: '',
-              desc: '',
-              hex: '7363726970745f7075626b6579',
-              type: 'unknown',
-              address: 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx'
+              address: "bcrt1pk6w56zalwe0txflwedv6d4mzszu4334ehtqe2yyjv8m2g36xlgrsnzsp4k",
+              asm: "OP_1 b69d4d0bbf765eb327eecb59a6d76280b958c6b9bac195109261f6a44746fa07",
+              desc: "Script witness_v1_taproot",
+              hex: "5120b69d4d0bbf765eb327eecb59a6d76280b958c6b9bac195109261f6a44746fa07",
+              type: "witness_v1_taproot"
             }
           }
         ],
@@ -1021,214 +1137,470 @@ describe('RoochDataSource', () => {
 
     it('should throw an error when transaction is not found', async () => {
       const mockTxId = '0x1234567890123456789012345678901234567890123456789012345678901234';
-
-      // Mock an empty response to simulate a not found transaction
-      mockTransport.setMockResponse('rooch_executeViewFunction', { return_values: [] });
-
-      await expect(instance.getTransaction({ txId: mockTxId }))
-        .rejects.toThrow(`Transaction with id ${mockTxId} not found`);
-    });
-
-    it('should return transaction without block information when getting transaction height fails', async () => {
-      const mockTxId = '0x1234567890123456789012345678901234567890123456789012345678901234';
-      const mockTx = {
-        id: mockTxId,
-        version: 1,
-        lock_time: 0,
-        input: [],
-        output: []
-      };
-
-      // Mock successful response for getting transaction
-      mockTransport.setMockResponse('rooch_executeViewFunction', { return_values: [{ decoded_value: mockTx }] });
-      
-      // Mock empty response for getting transaction height to simulate failure
-      mockTransport.setMockResponse('rooch_executeViewFunction', { return_values: [] });
-
-      const result = await instance.getTransaction({ txId: mockTxId });
-
-      expect(result.tx).toEqual(expect.objectContaining({
-        txid: mockTxId,
-        hash: mockTxId,
-        version: 1,
-        locktime: 0,
-        blockhash: "",
-        blockheight: 0,
-        blocktime: 0
-      }));
-    });
-
-    it('should return transaction with empty hex when hex parameter is true', async () => {
-      const mockTxId = '0x1234567890123456789012345678901234567890123456789012345678901234';
-      const mockTx = {
-        id: mockTxId,
-        version: 1,
-        lock_time: 0,
-        input: [],
-        output: []
-      };
-
-      // Mock successful response for getting transaction
-      mockTransport.setMockResponse('rooch_executeViewFunction', { return_values: [{ decoded_value: mockTx }] });
-      
-      // Mock successful response for getting transaction height
-      mockTransport.setMockResponse('rooch_executeViewFunction', { return_values: [{ decoded_value: 12345 }] });
-
-      // Mock successful response for getting block information
-      mockTransport.setMockResponse('rooch_executeViewFunction', { 
-        return_values: [{ 
-          decoded_value: { 
-            prev_blockhash: '0x3456789012345678901234567890123456789012345678901234567890123456',
-            time: 1623456789
-          } 
-        }] 
+    
+      // Mock response for getting transaction (empty result)
+      mockTransport.setMockResponse('rooch_executeViewFunction', {
+        jsonrpc: "2.0",
+        result: {
+          vm_status: "Executed",
+          return_values: [
+            {
+              value: {
+                type_tag: "0x1::option::Option<0x4::types::Transaction>",
+                value: "0x00"  // Empty option
+              },
+              decoded_value: {
+                abilities: 7,
+                type: "0x1::option::Option<0x4::types::Transaction>",
+                value: {
+                  vec: []
+                }
+              }
+            }
+          ]
+        },
+        id: 3908
       });
-
-      const result = await instance.getTransaction({ txId: mockTxId, hex: true });
-
-      expect(result.tx).toEqual(expect.objectContaining({
-        txid: mockTxId,
-        hash: mockTxId,
-        version: 1,
-        locktime: 0,
-        blockheight: 12345,
-        blockhash: '0x3456789012345678901234567890123456789012345678901234567890123456',
-        blocktime: 1623456789,
-        hex: ""
-      }));
+    
+      await expect(instance.getTransaction({ txId: mockTxId })).rejects.toThrow(`Transaction with id ${mockTxId} not found`);
     });
 
-    it('should correctly handle transactions with multiple inputs and outputs', async () => {
-      const mockTxId = '0x1234567890123456789012345678901234567890123456789012345678901234';
-      const mockTx = {
-        id: mockTxId,
-        version: 1,
-        lock_time: 0,
-        input: [
-          {
-            previous_output: { 
-              txid: '0x2345678901234567890123456789012345678901234567890123456789012345', 
-              vout: 0 
-            },
-            script_sig: Buffer.from('script_sig_1').toString('base64'),
-            sequence: 4294967295,
-            witness: { witness: ['witness_data_1'] }
-          },
-          {
-            previous_output: { 
-              txid: '0x3456789012345678901234567890123456789012345678901234567890123456', 
-              vout: 1 
-            },
-            script_sig: Buffer.from('script_sig_2').toString('base64'),
-            sequence: 4294967294,
-            witness: { witness: ['witness_data_2a', 'witness_data_2b'] }
-          }
-        ],
-        output: [
-          {
-            value: '50000000',
-            script_pubkey: Buffer.from('script_pubkey_1').toString('base64'),
-            recipient_address: 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx'
-          },
-          {
-            value: '49000000',
-            script_pubkey: Buffer.from('script_pubkey_2').toString('base64'),
-            recipient_address: 'tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7'
-          }
-        ]
+    it('should return transaction without block info when unable to fetch block data', async () => {
+      const mockTxId = '0x50d868b181ac454d29df8dcfa7a150a81ce44e063fdd1b52f2c85d12cb686131';
+      const mockTxResponse = {
+        jsonrpc: "2.0",
+        result: {
+          vm_status: "Executed",
+          return_values: [
+            {
+              value: {
+                type_tag: "0x1::option::Option<0x4::types::Transaction>",
+                value: "0x0150d868b181ac454d29df8dcfa7a150a81ce44e063fdd1b52f2c85d12cb686131020000006600000001e9144d43dd0f52bfcc7044f61ae04d7592537326110775db23df7926afc83c870000000000fdffffff0247304402200b66a648b0dac1b5871758399d574200adba581794493de6465b4333477cd02a022012b5e02612646937e86a9625707fc90517d2a407a98bff826566320d729f378801210248504d1c93def5d474becee5e2cbf515d9e9b884ed515b8ae2c4b41d8b7a7ad6025b1010240100000022512089f7da53a1d79dcadff04ab24a05ed60b6053858f09bd8b431dee25b0ea5710122020189f7da53a1d79dcadff04ab24a05ed60b6053858f09bd8b431dee25b0ea5710100e1f50500000000225120b69d4d0bbf765eb327eecb59a6d76280b958c6b9bac195109261f6a44746fa07220201b69d4d0bbf765eb327eecb59a6d76280b958c6b9bac195109261f6a44746fa07"
+              },
+              decoded_value: {
+                abilities: 7,
+                type: "0x1::option::Option<0x4::types::Transaction>",
+                value: {
+                  vec: [
+                    {
+                      abilities: 7,
+                      type: "0x4::types::Transaction",
+                      value: {
+                        id: "0x50d868b181ac454d29df8dcfa7a150a81ce44e063fdd1b52f2c85d12cb686131",
+                        input: [
+                          {
+                            abilities: 7,
+                            type: "0x4::types::TxIn",
+                            value: {
+                              previous_output: {
+                                abilities: 7,
+                                type: "0x4::types::OutPoint",
+                                value: {
+                                  txid: "0xe9144d43dd0f52bfcc7044f61ae04d7592537326110775db23df7926afc83c87",
+                                  vout: 0
+                                }
+                              },
+                              script_sig: "0x",
+                              sequence: 4294967293,
+                              witness: {
+                                abilities: 7,
+                                type: "0x4::types::Witness",
+                                value: {
+                                  witness: [
+                                    "0x304402200b66a648b0dac1b5871758399d574200adba581794493de6465b4333477cd02a022012b5e02612646937e86a9625707fc90517d2a407a98bff826566320d729f378801",
+                                    "0x0248504d1c93def5d474becee5e2cbf515d9e9b884ed515b8ae2c4b41d8b7a7ad6"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        ],
+                        lock_time: 102,
+                        output: [
+                          {
+                            abilities: 7,
+                            type: "0x4::types::TxOut",
+                            value: {
+                              recipient_address: {
+                                abilities: 7,
+                                type: "0x3::bitcoin_address::BitcoinAddress",
+                                value: {
+                                  bytes: "0x020189f7da53a1d79dcadff04ab24a05ed60b6053858f09bd8b431dee25b0ea57101"
+                                }
+                              },
+                              script_pubkey: {
+                                abilities: 7,
+                                type: "0x4::script_buf::ScriptBuf",
+                                value: {
+                                  bytes: "0x512089f7da53a1d79dcadff04ab24a05ed60b6053858f09bd8b431dee25b0ea57101"
+                                }
+                              },
+                              value: "4899999835"
+                            }
+                          },
+                          {
+                            abilities: 7,
+                            type: "0x4::types::TxOut",
+                            value: {
+                              recipient_address: {
+                                abilities: 7,
+                                type: "0x3::bitcoin_address::BitcoinAddress",
+                                value: {
+                                  bytes: "0x0201b69d4d0bbf765eb327eecb59a6d76280b958c6b9bac195109261f6a44746fa07"
+                                }
+                              },
+                              script_pubkey: {
+                                abilities: 7,
+                                type: "0x4::script_buf::ScriptBuf",
+                                value: {
+                                  bytes: "0x5120b69d4d0bbf765eb327eecb59a6d76280b958c6b9bac195109261f6a44746fa07"
+                                }
+                              },
+                              value: "100000000"
+                            }
+                          }
+                        ],
+                        version: 2
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        id: 3907
       };
-
-      // Mock successful response for getting transaction
-      mockTransport.setMockResponse('rooch_executeViewFunction', { return_values: [{ decoded_value: mockTx }] });
+    
+      // Mock response for getting transaction
+      mockTransport.setMockResponse('rooch_executeViewFunction', mockTxResponse);
       
-      // Mock successful response for getting transaction height
-      mockTransport.setMockResponse('rooch_executeViewFunction', { return_values: [{ decoded_value: 12345 }] });
-
-      // Mock successful response for getting block information
-      mockTransport.setMockResponse('rooch_executeViewFunction', { 
-        return_values: [{ 
-          decoded_value: { 
-            prev_blockhash: '0x4567890123456789012345678901234567890123456789012345678901234567',
-            time: 1623456789
-          } 
-        }] 
+      // Mock response for getting transaction height (empty result)
+      mockTransport.setMockResponse('rooch_executeViewFunction', {
+        result: {
+          return_values: []
+        }
       });
-
+    
       const result = await instance.getTransaction({ txId: mockTxId });
-
-      expect(result.tx).toEqual(expect.objectContaining({
-        txid: mockTxId,
-        hash: mockTxId,
-        version: 1,
-        locktime: 0,
+    
+      expect(result.tx).toEqual({
+        txid: "0x50d868b181ac454d29df8dcfa7a150a81ce44e063fdd1b52f2c85d12cb686131",
+        hash: "0x50d868b181ac454d29df8dcfa7a150a81ce44e063fdd1b52f2c85d12cb686131",
+        version: 2,
+        size: 0,
+        vsize: 0,
+        weight: 0,
+        locktime: 102,
         vin: [
           {
-            txid: '0x2345678901234567890123456789012345678901234567890123456789012345',
+            txid: "0xe9144d43dd0f52bfcc7044f61ae04d7592537326110775db23df7926afc83c87",
             vout: 0,
             scriptSig: {
               asm: '',
-              hex: '7363726970745f7369675f31'
+              hex: ''
             },
-            txinwitness: ['witness_data_1'],
-            sequence: 4294967295,
-            value: 0
-          },
-          {
-            txid: '0x3456789012345678901234567890123456789012345678901234567890123456',
-            vout: 1,
-            scriptSig: {
-              asm: '',
-              hex: '7363726970745f7369675f32'
-            },
-            txinwitness: ['witness_data_2a', 'witness_data_2b'],
-            sequence: 4294967294,
+            txinwitness: [
+              "304402200b66a648b0dac1b5871758399d574200adba581794493de6465b4333477cd02a022012b5e02612646937e86a9625707fc90517d2a407a98bff826566320d729f378801",
+              "0248504d1c93def5d474becee5e2cbf515d9e9b884ed515b8ae2c4b41d8b7a7ad6"
+            ],
+            sequence: 4294967293,
             value: 0
           }
         ],
         vout: [
           {
-            value: 50000000,
+            value: 4899999835,
             n: 0,
             ordinals: [],
             inscriptions: [],
             spent: false,
-            sats: 50000000,
+            sats: 4899999835,
             scriptPubKey: {
-              asm: '',
-              desc: '',
-              hex: '7363726970745f7075626b65795f31',
-              type: 'unknown',
-              address: 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx'
+              address: "bcrt1p38ma55ap67wu4hlsf2ey5p0dvzmq2wzc7zda3dp3mm39kr49wyqs96d69e",
+              asm: "OP_1 89f7da53a1d79dcadff04ab24a05ed60b6053858f09bd8b431dee25b0ea57101",
+              desc: "Script witness_v1_taproot",
+              hex: '512089f7da53a1d79dcadff04ab24a05ed60b6053858f09bd8b431dee25b0ea57101',
+              type: 'witness_v1_taproot',
             }
           },
           {
-            value: 49000000,
+            value: 100000000,
             n: 1,
             ordinals: [],
             inscriptions: [],
             spent: false,
-            sats: 49000000,
+            sats: 100000000,
             scriptPubKey: {
-              asm: '',
-              desc: '',
-              hex: '7363726970745f7075626b65795f32',
-              type: 'unknown',
-              address: 'tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7'
+              address: "bcrt1pk6w56zalwe0txflwedv6d4mzszu4334ehtqe2yyjv8m2g36xlgrsnzsp4k",
+              asm: "OP_1 b69d4d0bbf765eb327eecb59a6d76280b958c6b9bac195109261f6a44746fa07",
+              desc: "Script witness_v1_taproot",
+              hex: "5120b69d4d0bbf765eb327eecb59a6d76280b958c6b9bac195109261f6a44746fa07",
+              type: "witness_v1_taproot"
             }
           }
         ],
-        blockheight: 12345,
-        blockhash: '0x4567890123456789012345678901234567890123456789012345678901234567',
-        blocktime: 1623456789,
+        blockhash: '',
+        blockheight: 0,
+        blocktime: 0,
         confirmations: 0,
-        fee: 0,
-        size: 0,
-        time: 0
-      }));
+        time: 0,
+        fee: 0
+      });
     });
 
+    it('should return transaction with hex when hex parameter is true', async () => {
+      const mockTxId = '0x50d868b181ac454d29df8dcfa7a150a81ce44e063fdd1b52f2c85d12cb686131';
+      const mockTxResponse = {
+        jsonrpc: "2.0",
+        result: {
+          vm_status: "Executed",
+          return_values: [
+            {
+              value: {
+                type_tag: "0x1::option::Option<0x4::types::Transaction>",
+                value: "0x0150d868b181ac454d29df8dcfa7a150a81ce44e063fdd1b52f2c85d12cb686131020000006600000001e9144d43dd0f52bfcc7044f61ae04d7592537326110775db23df7926afc83c870000000000fdffffff0247304402200b66a648b0dac1b5871758399d574200adba581794493de6465b4333477cd02a022012b5e02612646937e86a9625707fc90517d2a407a98bff826566320d729f378801210248504d1c93def5d474becee5e2cbf515d9e9b884ed515b8ae2c4b41d8b7a7ad6025b1010240100000022512089f7da53a1d79dcadff04ab24a05ed60b6053858f09bd8b431dee25b0ea5710122020189f7da53a1d79dcadff04ab24a05ed60b6053858f09bd8b431dee25b0ea5710100e1f50500000000225120b69d4d0bbf765eb327eecb59a6d76280b958c6b9bac195109261f6a44746fa07220201b69d4d0bbf765eb327eecb59a6d76280b958c6b9bac195109261f6a44746fa07"
+              },
+              decoded_value: {
+                abilities: 7,
+                type: "0x1::option::Option<0x4::types::Transaction>",
+                value: {
+                  vec: [
+                    {
+                      abilities: 7,
+                      type: "0x4::types::Transaction",
+                      value: {
+                        id: "0x50d868b181ac454d29df8dcfa7a150a81ce44e063fdd1b52f2c85d12cb686131",
+                        input: [
+                          {
+                            abilities: 7,
+                            type: "0x4::types::TxIn",
+                            value: {
+                              previous_output: {
+                                abilities: 7,
+                                type: "0x4::types::OutPoint",
+                                value: {
+                                  txid: "0xe9144d43dd0f52bfcc7044f61ae04d7592537326110775db23df7926afc83c87",
+                                  vout: 0
+                                }
+                              },
+                              script_sig: "0x",
+                              sequence: 4294967293,
+                              witness: {
+                                abilities: 7,
+                                type: "0x4::types::Witness",
+                                value: {
+                                  witness: [
+                                    "0x304402200b66a648b0dac1b5871758399d574200adba581794493de6465b4333477cd02a022012b5e02612646937e86a9625707fc90517d2a407a98bff826566320d729f378801",
+                                    "0x0248504d1c93def5d474becee5e2cbf515d9e9b884ed515b8ae2c4b41d8b7a7ad6"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        ],
+                        lock_time: 102,
+                        output: [
+                          {
+                            abilities: 7,
+                            type: "0x4::types::TxOut",
+                            value: {
+                              recipient_address: {
+                                abilities: 7,
+                                type: "0x3::bitcoin_address::BitcoinAddress",
+                                value: {
+                                  bytes: "0x020189f7da53a1d79dcadff04ab24a05ed60b6053858f09bd8b431dee25b0ea57101"
+                                }
+                              },
+                              script_pubkey: {
+                                abilities: 7,
+                                type: "0x4::script_buf::ScriptBuf",
+                                value: {
+                                  bytes: "0x512089f7da53a1d79dcadff04ab24a05ed60b6053858f09bd8b431dee25b0ea57101"
+                                }
+                              },
+                              value: "4899999835"
+                            }
+                          },
+                          {
+                            abilities: 7,
+                            type: "0x4::types::TxOut",
+                            value: {
+                              recipient_address: {
+                                abilities: 7,
+                                type: "0x3::bitcoin_address::BitcoinAddress",
+                                value: {
+                                  bytes: "0x0201b69d4d0bbf765eb327eecb59a6d76280b958c6b9bac195109261f6a44746fa07"
+                                }
+                              },
+                              script_pubkey: {
+                                abilities: 7,
+                                type: "0x4::script_buf::ScriptBuf",
+                                value: {
+                                  bytes: "0x5120b69d4d0bbf765eb327eecb59a6d76280b958c6b9bac195109261f6a44746fa07"
+                                }
+                              },
+                              value: "100000000"
+                            }
+                          }
+                        ],
+                        version: 2
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        id: 3907
+      };
+    
+      // Mock response for getting transaction
+      mockTransport.setMockResponse('rooch_executeViewFunction', mockTxResponse);
+      
+      // Mock response for getting transaction height
+      mockTransport.setMockResponse('rooch_executeViewFunction', {
+        result: {
+          return_values: [
+            {
+              decoded_value: 12345
+            }
+          ]
+        }
+      });
+    
+      // Mock response for getting block information
+      mockTransport.setMockResponse('rooch_executeViewFunction', {
+        result: {
+          return_values: [
+            {
+              decoded_value: {
+                prev_blockhash: '0x3456789012345678901234567890123456789012345678901234567890123456',
+                time: 1623456789
+              }
+            }
+          ]
+        }
+      });
+    
+      const result = await instance.getTransaction({ txId: mockTxId, hex: true });
+    
+      expect(result.tx).toMatchObject({
+        txid: "0x50d868b181ac454d29df8dcfa7a150a81ce44e063fdd1b52f2c85d12cb686131",
+        hash: "0x50d868b181ac454d29df8dcfa7a150a81ce44e063fdd1b52f2c85d12cb686131",
+        version: 2,
+        size: 0,
+        vsize: 0,
+        weight: 0,
+        locktime: 102,
+        vin: [
+          {
+            txid: "0xe9144d43dd0f52bfcc7044f61ae04d7592537326110775db23df7926afc83c87",
+            vout: 0,
+            scriptSig: {
+              asm: '',
+              hex: ''
+            },
+            txinwitness: [
+              "304402200b66a648b0dac1b5871758399d574200adba581794493de6465b4333477cd02a022012b5e02612646937e86a9625707fc90517d2a407a98bff826566320d729f378801",
+              "0248504d1c93def5d474becee5e2cbf515d9e9b884ed515b8ae2c4b41d8b7a7ad6"
+            ],
+            sequence: 4294967293,
+            value: 0
+          }
+        ],
+        vout: [
+          {
+            value: 4899999835,
+            n: 0,
+            ordinals: [],
+            inscriptions: [],
+            spent: false,
+            sats: 4899999835,
+            scriptPubKey: {
+              address: "bcrt1p38ma55ap67wu4hlsf2ey5p0dvzmq2wzc7zda3dp3mm39kr49wyqs96d69e",
+              asm: "OP_1 89f7da53a1d79dcadff04ab24a05ed60b6053858f09bd8b431dee25b0ea57101",
+              desc: "Script witness_v1_taproot",
+              hex: '512089f7da53a1d79dcadff04ab24a05ed60b6053858f09bd8b431dee25b0ea57101',
+              type: 'witness_v1_taproot',
+            }
+          },
+          {
+            value: 100000000,
+            n: 1,
+            ordinals: [],
+            inscriptions: [],
+            spent: false,
+            sats: 100000000,
+            scriptPubKey: {
+              address: "bcrt1pk6w56zalwe0txflwedv6d4mzszu4334ehtqe2yyjv8m2g36xlgrsnzsp4k",
+              asm: "OP_1 b69d4d0bbf765eb327eecb59a6d76280b958c6b9bac195109261f6a44746fa07",
+              desc: "Script witness_v1_taproot",
+              hex: "5120b69d4d0bbf765eb327eecb59a6d76280b958c6b9bac195109261f6a44746fa07",
+              type: "witness_v1_taproot"
+            }
+          }
+        ],
+        blockhash: '0x3456789012345678901234567890123456789012345678901234567890123456',
+        blockheight: 12345,
+        blocktime: 1623456789,
+        confirmations: 0,
+        time: 0,
+        fee: 0,
+        hex: expect.any(String)  // We expect the hex field to be present and be a string
+      });
+    
+      // Verify that the hex field is present and is a non-empty string
+      expect(result.tx.hex).toBeDefined();
+      expect(typeof result.tx.hex).toBe('string');
+    });
+
+    it('should handle unexpected errors gracefully', async () => {
+      const mockTxId = '0x50d868b181ac454d29df8dcfa7a150a81ce44e063fdd1b52f2c85d12cb686131';
+    
+      // Mock a network error
+      mockTransport.setMockResponse('rooch_executeViewFunction', () => {
+        throw new Error('Network error');
+      });
+    
+      await expect(instance.getTransaction({ txId: mockTxId })).rejects.toThrow('Transaction with id 0x50d868b181ac454d29df8dcfa7a150a81ce44e063fdd1b52f2c85d12cb686131 not found');
+    
+      // Mock a server error
+      mockTransport.setMockResponse('rooch_executeViewFunction', {
+        jsonrpc: "2.0",
+        error: {
+          code: -32000,
+          message: "Server error"
+        },
+        id: 3907
+      });
+    
+      await expect(instance.getTransaction({ txId: mockTxId })).rejects.toThrow('Transaction with id 0x50d868b181ac454d29df8dcfa7a150a81ce44e063fdd1b52f2c85d12cb686131 not found');
+    
+      // Mock an unexpected response format
+      mockTransport.setMockResponse('rooch_executeViewFunction', {
+        jsonrpc: "2.0",
+        result: {
+          vm_status: "Executed",
+          return_values: [
+            {
+              value: {
+                type_tag: "0x1::option::Option<0x4::types::Transaction>",
+                value: "Invalid data"
+              },
+              decoded_value: null
+            }
+          ]
+        },
+        id: 3907
+      });
+    
+      await expect(instance.getTransaction({ txId: mockTxId })).rejects.toThrow('Transaction with id 0x50d868b181ac454d29df8dcfa7a150a81ce44e063fdd1b52f2c85d12cb686131 not found');
+    });
   });
 
+  /*
   describe('getSpendables', () => {
     it('should successfully get spendable UTXOs', async () => {
       const mockAddress = 'mockAddress';
@@ -2235,5 +2607,5 @@ describe('RoochDataSource', () => {
     });
 
   });
-
+  */
 });

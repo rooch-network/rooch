@@ -1,4 +1,5 @@
 import cbor from 'cbor'
+import * as bitcoin from 'bitcoinjs-lib';
 import { Network } from '../../types'
 import {
   IDatasource, 
@@ -32,9 +33,9 @@ import {
   Args
 } from '@roochnetwork/rooch-sdk';
 import {
-  TxIn,
-  TxOut
-} from './bitcoin_types';
+  decodeScriptPubKey,
+  hexStringToTxid,
+} from "../../utils";
 
 type RoochDataSourceOptions = {
   network?: Network;
@@ -43,10 +44,12 @@ type RoochDataSourceOptions = {
 }
 
 export class RoochDataSource implements IDatasource {
+  private network: bitcoin.Network;
   private roochClient: RoochClient;
 
   constructor(opts: RoochDataSourceOptions) {
     if (opts.transport != null) {
+      this.network = bitcoin.networks.regtest;
       this.roochClient = new RoochClient({
         transport: opts.transport
       });
@@ -55,6 +58,7 @@ export class RoochDataSource implements IDatasource {
     }
 
     if (opts.url != null) {
+      this.network = bitcoin.networks.regtest;
       this.roochClient = new RoochClient({
         url: opts.url,
       });
@@ -63,6 +67,7 @@ export class RoochDataSource implements IDatasource {
     }
 
     if (opts.network != null) {
+      this.network = toBitcoinNetwork(opts.network);
       let roochNetwork = bitcoinNetworkToRooch(opts.network)
       let nodeURL = getRoochNodeUrl(roochNetwork);
       this.roochClient = new RoochClient({
@@ -282,17 +287,22 @@ export class RoochDataSource implements IDatasource {
   }> {
     // Get transaction information
     const txResult = await this.roochClient.executeViewFunction({
-      target: '0x1::bitcoin::get_tx',
+      target: '0x4::bitcoin::get_tx',
       typeArgs: [],
       args: [Args.address(txId)],
-    });
-
+    }) as any;
+  
     if (!txResult.return_values || txResult.return_values.length === 0) {
       throw new Error(`Transaction with id ${txId} not found`);
     }
-
-    const btcTx = txResult.return_values[0].decoded_value as any;
-
+  
+    const btcTxOption = txResult.return_values[0].decoded_value.value.vec[0];
+    if (!btcTxOption) {
+      throw new Error(`Transaction with id ${txId} not found`);
+    }
+  
+    const btcTx = btcTxOption.value;
+  
     // Convert Rooch BTC transaction to the required Transaction type
     const tx: Transaction = {
       txid: btcTx.id,
@@ -302,32 +312,31 @@ export class RoochDataSource implements IDatasource {
       vsize: 0, // Not available in Rooch BTC tx
       weight: 0, // Not available in Rooch BTC tx
       locktime: btcTx.lock_time,
-      vin: btcTx.input.map((input: TxIn): Vin => ({
-        txid: input.previous_output.txid,
-        vout: input.previous_output.vout,
+      vin: btcTx.input.map((input: any): Vin => ({
+        txid: input.value.previous_output.value.txid,
+        vout: input.value.previous_output.value.vout,
         scriptSig: {
           asm: "", // Not available in Rooch BTC tx
-          hex: Buffer.from(input.script_sig, 'base64').toString('hex')
+          hex: input.value.script_sig.slice(2) // Remove '0x' prefix
         },
-        txinwitness: input.witness.witness,
-        sequence: input.sequence,
+        txinwitness: input.value.witness.value.witness.map((w: string) => w.slice(2)), // Remove '0x' prefix
+        sequence: input.value.sequence,
         value: 0, // Not available in Rooch BTC tx
       })),
-      vout: btcTx.output.map((output: TxOut, index: number): Vout => ({
-        value: Number(output.value),
-        n: index,
-        ordinals: [], // Not available in Rooch BTC tx
-        inscriptions: [], // Not available in Rooch BTC tx
-        spent: false, // Not available in Rooch BTC tx
-        sats: Number(output.value), // Assuming sats is the same as value
-        scriptPubKey: {
-          asm: "", // Not available in Rooch BTC tx
-          desc: "", // Not available in Rooch BTC tx
-          hex: Buffer.from(output.script_pubkey, 'base64').toString('hex'),
-          type: "unknown", // Not available in Rooch BTC tx
-          address: output.recipient_address
+      vout: btcTx.output.map((output: any, index: number): Vout => {
+        const scriptPubHex = output.value.script_pubkey.value.bytes.slice(2); // Remove '0x' prefix
+        const scriptPubKey = decodeScriptPubKey(scriptPubHex, this.network);
+  
+        return {
+          value: Number(output.value.value),
+          n: index,
+          ordinals: [], // Not available in Rooch BTC tx
+          inscriptions: [], // Not available in Rooch BTC tx
+          spent: false, // Not available in Rooch BTC tx
+          sats: Number(output.value.value),
+          scriptPubKey: scriptPubKey
         }
-      })),
+      }),
       blockhash: "", // Will be filled later
       blockheight: 0, // Will be filled later
       blocktime: 0, // Will be filled later
@@ -335,36 +344,36 @@ export class RoochDataSource implements IDatasource {
       time: 0, // Not available in Rooch BTC tx
       fee: 0, // Not available in Rooch BTC tx
     };
-
+  
     if (hex) {
       tx.hex = ""; // Not available in Rooch BTC tx
     }
-
+  
     // Get transaction height
     const txHeightResult = await this.roochClient.executeViewFunction({
-      target: '0x1::bitcoin::get_tx_height',
+      target: '0x4::bitcoin::get_tx_height',
       typeArgs: [],
       args: [Args.address(txId)],
-    });
-
-    if (txHeightResult.return_values && txHeightResult.return_values.length > 0) {
-      const blockHeight = Number(txHeightResult.return_values[0].decoded_value);
+    }) as any;
+  
+    if (txHeightResult.result && txHeightResult.result.return_values && txHeightResult.result.return_values.length > 0) {
+      const blockHeight = Number(txHeightResult.result.return_values[0].decoded_value);
       tx.blockheight = blockHeight;
-
+  
       // Get block information
       const blockResult = await this.roochClient.executeViewFunction({
-        target: '0x1::bitcoin::get_block_by_height',
+        target: '0x4::bitcoin::get_block_by_height',
         typeArgs: [],
         args: [Args.u64(BigInt(blockHeight))],
-      });
-
-      if (blockResult.return_values && blockResult.return_values.length > 0) {
-        const block = blockResult.return_values[0].decoded_value as any;
+      }) as any;
+  
+      if (blockResult.result && blockResult.result.return_values && blockResult.result.return_values.length > 0) {
+        const block = blockResult.result.return_values[0].decoded_value;
         tx.blockhash = block.prev_blockhash;
         tx.blocktime = Number(block.time);
       }
     }
-
+  
     return { tx };
   }
 
@@ -399,7 +408,7 @@ export class RoochDataSource implements IDatasource {
       });
 
       for (const utxoState of response.data) {
-        const utxo = this.convertToUTXOLimited(utxoState);
+        const utxo = await this.convertToUTXOLimited(utxoState);
 
         if (this.isSpendable(utxo, type)) {
           spendables.push(utxo);
@@ -421,23 +430,38 @@ export class RoochDataSource implements IDatasource {
     return spendables;
   }
 
-  private convertToUTXOLimited(utxoState: UTXOStateView): ExtendedUTXOLimited {
+  private async convertToUTXOLimited(utxoState: UTXOStateView): Promise<ExtendedUTXOLimited> {
     const utxoValue: UTXOView = utxoState.value;
     
     if (!utxoValue.bitcoin_txid || !utxoValue.value || typeof utxoValue.vout !== 'number') {
       throw new Error('Invalid UTXO data');
     }
 
+    const output = await this.getTransaction({
+      txId: hexStringToTxid(utxoValue.bitcoin_txid),
+      hex: true
+    });
+
+    const utxoOuts = output.tx.vout.filter((out)=>{
+      return out.n == utxoValue.vout
+    });
+
+    if (utxoOuts.length == 0) {
+      throw new Error('Invalid UTXO scriptPubKey');
+    }
+
+    const scriptPubKey = utxoOuts[0].scriptPubKey
+
     return {
       txid: utxoValue.bitcoin_txid,
       n: utxoValue.vout,
       sats: this.safeParseBigInt(utxoValue.value),
       scriptPubKey: {
-        asm: "", // Rooch does not provide this information
-        desc: "", // Rooch does not provide this information
-        hex: "", // Rooch does not provide script_pubkey in the current structure
-        address: utxoState.owner_bitcoin_address || utxoState.owner,
-        type: "p2tr", // Assuming all UTXOs use Taproot
+        asm: scriptPubKey.asm,
+        desc: scriptPubKey.desc,
+        hex: scriptPubKey.hex, 
+        address: scriptPubKey.address || "",
+        type: scriptPubKey.type, 
       },
       seals: utxoValue.seals
     };
@@ -489,7 +513,7 @@ export class RoochDataSource implements IDatasource {
       });
 
       for (const utxoState of response.data) {
-        const utxo = this.convertToUTXO(utxoState);
+        const utxo = await this.convertToUTXO(utxoState);
         
         if (utxo.safeToSpend) {
           spendableUTXOs.push(utxo);
@@ -531,8 +555,8 @@ export class RoochDataSource implements IDatasource {
     };
   }
   
-  private convertToUTXO(utxoState: UTXOStateView): UTXO {
-    const limitedUTXO = this.convertToUTXOLimited(utxoState);
+  private async convertToUTXO(utxoState: UTXOStateView): Promise<UTXO> {
+    const limitedUTXO = await this.convertToUTXOLimited(utxoState);
     
     return {
       ...limitedUTXO,
@@ -563,6 +587,19 @@ export class RoochDataSource implements IDatasource {
     }
   }
 
+}
+
+function toBitcoinNetwork(network: Network): bitcoin.Network {
+  switch (network) {
+    case 'mainnet':
+      return bitcoin.networks.bitcoin
+    case 'testnet':
+      return bitcoin.networks.testnet
+    case 'regtest':
+      return bitcoin.networks.regtest
+    default:
+      throw new Error(`Unknown network: ${network}`)
+  }
 }
 
 function bitcoinNetworkToRooch(network: Network): 'testnet' | 'devnet' | 'localnet' {

@@ -3,14 +3,18 @@ import React, { useEffect, useState } from 'react'
 import { BitSeed, InscriptionID, inscriptionIDToString, DeployOptions } from '../../src'
 import { createTestBitSeed } from './commons/test_bitseed'
 
-export default function DeployGeneratorStory() {
+interface DeployGeneratorStoryProps {
+  roochServerAddress: string;
+}
+
+export default function DeployGeneratorStory({ roochServerAddress }: DeployGeneratorStoryProps) {
   const [bitseed, setBitseed] = useState<BitSeed | undefined>(undefined)
   const [file, setFile] = useState<File | null>(null)
   const [deployResult, setDeployResult] = useState<InscriptionID | undefined>(undefined)
   const [error, setError] = useState<string | undefined>(undefined)
 
   useEffect(() => {
-    setBitseed(createTestBitSeed())
+    setBitseed(createTestBitSeed(roochServerAddress))
   }, [])
 
   const handleDeploy = async () => {

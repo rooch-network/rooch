@@ -9,7 +9,7 @@
     "test:unit": "jest src",
     "test:unit:debug": "jest sdk/typescript/bitseed-sdk/src/datasource/rooch/rooch_datasource.test.ts",
     "test:e2e": "pnpm run build && playwright test -c playwright-ct.config.ts",
-    "test:e2e:debug": "pnpm run build && playwright test -c playwright-ct.config.ts --debug -g deploy",
+    "test:e2e:debug": "pnpm run build && playwright test -c playwright-ct.config.ts -g mint",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },

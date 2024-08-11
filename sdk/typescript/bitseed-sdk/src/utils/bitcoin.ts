@@ -85,3 +85,19 @@ export function decodeUTXOs(signedTxHex: string, network: bitcoin.Network, filte
     }
   })
 }
+
+/**
+ * Converts a hexadecimal string to a Bitcoin transaction ID (txid).
+ *
+ * @param {string} hexString - The hexadecimal string to convert.
+ * @returns {string} The Bitcoin transaction ID (txid).
+ */
+export function hexStringToTxid(hexString: string): string {
+  // Reverse the byte order of the hexadecimal string.
+  const reversedHexString = hexString
+    .match(/.{1,2}/g)! // Split the string into pairs of characters.
+    .reverse() // Reverse the order of the pairs.
+    .join(""); // Join the pairs back together.
+
+  return reversedHexString;
+}
