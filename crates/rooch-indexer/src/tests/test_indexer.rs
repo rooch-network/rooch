@@ -70,7 +70,7 @@ fn random_remove_object_states() -> Vec<String> {
     remove_object_states
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_transaction_store() -> Result<()> {
     let registry_service = RegistryService::default();
     let tmpdir = moveos_config::temp_dir();
@@ -114,7 +114,7 @@ async fn test_transaction_store() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_event_store() -> Result<()> {
     let registry_service = RegistryService::default();
     let tmpdir = moveos_config::temp_dir();
@@ -148,7 +148,7 @@ async fn test_event_store() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_state_store() -> Result<()> {
     let registry_service = RegistryService::default();
     let tmpdir = moveos_config::temp_dir();
@@ -180,7 +180,7 @@ async fn test_state_store() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_object_type_query() -> Result<()> {
     let registry_service = RegistryService::default();
     let tmpdir = moveos_config::temp_dir();
@@ -231,7 +231,7 @@ async fn test_object_type_query() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_escape_transaction() -> Result<()> {
     let registry_service = RegistryService::default();
     let tmpdir = moveos_config::temp_dir();

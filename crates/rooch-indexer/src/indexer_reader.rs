@@ -31,9 +31,10 @@ use std::ops::DerefMut;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
+use tokio::runtime::Handle;
 use tokio::time::timeout;
 
-pub const DEFAULT_QUERY_TIMEOUT: u64 = 32; // second
+pub const DEFAULT_QUERY_TIMEOUT: u64 = 60; // second
 
 pub const TX_ORDER_STR: &str = "tx_order";
 pub const TX_HASH_STR: &str = "tx_hash";
@@ -110,38 +111,25 @@ impl InnerIndexerReader {
         E: From<diesel::result::Error> + std::error::Error + Send,
         T: Send + 'static,
     {
-        let timeout_duration = Duration::from_secs(DEFAULT_QUERY_TIMEOUT); // default 30 second timeout
+        // default query time out in second
+        let timeout_duration = Duration::from_secs(DEFAULT_QUERY_TIMEOUT);
         let mut connection = self.get_connection()?;
 
-        futures::executor::block_on(async move {
-            timeout(
-                timeout_duration,
-                tokio::task::spawn_blocking(move || {
-                    connection
-                        .deref_mut()
-                        .transaction(query)
-                        .map_err(|e| IndexerError::SQLiteReadError(e.to_string()))
-                }),
-            )
-            .await
-            .map_err(|e| IndexerError::SQLiteAsyncReadError(e.to_string()))??
+        tokio::task::block_in_place(|| {
+            Handle::current().block_on(async move {
+                timeout(
+                    timeout_duration,
+                    tokio::task::spawn_blocking(move || {
+                        connection
+                            .deref_mut()
+                            .transaction(query)
+                            .map_err(|e| IndexerError::SQLiteReadError(e.to_string()))
+                    }),
+                )
+                .await
+                .map_err(|e| IndexerError::SQLiteAsyncReadError(e.to_string()))??
+            })
         })
-
-        // tokio::task::block_in_place(|| {
-        //     Handle::current().block_on(async move {
-        //         timeout(
-        //             timeout_duration,
-        //             tokio::task::spawn_blocking(move || {
-        //                 connection
-        //                     .deref_mut()
-        //                     .transaction(query)
-        //                     .map_err(|e| IndexerError::SQLiteReadError(e.to_string()))
-        //             }),
-        //         )
-        //             .await
-        //             .map_err(|e| IndexerError::SQLiteAsyncReadError(e.to_string()))??
-        //     })
-        // })
     }
 }
 
