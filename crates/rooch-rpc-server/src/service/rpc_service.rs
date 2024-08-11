@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{Ok, Result};
+use anyhow::{format_err, Ok, Result};
 use bitcoincore_rpc::bitcoin::Txid;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{ModuleId, StructTag};
@@ -14,6 +14,7 @@ use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::{AnnotatedState, FieldKey, ObjectState};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
+use rooch_executor::actor::messages::DryRunTransactionResult;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
@@ -23,9 +24,12 @@ use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::address::{BitcoinAddress, RoochAddress};
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
-use rooch_types::indexer::state::{IndexerStateID, ObjectStateFilter};
+use rooch_types::indexer::state::{IndexerObjectState, IndexerStateID, ObjectStateFilter};
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
-use rooch_types::transaction::{ExecuteTransactionResponse, LedgerTransaction, RoochTransaction};
+use rooch_types::repair::{RepairIndexerParams, RepairIndexerType};
+use rooch_types::transaction::{
+    ExecuteTransactionResponse, LedgerTransaction, RoochTransaction, RoochTransactionData,
+};
 use std::collections::{BTreeMap, HashMap};
 
 /// RpcService is the implementation of the RPC service.
@@ -81,6 +85,11 @@ impl RpcService {
 
     pub async fn execute_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponse> {
         self.pipeline_processor.execute_l2_tx(tx).await
+    }
+
+    pub async fn dry_run_tx(&self, tx: RoochTransactionData) -> Result<DryRunTransactionResult> {
+        let verified_tx = self.executor.convert_to_verified_tx(tx).await?;
+        self.executor.dry_run_transaction(verified_tx).await
     }
 
     pub async fn execute_view_function(
@@ -230,8 +239,6 @@ impl RpcService {
         limit: usize,
         descending_order: bool,
     ) -> Result<Vec<IndexerEvent>> {
-        // ) -> Result<Vec<AnnotatedEvent>> {
-
         let resp = self
             .indexer
             .query_events(filter, cursor, limit, descending_order)
@@ -447,5 +454,123 @@ impl RpcService {
         bitcoin_client
             .broadcast_transaction(hex, maxfeerate, maxburnamount)
             .await
+    }
+
+    pub async fn repair_indexer(
+        &self,
+        repair_type: RepairIndexerType,
+        repair_params: RepairIndexerParams,
+    ) -> Result<()> {
+        {
+            match repair_type {
+                RepairIndexerType::ObjectState => {
+                    match repair_params {
+                        RepairIndexerParams::ObjectId(object_ids) => {
+                            let states = self
+                                .get_states(AccessPath::objects(object_ids.clone()))
+                                .await?;
+
+                            let mut remove_object_ids = vec![];
+                            let mut object_states_mapping = HashMap::new();
+                            for (idx, state_opt) in states.into_iter().enumerate() {
+                                match state_opt {
+                                    Some(state) => {
+                                        object_states_mapping
+                                            .insert(state.metadata.id.clone(), state);
+                                    }
+                                    None => remove_object_ids.push(object_ids[idx].clone()),
+                                }
+                            }
+
+                            let expect_update_object_ids: Vec<_> =
+                                object_states_mapping.keys().cloned().collect();
+                            let query_limit = expect_update_object_ids.len();
+                            let indexer_ids = self
+                                .indexer
+                                .query_object_ids(
+                                    ObjectStateFilter::ObjectId(expect_update_object_ids.clone()),
+                                    None,
+                                    query_limit,
+                                    true,
+                                )
+                                .await?;
+
+                            let mut update_object_states = indexer_ids
+                                .into_iter()
+                                .map(|(object_id, indexer_state_id)| {
+                                    let state = object_states_mapping.get(&object_id).ok_or(
+                                        anyhow::anyhow!(
+                                            "Object states {:?} should exist",
+                                            object_id
+                                        ),
+                                    )?;
+                                    Ok(IndexerObjectState::new(
+                                        state.metadata.clone(),
+                                        indexer_state_id.tx_order,
+                                        indexer_state_id.state_index,
+                                    ))
+                                })
+                                .collect::<Result<Vec<_>>>()?;
+
+                            // Object state may exist in state, but not exist in indexer
+                            let actual_update_object_ids = update_object_states
+                                .iter()
+                                .map(|v| v.metadata.id.clone())
+                                .collect::<Vec<_>>();
+                            let new_object_ids = expect_update_object_ids
+                                .iter()
+                                .filter(|&v| !actual_update_object_ids.contains(v))
+                                .collect::<Vec<_>>();
+                            let mut new_object_states = if !new_object_ids.is_empty() {
+                                // set genesis tx_order and state_index_generator for new indexer repair
+                                let tx_order: u64 = 0;
+                                let mut state_index_generator = self
+                                    .indexer
+                                    .query_last_state_index_by_tx_order(tx_order)
+                                    .await?;
+                                new_object_ids
+                                    .into_iter()
+                                    .map(|k| {
+                                        let state = object_states_mapping.get(k).ok_or(
+                                            anyhow::anyhow!("Object states {:?} should exist", k),
+                                        )?;
+                                        let object_state = IndexerObjectState::new(
+                                            state.metadata.clone(),
+                                            tx_order,
+                                            state_index_generator,
+                                        );
+                                        state_index_generator += 1;
+                                        Ok(object_state)
+                                    })
+                                    .collect::<Result<Vec<_>>>()?
+                            } else {
+                                vec![]
+                            };
+
+                            update_object_states.append(&mut new_object_states);
+                            if !update_object_states.is_empty() {
+                                self.indexer
+                                    .persist_or_update_object_states(update_object_states)
+                                    .await?;
+                            }
+
+                            if !remove_object_ids.is_empty() {
+                                self.indexer.delete_object_states(remove_object_ids).await?
+                            }
+                            Ok(())
+                        }
+                        _ => Err(format_err!(
+                            "Invalid params when repair indexer for ObjectState"
+                        )),
+                    }
+                }
+                RepairIndexerType::Transaction => {
+                    Err(format_err!("Repair indexer for transaction not support"))
+                }
+                RepairIndexerType::Event => {
+                    Err(format_err!("Repair indexer for event not support"))
+                }
+            }
+        }
     }
 }

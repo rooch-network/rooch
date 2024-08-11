@@ -24,11 +24,11 @@ const ComingSoonTokens = [
     name: 'Free Mint Coin',
     distribution: 'Free Mint',
   },
-  {
-    symbol: 'fmNFT',
-    name: 'Free Mint NFT',
-    distribution: 'Free Mint',
-  },
+  // {
+  //   symbol: 'fmNFT',
+  //   name: 'Free Mint NFT',
+  //   distribution: 'Free Mint',
+  // },
   {
     symbol: 'fmSFT',
     name: 'Free Mint SFT',

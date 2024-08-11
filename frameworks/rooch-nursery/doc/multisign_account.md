@@ -13,21 +13,27 @@ Bitcoin multisign account module
 -  [Constants](#@Constants_0)
 -  [Function `initialize_multisig_account_entry`](#0xa_multisign_account_initialize_multisig_account_entry)
 -  [Function `initialize_multisig_account`](#0xa_multisign_account_initialize_multisig_account)
+-  [Function `generate_multisign_address`](#0xa_multisign_account_generate_multisign_address)
 -  [Function `is_participant`](#0xa_multisign_account_is_participant)
 -  [Function `bitcoin_address`](#0xa_multisign_account_bitcoin_address)
 -  [Function `submit_bitcoin_proposal`](#0xa_multisign_account_submit_bitcoin_proposal)
 -  [Function `sign_bitcoin_proposal`](#0xa_multisign_account_sign_bitcoin_proposal)
 
 
-<pre><code><b>use</b> <a href="">0x1::vector</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::account</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
+<b>use</b> <a href="">0x2::compare</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::table_vec</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
 <b>use</b> <a href="">0x3::ecdsa_k1</a>;
+<b>use</b> <a href="">0x4::opcode</a>;
+<b>use</b> <a href="">0x4::script_buf</a>;
+<b>use</b> <a href="taproot_builder.md#0xa_taproot_builder">0xa::taproot_builder</a>;
 </code></pre>
 
 
@@ -206,7 +212,7 @@ Initialize a taproot multisign account
 If the multisign account already exists, we will init the MultisignAccountInfo into the account
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="multisign_account.md#0xa_multisign_account_initialize_multisig_account_entry">initialize_multisig_account_entry</a>(participant_public_keys: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, threshold: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="multisign_account.md#0xa_multisign_account_initialize_multisig_account_entry">initialize_multisig_account_entry</a>(threshold: u64, participant_public_keys: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;)
 </code></pre>
 
 
@@ -217,7 +223,18 @@ If the multisign account already exists, we will init the MultisignAccountInfo i
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="multisign_account.md#0xa_multisign_account_initialize_multisig_account">initialize_multisig_account</a>(participant_public_keys: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, threshold: u64): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="multisign_account.md#0xa_multisign_account_initialize_multisig_account">initialize_multisig_account</a>(threshold: u64, participant_public_keys: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;): <b>address</b>
+</code></pre>
+
+
+
+<a name="0xa_multisign_account_generate_multisign_address"></a>
+
+## Function `generate_multisign_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multisign_account.md#0xa_multisign_account_generate_multisign_address">generate_multisign_address</a>(threshold: u64, public_keys: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;): <a href="_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
 </code></pre>
 
 

@@ -9,7 +9,7 @@ import { useCurrentWallet } from '@roochnetwork/rooch-sdk-kit'
 import { ConnectWalletHint } from '@/components/connect-wallet-hint'
 
 const mintTabItems: TabItem[] = [
-  { id: 'DemoTokens', label: 'Demo Tokens', available: true },
+  { id: 'DemoTokens', label: 'Demo', available: true },
   { id: 'ComingSoon', label: 'Coming Soon', available: true },
 ]
 

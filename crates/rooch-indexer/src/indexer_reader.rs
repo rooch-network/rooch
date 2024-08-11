@@ -20,6 +20,7 @@ use diesel::{
 };
 use function_name::named;
 use move_core_types::language_storage::StructTag;
+use moveos_types::moveos_std::event::EventHandle;
 use moveos_types::moveos_std::object::ObjectID;
 use prometheus::Registry;
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
@@ -329,9 +330,17 @@ impl IndexerReader {
         };
 
         let main_where_clause = match filter {
-            EventFilter::EventType(struct_tag) => {
-                let event_type_str = format!("0x{}", struct_tag.to_canonical_string());
-                format!("{EVENT_TYPE_STR} = \"{}\"", event_type_str)
+            EventFilter::EventTypeWithSender { event_type, sender } => {
+                let event_handle_id = EventHandle::derive_event_handle_id(&event_type);
+                format!(
+                    "{TX_SENDER_STR} = \"{}\" AND {EVENT_HANDLE_ID_STR} = \"{}\"",
+                    sender.to_hex_literal(),
+                    event_handle_id
+                )
+            }
+            EventFilter::EventType(event_type) => {
+                let event_handle_id = EventHandle::derive_event_handle_id(&event_type);
+                format!("{EVENT_HANDLE_ID_STR} = \"{}\"", event_handle_id)
             }
             EventFilter::Sender(sender) => {
                 format!("{TX_SENDER_STR} = \"{}\"", sender.to_hex_literal())

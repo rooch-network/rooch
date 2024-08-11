@@ -5,14 +5,19 @@
 module rooch_nursery::multisign_account{
 
     use std::vector;
+    use std::option;
     use moveos_std::signer;
     use moveos_std::object::{Object};
     use moveos_std::account::{Self, Account};
     use moveos_std::table_vec::{Self, TableVec};
     use moveos_std::table::{Self, Table};
     use moveos_std::bcs;
+    use moveos_std::compare;
+    use bitcoin_move::opcode;
+    use bitcoin_move::script_buf::{Self, ScriptBuf};
     use rooch_framework::ecdsa_k1;
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
+    use rooch_nursery::taproot_builder;
 
     const PROPOSAL_STATUS_PENDING: u8 = 0;
     const PROPOSAL_STATUS_APPROVED: u8 = 1;
@@ -37,8 +42,6 @@ module rooch_nursery::multisign_account{
         multisign_bitcoin_address: BitcoinAddress,
         /// The multisign account threshold
         threshold: u64,
-        /// The taproot public key of the multisign account
-        multisign_public_key: vector<u8>,
         /// The public keys of the multisign account
         participants: Table<address, ParticipantInfo>,
         /// The multisign account proposals on bitcoin
@@ -101,19 +104,18 @@ module rooch_nursery::multisign_account{
     /// Initialize a taproot multisign account
     /// If the multisign account already exists, we will init the MultisignAccountInfo into the account
     public entry fun initialize_multisig_account_entry(
-        participant_public_keys: vector<vector<u8>>,
         threshold: u64,
+        participant_public_keys: vector<vector<u8>>,
     ){
-        initialize_multisig_account(participant_public_keys, threshold);
+        initialize_multisig_account(threshold, participant_public_keys);
     }
     
     public fun initialize_multisig_account(
-        participant_public_keys: vector<vector<u8>>,
         threshold: u64,
+        participant_public_keys: vector<vector<u8>>,
     ): address {
         assert!(vector::length(&participant_public_keys) >= threshold, ErrorInvalidThreshold);
-        let multisign_public_key = bitcoin_address::derive_multisig_pubkey_from_pubkeys(participant_public_keys, threshold);
-        let multisign_bitcoin_address = bitcoin_address::derive_bitcoin_taproot_address_from_pubkey(&multisign_public_key);
+        let multisign_bitcoin_address = generate_multisign_address(threshold, participant_public_keys);
         let multisign_address = bitcoin_address::to_rooch_address(&multisign_bitcoin_address);
         let participants = table::new();
         let idx = 0;
@@ -134,7 +136,6 @@ module rooch_nursery::multisign_account{
             multisign_bitcoin_address,
             multisign_address,
             threshold,
-            multisign_public_key,
             participants,
             bitcoin_proposals: table_vec::new(),
             rooch_proposals: table_vec::new(),
@@ -142,6 +143,84 @@ module rooch_nursery::multisign_account{
         let account = borrow_mut_or_create_account(multisign_address);
         account::account_move_resource_to(account, multisign_account_info);
         multisign_address
+    }
+
+    public fun generate_multisign_address(threshold: u64, public_keys: vector<vector<u8>>): BitcoinAddress{
+        let sorted_public_keys = quick_sort(public_keys);
+        let merkle_root = generate_taproot(threshold, &sorted_public_keys);
+        //Use the sorted first public key as the internal pubkey
+        let internal_pubkey = vector::borrow(&sorted_public_keys, 0);
+        bitcoin_address::p2tr(internal_pubkey, option::some(merkle_root))
+    }
+
+    /// Generate a taproot merkle root from public keys
+    fun generate_taproot(threshold: u64, public_keys: &vector<vector<u8>>): address {
+        let multisign_script = create_multisign_script(threshold, public_keys);
+        let builder = taproot_builder::new();
+        taproot_builder::add_leaf(&mut builder, 0, multisign_script);
+        taproot_builder::finalize(builder)
+    }
+
+    fun create_multisign_script(threshold: u64, public_keys: &vector<vector<u8>>) : ScriptBuf {
+        let buf = script_buf::empty();
+        let idx = 0;
+        let len = vector::length(public_keys);
+        while(idx < len){
+            let public_key = *vector::borrow(public_keys, idx);
+            let x_only_key = sub_vector(&public_key, 1, 33);
+            if(script_buf::is_empty(&buf)){
+                script_buf::push_x_only_key(&mut buf, x_only_key);
+                script_buf::push_opcode(&mut buf, opcode::op_checksig());
+            }else{
+                script_buf::push_x_only_key(&mut buf, x_only_key);
+                script_buf::push_opcode(&mut buf, opcode::op_checksigadd());
+            };
+            idx = idx + 1;
+        };
+        script_buf::push_int(&mut buf, threshold);
+        script_buf::push_opcode(&mut buf, opcode::op_greaterthanorequal());
+        buf
+    }
+    
+    //TODO put this function in a more general module
+    fun sub_vector(bytes: &vector<u8>, start: u64, end: u64): vector<u8>{
+        let result = vector::empty();
+        let i = start;
+        while(i < end) {
+            vector::push_back(&mut result, *vector::borrow(bytes, i));
+            i = i + 1;
+        };
+        result
+    }
+
+    //TODO migrate this function to a suitable module
+    fun quick_sort(data: vector<vector<u8>>): vector<vector<u8>> {
+        if (vector::length(&data) <= 1) {
+            return data
+        };
+
+        let pivot = *vector::borrow(&data, 0);
+        let less = vector::empty();
+        let equal = vector::empty();
+        let greater = vector::empty();
+
+        while (vector::length(&data) > 0) {
+            let value = vector::remove(&mut data, 0);
+            let cmp = compare::compare_vector_u8(&value, &pivot);
+            if (cmp == compare::result_less_than()) {
+                vector::push_back(&mut less, value);
+            } else if (cmp == 0) {
+                vector::push_back(&mut equal, value);
+            } else {
+                vector::push_back(&mut greater, value);
+            };
+        };
+
+        let sortedData = vector::empty();
+        vector::append(&mut sortedData, quick_sort(less));
+        vector::append(&mut sortedData, equal);
+        vector::append(&mut sortedData, quick_sort(greater));
+        sortedData
     }
 
     public fun is_participant(multisign_address: address, participant_address: address) : bool {
@@ -202,12 +281,13 @@ module rooch_nursery::multisign_account{
 
         assert!(table_vec::contains(&multisign_account_info.bitcoin_proposals, proposal_id), ErrorInvalidProposal);
         
+        let participant = table::borrow(&multisign_account_info.participants, sender_addr);
         let proposal = table_vec::borrow_mut(&mut multisign_account_info.bitcoin_proposals, proposal_id);
         assert!(proposal.status == PROPOSAL_STATUS_PENDING, ErrorInvalidProposalStatus);
         assert!(!vector::contains(&proposal.participants, &sender_addr), ErrorProposalAlreadySigned);
 
         
-        verify_bitcoin_signature(proposal.tx_id, &signature, &multisign_account_info.multisign_public_key);
+        verify_bitcoin_signature(sender_addr, proposal.tx_id, &signature, &participant.public_key);
         
         vector::push_back(&mut proposal.signatures, signature);
         if(vector::length(&proposal.signatures) >= multisign_account_info.threshold){
@@ -216,8 +296,8 @@ module rooch_nursery::multisign_account{
     }
 
 
-    fun verify_bitcoin_signature(tx_id: address, signature: &vector<u8>, public_key: &vector<u8>) {
-        //TODO we need verify_schnorr?
+    fun verify_bitcoin_signature(_sender_addr: address, tx_id: address, signature: &vector<u8>, public_key: &vector<u8>) {
+        //TODO verify the public key with sender_addr's BitcoinAddress
         assert!(
             ecdsa_k1::verify(
                 signature,
@@ -240,7 +320,44 @@ module rooch_nursery::multisign_account{
     }
 
     fun borrow_account(multisign_address: address) : &Object<Account>{
+        assert!(account::exists_at(multisign_address), ErrorMultisignAccountNotFound);
         account::borrow_account(multisign_address)
     }
 
+    #[test]
+    fun test_create_multisign_script(){
+        let public_keys = vector::empty();
+        vector::push_back(&mut public_keys, x"0308839c624d3da34ae240086f60196409d619f285365cc3498fdd3a90b72599e4");
+        vector::push_back(&mut public_keys, x"0338121decf4ea2dbfd2ad1fe05a32a67448e78bf97a18bc107b4da177c27af752");
+        vector::push_back(&mut public_keys, x"03786e2d94b8aaac17b2846ea908a245ab8b3c9df7ff34be8c75c27beba8e1f579");
+        let sorted_public_keys = quick_sort(public_keys);
+        let buf = create_multisign_script(2, &sorted_public_keys);
+        std::debug::print(&buf);
+        let expect_result = x"2008839c624d3da34ae240086f60196409d619f285365cc3498fdd3a90b72599e4ac2038121decf4ea2dbfd2ad1fe05a32a67448e78bf97a18bc107b4da177c27af752ba20786e2d94b8aaac17b2846ea908a245ab8b3c9df7ff34be8c75c27beba8e1f579ba52a2";
+        assert!(script_buf::into_bytes(buf) == expect_result, 1000);
+    }
+
+    #[test]
+    fun test_multisign_taproot(){
+        let public_keys = vector::empty();
+        vector::push_back(&mut public_keys, x"0308839c624d3da34ae240086f60196409d619f285365cc3498fdd3a90b72599e4");
+        vector::push_back(&mut public_keys, x"0338121decf4ea2dbfd2ad1fe05a32a67448e78bf97a18bc107b4da177c27af752");
+        vector::push_back(&mut public_keys, x"03786e2d94b8aaac17b2846ea908a245ab8b3c9df7ff34be8c75c27beba8e1f579");
+        let sorted_public_keys = quick_sort(public_keys);
+        let merkle_root = generate_taproot(2, &sorted_public_keys);
+        //std::debug::print(&merkle_root);
+        let expected_root = @0x2dd3a13df28795832b0efbd279ddf0a432f6942ca82172f82abb2e15461c4402;
+        assert!(merkle_root == expected_root, 1000);
+    }
+
+    #[test]
+    fun test_multisign_bitcoin_address(){
+        let public_keys = vector::empty();
+        vector::push_back(&mut public_keys, x"0308839c624d3da34ae240086f60196409d619f285365cc3498fdd3a90b72599e4");
+        vector::push_back(&mut public_keys, x"0338121decf4ea2dbfd2ad1fe05a32a67448e78bf97a18bc107b4da177c27af752");
+        vector::push_back(&mut public_keys, x"03786e2d94b8aaac17b2846ea908a245ab8b3c9df7ff34be8c75c27beba8e1f579");
+        let bitcoin_address = generate_multisign_address(2, public_keys);
+        let expected_bitcoin_address = bitcoin_address::from_string(&std::string::utf8(b"tb1phldgaz7jzshk4zw60hvveeac498jt57dst25kuhuut96dkl6kvcskvg57y"));
+        assert!(bitcoin_address == expected_bitcoin_address, 1000);
+    }
 }

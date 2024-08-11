@@ -4,7 +4,29 @@
 /// https://github.com/rust-bitcoin/rust-bitcoin/blob/71d92bdbb91693b7882f8cd4a7e874b4e6f9eb48/bitcoin/src/blockdata/opcodes.rs#L81
 module bitcoin_move::opcode{
 
-        
+    /// Push an empty array onto the stack.
+    public fun op_0() : u8 {
+        OP_PUSHBYTES_0
+    }
+
+    /// Empty stack is also FALSE.
+    public fun op_false() : u8 {
+        OP_PUSHBYTES_0
+    }
+
+    /// Number 1 is also TRUE.
+    public fun op_true() : u8 {
+        OP_PUSHNUM_1
+    }
+
+    public fun op_nop2() : u8 {
+        OP_CLTV
+    }
+
+    public fun op_nop3() : u8 {
+        OP_CSV
+    }
+    
     /// Push an empty array onto the stack.
     const OP_PUSHBYTES_0:u8 = 0x00;
     public fun op_pushbytes_0() : u8 {

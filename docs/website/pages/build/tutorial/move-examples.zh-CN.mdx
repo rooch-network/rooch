@@ -11,7 +11,7 @@ Rooch 提供自动创建并初始化项目的命令 `rooch move new`，当我们
 例如：
 
 ```shell
-move rooch new hello-world
+rooch move new hello-world
 ```
 
 然而，`-` 不是命名地址（变量）的合法字符，所以当我们使用 `rooch move new` 创建好项目后，务必检查 `Move.toml` 文件中的项目地址别名是否存在非法字符。
@@ -23,7 +23,7 @@ move rooch new hello-world
 例如：
 
 ```shell
-move rooch new hello_world
+rooch move new hello_world
 ```
 
 在 Rooch 的 `examples` 中，我们创建的项目的名字统一使用 `_` 连接，至于实际开发中，使用那种风格，请根据您的喜好决定。
