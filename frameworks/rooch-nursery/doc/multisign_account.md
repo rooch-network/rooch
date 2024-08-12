@@ -114,6 +114,15 @@ Bitcoin multisign account module
 
 
 
+<a name="0xa_multisign_account_BITCOIN_COMPRESSED_PUBLIC_KEY_LEN"></a>
+
+
+
+<pre><code><b>const</b> <a href="multisign_account.md#0xa_multisign_account_BITCOIN_COMPRESSED_PUBLIC_KEY_LEN">BITCOIN_COMPRESSED_PUBLIC_KEY_LEN</a>: u64 = 33;
+</code></pre>
+
+
+
 <a name="0xa_multisign_account_ErrorInvalidParticipant"></a>
 
 
@@ -200,6 +209,15 @@ Bitcoin multisign account module
 
 
 <pre><code><b>const</b> <a href="multisign_account.md#0xa_multisign_account_PROPOSAL_STATUS_REJECTED">PROPOSAL_STATUS_REJECTED</a>: u8 = 2;
+</code></pre>
+
+
+
+<a name="0xa_multisign_account_X_ONLY_PUBLIC_KEY_LEN"></a>
+
+
+
+<pre><code><b>const</b> <a href="multisign_account.md#0xa_multisign_account_X_ONLY_PUBLIC_KEY_LEN">X_ONLY_PUBLIC_KEY_LEN</a>: u64 = 32;
 </code></pre>
 
 

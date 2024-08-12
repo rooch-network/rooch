@@ -20,14 +20,9 @@ pub const MODULE_NAME: &IdentStr = ident_str!("multisign_account");
 
 pub fn generate_multisign_address(
     threshold: usize,
-    mut public_keys: Vec<Vec<u8>>,
+    public_keys: Vec<Vec<u8>>,
 ) -> Result<BitcoinAddress> {
-    // Sort public keys to ensure the same script is generated for the same set of keys
-    //TODO: we should sort on the x-only public key
-    //FIX the Move code version then fix this
-    public_keys.sort();
-
-    let public_keys = public_keys
+    let mut x_only_public_keys = public_keys
         .into_iter()
         .map(|pk| {
             let x_only_pk = if pk.len() == SCHNORR_PUBLIC_KEY_SIZE {
@@ -40,12 +35,16 @@ pub fn generate_multisign_address(
         })
         .collect::<Result<Vec<_>>>()?;
 
-    let multisig_script = create_multisig_script(threshold, &public_keys);
+    // Sort public keys to ensure the same script is generated for the same set of keys
+    // Note: we sort on the x-only public key
+    x_only_public_keys.sort();
+
+    let multisig_script = create_multisig_script(threshold, &x_only_public_keys);
 
     let builder = TaprootBuilder::new().add_leaf(0, multisig_script)?;
     let secp = Secp256k1::verification_only();
     //Use the first public key after sorted as the internal key
-    let internal_key = public_keys[0];
+    let internal_key = x_only_public_keys[0];
 
     let spend_info = builder.finalize(&secp, internal_key).unwrap();
 
@@ -85,15 +84,18 @@ pub struct MultisignAccountModule<'a> {
 impl<'a> MultisignAccountModule<'a> {
     const INITIALIZE_MULTISIG_ACCOUNT_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("initialize_multisig_account_entry");
+    const GENERATE_MULTISIGN_ADDRESS_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("generate_multisign_address");
+    const IS_PARTICIPANT_FUNCTION_NAME: &'static IdentStr = ident_str!("is_participant");
 
     pub fn initialize_multisig_account_action(
-        public_keys: Vec<Vec<u8>>,
         threshold: u64,
+        public_keys: Vec<Vec<u8>>,
     ) -> MoveAction {
         Self::create_move_action(
             Self::INITIALIZE_MULTISIG_ACCOUNT_ENTRY_FUNCTION_NAME,
             vec![],
-            vec![public_keys.to_move_value(), threshold.to_move_value()],
+            vec![threshold.to_move_value(), public_keys.to_move_value()],
         )
     }
 
@@ -103,7 +105,7 @@ impl<'a> MultisignAccountModule<'a> {
         public_keys: Vec<Vec<u8>>,
     ) -> Result<BitcoinAddress> {
         let function_call = Self::create_function_call(
-            ident_str!("generate_multisign_address"),
+            Self::GENERATE_MULTISIGN_ADDRESS_FUNCTION_NAME,
             vec![],
             vec![threshold.to_move_value(), public_keys.to_move_value()],
         );
@@ -118,6 +120,31 @@ impl<'a> MultisignAccountModule<'a> {
                     .expect("should be a valid BitcoinAddress")
             })?;
         Ok(address)
+    }
+
+    pub fn is_participant(
+        &self,
+        multisign_address: AccountAddress,
+        participant_address: AccountAddress,
+    ) -> Result<bool> {
+        let function_call = Self::create_function_call(
+            Self::IS_PARTICIPANT_FUNCTION_NAME,
+            vec![],
+            vec![
+                multisign_address.to_move_value(),
+                participant_address.to_move_value(),
+            ],
+        );
+        let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
+        let is_participant = self
+            .caller
+            .call_function(&ctx, function_call)?
+            .into_result()
+            .map(|mut values| {
+                let value = values.pop().expect("should have one return value");
+                bcs::from_bytes::<bool>(&value.value).expect("should be a valid bool")
+            })?;
+        Ok(is_participant)
     }
 }
 

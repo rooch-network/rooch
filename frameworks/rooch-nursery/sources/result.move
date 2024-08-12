@@ -14,61 +14,63 @@ module rooch_nursery::result {
     /// The same as Rust's Result type.
     /// Most of the time, we do not need the Result type in smart contract, we can directly abort the transaction.
     /// But in some cases, we need to return a result to ensure the caller can handle the error.
-    struct Result<T> has copy, drop{
+    struct Result<T, E> has copy, drop{
         value: Option<T>,
-        err: Option<String>,
+        err: Option<E>,
     }
 
 
-    public fun ok<T>(value: T): Result<T> {
+    public fun ok<T, E>(value: T): Result<T, E> {
         Result {
             value: option::some(value),
             err: option::none(),
         }
     }
 
-    public fun is_ok<T>(result: &Result<T>): bool {
+    public fun is_ok<T, E>(result: &Result<T, E>): bool {
         option::is_some(&result.value)
     }
 
-    public fun get<T>(result: &Result<T>): &Option<T> {
+    public fun get<T, E>(result: &Result<T, E>): &Option<T> {
         &result.value
     }
 
-    public fun err<T>(err: vector<u8>): Result<T> {
-        Result {
-            value: option::none(),
-            err: option::some(string::utf8(err)),
-        }
-    }
-
-    public fun err_string<T>(err: String): Result<T> {
+    public fun err<T, E>(err: E): Result<T, E> {
         Result {
             value: option::none(),
             err: option::some(err),
         }
     }
 
-    public fun is_err<T>(result: &Result<T>): bool {
+    /// A shortcut to create a Result<T, String> with an error String with
+    /// err_str(b"msg").
+    public fun err_str<T>(err: vector<u8>): Result<T, String> {
+        Result {
+            value: option::none(),
+            err: option::some(string::utf8(err)),
+        }
+    }
+
+    public fun is_err<T, E>(result: &Result<T, E>): bool {
         option::is_some(&result.err)
     }
 
-    public fun get_err<T>(result: &Result<T>): Option<String> {
-        result.err
+    public fun get_err<T, E>(result: &Result<T, E>): &Option<E> {
+        &result.err
     }
 
-    /// Convert an error Result<T> to error Result<U>.
-    public fun as_err<U, T>(self: Result<T>): Result<U> {
+    /// Convert an error Result<T, String> to error Result<U, String>.
+    public fun as_err<U, T>(self: Result<T, String>): Result<U, String> {
         let Result {
             value,
             err,
         } = self;
         assert!(option::is_none(&value), ErrorExpectErr);
         option::destroy_none(value);
-        err_string(std::option::destroy_some(err))
+        err(std::option::destroy_some(err))
     }
 
-    public fun unpack<T>(result: Result<T>): (Option<T>, Option<String>) {
+    public fun unpack<T, E>(result: Result<T, E>): (Option<T>, Option<E>) {
         let Result {
             value,
             err,
@@ -76,16 +78,16 @@ module rooch_nursery::result {
         (value, err)
     }
 
-    public inline fun and_then<U, T>(result: Result<U>, f: |U|Result<T>): Result<T> {
+    public inline fun and_then<U, T, E>(result: Result<U, E>, f: |U|Result<T, E>): Result<T, E> {
         let (value, err) = rooch_nursery::result::unpack(result);
         if (std::option::is_some(&value)) {
             f(std::option::destroy_some(value))
         } else {
-            rooch_nursery::result::err_string(std::option::destroy_some(err))   
+            rooch_nursery::result::err(std::option::destroy_some(err))   
         }
     }
 
-    public fun unwrap<T>(result: Result<T>): T {
+    public fun unwrap<T, E: drop>(result: Result<T, E>): T {
         let Result {
             value,
             err:_,
@@ -94,7 +96,7 @@ module rooch_nursery::result {
         option::destroy_some(value)
     }
 
-    public fun unwrap_err<T>(result: Result<T>): String {
+    public fun unwrap_err<T, E>(result: Result<T, E>): E {
         let Result {
             value,
             err,
@@ -108,13 +110,14 @@ module rooch_nursery::result {
     /// Otherwise, abort with the abort_code.
     /// This function is inline, so it will be expanded in the caller.
     /// This ensures the abort_code is the caller's location.
-    public inline fun assert_ok<T>(result: Result<T>, abort_code: u64): T{
-        let (value, _err) = rooch_nursery::result::unpack(result);
+    public inline fun assert_ok<T, E>(result: Result<T, E>, abort_code: u64): T{
+        let (value, err) = rooch_nursery::result::unpack(result);
         assert!(std::option::is_some(&value), abort_code);
+        std::option::destroy_none(err);
         std::option::destroy_some(value)
     }
 
-    public inline fun assert_err<T>(result: Result<T>, abort_code: u64): String{
+    public inline fun assert_err<T, E>(result: Result<T, E>, abort_code: u64): E{
         let (value, err) = rooch_nursery::result::unpack(result);
         assert!(std::option::is_some(&err), abort_code);
         std::option::destroy_none(value);

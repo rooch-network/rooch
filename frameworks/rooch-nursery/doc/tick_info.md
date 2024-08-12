@@ -184,7 +184,7 @@ Check if the tick is deployed.
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tick_info.md#0xa_tick_info_mint_on_bitcoin">mint_on_bitcoin</a>(metaprotocol: <a href="_String">string::String</a>, tick: <a href="_String">string::String</a>, amount: u64): <a href="result.md#0xa_result_Result">result::Result</a>&lt;<a href="_Object">object::Object</a>&lt;<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>&gt;&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tick_info.md#0xa_tick_info_mint_on_bitcoin">mint_on_bitcoin</a>(metaprotocol: <a href="_String">string::String</a>, tick: <a href="_String">string::String</a>, amount: u64): <a href="result.md#0xa_result_Result">result::Result</a>&lt;<a href="_Object">object::Object</a>&lt;<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>&gt;, <a href="_String">string::String</a>&gt;
 </code></pre>
 
 

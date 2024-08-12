@@ -21,7 +21,7 @@ module rooch_nursery::inscribe_factory {
 
     use rooch_nursery::bitseed::{Self, Bitseed};
     use rooch_nursery::tick_info;
-    use rooch_nursery::result::{Self, Result, err, ok, is_err, as_err};
+    use rooch_nursery::result::{Self, Result, err_str, ok, is_err, as_err};
 
     const BIT_SEED_DEPLOY: vector<u8> = b"bitseed_deploy";
     const BIT_SEED_MINT: vector<u8> = b"bitseed_mint";
@@ -138,25 +138,25 @@ module rooch_nursery::inscribe_factory {
         return option::none()
     }
 
-    fun is_valid_bitseed(metadata: &SimpleMap<String,vector<u8>>) : Result<bool> {
+    fun is_valid_bitseed(metadata: &SimpleMap<String,vector<u8>>) : Result<bool,String> {
         let tick = get_SFT_tick_option(metadata);
         if (option::is_none(&tick)) {
-            return err(b"metadata.tick is required")
+            return err_str(b"metadata.tick is required")
         };
 
         let tick_len = std::string::length(option::borrow(&tick));
         if (tick_len < 4 || tick_len > 32) {
-            return err(b"metadata.tick must be 4-32 characters")
+            return err_str(b"metadata.tick must be 4-32 characters")
         };
 
         let amount = get_SFT_amount_option(metadata);
         if (option::is_none(&amount)) {
-            return err(b"metadata.amount is required")
+            return err_str(b"metadata.amount is required")
         };
         ok(true)
     }
 
-    fun is_valid_bitseed_deploy(metadata: &SimpleMap<String,vector<u8>>) : Result<bool> {
+    fun is_valid_bitseed_deploy(metadata: &SimpleMap<String,vector<u8>>) : Result<bool,String> {
         let is_valid_result = is_valid_bitseed(metadata);
         if (is_err(&is_valid_result)) {
             return is_valid_result
@@ -168,12 +168,12 @@ module rooch_nursery::inscribe_factory {
         let factory = get_SFT_string_attribute(&attributes, b"factory");
         if (option::is_none(&generator) && option::is_none(&factory)) {
             simple_map::drop(attributes);
-            return err(b"metadata.attributes.generator or metadata.attributes.factory is required")
+            return err_str(b"metadata.attributes.generator or metadata.attributes.factory is required")
         };
 
         if (option::is_some(&generator) && option::is_some(&factory)) {
             simple_map::drop(attributes);
-            return err(b"metadata.attributes.generator and metadata.attributes.factory can not exist at the same time")
+            return err_str(b"metadata.attributes.generator and metadata.attributes.factory can not exist at the same time")
         };
         if (option::is_some(&generator)) {
             let is_valid_result= is_valid_generator_uri(option::borrow(&generator));
@@ -190,37 +190,37 @@ module rooch_nursery::inscribe_factory {
         ok(true)
     }
 
-    fun is_valid_generator_uri(generator_uri: &String) : Result<bool> {
+    fun is_valid_generator_uri(generator_uri: &String) : Result<bool,String> {
         let index = string::index_of(generator_uri, &std::string::utf8(b"/inscription/"));
         if (index != 0) {
-            return err(b"metadata.attributes.generator not start with /inscription/")
+            return err_str(b"metadata.attributes.generator not start with /inscription/")
         };
 
         let inscription_id_str = string::sub_string(generator_uri, vector::length(&b"/inscription/"), string::length(generator_uri));
         let inscription_id_option = ord::parse_inscription_id(&inscription_id_str);
         if (option::is_none(&inscription_id_option)) {
-            return err(b"metadata.attributes.generator inscription_id parse fail")
+            return err_str(b"metadata.attributes.generator inscription_id parse fail")
         };
 
         let inscription_id = option::extract(&mut inscription_id_option);
         if (!ord::exists_inscription(inscription_id)) {
-            return err(b"metadata.attributes.generator inscription not exists")
+            return err_str(b"metadata.attributes.generator inscription not exists")
         };
 
         if (!ord::exists_metaprotocol_validity(inscription_id)) {
-            return err(b"metadata.attributes.generator inscription metaprotocol validity not exists")
+            return err_str(b"metadata.attributes.generator inscription metaprotocol validity not exists")
         };
 
         let metaprotocol_validity = ord::borrow_metaprotocol_validity(inscription_id);
 
         let is_match = ord::metaprotocol_validity_protocol_match<Bitseed>(metaprotocol_validity);
         if (!is_match) {
-            return err(b"metadata.attributes.generator inscription metaprotocol validity protocol not match")
+            return err_str(b"metadata.attributes.generator inscription metaprotocol validity protocol not match")
         };
 
         let is_valid = ord::metaprotocol_validity_is_valid(metaprotocol_validity);
         if (!is_valid) {
-            return err(b"metadata.attributes.generator inscription metaprotocol validity not valid")
+            return err_str(b"metadata.attributes.generator inscription metaprotocol validity not valid")
         };
         ok(true)
     }
@@ -264,7 +264,7 @@ module rooch_nursery::inscribe_factory {
         (true, option::none<String>())
     }
     
-    fun mint_bitseed(metadata: &SimpleMap<String,vector<u8>>, seed: vector<u8>, content_type: Option<String>, body: vector<u8>) : Result<Object<Bitseed>> {
+    fun mint_bitseed(metadata: &SimpleMap<String,vector<u8>>, seed: vector<u8>, content_type: Option<String>, body: vector<u8>) : Result<Object<Bitseed>,String> {
         let is_valid_result = is_valid_bitseed(metadata);
         if (is_err(&is_valid_result)) {
             return as_err(is_valid_result)
@@ -276,7 +276,7 @@ module rooch_nursery::inscribe_factory {
 
         if (!tick_info::is_deployed(bitseed::metaprotocol(), tick)) {
             simple_map::drop(attributes);
-            return err(b"the tick is not deployed")
+            return err_str(b"the tick is not deployed")
         };
         let tick_info = tick_info::borrow_tick_info(bitseed::metaprotocol(), tick);
         let has_user_input = tick_info::has_user_input(tick_info);
@@ -288,7 +288,7 @@ module rooch_nursery::inscribe_factory {
             let user_input_option = get_SFT_string_attribute(&attributes, b"id");
             if (option::is_none(&user_input_option)) {
                 simple_map::drop(attributes);
-                return err(b"metadata.attributes.user_input is required")
+                return err_str(b"metadata.attributes.user_input is required")
             };
 
             user_input = *option::borrow(&user_input_option);
@@ -298,13 +298,13 @@ module rooch_nursery::inscribe_factory {
             let generator_inscription_id_option = tick_info::generator(tick_info);
             if (option::is_none(&generator_inscription_id_option)) {
                 simple_map::drop(attributes);
-                return err(b"the tick can not mint on Bitcoin")
+                return err_str(b"the tick can not mint on Bitcoin")
             };
 
             let generator_inscription_id = option::destroy_some(generator_inscription_id_option);
             if (!ord::exists_metaprotocol_validity(generator_inscription_id)) {
                 simple_map::drop(attributes);
-                return err(b"generator_inscription_id is not validity bitseed")
+                return err_str(b"generator_inscription_id is not validity bitseed")
             };
 
             let generator_txid = ord::inscription_id_txid(&generator_inscription_id);
@@ -317,7 +317,7 @@ module rooch_nursery::inscribe_factory {
             let (is_valid, reason) = inscribe_verify(wasm_bytes, deploy_args, seed, user_input, metadata, content_type, body);
             if (!is_valid) {
                 simple_map::drop(attributes);
-                return result::err_string(option::destroy_with_default(reason, utf8(b"inscribe verify fail")))
+                return result::err(option::destroy_with_default(reason, utf8(b"inscribe verify fail")))
             };
         };
         let bitseed_result = tick_info::mint_on_bitcoin(bitseed::metaprotocol(), tick, amount);
