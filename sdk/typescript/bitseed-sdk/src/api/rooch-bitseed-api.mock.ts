@@ -1,5 +1,5 @@
-import { SFTRecord } from '../types'
-import { RoochBitSeedApiInterface } from './rooch-bitseed-api.interface'
+import { SFTRecord } from '../types/index.js'
+import { RoochBitSeedApiInterface } from './rooch-bitseed-api.interface.js'
 
 export class BitSeedApiMock implements RoochBitSeedApiInterface {
   getBitSeedSFTByID(): Promise<SFTRecord> {

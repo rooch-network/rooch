@@ -1,6 +1,6 @@
 import cbor from 'cbor'
 import * as bitcoin from 'bitcoinjs-lib';
-import { Network } from '../../types'
+import { Network } from '../../types/index.js'
 import {
   IDatasource, 
   GetBalanceOptions,
@@ -35,7 +35,7 @@ import {
 import {
   decodeScriptPubKey,
   hexStringToTxid,
-} from "../../utils";
+} from "../../utils/index.js";
 
 type RoochDataSourceOptions = {
   network?: Network;

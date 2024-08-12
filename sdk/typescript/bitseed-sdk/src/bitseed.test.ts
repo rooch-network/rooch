@@ -2,7 +2,7 @@ import path from 'path'
 import fs from 'fs';
 import * as bitcoin from 'bitcoinjs-lib'
 import { Transaction as BTCTransaction } from "bitcoinjs-lib";
-import { BitSeed } from './bitseed';
+import { BitSeed } from './bitseed.js';
 import {
   Ordit,
   IDatasource,
@@ -14,10 +14,10 @@ import {
   GetTransactionOptions,
   Transaction
 } from '@sadoprotocol/ordit-sdk';
-import { IGeneratorLoader, GeneratorLoader } from './generator';
-import { SFTRecord, InscriptionID } from './types';
-import { InscribeOptions, DeployOptions } from './interfaces'
-import { toB64 } from './utils';
+import { IGeneratorLoader, GeneratorLoader } from './generator/index.js';
+import { SFTRecord, InscriptionID } from './types/index.js';
+import { InscribeOptions, DeployOptions } from './interfaces/index.js'
+import { toB64 } from './utils/index.js';
 
 const networkType = 'testnet'
 

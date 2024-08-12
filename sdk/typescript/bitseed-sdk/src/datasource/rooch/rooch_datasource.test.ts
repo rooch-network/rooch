@@ -1,6 +1,6 @@
 import cbor from 'cbor'
-import { RoochDataSource } from './rooch_datasource';
-import { Wallet } from '../../wallet';
+import { RoochDataSource } from './rooch_datasource.js';
+import { Wallet } from '../../wallet/index.js';
 import { 
   RoochTransport, 
   PaginatedUTXOStateViews, 

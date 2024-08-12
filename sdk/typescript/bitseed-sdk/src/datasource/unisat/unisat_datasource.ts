@@ -17,12 +17,12 @@ import {
   UTXO, 
   UTXOLimited,
 } from "@sadoprotocol/ordit-sdk";
-import { IUniSatOpenAPI, unisatTypes } from "../../api";
-import { decodeScriptPubKey } from '../../utils/bitcoin';
-import { BitseedSDKError } from '../../errors';
-import { toB64, decodeInscriptionMetadata } from '../../utils';
-import { UnisatOpenApi } from '../../api'
-import { Network } from '../../types'
+import { IUniSatOpenAPI, unisatTypes } from "../../api/index.js";
+import { decodeScriptPubKey } from '../../utils/index.js';
+import { BitseedSDKError } from '../../errors/index.js';
+import { toB64, decodeInscriptionMetadata } from '../../utils/index.js';
+import { UnisatOpenApi } from '../../api/index.js'
+import { Network } from '../../types/index.js'
 
 interface UniSatDataSourceOptions {
   network: Network;
@@ -134,7 +134,7 @@ export class UniSatDataSource implements IDatasource {
     }
 
     const resp = await this.unisatOpenAPI.getAddressInscriptions(owner, 0, size)
-    return Array.from(resp.list).map((inscription)=>{
+    return Array.from(resp.list).map((inscription:unisatTypes.Inscription)=>{
       return {
         id: inscription.inscriptionId,
         outpoint: inscription.output,
@@ -159,7 +159,7 @@ export class UniSatDataSource implements IDatasource {
 
   async getSpendables({ address, value }: GetSpendablesOptions): Promise<UTXOLimited[]> {
     const utxos = await this.unisatOpenAPI.getBTCUtxos(address)
-    return Array.from(utxos).filter((utxo)=>utxo.satoshis >= value).map((utxo)=>{
+    return Array.from(utxos).filter((utxo:unisatTypes.UTXO)=>utxo.satoshis >= value).map((utxo:unisatTypes.UTXO)=>{
       return {
         n: utxo.vout,
         txid: utxo.txid,
@@ -171,7 +171,7 @@ export class UniSatDataSource implements IDatasource {
 
   async getUnspents({ address }: GetUnspentsOptions): Promise<GetUnspentsResponse> {
     const utxos = await this.unisatOpenAPI.getBTCUtxos(address)
-    const decodeUTXOs = Array.from(utxos).map((utxo)=>{
+    const decodeUTXOs = Array.from(utxos).map((utxo:unisatTypes.UTXO)=>{
       return {
         n: utxo.vout,
         txid: utxo.txid,

@@ -1,9 +1,9 @@
 import { IDatasource } from '@sadoprotocol/ordit-sdk'
 
-import { InscriptionID } from '../types'
-import { inscriptionIDToString, fromB64 } from '../utils'
-import { IGenerator, IGeneratorLoader } from './interface'
-import { WasmGenerator } from './wasm_generator'
+import { InscriptionID } from '../types/index.js'
+import { inscriptionIDToString, fromB64 } from '../utils/index.js'
+import { IGenerator, IGeneratorLoader } from './interface.js'
+import { WasmGenerator } from './wasm_generator.js'
 
 export class GeneratorLoader implements IGeneratorLoader {
   private datasource: IDatasource

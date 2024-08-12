@@ -1,4 +1,4 @@
-import { InscriptionID } from './generator'
+import { InscriptionID } from './generator.js'
 
 export type Tick = {
   tick: string

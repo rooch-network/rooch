@@ -13,7 +13,7 @@ import {
   ORDAPI_URL_MAINNET,
   ORDAPI_URL_TESTNET,
   ORDAPI_URL_REGTEST
-} from './unisat-openapi.constants';
+} from './unisat-openapi.constants.js';
 import {
   AddressSummary,
   AddressTokenSummary,
@@ -32,10 +32,10 @@ import {
   VersionDetail,
   WalletConfig,
   Transaction
-} from './unisat-openapi.types';
+} from './unisat-openapi.types.js';
 
-import { IUniSatOpenAPI } from './unisat-openapi.interface'
-import { Network } from '../types'
+import { IUniSatOpenAPI } from './unisat-openapi.interface.js'
+import { Network } from '../types/index.js'
 
 interface OpenApiStore {
   ordAPIHost: string;

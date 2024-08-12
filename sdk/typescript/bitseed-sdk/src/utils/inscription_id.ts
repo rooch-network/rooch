@@ -1,4 +1,4 @@
-import { InscriptionID } from '../types'
+import { InscriptionID } from '../types/index.js'
 
 export function parseInscriptionID(id: string): InscriptionID {
   // Regular expression to match the hexadecimal txid and the index
