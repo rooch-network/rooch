@@ -11,7 +11,7 @@
 -  [Function `is_ok`](#0xa_result_is_ok)
 -  [Function `get`](#0xa_result_get)
 -  [Function `err`](#0xa_result_err)
--  [Function `err_string`](#0xa_result_err_string)
+-  [Function `err_str`](#0xa_result_err_str)
 -  [Function `is_err`](#0xa_result_is_err)
 -  [Function `get_err`](#0xa_result_get_err)
 -  [Function `as_err`](#0xa_result_as_err)
@@ -38,7 +38,7 @@ Most of the time, we do not need the Result type in smart contract, we can direc
 But in some cases, we need to return a result to ensure the caller can handle the error.
 
 
-<pre><code><b>struct</b> <a href="result.md#0xa_result_Result">Result</a>&lt;T&gt; <b>has</b> <b>copy</b>, drop
+<pre><code><b>struct</b> <a href="result.md#0xa_result_Result">Result</a>&lt;T, E&gt; <b>has</b> <b>copy</b>, drop
 </code></pre>
 
 
@@ -74,7 +74,7 @@ Expected the result is ok but the result is err.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_ok">ok</a>&lt;T&gt;(value: T): <a href="result.md#0xa_result_Result">result::Result</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_ok">ok</a>&lt;T, E&gt;(value: T): <a href="result.md#0xa_result_Result">result::Result</a>&lt;T, E&gt;
 </code></pre>
 
 
@@ -85,7 +85,7 @@ Expected the result is ok but the result is err.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_is_ok">is_ok</a>&lt;T&gt;(<a href="result.md#0xa_result">result</a>: &<a href="result.md#0xa_result_Result">result::Result</a>&lt;T&gt;): bool
+<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_is_ok">is_ok</a>&lt;T, E&gt;(<a href="result.md#0xa_result">result</a>: &<a href="result.md#0xa_result_Result">result::Result</a>&lt;T, E&gt;): bool
 </code></pre>
 
 
@@ -96,7 +96,7 @@ Expected the result is ok but the result is err.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_get">get</a>&lt;T&gt;(<a href="result.md#0xa_result">result</a>: &<a href="result.md#0xa_result_Result">result::Result</a>&lt;T&gt;): &<a href="_Option">option::Option</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_get">get</a>&lt;T, E&gt;(<a href="result.md#0xa_result">result</a>: &<a href="result.md#0xa_result_Result">result::Result</a>&lt;T, E&gt;): &<a href="_Option">option::Option</a>&lt;T&gt;
 </code></pre>
 
 
@@ -107,18 +107,20 @@ Expected the result is ok but the result is err.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_err">err</a>&lt;T&gt;(err: <a href="">vector</a>&lt;u8&gt;): <a href="result.md#0xa_result_Result">result::Result</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_err">err</a>&lt;T, E&gt;(err: E): <a href="result.md#0xa_result_Result">result::Result</a>&lt;T, E&gt;
 </code></pre>
 
 
 
-<a name="0xa_result_err_string"></a>
+<a name="0xa_result_err_str"></a>
 
-## Function `err_string`
+## Function `err_str`
+
+A shortcut to create a Result<T, String> with an error String with
+err_str(b"msg").
 
 
-
-<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_err_string">err_string</a>&lt;T&gt;(err: <a href="_String">string::String</a>): <a href="result.md#0xa_result_Result">result::Result</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_err_str">err_str</a>&lt;T&gt;(err: <a href="">vector</a>&lt;u8&gt;): <a href="result.md#0xa_result_Result">result::Result</a>&lt;T, <a href="_String">string::String</a>&gt;
 </code></pre>
 
 
@@ -129,7 +131,7 @@ Expected the result is ok but the result is err.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_is_err">is_err</a>&lt;T&gt;(<a href="result.md#0xa_result">result</a>: &<a href="result.md#0xa_result_Result">result::Result</a>&lt;T&gt;): bool
+<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_is_err">is_err</a>&lt;T, E&gt;(<a href="result.md#0xa_result">result</a>: &<a href="result.md#0xa_result_Result">result::Result</a>&lt;T, E&gt;): bool
 </code></pre>
 
 
@@ -140,7 +142,7 @@ Expected the result is ok but the result is err.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_get_err">get_err</a>&lt;T&gt;(<a href="result.md#0xa_result">result</a>: &<a href="result.md#0xa_result_Result">result::Result</a>&lt;T&gt;): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_get_err">get_err</a>&lt;T, E&gt;(<a href="result.md#0xa_result">result</a>: &<a href="result.md#0xa_result_Result">result::Result</a>&lt;T, E&gt;): &<a href="_Option">option::Option</a>&lt;E&gt;
 </code></pre>
 
 
@@ -149,10 +151,10 @@ Expected the result is ok but the result is err.
 
 ## Function `as_err`
 
-Convert an error Result<T> to error Result<U>.
+Convert an error Result<T, String> to error Result<U, String>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_as_err">as_err</a>&lt;U, T&gt;(self: <a href="result.md#0xa_result_Result">result::Result</a>&lt;T&gt;): <a href="result.md#0xa_result_Result">result::Result</a>&lt;U&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_as_err">as_err</a>&lt;U, T&gt;(self: <a href="result.md#0xa_result_Result">result::Result</a>&lt;T, <a href="_String">string::String</a>&gt;): <a href="result.md#0xa_result_Result">result::Result</a>&lt;U, <a href="_String">string::String</a>&gt;
 </code></pre>
 
 
@@ -163,7 +165,7 @@ Convert an error Result<T> to error Result<U>.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_unpack">unpack</a>&lt;T&gt;(<a href="result.md#0xa_result">result</a>: <a href="result.md#0xa_result_Result">result::Result</a>&lt;T&gt;): (<a href="_Option">option::Option</a>&lt;T&gt;, <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_unpack">unpack</a>&lt;T, E&gt;(<a href="result.md#0xa_result">result</a>: <a href="result.md#0xa_result_Result">result::Result</a>&lt;T, E&gt;): (<a href="_Option">option::Option</a>&lt;T&gt;, <a href="_Option">option::Option</a>&lt;E&gt;)
 </code></pre>
 
 
@@ -174,7 +176,7 @@ Convert an error Result<T> to error Result<U>.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_and_then">and_then</a>&lt;U, T&gt;(<a href="result.md#0xa_result">result</a>: <a href="result.md#0xa_result_Result">result::Result</a>&lt;U&gt;, f: |U|<a href="result.md#0xa_result_Result">result::Result</a>&lt;T&gt;): <a href="result.md#0xa_result_Result">result::Result</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_and_then">and_then</a>&lt;U, T, E&gt;(<a href="result.md#0xa_result">result</a>: <a href="result.md#0xa_result_Result">result::Result</a>&lt;U, E&gt;, f: |U|<a href="result.md#0xa_result_Result">result::Result</a>&lt;T, E&gt;): <a href="result.md#0xa_result_Result">result::Result</a>&lt;T, E&gt;
 </code></pre>
 
 
@@ -185,7 +187,7 @@ Convert an error Result<T> to error Result<U>.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_unwrap">unwrap</a>&lt;T&gt;(<a href="result.md#0xa_result">result</a>: <a href="result.md#0xa_result_Result">result::Result</a>&lt;T&gt;): T
+<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_unwrap">unwrap</a>&lt;T, E: drop&gt;(<a href="result.md#0xa_result">result</a>: <a href="result.md#0xa_result_Result">result::Result</a>&lt;T, E&gt;): T
 </code></pre>
 
 
@@ -196,7 +198,7 @@ Convert an error Result<T> to error Result<U>.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_unwrap_err">unwrap_err</a>&lt;T&gt;(<a href="result.md#0xa_result">result</a>: <a href="result.md#0xa_result_Result">result::Result</a>&lt;T&gt;): <a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_unwrap_err">unwrap_err</a>&lt;T, E&gt;(<a href="result.md#0xa_result">result</a>: <a href="result.md#0xa_result_Result">result::Result</a>&lt;T, E&gt;): E
 </code></pre>
 
 
@@ -211,7 +213,7 @@ This function is inline, so it will be expanded in the caller.
 This ensures the abort_code is the caller's location.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_assert_ok">assert_ok</a>&lt;T&gt;(<a href="result.md#0xa_result">result</a>: <a href="result.md#0xa_result_Result">result::Result</a>&lt;T&gt;, abort_code: u64): T
+<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_assert_ok">assert_ok</a>&lt;T, E&gt;(<a href="result.md#0xa_result">result</a>: <a href="result.md#0xa_result_Result">result::Result</a>&lt;T, E&gt;, abort_code: u64): T
 </code></pre>
 
 
@@ -222,5 +224,5 @@ This ensures the abort_code is the caller's location.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_assert_err">assert_err</a>&lt;T&gt;(<a href="result.md#0xa_result">result</a>: <a href="result.md#0xa_result_Result">result::Result</a>&lt;T&gt;, abort_code: u64): <a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="result.md#0xa_result_assert_err">assert_err</a>&lt;T, E&gt;(<a href="result.md#0xa_result">result</a>: <a href="result.md#0xa_result_Result">result::Result</a>&lt;T, E&gt;, abort_code: u64): E
 </code></pre>
