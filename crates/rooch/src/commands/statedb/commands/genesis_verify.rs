@@ -27,13 +27,13 @@ use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::into_address::IntoAddress;
 use rooch_types::rooch_network::RoochChainID;
 
-use crate::commands::statedb::commands::inscription::{
-    derive_inscription_ids, gen_inscription_ids_update, InscriptionSource,
-};
-use crate::commands::statedb::commands::utxo::UTXORawData;
 use crate::commands::statedb::commands::{
     get_values_by_key, init_job, OutpointInscriptionsMap, UTXO_SEAL_INSCRIPTION_PROTOCOL,
 };
+use crate::commands::statedb::commands::inscription::{
+    derive_inscription_ids, gen_inscription_id_update, InscriptionSource,
+};
+use crate::commands::statedb::commands::utxo::UTXORawData;
 
 /// Import BTC ordinals & UTXO for genesis
 #[derive(Debug, Parser)]
@@ -203,6 +203,15 @@ fn verify_utxo(
             }
         }
         total += 1;
+        if total % 1_000_000 == 0 {
+            println!(
+                "utxo checking: total: {}, checked: {}, mismatched: {}. cost: {:?}",
+                total,
+                checked_count,
+                mismatched_count,
+                start_time.elapsed()
+            );
+        }
         let mut utxo_raw = UTXORawData::from_str(&line);
         let (key, state) = utxo_raw.gen_utxo_update(Some(outpoint_inscriptions_map.clone()));
         let (_, address_mapping_data) = utxo_raw.gen_address_mapping_data();
@@ -293,16 +302,6 @@ fn verify_utxo(
                 continue;
             }
         }
-
-        if total % 1_000_000 == 0 {
-            println!(
-                "utxo checking: total: {}, checked: {}, mismatched: {}. cost: {:?}",
-                total,
-                checked_count,
-                mismatched_count,
-                start_time.elapsed()
-            );
-        }
     }
     output_writer.flush().expect("Unable to flush writer");
 
@@ -329,13 +328,6 @@ fn verify_utxo(
         act_utxo_store_state.metadata,
         act_address_mapping_state.metadata
     );
-}
-
-// clear metadata, because it's not deterministic in genesis cmd
-fn clear_metadata(state: &mut ObjectState) {
-    state.metadata.state_root = None;
-    state.metadata.created_at = 0;
-    state.metadata.updated_at = 0;
 }
 
 fn verify_inscription(
@@ -385,6 +377,15 @@ fn verify_inscription(
             }
         }
         sequence_number += 1;
+        if sequence_number % 1_000_000 == 0 {
+            println!(
+                "inscription checking: total: {}, checked: {}, mismatched: {}. cost: {:?}",
+                sequence_number,
+                checked_count,
+                mismatched_count,
+                start_time.elapsed()
+            );
+        }
 
         let source: InscriptionSource = InscriptionSource::from_str(&line);
         if source.inscription_number < 0 {
@@ -419,7 +420,7 @@ fn verify_inscription(
             mismatched_count += 1;
             continue;
         }
-        let (key2, state2) = gen_inscription_ids_update(sequence_number, inscription_id);
+        let (key2, state2) = gen_inscription_id_update(sequence_number, inscription_id);
         let mut act_inscription_id_state = resolver
             .get_field_at(inscription_store_state_root, &key2)
             .unwrap()
@@ -434,16 +435,6 @@ fn verify_inscription(
             .expect("Unable to write line");
             mismatched_count += 1;
             continue;
-        }
-
-        if sequence_number % 1_000_000 == 0 {
-            println!(
-                "inscription checking: total: {}, checked: {}, mismatched: {}. cost: {:?}",
-                sequence_number,
-                checked_count,
-                mismatched_count,
-                start_time.elapsed()
-            );
         }
     }
 
@@ -475,4 +466,27 @@ fn verify_inscription(
         start_time.elapsed(),
         act_inscription_store_state.metadata,
     );
+}
+
+// clear metadata, because it's not deterministic in genesis cmd
+fn clear_metadata(state: &mut ObjectState) {
+    state.metadata.state_root = None;
+    state.metadata.created_at = 0;
+    state.metadata.updated_at = 0;
+}
+
+#[allow(dead_code)]
+fn write_mismatched_state_output(
+    output_writer: &mut BufWriter<File>,
+    prefix: &str,
+    exp: &ObjectState,
+    act: &ObjectState,
+) {
+    writeln!(
+        output_writer,
+        "{} mismatched state: exp: {}, act: {}",
+        prefix, exp, act
+    )
+    .expect("Unable to write line");
+    writeln!(output_writer, "--------------------------------").expect("Unable to write line");
 }

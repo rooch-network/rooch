@@ -15,8 +15,8 @@ use moveos_types::moveos_std::object::{
 use moveos_types::moveos_std::simple_multimap::SimpleMultiMap;
 use moveos_types::state::{FieldKey, ObjectState};
 use rooch_types::address::BitcoinAddress;
-use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
 use rooch_types::bitcoin::{types, utxo};
+use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::into_address::IntoAddress;
 
