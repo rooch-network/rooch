@@ -52,6 +52,7 @@ members = [
     "frameworks/framework-types",
     "frameworks/moveos-stdlib",
     "frameworks/rooch-framework",
+    "frameworks/rooch-nursery",
 ]
 
 default-members = [
@@ -71,7 +72,7 @@ license = "Apache-2.0"
 publish = false
 repository = "https://github.com/rooch-network/rooch"
 rust-version = "1.78.0"
-version = "0.6.6"
+version = "0.6.8"
 
 [workspace.dependencies]
 # Internal crate dependencies.
@@ -130,6 +131,7 @@ framework-release = { path = "frameworks/framework-release" }
 moveos-stdlib = { path = "frameworks/moveos-stdlib" }
 rooch-framework = { path = "frameworks/rooch-framework" }
 bitcoin-move = { path = "frameworks/bitcoin-move" }
+rooch-nursery = { path = "frameworks/rooch-nursery" }
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.
@@ -183,7 +185,7 @@ rayon = "1.5.2"
 rand = "0.8.5"
 rand_core = { version = "0.6.3", default-features = false }
 schemars = { version = "0.8.21", features = ["either"] }
-serde = { version = "1.0.204", features = ["derive", "rc"] }
+serde = { version = "1.0.206", features = ["derive", "rc"] }
 serde_bytes = "0.11.15"
 #serde_json = { version = "1.0.111", features = ["preserve_order", "arbitrary_precision"] }
 serde_json = { version = "1.0.122", features = ["preserve_order"] }
@@ -322,6 +324,7 @@ xorf = { version = "0.11.0" }
 vergen-git2 = { version = "1.0.0", features = ["build", "cargo", "rustc"] }
 vergen-pretty = "0.3.4"
 musig2 = { version = "0.0.11" }
+miniscript = "12.2.0"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES

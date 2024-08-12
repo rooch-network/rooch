@@ -20,7 +20,9 @@ use moveos_verifier::build::run_verifier;
 use moveos_verifier::verifier;
 use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
-use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, HumanReadableDisplay};
+use rooch_rpc_api::jsonrpc_types::{
+    ExecuteTransactionResponseView, HumanReadableDisplay, KeptVMStatusView,
+};
 use rooch_types::address::RoochAddress;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::rooch::RoochTransaction;
@@ -146,8 +148,16 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                 vec![args],
             );
 
+            let dry_run_result = context
+                .dry_run(
+                    context
+                        .build_tx_data(sender, action.clone(), max_gas_amount)
+                        .await?,
+                )
+                .await;
+
             // Handle transaction with or without authenticator
-            match self.tx_options.authenticator {
+            let mut result = match self.tx_options.authenticator {
                 Some(authenticator) => {
                     let tx_data = context
                         .build_tx_data(sender, action, max_gas_amount)
@@ -179,7 +189,15 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                             .await?
                     }
                 }
+            };
+
+            if let Ok(dry_run_resp) = dry_run_result {
+                if dry_run_resp.raw_output.status != KeptVMStatusView::Executed {
+                    result.error_info = Some(dry_run_resp);
+                }
             }
+
+            result
         } else {
             // Handle MoveAction.ModuleBundle case
             let action = MoveAction::ModuleBundle(bundles);
@@ -238,6 +256,21 @@ impl Publish {
         output.push_str(&exe_info.to_human_readable_string(false, 0));
 
         if let Some(txn_output) = &txn_response.output {
+            // print error info
+            if let Some(error_info) = txn_response.clone().error_info {
+                output.push_str(
+                    format!(
+                        "\n\n\nTransaction dry run failed:\n {:?}",
+                        error_info.vm_error_info.error_message
+                    )
+                    .as_str(),
+                );
+                output.push_str("\nCallStack trace:\n".to_string().as_str());
+                for (idx, item) in error_info.vm_error_info.execution_state.iter().enumerate() {
+                    output.push_str(format!("{} {}\n", idx, item).as_str());
+                }
+            };
+
             // print modules
             let changes = &txn_output.changeset.changes;
             let module_store_id = ModuleStore::object_id();

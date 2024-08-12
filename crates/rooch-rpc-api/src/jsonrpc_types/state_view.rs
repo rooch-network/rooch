@@ -3,7 +3,7 @@
 
 use super::{
     AnnotatedMoveStructView, BytesView, H256View, HumanReadableDisplay, ObjectIDVecView,
-    RoochAddressView, StrView, StructTagView, TypeTagView, UnitedAddressView,
+    QueryOptions, RoochAddressView, StrView, StructTagView, TypeTagView, UnitedAddressView,
 };
 use anyhow::Result;
 use move_core_types::effects::Op;
@@ -371,7 +371,6 @@ pub enum ObjectStateFilterView {
     /// Query by object value type and owner.
     ObjectTypeWithOwner {
         object_type: StructTagView,
-        filter_out: bool,
         owner: UnitedAddressView,
     },
     /// Query by object value type.
@@ -385,17 +384,16 @@ pub enum ObjectStateFilterView {
 impl ObjectStateFilterView {
     pub fn try_into_object_state_filter(
         state_filter: ObjectStateFilterView,
+        query_option: QueryOptions,
     ) -> Result<ObjectStateFilter> {
         Ok(match state_filter {
-            ObjectStateFilterView::ObjectTypeWithOwner {
-                object_type,
-                filter_out,
-                owner,
-            } => ObjectStateFilter::ObjectTypeWithOwner {
-                object_type: object_type.into(),
-                filter_out,
-                owner: owner.into(),
-            },
+            ObjectStateFilterView::ObjectTypeWithOwner { object_type, owner } => {
+                ObjectStateFilter::ObjectTypeWithOwner {
+                    object_type: object_type.into(),
+                    owner: owner.into(),
+                    filter_out: query_option.filter_out,
+                }
+            }
             ObjectStateFilterView::ObjectType(object_type) => {
                 ObjectStateFilter::ObjectType(object_type.into())
             }

@@ -1,17 +1,20 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::address::BitcoinAddress;
+use std::str::FromStr;
+
 use bitcoin::{block::Header, BlockHash};
-use framework_builder::stdlib_version::StdlibVersion;
 use move_core_types::value::MoveTypeLayout;
+use once_cell::sync::Lazy;
+use serde::{Deserialize, Serialize};
+
+use framework_builder::stdlib_version::StdlibVersion;
 use moveos_types::{
     moveos_std::{module_store::ModuleStore, timestamp::Timestamp},
     state::{MoveState, ObjectState},
 };
-use once_cell::sync::Lazy;
-use serde::{Deserialize, Serialize};
-use std::str::FromStr;
+
+use crate::address::BitcoinAddress;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GenesisConfig {
@@ -178,5 +181,5 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
         ),
         (ObjectState::new_module_store(), ModuleStore::type_layout()),
     ],
-    stdlib_version: StdlibVersion::Version(5),
+    stdlib_version: StdlibVersion::Version(6),
 });

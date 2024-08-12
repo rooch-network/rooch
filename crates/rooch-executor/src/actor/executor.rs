@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::messages::{
+    ConvertL2TransactionData, DryRunTransactionMessage, DryRunTransactionResult,
     ExecuteTransactionMessage, ExecuteTransactionResult, GetRootMessage, ValidateL1BlockMessage,
     ValidateL1TxMessage, ValidateL2TxMessage,
 };
@@ -16,24 +17,30 @@ use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::move_std::option::MoveOption;
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::ObjectState;
 use moveos_types::state_resolver::RootObjectResolver;
-use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::transaction::{FunctionCall, MoveOSTransaction, VerifiedMoveAction};
+use moveos_types::transaction::{MoveAction, VerifiedMoveOSTransaction};
 use prometheus::Registry;
 use rooch_genesis::FrameworksGasParameters;
 use rooch_store::RoochStore;
+use rooch_types::address::{BitcoinAddress, MultiChainAddress};
 use rooch_types::bitcoin::BitcoinModule;
-use rooch_types::framework::auth_validator::{AuthValidatorCaller, TxValidateResult};
+use rooch_types::framework::auth_validator::{
+    AuthValidatorCaller, BuiltinAuthValidator, TxValidateResult,
+};
 use rooch_types::framework::ethereum::EthereumModule;
 use rooch_types::framework::transaction_validator::TransactionValidator;
 use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
 use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::{
     AuthenticatorInfo, L1Block, L1BlockWithBody, L1Transaction, RoochTransaction,
+    RoochTransactionData,
 };
+use std::str::FromStr;
 use std::sync::Arc;
 use tracing::{debug, warn};
 
@@ -87,6 +94,21 @@ impl ExecutorActor {
     }
 
     #[named]
+    pub fn dry_run(&mut self, tx: VerifiedMoveOSTransaction) -> Result<DryRunTransactionResult> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .executor_execute_tx_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
+        let (raw_output, vm_error_info) = self.moveos.execute_only(tx)?;
+        Ok(DryRunTransactionResult {
+            raw_output,
+            vm_error_info,
+        })
+    }
+
+    #[named]
     pub fn execute(&mut self, tx: VerifiedMoveOSTransaction) -> Result<ExecuteTransactionResult> {
         let fn_name = function_name!();
         let _timer = self
@@ -96,10 +118,26 @@ impl ExecutorActor {
             .start_timer();
         let tx_hash = tx.ctx.tx_hash();
         let size = tx.ctx.tx_size;
-        let output = self.moveos.execute_and_apply(tx)?;
+        let (raw_output, _) = self.moveos.execute_only(tx)?;
+        let output = MoveOS::apply_transaction_output(&self.moveos.db, raw_output)?;
+
         let execution_info = self
             .moveos_store
             .handle_tx_output(tx_hash, output.clone())?;
+
+        // The cost table has been upgraded, we need to reload the native functions.
+        if self.moveos.cost_table.read().is_none() {
+            let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
+            let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
+
+            self.moveos = MoveOS::new(
+                self.moveos_store.clone(),
+                gas_parameters.all_natives(),
+                MoveOSConfig::default(),
+                system_pre_execute_functions(),
+                system_post_execute_functions(),
+            )?;
+        }
 
         self.root = execution_info.root_metadata();
         self.metrics
@@ -313,6 +351,55 @@ impl ExecutorActor {
 
         Ok(vm_result)
     }
+
+    pub fn convert_to_verified_tx(
+        &self,
+        tx_data: RoochTransactionData,
+    ) -> Result<VerifiedMoveOSTransaction> {
+        let root = self.root.clone();
+
+        let mut tx_ctx = TxContext::new(
+            tx_data.sender.into(),
+            tx_data.sequence_number,
+            tx_data.max_gas_amount,
+            tx_data.tx_hash(),
+            tx_data.tx_size(),
+        );
+
+        let mut bitcoin_address = BitcoinAddress::from_str("18cBEMRxXHqzWWCxZNtU91F5sbUNKhL5PX")?;
+
+        let user_multi_chain_address: MultiChainAddress = tx_data.sender.into();
+        if user_multi_chain_address.is_bitcoin_address() {
+            bitcoin_address = user_multi_chain_address.try_into()?;
+        }
+
+        let dummy_result = TxValidateResult {
+            auth_validator_id: BuiltinAuthValidator::Bitcoin.flag().into(),
+            auth_validator: MoveOption::none(),
+            session_key: MoveOption::none(),
+            bitcoin_address,
+        };
+
+        tx_ctx.add(dummy_result)?;
+
+        let verified_action = match tx_data.action {
+            MoveAction::Script(script_call) => VerifiedMoveAction::Script { call: script_call },
+            MoveAction::Function(function_call) => VerifiedMoveAction::Function {
+                call: function_call,
+                bypass_visibility: false,
+            },
+            MoveAction::ModuleBundle(module_bundle) => VerifiedMoveAction::ModuleBundle {
+                module_bundle,
+                init_function_modules: vec![],
+            },
+        };
+
+        Ok(VerifiedMoveOSTransaction::new(
+            root,
+            tx_ctx,
+            verified_action,
+        ))
+    }
 }
 
 impl Actor for ExecutorActor {}
@@ -325,6 +412,17 @@ impl Handler<ValidateL2TxMessage> for ExecutorActor {
         _ctx: &mut ActorContext,
     ) -> Result<VerifiedMoveOSTransaction> {
         self.validate_l2_tx(msg.tx)
+    }
+}
+
+#[async_trait]
+impl Handler<ConvertL2TransactionData> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: ConvertL2TransactionData,
+        _ctx: &mut ActorContext,
+    ) -> Result<VerifiedMoveOSTransaction> {
+        self.convert_to_verified_tx(msg.tx_data)
     }
 }
 
@@ -358,6 +456,17 @@ impl Handler<ExecuteTransactionMessage> for ExecutorActor {
         _ctx: &mut ActorContext,
     ) -> Result<ExecuteTransactionResult> {
         self.execute(msg.tx)
+    }
+}
+
+#[async_trait]
+impl Handler<DryRunTransactionMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: DryRunTransactionMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<DryRunTransactionResult> {
+        self.dry_run(msg.tx)
     }
 }
 

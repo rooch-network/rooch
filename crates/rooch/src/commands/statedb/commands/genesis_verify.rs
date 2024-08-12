@@ -17,7 +17,7 @@ use rustc_hash::FxHashSet;
 use moveos_store::MoveOSStore;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::ObjectMeta;
-use moveos_types::state::{MoveState, ObjectState};
+use moveos_types::state::{FieldKey, MoveState, ObjectState};
 use moveos_types::state_resolver::{RootObjectResolver, StatelessResolver};
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::bitcoin::ord::InscriptionStore;
@@ -204,8 +204,8 @@ fn verify_utxo(
         }
         total += 1;
         let mut utxo_raw = UTXORawData::from_str(&line);
-        let (key, state, address_mapping_data) =
-            utxo_raw.gen_update(Some(outpoint_inscriptions_map.clone()));
+        let (key, state) = utxo_raw.gen_utxo_update(Some(outpoint_inscriptions_map.clone()));
+        let (_, address_mapping_data) = utxo_raw.gen_address_mapping_data();
         let addr_updates = if let Some(address_mapping_data) = address_mapping_data {
             address_mapping_data.gen_update(&mut added_address_set)
         } else {

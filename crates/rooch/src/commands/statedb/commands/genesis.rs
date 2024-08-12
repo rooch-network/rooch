@@ -25,7 +25,7 @@ use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
 use crate::commands::statedb::commands::genesis_utxo::{
-    apply_address_updates, apply_utxo_updates, produce_utxo_updates,
+    apply_address_updates, apply_utxo_updates, produce_address_map_updates, produce_utxo_updates,
 };
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes, finish_import_job};
 use crate::commands::statedb::commands::inscription::{
@@ -48,13 +48,13 @@ pub struct GenesisCommand {
     pub ord_source: PathBuf,
     #[clap(
         long,
-        default_value = "524288",
+        default_value = "1048576",
         help = "batch size submited to state db. Set it smaller if memory is limited."
     )]
     pub utxo_batch_size: Option<usize>,
     #[clap(
         long,
-        default_value = "524288",
+        default_value = "1048576",
         help = "batch size submited to state db. Set it smaller if memory is limited."
     )] // ord may have large body, so set a smaller batch
     pub ord_batch_size: Option<usize>,
@@ -115,7 +115,7 @@ impl GenesisCommand {
         // import inscriptions
         let input_path = self.ord_source.clone();
         let batch_size = self.ord_batch_size.unwrap();
-        let (ord_tx, ord_rx) = mpsc::sync_channel(3);
+        let (ord_tx, ord_rx) = mpsc::sync_channel(2);
         let produce_inscription_updates_thread =
             thread::spawn(move || produce_inscription_updates(ord_tx, input_path, batch_size));
         let moveos_store_clone = Arc::clone(&moveos_store);
@@ -125,15 +125,19 @@ impl GenesisCommand {
         });
 
         // import utxo
-        let utxo_input_path = self.utxo_source.clone();
+        let utxo_input_path = Arc::new(self.utxo_source.clone());
+        let utxo_input_path_clone1 = Arc::clone(&utxo_input_path);
+        let utxo_input_path_clone2 = Arc::clone(&utxo_input_path);
         let utxo_batch_size = self.utxo_batch_size.unwrap();
-        let (utxo_tx, utxo_rx) = mpsc::sync_channel(4);
-        let (addr_tx, addr_rx) = mpsc::sync_channel(4);
+        let (addr_tx, addr_rx) = mpsc::sync_channel(2);
+        let produce_addr_updates_thread = thread::spawn(move || {
+            produce_address_map_updates(addr_tx, utxo_input_path_clone1, utxo_batch_size)
+        });
+        let (utxo_tx, utxo_rx) = mpsc::sync_channel(2);
         let produce_utxo_updates_thread = thread::spawn(move || {
             produce_utxo_updates(
                 utxo_tx,
-                addr_tx,
-                utxo_input_path,
+                utxo_input_path_clone2,
                 utxo_batch_size,
                 Some(outpoint_inscriptions_map),
             )
@@ -150,6 +154,7 @@ impl GenesisCommand {
         });
 
         produce_inscription_updates_thread.join().unwrap();
+        produce_addr_updates_thread.join().unwrap();
         produce_utxo_updates_thread.join().unwrap();
         apply_inscription_updates_thread.join().unwrap();
         apply_addr_updates_thread.join().unwrap();

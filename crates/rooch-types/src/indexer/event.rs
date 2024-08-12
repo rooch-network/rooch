@@ -82,6 +82,11 @@ impl IndexerEventID {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum EventFilter {
+    /// Query by event type with sender
+    EventTypeWithSender {
+        event_type: StructTag,
+        sender: RoochAddress,
+    },
     /// Query by event type.
     EventType(StructTag),
     /// Query by sender address.
@@ -107,6 +112,9 @@ pub enum EventFilter {
 impl EventFilter {
     fn try_matches(&self, item: &IndexerEvent) -> Result<bool> {
         Ok(match self {
+            EventFilter::EventTypeWithSender {
+                event_type, sender, ..
+            } => struct_tag_match(&item.event_type, event_type) && sender == &item.sender,
             EventFilter::EventType(event_type) => struct_tag_match(&item.event_type, event_type),
             EventFilter::Sender(sender) => sender == &item.sender,
             EventFilter::TxHash(tx_hash) => tx_hash == &item.tx_hash,

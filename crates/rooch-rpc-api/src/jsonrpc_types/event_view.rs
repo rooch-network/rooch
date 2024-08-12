@@ -173,6 +173,11 @@ impl From<IndexerEvent> for IndexerEventView {
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum EventFilterView {
+    /// Query by event type with sender
+    EventTypeWithSender {
+        event_type: StructTagView,
+        sender: UnitedAddressView,
+    },
     /// Query by event type.
     EventType(StructTagView),
     /// Query by sender address.
@@ -199,6 +204,12 @@ pub enum EventFilterView {
 impl From<EventFilterView> for EventFilter {
     fn from(event_filter: EventFilterView) -> Self {
         match event_filter {
+            EventFilterView::EventTypeWithSender { event_type, sender } => {
+                Self::EventTypeWithSender {
+                    event_type: event_type.into(),
+                    sender: sender.into(),
+                }
+            }
             EventFilterView::EventType(event_type) => Self::EventType(event_type.into()),
             EventFilterView::Sender(address) => Self::Sender(address.into()),
             EventFilterView::TxHash(tx_hash) => Self::TxHash(tx_hash.into()),

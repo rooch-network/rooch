@@ -15,4 +15,6 @@ crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasPar
     [.derive_multisig_pubkey_from_pubkeys.per_byte, optional "derive_multisig_pubkey_from_pubkeys.per_byte", 30 * MUL],
     [.derive_bitcoin_taproot_address_from_pubkey.base, optional "derive_bitcoin_taproot_address_from_pubkey.base", 1000 * MUL],
     [.derive_bitcoin_taproot_address_from_pubkey.per_byte, optional "derive_bitcoin_taproot_address_from_pubkey.per_byte", 30 * MUL],
+    [.derive_bitcoin_taproot_address.base, optional "derive_bitcoin_taproot_address.base", 1000 * MUL],
+    [.derive_bitcoin_taproot_address.per_byte, optional "derive_bitcoin_taproot_address.per_byte", 30 * MUL],
 ]);
