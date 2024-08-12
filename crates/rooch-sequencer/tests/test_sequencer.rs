@@ -6,6 +6,7 @@ use coerce::actor::{system::ActorSystem, IntoActor};
 use metrics::RegistryService;
 use prometheus::Registry;
 use raw_store::metrics::DBMetrics;
+use raw_store::{StoreInstance, CF_METRICS_REPORT_PERIOD_MILLIS};
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
 use rooch_genesis::RoochGenesis;
@@ -15,10 +16,21 @@ use rooch_types::{
     service_status::ServiceStatus,
     transaction::{LedgerTxData, RoochTransaction},
 };
+use std::time::Duration;
 
 fn init_rooch_db(opt: &RoochOpt, registry: &Registry) -> Result<RoochDB> {
     DBMetrics::init(registry);
-    let rooch_db = RoochDB::init(opt.store_config(), registry)?;
+    let store_instance = RoochDB::generate_store_instance(opt.store_config(), registry)?;
+    init_rooch_db_with_instance(opt, store_instance, registry)
+}
+
+fn init_rooch_db_with_instance(
+    opt: &RoochOpt,
+    instance: StoreInstance,
+    registry: &Registry,
+) -> Result<RoochDB> {
+    // DBMetrics::init(registry);
+    let rooch_db = RoochDB::init_with_instance(opt.store_config(), instance, registry)?;
     let network = opt.network();
     let _genesis = RoochGenesis::load_or_init(network, &rooch_db)?;
     Ok(rooch_db)
@@ -30,7 +42,15 @@ async fn test_sequencer() -> Result<()> {
     let mut last_tx_order = 0;
     let registry_service = RegistryService::default();
     {
-        let rooch_db = init_rooch_db(&opt, &registry_service.default_registry())?;
+        let mut store_instance = RoochDB::generate_store_instance(
+            opt.store_config(),
+            &registry_service.default_registry(),
+        )?;
+        let rooch_db = init_rooch_db_with_instance(
+            &opt,
+            store_instance.clone(),
+            &registry_service.default_registry(),
+        )?;
         let sequencer_key = RoochKeyPair::generate_secp256k1();
         let mut sequencer = SequencerActor::new(
             sequencer_key,
@@ -46,6 +66,10 @@ async fn test_sequencer() -> Result<()> {
             last_tx_order = ledger_tx.sequence_info.tx_order;
         }
         assert_eq!(sequencer.last_order(), last_tx_order);
+
+        let _ = store_instance.cancel_metrics_task();
+        // Wait for rocksdb cancel metrics task to avoid db lock
+        tokio::time::sleep(Duration::from_millis(CF_METRICS_REPORT_PERIOD_MILLIS)).await;
     }
     // load from db again
     {
@@ -69,7 +93,7 @@ async fn test_sequencer() -> Result<()> {
 
 // test concurrent
 // Build a sequencer actor and sequence transactions concurrently
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread", worker_threads = 5)]
 async fn test_sequencer_concurrent() -> Result<()> {
     let opt = RoochOpt::new_with_temp_store()?;
     let registry_service = RegistryService::default();

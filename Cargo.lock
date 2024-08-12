@@ -8626,11 +8626,13 @@ dependencies = [
  "moveos-common",
  "moveos-config",
  "once_cell",
+ "parking_lot 0.12.3",
  "prometheus",
  "rocksdb",
  "serde 1.0.205",
  "tap",
  "thiserror",
+ "tokio",
  "tracing",
 ]
 

@@ -10,15 +10,8 @@ use prometheus::{
     register_histogram_vec_with_registry, register_int_counter_vec_with_registry,
     register_int_gauge_vec_with_registry, HistogramVec, IntCounterVec, IntGaugeVec, Registry,
 };
-use rocksdb::PerfContext;
-use std::cell::RefCell;
 use std::sync::Arc;
 use tap::TapFallible;
-use tracing::warn;
-
-thread_local! {
-    static PER_THREAD_ROCKS_PERF_CONTEXT: std::cell::RefCell<rocksdb::PerfContext>  = RefCell::new(PerfContext::default());
-}
 
 #[derive(Debug)]
 pub struct RocksDBMetrics {
@@ -376,7 +369,7 @@ pub struct DBMetrics {
     pub rocksdb_metrics: RocksDBMetrics,
 }
 
-static ONCE: OnceCell<Arc<DBMetrics>> = OnceCell::new();
+static DB_METRICS_ONCE: OnceCell<Arc<DBMetrics>> = OnceCell::new();
 
 impl DBMetrics {
     pub fn new(registry: &Registry) -> Self {
@@ -391,10 +384,10 @@ impl DBMetrics {
         // only ever initialize db metrics once with a registry whereas
         // in the code we might want to initialize it with different
         // registries.
-        let _ = ONCE
+        let _ = DB_METRICS_ONCE
             .set(Self::inner_init(registry))
-            .tap_err(|_| warn!("DBMetrics registry overwritten"));
-        ONCE.get().unwrap()
+            .tap_err(|_| tracing::warn!("DBMetrics registry overwritten"));
+        DB_METRICS_ONCE.get().unwrap()
     }
 
     fn inner_init(registry: &Registry) -> Arc<DBMetrics> {
@@ -416,10 +409,10 @@ impl DBMetrics {
     }
 
     pub fn get() -> Option<&'static Arc<DBMetrics>> {
-        ONCE.get()
+        DB_METRICS_ONCE.get()
     }
 
     pub fn get_or_init(registry: &Registry) -> &'static Arc<DBMetrics> {
-        ONCE.get_or_init(|| Self::inner_init(registry).clone())
+        DB_METRICS_ONCE.get_or_init(|| Self::inner_init(registry).clone())
     }
 }
