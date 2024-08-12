@@ -114,7 +114,7 @@ export class StartedBitcoinContainer extends AbstractStartedContainer {
     ]
 
     const result = await this.startedTestContainer.exec(cmd);
-    console.log(`StartedBitcoinContainer#executeRpcCommand cmd: ${cmd.join(' ')}, result:${JSON.stringify(result)}`)
+    console.log(`bitcoind run cmd: ${cmd.join(' ')}, result:${JSON.stringify(result)}`)
 
     if (result.exitCode !== 0) {
       throw new Error(`executeRpcCommand failed with exit code ${result.exitCode} for command: ${command}`);

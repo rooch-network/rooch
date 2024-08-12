@@ -26,7 +26,7 @@ test.afterAll(async () => {
   await testEnv.stop()
 });
 
-test('Deploy generator', async ({ mount }) => {
+test('Upload generator', async ({ mount }) => {
   if (!roochServerAddress) {
     throw new Error('Failed to get Rooch server address');
   }
@@ -45,7 +45,7 @@ test('Deploy generator', async ({ mount }) => {
   await expect(component).toContainText('Deploy Result: ')
 })
 
-test('Deploy invalid generator', async ({ mount }) => {
+test('Upload invalid generator', async ({ mount }) => {
   if (!roochServerAddress) {
     throw new Error('Failed to get Rooch server address');
   }
