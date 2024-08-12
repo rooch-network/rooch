@@ -5,8 +5,8 @@ use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
+use std::sync::{Arc, mpsc, RwLock};
 use std::sync::mpsc::{Receiver, SyncSender};
-use std::sync::{mpsc, Arc, RwLock};
 use std::thread;
 use std::time::SystemTime;
 
@@ -24,6 +24,7 @@ use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
+use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 use crate::commands::statedb::commands::genesis_utxo::{
     apply_address_updates, apply_utxo_updates, produce_address_map_updates, produce_utxo_updates,
 };
@@ -31,7 +32,6 @@ use crate::commands::statedb::commands::import::{apply_fields, apply_nodes, fini
 use crate::commands::statedb::commands::inscription::{
     create_genesis_inscription_store_object, gen_inscription_ids_update, InscriptionSource,
 };
-use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 
 /// Import BTC ordinals & UTXO for genesis
 #[derive(Debug, Parser)]
@@ -68,6 +68,11 @@ pub struct GenesisCommand {
         help = "only map outpoint to inscriptions, do not import inscriptions"
     )]
     pub map_outpoint_inscriptions_only: bool,
+    #[clap(
+        long = "export-dir",
+        help = "export state to files, for import/indexer build"
+    )]
+    pub export_dir: Option<PathBuf>,
 
     #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
@@ -123,7 +128,6 @@ impl GenesisCommand {
         let apply_inscription_updates_thread = thread::spawn(move || {
             apply_inscription_updates(ord_rx, moveos_store_clone, startup_update_set_clone);
         });
-
         // import utxo
         let utxo_input_path = Arc::new(self.utxo_source.clone());
         let utxo_input_path_clone1 = Arc::clone(&utxo_input_path);

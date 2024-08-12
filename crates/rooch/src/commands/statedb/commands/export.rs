@@ -215,6 +215,11 @@ pub struct ExportCommand {
     #[clap(long)]
     pub object_name: Option<ExportObjectName>,
 
+    #[clap(long)]
+    pub utxo_source: Option<PathBuf>,
+    #[clap(long)]
+    pub ord_source: Option<PathBuf>,
+
     /// If local chainid, start the service with a temporary data store.
     /// All data will be deleted when the service is stopped.
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
@@ -249,7 +254,7 @@ impl ExportCommand {
                 todo!()
             }
             ExportMode::FullIndexer => {
-                Self::export_full_indexer(&moveos_store, root_state_root, &mut writer)?;
+                Self::export_full_indexer(&self, &moveos_store, root_state_root, &mut writer)?;
             }
             ExportMode::Indexer => {
                 Self::export_indexer(&moveos_store, root_state_root, &mut writer)?;
@@ -293,9 +298,38 @@ impl ExportCommand {
     }
 
     fn export_full_indexer<W: std::io::Write>(
+        &self,
         moveos_store: &MoveOSStore,
         root_state_root: H256,
         writer: &mut Writer<W>,
+    ) -> Result<()> {
+        if self.utxo_source.is_some() && self.ord_source.is_some() {
+            Self::export_full_indexer_by_source(
+                moveos_store,
+                root_state_root,
+                self.utxo_source.clone().unwrap(),
+                self.ord_source.clone().unwrap(),
+            )?;
+        } else {
+            // export root object, utxo, inscription store object, exclude dynamic filed objects
+            let object_ids = vec![
+                ObjectID::root(),
+                BitcoinUTXOStore::object_id(),
+                InscriptionStore::object_id(),
+            ];
+
+            Self::internal_export_indexer(moveos_store, root_state_root, writer, object_ids)?;
+            writer.flush()?;
+        }
+
+        Ok(())
+    }
+
+    fn export_full_indexer_by_source<W: std::io::Write>(
+        moveos_store: &MoveOSStore,
+        root_state_root: H256,
+        utxo_source: PathBuf,
+        ord_source: PathBuf,
     ) -> Result<()> {
         // export root object, utxo, inscription store object, exclude dynamic filed objects
         let object_ids = vec![
