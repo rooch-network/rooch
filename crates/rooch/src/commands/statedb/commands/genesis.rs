@@ -5,8 +5,8 @@ use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
+use std::sync::{Arc, mpsc, RwLock};
 use std::sync::mpsc::{Receiver, SyncSender};
-use std::sync::{mpsc, Arc, RwLock};
 use std::thread;
 use std::time::SystemTime;
 
@@ -24,14 +24,14 @@ use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
+use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 use crate::commands::statedb::commands::genesis_utxo::{
     apply_address_updates, apply_utxo_updates, produce_address_map_updates, produce_utxo_updates,
 };
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes, finish_import_job};
 use crate::commands::statedb::commands::inscription::{
-    create_genesis_inscription_store_object, gen_inscription_ids_update, InscriptionSource,
+    create_genesis_inscription_store_object, gen_inscription_id_update, InscriptionSource,
 };
-use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 
 /// Import BTC ordinals & UTXO for genesis
 #[derive(Debug, Parser)]
@@ -222,7 +222,7 @@ fn produce_inscription_updates(
             let (key, state, inscription_id) = source.gen_update();
             updates.updates_value_bytes += state.value.len() as u64;
             updates.update_set.put(key, state);
-            let (key2, state2) = gen_inscription_ids_update(sequence_number, inscription_id);
+            let (key2, state2) = gen_inscription_id_update(sequence_number, inscription_id);
             updates.update_set.put(key2, state2);
             sequence_number += 1;
         }
