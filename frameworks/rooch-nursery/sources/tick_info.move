@@ -14,7 +14,7 @@ module rooch_nursery::tick_info {
     
     use bitcoin_move::ord::{Self, InscriptionID};
     use rooch_nursery::bitseed::{Self, Bitseed};
-    use rooch_nursery::result::{Result, ok, err};
+    use rooch_nursery::result::{Result, ok, err_str};
 
     const ErrorMetaprotocolNotFound: u64 = 1;
     const ErrorTickNotFound: u64 = 2;
@@ -162,11 +162,11 @@ module rooch_nursery::tick_info {
         bitseed
     }
 
-    public(friend) fun mint_on_bitcoin(metaprotocol: String, tick: String, amount: u64) : Result<Object<Bitseed>>{
+    public(friend) fun mint_on_bitcoin(metaprotocol: String, tick: String, amount: u64) : Result<Object<Bitseed>,String>{
         let tick = string_utils::to_lower_case(&tick);
         let tick_info = borrow_mut_tick_info(metaprotocol, tick);
         if (tick_info.supply + amount > tick_info.max){
-            return err(b"maximum supply exceeded")
+            return err_str(b"maximum supply exceeded")
         };
         let bid = tx_context::fresh_address();
         let bitseed = bitseed::new(metaprotocol, tick, bid, amount, option::none(), vector::empty());
