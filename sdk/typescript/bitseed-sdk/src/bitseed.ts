@@ -2,17 +2,17 @@ import * as bitcoin from 'bitcoinjs-lib'
 import { IDatasource } from '@sadoprotocol/ordit-sdk'
 import { Inscriber, Ordit, ordit, UTXOLimited } from '@sadoprotocol/ordit-sdk'
 
-import { BITSEED_PROTOAL_NAME } from './constants'
+import { BITSEED_PROTOAL_NAME } from './constants/index.js'
 import {
   InscriptionID, 
   Generator, 
   Tick, 
   SFTRecord
-} from './types'
-import { inscriptionIDToString, extractInscriptionID, toB64, decodeUTXOs } from './utils'
-import { IGeneratorLoader, InscribeSeed } from './generator'
-import { APIInterface, DeployOptions, InscribeOptions } from './interfaces'
-import { BitseedSDKError } from './errors'
+} from './types/index.js'
+import { inscriptionIDToString, extractInscriptionID, toB64, decodeUTXOs } from './utils/index.js'
+import { IGeneratorLoader, InscribeSeed } from './generator/index.js'
+import { APIInterface, DeployOptions, InscribeOptions } from './interfaces/index.js'
+import { BitseedSDKError } from './errors/index.js'
 
 export class BitSeed implements APIInterface {
   private network: bitcoin.Network

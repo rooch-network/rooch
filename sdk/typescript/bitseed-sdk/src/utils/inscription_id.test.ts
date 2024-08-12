@@ -1,5 +1,5 @@
-import { InscriptionID } from '../types'
-import { parseInscriptionID, inscriptionIDToString, extractInscription } from './inscription_id';
+import { InscriptionID } from '../types/index.js'
+import { parseInscriptionID, inscriptionIDToString, extractInscription } from './inscription_id.js';
 
 describe('parseInscriptionID', () => {
   it('should correctly parse a valid InscriptionID string', () => {

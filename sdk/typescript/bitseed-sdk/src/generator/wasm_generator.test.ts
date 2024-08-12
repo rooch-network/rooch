@@ -1,8 +1,8 @@
 import path from 'path'
 import fs from 'fs';
 
-import { InscribeSeed } from './seed'
-import { WasmGenerator } from './wasm_generator';
+import { InscribeSeed } from './seed.js'
+import { WasmGenerator } from './wasm_generator.js';
 
 const loadWasmModuleFromFile = async(url: string) => {
   const filePath = path.resolve(url);

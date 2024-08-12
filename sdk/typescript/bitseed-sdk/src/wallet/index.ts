@@ -1,4 +1,4 @@
-import { Network } from '../types'
+import { Network } from '../types/index.js'
 import { Ordit, AddressFormats } from '@sadoprotocol/ordit-sdk'
 
 export type WalletOptions = {

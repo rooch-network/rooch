@@ -1,8 +1,8 @@
 import cbor from 'cbor'
-import { IGenerator } from './interface'
-import { SFTRecord } from '../types'
-import { EmscriptenRuntime } from './emscripten_runtime'
-import { InscribeSeed } from './seed'
+import { IGenerator } from './interface.js'
+import { SFTRecord } from '../types/index.js'
+import { EmscriptenRuntime } from './emscripten_runtime.js'
+import { InscribeSeed } from './seed.js'
 
 export class WasmGenerator implements IGenerator {
   private wasmInstance: WebAssembly.Instance

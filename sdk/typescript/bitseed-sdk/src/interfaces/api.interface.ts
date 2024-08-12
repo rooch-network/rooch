@@ -4,7 +4,7 @@ import {
   Amount, 
   Generator, 
   InscriptionID 
-} from '../types'
+} from '../types/index.js'
 
 export interface NestedObject {
   [key: string]: NestedObject | any

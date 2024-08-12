@@ -18,7 +18,7 @@ import {
   VersionDetail,
   WalletConfig,
   Transaction
-} from './unisat-openapi.types';
+} from './unisat-openapi.types.js';
 
 export interface IUniSatOpenAPI {
   getHost(): string;

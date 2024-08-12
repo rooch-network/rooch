@@ -1,5 +1,5 @@
 import * as bitcoin from 'bitcoinjs-lib';
-import { decodeScriptPubKey, ScriptTypeWitnessV0KeyHash, decodeUTXOs, hexStringToTxid } from './bitcoin';
+import { decodeScriptPubKey, ScriptTypeWitnessV0KeyHash, decodeUTXOs, hexStringToTxid } from './bitcoin.js';
 
 describe('decodeScriptPubKey', () => {
   const network = bitcoin.networks.testnet;

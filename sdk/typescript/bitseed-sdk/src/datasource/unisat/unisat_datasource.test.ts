@@ -1,6 +1,6 @@
  
-import { UniSatDataSource } from './unisat_datasource'; // 假设你的类名为 YourClass
-import { Wallet } from '../../wallet'
+import { UniSatDataSource } from './unisat_datasource.js'; 
+import { Wallet } from '../../wallet/index.js'
 
 describe('UniSatDataSource', () => {
   let instance: UniSatDataSource;

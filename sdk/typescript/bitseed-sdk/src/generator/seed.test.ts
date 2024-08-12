@@ -1,5 +1,5 @@
 import { sha3_256 } from 'js-sha3';
-import { InscribeSeed } from './seed';
+import { InscribeSeed } from './seed.js';
 
 describe('InscribeSeed', () => {
   it('should generate the correct seed', () => {

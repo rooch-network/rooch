@@ -1,4 +1,4 @@
-import { decodeInscriptionMetadata } from "./ordinal";
+import { decodeInscriptionMetadata } from "./ordinal.js";
 
 describe('decodeInscription', () => {
   it('decode Inscription from move tick transaction hex should be ok', () => {

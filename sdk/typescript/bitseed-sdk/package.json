@@ -2,7 +2,7 @@
   "name": "@roochnetowrk/bitseed-sdk",
   "private": true,
   "version": "0.1.0",
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
     "build": "build-package",
     "test": "pnpm test:unit && pnpm test:e2e",

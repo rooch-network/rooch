@@ -1,4 +1,4 @@
-import { AddressType, Chain, NetworkType, RestoreWalletType, CHAINS_ENUM } from './unisat-openapi.types';
+import { AddressType, Chain, NetworkType, RestoreWalletType, CHAINS_ENUM } from './unisat-openapi.types.js';
 
 export const CHAINS: Record<string, Chain> = {
   [CHAINS_ENUM.BTC]: {
