@@ -241,32 +241,36 @@ fn verify_utxo(
     }
     output_writer.flush().expect("Unable to flush writer");
 
+    let mut result = "OK";
     if act_utxo_store_state.metadata.size != utxo_total as u64 {
-        println!("----------------------------");
+        result = "FAILED";
+        println!("------------FAILED----------------");
         println!(
             "[utxo_store] mismatched size: exp: {}, act: {}",
             utxo_total, act_utxo_store_state.metadata.size
         )
     };
     if act_address_mapping_state.metadata.size != added_address_set.len() as u64 {
-        println!("----------------------------");
+        result = "FAILED";
+        println!("------------FAILED----------------");
         println!(
             "[address_mapping] mismatched size: exp: {}, act: {}",
             added_address_set.len(),
             act_address_mapping_state.metadata.size
         )
     };
-
-    println!("----------------------------");
+    if utxo_mismatched_count != 0 || address_mismatched_count != 0 {
+        result = "FAILED";
+    }
+    println!("------------{}----------------", result);
     println!(
-        "utxo check done. total: {}. (mismatched/checked): utxo: ({}/{}); address: ({}/{}). utxo_store_meta: {:?}, address_mapping_meta: {:?}. cost: {:?}",
+        "utxo check {}. total: {}. (mismatched/checked): utxo: ({}/{}); address: ({}/{}). cost: {:?}",
+        result,
         utxo_total,
         utxo_mismatched_count,
         utxo_checked_count,
         address_mismatched_count,
         address_checked_count,
-        act_utxo_store_state.metadata,
-        act_address_mapping_state.metadata,
         start_time.elapsed()
     );
 }
@@ -377,12 +381,14 @@ fn verify_inscription(
 
     output_writer.flush().expect("Unable to flush writer");
 
+    let mut result = "OK";
     if act_inscription_store_state.metadata.size != sequence_number as u64 * 2
         || act_inscription_store.cursed_inscription_count != cursed_inscription_count
         || act_inscription_store.blessed_inscription_count != blessed_inscription_count
         || act_inscription_store.next_sequence_number != sequence_number
     {
-        println!("----------------------------");
+        result = "FAILED";
+        println!("------------FAILED----------------");
         println!(
             "[inscription_store] mismatched size. metadata: exp: {}, act: {}; cursed: exp: {}, act: {}; blessed: exp: {}, act: {}; next_sequence_number: exp: {}, act: {}",
             sequence_number * 2,
@@ -395,10 +401,14 @@ fn verify_inscription(
             act_inscription_store.next_sequence_number
         )
     };
+    if mismatched_count != 0 || mismatched_inscription_id_count != 0 {
+        result = "FAILED";
+    }
 
-    println!("----------------------------");
+    println!("-----------{}-----------------", result);
     println!(
-        "inscription check done. total: {}. (mismatched/checked): inscription: ({}/{}); inscription_id: ({}/{}). cost: {:?}",
+        "inscription check {}. total: {}. (mismatched/checked): inscription: ({}/{}); inscription_id: ({}/{}). cost: {:?}",
+        result,
         sequence_number,
         mismatched_count,
         checked_count,
