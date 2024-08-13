@@ -215,11 +215,6 @@ pub struct ExportCommand {
     #[clap(long)]
     pub object_name: Option<ExportObjectName>,
 
-    #[clap(long)]
-    pub utxo_source: Option<PathBuf>,
-    #[clap(long)]
-    pub ord_source: Option<PathBuf>,
-
     /// If local chainid, start the service with a temporary data store.
     /// All data will be deleted when the service is stopped.
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
@@ -303,36 +298,6 @@ impl ExportCommand {
         root_state_root: H256,
         writer: &mut Writer<W>,
     ) -> Result<()> {
-        if self.utxo_source.is_some() && self.ord_source.is_some() {
-            Self::export_full_indexer_by_source(
-                moveos_store,
-                root_state_root,
-                self.utxo_source.clone().unwrap(),
-                self.ord_source.clone().unwrap(),
-            )?;
-        } else {
-            // export root object, utxo, inscription store object, exclude dynamic filed objects
-            let object_ids = vec![
-                ObjectID::root(),
-                BitcoinUTXOStore::object_id(),
-                InscriptionStore::object_id(),
-            ];
-
-            Self::internal_export_indexer(moveos_store, root_state_root, writer, object_ids)?;
-            writer.flush()?;
-        }
-
-        Ok(())
-    }
-
-    fn export_full_indexer_by_source<W: std::io::Write>(
-        moveos_store: &MoveOSStore,
-        root_state_root: H256,
-        utxo_source_path: PathBuf,
-        ord_source_path: PathBuf,
-        outpoint_inscription_map_path: PathBuf,
-        writer: &mut Writer<W>,
-    ) -> Result<()> {
         // export root object, utxo, inscription store object, exclude dynamic filed objects
         let object_ids = vec![
             ObjectID::root(),
@@ -342,62 +307,8 @@ impl ExportCommand {
 
         Self::internal_export_indexer(moveos_store, root_state_root, writer, object_ids)?;
         writer.flush()?;
+
         Ok(())
-    }
-
-    fn export_utxo_from_source<W: std::io::Write>(
-        input: PathBuf,
-        batch_size: usize,
-        outpoint_inscriptions_map: Option<Arc<OutpointInscriptionsMap>>,
-        writer: &mut Writer<W>,
-    ) {
-        let input = input.as_ref();
-        // produce utxo updates is slower than produce address map updates, so we put cache manager to drop cache here
-        let file_cache_mgr = FileCacheManager::new(input).unwrap();
-        let mut cache_drop_offset: u64 = 0;
-        let mut reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
-        let mut is_title_line = true;
-        let mut max_height = 0;
-
-        loop {
-            let loop_start_time = Instant::now();
-            let mut bytes_read = 0;
-            let mut utxo_updates = UpdateSet::new();
-
-            for line in reader.by_ref().lines().take(batch_size) {
-                let line = line.unwrap();
-                bytes_read += line.len() as u64 + 1; // Add line.len() + 1, assuming that the line terminator is '\n'
-
-                if is_title_line {
-                    is_title_line = false;
-                    if line.starts_with("count") {
-                        continue;
-                    }
-                }
-
-                let mut utxo_raw = UTXORawData::from_str(&line);
-                let (key, state) = utxo_raw.gen_utxo_update(outpoint_inscriptions_map.clone());
-                utxo_updates.put(key, state);
-                if utxo_raw.height > max_height {
-                    max_height = utxo_raw.height;
-                }
-            }
-            println!(
-                "{} utxo updates produced, cost: {:?}",
-                utxo_updates.len(),
-                loop_start_time.elapsed(),
-            );
-            let _ = file_cache_mgr.drop_cache_range(cache_drop_offset, bytes_read);
-            cache_drop_offset += bytes_read;
-
-            if utxo_updates.is_empty() {
-                break;
-            }
-            utxo_tx.send(utxo_updates).expect("failed to send updates");
-        }
-
-        drop(utxo_tx);
-        println!("utxo max_height: {}", max_height);
     }
 
     fn export_indexer<W: std::io::Write>(
