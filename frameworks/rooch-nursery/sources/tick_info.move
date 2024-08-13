@@ -14,7 +14,7 @@ module rooch_nursery::tick_info {
     
     use bitcoin_move::ord::{Self, InscriptionID};
     use rooch_nursery::bitseed::{Self, Bitseed};
-    use rooch_nursery::result::{Result, ok, err_str};
+    use moveos_std::result::{Result, ok, err_str};
 
     const ErrorMetaprotocolNotFound: u64 = 1;
     const ErrorTickNotFound: u64 = 2;

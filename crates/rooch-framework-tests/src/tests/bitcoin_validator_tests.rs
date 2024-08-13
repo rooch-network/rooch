@@ -11,8 +11,8 @@ use rooch_types::transaction::rooch::RoochTransactionData;
 
 use crate::binding_test;
 
-#[test]
-fn test_validate() {
+#[tokio::test]
+async fn test_validate() {
     let binding_test = binding_test::RustBindingTest::new().unwrap();
     let root = binding_test.root().clone();
 

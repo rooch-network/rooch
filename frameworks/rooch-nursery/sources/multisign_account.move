@@ -17,7 +17,8 @@ module rooch_nursery::multisign_account{
     use bitcoin_move::script_buf::{Self, ScriptBuf};
     use rooch_framework::ecdsa_k1;
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
-    use rooch_nursery::taproot_builder;
+    use bitcoin_move::taproot_builder;
+    use moveos_std::result;
 
     const PROPOSAL_STATUS_PENDING: u8 = 0;
     const PROPOSAL_STATUS_APPROVED: u8 = 1;
@@ -164,7 +165,8 @@ module rooch_nursery::multisign_account{
         let multisign_script = create_multisign_script(threshold, to_x_only_public_keys);
         let builder = taproot_builder::new();
         taproot_builder::add_leaf(&mut builder, 0, multisign_script);
-        taproot_builder::finalize(builder)
+        let result = taproot_builder::finalize(builder);
+        result::unwrap(result)
     }
 
     fun create_multisign_script(threshold: u64, to_x_only_public_keys: &vector<vector<u8>>) : ScriptBuf {
