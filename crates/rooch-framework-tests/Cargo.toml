@@ -26,6 +26,7 @@ tempfile = { workspace = true }
 include_dir = { workspace = true }
 musig2 = { workspace = true }
 miniscript = { workspace = true }
+tokio = { workspace = true }
 
 move-core-types = { workspace = true }
 

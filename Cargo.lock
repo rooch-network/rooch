@@ -8626,11 +8626,13 @@ dependencies = [
  "moveos-common",
  "moveos-config",
  "once_cell",
+ "parking_lot 0.12.3",
  "prometheus",
  "rocksdb",
  "serde 1.0.206",
  "tap",
  "thiserror",
+ "tokio",
  "tracing",
 ]
 
@@ -9378,6 +9380,7 @@ dependencies = [
  "rooch-types",
  "serde_json",
  "tempfile",
+ "tokio",
  "tracing",
  "tracing-subscriber",
 ]
@@ -9423,6 +9426,7 @@ dependencies = [
  "diesel",
  "diesel_migrations",
  "function_name",
+ "futures",
  "log",
  "metrics",
  "move-core-types",
@@ -9468,6 +9472,7 @@ dependencies = [
  "rooch-framework",
  "rooch-genesis",
  "rooch-types",
+ "tokio",
  "tracing",
  "tracing-subscriber",
  "walkdir",

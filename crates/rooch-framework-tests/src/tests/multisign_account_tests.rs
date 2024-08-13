@@ -9,8 +9,8 @@ use rooch_types::{
     transaction::RoochTransactionData,
 };
 
-#[test]
-fn test_multisign_account() {
+#[tokio::test]
+async fn test_multisign_account() {
     let _ = tracing_subscriber::fmt::try_init();
     let mut binding_test = binding_test::RustBindingTest::new().unwrap();
 
