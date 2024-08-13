@@ -371,6 +371,7 @@ impl OutpointInscriptionsMap {
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn get_values_by_key<Key, Value>(
     map: SimpleMultiMap<Key, Value>,
     key: Key,
