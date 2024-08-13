@@ -17,7 +17,7 @@ use rustc_hash::FxHashSet;
 use moveos_store::MoveOSStore;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::ObjectMeta;
-use moveos_types::state::{FieldKey, MoveState, ObjectState};
+use moveos_types::state::{MoveState, ObjectState};
 use moveos_types::state_resolver::{RootObjectResolver, StatelessResolver};
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::bitcoin::ord::InscriptionStore;
@@ -77,7 +77,11 @@ impl GenesisVerifyCommand {
     pub async fn execute(self) -> RoochResult<()> {
         let (root, moveos_store, start_time) =
             init_job(self.base_data_dir.clone(), self.chain_id.clone());
-        let outpoint_inscriptions_map = self.load_or_index_outpoint_inscription_map(start_time);
+        let outpoint_inscriptions_map = OutpointInscriptionsMap::load_or_index(
+            self.outpoint_inscriptions_map_dump_path,
+            self.ord_source,
+            start_time,
+        );
         let outpoint_inscriptions_map = Arc::new(outpoint_inscriptions_map);
         let random_mode = self.random_mode;
         let moveos_store = Arc::new(moveos_store);
@@ -116,41 +120,6 @@ impl GenesisVerifyCommand {
         verify_utxo_thread.join().unwrap();
 
         Ok(())
-    }
-
-    fn load_or_index_outpoint_inscription_map(
-        &self,
-        start_time: Instant,
-    ) -> OutpointInscriptionsMap {
-        let map_existed = self.outpoint_inscriptions_map_dump_path.exists();
-        if map_existed {
-            log::info!("load outpoint_inscriptions_map...");
-            let outpoint_inscriptions_map =
-                OutpointInscriptionsMap::load(self.outpoint_inscriptions_map_dump_path.clone());
-            let (outpoint_count, inscription_count) = outpoint_inscriptions_map.stats();
-            println!(
-                "{} outpoints : {} inscriptions mapped in: {:?}",
-                outpoint_count,
-                inscription_count,
-                start_time.elapsed(),
-            );
-            outpoint_inscriptions_map
-        } else {
-            log::info!("indexing and dumping outpoint_inscriptions_map...");
-            let (outpoint_inscriptions_map, mapped_outpoint, mapped_inscription, unbound_count) =
-                OutpointInscriptionsMap::index_and_dump(
-                    self.ord_source.clone(),
-                    Some(self.outpoint_inscriptions_map_dump_path.clone()),
-                );
-            println!(
-                "{} outpoints : {} inscriptions mapped in: {:?} ({} unbound inscriptions ignored)",
-                mapped_outpoint,
-                mapped_inscription,
-                start_time.elapsed(),
-                unbound_count
-            );
-            outpoint_inscriptions_map
-        }
     }
 }
 

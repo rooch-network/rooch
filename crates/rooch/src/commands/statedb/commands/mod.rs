@@ -319,6 +319,37 @@ impl OutpointInscriptionsMap {
         OutpointInscriptionsMap::new(items, true)
     }
 
+    fn load_or_index(path: PathBuf, inscriptions_path: PathBuf, start_time: Instant) -> Self {
+        let map_existed = path.exists();
+        if map_existed {
+            log::info!("load outpoint_inscriptions_map...");
+            let outpoint_inscriptions_map = OutpointInscriptionsMap::load(path.clone());
+            let (outpoint_count, inscription_count) = outpoint_inscriptions_map.stats();
+            println!(
+                "{} outpoints : {} inscriptions mapped in: {:?}",
+                outpoint_count,
+                inscription_count,
+                start_time.elapsed(),
+            );
+            outpoint_inscriptions_map
+        } else {
+            log::info!("indexing and dumping outpoint_inscriptions_map...");
+            let (outpoint_inscriptions_map, mapped_outpoint, mapped_inscription, unbound_count) =
+                OutpointInscriptionsMap::index_and_dump(
+                    inscriptions_path.clone(),
+                    Some(path.clone()),
+                );
+            println!(
+                "{} outpoints : {} inscriptions mapped in: {:?} ({} unbound inscriptions ignored)",
+                mapped_outpoint,
+                mapped_inscription,
+                start_time.elapsed(),
+                unbound_count
+            );
+            outpoint_inscriptions_map
+        }
+    }
+
     fn dump(&self, path: PathBuf) {
         let file = File::create(path.clone()).expect("Unable to create the file");
         let mut writer = BufWriter::new(file.try_clone().unwrap());
