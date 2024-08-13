@@ -17,8 +17,8 @@ module rooch_nursery::multisign_account{
     use bitcoin_move::script_buf::{Self, ScriptBuf};
     use rooch_framework::ecdsa_k1;
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
-    use rooch_nursery::taproot_builder;
-    use rooch_nursery::result;
+    use bitcoin_move::taproot_builder;
+    use moveos_std::result;
 
     const PROPOSAL_STATUS_PENDING: u8 = 0;
     const PROPOSAL_STATUS_APPROVED: u8 = 1;

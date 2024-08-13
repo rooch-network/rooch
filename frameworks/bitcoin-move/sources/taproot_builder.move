@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// Taproot is a module that provides Bitcoin Taproot related functions.
-module rooch_nursery::taproot_builder {
+module bitcoin_move::taproot_builder {
 
     use std::vector;
     use std::option::{Self, Option, is_none, is_some, none, destroy_some};
     use moveos_std::bcs;
     use moveos_std::compare;
     use bitcoin_move::script_buf::{Self,ScriptBuf};
-    use rooch_nursery::result::{err, ok, Result};
+    use moveos_std::result::{err, ok, Result};
 
     /// Tapscript leaf version.
     // https://github.com/bitcoin/bitcoin/blob/e826b22da252e0599c61d21c98ff89f366b3120f/src/script_buf/interpreter.h#L226

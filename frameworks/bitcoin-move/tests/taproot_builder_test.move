@@ -1,9 +1,9 @@
 #[test_only]
-module rooch_nursery::taproot_builder_tests {
+module bitcoin_move::taproot_builder_tests {
     use bitcoin_move::opcode;
     use bitcoin_move::script_buf;
-    use rooch_nursery::taproot_builder;
-    use rooch_nursery::result;
+    use bitcoin_move::taproot_builder;
+    use moveos_std::result;
 
     #[test]
     fun test_taproot_builder() {
