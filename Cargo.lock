@@ -9472,6 +9472,7 @@ dependencies = [
  "rooch-framework",
  "rooch-genesis",
  "rooch-types",
+ "tokio",
  "tracing",
  "tracing-subscriber",
  "walkdir",
