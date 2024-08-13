@@ -6,6 +6,7 @@
 
 
 -  [Struct `AuthPayload`](#0x3_auth_payload_AuthPayload)
+-  [Struct `SignData`](#0x3_auth_payload_SignData)
 -  [Constants](#@Constants_0)
 -  [Function `from_bytes`](#0x3_auth_payload_from_bytes)
 -  [Function `encode_full_message`](#0x3_auth_payload_encode_full_message)
@@ -36,6 +37,17 @@
 
 
 
+<a name="0x3_auth_payload_SignData"></a>
+
+## Struct `SignData`
+
+
+
+<pre><code><b>struct</b> <a href="auth_payload.md#0x3_auth_payload_SignData">SignData</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -50,11 +62,20 @@
 
 
 
-<a name="0x3_auth_payload_MessgaeInfoPrefix"></a>
+<a name="0x3_auth_payload_MessageInfoPrefix"></a>
 
 
 
-<pre><code><b>const</b> <a href="auth_payload.md#0x3_auth_payload_MessgaeInfoPrefix">MessgaeInfoPrefix</a>: <a href="">vector</a>&lt;u8&gt; = [82, 111, 111, 99, 104, 32, 84, 114, 97, 110, 115, 97, 99, 116, 105, 111, 110, 58, 10];
+<pre><code><b>const</b> <a href="auth_payload.md#0x3_auth_payload_MessageInfoPrefix">MessageInfoPrefix</a>: <a href="">vector</a>&lt;u8&gt; = [82, 111, 111, 99, 104, 32, 84, 114, 97, 110, 115, 97, 99, 116, 105, 111, 110, 58, 10];
+</code></pre>
+
+
+
+<a name="0x3_auth_payload_MessagePrefix"></a>
+
+
+
+<pre><code><b>const</b> <a href="auth_payload.md#0x3_auth_payload_MessagePrefix">MessagePrefix</a>: <a href="">vector</a>&lt;u8&gt; = [66, 105, 116, 99, 111, 105, 110, 32, 83, 105, 103, 110, 101, 100, 32, 77, 101, 115, 115, 97, 103, 101, 58, 10];
 </code></pre>
 
 
