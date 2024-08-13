@@ -25,11 +25,11 @@ use rooch_types::error::RoochResult;
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::rooch_network::RoochChainID;
 
-use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 use crate::commands::statedb::commands::inscription::{
     gen_inscription_id_update, InscriptionSource,
 };
 use crate::commands::statedb::commands::utxo::UTXORawData;
+use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 
 /// Import BTC ordinals & UTXO for genesis
 #[derive(Debug, Parser)]
@@ -286,7 +286,7 @@ fn verify_inscription(
     let start_time = Instant::now();
     let mut src_reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
     let mut is_title_line = true;
-    let mut sequence_number: u32 = 0;
+    let mut total: u32 = 0;
     let mut cursed_inscription_count: u32 = 0;
     let mut blessed_inscription_count: u32 = 0;
     let moveos_store = moveos_store_arc.as_ref();
@@ -333,11 +333,11 @@ fn verify_inscription(
             blessed_inscription_count += 1;
         }
 
-        sequence_number += 1;
-        if sequence_number % 1_000_000 == 0 {
+        total += 1;
+        if total % 1_000_000 == 0 {
             println!(
                 "inscription checking: total: {}. (mismatched/checked): inscription: ({}/{}); inscription_id: ({}/{}). cost: {:?}",
-                sequence_number,
+                total,
                 mismatched_count,
                 checked_count,
                 mismatched_inscription_id_count,
@@ -365,7 +365,7 @@ fn verify_inscription(
         }
         // check inscription_id
         let (exp_inscription_id_key, exp_inscription_id_state) =
-            gen_inscription_id_update(sequence_number, exp_inscription_id);
+            gen_inscription_id_update(total - 1, exp_inscription_id.clone());
         let act_inscription_id_state = resolver
             .get_field_at(inscription_store_state_root, &exp_inscription_id_key)
             .unwrap();
@@ -382,22 +382,22 @@ fn verify_inscription(
     output_writer.flush().expect("Unable to flush writer");
 
     let mut result = "OK";
-    if act_inscription_store_state.metadata.size != sequence_number as u64 * 2
+    if act_inscription_store_state.metadata.size != total as u64 * 2
         || act_inscription_store.cursed_inscription_count != cursed_inscription_count
         || act_inscription_store.blessed_inscription_count != blessed_inscription_count
-        || act_inscription_store.next_sequence_number != sequence_number
+        || act_inscription_store.next_sequence_number != total
     {
         result = "FAILED";
         println!("------------FAILED----------------");
         println!(
             "[inscription_store] mismatched size. metadata: exp: {}, act: {}; cursed: exp: {}, act: {}; blessed: exp: {}, act: {}; next_sequence_number: exp: {}, act: {}",
-            sequence_number * 2,
+            total * 2,
             act_inscription_store_state.metadata.size,
             cursed_inscription_count,
             act_inscription_store.cursed_inscription_count,
             blessed_inscription_count,
             act_inscription_store.blessed_inscription_count,
-            sequence_number,
+            total,
             act_inscription_store.next_sequence_number
         )
     };
@@ -409,7 +409,7 @@ fn verify_inscription(
     println!(
         "inscription check {}. total: {}. (mismatched/checked): inscription: ({}/{}); inscription_id: ({}/{}). cost: {:?}",
         result,
-        sequence_number,
+        total,
         mismatched_count,
         checked_count,
         mismatched_inscription_id_count,
@@ -437,8 +437,8 @@ fn write_mismatched_state_output<T: MoveStructState + std::fmt::Debug>(
         Some(act) => {
             let mut act = act;
             clear_metadata(&mut act);
-            let exp_decoded: Result<T, _> = get_struct_from_value(&exp);
-            let act_decoded: Result<T, _> = get_struct_from_value(&act);
+            let exp_decoded: Result<T, _> = T::from_bytes(&exp.value);
+            let act_decoded: Result<T, _> = T::from_bytes(&act.value);
             if exp != act {
                 mismatched = true;
                 (
@@ -451,7 +451,7 @@ fn write_mismatched_state_output<T: MoveStructState + std::fmt::Debug>(
         }
         None => {
             mismatched = true;
-            let exp_decoded: Result<T, _> = get_struct_from_value(&exp);
+            let exp_decoded: Result<T, _> = T::from_bytes(&exp.value);
             ("None".to_string(), format!("{:?}", exp_decoded.unwrap()))
         }
     };
@@ -467,12 +467,4 @@ fn write_mismatched_state_output<T: MoveStructState + std::fmt::Debug>(
     .expect("Unable to write line");
     writeln!(output_writer, "--------------------------------").expect("Unable to write line");
     true
-}
-
-fn get_struct_from_value<T>(obj_state: &ObjectState) -> anyhow::Result<T>
-where
-    T: MoveStructState,
-{
-    let val: Value = Value::simple_deserialize(&obj_state.value, &T::type_layout()).unwrap();
-    T::from_runtime_value(val)
 }
