@@ -60,20 +60,43 @@ module rooch_framework::auth_payload {
         // The signature description must start with Rooch Transaction:\n
         assert!(starts_with(&self.message_info, &MessageInfoPrefix), ErrorInvalidSignature);
         let message_prefix = self.message_prefix;
-        if (message_prefix != MessagePrefix) {
+        let full_message = if (message_prefix != MessagePrefix) {
             // For compatibility with the old version
             // The old version contains length information, so it needs to be removed in the future
             // After the js sdk is update, we can remove this branch
-            message_prefix = MessagePrefix;
+            encode_full_message_legacy(self, tx_hash)
+        }else{
+            encode_full_message_bcs(self, tx_hash)
         };
+        full_message
+    }
+    
+    // The bcs version of the full message encoding, which has `1a` prefix than the legacy version
+    fun encode_full_message_bcs(self: &AuthPayload, tx_hash: vector<u8>): vector<u8> {
         let tx_hex = hex::encode(tx_hash);
         let message_info = self.message_info;
         vector::append(&mut message_info, tx_hex);
         let sign_data = SignData {
-            message_prefix: message_prefix,
+            message_prefix: self.message_prefix,
             message_info: message_info,
         };
         bcs::to_bytes(&sign_data)
+    }
+
+    fun encode_full_message_legacy(self: &AuthPayload, tx_hash: vector<u8>): vector<u8> {
+        
+        let tx_hex = hex::encode(tx_hash);
+        let message_prefix_len = vector::length(&self.message_prefix);
+
+        let full_message = vector<u8>[];
+        if (message_prefix_len > 0) {
+            vector::append(&mut full_message, self.message_prefix);
+        };
+
+        vector::append(&mut full_message, self.message_info);
+        vector::append(&mut full_message, tx_hex);
+
+        full_message
     }
 
     public fun signature(payload: AuthPayload): vector<u8> {
