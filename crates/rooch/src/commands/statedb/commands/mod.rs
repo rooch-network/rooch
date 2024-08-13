@@ -26,7 +26,6 @@ use moveos_types::state::{FieldKey, ObjectState};
 use rooch_common::fs::file_cache::FileCacheManager;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
-use rooch_types::error::RoochError;
 use rooch_types::rooch_network::RoochChainID;
 
 use crate::commands::statedb::commands::inscription::{derive_inscription_ids, InscriptionSource};
@@ -360,10 +359,12 @@ where
     None
 }
 
+#[allow(dead_code)]
 struct ExportWriter {
     writer: Option<Writer<File>>,
 }
 
+#[allow(dead_code)]
 impl ExportWriter {
     fn new(output: Option<PathBuf>) -> Self {
         let writer = match output {
@@ -611,13 +612,5 @@ mod tests {
         assert_eq!(mapped_outpoint_count, mapped_outpoint_count2);
         assert_eq!(mapped_inscription_count, mapped_inscription_count2);
         assert_eq!(map.items, map_from_load.items);
-    }
-
-    #[test]
-    fn to_field_key() {
-        let obj_id = ObjectID::from_str(
-            "0x826a5e56581ba5ab84c39976f27cf3578cf524308b4ffc123922dfff507e514d",
-        );
-        println!("{:?}", obj_id.unwrap().field_key());
     }
 }

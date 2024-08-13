@@ -52,7 +52,7 @@ members = [
     "frameworks/framework-types",
     "frameworks/moveos-stdlib",
     "frameworks/rooch-framework",
-    "frameworks/rooch-nursery", "crates/fake-export",
+    "frameworks/rooch-nursery",
 ]
 
 default-members = [

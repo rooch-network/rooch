@@ -23,7 +23,7 @@ use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::rooch_network::RoochChainID;
 
-use crate::commands::statedb::commands::{GLOBAL_STATE_TYPE_ROOT, init_job};
+use crate::commands::statedb::commands::{init_job, GLOBAL_STATE_TYPE_ROOT};
 
 /// Export statedb
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
@@ -249,7 +249,7 @@ impl ExportCommand {
                 todo!()
             }
             ExportMode::FullIndexer => {
-                Self::export_full_indexer(&self, &moveos_store, root_state_root, &mut writer)?;
+                Self::export_full_indexer(&moveos_store, root_state_root, &mut writer)?;
             }
             ExportMode::Indexer => {
                 Self::export_indexer(&moveos_store, root_state_root, &mut writer)?;
@@ -293,7 +293,6 @@ impl ExportCommand {
     }
 
     fn export_full_indexer<W: std::io::Write>(
-        &self,
         moveos_store: &MoveOSStore,
         root_state_root: H256,
         writer: &mut Writer<W>,
