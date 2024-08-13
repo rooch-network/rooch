@@ -1,8 +1,13 @@
 {
   "name": "@roochnetowrk/bitseed-sdk",
-  "private": true,
-  "version": "0.1.0",
-  "type": "module",
+  "author": "Rooch.network <opensource@rooch.network>",
+  "version": "0.2.4",
+  "description": "Rooch SDK",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "pnpm@8.6.6",
   "scripts": {
     "build": "build-package",
     "test": "pnpm test:unit && pnpm test:e2e",
@@ -13,6 +18,20 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rooch-network/rooch.git"
+  },
+  "homepage": "https://github.com/rooch-network/rooch",
+  "bugs": {
+    "url": "https://github.com/rooch-network/rooch/issues"
+  },
+  "files": ["dist", "src"],
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/cjs/index.d.ts",
+  "keywords": ["Rooch", "Rooch Network", "Move"],
   "dependencies": {
     "@mempool/mempool.js": "^2.3.0",
     "@radix-ui/colors": "^3.0.0",

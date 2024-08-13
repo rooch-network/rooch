@@ -1,8 +1,9 @@
 import * as fs from 'fs';
 import { Ordit } from '@sadoprotocol/ordit-sdk'
-import { BitSeed, GeneratorLoader, RoochDataSource, DeployOptions, inscriptionIDToString } from '../../../src'
+import bitseed from '../../../dist/cjs/index.js'
+const {  BitSeed, GeneratorLoader, RoochDataSource, inscriptionIDToString } = bitseed;
 
-export function createTestBitSeed(roochServerAddress: string): BitSeed {
+export function createTestBitSeed(roochServerAddress: string) {
   const network = 'regtest'
   const datasource = new RoochDataSource({ url: `http://${roochServerAddress}` })
   const generatorLoader = new GeneratorLoader(datasource)
@@ -37,15 +38,17 @@ export function createTestBitSeed(roochServerAddress: string): BitSeed {
   return bitseed
 }
 
-export async function prepareGenerator(bitseed: BitSeed, filePath: string): Promise<string> {
+export async function prepareGenerator(bitseed, filePath: string): Promise<string> {
   let wasmBytes = await readFileAsBytes(filePath)
   console.log('wasm length:', wasmBytes.length)
 
-  const deployOptions: DeployOptions = {
+  const deployOptions = {
     fee_rate: 1,
   }
 
   const inscriptionId = await bitseed.generator("simple", wasmBytes, deployOptions)
+  console.log('prepareGenerator inscriptionId:', inscriptionId)
+
   return inscriptionIDToString(inscriptionId)
 }
 

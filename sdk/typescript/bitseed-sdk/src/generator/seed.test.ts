@@ -1,4 +1,4 @@
-import { sha3_256 } from 'js-sha3';
+import sha3 from 'js-sha3';
 import { InscribeSeed } from './seed.js';
 
 describe('InscribeSeed', () => {
@@ -11,7 +11,7 @@ describe('InscribeSeed', () => {
     };
 
     // Expected seed
-    const expectedSeed = sha3_256(Buffer.concat([
+    const expectedSeed = sha3.sha3_256(Buffer.concat([
       Buffer.from(block_hash, 'hex'),
       Buffer.from(utxo.txid, 'hex'),
       Buffer.from([1, 0, 0, 0]) // vout is 1, little-endian format

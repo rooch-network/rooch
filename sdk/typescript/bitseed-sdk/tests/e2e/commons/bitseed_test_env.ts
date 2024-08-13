@@ -11,6 +11,7 @@ export class BitseedTestEnv {
   private network: Network;
   private startedNetwork: StartedNetwork;
   private readonly bitcoinNetworkAlias = "bitcoind";
+  private miningIntervalId: NodeJS.Timeout | null = null;
 
   constructor() {
     this.network = new Network();
@@ -51,10 +52,23 @@ export class BitseedTestEnv {
 
     this.startedRoochContainer = await this.roochContainer.start();
     console.log('Rooch container started');
+
+    // Start mining interval after Bitcoin container is started
+    this.miningIntervalId = setInterval(async () => {
+      if (this.startedBitcoinContainer) {
+        await this.startedBitcoinContainer.mineBlock();
+      }
+    }, 1000); // Mine every 1 second
   }
 
   async stop() {
     console.log('Stopping containers');
+
+    // Clear mining interval before stopping containers
+    if (this.miningIntervalId) {
+      clearInterval(this.miningIntervalId);
+      this.miningIntervalId = null;
+    }
 
     // Stop Rooch container
     if (this.startedRoochContainer) {

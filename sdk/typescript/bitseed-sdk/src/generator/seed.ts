@@ -1,4 +1,4 @@
-import { sha3_256 } from 'js-sha3';
+import sha3 from 'js-sha3';
 import { OutPoint } from "../types/index.js";
 
 export class InscribeSeed {
@@ -17,7 +17,7 @@ export class InscribeSeed {
     voutBuffer.writeUInt32LE(this.utxo.vout);
 
     const combinedBuffer = Buffer.concat([blockHashBuffer, txidBuffer, voutBuffer]);
-    const hash = sha3_256(combinedBuffer);
+    const hash = sha3.sha3_256(combinedBuffer);
 
     return hash;
   }

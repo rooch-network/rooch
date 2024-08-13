@@ -85,6 +85,7 @@ export class BitSeed implements APIInterface {
 
     // deposit revealFee to address
     const utxos = await this.depositRevealFee(revealed, opts)
+    console.log("depositRevealFee utxos:", utxos)
 
     let ready = false;
 
@@ -130,6 +131,8 @@ export class BitSeed implements APIInterface {
       throw new Error('not selected address')
     }
 
+    console.log('depositRevealFee debug 1')
+
     const psbt = await ordit.transactions.createPsbt({
       pubKey: this.fundingWallet.publicKey,
       address: this.fundingWallet.selectedAddress,
@@ -144,7 +147,11 @@ export class BitSeed implements APIInterface {
       satsPerByte: opts?.commit_fee_rate || opts?.fee_rate || 1,
     })
 
+    console.log('depositRevealFee debug 2')
+
     const signedTxHex = await this.fundingWallet.signPsbt(psbt.hex)
+
+    console.log('depositRevealFee prepare relay:', signedTxHex)
     const txId = await this.datasource.relay({ hex: signedTxHex })
 
     console.log('depositRevealFee txId:', txId)

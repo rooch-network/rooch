@@ -1,8 +1,15 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 import React from 'react'
 import { test, expect } from '@playwright/experimental-ct-react'
+
 import DeployStory from './deploy.story'
 import { BitseedTestEnv } from './commons/bitseed_test_env'
-import { createTestBitSeed, prepareGenerator } from './commons/test_bitseed_node'
+import { createTestBitSeed, prepareGenerator } from './commons/test_bitseed_ext.js'
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 test.use({ viewport: { width: 500, height: 500 } })
 
@@ -20,7 +27,7 @@ test.beforeAll(async () => {
 
   if (roochServerAddress) {
     let bitseed = createTestBitSeed(roochServerAddress);
-    generatorID = await prepareGenerator(bitseed, "../data/generator.wasm")
+    generatorID = await prepareGenerator(bitseed, path.join(__dirname, "../data/generator.wasm"))
   }
 });
 

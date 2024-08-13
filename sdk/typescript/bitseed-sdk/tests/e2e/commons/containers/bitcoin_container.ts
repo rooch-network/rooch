@@ -1,5 +1,5 @@
-import { AbstractStartedContainer, GenericContainer, StartedTestContainer, Wait } from "testcontainers";
 import * as crypto from "crypto";
+import { AbstractStartedContainer, GenericContainer, StartedTestContainer, Wait } from "testcontainers";
 
 const BITCOIN_PORTS = [18443, 18444, 28333, 28332];
 
@@ -45,7 +45,9 @@ export class BitcoinContainer extends GenericContainer {
       RPC_USER: this.rpcUser,
       RPC_PASS: this.rpcPass,
       RPC_AUTH: rpcauth,
-    }).withWaitStrategy(Wait.forLogMessage("txindex thread start"));
+    })
+    .withWaitStrategy(Wait.forLogMessage("txindex thread start"))
+    .withStartupTimeout(120000);
 
     this.withCommand([
       "-chain=regtest",
@@ -114,7 +116,7 @@ export class StartedBitcoinContainer extends AbstractStartedContainer {
     ]
 
     const result = await this.startedTestContainer.exec(cmd);
-    console.log(`bitcoind run cmd: ${cmd.join(' ')}, result:${JSON.stringify(result)}`)
+    //console.log(`bitcoind run cmd: ${cmd.join(' ')}, result:${JSON.stringify(result)}`)
 
     if (result.exitCode !== 0) {
       throw new Error(`executeRpcCommand failed with exit code ${result.exitCode} for command: ${command}`);
@@ -143,8 +145,12 @@ export class StartedBitcoinContainer extends AbstractStartedContainer {
 
     return txid;
   }
-}
 
-async function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  public async mineBlock(): Promise<void> {
+    if (!this.preminedAddress) {
+      throw new Error("Failed to generate pre-mined address");
+    }
+
+    await this.executeRpcCommandRaw([`-rpcwallet="faucet_wallet"`], "generatetoaddress", ["1", await this.preminedAddress]);
+  }
 }
