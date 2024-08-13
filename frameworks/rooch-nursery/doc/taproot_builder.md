@@ -20,6 +20,7 @@ Taproot is a module that provides Bitcoin Taproot related functions.
 <b>use</b> <a href="">0x2::compare</a>;
 <b>use</b> <a href="">0x2::hash</a>;
 <b>use</b> <a href="">0x4::script_buf</a>;
+<b>use</b> <a href="result.md#0xa_result">0xa::result</a>;
 </code></pre>
 
 
@@ -150,7 +151,9 @@ Tapscript leaf version.
 
 ## Function `finalize`
 
+Finalize the builder, return the state root,
+We use the address to represent the hash.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="taproot_builder.md#0xa_taproot_builder_finalize">finalize</a>(builder: <a href="taproot_builder.md#0xa_taproot_builder_TaprootBuilder">taproot_builder::TaprootBuilder</a>): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="taproot_builder.md#0xa_taproot_builder_finalize">finalize</a>(builder: <a href="taproot_builder.md#0xa_taproot_builder_TaprootBuilder">taproot_builder::TaprootBuilder</a>): <a href="result.md#0xa_result_Result">result::Result</a>&lt;<b>address</b>, <a href="taproot_builder.md#0xa_taproot_builder_TaprootBuilder">taproot_builder::TaprootBuilder</a>&gt;
 </code></pre>

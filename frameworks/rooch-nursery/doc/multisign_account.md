@@ -33,6 +33,7 @@ Bitcoin multisign account module
 <b>use</b> <a href="">0x3::ecdsa_k1</a>;
 <b>use</b> <a href="">0x4::opcode</a>;
 <b>use</b> <a href="">0x4::script_buf</a>;
+<b>use</b> <a href="result.md#0xa_result">0xa::result</a>;
 <b>use</b> <a href="taproot_builder.md#0xa_taproot_builder">0xa::taproot_builder</a>;
 </code></pre>
 
