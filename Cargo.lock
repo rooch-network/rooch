@@ -9380,6 +9380,7 @@ dependencies = [
  "rooch-types",
  "serde_json",
  "tempfile",
+ "tokio",
  "tracing",
  "tracing-subscriber",
 ]

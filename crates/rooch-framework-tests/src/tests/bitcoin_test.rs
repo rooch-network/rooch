@@ -22,8 +22,8 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use tracing::{debug, info};
 
-#[test]
-fn test_submit_block() {
+#[tokio::test]
+async fn test_submit_block() {
     let _ = tracing_subscriber::fmt::try_init();
     let mut binding_test = binding_test::RustBindingTest::new().unwrap();
 

@@ -7,8 +7,8 @@ use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
 use rooch_types::nursery::multisign_account::{self, MultisignAccountModule};
 
-#[test]
-fn test_multisign_account() {
+#[tokio::test]
+async fn test_multisign_account() {
     let _ = tracing_subscriber::fmt::try_init();
     let binding_test = binding_test::RustBindingTest::new().unwrap();
 

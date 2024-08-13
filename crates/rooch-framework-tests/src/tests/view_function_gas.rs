@@ -12,8 +12,8 @@ use rooch_types::framework::empty::Empty;
 
 use crate::binding_test;
 
-#[test]
-fn view_function_gas() {
+#[tokio::test]
+async fn view_function_gas() {
     let empty_call = FunctionCall::new(
         Empty::function_id(Empty::EMPTY_FUNCTION_NAME),
         vec![],
