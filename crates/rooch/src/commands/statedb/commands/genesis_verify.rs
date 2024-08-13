@@ -55,9 +55,15 @@ pub struct GenesisVerifyCommand {
     pub outpoint_inscriptions_map_dump_path: PathBuf,
     #[clap(
         long,
-        help = "random mode, for randomly select 1/1000 inscriptions & utxos to verify"
+        help = "random mode, for randomly select 1/sample_rate inscriptions & utxos to verify"
     )]
     pub random_mode: bool,
+    #[clap(
+        long,
+        help = "sample rate, for randomly select 1/sample_rate inscriptions & utxos to verify",
+        default = "1000000"
+    )]
+    pub sample_rate: u32,
     #[clap(long, help = "mismatched utxo output path")]
     pub utxo_mismatched_output: PathBuf,
     #[clap(long, help = "mismatched ord output path")]
@@ -97,6 +103,7 @@ impl GenesisVerifyCommand {
                     moveos_store_clone,
                     root_clone_0,
                     random_mode,
+                    self.sample_rate,
                     self.ord_mismatched_output,
                 );
             })
@@ -111,6 +118,7 @@ impl GenesisVerifyCommand {
                     root.clone(),
                     outpoint_inscriptions_map,
                     random_mode,
+                    self.sample_rate,
                     self.utxo_mismatched_output,
                 );
             })
@@ -129,6 +137,7 @@ fn verify_utxo(
     root: ObjectMeta,
     outpoint_inscriptions_map: Arc<OutpointInscriptionsMap>,
     random_mode: bool,
+    sample_rate: u32,
     mismatched_output: PathBuf,
 ) {
     let start_time = Instant::now();
@@ -172,7 +181,7 @@ fn verify_utxo(
             }
         }
         total += 1;
-        if total % 1_000_000 == 0 {
+        if total % sample_rate == 0 {
             println!(
                 "utxo checking: total: {}, checked: {}, mismatched: {}. cost: {:?}",
                 total,
@@ -304,6 +313,7 @@ fn verify_inscription(
     moveos_store_arc: Arc<MoveOSStore>,
     root: ObjectMeta,
     random_mode: bool,
+    sample_rate: u32,
     mismatched_output: PathBuf,
 ) {
     let start_time = Instant::now();
@@ -346,7 +356,7 @@ fn verify_inscription(
             }
         }
         sequence_number += 1;
-        if sequence_number % 1_000_000 == 0 {
+        if sequence_number % sample_rate == 0 {
             println!(
                 "inscription checking: total: {}, checked: {}, mismatched: {}. cost: {:?}",
                 sequence_number,
