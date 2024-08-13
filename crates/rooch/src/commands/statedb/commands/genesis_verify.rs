@@ -1,13 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
 
+use bitcoin::OutPoint;
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use move_vm_types::values::Value;
@@ -64,6 +67,16 @@ pub struct GenesisVerifyCommand {
     pub utxo_mismatched_output: PathBuf,
     #[clap(long, help = "mismatched ord output path")]
     pub ord_mismatched_output: PathBuf,
+    #[clap(
+        long,
+        help = "inscription cases must be verified, file is outpoint list"
+    )]
+    pub utxo_cases: Option<PathBuf>,
+    #[clap(
+        long,
+        help = "utxo cases must be verified, file is inscription_number list"
+    )]
+    pub ord_cases: Option<PathBuf>,
 
     #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
@@ -73,6 +86,64 @@ pub struct GenesisVerifyCommand {
     /// All data will be deleted when the service is stopped.
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
     pub chain_id: Option<RoochChainID>,
+}
+
+struct UTXOCases {
+    cases: HashSet<OutPoint>,
+}
+
+impl UTXOCases {
+    fn load(path: Option<PathBuf>) -> Self {
+        let path = match path {
+            None => {
+                return Self {
+                    cases: HashSet::new(),
+                }
+            }
+            Some(path) => path,
+        };
+        let mut cases = HashSet::new();
+        let file = File::open(path).expect("Unable to open utxo cases file");
+        let reader = BufReader::new(file);
+        for line in reader.lines() {
+            let line = line.unwrap();
+            let outpoint = OutPoint::from_str(&line).unwrap();
+            cases.insert(outpoint);
+        }
+        Self { cases }
+    }
+    fn contains(&self, outpoint: &OutPoint) -> bool {
+        self.cases.contains(outpoint)
+    }
+}
+
+struct OrdCases {
+    cases: HashSet<u32>,
+}
+
+impl OrdCases {
+    fn load(path: Option<PathBuf>) -> Self {
+        let path = match path {
+            None => {
+                return Self {
+                    cases: HashSet::new(),
+                }
+            }
+            Some(path) => path,
+        };
+        let mut cases = HashSet::new();
+        let file = File::open(path).expect("Unable to open ord cases file");
+        let reader = BufReader::new(file);
+        for line in reader.lines() {
+            let line = line.unwrap();
+            let ord = line.parse::<u32>().unwrap();
+            cases.insert(ord);
+        }
+        Self { cases }
+    }
+    fn contains(&self, inscription_number: u32) -> bool {
+        self.cases.contains(&inscription_number)
+    }
 }
 
 impl GenesisVerifyCommand {
@@ -96,6 +167,7 @@ impl GenesisVerifyCommand {
             .spawn(move || {
                 verify_inscription(
                     inscription_source_path,
+                    self.ord_cases,
                     moveos_store_clone,
                     root_clone_0,
                     random_mode,
@@ -110,6 +182,7 @@ impl GenesisVerifyCommand {
             .spawn(move || {
                 verify_utxo(
                     self.utxo_source,
+                    self.utxo_cases,
                     moveos_store_clone,
                     root.clone(),
                     outpoint_inscriptions_map,
@@ -129,6 +202,7 @@ impl GenesisVerifyCommand {
 
 fn verify_utxo(
     input: PathBuf,
+    case_path: Option<PathBuf>,
     moveos_store_arc: Arc<MoveOSStore>,
     root: ObjectMeta,
     outpoint_inscriptions_map: Arc<OutpointInscriptionsMap>,
@@ -164,6 +238,8 @@ fn verify_utxo(
 
     let file = File::create(mismatched_output.clone()).expect("Unable to create utxo output file");
     let mut output_writer = BufWriter::with_capacity(1 << 23, file.try_clone().unwrap());
+
+    let cases = UTXOCases::load(case_path);
 
     let mut utxo_total: u32 = 0;
     let mut utxo_checked_count: u32 = 0;
@@ -207,7 +283,12 @@ fn verify_utxo(
             );
         }
 
-        if random_mode && rand::random::<u32>() % sample_rate != 0 {
+        let is_case = cases.contains(&OutPoint {
+            txid: utxo_raw.txid,
+            vout: utxo_raw.vout,
+        });
+
+        if (random_mode && rand::random::<u32>() % sample_rate != 0) && !is_case {
             continue;
         }
         // check utxo
@@ -291,6 +372,7 @@ fn verify_utxo(
 
 fn verify_inscription(
     input: PathBuf,
+    case_path: Option<PathBuf>,
     moveos_store_arc: Arc<MoveOSStore>,
     root: ObjectMeta,
     random_mode: bool,
@@ -323,6 +405,8 @@ fn verify_inscription(
     let file =
         File::create(mismatched_output.clone()).expect("Unable to create inscription output file");
     let mut output_writer = BufWriter::with_capacity(1 << 23, file.try_clone().unwrap());
+
+    let cases = OrdCases::load(case_path);
 
     let mut checked_count: u32 = 0;
     let mut mismatched_count: u32 = 0;
@@ -364,7 +448,9 @@ fn verify_inscription(
             );
         }
 
-        if random_mode && rand::random::<u32>() % sample_rate != 0 {
+        let is_case = cases.contains(source.inscription_number as u32);
+
+        if (random_mode && rand::random::<u32>() % sample_rate != 0) && !is_case {
             continue;
         }
         // check inscription
