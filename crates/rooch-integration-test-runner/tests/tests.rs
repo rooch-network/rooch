@@ -11,4 +11,4 @@ pub fn async_run_test(path: &Path) -> Result<(), Box<dyn std::error::Error + 'st
     runtime.block_on(async { run_test(path) })
 }
 
-datatest_stable::harness!(run_test, "tests", r".*\.(mvir|move)$");
+datatest_stable::harness!(async_run_test, "tests", r".*\.(mvir|move)$");
