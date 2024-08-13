@@ -29,7 +29,6 @@ fn init_rooch_db_with_instance(
     instance: StoreInstance,
     registry: &Registry,
 ) -> Result<RoochDB> {
-    // DBMetrics::init(registry);
     let rooch_db = RoochDB::init_with_instance(opt.store_config(), instance, registry)?;
     let network = opt.network();
     let _genesis = RoochGenesis::load_or_init(network, &rooch_db)?;
