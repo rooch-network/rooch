@@ -168,9 +168,11 @@ fn verify_utxo(
     let mut utxo_total: u32 = 0;
     let mut utxo_checked_count: u32 = 0;
     let mut utxo_mismatched_count: u32 = 0;
+    let mut utxo_not_found_count: u32 = 0;
 
     let mut address_checked_count: u32 = 0;
     let mut address_mismatched_count: u32 = 0;
+    let mut address_not_found_count: u32 = 0;
 
     for line in reader.by_ref().lines() {
         let line = line.unwrap();
@@ -193,11 +195,13 @@ fn verify_utxo(
         utxo_total += 1;
         if utxo_total % 1_000_000 == 0 {
             println!(
-                "utxo checking: total: {}. (mismatched/checked): utxo: ({}/{}); address: ({}/{}). cost: {:?}",
+                "utxo checking: total: {}. (mismatched(not_found)/checked): utxo: ({}({})/{}); address: ({}({})/{}). cost: {:?}",
                 utxo_total,
                 utxo_mismatched_count,
+                utxo_not_found_count,
                 utxo_checked_count,
                 address_mismatched_count,
+                address_not_found_count,
                 address_checked_count,
                 start_time.elapsed()
             );
@@ -213,29 +217,37 @@ fn verify_utxo(
         let act_utxo_state = resolver
             .get_field_at(utxo_store_state_root, &exp_utxo_key)
             .unwrap();
-        if write_mismatched_state_output::<UTXO>(
+        let (mismatched, not_found) = write_mismatched_state_output::<UTXO>(
             &mut output_writer,
             "[utxo]",
             exp_utxo_state,
             act_utxo_state.clone(),
-        ) {
+        );
+        if mismatched {
             utxo_mismatched_count += 1;
         }
+        if not_found {
+            utxo_not_found_count += 1;
+        }
         // check address
-
         if addr_updates.is_some() {
             address_checked_count += 1;
             let (exp_addr_key, exp_addr_state) = addr_updates.unwrap();
             let act_address_state = resolver
                 .get_field_at(address_mapping_state_root, &exp_addr_key)
                 .unwrap();
-            if write_mismatched_state_output::<DynamicField<AccountAddress, BitcoinAddress>>(
-                &mut output_writer,
-                "[address_mapping]",
-                exp_addr_state,
-                act_address_state.clone(),
-            ) {
+            let (mismatched, not_found) =
+                write_mismatched_state_output::<DynamicField<AccountAddress, BitcoinAddress>>(
+                    &mut output_writer,
+                    "[address_mapping]",
+                    exp_addr_state,
+                    act_address_state.clone(),
+                );
+            if mismatched {
                 address_mismatched_count += 1;
+            }
+            if not_found {
+                address_not_found_count += 1;
             }
         }
     }
@@ -264,12 +276,14 @@ fn verify_utxo(
     }
     println!("------------{}----------------", result);
     println!(
-        "utxo check {}. total: {}. (mismatched/checked): utxo: ({}/{}); address: ({}/{}). cost: {:?}",
+        "utxo check {}. total: {}. (mismatched(not_found)/checked): utxo: ({}({})/{}); address: ({}({})/{}). cost: {:?}",
         result,
         utxo_total,
         utxo_mismatched_count,
+        utxo_not_found_count,
         utxo_checked_count,
         address_mismatched_count,
+        address_not_found_count,
         address_checked_count,
         start_time.elapsed()
     );
@@ -312,7 +326,9 @@ fn verify_inscription(
 
     let mut checked_count: u32 = 0;
     let mut mismatched_count: u32 = 0;
+    let mut not_found_count: u32 = 0;
     let mut mismatched_inscription_id_count: u32 = 0;
+    let mut not_found_inscription_id_count: u32 = 0;
 
     let inscription_store_state_root = act_inscription_store_state.metadata.state_root.unwrap();
     for line in src_reader.by_ref().lines() {
@@ -336,11 +352,13 @@ fn verify_inscription(
         total += 1;
         if total % 1_000_000 == 0 {
             println!(
-                "inscription checking: total: {}. (mismatched/checked): inscription: ({}/{}); inscription_id: ({}/{}). cost: {:?}",
+                "inscription checking: total: {}. (mismatched(not_found)/checked): inscription: ({}({})/{}); inscription_id: ({}({})/{}). cost: {:?}",
                 total,
                 mismatched_count,
+                not_found_count,
                 checked_count,
                 mismatched_inscription_id_count,
+                not_found_inscription_id_count,
                 checked_count,
                 start_time.elapsed()
             );
@@ -355,13 +373,17 @@ fn verify_inscription(
         let act_inscription_state = resolver
             .get_field_at(inscription_store_state_root, &exp_key)
             .unwrap();
-        if write_mismatched_state_output::<Inscription>(
+        let (mismatched, not_found) = write_mismatched_state_output::<Inscription>(
             &mut output_writer,
             "[inscription]",
             exp_state,
             act_inscription_state.clone(),
-        ) {
+        );
+        if mismatched {
             mismatched_count += 1;
+        }
+        if not_found {
+            not_found_count += 1;
         }
         // check inscription_id
         let (exp_inscription_id_key, exp_inscription_id_state) =
@@ -369,13 +391,18 @@ fn verify_inscription(
         let act_inscription_id_state = resolver
             .get_field_at(inscription_store_state_root, &exp_inscription_id_key)
             .unwrap();
-        if write_mismatched_state_output::<DynamicField<u32, InscriptionID>>(
-            &mut output_writer,
-            "[inscription_id]",
-            exp_inscription_id_state,
-            act_inscription_id_state.clone(),
-        ) {
+        let (mismatched, not_found) =
+            write_mismatched_state_output::<DynamicField<u32, InscriptionID>>(
+                &mut output_writer,
+                "[inscription_id]",
+                exp_inscription_id_state,
+                act_inscription_id_state.clone(),
+            );
+        if mismatched {
             mismatched_inscription_id_count += 1;
+        }
+        if not_found {
+            not_found_inscription_id_count += 1;
         }
     }
 
@@ -407,12 +434,14 @@ fn verify_inscription(
 
     println!("-----------{}-----------------", result);
     println!(
-        "inscription check {}. total: {}. (mismatched/checked): inscription: ({}/{}); inscription_id: ({}/{}). cost: {:?}",
+        "inscription check {}. total: {}. (mismatched(not_found)/checked): inscription: ({}({})/{}); inscription_id: ({}({})/{}). cost: {:?}",
         result,
         total,
         mismatched_count,
+        not_found_count,
         checked_count,
         mismatched_inscription_id_count,
+        not_found_inscription_id_count,
         checked_count,
         start_time.elapsed()
     );
@@ -431,8 +460,9 @@ fn write_mismatched_state_output<T: MoveStructState + std::fmt::Debug>(
     prefix: &str,
     exp: ObjectState,
     act: Option<ObjectState>,
-) -> bool {
+) -> (bool, bool) {
     let mut mismatched = false;
+    let mut not_found = false;
     let (act_str, exp_str) = match act {
         Some(act) => {
             let mut act = act;
@@ -451,12 +481,13 @@ fn write_mismatched_state_output<T: MoveStructState + std::fmt::Debug>(
         }
         None => {
             mismatched = true;
+            not_found = true;
             let exp_decoded: Result<T, _> = T::from_bytes(&exp.value);
             ("None".to_string(), format!("{:?}", exp_decoded.unwrap()))
         }
     };
     if !mismatched {
-        return false;
+        return (false, false);
     }
 
     writeln!(
@@ -466,5 +497,5 @@ fn write_mismatched_state_output<T: MoveStructState + std::fmt::Debug>(
     )
     .expect("Unable to write line");
     writeln!(output_writer, "--------------------------------").expect("Unable to write line");
-    true
+    (mismatched, not_found)
 }
