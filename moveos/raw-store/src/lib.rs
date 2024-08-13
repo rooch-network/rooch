@@ -74,7 +74,7 @@ impl StoreInstance {
                             let db_clone_clone = db_clone.clone();
                             let db_metrics_clone_clone = db_metrics_clone.clone();
                             if let Err(e) = tokio::task::spawn_blocking(move || {
-                                Self::report_rocksdb_metrics(&db_clone_clone, cf_name, &db_metrics_clone_clone);
+                                let _ = Self::report_rocksdb_metrics(&db_clone_clone, cf_name, &db_metrics_clone_clone);
                             }).await {
                                 tracing::error!("Failed to report cf metrics with error: {}", e);
                             }
@@ -153,8 +153,11 @@ impl StoreInstance {
         }
     }
 
-    #[allow(dead_code)]
-    fn report_rocksdb_metrics(rocksdb: &Arc<RocksDB>, cf_name: &str, db_metrics: &Arc<DBMetrics>) {
+    fn report_rocksdb_metrics(
+        rocksdb: &Arc<RocksDB>,
+        cf_name: &str,
+        db_metrics: &Arc<DBMetrics>,
+    ) -> Result<()> {
         let cf = rocksdb.get_cf_handle(cf_name);
         db_metrics
             .rocksdb_metrics
@@ -182,38 +185,6 @@ impl StoreInstance {
             );
         db_metrics
             .rocksdb_metrics
-            .rocksdb_num_snapshots
-            .with_label_values(&[cf_name])
-            .set(
-                Self::get_int_property(rocksdb, &cf, properties::NUM_SNAPSHOTS)
-                    .unwrap_or(METRICS_ERROR),
-            );
-        db_metrics
-            .rocksdb_metrics
-            .rocksdb_oldest_snapshot_time
-            .with_label_values(&[cf_name])
-            .set(
-                Self::get_int_property(rocksdb, &cf, properties::OLDEST_SNAPSHOT_TIME)
-                    .unwrap_or(METRICS_ERROR),
-            );
-        db_metrics
-            .rocksdb_metrics
-            .rocksdb_actual_delayed_write_rate
-            .with_label_values(&[cf_name])
-            .set(
-                Self::get_int_property(rocksdb, &cf, properties::ACTUAL_DELAYED_WRITE_RATE)
-                    .unwrap_or(METRICS_ERROR),
-            );
-        db_metrics
-            .rocksdb_metrics
-            .rocksdb_is_write_stopped
-            .with_label_values(&[cf_name])
-            .set(
-                Self::get_int_property(rocksdb, &cf, properties::IS_WRITE_STOPPED)
-                    .unwrap_or(METRICS_ERROR),
-            );
-        db_metrics
-            .rocksdb_metrics
             .rocksdb_block_cache_capacity
             .with_label_values(&[cf_name])
             .set(
@@ -228,30 +199,22 @@ impl StoreInstance {
                 Self::get_int_property(rocksdb, &cf, properties::BLOCK_CACHE_USAGE)
                     .unwrap_or(METRICS_ERROR),
             );
-        db_metrics
-            .rocksdb_metrics
-            .rocksdb_block_cache_pinned_usage
-            .with_label_values(&[cf_name])
-            .set(
-                Self::get_int_property(rocksdb, &cf, properties::BLOCK_CACHE_PINNED_USAGE)
-                    .unwrap_or(METRICS_ERROR),
-            );
-        db_metrics
-            .rocksdb_metrics
-            .rocskdb_estimate_table_readers_mem
-            .with_label_values(&[cf_name])
-            .set(
-                Self::get_int_property(rocksdb, &cf, properties::ESTIMATE_TABLE_READERS_MEM)
-                    .unwrap_or(METRICS_ERROR),
-            );
-        db_metrics
-            .rocksdb_metrics
-            .rocksdb_estimated_num_keys
-            .with_label_values(&[cf_name])
-            .set(
-                Self::get_int_property(rocksdb, &cf, properties::ESTIMATE_NUM_KEYS)
-                    .unwrap_or(METRICS_ERROR),
-            );
+        // db_metrics
+        //     .rocksdb_metrics
+        //     .rocksdb_block_cache_hit
+        //     .with_label_values(&[cf_name])
+        //     .set(
+        //         Self::get_int_property(rocksdb, &cf, properties::BLOCK_CACHE_HIT_COUNT)
+        //             .unwrap_or(METRICS_ERROR),
+        //     );
+        // db_metrics
+        //     .rocksdb_metrics
+        //     .rocksdb_block_cache_miss
+        //     .with_label_values(&[cf_name])
+        //     .set(
+        //         Self::get_int_property(rocksdb, &cf, properties::BLOCK_CACHE_MISS_COUNT)
+        //             .unwrap_or(METRICS_ERROR),
+        //     );
         db_metrics
             .rocksdb_metrics
             .rocksdb_mem_table_flush_pending
@@ -286,20 +249,13 @@ impl StoreInstance {
             );
         db_metrics
             .rocksdb_metrics
-            .rocksdb_estimate_oldest_key_time
-            .with_label_values(&[cf_name])
-            .set(
-                Self::get_int_property(rocksdb, &cf, properties::ESTIMATE_OLDEST_KEY_TIME)
-                    .unwrap_or(METRICS_ERROR),
-            );
-        db_metrics
-            .rocksdb_metrics
             .rocskdb_background_errors
             .with_label_values(&[cf_name])
             .set(
                 Self::get_int_property(rocksdb, &cf, properties::BACKGROUND_ERRORS)
                     .unwrap_or(METRICS_ERROR),
             );
+        Ok(())
     }
 
     #[allow(dead_code)]
