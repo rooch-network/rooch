@@ -185,10 +185,10 @@ rayon = "1.5.2"
 rand = "0.8.5"
 rand_core = { version = "0.6.3", default-features = false }
 schemars = { version = "0.8.21", features = ["either"] }
-serde = { version = "1.0.205", features = ["derive", "rc"] }
+serde = { version = "1.0.206", features = ["derive", "rc"] }
 serde_bytes = "0.11.15"
 #serde_json = { version = "1.0.111", features = ["preserve_order", "arbitrary_precision"] }
-serde_json = { version = "1.0.122", features = ["preserve_order"] }
+serde_json = { version = "1.0.124", features = ["preserve_order"] }
 serde_yaml = "0.9"
 serde_repr = "0.1"
 serde-name = "0.2"
@@ -324,7 +324,7 @@ xorf = { version = "0.11.0" }
 vergen-git2 = { version = "1.0.0", features = ["build", "cargo", "rustc"] }
 vergen-pretty = "0.3.4"
 musig2 = { version = "0.0.11" }
-miniscript = "12.1.0"
+miniscript = "12.2.0"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES

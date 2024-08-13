@@ -305,7 +305,6 @@ impl OutpointInscriptionsMap {
             .map(|index| items[index].inscriptions.clone())
     }
 
-    #[allow(dead_code)]
     fn load(path: PathBuf) -> Self {
         let file = File::open(path.clone()).expect("Unable to open the file");
         let reader = BufReader::new(file);
@@ -321,6 +320,37 @@ impl OutpointInscriptionsMap {
         let _ = file_cache_manager.drop_cache_range(0, 1 << 40);
 
         OutpointInscriptionsMap::new(items, true)
+    }
+
+    fn load_or_index(path: PathBuf, inscriptions_path: PathBuf, start_time: Instant) -> Self {
+        let map_existed = path.exists();
+        if map_existed {
+            log::info!("load outpoint_inscriptions_map...");
+            let outpoint_inscriptions_map = OutpointInscriptionsMap::load(path.clone());
+            let (outpoint_count, inscription_count) = outpoint_inscriptions_map.stats();
+            println!(
+                "{} outpoints : {} inscriptions mapped in: {:?}",
+                outpoint_count,
+                inscription_count,
+                start_time.elapsed(),
+            );
+            outpoint_inscriptions_map
+        } else {
+            log::info!("indexing and dumping outpoint_inscriptions_map...");
+            let (outpoint_inscriptions_map, mapped_outpoint, mapped_inscription, unbound_count) =
+                OutpointInscriptionsMap::index_and_dump(
+                    inscriptions_path.clone(),
+                    Some(path.clone()),
+                );
+            println!(
+                "{} outpoints : {} inscriptions mapped in: {:?} ({} unbound inscriptions ignored)",
+                mapped_outpoint,
+                mapped_inscription,
+                start_time.elapsed(),
+                unbound_count
+            );
+            outpoint_inscriptions_map
+        }
     }
 
     fn dump(&self, path: PathBuf) {
@@ -344,6 +374,7 @@ impl OutpointInscriptionsMap {
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn get_values_by_key<Key, Value>(
     map: SimpleMultiMap<Key, Value>,
     key: Key,

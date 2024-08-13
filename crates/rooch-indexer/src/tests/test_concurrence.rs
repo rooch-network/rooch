@@ -20,8 +20,8 @@ mod tests {
     use std::thread;
     use std::time::Duration;
 
-    #[test]
-    fn test_sqlite_writer_sqlite_reader_concurrence() {
+    #[tokio::test]
+    async fn test_sqlite_writer_sqlite_reader_concurrence() {
         let count = sqlite_writer_sqlite_reader_concurrence().unwrap();
         assert_eq!(count, get_row_count());
     }

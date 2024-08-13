@@ -22,8 +22,8 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use tracing::{debug, info};
 
-#[test]
-fn test_submit_block() {
+#[tokio::test]
+async fn test_submit_block() {
     let _ = tracing_subscriber::fmt::try_init();
     let mut binding_test = binding_test::RustBindingTest::new().unwrap();
 
@@ -183,8 +183,8 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
 
 //this test takes too long time in debug mod run it in release mod, use command:
 //RUST_LOG=debug cargo test --release --package rooch-framework-tests --lib -- --include-ignored tests::bitcoin_test::test_real_bocks
-#[test]
-fn test_real_bocks() {
+#[tokio::test]
+async fn test_real_bocks() {
     let _ = tracing_subscriber::fmt::try_init();
     if cfg!(debug_assertions) {
         info!("test_real_bocks is ignored in debug mode, please run it in release mode");

@@ -17,12 +17,15 @@ module rooch_nursery::multisign_account{
     use bitcoin_move::script_buf::{Self, ScriptBuf};
     use rooch_framework::ecdsa_k1;
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
-    use rooch_nursery::taproot_builder;
+    use bitcoin_move::taproot_builder;
+    use moveos_std::result;
 
     const PROPOSAL_STATUS_PENDING: u8 = 0;
     const PROPOSAL_STATUS_APPROVED: u8 = 1;
     const PROPOSAL_STATUS_REJECTED: u8 = 2;
 
+    const X_ONLY_PUBLIC_KEY_LEN: u64 = 32;
+    const BITCOIN_COMPRESSED_PUBLIC_KEY_LEN: u64 = 33;
 
     const ErrorInvalidThreshold: u64 = 1;
     const ErrorMultisignAccountNotFound: u64 = 2;
@@ -115,6 +118,7 @@ module rooch_nursery::multisign_account{
         participant_public_keys: vector<vector<u8>>,
     ): address {
         assert!(vector::length(&participant_public_keys) >= threshold, ErrorInvalidThreshold);
+        check_public_keys(&participant_public_keys);
         let multisign_bitcoin_address = generate_multisign_address(threshold, participant_public_keys);
         let multisign_address = bitcoin_address::to_rooch_address(&multisign_bitcoin_address);
         let participants = table::new();
@@ -146,28 +150,31 @@ module rooch_nursery::multisign_account{
     }
 
     public fun generate_multisign_address(threshold: u64, public_keys: vector<vector<u8>>): BitcoinAddress{
-        let sorted_public_keys = quick_sort(public_keys);
+        let to_x_only_public_keys = to_x_only_public_keys(public_keys);
+        //We need to sort the public keys to generate the same multisign address
+        //And we sort the x_only_public_keys, not the original public keys
+        let sorted_public_keys = quick_sort(to_x_only_public_keys);
         let merkle_root = generate_taproot(threshold, &sorted_public_keys);
         //Use the sorted first public key as the internal pubkey
         let internal_pubkey = vector::borrow(&sorted_public_keys, 0);
         bitcoin_address::p2tr(internal_pubkey, option::some(merkle_root))
     }
 
-    /// Generate a taproot merkle root from public keys
-    fun generate_taproot(threshold: u64, public_keys: &vector<vector<u8>>): address {
-        let multisign_script = create_multisign_script(threshold, public_keys);
+    /// Generate a taproot merkle root from x_only_public_keys
+    fun generate_taproot(threshold: u64, to_x_only_public_keys: &vector<vector<u8>>): address {
+        let multisign_script = create_multisign_script(threshold, to_x_only_public_keys);
         let builder = taproot_builder::new();
         taproot_builder::add_leaf(&mut builder, 0, multisign_script);
-        taproot_builder::finalize(builder)
+        let result = taproot_builder::finalize(builder);
+        result::unwrap(result)
     }
 
-    fun create_multisign_script(threshold: u64, public_keys: &vector<vector<u8>>) : ScriptBuf {
+    fun create_multisign_script(threshold: u64, to_x_only_public_keys: &vector<vector<u8>>) : ScriptBuf {
         let buf = script_buf::empty();
         let idx = 0;
-        let len = vector::length(public_keys);
+        let len = vector::length(to_x_only_public_keys);
         while(idx < len){
-            let public_key = *vector::borrow(public_keys, idx);
-            let x_only_key = sub_vector(&public_key, 1, 33);
+            let x_only_key = *vector::borrow(to_x_only_public_keys, idx);
             if(script_buf::is_empty(&buf)){
                 script_buf::push_x_only_key(&mut buf, x_only_key);
                 script_buf::push_opcode(&mut buf, opcode::op_checksig());
@@ -180,6 +187,26 @@ module rooch_nursery::multisign_account{
         script_buf::push_int(&mut buf, threshold);
         script_buf::push_opcode(&mut buf, opcode::op_greaterthanorequal());
         buf
+    }
+
+    fun to_x_only_public_keys(public_keys: vector<vector<u8>>) : vector<vector<u8>> {
+        let result = vector::empty();
+        let idx = 0;
+        let len = vector::length(&public_keys);
+        while(idx < len){
+            let public_key = *vector::borrow(&public_keys, idx);
+            let public_key_len = vector::length(&public_key);
+            let x_only_key = if (public_key_len == BITCOIN_COMPRESSED_PUBLIC_KEY_LEN){
+                sub_vector(&public_key, 1, BITCOIN_COMPRESSED_PUBLIC_KEY_LEN)
+            }else{
+                //TODO should we support uncompressed public key?
+                abort ErrorInvalidPublicKey
+            };
+            sub_vector(&public_key, 1, 33);
+            vector::push_back(&mut result, x_only_key);
+            idx = idx + 1;
+        };
+        result
     }
     
     //TODO put this function in a more general module
@@ -324,13 +351,29 @@ module rooch_nursery::multisign_account{
         account::borrow_account(multisign_address)
     }
 
+    fun check_public_keys(public_keys: &vector<vector<u8>>) {
+        let idx = 0;
+        let len = vector::length(public_keys);
+        while(idx < len){
+            let public_key = vector::borrow(public_keys, idx);
+            check_public_key(public_key);
+            idx = idx + 1;
+        };
+    }
+
+    fun check_public_key(public_key: &vector<u8>) {
+        let public_key_len = vector::length(public_key);
+        assert!(public_key_len == BITCOIN_COMPRESSED_PUBLIC_KEY_LEN, ErrorInvalidPublicKey);
+    }
+
     #[test]
     fun test_create_multisign_script(){
         let public_keys = vector::empty();
         vector::push_back(&mut public_keys, x"0308839c624d3da34ae240086f60196409d619f285365cc3498fdd3a90b72599e4");
         vector::push_back(&mut public_keys, x"0338121decf4ea2dbfd2ad1fe05a32a67448e78bf97a18bc107b4da177c27af752");
         vector::push_back(&mut public_keys, x"03786e2d94b8aaac17b2846ea908a245ab8b3c9df7ff34be8c75c27beba8e1f579");
-        let sorted_public_keys = quick_sort(public_keys);
+        let x_only_public_keys = to_x_only_public_keys(public_keys);
+        let sorted_public_keys = quick_sort(x_only_public_keys);
         let buf = create_multisign_script(2, &sorted_public_keys);
         std::debug::print(&buf);
         let expect_result = x"2008839c624d3da34ae240086f60196409d619f285365cc3498fdd3a90b72599e4ac2038121decf4ea2dbfd2ad1fe05a32a67448e78bf97a18bc107b4da177c27af752ba20786e2d94b8aaac17b2846ea908a245ab8b3c9df7ff34be8c75c27beba8e1f579ba52a2";
@@ -343,7 +386,8 @@ module rooch_nursery::multisign_account{
         vector::push_back(&mut public_keys, x"0308839c624d3da34ae240086f60196409d619f285365cc3498fdd3a90b72599e4");
         vector::push_back(&mut public_keys, x"0338121decf4ea2dbfd2ad1fe05a32a67448e78bf97a18bc107b4da177c27af752");
         vector::push_back(&mut public_keys, x"03786e2d94b8aaac17b2846ea908a245ab8b3c9df7ff34be8c75c27beba8e1f579");
-        let sorted_public_keys = quick_sort(public_keys);
+        let x_only_public_keys = to_x_only_public_keys(public_keys);
+        let sorted_public_keys = quick_sort(x_only_public_keys);
         let merkle_root = generate_taproot(2, &sorted_public_keys);
         //std::debug::print(&merkle_root);
         let expected_root = @0x2dd3a13df28795832b0efbd279ddf0a432f6942ca82172f82abb2e15461c4402;

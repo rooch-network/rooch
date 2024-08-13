@@ -3,28 +3,28 @@
 
 use crate::binding_test;
 use moveos_types::module_binding::MoveFunctionCaller;
-use rooch_key::keystore::account_keystore::AccountKeystore;
-use rooch_key::keystore::memory_keystore::InMemKeystore;
-use rooch_types::nursery::multisign_account::{self, MultisignAccountModule};
+use rooch_types::{
+    crypto::RoochKeyPair,
+    nursery::multisign_account::{self, MultisignAccountModule},
+    transaction::RoochTransactionData,
+};
 
-#[test]
-fn test_multisign_account() {
+#[tokio::test]
+async fn test_multisign_account() {
     let _ = tracing_subscriber::fmt::try_init();
-    let binding_test = binding_test::RustBindingTest::new().unwrap();
+    let mut binding_test = binding_test::RustBindingTest::new().unwrap();
 
-    let keystore = InMemKeystore::new_insecure_for_tests(3);
+    let kp1 = RoochKeyPair::generate_secp256k1();
+    let kp2 = RoochKeyPair::generate_secp256k1();
+    let kp3 = RoochKeyPair::generate_secp256k1();
 
-    let u1 = keystore.addresses()[0];
-    let u2 = keystore.addresses()[1];
-    let u3 = keystore.addresses()[2];
+    let u1 = kp1.public().bitcoin_address().unwrap().to_rooch_address();
+    let u2 = kp2.public().bitcoin_address().unwrap().to_rooch_address();
+    let u3 = kp3.public().bitcoin_address().unwrap().to_rooch_address();
 
     // println!("u1: {:?}", u1);
     // println!("u2: {:?}", u2);
     // println!("u3: {:?}", u3);
-
-    let kp1 = keystore.get_key_pair(&u1, None).unwrap();
-    let kp2 = keystore.get_key_pair(&u2, None).unwrap();
-    let kp3 = keystore.get_key_pair(&u3, None).unwrap();
 
     let pubkeys = vec![
         kp1.bitcoin_public_key().unwrap(),
@@ -44,11 +44,30 @@ fn test_multisign_account() {
         multisign_account::generate_multisign_address(2, pubkeys.clone()).unwrap();
     //println!("bitcoin_address_from_rust: {}", bitcoin_address_from_rust);
 
+    let multisign_address = {
+        let account_module = binding_test.as_module_binding::<MultisignAccountModule>();
+
+        let bitcoin_address_from_move = account_module
+            .generate_multisign_address(2, pubkeys.clone())
+            .unwrap();
+
+        assert_eq!(bitcoin_address_from_rust, bitcoin_address_from_move);
+        bitcoin_address_from_move.to_rooch_address()
+    };
+
+    let action = MultisignAccountModule::initialize_multisig_account_action(2, pubkeys);
+    let tx_data = RoochTransactionData::new_for_test(u1, 0, action);
+    let tx = tx_data.sign(&kp1);
+    binding_test.execute(tx).unwrap();
+
     let account_module = binding_test.as_module_binding::<MultisignAccountModule>();
-
-    let bitcoin_address_from_move = account_module
-        .generate_multisign_address(2, pubkeys)
-        .unwrap();
-
-    assert_eq!(bitcoin_address_from_rust, bitcoin_address_from_move);
+    assert!(account_module
+        .is_participant(multisign_address.into(), u1.into())
+        .unwrap());
+    assert!(account_module
+        .is_participant(multisign_address.into(), u2.into())
+        .unwrap());
+    assert!(account_module
+        .is_participant(multisign_address.into(), u3.into())
+        .unwrap());
 }

@@ -28,6 +28,9 @@ pub enum IndexerError {
     #[error("Indexer failed to read SQLiteDB with error: `{0}`")]
     SQLiteReadError(String),
 
+    #[error("Indexer async read SQLiteDB error: `{0}`")]
+    SQLiteAsyncReadError(String),
+
     #[error("Indexer failed to reset SQLiteDB with error: `{0}`")]
     SQLiteResetError(String),
 

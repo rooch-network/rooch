@@ -26,6 +26,7 @@ Bitcoin multisign account module
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::compare</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::result</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::table_vec</a>;
@@ -33,7 +34,7 @@ Bitcoin multisign account module
 <b>use</b> <a href="">0x3::ecdsa_k1</a>;
 <b>use</b> <a href="">0x4::opcode</a>;
 <b>use</b> <a href="">0x4::script_buf</a>;
-<b>use</b> <a href="taproot_builder.md#0xa_taproot_builder">0xa::taproot_builder</a>;
+<b>use</b> <a href="">0x4::taproot_builder</a>;
 </code></pre>
 
 
@@ -110,6 +111,15 @@ Bitcoin multisign account module
 
 
 <pre><code><b>const</b> <a href="multisign_account.md#0xa_multisign_account_ErrorInvalidSignature">ErrorInvalidSignature</a>: u64 = 10;
+</code></pre>
+
+
+
+<a name="0xa_multisign_account_BITCOIN_COMPRESSED_PUBLIC_KEY_LEN"></a>
+
+
+
+<pre><code><b>const</b> <a href="multisign_account.md#0xa_multisign_account_BITCOIN_COMPRESSED_PUBLIC_KEY_LEN">BITCOIN_COMPRESSED_PUBLIC_KEY_LEN</a>: u64 = 33;
 </code></pre>
 
 
@@ -200,6 +210,15 @@ Bitcoin multisign account module
 
 
 <pre><code><b>const</b> <a href="multisign_account.md#0xa_multisign_account_PROPOSAL_STATUS_REJECTED">PROPOSAL_STATUS_REJECTED</a>: u8 = 2;
+</code></pre>
+
+
+
+<a name="0xa_multisign_account_X_ONLY_PUBLIC_KEY_LEN"></a>
+
+
+
+<pre><code><b>const</b> <a href="multisign_account.md#0xa_multisign_account_X_ONLY_PUBLIC_KEY_LEN">X_ONLY_PUBLIC_KEY_LEN</a>: u64 = 32;
 </code></pre>
 
 
