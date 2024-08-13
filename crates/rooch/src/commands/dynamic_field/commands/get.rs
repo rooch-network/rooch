@@ -9,7 +9,7 @@ use moveos_types::state::FieldKey;
 use rooch_rpc_api::jsonrpc_types::{FieldKeyView, ObjectStateView, StateOptions};
 use rooch_types::{error::RoochResult, function_arg::ParsedObjectID};
 
-/// Get field states for a special dynamic field with a Field Key.
+/// Get field states for a special dynamic field with an Object ID and Field Keys.
 #[derive(Debug, Parser)]
 pub struct GetFieldStatesCommand {
     #[clap(short = 'i', long, required = true)]

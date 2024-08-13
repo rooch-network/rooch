@@ -8,10 +8,10 @@ use crate::commands::statedb::Statedb;
 use clap::builder::styling::{AnsiColor, Effects, Styles};
 use cli_types::CommandAction;
 use commands::{
-    abi::ABI, account::Account, env::Env, genesis::Genesis, init::Init, move_cli::MoveCli,
-    object::ObjectCommand, resource::ResourceCommand, rpc::Rpc, server::Server,
-    session_key::SessionKey, state::StateCommand, transaction::Transaction, upgrade::Upgrade,
-    version::Version,
+    abi::ABI, account::Account, dynamic_field::DynamicField, env::Env, genesis::Genesis,
+    init::Init, move_cli::MoveCli, object::ObjectCommand, resource::ResourceCommand, rpc::Rpc,
+    server::Server, session_key::SessionKey, state::StateCommand, transaction::Transaction,
+    upgrade::Upgrade, version::Version,
 };
 use once_cell::sync::Lazy;
 use rooch_types::error::RoochResult;
@@ -48,6 +48,7 @@ pub enum Command {
     Server(Server),
     State(StateCommand),
     Object(ObjectCommand),
+    DynamicField(DynamicField),
     Resource(ResourceCommand),
     Transaction(Transaction),
     Event(EventCommand),
@@ -71,6 +72,7 @@ pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
         Command::Init(init) => init.execute_serialized().await,
         Command::State(state) => state.execute_serialized().await,
         Command::Object(object) => object.execute_serialized().await,
+        Command::DynamicField(dynamic_field) => dynamic_field.execute_serialized().await,
         Command::Resource(resource) => resource.execute_serialized().await,
         Command::Transaction(transation) => transation.execute().await,
         Command::Event(event) => event.execute().await,
