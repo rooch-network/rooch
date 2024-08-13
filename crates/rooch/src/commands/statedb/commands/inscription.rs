@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use bitcoin_move::natives::ord::inscription_id::InscriptionId;
 use framework_types::addresses::BITCOIN_MOVE_ADDRESS;
 use moveos_types::moveos_std::object::{
-    ObjectEntity, ObjectID, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
+    DynamicField, ObjectEntity, ObjectID, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
 };
 use moveos_types::state::{FieldKey, ObjectState};
 use rooch_types::address::BitcoinAddress;
@@ -106,12 +106,13 @@ impl InscriptionSource {
 }
 
 // sequence_number:inscription_id
-pub(crate) fn gen_inscription_ids_update(
+pub(crate) fn gen_inscription_id_update(
     sequence_number: u32,
     inscription_id: InscriptionID,
 ) -> (FieldKey, ObjectState) {
     let parent_id = InscriptionStore::object_id();
-    let field = ObjectEntity::new_dynamic_field(parent_id, sequence_number, inscription_id);
+    let field: ObjectEntity<DynamicField<u32, InscriptionID>> =
+        ObjectEntity::new_dynamic_field(parent_id, sequence_number, inscription_id);
     let state = field.into_state();
     let key = state.id().field_key();
     (key, state)
