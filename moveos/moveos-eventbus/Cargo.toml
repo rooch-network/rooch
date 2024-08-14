@@ -14,4 +14,4 @@ anyhow = { workspace = true }
 futures = { workspace = true }
 log = { workspace = true }
 once_cell = { workspace = true }
-crossbeam-channel = "0.5.13"
+crossbeam-channel = { workspace = true }
