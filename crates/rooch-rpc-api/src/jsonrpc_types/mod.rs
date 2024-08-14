@@ -23,7 +23,6 @@ pub mod transaction_view;
 
 pub mod address;
 pub mod btc;
-pub mod repair_view;
 
 pub use self::rooch_types::*;
 pub use address::*;
@@ -35,3 +34,5 @@ pub use rpc_options::*;
 pub use state_view::*;
 pub use str_view::*;
 pub use transaction_argument_view::*;
+
+pub mod account_sign_view;
