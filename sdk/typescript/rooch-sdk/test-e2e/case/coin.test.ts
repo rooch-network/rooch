@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { beforeAll, describe, expect, it } from 'vitest'
-import { setup, TestBox, cmdPublishPackage, cmd, defaultCmdAddress } from '../setup.js'
+import { TestBox } from '../setup.js'
 import { Transaction } from '../../src/transactions/index.js'
 import { Secp256k1Keypair } from '../../src/keypairs/index.js'
 import { Args } from '../../src/bcs/index.js'
@@ -11,11 +11,11 @@ describe('Checkpoints Coin API', () => {
   let testBox: TestBox
 
   beforeAll(async () => {
-    testBox = await setup()
+    testBox = TestBox.setup()
   })
 
   it('Cmd publish package should be success', async () => {
-    const result = await cmdPublishPackage('../../../examples/coins', {
+    const result = await testBox.cmdPublishPackage('../../../examples/coins', {
       namedAddresses: 'coins=default',
     })
 
@@ -23,19 +23,19 @@ describe('Checkpoints Coin API', () => {
   })
 
   it('Cmd publish package should be success', async () => {
-    await cmd(
+    testBox.roochCommand(
       'move run --function default::fixed_supply_coin::faucet --args object:default::fixed_supply_coin::Treasury',
     )
 
-    let result = await testBox.client.getBalances({
-      owner: await defaultCmdAddress(),
+    let result = await testBox.getClient().getBalances({
+      owner: await testBox.defaultCmdAddress(),
       limit: '1',
     })
 
     expect(result.has_next_page).toBeTruthy()
 
-    let result1 = await testBox.client.getBalances({
-      owner: await defaultCmdAddress(),
+    let result1 = await testBox.getClient().getBalances({
+      owner: await testBox.defaultCmdAddress(),
       limit: '1',
       cursor: result.next_cursor,
     })
@@ -59,7 +59,7 @@ describe('Checkpoints Coin API', () => {
     expect(await testBox.signAndExecuteTransaction(tx)).toBeTruthy()
 
     // transfer
-    const transferResult = await testBox.client.transfer({
+    const transferResult = await testBox.getClient().transfer({
       signer: sender,
       recipient: recipient.getRoochAddress(),
       amount: amount,
@@ -70,10 +70,10 @@ describe('Checkpoints Coin API', () => {
 
     expect(transferResult.execution_info.status.type === 'executed').toBeTruthy()
 
-    await testBox.delay(3000)
+    await testBox.delay(3)
 
     // check balance
-    const recipientBalance = await testBox.client.getBalance({
+    const recipientBalance = await testBox.getClient().getBalance({
       owner: recipient.getRoochAddress().toHexAddress(),
       coinType,
     })
