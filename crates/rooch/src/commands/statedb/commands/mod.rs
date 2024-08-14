@@ -8,8 +8,10 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Instant;
 
+use anyhow::Result;
 use bitcoin::hashes::Hash;
 use bitcoin::OutPoint;
+use csv::Writer;
 use xorf::{BinaryFuse8, Filter};
 use xxhash_rust::xxh3::xxh3_64;
 
@@ -20,6 +22,7 @@ use moveos_types::move_std::option::MoveOption;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
 use moveos_types::moveos_std::simple_multimap::{Element, SimpleMultiMap};
+use moveos_types::state::{FieldKey, ObjectState};
 use rooch_common::fs::file_cache::FileCacheManager;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
@@ -385,6 +388,39 @@ where
         }
     }
     None
+}
+
+#[allow(dead_code)]
+struct ExportWriter {
+    writer: Option<Writer<File>>,
+}
+
+#[allow(dead_code)]
+impl ExportWriter {
+    fn new(output: Option<PathBuf>) -> Self {
+        let writer = match output {
+            Some(output) => {
+                let file_name = output.display().to_string();
+                let mut writer_builder = csv::WriterBuilder::new();
+                let writer_builder = writer_builder
+                    .delimiter(b',')
+                    .double_quote(false)
+                    .buffer_capacity(1 << 23);
+                let writer = writer_builder.from_path(file_name).unwrap();
+                Some(writer)
+            }
+            None => None,
+        };
+        ExportWriter { writer }
+    }
+    fn write(&mut self, k: &FieldKey, v: &ObjectState) -> anyhow::Result<()> {
+        if let Some(writer) = &mut self.writer {
+            writer.write_record([k.to_string().as_str(), v.to_string().as_str()])?;
+            Ok(())
+        } else {
+            Ok(())
+        }
+    }
 }
 
 #[cfg(test)]

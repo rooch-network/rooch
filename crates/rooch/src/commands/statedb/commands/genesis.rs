@@ -123,7 +123,6 @@ impl GenesisCommand {
         let apply_inscription_updates_thread = thread::spawn(move || {
             apply_inscription_updates(ord_rx, moveos_store_clone, startup_update_set_clone);
         });
-
         // import utxo
         let utxo_input_path = Arc::new(self.utxo_source.clone());
         let utxo_input_path_clone1 = Arc::clone(&utxo_input_path);
