@@ -23,6 +23,7 @@ pub mod transaction_view;
 
 pub mod address;
 pub mod btc;
+pub mod repair_view;
 
 pub use self::rooch_types::*;
 pub use address::*;
