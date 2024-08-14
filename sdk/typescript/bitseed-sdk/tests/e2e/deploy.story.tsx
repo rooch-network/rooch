@@ -1,7 +1,4 @@
 import React, { useEffect, useState } from 'react'
-
-console.log('deploy.story init 1');
-
 import {
   BitSeed,
   InscriptionID,
@@ -10,7 +7,7 @@ import {
   DeployOptions,
 } from '../../src'
 
-import { createTestBitSeed } from './commons/test_bitseed'
+import { createTestBitSeed } from './commons/test_bitseed_web'
 
 interface DeployStoryProps {
   roochServerAddress: string;

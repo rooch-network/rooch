@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/experimental-ct-react'
 
 import DeployStory from './deploy.story'
 import { BitseedTestEnv } from './commons/bitseed_test_env'
-import { createTestBitSeed, prepareGenerator } from './commons/test_bitseed_ext.js'
+import { createTestBitSeed, prepareTestGenerator } from './commons/test_bitseed_node.js'
 import { sleep } from './commons/time';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -30,7 +30,7 @@ test.beforeAll(async () => {
 
   if (roochServerAddress) {
     let bitseed = createTestBitSeed(roochServerAddress);
-    generatorID = await prepareGenerator(bitseed, path.join(__dirname, "../data/generator.wasm"))
+    generatorID = await prepareTestGenerator(bitseed, path.join(__dirname, "../data/generator.wasm"))
 
     await sleep(5000)
   }

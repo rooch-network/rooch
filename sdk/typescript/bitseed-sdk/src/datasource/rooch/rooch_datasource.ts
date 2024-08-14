@@ -126,13 +126,16 @@ export class RoochDataSource implements IDatasource {
     const inscriptionState: InscriptionStateView = response.data[0];
     const inscriptionView = inscriptionState.value;
 
+    const bodyHex = inscriptionView.body.startsWith('0x') ? inscriptionView.body.slice(2) : inscriptionView.body;
+    const body = Buffer.from(bodyHex, 'hex')
+
     // Convert the Rooch inscription state to the Inscription type expected by IDatasource
     const inscription: Inscription = {
       id: `${inscriptionView.bitcoin_txid}i${inscriptionView.index}`,
       number: inscriptionView.inscription_number,
       owner: inscriptionState.owner ?? "",
-      mediaContent: inscriptionView.body ?? "",
-      mediaSize: inscriptionView.body ? Buffer.from(inscriptionView.body, 'base64').length : 0,
+      mediaContent: Buffer.from(body).toString('base64'),
+      mediaSize: body.length,
       mediaType: inscriptionView.content_type ?? "",
       timestamp: new Date(inscriptionState.created_at).getTime(),
       genesis: inscriptionView.bitcoin_txid,
@@ -144,8 +147,9 @@ export class RoochDataSource implements IDatasource {
 
     if (decodeMetadata && inscriptionView.metadata) {
       try {
-        // Decode the base64-encoded metadata
-        const metadataBuffer = Buffer.from(inscriptionView.metadata, 'base64');
+        // Decode the hex-encoded metadata
+        const metadataHex = inscriptionView.metadata.startsWith('0x') ? inscriptionView.metadata.slice(2) : inscriptionView.metadata;
+        const metadataBuffer = Buffer.from(metadataHex, 'hex');
         // Decode the CBOR data
         const decodedMetadata = cbor.decode(metadataBuffer);
         inscription.meta = decodedMetadata;
@@ -255,6 +259,10 @@ export class RoochDataSource implements IDatasource {
   
   private convertToInscription(inscriptionState: InscriptionStateView, decodeMetadata: boolean | undefined): Inscription {
     const inscriptionView = inscriptionState.value;
+
+    const bodyHex = inscriptionView.body.startsWith('0x') ? inscriptionView.body.slice(2) : inscriptionView.body;
+    const body = Buffer.from(bodyHex, 'hex')
+
     const inscription: Inscription = {
       id: `${inscriptionView.bitcoin_txid}i${inscriptionView.index}`,
       outpoint: `${inscriptionView.txid}:${inscriptionView.offset}`,
@@ -266,13 +274,14 @@ export class RoochDataSource implements IDatasource {
       sat: 0, // Rooch doesn't provide this information
       timestamp: new Date(inscriptionState.created_at).getTime(),
       mediaType: inscriptionView.content_type ?? "",
-      mediaSize: inscriptionView.body ? Buffer.from(inscriptionView.body, 'base64').length : 0,
-      mediaContent: inscriptionView.body ?? "",
+      mediaSize: body.length,
+      mediaContent: Buffer.from(body).toString('base64'),
     };
   
     if (decodeMetadata && inscriptionView.metadata) {
       try {
-        const metadataBuffer = Buffer.from(inscriptionView.metadata, 'base64');
+        const metadataHex = inscriptionView.metadata.startsWith('0x') ? inscriptionView.metadata.slice(2) : inscriptionView.metadata;
+        const metadataBuffer = Buffer.from(metadataHex, 'hex');
         inscription.meta = cbor.decode(metadataBuffer);
       } catch (error) {
         console.warn(`Failed to decode CBOR metadata for inscription ${inscription.id}: ${error}`);

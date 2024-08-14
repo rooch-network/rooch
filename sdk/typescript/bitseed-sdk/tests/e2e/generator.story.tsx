@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 
 import { BitSeed, InscriptionID, inscriptionIDToString, DeployOptions } from '../../src'
-import { createTestBitSeed } from './commons/test_bitseed'
+import { createTestBitSeed } from './commons/test_bitseed_web'
 
 interface DeployGeneratorStoryProps {
   roochServerAddress: string;

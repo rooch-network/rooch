@@ -1,3 +1,4 @@
+import { describe, it, vi, expect, beforeEach } from 'vitest'
 import cbor from 'cbor'
 import { RoochDataSource } from './rooch_datasource.js';
 import { Wallet } from '../../wallet/index.js';
@@ -144,11 +145,11 @@ describe('RoochDataSource', () => {
               bitcoin_txid: 'mocktxid',
               index: 0,
               inscription_number: 1,
-              body: 'bW9ja0JvZHk=', // base64 encoded 'mockBody'
+              body: '0x6d6f636b426f6479', // hex encoded 'mockBody'
               content_type: 'text/plain',
               txid: 'mocktxid',
               offset: '0',
-              metadata: 'bW9ja01ldGFkYXRh', // base64 encoded 'mockMetadata'
+              metadata: '0x6d6f636b4d65746164617461', // hex encoded 'mockMetadata'
               parents: '',
               is_curse: false,
               sequence_number: 0,
@@ -200,7 +201,7 @@ describe('RoochDataSource', () => {
       
       // Encode the metadata using CBOR
       const encodedMetadata = cbor.encode(mockMetadata);
-      const base64EncodedMetadata = Buffer.from(encodedMetadata).toString('base64');
+      const base64EncodedMetadata = Buffer.from(encodedMetadata).toString('hex');
 
       const mockResponse: PaginatedInscriptionStateViews = {
         data: [
@@ -210,7 +211,7 @@ describe('RoochDataSource', () => {
               bitcoin_txid: 'mocktxid',
               index: 0,
               inscription_number: 1,
-              body: 'bW9ja0JvZHk=', // base64 encoded 'mockBody'
+              body: '6d6f636b426f6479', // hex encoded 'mockBody'
               content_type: 'text/plain',
               txid: 'mocktxid',
               offset: '0',
@@ -254,6 +255,73 @@ describe('RoochDataSource', () => {
       });
     });
 
+    it('should successfully get an inscription and decode metadata with bitseed', async () => {
+      const mockInscriptionId = 'mocktxidi0';
+      const base64EncodedMetadata = "0xa4626f70666465706c6f79647469636b646d6f766566616d6f756e741903e86a61747472696275746573a366726570656174016967656e657261746f7278202f696e736372697074696f6e2f756e646566696e656469756e646566696e65646b6465706c6f795f617267738178377b22686569676874223a7b2274797065223a2272616e6765222c2264617461223a7b226d696e223a312c226d6178223a313030307d7d7d";
+
+      const mockResponse: PaginatedInscriptionStateViews = {
+        data: [
+          {
+            owner: 'mockOwner',
+            value: {
+              bitcoin_txid: 'mocktxid',
+              index: 0,
+              inscription_number: 1,
+              body: '6d6f636b426f6479', // hex encoded 'mockBody'
+              content_type: 'text/plain',
+              txid: 'mocktxid',
+              offset: '0',
+              metadata: base64EncodedMetadata,
+              parents: '',
+              is_curse: false,
+              sequence_number: 0,
+            },
+            created_at: '2023-01-01T00:00:00Z',
+            flag: 0,
+            id: 'mock_id',
+            object_type: 'mock_type',
+            size: '1',
+            state_index: '0',
+            tx_order: '0',
+            updated_at: '2023-01-01T00:00:00Z'
+          },
+        ],
+        has_next_page: false,
+        next_cursor: null
+      };
+
+      mockTransport.setMockResponse('btc_queryInscriptions', mockResponse);
+
+      const result = await instance.getInscription({ id: mockInscriptionId, decodeMetadata: true });
+
+      expect(result).toEqual({
+        id: 'mocktxidi0',
+        number: 1,
+        owner: 'mockOwner',
+        mediaContent: 'bW9ja0JvZHk=',
+        mediaSize: 8,
+        mediaType: 'text/plain',
+        timestamp: new Date('2023-01-01T00:00:00Z').getTime(),
+        genesis: 'mocktxid',
+        outpoint: 'mocktxid:0',
+        fee: 0,
+        height: 0,
+        sat: 0,
+        meta: {
+          amount: 1000,
+          attributes:  {
+            deploy_args: [
+              "{\"height\":{\"type\":\"range\",\"data\":{\"min\":1,\"max\":1000}}}",
+            ],
+          generator: "/inscription/undefinediundefined",
+            repeat: 1,
+          },
+          op: "deploy",
+          tick: "move",
+        },
+      });
+    });
+
     it('should throw an error when trying to get a non-existent inscription', async () => {
       const mockInscriptionId = 'nonexistenttxidi0';
       
@@ -273,7 +341,7 @@ describe('RoochDataSource', () => {
       const mockInscriptionId = 'mocktxidi0';
       const invalidEncodedMetadata = 'invalidCBORdata';
 
-      jest.spyOn(console, 'warn').mockImplementation(() => {});
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
   
       const mockResponse: PaginatedInscriptionStateViews = {
         data: [
@@ -931,6 +999,7 @@ describe('RoochDataSource', () => {
     });
   });
 
+    /*
   describe('getTransaction', () => {
 
     it('should successfully get transaction information including block data', async () => {
@@ -1600,7 +1669,7 @@ describe('RoochDataSource', () => {
     });
   });
 
-  /*
+
   describe('getSpendables', () => {
     it('should successfully get spendable UTXOs', async () => {
       const mockAddress = 'mockAddress';

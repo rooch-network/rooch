@@ -11,12 +11,18 @@
   "scripts": {
     "build": "build-package",
     "test": "pnpm test:unit && pnpm test:e2e",
-    "test:unit": "jest src",
-    "test:unit:debug": "jest sdk/typescript/bitseed-sdk/src/datasource/rooch/rooch_datasource.test.ts",
+    "test:unit": "vitest run src",
+    "test:unit:debug": "vitest run src/datasource/rooch",
     "test:e2e": "pnpm run build && playwright test -c playwright-ct.config.ts",
-    "test:e2e:debug": "pnpm run build && playwright test -c playwright-ct.config.ts --debug -g generator",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "test:e2e:debug": "pnpm run build && playwright test -c playwright-ct.config.ts --debug -g mint",
+    "size": "size-limit",
+    "analyze": "size-limit --why",
+    "eslint:check": "eslint --max-warnings=0 .",
+    "eslint:fix": "pnpm eslint:check --fix",
+    "prettier:check": "prettier -c --ignore-unknown .",
+    "prettier:fix": "prettier -w --ignore-unknown .",
+    "lint": "pnpm eslint:check && pnpm prettier:check",
+    "lint:fix": "pnpm eslint:fix && pnpm prettier:fix"
   },
   "repository": {
     "type": "git",

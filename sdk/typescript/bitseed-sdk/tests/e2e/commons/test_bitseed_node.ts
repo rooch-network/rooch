@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import { Ordit } from '@sadoprotocol/ordit-sdk'
 import bitseed from '../../../dist/cjs/index.js'
-const {  BitSeed, GeneratorLoader, RoochDataSource, inscriptionIDToString } = bitseed;
+const {  BitSeed, GeneratorLoader, RoochDataSource, inscriptionIDToString, parseInscriptionID } = bitseed;
 import { HTTPDebugTransport } from './http_debug_transport.js';
 
 export function createTestBitSeed(roochServerAddress: string) {
@@ -42,7 +42,7 @@ export function createTestBitSeed(roochServerAddress: string) {
   return bitseed
 }
 
-export async function prepareGenerator(bitseed, filePath: string): Promise<string> {
+export async function prepareTestGenerator(bitseed, filePath: string): Promise<string> {
   let wasmBytes = await readFileAsBytes(filePath)
   console.log('wasm length:', wasmBytes.length)
 
@@ -52,6 +52,21 @@ export async function prepareGenerator(bitseed, filePath: string): Promise<strin
 
   const inscriptionId = await bitseed.generator("simple", wasmBytes, deployOptions)
   console.log('prepareGenerator inscriptionId:', inscriptionId)
+
+  return inscriptionIDToString(inscriptionId)
+}
+
+export async function deployTestTick(bitseed, generatorID, tick, max, deployArg) {
+  let generator = parseInscriptionID(generatorID)
+  const deployArgs = [deployArg];
+
+  const deployOptions = {
+    fee_rate: 1,
+    repeat: 1,
+    deploy_args: deployArgs,
+  }
+
+  const inscriptionId = await bitseed.deploy(tick, max, generator, deployOptions)
 
   return inscriptionIDToString(inscriptionId)
 }

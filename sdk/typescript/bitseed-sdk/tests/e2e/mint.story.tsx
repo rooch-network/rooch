@@ -6,8 +6,9 @@ import {
   parseInscriptionID,
   inscriptionIDToString,
   InscribeOptions,
+  hexStringToTxid,
 } from '../../src'
-import { createTestBitSeed } from './commons/test_bitseed'
+import { createTestBitSeed } from './commons/test_bitseed_web'
 
 interface MintStoryProps {
   roochServerAddress: string;
@@ -37,7 +38,7 @@ export default function MintStory({ roochServerAddress }: MintStoryProps) {
         fee_rate: 1,
         satpoint: {
           outpoint: {
-            txid: '42d186a5d9bc064e5704024afb2dfccd424da1b9756ae31a4fbfee22f4fc7ec5',
+            txid: hexStringToTxid(tick.txid),
             vout: 0
           },
           offset: 0
