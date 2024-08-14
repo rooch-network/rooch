@@ -14,6 +14,7 @@ use rooch_types::{error::RoochResult, function_arg::ParsedObjectID};
 pub struct GetFieldStatesCommand {
     #[clap(short = 'i', long, required = true)]
     object_id: ParsedObjectID,
+
     #[clap(short = 'k', long, required = true)]
     field_keys: Vec<FieldKey>,
 
@@ -36,9 +37,11 @@ impl CommandAction<Vec<Option<ObjectStateView>>> for GetFieldStatesCommand {
             .map(|k| <FieldKey as Into<FieldKeyView>>::into(*k))
             .collect_vec();
 
-        Ok(client
+        let resp = client
             .rooch
             .get_field_states(object_id.into(), field_keys_view, options)
-            .await?)
+            .await?;
+
+        Ok(resp)
     }
 }

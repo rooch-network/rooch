@@ -4,8 +4,8 @@
 use crate::cli_types::CommandAction;
 use async_trait::async_trait;
 use clap::Parser;
-use commands::get::GetFieldStatesCommand;
-use commands::list::ListFieldStatesCommand;
+use commands::get_field_states::GetFieldStatesCommand;
+use commands::list_field_states::ListFieldStatesCommand;
 use rooch_types::error::RoochResult;
 
 pub mod commands;
@@ -21,17 +21,14 @@ pub struct DynamicField {
 impl CommandAction<String> for DynamicField {
     async fn execute(self) -> RoochResult<String> {
         match self.cmd {
-            DynamicFieldCommand::Get(get) => get.execute().await.map(|resp| {
-                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
-            }),
-            DynamicFieldCommand::List(list) => list.execute_serialized().await,
+            DynamicFieldCommand::GetFieldStates(cmd) => cmd.execute_serialized().await,
+            DynamicFieldCommand::ListFieldStates(cmd) => cmd.execute_serialized().await,
         }
     }
 }
 
 #[derive(clap::Subcommand)]
-#[clap(name = "dynamic_field")]
 pub enum DynamicFieldCommand {
-    Get(GetFieldStatesCommand),
-    List(ListFieldStatesCommand),
+    GetFieldStates(GetFieldStatesCommand),
+    ListFieldStates(ListFieldStatesCommand),
 }

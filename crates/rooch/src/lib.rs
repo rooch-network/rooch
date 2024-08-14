@@ -72,7 +72,7 @@ pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
         Command::Init(init) => init.execute_serialized().await,
         Command::State(state) => state.execute_serialized().await,
         Command::Object(object) => object.execute_serialized().await,
-        Command::DynamicField(dynamic_field) => dynamic_field.execute_serialized().await,
+        Command::DynamicField(dynamic_field) => dynamic_field.execute().await,
         Command::Resource(resource) => resource.execute_serialized().await,
         Command::Transaction(transation) => transation.execute().await,
         Command::Event(event) => event.execute().await,

@@ -14,6 +14,12 @@ pub struct ListFieldStatesCommand {
     #[clap(short = 'i', long, required = true)]
     object_id: ParsedObjectID,
 
+    #[clap(long)]
+    pub cursor: Option<String>,
+
+    #[clap(long)]
+    pub limit: Option<u64>,
+
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
 }
@@ -28,9 +34,11 @@ impl CommandAction<StatePageView> for ListFieldStatesCommand {
         let object_id = self.object_id.into_object_id(&address_mapping)?;
         let options = Some(StateOptions::new().decode(true));
 
-        Ok(client
+        let resp = client
             .rooch
-            .list_field_states(object_id.into(), None, None, options)
-            .await?)
+            .list_field_states(object_id.into(), self.cursor, self.limit, options)
+            .await?;
+
+        Ok(resp)
     }
 }
