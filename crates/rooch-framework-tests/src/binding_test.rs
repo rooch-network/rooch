@@ -74,12 +74,14 @@ impl RustBindingTest {
             rooch_db.moveos_store.clone(),
             rooch_db.rooch_store.clone(),
             &registry_service.default_registry(),
+            None,
         )?;
 
         let reader_executor = ReaderExecutorActor::new(
             root.clone(),
             rooch_db.moveos_store.clone(),
             rooch_db.rooch_store.clone(),
+            None,
         )?;
         Ok(Self {
             opt,

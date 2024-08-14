@@ -99,7 +99,10 @@ impl Handler<ExecuteViewFunctionMessage> for ReaderExecutorActor {
             .execute_view_function(self.root.clone(), msg.call);
 
         if let Some(event_bus) = self.event_bus.clone() {
-            if event_bus.get_event::<GasUpgradeEvent>("read-executor").is_some() {
+            if event_bus
+                .get_event::<GasUpgradeEvent>("read-executor")
+                .is_some()
+            {
                 let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
                 let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
 
