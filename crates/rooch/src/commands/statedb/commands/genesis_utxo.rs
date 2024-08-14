@@ -224,6 +224,7 @@ pub(crate) fn apply_address_updates(
     while let Ok(update_set) = rx.recv() {
         let loop_start_time = SystemTime::now();
 
+        let gen_nodes_start = Instant::now();
         let mut nodes: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
         let cnt = update_set.len();
         let mut rooch_to_bitcoin_address_mapping_tree_change_set = apply_fields(
@@ -233,17 +234,22 @@ pub(crate) fn apply_address_updates(
         )
         .unwrap();
         nodes.append(&mut rooch_to_bitcoin_address_mapping_tree_change_set.nodes);
+        let gen_nodes_cost = gen_nodes_start.elapsed();
+
         rooch_to_bitcoin_address_mapping_state_root =
             rooch_to_bitcoin_address_mapping_tree_change_set.state_root;
         address_mapping_count += cnt as u64;
 
+        let apply_nodes_start = Instant::now();
         apply_nodes(&moveos_store, nodes).expect("failed to apply nodes");
+        let apply_nodes_cost = apply_nodes_start.elapsed();
 
         println!(
-            "{} addr_mapping applied. this batch: {}, cost: {:?}",
+            "{} addr_mapping applied. this batch: {}, cost: {:?}(gen_nodes: {:?}, apply_nodes: {:?})",
             address_mapping_count,
             cnt,
-            loop_start_time.elapsed().unwrap()
+            loop_start_time.elapsed().unwrap(),
+            gen_nodes_cost, apply_nodes_cost
         );
 
         log::debug!(
@@ -289,25 +295,32 @@ pub(crate) fn apply_utxo_updates(
     while let Ok(update_set) = rx.recv() {
         let loop_start_time = SystemTime::now();
 
+        let gen_nodes_start = Instant::now();
         let mut nodes: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
 
         let cnt = update_set.len();
         let mut utxo_tree_change_set =
             apply_fields(moveos_store, utxo_store_state_root, update_set).unwrap();
         nodes.append(&mut utxo_tree_change_set.nodes);
+        let gen_nodes_cost = gen_nodes_start.elapsed();
+
         utxo_store_state_root = utxo_tree_change_set.state_root;
         utxo_count += cnt as u64;
 
+        let apply_nodes_start = Instant::now();
         apply_nodes(moveos_store, nodes).expect("failed to apply nodes");
+        let apply_nodes_cost = apply_nodes_start.elapsed();
 
         println!(
-            "{} utxo applied. this bacth: {}, cost: {:?}",
+            "{} utxo applied. this bacth: {}, cost: {:?}(gen_nodes: {:?}, apply_nodes: {:?})",
             // because we may skip the first line of data source, count result keep missing one.
             // e.g. batch_size = 8192:
             // 8191 utxo applied ...
             utxo_count,
             cnt,
-            loop_start_time.elapsed().unwrap()
+            loop_start_time.elapsed().unwrap(),
+            gen_nodes_cost,
+            apply_nodes_cost
         );
 
         log::debug!(
