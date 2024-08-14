@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
