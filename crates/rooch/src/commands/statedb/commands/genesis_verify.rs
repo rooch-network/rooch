@@ -148,12 +148,10 @@ impl OrdCases {
 
 impl GenesisVerifyCommand {
     pub async fn execute(self) -> RoochResult<()> {
-        let (root, moveos_store, start_time) =
-            init_job(self.base_data_dir.clone(), self.chain_id.clone());
+        let (root, moveos_store, _) = init_job(self.base_data_dir.clone(), self.chain_id.clone());
         let outpoint_inscriptions_map = OutpointInscriptionsMap::load_or_index(
             self.outpoint_inscriptions_map_dump_path,
             self.ord_source.clone(),
-            start_time,
         );
         let outpoint_inscriptions_map = Arc::new(outpoint_inscriptions_map);
         let random_mode = self.random_mode;
