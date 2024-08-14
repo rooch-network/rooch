@@ -10,10 +10,8 @@ import {
   DeployOptions,
 } from '../../src'
 
-console.log('deploy.story init 2');
 import { createTestBitSeed } from './commons/test_bitseed'
 
-console.log('deploy.story init 3');
 interface DeployStoryProps {
   roochServerAddress: string;
 }

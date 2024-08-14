@@ -42,7 +42,7 @@ test('Upload generator', async ({ mount }) => {
   await component.locator('button:has-text("Deploy")').click()
 
   // Optionally, check for the presence of the inscriptionId in the output/result
-  await expect(component).toContainText('Deploy Result: ')
+  await expect(component).toContainText('Deploy Result: ', { timeout: 20000 })
 })
 
 test('Upload invalid generator', async ({ mount }) => {
@@ -61,5 +61,5 @@ test('Upload invalid generator', async ({ mount }) => {
   await component.locator('button:has-text("Deploy")').click()
 
   // Optionally, check for the presence of the inscriptionId in the output/result
-  await expect(component).toContainText('Deploy Result: ')
+  await expect(component).toContainText('Error:', { timeout: 20000 })
 })

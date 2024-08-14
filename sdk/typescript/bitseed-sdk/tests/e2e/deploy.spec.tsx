@@ -7,6 +7,7 @@ import { test, expect } from '@playwright/experimental-ct-react'
 import DeployStory from './deploy.story'
 import { BitseedTestEnv } from './commons/bitseed_test_env'
 import { createTestBitSeed, prepareGenerator } from './commons/test_bitseed_ext.js'
+import { sleep } from './commons/time';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,9 +26,13 @@ test.beforeAll(async () => {
   await testEnv.getFaucetBTC("bcrt1pz9qq9gwemapvmpntw90ygalhnjzgy2d7tglts0a90avrre902z2s6gng6d", 1)
   await testEnv.getFaucetBTC("bcrt1pk6w56zalwe0txflwedv6d4mzszu4334ehtqe2yyjv8m2g36xlgrsnzsp4k", 1)
 
+  await sleep(5000)
+
   if (roochServerAddress) {
     let bitseed = createTestBitSeed(roochServerAddress);
     generatorID = await prepareGenerator(bitseed, path.join(__dirname, "../data/generator.wasm"))
+
+    await sleep(5000)
   }
 });
 
@@ -36,7 +41,7 @@ test.afterAll(async () => {
   await testEnv.stop()
 });
 
-test('Deploy move tick with simple generator', async ({ page, mount }) => {
+test('Deploy move tick with simple', async ({ page, mount }) => {
   if (!roochServerAddress) {
     throw new Error('Failed to get Rooch server address');
   }

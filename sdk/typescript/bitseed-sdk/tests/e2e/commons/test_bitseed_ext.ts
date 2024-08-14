@@ -2,10 +2,14 @@ import * as fs from 'fs';
 import { Ordit } from '@sadoprotocol/ordit-sdk'
 import bitseed from '../../../dist/cjs/index.js'
 const {  BitSeed, GeneratorLoader, RoochDataSource, inscriptionIDToString } = bitseed;
+import { HTTPDebugTransport } from './http_debug_transport.js';
 
 export function createTestBitSeed(roochServerAddress: string) {
   const network = 'regtest'
-  const datasource = new RoochDataSource({ url: `http://${roochServerAddress}` })
+  const datasource = new RoochDataSource({
+    transport: new HTTPDebugTransport({ url: `http://${roochServerAddress}` }, true)
+  })
+  
   const generatorLoader = new GeneratorLoader(datasource)
 
   // address: tb1pz9qq9gwemapvmpntw90ygalhnjzgy2d7tglts0a90avrre902z2sh3ew0h
