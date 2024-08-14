@@ -287,8 +287,10 @@ impl ExportCommand {
                 .ord_source_path
                 .clone()
                 .expect("ord source path must be existed if utxo path is provided");
-            let outpoint_inscriptions_map_path =
-                ord_path.with_extension("outpoint_inscriptions_map");
+            let outpoint_inscriptions_map_path = self
+                .outpoint_inscriptions_map_path
+                .clone()
+                .expect("outpoint_inscriptions_map path must be existed if utxo path is provided");
             let utxo_store_object_id = BitcoinUTXOStore::object_id();
             let utxo_store_state_root = get_state_root(
                 moveos_store,
