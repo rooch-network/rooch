@@ -7,7 +7,6 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, SyncSender};
-use std::thread;
 use std::time::Instant;
 
 use anyhow::{Error, Result};
@@ -52,15 +51,16 @@ impl RebuildCommand {
         let (indexer_store, indexer_reader, start_time) = self.init();
         let (tx, rx) = mpsc::sync_channel(2);
 
-        let produce_updates_thread =
-            thread::spawn(move || produce_updates(tx, indexer_reader, input_path, batch_size));
+        let produce_updates_thread = tokio::task::spawn_blocking(move || {
+            produce_updates(tx, indexer_reader, input_path, batch_size)
+        });
         let apply_updates_thread =
-            thread::spawn(move || apply_updates(rx, indexer_store, start_time));
+            tokio::task::spawn_blocking(move || apply_updates(rx, indexer_store, start_time));
         let _ = produce_updates_thread
-            .join()
+            .await
             .map_err(|_e| RoochError::from(Error::msg("Produce updates error".to_string())))?;
         let _ = apply_updates_thread
-            .join()
+            .await
             .map_err(|_e| RoochError::from(Error::msg("Apply updates error ".to_string())))?;
 
         Ok(())
