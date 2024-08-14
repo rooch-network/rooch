@@ -28,6 +28,7 @@ move-resource-viewer = { workspace = true }
 moveos = { workspace = true }
 moveos-store = { workspace = true }
 moveos-types = { workspace = true }
+moveos-eventbus = { workspace = true }
 metrics = { workspace = true }
 
 rooch-types = { workspace = true }

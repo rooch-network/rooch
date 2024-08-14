@@ -14,6 +14,7 @@ use coerce::actor::{system::ActorSystem, IntoActor};
 use jsonrpsee::server::middleware::rpc::RpcServiceBuilder;
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
+use moveos_eventbus::bus::EventBus;
 use raw_store::errors::RawStoreError;
 use rooch_config::server_config::ServerConfig;
 use rooch_config::{RoochOpt, ServerOpt};
@@ -234,16 +235,23 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         root.size()
     );
 
+    let event_bus = EventBus::new();
+
     let executor_actor = ExecutorActor::new(
         root.clone(),
         moveos_store.clone(),
         rooch_store.clone(),
         &prometheus_registry,
+        Some(event_bus.clone()),
     )?;
-    let reader_executor =
-        ReaderExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store.clone())?
-            .into_actor(Some("ReaderExecutor"), &actor_system)
-            .await?;
+    let reader_executor = ReaderExecutorActor::new(
+        root.clone(),
+        moveos_store.clone(),
+        rooch_store.clone(),
+        Some(event_bus.clone()),
+    )?
+    .into_actor(Some("ReaderExecutor"), &actor_system)
+    .await?;
     let executor = executor_actor
         .into_actor(Some("Executor"), &actor_system)
         .await?;

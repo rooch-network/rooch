@@ -270,6 +270,7 @@ impl RoochGenesis {
             vm_config,
             vec![],
             vec![],
+            None,
         )?;
         let output = moveos.init_genesis(
             genesis_moveos_tx.clone(),
@@ -371,6 +372,7 @@ impl RoochGenesis {
             MoveOSConfig::default(),
             vec![],
             vec![],
+            None,
         )?;
 
         let genesis_tx_output =

@@ -13,8 +13,9 @@ use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use move_resource_viewer::MoveValueAnnotator;
-use moveos::moveos::MoveOS;
 use moveos::moveos::MoveOSConfig;
+use moveos::moveos::{GasUpgradeEvent, MoveOS};
+use moveos_eventbus::bus::EventBus;
 use moveos_store::transaction_store::TransactionStore;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
@@ -35,6 +36,7 @@ pub struct ReaderExecutorActor {
     moveos: MoveOS,
     moveos_store: MoveOSStore,
     rooch_store: RoochStore,
+    event_bus: Option<EventBus>,
 }
 
 impl ReaderExecutorActor {
@@ -42,6 +44,7 @@ impl ReaderExecutorActor {
         root: ObjectMeta,
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
+        event_bus: Option<EventBus>,
     ) -> Result<Self> {
         let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
         let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
@@ -51,13 +54,19 @@ impl ReaderExecutorActor {
             MoveOSConfig::default(),
             system_pre_execute_functions(),
             system_post_execute_functions(),
+            event_bus.clone(),
         )?;
+
+        if let Some(ev_bus) = event_bus.clone() {
+            ev_bus.register_event_subscriber::<GasUpgradeEvent>("read-executor");
+        };
 
         Ok(Self {
             root,
             moveos,
             moveos_store,
             rooch_store,
+            event_bus,
         })
     }
 
@@ -88,6 +97,25 @@ impl Handler<ExecuteViewFunctionMessage> for ReaderExecutorActor {
         let function_result = self
             .moveos()
             .execute_view_function(self.root.clone(), msg.call);
+
+        if let Some(event_bus) = self.event_bus.clone() {
+            if event_bus.get_event::<GasUpgradeEvent>("read-executor").is_some() {
+                let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
+                let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
+
+                self.moveos = MoveOS::new(
+                    self.moveos_store.clone(),
+                    gas_parameters.all_natives(),
+                    MoveOSConfig::default(),
+                    system_pre_execute_functions(),
+                    system_post_execute_functions(),
+                    self.event_bus.clone(),
+                )?;
+
+                println!("222222222222222 ReaderExecutorActor");
+            }
+        }
+
         Ok(AnnotatedFunctionResult {
             vm_status: function_result.vm_status,
             return_values: match function_result.return_values {

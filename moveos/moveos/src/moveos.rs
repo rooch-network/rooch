@@ -23,6 +23,7 @@ use move_core_types::{
 use move_vm_runtime::config::VMConfig;
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::native_functions::NativeFunction;
+use moveos_eventbus::bus::EventBus;
 use moveos_store::config_store::ConfigDBStore;
 use moveos_store::event_store::EventDBStore;
 use moveos_store::state_store::statedb::StateDBStore;
@@ -104,12 +105,16 @@ impl Clone for MoveOSConfig {
     }
 }
 
+#[derive(Default, Clone)]
+pub struct GasUpgradeEvent {}
+
 pub struct MoveOS {
     vm: MoveOSVM,
     pub db: MoveOSStore,
     pub cost_table: Arc<RwLock<Option<CostTable>>>,
     system_pre_execute_functions: Vec<FunctionCall>,
     system_post_execute_functions: Vec<FunctionCall>,
+    event_bus: Option<EventBus>,
 }
 
 impl MoveOS {
@@ -119,6 +124,7 @@ impl MoveOS {
         config: MoveOSConfig,
         system_pre_execute_functions: Vec<FunctionCall>,
         system_post_execute_functions: Vec<FunctionCall>,
+        event_bus: Option<EventBus>,
     ) -> Result<Self> {
         //TODO load the gas table from argument, and remove the cost_table lock.
 
@@ -129,6 +135,7 @@ impl MoveOS {
             cost_table: Arc::new(RwLock::new(None)),
             system_pre_execute_functions,
             system_post_execute_functions,
+            event_bus,
         })
     }
 
@@ -535,6 +542,9 @@ impl MoveOS {
 
         let gas_schedule_updated = session.tx_context().get::<GasScheduleUpdated>()?;
         if let Some(_updated) = gas_schedule_updated {
+            if let Some(event_bus) = self.event_bus.clone() {
+                event_bus.notify::<GasUpgradeEvent>(GasUpgradeEvent {});
+            }
             log::info!("Gas schedule updated");
             self.cost_table.write().take();
         }

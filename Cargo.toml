@@ -17,6 +17,7 @@ members = [
     "moveos/moveos-wasm",
     "moveos/raw-store",
     "moveos/smt",
+    "moveos/moveos-eventbus",
     "crates/data_verify",
     "crates/rooch",
     "crates/rooch-benchmarks",
@@ -91,6 +92,7 @@ moveos-config = { path = "moveos/moveos-config" }
 moveos-wasm = { path = "moveos/moveos-wasm" }
 moveos-object-runtime = { path = "moveos/moveos-object-runtime" }
 moveos-compiler = { path = "moveos/moveos-compiler" }
+moveos-eventbus = { path = "moveos/moveos-eventbus" }
 accumulator = { path = "moveos/moveos-commons/accumulator" }
 
 # crates for Rooch

@@ -12,8 +12,9 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use function_name::named;
 use move_core_types::vm_status::VMStatus;
-use moveos::moveos::{MoveOS, MoveOSConfig};
+use moveos::moveos::{GasUpgradeEvent, MoveOS, MoveOSConfig};
 use moveos::vm::vm_status_explainer::explain_vm_status;
+use moveos_eventbus::bus::EventBus;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
@@ -50,6 +51,7 @@ pub struct ExecutorActor {
     moveos_store: MoveOSStore,
     rooch_store: RoochStore,
     metrics: Arc<ExecutorMetrics>,
+    event_bus: Option<EventBus>,
 }
 
 type ValidateAuthenticatorResult = Result<TxValidateResult, VMStatus>;
@@ -60,6 +62,7 @@ impl ExecutorActor {
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
         registry: &Registry,
+        event_bus: Option<EventBus>,
     ) -> Result<Self> {
         let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
         let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
@@ -70,7 +73,12 @@ impl ExecutorActor {
             MoveOSConfig::default(),
             system_pre_execute_functions(),
             system_post_execute_functions(),
+            event_bus.clone(),
         )?;
+
+        if let Some(ev_bus) = event_bus.clone() {
+            ev_bus.register_event_subscriber::<GasUpgradeEvent>("executor");
+        };
 
         Ok(Self {
             root,
@@ -78,6 +86,7 @@ impl ExecutorActor {
             moveos_store,
             rooch_store,
             metrics: Arc::new(ExecutorMetrics::new(registry)),
+            event_bus,
         })
     }
 
@@ -126,17 +135,22 @@ impl ExecutorActor {
             .handle_tx_output(tx_hash, output.clone())?;
 
         // The cost table has been upgraded, we need to reload the native functions.
-        if self.moveos.cost_table.read().is_none() {
-            let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
-            let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
+        if let Some(event_bus) = self.event_bus.clone() {
+            if event_bus.get_event::<GasUpgradeEvent>("executor").is_some() {
+                let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
+                let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
 
-            self.moveos = MoveOS::new(
-                self.moveos_store.clone(),
-                gas_parameters.all_natives(),
-                MoveOSConfig::default(),
-                system_pre_execute_functions(),
-                system_post_execute_functions(),
-            )?;
+                self.moveos = MoveOS::new(
+                    self.moveos_store.clone(),
+                    gas_parameters.all_natives(),
+                    MoveOSConfig::default(),
+                    system_pre_execute_functions(),
+                    system_post_execute_functions(),
+                    self.event_bus.clone(),
+                )?;
+
+                println!("111111111111111111 ExecutorActor");
+            }
         }
 
         self.root = execution_info.root_metadata();
