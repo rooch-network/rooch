@@ -74,11 +74,6 @@ impl EventBus {
         let receivers = self.receivers.read().unwrap();
         if let Some(event_receivers) = receivers.get(&event_type_id) {
             if let Some(receiver) = event_receivers.get(subscriber) {
-                log::debug!(
-                    "Checking if subscriber: '{}' has received event: '{:?}'",
-                    subscriber,
-                    event_type_id
-                );
                 if let Ok(boxed_event) = receiver.try_recv() {
                     if let Ok(event_data) = boxed_event.downcast::<T>() {
                         return Some(*event_data);
