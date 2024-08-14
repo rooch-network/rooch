@@ -12,9 +12,9 @@ use rooch_types::{
     error::{RoochError, RoochResult},
 };
 
-/// Export an existing private key for one address or mnemonic for all addresses off-chain.
+/// Sign an msg with current account private key (sign_hashed)
 ///
-/// Default to export all addresses with a mnemonic phrase but can be specified with -a or
+/// This operation must be specified with -a or
 /// --address to export only one address with a private key.
 #[derive(Debug, Parser)]
 pub struct SignCommand {
