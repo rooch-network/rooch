@@ -143,12 +143,12 @@ fn apply_updates(
         let loop_start_time = Instant::now();
         let count = batch.object_states.len();
         indexer_store.persist_or_update_object_states(batch.object_states)?;
+        ok_count += count;
         println!(
-            "{} updates applied in: {:?}",
-            count,
+            "{} updates applied. this batch cost: {:?}",
+            ok_count,
             loop_start_time.elapsed()
         );
-        ok_count += count;
     }
 
     println!(
