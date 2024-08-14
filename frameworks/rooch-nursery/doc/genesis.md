@@ -9,6 +9,7 @@
 
 
 <pre><code><b>use</b> <a href="">0x3::chain_id</a>;
+<b>use</b> <a href="bitcoin_multisign_validator.md#0xa_bitcoin_multisign_validator">0xa::bitcoin_multisign_validator</a>;
 <b>use</b> <a href="ethereum.md#0xa_ethereum">0xa::ethereum</a>;
 <b>use</b> <a href="tick_info.md#0xa_tick_info">0xa::tick_info</a>;
 </code></pre>

@@ -12,6 +12,7 @@ This is the reference documentation of the Rooch Nursery Framework.
 ## Index
 
 
+-  [`0xa::bitcoin_multisign_validator`](bitcoin_multisign_validator.md#0xa_bitcoin_multisign_validator)
 -  [`0xa::bitseed`](bitseed.md#0xa_bitseed)
 -  [`0xa::brc20`](brc20.md#0xa_brc20)
 -  [`0xa::ethereum`](ethereum.md#0xa_ethereum)
