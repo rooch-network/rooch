@@ -111,8 +111,6 @@ impl Handler<ExecuteViewFunctionMessage> for ReaderExecutorActor {
                     system_post_execute_functions(),
                     self.event_bus.clone(),
                 )?;
-
-                println!("222222222222222 ReaderExecutorActor");
             }
         }
 
