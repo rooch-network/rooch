@@ -54,6 +54,8 @@ impl CommandAction<Option<AccountSignView>> for SignCommand {
                 signature.encode_hex(),
             )))
         } else {
+            println!("Msg you input : {}", &self.msg);
+            println!("Signature : {}", signature.encode_hex());
             Ok(None)
         }
     }
