@@ -3,10 +3,11 @@
 
 /// Similar to `sui::table` but the values are linked together, allowing for ordered insertion and
 /// removal
-module orderbook::linked_table {
+module moveos_std::linked_table {
     use std::option::{Self, Option};
     use moveos_std::object::Object;
     use moveos_std::object;
+
 
 
     // Attempted to destroy a non-empty table
@@ -201,4 +202,29 @@ module orderbook::linked_table {
         assert!(size == 0, ErrorTableNotEmpty);
     }
 
+    #[test]
+    fun test_linked_table(){
+        let linked_table = new<u64, u64>();
+        push_back(&mut linked_table, 1, 2);
+        push_back(&mut linked_table, 3, 4);
+        assert!(length(&mut linked_table) == 2 , 0);
+        let pre = prev(&linked_table, 3);
+        let next = next(&linked_table, 1);
+        let front = front(&linked_table);
+        let back = back(&linked_table);
+
+        assert!(front == &option::some(1), 1);
+        assert!(back == &option::some(3), 2);
+        assert!(pre == &option::some(1), 3);
+        assert!(next == &option::some(3), 4);
+        push_back(&mut linked_table, 5, 6);
+        let (key1, value1) = pop_front(&mut linked_table);
+        assert!(front(&linked_table) == &option::some(3), 5);
+        let (key2, value2) = pop_front(&mut linked_table);
+        assert!(key1 == 1 && value1 == 2, 6);
+        assert!(key2 == 3 && value2 == 4, 7);
+        let value = remove(&mut linked_table, 5);
+        assert!(value == 6, 8);
+        destroy_empty(linked_table)
+    }
 }
