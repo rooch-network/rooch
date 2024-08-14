@@ -88,12 +88,6 @@ impl EventBus {
                             subscriber
                         );
                     }
-                } else {
-                    log::debug!(
-                        "No new event '{:?}' for subscriber '{}'",
-                        event_type_id,
-                        subscriber
-                    );
                 }
             } else {
                 log::debug!(
