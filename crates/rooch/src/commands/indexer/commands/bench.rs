@@ -24,7 +24,7 @@ pub struct BenchCommand {
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
     pub base_data_dir: Option<PathBuf>,
 
-    #[clap(long, help = "bench count", default_value = "1000000")]
+    #[clap(long, help = "bench count", default_value = "10000")]
     pub count: Option<u64>,
 
     #[clap(long, help = "query filter: utxo/ord", default_value = "utxo")]
@@ -61,7 +61,7 @@ impl BenchCommand {
         query_filter: String,
         count: u64,
     ) -> anyhow::Result<()> {
-        const BATCH_SIZE: usize = 5000;
+        let batch_size: u64 = count / 10;
 
         let filter = match query_filter.as_str() {
             "utxo" => ObjectStateFilter::ObjectType(UTXO::struct_tag()),
@@ -69,10 +69,17 @@ impl BenchCommand {
             _ => ObjectStateFilter::ObjectType(UTXO::struct_tag()),
         };
 
+        let start = Instant::now();
         let query_object_states =
             indexer_reader.query_object_states_with_filter(filter.clone(), None, 1, true)?;
         let tx_order = query_object_states[0].tx_order;
         let mut state_index = query_object_states[0].state_index;
+        log::info!(
+            "bench start for tx_order: {}, state_index: {}. init query cost: {:?}",
+            tx_order,
+            state_index,
+            start.elapsed()
+        );
         state_index += 1;
         let mut total_duration: u128 = 0;
         let mut total_query: u64 = 0;
@@ -81,19 +88,24 @@ impl BenchCommand {
                 break;
             }
             let start = Instant::now();
-            for _ in 0..BATCH_SIZE {
+            for _ in 0..batch_size {
                 let query_object_states = indexer_reader.query_object_states_with_filter(
                     filter.clone(),
                     Some(IndexerStateID::new(tx_order, state_index)),
                     1,
                     true,
                 )?;
-                assert!(query_object_states.len() == 1);
+                assert_eq!(query_object_states.len(), 1);
                 total_query += 1;
                 state_index += 1;
             }
             let duration = start.elapsed().as_millis();
             total_duration += duration;
+            println!(
+                "query: {}, avg_duration(ms): {:.2}",
+                batch_size,
+                total_duration as f64 / total_query as f64
+            );
         }
 
         println!(

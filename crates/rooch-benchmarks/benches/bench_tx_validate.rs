@@ -3,9 +3,9 @@
 
 use std::time::Duration;
 
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{criterion_group, criterion_main, Criterion};
 
-use rooch_benchmarks::config::{BenchTxConfig, configure_criterion};
+use rooch_benchmarks::config::{configure_criterion, BenchTxConfig};
 use rooch_benchmarks::tx::create_l2_tx;
 use rooch_framework_tests::binding_test;
 use rooch_test_transaction_builder::TestTransactionBuilder;
