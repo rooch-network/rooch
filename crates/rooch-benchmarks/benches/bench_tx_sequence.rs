@@ -12,8 +12,7 @@ use std::time::Duration;
 pub fn tx_sequence_benchmark(c: &mut Criterion) {
     let config = BenchTxConfig::load();
 
-    let binding_test = binding_test::RustBindingTest::new().unwrap();
-
+    let binding_test = binding_test::RustBindingTest::new_in_tokio().unwrap();
     let rooch_key_pair = binding_test.sequencer_kp().copy();
 
     let sequencer_keypair = rooch_key_pair.copy();
