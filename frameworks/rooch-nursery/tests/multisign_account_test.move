@@ -24,7 +24,7 @@ module rooch_nursery::multisign_account_test{
         vector::push_back(&mut public_keys, pk2);
         vector::push_back(&mut public_keys, pk3);
         let multisign_addr_result = multisign_account::initialize_multisig_account(threshold, public_keys);
-        std::debug::print(&multisign_addr_result);
+        //std::debug::print(&multisign_addr_result);
         assert!(multisign_addr == multisign_addr_result, 1001);
         assert!(multisign_account::is_participant(multisign_addr, u1), 1002);
         assert!(multisign_account::is_participant(multisign_addr, u2), 1003);
