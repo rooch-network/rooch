@@ -15,7 +15,7 @@ module rooch_nursery::bitcoin_multisign_validator{
     const ErrorGenesisInitError: u64 = 1;
 
     /// there defines auth validator id for each auth validator
-    const BITCOIN_MULTISIGN_AUTH_VALIDATOR_ID: u64 = 2;
+    const BITCOIN_MULTISIGN_VALIDATOR_ID: u64 = 2;
 
     struct BitcoinMultisignValidator has store, drop {}
 
@@ -38,12 +38,12 @@ module rooch_nursery::bitcoin_multisign_validator{
     }
 
     public fun auth_validator_id(): u64 {
-        BITCOIN_MULTISIGN_AUTH_VALIDATOR_ID
+        BITCOIN_MULTISIGN_VALIDATOR_ID
     }
 
     public(friend) fun genesis_init(){
         let id = auth_validator_registry::register<BitcoinMultisignValidator>();
-        assert!(id == BITCOIN_MULTISIGN_AUTH_VALIDATOR_ID, ErrorGenesisInitError);
+        assert!(id == BITCOIN_MULTISIGN_VALIDATOR_ID, ErrorGenesisInitError);
     }
 
     fun encode_full_message(self: &AuthPayload, tx_hash: vector<u8>): vector<u8> {

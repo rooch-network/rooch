@@ -66,12 +66,12 @@
 ## Constants
 
 
-<a name="0xa_bitcoin_multisign_validator_BITCOIN_MULTISIGN_AUTH_VALIDATOR_ID"></a>
+<a name="0xa_bitcoin_multisign_validator_BITCOIN_MULTISIGN_VALIDATOR_ID"></a>
 
 there defines auth validator id for each auth validator
 
 
-<pre><code><b>const</b> <a href="bitcoin_multisign_validator.md#0xa_bitcoin_multisign_validator_BITCOIN_MULTISIGN_AUTH_VALIDATOR_ID">BITCOIN_MULTISIGN_AUTH_VALIDATOR_ID</a>: u64 = 2;
+<pre><code><b>const</b> <a href="bitcoin_multisign_validator.md#0xa_bitcoin_multisign_validator_BITCOIN_MULTISIGN_VALIDATOR_ID">BITCOIN_MULTISIGN_VALIDATOR_ID</a>: u64 = 2;
 </code></pre>
 
 

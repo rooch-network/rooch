@@ -4,7 +4,7 @@
 use crate::address::{BitcoinAddress, RoochSupportedAddress};
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use crate::error::RoochError;
-use anyhow::{ensure, Result};
+use anyhow::Result;
 use clap::ValueEnum;
 use framework_types::addresses::ROOCH_NURSERY_ADDRESS;
 use move_core_types::value::MoveValue;
@@ -231,12 +231,6 @@ impl<'a> AuthValidatorCaller<'a> {
         );
         self.caller
             .call_function(ctx, auth_validator_call)?
-            .decode(|values| {
-                ensure!(
-                    !values.is_empty(),
-                    "Unexpect validate function return values"
-                );
-                Ok(())
-            })
+            .decode(|_values| Ok(()))
     }
 }

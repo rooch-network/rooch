@@ -19,6 +19,7 @@ module rooch_nursery::multisign_account{
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
     use bitcoin_move::taproot_builder;
     use moveos_std::result;
+    use rooch_framework::address_mapping;
 
     const PROPOSAL_STATUS_PENDING: u8 = 0;
     const PROPOSAL_STATUS_APPROVED: u8 = 1;
@@ -144,7 +145,7 @@ module rooch_nursery::multisign_account{
             bitcoin_proposals: table_vec::new(),
             rooch_proposals: table_vec::new(),
         };
-        let account = borrow_mut_or_create_account(multisign_address);
+        let account = borrow_mut_or_create_account(multisign_address, multisign_bitcoin_address);
         account::account_move_resource_to(account, multisign_account_info);
         multisign_address
     }
@@ -301,7 +302,7 @@ module rooch_nursery::multisign_account{
         tx_data: vector<u8>,
     ){
         assert!(account::exists_at(multisign_address), ErrorMultisignAccountNotFound);
-        let account = borrow_mut_or_create_account(multisign_address);
+        let account = borrow_mut_account(multisign_address);
         let multisign_account_info = account::account_borrow_mut_resource<MultisignAccountInfo>(account);
 
         let sender_addr = signer::address_of(sender);
@@ -328,7 +329,7 @@ module rooch_nursery::multisign_account{
         signature: vector<u8>,
     ){
         assert!(account::exists_at(multisign_address), ErrorMultisignAccountNotFound);
-        let account = borrow_mut_or_create_account(multisign_address);
+        let account = borrow_mut_account(multisign_address);
         let multisign_account_info = account::account_borrow_mut_resource<MultisignAccountInfo>(account);
 
         let sender_addr = signer::address_of(sender);
@@ -363,13 +364,21 @@ module rooch_nursery::multisign_account{
         );
     }
 
-    fun borrow_mut_or_create_account(multisign_address: address) : &mut Object<Account>{
-        let module_signer = signer::module_signer<MultisignAccountInfo>();
-        let signer = if(!account::exists_at(multisign_address)){
-            account::create_account_by_system(&module_signer, multisign_address)
+    fun borrow_mut_or_create_account(multisign_address: address, multisign_bitcoin_address: BitcoinAddress) : &mut Object<Account> {
+        // Maybe the multisign account is created by the Bitcoin transaction
+        if (account::exists_at(multisign_address)){
+            borrow_mut_account(multisign_address)
         }else{
-            account::create_signer_for_system(&module_signer, multisign_address)
-        };
+            let module_signer = signer::module_signer<MultisignAccountInfo>();
+            let signer = account::create_account_by_system(&module_signer, multisign_address);
+            address_mapping::bind_bitcoin_address_by_system(&module_signer, multisign_address, multisign_bitcoin_address);
+            account::borrow_mut_account(&signer)
+        }
+    }
+
+    fun borrow_mut_account(multisign_address: address) : &mut Object<Account>{
+        let module_signer = signer::module_signer<MultisignAccountInfo>();
+        let signer = account::create_signer_for_system(&module_signer, multisign_address);
         account::borrow_mut_account(&signer)
     }
 

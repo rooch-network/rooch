@@ -2,12 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::binding_test;
+use move_core_types::u256::U256;
 use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::state::MoveStructType;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use rooch_types::crypto::{RoochKeyPair, RoochSignature};
 use rooch_types::framework::auth_payload::SignData;
 use rooch_types::framework::auth_validator::BuiltinAuthValidator;
 use rooch_types::framework::empty::Empty;
+use rooch_types::framework::gas_coin::GasCoin;
+use rooch_types::framework::transfer::TransferModule;
 use rooch_types::nursery::bitcoin_multisign_validator::{
     AuthPayload, BitcoinMultisignValidatorModule,
 };
@@ -49,7 +53,21 @@ fn test_validate() {
     let tx = tx_data.sign(&kp1);
     binding_test.execute(tx).unwrap();
 
-    let sender = bitcoin_address_from_rust.to_rooch_address();
+    let multisign_address = bitcoin_address_from_rust.to_rooch_address();
+
+    //transfer gas free to multisign account
+
+    let gas_action = TransferModule::create_transfer_coin_action(
+        GasCoin::struct_tag(),
+        multisign_address.into(),
+        U256::from(1000000000u128),
+    );
+
+    let gas_tx_data = RoochTransactionData::new_for_test(u1, 1, gas_action);
+    let gas_tx = gas_tx_data.sign(&kp1);
+    binding_test.execute(gas_tx).unwrap();
+
+    let sender = multisign_address;
     let sequence_number = 0;
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
@@ -80,9 +98,15 @@ fn test_validate() {
 
     let auth_info = tx.authenticator_info();
 
-    let move_tx: MoveOSTransaction = tx.into_moveos_transaction(root);
+    //Test the validate function
+    {
+        let move_tx: MoveOSTransaction = tx.clone().into_moveos_transaction(root);
 
-    let validator_caller = binding_test.as_module_binding::<BitcoinMultisignValidatorModule>();
-    let result = validator_caller.validate(&move_tx.ctx, auth_info.authenticator.payload);
-    assert!(result.is_ok());
+        let validator_caller = binding_test.as_module_binding::<BitcoinMultisignValidatorModule>();
+        let result = validator_caller.validate(&move_tx.ctx, auth_info.authenticator.payload);
+        assert!(result.is_ok());
+    }
+
+    //Execute the multisign transaction
+    binding_test.execute(tx).unwrap();
 }
