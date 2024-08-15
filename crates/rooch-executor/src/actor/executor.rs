@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::ops::Deref;
 use super::messages::{
     ConvertL2TransactionData, DryRunTransactionMessage, DryRunTransactionResult,
     ExecuteTransactionMessage, ExecuteTransactionResult, GetRootMessage, ValidateL1BlockMessage,
@@ -14,7 +15,7 @@ use function_name::named;
 use move_core_types::vm_status::VMStatus;
 use moveos::moveos::{GasUpgradeEvent, MoveOS, MoveOSConfig};
 use moveos::vm::vm_status_explainer::explain_vm_status;
-use moveos_eventbus::bus::EventBus;
+use moveos_eventbus::bus::{EventBus, EventData};
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
@@ -44,6 +45,7 @@ use rooch_types::transaction::{
 use std::str::FromStr;
 use std::sync::Arc;
 use tracing::{debug, warn};
+use rooch_event::actor::GasUpgradeMessage;
 
 pub struct ExecutorActor {
     root: ObjectMeta,
@@ -498,5 +500,15 @@ impl MoveFunctionCaller for ExecutorActor {
         Ok(self
             .moveos
             .execute_readonly_function(self.root.clone(), ctx, call))
+    }
+}
+
+#[async_trait]
+impl Handler<EventData> for ExecutorActor {
+    async fn handle(&mut self, message: EventData, _ctx: &mut ActorContext) -> Result<()> {
+        if let Ok(gas_upgrade_msg) = message.data.downcast::<GasUpgradeMessage>() {
+            println!("Executor aaaaaaaaaa {:?}", gas_upgrade_msg.deref());
+        }
+        Ok(())
     }
 }

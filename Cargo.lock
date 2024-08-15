@@ -6838,10 +6838,12 @@ name = "moveos-eventbus"
 version = "0.6.8"
 dependencies = [
  "anyhow",
+ "coerce",
  "crossbeam-channel",
  "futures",
  "log",
  "once_cell",
+ "tokio",
 ]
 
 [[package]]
@@ -9300,6 +9302,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "rooch-event"
+version = "0.6.8"
+dependencies = [
+ "anyhow",
+ "coerce",
+]
+
+[[package]]
 name = "rooch-executor"
 version = "0.6.8"
 dependencies = [
@@ -9316,6 +9326,7 @@ dependencies = [
  "moveos-store",
  "moveos-types",
  "prometheus",
+ "rooch-event",
  "rooch-genesis",
  "rooch-store",
  "rooch-types",
@@ -9718,6 +9729,7 @@ dependencies = [
  "rooch-config",
  "rooch-da",
  "rooch-db",
+ "rooch-event",
  "rooch-executor",
  "rooch-genesis",
  "rooch-indexer",
@@ -9730,6 +9742,7 @@ dependencies = [
  "rooch-sequencer",
  "rooch-types",
  "serde_json",
+ "tokio",
  "tower",
  "tower-http",
  "tracing",

@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::ops::Deref;
 use super::messages::{
     AnnotatedStatesMessage, ExecuteViewFunctionMessage, GetAnnotatedEventsByEventHandleMessage,
     GetEventsByEventHandleMessage, RefreshStateMessage, StatesMessage,
@@ -15,7 +16,7 @@ use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use move_resource_viewer::MoveValueAnnotator;
 use moveos::moveos::MoveOSConfig;
 use moveos::moveos::{GasUpgradeEvent, MoveOS};
-use moveos_eventbus::bus::EventBus;
+use moveos_eventbus::bus::{EventBus, EventData};
 use moveos_store::transaction_store::TransactionStore;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
@@ -27,6 +28,7 @@ use moveos_types::state::{AnnotatedState, ObjectState};
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::state_resolver::{AnnotatedStateKV, AnnotatedStateReader, StateKV, StateReader};
 use moveos_types::transaction::TransactionExecutionInfo;
+use rooch_event::actor::GasUpgradeMessage;
 use rooch_genesis::FrameworksGasParameters;
 use rooch_store::RoochStore;
 use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
@@ -286,5 +288,15 @@ impl Handler<RefreshStateMessage> for ReaderExecutorActor {
     async fn handle(&mut self, msg: RefreshStateMessage, _ctx: &mut ActorContext) -> Result<()> {
         let RefreshStateMessage { root, is_upgrade } = msg;
         self.refresh_state(root, is_upgrade)
+    }
+}
+
+#[async_trait]
+impl Handler<EventData> for ReaderExecutorActor {
+    async fn handle(&mut self, message: EventData, _ctx: &mut ActorContext) -> Result<()> {
+        if let Ok(gas_upgrade_msg) = message.data.downcast::<GasUpgradeMessage>() {
+            println!("ReadExecutor bbbbbbbbbbbb {:?}", gas_upgrade_msg.deref());
+        }
+        Ok(())
     }
 }

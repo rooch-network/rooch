@@ -14,7 +14,7 @@ use coerce::actor::{system::ActorSystem, IntoActor};
 use jsonrpsee::server::middleware::rpc::RpcServiceBuilder;
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
-use moveos_eventbus::bus::EventBus;
+use moveos_eventbus::bus::{EventBus};
 use raw_store::errors::RawStoreError;
 use rooch_config::server_config::ServerConfig;
 use rooch_config::{RoochOpt, ServerOpt};
@@ -52,6 +52,7 @@ use std::{env, panic, process};
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::{error, info};
+use rooch_event::actor::GasUpgradeMessage;
 
 pub mod metrics_server;
 pub mod server;
@@ -255,7 +256,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let executor = executor_actor
         .into_actor(Some("Executor"), &actor_system)
         .await?;
-    let executor_proxy = ExecutorProxy::new(executor.into(), reader_executor.into());
+    let executor_proxy = ExecutorProxy::new(executor.clone().into(), reader_executor.clone().into());
 
     // Init sequencer
     info!("RPC Server sequencer address: {:?}", sequencer_account);
@@ -268,6 +269,9 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     .into_actor(Some("Sequencer"), &actor_system)
     .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
+
+    event_bus.actor_subscribe::<GasUpgradeMessage>("executor", Box::new(executor.clone()));
+    event_bus.actor_subscribe::<GasUpgradeMessage>("read-executor", Box::new(reader_executor.clone()));
 
     // Init DA
     let da_config = opt.da_config().clone();

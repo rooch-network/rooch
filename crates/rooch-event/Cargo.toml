@@ -1,5 +1,5 @@
 [package]
-name = "moveos-eventbus"
+name = "rooch-event"
 authors.workspace = true
 edition.workspace = true
 homepage.workspace = true
@@ -11,9 +11,4 @@ version.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
-futures = { workspace = true }
-log = { workspace = true }
-once_cell = { workspace = true }
-crossbeam-channel = { workspace = true }
 coerce = { workspace = true }
-tokio = "1.39.2"

@@ -1,10 +1,36 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use coerce::actor::message::{Handler, Message};
+use coerce::actor::{Actor, LocalActorRef};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
+
+pub struct EventData {
+    pub data: Box<dyn Any + Send + Sync + 'static>,
+}
+
+impl EventData {
+    pub fn new(data: Box<dyn Any + Send + Sync + 'static>) -> EventData {
+        Self { data }
+    }
+}
+
+impl Message for EventData {
+    type Result = anyhow::Result<()>;
+}
+
+pub trait EventNotifier {
+    fn send_event_data(&self, data: EventData);
+}
+
+impl<A: Actor + Handler<EventData>> EventNotifier for LocalActorRef<A> {
+    fn send_event_data(&self, data: EventData) {
+        let _ = self.notify(data);
+    }
+}
 
 type SenderType = Arc<RwLock<HashMap<TypeId, HashMap<String, Sender<Box<dyn Any + Send>>>>>>;
 type ReceiverType = Arc<RwLock<HashMap<TypeId, HashMap<String, Receiver<Box<dyn Any + Send>>>>>>;
@@ -13,6 +39,8 @@ type CallBackType = Arc<
         HashMap<TypeId, HashMap<String, Box<dyn Fn(Box<dyn Any + Send>) + Send + Sync + 'static>>>,
     >,
 >;
+type ActorsType =
+    Arc<RwLock<HashMap<TypeId, HashMap<String, Box<dyn EventNotifier + Send + Sync + 'static>>>>>;
 
 /// The EventBus struct manages event subscription and notification.
 #[derive(Clone)]
@@ -20,6 +48,7 @@ pub struct EventBus {
     senders: SenderType,
     receivers: ReceiverType,
     callbacks: CallBackType,
+    actors: ActorsType,
 }
 
 impl Default for EventBus {
@@ -35,11 +64,12 @@ impl EventBus {
             senders: Arc::new(RwLock::new(HashMap::new())),
             receivers: Arc::new(RwLock::new(HashMap::new())),
             callbacks: Arc::new(RwLock::new(HashMap::new())),
+            actors: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
     /// Publishes an event, notifying all subscribers with the data of type `T`.
-    pub fn notify<T: 'static + Send + Clone>(&self, event_data: T) {
+    pub fn notify<T: 'static + Send + Sync + Clone>(&self, event_data: T) {
         let event_type_id = TypeId::of::<T>();
         {
             let senders = self.senders.read().unwrap();
@@ -68,6 +98,18 @@ impl EventBus {
             }
         } else {
             log::debug!("No subscribers found for event: '{:?}'", event_type_id);
+        }
+
+        let actors = self.actors.read().unwrap();
+        if let Some(actors_map) = actors.get(&event_type_id) {
+            for (subscriber, actor) in actors_map {
+                log::debug!(
+                    "Executing actor for subscriber: '{}' on event: '{:?}'",
+                    subscriber,
+                    event_type_id
+                );
+                actor.send_event_data(EventData::new(Box::new(event_data.clone())));
+            }
         }
     }
 
@@ -125,7 +167,7 @@ impl EventBus {
     }
 
     /// Subscribes to an event with a callback function.
-    pub fn subscribe<T: 'static + Send, F>(&self, subscriber: &str, callback: F)
+    pub fn callback_subscribe<T: 'static + Send, F>(&self, subscriber: &str, callback: F)
     where
         F: Fn(Box<dyn Any + Send>) + Send + Sync + 'static,
     {
@@ -139,6 +181,18 @@ impl EventBus {
             subscriber,
             event_type_id
         );
+    }
+
+    pub fn actor_subscribe<T: Send + 'static>(
+        &self,
+        subscriber: &str,
+        actor: Box<dyn EventNotifier + Send + Sync + 'static>,
+    ) {
+        // actor.send_tx_msg(EventData::new(Box::new("".to_string())));
+        let event_type_id = TypeId::of::<T>();
+        let mut actors = self.actors.write().unwrap();
+        let event_actors = actors.entry(event_type_id).or_default();
+        event_actors.insert(subscriber.to_string(), actor);
     }
 
     /// Prints the current status of the event bus.
