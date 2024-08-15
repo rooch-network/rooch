@@ -1,5 +1,5 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-pub mod bus;
-pub mod event;
+#[derive(Default, Clone, Debug)]
+pub struct GasUpgradeEvent {}

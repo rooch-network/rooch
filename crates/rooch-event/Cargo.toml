@@ -12,3 +12,5 @@ version.workspace = true
 [dependencies]
 anyhow = { workspace = true }
 coerce = { workspace = true }
+async-trait = { workspace = true }
+moveos-eventbus = { workspace = true }

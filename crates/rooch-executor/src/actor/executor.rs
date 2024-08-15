@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::ops::Deref;
 use super::messages::{
     ConvertL2TransactionData, DryRunTransactionMessage, DryRunTransactionResult,
     ExecuteTransactionMessage, ExecuteTransactionResult, GetRootMessage, ValidateL1BlockMessage,
@@ -10,12 +9,14 @@ use super::messages::{
 use crate::metrics::ExecutorMetrics;
 use anyhow::Result;
 use async_trait::async_trait;
-use coerce::actor::{context::ActorContext, message::Handler, Actor};
+use coerce::actor::system::ActorSystem;
+use coerce::actor::{context::ActorContext, message::Handler, Actor, ActorRef, IntoActor};
 use function_name::named;
 use move_core_types::vm_status::VMStatus;
-use moveos::moveos::{GasUpgradeEvent, MoveOS, MoveOSConfig};
+use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos::vm::vm_status_explainer::explain_vm_status;
-use moveos_eventbus::bus::{EventBus, EventData};
+use moveos_eventbus::bus::EventData;
+use moveos_eventbus::event::GasUpgradeEvent;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
@@ -27,6 +28,7 @@ use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::{FunctionCall, MoveOSTransaction, VerifiedMoveAction};
 use moveos_types::transaction::{MoveAction, VerifiedMoveOSTransaction};
 use prometheus::Registry;
+use rooch_event::actor::{EventActor, GasUpgradeMessage};
 use rooch_genesis::FrameworksGasParameters;
 use rooch_store::RoochStore;
 use rooch_types::address::{BitcoinAddress, MultiChainAddress};
@@ -45,7 +47,6 @@ use rooch_types::transaction::{
 use std::str::FromStr;
 use std::sync::Arc;
 use tracing::{debug, warn};
-use rooch_event::actor::GasUpgradeMessage;
 
 pub struct ExecutorActor {
     root: ObjectMeta,
@@ -53,19 +54,19 @@ pub struct ExecutorActor {
     moveos_store: MoveOSStore,
     rooch_store: RoochStore,
     metrics: Arc<ExecutorMetrics>,
-    event_bus: Option<EventBus>,
+    event_actor: ActorRef<EventActor>,
 }
 
 type ValidateAuthenticatorResult = Result<TxValidateResult, VMStatus>;
 
 impl ExecutorActor {
-    pub fn new(
+    pub async fn new(
         root: ObjectMeta,
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
         registry: &Registry,
-        event_bus: Option<EventBus>,
-    ) -> Result<Self> {
+        event_actor: (EventActor, ActorRef<EventActor>, &ActorSystem),
+    ) -> Result<ActorRef<Self>> {
         let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
         let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
 
@@ -75,21 +76,26 @@ impl ExecutorActor {
             MoveOSConfig::default(),
             system_pre_execute_functions(),
             system_post_execute_functions(),
-            event_bus.clone(),
         )?;
 
-        if let Some(ev_bus) = event_bus.clone() {
-            ev_bus.register_event_subscriber::<GasUpgradeEvent>("executor");
-        };
-
-        Ok(Self {
+        let executor = Self {
             root,
             moveos,
             moveos_store,
             rooch_store,
             metrics: Arc::new(ExecutorMetrics::new(registry)),
-            event_bus,
-        })
+            event_actor: event_actor.1,
+        };
+
+        let executor_ref = executor
+            .into_actor(Some("Executor"), event_actor.2)
+            .await?;
+
+        event_actor
+            .0
+            .subscribe::<GasUpgradeEvent>("executor", Box::new(executor_ref.clone()));
+
+        Ok(executor_ref.into())
     }
 
     pub fn get_rooch_store(&self) -> RoochStore {
@@ -112,7 +118,7 @@ impl ExecutorActor {
             .executor_execute_tx_latency_seconds
             .with_label_values(&[fn_name])
             .start_timer();
-        let (raw_output, vm_error_info) = self.moveos.execute_only(tx)?;
+        let (raw_output, vm_error_info, _) = self.moveos.execute_only(tx)?;
         Ok(DryRunTransactionResult {
             raw_output,
             vm_error_info,
@@ -120,7 +126,10 @@ impl ExecutorActor {
     }
 
     #[named]
-    pub fn execute(&mut self, tx: VerifiedMoveOSTransaction) -> Result<ExecuteTransactionResult> {
+    pub async fn execute(
+        &mut self,
+        tx: VerifiedMoveOSTransaction,
+    ) -> Result<ExecuteTransactionResult> {
         let fn_name = function_name!();
         let _timer = self
             .metrics
@@ -129,35 +138,23 @@ impl ExecutorActor {
             .start_timer();
         let tx_hash = tx.ctx.tx_hash();
         let size = tx.ctx.tx_size;
-        let (raw_output, _) = self.moveos.execute_only(tx)?;
+        let (raw_output, _, gas_upgraded) = self.moveos.execute_only(tx)?;
         let output = MoveOS::apply_transaction_output(&self.moveos.db, raw_output)?;
 
         let execution_info = self
             .moveos_store
             .handle_tx_output(tx_hash, output.clone())?;
 
-        // The cost table has been upgraded, we need to reload the native functions.
-        if let Some(event_bus) = self.event_bus.clone() {
-            if event_bus.get_event::<GasUpgradeEvent>("executor").is_some() {
-                let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
-                let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
-
-                self.moveos = MoveOS::new(
-                    self.moveos_store.clone(),
-                    gas_parameters.all_natives(),
-                    MoveOSConfig::default(),
-                    system_pre_execute_functions(),
-                    system_post_execute_functions(),
-                    self.event_bus.clone(),
-                )?;
-            }
-        }
-
         self.root = execution_info.root_metadata();
         self.metrics
             .executor_execute_tx_bytes
             .with_label_values(&[fn_name])
             .observe(size as f64);
+
+        if gas_upgraded {
+            let _ = self.event_actor.send(GasUpgradeMessage {}).await;
+        }
+
         Ok(ExecuteTransactionResult {
             output,
             transaction_info: execution_info,
@@ -469,7 +466,7 @@ impl Handler<ExecuteTransactionMessage> for ExecutorActor {
         msg: ExecuteTransactionMessage,
         _ctx: &mut ActorContext,
     ) -> Result<ExecuteTransactionResult> {
-        self.execute(msg.tx)
+        self.execute(msg.tx).await
     }
 }
 
@@ -506,8 +503,17 @@ impl MoveFunctionCaller for ExecutorActor {
 #[async_trait]
 impl Handler<EventData> for ExecutorActor {
     async fn handle(&mut self, message: EventData, _ctx: &mut ActorContext) -> Result<()> {
-        if let Ok(gas_upgrade_msg) = message.data.downcast::<GasUpgradeMessage>() {
-            println!("Executor aaaaaaaaaa {:?}", gas_upgrade_msg.deref());
+        if let Ok(_gas_upgrade_msg) = message.data.downcast::<GasUpgradeEvent>() {
+            let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
+            let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
+
+            self.moveos = MoveOS::new(
+                self.moveos_store.clone(),
+                gas_parameters.all_natives(),
+                MoveOSConfig::default(),
+                system_pre_execute_functions(),
+                system_post_execute_functions(),
+            )?;
         }
         Ok(())
     }

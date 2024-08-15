@@ -9306,7 +9306,9 @@ name = "rooch-event"
 version = "0.6.8"
 dependencies = [
  "anyhow",
+ "async-trait",
  "coerce",
+ "moveos-eventbus",
 ]
 
 [[package]]
@@ -9722,6 +9724,7 @@ dependencies = [
  "metrics",
  "move-core-types",
  "move-resource-viewer",
+ "moveos",
  "moveos-eventbus",
  "moveos-types",
  "prometheus",

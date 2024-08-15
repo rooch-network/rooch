@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use coerce::actor::message::{Handler, Message};
-use coerce::actor::{Actor, LocalActorRef};
+use coerce::actor::{Actor, ActorRefErr, LocalActorRef};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
@@ -23,12 +23,12 @@ impl Message for EventData {
 }
 
 pub trait EventNotifier {
-    fn send_event_data(&self, data: EventData);
+    fn send_event_data(&self, data: EventData) -> Result<(), ActorRefErr>;
 }
 
 impl<A: Actor + Handler<EventData>> EventNotifier for LocalActorRef<A> {
-    fn send_event_data(&self, data: EventData) {
-        let _ = self.notify(data);
+    fn send_event_data(&self, data: EventData) -> Result<(), ActorRefErr> {
+        self.notify(data)
     }
 }
 
@@ -69,7 +69,10 @@ impl EventBus {
     }
 
     /// Publishes an event, notifying all subscribers with the data of type `T`.
-    pub fn notify<T: 'static + Send + Sync + Clone>(&self, event_data: T) {
+    pub fn notify<T: 'static + Send + Sync + Clone>(
+        &self,
+        event_data: T,
+    ) -> Result<(), ActorRefErr> {
         let event_type_id = TypeId::of::<T>();
         {
             let senders = self.senders.read().unwrap();
@@ -108,9 +111,11 @@ impl EventBus {
                     subscriber,
                     event_type_id
                 );
-                actor.send_event_data(EventData::new(Box::new(event_data.clone())));
+                actor.send_event_data(EventData::new(Box::new(event_data.clone())))?
             }
         }
+
+        Ok(())
     }
 
     /// Non-blocking check if the specified subscriber has received the event and returns the event data.
@@ -188,7 +193,6 @@ impl EventBus {
         subscriber: &str,
         actor: Box<dyn EventNotifier + Send + Sync + 'static>,
     ) {
-        // actor.send_tx_msg(EventData::new(Box::new("".to_string())));
         let event_type_id = TypeId::of::<T>();
         let mut actors = self.actors.write().unwrap();
         let event_actors = actors.entry(event_type_id).or_default();

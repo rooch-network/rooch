@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::ops::Deref;
 use super::messages::{
     AnnotatedStatesMessage, ExecuteViewFunctionMessage, GetAnnotatedEventsByEventHandleMessage,
     GetEventsByEventHandleMessage, RefreshStateMessage, StatesMessage,
@@ -12,11 +11,13 @@ use crate::actor::messages::{
 };
 use anyhow::Result;
 use async_trait::async_trait;
-use coerce::actor::{context::ActorContext, message::Handler, Actor};
+use coerce::actor::system::ActorSystem;
+use coerce::actor::{context::ActorContext, message::Handler, Actor, ActorRef, IntoActor};
 use move_resource_viewer::MoveValueAnnotator;
+use moveos::moveos::MoveOS;
 use moveos::moveos::MoveOSConfig;
-use moveos::moveos::{GasUpgradeEvent, MoveOS};
-use moveos_eventbus::bus::{EventBus, EventData};
+use moveos_eventbus::bus::EventData;
+use moveos_eventbus::event::GasUpgradeEvent;
 use moveos_store::transaction_store::TransactionStore;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
@@ -28,7 +29,7 @@ use moveos_types::state::{AnnotatedState, ObjectState};
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::state_resolver::{AnnotatedStateKV, AnnotatedStateReader, StateKV, StateReader};
 use moveos_types::transaction::TransactionExecutionInfo;
-use rooch_event::actor::GasUpgradeMessage;
+use rooch_event::actor::EventActor;
 use rooch_genesis::FrameworksGasParameters;
 use rooch_store::RoochStore;
 use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
@@ -38,16 +39,15 @@ pub struct ReaderExecutorActor {
     moveos: MoveOS,
     moveos_store: MoveOSStore,
     rooch_store: RoochStore,
-    event_bus: Option<EventBus>,
 }
 
 impl ReaderExecutorActor {
-    pub fn new(
+    pub async fn new(
         root: ObjectMeta,
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
-        event_bus: Option<EventBus>,
-    ) -> Result<Self> {
+        event_actor: (EventActor, &ActorSystem),
+    ) -> Result<ActorRef<Self>> {
         let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
         let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
         let moveos = MoveOS::new(
@@ -56,20 +56,24 @@ impl ReaderExecutorActor {
             MoveOSConfig::default(),
             system_pre_execute_functions(),
             system_post_execute_functions(),
-            event_bus.clone(),
         )?;
 
-        if let Some(ev_bus) = event_bus.clone() {
-            ev_bus.register_event_subscriber::<GasUpgradeEvent>("read-executor");
-        };
-
-        Ok(Self {
+        let read_executor = Self {
             root,
             moveos,
             moveos_store,
             rooch_store,
-            event_bus,
-        })
+        };
+
+        let read_executor_ref = read_executor
+            .into_actor(Some("Executor"), event_actor.1)
+            .await?;
+
+        event_actor
+            .0
+            .subscribe::<GasUpgradeEvent>("read-executor", Box::new(read_executor_ref.clone()));
+
+        Ok(read_executor_ref.into())
     }
 
     pub fn get_rooch_store(&self) -> RoochStore {
@@ -99,25 +103,6 @@ impl Handler<ExecuteViewFunctionMessage> for ReaderExecutorActor {
         let function_result = self
             .moveos()
             .execute_view_function(self.root.clone(), msg.call);
-
-        if let Some(event_bus) = self.event_bus.clone() {
-            if event_bus
-                .get_event::<GasUpgradeEvent>("read-executor")
-                .is_some()
-            {
-                let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
-                let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
-
-                self.moveos = MoveOS::new(
-                    self.moveos_store.clone(),
-                    gas_parameters.all_natives(),
-                    MoveOSConfig::default(),
-                    system_pre_execute_functions(),
-                    system_post_execute_functions(),
-                    self.event_bus.clone(),
-                )?;
-            }
-        }
 
         Ok(AnnotatedFunctionResult {
             vm_status: function_result.vm_status,
@@ -294,8 +279,17 @@ impl Handler<RefreshStateMessage> for ReaderExecutorActor {
 #[async_trait]
 impl Handler<EventData> for ReaderExecutorActor {
     async fn handle(&mut self, message: EventData, _ctx: &mut ActorContext) -> Result<()> {
-        if let Ok(gas_upgrade_msg) = message.data.downcast::<GasUpgradeMessage>() {
-            println!("ReadExecutor bbbbbbbbbbbb {:?}", gas_upgrade_msg.deref());
+        if let Ok(_gas_upgrade_msg) = message.data.downcast::<GasUpgradeEvent>() {
+            let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
+            let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
+
+            self.moveos = MoveOS::new(
+                self.moveos_store.clone(),
+                gas_parameters.all_natives(),
+                MoveOSConfig::default(),
+                system_pre_execute_functions(),
+                system_post_execute_functions(),
+            )?;
         }
         Ok(())
     }

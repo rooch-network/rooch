@@ -14,13 +14,14 @@ use coerce::actor::{system::ActorSystem, IntoActor};
 use jsonrpsee::server::middleware::rpc::RpcServiceBuilder;
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
-use moveos_eventbus::bus::{EventBus};
+use moveos_eventbus::bus::EventBus;
 use raw_store::errors::RawStoreError;
 use rooch_config::server_config::ServerConfig;
 use rooch_config::{RoochOpt, ServerOpt};
 use rooch_da::actor::da::DAActor;
 use rooch_da::proxy::DAProxy;
 use rooch_db::RoochDB;
+use rooch_event::actor::EventActor;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
@@ -52,7 +53,6 @@ use std::{env, panic, process};
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::{error, info};
-use rooch_event::actor::GasUpgradeMessage;
 
 pub mod metrics_server;
 pub mod server;
@@ -237,26 +237,35 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     );
 
     let event_bus = EventBus::new();
+    let event_actor = EventActor::new(event_bus.clone());
+    let event_actor_ref = event_actor
+        .clone()
+        .into_actor(Some("EventActor"), &actor_system)
+        .await?;
 
-    let executor_actor = ExecutorActor::new(
+    let executor_actor_ref = ExecutorActor::new(
         root.clone(),
         moveos_store.clone(),
         rooch_store.clone(),
         &prometheus_registry,
-        Some(event_bus.clone()),
-    )?;
-    let reader_executor = ReaderExecutorActor::new(
+        (
+            event_actor.clone(),
+            event_actor_ref.clone().into(),
+            &actor_system,
+        ),
+    )
+    .await?;
+
+    let reader_executor_ref = ReaderExecutorActor::new(
         root.clone(),
         moveos_store.clone(),
         rooch_store.clone(),
-        Some(event_bus.clone()),
-    )?
-    .into_actor(Some("ReaderExecutor"), &actor_system)
+        (event_actor.clone(), &actor_system),
+    )
     .await?;
-    let executor = executor_actor
-        .into_actor(Some("Executor"), &actor_system)
-        .await?;
-    let executor_proxy = ExecutorProxy::new(executor.clone().into(), reader_executor.clone().into());
+
+    let executor_proxy =
+        ExecutorProxy::new(executor_actor_ref.clone(), reader_executor_ref.clone());
 
     // Init sequencer
     info!("RPC Server sequencer address: {:?}", sequencer_account);
@@ -269,9 +278,6 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     .into_actor(Some("Sequencer"), &actor_system)
     .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
-
-    event_bus.actor_subscribe::<GasUpgradeMessage>("executor", Box::new(executor.clone()));
-    event_bus.actor_subscribe::<GasUpgradeMessage>("read-executor", Box::new(reader_executor.clone()));
 
     // Init DA
     let da_config = opt.da_config().clone();
