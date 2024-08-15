@@ -13,6 +13,7 @@ use rooch_indexer::store::traits::IndexerStoreTrait;
 use rooch_indexer::IndexerStore;
 use rooch_types::indexer::state::{IndexerObjectState, ObjectStateFilter};
 use std::cell::RefCell;
+use tokio::runtime::Runtime;
 
 fn bench_read_object_states(c: &mut Criterion) {
     let binding_test = binding_test::RustBindingTest::new_in_tokio().unwrap();
@@ -48,6 +49,7 @@ fn bench_read_with_reader(
         .persist_or_update_object_states(states.clone())
         .unwrap();
 
+    let rt = RefCell::new(Runtime::new().unwrap());
     group
         .bench_with_input(
             BenchmarkId::new(id, states_len),
@@ -69,15 +71,50 @@ fn bench_read_with_reader(
                             owner: state.metadata.owner,
                             filter_out: false,
                         };
-                        let result1 = indexer_reader
-                            .query_object_states_with_filter(object_state_filter1, None, 50, true)
-                            .unwrap();
-                        assert!(!result1.is_empty());
-                        let object_state_filter2 = ObjectStateFilter::ObjectType(object_type);
-                        let result2 = indexer_reader
-                            .query_object_states_with_filter(object_state_filter2, None, 50, true)
-                            .unwrap();
-                        assert!(!result2.is_empty());
+
+                        rt.borrow().block_on(async {
+                            let result1 = indexer_reader
+                                .query_object_states_with_filter(
+                                    object_state_filter1,
+                                    None,
+                                    50,
+                                    true,
+                                )
+                                .unwrap();
+                            assert!(!result1.is_empty());
+                            let object_state_filter2 = ObjectStateFilter::ObjectType(object_type);
+                            let result2 = indexer_reader
+                                .query_object_states_with_filter(
+                                    object_state_filter2,
+                                    None,
+                                    50,
+                                    true,
+                                )
+                                .unwrap();
+                            assert!(!result2.is_empty());
+                        })
+
+                        // tokio::task::spawn_blocking(|| {
+                        //     let result1 = indexer_reader
+                        //         .query_object_states_with_filter(
+                        //             object_state_filter1,
+                        //             None,
+                        //             50,
+                        //             true,
+                        //         )
+                        //         .unwrap();
+                        //     assert!(!result1.is_empty());
+                        //     let object_state_filter2 = ObjectStateFilter::ObjectType(object_type);
+                        //     let result2 = indexer_reader
+                        //         .query_object_states_with_filter(
+                        //             object_state_filter2,
+                        //             None,
+                        //             50,
+                        //             true,
+                        //         )
+                        //         .unwrap();
+                        //     assert!(!result2.is_empty());
+                        // })
                     },
                 );
             },
@@ -117,7 +154,7 @@ fn bench_write_with_store(
         .unwrap();
 
     // Must skip tx_orders in prepare_indexer_object_states_with_tx_order, just from tx_oder = 100
-    let mut tx_order_offset = RefCell::new(100u64);
+    let tx_order_offset = RefCell::new(100u64);
     group
         .bench_with_input(
             BenchmarkId::new(id, states_len),
