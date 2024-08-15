@@ -32,8 +32,8 @@ check_constant_errors_for_error() {
         constants=($(grep -E "const [A-Za-z0-9].*;" "$file" | cut -d':' -f1))
         
         for constant in "${constants[@]}"; do
-            if [[ "$constant" =~ ^(E|Error)[A-Za-z0-9]*$ ]]; then
-                if [[ "$constant" == "E"* && "$constant" != "Error"* ]]; then
+            if [[ "$constant" =~ ^(E_|Error)[A-Za-z0-9]*$ ]]; then
+                if [[ "$constant" == "E_"* && "$constant" != "Error"* ]]; then
                     echo "Integrity violated: $constant does not match expected prefix Error in $file"
                     exit 1
                 fi

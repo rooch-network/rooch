@@ -4,6 +4,7 @@
 pub mod abi;
 pub mod account;
 pub mod db;
+pub mod dynamic_field;
 pub mod env;
 pub mod event;
 pub mod genesis;

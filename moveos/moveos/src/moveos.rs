@@ -4,18 +4,24 @@
 use crate::gas::table::{
     get_gas_schedule_entries, initial_cost_schedule, ClassifiedGasMeter, CostTable, MoveOSGasMeter,
 };
+use crate::vm::data_cache::MoveosDataCache;
 use crate::vm::moveos_vm::{MoveOSSession, MoveOSVM};
 use anyhow::{bail, Result};
 use backtrace::Backtrace;
+use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::errors::VMError;
 use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError, VMResult};
+use move_binary_format::file_format::FunctionDefinitionIndex;
+use move_binary_format::CompiledModule;
 use move_core_types::identifier::IdentStr;
+use move_core_types::language_storage::ModuleId;
 use move_core_types::value::MoveTypeLayout;
 use move_core_types::vm_status::{KeptVMStatus, VMStatus};
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::Identifier, vm_status::StatusCode,
 };
 use move_vm_runtime::config::VMConfig;
+use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::native_functions::NativeFunction;
 use moveos_store::config_store::ConfigDBStore;
 use moveos_store::event_store::EventDBStore;
@@ -32,7 +38,7 @@ use moveos_types::moveos_std::tx_result::TxResult;
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{MoveStructState, MoveStructType, ObjectState};
 use moveos_types::state_resolver::RootObjectResolver;
-use moveos_types::transaction::FunctionCall;
+use moveos_types::transaction::{FunctionCall, VMErrorInfo};
 use moveos_types::transaction::{
     MoveOSTransaction, RawTransactionOutput, TransactionOutput, VerifiedMoveAction,
     VerifiedMoveOSTransaction,
@@ -100,8 +106,8 @@ impl Clone for MoveOSConfig {
 
 pub struct MoveOS {
     vm: MoveOSVM,
-    db: MoveOSStore,
-    cost_table: Arc<RwLock<Option<CostTable>>>,
+    pub db: MoveOSStore,
+    pub cost_table: Arc<RwLock<Option<CostTable>>>,
     system_pre_execute_functions: Vec<FunctionCall>,
     system_post_execute_functions: Vec<FunctionCall>,
 }
@@ -165,7 +171,7 @@ impl MoveOS {
         if raw_output.status != KeptVMStatus::Executed {
             bail!("genesis tx should success, error: {:?}", raw_output.status);
         }
-        let output = self.apply_transaction_output(raw_output.clone())?;
+        let output = Self::apply_transaction_output(&self.db, raw_output.clone())?;
         log::info!(
             "execute genesis tx state_root:{:?}, state_size:{}",
             output.changeset.state_root,
@@ -244,7 +250,10 @@ impl MoveOS {
         })
     }
 
-    pub fn execute(&self, tx: VerifiedMoveOSTransaction) -> Result<RawTransactionOutput> {
+    pub fn execute(
+        &self,
+        tx: VerifiedMoveOSTransaction,
+    ) -> Result<(RawTransactionOutput, Option<VMErrorInfo>)> {
         let VerifiedMoveOSTransaction { root, ctx, action } = tx;
         let tx_hash = ctx.tx_hash();
         if log::log_enabled!(log::Level::Debug) {
@@ -287,7 +296,7 @@ impl MoveOS {
                         status
                     );
                 }
-                self.execution_cleanup(is_system_call, session, status)
+                self.execution_cleanup(is_system_call, session, status, None)
             }
             Err(vm_err) => {
                 if log::log_enabled!(log::Level::Warn) {
@@ -297,27 +306,49 @@ impl MoveOS {
                         vm_err
                     );
                 }
+
+                let vm_error_info = VMErrorInfo {
+                    error_message: vm_err.to_string(),
+                    execution_state: extract_execution_state(
+                        vm_err.clone(),
+                        &session.session.data_cache,
+                    )?,
+                };
                 // If it is a system call, we should not respawn the session.
                 if !is_system_call {
                     let mut s = session.respawn(system_env);
                     //Because the session is respawned, the pre_execute function should be called again.
                     s.execute_function_call(self.system_pre_execute_functions.clone(), false)
                         .expect("system_pre_execute should not fail.");
-                    self.execution_cleanup(is_system_call, s, vm_err.into_vm_status())
+                    self.execution_cleanup(
+                        is_system_call,
+                        s,
+                        vm_err.into_vm_status(),
+                        Some(vm_error_info),
+                    )
                 } else {
-                    self.execution_cleanup(is_system_call, session, vm_err.into_vm_status())
+                    self.execution_cleanup(
+                        is_system_call,
+                        session,
+                        vm_err.into_vm_status(),
+                        Some(vm_error_info),
+                    )
                 }
             }
         }
     }
 
-    pub fn execute_and_apply(&self, tx: VerifiedMoveOSTransaction) -> Result<TransactionOutput> {
-        let raw_output = self.execute(tx)?;
-        let output = self.apply_transaction_output(raw_output.clone())?;
-        Ok(output)
+    pub fn execute_only(
+        &self,
+        tx: VerifiedMoveOSTransaction,
+    ) -> Result<(RawTransactionOutput, Option<VMErrorInfo>)> {
+        self.execute(tx)
     }
 
-    fn apply_transaction_output(&self, output: RawTransactionOutput) -> Result<TransactionOutput> {
+    pub fn apply_transaction_output(
+        db: &MoveOSStore,
+        output: RawTransactionOutput,
+    ) -> Result<TransactionOutput> {
         let RawTransactionOutput {
             status,
             mut changeset,
@@ -326,16 +357,14 @@ impl MoveOS {
             is_upgrade,
         } = output;
 
-        self.db
-            .get_state_store()
+        db.get_state_store()
             .apply_change_set(&mut changeset)
             .map_err(|e| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR)
                     .with_message(e.to_string())
                     .finish(Location::Undefined)
             })?;
-        let event_ids = self
-            .db
+        let event_ids = db
             .get_event_store()
             .save_events(tx_events.clone())
             .map_err(|e| {
@@ -353,8 +382,7 @@ impl MoveOS {
         let new_state_root = changeset.state_root;
         let size = changeset.global_size;
 
-        self.db
-            .get_config_store()
+        db.get_config_store()
             .save_startup_info(StartupInfo::new(new_state_root, size))
             .map_err(|e| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR)
@@ -462,7 +490,8 @@ impl MoveOS {
         is_system_call: bool,
         mut session: MoveOSSession<'_, '_, RootObjectResolver<MoveOSStore>, MoveOSGasMeter>,
         status: VMStatus,
-    ) -> Result<RawTransactionOutput> {
+        vm_error_info: Option<VMErrorInfo>,
+    ) -> Result<(RawTransactionOutput, Option<VMErrorInfo>)> {
         let kept_status = match status.keep_or_discard() {
             Ok(kept_status) => {
                 if is_system_call && kept_status != KeptVMStatus::Executed {
@@ -511,7 +540,7 @@ impl MoveOS {
         }
 
         let (_ctx, output) = session.finish_with_extensions(kept_status)?;
-        Ok(output)
+        Ok((output, vm_error_info))
     }
 
     pub fn flush_module_cache(&self, is_upgrade: bool) -> Result<()> {
@@ -520,4 +549,45 @@ impl MoveOS {
         };
         Ok(())
     }
+}
+
+fn extract_execution_state(
+    vm_err: VMError,
+    data_cache: &MoveosDataCache<RootObjectResolver<MoveOSStore>>,
+) -> Result<Vec<String>> {
+    let mut execution_stack_trace = Vec::new();
+    if let Some(exec_state) = vm_err.exec_state() {
+        for execute_record in exec_state.stack_trace() {
+            match execute_record {
+                (Some(module_id), func_idx, code_offset) => {
+                    let func_name = func_name_from_db(module_id, func_idx, data_cache)?;
+                    execution_stack_trace.push(format!(
+                        "{}::{}.{}",
+                        module_id.short_str_lossless(),
+                        func_name,
+                        code_offset
+                    ));
+                }
+                (None, func_idx, code_offset) => {
+                    execution_stack_trace.push(format!("{}::{}", func_idx, code_offset));
+                }
+            }
+        }
+    };
+
+    Ok(execution_stack_trace)
+}
+
+fn func_name_from_db(
+    module_id: &ModuleId,
+    func_idx: &FunctionDefinitionIndex,
+    data_cache: &MoveosDataCache<RootObjectResolver<MoveOSStore>>,
+) -> Result<String> {
+    let module_bytes = data_cache.load_module(module_id)?;
+    let compiled_module = CompiledModule::deserialize(module_bytes.as_slice())?;
+    let module_bin_view = BinaryIndexedView::Module(&compiled_module);
+    let func_def = module_bin_view.function_def_at(*func_idx)?;
+    Ok(module_bin_view
+        .identifier_at(module_bin_view.function_handle_at(func_def.function).name)
+        .to_string())
 }

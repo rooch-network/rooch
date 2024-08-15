@@ -3,6 +3,7 @@
 
 use crate::actor::messages::{
     QueryIndexerEventsMessage, QueryIndexerObjectStatesMessage, QueryIndexerTransactionsMessage,
+    QueryLastStateIndexByTxOrderMessage,
 };
 use crate::indexer_reader::IndexerReader;
 use anyhow::{anyhow, Result};
@@ -100,5 +101,25 @@ impl Handler<QueryIndexerObjectIdsMessage> for IndexerReaderActor {
         self.indexer_reader
             .query_object_ids_with_filter(filter, cursor, limit, descending_order)
             .map_err(|e| anyhow!(format!("Failed to query indexer object states: {:?}", e)))
+    }
+}
+
+#[async_trait]
+impl Handler<QueryLastStateIndexByTxOrderMessage> for IndexerReaderActor {
+    async fn handle(
+        &mut self,
+        msg: QueryLastStateIndexByTxOrderMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<u64> {
+        let QueryLastStateIndexByTxOrderMessage { tx_order } = msg;
+
+        self.indexer_reader
+            .query_last_state_index_by_tx_order(tx_order)
+            .map_err(|e| {
+                anyhow!(format!(
+                    "Failed to query indexer last state index by tx order: {:?}",
+                    e
+                ))
+            })
     }
 }

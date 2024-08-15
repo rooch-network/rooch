@@ -14,7 +14,7 @@ use rooch_types::{
     function_arg::{FunctionArg, ParsedFunctionId},
 };
 
-/// Run a Move function
+/// Run a View Move function
 #[derive(Parser)]
 pub struct RunViewFunction {
     /// Function name as `<ADDRESS>::<MODULE_ID>::<FUNCTION_NAME>`

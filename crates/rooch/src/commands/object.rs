@@ -70,7 +70,6 @@ impl CommandAction<IndexerObjectStatePageView> for ObjectCommand {
             let owner_addr: RoochAddressView = owner.into_rooch_address(&address_mapping)?.into();
             filter = Some(ObjectStateFilterView::ObjectTypeWithOwner {
                 object_type: obj_type.into(),
-                filter_out: self.filter_out,
                 owner: owner_addr.into(),
             });
         } else if self.owner.is_some() {
@@ -89,6 +88,7 @@ impl CommandAction<IndexerObjectStatePageView> for ObjectCommand {
             descending: self.descending_order,
             decode: true,
             show_display: self.show_display,
+            filter_out: self.filter_out,
         };
 
         if filter.is_none() {

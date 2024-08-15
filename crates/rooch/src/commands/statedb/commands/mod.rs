@@ -8,8 +8,10 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Instant;
 
+use anyhow::Result;
 use bitcoin::hashes::Hash;
 use bitcoin::OutPoint;
+use csv::Writer;
 use xorf::{BinaryFuse8, Filter};
 use xxhash_rust::xxh3::xxh3_64;
 
@@ -20,6 +22,7 @@ use moveos_types::move_std::option::MoveOption;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
 use moveos_types::moveos_std::simple_multimap::{Element, SimpleMultiMap};
+use moveos_types::state::{FieldKey, ObjectState};
 use rooch_common::fs::file_cache::FileCacheManager;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
@@ -30,7 +33,9 @@ use crate::commands::statedb::commands::inscription::{derive_inscription_ids, In
 pub mod export;
 pub mod genesis;
 pub mod genesis_utxo;
+pub mod genesis_verify;
 pub mod import;
+
 mod inscription;
 mod utxo;
 
@@ -135,12 +140,21 @@ fn derive_utxo_inscription_seal(
 pub(crate) struct OutpointInscriptionsMap {
     items: Vec<OutpointInscriptions>,
     key_filter: Option<BinaryFuse8>,
+    min: OutPoint,
+    max: OutPoint,
 }
 
 fn unbound_outpoint() -> OutPoint {
     OutPoint {
         txid: Hash::all_zeros(),
         vout: 0,
+    }
+}
+
+fn max_outpoint() -> OutPoint {
+    OutPoint {
+        txid: Hash::from_slice(&[0xff; 32]).unwrap(),
+        vout: u32::MAX,
     }
 }
 
@@ -211,12 +225,18 @@ impl OutpointInscriptionsMap {
         let mut map = OutpointInscriptionsMap {
             items,
             key_filter: None,
+            min: unbound_outpoint(),
+            max: max_outpoint(),
         };
         if !sorted {
             map.sort_and_merge();
         }
         map.add_outpoint_filter();
         map
+    }
+
+    fn is_in_range(&self, outpoint: &OutPoint) -> bool {
+        outpoint >= &self.min && outpoint <= &self.max
     }
 
     fn sort_and_merge(&mut self) -> usize {
@@ -244,6 +264,14 @@ impl OutpointInscriptionsMap {
         let new_len = write_index + 1;
         items.truncate(new_len);
         items.shrink_to_fit();
+        self.min = items
+            .first()
+            .map(|item| item.outpoint)
+            .unwrap_or(unbound_outpoint());
+        self.max = items
+            .last()
+            .map(|item| item.outpoint)
+            .unwrap_or(max_outpoint());
         new_len
     }
 
@@ -253,8 +281,12 @@ impl OutpointInscriptionsMap {
         self.key_filter = Some(filter);
     }
 
-    // check if the outpoint is in the filter, false positive is allowed
+    // check if outpoint is in the filter, false positive is allowed
     fn contains(&self, outpoint: &OutPoint) -> bool {
+        if !self.is_in_range(outpoint) {
+            return false;
+        }
+
         match &self.key_filter {
             Some(filter) => filter.contains(&xxh3_outpoint(outpoint)),
             None => true,
@@ -273,7 +305,6 @@ impl OutpointInscriptionsMap {
             .map(|index| items[index].inscriptions.clone())
     }
 
-    #[allow(dead_code)]
     fn load(path: PathBuf) -> Self {
         let file = File::open(path.clone()).expect("Unable to open the file");
         let reader = BufReader::new(file);
@@ -289,6 +320,38 @@ impl OutpointInscriptionsMap {
         let _ = file_cache_manager.drop_cache_range(0, 1 << 40);
 
         OutpointInscriptionsMap::new(items, true)
+    }
+
+    fn load_or_index(path: PathBuf, inscriptions_path: PathBuf) -> Self {
+        let start_time = Instant::now();
+        let map_existed = path.exists();
+        if map_existed {
+            log::info!("load outpoint_inscriptions_map...");
+            let outpoint_inscriptions_map = OutpointInscriptionsMap::load(path.clone());
+            let (outpoint_count, inscription_count) = outpoint_inscriptions_map.stats();
+            println!(
+                "{} outpoints : {} inscriptions mapped in: {:?}",
+                outpoint_count,
+                inscription_count,
+                start_time.elapsed(),
+            );
+            outpoint_inscriptions_map
+        } else {
+            log::info!("indexing and dumping outpoint_inscriptions_map...");
+            let (outpoint_inscriptions_map, mapped_outpoint, mapped_inscription, unbound_count) =
+                OutpointInscriptionsMap::index_and_dump(
+                    inscriptions_path.clone(),
+                    Some(path.clone()),
+                );
+            println!(
+                "{} outpoints : {} inscriptions mapped in: {:?} ({} unbound inscriptions ignored)",
+                mapped_outpoint,
+                mapped_inscription,
+                start_time.elapsed(),
+                unbound_count
+            );
+            outpoint_inscriptions_map
+        }
     }
 
     fn dump(&self, path: PathBuf) {
@@ -309,6 +372,62 @@ impl OutpointInscriptionsMap {
         let outpoint_count = self.items.len();
         let inscription_count = self.items.iter().map(|item| item.inscriptions.len()).sum();
         (outpoint_count, inscription_count)
+    }
+}
+
+#[allow(dead_code)]
+pub(crate) fn get_values_by_key<Key, Value>(
+    map: SimpleMultiMap<Key, Value>,
+    key: Key,
+) -> Option<Vec<Value>>
+where
+    Key: PartialEq,
+{
+    for element in map.data {
+        if element.key == key {
+            return Some(element.value);
+        }
+    }
+    None
+}
+
+// ExportWriter is a helper struct to write FieldKey:ObjectState pairs to a csv file
+struct ExportWriter {
+    writer: Option<Writer<File>>, // option here for nop writer
+}
+
+impl ExportWriter {
+    fn new(output: Option<PathBuf>) -> Self {
+        let writer = match output {
+            Some(output) => {
+                let file_name = output.display().to_string();
+                let mut writer_builder = csv::WriterBuilder::new();
+                let writer_builder = writer_builder
+                    .delimiter(b',')
+                    .double_quote(false)
+                    .buffer_capacity(1 << 23);
+                let writer = writer_builder.from_path(file_name).unwrap();
+                Some(writer)
+            }
+            None => None,
+        };
+        ExportWriter { writer }
+    }
+    fn write_record(&mut self, k: &FieldKey, v: &ObjectState) -> anyhow::Result<()> {
+        if let Some(writer) = &mut self.writer {
+            writer.write_record([k.to_string().as_str(), v.to_string().as_str()])?;
+            Ok(())
+        } else {
+            Ok(())
+        }
+    }
+    fn flush(&mut self) -> Result<()> {
+        if let Some(writer) = &mut self.writer {
+            writer.flush()?;
+            Ok(())
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -439,6 +558,8 @@ mod tests {
         let mut map = OutpointInscriptionsMap {
             items,
             key_filter: None,
+            min: unbound_outpoint(),
+            max: max_outpoint(),
         };
         assert!(!map.is_sorted_and_merged());
 
@@ -456,7 +577,7 @@ mod tests {
     fn contains_false_positive() {
         let sample_size = 1024 * 1024;
         let items = random_items(sample_size, 0);
-        // won't search later, so it's ok to not sort and merge
+        // won't search later, so it's OK to not sort and merge
         let mut map = OutpointInscriptionsMap::new(items.clone(), true);
         map.add_outpoint_filter();
         // ensure no false negative

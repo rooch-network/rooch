@@ -322,6 +322,7 @@ export type ObjectStateFilterView =
   /** Query by object value type and owner. */
   | {
       object_type_with_owner: {
+        filter_out: boolean
         object_type: string
         owner: string
       }
@@ -520,6 +521,11 @@ export interface TransactionWithInfoView {
   transaction: LedgerTransactionView
 }
 export interface TxOptions {
+  /**
+   * If true, the event is decoded and the decoded value is returned in the response. Only valid when
+   * with_output is true.
+   */
+  decode?: boolean
   /** If true, the TransactionOutput is returned in the response. */
   withOutput?: boolean
 }
@@ -556,7 +562,10 @@ export interface UTXOView {
   /** The txid of the UTXO */
   bitcoin_txid: string
   /** Protocol seals */
-  seals: string
+  seals: /** Protocol seals */
+  {
+    [key: string]: string[]
+  }
   /** The txid of the UTXO */
   txid: string
   /** The value of the UTXO */

@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::errors::IndexerError;
+use crate::metrics::IndexerReaderMetrics;
 use crate::models::events::StoredEvent;
 use crate::models::states::StoredObjectState;
 use crate::models::transactions::StoredTransaction;
 use crate::schema::object_states;
 use crate::schema::{events, transactions};
+use crate::utils::escape_sql_string;
 use crate::{
     IndexerResult, IndexerStoreMeta, SqliteConnectionConfig, SqliteConnectionPoolConfig,
     SqlitePoolConnection, DEFAULT_BUSY_TIMEOUT, INDEXER_EVENTS_TABLE_NAME,
@@ -16,8 +18,11 @@ use anyhow::{anyhow, Result};
 use diesel::{
     r2d2::ConnectionManager, Connection, ExpressionMethods, QueryDsl, RunQueryDsl, SqliteConnection,
 };
+use function_name::named;
 use move_core_types::language_storage::StructTag;
+use moveos_types::moveos_std::event::EventHandle;
 use moveos_types::moveos_std::object::ObjectID;
+use prometheus::Registry;
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{IndexerObjectState, IndexerStateID, ObjectStateFilter};
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
@@ -25,6 +30,11 @@ use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
+use std::time::Duration;
+use tokio::runtime::Handle;
+use tokio::time::timeout;
+
+pub const DEFAULT_QUERY_TIMEOUT: u64 = 60; // second
 
 pub const TX_ORDER_STR: &str = "tx_order";
 pub const TX_HASH_STR: &str = "tx_hash";
@@ -94,20 +104,52 @@ impl InnerIndexerReader {
             .transaction(query)
             .map_err(|e| IndexerError::SQLiteReadError(e.to_string()))
     }
+
+    pub fn run_query_with_timeout<T, E, F>(&self, query: F) -> Result<T, IndexerError>
+    where
+        F: FnOnce(&mut SqliteConnection) -> Result<T, E> + Send + 'static,
+        E: From<diesel::result::Error> + std::error::Error + Send,
+        T: Send + 'static,
+    {
+        // default query time out in second
+        let timeout_duration = Duration::from_secs(DEFAULT_QUERY_TIMEOUT);
+        let mut connection = self.get_connection()?;
+
+        tokio::task::block_in_place(|| {
+            Handle::current().block_on(async move {
+                timeout(
+                    timeout_duration,
+                    tokio::task::spawn_blocking(move || {
+                        connection
+                            .deref_mut()
+                            .transaction(query)
+                            .map_err(|e| IndexerError::SQLiteReadError(e.to_string()))
+                    }),
+                )
+                .await
+                .map_err(|e| IndexerError::SQLiteAsyncReadError(e.to_string()))??
+            })
+        })
+    }
 }
 
 #[derive(Clone)]
 pub struct IndexerReader {
     pub(crate) inner_indexer_reader_mapping: HashMap<String, InnerIndexerReader>,
+    metrics: Arc<IndexerReaderMetrics>,
 }
 
 impl IndexerReader {
-    pub fn new(db_path: PathBuf) -> Result<Self> {
-        let config = SqliteConnectionPoolConfig::default();
-        Self::new_with_config(db_path, config)
+    pub fn new(db_path: PathBuf, registry: &Registry) -> Result<Self> {
+        let config = SqliteConnectionPoolConfig::pool_config(true);
+        Self::new_with_config(db_path, config, registry)
     }
 
-    pub fn new_with_config(db_path: PathBuf, config: SqliteConnectionPoolConfig) -> Result<Self> {
+    pub fn new_with_config(
+        db_path: PathBuf,
+        config: SqliteConnectionPoolConfig,
+        registry: &Registry,
+    ) -> Result<Self> {
         let tables = IndexerStoreMeta::get_indexer_table_names().to_vec();
 
         let mut inner_indexer_reader_mapping = HashMap::<String, InnerIndexerReader>::new();
@@ -125,6 +167,7 @@ impl IndexerReader {
 
         Ok(IndexerReader {
             inner_indexer_reader_mapping,
+            metrics: Arc::new(IndexerReaderMetrics::new(registry)),
         })
     }
 
@@ -136,6 +179,7 @@ impl IndexerReader {
             .clone())
     }
 
+    #[named]
     pub fn query_transactions_with_filter(
         &self,
         filter: TransactionFilter,
@@ -143,12 +187,18 @@ impl IndexerReader {
         limit: usize,
         descending_order: bool,
     ) -> IndexerResult<Vec<IndexerTransaction>> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .indexer_reader_query_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let tx_order = if let Some(cursor) = cursor {
             cursor as i64
         } else if descending_order {
             let max_tx_order: i64 = self
                 .get_inner_indexer_reader(INDEXER_TRANSACTIONS_TABLE_NAME)?
-                .run_query(|conn| {
+                .run_query_with_timeout(|conn| {
                     transactions::dsl::transactions
                         .select(transactions::tx_order)
                         .order_by(transactions::tx_order.desc())
@@ -218,7 +268,9 @@ impl IndexerReader {
         tracing::debug!("query transactions: {}", query);
         let stored_transactions = self
             .get_inner_indexer_reader(INDEXER_TRANSACTIONS_TABLE_NAME)?
-            .run_query(|conn| diesel::sql_query(query).load::<StoredTransaction>(conn))?;
+            .run_query_with_timeout(|conn| {
+                diesel::sql_query(query).load::<StoredTransaction>(conn)
+            })?;
 
         let result = stored_transactions
             .into_iter()
@@ -231,6 +283,7 @@ impl IndexerReader {
         Ok(result)
     }
 
+    #[named]
     pub fn query_events_with_filter(
         &self,
         filter: EventFilter,
@@ -238,6 +291,12 @@ impl IndexerReader {
         limit: usize,
         descending_order: bool,
     ) -> IndexerResult<Vec<IndexerEvent>> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .indexer_reader_query_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let (tx_order, event_index) = if let Some(cursor) = cursor {
             let IndexerEventID {
                 tx_order,
@@ -247,7 +306,7 @@ impl IndexerReader {
         } else if descending_order {
             let (max_tx_order, event_index): (i64, i64) = self
                 .get_inner_indexer_reader(INDEXER_EVENTS_TABLE_NAME)?
-                .run_query(|conn| {
+                .run_query_with_timeout(|conn| {
                     events::dsl::events
                         .select((events::tx_order, events::event_index))
                         .order_by((events::tx_order.desc(), events::event_index.desc()))
@@ -259,9 +318,17 @@ impl IndexerReader {
         };
 
         let main_where_clause = match filter {
-            EventFilter::EventType(struct_tag) => {
-                let event_type_str = format!("0x{}", struct_tag.to_canonical_string());
-                format!("{EVENT_TYPE_STR} = \"{}\"", event_type_str)
+            EventFilter::EventTypeWithSender { event_type, sender } => {
+                let event_handle_id = EventHandle::derive_event_handle_id(&event_type);
+                format!(
+                    "{TX_SENDER_STR} = \"{}\" AND {EVENT_HANDLE_ID_STR} = \"{}\"",
+                    sender.to_hex_literal(),
+                    event_handle_id
+                )
+            }
+            EventFilter::EventType(event_type) => {
+                let event_handle_id = EventHandle::derive_event_handle_id(&event_type);
+                format!("{EVENT_HANDLE_ID_STR} = \"{}\"", event_handle_id)
             }
             EventFilter::Sender(sender) => {
                 format!("{TX_SENDER_STR} = \"{}\"", sender.to_hex_literal())
@@ -320,7 +387,7 @@ impl IndexerReader {
         tracing::debug!("query events: {}", query);
         let stored_events = self
             .get_inner_indexer_reader(INDEXER_EVENTS_TABLE_NAME)?
-            .run_query(|conn| diesel::sql_query(query).load::<StoredEvent>(conn))?;
+            .run_query_with_timeout(|conn| diesel::sql_query(query).load::<StoredEvent>(conn))?;
 
         let result = stored_events
             .into_iter()
@@ -349,7 +416,7 @@ impl IndexerReader {
         } else if descending_order {
             let (max_tx_order, state_index): (i64, i64) = self
                 .get_inner_indexer_reader(INDEXER_OBJECT_STATES_TABLE_NAME)?
-                .run_query(|conn| {
+                .run_query_with_timeout(|conn| {
                     object_states::dsl::object_states
                         .select((object_states::tx_order, object_states::state_index))
                         .order_by((
@@ -375,9 +442,9 @@ impl IndexerReader {
                     object_type_query(&object_type)
                 };
                 format!(
-                    "{} AND {STATE_OWNER_STR} = \"{}\"",
-                    object_query,
-                    owner.to_hex_literal()
+                    "{STATE_OWNER_STR} = \"{}\" AND {}",
+                    owner.to_hex_literal(),
+                    object_query
                 )
             }
             ObjectStateFilter::ObjectType(object_type) => object_type_query(&object_type),
@@ -425,10 +492,13 @@ impl IndexerReader {
         tracing::debug!("query object states: {}", query);
         let stored_object_states = self
             .get_inner_indexer_reader(INDEXER_OBJECT_STATES_TABLE_NAME)?
-            .run_query(|conn| diesel::sql_query(query).load::<StoredObjectState>(conn))?;
+            .run_query_with_timeout(|conn| {
+                diesel::sql_query(query).load::<StoredObjectState>(conn)
+            })?;
         Ok(stored_object_states)
     }
 
+    #[named]
     pub fn query_object_states_with_filter(
         &self,
         filter: ObjectStateFilter,
@@ -436,6 +506,12 @@ impl IndexerReader {
         limit: usize,
         descending_order: bool,
     ) -> IndexerResult<Vec<IndexerObjectState>> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .indexer_reader_query_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let stored_object_states =
             self.query_stored_object_states_with_filter(filter, cursor, limit, descending_order)?;
         let result = stored_object_states
@@ -485,7 +561,9 @@ impl IndexerReader {
         tracing::debug!("query last state index by tx order: {}", query);
         let stored_object_states = self
             .get_inner_indexer_reader(INDEXER_OBJECT_STATES_TABLE_NAME)?
-            .run_query(|conn| diesel::sql_query(query).load::<StoredObjectState>(conn))?;
+            .run_query_with_timeout(|conn| {
+                diesel::sql_query(query).load::<StoredObjectState>(conn)
+            })?;
         let last_state_index = if stored_object_states.is_empty() {
             0
         } else {
@@ -499,7 +577,12 @@ fn object_type_query(object_type: &StructTag) -> String {
     let object_type_str = object_type.to_string();
     // if the caller does not specify the type parameters, we will use the prefix match
     if object_type.type_params.is_empty() {
-        format!("{STATE_OBJECT_TYPE_STR} like \"{}%\"", object_type_str)
+        let (first_bound, second_bound, upper_bound) =
+            optimize_object_type_like_query(object_type_str.as_str());
+        format!(
+            "({STATE_OBJECT_TYPE_STR} = \"{}\" OR ({STATE_OBJECT_TYPE_STR} >= \"{}\" AND {STATE_OBJECT_TYPE_STR} < \"{}\" AND {STATE_OBJECT_TYPE_STR} < \"{}\"))",
+            object_type_str, first_bound, second_bound, upper_bound
+        )
     } else {
         format!("{STATE_OBJECT_TYPE_STR} = \"{}\"", object_type_str)
     }
@@ -509,8 +592,164 @@ fn not_object_type_query(object_type: &StructTag) -> String {
     let object_type_str = object_type.to_string();
     // if the caller does not specify the type parameters, we will use the prefix match
     if object_type.type_params.is_empty() {
-        format!("{STATE_OBJECT_TYPE_STR} not like \"{}%\"", object_type_str)
+        let (first_bound, second_bound, upper_bound) =
+            optimize_object_type_like_query(object_type_str.as_str());
+        format!(
+            "({STATE_OBJECT_TYPE_STR} != \"{}\" AND ({STATE_OBJECT_TYPE_STR} < \"{}\" OR {STATE_OBJECT_TYPE_STR} >= \"{}\" OR {STATE_OBJECT_TYPE_STR} >= \"{}\"))",
+            object_type_str, first_bound, second_bound, upper_bound
+        )
     } else {
         format!("{STATE_OBJECT_TYPE_STR} != \"{}\"", object_type_str)
+    }
+}
+
+// Only take effect on the rightmost prefix,
+// and only include nest object type and object type itself
+fn optimize_object_type_like_query(query: &str) -> (String, String, String) {
+    // Nest struct start with ASCII `<`
+    let first_bound = format!("{}{}", query, "<");
+    // The ASCII `=` follows after the ASCII `<`
+    let second_bound = format!("{}{}", query, "=");
+    // Calculate the upper bound for BETWEEN AND or OR
+    let upper_bound = increment_query_string(query);
+    // Avoid potential SQL injection risks
+    (
+        escape_sql_string(first_bound),
+        escape_sql_string(second_bound),
+        escape_sql_string(upper_bound),
+    )
+}
+
+pub fn increment_query_string(s: &str) -> String {
+    let mut chars: Vec<char> = s.chars().collect();
+    for i in (0..chars.len()).rev() {
+        if chars[i] < char::MAX {
+            chars[i] = char::from_u32(chars[i] as u32 + 1).unwrap_or(char::MAX);
+            break;
+        }
+        chars[i] = char::from_u32(0).unwrap_or('\0');
+    }
+
+    chars.into_iter().collect()
+}
+
+#[cfg(test)]
+mod test {
+    use crate::indexer_reader::optimize_object_type_like_query;
+    fn object_type_query_result(
+        origin_object_type: String,
+        match_object_type: String,
+        first_bound: String,
+        second_bound: String,
+        upper_bound: String,
+    ) -> bool {
+        origin_object_type == match_object_type
+            || (match_object_type >= first_bound
+                && match_object_type < second_bound
+                && match_object_type < upper_bound)
+    }
+
+    fn not_object_type_query_result(
+        origin_object_type: String,
+        match_object_type: String,
+        first_bound: String,
+        second_bound: String,
+        upper_bound: String,
+    ) -> bool {
+        origin_object_type != match_object_type
+            && (match_object_type < first_bound
+                || match_object_type >= second_bound
+                || match_object_type >= upper_bound)
+    }
+
+    #[test]
+    fn test_optimize_object_type_like_query() {
+        let gas_coin_object_type = "0x3::coin_store::CoinStore";
+        let (first_bound, second_bound, upper_bound) =
+            optimize_object_type_like_query(gas_coin_object_type);
+        assert_eq!(first_bound, "0x3::coin_store::CoinStore<");
+        assert_eq!(second_bound, "0x3::coin_store::CoinStore=");
+        assert_eq!(upper_bound, "0x3::coin_store::CoinStorf");
+
+        let object_type2 =
+            "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000::custom::CustomZZZ";
+        let (first_bound, second_bound, upper_bound) =
+            optimize_object_type_like_query(object_type2);
+        assert_eq!(first_bound, "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000::custom::CustomZZZ<");
+        assert_eq!(second_bound, "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000::custom::CustomZZZ=");
+        assert_eq!(
+            upper_bound,
+            "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000::custom::CustomZZ["
+        );
+    }
+
+    #[test]
+    fn test_object_type_query() {
+        // assert object_type_query
+        let object_type = "0xabcd::test::Account";
+        let object_type_include = "0xabcd::test::Account<T>".to_string();
+        let object_type_exclude1 = "0xabcd::test::AccountABC".to_string();
+        let object_type_exclude2 = "0xabcd::test::Account123<T>".to_string();
+        let (first_bound, second_bound, upper_bound) = optimize_object_type_like_query(object_type);
+        assert!(object_type_query_result(
+            object_type.to_string(),
+            object_type_include,
+            first_bound.clone(),
+            second_bound.clone(),
+            upper_bound.clone()
+        ));
+        assert!(!object_type_query_result(
+            object_type.to_string(),
+            object_type_exclude1,
+            first_bound.clone(),
+            second_bound.clone(),
+            upper_bound.clone()
+        ));
+        assert!(!object_type_query_result(
+            object_type.to_string(),
+            object_type_exclude2,
+            first_bound,
+            second_bound,
+            upper_bound
+        ));
+    }
+
+    #[test]
+    fn test_not_object_type_query() {
+        // assert not_object_type_query
+        let object_type = "0xabcd::test::Account";
+        let object_type_exclude1 = "0xabcd::test::Account".to_string();
+        let object_type_exclude2 = "0xabcd::test::Account<T>".to_string();
+        let object_type_include1 = "0xabcd::test::AccountABC".to_string();
+        let object_type_include2 = "0xabcd::test::Account123<T>".to_string();
+        let (first_bound, second_bound, upper_bound) = optimize_object_type_like_query(object_type);
+        assert!(not_object_type_query_result(
+            object_type.to_string(),
+            object_type_include1,
+            first_bound.clone(),
+            second_bound.clone(),
+            upper_bound.clone()
+        ));
+        assert!(not_object_type_query_result(
+            object_type.to_string(),
+            object_type_include2,
+            first_bound.clone(),
+            second_bound.clone(),
+            upper_bound.clone()
+        ));
+        assert!(!not_object_type_query_result(
+            object_type.to_string(),
+            object_type_exclude1,
+            first_bound.clone(),
+            second_bound.clone(),
+            upper_bound.clone()
+        ));
+        assert!(!not_object_type_query_result(
+            object_type.to_string(),
+            object_type_exclude2,
+            first_bound,
+            second_bound,
+            upper_bound
+        ));
     }
 }

@@ -1,7 +1,7 @@
 {
   "name": "@roochnetwork/rooch-sdk",
   "author": "Rooch.network <opensource@rooch.network>",
-  "version": "0.2.2",
+  "version": "0.2.4",
   "description": "Rooch SDK",
   "license": "Apache-2.0",
   "engines": {
@@ -48,14 +48,16 @@
   "devDependencies": {
     "@roochnetwork/build-scripts": "workspace:*",
     "@iarna/toml": "^2.2.5",
-    "@types/node": "^20.4.2",
+    "@types/node": "^20.14.10",
     "@types/tmp": "^0.2.1",
     "ts-retry-promise": "^0.7.0",
     "typescript": "^5.3.3",
     "vite": "^4.4.4",
     "vitest": "^1.6.0",
     "wait-on": "^7.0.1",
-    "tmp": "^0.2.1"
+    "tmp": "^0.2.1",
+    "@types/bs58check": "2.1.2",
+    "testcontainers": "10.11.0"
   },
   "dependencies": {
     "@noble/hashes": "~1.4.0",
@@ -68,7 +70,7 @@
     "bech32": "^2.0.0",
     "@mysten/bcs": "1.0.2",
     "valibot": "^0.25.0",
-    "buffer": "6.0.0"
+    "bs58check": "2.1.2"
   },
   "publishConfig": {
     "access": "public",

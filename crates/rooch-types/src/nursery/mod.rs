@@ -1,3 +1,4 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-require('../dist/index.js')
+
+pub mod multisign_account;

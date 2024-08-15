@@ -2,18 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::CommandAction;
-use crate::commands::account::commands::balance::BalanceCommand;
-use crate::commands::account::commands::export::ExportCommand;
 use async_trait::async_trait;
 use commands::{
-    create::CreateCommand, import::ImportCommand, list::ListCommand, nullify::NullifyCommand,
-    switch::SwitchCommand, transfer::TransferCommand,
+    balance::BalanceCommand, create::CreateCommand, export::ExportCommand, import::ImportCommand,
+    list::ListCommand, nullify::NullifyCommand, sign::SignCommand, switch::SwitchCommand,
+    transfer::TransferCommand,
 };
 use rooch_types::error::RoochResult;
 use std::path::PathBuf;
 
 pub mod commands;
-
 /// Tool for interacting with accounts
 #[derive(clap::Parser)]
 pub struct Account {
@@ -36,6 +34,7 @@ impl CommandAction<String> for Account {
             AccountCommand::Transfer(transfer) => transfer.execute_serialized().await,
             AccountCommand::Export(export) => export.execute_serialized().await,
             AccountCommand::Import(import) => import.execute_serialized().await,
+            AccountCommand::Sign(sign) => sign.execute_serialized().await,
         }
     }
 }
@@ -51,4 +50,5 @@ pub enum AccountCommand {
     Transfer(TransferCommand),
     Export(ExportCommand),
     Import(ImportCommand),
+    Sign(SignCommand),
 }

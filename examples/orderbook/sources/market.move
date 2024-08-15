@@ -10,8 +10,8 @@ module orderbook::market {
     use std::vector;
     use moveos_std::event;
     use rooch_framework::account_coin_store;
-    use orderbook::linked_table;
-    use orderbook::linked_table::LinkedTable;
+    use moveos_std::linked_table;
+    use moveos_std::linked_table::LinkedTable;
     use rooch_framework::coin_store;
     use moveos_std::tx_context::sender;
     use moveos_std::type_info::type_name;
@@ -65,7 +65,7 @@ module orderbook::market {
     struct TickLevel has store {
         price: u64,
         // The key is order order id.
-        open_orders: Object<LinkedTable<u64, Order>>,
+        open_orders: LinkedTable<u64, Order>,
         // other price level info
     }
 
@@ -87,7 +87,7 @@ module orderbook::market {
         /// Marketplace fee  of the marketplace
         fee: u256,
         /// User order info
-        user_order_info: Table<address, Object<LinkedTable<u64, u64>>>,
+        user_order_info: Table<address, LinkedTable<u64, u64>>,
         base_asset: Object<CoinStore<BaseAsset>>,
         quote_asset: Object<CoinStore<QuoteAsset>>,
         /// Stores the trading fees paid in `BaseAsset`.
@@ -108,7 +108,7 @@ module orderbook::market {
     struct AdminCap has key, store {}
 
     struct MarketplaceHouse has key {
-        market_info: Object<LinkedTable<String, ObjectID>>,
+        market_info: LinkedTable<String, ObjectID>,
     }
 
 
@@ -388,7 +388,7 @@ module orderbook::market {
 
     fun remove_order(
         open_orders: &mut CritbitTree<TickLevel>,
-        user_order_info: &mut Object<LinkedTable<u64, u64>>,
+        user_order_info: &mut LinkedTable<u64, u64>,
         tick_index: u64,
         order_id: u64,
         user: address,

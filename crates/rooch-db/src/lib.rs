@@ -23,8 +23,34 @@ pub struct RoochDB {
 
 impl RoochDB {
     pub fn init(config: &StoreConfig, registry: &Registry) -> Result<Self> {
-        let (store_dir, indexer_dir) = (config.get_store_dir(), config.get_indexer_dir());
+        let instance = Self::generate_store_instance(config, registry)?;
+        Self::init_with_instance(config, instance, registry)
+    }
 
+    pub fn init_with_instance(
+        config: &StoreConfig,
+        instance: StoreInstance,
+        registry: &Registry,
+    ) -> Result<Self> {
+        let indexer_dir = config.get_indexer_dir();
+        let moveos_store = MoveOSStore::new_with_instance(instance.clone(), registry)?;
+        let rooch_store = RoochStore::new_with_instance(instance, registry)?;
+        let indexer_store = IndexerStore::new(indexer_dir.clone(), registry)?;
+        let indexer_reader = IndexerReader::new(indexer_dir, registry)?;
+
+        Ok(Self {
+            moveos_store,
+            rooch_store,
+            indexer_store,
+            indexer_reader,
+        })
+    }
+
+    pub fn generate_store_instance(
+        config: &StoreConfig,
+        registry: &Registry,
+    ) -> Result<StoreInstance> {
+        let store_dir = config.get_store_dir();
         let mut column_families = moveos_store::StoreMeta::get_column_family_names().to_vec();
         column_families.append(&mut rooch_store::StoreMeta::get_column_family_names().to_vec());
         //ensure no duplicate column families
@@ -43,19 +69,7 @@ impl RoochDB {
             db_metrics,
         );
 
-        let moveos_store = MoveOSStore::new_with_instance(instance.clone(), registry)?;
-
-        let rooch_store = RoochStore::new_with_instance(instance, registry)?;
-
-        let indexer_store = IndexerStore::new(indexer_dir.clone())?;
-        let indexer_reader = IndexerReader::new(indexer_dir)?;
-
-        Ok(Self {
-            moveos_store,
-            rooch_store,
-            indexer_store,
-            indexer_reader,
-        })
+        Ok(instance)
     }
 
     pub fn init_with_mock_metrics_for_test(config: &StoreConfig) -> Result<Self> {

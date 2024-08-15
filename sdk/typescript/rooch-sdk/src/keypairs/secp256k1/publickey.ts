@@ -4,7 +4,7 @@
 import { bech32m } from '@scure/base'
 import { schnorr, secp256k1 } from '@noble/curves/secp256k1'
 
-import { BitcoinAddress } from '../../address/index.js'
+import { BitcoinAddress, BitcoinNetowkType, BitcoinNetwork } from '../../address/index.js'
 import { PublicKey, PublicKeyInitData, SIGNATURE_SCHEME_TO_FLAG } from '../../crypto/index.js'
 import { Bytes, EmptyBytes } from '../../types/index.js'
 import { fromB64, sha256, toHEX } from '../../utils/index.js'
@@ -51,18 +51,23 @@ export class Secp256k1PublicKey extends PublicKey<BitcoinAddress> {
   /**
    * Return the byte array representation of the Secp256k1 public key
    */
-  toBytes(): Uint8Array {
+  override toBytes(): Uint8Array {
     return this.data
   }
 
-  toString(): string {
+  override toString(): string {
     return toHEX(this.data)
   }
 
   /**
    * Return the Bitcoin address associated with this Secp256k1 public key
    */
-  toAddress(): BitcoinAddress {
+  override toAddress(): BitcoinAddress {
+    /// default version = 1 & network = testnet
+    return this.buildAddress(1, BitcoinNetowkType.Testnet)
+  }
+
+  buildAddress(version: number, network: BitcoinNetowkType) {
     const tapTweak = (a: Bytes, b: Bytes) => {
       const u = schnorr.utils
       const t = u.taggedHash('TapTweak', a, b)
@@ -78,8 +83,12 @@ export class Secp256k1PublicKey extends PublicKey<BitcoinAddress> {
     const Q = P.add(secp256k1.ProjectivePoint.fromPrivateKey(t)) // Q = point_add(P, point_mul(G, t))
     const tweakedPubkey = u.pointToBytes(Q)
 
-    /// bech32m version 1
-    return new BitcoinAddress(bech32m.encode('tb', [1].concat(bech32m.toWords(tweakedPubkey))))
+    return new BitcoinAddress(
+      bech32m.encode(
+        new BitcoinNetwork(network).bech32HRP(),
+        [version].concat(bech32m.toWords(tweakedPubkey)),
+      ),
+    )
   }
 
   /**

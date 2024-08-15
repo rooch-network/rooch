@@ -13,7 +13,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Index all Object state, include child object
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IndexerObjectState {
     pub metadata: ObjectMeta,
     // The tx order of this transaction
@@ -134,8 +134,8 @@ pub enum ObjectStateFilter {
     /// Query by object type and owner.
     ObjectTypeWithOwner {
         object_type: StructTag,
-        filter_out: bool,
         owner: AccountAddress,
+        filter_out: bool,
     },
     /// Query by object type.
     ObjectType(StructTag),

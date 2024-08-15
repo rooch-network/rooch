@@ -16,7 +16,6 @@ CREATE TABLE events
 );
 
 
---CREATE INDEX idx_events_event_id ON events (event_handle_id, event_seq);
 CREATE INDEX idx_events_tx_hash ON events (tx_hash);
 CREATE INDEX idx_events_tx_order ON events (tx_order);
 CREATE INDEX idx_events_sender ON events (sender);

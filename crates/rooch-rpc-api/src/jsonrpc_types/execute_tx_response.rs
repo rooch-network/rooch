@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::BytesView;
-use super::{ModuleIdView, StateChangeSetView, StrView};
+use super::{HumanReadableDisplay, ModuleIdView, StateChangeSetView, StrView};
 use crate::jsonrpc_types::event_view::EventView;
 use crate::jsonrpc_types::H256View;
 use move_core_types::vm_status::{AbortLocation, KeptVMStatus};
-use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
+use moveos_types::transaction::{TransactionExecutionInfo, VMErrorInfo};
 use rooch_types::transaction::ExecuteTransactionResponse;
 use rooch_types::transaction::{authenticator::Authenticator, TransactionSequenceInfo};
 use schemars::JsonSchema;
@@ -135,6 +135,25 @@ impl From<TransactionExecutionInfo> for TransactionExecutionInfoView {
     }
 }
 
+impl HumanReadableDisplay for TransactionExecutionInfoView {
+    fn to_human_readable_string(&self, _verbose: bool, indent: usize) -> String {
+        format!(
+            r#"{indent}Execution info:
+{indent}    status: {:?}
+{indent}    gas used: {}
+{indent}    tx hash: {}
+{indent}    state root: {}
+{indent}    event root: {}"#,
+            self.status,
+            self.gas_used,
+            self.tx_hash,
+            self.state_root,
+            self.event_root,
+            indent = " ".repeat(indent)
+        )
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionOutputView {
     pub status: KeptVMStatusView,
@@ -161,10 +180,24 @@ impl From<TransactionOutput> for TransactionOutputView {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct RawTransactionOutputView {
+    pub status: KeptVMStatusView,
+    pub gas_used: StrView<u64>,
+    pub is_upgrade: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct DryRunTransactionResponseView {
+    pub raw_output: RawTransactionOutputView,
+    pub vm_error_info: VMErrorInfo,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ExecuteTransactionResponseView {
     pub sequence_info: TransactionSequenceInfoView,
     pub execution_info: TransactionExecutionInfoView,
     pub output: Option<TransactionOutputView>,
+    pub error_info: Option<DryRunTransactionResponseView>,
 }
 
 impl ExecuteTransactionResponseView {
@@ -173,6 +206,7 @@ impl ExecuteTransactionResponseView {
             sequence_info: response.sequence_info.into(),
             execution_info: response.execution_info.into(),
             output: None,
+            error_info: None,
         }
     }
 }
@@ -183,6 +217,7 @@ impl From<ExecuteTransactionResponse> for ExecuteTransactionResponseView {
             sequence_info: response.sequence_info.into(),
             execution_info: response.execution_info.into(),
             output: Some(response.output.into()),
+            error_info: None,
         }
     }
 }
