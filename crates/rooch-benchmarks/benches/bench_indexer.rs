@@ -12,6 +12,7 @@ use rooch_indexer::indexer_reader::IndexerReader;
 use rooch_indexer::store::traits::IndexerStoreTrait;
 use rooch_indexer::IndexerStore;
 use rooch_types::indexer::state::{IndexerObjectState, ObjectStateFilter};
+use std::cell::RefCell;
 
 fn bench_read_object_states(c: &mut Criterion) {
     let binding_test = binding_test::RustBindingTest::new_in_tokio().unwrap();
@@ -115,6 +116,8 @@ fn bench_write_with_store(
         .persist_or_update_object_states(states)
         .unwrap();
 
+    // Must skip tx_orders in prepare_indexer_object_states_with_tx_order, just from tx_oder = 100
+    let mut tx_order_offset = RefCell::new(100u64);
     group
         .bench_with_input(
             BenchmarkId::new(id, states_len),
@@ -124,11 +127,13 @@ fn bench_write_with_store(
 
                 let once_num: usize = 100;
                 // Must skip tx_orders in prepare_indexer_object_states_with_tx_order, just from tx_oder = 100
-                let mut tx_order_offset = 100u64;
+                // let mut tx_order_offset = 100u64;
                 b.iter_with_setup(
                     || {
-                        let new_tx_order = tx_order_offset;
-                        tx_order_offset += 1;
+                        // let new_tx_order = tx_order_offset;
+                        // tx_order_offset += 1;
+                        let new_tx_order = *tx_order_offset.borrow();
+                        *tx_order_offset.borrow_mut() += 1;
                         gen_indexer_object_states_with_tx_order(once_num, new_tx_order)
                     },
                     |data| {
