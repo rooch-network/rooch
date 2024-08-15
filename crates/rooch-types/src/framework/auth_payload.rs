@@ -141,6 +141,43 @@ impl AuthPayload {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MultisignAuthPayload {
+    pub signatures: Vec<Vec<u8>>,
+    pub message_prefix: Vec<u8>,
+    pub message_info: Vec<u8>,
+    pub public_keys: Vec<Vec<u8>>,
+}
+
+impl MoveStructType for MultisignAuthPayload {
+    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("MultisignAuthPayload");
+}
+
+impl MoveStructState for MultisignAuthPayload {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![
+            move_core_types::value::MoveTypeLayout::Vector(Box::new(
+                move_core_types::value::MoveTypeLayout::Vector(Box::new(
+                    move_core_types::value::MoveTypeLayout::U8,
+                )),
+            )),
+            move_core_types::value::MoveTypeLayout::Vector(Box::new(
+                move_core_types::value::MoveTypeLayout::U8,
+            )),
+            move_core_types::value::MoveTypeLayout::Vector(Box::new(
+                move_core_types::value::MoveTypeLayout::U8,
+            )),
+            move_core_types::value::MoveTypeLayout::Vector(Box::new(
+                move_core_types::value::MoveTypeLayout::Vector(Box::new(
+                    move_core_types::value::MoveTypeLayout::U8,
+                )),
+            )),
+        ])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

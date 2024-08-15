@@ -13,17 +13,8 @@ use moveos_types::{
     state::MoveStructType,
     transaction::FunctionCall,
 };
-use serde::{Deserialize, Serialize};
 
 const MODULE_NAME: &IdentStr = ident_str!("bitcoin_multisign_validator");
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct AuthPayload {
-    pub signatures: Vec<Vec<u8>>,
-    pub message_prefix: Vec<u8>,
-    pub message_info: Vec<u8>,
-    pub public_keys: Vec<Vec<u8>>,
-}
 
 /// Bitcoin Multisign Auth Validator
 pub struct BitcoinMultisignValidator {}

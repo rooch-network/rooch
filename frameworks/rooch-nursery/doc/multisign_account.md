@@ -8,8 +8,6 @@ Bitcoin multisign account module
 
 -  [Resource `MultisignAccountInfo`](#0xa_multisign_account_MultisignAccountInfo)
 -  [Struct `ParticipantInfo`](#0xa_multisign_account_ParticipantInfo)
--  [Struct `BitcoinProposal`](#0xa_multisign_account_BitcoinProposal)
--  [Struct `RoochProposal`](#0xa_multisign_account_RoochProposal)
 -  [Constants](#@Constants_0)
 -  [Function `initialize_multisig_account_entry`](#0xa_multisign_account_initialize_multisig_account_entry)
 -  [Function `initialize_multisig_account`](#0xa_multisign_account_initialize_multisig_account)
@@ -19,8 +17,8 @@ Bitcoin multisign account module
 -  [Function `is_multisign_account`](#0xa_multisign_account_is_multisign_account)
 -  [Function `bitcoin_address`](#0xa_multisign_account_bitcoin_address)
 -  [Function `threshold`](#0xa_multisign_account_threshold)
--  [Function `submit_bitcoin_proposal`](#0xa_multisign_account_submit_bitcoin_proposal)
--  [Function `sign_bitcoin_proposal`](#0xa_multisign_account_sign_bitcoin_proposal)
+-  [Function `participant_public_key`](#0xa_multisign_account_participant_public_key)
+-  [Function `participant_bitcoin_address`](#0xa_multisign_account_participant_bitcoin_address)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -32,7 +30,6 @@ Bitcoin multisign account module
 <b>use</b> <a href="">0x2::result</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
-<b>use</b> <a href="">0x2::table_vec</a>;
 <b>use</b> <a href="">0x3::address_mapping</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
 <b>use</b> <a href="">0x3::ecdsa_k1</a>;
@@ -61,28 +58,6 @@ Bitcoin multisign account module
 
 
 <pre><code><b>struct</b> <a href="multisign_account.md#0xa_multisign_account_ParticipantInfo">ParticipantInfo</a> <b>has</b> <b>copy</b>, drop, store
-</code></pre>
-
-
-
-<a name="0xa_multisign_account_BitcoinProposal"></a>
-
-## Struct `BitcoinProposal`
-
-
-
-<pre><code><b>struct</b> <a href="multisign_account.md#0xa_multisign_account_BitcoinProposal">BitcoinProposal</a> <b>has</b> store
-</code></pre>
-
-
-
-<a name="0xa_multisign_account_RoochProposal"></a>
-
-## Struct `RoochProposal`
-
-
-
-<pre><code><b>struct</b> <a href="multisign_account.md#0xa_multisign_account_RoochProposal">RoochProposal</a> <b>has</b> store
 </code></pre>
 
 
@@ -317,22 +292,22 @@ If the multisign account already exists, we will init the MultisignAccountInfo i
 
 
 
-<a name="0xa_multisign_account_submit_bitcoin_proposal"></a>
+<a name="0xa_multisign_account_participant_public_key"></a>
 
-## Function `submit_bitcoin_proposal`
+## Function `participant_public_key`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="multisign_account.md#0xa_multisign_account_submit_bitcoin_proposal">submit_bitcoin_proposal</a>(sender: &<a href="">signer</a>, multisign_address: <b>address</b>, tx_id: <b>address</b>, tx_data: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="multisign_account.md#0xa_multisign_account_participant_public_key">participant_public_key</a>(multisign_address: <b>address</b>, participant_address: <b>address</b>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
 
-<a name="0xa_multisign_account_sign_bitcoin_proposal"></a>
+<a name="0xa_multisign_account_participant_bitcoin_address"></a>
 
-## Function `sign_bitcoin_proposal`
+## Function `participant_bitcoin_address`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="multisign_account.md#0xa_multisign_account_sign_bitcoin_proposal">sign_bitcoin_proposal</a>(sender: &<a href="">signer</a>, multisign_address: <b>address</b>, proposal_id: u64, signature: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="multisign_account.md#0xa_multisign_account_participant_bitcoin_address">participant_bitcoin_address</a>(multisign_address: <b>address</b>, participant_address: <b>address</b>): <a href="_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
 </code></pre>

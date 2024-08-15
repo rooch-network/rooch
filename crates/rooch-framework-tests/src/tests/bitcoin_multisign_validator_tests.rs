@@ -7,20 +7,18 @@ use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::state::MoveStructType;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use rooch_types::crypto::{RoochKeyPair, RoochSignature};
-use rooch_types::framework::auth_payload::SignData;
+use rooch_types::framework::auth_payload::{MultisignAuthPayload, SignData};
 use rooch_types::framework::auth_validator::BuiltinAuthValidator;
 use rooch_types::framework::empty::Empty;
 use rooch_types::framework::gas_coin::GasCoin;
 use rooch_types::framework::transfer::TransferModule;
-use rooch_types::nursery::bitcoin_multisign_validator::{
-    AuthPayload, BitcoinMultisignValidatorModule,
-};
+use rooch_types::nursery::bitcoin_multisign_validator::BitcoinMultisignValidatorModule;
 use rooch_types::nursery::multisign_account::{self, MultisignAccountModule};
 use rooch_types::transaction::rooch::RoochTransactionData;
 use rooch_types::transaction::{Authenticator, RoochTransaction};
 
-#[test]
-fn test_validate() {
+#[tokio::test]
+async fn test_validate() {
     let mut binding_test = binding_test::RustBindingTest::new().unwrap();
     let root = binding_test.root().clone();
 
@@ -79,7 +77,7 @@ fn test_validate() {
     let signature2 = kp2.sign(data_hash.as_bytes());
 
     let message_info = sign_data.message_info_without_tx_hash();
-    let payload = AuthPayload {
+    let payload = MultisignAuthPayload {
         signatures: vec![
             signature1.signature_bytes().to_vec(),
             signature2.signature_bytes().to_vec(),

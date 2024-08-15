@@ -21,6 +21,7 @@ This is the reference documentation of the Rooch Nursery Framework.
 -  [`0xa::inscribe_factory`](inscribe_factory.md#0xa_inscribe_factory)
 -  [`0xa::mint_get_factory`](mint_get_factory.md#0xa_mint_get_factory)
 -  [`0xa::multisign_account`](multisign_account.md#0xa_multisign_account)
+-  [`0xa::multisign_wallet`](multisign_wallet.md#0xa_multisign_wallet)
 -  [`0xa::tick_info`](tick_info.md#0xa_tick_info)
 
 

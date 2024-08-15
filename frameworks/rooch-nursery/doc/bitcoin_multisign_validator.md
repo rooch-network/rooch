@@ -6,19 +6,15 @@
 
 
 -  [Struct `BitcoinMultisignValidator`](#0xa_bitcoin_multisign_validator_BitcoinMultisignValidator)
--  [Struct `AuthPayload`](#0xa_bitcoin_multisign_validator_AuthPayload)
--  [Struct `SignData`](#0xa_bitcoin_multisign_validator_SignData)
 -  [Constants](#@Constants_0)
 -  [Function `auth_validator_id`](#0xa_bitcoin_multisign_validator_auth_validator_id)
 -  [Function `genesis_init`](#0xa_bitcoin_multisign_validator_genesis_init)
 -  [Function `validate`](#0xa_bitcoin_multisign_validator_validate)
 
 
-<pre><code><b>use</b> <a href="">0x1::vector</a>;
-<b>use</b> <a href="">0x2::bcs</a>;
-<b>use</b> <a href="">0x2::hash</a>;
-<b>use</b> <a href="">0x2::hex</a>;
+<pre><code><b>use</b> <a href="">0x2::hash</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
+<b>use</b> <a href="">0x3::auth_payload</a>;
 <b>use</b> <a href="">0x3::auth_validator</a>;
 <b>use</b> <a href="">0x3::auth_validator_registry</a>;
 <b>use</b> <a href="">0x3::ecdsa_k1</a>;
@@ -34,29 +30,6 @@
 
 
 <pre><code><b>struct</b> <a href="bitcoin_multisign_validator.md#0xa_bitcoin_multisign_validator_BitcoinMultisignValidator">BitcoinMultisignValidator</a> <b>has</b> drop, store
-</code></pre>
-
-
-
-<a name="0xa_bitcoin_multisign_validator_AuthPayload"></a>
-
-## Struct `AuthPayload`
-
-
-
-<pre><code>#[data_struct]
-<b>struct</b> <a href="bitcoin_multisign_validator.md#0xa_bitcoin_multisign_validator_AuthPayload">AuthPayload</a> <b>has</b> <b>copy</b>, drop, store
-</code></pre>
-
-
-
-<a name="0xa_bitcoin_multisign_validator_SignData"></a>
-
-## Struct `SignData`
-
-
-
-<pre><code><b>struct</b> <a href="bitcoin_multisign_validator.md#0xa_bitcoin_multisign_validator_SignData">SignData</a> <b>has</b> <b>copy</b>, drop
 </code></pre>
 
 
