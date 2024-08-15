@@ -23,7 +23,7 @@ fn bench_read_object_states(c: &mut Criterion) {
     let indexer_reader = binding_test.rooch_db().indexer_reader.clone();
 
     // Because of genesis tx and subsequent txs, reserved tx order position start with tx_order = 90
-    let states = prepare_indexer_object_states_with_tx_order(100_000_0, 90);
+    let states = prepare_indexer_object_states_with_tx_order(1_000_000, 90);
     bench_read_with_reader(
         &mut group,
         "indexer_read",
@@ -82,28 +82,9 @@ fn bench_read_with_reader(
                                 )
                                 .unwrap();
                             assert!(!result1.is_empty());
-                            let object_state_filter2 = ObjectStateFilter::ObjectType(object_type);
-                            let result2 = indexer_reader
-                                .query_object_states_with_filter(
-                                    object_state_filter2,
-                                    None,
-                                    50,
-                                    true,
-                                )
-                                .unwrap();
-                            assert!(!result2.is_empty());
                         })
 
                         // tokio::task::spawn_blocking(|| {
-                        //     let result1 = indexer_reader
-                        //         .query_object_states_with_filter(
-                        //             object_state_filter1,
-                        //             None,
-                        //             50,
-                        //             true,
-                        //         )
-                        //         .unwrap();
-                        //     assert!(!result1.is_empty());
                         //     let object_state_filter2 = ObjectStateFilter::ObjectType(object_type);
                         //     let result2 = indexer_reader
                         //         .query_object_states_with_filter(
@@ -129,7 +110,7 @@ fn bench_write_object_states(c: &mut Criterion) {
     let indexer_store = binding_test.rooch_db().indexer_store.clone();
 
     // Because of genesis tx and subsequent txs, reserved tx order position start with tx_order = 90
-    let states = prepare_indexer_object_states_with_tx_order(100_000_0, 90);
+    let states = prepare_indexer_object_states_with_tx_order(1_000_000, 90);
     bench_write_with_store(
         &mut group,
         "indexer_write",
@@ -163,12 +144,8 @@ fn bench_write_with_store(
                 let (indexer_store, _states_len) = input;
 
                 let once_num: usize = 100;
-                // Must skip tx_orders in prepare_indexer_object_states_with_tx_order, just from tx_oder = 100
-                // let mut tx_order_offset = 100u64;
                 b.iter_with_setup(
                     || {
-                        // let new_tx_order = tx_order_offset;
-                        // tx_order_offset += 1;
                         let new_tx_order = *tx_order_offset.borrow();
                         *tx_order_offset.borrow_mut() += 1;
                         gen_indexer_object_states_with_tx_order(once_num, new_tx_order)
