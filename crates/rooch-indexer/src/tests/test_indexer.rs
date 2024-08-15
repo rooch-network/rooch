@@ -13,7 +13,7 @@ use moveos_types::moveos_std::object::{ObjectEntity, ObjectID, ObjectMeta};
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::MoveStructType;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
-use rand::{random, thread_rng, Rng};
+use rand::random;
 use rooch_config::store_config::DEFAULT_DB_INDEXER_SUBDIR;
 use rooch_types::framework::coin_store::CoinStore;
 use rooch_types::framework::gas_coin::GasCoin;
@@ -21,54 +21,9 @@ use rooch_types::indexer::event::{EventFilter, IndexerEvent};
 use rooch_types::indexer::state::{IndexerObjectState, ObjectStateFilter};
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::test_utils::{
-    random_event, random_ledger_transaction, random_table_object, random_verified_move_action,
+    random_event, random_ledger_transaction, random_new_object_states, random_remove_object_states,
+    random_update_object_states, random_verified_move_action,
 };
-
-fn random_update_object_states(states: Vec<IndexerObjectState>) -> Vec<IndexerObjectState> {
-    states
-        .into_iter()
-        .map(|item| {
-            let mut metadata = item.metadata;
-            metadata.size += 1;
-            metadata.updated_at += 1;
-
-            IndexerObjectState {
-                metadata,
-                tx_order: item.tx_order,
-                state_index: item.state_index,
-            }
-        })
-        .collect()
-}
-
-fn random_new_object_states() -> Result<Vec<IndexerObjectState>> {
-    let mut new_object_states = vec![];
-
-    let mut rng = thread_rng();
-    for (state_index, n) in (0..rng.gen_range(1..=10)).enumerate() {
-        let state = IndexerObjectState::new(
-            random_table_object()?.into_state().metadata,
-            n as u64,
-            state_index as u64,
-        );
-
-        new_object_states.push(state);
-    }
-
-    Ok(new_object_states)
-}
-
-fn random_remove_object_states() -> Vec<String> {
-    let mut remove_object_states = vec![];
-
-    let mut rng = thread_rng();
-    for _n in 0..rng.gen_range(1..=10) {
-        let object_id = ObjectID::from(AccountAddress::random());
-        remove_object_states.push(object_id.to_string());
-    }
-
-    remove_object_states
-}
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_transaction_store() -> Result<()> {
@@ -157,7 +112,7 @@ async fn test_state_store() -> Result<()> {
         IndexerStore::new(indexer_db.clone(), &registry_service.default_registry())?;
     let indexer_reader = IndexerReader::new(indexer_db, &registry_service.default_registry())?;
 
-    let mut new_object_states = random_new_object_states()?;
+    let mut new_object_states = random_new_object_states();
     let new_object_ids = new_object_states
         .iter()
         .map(|state| state.metadata.id.clone())

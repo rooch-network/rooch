@@ -11,8 +11,7 @@ use std::time::Duration;
 
 pub fn tx_validate_benchmark(c: &mut Criterion) {
     let config = BenchTxConfig::load();
-
-    let binding_test = binding_test::RustBindingTest::new().unwrap();
+    let binding_test = binding_test::RustBindingTest::new_in_tokio().unwrap();
 
     let rooch_key_pair = RoochKeyPair::generate_secp256k1();
 
