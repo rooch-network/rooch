@@ -52,7 +52,6 @@ fn bench_get_with_proof_with_tree<NS>(
     node_store: NS,
     ks: Vec<H256>,
     changeset: TreeChangeSet,
-    // registry: &Registry,
 ) where
     NS: NodeReader + NodeWriter + Clone + 'static,
 {
