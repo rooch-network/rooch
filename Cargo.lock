@@ -9219,6 +9219,7 @@ dependencies = [
  "rooch-types",
  "serde 1.0.207",
  "smt",
+ "tokio",
  "toml 0.8.19",
  "tracing",
 ]

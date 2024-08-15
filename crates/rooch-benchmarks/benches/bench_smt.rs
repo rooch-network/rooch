@@ -5,18 +5,15 @@ use criterion::measurement::WallTime;
 use criterion::{criterion_group, criterion_main, BenchmarkGroup, BenchmarkId, Criterion};
 use ethers::types::H256;
 use moveos_types::moveos_std::object::GENESIS_STATE_ROOT;
-use prometheus::Registry;
 use rooch_benchmarks::smt::{gen_kv_from_seed, prepare_change_set, Blob};
 use rooch_framework_tests::binding_test;
 use smt::{InMemoryNodeStore, NodeReader, NodeWriter, SMTree, TreeChangeSet};
 
 fn bench_get_with_proof(c: &mut Criterion) {
-    let binding_test = binding_test::RustBindingTest::new().unwrap();
-
+    let binding_test = binding_test::RustBindingTest::new_in_tokio().unwrap();
     let mut group = c.benchmark_group("get_with_proof");
 
     let mem_store = InMemoryNodeStore::default();
-    let registry = prometheus::Registry::new();
     let db_store = binding_test
         .rooch_db()
         .moveos_store
@@ -32,7 +29,6 @@ fn bench_get_with_proof(c: &mut Criterion) {
         mem_store,
         ks.clone(),
         changeset.clone(),
-        &registry,
     );
 
     bench_get_with_proof_with_tree(
@@ -41,12 +37,11 @@ fn bench_get_with_proof(c: &mut Criterion) {
         db_store.clone(),
         ks.clone(),
         changeset.clone(),
-        &registry,
     );
 
     let (ks, changeset) = prepare_change_set(*GENESIS_STATE_ROOT, 1_000_000).unwrap();
 
-    bench_get_with_proof_with_tree(&mut group, "db_store", db_store, ks, changeset, &registry);
+    bench_get_with_proof_with_tree(&mut group, "db_store", db_store, ks, changeset);
 
     group.finish();
 }
@@ -57,11 +52,12 @@ fn bench_get_with_proof_with_tree<NS>(
     node_store: NS,
     ks: Vec<H256>,
     changeset: TreeChangeSet,
-    registry: &Registry,
+    // registry: &Registry,
 ) where
     NS: NodeReader + NodeWriter + Clone + 'static,
 {
-    let tree: SMTree<H256, Blob, NS> = SMTree::new(node_store.clone(), registry);
+    let registry = prometheus::Registry::new();
+    let tree: SMTree<H256, Blob, NS> = SMTree::new(node_store.clone(), &registry);
 
     node_store.write_nodes(changeset.nodes.clone()).unwrap();
     let key_nums = ks.len();
@@ -90,11 +86,10 @@ fn bench_get_with_proof_with_tree<NS>(
 }
 
 fn bench_put_and_commit(c: &mut Criterion) {
-    let binding_test = binding_test::RustBindingTest::new().unwrap();
+    let binding_test = binding_test::RustBindingTest::new_in_tokio().unwrap();
     let mut group = c.benchmark_group("put_and_commit");
 
     let mem_store = InMemoryNodeStore::default();
-    let registry = prometheus::Registry::new();
     let db_store = binding_test
         .rooch_db()
         .moveos_store
@@ -110,7 +105,6 @@ fn bench_put_and_commit(c: &mut Criterion) {
         mem_store,
         ks.len() as u64,
         changeset.clone(),
-        &registry,
     );
     bench_put_with_tree(
         &mut group,
@@ -118,7 +112,6 @@ fn bench_put_and_commit(c: &mut Criterion) {
         db_store.clone(),
         ks.len() as u64,
         changeset,
-        &registry,
     );
 
     let (ks, changeset) = prepare_change_set(*GENESIS_STATE_ROOT, 1_000_000).unwrap();
@@ -129,7 +122,6 @@ fn bench_put_and_commit(c: &mut Criterion) {
         db_store.clone(),
         ks.len() as u64,
         changeset,
-        &registry,
     );
 
     group.sample_size(100);
@@ -143,11 +135,11 @@ fn bench_put_with_tree<NS>(
     node_store: NS,
     key_nums: u64,
     changeset: TreeChangeSet,
-    registry: &Registry,
 ) where
     NS: NodeReader + NodeWriter + Clone + 'static,
 {
-    let tree: SMTree<H256, Blob, NS> = SMTree::new(node_store.clone(), registry);
+    let registry = prometheus::Registry::new();
+    let tree: SMTree<H256, Blob, NS> = SMTree::new(node_store.clone(), &registry);
 
     node_store.write_nodes(changeset.nodes.clone()).unwrap();
     group

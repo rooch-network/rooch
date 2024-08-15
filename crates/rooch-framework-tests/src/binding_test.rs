@@ -27,6 +27,7 @@ use std::env;
 use std::path::Path;
 use std::sync::Arc;
 use tempfile::TempDir;
+use tokio::runtime::Runtime;
 
 pub fn get_data_dir() -> DataDirPath {
     match env::var("ROOCH_TEST_DATA_DIR") {
@@ -53,6 +54,15 @@ pub struct RustBindingTest {
 }
 
 impl RustBindingTest {
+    // RustBindingTest new must be in a tokio runtime due to raw store dependency on tokio
+    // There are two ways to ensure this:
+    // 1. The upper layer calls are in the tokio runtime
+    // 2. Create an independent tokio runtime when self new
+    pub fn new_in_tokio() -> Result<Self> {
+        let rt = Runtime::new().unwrap();
+        rt.block_on(async { Self::new() })
+    }
+
     pub fn new() -> Result<Self> {
         let opt = RoochOpt::new_with_temp_store()?;
         let store_config = opt.store_config();

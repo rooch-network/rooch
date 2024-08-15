@@ -17,7 +17,7 @@ use tracing::info;
 pub fn tx_exec_benchmark(c: &mut Criterion) {
     let config = BenchTxConfig::load();
 
-    let mut binding_test = binding_test::RustBindingTest::new().unwrap();
+    let mut binding_test = binding_test::RustBindingTest::new_in_tokio().unwrap();
     let kp = RoochKeyPair::generate_secp256k1();
     let mut test_transaction_builder = TestTransactionBuilder::new(kp);
 
