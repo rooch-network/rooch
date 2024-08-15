@@ -1,11 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_types::CommandAction;
-use crate::commands::indexer::commands::rebuild::RebuildCommand;
 use async_trait::async_trait;
 use clap::Parser;
+
 use rooch_types::error::RoochResult;
+
+use crate::cli_types::CommandAction;
+use crate::commands::indexer::commands::bench::BenchCommand;
+use crate::commands::indexer::commands::rebuild::RebuildCommand;
 
 pub mod commands;
 
@@ -23,6 +26,9 @@ impl CommandAction<String> for Indexer {
             IndexerCommand::Rebuild(rebuild) => rebuild.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
+            IndexerCommand::Bench(bench) => bench.execute().await.map(|resp| {
+                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
+            }),
         }
     }
 }
@@ -31,4 +37,5 @@ impl CommandAction<String> for Indexer {
 #[clap(name = "indexer")]
 pub enum IndexerCommand {
     Rebuild(RebuildCommand),
+    Bench(BenchCommand),
 }
