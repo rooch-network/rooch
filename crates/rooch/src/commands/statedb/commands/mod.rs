@@ -322,7 +322,8 @@ impl OutpointInscriptionsMap {
         OutpointInscriptionsMap::new(items, true)
     }
 
-    fn load_or_index(path: PathBuf, inscriptions_path: PathBuf, start_time: Instant) -> Self {
+    fn load_or_index(path: PathBuf, inscriptions_path: PathBuf) -> Self {
+        let start_time = Instant::now();
         let map_existed = path.exists();
         if map_existed {
             log::info!("load outpoint_inscriptions_map...");
@@ -390,12 +391,11 @@ where
     None
 }
 
-#[allow(dead_code)]
+// ExportWriter is a helper struct to write FieldKey:ObjectState pairs to a csv file
 struct ExportWriter {
-    writer: Option<Writer<File>>,
+    writer: Option<Writer<File>>, // option here for nop writer
 }
 
-#[allow(dead_code)]
 impl ExportWriter {
     fn new(output: Option<PathBuf>) -> Self {
         let writer = match output {
@@ -413,9 +413,17 @@ impl ExportWriter {
         };
         ExportWriter { writer }
     }
-    fn write(&mut self, k: &FieldKey, v: &ObjectState) -> anyhow::Result<()> {
+    fn write_record(&mut self, k: &FieldKey, v: &ObjectState) -> anyhow::Result<()> {
         if let Some(writer) = &mut self.writer {
             writer.write_record([k.to_string().as_str(), v.to_string().as_str()])?;
+            Ok(())
+        } else {
+            Ok(())
+        }
+    }
+    fn flush(&mut self) -> Result<()> {
+        if let Some(writer) = &mut self.writer {
+            writer.flush()?;
             Ok(())
         } else {
             Ok(())
