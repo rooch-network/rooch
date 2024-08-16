@@ -5,6 +5,7 @@ use crate::{
     crypto::{RoochSignature, Signature, SignatureScheme},
     transaction::RoochTransactionData,
 };
+use anyhow::Result;
 use fastcrypto::{
     hash::Sha256,
     secp256k1::{Secp256k1PublicKey, Secp256k1Signature},
@@ -20,38 +21,48 @@ use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("auth_payload");
 
-const MESSAGE_INFO_PREFIX: &[u8] = b"\x18Bitcoin Signed Message:\n";
+/// The original message prefix of the Bitcoin wallet includes the length of the message `x18`
+/// We remove the length because the bcs serialization format already contains the length information
+const MESSAGE_INFO_PREFIX: &[u8] = b"Bitcoin Signed Message:\n";
 const MESSAGE_INFO: &[u8] = b"Rooch Transaction:\n";
+
+const TX_HASH_HEX_LENGTH: usize = 64;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SignData {
     pub message_prefix: Vec<u8>,
     pub message_info: Vec<u8>,
-    pub tx_hash_hex: Vec<u8>,
 }
 
 impl SignData {
-    pub fn new(tx_data: &RoochTransactionData) -> Self {
-        let tx_hash_hex = hex::encode(tx_data.tx_hash().as_bytes()).into_bytes();
-        let message_info = MESSAGE_INFO.to_vec();
-
-        // We simulate the format of the Bitcoin wallet, append the length of message info and tx hash to the prefix
-        let mut encode_message_prefix = MESSAGE_INFO_PREFIX.to_vec();
-        encode_message_prefix.push((message_info.len() + tx_hash_hex.len()) as u8);
-
+    pub fn new(
+        message_prefix: Vec<u8>,
+        message_info_without_tx_hash: Vec<u8>,
+        tx_data: &RoochTransactionData,
+    ) -> Self {
+        let message_info = {
+            let tx_hash_hex = hex::encode(tx_data.tx_hash().as_bytes()).into_bytes();
+            let mut message_info = message_info_without_tx_hash;
+            message_info.extend_from_slice(&tx_hash_hex);
+            message_info
+        };
         SignData {
-            message_prefix: encode_message_prefix,
+            message_prefix,
             message_info,
-            tx_hash_hex,
         }
     }
 
+    pub fn new_with_default(tx_data: &RoochTransactionData) -> Self {
+        Self::new(MESSAGE_INFO_PREFIX.to_vec(), MESSAGE_INFO.to_vec(), tx_data)
+    }
+
     pub fn encode(&self) -> Vec<u8> {
-        let mut data = Vec::new();
-        data.extend_from_slice(&self.message_prefix);
-        data.extend_from_slice(&self.message_info);
-        data.extend_from_slice(&self.tx_hash_hex);
-        data
+        bcs::to_bytes(self).expect("Serialize SignData should success")
+    }
+
+    /// The message info without tx hash, the verifier should append the tx hash to the message info
+    pub fn message_info_without_tx_hash(&self) -> Vec<u8> {
+        self.message_info[..self.message_info.len() - TX_HASH_HEX_LENGTH].to_vec()
     }
 
     pub fn data_hash(&self) -> H256 {
@@ -66,7 +77,7 @@ pub struct AuthPayload {
     pub signature: Vec<u8>,
     // Some wallets add magic prefixes, such as unisat adding 'Bitcoin Signed Message:\n'
     pub message_prefix: Vec<u8>,
-    // Description of a user-defined signature
+    // Description of a user-defined signature, the message info does not include the tx hash
     pub message_info: Vec<u8>,
     // Public key of address
     pub public_key: Vec<u8>,
@@ -105,29 +116,65 @@ impl MoveStructState for AuthPayload {
 impl AuthPayload {
     pub fn new(sign_data: SignData, signature: Signature, bitcoin_address: String) -> Self {
         debug_assert_eq!(signature.scheme(), SignatureScheme::Secp256k1);
-
+        let message_info = sign_data.message_info_without_tx_hash();
         AuthPayload {
             signature: signature.signature_bytes().to_vec(),
             message_prefix: sign_data.message_prefix,
-            message_info: sign_data.message_info,
+            message_info,
             public_key: signature.public_key_bytes().to_vec(),
             from_address: bitcoin_address.into_bytes(),
         }
     }
 
-    pub fn verify(&self, tx_data: &RoochTransactionData) -> Result<(), anyhow::Error> {
+    pub fn verify(&self, tx_data: &RoochTransactionData) -> Result<()> {
         let pk = Secp256k1PublicKey::from_bytes(&self.public_key)?;
-        let tx_hash_hex = hex::encode(tx_data.tx_hash().as_bytes()).into_bytes();
-        let sign_data = SignData {
-            message_prefix: self.message_prefix.clone(),
-            message_info: self.message_info.clone(),
-            tx_hash_hex,
-        };
+        let sign_data = SignData::new(
+            self.message_prefix.clone(),
+            self.message_info.clone(),
+            tx_data,
+        );
         let message = sign_data.encode();
         let message_hash = sha2_256_of(&message).0.to_vec();
         let signature = Secp256k1Signature::from_bytes(&self.signature)?;
         pk.verify_with_hash::<Sha256>(&message_hash, &signature)?;
         Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MultisignAuthPayload {
+    pub signatures: Vec<Vec<u8>>,
+    pub message_prefix: Vec<u8>,
+    pub message_info: Vec<u8>,
+    pub public_keys: Vec<Vec<u8>>,
+}
+
+impl MoveStructType for MultisignAuthPayload {
+    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("MultisignAuthPayload");
+}
+
+impl MoveStructState for MultisignAuthPayload {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![
+            move_core_types::value::MoveTypeLayout::Vector(Box::new(
+                move_core_types::value::MoveTypeLayout::Vector(Box::new(
+                    move_core_types::value::MoveTypeLayout::U8,
+                )),
+            )),
+            move_core_types::value::MoveTypeLayout::Vector(Box::new(
+                move_core_types::value::MoveTypeLayout::U8,
+            )),
+            move_core_types::value::MoveTypeLayout::Vector(Box::new(
+                move_core_types::value::MoveTypeLayout::U8,
+            )),
+            move_core_types::value::MoveTypeLayout::Vector(Box::new(
+                move_core_types::value::MoveTypeLayout::Vector(Box::new(
+                    move_core_types::value::MoveTypeLayout::U8,
+                )),
+            )),
+        ])
     }
 }
 
