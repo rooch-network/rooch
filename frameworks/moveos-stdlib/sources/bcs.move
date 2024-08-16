@@ -9,11 +9,11 @@
 module moveos_std::bcs{
 
     use std::option::{Self, Option};
+    use std::vector;
 
     friend moveos_std::any;
     friend moveos_std::copyable_any;
-    friend moveos_std::address;
-    
+
     /// The request Move type is not match with input Move type.
     const ErrorTypeNotMatch: u64 = 1;
     const ErrorInvalidBytes: u64 = 2;
@@ -48,10 +48,10 @@ module moveos_std::bcs{
 
     /// Read `address` value from the bcs-serialized bytes.
     public fun peel_address(v: vector<u8>): address {
-        assert!(vector::length(&v) >= address::length(), ErrorInvalidLength);
+        assert!(vector::length(&v) >= 32, ErrorInvalidLength);
         let i = 0;
         let addr_bytes = vector::empty<u8>();
-        while (i < address::length()) {
+        while (i < 32) {
             let byte = vector::pop_back(&mut v);
             vector::push_back(&mut addr_bytes, byte);
             i = i + 1;
@@ -84,7 +84,7 @@ module moveos_std::bcs{
         let i = 0;
         let bits = 16u8;
         while (i < bits) {
-            let byte = vector::pop_back(&mut v);
+            let byte = (vector::pop_back(&mut v) as u16);
             value = value + (byte << (i as u8));
             i = i + 8;
         };
@@ -99,7 +99,7 @@ module moveos_std::bcs{
         let i = 0;
         let bits = 32u8;
         while (i < bits) {
-            let byte = vector::pop_back(&mut v);
+            let byte = (vector::pop_back(&mut v) as u32);
             value = value + (byte << (i as u8));
             i = i + 8;
         };
@@ -114,7 +114,7 @@ module moveos_std::bcs{
         let i = 0;
         let bits = 64u8;
         while (i < bits) {
-            let byte = vector::pop_back(&mut v);
+            let byte = (vector::pop_back(&mut v) as u64);
             value = value + (byte << (i as u8));
             i = i + 8;
         };
@@ -129,7 +129,7 @@ module moveos_std::bcs{
         let i = 0;
         let bits = 128u8;
         while (i < bits) {
-            let byte = vector::pop_back(&mut v);
+            let byte = (vector::pop_back(&mut v) as u128);
             value = value + (byte << (i as u8));
             i = i + 8;
         };
@@ -144,7 +144,7 @@ module moveos_std::bcs{
         let i = 0;
         let bits = 256u16;
         while (i < bits) {
-            let byte = vector::pop_back(&mut v);
+            let byte = (vector::pop_back(&mut v) as u256);
             value = value + (byte << (i as u8));
             i = i + 8;
         };
@@ -165,12 +165,12 @@ module moveos_std::bcs{
         let len = 0;
         loop {
             assert!(len <= 4, ErrorLengthOutOfRange);
-            let byte = vector::pop_back(&mut v) as u64;
+            let byte = (vector::pop_back(&mut v) as u64);
             len = len + 1;
             total = total | ((byte & 0x7f) << shift);
             if ((byte & 0x80) == 0) {
-                break;
-            }
+                break
+            };
             shift = shift + 7;
         };
         total
