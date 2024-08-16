@@ -27,7 +27,7 @@ use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::{FunctionCall, MoveOSTransaction, VerifiedMoveAction};
 use moveos_types::transaction::{MoveAction, VerifiedMoveOSTransaction};
 use prometheus::Registry;
-use rooch_event::actor::{EventActor, GasUpgradeMessage};
+use rooch_event::actor::{EventActor, EventActorSubscribeMessage, GasUpgradeMessage};
 use rooch_genesis::FrameworksGasParameters;
 use rooch_store::RoochStore;
 use rooch_types::address::{BitcoinAddress, MultiChainAddress};
@@ -87,11 +87,18 @@ impl ExecutorActor {
         })
     }
 
-    pub fn subscribe_event(
-        event_actor: EventActor,
+    pub async fn subscribe_event(
+        &self,
+        event_actor_ref: LocalActorRef<EventActor>,
         executor_actor_ref: LocalActorRef<ExecutorActor>,
-    ) -> Result<()> {
-        event_actor.subscribe::<GasUpgradeEvent>("executor", Box::new(executor_actor_ref))
+    ) {
+        let gas_upgrade_event = GasUpgradeEvent::default();
+        let actor_subscribe_message = EventActorSubscribeMessage::new(
+            gas_upgrade_event,
+            "executor".to_string(),
+            Box::new(executor_actor_ref),
+        );
+        let _ = event_actor_ref.send(actor_subscribe_message).await;
     }
 
     pub fn get_rooch_store(&self) -> RoochStore {
@@ -409,7 +416,15 @@ impl ExecutorActor {
     }
 }
 
-impl Actor for ExecutorActor {}
+#[async_trait]
+impl Actor for ExecutorActor {
+    async fn started(&mut self, ctx: &mut ActorContext) {
+        let local_actor_ref: LocalActorRef<Self> = ctx.actor_ref();
+        if let Some(event_actor) = self.event_actor.clone() {
+            let _ = self.subscribe_event(event_actor, local_actor_ref).await;
+        }
+    }
+}
 
 #[async_trait]
 impl Handler<ValidateL2TxMessage> for ExecutorActor {
@@ -500,7 +515,7 @@ impl MoveFunctionCaller for ExecutorActor {
 impl Handler<EventData> for ExecutorActor {
     async fn handle(&mut self, message: EventData, _ctx: &mut ActorContext) -> Result<()> {
         if let Ok(_gas_upgrade_msg) = message.data.downcast::<GasUpgradeEvent>() {
-            log::debug!("ExecutorActor: Reload the MoveOS instance...");
+            println!("ExecutorActor: Reload the MoveOS instance...");
 
             let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
             let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;

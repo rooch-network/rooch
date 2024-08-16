@@ -239,7 +239,6 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let event_bus = EventBus::new();
     let event_actor = EventActor::new(event_bus.clone());
     let event_actor_ref = event_actor
-        .clone()
         .into_actor(Some("EventActor"), &actor_system)
         .await?;
 
@@ -248,23 +247,23 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         moveos_store.clone(),
         rooch_store.clone(),
         &prometheus_registry,
-        Some(event_actor_ref),
+        Some(event_actor_ref.clone()),
     )?;
 
     let executor_actor_ref = executor_actor
         .into_actor(Some("Executor"), &actor_system)
         .await?;
 
-    ExecutorActor::subscribe_event(event_actor.clone(), executor_actor_ref.clone())?;
-
-    let reader_executor =
-        ReaderExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store.clone())?;
+    let reader_executor = ReaderExecutorActor::new(
+        root.clone(),
+        moveos_store.clone(),
+        rooch_store.clone(),
+        Some(event_actor_ref),
+    )?;
 
     let read_executor_ref = reader_executor
         .into_actor(Some("ReadExecutor"), &actor_system)
         .await?;
-
-    ReaderExecutorActor::subscribe_event(event_actor, read_executor_ref.clone())?;
 
     let executor_proxy = ExecutorProxy::new(
         executor_actor_ref.clone().into(),

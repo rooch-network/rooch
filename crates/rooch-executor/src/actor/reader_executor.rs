@@ -28,7 +28,7 @@ use moveos_types::state::{AnnotatedState, ObjectState};
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::state_resolver::{AnnotatedStateKV, AnnotatedStateReader, StateKV, StateReader};
 use moveos_types::transaction::TransactionExecutionInfo;
-use rooch_event::actor::EventActor;
+use rooch_event::actor::{EventActor, EventActorSubscribeMessage};
 use rooch_genesis::FrameworksGasParameters;
 use rooch_store::RoochStore;
 use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
@@ -38,6 +38,7 @@ pub struct ReaderExecutorActor {
     moveos: MoveOS,
     moveos_store: MoveOSStore,
     rooch_store: RoochStore,
+    event_actor: Option<LocalActorRef<EventActor>>,
 }
 
 impl ReaderExecutorActor {
@@ -45,6 +46,7 @@ impl ReaderExecutorActor {
         root: ObjectMeta,
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
+        event_actor: Option<LocalActorRef<EventActor>>,
     ) -> Result<Self> {
         let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
         let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
@@ -61,14 +63,22 @@ impl ReaderExecutorActor {
             moveos,
             moveos_store,
             rooch_store,
+            event_actor,
         })
     }
 
-    pub fn subscribe_event(
-        event_actor: EventActor,
+    pub async fn subscribe_event(
+        &self,
+        event_actor_ref: LocalActorRef<EventActor>,
         executor_actor_ref: LocalActorRef<ReaderExecutorActor>,
-    ) -> Result<()> {
-        event_actor.subscribe::<GasUpgradeEvent>("read-executor", Box::new(executor_actor_ref))
+    ) {
+        let gas_upgrade_event = GasUpgradeEvent::default();
+        let actor_subscribe_message = EventActorSubscribeMessage::new(
+            gas_upgrade_event,
+            "read-executor".to_string(),
+            Box::new(executor_actor_ref),
+        );
+        let _ = event_actor_ref.send(actor_subscribe_message).await;
     }
 
     pub fn get_rooch_store(&self) -> RoochStore {
@@ -85,7 +95,15 @@ impl ReaderExecutorActor {
     }
 }
 
-impl Actor for ReaderExecutorActor {}
+#[async_trait]
+impl Actor for ReaderExecutorActor {
+    async fn started(&mut self, ctx: &mut ActorContext) {
+        let local_actor_ref: LocalActorRef<Self> = ctx.actor_ref();
+        if let Some(event_actor) = self.event_actor.clone() {
+            let _ = self.subscribe_event(event_actor, local_actor_ref).await;
+        }
+    }
+}
 
 #[async_trait]
 impl Handler<ExecuteViewFunctionMessage> for ReaderExecutorActor {
@@ -275,7 +293,7 @@ impl Handler<RefreshStateMessage> for ReaderExecutorActor {
 impl Handler<EventData> for ReaderExecutorActor {
     async fn handle(&mut self, message: EventData, _ctx: &mut ActorContext) -> Result<()> {
         if let Ok(_gas_upgrade_msg) = message.data.downcast::<GasUpgradeEvent>() {
-            log::debug!("ReadExecutorActor: Reload the MoveOS instance...");
+            println!("ReadExecutorActor: Reload the MoveOS instance...");
 
             let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
             let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
