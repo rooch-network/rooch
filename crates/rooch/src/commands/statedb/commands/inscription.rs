@@ -28,7 +28,7 @@ pub struct InscriptionSource {
     pub sequence_number: u32,
     pub inscription_number: i32,
     pub id: InscriptionId,
-    // ord crate has different version of bitcoin dependency, using string for compatibility
+    // ord crate has a different version of bitcoin dependency, using string for compatibility
     pub satpoint_outpoint: String, // txid:vout
     pub satpoint_offset: u64,
     #[serde(skip_serializing_if = "Option::is_none")]

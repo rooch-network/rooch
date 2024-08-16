@@ -16,6 +16,7 @@ use move_core_types::account_address::AccountAddress;
 use move_vm_types::values::Value;
 use rustc_hash::FxHashSet;
 
+use bitcoin_move::natives::ord::inscription_id::InscriptionId;
 use moveos_store::MoveOSStore;
 use moveos_types::moveos_std::object::{DynamicField, ObjectMeta};
 use moveos_types::state::{MoveState, MoveStructState, ObjectState};
@@ -31,7 +32,7 @@ use rooch_types::rooch_network::RoochChainID;
 use crate::commands::statedb::commands::inscription::{
     gen_inscription_id_update, InscriptionSource,
 };
-use crate::commands::statedb::commands::utxo::UTXORawData;
+use crate::commands::statedb::commands::utxo::{AddressMappingData, UTXORawData};
 use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 
 /// Import BTC ordinals & UTXO for genesis
@@ -296,11 +297,12 @@ fn verify_utxo(
         let act_utxo_state = resolver
             .get_field_at(utxo_store_state_root, &exp_utxo_key)
             .unwrap();
-        let (mismatched, not_found) = write_mismatched_state_output::<UTXO>(
+        let (mismatched, not_found) = write_mismatched_state_output::<UTXO, UTXORawData>(
             &mut output_writer,
             "[utxo]",
             exp_utxo_state,
             act_utxo_state.clone(),
+            Some(utxo_raw.clone()),
         );
         if mismatched {
             utxo_mismatched_count += 1;
@@ -315,13 +317,16 @@ fn verify_utxo(
             let act_address_state = resolver
                 .get_field_at(address_mapping_state_root, &exp_addr_key)
                 .unwrap();
-            let (mismatched, not_found) =
-                write_mismatched_state_output::<DynamicField<AccountAddress, BitcoinAddress>>(
-                    &mut output_writer,
-                    "[address_mapping]",
-                    exp_addr_state,
-                    act_address_state.clone(),
-                );
+            let (mismatched, not_found) = write_mismatched_state_output::<
+                DynamicField<AccountAddress, BitcoinAddress>,
+                AddressMappingData,
+            >(
+                &mut output_writer,
+                "[address_mapping]",
+                exp_addr_state,
+                act_address_state.clone(),
+                None,
+            );
             if mismatched {
                 address_mismatched_count += 1;
             }
@@ -457,11 +462,12 @@ fn verify_inscription(
         let act_inscription_state = resolver
             .get_field_at(inscription_store_state_root, &exp_key)
             .unwrap();
-        let (mismatched, not_found) = write_mismatched_state_output::<Inscription>(
+        let (mismatched, not_found) = write_mismatched_state_output::<Inscription, InscriptionSource>(
             &mut output_writer,
             "[inscription]",
             exp_state,
             act_inscription_state.clone(),
+            Some(source.clone()),
         );
         if mismatched {
             mismatched_count += 1;
@@ -476,11 +482,12 @@ fn verify_inscription(
             .get_field_at(inscription_store_state_root, &exp_inscription_id_key)
             .unwrap();
         let (mismatched, not_found) =
-            write_mismatched_state_output::<DynamicField<u32, InscriptionID>>(
+            write_mismatched_state_output::<DynamicField<u32, InscriptionID>, InscriptionId>(
                 &mut output_writer,
                 "[inscription_id]",
                 exp_inscription_id_state,
                 act_inscription_id_state.clone(),
+                Some(source.id),
             );
         if mismatched {
             mismatched_inscription_id_count += 1;
@@ -538,12 +545,13 @@ fn clear_metadata(state: &mut ObjectState) {
     state.metadata.updated_at = 0;
 }
 
-// if mismatched return true & write output
-fn write_mismatched_state_output<T: MoveStructState + std::fmt::Debug>(
+// if mismatched, return true & write output
+fn write_mismatched_state_output<T: MoveStructState + std::fmt::Debug, R: std::fmt::Debug>(
     output_writer: &mut BufWriter<File>,
     prefix: &str,
     exp: ObjectState,
     act: Option<ObjectState>,
+    src_data: Option<R>, // write source data to output if mismatched for debug
 ) -> (bool, bool) {
     let mut mismatched = false;
     let mut not_found = false;
@@ -576,8 +584,8 @@ fn write_mismatched_state_output<T: MoveStructState + std::fmt::Debug>(
 
     writeln!(
         output_writer,
-        "{} mismatched: exp: {:?}, act: {:?}",
-        prefix, exp_str, act_str
+        "{} mismatched: exp: {:?}, act: {:?}, src_data: {:?}",
+        prefix, exp_str, act_str, src_data
     )
     .expect("Unable to write line");
     writeln!(output_writer, "--------------------------------").expect("Unable to write line");
