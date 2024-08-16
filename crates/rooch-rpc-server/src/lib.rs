@@ -243,29 +243,33 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         .into_actor(Some("EventActor"), &actor_system)
         .await?;
 
-    let executor_actor_ref = ExecutorActor::new(
+    let executor_actor = ExecutorActor::new(
         root.clone(),
         moveos_store.clone(),
         rooch_store.clone(),
         &prometheus_registry,
-        (
-            event_actor.clone(),
-            event_actor_ref.clone().into(),
-            &actor_system,
-        ),
-    )
-    .await?;
+        Some(event_actor_ref),
+    )?;
 
-    let reader_executor_ref = ReaderExecutorActor::new(
-        root.clone(),
-        moveos_store.clone(),
-        rooch_store.clone(),
-        (event_actor.clone(), &actor_system),
-    )
-    .await?;
+    let executor_actor_ref = executor_actor
+        .into_actor(Some("Executor"), &actor_system)
+        .await?;
 
-    let executor_proxy =
-        ExecutorProxy::new(executor_actor_ref.clone(), reader_executor_ref.clone());
+    ExecutorActor::subscribe_event(event_actor.clone(), executor_actor_ref.clone())?;
+
+    let reader_executor =
+        ReaderExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store.clone())?;
+
+    let read_executor_ref = reader_executor
+        .into_actor(Some("ReadExecutor"), &actor_system)
+        .await?;
+
+    ReaderExecutorActor::subscribe_event(event_actor, read_executor_ref.clone())?;
+
+    let executor_proxy = ExecutorProxy::new(
+        executor_actor_ref.clone().into(),
+        read_executor_ref.clone().into(),
+    );
 
     // Init sequencer
     info!("RPC Server sequencer address: {:?}", sequencer_account);

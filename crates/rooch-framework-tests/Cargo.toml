@@ -26,12 +26,14 @@ tempfile = { workspace = true }
 include_dir = { workspace = true }
 musig2 = { workspace = true }
 miniscript = { workspace = true }
+coerce = { workspace = true }
 
 move-core-types = { workspace = true }
 
 moveos-types = { workspace = true }
 moveos-store = { workspace = true }
 moveos-config = { workspace = true }
+moveos-eventbus = { workspace = true }
 metrics = { workspace = true }
 
 rooch-genesis = { workspace = true }
@@ -40,6 +42,7 @@ rooch-key = { workspace = true }
 rooch-executor = { workspace = true }
 rooch-config = { workspace = true }
 rooch-db = { workspace = true }
+rooch-event = { workspace = true }
 
 bitcoin-move = { workspace = true }
 

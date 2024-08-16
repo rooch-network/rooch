@@ -81,7 +81,6 @@ impl RustBindingTest {
             root.clone(),
             rooch_db.moveos_store.clone(),
             rooch_db.rooch_store.clone(),
-            None,
         )?;
         Ok(Self {
             opt,

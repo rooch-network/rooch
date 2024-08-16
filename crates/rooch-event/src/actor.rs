@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use coerce::actor::context::ActorContext;
 use coerce::actor::message::{Handler, Message};
 use coerce::actor::Actor;
+use log;
 use moveos_eventbus::bus::{EventBus, EventNotifier};
 use moveos_eventbus::event::GasUpgradeEvent;
 
@@ -40,9 +41,10 @@ impl Message for GasUpgradeMessage {
 impl Handler<GasUpgradeMessage> for EventActor {
     async fn handle(
         &mut self,
-        _message: GasUpgradeMessage,
+        message: GasUpgradeMessage,
         _ctx: &mut ActorContext,
     ) -> anyhow::Result<()> {
+        log::debug!("EventActor receive message {:?}", message);
         self.event_bus
             .notify::<GasUpgradeEvent>(GasUpgradeEvent {})?;
         Ok(())

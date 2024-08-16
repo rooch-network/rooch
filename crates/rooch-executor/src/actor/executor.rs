@@ -9,8 +9,7 @@ use super::messages::{
 use crate::metrics::ExecutorMetrics;
 use anyhow::Result;
 use async_trait::async_trait;
-use coerce::actor::system::ActorSystem;
-use coerce::actor::{context::ActorContext, message::Handler, Actor, ActorRef, IntoActor};
+use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use function_name::named;
 use move_core_types::vm_status::VMStatus;
 use moveos::moveos::{MoveOS, MoveOSConfig};
@@ -54,19 +53,19 @@ pub struct ExecutorActor {
     moveos_store: MoveOSStore,
     rooch_store: RoochStore,
     metrics: Arc<ExecutorMetrics>,
-    event_actor: ActorRef<EventActor>,
+    event_actor: Option<LocalActorRef<EventActor>>,
 }
 
 type ValidateAuthenticatorResult = Result<TxValidateResult, VMStatus>;
 
 impl ExecutorActor {
-    pub async fn new(
+    pub fn new(
         root: ObjectMeta,
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
         registry: &Registry,
-        event_actor: (EventActor, ActorRef<EventActor>, &ActorSystem),
-    ) -> Result<ActorRef<Self>> {
+        event_actor: Option<LocalActorRef<EventActor>>,
+    ) -> Result<Self> {
         let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
         let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
 
@@ -84,16 +83,17 @@ impl ExecutorActor {
             moveos_store,
             rooch_store,
             metrics: Arc::new(ExecutorMetrics::new(registry)),
-            event_actor: event_actor.1,
+            event_actor,
         };
 
-        let executor_ref = executor.into_actor(Some("Executor"), event_actor.2).await?;
+        Ok(executor)
+    }
 
-        event_actor
-            .0
-            .subscribe::<GasUpgradeEvent>("executor", Box::new(executor_ref.clone()))?;
-
-        Ok(executor_ref.into())
+    pub fn subscribe_event(
+        event_actor: EventActor,
+        executor_actor_ref: LocalActorRef<ExecutorActor>,
+    ) -> Result<()> {
+        event_actor.subscribe::<GasUpgradeEvent>("executor", Box::new(executor_actor_ref))
     }
 
     pub fn get_rooch_store(&self) -> RoochStore {
@@ -124,10 +124,7 @@ impl ExecutorActor {
     }
 
     #[named]
-    pub async fn execute(
-        &mut self,
-        tx: VerifiedMoveOSTransaction,
-    ) -> Result<ExecuteTransactionResult> {
+    pub fn execute(&mut self, tx: VerifiedMoveOSTransaction) -> Result<ExecuteTransactionResult> {
         let fn_name = function_name!();
         let _timer = self
             .metrics
@@ -151,7 +148,9 @@ impl ExecutorActor {
             .observe(size as f64);
 
         if is_gas_upgrade {
-            let _ = self.event_actor.send(GasUpgradeMessage {}).await;
+            if let Some(event_actor) = self.event_actor.clone() {
+                let _ = event_actor.notify(GasUpgradeMessage {});
+            }
         }
 
         Ok(ExecuteTransactionResult {
@@ -465,7 +464,7 @@ impl Handler<ExecuteTransactionMessage> for ExecutorActor {
         msg: ExecuteTransactionMessage,
         _ctx: &mut ActorContext,
     ) -> Result<ExecuteTransactionResult> {
-        self.execute(msg.tx).await
+        self.execute(msg.tx)
     }
 }
 

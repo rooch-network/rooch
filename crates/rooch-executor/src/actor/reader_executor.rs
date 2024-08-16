@@ -11,8 +11,7 @@ use crate::actor::messages::{
 };
 use anyhow::Result;
 use async_trait::async_trait;
-use coerce::actor::system::ActorSystem;
-use coerce::actor::{context::ActorContext, message::Handler, Actor, ActorRef, IntoActor};
+use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use move_resource_viewer::MoveValueAnnotator;
 use moveos::moveos::MoveOS;
 use moveos::moveos::MoveOSConfig;
@@ -42,12 +41,11 @@ pub struct ReaderExecutorActor {
 }
 
 impl ReaderExecutorActor {
-    pub async fn new(
+    pub fn new(
         root: ObjectMeta,
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
-        event_actor: (EventActor, &ActorSystem),
-    ) -> Result<ActorRef<Self>> {
+    ) -> Result<Self> {
         let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
         let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
         let moveos = MoveOS::new(
@@ -65,15 +63,14 @@ impl ReaderExecutorActor {
             rooch_store,
         };
 
-        let read_executor_ref = read_executor
-            .into_actor(Some("Executor"), event_actor.1)
-            .await?;
+        Ok(read_executor)
+    }
 
-        event_actor
-            .0
-            .subscribe::<GasUpgradeEvent>("read-executor", Box::new(read_executor_ref.clone()))?;
-
-        Ok(read_executor_ref.into())
+    pub fn subscribe_event(
+        event_actor: EventActor,
+        executor_actor_ref: LocalActorRef<ReaderExecutorActor>,
+    ) -> Result<()> {
+        event_actor.subscribe::<GasUpgradeEvent>("read-executor", Box::new(executor_actor_ref))
     }
 
     pub fn get_rooch_store(&self) -> RoochStore {
