@@ -1,14 +1,17 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::path::PathBuf;
+
 use anyhow::Result;
+
 use metrics::RegistryService;
 use rooch_config::RoochOpt;
 use rooch_indexer::indexer_reader::IndexerReader;
 use rooch_indexer::IndexerStore;
 use rooch_types::rooch_network::RoochChainID;
-use std::path::PathBuf;
 
+pub mod bench;
 pub mod rebuild;
 
 pub const BATCH_SIZE: usize = 5000;

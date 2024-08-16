@@ -2,13 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// Taproot is a module that provides Bitcoin Taproot related functions.
-module rooch_nursery::taproot_builder {
+module bitcoin_move::taproot_builder {
 
     use std::vector;
     use std::option::{Self, Option, is_none, is_some, none, destroy_some};
     use moveos_std::bcs;
     use moveos_std::compare;
     use bitcoin_move::script_buf::{Self,ScriptBuf};
+    use moveos_std::result::{err, ok, Result};
 
     /// Tapscript leaf version.
     // https://github.com/bitcoin/bitcoin/blob/e826b22da252e0599c61d21c98ff89f366b3120f/src/script_buf/interpreter.h#L226
@@ -110,17 +111,18 @@ module rooch_nursery::taproot_builder {
         hash
     }
 
-    public fun finalize(builder: TaprootBuilder): address {
+    /// Finalize the builder, return the state root,
+    /// We use the address to represent the hash.
+    public fun finalize(builder: TaprootBuilder): Result<address, TaprootBuilder> {
         let len = vector::length(&builder.branch);
         if (len == 0) {
-            //TODO return Result<address, TaprootBuilder> after refactor the Result
-            return @0x0
+            return err(builder)
         };
         let last_node_opt = vector::pop_back(&mut builder.branch);
         //This should not happen, Builder guarantees the last element is Some
         assert!(is_some(&last_node_opt), ErrorUnreachable);
         let last_node = destroy_some(last_node_opt);
-        last_node.hash
+        ok(last_node.hash)
     }
 
     fun tagged_hash(tag: vector<u8>, msg: vector<u8>): address {

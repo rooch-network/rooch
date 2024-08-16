@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module rooch_nursery::result {
+module moveos_std::result {
 
     use std::string::{Self, String};
     use std::option::{Self, Option};
@@ -79,11 +79,11 @@ module rooch_nursery::result {
     }
 
     public inline fun and_then<U, T, E>(result: Result<U, E>, f: |U|Result<T, E>): Result<T, E> {
-        let (value, err) = rooch_nursery::result::unpack(result);
+        let (value, err) = moveos_std::result::unpack(result);
         if (std::option::is_some(&value)) {
             f(std::option::destroy_some(value))
         } else {
-            rooch_nursery::result::err(std::option::destroy_some(err))   
+            moveos_std::result::err(std::option::destroy_some(err))   
         }
     }
 
@@ -111,14 +111,14 @@ module rooch_nursery::result {
     /// This function is inline, so it will be expanded in the caller.
     /// This ensures the abort_code is the caller's location.
     public inline fun assert_ok<T, E>(result: Result<T, E>, abort_code: u64): T{
-        let (value, err) = rooch_nursery::result::unpack(result);
+        let (value, err) = moveos_std::result::unpack(result);
         assert!(std::option::is_some(&value), abort_code);
         std::option::destroy_none(err);
         std::option::destroy_some(value)
     }
 
     public inline fun assert_err<T, E>(result: Result<T, E>, abort_code: u64): E{
-        let (value, err) = rooch_nursery::result::unpack(result);
+        let (value, err) = moveos_std::result::unpack(result);
         assert!(std::option::is_some(&err), abort_code);
         std::option::destroy_none(value);
         std::option::destroy_some(err)

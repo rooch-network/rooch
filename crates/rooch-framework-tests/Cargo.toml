@@ -27,6 +27,7 @@ include_dir = { workspace = true }
 musig2 = { workspace = true }
 miniscript = { workspace = true }
 coerce = { workspace = true }
+tokio = { workspace = true }
 
 move-core-types = { workspace = true }
 

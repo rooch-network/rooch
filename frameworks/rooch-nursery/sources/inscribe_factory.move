@@ -21,7 +21,7 @@ module rooch_nursery::inscribe_factory {
 
     use rooch_nursery::bitseed::{Self, Bitseed};
     use rooch_nursery::tick_info;
-    use rooch_nursery::result::{Self, Result, err_str, ok, is_err, as_err};
+    use moveos_std::result::{Self, Result, err_str, ok, is_err, as_err};
 
     const BIT_SEED_DEPLOY: vector<u8> = b"bitseed_deploy";
     const BIT_SEED_MINT: vector<u8> = b"bitseed_mint";
@@ -750,7 +750,7 @@ module rooch_nursery::inscribe_factory {
     #[test_only]
     use moveos_std::features;
     #[test_only]
-    use rooch_nursery::result::{is_ok};
+    use moveos_std::result::{is_ok};
 
     #[test(genesis_account=@0x4)]
     fun test_is_valid_bitseed_mint_fail_with_tick_not_deploy(genesis_account: &signer){

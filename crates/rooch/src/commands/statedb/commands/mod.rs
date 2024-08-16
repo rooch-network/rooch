@@ -8,8 +8,10 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Instant;
 
+use anyhow::Result;
 use bitcoin::hashes::Hash;
 use bitcoin::OutPoint;
+use csv::Writer;
 use xorf::{BinaryFuse8, Filter};
 use xxhash_rust::xxh3::xxh3_64;
 
@@ -20,6 +22,7 @@ use moveos_types::move_std::option::MoveOption;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
 use moveos_types::moveos_std::simple_multimap::{Element, SimpleMultiMap};
+use moveos_types::state::{FieldKey, ObjectState};
 use rooch_common::fs::file_cache::FileCacheManager;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
@@ -302,7 +305,6 @@ impl OutpointInscriptionsMap {
             .map(|index| items[index].inscriptions.clone())
     }
 
-    #[allow(dead_code)]
     fn load(path: PathBuf) -> Self {
         let file = File::open(path.clone()).expect("Unable to open the file");
         let reader = BufReader::new(file);
@@ -318,6 +320,38 @@ impl OutpointInscriptionsMap {
         let _ = file_cache_manager.drop_cache_range(0, 1 << 40);
 
         OutpointInscriptionsMap::new(items, true)
+    }
+
+    fn load_or_index(path: PathBuf, inscriptions_path: PathBuf) -> Self {
+        let start_time = Instant::now();
+        let map_existed = path.exists();
+        if map_existed {
+            log::info!("load outpoint_inscriptions_map...");
+            let outpoint_inscriptions_map = OutpointInscriptionsMap::load(path.clone());
+            let (outpoint_count, inscription_count) = outpoint_inscriptions_map.stats();
+            println!(
+                "{} outpoints : {} inscriptions mapped in: {:?}",
+                outpoint_count,
+                inscription_count,
+                start_time.elapsed(),
+            );
+            outpoint_inscriptions_map
+        } else {
+            log::info!("indexing and dumping outpoint_inscriptions_map...");
+            let (outpoint_inscriptions_map, mapped_outpoint, mapped_inscription, unbound_count) =
+                OutpointInscriptionsMap::index_and_dump(
+                    inscriptions_path.clone(),
+                    Some(path.clone()),
+                );
+            println!(
+                "{} outpoints : {} inscriptions mapped in: {:?} ({} unbound inscriptions ignored)",
+                mapped_outpoint,
+                mapped_inscription,
+                start_time.elapsed(),
+                unbound_count
+            );
+            outpoint_inscriptions_map
+        }
     }
 
     fn dump(&self, path: PathBuf) {
@@ -341,6 +375,7 @@ impl OutpointInscriptionsMap {
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn get_values_by_key<Key, Value>(
     map: SimpleMultiMap<Key, Value>,
     key: Key,
@@ -354,6 +389,46 @@ where
         }
     }
     None
+}
+
+// ExportWriter is a helper struct to write FieldKey:ObjectState pairs to a csv file
+struct ExportWriter {
+    writer: Option<Writer<File>>, // option here for nop writer
+}
+
+impl ExportWriter {
+    fn new(output: Option<PathBuf>) -> Self {
+        let writer = match output {
+            Some(output) => {
+                let file_name = output.display().to_string();
+                let mut writer_builder = csv::WriterBuilder::new();
+                let writer_builder = writer_builder
+                    .delimiter(b',')
+                    .double_quote(false)
+                    .buffer_capacity(1 << 23);
+                let writer = writer_builder.from_path(file_name).unwrap();
+                Some(writer)
+            }
+            None => None,
+        };
+        ExportWriter { writer }
+    }
+    fn write_record(&mut self, k: &FieldKey, v: &ObjectState) -> anyhow::Result<()> {
+        if let Some(writer) = &mut self.writer {
+            writer.write_record([k.to_string().as_str(), v.to_string().as_str()])?;
+            Ok(())
+        } else {
+            Ok(())
+        }
+    }
+    fn flush(&mut self) -> Result<()> {
+        if let Some(writer) = &mut self.writer {
+            writer.flush()?;
+            Ok(())
+        } else {
+            Ok(())
+        }
+    }
 }
 
 #[cfg(test)]

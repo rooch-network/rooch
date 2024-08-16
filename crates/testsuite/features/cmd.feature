@@ -81,6 +81,9 @@ Feature: Rooch CLI integration tests
       Given a server for state
       Then cmd: "object -i 0x3" 
       Then cmd: "object -i 0x2::timestamp::Timestamp"
+      Then cmd: "dynamic-field list-field-states --object-id 0x3"
+      Then cmd: "dynamic-field get-field-states --object-id 0x3 --field-keys 0x064a9d6a507002868e9500d1a59e5b2760708a8d0bd64c78a55b9cc2cafdf6a0"
+      Then assert: "{{$.dynamic-field[-2].data[0].state.id}} == {{$.dynamic-field[-1][0].id}}"
       Then cmd: "state --access-path /object/0x2::timestamp::Timestamp"
       Then assert: "{{$.state[-1][0].object_type}} == '0x2::timestamp::Timestamp'"
       Then cmd: "state --access-path /object/0x3::chain_id::ChainID"

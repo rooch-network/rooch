@@ -140,7 +140,7 @@ impl Authenticator {
     /// We simulate the Bitcoin Wallet message signature
     pub fn bitcoin(kp: &RoochKeyPair, tx_data: &RoochTransactionData) -> Self {
         debug_assert_eq!(kp.public().scheme(), SignatureScheme::Secp256k1);
-        let sign_data = SignData::new(tx_data);
+        let sign_data = SignData::new_with_default(tx_data);
         //The Bitcoin wallet uses sha2_256 twice, the Secp256k1 sign method will hash the data again
         let data_hash = sign_data.data_hash();
         let signature = kp.sign(data_hash.as_bytes());

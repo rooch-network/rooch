@@ -11,7 +11,6 @@ use crate::{
     state::{FieldKey, ObjectChange, ObjectState, StateChangeSet},
     transaction::{FunctionCall, MoveAction, ScriptCall, VerifiedMoveAction},
 };
-use anyhow::Result;
 use move_core_types::{
     account_address::AccountAddress,
     effects::Op,
@@ -343,10 +342,10 @@ pub fn random_state_change_set_for_child_object(parent_id: ObjectID) -> StateCha
     state_change_set
 }
 
-pub fn random_table_object() -> Result<ObjectEntity<TablePlaceholder>> {
-    Ok(ObjectEntity::new_table_object(
+pub fn random_table_object() -> ObjectEntity<TablePlaceholder> {
+    ObjectEntity::new_table_object(
         ObjectID::from(AccountAddress::random()),
         *GENESIS_STATE_ROOT,
         0,
-    ))
+    )
 }
