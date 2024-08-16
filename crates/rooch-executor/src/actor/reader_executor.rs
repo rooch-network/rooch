@@ -56,14 +56,12 @@ impl ReaderExecutorActor {
             system_post_execute_functions(),
         )?;
 
-        let read_executor = Self {
+        Ok(Self {
             root,
             moveos,
             moveos_store,
             rooch_store,
-        };
-
-        Ok(read_executor)
+        })
     }
 
     pub fn subscribe_event(

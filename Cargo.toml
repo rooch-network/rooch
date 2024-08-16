@@ -46,6 +46,7 @@ members = [
     "crates/rooch-store",
     "crates/rooch-test-transaction-builder",
     "crates/rooch-types",
+    "crates/rooch-event",
     "crates/testsuite",
     "frameworks/bitcoin-move",
     "frameworks/framework-builder",
@@ -53,7 +54,7 @@ members = [
     "frameworks/framework-types",
     "frameworks/moveos-stdlib",
     "frameworks/rooch-framework",
-    "frameworks/rooch-nursery", "crates/rooch-event",
+    "frameworks/rooch-nursery",
 ]
 
 default-members = [

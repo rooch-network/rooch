@@ -77,16 +77,14 @@ impl ExecutorActor {
             system_post_execute_functions(),
         )?;
 
-        let executor = Self {
+        Ok(Self {
             root,
             moveos,
             moveos_store,
             rooch_store,
             metrics: Arc::new(ExecutorMetrics::new(registry)),
             event_actor,
-        };
-
-        Ok(executor)
+        })
     }
 
     pub fn subscribe_event(
