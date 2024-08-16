@@ -342,7 +342,7 @@ fn verify_utxo(
         result = "FAILED";
         println!("------------FAILED----------------");
         println!(
-            "[utxo_store] mismatched size: exp: {}, act: {}",
+            "[utxo_store] mismatched metadata.size: exp: {}, act: {}",
             utxo_total, act_utxo_store_state.metadata.size
         )
     };
@@ -350,7 +350,7 @@ fn verify_utxo(
         result = "FAILED";
         println!("------------FAILED----------------");
         println!(
-            "[address_mapping] mismatched size: exp: {}, act: {}",
+            "[address_mapping] mismatched metadata.size: exp: {}, act: {}",
             added_address_set.len(),
             act_address_mapping_state.metadata.size
         )
@@ -508,7 +508,7 @@ fn verify_inscription(
         result = "FAILED";
         println!("------------FAILED----------------");
         println!(
-            "[inscription_store] mismatched size. metadata: exp: {}, act: {}; cursed: exp: {}, act: {}; blessed: exp: {}, act: {}; next_sequence_number: exp: {}, act: {}",
+            "[inscription_store] mismatched. metadata.size: exp: {}, act: {}; cursed: exp: {}, act: {}; blessed: exp: {}, act: {}; next_sequence_number: exp: {}, act: {}",
             total * 2,
             act_inscription_store_state.metadata.size,
             cursed_inscription_count,
