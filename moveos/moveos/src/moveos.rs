@@ -253,7 +253,7 @@ impl MoveOS {
     pub fn execute(
         &self,
         tx: VerifiedMoveOSTransaction,
-    ) -> Result<(RawTransactionOutput, Option<VMErrorInfo>, bool)> {
+    ) -> Result<(RawTransactionOutput, Option<VMErrorInfo>)> {
         let VerifiedMoveOSTransaction { root, ctx, action } = tx;
         let tx_hash = ctx.tx_hash();
         if log::log_enabled!(log::Level::Debug) {
@@ -341,7 +341,7 @@ impl MoveOS {
     pub fn execute_only(
         &self,
         tx: VerifiedMoveOSTransaction,
-    ) -> Result<(RawTransactionOutput, Option<VMErrorInfo>, bool)> {
+    ) -> Result<(RawTransactionOutput, Option<VMErrorInfo>)> {
         self.execute(tx)
     }
 
@@ -355,6 +355,7 @@ impl MoveOS {
             events: tx_events,
             gas_used,
             is_upgrade,
+            is_gas_upgrade: _,
         } = output;
 
         db.get_state_store()
@@ -491,7 +492,7 @@ impl MoveOS {
         mut session: MoveOSSession<'_, '_, RootObjectResolver<MoveOSStore>, MoveOSGasMeter>,
         status: VMStatus,
         vm_error_info: Option<VMErrorInfo>,
-    ) -> Result<(RawTransactionOutput, Option<VMErrorInfo>, bool)> {
+    ) -> Result<(RawTransactionOutput, Option<VMErrorInfo>)> {
         let kept_status = match status.keep_or_discard() {
             Ok(kept_status) => {
                 if is_system_call && kept_status != KeptVMStatus::Executed {
@@ -533,16 +534,17 @@ impl MoveOS {
                 .expect("system_post_execute should not fail.");
         }
 
-        let mut gas_upgraed = false;
+        let mut gas_upgrade = false;
         let gas_schedule_updated = session.tx_context().get::<GasScheduleUpdated>()?;
         if let Some(_updated) = gas_schedule_updated {
             log::info!("Gas schedule updated");
-            gas_upgraed = true;
+            gas_upgrade = true;
             self.cost_table.write().take();
         }
 
-        let (_ctx, output) = session.finish_with_extensions(kept_status)?;
-        Ok((output, vm_error_info, gas_upgraed))
+        let (_ctx, mut output) = session.finish_with_extensions(kept_status)?;
+        output.is_gas_upgrade = gas_upgrade;
+        Ok((output, vm_error_info))
     }
 
     pub fn flush_module_cache(&self, is_upgrade: bool) -> Result<()> {

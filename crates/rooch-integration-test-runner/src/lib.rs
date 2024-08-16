@@ -181,7 +181,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
 
         let tx = MoveOSTransaction::new_for_test(self.root.clone(), sender, action);
         let verified_tx = self.validate_tx(tx)?;
-        let (raw_output, _, _) = self.moveos.execute_only(verified_tx)?;
+        let (raw_output, _) = self.moveos.execute_only(verified_tx)?;
         let output = MoveOS::apply_transaction_output(&self.moveos.db, raw_output)?;
         self.root = output.changeset.root_metadata();
         Ok((Some(tx_output_to_str(output)), module))
@@ -220,7 +220,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             MoveAction::new_script_call(script_bytes, type_args, args),
         );
         let verified_tx = self.validate_tx(tx)?;
-        let (raw_output, _, _) = self.moveos.execute_only(verified_tx)?;
+        let (raw_output, _) = self.moveos.execute_only(verified_tx)?;
         let output = MoveOS::apply_transaction_output(&self.moveos.db, raw_output)?;
         self.root = output.changeset.root_metadata();
         //TODO return values
@@ -262,7 +262,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             MoveAction::new_function_call(function_id, type_args, args),
         );
         let verified_tx = self.validate_tx(tx)?;
-        let (raw_output, _, _) = self.moveos.execute_only(verified_tx)?;
+        let (raw_output, _) = self.moveos.execute_only(verified_tx)?;
         let output = MoveOS::apply_transaction_output(&self.moveos.db, raw_output)?;
         self.root = output.changeset.root_metadata();
         debug_assert!(

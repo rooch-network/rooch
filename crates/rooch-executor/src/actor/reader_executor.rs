@@ -71,7 +71,7 @@ impl ReaderExecutorActor {
 
         event_actor
             .0
-            .subscribe::<GasUpgradeEvent>("read-executor", Box::new(read_executor_ref.clone()));
+            .subscribe::<GasUpgradeEvent>("read-executor", Box::new(read_executor_ref.clone()))?;
 
         Ok(read_executor_ref.into())
     }
@@ -280,6 +280,8 @@ impl Handler<RefreshStateMessage> for ReaderExecutorActor {
 impl Handler<EventData> for ReaderExecutorActor {
     async fn handle(&mut self, message: EventData, _ctx: &mut ActorContext) -> Result<()> {
         if let Ok(_gas_upgrade_msg) = message.data.downcast::<GasUpgradeEvent>() {
+            log::debug!("ReadExecutorActor: Reload the MoveOS instance...");
+
             let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
             let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
 

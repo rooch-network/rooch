@@ -87,13 +87,11 @@ impl ExecutorActor {
             event_actor: event_actor.1,
         };
 
-        let executor_ref = executor
-            .into_actor(Some("Executor"), event_actor.2)
-            .await?;
+        let executor_ref = executor.into_actor(Some("Executor"), event_actor.2).await?;
 
         event_actor
             .0
-            .subscribe::<GasUpgradeEvent>("executor", Box::new(executor_ref.clone()));
+            .subscribe::<GasUpgradeEvent>("executor", Box::new(executor_ref.clone()))?;
 
         Ok(executor_ref.into())
     }
@@ -118,7 +116,7 @@ impl ExecutorActor {
             .executor_execute_tx_latency_seconds
             .with_label_values(&[fn_name])
             .start_timer();
-        let (raw_output, vm_error_info, _) = self.moveos.execute_only(tx)?;
+        let (raw_output, vm_error_info) = self.moveos.execute_only(tx)?;
         Ok(DryRunTransactionResult {
             raw_output,
             vm_error_info,
@@ -138,7 +136,8 @@ impl ExecutorActor {
             .start_timer();
         let tx_hash = tx.ctx.tx_hash();
         let size = tx.ctx.tx_size;
-        let (raw_output, _, gas_upgraded) = self.moveos.execute_only(tx)?;
+        let (raw_output, _) = self.moveos.execute_only(tx)?;
+        let is_gas_upgrade = raw_output.is_gas_upgrade;
         let output = MoveOS::apply_transaction_output(&self.moveos.db, raw_output)?;
 
         let execution_info = self
@@ -151,7 +150,7 @@ impl ExecutorActor {
             .with_label_values(&[fn_name])
             .observe(size as f64);
 
-        if gas_upgraded {
+        if is_gas_upgrade {
             let _ = self.event_actor.send(GasUpgradeMessage {}).await;
         }
 
@@ -504,6 +503,8 @@ impl MoveFunctionCaller for ExecutorActor {
 impl Handler<EventData> for ExecutorActor {
     async fn handle(&mut self, message: EventData, _ctx: &mut ActorContext) -> Result<()> {
         if let Ok(_gas_upgrade_msg) = message.data.downcast::<GasUpgradeEvent>() {
+            log::debug!("ExecutorActor: Reload the MoveOS instance...");
+
             let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
             let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
 

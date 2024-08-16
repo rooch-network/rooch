@@ -1,12 +1,23 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use anyhow::{format_err, Error};
 use coerce::actor::message::{Handler, Message};
 use coerce::actor::{Actor, ActorRefErr, LocalActorRef};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
+
+#[derive(thiserror::Error, Debug)]
+pub enum EventBusError {
+    #[error("Locker read error {0:?}.")]
+    LockerReadError(Error),
+    #[error("Locker write error {0:?}.")]
+    LockerWriteError(Error),
+    #[error("ActorRef error {0:?}.")]
+    ActorRefError(Error),
+}
 
 pub struct EventData {
     pub data: Box<dyn Any + Send + Sync + 'static>,
@@ -69,13 +80,17 @@ impl EventBus {
     }
 
     /// Publishes an event, notifying all subscribers with the data of type `T`.
-    pub fn notify<T: 'static + Send + Sync + Clone>(
-        &self,
-        event_data: T,
-    ) -> Result<(), ActorRefErr> {
+    pub fn notify<T: 'static + Send + Sync + Clone>(&self, event_data: T) -> anyhow::Result<()> {
         let event_type_id = TypeId::of::<T>();
         {
-            let senders = self.senders.read().unwrap();
+            let senders = match self.senders.read() {
+                Ok(v) => v,
+                Err(_) => {
+                    return Err(Error::from(EventBusError::LockerReadError(format_err!(
+                        "read the locker with poisoned error"
+                    ))))
+                }
+            };
             if let Some(event_senders) = senders.get(&event_type_id) {
                 for (subscriber, sender) in event_senders {
                     if sender.send(Box::new(event_data.clone())).is_err() {
@@ -89,7 +104,14 @@ impl EventBus {
             }
         }
 
-        let callbacks = self.callbacks.read().unwrap();
+        let callbacks = match self.callbacks.read() {
+            Ok(v) => v,
+            Err(_) => {
+                return Err(Error::from(EventBusError::LockerReadError(format_err!(
+                    "read the locker with poisoned error"
+                ))))
+            }
+        };
         if let Some(event_callbacks) = callbacks.get(&event_type_id) {
             for (subscriber, callback) in event_callbacks {
                 log::debug!(
@@ -103,7 +125,14 @@ impl EventBus {
             log::debug!("No subscribers found for event: '{:?}'", event_type_id);
         }
 
-        let actors = self.actors.read().unwrap();
+        let actors = match self.actors.read() {
+            Ok(v) => v,
+            Err(_) => {
+                return Err(Error::from(EventBusError::LockerReadError(format_err!(
+                    "read the locker with poisoned error"
+                ))))
+            }
+        };
         if let Some(actors_map) = actors.get(&event_type_id) {
             for (subscriber, actor) in actors_map {
                 log::debug!(
@@ -111,7 +140,14 @@ impl EventBus {
                     subscriber,
                     event_type_id
                 );
-                actor.send_event_data(EventData::new(Box::new(event_data.clone())))?
+                match actor.send_event_data(EventData::new(Box::new(event_data.clone()))) {
+                    Ok(_) => {}
+                    Err(_) => {
+                        return Err(Error::from(EventBusError::LockerReadError(format_err!(
+                            "event actor send message failed"
+                        ))))
+                    }
+                }
             }
         }
 
@@ -119,14 +155,21 @@ impl EventBus {
     }
 
     /// Non-blocking check if the specified subscriber has received the event and returns the event data.
-    pub fn get_event<T: 'static + Send>(&self, subscriber: &str) -> Option<T> {
+    pub fn get_event<T: 'static + Send>(&self, subscriber: &str) -> anyhow::Result<Option<T>> {
         let event_type_id = TypeId::of::<T>();
-        let receivers = self.receivers.read().unwrap();
+        let receivers = match self.receivers.read() {
+            Ok(v) => v,
+            Err(_) => {
+                return Err(Error::from(EventBusError::LockerReadError(format_err!(
+                    "read the locker with poisoned error"
+                ))))
+            }
+        };
         if let Some(event_receivers) = receivers.get(&event_type_id) {
             if let Some(receiver) = event_receivers.get(subscriber) {
                 if let Ok(boxed_event) = receiver.try_recv() {
                     if let Ok(event_data) = boxed_event.downcast::<T>() {
-                        return Some(*event_data);
+                        return Ok(Some(*event_data));
                     } else {
                         log::error!(
                             "Failed to downcast event data for subscriber: '{}'",
@@ -144,22 +187,39 @@ impl EventBus {
         } else {
             log::debug!("No event '{:?}' found in the system", event_type_id);
         }
-        None
+        Ok(None)
     }
 
     /// Registers an event and subscriber.
-    pub fn register_event_subscriber<T: 'static + Send>(&self, subscriber: &str) {
+    pub fn register_event_subscriber<T: 'static + Send>(
+        &self,
+        subscriber: &str,
+    ) -> anyhow::Result<()> {
         let event_type_id = TypeId::of::<T>();
         let (sender, receiver) = unbounded();
 
         {
-            let mut senders = self.senders.write().unwrap();
+            let mut senders = match self.senders.write() {
+                Ok(v) => v,
+                Err(_) => {
+                    return Err(Error::from(EventBusError::LockerWriteError(format_err!(
+                        "write the locker with poisoned error"
+                    ))))
+                }
+            };
             let event_senders = senders.entry(event_type_id).or_default();
             event_senders.insert(subscriber.to_string(), sender);
         }
 
         {
-            let mut receivers = self.receivers.write().unwrap();
+            let mut receivers = match self.receivers.write() {
+                Ok(v) => v,
+                Err(_) => {
+                    return Err(Error::from(EventBusError::LockerWriteError(format_err!(
+                        "write the locker with poisoned error"
+                    ))))
+                }
+            };
             let event_receivers = receivers.entry(event_type_id).or_default();
             event_receivers.insert(subscriber.to_string(), receiver);
         }
@@ -169,15 +229,27 @@ impl EventBus {
             subscriber,
             event_type_id
         );
+        Ok(())
     }
 
     /// Subscribes to an event with a callback function.
-    pub fn callback_subscribe<T: 'static + Send, F>(&self, subscriber: &str, callback: F)
+    pub fn callback_subscribe<T: 'static + Send, F>(
+        &self,
+        subscriber: &str,
+        callback: F,
+    ) -> anyhow::Result<()>
     where
         F: Fn(Box<dyn Any + Send>) + Send + Sync + 'static,
     {
         let event_type_id = TypeId::of::<T>();
-        let mut callbacks = self.callbacks.write().unwrap();
+        let mut callbacks = match self.callbacks.write() {
+            Ok(v) => v,
+            Err(_) => {
+                return Err(Error::from(EventBusError::LockerWriteError(format_err!(
+                    "write the locker with poisoned error"
+                ))))
+            }
+        };
         let event_callbacks = callbacks.entry(event_type_id).or_default();
         event_callbacks.insert(subscriber.to_string(), Box::new(callback));
 
@@ -186,22 +258,41 @@ impl EventBus {
             subscriber,
             event_type_id
         );
+        Ok(())
     }
 
     pub fn actor_subscribe<T: Send + 'static>(
         &self,
         subscriber: &str,
         actor: Box<dyn EventNotifier + Send + Sync + 'static>,
-    ) {
+    ) -> anyhow::Result<()> {
         let event_type_id = TypeId::of::<T>();
-        let mut actors = self.actors.write().unwrap();
+
+        let mut actors = match self.actors.write() {
+            Ok(v) => v,
+            Err(_) => {
+                return Err(Error::from(EventBusError::LockerWriteError(format_err!(
+                    "write the locker with poisoned error"
+                ))))
+            }
+        };
+
         let event_actors = actors.entry(event_type_id).or_default();
         event_actors.insert(subscriber.to_string(), actor);
+        Ok(())
     }
 
     /// Prints the current status of the event bus.
-    pub fn print_status(&self) {
-        let senders = self.senders.read().unwrap();
+    pub fn print_status(&self) -> anyhow::Result<()> {
+        let senders = match self.senders.read() {
+            Ok(v) => v,
+            Err(_) => {
+                return Err(Error::from(EventBusError::LockerReadError(format_err!(
+                    "read the locker with poisoned error"
+                ))))
+            }
+        };
+
         for (event_type_id, subscribers) in senders.iter() {
             log::debug!(
                 "Event: '{:?}', Subscribers: {}",
@@ -212,13 +303,22 @@ impl EventBus {
                 log::debug!("  - Subscriber: '{}'", subscriber);
             }
         }
+        Ok(())
     }
 
     /// Removes a specific subscriber's registration.
-    pub fn remove_subscriber<T: 'static + Send>(&self, subscriber: &str) {
+    pub fn remove_subscriber<T: 'static + Send>(&self, subscriber: &str) -> anyhow::Result<()> {
         let event_type_id = TypeId::of::<T>();
         {
-            let mut senders = self.senders.write().unwrap();
+            let mut senders = match self.senders.write() {
+                Ok(v) => v,
+                Err(_) => {
+                    return Err(Error::from(EventBusError::LockerWriteError(format_err!(
+                        "write the locker with poisoned error"
+                    ))))
+                }
+            };
+
             if let Some(event_senders) = senders.get_mut(&event_type_id) {
                 event_senders.remove(subscriber);
                 log::debug!(
@@ -230,7 +330,15 @@ impl EventBus {
         }
 
         {
-            let mut receivers = self.receivers.write().unwrap();
+            let mut receivers = match self.receivers.write() {
+                Ok(v) => v,
+                Err(_) => {
+                    return Err(Error::from(EventBusError::LockerWriteError(format_err!(
+                        "write the locker with poisoned error"
+                    ))))
+                }
+            };
+
             if let Some(event_receivers) = receivers.get_mut(&event_type_id) {
                 event_receivers.remove(subscriber);
                 log::debug!(
@@ -242,7 +350,15 @@ impl EventBus {
         }
 
         {
-            let mut callbacks = self.callbacks.write().unwrap();
+            let mut callbacks = match self.callbacks.write() {
+                Ok(v) => v,
+                Err(_) => {
+                    return Err(Error::from(EventBusError::LockerWriteError(format_err!(
+                        "write the locker with poisoned error"
+                    ))))
+                }
+            };
+
             if let Some(event_callbacks) = callbacks.get_mut(&event_type_id) {
                 event_callbacks.remove(subscriber);
                 log::debug!(
@@ -252,59 +368,129 @@ impl EventBus {
                 );
             }
         }
+
+        Ok(())
     }
 
     /// Clears all events and subscribers.
-    pub fn clear(&self) {
-        let mut senders = self.senders.write().unwrap();
-        let mut receivers = self.receivers.write().unwrap();
-        let mut callbacks = self.callbacks.write().unwrap();
+    pub fn clear(&self) -> anyhow::Result<()> {
+        let mut senders = match self.senders.write() {
+            Ok(v) => v,
+            Err(_) => {
+                return Err(Error::from(EventBusError::LockerWriteError(format_err!(
+                    "write the locker with poisoned error"
+                ))))
+            }
+        };
+
+        let mut receivers = match self.receivers.write() {
+            Ok(v) => v,
+            Err(_) => {
+                return Err(Error::from(EventBusError::LockerWriteError(format_err!(
+                    "write the locker with poisoned error"
+                ))))
+            }
+        };
+
+        let mut callbacks = match self.callbacks.write() {
+            Ok(v) => v,
+            Err(_) => {
+                return Err(Error::from(EventBusError::LockerWriteError(format_err!(
+                    "write the locker with poisoned error"
+                ))))
+            }
+        };
+
         senders.clear();
         receivers.clear();
         callbacks.clear();
         log::debug!("Cleared all events and subscribers.");
+
+        Ok(())
     }
 
     /// Gets the number of subscribers for a specific event.
-    pub fn subscriber_count<T: 'static + Send>(&self) -> usize {
+    pub fn subscriber_count<T: 'static + Send>(&self) -> anyhow::Result<usize> {
         let event_type_id = TypeId::of::<T>();
-        let senders = self.senders.read().unwrap();
+        let senders = match self.senders.read() {
+            Ok(v) => v,
+            Err(_) => {
+                return Err(Error::from(EventBusError::LockerReadError(format_err!(
+                    "read the locker with poisoned error"
+                ))))
+            }
+        };
+
         if let Some(event_senders) = senders.get(&event_type_id) {
-            return event_senders.len();
+            return Ok(event_senders.len());
         }
-        0
+
+        Ok(0)
     }
 
     /// Gets the total number of events.
-    pub fn event_count(&self) -> usize {
-        let senders = self.senders.read().unwrap();
-        senders.len()
+    pub fn event_count(&self) -> anyhow::Result<usize> {
+        let senders = match self.senders.read() {
+            Ok(v) => v,
+            Err(_) => {
+                return Err(Error::from(EventBusError::LockerReadError(format_err!(
+                    "read the locker with poisoned error"
+                ))))
+            }
+        };
+
+        Ok(senders.len())
     }
 
     /// Checks if there are any subscribers for a specific event.
-    pub fn has_subscribers<T: 'static + Send>(&self) -> bool {
+    pub fn has_subscribers<T: 'static + Send>(&self) -> anyhow::Result<bool> {
         let event_type_id = TypeId::of::<T>();
-        let senders = self.senders.read().unwrap();
+        let senders = match self.senders.read() {
+            Ok(v) => v,
+            Err(_) => {
+                return Err(Error::from(EventBusError::LockerReadError(format_err!(
+                    "read the locker with poisoned error"
+                ))))
+            }
+        };
+
         if let Some(event_senders) = senders.get(&event_type_id) {
-            return !event_senders.is_empty();
+            return Ok(!event_senders.is_empty());
         }
-        false
+        Ok(false)
     }
 
     /// Checks if a specific event exists.
-    pub fn has_event_type<T: 'static + Send>(&self) -> bool {
+    pub fn has_event_type<T: 'static + Send>(&self) -> anyhow::Result<bool> {
         let event_type_id = TypeId::of::<T>();
-        let senders = self.senders.read().unwrap();
-        senders.contains_key(&event_type_id)
+        let senders = match self.senders.read() {
+            Ok(v) => v,
+            Err(_) => {
+                return Err(Error::from(EventBusError::LockerReadError(format_err!(
+                    "read the locker with poisoned error"
+                ))))
+            }
+        };
+
+        Ok(senders.contains_key(&event_type_id))
     }
 
     /// Gets all subscribers for a specific event.
-    pub fn get_subscribers<T: 'static + Send>(&self) -> Vec<String> {
+    pub fn get_subscribers<T: 'static + Send>(&self) -> anyhow::Result<Vec<String>> {
         let event_type_id = TypeId::of::<T>();
-        let senders = self.senders.read().unwrap();
+
+        let senders = match self.senders.read() {
+            Ok(v) => v,
+            Err(_) => {
+                return Err(Error::from(EventBusError::LockerReadError(format_err!(
+                    "read the locker with poisoned error"
+                ))))
+            }
+        };
+
         if let Some(event_senders) = senders.get(&event_type_id) {
-            return event_senders.keys().cloned().collect();
+            return Ok(event_senders.keys().cloned().collect());
         }
-        Vec::new()
+        Ok(Vec::new())
     }
 }

@@ -22,8 +22,8 @@ impl EventActor {
         &self,
         subscriber: &str,
         actor: Box<dyn EventNotifier + Send + Sync + 'static>,
-    ) {
-        self.event_bus.actor_subscribe::<T>(subscriber, actor);
+    ) -> anyhow::Result<()> {
+        self.event_bus.actor_subscribe::<T>(subscriber, actor)
     }
 }
 

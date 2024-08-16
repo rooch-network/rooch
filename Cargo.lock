@@ -6843,6 +6843,7 @@ dependencies = [
  "futures",
  "log",
  "once_cell",
+ "thiserror",
  "tokio",
 ]
 
