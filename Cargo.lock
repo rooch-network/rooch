@@ -2312,6 +2312,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "crossbeam-channel"
+version = "0.5.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33480d6946193aa8033910124896ca395333cae7e2d1113d1fef6c3272217df2"
+dependencies = [
+ "crossbeam-utils",
+]
+
+[[package]]
 name = "crossbeam-deque"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6779,6 +6788,7 @@ dependencies = [
  "move-transactional-test-runner",
  "move-vm-runtime",
  "move-vm-types",
+ "moveos-eventbus",
  "moveos-object-runtime",
  "moveos-stdlib",
  "moveos-store",
@@ -6821,6 +6831,20 @@ dependencies = [
  "clap 4.5.13",
  "serde 1.0.208",
  "tempfile",
+]
+
+[[package]]
+name = "moveos-eventbus"
+version = "0.6.8"
+dependencies = [
+ "anyhow",
+ "coerce",
+ "crossbeam-channel",
+ "futures",
+ "log",
+ "once_cell",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -9282,6 +9306,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "rooch-event"
+version = "0.6.8"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "coerce",
+ "log",
+ "moveos-eventbus",
+]
+
+[[package]]
 name = "rooch-executor"
 version = "0.6.8"
 dependencies = [
@@ -9294,9 +9329,11 @@ dependencies = [
  "move-core-types",
  "move-resource-viewer",
  "moveos",
+ "moveos-eventbus",
  "moveos-store",
  "moveos-types",
  "prometheus",
+ "rooch-event",
  "rooch-genesis",
  "rooch-store",
  "rooch-types",
@@ -9361,6 +9398,7 @@ dependencies = [
  "bcs",
  "bitcoin 0.31.2",
  "bitcoin-move",
+ "coerce",
  "datatest-stable 0.1.3",
  "ethers",
  "hex",
@@ -9369,11 +9407,13 @@ dependencies = [
  "miniscript",
  "move-core-types",
  "moveos-config",
+ "moveos-eventbus",
  "moveos-store",
  "moveos-types",
  "musig2",
  "rooch-config",
  "rooch-db",
+ "rooch-event",
  "rooch-executor",
  "rooch-genesis",
  "rooch-integration-test-runner",
@@ -9695,12 +9735,15 @@ dependencies = [
  "metrics",
  "move-core-types",
  "move-resource-viewer",
+ "moveos",
+ "moveos-eventbus",
  "moveos-types",
  "prometheus",
  "raw-store",
  "rooch-config",
  "rooch-da",
  "rooch-db",
+ "rooch-event",
  "rooch-executor",
  "rooch-genesis",
  "rooch-indexer",
@@ -9713,6 +9756,7 @@ dependencies = [
  "rooch-sequencer",
  "rooch-types",
  "serde_json",
+ "tokio",
  "tower",
  "tower-http",
  "tracing",

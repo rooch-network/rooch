@@ -355,6 +355,7 @@ impl MoveOS {
             events: tx_events,
             gas_used,
             is_upgrade,
+            is_gas_upgrade: _,
         } = output;
 
         db.get_state_store()
@@ -533,13 +534,16 @@ impl MoveOS {
                 .expect("system_post_execute should not fail.");
         }
 
+        let mut gas_upgrade = false;
         let gas_schedule_updated = session.tx_context().get::<GasScheduleUpdated>()?;
         if let Some(_updated) = gas_schedule_updated {
             log::info!("Gas schedule updated");
+            gas_upgrade = true;
             self.cost_table.write().take();
         }
 
-        let (_ctx, output) = session.finish_with_extensions(kept_status)?;
+        let (_ctx, mut output) = session.finish_with_extensions(kept_status)?;
+        output.is_gas_upgrade = gas_upgrade;
         Ok((output, vm_error_info))
     }
 

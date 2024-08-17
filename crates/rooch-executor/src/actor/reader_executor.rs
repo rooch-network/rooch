@@ -11,10 +11,12 @@ use crate::actor::messages::{
 };
 use anyhow::Result;
 use async_trait::async_trait;
-use coerce::actor::{context::ActorContext, message::Handler, Actor};
+use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use move_resource_viewer::MoveValueAnnotator;
 use moveos::moveos::MoveOS;
 use moveos::moveos::MoveOSConfig;
+use moveos_eventbus::bus::EventData;
+use moveos_eventbus::event::GasUpgradeEvent;
 use moveos_store::transaction_store::TransactionStore;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
@@ -26,6 +28,7 @@ use moveos_types::state::{AnnotatedState, ObjectState};
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::state_resolver::{AnnotatedStateKV, AnnotatedStateReader, StateKV, StateReader};
 use moveos_types::transaction::TransactionExecutionInfo;
+use rooch_event::actor::{EventActor, EventActorSubscribeMessage};
 use rooch_genesis::FrameworksGasParameters;
 use rooch_store::RoochStore;
 use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
@@ -35,6 +38,7 @@ pub struct ReaderExecutorActor {
     moveos: MoveOS,
     moveos_store: MoveOSStore,
     rooch_store: RoochStore,
+    event_actor: Option<LocalActorRef<EventActor>>,
 }
 
 impl ReaderExecutorActor {
@@ -42,6 +46,7 @@ impl ReaderExecutorActor {
         root: ObjectMeta,
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
+        event_actor: Option<LocalActorRef<EventActor>>,
     ) -> Result<Self> {
         let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
         let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
@@ -58,7 +63,22 @@ impl ReaderExecutorActor {
             moveos,
             moveos_store,
             rooch_store,
+            event_actor,
         })
+    }
+
+    pub async fn subscribe_event(
+        &self,
+        event_actor_ref: LocalActorRef<EventActor>,
+        executor_actor_ref: LocalActorRef<ReaderExecutorActor>,
+    ) {
+        let gas_upgrade_event = GasUpgradeEvent::default();
+        let actor_subscribe_message = EventActorSubscribeMessage::new(
+            gas_upgrade_event,
+            "read-executor".to_string(),
+            Box::new(executor_actor_ref),
+        );
+        let _ = event_actor_ref.send(actor_subscribe_message).await;
     }
 
     pub fn get_rooch_store(&self) -> RoochStore {
@@ -75,7 +95,15 @@ impl ReaderExecutorActor {
     }
 }
 
-impl Actor for ReaderExecutorActor {}
+#[async_trait]
+impl Actor for ReaderExecutorActor {
+    async fn started(&mut self, ctx: &mut ActorContext) {
+        let local_actor_ref: LocalActorRef<Self> = ctx.actor_ref();
+        if let Some(event_actor) = self.event_actor.clone() {
+            let _ = self.subscribe_event(event_actor, local_actor_ref).await;
+        }
+    }
+}
 
 #[async_trait]
 impl Handler<ExecuteViewFunctionMessage> for ReaderExecutorActor {
@@ -88,6 +116,7 @@ impl Handler<ExecuteViewFunctionMessage> for ReaderExecutorActor {
         let function_result = self
             .moveos()
             .execute_view_function(self.root.clone(), msg.call);
+
         Ok(AnnotatedFunctionResult {
             vm_status: function_result.vm_status,
             return_values: match function_result.return_values {
@@ -257,5 +286,26 @@ impl Handler<RefreshStateMessage> for ReaderExecutorActor {
     async fn handle(&mut self, msg: RefreshStateMessage, _ctx: &mut ActorContext) -> Result<()> {
         let RefreshStateMessage { root, is_upgrade } = msg;
         self.refresh_state(root, is_upgrade)
+    }
+}
+
+#[async_trait]
+impl Handler<EventData> for ReaderExecutorActor {
+    async fn handle(&mut self, message: EventData, _ctx: &mut ActorContext) -> Result<()> {
+        if let Ok(_gas_upgrade_msg) = message.data.downcast::<GasUpgradeEvent>() {
+            log::debug!("ReadExecutorActor: Reload the MoveOS instance...");
+
+            let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
+            let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
+
+            self.moveos = MoveOS::new(
+                self.moveos_store.clone(),
+                gas_parameters.all_natives(),
+                MoveOSConfig::default(),
+                system_pre_execute_functions(),
+                system_post_execute_functions(),
+            )?;
+        }
+        Ok(())
     }
 }
