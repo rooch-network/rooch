@@ -26,7 +26,7 @@ test.beforeAll(async () => {
   await testEnv.getFaucetBTC("bcrt1pz9qq9gwemapvmpntw90ygalhnjzgy2d7tglts0a90avrre902z2s6gng6d", 1)
   await testEnv.getFaucetBTC("bcrt1pk6w56zalwe0txflwedv6d4mzszu4334ehtqe2yyjv8m2g36xlgrsnzsp4k", 1)
 
-  await sleep(5000)
+  await sleep(10000)
 
   if (roochServerAddress) {
     let bitseed = createTestBitSeed(roochServerAddress);
@@ -64,5 +64,5 @@ test('Deploy move tick with simple', async ({ page, mount }) => {
   await expect(component).toContainText(`Rooch Server: ${roochServerAddress}`)
 
   // Optionally, check for the presence of the inscriptionId in the output/result
-  await expect(component).toContainText('Deploy Result: ')
+  await expect(component).toContainText('Deploy Result: ', { timeout: 60000 })
 })

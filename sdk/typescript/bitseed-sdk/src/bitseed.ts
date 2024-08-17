@@ -9,7 +9,7 @@ import {
   Tick, 
   SFTRecord
 } from './types/index.js'
-import { inscriptionIDToString, extractInscriptionID, toB64, decodeUTXOs } from './utils/index.js'
+import { inscriptionIDToString, extractInscriptionID, toB64, decodeUTXOs, sleep } from './utils/index.js'
 import { IGeneratorLoader, InscribeSeed } from './generator/index.js'
 import { APIInterface, DeployOptions, InscribeOptions } from './interfaces/index.js'
 import { BitseedSDKError } from './errors/index.js'
@@ -131,7 +131,15 @@ export class BitSeed implements APIInterface {
       throw new Error('not selected address')
     }
 
-    console.log('depositRevealFee debug 1')
+    let spendables = await this.datasource.getSpendables({ address: this.fundingWallet.selectedAddress, value: revealed.revealFee});
+    let totalSpendableValue = spendables.reduce((sum, utxo) => sum + utxo.sats, 0);
+
+    while (totalSpendableValue < revealed.revealFee) {
+      console.warn(`Insufficient funds in funding wallet. Waiting for more funds...`);
+      await sleep(5000) // Wait for 5 seconds before retrying
+      spendables = await this.datasource.getSpendables({ address: this.fundingWallet.selectedAddress, value: revealed.revealFee });
+      totalSpendableValue = spendables.reduce((sum, utxo) => sum + utxo.sats, 0);
+    }
 
     const psbt = await ordit.transactions.createPsbt({
       pubKey: this.fundingWallet.publicKey,
@@ -147,15 +155,12 @@ export class BitSeed implements APIInterface {
       satsPerByte: opts?.commit_fee_rate || opts?.fee_rate || 1,
     })
 
-    console.log('depositRevealFee debug 2')
-
     const signedTxHex = await this.fundingWallet.signPsbt(psbt.hex)
 
     console.log('depositRevealFee prepare relay:', signedTxHex)
     const txId = await this.datasource.relay({ hex: signedTxHex })
 
     console.log('depositRevealFee txId:', txId)
-
     return decodeUTXOs(signedTxHex, this.network, revealed.address)
   }
 

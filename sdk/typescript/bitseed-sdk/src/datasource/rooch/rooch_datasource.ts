@@ -35,8 +35,9 @@ import {
 import {
   decodeScriptPubKey,
   hexStringToTxid,
+  sleep,
 } from "../../utils/index.js";
-
+ 
 type RoochDataSourceOptions = {
   network?: Network;
   url?: string;
@@ -515,6 +516,8 @@ export class RoochDataSource implements IDatasource {
     let cursor: IndexerStateIDView | null = next ? JSON.parse(next) : null;
   
     while ((spendableUTXOs.length + unspendableUTXOs.length) < limit) {
+      await sleep(1000)
+
       const response: PaginatedUTXOStateViews = await this.roochClient.queryUTXO({
         filter: { owner: address },
         cursor,

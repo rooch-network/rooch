@@ -7,7 +7,7 @@ import { HTTPDebugTransport } from './http_debug_transport.js';
 export function createTestBitSeed(roochServerAddress: string) {
   const network = 'regtest'
   const datasource = new RoochDataSource({
-    transport: new HTTPDebugTransport({ url: `http://${roochServerAddress}` }, true)
+    transport: new HTTPDebugTransport({ url: `http://${roochServerAddress}` }, false)
   })
   
   const generatorLoader = new GeneratorLoader(datasource)

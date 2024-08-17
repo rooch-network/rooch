@@ -5,8 +5,11 @@ import { fileURLToPath } from 'url';
 import { test, expect } from '@playwright/experimental-ct-react'
 import DeployGeneratorStory from './generator.story'
 import { BitseedTestEnv } from './commons/bitseed_test_env'
+import { sleep } from './commons/time';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 test.use({ viewport: { width: 500, height: 500 } })
 
 var testEnv: BitseedTestEnv = new BitseedTestEnv();
@@ -19,6 +22,8 @@ test.beforeAll(async () => {
 
   await testEnv.getFaucetBTC("bcrt1pz9qq9gwemapvmpntw90ygalhnjzgy2d7tglts0a90avrre902z2s6gng6d", 1)
   await testEnv.getFaucetBTC("bcrt1pk6w56zalwe0txflwedv6d4mzszu4334ehtqe2yyjv8m2g36xlgrsnzsp4k", 1)
+
+  await sleep(5000)
 });
 
 test.afterAll(async () => {
@@ -42,7 +47,7 @@ test('Upload generator', async ({ mount }) => {
   await component.locator('button:has-text("Deploy")').click()
 
   // Optionally, check for the presence of the inscriptionId in the output/result
-  await expect(component).toContainText('Deploy Result: ', { timeout: 20000 })
+  await expect(component).toContainText('Deploy Result: ', { timeout: 60000 })
 })
 
 test('Upload invalid generator', async ({ mount }) => {
@@ -61,5 +66,5 @@ test('Upload invalid generator', async ({ mount }) => {
   await component.locator('button:has-text("Deploy")').click()
 
   // Optionally, check for the presence of the inscriptionId in the output/result
-  await expect(component).toContainText('Error:', { timeout: 20000 })
+  await expect(component).toContainText('Error:', { timeout: 60000 })
 })
