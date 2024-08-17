@@ -9,6 +9,7 @@ to values. This is the opposite of <code><a href="_to_bytes">bcs::to_bytes</a></
 Note we provie a generic public <code>from_bytes</code> function and protected it with <code>#[data_struct(T)]</code>.
 
 
+-  [Struct `BCS`](#0x2_bcs_BCS)
 -  [Constants](#@Constants_0)
 -  [Function `to_bytes`](#0x2_bcs_to_bytes)
 -  [Function `to_bool`](#0x2_bcs_to_bool)
@@ -16,6 +17,8 @@ Note we provie a generic public <code>from_bytes</code> function and protected i
 -  [Function `to_u64`](#0x2_bcs_to_u64)
 -  [Function `to_u128`](#0x2_bcs_to_u128)
 -  [Function `to_address`](#0x2_bcs_to_address)
+-  [Function `new`](#0x2_bcs_new)
+-  [Function `into_remainder_bytes`](#0x2_bcs_into_remainder_bytes)
 -  [Function `peel_address`](#0x2_bcs_peel_address)
 -  [Function `peel_bool`](#0x2_bcs_peel_bool)
 -  [Function `peel_u8`](#0x2_bcs_peel_u8)
@@ -49,6 +52,21 @@ Note we provie a generic public <code>from_bytes</code> function and protected i
 
 <pre><code><b>use</b> <a href="">0x1::bcs</a>;
 <b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x1::vector</a>;
+</code></pre>
+
+
+
+<a name="0x2_bcs_BCS"></a>
+
+## Struct `BCS`
+
+A helper struct that saves resources on operations. For better
+vector performance, it stores reversed bytes of the BCS and
+enables use of <code><a href="_pop_back">vector::pop_back</a></code>.
+
+
+<pre><code><b>struct</b> <a href="bcs.md#0x2_bcs_BCS">BCS</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -179,6 +197,32 @@ The request Move type is not match with input Move type.
 
 
 
+<a name="0x2_bcs_new"></a>
+
+## Function `new`
+
+Creates a new instance of BCS wrapper that holds inversed
+bytes for better performance.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_new">new</a>(bytes: <a href="">vector</a>&lt;u8&gt;): bcs::BCS
+</code></pre>
+
+
+
+<a name="0x2_bcs_into_remainder_bytes"></a>
+
+## Function `into_remainder_bytes`
+
+Unpack the <code><a href="bcs.md#0x2_bcs_BCS">BCS</a></code> struct returning the leftover bytes.
+Useful for passing the data further after partial deserialization.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_into_remainder_bytes">into_remainder_bytes</a>(<a href="">bcs</a>: bcs::BCS): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
 <a name="0x2_bcs_peel_address"></a>
 
 ## Function `peel_address`
@@ -186,7 +230,7 @@ The request Move type is not match with input Move type.
 Read <code><b>address</b></code> value from the bcs-serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_address">peel_address</a>(v: <a href="">vector</a>&lt;u8&gt;): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_address">peel_address</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <b>address</b>
 </code></pre>
 
 
@@ -198,7 +242,7 @@ Read <code><b>address</b></code> value from the bcs-serialized bytes.
 Read a <code>bool</code> value from bcs-serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_bool">peel_bool</a>(v: <a href="">vector</a>&lt;u8&gt;): bool
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_bool">peel_bool</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): bool
 </code></pre>
 
 
@@ -210,7 +254,7 @@ Read a <code>bool</code> value from bcs-serialized bytes.
 Read <code>u8</code> value from bcs-serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_u8">peel_u8</a>(v: <a href="">vector</a>&lt;u8&gt;): u8
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_u8">peel_u8</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): u8
 </code></pre>
 
 
@@ -222,7 +266,7 @@ Read <code>u8</code> value from bcs-serialized bytes.
 Read <code>u16</code> value from bcs-serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_u16">peel_u16</a>(v: <a href="">vector</a>&lt;u8&gt;): u16
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_u16">peel_u16</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): u16
 </code></pre>
 
 
@@ -234,7 +278,7 @@ Read <code>u16</code> value from bcs-serialized bytes.
 Read <code>u32</code> value from bcs-serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_u32">peel_u32</a>(v: <a href="">vector</a>&lt;u8&gt;): u32
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_u32">peel_u32</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): u32
 </code></pre>
 
 
@@ -246,7 +290,7 @@ Read <code>u32</code> value from bcs-serialized bytes.
 Read <code>u64</code> value from bcs-serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_u64">peel_u64</a>(v: <a href="">vector</a>&lt;u8&gt;): u64
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_u64">peel_u64</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): u64
 </code></pre>
 
 
@@ -258,7 +302,7 @@ Read <code>u64</code> value from bcs-serialized bytes.
 Read <code>u128</code> value from bcs-serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_u128">peel_u128</a>(v: <a href="">vector</a>&lt;u8&gt;): u128
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_u128">peel_u128</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): u128
 </code></pre>
 
 
@@ -270,7 +314,7 @@ Read <code>u128</code> value from bcs-serialized bytes.
 Read <code>u256</code> value from bcs-serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_u256">peel_u256</a>(v: <a href="">vector</a>&lt;u8&gt;): u256
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_u256">peel_u256</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): u256
 </code></pre>
 
 
@@ -286,7 +330,7 @@ In BCS <code><a href="">vector</a></code> length is implemented with ULEB128;
 See more here: https://en.wikipedia.org/wiki/LEB128
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_length">peel_vec_length</a>(v: <a href="">vector</a>&lt;u8&gt;): u64
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_length">peel_vec_length</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): u64
 </code></pre>
 
 
@@ -298,7 +342,7 @@ See more here: https://en.wikipedia.org/wiki/LEB128
 Peel a vector of <code><b>address</b></code> from serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_address">peel_vec_address</a>(v: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;<b>address</b>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_address">peel_vec_address</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="">vector</a>&lt;<b>address</b>&gt;
 </code></pre>
 
 
@@ -310,7 +354,7 @@ Peel a vector of <code><b>address</b></code> from serialized bytes.
 Peel a vector of <code><b>address</b></code> from serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_bool">peel_vec_bool</a>(v: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;bool&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_bool">peel_vec_bool</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="">vector</a>&lt;bool&gt;
 </code></pre>
 
 
@@ -322,7 +366,7 @@ Peel a vector of <code><b>address</b></code> from serialized bytes.
 Peel a vector of <code>u8</code> (eg string) from serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_u8">peel_vec_u8</a>(v: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_u8">peel_vec_u8</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -334,7 +378,7 @@ Peel a vector of <code>u8</code> (eg string) from serialized bytes.
 Peel a <code><a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;</code> (eg vec of string) from serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_vec_u8">peel_vec_vec_u8</a>(v: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_vec_u8">peel_vec_vec_u8</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
 </code></pre>
 
 
@@ -346,7 +390,7 @@ Peel a <code><a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;</code>
 Peel a vector of <code>u16</code> from serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_u16">peel_vec_u16</a>(v: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u16&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_u16">peel_vec_u16</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="">vector</a>&lt;u16&gt;
 </code></pre>
 
 
@@ -358,7 +402,7 @@ Peel a vector of <code>u16</code> from serialized bytes.
 Peel a vector of <code>u32</code> from serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_u32">peel_vec_u32</a>(v: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u32&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_u32">peel_vec_u32</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="">vector</a>&lt;u32&gt;
 </code></pre>
 
 
@@ -370,7 +414,7 @@ Peel a vector of <code>u32</code> from serialized bytes.
 Peel a vector of <code>u64</code> from serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_u64">peel_vec_u64</a>(v: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u64&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_u64">peel_vec_u64</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="">vector</a>&lt;u64&gt;
 </code></pre>
 
 
@@ -382,7 +426,7 @@ Peel a vector of <code>u64</code> from serialized bytes.
 Peel a vector of <code>u128</code> from serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_u128">peel_vec_u128</a>(v: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u128&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_u128">peel_vec_u128</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="">vector</a>&lt;u128&gt;
 </code></pre>
 
 
@@ -394,7 +438,7 @@ Peel a vector of <code>u128</code> from serialized bytes.
 Peel a vector of <code>u256</code> from serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_u256">peel_vec_u256</a>(v: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u256&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_u256">peel_vec_u256</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="">vector</a>&lt;u256&gt;
 </code></pre>
 
 
@@ -406,7 +450,7 @@ Peel a vector of <code>u256</code> from serialized bytes.
 Peel <code>Option&lt;<b>address</b>&gt;</code> from serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_option_address">peel_option_address</a>(v: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_option_address">peel_option_address</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;
 </code></pre>
 
 
@@ -418,7 +462,7 @@ Peel <code>Option&lt;<b>address</b>&gt;</code> from serialized bytes.
 Peel <code>Option&lt;bool&gt;</code> from serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_option_bool">peel_option_bool</a>(v: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;bool&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_option_bool">peel_option_bool</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="_Option">option::Option</a>&lt;bool&gt;
 </code></pre>
 
 
@@ -430,7 +474,7 @@ Peel <code>Option&lt;bool&gt;</code> from serialized bytes.
 Peel <code>Option&lt;u8&gt;</code> from serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_option_u8">peel_option_u8</a>(v: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_option_u8">peel_option_u8</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="_Option">option::Option</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -442,7 +486,7 @@ Peel <code>Option&lt;u8&gt;</code> from serialized bytes.
 Peel <code>Option&lt;u16&gt;</code> from serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_option_u16">peel_option_u16</a>(v: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;u16&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_option_u16">peel_option_u16</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="_Option">option::Option</a>&lt;u16&gt;
 </code></pre>
 
 
@@ -454,7 +498,7 @@ Peel <code>Option&lt;u16&gt;</code> from serialized bytes.
 Peel <code>Option&lt;u32&gt;</code> from serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_option_u32">peel_option_u32</a>(v: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;u32&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_option_u32">peel_option_u32</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="_Option">option::Option</a>&lt;u32&gt;
 </code></pre>
 
 
@@ -466,7 +510,7 @@ Peel <code>Option&lt;u32&gt;</code> from serialized bytes.
 Peel <code>Option&lt;u64&gt;</code> from serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_option_u64">peel_option_u64</a>(v: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;u64&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_option_u64">peel_option_u64</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="_Option">option::Option</a>&lt;u64&gt;
 </code></pre>
 
 
@@ -478,7 +522,7 @@ Peel <code>Option&lt;u64&gt;</code> from serialized bytes.
 Peel <code>Option&lt;u128&gt;</code> from serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_option_u128">peel_option_u128</a>(v: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;u128&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_option_u128">peel_option_u128</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="_Option">option::Option</a>&lt;u128&gt;
 </code></pre>
 
 
@@ -490,7 +534,7 @@ Peel <code>Option&lt;u128&gt;</code> from serialized bytes.
 Peel <code>Option&lt;u256&gt;</code> from serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_option_u256">peel_option_u256</a>(v: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;u256&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_option_u256">peel_option_u256</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="_Option">option::Option</a>&lt;u256&gt;
 </code></pre>
 
 
