@@ -418,6 +418,9 @@ importers:
       '@roochnetwork/build-scripts':
         specifier: workspace:*
         version: link:../build-scripts
+      '@roochnetwork/test-suite':
+        specifier: workspace:*
+        version: link:../test-suite
       '@types/bs58check':
         specifier: 2.1.2
         version: 2.1.2
@@ -588,6 +591,33 @@ importers:
       vite:
         specifier: ^4.4.4
         version: 4.5.3(@types/node@20.14.14)(terser@5.31.1)
+
+  sdk/typescript/test-suite:
+    devDependencies:
+      '@roochnetwork/build-scripts':
+        specifier: workspace:*
+        version: link:../build-scripts
+      '@types/node':
+        specifier: ^20.14.10
+        version: 20.14.14
+      '@types/tmp':
+        specifier: ^0.2.1
+        version: 0.2.6
+      testcontainers:
+        specifier: 10.11.0
+        version: 10.11.0
+      tmp:
+        specifier: ^0.2.1
+        version: 0.2.3
+      typescript:
+        specifier: ^5.3.3
+        version: 5.4.5
+      vite:
+        specifier: ^4.4.4
+        version: 4.5.3(@types/node@20.14.14)(terser@5.31.1)
+      vitest:
+        specifier: ^1.6.0
+        version: 1.6.0(@types/node@20.14.14)(happy-dom@14.12.0)(jsdom@23.2.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))(terser@5.31.1)
 
 packages:
 

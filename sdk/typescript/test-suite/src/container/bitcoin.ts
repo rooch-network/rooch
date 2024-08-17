@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+import fs from 'fs'
+import path from 'node:path'
 import * as crypto from 'crypto'
 import {
   AbstractStartedContainer,
@@ -9,8 +11,6 @@ import {
   StartedTestContainer,
   Wait,
 } from 'testcontainers'
-import path from 'node:path'
-import fs from 'fs'
 
 const BITCOIN_PORTS = [18443, 18444, 28333, 28332]
 
