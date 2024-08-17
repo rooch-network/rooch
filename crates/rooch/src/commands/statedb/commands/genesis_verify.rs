@@ -119,7 +119,7 @@ impl UTXOCases {
 }
 
 struct OrdCases {
-    cases: HashSet<u32>,
+    cases: HashSet<u32>, // sequence_number for easy generating
 }
 
 impl OrdCases {
@@ -142,8 +142,8 @@ impl OrdCases {
         }
         Self { cases }
     }
-    fn contains(&self, inscription_number: u32) -> bool {
-        self.cases.contains(&inscription_number)
+    fn contains(&self, sequence_number: u32) -> bool {
+        self.cases.contains(&sequence_number)
     }
 }
 
@@ -459,7 +459,7 @@ fn verify_inscription(
             );
         }
 
-        let is_case = cases.contains(source.inscription_number as u32);
+        let is_case = cases.contains(source.sequence_number);
 
         if (random_mode && rand::random::<u32>() % sample_rate != 0) && !is_case {
             continue;
@@ -590,10 +590,11 @@ fn write_mismatched_state_output<T: MoveStructState + std::fmt::Debug, R: std::f
         return (false, false);
     }
 
+    let result = if not_found { "not_found" } else { "mismatched" };
     writeln!(
         output_writer,
-        "{} mismatched: exp: {:?}, act: {:?}, src_data: {:?}",
-        prefix, exp_str, act_str, src_data
+        "{} {}: exp: {:?}, act: {:?}, src_data: {:?}",
+        prefix, result, exp_str, act_str, src_data
     )
     .expect("Unable to write line");
     writeln!(output_writer, "--------------------------------").expect("Unable to write line");
