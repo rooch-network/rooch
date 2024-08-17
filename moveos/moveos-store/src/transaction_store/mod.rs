@@ -23,6 +23,7 @@ pub trait TransactionStore {
         &self,
         tx_hashes: Vec<H256>,
     ) -> Result<Vec<Option<TransactionExecutionInfo>>>;
+    fn remove_tx_execution_info(&self, tx_hash: H256) -> Result<()>;
 }
 
 impl TransactionStore for TransactionDBStore {
@@ -39,5 +40,9 @@ impl TransactionStore for TransactionDBStore {
         tx_hashes: Vec<H256>,
     ) -> Result<Vec<Option<TransactionExecutionInfo>>> {
         self.multiple_get(tx_hashes)
+    }
+
+    fn remove_tx_execution_info(&self, tx_hash: H256) -> Result<()> {
+        self.remove(tx_hash)
     }
 }

@@ -394,6 +394,7 @@ pub struct RawTransactionOutput {
     pub events: Vec<TransactionEvent>,
     pub gas_used: u64,
     pub is_upgrade: bool,
+    pub is_gas_upgrade: bool,
 }
 
 /// TransactionOutput is the execution result of a MoveOS transaction, and pack TransactionEvent to Event

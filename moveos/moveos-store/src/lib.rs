@@ -260,6 +260,11 @@ impl TransactionStore for MoveOSStore {
         self.get_transaction_store()
             .multi_get_tx_execution_infos(tx_hashes)
     }
+
+    fn remove_tx_execution_info(&self, tx_hash: H256) -> Result<()> {
+        self.get_transaction_store()
+            .remove_tx_execution_info(tx_hash)
+    }
 }
 
 impl ConfigStore for MoveOSStore {
