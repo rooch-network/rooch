@@ -390,7 +390,7 @@ impl ExportCommand {
         let mut count: u64 = 0;
 
         let outpoint_inscriptions_map =
-            OutpointInscriptionsMap::load_or_index(outpoint_inscriptions_map_path, ord_path);
+            OutpointInscriptionsMap::load_or_index(outpoint_inscriptions_map_path, Some(ord_path));
         let outpoint_inscriptions_map = Some(Arc::new(outpoint_inscriptions_map));
 
         let object_id = BitcoinUTXOStore::object_id();

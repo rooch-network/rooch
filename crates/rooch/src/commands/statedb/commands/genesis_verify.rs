@@ -47,12 +47,12 @@ pub struct GenesisVerifyCommand {
     /// ord source data file. like ~/.rooch/local/ord or ord, ord_input must be sorted by sequence_number
     /// The file format is JSON, and the first line is block height info: # export at block height <N>, ord range: [0, N).
     /// ord_input & utxo_input must be at the same height
-    pub ord_source: PathBuf,
+    pub ord_source: Option<PathBuf>,
     #[clap(
         long,
         help = "outpoint(original):inscriptions(original inscription_id) map dump path"
     )]
-    pub outpoint_inscriptions_map_dump_path: PathBuf,
+    pub outpoint_inscriptions_map_dump_path: Option<PathBuf>,
     #[clap(
         long,
         help = "random mode, for randomly select 1/sample_rate inscriptions & utxos to verify"
@@ -67,7 +67,7 @@ pub struct GenesisVerifyCommand {
     #[clap(long, help = "mismatched utxo output path")]
     pub utxo_mismatched_output: PathBuf,
     #[clap(long, help = "mismatched ord output path")]
-    pub ord_mismatched_output: PathBuf,
+    pub ord_mismatched_output: Option<PathBuf>,
     #[clap(
         long,
         help = "inscription cases must be verified, file is outpoint list"
@@ -150,11 +150,14 @@ impl OrdCases {
 impl GenesisVerifyCommand {
     pub async fn execute(self) -> RoochResult<()> {
         let (root, moveos_store, _) = init_job(self.base_data_dir.clone(), self.chain_id.clone());
-        let outpoint_inscriptions_map = OutpointInscriptionsMap::load_or_index(
-            self.outpoint_inscriptions_map_dump_path,
-            self.ord_source.clone(),
-        );
-        let outpoint_inscriptions_map = Arc::new(outpoint_inscriptions_map);
+        let outpoint_inscriptions_map = if self.outpoint_inscriptions_map_dump_path.is_some() {
+            Some(Arc::new(OutpointInscriptionsMap::load_or_index(
+                self.outpoint_inscriptions_map_dump_path.clone().unwrap(),
+                self.ord_source.clone(),
+            )))
+        } else {
+            None
+        };
         let random_mode = self.random_mode;
         let moveos_store = Arc::new(moveos_store);
         let moveos_store_clone = Arc::clone(&moveos_store);
@@ -204,7 +207,7 @@ fn verify_utxo(
     case_path: Option<PathBuf>,
     moveos_store_arc: Arc<MoveOSStore>,
     root: ObjectMeta,
-    outpoint_inscriptions_map: Arc<OutpointInscriptionsMap>,
+    outpoint_inscriptions_map: Option<Arc<OutpointInscriptionsMap>>,
     random_mode: bool,
     sample_rate: u32,
     mismatched_output: PathBuf,
@@ -293,7 +296,7 @@ fn verify_utxo(
         // check utxo
         utxo_checked_count += 1;
         let (exp_utxo_key, exp_utxo_state) =
-            utxo_raw.gen_utxo_update(Some(outpoint_inscriptions_map.clone()));
+            utxo_raw.gen_utxo_update(outpoint_inscriptions_map.clone());
         let act_utxo_state = resolver
             .get_field_at(utxo_store_state_root, &exp_utxo_key)
             .unwrap();
@@ -374,14 +377,19 @@ fn verify_utxo(
 }
 
 fn verify_inscription(
-    input: PathBuf,
+    input: Option<PathBuf>,
     case_path: Option<PathBuf>,
     moveos_store_arc: Arc<MoveOSStore>,
     root: ObjectMeta,
     random_mode: bool,
     sample_rate: u32,
-    mismatched_output: PathBuf,
+    mismatched_output: Option<PathBuf>,
 ) {
+    if input.is_none() {
+        return;
+    }
+    let mismatched_output = mismatched_output.unwrap();
+    let input = input.unwrap();
     let start_time = Instant::now();
     let mut src_reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
     let mut is_title_line = true;

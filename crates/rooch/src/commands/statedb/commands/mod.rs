@@ -322,7 +322,7 @@ impl OutpointInscriptionsMap {
         OutpointInscriptionsMap::new(items, true)
     }
 
-    fn load_or_index(path: PathBuf, inscriptions_path: PathBuf) -> Self {
+    fn load_or_index(path: PathBuf, inscriptions_path: Option<PathBuf>) -> Self {
         let start_time = Instant::now();
         let map_existed = path.exists();
         if map_existed {
@@ -340,7 +340,7 @@ impl OutpointInscriptionsMap {
             log::info!("indexing and dumping outpoint_inscriptions_map...");
             let (outpoint_inscriptions_map, mapped_outpoint, mapped_inscription, unbound_count) =
                 OutpointInscriptionsMap::index_and_dump(
-                    inscriptions_path.clone(),
+                    inscriptions_path.clone().expect("if outpoint_inscriptions_map not existed, inscriptions_path must be provided"),
                     Some(path.clone()),
                 );
             println!(
