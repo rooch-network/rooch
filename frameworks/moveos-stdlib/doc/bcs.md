@@ -351,7 +351,7 @@ Peel a vector of <code><b>address</b></code> from serialized bytes.
 
 ## Function `peel_vec_bool`
 
-Peel a vector of <code><b>address</b></code> from serialized bytes.
+Peel a vector of <code>bool</code> from serialized bytes.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_bool">peel_vec_bool</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="">vector</a>&lt;bool&gt;
