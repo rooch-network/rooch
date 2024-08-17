@@ -29,11 +29,11 @@ use rooch_types::error::RoochResult;
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::rooch_network::RoochChainID;
 
-use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 use crate::commands::statedb::commands::inscription::{
     gen_inscription_id_update, InscriptionSource,
 };
 use crate::commands::statedb::commands::utxo::{AddressMappingData, UTXORawData};
+use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 
 /// Import BTC ordinals & UTXO for genesis
 #[derive(Debug, Parser)]
@@ -594,11 +594,7 @@ fn write_mismatched_state_output<T: MoveStructState + std::fmt::Debug, R: std::f
     writeln!(
         output_writer,
         "{} {}: exp: {:?}, act: {:?}, src_data: {:?}",
-        prefix,
-        result.to_string(),
-        exp_str,
-        act_str,
-        src_data
+        prefix, result, exp_str, act_str, src_data
     )
     .expect("Unable to write line");
     writeln!(output_writer, "--------------------------------").expect("Unable to write line");
