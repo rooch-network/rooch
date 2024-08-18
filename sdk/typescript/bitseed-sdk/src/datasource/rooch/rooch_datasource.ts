@@ -35,7 +35,6 @@ import {
 import {
   decodeScriptPubKey,
   hexStringToTxid,
-  sleep,
 } from "../../utils/index.js";
  
 type RoochDataSourceOptions = {
@@ -127,16 +126,19 @@ export class RoochDataSource implements IDatasource {
     const inscriptionState: InscriptionStateView = response.data[0];
     const inscriptionView = inscriptionState.value;
 
-    const bodyHex = inscriptionView.body.startsWith('0x') ? inscriptionView.body.slice(2) : inscriptionView.body;
-    const body = Buffer.from(bodyHex, 'hex')
+    let body: Buffer | null = null
+    if (inscriptionView.body) {
+      const bodyHex = inscriptionView.body.startsWith('0x') ? inscriptionView.body.slice(2) : inscriptionView.body;
+      body = Buffer.from(bodyHex, 'hex')
+    }
 
     // Convert the Rooch inscription state to the Inscription type expected by IDatasource
     const inscription: Inscription = {
       id: `${inscriptionView.bitcoin_txid}i${inscriptionView.index}`,
       number: inscriptionView.inscription_number,
       owner: inscriptionState.owner ?? "",
-      mediaContent: Buffer.from(body).toString('base64'),
-      mediaSize: body.length,
+      mediaContent: body ? Buffer.from(body).toString('base64') : '',
+      mediaSize: body ? body.length : 0,
       mediaType: inscriptionView.content_type ?? "",
       timestamp: new Date(inscriptionState.created_at).getTime(),
       genesis: inscriptionView.bitcoin_txid,
@@ -261,8 +263,11 @@ export class RoochDataSource implements IDatasource {
   private convertToInscription(inscriptionState: InscriptionStateView, decodeMetadata: boolean | undefined): Inscription {
     const inscriptionView = inscriptionState.value;
 
-    const bodyHex = inscriptionView.body.startsWith('0x') ? inscriptionView.body.slice(2) : inscriptionView.body;
-    const body = Buffer.from(bodyHex, 'hex')
+    let body : Buffer | null = null;
+    if (inscriptionView.body) {
+      const bodyHex = inscriptionView.body.startsWith('0x') ? inscriptionView.body.slice(2) : inscriptionView.body;
+      body = Buffer.from(bodyHex, 'hex')
+    }
 
     const inscription: Inscription = {
       id: `${inscriptionView.bitcoin_txid}i${inscriptionView.index}`,
@@ -275,8 +280,8 @@ export class RoochDataSource implements IDatasource {
       sat: 0, // Rooch doesn't provide this information
       timestamp: new Date(inscriptionState.created_at).getTime(),
       mediaType: inscriptionView.content_type ?? "",
-      mediaSize: body.length,
-      mediaContent: Buffer.from(body).toString('base64'),
+      mediaContent: body ? Buffer.from(body).toString('base64') : '',
+      mediaSize: body ? body.length : 0,
     };
   
     if (decodeMetadata && inscriptionView.metadata) {
@@ -516,8 +521,6 @@ export class RoochDataSource implements IDatasource {
     let cursor: IndexerStateIDView | null = next ? JSON.parse(next) : null;
   
     while ((spendableUTXOs.length + unspendableUTXOs.length) < limit) {
-      await sleep(1000)
-
       const response: PaginatedUTXOStateViews = await this.roochClient.queryUTXO({
         filter: { owner: address },
         cursor,
