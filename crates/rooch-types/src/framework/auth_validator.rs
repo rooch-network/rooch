@@ -1,11 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::transaction_validator::TransactionValidator;
 use crate::address::{BitcoinAddress, RoochSupportedAddress};
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use crate::error::RoochError;
-use anyhow::{ensure, Result};
+use anyhow::Result;
 use clap::ValueEnum;
 use framework_types::addresses::ROOCH_NURSERY_ADDRESS;
 use move_core_types::value::MoveValue;
@@ -48,19 +47,22 @@ pub const MODULE_NAME: &IdentStr = ident_str!("auth_validator");
 pub enum BuiltinAuthValidator {
     Rooch,
     Bitcoin,
+    BitcoinMultisign,
     Ethereum,
 }
 
 impl BuiltinAuthValidator {
     const ROOCH_FLAG: u8 = 0x00;
     const BITCOIN_FLAG: u8 = 0x01;
-    const ETHEREUM_FLAG: u8 = 0x02;
+    const BITCOIN_MULTISIGN: u8 = 0x02;
+    const ETHEREUM_FLAG: u8 = 0x03;
 
     pub fn flag(&self) -> u8 {
         match self {
             BuiltinAuthValidator::Rooch => Self::ROOCH_FLAG,
-            BuiltinAuthValidator::Ethereum => Self::ETHEREUM_FLAG,
             BuiltinAuthValidator::Bitcoin => Self::BITCOIN_FLAG,
+            BuiltinAuthValidator::BitcoinMultisign => Self::BITCOIN_MULTISIGN,
+            BuiltinAuthValidator::Ethereum => Self::ETHEREUM_FLAG,
         }
     }
 
@@ -75,6 +77,7 @@ impl BuiltinAuthValidator {
         match byte_int {
             Self::ROOCH_FLAG => Ok(BuiltinAuthValidator::Rooch),
             Self::BITCOIN_FLAG => Ok(BuiltinAuthValidator::Bitcoin),
+            Self::BITCOIN_MULTISIGN => Ok(BuiltinAuthValidator::BitcoinMultisign),
             Self::ETHEREUM_FLAG => Ok(BuiltinAuthValidator::Ethereum),
             _ => Err(RoochError::KeyConversionError(
                 "Invalid key auth validator".to_owned(),
@@ -93,6 +96,12 @@ impl BuiltinAuthValidator {
                 id: self.flag().into(),
                 module_address: ROOCH_FRAMEWORK_ADDRESS,
                 module_name: MoveString::from_str("bitcoin_validator").expect("Should be valid"),
+            },
+            BuiltinAuthValidator::BitcoinMultisign => AuthValidator {
+                id: self.flag().into(),
+                module_address: ROOCH_NURSERY_ADDRESS,
+                module_name: MoveString::from_str("bitcoin_multisign_validator")
+                    .expect("Should be valid"),
             },
             BuiltinAuthValidator::Ethereum => AuthValidator {
                 id: self.flag().into(),
@@ -222,34 +231,6 @@ impl<'a> AuthValidatorCaller<'a> {
         );
         self.caller
             .call_function(ctx, auth_validator_call)?
-            .decode(|values| {
-                ensure!(
-                    !values.is_empty(),
-                    "Unexpect validate function return values"
-                );
-                Ok(())
-            })
-    }
-
-    pub fn pre_execute_function_id(&self) -> FunctionId {
-        FunctionId::new(
-            self.auth_validator.validator_module_id(),
-            TransactionValidator::PRE_EXECUTE_FUNCTION_NAME.to_owned(),
-        )
-    }
-
-    pub fn pre_execute_function_call(&self) -> FunctionCall {
-        FunctionCall::new(self.pre_execute_function_id(), vec![], vec![])
-    }
-
-    pub fn post_execute_function_id(&self) -> FunctionId {
-        FunctionId::new(
-            self.auth_validator.validator_module_id(),
-            TransactionValidator::POST_EXECUTE_FUNCTION_NAME.to_owned(),
-        )
-    }
-
-    pub fn post_execute_function_call(&self) -> FunctionCall {
-        FunctionCall::new(self.post_execute_function_id(), vec![], vec![])
+            .decode(|_values| Ok(()))
     }
 }

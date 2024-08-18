@@ -155,11 +155,11 @@ ord::add_temp_state(seed, actions);
 
 永久区域中添加、修改、删除状态的接口：
 
-- 使用 `add_permanent_state` 函数将状态数据添加到 `Inscription` 的临时区域。该函数接受一个 `Inscription` 对象和一个要存储的状态数据。
-- 使用 `contains_permanent_state` 函数检查 `Inscription` 的临时区域是否包含特定类型的状态数据。
-- 使用 `borrow_permanent_state` 函数借用临时区域中的特定类型的状态数据的不可变引用。
-- 使用 `borrow_mut_permanent_state` 函数借用临时区域中的特定类型的状态数据的可变引用，以便修改它。
-- 使用 `remove_permanent_state` 函数从 `Inscription` 的临时区域中移除特定类型的状态数据，并获取其值。
+- 使用 `add_permanent_state` 函数将状态数据添加到 `Inscription` 的永久区域。该函数接受一个 `Inscription` 对象和一个要存储的状态数据。
+- 使用 `contains_permanent_state` 函数检查 `Inscription` 的永久区域是否包含特定类型的状态数据。
+- 使用 `borrow_permanent_state` 函数借用永久区域中的特定类型的状态数据的不可变引用。
+- 使用 `borrow_mut_permanent_state` 函数借用永久区域中的特定类型的状态数据的可变引用，以便修改它。
+- 使用 `remove_permanent_state` 函数从 `Inscription` 的永久区域中移除特定类型的状态数据，并获取其值。
 
 ### 示例
 1. [bitcoin_plants](https://github.com/rooch-network/rooch/blob/main/examples/bitcoin_plants)：一个简单的 Inscription 示例，实现了将 Bitcoin Inscription 作为种子，在 Layer2 上种植植物的游戏。这个植物的所有权会随着 Inscription 一起转移。

@@ -1,0 +1,47 @@
+# https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository#creating-issue-forms
+# https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-githubs-form-schema
+name: Bugs
+description: The rooch command, framework, or anything else
+title: "commands/rpc: issue title"
+labels: [ "bug" ]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping us improve! 🙏 Please answer these questions and provide as much information as possible about your problem.
+
+  - type: input
+    id: rooch-version
+    attributes:
+      label: Rooch version
+      description: |
+        What version of Rooch are you using (`rooch --version`)?
+
+      placeholder: ex. rooch --version rooch 0.6.8 (git commit a3d8e1987562d29673bfa29e1a8b23ddc9ac8967)
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-did-you-do
+    attributes:
+      label: "What did you do?"
+      description: "If possible, provide a recipe for reproducing the error. A complete runnable program is good."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: "What did you see happen?"
+      description: Command invocations and their associated output, functions with their arguments and return results, full stacktraces for panics (upload a file if it is very long), etc. Prefer copying text output over using screenshots.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: "What did you expect to see?"
+      description: Why is the current output incorrect, and any additional context we may need to understand the issue.
+    validations:
+      required: true

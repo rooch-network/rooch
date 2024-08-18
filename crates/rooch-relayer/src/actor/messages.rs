@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use bitcoincore_rpc::bitcoin::Txid;
 use bitcoincore_rpc::json;
 use coerce::actor::{message::Message, scheduler::timer::TimerTick};
 use rooch_types::transaction::{L1BlockWithBody, L1Transaction};
@@ -74,4 +75,15 @@ pub struct SyncTick {}
 
 impl Message for SyncTick {
     type Result = ();
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BroadcastTransactionMessage {
+    pub hex: String,
+    pub maxfeerate: Option<f64>,
+    pub maxburnamount: Option<f64>,
+}
+
+impl Message for BroadcastTransactionMessage {
+    type Result = Result<Txid>;
 }

@@ -120,7 +120,7 @@ Return the max gas to be used
 Generate a new unique address,
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_fresh_address">fresh_address</a>(): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_fresh_address">fresh_address</a>(): <b>address</b>
 </code></pre>
 
 

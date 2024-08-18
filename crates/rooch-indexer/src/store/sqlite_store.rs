@@ -5,28 +5,36 @@ use crate::errors::{Context, IndexerError};
 use anyhow::Result;
 use diesel::QueryDsl;
 use diesel::{ExpressionMethods, RunQueryDsl};
+use function_name::named;
 use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::indexer::state::IndexerObjectState;
 use rooch_types::indexer::transaction::IndexerTransaction;
+use std::sync::Arc;
 use tracing::log;
 
 use crate::models::events::StoredEvent;
 use crate::models::states::StoredObjectState;
 use crate::models::transactions::{escape_transaction, StoredTransaction};
 use crate::schema::{events, object_states, transactions};
+use crate::store::metrics::IndexerDBMetrics;
 use crate::utils::escape_sql_string;
 use crate::{get_sqlite_pool_connection, SqliteConnectionPool};
 
 #[derive(Clone)]
 pub struct SqliteIndexerStore {
     pub(crate) connection_pool: SqliteConnectionPool,
+    db_metrics: Arc<IndexerDBMetrics>,
 }
 
 impl SqliteIndexerStore {
-    pub fn new(connection_pool: SqliteConnectionPool) -> Self {
-        Self { connection_pool }
+    pub fn new(connection_pool: SqliteConnectionPool, db_metrics: Arc<IndexerDBMetrics>) -> Self {
+        Self {
+            connection_pool,
+            db_metrics,
+        }
     }
 
+    #[named]
     pub fn persist_or_update_object_states(
         &self,
         states: Vec<IndexerObjectState>,
@@ -35,6 +43,13 @@ impl SqliteIndexerStore {
             return Ok(());
         }
 
+        let fn_name = function_name!();
+        let _timer = self
+            .db_metrics
+            .indexer_store_metrics
+            .indexer_persist_or_update_or_delete_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
         let states = states
             .into_iter()
@@ -105,11 +120,19 @@ impl SqliteIndexerStore {
         Ok(())
     }
 
+    #[named]
     pub fn delete_object_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError> {
         if state_pks.is_empty() {
             return Ok(());
         }
 
+        let fn_name = function_name!();
+        let _timer = self
+            .db_metrics
+            .indexer_store_metrics
+            .indexer_persist_or_update_or_delete_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
 
         diesel::delete(object_states::table.filter(object_states::id.eq_any(state_pks.as_slice())))
@@ -120,6 +143,7 @@ impl SqliteIndexerStore {
         Ok(())
     }
 
+    #[named]
     pub fn persist_transactions(
         &self,
         transactions: Vec<IndexerTransaction>,
@@ -128,6 +152,13 @@ impl SqliteIndexerStore {
             return Ok(());
         }
 
+        let fn_name = function_name!();
+        let _timer = self
+            .db_metrics
+            .indexer_store_metrics
+            .indexer_persist_or_update_or_delete_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
         let transactions = transactions
             .into_iter()
@@ -143,11 +174,19 @@ impl SqliteIndexerStore {
         Ok(())
     }
 
+    #[named]
     pub fn persist_events(&self, events: Vec<IndexerEvent>) -> Result<(), IndexerError> {
         if events.is_empty() {
             return Ok(());
         }
 
+        let fn_name = function_name!();
+        let _timer = self
+            .db_metrics
+            .indexer_store_metrics
+            .indexer_persist_or_update_or_delete_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
         let events = events
             .into_iter()

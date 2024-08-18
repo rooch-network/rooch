@@ -30,6 +30,7 @@ use serde_json::Value;
 use std::rc::Rc;
 use std::{collections::BTreeMap, path::PathBuf};
 use termcolor::Buffer;
+use tokio::runtime::Runtime;
 
 #[derive(Parser)]
 #[group(skip)]
@@ -122,8 +123,11 @@ impl CommandAction<Option<Value>> for TestCommand {
     }
 }
 
-static MOVEOSSTORE: Lazy<(MoveOSStore, DataDirPath)> =
-    Lazy::new(|| MoveOSStore::mock_moveos_store().unwrap());
+static MOVEOSSTORE: Lazy<(MoveOSStore, DataDirPath)> = Lazy::new(|| {
+    let runtime = Runtime::new()
+        .expect("Failed to create Tokio runtime when mock moveos store in move unit test");
+    runtime.block_on(async { MoveOSStore::mock_moveos_store().unwrap() })
+});
 
 static RESOLVER: Lazy<Box<RootObjectResolver<MoveOSStore>>> = Lazy::new(|| {
     Box::new(RootObjectResolver::new(

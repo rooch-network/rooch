@@ -16,6 +16,7 @@ use crate::rocks::{RocksDB, SchemaIterator};
 use crate::traits::{DBStore, KVStore};
 use anyhow::{bail, format_err, Result};
 use moveos_common::utils::{from_bytes, to_bytes};
+use parking_lot::Mutex;
 use rocksdb::{properties, AsColumnFamilyRef};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -24,11 +25,13 @@ use std::ffi::CStr;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::Arc;
+use std::time::Duration;
+use tokio::sync::oneshot;
 
 /// Type alias to improve readability.
 pub type ColumnFamilyName = &'static str;
 
-pub const CF_METRICS_REPORT_PERIOD_MILLIS: u64 = 1000;
+pub const CF_METRICS_REPORT_PERIOD_MILLIS: u64 = 5000;
 pub const METRICS_ERROR: i64 = -1;
 
 // TODO: remove this after Rust rocksdb has the TOTAL_BLOB_FILES_SIZE property built-in.
@@ -43,7 +46,9 @@ pub enum StoreInstance {
     DB {
         db: Arc<RocksDB>,
         db_metrics: Arc<DBMetrics>,
-        // metrics_task_cancel_handle: Arc<oneshot::Sender<()>>,
+        // Send consumes self, but we only have a &self of the containing struct,
+        // so we put the sender in an Option containing
+        metrics_task_cancel_handle: Arc<Mutex<Option<oneshot::Sender<()>>>>,
     },
 }
 
@@ -51,71 +56,69 @@ unsafe impl Send for StoreInstance {}
 
 impl StoreInstance {
     pub fn new_db_instance(db: RocksDB, db_metrics: Arc<DBMetrics>) -> Self {
-        // let db_metrics = DBMetrics::get().clone();
         let db_arc = Arc::new(db);
-        // let db_metrics = Arc::new(DBMetrics::new(registry));
-        // let db_clone = db_arc.clone();
-        // let db_metrics_clone = db_metrics.clone();
-        // let (sender, mut recv) = tokio::sync::oneshot::channel();
+        let db_clone = db_arc.clone();
+        let db_metrics_clone = db_metrics.clone();
+        let (sender, mut cancel_receiver) = tokio::sync::oneshot::channel();
 
-        // TODO We need to find a more elegant implementation to avoid
-        // introducing tokio 1.x runtime dependency in the raw store layer,
+        // Introducing tokio 1.x runtime dependency in the raw store layer,
         // which would cause upper-level unit test cases and framework tests to depend on tokio.
-
-        // tokio::spawn(async move {
-        //     let mut interval =
-        //         tokio::time::interval(Duration::from_millis(CF_METRICS_REPORT_PERIOD_MILLIS));
-        //     loop {
-        //         tokio::select! {
-        //             _ = interval.tick() => {
-        //                 let cfs = db_clone.cfs.clone();
-        //                 for cf_name in cfs {
-        //                     let db_clone_clone = db_clone.clone();
-        //                     let db_metrics_clone_clone = db_metrics_clone.clone();
-        //                     if let Err(e) = tokio::task::spawn_blocking(move || {
-        //                         Self::report_rocksdb_metrics(&db_clone_clone, cf_name, &db_metrics_clone_clone);
-        //                     }).await {
-        //                         error!("Failed to report cf metrics with error: {}", e);
-        //                     }
-        //                     // Self::report_rocksdb_metrics(&db_clone_clone, cf_name, &db_metrics_clone);
-        //                 }
-        //             }
-        //             _ = &mut recv => break,
-        //         }
-        //     }
-        //     debug!("Returning to report cf metrics task for StoreInstance");
-        // });
+        tokio::spawn(async move {
+            let mut interval =
+                tokio::time::interval(Duration::from_millis(CF_METRICS_REPORT_PERIOD_MILLIS));
+            loop {
+                tokio::select! {
+                    _ = interval.tick() => {
+                        let cfs = db_clone.cfs.clone();
+                        for cf_name in cfs {
+                            let db_clone_clone = db_clone.clone();
+                            let db_metrics_clone_clone = db_metrics_clone.clone();
+                            if let Err(e) = tokio::task::spawn_blocking(move || {
+                                let _ = Self::report_rocksdb_metrics(&db_clone_clone, cf_name, &db_metrics_clone_clone);
+                            }).await {
+                                tracing::error!("Failed to report cf metrics with error: {}", e);
+                            }
+                        }
+                    }
+                    _ = &mut cancel_receiver => {
+                        tracing::info!("Metrics task cancelled for store instance");
+                        break;
+                    }
+                }
+            }
+            tracing::debug!("Returning to report cf metrics task for store instance");
+        });
 
         Self::DB {
             db: db_arc,
             db_metrics,
-            // metrics_task_cancel_handle: Arc::new(sender),
+            metrics_task_cancel_handle: Arc::new(Mutex::new(Some(sender))),
         }
     }
 
-    // pub fn cancel_metrics_task(&mut self) -> Result<()> {
-    //     match self {
-    //         StoreInstance::DB {
-    //             db: _,
-    //             db_metrics: _,
-    //             metrics_task_cancel_handle,
-    //         } => {
-    //             // metrics_task_cancel_handle.send()
-    //             // Send a cancellation signal
-    //             // metrics_task_cancel_handle
-    //             let handle = Arc::get_mut(metrics_task_cancel_handle).unwrap();
-    //             handle.send()?;
-    //         }
-    //     };
-    //     Ok(())
-    // }
+    pub fn cancel_metrics_task(&mut self) -> Result<()> {
+        match self {
+            StoreInstance::DB {
+                db: _,
+                db_metrics: _,
+                metrics_task_cancel_handle,
+            } => {
+                // Send a cancellation signal
+                let mut handle = metrics_task_cancel_handle.lock();
+                if let Some(sender) = handle.take() {
+                    let _r = sender.send(());
+                }
+            }
+        };
+        Ok(())
+    }
 
     pub fn db(&self) -> Option<&RocksDB> {
         match self {
             StoreInstance::DB {
                 db,
                 db_metrics: _,
-                // metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => Some(db.as_ref()),
         }
     }
@@ -125,7 +128,7 @@ impl StoreInstance {
             StoreInstance::DB {
                 db: _,
                 db_metrics,
-                // metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => Some(db_metrics.as_ref()),
         }
     }
@@ -135,7 +138,7 @@ impl StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics: _,
-                // metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => Arc::get_mut(db),
         }
     }
@@ -145,13 +148,16 @@ impl StoreInstance {
             StoreInstance::DB {
                 db: _,
                 db_metrics,
-                // metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => Arc::get_mut(db_metrics),
         }
     }
 
-    #[allow(dead_code)]
-    fn report_rocksdb_metrics(rocksdb: &Arc<RocksDB>, cf_name: &str, db_metrics: &Arc<DBMetrics>) {
+    fn report_rocksdb_metrics(
+        rocksdb: &Arc<RocksDB>,
+        cf_name: &str,
+        db_metrics: &Arc<DBMetrics>,
+    ) -> Result<()> {
         let cf = rocksdb.get_cf_handle(cf_name);
         db_metrics
             .rocksdb_metrics
@@ -179,38 +185,6 @@ impl StoreInstance {
             );
         db_metrics
             .rocksdb_metrics
-            .rocksdb_num_snapshots
-            .with_label_values(&[cf_name])
-            .set(
-                Self::get_int_property(rocksdb, &cf, properties::NUM_SNAPSHOTS)
-                    .unwrap_or(METRICS_ERROR),
-            );
-        db_metrics
-            .rocksdb_metrics
-            .rocksdb_oldest_snapshot_time
-            .with_label_values(&[cf_name])
-            .set(
-                Self::get_int_property(rocksdb, &cf, properties::OLDEST_SNAPSHOT_TIME)
-                    .unwrap_or(METRICS_ERROR),
-            );
-        db_metrics
-            .rocksdb_metrics
-            .rocksdb_actual_delayed_write_rate
-            .with_label_values(&[cf_name])
-            .set(
-                Self::get_int_property(rocksdb, &cf, properties::ACTUAL_DELAYED_WRITE_RATE)
-                    .unwrap_or(METRICS_ERROR),
-            );
-        db_metrics
-            .rocksdb_metrics
-            .rocksdb_is_write_stopped
-            .with_label_values(&[cf_name])
-            .set(
-                Self::get_int_property(rocksdb, &cf, properties::IS_WRITE_STOPPED)
-                    .unwrap_or(METRICS_ERROR),
-            );
-        db_metrics
-            .rocksdb_metrics
             .rocksdb_block_cache_capacity
             .with_label_values(&[cf_name])
             .set(
@@ -225,30 +199,22 @@ impl StoreInstance {
                 Self::get_int_property(rocksdb, &cf, properties::BLOCK_CACHE_USAGE)
                     .unwrap_or(METRICS_ERROR),
             );
-        db_metrics
-            .rocksdb_metrics
-            .rocksdb_block_cache_pinned_usage
-            .with_label_values(&[cf_name])
-            .set(
-                Self::get_int_property(rocksdb, &cf, properties::BLOCK_CACHE_PINNED_USAGE)
-                    .unwrap_or(METRICS_ERROR),
-            );
-        db_metrics
-            .rocksdb_metrics
-            .rocskdb_estimate_table_readers_mem
-            .with_label_values(&[cf_name])
-            .set(
-                Self::get_int_property(rocksdb, &cf, properties::ESTIMATE_TABLE_READERS_MEM)
-                    .unwrap_or(METRICS_ERROR),
-            );
-        db_metrics
-            .rocksdb_metrics
-            .rocksdb_estimated_num_keys
-            .with_label_values(&[cf_name])
-            .set(
-                Self::get_int_property(rocksdb, &cf, properties::ESTIMATE_NUM_KEYS)
-                    .unwrap_or(METRICS_ERROR),
-            );
+        // db_metrics
+        //     .rocksdb_metrics
+        //     .rocksdb_block_cache_hit
+        //     .with_label_values(&[cf_name])
+        //     .set(
+        //         Self::get_int_property(rocksdb, &cf, properties::BLOCK_CACHE_HIT_COUNT)
+        //             .unwrap_or(METRICS_ERROR),
+        //     );
+        // db_metrics
+        //     .rocksdb_metrics
+        //     .rocksdb_block_cache_miss
+        //     .with_label_values(&[cf_name])
+        //     .set(
+        //         Self::get_int_property(rocksdb, &cf, properties::BLOCK_CACHE_MISS_COUNT)
+        //             .unwrap_or(METRICS_ERROR),
+        //     );
         db_metrics
             .rocksdb_metrics
             .rocksdb_mem_table_flush_pending
@@ -283,20 +249,13 @@ impl StoreInstance {
             );
         db_metrics
             .rocksdb_metrics
-            .rocksdb_estimate_oldest_key_time
-            .with_label_values(&[cf_name])
-            .set(
-                Self::get_int_property(rocksdb, &cf, properties::ESTIMATE_OLDEST_KEY_TIME)
-                    .unwrap_or(METRICS_ERROR),
-            );
-        db_metrics
-            .rocksdb_metrics
             .rocskdb_background_errors
             .with_label_values(&[cf_name])
             .set(
                 Self::get_int_property(rocksdb, &cf, properties::BACKGROUND_ERRORS)
                     .unwrap_or(METRICS_ERROR),
             );
+        Ok(())
     }
 
     #[allow(dead_code)]
@@ -306,7 +265,7 @@ impl StoreInstance {
         property_name: &'static std::ffi::CStr,
     ) -> Result<i64, anyhow::Error> {
         match rocksdb.property_int_value_cf(cf, property_name) {
-            Ok(Some(value)) => Ok(value.try_into().unwrap()),
+            Ok(Some(value)) => Ok(value as i64),
             Ok(None) => Ok(0),
             Err(e) => Err(anyhow::Error::new(e)),
             // Err(anyhow::Error::msg(format!("get_int_property error {}", e))),
@@ -320,7 +279,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                // metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .raw_store_metrics
@@ -343,7 +302,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                // metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .raw_store_metrics
@@ -367,7 +326,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                // metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .raw_store_metrics
@@ -385,7 +344,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                // metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .raw_store_metrics
@@ -408,7 +367,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                // metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .raw_store_metrics
@@ -440,7 +399,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                // metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .raw_store_metrics
@@ -464,7 +423,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                // metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .raw_store_metrics
@@ -488,7 +447,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB {
                 db,
                 db_metrics,
-                // metrics_task_cancel_handle: _,
+                metrics_task_cancel_handle: _,
             } => {
                 let _timer = db_metrics
                     .raw_store_metrics
@@ -723,6 +682,8 @@ where
     fn get_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
 
     fn iter(&self) -> Result<SchemaIterator<K, V>>;
+
+    fn multiple_get_raw(&self, keys: Vec<K>) -> Result<Vec<Option<Vec<u8>>>>;
 }
 
 impl<K, V, S> CodecKVStore<K, V> for S
@@ -742,8 +703,8 @@ where
     fn multiple_get(&self, keys: Vec<K>) -> Result<Vec<Option<V>>> {
         let encoded_keys = keys
             .into_iter()
-            .map(|key| to_bytes(&key).unwrap())
-            .collect::<Vec<_>>();
+            .map(|key| to_bytes(&key))
+            .collect::<Result<Vec<_>, _>>()?;
         let values = KVStore::multiple_get(self.get_store(), encoded_keys)?;
         values
             .into_iter()
@@ -788,10 +749,9 @@ where
 
     fn keys(&self) -> Result<Vec<K>> {
         let keys = KVStore::keys(self.get_store())?;
-        Ok(keys
-            .into_iter()
-            .map(|key| from_bytes::<K>(key.as_slice()).unwrap())
-            .collect())
+        keys.into_iter()
+            .map(|key| from_bytes::<K>(key.as_slice()))
+            .collect::<Result<Vec<_>, _>>()
     }
 
     fn put_raw(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
@@ -809,5 +769,13 @@ where
             .db()
             .ok_or_else(|| format_err!("Only support scan on db store instance"))?;
         db.iter::<K, V>(self.get_store().cf_name)
+    }
+
+    fn multiple_get_raw(&self, keys: Vec<K>) -> Result<Vec<Option<Vec<u8>>>> {
+        let encoded_keys = keys
+            .into_iter()
+            .map(|key| to_bytes(&key))
+            .collect::<Result<Vec<_>, _>>()?;
+        KVStore::multiple_get(self.get_store(), encoded_keys)
     }
 }

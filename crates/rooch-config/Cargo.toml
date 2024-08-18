@@ -14,24 +14,14 @@ rust-version = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rand = { workspace = true }
 anyhow = { workspace = true }
 serde = { workspace = true }
 serde_yaml = { workspace = true }
-serde_with = { workspace = true }
 serde_json = { workspace = true }
-jsonrpsee = { workspace = true }
-thiserror = { workspace = true }
-tonic = { workspace = true }
-coerce = { workspace = true }
 dirs = { workspace = true }
 once_cell = { workspace = true }
 clap = { workspace = true }
 dirs-next = { workspace = true }
-schemars = { workspace = true }
-proptest = { optional = true, workspace = true }
-proptest-derive = { optional = true, workspace = true }
 
-rooch-key = { workspace = true }
 rooch-types = { workspace = true }
 moveos-config = { workspace = true }

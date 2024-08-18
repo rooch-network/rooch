@@ -10,36 +10,23 @@ use prometheus::{
     register_histogram_vec_with_registry, register_int_counter_vec_with_registry,
     register_int_gauge_vec_with_registry, HistogramVec, IntCounterVec, IntGaugeVec, Registry,
 };
-use rocksdb::PerfContext;
-use std::cell::RefCell;
 use std::sync::Arc;
 use tap::TapFallible;
-use tracing::warn;
-
-thread_local! {
-    static PER_THREAD_ROCKS_PERF_CONTEXT: std::cell::RefCell<rocksdb::PerfContext>  = RefCell::new(PerfContext::default());
-}
 
 #[derive(Debug)]
 pub struct RocksDBMetrics {
     pub rocksdb_total_sst_files_size: IntGaugeVec,
     pub rocksdb_total_blob_files_size: IntGaugeVec,
     pub rocksdb_size_all_mem_tables: IntGaugeVec,
-    pub rocksdb_num_snapshots: IntGaugeVec,
-    pub rocksdb_oldest_snapshot_time: IntGaugeVec,
-    pub rocksdb_actual_delayed_write_rate: IntGaugeVec,
-    pub rocksdb_is_write_stopped: IntGaugeVec,
     pub rocksdb_block_cache_capacity: IntGaugeVec,
     pub rocksdb_block_cache_usage: IntGaugeVec,
-    pub rocksdb_block_cache_pinned_usage: IntGaugeVec,
-    pub rocskdb_estimate_table_readers_mem: IntGaugeVec,
+    pub rocksdb_block_cache_hit: IntGaugeVec,
+    pub rocksdb_block_cache_miss: IntGaugeVec,
     pub rocksdb_mem_table_flush_pending: IntGaugeVec,
     pub rocskdb_compaction_pending: IntGaugeVec,
     pub rocskdb_num_running_compactions: IntGaugeVec,
     pub rocksdb_num_running_flushes: IntGaugeVec,
-    pub rocksdb_estimate_oldest_key_time: IntGaugeVec,
     pub rocskdb_background_errors: IntGaugeVec,
-    pub rocksdb_estimated_num_keys: IntGaugeVec,
 }
 
 impl RocksDBMetrics {
@@ -66,34 +53,6 @@ impl RocksDBMetrics {
                 registry,
             )
             .unwrap(),
-            rocksdb_num_snapshots: register_int_gauge_vec_with_registry!(
-                "rocksdb_num_snapshots",
-                "Number of snapshots held for the column family",
-                &["cf_name"],
-                registry,
-            )
-            .unwrap(),
-            rocksdb_oldest_snapshot_time: register_int_gauge_vec_with_registry!(
-                "rocksdb_oldest_snapshot_time",
-                "Unit timestamp of the oldest unreleased snapshot",
-                &["cf_name"],
-                registry,
-            )
-            .unwrap(),
-            rocksdb_actual_delayed_write_rate: register_int_gauge_vec_with_registry!(
-                "rocksdb_actual_delayed_write_rate",
-                "The current actual delayed write rate. 0 means no delay",
-                &["cf_name"],
-                registry,
-            )
-            .unwrap(),
-            rocksdb_is_write_stopped: register_int_gauge_vec_with_registry!(
-                "rocksdb_is_write_stopped",
-                "A flag indicating whether writes are stopped on this column family. 1 indicates writes have been stopped.",
-                &["cf_name"],
-                registry,
-            )
-            .unwrap(),
             rocksdb_block_cache_capacity: register_int_gauge_vec_with_registry!(
                 "rocksdb_block_cache_capacity",
                 "The block cache capacity of the column family.",
@@ -108,18 +67,17 @@ impl RocksDBMetrics {
                 registry,
             )
             .unwrap(),
-            rocksdb_block_cache_pinned_usage: register_int_gauge_vec_with_registry!(
-                "rocksdb_block_cache_pinned_usage",
-                "The memory size used by the column family in the block cache where entries are pinned",
+
+            rocksdb_block_cache_hit: register_int_gauge_vec_with_registry!(
+                "rocksdb_block_cache_hit",
+                "The cache hit counts by the column family in the block cache.",
                 &["cf_name"],
                 registry,
             )
             .unwrap(),
-            rocskdb_estimate_table_readers_mem: register_int_gauge_vec_with_registry!(
-                "rocskdb_estimate_table_readers_mem",
-                "The estimated memory size used for reading SST tables in this column
-                family such as filters and index blocks. Note that this number does not
-                include the memory used in block cache.",
+            rocksdb_block_cache_miss: register_int_gauge_vec_with_registry!(
+                "rocksdb_block_cache_miss",
+                "The cache miss counts by the column family in the block cache.",
                 &["cf_name"],
                 registry,
             )
@@ -159,21 +117,6 @@ impl RocksDBMetrics {
                 registry,
             )
             .unwrap(),
-            rocksdb_estimate_oldest_key_time: register_int_gauge_vec_with_registry!(
-                "rocksdb_estimate_oldest_key_time",
-                "Estimation of the oldest key timestamp in the DB. Only available
-                for FIFO compaction with compaction_options_fifo.allow_compaction = false.",
-                &["cf_name"],
-                registry,
-            )
-            .unwrap(),
-            rocksdb_estimated_num_keys: register_int_gauge_vec_with_registry!(
-                "rocksdb_estimated_num_keys",
-                "The estimated number of keys in the table",
-                &["cf_name"],
-                registry,
-            )
-            .unwrap(),
             rocskdb_background_errors: register_int_gauge_vec_with_registry!(
                 "rocskdb_background_errors",
                 "The accumulated number of RocksDB background errors.",
@@ -181,7 +124,6 @@ impl RocksDBMetrics {
                 registry,
             )
             .unwrap(),
-
         }
     }
 }
@@ -376,7 +318,7 @@ pub struct DBMetrics {
     pub rocksdb_metrics: RocksDBMetrics,
 }
 
-static ONCE: OnceCell<Arc<DBMetrics>> = OnceCell::new();
+static DB_METRICS_ONCE: OnceCell<Arc<DBMetrics>> = OnceCell::new();
 
 impl DBMetrics {
     pub fn new(registry: &Registry) -> Self {
@@ -391,10 +333,10 @@ impl DBMetrics {
         // only ever initialize db metrics once with a registry whereas
         // in the code we might want to initialize it with different
         // registries.
-        let _ = ONCE
+        let _ = DB_METRICS_ONCE
             .set(Self::inner_init(registry))
-            .tap_err(|_| warn!("DBMetrics registry overwritten"));
-        ONCE.get().unwrap()
+            .tap_err(|_| tracing::warn!("DBMetrics registry overwritten"));
+        DB_METRICS_ONCE.get().unwrap()
     }
 
     fn inner_init(registry: &Registry) -> Arc<DBMetrics> {
@@ -416,10 +358,10 @@ impl DBMetrics {
     }
 
     pub fn get() -> Option<&'static Arc<DBMetrics>> {
-        ONCE.get()
+        DB_METRICS_ONCE.get()
     }
 
     pub fn get_or_init(registry: &Registry) -> &'static Arc<DBMetrics> {
-        ONCE.get_or_init(|| Self::inner_init(registry).clone())
+        DB_METRICS_ONCE.get_or_init(|| Self::inner_init(registry).clone())
     }
 }

@@ -122,6 +122,10 @@ impl TransactionStore for RoochStore {
         self.transaction_store.save_transaction(tx)
     }
 
+    fn remove_transaction(&self, tx_hash: H256, tx_order: u64) -> Result<()> {
+        self.transaction_store.remove_transaction(tx_hash, tx_order)
+    }
+
     fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<LedgerTransaction>> {
         self.transaction_store.get_transaction_by_hash(hash)
     }

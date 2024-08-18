@@ -165,9 +165,9 @@ export const Overview: React.FC<OverviewProps> = ({ txData }) => {
               </div>
               <div className="flex items-center justify-start gap-2">
                 {txData ? <>
-                  <img src="/icon-success.svg" alt={txData?.execution_info.status.type} />
+                  <img src="/icon-success.svg" alt={txData?.execution_info?.status.type} />
                   <span className="text-gray-800 dark:text-gray-50 tracking-tight">
-                      {txData?.execution_info.status.type.toUpperCase()}
+                      {txData?.execution_info?.status.type.toUpperCase()}
                     </span>
                 </> : <Skeleton width={150} />}
               </div>
@@ -183,7 +183,7 @@ export const Overview: React.FC<OverviewProps> = ({ txData }) => {
                 {txData ? <div
                   className="border border-accent dark:border-muted-foreground/15 dark:bg-blue-950 py-0.5 px-2 rounded-lg text-blue-500 dark:text-blue-300 hover:underline cursor-pointer font-mono tracking-tight">
                     <span className="flex items-center justify-start gap-1">
-                      <p>{txData?.execution_info.event_root}</p>
+                      <p>{txData?.execution_info?.event_root}</p>
                       <Copy className="w-3 h-3 text-muted-foreground" />
                     </span>
                 </div> : <Skeleton width={250} />}
@@ -200,7 +200,7 @@ export const Overview: React.FC<OverviewProps> = ({ txData }) => {
                 {txData ? <div
                   className="border border-accent dark:border-muted-foreground/15 dark:bg-blue-950 py-0.5 px-2 rounded-lg text-blue-500 dark:text-blue-300 hover:underline cursor-pointer font-mono tracking-tight">
                     <span className="flex items-center justify-start gap-1">
-                      <p>{txData?.execution_info.state_root}</p>
+                      <p>{txData?.execution_info?.state_root}</p>
                       <Copy className="w-3 h-3 text-muted-foreground" />
                     </span>
                 </div> : <Skeleton width={250} />}
@@ -223,7 +223,7 @@ export const Overview: React.FC<OverviewProps> = ({ txData }) => {
               </div>
               <span className="text-gray-800 dark:text-gray-50 tracking-tight flex items-center justify-start gap-1">
                 {txData ? <>
-                  <span>{txData?.execution_info.gas_used}</span>
+                  <span>{txData?.execution_info?.gas_used}</span>
                   <img
                     src="/rooch_white_logo.svg"
                     alt=""

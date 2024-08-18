@@ -17,11 +17,12 @@ module rooch_framework::transaction_validator {
     use rooch_framework::chain_id;
     use rooch_framework::transaction_fee;
     use rooch_framework::gas_coin;
-    use rooch_framework::transaction::{Self, TransactionSequenceInfo};
+    use rooch_framework::transaction::{Self, TransactionSequenceInfoV2};
     use rooch_framework::session_validator;
     use rooch_framework::bitcoin_validator;
     use rooch_framework::address_mapping;
     use rooch_framework::account_coin_store;
+    use rooch_framework::builtin_validators;
 
     const MAX_U64: u128 = 18446744073709551615;
 
@@ -98,7 +99,7 @@ module rooch_framework::transaction_validator {
             let auth_validator = auth_validator_registry::borrow_validator(auth_validator_id);
             let validator_id = auth_validator::validator_id(auth_validator);
             // The third-party auth validator must be installed to the sender's account
-            assert!(account_authentication::is_auth_validator_installed(sender, validator_id),
+            assert!(builtin_validators::is_builtin_auth_validator(validator_id) || account_authentication::is_auth_validator_installed(sender, validator_id),
                     auth_validator::error_validate_not_installed_auth_validator());
             let bitcoin_address = address_mapping::resolve_bitcoin(sender);
             (bitcoin_address, option::none(), option::some(*auth_validator))
@@ -128,10 +129,10 @@ module rooch_framework::transaction_validator {
         };
         let bitcoin_addr = auth_validator::get_bitcoin_address_from_ctx();
         address_mapping::bind_bitcoin_address(sender, bitcoin_addr); 
-        let tx_sequence_info = tx_context::get_attribute<TransactionSequenceInfo>();
+        let tx_sequence_info = tx_context::get_attribute<TransactionSequenceInfoV2>();
         if (option::is_some(&tx_sequence_info)) {
             let tx_sequence_info = option::extract(&mut tx_sequence_info);
-            let tx_timestamp = transaction::tx_timestamp(&tx_sequence_info);
+            let tx_timestamp = transaction::get_tx_timestamp(&tx_sequence_info);
             let module_signer = module_signer<TransactionValidatorPlaceholder>();
             timestamp::try_update_global_time(&module_signer, tx_timestamp);
         };

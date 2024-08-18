@@ -15,4 +15,6 @@ CREATE TABLE object_states
 
 CREATE INDEX idx_object_states_owner ON object_states (owner);
 CREATE INDEX idx_object_states_object_type_and_owner ON object_states (object_type, owner);
+--CREATE INDEX idx_object_states_object_type ON object_states (object_type);
+--CREATE INDEX idx_object_states_owner_and_object_type ON object_states (owner, object_type);
 CREATE INDEX idx_object_states_created_at ON object_states (created_at);

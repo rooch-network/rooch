@@ -120,3 +120,29 @@ pub struct QueryIndexerObjectIdsMessage {
 impl Message for QueryIndexerObjectIdsMessage {
     type Result = Result<Vec<(ObjectID, IndexerStateID)>>;
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct IndexerPersistOrUpdateObjectStatesMessage {
+    pub states: Vec<IndexerObjectState>,
+}
+
+impl Message for IndexerPersistOrUpdateObjectStatesMessage {
+    type Result = Result<()>;
+}
+
+pub struct IndexerDeleteObjectStatesMessage {
+    pub object_ids: Vec<ObjectID>,
+}
+
+impl Message for IndexerDeleteObjectStatesMessage {
+    type Result = Result<()>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct QueryLastStateIndexByTxOrderMessage {
+    pub tx_order: u64,
+}
+
+impl Message for QueryLastStateIndexByTxOrderMessage {
+    type Result = Result<u64>;
+}

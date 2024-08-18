@@ -327,7 +327,7 @@ impl RoochGenesis {
                 if let Some(builtin_id) = network.chain_id.to_builtin() {
                     let genesis_from_binary = Self::load(builtin_id)?;
                     let genesis_info_from_binary = genesis_from_binary.genesis_info();
-                    if genesis_info_from_store != genesis_info_from_binary {
+                    if genesis_info_from_store.root != genesis_info_from_binary.root {
                         return Err(GenesisError::GenesisVersionMismatch {
                             from_store: Box::new(genesis_info_from_store),
                             from_binary: Box::new(genesis_info_from_binary),
@@ -401,19 +401,19 @@ impl RoochGenesis {
             AccumulatorInfo::default(),
             rooch_db.rooch_store.get_transaction_accumulator_store(),
         );
-        let genesis_accumulator_root =
+        let _genesis_accumulator_root =
             genesis_tx_accumulator.append(vec![tx_ledger_data.clone().tx_hash()].as_slice())?;
         genesis_tx_accumulator.flush()?;
 
+        let genesis_tx_accmulator_info = genesis_tx_accumulator.get_info();
         let ledger_tx = LedgerTransaction::build_ledger_transaction(
             tx_ledger_data,
             moveos_genesis_context.timestamp,
             genesis_tx_order,
             vec![],
-            genesis_accumulator_root,
+            genesis_tx_accmulator_info.clone(),
         );
-        let sequencer_info =
-            SequencerInfo::new(genesis_tx_order, genesis_tx_accumulator.get_info());
+        let sequencer_info = SequencerInfo::new(genesis_tx_order, genesis_tx_accmulator_info);
         rooch_db.rooch_store.save_sequencer_info(sequencer_info)?;
         rooch_db.rooch_store.save_transaction(ledger_tx.clone())?;
 
@@ -428,7 +428,7 @@ impl RoochGenesis {
         let transactions = vec![indexer_transaction];
         rooch_db.indexer_store.persist_transactions(transactions)?;
 
-        // 2. update indexer state
+        // 2. update indexer event
         let events: Vec<_> = genesis_tx_output
             .events
             .into_iter()
@@ -632,7 +632,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_custom_genesis_init() {
-        let network = RoochNetwork::new(100.into(), BuiltinChainID::Local.genesis_config().clone());
+        let network = RoochNetwork::new(100.into(), BuiltinChainID::Test.genesis_config().clone());
         let genesis = RoochGenesis::build(network.clone()).unwrap();
         genesis_init_test_case(network, genesis);
     }
@@ -640,6 +640,9 @@ mod tests {
     #[test]
     fn test_genesis_load_from_binary() {
         assert!(load_genesis_from_binary(BuiltinChainID::Test)
+            .unwrap()
+            .is_some());
+        assert!(load_genesis_from_binary(BuiltinChainID::Main)
             .unwrap()
             .is_some());
     }

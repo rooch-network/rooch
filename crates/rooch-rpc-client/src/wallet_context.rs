@@ -12,7 +12,9 @@ use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG};
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::file_keystore::FileBasedKeystore;
 use rooch_key::keystore::Keystore;
-use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView, TxOptions};
+use rooch_rpc_api::jsonrpc_types::{
+    DryRunTransactionResponseView, ExecuteTransactionResponseView, KeptVMStatusView, TxOptions,
+};
 use rooch_types::address::ParsedAddress;
 use rooch_types::address::RoochAddress;
 use rooch_types::addresses;
@@ -90,7 +92,7 @@ impl WalletContext {
         }
     }
 
-    /// Parse and resolve addresses from a map of name to address string    
+    /// Parse and resolve addresses from a map of name to address string
     pub fn parse_and_resolve_addresses(
         &self,
         addresses: BTreeMap<String, String>,
@@ -169,7 +171,13 @@ impl WalletContext {
         let client = self.get_client().await?;
         client
             .rooch
-            .execute_tx(tx, Some(TxOptions { with_output: true }))
+            .execute_tx(
+                tx,
+                Some(TxOptions {
+                    with_output: true,
+                    decode: true,
+                }),
+            )
             .await
             .map_err(|e| RoochError::TransactionError(e.to_string()))
     }
@@ -183,6 +191,18 @@ impl WalletContext {
     ) -> RoochResult<ExecuteTransactionResponseView> {
         let tx = self.sign(sender, action, password, max_gas_amount).await?;
         self.execute(tx).await
+    }
+
+    pub async fn dry_run(
+        &self,
+        tx: RoochTransactionData,
+    ) -> RoochResult<DryRunTransactionResponseView> {
+        let client = self.get_client().await?;
+        client
+            .rooch
+            .dry_run_tx(tx)
+            .await
+            .map_err(|e| RoochError::DryRunTransactionError(e.to_string()))
     }
 
     pub fn assert_execute_success(

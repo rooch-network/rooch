@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use std::sync::mpsc::{Receiver, SyncSender};
 use std::sync::{mpsc, Arc, RwLock};
 use std::thread;
-use std::time::SystemTime;
+use std::time::{Instant, SystemTime};
 
 use clap::Parser;
 
@@ -24,13 +24,12 @@ use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
-use crate::cli_types::WalletContextOptions;
 use crate::commands::statedb::commands::genesis_utxo::{
-    apply_address_updates, apply_utxo_updates, produce_utxo_updates,
+    apply_address_updates, apply_utxo_updates, produce_address_map_updates, produce_utxo_updates,
 };
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes, finish_import_job};
 use crate::commands::statedb::commands::inscription::{
-    create_genesis_inscription_store_object, gen_inscription_ids_update, InscriptionSource,
+    create_genesis_inscription_store_object, gen_inscription_id_update, InscriptionSource,
 };
 use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 
@@ -40,28 +39,28 @@ pub struct GenesisCommand {
     #[clap(long, short = 'i')]
     /// utxo source data file. like ~/.rooch/local/utxo.csv or utxo.csv
     /// The file format is csv, and the first line is the header, the header is as follows:
-    /// count,txid,vout,height,coinbase,amount,script,type,address
+    /// count, txid, vout, height, coinbase, amount, script, type,address
     pub utxo_source: PathBuf,
     #[clap(long)]
     /// ord source data file. like ~/.rooch/local/ord or ord, ord_input must be sorted by sequence_number
-    /// The file format is json, and the first line is block height info: # export at block height <N>, ord range: [0, N).
-    /// ord_input & utxo_input must be in the same height
+    /// The file format is JSON, and the first line is block height info: # export at block height <N>, ord range: [0, N).
+    /// ord_input & utxo_input must be at the same height
     pub ord_source: PathBuf,
     #[clap(
         long,
-        default_value = "524288",
+        default_value = "1048576",
         help = "batch size submited to state db. Set it smaller if memory is limited."
     )]
     pub utxo_batch_size: Option<usize>,
     #[clap(
         long,
-        default_value = "524288",
+        default_value = "1048576",
         help = "batch size submited to state db. Set it smaller if memory is limited."
     )] // ord may have large body, so set a smaller batch
     pub ord_batch_size: Option<usize>,
     #[clap(
         long,
-        help = "outpoint(original):inscriptions(object_id) map dump path, for debug"
+        help = "outpoint(original):inscriptions(original inscription_id) map dump path, for debug"
     )]
     pub outpoint_inscriptions_map_dump_path: Option<PathBuf>,
     #[clap(
@@ -78,9 +77,6 @@ pub struct GenesisCommand {
     /// All data will be deleted when the service is stopped.
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
     pub chain_id: Option<RoochChainID>,
-
-    #[clap(flatten)]
-    pub context_options: WalletContextOptions,
 }
 
 impl GenesisCommand {
@@ -119,25 +115,28 @@ impl GenesisCommand {
         // import inscriptions
         let input_path = self.ord_source.clone();
         let batch_size = self.ord_batch_size.unwrap();
-        let (ord_tx, ord_rx) = mpsc::sync_channel(3);
-        let produce_ord_updates_thread =
+        let (ord_tx, ord_rx) = mpsc::sync_channel(2);
+        let produce_inscription_updates_thread =
             thread::spawn(move || produce_inscription_updates(ord_tx, input_path, batch_size));
         let moveos_store_clone = Arc::clone(&moveos_store);
         let startup_update_set_clone = Arc::clone(&startup_update_set);
-        let apply_ord_updates_thread = thread::spawn(move || {
+        let apply_inscription_updates_thread = thread::spawn(move || {
             apply_inscription_updates(ord_rx, moveos_store_clone, startup_update_set_clone);
         });
-
         // import utxo
-        let utxo_input_path = self.utxo_source.clone();
+        let utxo_input_path = Arc::new(self.utxo_source.clone());
+        let utxo_input_path_clone1 = Arc::clone(&utxo_input_path);
+        let utxo_input_path_clone2 = Arc::clone(&utxo_input_path);
         let utxo_batch_size = self.utxo_batch_size.unwrap();
-        let (utxo_tx, utxo_rx) = mpsc::sync_channel(4);
-        let (addr_tx, addr_rx) = mpsc::sync_channel(4);
+        let (addr_tx, addr_rx) = mpsc::sync_channel(2);
+        let produce_addr_updates_thread = thread::spawn(move || {
+            produce_address_map_updates(addr_tx, utxo_input_path_clone1, utxo_batch_size)
+        });
+        let (utxo_tx, utxo_rx) = mpsc::sync_channel(2);
         let produce_utxo_updates_thread = thread::spawn(move || {
             produce_utxo_updates(
                 utxo_tx,
-                addr_tx,
-                utxo_input_path,
+                utxo_input_path_clone2,
                 utxo_batch_size,
                 Some(outpoint_inscriptions_map),
             )
@@ -153,9 +152,10 @@ impl GenesisCommand {
             apply_utxo_updates(utxo_rx, moveos_store_clone, startup_update_set_clone);
         });
 
-        produce_ord_updates_thread.join().unwrap();
+        produce_inscription_updates_thread.join().unwrap();
+        produce_addr_updates_thread.join().unwrap();
         produce_utxo_updates_thread.join().unwrap();
-        apply_ord_updates_thread.join().unwrap();
+        apply_inscription_updates_thread.join().unwrap();
         apply_addr_updates_thread.join().unwrap();
         apply_utxo_updates_thread.join().unwrap();
 
@@ -221,7 +221,7 @@ fn produce_inscription_updates(
             let (key, state, inscription_id) = source.gen_update();
             updates.updates_value_bytes += state.value.len() as u64;
             updates.update_set.put(key, state);
-            let (key2, state2) = gen_inscription_ids_update(sequence_number, inscription_id);
+            let (key2, state2) = gen_inscription_id_update(sequence_number, inscription_id);
             updates.update_set.put(key2, state2);
             sequence_number += 1;
         }
@@ -257,28 +257,35 @@ fn apply_inscription_updates(
     while let Ok(batch) = rx.recv() {
         let loop_start_time = SystemTime::now();
 
+        let gen_nodes_start = Instant::now();
         let mut nodes: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
 
         let cnt = batch.update_set.len();
+
         let mut tree_change_set =
             apply_fields(moveos_store, inscription_store_state_root, batch.update_set).unwrap();
         nodes.append(&mut tree_change_set.nodes);
+        let gen_nodes_cost = gen_nodes_start.elapsed();
 
         inscription_store_state_root = tree_change_set.state_root;
         cursed_inscription_count += batch.cursed_inscription_count;
         blessed_inscription_count += batch.blessed_inscription_count;
 
+        let apply_nodes_start = Instant::now();
         apply_nodes(moveos_store, nodes).expect("failed to apply inscription nodes");
+        let apply_nodes_cost = apply_nodes_start.elapsed();
 
         inscritpion_store_filed_count += cnt as u32;
 
         println!(
-            "{} inscription applied ({} cursed, {} blessed). this batch: value size: {}, cost: {:?}",
+            "{} inscription applied ({} cursed, {} blessed). this batch: value size: {}, cost: {:?}(gen_nodes: {:?}, apply_nodes: {:?})",
             inscritpion_store_filed_count / 2, // both inscription and inscription_id as field
             cursed_inscription_count,
             blessed_inscription_count,
             humanize::human_readable_bytes(batch.updates_value_bytes),
-            loop_start_time.elapsed().unwrap()
+            loop_start_time.elapsed().unwrap(),
+            gen_nodes_cost,
+            apply_nodes_cost,
         );
 
         log::debug!(

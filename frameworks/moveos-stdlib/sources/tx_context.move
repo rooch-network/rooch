@@ -68,7 +68,7 @@ module moveos_std::tx_context {
     } 
 
     /// Generate a new unique address,
-    public(friend) fun fresh_address(): address {
+    public fun fresh_address(): address {
         let ctx = borrow_mut();
         let addr = derive_id(ctx.tx_hash, ctx.ids_created);
         ctx.ids_created = ctx.ids_created + 1;

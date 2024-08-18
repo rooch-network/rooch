@@ -6,8 +6,6 @@
 This module contains the error code for auth_validator module
 The auth_validator implementation should contain the following functions
 public fun validate(authenticator_payload: vector<u8>)
-fun pre_execute()
-fun post_execute()
 
 
 -  [Struct `AuthValidator`](#0x3_auth_validator_AuthValidator)

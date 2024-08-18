@@ -1,17 +1,21 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::sync::Arc;
 use std::time::SystemTime;
 
 use crate::messages::{
     GetSequencerOrderMessage, GetTransactionByHashMessage, GetTransactionsByHashMessage,
     GetTxHashsMessage, TransactionSequenceMessage,
 };
+use crate::metrics::SequencerMetrics;
 use accumulator::{Accumulator, MerkleAccumulator};
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
+use function_name::named;
 use moveos_types::h256::{self, H256};
+use prometheus::Registry;
 use rooch_store::meta_store::MetaStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
@@ -27,6 +31,7 @@ pub struct SequencerActor {
     sequencer_key: RoochKeyPair,
     rooch_store: RoochStore,
     service_status: ServiceStatus,
+    metrics: Arc<SequencerMetrics>,
 }
 
 impl SequencerActor {
@@ -34,6 +39,7 @@ impl SequencerActor {
         sequencer_key: RoochKeyPair,
         rooch_store: RoochStore,
         service_status: ServiceStatus,
+        registry: &Registry,
     ) -> Result<Self> {
         // The sequencer info would be inited when genesis, so the sequencer info should not be None
         let last_sequencer_info = rooch_store
@@ -60,6 +66,7 @@ impl SequencerActor {
             sequencer_key,
             rooch_store,
             service_status,
+            metrics: Arc::new(SequencerMetrics::new(registry)),
         })
     }
 
@@ -67,7 +74,15 @@ impl SequencerActor {
         self.last_sequencer_info.last_order
     }
 
+    #[named]
     pub fn sequence(&mut self, mut tx_data: LedgerTxData) -> Result<LedgerTransaction> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .sequencer_sequence_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
+
         match self.service_status {
             ServiceStatus::ReadOnlyMode => {
                 return Err(anyhow::anyhow!("The service is in read-only mode"));
@@ -106,24 +121,25 @@ impl SequencerActor {
             .to_vec();
 
         // Calc transaction accumulator
-        let tx_accumulator_root = self.tx_accumulator.append(vec![hash].as_slice())?;
+        let _tx_accumulator_root = self.tx_accumulator.append(vec![hash].as_slice())?;
         self.tx_accumulator.flush()?;
 
+        let tx_accumulator_info = self.tx_accumulator.get_info();
         let tx = LedgerTransaction::build_ledger_transaction(
             tx_data,
             tx_timestamp,
             tx_order,
             tx_order_signature,
-            tx_accumulator_root,
+            tx_accumulator_info.clone(),
         );
 
-        let sequencer_info =
-            SequencerInfo::new(tx.sequence_info.tx_order, self.tx_accumulator.get_info());
+        let sequencer_info = SequencerInfo::new(tx.sequence_info.tx_order, tx_accumulator_info);
         self.rooch_store
             .save_sequencer_info(sequencer_info.clone())?;
         self.rooch_store.save_transaction(tx.clone())?;
         info!("sequencer tx: {} order: {:?}", hash, tx_order);
         self.last_sequencer_info = sequencer_info;
+
         Ok(tx)
     }
 }

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, Result};
+use metrics::RegistryService;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_config::DataDirPath;
@@ -26,6 +27,7 @@ use std::env;
 use std::path::Path;
 use std::sync::Arc;
 use tempfile::TempDir;
+use tokio::runtime::Runtime;
 
 pub fn get_data_dir() -> DataDirPath {
     match env::var("ROOCH_TEST_DATA_DIR") {
@@ -48,9 +50,19 @@ pub struct RustBindingTest {
     pub reader_executor: ReaderExecutorActor,
     root: ObjectMeta,
     rooch_db: RoochDB,
+    pub registry_service: RegistryService,
 }
 
 impl RustBindingTest {
+    // RustBindingTest new must be in a tokio runtime due to raw store dependency on tokio
+    // There are two ways to ensure this:
+    // 1. The upper layer calls are in the tokio runtime
+    // 2. Create an independent tokio runtime when self new
+    pub fn new_in_tokio() -> Result<Self> {
+        let rt = Runtime::new().unwrap();
+        rt.block_on(async { Self::new() })
+    }
+
     pub fn new() -> Result<Self> {
         let opt = RoochOpt::new_with_temp_store()?;
         let store_config = opt.store_config();
@@ -71,12 +83,15 @@ impl RustBindingTest {
             root.clone(),
             rooch_db.moveos_store.clone(),
             rooch_db.rooch_store.clone(),
+            &registry_service.default_registry(),
+            None,
         )?;
 
         let reader_executor = ReaderExecutorActor::new(
             root.clone(),
             rooch_db.moveos_store.clone(),
             rooch_db.rooch_store.clone(),
+            None,
         )?;
         Ok(Self {
             opt,
@@ -87,6 +102,7 @@ impl RustBindingTest {
             executor,
             reader_executor,
             rooch_db,
+            registry_service,
         })
     }
 

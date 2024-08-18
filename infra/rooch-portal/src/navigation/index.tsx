@@ -17,7 +17,8 @@ import { AssetsLayout } from '@/pages/assets/assets-layout.tsx'
 import { MintLayout } from '@/pages/mint/layout.tsx'
 import { TradeLayout } from '@/pages/trade/trade-layout.tsx'
 import { LeapLayout } from '@/pages/leap/leap-layout.tsx'
-import { MintDetailLayout } from '@/pages/mint/detail/layout.tsx'
+import { SelfStakingLayout } from '@/pages/mint/detail/self-staking-layout.tsx'
+import { FreeMintLayout } from '@/pages/mint/detail/free-mint-layout.tsx'
 import { TransactionsLayout } from '@/pages/transactions/layout.tsx'
 import { TransactionDetailLayout } from '@/pages/transactions/detail/layout'
 import { AppsLayout } from '@/pages/apps/apps-layout.tsx'
@@ -37,7 +38,8 @@ export type NavItemsType = NavLink[]
 export const allRouter = [
   { path: '/', element: <AssetsLayout /> },
   { path: '/mint', element: <MintLayout /> },
-  { path: '/mint/detail/:address', element: <MintDetailLayout /> },
+  { path: '/mint/self/staking/:address', element: <SelfStakingLayout /> },
+  { path: '/mint/free/nft/:address', element: <FreeMintLayout /> },
   { path: '/trade', element: <TradeLayout /> },
   { path: '/leap', element: <LeapLayout /> },
   { path: '/apps', element: <AppsLayout /> },

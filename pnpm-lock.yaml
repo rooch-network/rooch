@@ -214,11 +214,11 @@ importers:
         specifier: ^1.0.7
         version: 1.0.7(@types/react-dom@18.3.0)(@types/react@18.3.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@roochnetwork/rooch-sdk':
-        specifier: 0.2.1
-        version: 0.2.1
+        specifier: 0.2.3
+        version: 0.2.3
       '@roochnetwork/rooch-sdk-kit':
-        specifier: 0.2.1
-        version: 0.2.1(@tanstack/react-query@5.45.1(react@18.2.0))(@types/react@18.3.3)(immer@9.0.21)(react@18.2.0)
+        specifier: 0.2.3
+        version: 0.2.3(@tanstack/react-query@5.45.1(react@18.2.0))(@types/react@18.3.3)(immer@9.0.21)(react@18.2.0)
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.45.1(react@18.2.0)
@@ -287,8 +287,8 @@ importers:
         specifier: ^8.4.1
         version: 8.4.1
       '@types/node':
-        specifier: ^20.11.16
-        version: 20.14.2
+        specifier: ^20.14.10
+        version: 20.14.14
       '@types/react':
         specifier: ^18.2.43
         version: 18.3.3
@@ -306,7 +306,7 @@ importers:
         version: 6.21.0(eslint@8.57.0)(typescript@5.4.5)
       '@vitejs/plugin-react-swc':
         specifier: ^3.5.0
-        version: 3.7.0(@swc/helpers@0.5.2)(vite@5.3.1(@types/node@20.14.2)(terser@5.31.1))
+        version: 3.7.0(@swc/helpers@0.5.2)(vite@5.3.1(@types/node@20.14.14)(terser@5.31.1))
       autoprefixer:
         specifier: ^10.4.17
         version: 10.4.19(postcss@8.4.38)
@@ -330,10 +330,10 @@ importers:
         version: 5.4.5
       vite:
         specifier: ^5.0.8
-        version: 5.3.1(@types/node@20.14.2)(terser@5.31.1)
+        version: 5.3.1(@types/node@20.14.14)(terser@5.31.1)
       vite-plugin-node-polyfills:
         specifier: ^0.22.0
-        version: 0.22.0(rollup@4.19.0)(vite@5.3.1(@types/node@20.14.2)(terser@5.31.1))
+        version: 0.22.0(rollup@4.19.0)(vite@5.3.1(@types/node@20.14.14)(terser@5.31.1))
 
   sdk/typescript/bitseed-sdk:
     dependencies:
@@ -469,20 +469,20 @@ importers:
         version: 3.3.0(vite@5.0.2(@types/node@20.14.2)(terser@5.31.1))
       vitest:
         specifier: ^1.6.0
-        version: 1.6.0(@types/node@20.14.2)(happy-dom@14.12.0)(jsdom@23.2.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))(terser@5.31.1)
+        version: 1.6.0(@types/node@20.14.2)(happy-dom@14.12.0)(jsdom@23.2.0(bufferutil@4.0.8))(terser@5.31.1)
 
   sdk/typescript/build-scripts:
     dependencies:
       '@types/node':
-        specifier: ^20.4.2
-        version: 20.14.2
+        specifier: ^20.14.10
+        version: 20.14.14
     devDependencies:
       '@types/postcss-prefix-selector':
         specifier: ^1.16.1
         version: 1.16.3
       '@vanilla-extract/esbuild-plugin':
         specifier: ^2.3.0
-        version: 2.3.7(@types/node@20.14.2)(babel-plugin-macros@3.1.0)(esbuild@0.17.19)(terser@5.31.1)
+        version: 2.3.7(@types/node@20.14.14)(babel-plugin-macros@3.1.0)(esbuild@0.17.19)(terser@5.31.1)
       autoprefixer:
         specifier: ^10.4.14
         version: 10.4.19(postcss@8.4.38)
@@ -512,8 +512,8 @@ importers:
         version: 5.4.5
     devDependencies:
       '@types/node':
-        specifier: ^20.4.2
-        version: 20.14.2
+        specifier: ^20.14.10
+        version: 20.14.14
 
   sdk/typescript/rooch-sdk:
     dependencies:
@@ -541,9 +541,9 @@ importers:
       bech32:
         specifier: ^2.0.0
         version: 2.0.0
-      buffer:
-        specifier: 6.0.0
-        version: 6.0.0
+      bs58check:
+        specifier: 2.1.2
+        version: 2.1.2
       tweetnacl:
         specifier: ^1.0.3
         version: 1.0.3
@@ -557,12 +557,21 @@ importers:
       '@roochnetwork/build-scripts':
         specifier: workspace:*
         version: link:../build-scripts
+      '@roochnetwork/test-suite':
+        specifier: workspace:*
+        version: link:../test-suite
+      '@types/bs58check':
+        specifier: 2.1.2
+        version: 2.1.2
       '@types/node':
-        specifier: ^20.4.2
-        version: 20.14.2
+        specifier: ^20.14.10
+        version: 20.14.14
       '@types/tmp':
         specifier: ^0.2.1
         version: 0.2.6
+      testcontainers:
+        specifier: 10.11.0
+        version: 10.11.0
       tmp:
         specifier: ^0.2.1
         version: 0.2.3
@@ -574,10 +583,10 @@ importers:
         version: 5.4.5
       vite:
         specifier: ^4.4.4
-        version: 4.5.3(@types/node@20.14.2)(terser@5.31.1)
+        version: 4.5.3(@types/node@20.14.14)(terser@5.31.1)
       vitest:
         specifier: ^1.6.0
-        version: 1.6.0(@types/node@20.14.2)(happy-dom@14.12.0)(jsdom@23.2.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))(terser@5.31.1)
+        version: 1.6.0(@types/node@20.14.14)(happy-dom@14.12.0)(jsdom@23.2.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))(terser@5.31.1)
       wait-on:
         specifier: ^7.0.1
         version: 7.2.0
@@ -632,10 +641,10 @@ importers:
         version: 5.14.9
       '@vanilla-extract/esbuild-plugin':
         specifier: ^2.3.0
-        version: 2.3.7(@types/node@20.14.2)(babel-plugin-macros@3.1.0)(esbuild@0.23.0)(terser@5.31.1)
+        version: 2.3.7(@types/node@20.14.14)(babel-plugin-macros@3.1.0)(esbuild@0.23.0)(terser@5.31.1)
       '@vanilla-extract/vite-plugin':
         specifier: ^3.9.0
-        version: 3.9.5(@types/node@20.14.2)(babel-plugin-macros@3.1.0)(terser@5.31.1)(vite@4.5.3(@types/node@20.14.2)(terser@5.31.1))
+        version: 3.9.5(@types/node@20.14.14)(babel-plugin-macros@3.1.0)(terser@5.31.1)(vite@4.5.3(@types/node@20.14.14)(terser@5.31.1))
       happy-dom:
         specifier: ^14.12.0
         version: 14.12.0
@@ -656,10 +665,10 @@ importers:
         version: 5.4.5
       vite:
         specifier: ^4.4.4
-        version: 4.5.3(@types/node@20.14.2)(terser@5.31.1)
+        version: 4.5.3(@types/node@20.14.14)(terser@5.31.1)
       vitest:
         specifier: ^1.6.0
-        version: 1.6.0(@types/node@20.14.2)(happy-dom@14.12.0)(jsdom@23.2.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))(terser@5.31.1)
+        version: 1.6.0(@types/node@20.14.14)(happy-dom@14.12.0)(jsdom@23.2.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))(terser@5.31.1)
 
   sdk/typescript/templates/react-counter:
     dependencies:
@@ -702,7 +711,7 @@ importers:
         version: 6.21.0(eslint@8.57.0)(typescript@5.4.5)
       '@vitejs/plugin-react-swc':
         specifier: ^3.3.2
-        version: 3.7.0(@swc/helpers@0.5.2)(vite@4.5.3(@types/node@20.14.2)(terser@5.31.1))
+        version: 3.7.0(@swc/helpers@0.5.2)(vite@4.5.3(@types/node@20.14.14)(terser@5.31.1))
       eslint:
         specifier: ^8.45.0
         version: 8.57.0
@@ -720,7 +729,34 @@ importers:
         version: 5.4.5
       vite:
         specifier: ^4.4.4
-        version: 4.5.3(@types/node@20.14.2)(terser@5.31.1)
+        version: 4.5.3(@types/node@20.14.14)(terser@5.31.1)
+
+  sdk/typescript/test-suite:
+    devDependencies:
+      '@roochnetwork/build-scripts':
+        specifier: workspace:*
+        version: link:../build-scripts
+      '@types/node':
+        specifier: ^20.14.10
+        version: 20.14.14
+      '@types/tmp':
+        specifier: ^0.2.1
+        version: 0.2.6
+      testcontainers:
+        specifier: 10.11.0
+        version: 10.11.0
+      tmp:
+        specifier: ^0.2.1
+        version: 0.2.3
+      typescript:
+        specifier: ^5.3.3
+        version: 5.4.5
+      vite:
+        specifier: ^4.4.4
+        version: 4.5.3(@types/node@20.14.14)(terser@5.31.1)
+      vitest:
+        specifier: ^1.6.0
+        version: 1.6.0(@types/node@20.14.14)(happy-dom@14.12.0)(jsdom@23.2.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))(terser@5.31.1)
 
 packages:
 
@@ -3772,15 +3808,15 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@roochnetwork/rooch-sdk-kit@0.2.1':
-    resolution: {integrity: sha512-V2gc0kjGMBC8tc2a2Ogzz3MhCJvoD3QbJeXc8SYrWXMH9ZG4+1xo+oP8u29ju0P7fGnIxmvTKYvjH44sN3kaKw==}
+  '@roochnetwork/rooch-sdk-kit@0.2.3':
+    resolution: {integrity: sha512-8fQpxKc1qMkNL+7QAAxDhcwpc++5kESYNnIU/+WpBpou8L6RahVjnTOQaDQL0Outgf44On14/cDzXP8Nh06bcg==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       '@tanstack/react-query': ^5.0.0
       react: '*'
 
-  '@roochnetwork/rooch-sdk@0.2.1':
-    resolution: {integrity: sha512-0GYCHx7wXYSaQqeeMPfod/X+GIbcHvc7PTv7M57KcfbiSmD63VyWIaZprNDCU68afL03cL13RbIdq7RW8OHByg==}
+  '@roochnetwork/rooch-sdk@0.2.3':
+    resolution: {integrity: sha512-9OrkxjtWBg+bvvoMdnqiNFZk8nBHRMbZtEM/cSpCJgTC4UYbfd0LXk6WLGtEagU/FAaBP3p5G6CdBdg/4DdlGA==}
     engines: {node: '>=18.0.0'}
 
   '@rushstack/eslint-patch@1.10.3':
@@ -4003,6 +4039,9 @@ packages:
   '@types/babel__traverse@7.20.6':
     resolution: {integrity: sha512-r1bzfrm0tomOI8g1SzvCaQHo6Lcv6zu0EA+W2kHrt8dyrHQxGzBBL4kdkzIS+jBMV+EYcMAEAqXqYaLJq5rOZg==}
 
+  '@types/bs58check@2.1.2':
+    resolution: {integrity: sha512-xpXaQlOIY1KoXlA/ytHGHpEIU87PJt+g9SH7nC6HdCgaBwT2IEZIwBMHbjuX6BpnfbiUMlmwqurdLDwXpcdmSA==}
+
   '@types/d3-scale-chromatic@3.0.3':
     resolution: {integrity: sha512-laXM4+1o5ImZv3RpFAsTRn3TEkzqkytiOY0Dz0sq5cnd1dtNlk6sHLon4OvqaiJb28T0S/TdsBI3Sjsy+keJrw==}
 
@@ -4089,6 +4128,9 @@ packages:
 
   '@types/node@18.15.13':
     resolution: {integrity: sha512-N+0kuo9KgrUQ1Sn/ifDXsvg0TTleP7rIy4zOBGECxAljqvqfqpTfzx0Q1NUedOixRMBfe2Whhb056a42cWs26Q==}
+
+  '@types/node@20.14.14':
+    resolution: {integrity: sha512-d64f00982fS9YoOgJkAMolK7MN8Iq3TDdVjchbYHdEmjth/DHowx82GnoA+tVUAN+7vxfYUgAzi+JXbKNd2SDQ==}
 
   '@types/node@20.14.2':
     resolution: {integrity: sha512-xyu6WAMVwv6AKFLB+e/7ySZVr/0zLCzOa7rSpq6jNwpqOrUbcACDWC+53d4n2QHOnDou0fbIsg8wZu/sxrnI4Q==}
@@ -4837,9 +4879,6 @@ packages:
 
   buffer@5.7.1:
     resolution: {integrity: sha512-EHcyIPBQ4BSGlvjB16k5KgAJ27CIsHY/2JBmCRReo48y9rQ3MaUzWX3KVlBa4U7MyX02HdVj0K7C3WaB3ju7FQ==}
-
-  buffer@6.0.0:
-    resolution: {integrity: sha512-Sxdxq98A+Y9kRjO/3+mc2IAxIyTAKqzBiYKpeo5EluWnw9535rI4fN8DeMGsiQqpqqaWtFtTdxQgHnku6IEjCA==}
 
   buffer@6.0.3:
     resolution: {integrity: sha512-FTiCpNxtwiZZHEZbcbTIcZjERVICn9yq/pDFkTl95/AxzD1naBctN7YO68riM/gLSDY7sdrMby8hofADYuuqOA==}
@@ -12055,7 +12094,7 @@ snapshots:
     dependencies:
       '@jest/fake-timers': 29.7.0
       '@jest/types': 29.6.3
-      '@types/node': 20.14.2
+      '@types/node': 20.14.14
       jest-mock: 29.7.0
 
   '@jest/expect-utils@29.7.0':
@@ -12073,7 +12112,7 @@ snapshots:
     dependencies:
       '@jest/types': 29.6.3
       '@sinonjs/fake-timers': 10.3.0
-      '@types/node': 20.14.2
+      '@types/node': 20.14.14
       jest-message-util: 29.7.0
       jest-mock: 29.7.0
       jest-util: 29.7.0
@@ -12164,7 +12203,7 @@ snapshots:
     dependencies:
       '@types/istanbul-lib-coverage': 2.0.6
       '@types/istanbul-reports': 3.0.4
-      '@types/node': 20.14.2
+      '@types/node': 20.14.14
       '@types/yargs': 15.0.19
       chalk: 4.1.2
 
@@ -12173,7 +12212,7 @@ snapshots:
       '@jest/schemas': 29.6.3
       '@types/istanbul-lib-coverage': 2.0.6
       '@types/istanbul-reports': 3.0.4
-      '@types/node': 20.14.2
+      '@types/node': 20.14.14
       '@types/yargs': 17.0.32
       chalk: 4.1.2
 
@@ -13754,9 +13793,9 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.19.0':
     optional: true
 
-  '@roochnetwork/rooch-sdk-kit@0.2.1(@tanstack/react-query@5.45.1(react@18.2.0))(@types/react@18.3.3)(immer@9.0.21)(react@18.2.0)':
+  '@roochnetwork/rooch-sdk-kit@0.2.3(@tanstack/react-query@5.45.1(react@18.2.0))(@types/react@18.3.3)(immer@9.0.21)(react@18.2.0)':
     dependencies:
-      '@roochnetwork/rooch-sdk': 0.2.1
+      '@roochnetwork/rooch-sdk': 0.2.3
       '@tanstack/react-query': 5.45.1(react@18.2.0)
       '@vanilla-extract/css': 1.15.3(babel-plugin-macros@3.1.0)
       '@vanilla-extract/dynamic': 2.1.1
@@ -13769,7 +13808,7 @@ snapshots:
       - babel-plugin-macros
       - immer
 
-  '@roochnetwork/rooch-sdk@0.2.1':
+  '@roochnetwork/rooch-sdk@0.2.3':
     dependencies:
       '@mysten/bcs': 1.0.2
       '@noble/curves': 1.4.0
@@ -13779,7 +13818,7 @@ snapshots:
       '@scure/bip39': 1.3.0
       '@suchipi/femver': 1.0.0
       bech32: 2.0.0
-      buffer: 6.0.0
+      bs58check: 2.1.2
       tweetnacl: 1.0.3
       valibot: 0.25.0
 
@@ -14023,6 +14062,10 @@ snapshots:
     dependencies:
       '@babel/types': 7.24.7
 
+  '@types/bs58check@2.1.2':
+    dependencies:
+      '@types/node': 20.14.14
+
   '@types/d3-scale-chromatic@3.0.3': {}
 
   '@types/d3-scale@4.0.8':
@@ -14037,13 +14080,13 @@ snapshots:
 
   '@types/docker-modem@3.0.6':
     dependencies:
-      '@types/node': 20.14.2
+      '@types/node': 20.14.14
       '@types/ssh2': 1.15.0
 
   '@types/dockerode@3.3.31':
     dependencies:
       '@types/docker-modem': 3.0.6
-      '@types/node': 20.14.2
+      '@types/node': 20.14.14
       '@types/ssh2': 1.15.0
 
   '@types/estree-jsx@1.0.5':
@@ -14105,13 +14148,17 @@ snapshots:
 
   '@types/node-forge@1.3.11':
     dependencies:
-      '@types/node': 20.14.2
+      '@types/node': 20.14.14
 
   '@types/node@12.20.55': {}
 
   '@types/node@18.15.11': {}
 
   '@types/node@18.15.13': {}
+
+  '@types/node@20.14.14':
+    dependencies:
+      undici-types: 5.26.5
 
   '@types/node@20.14.2':
     dependencies:
@@ -14156,11 +14203,11 @@ snapshots:
 
   '@types/ssh2-streams@0.1.12':
     dependencies:
-      '@types/node': 20.14.2
+      '@types/node': 20.14.14
 
   '@types/ssh2@0.5.52':
     dependencies:
-      '@types/node': 20.14.2
+      '@types/node': 20.14.14
       '@types/ssh2-streams': 0.1.12
 
   '@types/ssh2@1.15.0':
@@ -14435,9 +14482,9 @@ snapshots:
     dependencies:
       '@vanilla-extract/private': 1.0.5
 
-  '@vanilla-extract/esbuild-plugin@2.3.7(@types/node@20.14.2)(babel-plugin-macros@3.1.0)(esbuild@0.17.19)(terser@5.31.1)':
+  '@vanilla-extract/esbuild-plugin@2.3.7(@types/node@20.14.14)(babel-plugin-macros@3.1.0)(esbuild@0.17.19)(terser@5.31.1)':
     dependencies:
-      '@vanilla-extract/integration': 7.1.6(@types/node@20.14.2)(babel-plugin-macros@3.1.0)(terser@5.31.1)
+      '@vanilla-extract/integration': 7.1.6(@types/node@20.14.14)(babel-plugin-macros@3.1.0)(terser@5.31.1)
     optionalDependencies:
       esbuild: 0.17.19
     transitivePeerDependencies:
@@ -14451,9 +14498,9 @@ snapshots:
       - supports-color
       - terser
 
-  '@vanilla-extract/esbuild-plugin@2.3.7(@types/node@20.14.2)(babel-plugin-macros@3.1.0)(esbuild@0.23.0)(terser@5.31.1)':
+  '@vanilla-extract/esbuild-plugin@2.3.7(@types/node@20.14.14)(babel-plugin-macros@3.1.0)(esbuild@0.23.0)(terser@5.31.1)':
     dependencies:
-      '@vanilla-extract/integration': 7.1.6(@types/node@20.14.2)(babel-plugin-macros@3.1.0)(terser@5.31.1)
+      '@vanilla-extract/integration': 7.1.6(@types/node@20.14.14)(babel-plugin-macros@3.1.0)(terser@5.31.1)
     optionalDependencies:
       esbuild: 0.23.0
     transitivePeerDependencies:
@@ -14467,7 +14514,7 @@ snapshots:
       - supports-color
       - terser
 
-  '@vanilla-extract/integration@6.5.0(@types/node@20.14.2)(babel-plugin-macros@3.1.0)(terser@5.31.1)':
+  '@vanilla-extract/integration@6.5.0(@types/node@20.14.14)(babel-plugin-macros@3.1.0)(terser@5.31.1)':
     dependencies:
       '@babel/core': 7.24.7
       '@babel/plugin-syntax-typescript': 7.24.7(@babel/core@7.24.7)
@@ -14480,8 +14527,8 @@ snapshots:
       lodash: 4.17.21
       mlly: 1.7.1
       outdent: 0.8.0
-      vite: 5.3.1(@types/node@20.14.2)(terser@5.31.1)
-      vite-node: 1.6.0(@types/node@20.14.2)(terser@5.31.1)
+      vite: 5.3.1(@types/node@20.14.14)(terser@5.31.1)
+      vite-node: 1.6.0(@types/node@20.14.14)(terser@5.31.1)
     transitivePeerDependencies:
       - '@types/node'
       - babel-plugin-macros
@@ -14493,7 +14540,7 @@ snapshots:
       - supports-color
       - terser
 
-  '@vanilla-extract/integration@7.1.6(@types/node@20.14.2)(babel-plugin-macros@3.1.0)(terser@5.31.1)':
+  '@vanilla-extract/integration@7.1.6(@types/node@20.14.14)(babel-plugin-macros@3.1.0)(terser@5.31.1)':
     dependencies:
       '@babel/core': 7.24.7
       '@babel/plugin-syntax-typescript': 7.24.7(@babel/core@7.24.7)
@@ -14505,8 +14552,8 @@ snapshots:
       find-up: 5.0.0
       javascript-stringify: 2.1.0
       mlly: 1.7.1
-      vite: 5.3.1(@types/node@20.14.2)(terser@5.31.1)
-      vite-node: 1.6.0(@types/node@20.14.2)(terser@5.31.1)
+      vite: 5.3.1(@types/node@20.14.14)(terser@5.31.1)
+      vite-node: 1.6.0(@types/node@20.14.14)(terser@5.31.1)
     transitivePeerDependencies:
       - '@types/node'
       - babel-plugin-macros
@@ -14524,13 +14571,13 @@ snapshots:
     dependencies:
       '@vanilla-extract/css': 1.15.3(babel-plugin-macros@3.1.0)
 
-  '@vanilla-extract/vite-plugin@3.9.5(@types/node@20.14.2)(babel-plugin-macros@3.1.0)(terser@5.31.1)(vite@4.5.3(@types/node@20.14.2)(terser@5.31.1))':
+  '@vanilla-extract/vite-plugin@3.9.5(@types/node@20.14.14)(babel-plugin-macros@3.1.0)(terser@5.31.1)(vite@4.5.3(@types/node@20.14.14)(terser@5.31.1))':
     dependencies:
-      '@vanilla-extract/integration': 6.5.0(@types/node@20.14.2)(babel-plugin-macros@3.1.0)(terser@5.31.1)
+      '@vanilla-extract/integration': 6.5.0(@types/node@20.14.14)(babel-plugin-macros@3.1.0)(terser@5.31.1)
       outdent: 0.8.0
       postcss: 8.4.38
       postcss-load-config: 4.0.2(postcss@8.4.38)
-      vite: 4.5.3(@types/node@20.14.2)(terser@5.31.1)
+      vite: 4.5.3(@types/node@20.14.14)(terser@5.31.1)
     transitivePeerDependencies:
       - '@types/node'
       - babel-plugin-macros
@@ -14543,10 +14590,10 @@ snapshots:
       - terser
       - ts-node
 
-  '@vitejs/plugin-react-swc@3.7.0(@swc/helpers@0.5.2)(vite@4.5.3(@types/node@20.14.2)(terser@5.31.1))':
+  '@vitejs/plugin-react-swc@3.7.0(@swc/helpers@0.5.2)(vite@4.5.3(@types/node@20.14.14)(terser@5.31.1))':
     dependencies:
       '@swc/core': 1.6.1(@swc/helpers@0.5.2)
-      vite: 4.5.3(@types/node@20.14.2)(terser@5.31.1)
+      vite: 4.5.3(@types/node@20.14.14)(terser@5.31.1)
     transitivePeerDependencies:
       - '@swc/helpers'
 
@@ -14557,10 +14604,10 @@ snapshots:
     transitivePeerDependencies:
       - '@swc/helpers'
 
-  '@vitejs/plugin-react-swc@3.7.0(@swc/helpers@0.5.2)(vite@5.3.1(@types/node@20.14.2)(terser@5.31.1))':
+  '@vitejs/plugin-react-swc@3.7.0(@swc/helpers@0.5.2)(vite@5.3.1(@types/node@20.14.14)(terser@5.31.1))':
     dependencies:
       '@swc/core': 1.6.1(@swc/helpers@0.5.2)
-      vite: 5.3.1(@types/node@20.14.2)(terser@5.31.1)
+      vite: 5.3.1(@types/node@20.14.14)(terser@5.31.1)
     transitivePeerDependencies:
       - '@swc/helpers'
 
@@ -15221,11 +15268,6 @@ snapshots:
       base64-js: 1.5.1
       ieee754: 1.2.1
 
-  buffer@6.0.0:
-    dependencies:
-      base64-js: 1.5.1
-      ieee754: 1.2.1
-
   buffer@6.0.3:
     dependencies:
       base64-js: 1.5.1
@@ -15377,7 +15419,7 @@ snapshots:
 
   chrome-launcher@0.15.2:
     dependencies:
-      '@types/node': 20.14.2
+      '@types/node': 20.14.14
       escape-string-regexp: 4.0.0
       is-wsl: 2.2.0
       lighthouse-logger: 1.4.2
@@ -16866,7 +16908,7 @@ snapshots:
 
   eval@0.1.8:
     dependencies:
-      '@types/node': 20.14.2
+      '@types/node': 20.14.14
       require-like: 0.1.2
 
   event-target-shim@5.0.1: {}
@@ -17974,7 +18016,7 @@ snapshots:
       '@jest/environment': 29.7.0
       '@jest/fake-timers': 29.7.0
       '@jest/types': 29.6.3
-      '@types/node': 20.14.2
+      '@types/node': 20.14.14
       jest-mock: 29.7.0
       jest-util: 29.7.0
 
@@ -18023,7 +18065,7 @@ snapshots:
   jest-mock@29.7.0:
     dependencies:
       '@jest/types': 29.6.3
-      '@types/node': 20.14.2
+      '@types/node': 20.14.14
       jest-util: 29.7.0
 
   jest-pnp-resolver@1.2.3(jest-resolve@29.7.0):
@@ -18132,7 +18174,7 @@ snapshots:
   jest-util@29.7.0:
     dependencies:
       '@jest/types': 29.6.3
-      '@types/node': 20.14.2
+      '@types/node': 20.14.14
       chalk: 4.1.2
       ci-info: 3.9.0
       graceful-fs: 4.2.11
@@ -18160,7 +18202,7 @@ snapshots:
 
   jest-worker@29.7.0:
     dependencies:
-      '@types/node': 20.14.2
+      '@types/node': 20.14.14
       jest-util: 29.7.0
       merge-stream: 2.0.0
       supports-color: 8.1.1
@@ -21665,6 +21707,23 @@ snapshots:
       unist-util-stringify-position: 4.0.0
       vfile-message: 4.0.2
 
+  vite-node@1.6.0(@types/node@20.14.14)(terser@5.31.1):
+    dependencies:
+      cac: 6.7.14
+      debug: 4.3.6
+      pathe: 1.1.2
+      picocolors: 1.0.1
+      vite: 5.3.1(@types/node@20.14.14)(terser@5.31.1)
+    transitivePeerDependencies:
+      - '@types/node'
+      - less
+      - lightningcss
+      - sass
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+
   vite-node@1.6.0(@types/node@20.14.2)(terser@5.31.1):
     dependencies:
       cac: 6.7.14
@@ -21690,11 +21749,11 @@ snapshots:
     transitivePeerDependencies:
       - rollup
 
-  vite-plugin-node-polyfills@0.22.0(rollup@4.19.0)(vite@5.3.1(@types/node@20.14.2)(terser@5.31.1)):
+  vite-plugin-node-polyfills@0.22.0(rollup@4.19.0)(vite@5.3.1(@types/node@20.14.14)(terser@5.31.1)):
     dependencies:
       '@rollup/plugin-inject': 5.0.5(rollup@4.19.0)
       node-stdlib-browser: 1.2.0
-      vite: 5.3.1(@types/node@20.14.2)(terser@5.31.1)
+      vite: 5.3.1(@types/node@20.14.14)(terser@5.31.1)
     transitivePeerDependencies:
       - rollup
 
@@ -21702,13 +21761,13 @@ snapshots:
     dependencies:
       vite: 5.0.2(@types/node@20.14.2)(terser@5.31.1)
 
-  vite@4.5.3(@types/node@20.14.2)(terser@5.31.1):
+  vite@4.5.3(@types/node@20.14.14)(terser@5.31.1):
     dependencies:
       esbuild: 0.18.20
       postcss: 8.4.38
       rollup: 3.29.4
     optionalDependencies:
-      '@types/node': 20.14.2
+      '@types/node': 20.14.14
       fsevents: 2.3.3
       terser: 5.31.1
 
@@ -21722,6 +21781,16 @@ snapshots:
       fsevents: 2.3.3
       terser: 5.31.1
 
+  vite@5.3.1(@types/node@20.14.14)(terser@5.31.1):
+    dependencies:
+      esbuild: 0.21.5
+      postcss: 8.4.38
+      rollup: 4.18.0
+    optionalDependencies:
+      '@types/node': 20.14.14
+      fsevents: 2.3.3
+      terser: 5.31.1
+
   vite@5.3.1(@types/node@20.14.2)(terser@5.31.1):
     dependencies:
       esbuild: 0.21.5
@@ -21732,7 +21801,42 @@ snapshots:
       fsevents: 2.3.3
       terser: 5.31.1
 
-  vitest@1.6.0(@types/node@20.14.2)(happy-dom@14.12.0)(jsdom@23.2.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))(terser@5.31.1):
+  vitest@1.6.0(@types/node@20.14.14)(happy-dom@14.12.0)(jsdom@23.2.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))(terser@5.31.1):
+    dependencies:
+      '@vitest/expect': 1.6.0
+      '@vitest/runner': 1.6.0
+      '@vitest/snapshot': 1.6.0
+      '@vitest/spy': 1.6.0
+      '@vitest/utils': 1.6.0
+      acorn-walk: 8.3.3
+      chai: 4.4.1
+      debug: 4.3.6
+      execa: 8.0.1
+      local-pkg: 0.5.0
+      magic-string: 0.30.10
+      pathe: 1.1.2
+      picocolors: 1.0.1
+      std-env: 3.7.0
+      strip-literal: 2.1.0
+      tinybench: 2.8.0
+      tinypool: 0.8.4
+      vite: 5.3.1(@types/node@20.14.14)(terser@5.31.1)
+      vite-node: 1.6.0(@types/node@20.14.14)(terser@5.31.1)
+      why-is-node-running: 2.2.2
+    optionalDependencies:
+      '@types/node': 20.14.14
+      happy-dom: 14.12.0
+      jsdom: 23.2.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)
+    transitivePeerDependencies:
+      - less
+      - lightningcss
+      - sass
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+
+  vitest@1.6.0(@types/node@20.14.2)(happy-dom@14.12.0)(jsdom@23.2.0(bufferutil@4.0.8))(terser@5.31.1):
     dependencies:
       '@vitest/expect': 1.6.0
       '@vitest/runner': 1.6.0

@@ -14,12 +14,14 @@ use coerce::actor::{system::ActorSystem, IntoActor};
 use jsonrpsee::server::middleware::rpc::RpcServiceBuilder;
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
+use moveos_eventbus::bus::EventBus;
 use raw_store::errors::RawStoreError;
 use rooch_config::server_config::ServerConfig;
 use rooch_config::{RoochOpt, ServerOpt};
 use rooch_da::actor::da::DAActor;
 use rooch_da::proxy::DAProxy;
 use rooch_db::RoochDB;
+use rooch_event::actor::EventActor;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
@@ -32,6 +34,8 @@ use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
 use rooch_proposer::proxy::ProposerProxy;
+use rooch_relayer::actor::bitcoin_client::BitcoinClientActor;
+use rooch_relayer::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use rooch_relayer::actor::messages::RelayTick;
 use rooch_relayer::actor::relayer::RelayerActor;
 use rooch_rpc_api::api::RoochRpcModule;
@@ -232,22 +236,50 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         root.size()
     );
 
-    let executor_actor =
-        ExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store.clone())?;
-    let reader_executor =
-        ReaderExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store.clone())?
-            .into_actor(Some("ReaderExecutor"), &actor_system)
-            .await?;
-    let executor = executor_actor
+    let event_bus = EventBus::new();
+    let event_actor = EventActor::new(event_bus.clone());
+    let event_actor_ref = event_actor
+        .into_actor(Some("EventActor"), &actor_system)
+        .await?;
+
+    let executor_actor = ExecutorActor::new(
+        root.clone(),
+        moveos_store.clone(),
+        rooch_store.clone(),
+        &prometheus_registry,
+        Some(event_actor_ref.clone()),
+    )?;
+
+    let executor_actor_ref = executor_actor
         .into_actor(Some("Executor"), &actor_system)
         .await?;
-    let executor_proxy = ExecutorProxy::new(executor.into(), reader_executor.into());
+
+    let reader_executor = ReaderExecutorActor::new(
+        root.clone(),
+        moveos_store.clone(),
+        rooch_store.clone(),
+        Some(event_actor_ref),
+    )?;
+
+    let read_executor_ref = reader_executor
+        .into_actor(Some("ReadExecutor"), &actor_system)
+        .await?;
+
+    let executor_proxy = ExecutorProxy::new(
+        executor_actor_ref.clone().into(),
+        read_executor_ref.clone().into(),
+    );
 
     // Init sequencer
     info!("RPC Server sequencer address: {:?}", sequencer_account);
-    let sequencer = SequencerActor::new(sequencer_keypair.copy(), rooch_store, service_status)?
-        .into_actor(Some("Sequencer"), &actor_system)
-        .await?;
+    let sequencer = SequencerActor::new(
+        sequencer_keypair.copy(),
+        rooch_store,
+        service_status,
+        &prometheus_registry,
+    )?
+    .into_actor(Some("Sequencer"), &actor_system)
+    .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
 
     // Init DA
@@ -265,7 +297,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let proposer_keypair = server_opt.proposer_keypair.unwrap();
     let proposer_account: RoochAddress = proposer_keypair.public().rooch_address()?;
     info!("RPC Server proposer address: {:?}", proposer_account);
-    let proposer = ProposerActor::new(proposer_keypair, da_proxy)
+    let proposer = ProposerActor::new(proposer_keypair, da_proxy, &prometheus_registry)
         .into_actor(Some("Proposer"), &actor_system)
         .await?;
     let proposer_proxy = ProposerProxy::new(proposer.clone().into());
@@ -294,27 +326,17 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         proposer_proxy.clone(),
         indexer_proxy.clone(),
         service_status,
+        &prometheus_registry,
     );
 
     // Only process sequenced tx on startup when service is active
     if service_status.is_active() {
         processor.process_sequenced_tx_on_startup().await?;
     }
-
     let processor_actor = processor
         .into_actor(Some("PipelineProcessor"), &actor_system)
         .await?;
     let processor_proxy = PipelineProcessorProxy::new(processor_actor.into());
-
-    let rpc_service = RpcService::new(
-        network.chain_id.id,
-        network.genesis_config.bitcoin_network,
-        executor_proxy.clone(),
-        sequencer_proxy,
-        indexer_proxy,
-        processor_proxy.clone(),
-    );
-    let aggregate_service = AggregateService::new(rpc_service.clone());
 
     let ethereum_relayer_config = opt.ethereum_relayer_config();
     let bitcoin_relayer_config = opt.bitcoin_relayer_config();
@@ -323,10 +345,10 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         && (ethereum_relayer_config.is_some() || bitcoin_relayer_config.is_some())
     {
         let relayer = RelayerActor::new(
-            executor_proxy,
+            executor_proxy.clone(),
             processor_proxy.clone(),
             ethereum_relayer_config,
-            bitcoin_relayer_config,
+            bitcoin_relayer_config.clone(),
         )
         .await?
         .into_actor(Some("Relayer"), &actor_system)
@@ -339,6 +361,28 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         );
         timers.push(relayer_timer);
     }
+
+    let bitcoin_client_proxy = if service_status.is_active() && bitcoin_relayer_config.is_some() {
+        let bitcoin_client = BitcoinClientActor::new(bitcoin_relayer_config.unwrap())?;
+        let bitcoin_client_actor_ref = bitcoin_client
+            .into_actor(Some("bitcoin_client_for_rpc_service"), &actor_system)
+            .await?;
+        let bitcoin_client_proxy = BitcoinClientProxy::new(bitcoin_client_actor_ref.into());
+        Some(bitcoin_client_proxy)
+    } else {
+        None
+    };
+
+    let rpc_service = RpcService::new(
+        network.chain_id.id,
+        network.genesis_config.bitcoin_network,
+        executor_proxy,
+        sequencer_proxy,
+        indexer_proxy,
+        processor_proxy,
+        bitcoin_client_proxy,
+    );
+    let aggregate_service = AggregateService::new(rpc_service.clone());
 
     let acl = match env::var("ACCESS_CONTROL_ALLOW_ORIGIN") {
         Ok(value) => {

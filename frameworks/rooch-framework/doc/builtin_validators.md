@@ -31,6 +31,34 @@
 
 
 
+<a name="0x3_builtin_validators_SESSION_VALIDATOR_ID"></a>
+
+
+
+<pre><code><b>const</b> <a href="builtin_validators.md#0x3_builtin_validators_SESSION_VALIDATOR_ID">SESSION_VALIDATOR_ID</a>: u64 = 0;
+</code></pre>
+
+
+
+<a name="0x3_builtin_validators_BITCOIN_MULTISIGN_VALIDATOR_ID"></a>
+
+Bitcoin multisign validator is defined in bitcoin_move framework.
+
+
+<pre><code><b>const</b> <a href="builtin_validators.md#0x3_builtin_validators_BITCOIN_MULTISIGN_VALIDATOR_ID">BITCOIN_MULTISIGN_VALIDATOR_ID</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x3_builtin_validators_BITCOIN_VALIDATOR_ID"></a>
+
+
+
+<pre><code><b>const</b> <a href="builtin_validators.md#0x3_builtin_validators_BITCOIN_VALIDATOR_ID">BITCOIN_VALIDATOR_ID</a>: u64 = 1;
+</code></pre>
+
+
+
 <a name="0x3_builtin_validators_genesis_init"></a>
 
 ## Function `genesis_init`

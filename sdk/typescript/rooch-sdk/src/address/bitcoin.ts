@@ -1,20 +1,20 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { bech32, bech32m, createBase58check } from '@scure/base'
+import { bech32, bech32m } from '@scure/base'
 
 import { bcs } from '../bcs/index.js'
 import { Bytes } from '../types/index.js'
-import { blake2b, bytes, sha256, validateWitness } from '../utils/index.js'
+import { blake2b, bytes, isHex, validateWitness } from '../utils/index.js'
 
 import { Address, ROOCH_ADDRESS_LENGTH } from './address.js'
 import { RoochAddress } from './rooch.js'
 import { MultiChainID } from './types.js'
 import { ThirdPartyAddress } from './thirdparty-address.js'
+import { Buffer } from 'buffer'
+import bs58check from 'bs58check'
 
-const base58check = createBase58check(sha256)
-
-enum BitcoinNetowk {
+export enum BitcoinNetowkType {
   Bitcoin,
   /// Bitcoin's testnet network.
   Testnet,
@@ -27,19 +27,98 @@ enum BitcoinNetowk {
 enum BitcoinAddressType {
   pkh = 0,
   sh = 1,
-  wpkh = 2,
-  wsh = 2,
-  tr = 2,
+  witness = 2,
+}
+
+const PUBKEY_ADDRESS_PREFIX_MAIN = 0 // 0x00
+const PUBKEY_ADDRESS_PREFIX_TEST = 111 // 0x6f
+const SCRIPT_ADDRESS_PREFIX_MAIN = 5 // 0x05
+const SCRIPT_ADDRESS_PREFIX_TEST = 196 // 0xc4
+
+export class BitcoinNetwork {
+  private readonly network: BitcoinNetowkType
+
+  constructor(network?: BitcoinNetowkType) {
+    this.network = network ?? BitcoinNetowkType.Bitcoin
+  }
+
+  static fromBech32Prefix(prefix: string) {
+    switch (prefix) {
+      case 'bc' || 'BC':
+        return new BitcoinNetwork(BitcoinNetowkType.Bitcoin)
+      case 'tb' || 'TB':
+        return new BitcoinNetwork(BitcoinNetowkType.Testnet)
+      case 'bcrt' || 'bcrt':
+        return new BitcoinNetwork(BitcoinNetowkType.Regtest)
+      default:
+        return undefined
+    }
+  }
+
+  bech32HRP(): string {
+    switch (this.network) {
+      case BitcoinNetowkType.Bitcoin:
+        return 'bc'
+      case BitcoinNetowkType.Testnet:
+        return 'tb'
+      case BitcoinNetowkType.Signet:
+        return 'tb'
+      case BitcoinNetowkType.Regtest:
+        return 'bcrt'
+    }
+  }
 }
 
 export class BitcoinAddress extends ThirdPartyAddress implements Address {
   private readonly bytes: Bytes
   private roochAddress: RoochAddress | undefined
 
-  constructor(input: string) {
+  constructor(input: string, network?: BitcoinNetowkType) {
     super(input)
-    let info = this.decode()
-    this.bytes = this.wrapAddress(info.type, info.bytes, info.version)
+
+    if (isHex(input)) {
+      this.bytes = bytes('hex', input.startsWith('0x') ? input.slice(2) : input)
+
+      let prefixed: Uint8Array
+      let version = this.bytes[1]
+
+      switch (this.bytes[0]) {
+        case BitcoinAddressType.pkh:
+          prefixed = new Uint8Array(22)
+          prefixed[0] = version
+          prefixed[1] = this.getPubkeyAddressPrefix(network)
+          prefixed.set(this.bytes.slice(2))
+          this.rawAddress = bs58check.encode(prefixed)
+          break
+        case BitcoinAddressType.sh:
+          prefixed = new Uint8Array(22)
+          prefixed[0] = version
+          prefixed[1] = this.getScriptAddressPrefix(network)
+          prefixed.set(this.bytes.slice(2))
+          this.rawAddress = bs58check.encode(prefixed)
+          break
+        case BitcoinAddressType.witness:
+          const hrp = new BitcoinNetwork(network).bech32HRP()
+          const words = bech32.toWords(Buffer.from(this.bytes.slice(2)))
+          words.unshift(version)
+          this.rawAddress = version === 0 ? bech32.encode(hrp, words) : bech32m.encode(hrp, words)
+      }
+    } else {
+      let info = this.decode()
+      this.bytes = this.wrapAddress(info.type, info.bytes, info.version)
+    }
+  }
+
+  private getPubkeyAddressPrefix(network: BitcoinNetowkType = BitcoinNetowkType.Bitcoin): number {
+    return network === BitcoinNetowkType.Bitcoin
+      ? PUBKEY_ADDRESS_PREFIX_MAIN
+      : PUBKEY_ADDRESS_PREFIX_TEST
+  }
+
+  private getScriptAddressPrefix(network: BitcoinNetowkType = BitcoinNetowkType.Bitcoin): number {
+    return network === BitcoinNetowkType.Bitcoin
+      ? SCRIPT_ADDRESS_PREFIX_MAIN
+      : SCRIPT_ADDRESS_PREFIX_TEST
   }
 
   toBytes(): Bytes {
@@ -69,16 +148,7 @@ export class BitcoinAddress extends ThirdPartyAddress implements Address {
       const sep = input.lastIndexOf('1')
       const bech32Prefix = sep === -1 ? input : input.substring(0, sep)
 
-      switch (bech32Prefix) {
-        case 'bc' || 'BC':
-          return BitcoinNetowk.Bitcoin
-        case 'tb' || 'TB':
-          return BitcoinNetowk.Testnet
-        case 'bcrt' || 'bcrt':
-          return BitcoinNetowk.Regtest
-        default:
-          return undefined
-      }
+      return BitcoinNetwork.fromBech32Prefix(bech32Prefix)
     })()
 
     if (bech32_network !== undefined) {
@@ -97,25 +167,25 @@ export class BitcoinAddress extends ThirdPartyAddress implements Address {
       if (version === 0 && data.length === 32)
         return {
           bytes: data,
-          type: BitcoinAddressType.wsh,
+          type: BitcoinAddressType.witness, //wsh
           version: version,
         }
       else if (version === 0 && data.length === 20)
         return {
           bytes: data,
-          type: BitcoinAddressType.wpkh,
+          type: BitcoinAddressType.witness, //wpkh
           version: version,
         }
       else if (version === 1 && data.length === 32)
         return {
           bytes: data,
-          type: BitcoinAddressType.tr,
+          type: BitcoinAddressType.witness, //tr
           version: version,
         }
       else throw new Error('Unknown witness program')
     }
 
-    const data = base58check.decode(input)
+    const data = bs58check.decode(input)
     if (data.length !== 21) throw new Error('Invalid base58 address')
     // Pay To Public Key Hash
     if (data[0] === 0x00) {

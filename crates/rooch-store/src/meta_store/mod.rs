@@ -40,10 +40,24 @@ impl MetaDBStore {
     }
 
     pub fn save_sequencer_info(&self, sequencer_info: SequencerInfo) -> Result<()> {
-        let pre_sequencer_info = self.get_sequencer_info()?;
-        if let Some(pre_sequencer_info) = pre_sequencer_info {
-            if sequencer_info.last_order != pre_sequencer_info.last_order + 1 {
-                return Err(anyhow::anyhow!("Sequencer order is not continuous"));
+        self.inner_save_sequencer_info(sequencer_info, true)
+    }
+
+    pub fn save_sequencer_info_ignore_check(&self, sequencer_info: SequencerInfo) -> Result<()> {
+        self.inner_save_sequencer_info(sequencer_info, false)
+    }
+
+    fn inner_save_sequencer_info(
+        &self,
+        sequencer_info: SequencerInfo,
+        need_check: bool,
+    ) -> Result<()> {
+        if need_check {
+            let pre_sequencer_info = self.get_sequencer_info()?;
+            if let Some(pre_sequencer_info) = pre_sequencer_info {
+                if sequencer_info.last_order != pre_sequencer_info.last_order + 1 {
+                    return Err(anyhow::anyhow!("Sequencer order is not continuous"));
+                }
             }
         }
         self.sequencer_info_store

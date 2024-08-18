@@ -14,33 +14,13 @@ rust-version = { workspace = true }
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
-bcs = { workspace = true }
-chrono = { workspace = true }
-clap = { workspace = true }
 coerce = { workspace = true }
-derive_builder = { workspace = true }
-fastcrypto = { workspace = true }
-futures = { workspace = true }
-jsonrpsee = { workspace = true }
 serde = { workspace = true }
-serde_yaml = { workspace = true }
-serde_json = { workspace = true }
-thiserror = { workspace = true }
 tokio = { features = ["full"], workspace = true }
-tonic = { workspace = true }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
-schemars = { workspace = true }
-serde_with = { workspace = true }
-parking_lot = { workspace = true }
-log = { workspace = true }
 prometheus = { workspace = true }
+function_name = { workspace = true }
 
-move-core-types = { workspace = true }
-move-resource-viewer = { workspace = true }
-
-moveos = { workspace = true }
-moveos-store = { workspace = true }
 moveos-types = { workspace = true }
 accumulator = { workspace = true }
 metrics = { workspace = true }

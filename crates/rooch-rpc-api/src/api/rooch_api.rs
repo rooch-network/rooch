@@ -4,14 +4,15 @@
 use crate::jsonrpc_types::account_view::BalanceInfoView;
 use crate::jsonrpc_types::address::UnitedAddressView;
 use crate::jsonrpc_types::event_view::{EventFilterView, IndexerEventIDView};
+use crate::jsonrpc_types::repair_view::{RepairIndexerParamsView, RepairIndexerTypeView};
 use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionWithInfoView};
 use crate::jsonrpc_types::{
-    AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
-    EventPageView, ExecuteTransactionResponseView, FieldKeyView, FunctionCallView, H256View,
-    IndexerEventPageView, IndexerObjectStatePageView, IndexerStateIDView, ModuleABIView,
-    ObjectIDVecView, ObjectIDView, ObjectStateFilterView, ObjectStateView, QueryOptions,
-    RoochAddressView, StateOptions, StatePageView, StrView, StructTagView,
-    TransactionWithInfoPageView, TxOptions,
+    AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView,
+    DryRunTransactionResponseView, EventOptions, EventPageView, ExecuteTransactionResponseView,
+    FieldKeyView, FunctionCallView, H256View, IndexerEventPageView, IndexerObjectStatePageView,
+    IndexerStateIDView, ModuleABIView, ObjectIDVecView, ObjectIDView, ObjectStateFilterView,
+    ObjectStateView, QueryOptions, RoochAddressView, StateOptions, StatePageView, StrView,
+    StructTagView, TransactionWithInfoPageView, TxOptions,
 };
 use crate::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -38,6 +39,9 @@ pub trait RoochAPI {
         tx_bcs_hex: BytesView,
         tx_option: Option<TxOptions>,
     ) -> RpcResult<ExecuteTransactionResponseView>;
+
+    #[method(name = "dryRunRawTransaction")]
+    async fn dry_run(&self, tx_bcs_hex: BytesView) -> RpcResult<DryRunTransactionResponseView>;
 
     /// Execute a read-only function call
     /// The function do not change the state of Application
@@ -186,4 +190,12 @@ pub trait RoochAPI {
         limit: Option<StrView<u64>>,
         query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerObjectStatePageView>;
+
+    /// Repair indexer by sync from states
+    #[method(name = "repairIndexer")]
+    async fn repair_indexer(
+        &self,
+        repair_type: RepairIndexerTypeView,
+        repair_params: RepairIndexerParamsView,
+    ) -> RpcResult<()>;
 }

@@ -6,44 +6,24 @@
 
 
 -  [Resource `Bitseed`](#0xa_bitseed_Bitseed)
--  [Struct `BitseedCoinInfo`](#0xa_bitseed_BitseedCoinInfo)
--  [Resource `BitseedStore`](#0xa_bitseed_BitseedStore)
--  [Struct `InscribeGenerateArgs`](#0xa_bitseed_InscribeGenerateArgs)
--  [Struct `InscribeGenerateOutput`](#0xa_bitseed_InscribeGenerateOutput)
 -  [Constants](#@Constants_0)
--  [Function `genesis_init`](#0xa_bitseed_genesis_init)
--  [Function `bitseed_deploy_key`](#0xa_bitseed_bitseed_deploy_key)
--  [Function `bitseed_mint_key`](#0xa_bitseed_bitseed_mint_key)
--  [Function `get_coin_info`](#0xa_bitseed_get_coin_info)
--  [Function `coin_info_tick`](#0xa_bitseed_coin_info_tick)
--  [Function `coin_info_generator`](#0xa_bitseed_coin_info_generator)
--  [Function `coin_info_max`](#0xa_bitseed_coin_info_max)
--  [Function `coin_info_repeat`](#0xa_bitseed_coin_info_repeat)
--  [Function `coin_info_has_user_input`](#0xa_bitseed_coin_info_has_user_input)
--  [Function `coin_info_deploy_args_option`](#0xa_bitseed_coin_info_deploy_args_option)
--  [Function `coin_info_deploy_args`](#0xa_bitseed_coin_info_deploy_args)
--  [Function `coin_info_supply`](#0xa_bitseed_coin_info_supply)
--  [Function `inscribe_verify`](#0xa_bitseed_inscribe_verify)
--  [Function `process_inscription`](#0xa_bitseed_process_inscription)
--  [Function `view_validity`](#0xa_bitseed_view_validity)
+-  [Function `metaprotocol`](#0xa_bitseed_metaprotocol)
+-  [Function `new`](#0xa_bitseed_new)
+-  [Function `is_same_type`](#0xa_bitseed_is_same_type)
+-  [Function `is_mergeable`](#0xa_bitseed_is_mergeable)
+-  [Function `merge`](#0xa_bitseed_merge)
+-  [Function `is_splitable`](#0xa_bitseed_is_splitable)
+-  [Function `split`](#0xa_bitseed_split)
+-  [Function `seal_metaprotocol_validity`](#0xa_bitseed_seal_metaprotocol_validity)
+-  [Function `add_metaprotocol_attachment`](#0xa_bitseed_add_metaprotocol_attachment)
 
 
-<pre><code><b>use</b> <a href="">0x1::bcs</a>;
-<b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="">0x1::vector</a>;
-<b>use</b> <a href="">0x2::address</a>;
-<b>use</b> <a href="">0x2::cbor</a>;
-<b>use</b> <a href="">0x2::hash</a>;
-<b>use</b> <a href="">0x2::hex</a>;
+<b>use</b> <a href="">0x2::copyable_any</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
-<b>use</b> <a href="">0x2::string_utils</a>;
-<b>use</b> <a href="">0x2::table</a>;
-<b>use</b> <a href="">0x2::wasm</a>;
-<b>use</b> <a href="">0x4::bitcoin</a>;
 <b>use</b> <a href="">0x4::ord</a>;
-<b>use</b> <a href="">0x4::types</a>;
 </code></pre>
 
 
@@ -52,54 +32,10 @@
 
 ## Resource `Bitseed`
 
+Bitseed is a SFT asset type.
 
 
-<pre><code><b>struct</b> <a href="bitseed.md#0xa_bitseed_Bitseed">Bitseed</a> <b>has</b> key
-</code></pre>
-
-
-
-<a name="0xa_bitseed_BitseedCoinInfo"></a>
-
-## Struct `BitseedCoinInfo`
-
-
-
-<pre><code><b>struct</b> <a href="bitseed.md#0xa_bitseed_BitseedCoinInfo">BitseedCoinInfo</a> <b>has</b> <b>copy</b>, drop, store
-</code></pre>
-
-
-
-<a name="0xa_bitseed_BitseedStore"></a>
-
-## Resource `BitseedStore`
-
-
-
-<pre><code><b>struct</b> <a href="bitseed.md#0xa_bitseed_BitseedStore">BitseedStore</a> <b>has</b> key
-</code></pre>
-
-
-
-<a name="0xa_bitseed_InscribeGenerateArgs"></a>
-
-## Struct `InscribeGenerateArgs`
-
-
-
-<pre><code>#[data_struct]
-<b>struct</b> <a href="bitseed.md#0xa_bitseed_InscribeGenerateArgs">InscribeGenerateArgs</a> <b>has</b> <b>copy</b>, drop, store
-</code></pre>
-
-
-
-<a name="0xa_bitseed_InscribeGenerateOutput"></a>
-
-## Struct `InscribeGenerateOutput`
-
-
-
-<pre><code><b>struct</b> <a href="bitseed.md#0xa_bitseed_InscribeGenerateOutput">InscribeGenerateOutput</a> <b>has</b> store
+<pre><code><b>struct</b> <a href="bitseed.md#0xa_bitseed_Bitseed">Bitseed</a> <b>has</b> store, key
 </code></pre>
 
 
@@ -136,165 +72,139 @@
 
 
 
-<a name="0xa_bitseed_genesis_init"></a>
-
-## Function `genesis_init`
+<a name="0xa_bitseed_ErrorBitseedNotMergeable"></a>
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bitseed.md#0xa_bitseed_genesis_init">genesis_init</a>(_genesis_account: &<a href="">signer</a>)
+<pre><code><b>const</b> <a href="bitseed.md#0xa_bitseed_ErrorBitseedNotMergeable">ErrorBitseedNotMergeable</a>: u64 = 1;
 </code></pre>
 
 
 
-<a name="0xa_bitseed_bitseed_deploy_key"></a>
-
-## Function `bitseed_deploy_key`
+<a name="0xa_bitseed_ErrorBitseedNotSplittable"></a>
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_bitseed_deploy_key">bitseed_deploy_key</a>(): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>const</b> <a href="bitseed.md#0xa_bitseed_ErrorBitseedNotSplittable">ErrorBitseedNotSplittable</a>: u64 = 2;
 </code></pre>
 
 
 
-<a name="0xa_bitseed_bitseed_mint_key"></a>
-
-## Function `bitseed_mint_key`
+<a name="0xa_bitseed_ErrorInvalidAmount"></a>
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_bitseed_mint_key">bitseed_mint_key</a>(): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>const</b> <a href="bitseed.md#0xa_bitseed_ErrorInvalidAmount">ErrorInvalidAmount</a>: u64 = 3;
 </code></pre>
 
 
 
-<a name="0xa_bitseed_get_coin_info"></a>
-
-## Function `get_coin_info`
+<a name="0xa_bitseed_METAPROTOCOL"></a>
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_get_coin_info">get_coin_info</a>(bitseed_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitseed.md#0xa_bitseed_BitseedStore">bitseed::BitseedStore</a>&gt;, tick: &<a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="bitseed.md#0xa_bitseed_BitseedCoinInfo">bitseed::BitseedCoinInfo</a>&gt;
+<pre><code><b>const</b> <a href="bitseed.md#0xa_bitseed_METAPROTOCOL">METAPROTOCOL</a>: <a href="">vector</a>&lt;u8&gt; = [98, 105, 116, 115, 101, 101, 100];
 </code></pre>
 
 
 
-<a name="0xa_bitseed_coin_info_tick"></a>
+<a name="0xa_bitseed_metaprotocol"></a>
 
-## Function `coin_info_tick`
+## Function `metaprotocol`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_coin_info_tick">coin_info_tick</a>(self: &<a href="bitseed.md#0xa_bitseed_BitseedCoinInfo">bitseed::BitseedCoinInfo</a>): <a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_metaprotocol">metaprotocol</a>(): <a href="_String">string::String</a>
 </code></pre>
 
 
 
-<a name="0xa_bitseed_coin_info_generator"></a>
+<a name="0xa_bitseed_new"></a>
 
-## Function `coin_info_generator`
+## Function `new`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_coin_info_generator">coin_info_generator</a>(self: &<a href="bitseed.md#0xa_bitseed_BitseedCoinInfo">bitseed::BitseedCoinInfo</a>): <a href="_Option">option::Option</a>&lt;<a href="_InscriptionID">ord::InscriptionID</a>&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bitseed.md#0xa_bitseed_new">new</a>(metaprotocol: <a href="_String">string::String</a>, tick: <a href="_String">string::String</a>, bid: <b>address</b>, amount: u64, content_type: <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, body: <a href="">vector</a>&lt;u8&gt;): <a href="_Object">object::Object</a>&lt;<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>&gt;
 </code></pre>
 
 
 
-<a name="0xa_bitseed_coin_info_max"></a>
+<a name="0xa_bitseed_is_same_type"></a>
 
-## Function `coin_info_max`
+## Function `is_same_type`
+
+Check if the two bitseeds are the same type.
 
 
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_coin_info_max">coin_info_max</a>(self: &<a href="bitseed.md#0xa_bitseed_BitseedCoinInfo">bitseed::BitseedCoinInfo</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_is_same_type">is_same_type</a>(bitseed1_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>&gt;, bitseed2_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>&gt;): bool
 </code></pre>
 
 
 
-<a name="0xa_bitseed_coin_info_repeat"></a>
+<a name="0xa_bitseed_is_mergeable"></a>
 
-## Function `coin_info_repeat`
+## Function `is_mergeable`
+
+Check if the two bitseeds are mergeable.
 
 
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_coin_info_repeat">coin_info_repeat</a>(self: &<a href="bitseed.md#0xa_bitseed_BitseedCoinInfo">bitseed::BitseedCoinInfo</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_is_mergeable">is_mergeable</a>(bitseed1_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>&gt;, bitseed2_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>&gt;): bool
 </code></pre>
 
 
 
-<a name="0xa_bitseed_coin_info_has_user_input"></a>
+<a name="0xa_bitseed_merge"></a>
 
-## Function `coin_info_has_user_input`
+## Function `merge`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_coin_info_has_user_input">coin_info_has_user_input</a>(self: &<a href="bitseed.md#0xa_bitseed_BitseedCoinInfo">bitseed::BitseedCoinInfo</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_merge">merge</a>(bitseed1_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>&gt;, bitseed2_obj: <a href="_Object">object::Object</a>&lt;<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>&gt;)
 </code></pre>
 
 
 
-<a name="0xa_bitseed_coin_info_deploy_args_option"></a>
+<a name="0xa_bitseed_is_splitable"></a>
 
-## Function `coin_info_deploy_args_option`
+## Function `is_splitable`
+
+Check if the bitseed is splittable.
 
 
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_coin_info_deploy_args_option">coin_info_deploy_args_option</a>(self: &<a href="bitseed.md#0xa_bitseed_BitseedCoinInfo">bitseed::BitseedCoinInfo</a>): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_is_splitable">is_splitable</a>(bitseed_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>&gt;): bool
 </code></pre>
 
 
 
-<a name="0xa_bitseed_coin_info_deploy_args"></a>
+<a name="0xa_bitseed_split"></a>
 
-## Function `coin_info_deploy_args`
+## Function `split`
+
+Split the bitseed and return the new bitseed.
 
 
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_coin_info_deploy_args">coin_info_deploy_args</a>(self: &<a href="bitseed.md#0xa_bitseed_BitseedCoinInfo">bitseed::BitseedCoinInfo</a>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_split">split</a>(bitseed_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>&gt;, amount: u64): <a href="_Object">object::Object</a>&lt;<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>&gt;
 </code></pre>
 
 
 
-<a name="0xa_bitseed_coin_info_supply"></a>
+<a name="0xa_bitseed_seal_metaprotocol_validity"></a>
 
-## Function `coin_info_supply`
+## Function `seal_metaprotocol_validity`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_coin_info_supply">coin_info_supply</a>(self: &<a href="bitseed.md#0xa_bitseed_BitseedCoinInfo">bitseed::BitseedCoinInfo</a>): u64
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bitseed.md#0xa_bitseed_seal_metaprotocol_validity">seal_metaprotocol_validity</a>(inscription_id: <a href="_InscriptionID">ord::InscriptionID</a>, is_valid: bool, invalid_reason: <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;)
 </code></pre>
 
 
 
-<a name="0xa_bitseed_inscribe_verify"></a>
+<a name="0xa_bitseed_add_metaprotocol_attachment"></a>
 
-## Function `inscribe_verify`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_inscribe_verify">inscribe_verify</a>(wasm_bytes: <a href="">vector</a>&lt;u8&gt;, deploy_args: <a href="">vector</a>&lt;u8&gt;, seed: <a href="">vector</a>&lt;u8&gt;, user_input: <a href="_String">string::String</a>, metadata: &<a href="_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="">vector</a>&lt;u8&gt;&gt;, content_type: <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, body: <a href="">vector</a>&lt;u8&gt;): (bool, <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;)
-</code></pre>
+## Function `add_metaprotocol_attachment`
 
 
 
-<a name="0xa_bitseed_process_inscription"></a>
-
-## Function `process_inscription`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_process_inscription">process_inscription</a>(inscription: &<a href="_Inscription">ord::Inscription</a>)
-</code></pre>
-
-
-
-<a name="0xa_bitseed_view_validity"></a>
-
-## Function `view_validity`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_view_validity">view_validity</a>(inscription_id_str: <a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="_MetaprotocolValidity">ord::MetaprotocolValidity</a>&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bitseed.md#0xa_bitseed_add_metaprotocol_attachment">add_metaprotocol_attachment</a>(inscription_id: <a href="_InscriptionID">ord::InscriptionID</a>, attachment: <a href="_Object">object::Object</a>&lt;<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>&gt;)
 </code></pre>

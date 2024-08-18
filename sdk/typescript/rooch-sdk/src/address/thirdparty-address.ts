@@ -7,9 +7,9 @@ import { Address } from './address.js'
 import { RoochAddress } from './rooch.js'
 
 export abstract class ThirdPartyAddress implements Address {
-  protected readonly rawAddress: string
+  protected rawAddress: string
 
-  constructor(input: string) {
+  protected constructor(input: string) {
     this.rawAddress = input
   }
 

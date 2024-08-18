@@ -666,6 +666,7 @@ where
                 events,
                 gas_used,
                 is_upgrade,
+                is_gas_upgrade: false,
             },
         ))
     }
