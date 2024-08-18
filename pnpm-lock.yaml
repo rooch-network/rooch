@@ -416,6 +416,9 @@ importers:
       '@roochnetwork/build-scripts':
         specifier: workspace:*
         version: link:../build-scripts
+      '@roochnetwork/test-suite':
+        specifier: workspace:*
+        version: link:../test-suite
       '@types/jest':
         specifier: ^29.5.12
         version: 29.5.12

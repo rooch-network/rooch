@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url'
 import React from 'react'
 import { test, expect } from '@playwright/experimental-ct-react'
 import MintStory from './mint.story'
-import { BitseedTestEnv } from './commons/bitseed_test_env'
+import rooch_test from '@roochnetwork/test-suite'
 import {
   createTestBitSeed,
   prepareTestGenerator,
@@ -14,22 +14,25 @@ import {
 } from './commons/test_bitseed_node.js'
 import { sleep } from './commons/time'
 
+const { TestBox } = rooch_test
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 test.use({ viewport: { width: 500, height: 500 } })
 
-var testEnv: BitseedTestEnv = new BitseedTestEnv()
+var testBox: any = null
 let roochServerAddress: string | null
 let generatorID: string | null
 let moveTickInscriptionId: string | null
 
 test.beforeAll(async () => {
-  await testEnv.start()
-  roochServerAddress = testEnv.getRoochServerAddress()
+  testBox = new TestBox();
+  await testBox.loadBitcoinEnv()
+  await testBox.loadRoochEnv("local", 0)
+  roochServerAddress = testBox.getRoochServerAddress()
 
-  await testEnv.getFaucetBTC('bcrt1pz9qq9gwemapvmpntw90ygalhnjzgy2d7tglts0a90avrre902z2s6gng6d', 1)
-  await testEnv.getFaucetBTC('bcrt1pk6w56zalwe0txflwedv6d4mzszu4334ehtqe2yyjv8m2g36xlgrsnzsp4k', 1)
+  await testBox.getFaucetBTC('bcrt1pz9qq9gwemapvmpntw90ygalhnjzgy2d7tglts0a90avrre902z2s6gng6d', 1)
+  await testBox.getFaucetBTC('bcrt1pk6w56zalwe0txflwedv6d4mzszu4334ehtqe2yyjv8m2g36xlgrsnzsp4k', 1)
 
   await sleep(10000)
 
@@ -48,7 +51,7 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
-  await testEnv.stop()
+  await testBox.unloadContainer()
 })
 
 test('mint tick', async ({ mount }) => {

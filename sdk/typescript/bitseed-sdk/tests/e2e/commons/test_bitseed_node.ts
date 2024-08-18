@@ -32,14 +32,6 @@ export function createTestBitSeed(roochServerAddress: string) {
     type: 'taproot',
   })
 
-  /*
-  const fundingWallet = new Ordit({
-    wif: 'cTW1Q2A8AVBuJ1sEBoV9gWokc6e5NYFPHxez6hhriVL2jKH6bfct',
-    network,
-    type: 'taproot',
-  })
-  */
-
   log('primary wallet address:', primaryWallet.selectedAddress)
   log('funding wallet address:', fundingWallet.selectedAddress)
 

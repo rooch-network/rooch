@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import debug from 'debug'
 import { Ordit } from '@sadoprotocol/ordit-sdk'
-import { BitSeed, GeneratorLoader, RoochDataSource } from '../../../src'
+import { BitSeed, GeneratorLoader, RoochDataSource } from '../../../dist/esm'
 
 const log = debug('bitseed:e2e:test_bitseed_web')
 
@@ -24,14 +24,6 @@ export function createTestBitSeed(roochServerAddress: string): BitSeed {
     network,
     type: 'taproot',
   })
-
-  /*
-  const fundingWallet = new Ordit({
-    wif: 'cTW1Q2A8AVBuJ1sEBoV9gWokc6e5NYFPHxez6hhriVL2jKH6bfct',
-    network,
-    type: 'taproot',
-  })
-  */
 
   log('primary wallet address:', primaryWallet.selectedAddress)
   log('funding wallet address:', fundingWallet.selectedAddress)

@@ -84,6 +84,7 @@ export class RoochContainer extends GenericContainer {
     if (!this.hostConfigPath) {
       throw new Error('Host config path not set. Call withHostConfigPath() before initializing.')
     }
+
     await new GenericContainer(this.imageName.string)
       .withStartupTimeout(10_000)
       .withBindMounts([{ source: this.hostConfigPath, target: this.accountDir }])
@@ -96,6 +97,25 @@ export class RoochContainer extends GenericContainer {
       .withCommand(['env', 'switch', '--alias', 'local'])
       .start()
   }
+
+  public async cleanRooch(): Promise<void> {
+    if (!this.hostConfigPath) {
+      throw new Error('Host config path not set. Call withHostConfigPath() before initializing.')
+    }
+    
+    await new GenericContainer(this.imageName.string)
+      .withStartupTimeout(10_000)
+      .withBindMounts([{ source: this.hostConfigPath, target: this.accountDir }])
+      .withCommand(['init', '--skip-password'])
+      .start()
+
+    await new GenericContainer(this.imageName.string)
+      .withStartupTimeout(10_000)
+      .withBindMounts([{ source: this.hostConfigPath, target: this.accountDir }])
+      .withCommand(['env', 'switch', '--alias', 'local'])
+      .start()
+  }
+
 
   public override async start(): Promise<StartedRoochContainer> {
     if (!this.hostConfigPath) {

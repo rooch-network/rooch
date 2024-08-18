@@ -1,5 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
 import React, { useEffect, useState } from 'react'
 
 import { BitSeed, InscriptionID, inscriptionIDToString, DeployOptions } from '../../src'
