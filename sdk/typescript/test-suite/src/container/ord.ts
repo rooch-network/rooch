@@ -1,9 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { AbstractStartedContainer, GenericContainer, StartedTestContainer } from 'testcontainers'
-import path from 'node:path'
 import fs from 'fs'
+import path from 'node:path'
+
+import { AbstractStartedContainer, GenericContainer, StartedTestContainer } from 'testcontainers'
 
 export class OrdContainer extends GenericContainer {
   private btcRpcUrl = 'http:://bitcoind:18443'
@@ -21,6 +22,7 @@ export class OrdContainer extends GenericContainer {
     this.bitcoinDataPath = bitcoinHostPath
     return this
   }
+
   public withHostDataPath(hostPath: string): this {
     this.hostDataPath = path.join(hostPath, 'ord')
     fs.mkdirSync(this.hostDataPath, { recursive: true })
