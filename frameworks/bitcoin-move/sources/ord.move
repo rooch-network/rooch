@@ -580,9 +580,17 @@ module bitcoin_move::ord {
 
     public(friend) fun process_transaction(tx: &Transaction, input_utxo_values: vector<u64>): vector<SatPoint> {
         let sat_points = vector::empty();
+        let inscription_store = borrow_mut_inscription_store();
 
-        let inscriptions = from_transaction(tx, option::some(input_utxo_values));
+        let next_inscription_number = inscription_store.blessed_inscription_count;
+        let next_sequence_number = inscription_store.next_sequence_number;
+
+        let inscriptions = from_transaction(tx, input_utxo_values, next_inscription_number, next_sequence_number);
+        
         let inscriptions_len = vector::length(&inscriptions);
+        inscription_store.blessed_inscription_count = inscription_store.blessed_inscription_count + (inscriptions_len as u32);
+        inscription_store.next_sequence_number = inscription_store.next_sequence_number + (inscriptions_len as u32);
+        
         if (inscriptions_len == 0) {
             vector::destroy_empty(inscriptions);
             return sat_points
@@ -786,8 +794,7 @@ module bitcoin_move::ord {
         (body, content_encoding, content_type, metadata, metaprotocol, parents, pointer)
     }
 
-    fun from_transaction(tx: &Transaction, input_utxo_values: Option<vector<u64>>): vector<Inscription> {
-        let inscription_store = borrow_mut_inscription_store();
+    fun from_transaction(tx: &Transaction, input_utxo_values: vector<u64>, next_inscription_number: u32, next_sequence_number: u32): vector<Inscription> {
         let tx_id = types::tx_id(tx);
         let inscriptions = vector::empty();
         let inputs = types::tx_input(tx);
@@ -798,8 +805,8 @@ module bitcoin_move::ord {
         while (input_idx < len) {
             let input = vector::borrow(inputs, input_idx);
             let witness = types::txin_witness(input);
-            let input_value = if (option::is_some(&input_utxo_values)) {
-                *vector::borrow(option::borrow(&input_utxo_values), input_idx)
+            let input_value = if (!vector::is_empty(&input_utxo_values)) {
+                *vector::borrow(&input_utxo_values, input_idx)
             } else {
                 0
             };
@@ -817,11 +824,8 @@ module bitcoin_move::ord {
                 };
                 let offset = next_offset + pointer;
 
-                let inscription_number = inscription_store.blessed_inscription_count;
-                inscription_store.blessed_inscription_count = inscription_store.blessed_inscription_count + 1;
-
-                let sequence_number = inscription_store.next_sequence_number;
-                inscription_store.next_sequence_number = inscription_store.next_sequence_number + 1;
+                let inscription_number = next_inscription_number;
+                let sequence_number = next_sequence_number;
                 let inscription = record_to_inscription(
                     tx_id,
                     (index_counter as u32),
@@ -838,6 +842,8 @@ module bitcoin_move::ord {
                 );
                 vector::push_back(&mut inscriptions, inscription);
                 index_counter = index_counter + 1;
+                next_inscription_number = next_inscription_number + 1;
+                next_sequence_number = next_sequence_number + 1;
                 j = j + 1;
             };
             next_offset = next_offset + input_value;
@@ -846,9 +852,9 @@ module bitcoin_move::ord {
         inscriptions
     }
 
-    fun from_transaction_bytes(transaction_bytes: vector<u8>): vector<Inscription> {
+    fun from_transaction_bytes(transaction_bytes: vector<u8>, input_utxo_values: vector<u64>, next_inscription_number: u32, next_sequence_number: u32): vector<Inscription> {
         let transaction = bcs::from_bytes<Transaction>(transaction_bytes);
-        from_transaction(&transaction, option::none())
+        from_transaction(&transaction, input_utxo_values, next_inscription_number, next_sequence_number)
     }
 
     native fun parse_inscription_from_witness(witness: &Witness): vector<Envelope<InscriptionRecord>>;
