@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+import { describe, it, expect } from 'vitest'
 import path from 'path'
 import fs from 'fs';
 
@@ -30,7 +33,6 @@ describe('WasmGenerator', () => {
 
     // Call the inscribeGenerate method
     const result = await generator.inscribeGenerate(deployArgs, seed, userInput);
-    console.log('result:', result)
 
     // Assert that result has properties "id" and "amount"
     expect(result).toHaveProperty("amount");
@@ -56,7 +58,6 @@ describe('WasmGenerator', () => {
 
     // Call the inscribeGenerate method
     const result = await generator.inscribeGenerate(deployArgs, seed, userInput);
-    console.log('result:', result)
 
     // Assert that result has properties "id" and "amount"
     expect(result).toHaveProperty("amount");

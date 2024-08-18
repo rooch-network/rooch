@@ -1,4 +1,6 @@
-import * as bitcoin from 'bitcoinjs-lib';
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+import * as bitcoin from 'bitcoinjs-lib'
 
 import {
   AddressSummary,
@@ -17,102 +19,106 @@ import {
   UTXO_Detail,
   VersionDetail,
   WalletConfig,
-  Transaction
-} from './unisat-openapi.types.js';
+  Transaction,
+} from './unisat-openapi.types.js'
 
 export interface IUniSatOpenAPI {
-  getHost(): string;
+  getHost(): string
 
-  getNetwork(): bitcoin.Network;
+  getNetwork(): bitcoin.Network
 
-  getWalletConfig(): Promise<WalletConfig>;
+  getWalletConfig(): Promise<WalletConfig>
 
-  getAddressSummary(address: string): Promise<AddressSummary>;
+  getAddressSummary(address: string): Promise<AddressSummary>
 
-  getAddressBalance(address: string): Promise<BitcoinBalance>;
+  getAddressBalance(address: string): Promise<BitcoinBalance>
 
-  getMultiAddressAssets(addresses: string): Promise<AddressSummary[]>;
+  getMultiAddressAssets(addresses: string): Promise<AddressSummary[]>
 
   findGroupAssets(
-    groups: { type: number; address_arr: string[] }[]
-  ): Promise<{ type: number; address_arr: string[]; satoshis_arr: number[] }[]>;
+    groups: { type: number; address_arr: string[] }[],
+  ): Promise<{ type: number; address_arr: string[]; satoshis_arr: number[] }[]>
 
-  getBTCUtxos(address: string): Promise<UTXO[]>;
+  getBTCUtxos(address: string): Promise<UTXO[]>
 
-  getInscriptionUtxo(inscriptionId: string): Promise<UTXO>;
+  getInscriptionUtxo(inscriptionId: string): Promise<UTXO>
 
-  getInscriptionUtxoDetail(inscriptionId: string): Promise<UTXO_Detail>;
+  getInscriptionUtxoDetail(inscriptionId: string): Promise<UTXO_Detail>
 
-  getInscriptionUtxos(inscriptionIds: string[]): Promise<UTXO[]>;
+  getInscriptionUtxos(inscriptionIds: string[]): Promise<UTXO[]>
 
   getAddressInscriptions(
     address: string,
     cursor: number,
-    size: number
-  ): Promise<{ list: Inscription[]; total: number }>;
+    size: number,
+  ): Promise<{ list: Inscription[]; total: number }>
 
-  getInscriptionSummary(): Promise<InscriptionSummary>;
+  getInscriptionSummary(): Promise<InscriptionSummary>
 
-  getAppSummary(): Promise<AppSummary>;
+  getAppSummary(): Promise<AppSummary>
 
-  getTx(txid: string): Promise<Transaction>;
+  getTx(txid: string): Promise<Transaction>
 
-  pushTx(rawtx: string): Promise<string>;
+  pushTx(rawtx: string): Promise<string>
 
-  getFeeSummary(): Promise<FeeSummary>;
+  getFeeSummary(): Promise<FeeSummary>
 
-  getDomainInfo(domain: string): Promise<Inscription>;
+  getDomainInfo(domain: string): Promise<Inscription>
 
   inscribeBRC20Transfer(
     address: string,
     tick: string,
     amount: string,
     feeRate: number,
-    outputValue: number
-  ): Promise<InscribeOrder>;
+    outputValue: number,
+  ): Promise<InscribeOrder>
 
-  getInscribeResult(orderId: string): Promise<TokenTransfer>;
+  getInscribeResult(orderId: string): Promise<TokenTransfer>
 
-  getBRC20List(address: string, cursor: number, size: number): Promise<{ list: TokenBalance[]; total: number }>;
+  getBRC20List(
+    address: string,
+    cursor: number,
+    size: number,
+  ): Promise<{ list: TokenBalance[]; total: number }>
 
-  getAddressTokenSummary(address: string, ticker: string): Promise<AddressTokenSummary>;
+  getAddressTokenSummary(address: string, ticker: string): Promise<AddressTokenSummary>
 
   getTokenTransferableList(
     address: string,
     ticker: string,
     cursor: number,
-    size: number
-  ): Promise<{ list: TokenTransfer[]; total: number }>;
+    size: number,
+  ): Promise<{ list: TokenTransfer[]; total: number }>
 
-  decodePsbt(psbtHex: string): Promise<DecodedPsbt>;
+  decodePsbt(psbtHex: string): Promise<DecodedPsbt>
 
-  createMoonpayUrl(address: string): Promise<string>;
+  createMoonpayUrl(address: string): Promise<string>
 
-  checkWebsite(website: string): Promise<{ isScammer: boolean; warning: string }>;
+  checkWebsite(website: string): Promise<{ isScammer: boolean; warning: string }>
 
   getOrdinalsInscriptions(
     address: string,
     cursor: number,
-    size: number
-  ): Promise<{ list: Inscription[]; total: number }>;
+    size: number,
+  ): Promise<{ list: Inscription[]; total: number }>
 
   getAtomicalsNFT(
     address: string,
     cursor: number,
-    size: number
-  ): Promise<{ list: Inscription[]; total: number }>;
+    size: number,
+  ): Promise<{ list: Inscription[]; total: number }>
 
-  getAtomicalsUtxo(atomicalId: string): Promise<UTXO>;
+  getAtomicalsUtxo(atomicalId: string): Promise<UTXO>
 
   getArc20BalanceList(
     address: string,
     cursor: number,
-    size: number
-  ): Promise<{ list: Arc20Balance[]; total: number }>;
+    size: number,
+  ): Promise<{ list: Arc20Balance[]; total: number }>
 
-  getArc20Utxos(address: string, ticker: string): Promise<UTXO[]>;
+  getArc20Utxos(address: string, ticker: string): Promise<UTXO[]>
 
-  getVersionDetail(version: string): Promise<VersionDetail>;
+  getVersionDetail(version: string): Promise<VersionDetail>
 
-  loadContent(inscriptionid: string): Promise<ArrayBuffer>;
+  loadContent(inscriptionid: string): Promise<ArrayBuffer>
 }

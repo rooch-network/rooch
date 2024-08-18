@@ -1,18 +1,24 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+import { debug } from 'debug'
 import * as bitcoin from 'bitcoinjs-lib'
 import { IDatasource } from '@sadoprotocol/ordit-sdk'
 import { Inscriber, Ordit, ordit, UTXOLimited } from '@sadoprotocol/ordit-sdk'
 
 import { BITSEED_PROTOAL_NAME } from './constants/index.js'
+import { InscriptionID, Generator, Tick, SFTRecord } from './types/index.js'
 import {
-  InscriptionID, 
-  Generator, 
-  Tick, 
-  SFTRecord
-} from './types/index.js'
-import { inscriptionIDToString, extractInscriptionID, toB64, decodeUTXOs, sleep } from './utils/index.js'
+  inscriptionIDToString,
+  extractInscriptionID,
+  toB64,
+  decodeUTXOs,
+  sleep,
+} from './utils/index.js'
 import { IGeneratorLoader, InscribeSeed } from './generator/index.js'
 import { APIInterface, DeployOptions, InscribeOptions } from './interfaces/index.js'
 import { BitseedSDKError } from './errors/index.js'
+
+const log = debug('bitseed:bitseed')
 
 export class BitSeed implements APIInterface {
   private network: bitcoin.Network
@@ -37,7 +43,7 @@ export class BitSeed implements APIInterface {
   resolveNetwork(networkType: string): bitcoin.Network {
     if (networkType === 'regtest') {
       return bitcoin.networks.regtest
-    } else if (networkType === 'testnet'){
+    } else if (networkType === 'testnet') {
       return bitcoin.networks.testnet
     } else {
       return bitcoin.networks.bitcoin
@@ -53,7 +59,7 @@ export class BitSeed implements APIInterface {
       op: sft.op,
       tick: sft.tick,
       amount: sft.amount,
-      attributes: sft.attributes
+      attributes: sft.attributes,
     }
 
     let contentType: string | undefined = undefined
@@ -81,25 +87,25 @@ export class BitSeed implements APIInterface {
     inscriber.withMetaProtocol(BITSEED_PROTOAL_NAME)
 
     const revealed = await inscriber.generateCommit()
-    console.log("revealed:", revealed)
+    log('revealed:', revealed)
 
     // deposit revealFee to address
     const utxos = await this.depositRevealFee(revealed, opts)
-    console.log("depositRevealFee utxos:", utxos)
+    log('depositRevealFee utxos:', utxos)
 
-    let ready = false;
+    let ready = false
 
     try {
-      const setUTXOs = (builder: any, utxos: UTXOLimited[])=>{
+      const setUTXOs = (builder: any, utxos: UTXOLimited[]) => {
         builder.utxos = utxos
         builder.suitableUnspent = utxos[0]
         builder.ready = true
-      };
-      
+      }
+
       setUTXOs(inscriber, utxos)
       ready = true
     } catch (error) {
-      console.log("inscribe error:", error)
+      log('inscribe error:', error)
       ready = false
     }
 
@@ -109,7 +115,7 @@ export class BitSeed implements APIInterface {
       const signedTxHex = this.primaryWallet.signPsbt(inscriber.toHex(), { isRevealTx: true })
 
       const inscribeTx = await this.datasource.relay({ hex: signedTxHex })
-      console.log("inscribeTx:", inscribeTx)
+      log('inscribeTx:', inscribeTx)
 
       return {
         txid: inscribeTx,
@@ -131,14 +137,20 @@ export class BitSeed implements APIInterface {
       throw new Error('not selected address')
     }
 
-    let spendables = await this.datasource.getSpendables({ address: this.fundingWallet.selectedAddress, value: revealed.revealFee});
-    let totalSpendableValue = spendables.reduce((sum, utxo) => sum + utxo.sats, 0);
+    let spendables = await this.datasource.getSpendables({
+      address: this.fundingWallet.selectedAddress,
+      value: revealed.revealFee,
+    })
+    let totalSpendableValue = spendables.reduce((sum, utxo) => sum + utxo.sats, 0)
 
     while (totalSpendableValue < revealed.revealFee) {
-      console.warn(`Insufficient funds in funding wallet. Waiting for more funds...`);
+      console.warn(`Insufficient funds in funding wallet. Waiting for more funds...`)
       await sleep(5000) // Wait for 5 seconds before retrying
-      spendables = await this.datasource.getSpendables({ address: this.fundingWallet.selectedAddress, value: revealed.revealFee });
-      totalSpendableValue = spendables.reduce((sum, utxo) => sum + utxo.sats, 0);
+      spendables = await this.datasource.getSpendables({
+        address: this.fundingWallet.selectedAddress,
+        value: revealed.revealFee,
+      })
+      totalSpendableValue = spendables.reduce((sum, utxo) => sum + utxo.sats, 0)
     }
 
     const psbt = await ordit.transactions.createPsbt({
@@ -157,25 +169,29 @@ export class BitSeed implements APIInterface {
 
     const signedTxHex = await this.fundingWallet.signPsbt(psbt.hex)
 
-    console.log('depositRevealFee prepare relay:', signedTxHex)
+    log('depositRevealFee prepare relay:', signedTxHex)
     const txId = await this.datasource.relay({ hex: signedTxHex })
 
-    console.log('depositRevealFee txId:', txId)
+    log('depositRevealFee txId:', txId)
     return decodeUTXOs(signedTxHex, this.network, revealed.address)
   }
 
-  public async generator(name: string, wasmBytes: Uint8Array, opts?: InscribeOptions): Promise<InscriptionID> {
+  public async generator(
+    name: string,
+    wasmBytes: Uint8Array,
+    opts?: InscribeOptions,
+  ): Promise<InscriptionID> {
     const sft: SFTRecord = {
-      op: "mint",
-      tick: "generator",
+      op: 'mint',
+      tick: 'generator',
       amount: 1,
       attributes: {
         name: name,
       },
       content: {
         content_type: 'application/wasm',
-        body: wasmBytes
-      }
+        body: wasmBytes,
+      },
     }
 
     return await this.inscribe(sft, opts)
@@ -188,14 +204,14 @@ export class BitSeed implements APIInterface {
     opts?: DeployOptions | undefined,
   ): Promise<InscriptionID> {
     const sft: SFTRecord = {
-      op: "deploy",
+      op: 'deploy',
       tick: tick,
       amount: max,
       attributes: {
         repeat: opts?.repeat || 0,
         generator: `/inscription/${inscriptionIDToString(generator)}`,
-        deploy_args: opts?.deploy_args
-      }
+        deploy_args: opts?.deploy_args,
+      },
     }
 
     return await this.inscribe(sft, opts)
@@ -213,17 +229,17 @@ export class BitSeed implements APIInterface {
     let tick = await this.getTickByInscriptionId(tickInscriptionId)
     const generator = await this.generatorLoader.load(tick.generator)
 
-    let seed_utxo = opts.satpoint.outpoint;
+    let seed_utxo = opts.satpoint.outpoint
     let seed_tx = await this.datasource.getTransaction({
-      txId: seed_utxo.txid
+      txId: seed_utxo.txid,
     })
 
     const seed = new InscribeSeed(seed_tx.tx.blockhash, seed_utxo)
     const sft = await generator.inscribeGenerate(tick.deploy_args, seed, userInput)
-    console.log('SFT record:', sft)
+    log('SFT record:', sft)
 
-    sft.op = "mint"
-    sft.tick = tick.tick;
+    sft.op = 'mint'
+    sft.tick = tick.tick
 
     return await this.inscribe(sft, opts)
   }
@@ -235,22 +251,24 @@ export class BitSeed implements APIInterface {
     })
 
     if (!tickInscription.meta) {
-      throw new BitseedSDKError('tick meta is nil');
+      throw new BitseedSDKError('tick meta is nil')
     }
 
-    console.log('tickInscription.meta:', tickInscription.meta)
+    log('tickInscription.meta:', tickInscription.meta)
 
-    const generatorInscriptionId = extractInscriptionID(tickInscription.meta.attributes['generator'])
+    const generatorInscriptionId = extractInscriptionID(
+      tickInscription.meta.attributes['generator'],
+    )
     if (!generatorInscriptionId) {
-      throw new BitseedSDKError('generator inscriptionid is nil');
+      throw new BitseedSDKError('generator inscriptionid is nil')
     }
 
-    const tick: Tick  = {
+    const tick: Tick = {
       tick: tickInscription.meta.tick,
       max: tickInscription.meta.amount,
       generator: generatorInscriptionId,
       repeat: tickInscription.meta.attributes['repeat'],
-      deploy_args: tickInscription.meta.attributes['deploy_args']
+      deploy_args: tickInscription.meta.attributes['deploy_args'],
     }
 
     return tick

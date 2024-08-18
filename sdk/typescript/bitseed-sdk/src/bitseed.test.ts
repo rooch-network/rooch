@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import path from 'path'
 import fs from 'fs';
 import * as bitcoin from 'bitcoinjs-lib'
@@ -5,7 +8,6 @@ import { Transaction as BTCTransaction } from "bitcoinjs-lib";
 import { BitSeed } from './bitseed.js';
 import {
   Ordit,
-  IDatasource,
   RelayOptions,
   GetSpendablesOptions,
   UTXOLimited,
@@ -34,7 +36,7 @@ describe('BitSeed', () => {
 
   let primaryWallet: Ordit;
   let fundingWallet: Ordit;
-  let datasourceMock: jest.Mocked<IDatasource>;
+  let datasourceMock: any;
   let generatorLoaderMock: IGeneratorLoader;
   let bitSeed: BitSeed;
 
@@ -146,14 +148,14 @@ describe('BitSeed', () => {
     })
 
     datasourceMock = {
-      getBalance: jest.fn(),
-      getInscription: jest.fn(),
-      getInscriptionUTXO: jest.fn(),
-      getInscriptions: jest.fn(),
-      getTransaction: jest.fn(),
-      getSpendables: jest.fn(),
-      getUnspents: jest.fn(),
-      relay: jest.fn()
+      getBalance: vi.fn(),
+      getInscription: vi.fn(),
+      getInscriptionUTXO: vi.fn(),
+      getInscriptions: vi.fn(),
+      getTransaction: vi.fn(),
+      getSpendables: vi.fn(),
+      getUnspents: vi.fn(),
+      relay: vi.fn()
     };
 
     generatorLoaderMock = new GeneratorLoader(datasourceMock)
@@ -231,8 +233,6 @@ describe('BitSeed', () => {
 
     it('should be ok when mint invalid-generator.wasm', async () => {
       let wasmBytes = loadWasmBytesFromFile(path.resolve(__dirname, '../tests/data/invalid-generator.wasm'))
-      console.log('wasm length:', wasmBytes.length)
-
       const inscribeOptions: InscribeOptions = {
         fee_rate: 1,
       }
@@ -246,8 +246,6 @@ describe('BitSeed', () => {
 
     it('should be ok when mint generator.wasm', async () => {
       let wasmBytes = loadWasmBytesFromFile(path.resolve(__dirname, '../tests/data/generator.wasm'))
-      console.log('wasm length:', wasmBytes.length)
-
       const inscribeOptions: InscribeOptions = {
         fee_rate: 1,
       }

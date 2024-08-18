@@ -1,5 +1,10 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+import debug from 'debug'
 import { Ordit } from '@sadoprotocol/ordit-sdk'
 import { BitSeed, GeneratorLoader, RoochDataSource } from '../../../src'
+
+const log = debug('bitseed:e2e:test_bitseed_web')
 
 export function createTestBitSeed(roochServerAddress: string): BitSeed {
   const network = 'regtest'
@@ -28,8 +33,8 @@ export function createTestBitSeed(roochServerAddress: string): BitSeed {
   })
   */
 
-  console.log('primary wallet address:', primaryWallet.selectedAddress)
-  console.log('funding wallet address:', fundingWallet.selectedAddress)
+  log('primary wallet address:', primaryWallet.selectedAddress)
+  log('funding wallet address:', fundingWallet.selectedAddress)
 
   const bitseed = new BitSeed(primaryWallet, fundingWallet, datasource, generatorLoader)
 

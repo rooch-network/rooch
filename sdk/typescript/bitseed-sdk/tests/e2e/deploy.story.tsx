@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import React, { useEffect, useState } from 'react'
 import {
   BitSeed,
@@ -10,7 +12,7 @@ import {
 import { createTestBitSeed } from './commons/test_bitseed_web'
 
 interface DeployStoryProps {
-  roochServerAddress: string;
+  roochServerAddress: string
 }
 
 export default function DeployStory({ roochServerAddress }: DeployStoryProps) {
@@ -23,18 +25,15 @@ export default function DeployStory({ roochServerAddress }: DeployStoryProps) {
   const [error, setError] = useState<string | undefined>(undefined)
 
   useEffect(() => {
-    console.log('DeployStory useEffect run');
     setBitseed(createTestBitSeed(roochServerAddress))
   }, [roochServerAddress])
 
   const handleDeploy = async () => {
     if (!bitseed) return
 
-    console.log('handle deploy start')
-
     try {
       let generator = parseInscriptionID(generatorValue)
-      const deployArgs = [deployArg];
+      const deployArgs = [deployArg]
 
       const deployOptions: DeployOptions = {
         fee_rate: 1,
@@ -46,7 +45,6 @@ export default function DeployStory({ roochServerAddress }: DeployStoryProps) {
       setDeployResult(inscriptionId)
       setError(undefined)
     } catch (e) {
-      console.log('deploy bitseed error:', e)
       setError(e.message)
       setDeployResult(undefined)
     }
@@ -56,38 +54,38 @@ export default function DeployStory({ roochServerAddress }: DeployStoryProps) {
     <div>
       <div>Deploy Tick (Rooch Server: {roochServerAddress})</div>
       <div>
-        Tick: <input
+        Tick:{' '}
+        <input
           type="text"
           placeholder="Tick"
           value={tick}
           onChange={(e) => setTick(e.target.value)}
         />
         <br />
-
-        Max: <input
+        Max:{' '}
+        <input
           type="number"
           placeholder="Max"
           value={max}
           onChange={(e) => setMax(Number(e.target.value))}
         />
         <br />
-
-        GeneratorInscriptionID: <input
+        GeneratorInscriptionID:{' '}
+        <input
           type="text"
           placeholder="GeneratorInscriptionID"
           value={generatorValue}
           onChange={(e) => setGeneratorValue(e.target.value)}
         />
         <br />
-
-        DeployArg: <input
+        DeployArg:{' '}
+        <input
           type="text"
           placeholder="DeployArg"
           value={deployArg}
           onChange={(e) => setDeployArg(e.target.value)}
         />
         <br />
-        
         <button onClick={handleDeploy}>Deploy</button>
       </div>
       {deployResult && <div>Deploy Result: {inscriptionIDToString(deployResult)}</div>}

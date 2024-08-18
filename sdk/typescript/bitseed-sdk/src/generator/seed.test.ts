@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+import { describe, it, expect } from 'vitest'
 import sha3 from 'js-sha3';
 import { InscribeSeed } from './seed.js';
 

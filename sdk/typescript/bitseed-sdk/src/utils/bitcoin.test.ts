@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+import { describe, it, expect } from 'vitest'
 import * as bitcoin from 'bitcoinjs-lib';
 import { decodeScriptPubKey, ScriptTypeWitnessV0KeyHash, decodeUTXOs, hexStringToTxid } from './bitcoin.js';
 
@@ -68,9 +71,9 @@ describe('decodeUTXOs', () => {
 
 
 describe('hexStringToTxid', () => {
-  test('Valid Hex String', () => {
+  it('Valid Hex String', () => {
     const hexString = '719174a0b1f0f4e41b3bfbf0bea11153ce794ab17336cfc4afdf2e503dca0336';
-    const expectedTxid = '3603ca3d502edfdfc4cf3673b1ab9479ce5311eabfbf3bb3e4f4f0b1a0749171';
+    const expectedTxid = '3603ca3d502edfafc4cf3673b14a79ce5311a1bef0fb3b1be4f4f0b1a0749171';
     expect(hexStringToTxid(hexString)).toBe(expectedTxid);
   });
 });

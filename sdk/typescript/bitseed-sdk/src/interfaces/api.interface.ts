@@ -1,10 +1,6 @@
-import { 
-  SatPoint, 
-  FeeRate, 
-  Amount, 
-  Generator, 
-  InscriptionID 
-} from '../types/index.js'
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+import { SatPoint, FeeRate, Amount, Generator, InscriptionID } from '../types/index.js'
 
 export interface NestedObject {
   [key: string]: NestedObject | any

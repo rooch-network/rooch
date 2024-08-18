@@ -1,7 +1,13 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { InscriptionID, SFTRecord } from '../types/index.js'
 import { InscribeSeed } from './seed.js'
 export interface IGenerator {
-  inscribeGenerate(deployArgs: Array<string>, seed: InscribeSeed, userInput: string): Promise<SFTRecord>
+  inscribeGenerate(
+    deployArgs: Array<string>,
+    seed: InscribeSeed,
+    userInput: string,
+  ): Promise<SFTRecord>
 }
 
 export interface IGeneratorLoader {

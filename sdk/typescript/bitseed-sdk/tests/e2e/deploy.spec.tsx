@@ -1,5 +1,7 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+import path from 'path'
+import { fileURLToPath } from 'url'
 
 import React from 'react'
 import { test, expect } from '@playwright/experimental-ct-react'
@@ -7,45 +9,46 @@ import { test, expect } from '@playwright/experimental-ct-react'
 import DeployStory from './deploy.story'
 import { BitseedTestEnv } from './commons/bitseed_test_env'
 import { createTestBitSeed, prepareTestGenerator } from './commons/test_bitseed_node.js'
-import { sleep } from './commons/time';
+import { sleep } from './commons/time'
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 test.use({ viewport: { width: 500, height: 500 } })
 
-var testEnv: BitseedTestEnv = new BitseedTestEnv();
-let roochServerAddress: string | null;
-let generatorID: string | null;
+var testEnv: BitseedTestEnv = new BitseedTestEnv()
+let roochServerAddress: string | null
+let generatorID: string | null
 
 test.beforeAll(async () => {
-  console.log('Before tests');
-  await testEnv.start();
-  roochServerAddress = testEnv.getRoochServerAddress();
+  await testEnv.start()
+  roochServerAddress = testEnv.getRoochServerAddress()
 
-  await testEnv.getFaucetBTC("bcrt1pz9qq9gwemapvmpntw90ygalhnjzgy2d7tglts0a90avrre902z2s6gng6d", 1)
-  await testEnv.getFaucetBTC("bcrt1pk6w56zalwe0txflwedv6d4mzszu4334ehtqe2yyjv8m2g36xlgrsnzsp4k", 1)
+  await testEnv.getFaucetBTC('bcrt1pz9qq9gwemapvmpntw90ygalhnjzgy2d7tglts0a90avrre902z2s6gng6d', 1)
+  await testEnv.getFaucetBTC('bcrt1pk6w56zalwe0txflwedv6d4mzszu4334ehtqe2yyjv8m2g36xlgrsnzsp4k', 1)
 
   await sleep(10000)
 
   if (roochServerAddress) {
-    let bitseed = createTestBitSeed(roochServerAddress);
-    generatorID = await prepareTestGenerator(bitseed, path.join(__dirname, "../data/generator.wasm"))
+    let bitseed = createTestBitSeed(roochServerAddress)
+    generatorID = await prepareTestGenerator(
+      bitseed,
+      path.join(__dirname, '../data/generator.wasm'),
+    )
 
-    await sleep(5000)
+    await sleep(10000)
   }
-});
+})
 
 test.afterAll(async () => {
-  console.log('After tests');
   await testEnv.stop()
-});
+})
 
 test('Deploy move tick with simple', async ({ page, mount }) => {
   if (!roochServerAddress) {
-    throw new Error('Failed to get Rooch server address');
+    throw new Error('Failed to get Rooch server address')
   }
-  
+
   const component = await mount(<DeployStory roochServerAddress={roochServerAddress} />)
 
   const generatorInscriptionId = `${generatorID}`
@@ -54,7 +57,9 @@ test('Deploy move tick with simple', async ({ page, mount }) => {
   // Input the InscriptionID
   await component.locator('input[placeholder="Tick"]').fill('move')
   await component.locator('input[placeholder="Max"]').fill('1000')
-  await component.locator('input[placeholder="GeneratorInscriptionID"]').fill(generatorInscriptionId)
+  await component
+    .locator('input[placeholder="GeneratorInscriptionID"]')
+    .fill(generatorInscriptionId)
   await component.locator('input[placeholder="DeployArg"]').fill(deployArg)
 
   // Click the deploy button

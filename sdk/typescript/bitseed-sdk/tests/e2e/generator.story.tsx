@@ -1,10 +1,12 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import React, { useEffect, useState } from 'react'
 
 import { BitSeed, InscriptionID, inscriptionIDToString, DeployOptions } from '../../src'
 import { createTestBitSeed } from './commons/test_bitseed_web'
 
 interface DeployGeneratorStoryProps {
-  roochServerAddress: string;
+  roochServerAddress: string
 }
 
 export default function DeployGeneratorStory({ roochServerAddress }: DeployGeneratorStoryProps) {
@@ -22,21 +24,17 @@ export default function DeployGeneratorStory({ roochServerAddress }: DeployGener
 
     if (!file) return
 
-    console.log('handle deploy start')
-
     try {
       let wasmBytes = await readFileAsBytes(file)
-      console.log('wasm length:', wasmBytes.length)
 
       const deployOptions: DeployOptions = {
         fee_rate: 1,
       }
 
-      const inscriptionId = await bitseed.generator("simple", wasmBytes, deployOptions)
+      const inscriptionId = await bitseed.generator('simple', wasmBytes, deployOptions)
       setDeployResult(inscriptionId)
       setError(undefined)
     } catch (e) {
-      console.log('deploy bitseed generator error:', e)
       setError(e.message)
       setDeployResult(undefined)
     }

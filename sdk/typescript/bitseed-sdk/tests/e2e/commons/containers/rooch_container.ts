@@ -1,140 +1,152 @@
-import { AbstractStartedContainer, GenericContainer, StartedTestContainer, Wait } from "testcontainers";
-import * as path from 'path';
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+import debug from 'debug'
+import {
+  AbstractStartedContainer,
+  GenericContainer,
+  StartedTestContainer,
+  Wait,
+} from 'testcontainers'
 
-const ROOCH_PORT = 6767;
+const log = debug('bitseed:e2e:rooch_container')
+const ROOCH_PORT = 6767
 
 export class RoochContainer extends GenericContainer {
-  private networkName = "local";
-  private dataDir = "TMP";
-  private accountDir = "/root/.rooch";
-  private port = ROOCH_PORT;
-  private ethRpcUrl?: string;
-  private btcRpcUrl?: string;
-  private btcRpcUsername?: string;
-  private btcRpcPassword?: string;
-  private btcEndBlockHeight?: number;
-  private btcSyncBlockInterval?: number;
-  private hostConfigPath?: string;
+  private networkName = 'local'
+  private dataDir = 'TMP'
+  private accountDir = '/root/.rooch'
+  private port = ROOCH_PORT
+  private ethRpcUrl?: string
+  private btcRpcUrl?: string
+  private btcRpcUsername?: string
+  private btcRpcPassword?: string
+  private btcEndBlockHeight?: number
+  private btcSyncBlockInterval?: number
+  private hostConfigPath?: string
 
-  constructor(image = "ghcr.io/rooch-network/rooch:main_debug") {
-    super(image);
+  constructor(image = 'ghcr.io/rooch-network/rooch:main_debug') {
+    super(image)
     this.withExposedPorts(this.port)
       .withStartupTimeout(120_000)
-      .withWaitStrategy(Wait.forLogMessage("JSON-RPC HTTP Server start listening"));
+      .withWaitStrategy(Wait.forLogMessage('JSON-RPC HTTP Server start listening'))
   }
 
   public withNetworkName(name: string): this {
-    this.networkName = name;
-    return this;
+    this.networkName = name
+    return this
   }
 
   public withDataDir(dir: string): this {
-    this.dataDir = dir;
-    return this;
+    this.dataDir = dir
+    return this
   }
 
   public withPort(port: number): this {
-    this.port = port;
-    return this;
+    this.port = port
+    return this
   }
 
   public withEthRpcUrl(url: string): this {
-    this.ethRpcUrl = url;
-    return this;
+    this.ethRpcUrl = url
+    return this
   }
 
   public withBtcRpcUrl(url: string): this {
-    this.btcRpcUrl = url;
-    return this;
+    this.btcRpcUrl = url
+    return this
   }
 
   public withBtcRpcUsername(username: string): this {
-    this.btcRpcUsername = username;
-    return this;
+    this.btcRpcUsername = username
+    return this
   }
 
   public withBtcRpcPassword(password: string): this {
-    this.btcRpcPassword = password;
-    return this;
+    this.btcRpcPassword = password
+    return this
   }
 
   public withBtcEndBlockHeight(height: number): this {
-    this.btcEndBlockHeight = height;
-    return this;
+    this.btcEndBlockHeight = height
+    return this
   }
 
   public withBtcSyncBlockInterval(interval: number): this {
-    this.btcSyncBlockInterval = interval;
-    return this;
+    this.btcSyncBlockInterval = interval
+    return this
   }
 
   public withHostConfigPath(hostPath: string): this {
-    this.hostConfigPath = hostPath;
-    return this;
+    this.hostConfigPath = hostPath
+    return this
   }
 
   public async initializeRooch(): Promise<void> {
     if (!this.hostConfigPath) {
-      throw new Error("Host config path not set. Call withHostConfigPath() before initializing.");
+      throw new Error('Host config path not set. Call withHostConfigPath() before initializing.')
     }
 
     await new GenericContainer(this.imageName.string)
       .withStartupTimeout(10_000)
       .withBindMounts([{ source: this.hostConfigPath, target: this.accountDir }])
-      .withCommand(["init", "--skip-password"])
-      .start();
+      .withCommand(['init', '--skip-password'])
+      .start()
 
     await new GenericContainer(this.imageName.string)
       .withStartupTimeout(10_000)
       .withBindMounts([{ source: this.hostConfigPath, target: this.accountDir }])
-      .withCommand(["env", "switch", "--alias", "local"])
-      .start();
+      .withCommand(['env', 'switch', '--alias', 'local'])
+      .start()
 
-    console.log('Rooch wallet initialized and environment switched to local');
+    log('Rooch wallet initialized and environment switched to local')
   }
 
   public override async start(): Promise<StartedRoochContainer> {
     if (!this.hostConfigPath) {
-      throw new Error("Host config path not set. Call withHostConfigPath() before starting.");
+      throw new Error('Host config path not set. Call withHostConfigPath() before starting.')
     }
 
-    this.withBindMounts([{ source: this.hostConfigPath, target: this.accountDir }]);
+    this.withBindMounts([{ source: this.hostConfigPath, target: this.accountDir }])
 
     const command = [
-      "server", "start",
-      "-n", this.networkName,
-      "-d", this.dataDir,
-      "--port", this.port.toString()
-    ];
+      'server',
+      'start',
+      '-n',
+      this.networkName,
+      '-d',
+      this.dataDir,
+      '--port',
+      this.port.toString(),
+    ]
 
     if (this.ethRpcUrl) {
-      command.push("--eth-rpc-url", this.ethRpcUrl);
+      command.push('--eth-rpc-url', this.ethRpcUrl)
     }
 
     if (this.btcRpcUrl) {
-      command.push("--btc-rpc-url", this.btcRpcUrl);
+      command.push('--btc-rpc-url', this.btcRpcUrl)
     }
 
     if (this.btcRpcUsername) {
-      command.push("--btc-rpc-username", this.btcRpcUsername);
+      command.push('--btc-rpc-username', this.btcRpcUsername)
     }
 
     if (this.btcRpcPassword) {
-      command.push("--btc-rpc-password", this.btcRpcPassword);
+      command.push('--btc-rpc-password', this.btcRpcPassword)
     }
 
     if (this.btcEndBlockHeight !== undefined) {
-      command.push("--btc-end-block-height", this.btcEndBlockHeight.toString());
+      command.push('--btc-end-block-height', this.btcEndBlockHeight.toString())
     }
 
     if (this.btcSyncBlockInterval !== undefined) {
-      command.push("--btc-sync-block-interval", this.btcSyncBlockInterval.toString());
+      command.push('--btc-sync-block-interval', this.btcSyncBlockInterval.toString())
     }
 
-    console.log("rooch server cmd:", command);
-    this.withCommand(command);
+    log('rooch server cmd:', command)
+    this.withCommand(command)
 
-    const startedContainer = await super.start();
+    const startedContainer = await super.start()
 
     return new StartedRoochContainer(
       startedContainer,
@@ -146,13 +158,13 @@ export class RoochContainer extends GenericContainer {
       this.btcRpcUsername,
       this.btcRpcPassword,
       this.btcEndBlockHeight,
-      this.btcSyncBlockInterval
-    );
+      this.btcSyncBlockInterval,
+    )
   }
 }
 
 export class StartedRoochContainer extends AbstractStartedContainer {
-  private readonly mappedPort: number;
+  private readonly mappedPort: number
 
   constructor(
     startedTestContainer: StartedTestContainer,
@@ -164,49 +176,49 @@ export class StartedRoochContainer extends AbstractStartedContainer {
     private readonly btcRpcUsername?: string,
     private readonly btcRpcPassword?: string,
     private readonly btcEndBlockHeight?: number,
-    private readonly btcSyncBlockInterval?: number
+    private readonly btcSyncBlockInterval?: number,
   ) {
-    super(startedTestContainer);
-    this.mappedPort = startedTestContainer.getMappedPort(this.containerPort);
+    super(startedTestContainer)
+    this.mappedPort = startedTestContainer.getMappedPort(this.containerPort)
   }
 
   public getPort(): number {
-    return this.mappedPort;
+    return this.mappedPort
   }
 
   public getNetworkName(): string {
-    return this.networkName;
+    return this.networkName
   }
 
   public getDataDir(): string {
-    return this.dataDir;
+    return this.dataDir
   }
 
   public getEthRpcUrl(): string | undefined {
-    return this.ethRpcUrl;
+    return this.ethRpcUrl
   }
 
   public getBtcRpcUrl(): string | undefined {
-    return this.btcRpcUrl;
+    return this.btcRpcUrl
   }
 
   public getBtcRpcUsername(): string | undefined {
-    return this.btcRpcUsername;
+    return this.btcRpcUsername
   }
 
   public getBtcRpcPassword(): string | undefined {
-    return this.btcRpcPassword;
+    return this.btcRpcPassword
   }
 
   public getBtcEndBlockHeight(): number | undefined {
-    return this.btcEndBlockHeight;
+    return this.btcEndBlockHeight
   }
 
   public getBtcSyncBlockInterval(): number | undefined {
-    return this.btcSyncBlockInterval;
+    return this.btcSyncBlockInterval
   }
 
   public getConnectionAddress(): string {
-    return `${this.getHost()}:${this.getPort()}`;
+    return `${this.getHost()}:${this.getPort()}`
   }
 }

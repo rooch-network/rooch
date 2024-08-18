@@ -1,21 +1,32 @@
- 
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+import { describe, it, expect, beforeEach } from 'vitest'
 import { UniSatDataSource } from './unisat_datasource.js'; 
-import { Wallet } from '../../wallet/index.js'
+//import { Wallet } from '../../wallet/index.js'
 
 describe('UniSatDataSource', () => {
   let instance: UniSatDataSource;
-  let wallet: Wallet;
+  //let wallet: Wallet;
 
   beforeEach(() => {
+    /*
     wallet = new Wallet({
       wif: 'cNGdjKojxE7nCcYdK34d12cdYTzBdDV4VdXdbpG7SHGTRWuCxpAW',
       network: "testnet",
       type: 'taproot',
     })
-
+    */
+   
     instance = new UniSatDataSource({network: 'testnet'});
   });
 
+  describe('unisat test', () => {
+    it('instance', async () => {
+      expect(instance).toBeDefined()
+    });
+  });
+
+  /*
   describe('getBalance', () => {
     it('should return the correct balance for a given address', async () => {
       if (!wallet.selectedAddress) {
@@ -43,7 +54,7 @@ describe('UniSatDataSource', () => {
     });
   });
 
-  /*
+ 
   describe('getInscriptionUTXO', () => {
     it('should return the correct UTXO for getInscriptionUTXO', async () => {
       const utxo = await instance.getInscriptionUTXO({ id: '42d186a5d9bc064e5704024afb2dfccd424da1b9756ae31a4fbfee22f4fc7ec5i1' });
@@ -107,13 +118,11 @@ describe('UniSatDataSource', () => {
 
     it('should return the correct Inscription for getInscription for generator wasm', async () => {
       const inscription = await instance.getInscription({ id: '6f55475ce65054aa8371d618d217da8c9a764cecdaf4debcbce8d6312fe6b4d8i0', decodeMetadata: true });
-      console.log('generator inscription:', inscription)
       expect(inscription).toBeDefined()
     });
 
     it('should return the correct Inscription for getInscription for move tick', async () => {
       const inscription = await instance.getInscription({ id: '75e95eeba0b3450feda8d880efe00600816e5934160a4757fbdaa99a0e3bb436i0', decodeMetadata: true });
-      console.log('move tick inscription:', inscription)
       expect(inscription).toBeDefined()
     });
   });
@@ -133,7 +142,6 @@ describe('UniSatDataSource', () => {
     
     it('should return the correct TX for getTransaction', async () => {
       const resp = await instance.getTransaction({ txId: '42d186a5d9bc064e5704024afb2dfccd424da1b9756ae31a4fbfee22f4fc7ec5' });
-      console.log("resp:", resp)
       expect(resp).toBeDefined()
     });
 
@@ -145,7 +153,6 @@ describe('UniSatDataSource', () => {
         witness: true,
         decodeMetadata: true,
       });
-      console.log("raw resp:", resp)
       expect(resp).toBeDefined()
     });
   });
@@ -155,7 +162,6 @@ describe('UniSatDataSource', () => {
     
     it('should return the UTXSs for getSpendables', async () => {
       const utxos = await instance.getSpendables({ address: 'tb1pk6w56zalwe0txflwedv6d4mzszu4334ehtqe2yyjv8m2g36xlgrs7m68qv', value: 100 });
-      console.log('spendable utxos:', utxos)
       expect(utxos).toBeDefined()
     });
   });

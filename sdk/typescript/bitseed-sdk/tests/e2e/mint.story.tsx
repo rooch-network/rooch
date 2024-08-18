@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import React, { useEffect, useState } from 'react'
 
 import {
@@ -11,7 +13,7 @@ import {
 import { createTestBitSeed } from './commons/test_bitseed_web'
 
 interface MintStoryProps {
-  roochServerAddress: string;
+  roochServerAddress: string
 }
 
 export default function MintStory({ roochServerAddress }: MintStoryProps) {
@@ -30,8 +32,6 @@ export default function MintStory({ roochServerAddress }: MintStoryProps) {
   const handleMint = async () => {
     if (!bitseed) return
 
-    console.log('handle mint tick')
-
     try {
       let tick = parseInscriptionID(tickDeployInscriptionID)
       const mintOptions: InscribeOptions = {
@@ -39,19 +39,17 @@ export default function MintStory({ roochServerAddress }: MintStoryProps) {
         satpoint: {
           outpoint: {
             txid: hexStringToTxid(tick.txid),
-            vout: 0
+            vout: 0,
           },
-          offset: 0
-        }
+          offset: 0,
+        },
       }
 
       const inscriptionId = await bitseed.mint(tick, userInput, mintOptions)
-      console.log('mint ok, inscriptionId:', inscriptionId)
 
       setMintResult(inscriptionId)
       setError(undefined)
     } catch (e) {
-      console.log('mint error:', e)
       setError(e.message)
       setMintResult(undefined)
     }

@@ -12,11 +12,9 @@
     "build": "build-package",
     "test": "pnpm test:unit && pnpm test:e2e",
     "test:unit": "vitest run src",
-    "test:unit:debug": "vitest run src/datasource/rooch",
+    "test:unit:debug": "vitest run src/bitseed.test.ts",
     "test:e2e": "pnpm run build && playwright test -c playwright-ct.config.ts",
     "test:e2e:debug": "pnpm run build && playwright test -c playwright-ct.config.ts -g deploy",
-    "size": "size-limit",
-    "analyze": "size-limit --why",
     "eslint:check": "eslint --max-warnings=0 .",
     "eslint:fix": "pnpm eslint:check --fix",
     "prettier:check": "prettier -c --ignore-unknown .",
@@ -32,12 +30,19 @@
   "bugs": {
     "url": "https://github.com/rooch-network/rooch/issues"
   },
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "type": "module",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/cjs/index.d.ts",
-  "keywords": ["Rooch", "Rooch Network", "Move"],
+  "keywords": [
+    "Rooch",
+    "Rooch Network",
+    "Move"
+  ],
   "dependencies": {
     "@mempool/mempool.js": "^2.3.0",
     "@radix-ui/colors": "^3.0.0",
@@ -47,12 +52,14 @@
     "@roochnetwork/rooch-sdk-kit": "workspace:*",
     "@sadoprotocol/ordit-sdk": "./libs/sadoprotocol-ordit-sdk-v2.4.9.tgz",
     "@tanstack/react-query": "^5.0.0",
+    "@types/debug": "^4.1.12",
     "@types/randomstring": "^1.1.11",
     "bip39": "^3.1.0",
     "bitcoinjs-lib": "^6.1.5",
     "buffer": "5.7.1",
     "cbor": "^9.0.2",
     "commander": "^10.0.0",
+    "debug": "^4.3.6",
     "decimal.js": "^10.4.3",
     "js-sha3": "^0.9.3",
     "randomstring": "^1.2.3",

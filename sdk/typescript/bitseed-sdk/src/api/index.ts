@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 export * from './rooch-bitseed-api.interface.js'
 export * from './rooch-bitseed-api.js'
 export * from './rooch-bitseed-api.mock.js'

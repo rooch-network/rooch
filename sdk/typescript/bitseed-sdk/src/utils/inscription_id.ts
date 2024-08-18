@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { InscriptionID } from '../types/index.js'
 
 export function parseInscriptionID(id: string): InscriptionID {
@@ -19,8 +21,8 @@ export function inscriptionIDToString(inscriptionID: InscriptionID): string {
 }
 
 export function extractInscription(generator: string): string | null {
-  const match = generator.match(/\/inscription\/([a-f0-9]+i[0-9])/i);
-  return match ? match[1] : null;
+  const match = generator.match(/\/inscription\/([a-f0-9]+i[0-9])/i)
+  return match ? match[1] : null
 }
 
 export function extractInscriptionID(generator: string): InscriptionID | null {

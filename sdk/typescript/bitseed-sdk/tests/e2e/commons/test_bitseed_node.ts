@@ -1,15 +1,21 @@
-import * as fs from 'fs';
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+import debug from 'debug'
+import * as fs from 'fs'
 import { Ordit } from '@sadoprotocol/ordit-sdk'
 import bitseed from '../../../dist/cjs/index.js'
-const {  BitSeed, GeneratorLoader, RoochDataSource, inscriptionIDToString, parseInscriptionID } = bitseed;
-import { HTTPDebugTransport } from './http_debug_transport.js';
+import { HTTPDebugTransport } from './http_debug_transport.js'
+const { BitSeed, GeneratorLoader, RoochDataSource, inscriptionIDToString, parseInscriptionID } =
+  bitseed
+
+const log = debug('bitseed:e2e:test_bitseed_node')
 
 export function createTestBitSeed(roochServerAddress: string) {
   const network = 'regtest'
   const datasource = new RoochDataSource({
-    transport: new HTTPDebugTransport({ url: `http://${roochServerAddress}` }, false)
+    transport: new HTTPDebugTransport({ url: `http://${roochServerAddress}` }, false),
   })
-  
+
   const generatorLoader = new GeneratorLoader(datasource)
 
   // address: tb1pz9qq9gwemapvmpntw90ygalhnjzgy2d7tglts0a90avrre902z2sh3ew0h
@@ -34,8 +40,8 @@ export function createTestBitSeed(roochServerAddress: string) {
   })
   */
 
-  console.log('primary wallet address:', primaryWallet.selectedAddress)
-  console.log('funding wallet address:', fundingWallet.selectedAddress)
+  log('primary wallet address:', primaryWallet.selectedAddress)
+  log('funding wallet address:', fundingWallet.selectedAddress)
 
   const bitseed = new BitSeed(primaryWallet, fundingWallet, datasource, generatorLoader)
 
@@ -44,21 +50,21 @@ export function createTestBitSeed(roochServerAddress: string) {
 
 export async function prepareTestGenerator(bitseed, filePath: string): Promise<string> {
   let wasmBytes = await readFileAsBytes(filePath)
-  console.log('wasm length:', wasmBytes.length)
+  log('wasm length:', wasmBytes.length)
 
   const deployOptions = {
     fee_rate: 1,
   }
 
-  const inscriptionId = await bitseed.generator("simple", wasmBytes, deployOptions)
-  console.log('prepareGenerator inscriptionId:', inscriptionId)
+  const inscriptionId = await bitseed.generator('simple', wasmBytes, deployOptions)
+  log('prepareGenerator inscriptionId:', inscriptionId)
 
   return inscriptionIDToString(inscriptionId)
 }
 
 export async function deployTestTick(bitseed, generatorID, tick, max, deployArg) {
   let generator = parseInscriptionID(generatorID)
-  const deployArgs = [deployArg];
+  const deployArgs = [deployArg]
 
   const deployOptions = {
     fee_rate: 1,
@@ -75,10 +81,10 @@ const readFileAsBytes = (filePath: string): Promise<Uint8Array> => {
   return new Promise((resolve, reject) => {
     fs.readFile(filePath, (err, data) => {
       if (err) {
-        reject(err);
+        reject(err)
       } else {
-        resolve(new Uint8Array(data));
+        resolve(new Uint8Array(data))
       }
-    });
-  });
-};
+    })
+  })
+}

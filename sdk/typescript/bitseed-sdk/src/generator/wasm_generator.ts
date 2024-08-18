@@ -1,8 +1,13 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+import { debug } from 'debug'
 import cbor from 'cbor'
 import { IGenerator } from './interface.js'
 import { SFTRecord } from '../types/index.js'
 import { EmscriptenRuntime } from './emscripten_runtime.js'
 import { InscribeSeed } from './seed.js'
+
+const log = debug('bitseed:wasm-generator')
 
 export class WasmGenerator implements IGenerator {
   private wasmInstance: WebAssembly.Instance
@@ -17,12 +22,12 @@ export class WasmGenerator implements IGenerator {
     userInput: string,
   ): Promise<SFTRecord> {
     // Convert deployArgs to a CBOR bytes
-    const argsBytes = new Uint8Array(cbor.encodeOne(deployArgs.map((json)=>JSON.parse(json))))
+    const argsBytes = new Uint8Array(cbor.encodeOne(deployArgs.map((json) => JSON.parse(json))))
 
     const input = {
-      "seed": seed.seed(),
-      "user_input": userInput,
-      "attrs": Array.from(argsBytes),
+      seed: seed.seed(),
+      user_input: userInput,
+      attrs: Array.from(argsBytes),
     }
 
     // Get the memory of the WASM instance
@@ -44,7 +49,7 @@ export class WasmGenerator implements IGenerator {
       const ptr = stackAllocFunction(len + 4)
 
       // write buffer length
-      const dataView = new DataView(memory.buffer);
+      const dataView = new DataView(memory.buffer)
       dataView.setUint32(ptr, len, false)
 
       // Write the input to the stack
@@ -73,13 +78,14 @@ export class WasmGenerator implements IGenerator {
 
     try {
       // Call the WASM function
-      const inscribeGenerateFunction = this.wasmInstance.exports.inscribe_generate as CallableFunction
+      const inscribeGenerateFunction = this.wasmInstance.exports
+        .inscribe_generate as CallableFunction
       const outputPtr = inscribeGenerateFunction(inputEncoded.ptr)
 
       const output = await decodeOutputOnHeap(outputPtr, memory)
-      return output as SFTRecord;
-    } catch(e: any) {
-      console.log('call inscribe_generate error:', e)
+      return output as SFTRecord
+    } catch (e: any) {
+      log('call inscribe_generate error:', e)
       throw e
     } finally {
       inputEncoded.free()
