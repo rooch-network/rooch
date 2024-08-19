@@ -1,14 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::bitcoin::ord::Inscription;
 use crate::bitcoin::utxo::UTXO;
 use crate::indexer::Filter;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
-use move_core_types::language_storage::StructTag;
+use move_core_types::language_storage::{StructTag, TypeTag};
+use moveos_types::move_types::type_tag_match;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
-use moveos_types::state::{MoveStructType, ObjectChange, StateChangeSet};
+use moveos_types::state::{MoveStructType, MoveType, ObjectChange, StateChangeSet};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -45,6 +47,52 @@ impl IndexerObjectState {
 }
 
 #[derive(Clone, Debug, Default)]
+pub struct IndexerObjectStateChangeSet {
+    pub object_states: IndexerObjectStateChanges,
+    pub object_state_utxos: IndexerObjectStateChanges,
+    pub object_state_inscriptions: IndexerObjectStateChanges,
+}
+
+impl IndexerObjectStateChangeSet {
+    pub fn update_object_states(&mut self, state: IndexerObjectState) {
+        if type_tag_match(&state.metadata.object_type, &UTXO::type_tag()) {
+            self.object_state_utxos.update_object_states.push(state)
+        } else if type_tag_match(&state.metadata.object_type, &Inscription::type_tag()) {
+            self.object_state_inscriptions
+                .update_object_states
+                .push(state)
+        } else {
+            self.object_states.update_object_states.push(state)
+        }
+    }
+
+    pub fn new_object_states(&mut self, state: IndexerObjectState) {
+        if type_tag_match(&state.metadata.object_type, &UTXO::type_tag()) {
+            self.object_state_utxos.new_object_states.push(state)
+        } else if type_tag_match(&state.metadata.object_type, &Inscription::type_tag()) {
+            self.object_state_inscriptions.new_object_states.push(state)
+        } else {
+            self.object_states.new_object_states.push(state)
+        }
+    }
+
+    pub fn remove_object_states(&mut self, object_id: ObjectID, object_type: TypeTag) {
+        if type_tag_match(&object_type, &UTXO::type_tag()) {
+            self.object_state_utxos
+                .remove_object_states
+                .push(object_id.to_string())
+        } else if type_tag_match(&object_type, &Inscription::type_tag()) {
+            self.object_state_inscriptions
+                .remove_object_states
+                .push(object_id.to_string())
+        } else {
+            self.object_states
+                .remove_object_states
+                .push(object_id.to_string())
+        }
+    }
+}
+#[derive(Clone, Debug, Default)]
 pub struct IndexerObjectStateChanges {
     pub new_object_states: Vec<IndexerObjectState>,
     pub update_object_states: Vec<IndexerObjectState>,
@@ -54,7 +102,7 @@ pub struct IndexerObjectStateChanges {
 pub fn handle_object_change(
     mut state_index_generator: u64,
     tx_order: u64,
-    indexer_object_state_changes: &mut IndexerObjectStateChanges,
+    indexer_object_state_change_set: &mut IndexerObjectStateChangeSet,
     object_change: ObjectChange,
 ) -> Result<u64> {
     let ObjectChange {
@@ -67,26 +115,21 @@ pub fn handle_object_change(
         match op {
             Op::Modify(_value) => {
                 let state = IndexerObjectState::new(metadata, tx_order, state_index_generator);
-                indexer_object_state_changes
-                    .update_object_states
-                    .push(state);
+                indexer_object_state_change_set.update_object_states(state);
             }
             Op::Delete => {
-                indexer_object_state_changes
-                    .remove_object_states
-                    .push(object_id.to_string());
+                indexer_object_state_change_set
+                    .remove_object_states(object_id, metadata.object_type.clone());
             }
             Op::New(_value) => {
                 let state = IndexerObjectState::new(metadata, tx_order, state_index_generator);
-                indexer_object_state_changes.new_object_states.push(state);
+                indexer_object_state_change_set.new_object_states(state);
             }
         }
     } else {
         //If value is not changed, we should update the metadata.
         let state = IndexerObjectState::new(metadata, tx_order, state_index_generator);
-        indexer_object_state_changes
-            .update_object_states
-            .push(state);
+        indexer_object_state_change_set.update_object_states(state);
     }
 
     state_index_generator += 1;
@@ -94,7 +137,7 @@ pub fn handle_object_change(
         state_index_generator = handle_object_change(
             state_index_generator,
             tx_order,
-            indexer_object_state_changes,
+            indexer_object_state_change_set,
             change,
         )?;
     }

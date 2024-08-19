@@ -21,10 +21,40 @@ diesel::table! {
     object_states (id) {
         id -> Text,
         owner -> Text,
-        flag -> SmallInt,
-        state_root -> Text,
-        size -> BigInt,
+        // flag -> SmallInt,
+        // state_root -> Text,
+        // size -> BigInt,
         object_type -> Text,
+        tx_order -> BigInt,
+        state_index -> BigInt,
+        created_at -> BigInt,
+        updated_at -> BigInt,
+    }
+}
+
+diesel::table! {
+    utxos (id) {
+        id -> Text,
+        owner -> Text,
+        // flag -> SmallInt,
+        // state_root -> Text,
+        // size -> BigInt,
+        // object_type -> Text,
+        tx_order -> BigInt,
+        state_index -> BigInt,
+        created_at -> BigInt,
+        updated_at -> BigInt,
+    }
+}
+
+diesel::table! {
+    inscriptions (id) {
+        id -> Text,
+        owner -> Text,
+        // flag -> SmallInt,
+        // state_root -> Text,
+        // size -> BigInt,
+        // object_type -> Text,
         tx_order -> BigInt,
         state_index -> BigInt,
         created_at -> BigInt,
@@ -51,4 +81,10 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(events, object_states, transactions,);
+diesel::allow_tables_to_appear_in_same_query!(
+    events,
+    object_states,
+    utxos,
+    inscriptions,
+    transactions,
+);

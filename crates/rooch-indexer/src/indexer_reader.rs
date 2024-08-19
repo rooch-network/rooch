@@ -4,7 +4,7 @@
 use crate::errors::IndexerError;
 use crate::metrics::IndexerReaderMetrics;
 use crate::models::events::StoredEvent;
-use crate::models::states::StoredObjectState;
+use crate::models::states::{StoredObjectState, StoredObjectStateInfo};
 use crate::models::transactions::StoredTransaction;
 use crate::schema::object_states;
 use crate::schema::{events, transactions};
@@ -30,7 +30,7 @@ use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::runtime::Handle;
 use tokio::time::timeout;
 
@@ -400,13 +400,14 @@ impl IndexerReader {
         Ok(result)
     }
 
-    fn query_stored_object_states_with_filter(
+    fn query_stored_object_state_infos_with_filter(
         &self,
         filter: ObjectStateFilter,
         cursor: Option<IndexerStateID>,
         limit: usize,
         descending_order: bool,
-    ) -> IndexerResult<Vec<StoredObjectState>> {
+    ) -> IndexerResult<Vec<StoredObjectStateInfo>> {
+        let start = Instant::now();
         let (tx_order, state_index) = if let Some(cursor) = cursor {
             let IndexerStateID {
                 tx_order,
@@ -429,6 +430,11 @@ impl IndexerReader {
         } else {
             (-1, 0)
         };
+
+        // SELECT * FROM object_states \
+        // Avoid to use "select *". Specify the columns to use.
+        let select_clause =
+            format!("SELECT {OBJECT_ID_STR},{TX_ORDER_STR},{STATE_INDEX_STR} FROM object_states");
 
         let main_where_clause = match filter {
             ObjectStateFilter::ObjectTypeWithOwner {
@@ -481,21 +487,26 @@ impl IndexerReader {
 
         let query = format!(
             "
-                SELECT * FROM object_states \
+                {} \
                 WHERE {} {} \
                 ORDER BY {} \
                 LIMIT {}
             ",
-            main_where_clause, cursor_clause, order_clause, limit,
+            select_clause, main_where_clause, cursor_clause, order_clause, limit,
         );
 
         tracing::debug!("query object states: {}", query);
-        let stored_object_states = self
+        println!("Query object states: {}", query);
+        let stored_object_state_infos = self
             .get_inner_indexer_reader(INDEXER_OBJECT_STATES_TABLE_NAME)?
             .run_query_with_timeout(|conn| {
-                diesel::sql_query(query).load::<StoredObjectState>(conn)
+                // diesel::sql_query(query).load::<StoredObjectState>(conn)
+                diesel::sql_query(query).load::<StoredObjectStateInfo>(conn)
             })?;
-        Ok(stored_object_states)
+        let duration = start.elapsed();
+
+        println!("Query object states time elapsed: {:?}", duration);
+        Ok(stored_object_state_infos)
     }
 
     #[named]
@@ -512,8 +523,12 @@ impl IndexerReader {
             .indexer_reader_query_latency_seconds
             .with_label_values(&[fn_name])
             .start_timer();
-        let stored_object_states =
-            self.query_stored_object_states_with_filter(filter, cursor, limit, descending_order)?;
+        let stored_object_state_infos = self.query_stored_object_state_infos_with_filter(
+            filter,
+            cursor,
+            limit,
+            descending_order,
+        )?;
         let result = stored_object_states
             .into_iter()
             .map(|v| v.try_parse_indexer_object_state())
@@ -532,9 +547,13 @@ impl IndexerReader {
         limit: usize,
         descending_order: bool,
     ) -> IndexerResult<Vec<(ObjectID, IndexerStateID)>> {
-        let stored_object_states =
-            self.query_stored_object_states_with_filter(filter, cursor, limit, descending_order)?;
-        let result = stored_object_states
+        let stored_object_state_infos = self.query_stored_object_state_infos_with_filter(
+            filter,
+            cursor,
+            limit,
+            descending_order,
+        )?;
+        let result = stored_object_state_infos
             .into_iter()
             .map(|v| v.try_parse_id())
             .collect::<Result<Vec<_>>>()

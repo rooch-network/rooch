@@ -1,17 +1,17 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::schema::object_states;
 use diesel::prelude::*;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::language_storage::TypeTag;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
-use rooch_types::indexer::state::{IndexerObjectState, IndexerStateID};
+use moveos_types::state::MoveType;
+use rooch_types::bitcoin::ord::Inscription;
+use rooch_types::indexer::state::IndexerObjectState;
 use std::str::FromStr;
 
 #[derive(Queryable, QueryableByName, Insertable, Debug, Clone)]
-#[diesel(table_name = object_states)]
-pub struct StoredObjectState {
+#[diesel(table_name = inscriptions)]
+pub struct StoredInscription {
     /// The global state key
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub id: String,
@@ -33,9 +33,9 @@ pub struct StoredObjectState {
     /// The object updated timestamp on chain
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub updated_at: i64,
-    /// The T struct tag of the object value
-    #[diesel(sql_type = diesel::sql_types::Text)]
-    pub object_type: String,
+    // /// The T struct tag of the object value
+    // #[diesel(sql_type = diesel::sql_types::Text)]
+    // pub object_type: String,
     /// The tx order of this transaction
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub tx_order: i64,
@@ -44,7 +44,7 @@ pub struct StoredObjectState {
     pub state_index: i64,
 }
 
-impl From<IndexerObjectState> for StoredObjectState {
+impl From<IndexerObjectState> for StoredInscription {
     fn from(state: IndexerObjectState) -> Self {
         let metadata = state.metadata;
         let tx_order = state.tx_order;
@@ -60,18 +60,19 @@ impl From<IndexerObjectState> for StoredObjectState {
             // size: metadata.size as i64,
             created_at: metadata.created_at as i64,
             updated_at: metadata.updated_at as i64,
-            object_type: metadata.object_type.to_string(),
+            // object_type: metadata.object_type.to_string(),
             tx_order: tx_order as i64,
             state_index: state_index as i64,
         }
     }
 }
 
-impl StoredObjectState {
+impl StoredInscription {
     pub fn try_parse_indexer_object_state(&self) -> Result<IndexerObjectState, anyhow::Error> {
         let id = ObjectID::from_str(self.id.as_str())?;
         let owner = AccountAddress::from_str(self.owner.as_str())?;
-        let object_type = TypeTag::from_str(self.object_type.as_str())?;
+        // let object_type = TypeTag::from_str(self.object_type.as_str())?;
+        let object_type = Inscription::type_tag();
         let state_root = None;
         let metadata = ObjectMeta {
             id,
@@ -100,51 +101,4 @@ impl StoredObjectState {
     //     };
     //     Ok((ObjectID::from_str(self.id.as_str())?, indexer_state_id))
     // }
-}
-
-#[derive(Queryable, QueryableByName, Debug)]
-// #[diesel(table_name = object_states)]
-pub struct StoredObjectStateInfo {
-    /// The global state key
-    #[diesel(sql_type = diesel::sql_types::Text)]
-    pub id: String,
-    // /// The owner of the object
-    // #[diesel(sql_type = diesel::sql_types::Text)]
-    // pub owner: String,
-    // /// A flag to indicate whether the object is shared or frozen
-    // #[diesel(sql_type = diesel::sql_types::SmallInt)]
-    // pub flag: i16,
-    // /// The table state root of the object
-    // #[diesel(sql_type = diesel::sql_types::Text)]
-    // pub state_root: String,
-    // /// The table length
-    // #[diesel(sql_type = diesel::sql_types::BigInt)]
-    // pub size: i64,
-    // /// The object created timestamp on chain
-    // #[diesel(sql_type = diesel::sql_types::BigInt)]
-    // pub created_at: i64,
-    // /// The object updated timestamp on chain
-    // #[diesel(sql_type = diesel::sql_types::BigInt)]
-    // pub updated_at: i64,
-    // /// The T struct tag of the object value
-    // #[diesel(sql_type = diesel::sql_types::Text)]
-    // pub object_type: String,
-    /// The tx order of this transaction
-    #[diesel(sql_type = diesel::sql_types::BigInt)]
-    pub tx_order: i64,
-    /// The state index in the tx
-    #[diesel(sql_type = diesel::sql_types::BigInt)]
-    pub state_index: i64,
-}
-
-impl StoredObjectStateInfo {
-    pub fn try_parse_id(&self) -> Result<(ObjectID, IndexerStateID), anyhow::Error> {
-        let tx_order = self.tx_order as u64;
-        let state_index = self.state_index as u64;
-        let indexer_state_id = IndexerStateID {
-            tx_order,
-            state_index,
-        };
-        Ok((ObjectID::from_str(self.id.as_str())?, indexer_state_id))
-    }
 }
