@@ -1,15 +1,20 @@
-module rooch_nursery::bitcoin_multisign_validator{
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+/// Bitcoin multisign auth validator
+module bitcoin_move::bitcoin_multisign_validator{
 
     use std::vector;
     use moveos_std::tx_context;
     use moveos_std::hash;
+    use moveos_std::signer;
     use rooch_framework::ecdsa_k1;
     use rooch_framework::auth_validator_registry;
     use rooch_framework::auth_validator;
     use rooch_framework::auth_payload;
-    use rooch_nursery::multisign_account;
+    use bitcoin_move::multisign_account;
 
-    friend rooch_nursery::genesis;
+    friend bitcoin_move::genesis;
 
     const ErrorGenesisInitError: u64 = 1;
 
@@ -24,8 +29,17 @@ module rooch_nursery::bitcoin_multisign_validator{
     }
 
     public(friend) fun genesis_init(){
-        let id = auth_validator_registry::register<BitcoinMultisignValidator>();
+        let system = signer::module_signer<BitcoinMultisignValidator>();
+        let id = auth_validator_registry::register_by_system<BitcoinMultisignValidator>(&system);
         assert!(id == BITCOIN_MULTISIGN_VALIDATOR_ID, ErrorGenesisInitError);
+    }
+
+    /// Init function called by upgrade. This module is upgrade after genesis, so we provide this function for upgrade.
+    /// When rest the genesis, we can remove this function.
+    public fun init_for_upgrade(){
+        if(!auth_validator_registry::is_registered<BitcoinMultisignValidator>()){
+            genesis_init();
+        }
     }
 
     /// Only validate the authenticator's signature.

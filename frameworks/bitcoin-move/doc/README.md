@@ -14,7 +14,9 @@ This is the reference documentation of the Bitcoin Move Framework.
 
 -  [`0x4::bitcoin`](bitcoin.md#0x4_bitcoin)
 -  [`0x4::bitcoin_hash`](bitcoin_hash.md#0x4_bitcoin_hash)
+-  [`0x4::bitcoin_multisign_validator`](bitcoin_multisign_validator.md#0x4_bitcoin_multisign_validator)
 -  [`0x4::genesis`](genesis.md#0x4_genesis)
+-  [`0x4::multisign_account`](multisign_account.md#0x4_multisign_account)
 -  [`0x4::network`](network.md#0x4_network)
 -  [`0x4::opcode`](opcode.md#0x4_opcode)
 -  [`0x4::ord`](ord.md#0x4_ord)

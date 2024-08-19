@@ -3,7 +3,7 @@
 
 use crate::framework::auth_validator::BuiltinAuthValidator;
 use anyhow::Result;
-use framework_types::addresses::ROOCH_NURSERY_ADDRESS;
+use framework_types::addresses::BITCOIN_MOVE_ADDRESS;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
 };
@@ -26,7 +26,7 @@ impl BitcoinMultisignValidator {
 }
 
 impl MoveStructType for BitcoinMultisignValidator {
-    const ADDRESS: AccountAddress = ROOCH_NURSERY_ADDRESS;
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("BitcoinMultisignValidator");
 }
@@ -56,7 +56,7 @@ impl<'a> BitcoinMultisignValidatorModule<'a> {
 }
 
 impl<'a> ModuleBinding<'a> for BitcoinMultisignValidatorModule<'a> {
-    const MODULE_ADDRESS: AccountAddress = ROOCH_NURSERY_ADDRESS;
+    const MODULE_ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
 
     fn new(caller: &'a impl MoveFunctionCaller) -> Self

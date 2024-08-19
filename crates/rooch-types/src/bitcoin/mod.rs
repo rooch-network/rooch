@@ -24,10 +24,12 @@ use types::BlockHeightHash;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("bitcoin");
 
+pub mod bitcoin_multisign_validator;
 /// Types mapping from Bitcoin Move types to Rust types
 /// Module binding for the Framework
 pub mod brc20;
 pub mod genesis;
+pub mod multisign_account;
 pub mod network;
 pub mod ord;
 pub mod pending_block;

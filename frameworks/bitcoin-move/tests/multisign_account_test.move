@@ -1,10 +1,10 @@
-module rooch_nursery::multisign_account_test{
+module bitcoin_move::multisign_account_test{
     
     use std::vector;
     use std::string::{utf8};
     use rooch_framework::bitcoin_address;
-    use rooch_nursery::multisign_account;
-    use rooch_nursery::genesis;
+    use bitcoin_move::multisign_account;
+    use bitcoin_move::genesis;
 
     #[test]
     public fun test_multisign_account(){

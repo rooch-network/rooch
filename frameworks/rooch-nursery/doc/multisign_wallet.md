@@ -20,7 +20,7 @@ Bitcoin multisign account wallet to manage the multisign tx on Bitcoin and Rooch
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::table_vec</a>;
 <b>use</b> <a href="">0x3::ecdsa_k1</a>;
-<b>use</b> <a href="multisign_account.md#0xa_multisign_account">0xa::multisign_account</a>;
+<b>use</b> <a href="">0x4::multisign_account</a>;
 </code></pre>
 
 

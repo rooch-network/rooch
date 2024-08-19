@@ -4,8 +4,8 @@
 use crate::binding_test;
 use moveos_types::module_binding::MoveFunctionCaller;
 use rooch_types::{
+    bitcoin::multisign_account::{self, MultisignAccountModule},
     crypto::RoochKeyPair,
-    nursery::multisign_account::{self, MultisignAccountModule},
     transaction::RoochTransactionData,
 };
 
