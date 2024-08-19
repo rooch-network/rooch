@@ -99,9 +99,11 @@ jobs:
         run: pnpm rooch-sdk-kit build
       - name: Test SDK KIT
         run: pnpm rooch-sdk-kit test
-      - name: Build bitseed-sdk
+      - name: Lint Bitseed SDK
+        run: pnpm bitseed-sdk lint
+      - name: Build Bitseed SDK
         run: pnpm bitseed-sdk build
-      - name: Test bitseed-sdk
+      - name: Test Bitseed SDK
         run: pnpm bitseed-sdk test
 
       - uses: CatChen/check-git-status-action@v1
