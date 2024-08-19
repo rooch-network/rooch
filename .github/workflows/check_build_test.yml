@@ -87,10 +87,23 @@ jobs:
             ## Build and test app start
       - name: Install pnpm dependencies
         run: npm install pnpm@9.4.0 -g && pnpm install
+      - name: Install Playwright Browsers
+        uses: microsoft/playwright-github-action@v1
+        with:
+          install_deps: true
+      - name: Cache Playwright Browsers
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
       - name: Lint
         run: pnpm lint
         continue-on-error: true
         timeout-minutes: 15
+      - name: Build Test Suite
+        run: pnpm test-suite build
       - name: Build SDK
         run: pnpm rooch-sdk build
       - name: Test SDK
