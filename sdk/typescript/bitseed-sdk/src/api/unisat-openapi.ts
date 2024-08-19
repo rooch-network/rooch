@@ -143,7 +143,7 @@ export class UnisatOpenApi implements IUniSatOpenAPI {
     let url = host + '/' + version + route
     let c = 0
     for (const id in params) {
-      if (c == 0) {
+      if (c === 0) {
         url += '?'
       } else {
         url += '&'

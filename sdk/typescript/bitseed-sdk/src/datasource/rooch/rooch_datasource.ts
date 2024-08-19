@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 import cbor from 'cbor'
+import { Buffer } from 'buffer'
 import * as bitcoin from 'bitcoinjs-lib'
 import { Network } from '../../types/index.js'
 import {
@@ -497,10 +498,10 @@ export class RoochDataSource implements IDatasource {
     })
 
     const utxoOuts = output.tx.vout.filter((out) => {
-      return out.n == utxoValue.vout
+      return out.n === utxoValue.vout
     })
 
-    if (utxoOuts.length == 0) {
+    if (utxoOuts.length === 0) {
       throw new Error('Invalid UTXO scriptPubKey')
     }
 

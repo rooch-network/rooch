@@ -12,8 +12,4 @@ export type WalletOptions = {
   type?: AddressFormats
 }
 
-export class Wallet extends Ordit {
-  constructor(opts: WalletOptions) {
-    super(opts)
-  }
-}
+export class Wallet extends Ordit {}

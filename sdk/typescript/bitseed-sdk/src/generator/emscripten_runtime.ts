@@ -41,12 +41,12 @@ var UTF8ArrayToString = (heapOrArray: any, idx: any, maxBytesToRead: any) => {
       continue
     }
     var u1 = heapOrArray[idx++] & 63
-    if ((u0 & 0xe0) == 0xc0) {
+    if ((u0 & 0xe0) === 0xc0) {
       str += String.fromCharCode(((u0 & 31) << 6) | u1)
       continue
     }
     var u2 = heapOrArray[idx++] & 63
-    if ((u0 & 0xf0) == 0xe0) {
+    if ((u0 & 0xf0) === 0xe0) {
       u0 = ((u0 & 15) << 12) | (u1 << 6) | u2
     } else {
       u0 = ((u0 & 7) << 18) | (u1 << 12) | (u2 << 6) | (heapOrArray[idx++] & 63)

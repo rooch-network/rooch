@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 import sha3 from 'js-sha3'
+import { Buffer } from 'buffer'
 import { OutPoint } from '../types/index.js'
 
 export class InscribeSeed {

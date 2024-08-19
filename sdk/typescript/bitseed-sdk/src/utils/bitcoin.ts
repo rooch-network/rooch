@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 import * as bitcoin from 'bitcoinjs-lib'
+import { Buffer } from 'buffer'
 import { UTXOLimited } from '@sadoprotocol/ordit-sdk'
 export const ScriptTypeWitnessV1Taproot = 'witness_v1_taproot'
 export const ScriptTypeWitnessV0Scripthash = 'witness_v0_scripthash'
@@ -90,7 +91,7 @@ export function decodeUTXOs(
 
       try {
         const address = bitcoin.address.fromOutputScript(output.script, network)
-        return address && address == filterAddress
+        return address && address === filterAddress
       } catch (e: any) {
         return false
       }

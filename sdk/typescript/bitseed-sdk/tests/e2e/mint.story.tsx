@@ -27,7 +27,7 @@ export default function MintStory({ roochServerAddress }: MintStoryProps) {
 
   useEffect(() => {
     setBitseed(createTestBitSeed(roochServerAddress))
-  }, [])
+  }, [roochServerAddress])
 
   const handleMint = async () => {
     if (!bitseed) return

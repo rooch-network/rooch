@@ -62,7 +62,7 @@ export class UniSatDataSource implements IDatasource {
   async getInscription({ id, decodeMetadata }: GetInscriptionOptions): Promise<Inscription> {
     const utxoDetail = await this.unisatOpenAPI.getInscriptionUtxoDetail(id)
 
-    if (!utxoDetail || utxoDetail.inscriptions.length == 0) {
+    if (!utxoDetail || utxoDetail.inscriptions.length === 0) {
       throw new BitseedSDKError('inscription nil')
     }
 

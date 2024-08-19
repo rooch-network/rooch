@@ -18,7 +18,7 @@ export default function DeployGeneratorStory({ roochServerAddress }: DeployGener
 
   useEffect(() => {
     setBitseed(createTestBitSeed(roochServerAddress))
-  }, [])
+  }, [roochServerAddress])
 
   const handleDeploy = async () => {
     if (!bitseed) return

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { describe, it, vi, expect, beforeEach } from 'vitest'
 import cbor from 'cbor'
+import { Buffer } from 'buffer'
 import { RoochDataSource } from './rooch_datasource.js';
 import { Wallet } from '../../wallet/index.js';
 import { 
