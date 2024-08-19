@@ -38,6 +38,7 @@ module bitcoin_move::genesis{
     #[test_only]
     /// init the genesis context for test
     public fun init_for_test(){
+        rooch_framework::genesis::init_for_test();
         let genesis_account = moveos_std::signer::module_signer<BitcoinGenesisContext>();
         tx_context::add_attribute_via_system(&genesis_account, 
             BitcoinGenesisContext{
