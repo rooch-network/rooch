@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-import cbor from 'cbor'
 import { Buffer } from 'buffer'
+import cbor from 'cbor'
 import * as bitcoin from 'bitcoinjs-lib'
 
 const PROTOCOL_ID = Buffer.from('6f7264', 'hex')
@@ -9,9 +9,9 @@ const ENVELOPE_START_TAG = 0
 const ENVELOPE_END_TAG = 104
 const META_TAG = 85
 
-type EnvelopeData = number | Buffer
+type EnvelopeData = number | any
 
-function isBuffer(value: unknown): value is Buffer {
+function isBuffer(value: unknown): value is any {
   return Buffer.isBuffer(value)
 }
 
@@ -40,12 +40,12 @@ function getEnvelope(data: EnvelopeData[]): EnvelopeData[] | undefined {
 }
 
 function getEnvelopeMetadata(data: EnvelopeData[]) {
-  const content: Buffer[] = []
+  const content: any[] = []
 
   for (var i = 0; i < data.length; i++) {
     if (data[i] === META_TAG) {
       if (isBuffer(data[i + 1])) {
-        content.push(data[i + 1] as Buffer)
+        content.push(data[i + 1] as any)
       }
     }
   }

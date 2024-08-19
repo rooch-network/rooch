@@ -126,7 +126,7 @@ export class RoochDataSource implements IDatasource {
     const inscriptionState: InscriptionStateView = response.data[0]
     const inscriptionView = inscriptionState.value
 
-    let body: Buffer | null = null
+    let body: any | null = null
     if (inscriptionView.body) {
       const bodyHex = inscriptionView.body.startsWith('0x')
         ? inscriptionView.body.slice(2)
@@ -282,7 +282,7 @@ export class RoochDataSource implements IDatasource {
   ): Inscription {
     const inscriptionView = inscriptionState.value
 
-    let body: Buffer | null = null
+    let body: any | null = null
     if (inscriptionView.body) {
       const bodyHex = inscriptionView.body.startsWith('0x')
         ? inscriptionView.body.slice(2)

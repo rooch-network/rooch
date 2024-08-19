@@ -17,8 +17,8 @@ export interface ScriptPubKey {
   type: string
 }
 
-const classifyOutputScript = (script: Buffer): string => {
-  const isOutput = (paymentFn: (params: { output?: Buffer }) => bitcoin.payments.Payment) => {
+const classifyOutputScript = (script: any): string => {
+  const isOutput = (paymentFn: (params: { output?: any }) => bitcoin.payments.Payment) => {
     try {
       return paymentFn({ output: script }) !== undefined
     } catch (e) {
