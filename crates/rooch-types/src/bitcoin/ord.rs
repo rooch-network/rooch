@@ -243,11 +243,22 @@ impl<'a> OrdModule<'a> {
     pub const FROM_TRANSACTION_FUNCTION_NAME: &'static IdentStr =
         ident_str!("from_transaction_bytes");
 
-    pub fn from_transaction(&self, tx: &Transaction) -> Result<Vec<Inscription>> {
+    pub fn from_transaction(
+        &self,
+        tx: &Transaction,
+        input_utxo_values: Vec<u64>,
+        next_inscription_number: u32,
+        next_sequence_number: u32,
+    ) -> Result<Vec<Inscription>> {
         let call = Self::create_function_call(
             Self::FROM_TRANSACTION_FUNCTION_NAME,
             vec![],
-            vec![MoveValue::vector_u8(tx.to_bytes())],
+            vec![
+                MoveValue::vector_u8(tx.to_bytes()),
+                input_utxo_values.to_move_value(),
+                next_inscription_number.to_move_value(),
+                next_sequence_number.to_move_value(),
+            ],
         );
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ONE);
         let inscriptions =
