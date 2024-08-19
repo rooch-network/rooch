@@ -19,9 +19,9 @@ var testBox: any = null
 let roochServerAddress: string | null
 
 test.beforeAll(async () => {
-  testBox = new TestBox();
+  testBox = new TestBox()
   await testBox.loadBitcoinEnv()
-  await testBox.loadRoochEnv("local", 0)
+  await testBox.loadRoochEnv('local', 0)
 
   roochServerAddress = testBox.getRoochServerAddress()
 
