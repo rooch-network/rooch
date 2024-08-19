@@ -5,6 +5,10 @@ use crate::commands::db::DB;
 use crate::commands::event::EventCommand;
 use crate::commands::indexer::Indexer;
 use crate::commands::statedb::Statedb;
+use clap::builder::{
+    styling::{AnsiColor, Effects},
+    Styles,
+};
 use cli_types::CommandAction;
 use commands::{
     abi::ABI, account::Account, dynamic_field::DynamicField, env::Env, genesis::Genesis,
@@ -14,7 +18,6 @@ use commands::{
 };
 use once_cell::sync::Lazy;
 use rooch_types::error::RoochResult;
-use clap::builder::{styling::{AnsiColor, Effects}, Styles};
 
 pub mod cli_types;
 pub mod commands;
@@ -30,7 +33,6 @@ styles = Styles::styled()
 pub struct RoochCli {
     #[clap(subcommand)]
     pub cmd: Command,
-
 }
 
 static LONG_VERSION: Lazy<String> = Lazy::new(|| {
@@ -88,5 +90,4 @@ pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
         Command::Upgrade(upgrade) => upgrade.execute().await,
         Command::DB(db) => db.execute().await,
     }
-    
 }
