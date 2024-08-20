@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{
-    IndexerDeleteAnyObjectStatesMessage, IndexerEventsMessage,
+    IndexerApplyObjectStatesMessage, IndexerDeleteAnyObjectStatesMessage, IndexerEventsMessage,
     IndexerPersistOrUpdateAnyObjectStatesMessage, IndexerStatesMessage, IndexerTransactionMessage,
     UpdateIndexerMessage,
 };
@@ -15,8 +15,8 @@ use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::transaction::MoveAction;
 use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::indexer::state::{
-    handle_object_change, IndexerObjectStateChangeSet, IndexerObjectStateType,
-    IndexerObjectStatesIndexGenerator,
+    handle_object_change, IndexerObjectStateChangeSet, IndexerObjectStatesIndexGenerator,
+    ObjectStateType,
 };
 use rooch_types::indexer::transaction::IndexerTransaction;
 
@@ -88,7 +88,7 @@ impl Handler<UpdateIndexerMessage> for IndexerActor {
             )?;
         }
         self.indexer_store
-            .update_full_object_states(indexer_object_state_change_set)?;
+            .apply_object_states(indexer_object_state_change_set)?;
 
         Ok(())
     }
@@ -120,7 +120,7 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
         }
 
         self.indexer_store
-            .update_full_object_states(indexer_object_state_change_set)?;
+            .apply_object_states(indexer_object_state_change_set)?;
 
         Ok(())
     }
@@ -177,13 +177,13 @@ impl Handler<IndexerPersistOrUpdateAnyObjectStatesMessage> for IndexerActor {
         let IndexerPersistOrUpdateAnyObjectStatesMessage { states, state_type } = msg;
 
         match state_type {
-            IndexerObjectStateType::ObjectState => {
+            ObjectStateType::ObjectState => {
                 self.indexer_store.persist_or_update_object_states(states)?
             }
-            IndexerObjectStateType::UTXO => self
+            ObjectStateType::UTXO => self
                 .indexer_store
                 .persist_or_update_object_state_utxos(states)?,
-            IndexerObjectStateType::Inscription => self
+            ObjectStateType::Inscription => self
                 .indexer_store
                 .persist_or_update_object_state_inscriptions(states)?,
         }
@@ -205,16 +205,29 @@ impl Handler<IndexerDeleteAnyObjectStatesMessage> for IndexerActor {
 
         let state_pks = object_ids.into_iter().map(|v| v.to_string()).collect();
         match state_type {
-            IndexerObjectStateType::ObjectState => {
-                self.indexer_store.delete_object_states(state_pks)?
-            }
-            IndexerObjectStateType::UTXO => {
-                self.indexer_store.delete_object_state_utxos(state_pks)?
-            }
-            IndexerObjectStateType::Inscription => self
+            ObjectStateType::ObjectState => self.indexer_store.delete_object_states(state_pks)?,
+            ObjectStateType::UTXO => self.indexer_store.delete_object_state_utxos(state_pks)?,
+            ObjectStateType::Inscription => self
                 .indexer_store
                 .delete_object_state_inscriptions(state_pks)?,
         }
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl Handler<IndexerApplyObjectStatesMessage> for IndexerActor {
+    async fn handle(
+        &mut self,
+        msg: IndexerApplyObjectStatesMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<()> {
+        let IndexerApplyObjectStatesMessage {
+            object_state_change_set,
+        } = msg;
+
+        self.indexer_store
+            .apply_object_states(object_state_change_set)?;
         Ok(())
     }
 }

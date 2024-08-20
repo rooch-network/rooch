@@ -16,8 +16,7 @@ use once_cell::sync::Lazy;
 use prometheus::Registry;
 use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::indexer::state::{
-    IndexerObjectState, IndexerObjectStateChangeSet, IndexerObjectStateChanges,
-    IndexerObjectStateType,
+    IndexerObjectState, IndexerObjectStateChangeSet, IndexerObjectStateChanges, ObjectStateType,
 };
 use rooch_types::indexer::transaction::IndexerTransaction;
 use std::collections::HashMap;
@@ -141,24 +140,24 @@ pub fn new_sqlite_connection_pool(db_url: &str) -> Result<SqliteConnectionPool, 
 }
 
 impl IndexerStoreTrait for IndexerStore {
-    fn update_full_object_states(
+    fn apply_object_states(
         &self,
         object_state_change_set: IndexerObjectStateChangeSet,
     ) -> Result<(), IndexerError> {
-        self.update_any_object_states(
+        self.update_object_states_by_state_type(
             object_state_change_set.object_states,
             INDEXER_OBJECT_STATES_TABLE_NAME,
-            IndexerObjectStateType::ObjectState,
+            ObjectStateType::ObjectState,
         )?;
-        self.update_any_object_states(
+        self.update_object_states_by_state_type(
             object_state_change_set.object_state_utxos,
             INDEXER_OBJECT_STATE_UTXOS_TABLE_NAME,
-            IndexerObjectStateType::UTXO,
+            ObjectStateType::UTXO,
         )?;
-        self.update_any_object_states(
+        self.update_object_states_by_state_type(
             object_state_change_set.object_state_inscriptions,
             INDEXER_OBJECT_STATE_INSCRIPTIONS_TABLE_NAME,
-            IndexerObjectStateType::Inscription,
+            ObjectStateType::Inscription,
         )
     }
 
@@ -229,28 +228,28 @@ impl IndexerStoreTrait for IndexerStore {
 }
 
 impl IndexerStore {
-    fn update_any_object_states(
+    fn update_object_states_by_state_type(
         &self,
         mut object_state_change: IndexerObjectStateChanges,
         table_name: &str,
-        state_type: IndexerObjectStateType,
+        state_type: ObjectStateType,
     ) -> Result<(), IndexerError> {
         let mut object_states_new_and_update = object_state_change.new_object_states;
         object_states_new_and_update.append(&mut object_state_change.update_object_states);
         match state_type {
-            IndexerObjectStateType::ObjectState => {
+            ObjectStateType::ObjectState => {
                 self.get_sqlite_store(table_name)?
                     .persist_or_update_object_states(object_states_new_and_update)?;
                 self.get_sqlite_store(table_name)?
                     .delete_object_states(object_state_change.remove_object_states)
             }
-            IndexerObjectStateType::UTXO => {
+            ObjectStateType::UTXO => {
                 self.get_sqlite_store(table_name)?
                     .persist_or_update_object_state_utxos(object_states_new_and_update)?;
                 self.get_sqlite_store(table_name)?
                     .delete_object_state_utxos(object_state_change.remove_object_states)
             }
-            IndexerObjectStateType::Inscription => {
+            ObjectStateType::Inscription => {
                 self.get_sqlite_store(table_name)?
                     .persist_or_update_object_state_inscriptions(object_states_new_and_update)?;
                 self.get_sqlite_store(table_name)?

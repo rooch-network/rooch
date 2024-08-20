@@ -7,7 +7,7 @@ use rooch_types::indexer::state::{IndexerObjectState, IndexerObjectStateChangeSe
 use rooch_types::indexer::transaction::IndexerTransaction;
 
 pub trait IndexerStoreTrait: Send + Sync {
-    fn update_full_object_states(
+    fn apply_object_states(
         &self,
         object_state_change_set: IndexerObjectStateChangeSet,
     ) -> anyhow::Result<(), IndexerError>;

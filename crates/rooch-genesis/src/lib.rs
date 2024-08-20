@@ -459,7 +459,7 @@ impl RoochGenesis {
         }
         rooch_db
             .indexer_store
-            .update_full_object_states(indexer_object_state_change_set)?;
+            .apply_object_states(indexer_object_state_change_set)?;
 
         let genesis_info =
             GenesisInfo::new(self.genesis_hash(), inited_root.clone(), self.encode());

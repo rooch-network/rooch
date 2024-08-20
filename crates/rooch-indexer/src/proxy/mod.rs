@@ -3,10 +3,10 @@
 
 use crate::actor::indexer::IndexerActor;
 use crate::actor::messages::{
-    IndexerDeleteAnyObjectStatesMessage, IndexerEventsMessage,
+    IndexerApplyObjectStatesMessage, IndexerDeleteAnyObjectStatesMessage, IndexerEventsMessage,
     IndexerPersistOrUpdateAnyObjectStatesMessage, IndexerStatesMessage, IndexerTransactionMessage,
-    QueryIndexerEventsMessage, QueryIndexerObjectIdsMessage, QueryIndexerObjectStatesMessage,
-    QueryIndexerTransactionsMessage, QueryLastStateIndexByTxOrderMessage, UpdateIndexerMessage,
+    QueryIndexerEventsMessage, QueryIndexerObjectIdsMessage, QueryIndexerTransactionsMessage,
+    QueryLastStateIndexByTxOrderMessage, UpdateIndexerMessage,
 };
 use crate::actor::reader_indexer::IndexerReaderActor;
 use anyhow::{Ok, Result};
@@ -18,7 +18,8 @@ use moveos_types::state::StateChangeSet;
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
-    IndexerObjectState, IndexerObjectStateType, IndexerStateID, ObjectStateFilter,
+    IndexerObjectState, IndexerObjectStateChangeSet, IndexerStateID, ObjectStateFilter,
+    ObjectStateType,
 };
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::transaction::LedgerTransaction;
@@ -142,25 +143,25 @@ impl IndexerProxy {
             .await?
     }
 
-    pub async fn query_object_states(
-        &self,
-        filter: ObjectStateFilter,
-        // exclusive cursor if `Some`, otherwise start from the beginning
-        cursor: Option<IndexerStateID>,
-        limit: usize,
-        descending_order: bool,
-        state_type: IndexerObjectStateType,
-    ) -> Result<Vec<IndexerObjectState>> {
-        self.reader_actor
-            .send(QueryIndexerObjectStatesMessage {
-                filter,
-                cursor,
-                limit,
-                descending_order,
-                state_type,
-            })
-            .await?
-    }
+    // pub async fn query_object_states(
+    //     &self,
+    //     filter: ObjectStateFilter,
+    //     // exclusive cursor if `Some`, otherwise start from the beginning
+    //     cursor: Option<IndexerStateID>,
+    //     limit: usize,
+    //     descending_order: bool,
+    //     state_type: IndexerObjectStateType,
+    // ) -> Result<Vec<IndexerObjectState>> {
+    //     self.reader_actor
+    //         .send(QueryIndexerObjectStatesMessage {
+    //             filter,
+    //             cursor,
+    //             limit,
+    //             descending_order,
+    //             state_type,
+    //         })
+    //         .await?
+    // }
 
     pub async fn query_object_ids(
         &self,
@@ -169,7 +170,7 @@ impl IndexerProxy {
         cursor: Option<IndexerStateID>,
         limit: usize,
         descending_order: bool,
-        state_type: IndexerObjectStateType,
+        state_type: ObjectStateType,
     ) -> Result<Vec<(ObjectID, IndexerStateID)>> {
         self.reader_actor
             .send(QueryIndexerObjectIdsMessage {
@@ -185,17 +186,28 @@ impl IndexerProxy {
     pub async fn persist_or_update_object_states(
         &self,
         states: Vec<IndexerObjectState>,
-        state_type: IndexerObjectStateType,
+        state_type: ObjectStateType,
     ) -> Result<()> {
         self.actor
             .send(IndexerPersistOrUpdateAnyObjectStatesMessage { states, state_type })
             .await?
     }
 
+    pub async fn apply_object_states(
+        &self,
+        object_state_change_set: IndexerObjectStateChangeSet,
+    ) -> Result<()> {
+        self.actor
+            .send(IndexerApplyObjectStatesMessage {
+                object_state_change_set,
+            })
+            .await?
+    }
+
     pub async fn delete_object_states(
         &self,
         object_ids: Vec<ObjectID>,
-        state_type: IndexerObjectStateType,
+        state_type: ObjectStateType,
     ) -> Result<()> {
         self.actor
             .send(IndexerDeleteAnyObjectStatesMessage {
@@ -208,8 +220,8 @@ impl IndexerProxy {
     pub async fn query_last_state_index_by_tx_order(
         &self,
         tx_order: u64,
-        state_type: IndexerObjectStateType,
-    ) -> Result<u64> {
+        state_type: ObjectStateType,
+    ) -> Result<Option<u64>> {
         self.reader_actor
             .send(QueryLastStateIndexByTxOrderMessage {
                 tx_order,

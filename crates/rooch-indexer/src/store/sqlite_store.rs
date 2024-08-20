@@ -7,7 +7,7 @@ use diesel::QueryDsl;
 use diesel::{ExpressionMethods, RunQueryDsl};
 use function_name::named;
 use rooch_types::indexer::event::IndexerEvent;
-use rooch_types::indexer::state::{IndexerObjectState, IndexerObjectStateType};
+use rooch_types::indexer::state::IndexerObjectState;
 use rooch_types::indexer::transaction::IndexerTransaction;
 use std::sync::Arc;
 use tracing::log;

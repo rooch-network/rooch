@@ -18,7 +18,7 @@ use rooch_config::store_config::DEFAULT_DB_INDEXER_SUBDIR;
 use rooch_types::framework::coin_store::CoinStore;
 use rooch_types::framework::gas_coin::GasCoin;
 use rooch_types::indexer::event::{EventFilter, IndexerEvent};
-use rooch_types::indexer::state::{IndexerObjectState, ObjectStateFilter};
+use rooch_types::indexer::state::{IndexerObjectState, ObjectStateFilter, ObjectStateType};
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::test_utils::{
     random_event, random_ledger_transaction, random_new_object_states, random_remove_object_states,
@@ -128,8 +128,13 @@ async fn test_state_store() -> Result<()> {
     // test for querying batch objects with filter ObjectStateFilter::ObjectId
     let num_objs = new_object_ids.len();
     let filter = ObjectStateFilter::ObjectId(new_object_ids);
-    let query_object_states =
-        indexer_reader.query_object_states_with_filter(filter, None, num_objs, true)?;
+    let query_object_states = indexer_reader.query_object_ids_with_filter(
+        filter,
+        None,
+        num_objs,
+        true,
+        ObjectStateType::ObjectState,
+    )?;
     assert_eq!(query_object_states.len(), num_objs);
 
     Ok(())
@@ -161,8 +166,13 @@ async fn test_object_type_query() -> Result<()> {
     indexer_store.persist_or_update_object_states(object_states.clone())?;
     // filter by exact object type
     let filter = ObjectStateFilter::ObjectType(CoinStore::<GasCoin>::struct_tag());
-    let query_object_states =
-        indexer_reader.query_object_states_with_filter(filter, None, 1, true)?;
+    let query_object_states = indexer_reader.query_object_ids_with_filter(
+        filter,
+        None,
+        1,
+        true,
+        ObjectStateType::ObjectState,
+    )?;
     assert_eq!(query_object_states.len(), 1);
     // filter by object type and owner
     let filter = ObjectStateFilter::ObjectTypeWithOwner {
@@ -170,18 +180,33 @@ async fn test_object_type_query() -> Result<()> {
         filter_out: false,
         owner,
     };
-    let query_object_states =
-        indexer_reader.query_object_states_with_filter(filter, None, 1, true)?;
+    let query_object_states = indexer_reader.query_object_ids_with_filter(
+        filter,
+        None,
+        1,
+        true,
+        ObjectStateType::ObjectState,
+    )?;
     assert_eq!(query_object_states.len(), 1);
     // filter by object owner
     let filter = ObjectStateFilter::Owner(owner);
-    let query_object_states =
-        indexer_reader.query_object_states_with_filter(filter, None, 1, true)?;
+    let query_object_states = indexer_reader.query_object_ids_with_filter(
+        filter,
+        None,
+        1,
+        true,
+        ObjectStateType::ObjectState,
+    )?;
     assert_eq!(query_object_states.len(), 1);
     // filter by object type without type params
     let filter = ObjectStateFilter::ObjectType(CoinStore::struct_tag_without_coin_type());
-    let query_object_states =
-        indexer_reader.query_object_states_with_filter(filter, None, 1, true)?;
+    let query_object_states = indexer_reader.query_object_ids_with_filter(
+        filter,
+        None,
+        1,
+        true,
+        ObjectStateType::ObjectState,
+    )?;
     assert_eq!(query_object_states.len(), 1);
     Ok(())
 }

@@ -36,7 +36,7 @@ use rooch_rpc_api::{
     jsonrpc_types::BytesView,
     RpcError, RpcResult,
 };
-use rooch_types::indexer::state::IndexerStateID;
+use rooch_types::indexer::state::{IndexerStateID, ObjectStateType};
 use rooch_types::transaction::{RoochTransaction, RoochTransactionData, TransactionWithInfo};
 use std::cmp::min;
 use std::str::FromStr;
@@ -744,6 +744,7 @@ impl RoochAPIServer for RoochServer {
                 descending_order,
                 query_option.decode,
                 query_option.show_display,
+                ObjectStateType::ObjectState,
             )
             .await?;
 

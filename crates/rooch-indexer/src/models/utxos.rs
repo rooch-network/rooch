@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::schema::utxos;
 use diesel::prelude::*;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};

@@ -10,7 +10,8 @@ use moveos_types::state::StateChangeSet;
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
-    IndexerObjectState, IndexerObjectStateType, IndexerStateID, ObjectStateFilter,
+    IndexerObjectState, IndexerObjectStateChangeSet, IndexerStateID, ObjectStateFilter,
+    ObjectStateType,
 };
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::transaction::LedgerTransaction;
@@ -96,20 +97,20 @@ impl Message for QueryIndexerEventsMessage {
     type Result = Result<Vec<IndexerEvent>>;
 }
 
-/// Query Indexer Object States Message
-#[derive(Debug, Serialize, Deserialize)]
-pub struct QueryIndexerObjectStatesMessage {
-    pub filter: ObjectStateFilter,
-    // exclusive cursor if `Some`, otherwise start from the beginning
-    pub cursor: Option<IndexerStateID>,
-    pub limit: usize,
-    pub descending_order: bool,
-    pub state_type: IndexerObjectStateType,
-}
-
-impl Message for QueryIndexerObjectStatesMessage {
-    type Result = Result<Vec<IndexerObjectState>>;
-}
+// /// Query Indexer Object States Message
+// #[derive(Debug, Serialize, Deserialize)]
+// pub struct QueryIndexerObjectStatesMessage {
+//     pub filter: ObjectStateFilter,
+//     // exclusive cursor if `Some`, otherwise start from the beginning
+//     pub cursor: Option<IndexerStateID>,
+//     pub limit: usize,
+//     pub descending_order: bool,
+//     pub state_type: ObjectStateType,
+// }
+//
+// impl Message for QueryIndexerObjectStatesMessage {
+//     type Result = Result<Vec<IndexerObjectState>>;
+// }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct QueryIndexerObjectIdsMessage {
@@ -118,7 +119,7 @@ pub struct QueryIndexerObjectIdsMessage {
     pub cursor: Option<IndexerStateID>,
     pub limit: usize,
     pub descending_order: bool,
-    pub state_type: IndexerObjectStateType,
+    pub state_type: ObjectStateType,
 }
 
 impl Message for QueryIndexerObjectIdsMessage {
@@ -128,7 +129,7 @@ impl Message for QueryIndexerObjectIdsMessage {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IndexerPersistOrUpdateAnyObjectStatesMessage {
     pub states: Vec<IndexerObjectState>,
-    pub state_type: IndexerObjectStateType,
+    pub state_type: ObjectStateType,
 }
 
 impl Message for IndexerPersistOrUpdateAnyObjectStatesMessage {
@@ -137,7 +138,7 @@ impl Message for IndexerPersistOrUpdateAnyObjectStatesMessage {
 
 pub struct IndexerDeleteAnyObjectStatesMessage {
     pub object_ids: Vec<ObjectID>,
-    pub state_type: IndexerObjectStateType,
+    pub state_type: ObjectStateType,
 }
 
 impl Message for IndexerDeleteAnyObjectStatesMessage {
@@ -147,9 +148,18 @@ impl Message for IndexerDeleteAnyObjectStatesMessage {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct QueryLastStateIndexByTxOrderMessage {
     pub tx_order: u64,
-    pub state_type: IndexerObjectStateType,
+    pub state_type: ObjectStateType,
 }
 
 impl Message for QueryLastStateIndexByTxOrderMessage {
-    type Result = Result<u64>;
+    type Result = Result<Option<u64>>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct IndexerApplyObjectStatesMessage {
+    pub object_state_change_set: IndexerObjectStateChangeSet,
+}
+
+impl Message for IndexerApplyObjectStatesMessage {
+    type Result = Result<()>;
 }
