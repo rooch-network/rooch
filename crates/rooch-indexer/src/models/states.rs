@@ -148,3 +148,38 @@ impl StoredObjectStateInfo {
         Ok((ObjectID::from_str(self.id.as_str())?, indexer_state_id))
     }
 }
+
+#[derive(Queryable, QueryableByName, Debug)]
+// #[diesel(table_name = object_states)]
+pub struct StoredStateID {
+    // /// The global state key
+    // #[diesel(sql_type = diesel::sql_types::Text)]
+    // pub id: String,
+    // /// The owner of the object
+    // #[diesel(sql_type = diesel::sql_types::Text)]
+    // pub owner: String,
+    // /// A flag to indicate whether the object is shared or frozen
+    // #[diesel(sql_type = diesel::sql_types::SmallInt)]
+    // pub flag: i16,
+    // /// The table state root of the object
+    // #[diesel(sql_type = diesel::sql_types::Text)]
+    // pub state_root: String,
+    // /// The table length
+    // #[diesel(sql_type = diesel::sql_types::BigInt)]
+    // pub size: i64,
+    // /// The object created timestamp on chain
+    // #[diesel(sql_type = diesel::sql_types::BigInt)]
+    // pub created_at: i64,
+    // /// The object updated timestamp on chain
+    // #[diesel(sql_type = diesel::sql_types::BigInt)]
+    // pub updated_at: i64,
+    // /// The T struct tag of the object value
+    // #[diesel(sql_type = diesel::sql_types::Text)]
+    // pub object_type: String,
+    /// The tx order of this transaction
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub tx_order: i64,
+    /// The state index in the tx
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub state_index: i64,
+}

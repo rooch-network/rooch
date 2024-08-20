@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{
-    IndexerDeleteObjectStatesMessage, IndexerEventsMessage,
-    IndexerPersistOrUpdateObjectStatesMessage, IndexerStatesMessage, IndexerTransactionMessage,
+    IndexerDeleteAnyObjectStatesMessage, IndexerEventsMessage,
+    IndexerPersistOrUpdateAnyObjectStatesMessage, IndexerStatesMessage, IndexerTransactionMessage,
     UpdateIndexerMessage,
 };
 use crate::store::traits::IndexerStoreTrait;
@@ -14,7 +14,10 @@ use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::transaction::MoveAction;
 use rooch_types::indexer::event::IndexerEvent;
-use rooch_types::indexer::state::{handle_object_change, IndexerObjectStateChanges};
+use rooch_types::indexer::state::{
+    handle_object_change, IndexerObjectStateChangeSet, IndexerObjectStateType,
+    IndexerObjectStatesIndexGenerator,
+};
 use rooch_types::indexer::transaction::IndexerTransaction;
 
 pub struct IndexerActor {
@@ -71,21 +74,21 @@ impl Handler<UpdateIndexerMessage> for IndexerActor {
             .collect();
         self.indexer_store.persist_events(events)?;
 
-        // 3. update indexer object state
+        // 3. update indexer full object state, including object_states, utxos and inscriptions
         // indexer object state index generator
-        let mut state_index_generator = 0u64;
-        let mut indexer_object_state_changes = IndexerObjectStateChanges::default();
+        let mut state_index_generator = IndexerObjectStatesIndexGenerator::default();
+        let mut indexer_object_state_change_set = IndexerObjectStateChangeSet::default();
 
         for (_feild_key, object_change) in state_change_set.changes {
-            state_index_generator = handle_object_change(
-                state_index_generator,
+            let _ = handle_object_change(
+                &mut state_index_generator,
                 tx_order,
-                &mut indexer_object_state_changes,
+                &mut indexer_object_state_change_set,
                 object_change,
             )?;
         }
         self.indexer_store
-            .update_object_states(indexer_object_state_changes)?;
+            .update_full_object_states(indexer_object_state_change_set)?;
 
         Ok(())
     }
@@ -104,20 +107,20 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
         self.root = root;
 
         // indexer state index generator
-        let mut state_index_generator = 0u64;
-        let mut indexer_object_state_changes = IndexerObjectStateChanges::default();
+        let mut state_index_generator = IndexerObjectStatesIndexGenerator::default();
+        let mut indexer_object_state_change_set = IndexerObjectStateChangeSet::default();
 
         for (_field_key, object_change) in state_change_set.changes {
-            state_index_generator = handle_object_change(
-                state_index_generator,
+            handle_object_change(
+                &mut state_index_generator,
                 tx_order,
-                &mut indexer_object_state_changes,
+                &mut indexer_object_state_change_set,
                 object_change,
             )?;
         }
 
         self.indexer_store
-            .update_object_states(indexer_object_state_changes)?;
+            .update_full_object_states(indexer_object_state_change_set)?;
 
         Ok(())
     }
@@ -165,30 +168,53 @@ impl Handler<IndexerEventsMessage> for IndexerActor {
 }
 
 #[async_trait]
-impl Handler<IndexerPersistOrUpdateObjectStatesMessage> for IndexerActor {
+impl Handler<IndexerPersistOrUpdateAnyObjectStatesMessage> for IndexerActor {
     async fn handle(
         &mut self,
-        msg: IndexerPersistOrUpdateObjectStatesMessage,
+        msg: IndexerPersistOrUpdateAnyObjectStatesMessage,
         _ctx: &mut ActorContext,
     ) -> Result<()> {
-        let IndexerPersistOrUpdateObjectStatesMessage { states } = msg;
+        let IndexerPersistOrUpdateAnyObjectStatesMessage { states, state_type } = msg;
 
-        self.indexer_store.persist_or_update_object_states(states)?;
+        match state_type {
+            IndexerObjectStateType::ObjectState => {
+                self.indexer_store.persist_or_update_object_states(states)?
+            }
+            IndexerObjectStateType::UTXO => self
+                .indexer_store
+                .persist_or_update_object_state_utxos(states)?,
+            IndexerObjectStateType::Inscription => self
+                .indexer_store
+                .persist_or_update_object_state_inscriptions(states)?,
+        }
         Ok(())
     }
 }
 
 #[async_trait]
-impl Handler<IndexerDeleteObjectStatesMessage> for IndexerActor {
+impl Handler<IndexerDeleteAnyObjectStatesMessage> for IndexerActor {
     async fn handle(
         &mut self,
-        msg: IndexerDeleteObjectStatesMessage,
+        msg: IndexerDeleteAnyObjectStatesMessage,
         _ctx: &mut ActorContext,
     ) -> Result<()> {
-        let IndexerDeleteObjectStatesMessage { object_ids } = msg;
+        let IndexerDeleteAnyObjectStatesMessage {
+            object_ids,
+            state_type,
+        } = msg;
 
         let state_pks = object_ids.into_iter().map(|v| v.to_string()).collect();
-        self.indexer_store.delete_object_states(state_pks)?;
+        match state_type {
+            IndexerObjectStateType::ObjectState => {
+                self.indexer_store.delete_object_states(state_pks)?
+            }
+            IndexerObjectStateType::UTXO => {
+                self.indexer_store.delete_object_state_utxos(state_pks)?
+            }
+            IndexerObjectStateType::Inscription => self
+                .indexer_store
+                .delete_object_state_inscriptions(state_pks)?,
+        }
         Ok(())
     }
 }

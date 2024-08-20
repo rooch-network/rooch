@@ -15,7 +15,10 @@ use errors::IndexerError;
 use once_cell::sync::Lazy;
 use prometheus::Registry;
 use rooch_types::indexer::event::IndexerEvent;
-use rooch_types::indexer::state::{IndexerObjectState, IndexerObjectStateChanges};
+use rooch_types::indexer::state::{
+    IndexerObjectState, IndexerObjectStateChangeSet, IndexerObjectStateChanges,
+    IndexerObjectStateType,
+};
 use rooch_types::indexer::transaction::IndexerTransaction;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
@@ -138,17 +141,39 @@ pub fn new_sqlite_connection_pool(db_url: &str) -> Result<SqliteConnectionPool, 
 }
 
 impl IndexerStoreTrait for IndexerStore {
-    fn update_object_states(
+    fn update_full_object_states(
         &self,
-        mut object_state_change: IndexerObjectStateChanges,
+        object_state_change_set: IndexerObjectStateChangeSet,
     ) -> Result<(), IndexerError> {
-        let mut object_states_new_and_update = object_state_change.new_object_states;
-        object_states_new_and_update.append(&mut object_state_change.update_object_states);
-        self.get_sqlite_store(INDEXER_OBJECT_STATES_TABLE_NAME)?
-            .persist_or_update_object_states(object_states_new_and_update)?;
-        self.get_sqlite_store(INDEXER_OBJECT_STATES_TABLE_NAME)?
-            .delete_object_states(object_state_change.remove_object_states)
+        self.update_any_object_states(
+            object_state_change_set.object_states,
+            INDEXER_OBJECT_STATES_TABLE_NAME,
+            IndexerObjectStateType::ObjectState,
+        )?;
+        self.update_any_object_states(
+            object_state_change_set.object_state_utxos,
+            INDEXER_OBJECT_STATE_UTXOS_TABLE_NAME,
+            IndexerObjectStateType::UTXO,
+        )?;
+        self.update_any_object_states(
+            object_state_change_set.object_state_inscriptions,
+            INDEXER_OBJECT_STATE_INSCRIPTIONS_TABLE_NAME,
+            IndexerObjectStateType::Inscription,
+        )
     }
+
+    // fn update_any_object_states(
+    //     &self,
+    //     mut object_state_change: IndexerObjectStateChanges,
+    //     table_name: &str,
+    // ) -> Result<(), IndexerError> {
+    //     let mut object_states_new_and_update = object_state_change.new_object_states;
+    //     object_states_new_and_update.append(&mut object_state_change.update_object_states);
+    //     self.get_sqlite_store(table_name)?
+    //         .persist_or_update_object_states(object_states_new_and_update)?;
+    //     self.get_sqlite_store(table_name)?
+    //         .delete_object_states(object_state_change.remove_object_states)
+    // }
 
     fn persist_or_update_object_states(
         &self,
@@ -161,6 +186,32 @@ impl IndexerStoreTrait for IndexerStore {
     fn delete_object_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError> {
         self.get_sqlite_store(INDEXER_OBJECT_STATES_TABLE_NAME)?
             .delete_object_states(state_pks)
+    }
+
+    fn persist_or_update_object_state_utxos(
+        &self,
+        states: Vec<IndexerObjectState>,
+    ) -> Result<(), IndexerError> {
+        self.get_sqlite_store(INDEXER_OBJECT_STATE_UTXOS_TABLE_NAME)?
+            .persist_or_update_object_state_utxos(states)
+    }
+
+    fn delete_object_state_utxos(&self, state_pks: Vec<String>) -> Result<(), IndexerError> {
+        self.get_sqlite_store(INDEXER_OBJECT_STATE_UTXOS_TABLE_NAME)?
+            .delete_object_state_utxos(state_pks)
+    }
+
+    fn persist_or_update_object_state_inscriptions(
+        &self,
+        states: Vec<IndexerObjectState>,
+    ) -> Result<(), IndexerError> {
+        self.get_sqlite_store(INDEXER_OBJECT_STATE_INSCRIPTIONS_TABLE_NAME)?
+            .persist_or_update_object_state_inscriptions(states)
+    }
+
+    fn delete_object_state_inscriptions(&self, state_pks: Vec<String>) -> Result<(), IndexerError> {
+        self.get_sqlite_store(INDEXER_OBJECT_STATE_INSCRIPTIONS_TABLE_NAME)?
+            .delete_object_state_inscriptions(state_pks)
     }
 
     fn persist_transactions(
@@ -177,6 +228,37 @@ impl IndexerStoreTrait for IndexerStore {
     }
 }
 
+impl IndexerStore {
+    fn update_any_object_states(
+        &self,
+        mut object_state_change: IndexerObjectStateChanges,
+        table_name: &str,
+        state_type: IndexerObjectStateType,
+    ) -> Result<(), IndexerError> {
+        let mut object_states_new_and_update = object_state_change.new_object_states;
+        object_states_new_and_update.append(&mut object_state_change.update_object_states);
+        match state_type {
+            IndexerObjectStateType::ObjectState => {
+                self.get_sqlite_store(table_name)?
+                    .persist_or_update_object_states(object_states_new_and_update)?;
+                self.get_sqlite_store(table_name)?
+                    .delete_object_states(object_state_change.remove_object_states)
+            }
+            IndexerObjectStateType::UTXO => {
+                self.get_sqlite_store(table_name)?
+                    .persist_or_update_object_state_utxos(object_states_new_and_update)?;
+                self.get_sqlite_store(table_name)?
+                    .delete_object_state_utxos(object_state_change.remove_object_states)
+            }
+            IndexerObjectStateType::Inscription => {
+                self.get_sqlite_store(table_name)?
+                    .persist_or_update_object_state_inscriptions(object_states_new_and_update)?;
+                self.get_sqlite_store(table_name)?
+                    .delete_object_state_inscriptions(object_state_change.remove_object_states)
+            }
+        }
+    }
+}
 pub fn new_sqlite_connection_pool_impl(
     db_url: &str,
     pool_size: Option<u32>,
@@ -292,7 +374,8 @@ impl diesel::r2d2::CustomizeConnection<SqliteConnection, diesel::r2d2::Error>
             // The default cache_size value is -2000, which translates into a maximum of 2048000 bytes per cache.
             // The cache_size in SQLite is primarily associated with the database connection, not the database file itself.
             // pragma_builder.push_str("PRAGMA page_size = 4096; PRAGMA cache_size = 65536000;"); // 64MB
-            pragma_builder.push_str("PRAGMA page_size = 4096; PRAGMA cache_size = 262144000;"); // 256MB
+            pragma_builder.push_str("PRAGMA page_size = 4096; PRAGMA cache_size = 262144000;");
+            // 256MB
         }
         // WAL mode has better write-concurrency. When synchronous is NORMAL it will fsync only in critical moments
         if self.enable_wal {
