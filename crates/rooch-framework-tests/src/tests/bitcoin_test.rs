@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::binding_test;
+use crate::tests::bitcoin_data::load_block;
 use bitcoin::consensus::deserialize;
 use bitcoin::hashes::Hash;
 use bitcoin::{Block, OutPoint, Transaction, TxOut};
 use hex::FromHex;
-use include_dir::{include_dir, Dir};
 use moveos_types::access_path::AccessPath;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::state_resolver::StateReader;
@@ -19,7 +19,6 @@ use rooch_types::into_address::IntoAddress;
 use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::L1BlockWithBody;
 use std::collections::HashMap;
-use std::path::PathBuf;
 use tracing::{debug, info};
 
 #[tokio::test]
@@ -206,20 +205,4 @@ async fn test_real_bocks() {
             .collect();
         test_block_process(blocks);
     }
-}
-// Download the bitcoin block via the following command:
-// curl -sSL "https://mempool.space/api/block/00000000000af0aed4792b1acee3d966af36cf5def14935db8de83d6f9306f2f/raw" > crates/rooch-framework-tests/blocks/bitcoin/91812.blob
-// curl -sSL "https://mempool.space/api/block/00000000000a4d0a398161ffc163c503763b1f4360639393e0e4c8e300e0caec/raw" > crates/rooch-framework-tests/blocks/bitcoin/91842.blob
-// curl -sSL "https://mempool.space/api/block/000000000000000000020750f322f4e72e99c2f0b9738fb4f46607860bd18c13/raw" > crates/rooch-framework-tests/blocks/bitcoin/818677.blob
-// curl -sSL "https://mempool.space/testnet/api/block/0000000016412abe1778a347da773ff8bc087ad1a91ae5daad349bc268285c2d/raw" > crates/rooch-framework-tests/blocks/testnet/2821527.blob
-pub(crate) const STATIC_BLOCK_DIR: Dir = include_dir!("blocks");
-
-fn load_block(network: Network, height: u64) -> Block {
-    let block_file = PathBuf::from(network.to_string()).join(format!("{}.blob", height));
-    let btc_block_bytes = STATIC_BLOCK_DIR
-        .get_file(block_file.as_path())
-        .unwrap()
-        .contents();
-    let block: Block = deserialize(btc_block_bytes).unwrap();
-    block
 }

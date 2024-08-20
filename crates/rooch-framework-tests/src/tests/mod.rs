@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+mod bitcoin_data;
 mod bitcoin_multisign_validator_tests;
 mod bitcoin_test;
 mod bitcoin_validator_tests;
