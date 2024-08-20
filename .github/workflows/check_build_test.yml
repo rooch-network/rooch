@@ -88,7 +88,7 @@ jobs:
       - name: Install pnpm dependencies
         run: npm install pnpm@9.4.0 -g && pnpm install
       - name: Install playwright browsers
-        run: npx playwright install --with-deps
+        run: pnpm bitseed-sdk playwright-deps
       - name: Lint
         run: pnpm lint
         continue-on-error: true

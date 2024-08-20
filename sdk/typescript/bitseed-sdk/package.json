@@ -9,6 +9,7 @@
   },
   "packageManager": "pnpm@8.6.6",
   "scripts": {
+    "playwright-deps": "pnpm playwright install --with-deps",
     "build": "build-package",
     "test": "pnpm test:unit && pnpm test:e2e",
     "test:unit": "vitest run src",
