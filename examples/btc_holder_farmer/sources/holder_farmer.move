@@ -538,7 +538,6 @@ module btc_holder_farmer::hold_farmer {
 
     #[test(sender=@0x42)]
     fun test_stake(sender: signer) {
-        rooch_framework::genesis::init_for_test();
         bitcoin_move::genesis::init_for_test();
         let admin_cap = object::new_named_object(AdminCap {});
         deploy(&sender, 1, 0, 200, b"BTC Holder Coin", b"HDC", 6, &mut admin_cap);

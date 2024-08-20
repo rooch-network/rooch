@@ -10,6 +10,7 @@ module bitcoin_move::genesis{
     use bitcoin_move::utxo;
     use bitcoin_move::network;
     use bitcoin_move::pending_block;
+    use bitcoin_move::bitcoin_multisign_validator;
 
     const ErrorGenesisInit: u64 = 1;
 
@@ -31,11 +32,13 @@ module bitcoin_move::genesis{
         ord::genesis_init(&genesis_account);
         bitcoin::genesis_init(&genesis_account, genesis_context.genesis_block_height, genesis_context.genesis_block_hash);
         pending_block::genesis_init(genesis_context.reorg_block_count);
+        bitcoin_multisign_validator::genesis_init();
     }
 
     #[test_only]
     /// init the genesis context for test
     public fun init_for_test(){
+        rooch_framework::genesis::init_for_test();
         let genesis_account = moveos_std::signer::module_signer<BitcoinGenesisContext>();
         tx_context::add_attribute_via_system(&genesis_account, 
             BitcoinGenesisContext{
