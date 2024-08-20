@@ -1,39 +1,58 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::{fs::File, io::Write};
+
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
+use anyhow::Result;
 use async_trait::async_trait;
-use move_core_types::{
-    account_address::AccountAddress,
-    identifier::Identifier,
-    language_storage::{ModuleId, TypeTag},
+use move_command_line_common::types::ParsedStructType;
+use move_core_types::language_storage::TypeTag;
+use moveos_types::transaction::MoveAction;
+use rooch_types::{
+    error::{RoochError, RoochResult},
+    function_arg::{parse_function_arg, FunctionArg, ParsedFunctionId},
 };
-use moveos_types::{move_types::FunctionId, transaction::MoveAction};
-use rooch_types::error::RoochResult;
 
 /// Get transactions by order
 #[derive(Debug, clap::Parser)]
 pub struct BuildCommand {
+    /// Function name as `<ADDRESS>::<MODULE_ID>::<FUNCTION_NAME>`
+    /// Example: `0x42::message::set_message`, `rooch_framework::empty::empty`
     #[clap(long, required = true)]
-    pub module_address: AccountAddress,
+    pub function: ParsedFunctionId,
 
-    #[clap(long, required = true)]
-    pub module_name: String,
+    /// TypeTag arguments separated by spaces.
+    ///
+    /// Example: `0x1::M::T1 0x1::M::T2 rooch_framework::empty::Empty`
+    #[clap(
+        long = "type-args",
+        value_parser=ParsedStructType::parse,
+    )]
+    pub type_args: Vec<ParsedStructType>,
 
-    #[clap(long, required = true)]
-    pub function_name: String,
-
-    #[clap(long)]
-    pub type_args: Vec<TypeTag>,
-
-    #[clap(long)]
-    pub args: Vec<Vec<u8>>,
+    /// Arguments combined with their type separated by spaces.
+    ///
+    /// Supported types [u8, u16, u32, u64, u128, u256, bool, object_id, string, address, vector<inner_type>]
+    ///
+    /// Example: `address:0x1 bool:true u8:0 u256:1234 'vector<u32>:a,b,c,d'`
+    ///     address and uint can be written in short form like `@0x1 1u8 4123u256`.
+    #[clap(long = "args", value_parser=parse_function_arg)]
+    pub args: Vec<FunctionArg>,
 
     #[clap(flatten)]
     tx_options: TransactionOptions,
 
     #[clap(flatten)]
     context: WalletContextOptions,
+
+    /// Output result in command line, otherwise write to a file
+    #[clap(long, default_value = "false")]
+    output: bool,
+
+    /// File location for the file being written
+    #[clap(long)]
+    file_location: Option<String>,
 
     /// Return command outputs in json format
     #[clap(long, default_value = "false")]
@@ -44,35 +63,55 @@ pub struct BuildCommand {
 impl CommandAction<Option<String>> for BuildCommand {
     async fn execute(self) -> RoochResult<Option<String>> {
         let context = self.context.build()?;
+        let address_mapping = context.address_mapping();
         let sender = context.resolve_address(self.tx_options.sender)?.into();
         let max_gas_amount = self.tx_options.max_gas_amount;
 
-        let action = MoveAction::new_function_call(
-            FunctionId::new(
-                ModuleId::new(
-                    self.module_address,
-                    Identifier::new(self.module_name.to_owned()).unwrap(),
-                ),
-                Identifier::new(self.function_name.to_owned()).unwrap(),
-            ),
-            self.type_args,
-            self.args,
-        );
+        let function_id = self.function.into_function_id(&address_mapping)?;
+        let args = self
+            .args
+            .into_iter()
+            .map(|arg| arg.into_bytes(&address_mapping))
+            .collect::<Result<Vec<_>>>()?;
+        let type_args = self
+            .type_args
+            .into_iter()
+            .map(|tag| {
+                Ok(TypeTag::Struct(Box::new(
+                    tag.into_struct_tag(&address_mapping)?,
+                )))
+            })
+            .collect::<Result<Vec<_>>>()?;
+        let action = MoveAction::new_function_call(function_id, type_args, args);
 
         let tx_data = context
             .build_tx_data(sender, action, max_gas_amount)
             .await?;
-        let tx_data_hex = hex::encode(tx_data.encode());
 
-        if self.json {
-            Ok(Some(tx_data_hex))
+        if self.output {
+            let tx_data_hex = hex::encode(tx_data.encode());
+            if self.json {
+                Ok(Some(tx_data_hex))
+            } else {
+                println!(
+                    "Build transaction succeeded with the transaction hex [{}]",
+                    tx_data_hex
+                );
+
+                Ok(None)
+            }
         } else {
-            println!(
-                "Build transaction succeeded with the transaction hex [{}]",
-                tx_data_hex
-            );
+            if let Some(file_location) = self.file_location {
+                let mut file = File::create(file_location)?;
+                file.write_all(&tx_data.encode())?;
+                println!("Write encoded tx data succeeded in the designated location");
 
-            Ok(None)
+                Ok(None)
+            } else {
+                return Err(RoochError::CommandArgumentError(format!(
+                    "Argument --file-location is not provided",
+                )));
+            }
         }
     }
 }
