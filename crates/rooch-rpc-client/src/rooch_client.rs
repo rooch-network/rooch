@@ -2,11 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Ok, Result};
-use hex::ToHex;
 use jsonrpsee::http_client::HttpClient;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::account::Account;
-use moveos_types::transaction::MoveAction;
 use moveos_types::{access_path::AccessPath, state::ObjectState, transaction::FunctionCall};
 use rooch_rpc_api::api::rooch_api::RoochAPIClient;
 use rooch_rpc_api::jsonrpc_types::{
@@ -15,8 +13,7 @@ use rooch_rpc_api::jsonrpc_types::{
 };
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, EventOptions, EventPageView,
-    FieldKeyView, ObjectIDView, RoochAddressView, StateOptions, StatePageView, StrView,
-    StructTagView,
+    FieldKeyView, ObjectIDView, RoochAddressView, StateOptions, StatePageView, StructTagView,
 };
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, ObjectStateView};
 use rooch_rpc_api::jsonrpc_types::{

@@ -3,26 +3,31 @@
 
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use async_trait::async_trait;
-use move_core_types::{identifier::Identifier, language_storage::ModuleId};
+use move_core_types::{
+    account_address::AccountAddress,
+    identifier::Identifier,
+    language_storage::{ModuleId, TypeTag},
+};
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
-use rooch_framework::MOVEOS_STD_ADDRESS;
-use rooch_rpc_api::jsonrpc_types::TransactionWithInfoPageView;
-use rooch_rpc_client::wallet_context;
 use rooch_types::{error::RoochResult, transaction::RoochTransactionData};
 
 /// Get transactions by order
 #[derive(Debug, clap::Parser)]
 pub struct BuildCommand {
-    /// Transaction's hash
-    #[clap(long)]
-    pub cursor: Option<u64>,
+    #[clap(long, required = true)]
+    pub module_address: AccountAddress,
+
+    #[clap(long, required = true)]
+    pub module_name: String,
+
+    #[clap(long, required = true)]
+    pub function_name: String,
 
     #[clap(long)]
-    pub limit: Option<u64>,
+    pub type_args: Vec<TypeTag>,
 
-    /// descending order
-    #[clap(short = 'd', long)]
-    descending_order: Option<bool>,
+    #[clap(long)]
+    pub args: Vec<Vec<u8>>,
 
     #[clap(flatten)]
     tx_options: TransactionOptions,
@@ -38,22 +43,21 @@ impl CommandAction<RoochTransactionData> for BuildCommand {
         let sender = context.resolve_address(self.tx_options.sender)?.into();
         let max_gas_amount = self.tx_options.max_gas_amount;
 
-        // TODO: actions for building a tx data
-        let mut bundles: Vec<Vec<u8>> = vec![];
-        let args = bcs::to_bytes(&bundles).unwrap();
         let action = MoveAction::new_function_call(
             FunctionId::new(
                 ModuleId::new(
-                    MOVEOS_STD_ADDRESS,
-                    Identifier::new("module_store".to_owned()).unwrap(),
+                    self.module_address,
+                    Identifier::new(self.module_name.to_owned()).unwrap(),
                 ),
-                Identifier::new("publish_modules_entry".to_owned()).unwrap(),
+                Identifier::new(self.function_name.to_owned()).unwrap(),
             ),
-            vec![],
-            vec![args],
+            self.type_args,
+            self.args,
         );
 
-        let tx_data = context.build_tx_data(sender, action, max_gas_amount);
+        let tx_data = context
+            .build_tx_data(sender, action, max_gas_amount)
+            .await?;
         Ok(tx_data)
     }
 }
