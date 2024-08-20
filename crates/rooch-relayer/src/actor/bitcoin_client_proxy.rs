@@ -7,11 +7,12 @@ use crate::actor::messages::{
     GetBlockHeaderInfoMessage, GetBlockMessage,
 };
 use anyhow::Result;
+use bitcoin::Transaction;
 use bitcoincore_rpc::bitcoin::Txid;
 use bitcoincore_rpc::json;
 use coerce::actor::ActorRef;
 
-use super::messages::GetChainTipsMessage;
+use super::messages::{GetChainTipsMessage, GetRawTransactionMessage, GetTxOutMessage};
 
 #[derive(Clone)]
 pub struct BitcoinClientProxy {
@@ -59,5 +60,14 @@ impl BitcoinClientProxy {
                 maxburnamount,
             })
             .await?
+    }
+
+    /// Get transaction output, do not include the mempool
+    pub async fn get_tx_out(&self, txid: Txid, vout: u32) -> Result<Option<json::GetTxOutResult>> {
+        self.actor.send(GetTxOutMessage::new(txid, vout)).await?
+    }
+
+    pub async fn get_raw_transaction(&self, txid: Txid) -> Result<Transaction> {
+        self.actor.send(GetRawTransactionMessage { txid }).await?
     }
 }
