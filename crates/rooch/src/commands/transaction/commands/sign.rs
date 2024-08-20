@@ -1,39 +1,115 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_types::{CommandAction, WalletContextOptions};
+use std::{
+    fs::File,
+    io::{Read, Write},
+};
+
+use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use async_trait::async_trait;
-use rooch_types::error::RoochResult;
+use rooch_types::{
+    error::{RoochError, RoochResult},
+    transaction::RoochTransactionData,
+};
 
 /// Get transactions by order
 #[derive(Debug, clap::Parser)]
 pub struct SignCommand {
-    /// Transaction's hash
+    /// Transaction data hex to be used for signing
     #[clap(long)]
-    pub cursor: Option<u64>,
-
-    #[clap(long)]
-    pub limit: Option<u64>,
-
-    /// descending order
-    #[clap(short = 'd', long)]
-    descending_order: Option<bool>,
+    tx_hex: String,
 
     #[clap(flatten)]
-    pub(crate) context_options: WalletContextOptions,
+    tx_options: TransactionOptions,
+
+    #[clap(flatten)]
+    context: WalletContextOptions,
+
+    /// Read data from file, otherwise read transaction data hex from argument
+    #[clap(long, default_value = "false")]
+    read: bool,
+
+    /// File location for the file being read
+    #[clap(long)]
+    file_location: Option<String>,
+
+    /// Output result in command line, otherwise write to a file
+    #[clap(long, default_value = "false")]
+    output: bool,
+
+    /// File location for the file being written
+    #[clap(long)]
+    file_destination: Option<String>,
+
+    /// Return command outputs in json format
+    #[clap(long, default_value = "false")]
+    json: bool,
 }
 
 #[async_trait]
 impl CommandAction<Option<String>> for SignCommand {
     async fn execute(self) -> RoochResult<Option<String>> {
-        let client = self.context_options.build()?.get_client().await?;
+        let context = self.context.build()?;
+        let password = context.get_password();
+        let sender = context.resolve_address(self.tx_options.sender)?.into();
+        let max_gas_amount = self.tx_options.max_gas_amount;
+        let signed_tx;
 
-        // TODO: sign command
-        let resp = client
-            .rooch
-            .get_transactions_by_order(self.cursor, self.limit, self.descending_order)
-            .await?;
+        if self.read {
+            if let Some(file_location) = self.file_location {
+                println!("Write encoded tx data succeeded in the designated location");
 
-        Ok(resp)
+                let mut file = File::open(file_location)?;
+                let mut encoded_tx_data_str = String::new();
+                file.read_to_string(&mut encoded_tx_data_str)?;
+                let encoded_tx_data = encoded_tx_data_str.into_bytes();
+                let tx_data = RoochTransactionData::decode(encoded_tx_data);
+                signed_tx = context
+                    .sign(sender, tx_data.action, password, max_gas_amount)
+                    .await?;
+            } else {
+                return Err(RoochError::CommandArgumentError(format!(
+                    "Argument --file-location is not provided",
+                )));
+            }
+        } else {
+            let encoded_tx_data = hex::decode(self.tx_hex.clone()).map_err(|_| {
+                RoochError::CommandArgumentError(format!(
+                    "Invalid transaction hex: {}",
+                    self.tx_hex
+                ))
+            })?;
+            let tx_data = RoochTransactionData::decode(encoded_tx_data);
+            signed_tx = context
+                .sign(sender, tx_data.action, password, max_gas_amount)
+                .await?;
+        }
+
+        if self.output {
+            let signed_tx_hex = hex::encode(signed_tx.encode());
+            if self.json {
+                Ok(Some(signed_tx_hex))
+            } else {
+                println!(
+                    "Sign transaction succeeded with the signed transaction hex [{}]",
+                    signed_tx_hex
+                );
+
+                Ok(None)
+            }
+        } else {
+            if let Some(file_destination) = self.file_destination {
+                let mut file = File::create(file_destination)?;
+                file.write_all(&signed_tx.encode())?;
+                println!("Write signed tx data succeeded in the destination");
+
+                Ok(None)
+            } else {
+                return Err(RoochError::CommandArgumentError(format!(
+                    "Argument --file-destination is not provided",
+                )));
+            }
+        }
     }
 }
