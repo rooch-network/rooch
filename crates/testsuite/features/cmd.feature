@@ -68,6 +68,9 @@ Feature: Rooch CLI integration tests
       Then cmd: "transaction get-transactions-by-order --cursor 0 --limit 1 --descending-order false"
       Then cmd: "transaction get-transactions-by-hash --hashes {{$.transaction[-1].data[0].execution_info.tx_hash}}"
 
+      # alias tx for transaction
+      Then cmd: "tx get-transactions-by-order --cursor 1 --limit 2 --descending-order true"
+
       # account balance
       Then cmd: "account balance"
       Then cmd: "account balance --coin-type rooch_framework::gas_coin::GasCoin"
