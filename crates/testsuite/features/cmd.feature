@@ -67,7 +67,7 @@ Feature: Rooch CLI integration tests
       # transaction
       Then cmd: "transaction get-transactions-by-order --cursor 0 --limit 1 --descending-order false"
       Then cmd: "transaction get-transactions-by-hash --hashes {{$.transaction[-1].data[0].execution_info.tx_hash}}"
-      Then cmd: "transaction build --module-address 0000000000000000000000000000000000000000000000000000000000000003 --module-name empty --function-name empty --json --output"
+      Then cmd: "transaction build --function rooch_framework::empty::empty --json --output"
 
       # alias tx for transaction
       Then cmd: "tx get-transactions-by-order --cursor 1 --limit 2 --descending-order true"
