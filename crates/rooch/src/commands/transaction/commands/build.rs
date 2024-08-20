@@ -50,9 +50,9 @@ pub struct BuildCommand {
     #[clap(long, default_value = "false")]
     output: bool,
 
-    /// File location for the file being written
+    /// File destination for the file being written
     #[clap(long)]
-    file_location: Option<String>,
+    file_destination: Option<String>,
 
     /// Return command outputs in json format
     #[clap(long, default_value = "false")]
@@ -100,18 +100,16 @@ impl CommandAction<Option<String>> for BuildCommand {
 
                 Ok(None)
             }
-        } else {
-            if let Some(file_location) = self.file_location {
-                let mut file = File::create(file_location)?;
-                file.write_all(&tx_data.encode())?;
-                println!("Write encoded tx data succeeded in the designated location");
+        } else if let Some(file_destination) = self.file_destination {
+            let mut file = File::create(file_destination)?;
+            file.write_all(&tx_data.encode())?;
+            println!("Write encoded tx data succeeded in the destination");
 
-                Ok(None)
-            } else {
-                return Err(RoochError::CommandArgumentError(format!(
-                    "Argument --file-location is not provided",
-                )));
-            }
+            Ok(None)
+        } else {
+            return Err(RoochError::CommandArgumentError(
+                "Argument --file-destination is not provided".to_owned(),
+            ));
         }
     }
 }
