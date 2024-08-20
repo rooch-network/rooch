@@ -87,17 +87,8 @@ jobs:
             ## Build and test app start
       - name: Install pnpm dependencies
         run: npm install pnpm@9.4.0 -g && pnpm install
-      - name: Install Playwright Browsers
-        uses: microsoft/playwright-github-action@v1
-        with:
-          install_deps: true
-      - name: Cache Playwright Browsers
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
+      - name: Install playwright browsers
+        run: npx playwright install --with-deps
       - name: Lint
         run: pnpm lint
         continue-on-error: true
