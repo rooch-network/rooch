@@ -8,7 +8,7 @@ module rooch_framework::auth_validator_registry {
     use moveos_std::table::{Self, Table};
     use moveos_std::type_table::{Self, TypeTable};
     use moveos_std::features;
-    
+    use moveos_std::core_addresses;
     use rooch_framework::auth_validator::{Self, AuthValidator};
 
     friend rooch_framework::genesis;
@@ -39,8 +39,15 @@ module rooch_framework::auth_validator_registry {
     }
 
     #[private_generics(ValidatorType)]
+    /// Register a new validator. This feature not enabled in the mainnet.
     public fun register<ValidatorType: store>() : u64{
         features::ensure_testnet_enabled();
+        register_internal<ValidatorType>()
+    }
+
+    /// Register a new validator by system. This function is only called by system.
+    public fun register_by_system<ValidatorType: store>(system: &signer) : u64{
+        core_addresses::assert_system_reserved(system);
         register_internal<ValidatorType>()
     }
 
@@ -68,6 +75,11 @@ module rooch_framework::auth_validator_registry {
         
         registry.validator_num = registry.validator_num + 1;
         id
+    }
+
+    public fun is_registered<ValidatorType: store>(): bool{
+        let registry = account::borrow_resource<ValidatorRegistry>(@rooch_framework);
+        type_table::contains<AuthValidatorWithType<ValidatorType>>(&registry.validators_with_type)
     }
 
     public fun borrow_validator(id: u64): &AuthValidator {

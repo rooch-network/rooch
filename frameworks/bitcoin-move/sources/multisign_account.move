@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// Bitcoin multisign account module
-module rooch_nursery::multisign_account{
+module bitcoin_move::multisign_account{
 
     use std::vector;
     use std::option;
