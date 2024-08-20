@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::address::BitcoinAddress;
-use crate::addresses::ROOCH_NURSERY_ADDRESS;
+use crate::addresses::BITCOIN_MOVE_ADDRESS;
 use anyhow::Result;
 use bitcoin::key::constants::SCHNORR_PUBLIC_KEY_SIZE;
 use bitcoin::key::Secp256k1;
@@ -150,7 +150,7 @@ impl<'a> MultisignAccountModule<'a> {
 
 impl<'a> ModuleBinding<'a> for MultisignAccountModule<'a> {
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const MODULE_ADDRESS: AccountAddress = ROOCH_NURSERY_ADDRESS;
+    const MODULE_ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
 
     fn new(caller: &'a impl MoveFunctionCaller) -> Self
     where

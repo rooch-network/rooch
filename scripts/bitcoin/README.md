@@ -9,7 +9,7 @@ This directory contains scripts for setting up a local development environment f
 ## Setup
 
 1. Run `./node/run_local_node_docker.sh` or `./node/run_local_node_podman.sh` to start a local Bitcoin Core node
-2. Run `source ./cmd_alias.sh` to set up aliases for running `bitcoin-cli` and `ord` commands
+2. Run `source ./cmd_alias_docker.sh` or `source ./cmd_alias_podman.sh` to set up aliases for running `bitcoin-cli` and `ord` commands
 
 ## Development on rooch
 

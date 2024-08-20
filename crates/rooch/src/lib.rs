@@ -5,7 +5,10 @@ use crate::commands::db::DB;
 use crate::commands::event::EventCommand;
 use crate::commands::indexer::Indexer;
 use crate::commands::statedb::Statedb;
-use clap::builder::styling::{AnsiColor, Effects, Styles};
+use clap::builder::{
+    styling::{AnsiColor, Effects},
+    Styles,
+};
 use cli_types::CommandAction;
 use commands::{
     abi::ABI, account::Account, dynamic_field::DynamicField, env::Env, genesis::Genesis,
@@ -50,6 +53,7 @@ pub enum Command {
     Object(ObjectCommand),
     DynamicField(DynamicField),
     Resource(ResourceCommand),
+    #[clap(visible_alias = "tx")]
     Transaction(Transaction),
     Event(EventCommand),
     ABI(ABI),

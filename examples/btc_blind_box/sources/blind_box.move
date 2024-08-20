@@ -140,7 +140,6 @@ module btc_blind_box::blind_box {
 
     #[test(sender=@0x42)]
     fun test_request_and_claim(sender: &signer) {
-        rooch_framework::genesis::init_for_test();
         bitcoin_move::genesis::init_for_test();
         let module_owner = account::create_account_for_testing(@btc_blind_box);
 

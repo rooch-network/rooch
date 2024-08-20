@@ -9419,6 +9419,7 @@ dependencies = [
  "rooch-integration-test-runner",
  "rooch-key",
  "rooch-types",
+ "serde 1.0.208",
  "serde_json",
  "tempfile",
  "tokio",
