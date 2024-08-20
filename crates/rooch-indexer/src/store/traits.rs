@@ -12,12 +12,6 @@ pub trait IndexerStoreTrait: Send + Sync {
         object_state_change_set: IndexerObjectStateChangeSet,
     ) -> anyhow::Result<(), IndexerError>;
 
-    // fn update_any_object_states(
-    //     &self,
-    //     object_state_change: IndexerObjectStateChanges,
-    //     table_name: &str,
-    // ) -> Result<(), IndexerError>;
-
     fn persist_or_update_object_states(
         &self,
         states: Vec<IndexerObjectState>,

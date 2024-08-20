@@ -65,26 +65,6 @@ impl Handler<QueryIndexerEventsMessage> for IndexerReaderActor {
     }
 }
 
-// #[async_trait]
-// impl Handler<QueryIndexerObjectStatesMessage> for IndexerReaderActor {
-//     async fn handle(
-//         &mut self,
-//         msg: QueryIndexerObjectStatesMessage,
-//         _ctx: &mut ActorContext,
-//     ) -> Result<Vec<IndexerObjectState>> {
-//         let QueryIndexerObjectStatesMessage {
-//             filter,
-//             cursor,
-//             limit,
-//             descending_order,
-//             state_type,
-//         } = msg;
-//         self.indexer_reader
-//             .query_object_states_with_filter(filter, cursor, limit, descending_order)
-//             .map_err(|e| anyhow!(format!("Failed to query indexer object states: {:?}", e)))
-//     }
-// }
-
 #[async_trait]
 impl Handler<QueryIndexerObjectIdsMessage> for IndexerReaderActor {
     async fn handle(

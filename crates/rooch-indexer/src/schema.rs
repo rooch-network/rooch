@@ -21,9 +21,6 @@ diesel::table! {
     object_states (id) {
         id -> Text,
         owner -> Text,
-        // flag -> SmallInt,
-        // state_root -> Text,
-        // size -> BigInt,
         object_type -> Text,
         tx_order -> BigInt,
         state_index -> BigInt,
@@ -36,10 +33,6 @@ diesel::table! {
     utxos (id) {
         id -> Text,
         owner -> Text,
-        // flag -> SmallInt,
-        // state_root -> Text,
-        // size -> BigInt,
-        // object_type -> Text,
         tx_order -> BigInt,
         state_index -> BigInt,
         created_at -> BigInt,
@@ -51,10 +44,6 @@ diesel::table! {
     inscriptions (id) {
         id -> Text,
         owner -> Text,
-        // flag -> SmallInt,
-        // state_root -> Text,
-        // size -> BigInt,
-        // object_type -> Text,
         tx_order -> BigInt,
         state_index -> BigInt,
         created_at -> BigInt,

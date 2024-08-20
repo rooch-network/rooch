@@ -97,21 +97,6 @@ impl Message for QueryIndexerEventsMessage {
     type Result = Result<Vec<IndexerEvent>>;
 }
 
-// /// Query Indexer Object States Message
-// #[derive(Debug, Serialize, Deserialize)]
-// pub struct QueryIndexerObjectStatesMessage {
-//     pub filter: ObjectStateFilter,
-//     // exclusive cursor if `Some`, otherwise start from the beginning
-//     pub cursor: Option<IndexerStateID>,
-//     pub limit: usize,
-//     pub descending_order: bool,
-//     pub state_type: ObjectStateType,
-// }
-//
-// impl Message for QueryIndexerObjectStatesMessage {
-//     type Result = Result<Vec<IndexerObjectState>>;
-// }
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct QueryIndexerObjectIdsMessage {
     pub filter: ObjectStateFilter,

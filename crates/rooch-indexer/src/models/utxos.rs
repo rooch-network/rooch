@@ -19,15 +19,6 @@ pub struct StoredUTXO {
     /// The owner of the object
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub owner: String,
-    // /// A flag to indicate whether the object is shared or frozen
-    // #[diesel(sql_type = diesel::sql_types::SmallInt)]
-    // pub flag: i16,
-    // /// The table state root of the object
-    // #[diesel(sql_type = diesel::sql_types::Text)]
-    // pub state_root: String,
-    // /// The table length
-    // #[diesel(sql_type = diesel::sql_types::BigInt)]
-    // pub size: i64,
     /// The object created timestamp on chain
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub created_at: i64,
@@ -53,12 +44,6 @@ impl From<IndexerObjectState> for StoredUTXO {
         Self {
             id: metadata.id.to_string(),
             owner: metadata.owner.to_hex_literal(),
-            // flag: metadata.flag as i16,
-            // state_root: metadata
-            //     .state_root
-            //     .map(|h| format!("{:?}", h))
-            //     .unwrap_or_default(),
-            // size: metadata.size as i64,
             created_at: metadata.created_at as i64,
             updated_at: metadata.updated_at as i64,
             // object_type: metadata.object_type.to_string(),
@@ -72,7 +57,6 @@ impl StoredUTXO {
     pub fn try_parse_indexer_object_state(&self) -> Result<IndexerObjectState, anyhow::Error> {
         let id = ObjectID::from_str(self.id.as_str())?;
         let owner = AccountAddress::from_str(self.owner.as_str())?;
-        // let object_type = TypeTag::from_str(self.object_type.as_str())?;
         let object_type = UTXO::type_tag();
         let state_root = None;
         let metadata = ObjectMeta {
@@ -92,14 +76,4 @@ impl StoredUTXO {
         };
         Ok(state)
     }
-
-    // pub fn try_parse_id(&self) -> Result<(ObjectID, IndexerStateID), anyhow::Error> {
-    //     let tx_order = self.tx_order as u64;
-    //     let state_index = self.state_index as u64;
-    //     let indexer_state_id = IndexerStateID {
-    //         tx_order,
-    //         state_index,
-    //     };
-    //     Ok((ObjectID::from_str(self.id.as_str())?, indexer_state_id))
-    // }
 }

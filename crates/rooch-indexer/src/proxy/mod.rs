@@ -143,26 +143,6 @@ impl IndexerProxy {
             .await?
     }
 
-    // pub async fn query_object_states(
-    //     &self,
-    //     filter: ObjectStateFilter,
-    //     // exclusive cursor if `Some`, otherwise start from the beginning
-    //     cursor: Option<IndexerStateID>,
-    //     limit: usize,
-    //     descending_order: bool,
-    //     state_type: IndexerObjectStateType,
-    // ) -> Result<Vec<IndexerObjectState>> {
-    //     self.reader_actor
-    //         .send(QueryIndexerObjectStatesMessage {
-    //             filter,
-    //             cursor,
-    //             limit,
-    //             descending_order,
-    //             state_type,
-    //         })
-    //         .await?
-    // }
-
     pub async fn query_object_ids(
         &self,
         filter: ObjectStateFilter,

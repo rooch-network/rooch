@@ -161,19 +161,6 @@ impl IndexerStoreTrait for IndexerStore {
         )
     }
 
-    // fn update_any_object_states(
-    //     &self,
-    //     mut object_state_change: IndexerObjectStateChanges,
-    //     table_name: &str,
-    // ) -> Result<(), IndexerError> {
-    //     let mut object_states_new_and_update = object_state_change.new_object_states;
-    //     object_states_new_and_update.append(&mut object_state_change.update_object_states);
-    //     self.get_sqlite_store(table_name)?
-    //         .persist_or_update_object_states(object_states_new_and_update)?;
-    //     self.get_sqlite_store(table_name)?
-    //         .delete_object_states(object_state_change.remove_object_states)
-    // }
-
     fn persist_or_update_object_states(
         &self,
         states: Vec<IndexerObjectState>,

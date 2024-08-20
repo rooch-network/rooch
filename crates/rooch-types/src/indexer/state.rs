@@ -53,7 +53,6 @@ impl IndexerObjectState {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ObjectStateType {
-    // #[default]
     ObjectState, //all object states exclude utxo and inscription
     UTXO,
     Inscription,
@@ -77,15 +76,6 @@ impl IndexerObjectStateChangeSet {
         } else {
             self.object_states.update_object_states.push(state)
         }
-
-        // match state.metadata.object_type {
-        //     UTXO_TYPE_TAG => self.object_state_utxos.update_object_states.push(state),
-        //     INSCRIPTION_TYPE_TAG => self
-        //         .object_state_inscriptions
-        //         .update_object_states
-        //         .push(state),
-        //     _ => self.object_states.update_object_states.push(state),
-        // }
     }
 
     pub fn new_object_states(&mut self, state: IndexerObjectState) {
@@ -96,12 +86,6 @@ impl IndexerObjectStateChangeSet {
         } else {
             self.object_states.new_object_states.push(state)
         }
-
-        // match state.metadata.object_type {
-        //     UTXO_TYPE_TAG => self.object_state_utxos.new_object_states.push(state),
-        //     INSCRIPTION_TYPE_TAG => self.object_state_inscriptions.new_object_states.push(state),
-        //     _ => self.object_states.new_object_states.push(state),
-        // }
     }
 
     pub fn remove_object_states(&mut self, object_id: ObjectID, object_type: &TypeTag) {
@@ -118,21 +102,6 @@ impl IndexerObjectStateChangeSet {
                 .remove_object_states
                 .push(object_id.to_string())
         }
-
-        // match object_type {
-        //     UTXO_TYPE_TAG => self
-        //         .object_state_utxos
-        //         .remove_object_states
-        //         .push(object_id.to_string()),
-        //     INSCRIPTION_TYPE_TAG => self
-        //         .object_state_inscriptions
-        //         .remove_object_states
-        //         .push(object_id.to_string()),
-        //     _ => self
-        //         .object_states
-        //         .remove_object_states
-        //         .push(object_id.to_string()),
-        // }
     }
 }
 
@@ -159,12 +128,6 @@ impl IndexerObjectStatesIndexGenerator {
         } else {
             self.object_states_index_generator += 1;
         }
-
-        // match object_type {
-        //     UTXO_TYPE_TAG => self.object_state_utxos_index_generator += 1,
-        //     INSCRIPTION_TYPE_TAG => self.object_state_inscriptions_generator += 1,
-        //     _ => self.object_states_index_generator += 1,
-        // }
     }
 
     pub fn get(&mut self, object_type: &TypeTag) -> u64 {
@@ -175,12 +138,6 @@ impl IndexerObjectStatesIndexGenerator {
         } else {
             self.object_states_index_generator
         }
-
-        // match object_type {
-        //     UTXO_TYPE_TAG => self.object_state_utxos_index_generator,
-        //     INSCRIPTION_TYPE_TAG => self.object_state_inscriptions_generator,
-        //     _ => self.object_states_index_generator,
-        // }
     }
 }
 

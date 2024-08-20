@@ -313,7 +313,7 @@ impl IndexerReader {
                         .order_by((events::tx_order.desc(), events::event_index.desc()))
                         .first::<(i64, i64)>(conn)
                 })?;
-            (max_tx_order + 1, event_index)
+            (max_tx_order, event_index)
         } else {
             (-1, 0)
         };
@@ -417,30 +417,16 @@ impl IndexerReader {
             } = cursor;
             (tx_order as i64, state_index as i64)
         } else if descending_order {
-            // let (max_tx_order, state_index): (i64, i64) = self
-            //     .get_inner_indexer_reader(INDEXER_OBJECT_STATES_TABLE_NAME)?
-            //     .run_query_with_timeout(|conn| {
-            //         object_states::dsl::object_states
-            //             .select((object_states::tx_order, object_states::state_index))
-            //             .order_by((
-            //                 object_states::tx_order.desc(),
-            //                 object_states::state_index.desc(),
-            //             ))
-            //             .first::<(i64, i64)>(conn)
-            //     })?;
-
             let last_state_id = self.query_last_indexer_state_id(state_type.clone())?;
             match last_state_id {
-                Some((max_tx_order, state_index)) => (max_tx_order + 1, state_index),
+                Some((max_tx_order, state_index)) => (max_tx_order, state_index),
                 None => (0, 0),
             }
-            // (max_tx_order + 1, state_index)
         } else {
             (-1, 0)
         };
 
         let table_name = get_table_name_by_state_type(state_type.clone());
-        // SELECT * FROM object_states \
         // Avoid to use "select *". Specify the columns to use.
         let select_clause = format!(
             "SELECT {STATE_OBJECT_ID_STR},{TX_ORDER_STR},{STATE_INDEX_STR} FROM {}",
@@ -527,7 +513,6 @@ impl IndexerReader {
         let stored_object_state_infos = self
             .get_inner_indexer_reader(INDEXER_OBJECT_STATES_TABLE_NAME)?
             .run_query_with_timeout(|conn| {
-                // diesel::sql_query(query).load::<StoredObjectState>(conn)
                 diesel::sql_query(query).load::<StoredObjectStateInfo>(conn)
             })?;
         let duration = start.elapsed();
@@ -535,39 +520,6 @@ impl IndexerReader {
         println!("Query object states time elapsed: {:?}", duration);
         Ok(stored_object_state_infos)
     }
-
-    // #[named]
-    // pub fn query_object_states_with_filter(
-    //     &self,
-    //     filter: ObjectStateFilter,
-    //     cursor: Option<IndexerStateID>,
-    //     limit: usize,
-    //     descending_order: bool,
-    //     state_type: IndexerObjectStateType,
-    // ) -> IndexerResult<Vec<IndexerObjectState>> {
-    //     let fn_name = function_name!();
-    //     let _timer = self
-    //         .metrics
-    //         .indexer_reader_query_latency_seconds
-    //         .with_label_values(&[fn_name])
-    //         .start_timer();
-    //     // let stored_object_state_infos = self.query_stored_object_state_infos_with_filter(
-    //     //     filter,
-    //     //     cursor,
-    //     //     limit,
-    //     //     descending_order,
-    //     //     state_type,
-    //     // )?;
-    //     // let result = stored_object_states
-    //     //     .into_iter()
-    //     //     .map(|v| v.try_parse_indexer_object_state())
-    //     //     .collect::<Result<Vec<_>>>()
-    //     //     .map_err(|e| {
-    //     //         IndexerError::SQLiteReadError(format!("Cast indexer object states failed: {:?}", e))
-    //     //     })?;
-    //
-    //     Ok(result)
-    // }
 
     #[named]
     pub fn query_object_ids_with_filter(
@@ -620,10 +572,7 @@ impl IndexerReader {
         tracing::debug!("query last indexer state id: {}", query);
         let stored_state_ids = self
             .get_inner_indexer_reader(table_name)?
-            .run_query_with_timeout(|conn| {
-                // diesel::sql_query(query).load::<(i64, i64)>(conn)
-                diesel::sql_query(query).load::<StoredStateID>(conn)
-            })?;
+            .run_query_with_timeout(|conn| diesel::sql_query(query).load::<StoredStateID>(conn))?;
 
         let last_state_id = if stored_state_ids.is_empty() {
             None
