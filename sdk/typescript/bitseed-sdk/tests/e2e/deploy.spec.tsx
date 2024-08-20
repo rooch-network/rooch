@@ -24,7 +24,7 @@ let generatorID: string | null
 
 test.beforeAll(async () => {
   testBox = new TestBox()
-  await testBox.loadBitcoinEnv()
+  await testBox.loadBitcoinEnv(null, true)
   await testBox.loadRoochEnv('local', 0)
   roochServerAddress = testBox.getRoochServerAddress()
 

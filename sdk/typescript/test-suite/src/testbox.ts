@@ -28,7 +28,7 @@ export class TestBox {
     this.tmpDir = tmp.dirSync({ unsafeCleanup: true })
   }
 
-  async loadBitcoinEnv(customContainer?: BitcoinContainer) {
+  async loadBitcoinEnv(customContainer?: BitcoinContainer, autoMining: boolean = false) {
     if (customContainer) {
       this.bitcoinContainer = await customContainer.start()
       return
@@ -42,15 +42,17 @@ export class TestBox {
 
     await this.delay(5)
 
-    // Preprea Faucet
-    await this.bitcoinContainer.prepareFaucet()
+    if (autoMining) {
+      // Preprea Faucet
+      await this.bitcoinContainer.prepareFaucet()
 
-    // Start mining interval after Bitcoin container is started
-    this.miningIntervalId = setInterval(async () => {
-      if (this.bitcoinContainer) {
-        await this.bitcoinContainer.mineBlock()
-      }
-    }, 1000) // Mine every 1 second
+      // Start mining interval after Bitcoin container is started
+      this.miningIntervalId = setInterval(async () => {
+        if (this.bitcoinContainer) {
+          await this.bitcoinContainer.mineBlock()
+        }
+      }, 1000) // Mine every 1 second
+    }
   }
 
   async loadORDEnv(customContainer?: OrdContainer) {
