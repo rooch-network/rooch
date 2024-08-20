@@ -9,7 +9,7 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
 };
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
-use rooch_types::{error::RoochResult, transaction::RoochTransactionData};
+use rooch_types::error::RoochResult;
 
 /// Get transactions by order
 #[derive(Debug, clap::Parser)]
@@ -34,11 +34,15 @@ pub struct BuildCommand {
 
     #[clap(flatten)]
     context: WalletContextOptions,
+
+    /// Return command outputs in json format
+    #[clap(long, default_value = "false")]
+    json: bool,
 }
 
 #[async_trait]
-impl CommandAction<RoochTransactionData> for BuildCommand {
-    async fn execute(self) -> RoochResult<RoochTransactionData> {
+impl CommandAction<Option<String>> for BuildCommand {
+    async fn execute(self) -> RoochResult<Option<String>> {
         let context = self.context.build()?;
         let sender = context.resolve_address(self.tx_options.sender)?.into();
         let max_gas_amount = self.tx_options.max_gas_amount;
@@ -58,6 +62,17 @@ impl CommandAction<RoochTransactionData> for BuildCommand {
         let tx_data = context
             .build_tx_data(sender, action, max_gas_amount)
             .await?;
-        Ok(tx_data)
+        let tx_data_hex = hex::encode(tx_data.encode());
+
+        if self.json {
+            Ok(Some(tx_data_hex))
+        } else {
+            println!(
+                "Build transaction succeeded with the transaction hex [{}]",
+                tx_data_hex
+            );
+
+            Ok(None)
+        }
     }
 }
