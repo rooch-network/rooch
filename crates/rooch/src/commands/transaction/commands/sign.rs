@@ -18,7 +18,7 @@ use rooch_types::{
 pub struct SignCommand {
     /// Transaction data hex to be used for signing
     #[clap(long)]
-    tx_hex: String,
+    tx_hex: Option<String>,
 
     #[clap(flatten)]
     tx_options: TransactionOptions,
@@ -38,7 +38,7 @@ pub struct SignCommand {
     #[clap(long, default_value = "false")]
     output: bool,
 
-    /// File location for the file being written
+    /// File destination for the file being written
     #[clap(long)]
     file_destination: Option<String>,
 
@@ -58,12 +58,9 @@ impl CommandAction<Option<String>> for SignCommand {
 
         if self.read {
             if let Some(file_location) = self.file_location {
-                println!("Write encoded tx data succeeded in the designated location");
-
                 let mut file = File::open(file_location)?;
-                let mut encoded_tx_data_str = String::new();
-                file.read_to_string(&mut encoded_tx_data_str)?;
-                let encoded_tx_data = encoded_tx_data_str.into_bytes();
+                let mut encoded_tx_data = Vec::new();
+                file.read_to_end(&mut encoded_tx_data)?;
                 let tx_data = RoochTransactionData::decode(encoded_tx_data);
                 signed_tx = context
                     .sign(sender, tx_data.action, password, max_gas_amount)
@@ -74,16 +71,19 @@ impl CommandAction<Option<String>> for SignCommand {
                 )));
             }
         } else {
-            let encoded_tx_data = hex::decode(self.tx_hex.clone()).map_err(|_| {
-                RoochError::CommandArgumentError(format!(
-                    "Invalid transaction hex: {}",
-                    self.tx_hex
-                ))
-            })?;
-            let tx_data = RoochTransactionData::decode(encoded_tx_data);
-            signed_tx = context
-                .sign(sender, tx_data.action, password, max_gas_amount)
-                .await?;
+            if let Some(tx_hex) = self.tx_hex {
+                let encoded_tx_data = hex::decode(tx_hex.clone()).map_err(|_| {
+                    RoochError::CommandArgumentError(format!("Invalid transaction hex: {}", tx_hex))
+                })?;
+                let tx_data = RoochTransactionData::decode(encoded_tx_data);
+                signed_tx = context
+                    .sign(sender, tx_data.action, password, max_gas_amount)
+                    .await?;
+            } else {
+                return Err(RoochError::CommandArgumentError(format!(
+                    "Argument --tx-hex is not provided",
+                )));
+            }
         }
 
         if self.output {
