@@ -1,16 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{
-    fs::File,
-    io::{Read, Write},
-};
-
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use async_trait::async_trait;
 use rooch_types::{
     error::{RoochError, RoochResult},
     transaction::RoochTransactionData,
+};
+use std::{
+    fs::File,
+    io::{Read, Write},
 };
 
 /// Get transactions by order
@@ -61,29 +60,36 @@ impl CommandAction<Option<String>> for SignCommand {
                 let mut file = File::open(file_location)?;
                 let mut encoded_tx_data = Vec::new();
                 file.read_to_end(&mut encoded_tx_data)?;
-                let tx_data = RoochTransactionData::decode(encoded_tx_data);
+                let tx_data: RoochTransactionData =
+                    bcs::from_bytes(&encoded_tx_data).map_err(|_| {
+                        RoochError::BcsError(format!(
+                            "Invalid encoded tx data: {:?}",
+                            encoded_tx_data
+                        ))
+                    })?;
                 signed_tx = context
                     .sign(sender, tx_data.action, password, max_gas_amount)
                     .await?;
             } else {
-                return Err(RoochError::CommandArgumentError(format!(
-                    "Argument --file-location is not provided",
-                )));
+                return Err(RoochError::CommandArgumentError(
+                    "Argument --file-location is not provided".to_owned(),
+                ));
             }
-        } else {
-            if let Some(tx_hex) = self.tx_hex {
-                let encoded_tx_data = hex::decode(tx_hex.clone()).map_err(|_| {
-                    RoochError::CommandArgumentError(format!("Invalid transaction hex: {}", tx_hex))
+        } else if let Some(tx_hex) = self.tx_hex {
+            let encoded_tx_data = hex::decode(tx_hex.clone()).map_err(|_| {
+                RoochError::CommandArgumentError(format!("Invalid transaction hex: {}", tx_hex))
+            })?;
+            let tx_data: RoochTransactionData =
+                bcs::from_bytes(&encoded_tx_data).map_err(|_| {
+                    RoochError::BcsError(format!("Invalid encoded tx data: {:?}", encoded_tx_data))
                 })?;
-                let tx_data = RoochTransactionData::decode(encoded_tx_data);
-                signed_tx = context
-                    .sign(sender, tx_data.action, password, max_gas_amount)
-                    .await?;
-            } else {
-                return Err(RoochError::CommandArgumentError(format!(
-                    "Argument --tx-hex is not provided",
-                )));
-            }
+            signed_tx = context
+                .sign(sender, tx_data.action, password, max_gas_amount)
+                .await?;
+        } else {
+            return Err(RoochError::CommandArgumentError(
+                "Argument --tx-hex is not provided".to_owned(),
+            ));
         }
 
         if self.output {
@@ -98,18 +104,16 @@ impl CommandAction<Option<String>> for SignCommand {
 
                 Ok(None)
             }
-        } else {
-            if let Some(file_destination) = self.file_destination {
-                let mut file = File::create(file_destination)?;
-                file.write_all(&signed_tx.encode())?;
-                println!("Write signed tx data succeeded in the destination");
+        } else if let Some(file_destination) = self.file_destination {
+            let mut file = File::create(file_destination)?;
+            file.write_all(&signed_tx.encode())?;
+            println!("Write signed tx data succeeded in the destination");
 
-                Ok(None)
-            } else {
-                return Err(RoochError::CommandArgumentError(format!(
-                    "Argument --file-destination is not provided",
-                )));
-            }
+            Ok(None)
+        } else {
+            return Err(RoochError::CommandArgumentError(
+                "Argument --file-destination is not provided".to_owned(),
+            ));
         }
     }
 }
