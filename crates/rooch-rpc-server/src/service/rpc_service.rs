@@ -261,10 +261,19 @@ impl RpcService {
         show_display: bool,
         state_type: ObjectStateType,
     ) -> Result<Vec<IndexerObjectStateView>> {
-        let indexer_ids = self
-            .indexer
-            .query_object_ids(filter, cursor, limit, descending_order, state_type)
-            .await?;
+        let indexer_ids = match filter {
+            // Compatible with object_ids query after split object_states
+            // Do not query the indexer, directly return the states query results.
+            ObjectStateFilter::ObjectId(object_ids) => object_ids
+                .into_iter()
+                .map(|v| (v, IndexerStateID::default()))
+                .collect(),
+            _ => {
+                self.indexer
+                    .query_object_ids(filter, cursor, limit, descending_order, state_type)
+                    .await?
+            }
+        };
         let object_ids = indexer_ids.iter().map(|m| m.0.clone()).collect::<Vec<_>>();
 
         let access_path = AccessPath::objects(object_ids.clone());

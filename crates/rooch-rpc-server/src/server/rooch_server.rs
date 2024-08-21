@@ -584,7 +584,7 @@ impl RoochAPIServer for RoochServer {
         let cursor: Option<IndexerStateID> = cursor.map(Into::into);
         let mut data = self
             .aggregate_service
-            .get_balances(account_addr.into(), cursor, limit_of + 1)
+            .get_balances(account_addr.into(), cursor.clone(), limit_of + 1)
             .await?;
 
         let has_next_page = data.len() > limit_of;
@@ -593,7 +593,7 @@ impl RoochAPIServer for RoochServer {
         let next_cursor = data
             .last()
             .cloned()
-            .map_or(cursor, |(key, _balance_info)| key);
+            .map_or(cursor.clone(), |(key, _balance_info)| key);
 
         Ok(BalanceInfoPageView {
             data: data

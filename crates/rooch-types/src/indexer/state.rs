@@ -188,7 +188,7 @@ pub fn handle_object_change(
 }
 
 #[derive(
-    Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize, JsonSchema,
+    Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize, JsonSchema, Default,
 )]
 pub struct IndexerStateID {
     pub tx_order: u64,

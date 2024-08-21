@@ -359,16 +359,17 @@ impl diesel::r2d2::CustomizeConnection<SqliteConnection, diesel::r2d2::Error>
             // The default page_size is 1024 byte.
             // The default cache_size value is -2000, which translates into a maximum of 2048000 bytes per cache.
             // The cache_size in SQLite is primarily associated with the database connection, not the database file itself.
-            // pragma_builder.push_str("PRAGMA page_size = 4096; PRAGMA cache_size = 65536000;"); // 64MB
+            // pragma_builder.push_str("PRAGMA page_size = 4096; PRAGMA cache_size = 524288000;"); //512MB
             pragma_builder.push_str("PRAGMA page_size = 4096; PRAGMA cache_size = 262144000;");
-            // 256MB
+            //256MB
         }
         // WAL mode has better write-concurrency. When synchronous is NORMAL it will fsync only in critical moments
         if self.enable_wal {
             pragma_builder.push_str("PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL;");
         }
         // The mmap_size in SQLite is primarily associated with the database file, not the connection.
-        pragma_builder.push_str("PRAGMA mmap_size = 536870912"); // 512MB
+        pragma_builder.push_str("PRAGMA mmap_size = 1073741824"); // 1GB
+                                                                  // pragma_builder.push_str("PRAGMA mmap_size = 536870912"); // 512MB
         conn.batch_execute(&pragma_builder)
             .map_err(diesel::r2d2::Error::QueryError)?;
 

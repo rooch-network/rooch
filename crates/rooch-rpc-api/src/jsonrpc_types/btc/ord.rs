@@ -11,18 +11,59 @@ use bitcoin::hashes::Hash;
 use bitcoin::Txid;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::state::MoveState;
-use moveos_types::{moveos_std::object::ObjectID, state::MoveStructType};
+use moveos_types::state::MoveStructType;
 use rooch_types::bitcoin::ord;
-use rooch_types::bitcoin::ord::{BitcoinInscriptionID, Inscription, InscriptionID};
+use rooch_types::bitcoin::ord::{BitcoinInscriptionID, Inscription};
 use rooch_types::indexer::state::ObjectStateFilter;
-use rooch_types::into_address::IntoAddress;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
+pub type BitcoinInscriptionIDStr = StrView<BitcoinInscriptionID>;
+
+impl std::fmt::Display for BitcoinInscriptionIDStr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}i{}", self.0.txid, self.0.index)
+    }
+}
+
+impl FromStr for BitcoinInscriptionIDStr {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> anyhow::Result<Self, Self::Err> {
+        let parts: Vec<&str> = s.split('i').collect();
+        if parts.len() != 2 {
+            return Err(anyhow::anyhow!(
+                "Invalid string format for bitcoin inscriptionID"
+            ));
+        }
+
+        let txid = hex_to_txid(parts[0])?;
+        let index = u32::from_str(parts[1])
+            .map_err(|_| anyhow::anyhow!("Invalid index for bitcoin inscriptionID"))?;
+        Ok(StrView(BitcoinInscriptionID { txid, index }))
+    }
+}
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, JsonSchema)]
 pub struct BitcoinInscriptionIDView {
     pub txid: TxidView,
     pub index: u32,
+}
+
+impl std::fmt::Display for BitcoinInscriptionIDView {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}i{}", self.txid, self.index)
+    }
+}
+
+impl FromStr for BitcoinInscriptionIDView {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> anyhow::Result<Self, Self::Err> {
+        let bitcoin_inscription_id = BitcoinInscriptionIDStr::from_str(s)?;
+        Ok(BitcoinInscriptionIDView {
+            txid: StrView(bitcoin_inscription_id.0.txid),
+            index: bitcoin_inscription_id.0.index,
+        })
+    }
 }
 
 impl From<BitcoinInscriptionIDView> for BitcoinInscriptionID {
@@ -39,10 +80,10 @@ impl From<BitcoinInscriptionIDView> for BitcoinInscriptionID {
 pub enum InscriptionFilterView {
     /// Query by owner, support rooch address and bitcoin address
     Owner(UnitedAddressView),
-    /// Query by inscription id, represent by bitcoin txid and index
-    InscriptionId { txid: String, index: u32 },
-    /// Query by object id.
-    ObjectId(ObjectID),
+    /// Query by inscription id, represent by bitcoin {{txid}i{index}}
+    InscriptionId(BitcoinInscriptionIDStr),
+    /// Query by object ids.
+    ObjectId(ObjectIDVecView),
     /// Query all.
     All,
 }
@@ -55,14 +96,12 @@ impl InscriptionFilterView {
                 filter_out: false,
                 owner: owner.0.rooch_address.into(),
             },
-            InscriptionFilterView::InscriptionId { txid, index } => {
-                let txid = hex_to_txid(txid.as_str())?;
-                let inscription_id = InscriptionID::new(txid.into_address(), index);
-                let obj_id = ord::derive_inscription_id(&inscription_id);
+            InscriptionFilterView::InscriptionId(inscription_id) => {
+                let obj_id = ord::derive_inscription_id(&inscription_id.0.into());
                 ObjectStateFilter::ObjectId(vec![obj_id])
             }
-            InscriptionFilterView::ObjectId(object_id) => {
-                ObjectStateFilter::ObjectId(vec![object_id])
+            InscriptionFilterView::ObjectId(object_id_vec_view) => {
+                ObjectStateFilter::ObjectId(object_id_vec_view.into())
             }
             InscriptionFilterView::All => ObjectStateFilter::ObjectType(Inscription::struct_tag()),
         })
