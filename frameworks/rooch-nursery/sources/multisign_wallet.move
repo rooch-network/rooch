@@ -9,7 +9,7 @@ module rooch_nursery::multisign_wallet{
     use moveos_std::object;
     use moveos_std::table_vec::{Self, TableVec};
     use moveos_std::bcs;
-    use rooch_nursery::multisign_account;
+    use bitcoin_move::multisign_account;
     use rooch_framework::ecdsa_k1;
 
     const PROPOSAL_STATUS_PENDING: u8 = 0;
