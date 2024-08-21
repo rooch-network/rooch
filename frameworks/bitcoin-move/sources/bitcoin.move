@@ -73,7 +73,7 @@ module bitcoin_move::bitcoin{
 
     struct TransferUTXOEvent has drop, store, copy {
         txid: address,
-        sender: address,
+        sender: Option<address>,
         receiver: address,
         value: u64
     }
@@ -165,13 +165,18 @@ module bitcoin_move::bitcoin{
         let output_seals = simple_multimap::new<u32, UTXOSeal>();
         let need_process_oridinal = need_process_oridinals(block_height);
         let sender: Option<address> = option::none<address>();
+        let find_sender: bool = false;
         while (idx < vector::length(txinput)) {
             let txin = vector::borrow(txinput, idx);
             let outpoint = *types::txin_previous_output(txin);
             if (utxo::exists_utxo(outpoint)) {
                 let object_id = utxo::derive_utxo_id(outpoint);
                 let utxo_obj = utxo::take(object_id);
-                sender = option::some(object::owner(&utxo_obj));
+                let utxo_owner = object::owner(&utxo_obj);
+                if (!find_sender && utxo_owner != @bitcoin_move) {
+                    sender = option::some(utxo_owner);
+                    find_sender = true;
+                };
                 if(need_process_oridinal) {
                     let (sat_points, utxo_flotsams) = ord::spend_utxo(&mut utxo_obj, tx, input_utxo_values, idx);
                     handle_sat_point(sat_points, &mut output_seals);
@@ -290,21 +295,24 @@ module bitcoin_move::bitcoin{
             };
             let owner_address = types::txout_object_address(txout);
             utxo::transfer(utxo_obj, owner_address);
-            if (option::is_some(&sender)){
-                let sender_address = option::extract(&mut sender);
-                event_queue::emit(to_string(&sender_address), TransferUTXOEvent{
-                    txid,
-                    sender: sender_address,
-                    receiver: owner_address,
-                    value
-                });
+            if (owner_address != @bitcoin_move){
                 event_queue::emit(to_string(&owner_address), TransferUTXOEvent{
                     txid,
-                    sender: sender_address,
+                    sender,
                     receiver: owner_address,
                     value
                 })
             };
+            if (option::is_some(&sender)){
+                let sender_address = option::extract(&mut sender);
+                event_queue::emit(to_string(&sender_address), TransferUTXOEvent{
+                    txid,
+                    sender,
+                    receiver: owner_address,
+                    value
+                });
+            };
+
 
             //Auto create address mapping, we ensure when UTXO object create, the address mapping is recored
             let bitcoin_address_opt = types::txout_address(txout);
