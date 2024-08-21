@@ -10,7 +10,7 @@ use move_command_line_common::types::ParsedStructType;
 use move_core_types::language_storage::TypeTag;
 use moveos_types::transaction::MoveAction;
 use rooch_types::{
-    error::{RoochError, RoochResult},
+    error::RoochResult,
     function_arg::{parse_function_arg, FunctionArg, ParsedFunctionId},
 };
 
