@@ -4,11 +4,11 @@
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
 use std::thread;
-use std::time::Instant;
+use std::time::{Instant, SystemTime};
 
 use bitcoin::OutPoint;
 use clap::Parser;
@@ -60,24 +60,12 @@ pub struct GenesisVerifyCommand {
     pub random_mode: bool,
     #[clap(
         long,
-        help = "sample rate, for randomly select 1/sample_rate inscriptions & utxos to verify",
+        help = "sample rate, for randomly select 1/sample_rate inscriptions & utxos to verify. Set 0 if you want to verify cases only",
         default_value = "1000"
     )]
     pub sample_rate: u32,
-    #[clap(long, help = "mismatched utxo output path")]
-    pub utxo_mismatched_output: PathBuf,
-    #[clap(long, help = "mismatched ord output path")]
-    pub ord_mismatched_output: Option<PathBuf>,
-    #[clap(
-        long,
-        help = "inscription cases must be verified, file is outpoint list"
-    )]
-    pub utxo_cases: Option<PathBuf>,
-    #[clap(
-        long,
-        help = "utxo cases must be verified, file is inscription_number list"
-    )]
-    pub ord_cases: Option<PathBuf>,
+    #[clap(long, help = "mismatched output path")]
+    pub mismatched_output_dir: PathBuf,
 
     #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
@@ -113,8 +101,19 @@ impl UTXOCases {
         }
         Self { cases }
     }
+    fn insert(&mut self, outpoint: OutPoint) {
+        self.cases.insert(outpoint);
+    }
     fn contains(&self, outpoint: &OutPoint) -> bool {
         self.cases.contains(outpoint)
+    }
+    fn dump(&self, path: PathBuf) {
+        let file = File::create(path).expect("Unable to create utxo cases file");
+        let mut writer = BufWriter::new(file);
+        for outpoint in &self.cases {
+            writeln!(writer, "{}", outpoint).expect("Unable to write line");
+        }
+        writer.flush().expect("Unable to flush writer");
     }
 }
 
@@ -142,14 +141,54 @@ impl OrdCases {
         }
         Self { cases }
     }
+    fn insert(&mut self, sequence_number: u32) {
+        self.cases.insert(sequence_number);
+    }
     fn contains(&self, sequence_number: u32) -> bool {
         self.cases.contains(&sequence_number)
     }
+
+    fn dump(&self, path: PathBuf) {
+        let file = File::create(path).expect("Unable to create ord cases file");
+        let mut writer = BufWriter::new(file);
+        for ord in &self.cases {
+            writeln!(writer, "{}", ord).expect("Unable to write line");
+        }
+        writer.flush().expect("Unable to flush writer");
+    }
+}
+
+fn create_output_path(output_dir: &Path, prefix: &str, timestamp: u64) -> PathBuf {
+    let file_name = format!("{}_{:?}", prefix, timestamp);
+    output_dir.join(file_name)
+}
+
+fn find_latest_file_with_prefix(output_dir: &PathBuf, prefix: &str) -> Option<PathBuf> {
+    let mut max_timestamp = None;
+    let mut max_path = None;
+    for entry in std::fs::read_dir(output_dir).unwrap() {
+        let entry = entry.unwrap();
+        let path = entry.path();
+        if path.is_file() {
+            let filename = path.file_name().unwrap().to_str().unwrap();
+            if !filename.starts_with(prefix) {
+                continue;
+            };
+            // get timestamp from file name: <prefix>_<timestamp>
+            let timestamp = filename.split('_').last().unwrap().parse::<u64>().unwrap();
+            if max_timestamp.is_none() || timestamp > max_timestamp.unwrap() {
+                max_timestamp = Some(timestamp);
+                max_path = Some(path);
+            }
+        }
+    }
+    max_path
 }
 
 impl GenesisVerifyCommand {
     pub async fn execute(self) -> RoochResult<()> {
-        let (root, moveos_store, _) = init_job(self.base_data_dir.clone(), self.chain_id.clone());
+        let (root, moveos_store, start_time) =
+            init_job(self.base_data_dir.clone(), self.chain_id.clone());
         let outpoint_inscriptions_map = if self.outpoint_inscriptions_map_dump_path.is_some() {
             Some(Arc::new(OutpointInscriptionsMap::load_or_index(
                 self.outpoint_inscriptions_map_dump_path.clone().unwrap(),
@@ -158,10 +197,22 @@ impl GenesisVerifyCommand {
         } else {
             None
         };
+        let since_the_epoch = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .expect("Time went backwards");
+        let timestamp = since_the_epoch.as_secs();
         let random_mode = self.random_mode;
         let moveos_store = Arc::new(moveos_store);
         let moveos_store_clone = Arc::clone(&moveos_store);
+        // create dir if self.mismatched_output_dir not exists
+        std::fs::create_dir_all(&self.mismatched_output_dir)?;
+
         // verify inscriptions
+        let ord_mismatched_output =
+            create_output_path(&self.mismatched_output_dir, "ord_mismatched", timestamp);
+        let ord_new_cases_output =
+            create_output_path(&self.mismatched_output_dir, "ord_cases", timestamp);
+        let ord_cases = find_latest_file_with_prefix(&self.mismatched_output_dir, "ord_cases");
         let inscription_source_path = self.ord_source.clone();
         let root_clone_0 = root.clone();
         let verify_inscription_thread = thread::Builder::new()
@@ -169,34 +220,49 @@ impl GenesisVerifyCommand {
             .spawn(move || {
                 verify_inscription(
                     inscription_source_path,
-                    self.ord_cases,
+                    ord_cases,
+                    ord_new_cases_output,
                     moveos_store_clone,
                     root_clone_0,
                     random_mode,
                     self.sample_rate,
-                    self.ord_mismatched_output,
+                    ord_mismatched_output,
                 );
             })
             .unwrap();
+        // verify utxo
+        let utxo_mismatched_output =
+            create_output_path(&self.mismatched_output_dir, "utxo_mismatched", timestamp);
+        let utxo_new_cases_output =
+            create_output_path(&self.mismatched_output_dir, "utxo_cases", timestamp);
+        let utxo_cases = find_latest_file_with_prefix(&self.mismatched_output_dir, "utxo_cases");
         let moveos_store_clone = Arc::clone(&moveos_store);
         let verify_utxo_thread = thread::Builder::new()
             .name("verify-utxo".to_string())
             .spawn(move || {
                 verify_utxo(
                     self.utxo_source,
-                    self.utxo_cases,
+                    utxo_cases,
+                    utxo_new_cases_output,
                     moveos_store_clone,
                     root.clone(),
                     outpoint_inscriptions_map,
                     random_mode,
                     self.sample_rate,
-                    self.utxo_mismatched_output,
+                    utxo_mismatched_output,
                 );
             })
             .unwrap();
 
         verify_inscription_thread.join().unwrap();
         verify_utxo_thread.join().unwrap();
+
+        println!(
+            "genesis verify done, output with timestamp: {:?} in {:?}, cost: {:?}",
+            timestamp,
+            self.mismatched_output_dir,
+            start_time.elapsed()
+        );
 
         Ok(())
     }
@@ -205,6 +271,7 @@ impl GenesisVerifyCommand {
 fn verify_utxo(
     input: PathBuf,
     case_path: Option<PathBuf>,
+    case_new_path: PathBuf,
     moveos_store_arc: Arc<MoveOSStore>,
     root: ObjectMeta,
     outpoint_inscriptions_map: Option<Arc<OutpointInscriptionsMap>>,
@@ -242,6 +309,9 @@ fn verify_utxo(
     let mut output_writer = BufWriter::with_capacity(1 << 23, file.try_clone().unwrap());
 
     let cases = UTXOCases::load(case_path);
+    let mut new_cases = UTXOCases {
+        cases: HashSet::new(),
+    };
 
     let mut utxo_total: u32 = 0;
     let mut utxo_checked_count: u32 = 0;
@@ -285,14 +355,23 @@ fn verify_utxo(
             );
         }
 
-        let is_case = cases.contains(&OutPoint {
+        let raw_output = OutPoint {
             txid: utxo_raw.txid,
             vout: utxo_raw.vout,
-        });
+        };
 
-        if (random_mode && rand::random::<u32>() % sample_rate != 0) && !is_case {
+        let is_case = cases.contains(&raw_output);
+
+        let random_picked = if sample_rate == 0 {
+            true
+        } else {
+            rand::random::<u32>() % sample_rate == 0
+        };
+
+        if (random_mode && !random_picked) && !is_case {
             continue;
         }
+
         // check utxo
         utxo_checked_count += 1;
         let (exp_utxo_key, exp_utxo_state) =
@@ -308,6 +387,7 @@ fn verify_utxo(
             Some(utxo_raw.clone()),
         );
         if mismatched {
+            new_cases.insert(raw_output);
             utxo_mismatched_count += 1;
         }
         if not_found {
@@ -331,6 +411,7 @@ fn verify_utxo(
                 None,
             );
             if mismatched {
+                new_cases.insert(raw_output);
                 address_mismatched_count += 1;
             }
             if not_found {
@@ -339,6 +420,7 @@ fn verify_utxo(
         }
     }
     output_writer.flush().expect("Unable to flush writer");
+    new_cases.dump(case_new_path);
 
     let mut result = "OK";
     if act_utxo_store_state.metadata.size != utxo_total as u64 {
@@ -379,16 +461,16 @@ fn verify_utxo(
 fn verify_inscription(
     input: Option<PathBuf>,
     case_path: Option<PathBuf>,
+    case_new_path: PathBuf,
     moveos_store_arc: Arc<MoveOSStore>,
     root: ObjectMeta,
     random_mode: bool,
     sample_rate: u32,
-    mismatched_output: Option<PathBuf>,
+    mismatched_output: PathBuf,
 ) {
     if input.is_none() {
         return;
     }
-    let mismatched_output = mismatched_output.unwrap();
     let input = input.unwrap();
     let start_time = Instant::now();
     let mut src_reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
@@ -418,6 +500,9 @@ fn verify_inscription(
     let mut output_writer = BufWriter::with_capacity(1 << 23, file.try_clone().unwrap());
 
     let cases = OrdCases::load(case_path);
+    let mut new_cases = OrdCases {
+        cases: HashSet::new(),
+    };
 
     let mut checked_count: u32 = 0;
     let mut mismatched_count: u32 = 0;
@@ -460,8 +545,13 @@ fn verify_inscription(
         }
 
         let is_case = cases.contains(source.sequence_number);
+        let random_picked = if sample_rate == 0 {
+            true
+        } else {
+            rand::random::<u32>() % sample_rate == 0
+        };
 
-        if (random_mode && rand::random::<u32>() % sample_rate != 0) && !is_case {
+        if (random_mode && !random_picked) && !is_case {
             continue;
         }
         // check inscription
@@ -479,6 +569,7 @@ fn verify_inscription(
         );
         if mismatched {
             mismatched_count += 1;
+            new_cases.insert(source.sequence_number);
         }
         if not_found {
             not_found_count += 1;
@@ -499,6 +590,7 @@ fn verify_inscription(
             );
         if mismatched {
             mismatched_inscription_id_count += 1;
+            new_cases.insert(source.sequence_number);
         }
         if not_found {
             not_found_inscription_id_count += 1;
@@ -506,6 +598,7 @@ fn verify_inscription(
     }
 
     output_writer.flush().expect("Unable to flush writer");
+    new_cases.dump(case_new_path);
 
     let mut result = "OK";
     if act_inscription_store_state.metadata.size != total as u64 * 2
