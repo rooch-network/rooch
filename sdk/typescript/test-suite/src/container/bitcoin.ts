@@ -4,6 +4,7 @@
 import fs from 'fs'
 import path from 'node:path'
 import * as crypto from 'crypto'
+import { Readable } from "stream";
 import {
   AbstractStartedContainer,
   GenericContainer,
@@ -76,7 +77,7 @@ export class BitcoinContainer extends GenericContainer {
       RPC_PASS: this.rpcPass,
       RPC_AUTH: rpcauth,
     })
-      .withWaitStrategy(Wait.forListeningPorts())
+      .withWaitStrategy(Wait.forLogMessage('txindex thread start'))
       .withStartupTimeout(120000)
       .withBindMounts([
         {
@@ -95,6 +96,12 @@ export class BitcoinContainer extends GenericContainer {
       `-rpcbind=${this.rpcBind}`,
       `-rpcauth=${rpcauth}`,
     ])
+
+    this.withLogConsumer((stream: Readable) => {
+      stream.on('data', (chunk) => {
+        console.log(chunk.toString());
+      });
+    })
 
     const container = await super.start()
     return new StartedBitcoinContainer(
