@@ -3,8 +3,8 @@
 
 use super::types::Transaction;
 use crate::addresses::BITCOIN_MOVE_ADDRESS;
-use crate::into_address::IntoAddress;
-use anyhow::Result;
+use crate::into_address::{FromAddress, IntoAddress};
+use anyhow::{bail, Result};
 use move_core_types::language_storage::{StructTag, TypeTag};
 use move_core_types::value::MoveTypeLayout;
 use move_core_types::{
@@ -21,18 +21,62 @@ use moveos_types::{
 };
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use std::fmt::{Debug, Display};
+use std::str::FromStr;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("ord");
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq)]
+#[derive(PartialEq, Clone, Copy, Serialize, Deserialize, Hash, Eq)]
 pub struct InscriptionID {
     pub txid: AccountAddress,
     pub index: u32,
 }
 
+impl Default for InscriptionID {
+    fn default() -> Self {
+        Self {
+            txid: AccountAddress::ZERO,
+            index: 0,
+        }
+    }
+}
+
 impl InscriptionID {
     pub fn new(txid: AccountAddress, index: u32) -> Self {
         Self { txid, index }
+    }
+
+    pub fn object_id(&self) -> ObjectID {
+        derive_inscription_id(self)
+    }
+}
+
+impl FromStr for InscriptionID {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        BitcoinInscriptionID::from_str(s).map(Into::into)
+    }
+}
+
+impl Debug for InscriptionID {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("InscriptionID")
+            .field("txid(move)", &self.txid)
+            .field(
+                "txid(bitcoin)",
+                &bitcoin::Txid::from_address(self.txid).to_string(),
+            )
+            .field("index", &self.index)
+            .field("id", &format!("{}", self))
+            .finish()
+    }
+}
+
+impl Display for InscriptionID {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let bitcoin_inscription_id: BitcoinInscriptionID = (*self).into();
+        write!(f, "{}", bitcoin_inscription_id)
     }
 }
 
@@ -346,7 +390,7 @@ impl<'a> ModuleBinding<'a> for OrdModule<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq)]
+#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize, Hash, Eq)]
 pub struct BitcoinInscriptionID {
     pub txid: bitcoin::Txid,
     pub index: u32,
@@ -364,6 +408,35 @@ impl From<BitcoinInscriptionID> for InscriptionID {
             txid: inscription.txid.into_address(),
             index: inscription.index,
         }
+    }
+}
+
+impl From<InscriptionID> for BitcoinInscriptionID {
+    fn from(inscription: InscriptionID) -> Self {
+        BitcoinInscriptionID {
+            txid: bitcoin::Txid::from_address(inscription.txid),
+            index: inscription.index,
+        }
+    }
+}
+
+impl Display for BitcoinInscriptionID {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}i{}", self.txid, self.index)
+    }
+}
+
+impl FromStr for BitcoinInscriptionID {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let parts: Vec<&str> = s.split('i').collect();
+        if parts.len() != 2 {
+            bail!("Invalid BitcoinInscriptionID string: {}", s);
+        }
+        let txid = bitcoin::Txid::from_str(parts[0])?;
+        let index = parts[1].parse()?;
+        Ok(BitcoinInscriptionID { txid, index })
     }
 }
 

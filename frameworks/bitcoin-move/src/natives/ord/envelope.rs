@@ -26,11 +26,11 @@ pub(crate) const CONTENT_ENCODING_TAG: [u8; 1] = [9];
 pub(crate) const RUNE_TAG: [u8; 1] = [13];
 
 type Result<T> = std::result::Result<T, script::Error>;
-pub type RawEnvelope = Envelope<Vec<Vec<u8>>>;
-pub type ParsedEnvelope = Envelope<Inscription>;
+pub(crate) type RawEnvelope = Envelope<Vec<Vec<u8>>>;
+pub(crate) type ParsedEnvelope = Envelope<Inscription>;
 
 #[derive(Debug, Default, PartialEq, Clone)]
-pub struct Envelope<T> {
+pub(crate) struct Envelope<T> {
     pub payload: T,
     pub input: u32,
     pub offset: u32,

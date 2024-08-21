@@ -1,21 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::fmt::Display;
-use std::fs::File;
-use std::io::{BufRead, BufReader, BufWriter, Read, Write};
-use std::path::PathBuf;
-use std::str::FromStr;
-use std::time::Instant;
-
 use anyhow::Result;
 use bitcoin::hashes::Hash;
 use bitcoin::OutPoint;
 use csv::Writer;
-use xorf::{BinaryFuse8, Filter};
-use xxhash_rust::xxh3::xxh3_64;
-
-use bitcoin_move::natives::ord::inscription_id::InscriptionId;
 use metrics::RegistryService;
 use moveos_store::MoveOSStore;
 use moveos_types::move_std::option::MoveOption;
@@ -26,7 +15,16 @@ use moveos_types::state::{FieldKey, ObjectState};
 use rooch_common::fs::file_cache::FileCacheManager;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
+use rooch_types::bitcoin::ord::BitcoinInscriptionID;
 use rooch_types::rooch_network::RoochChainID;
+use std::fmt::Display;
+use std::fs::File;
+use std::io::{BufRead, BufReader, BufWriter, Read, Write};
+use std::path::PathBuf;
+use std::str::FromStr;
+use std::time::Instant;
+use xorf::{BinaryFuse8, Filter};
+use xxhash_rust::xxh3::xxh3_64;
 
 use crate::commands::statedb::commands::inscription::{derive_inscription_ids, InscriptionSource};
 
@@ -74,7 +72,7 @@ fn convert_option_string_to_move_type(opt: Option<String>) -> MoveOption<MoveStr
 #[derive(Clone, Default, PartialEq, Debug)]
 pub(crate) struct OutpointInscriptions {
     outpoint: OutPoint,
-    inscriptions: Vec<InscriptionId>,
+    inscriptions: Vec<BitcoinInscriptionID>,
 }
 
 impl OutpointInscriptions {
@@ -113,8 +111,8 @@ impl FromStr for OutpointInscriptions {
         let outpoint = OutPoint::from_str(parts[0])?;
         let inscriptions = parts[1]
             .split(',')
-            .map(InscriptionId::from_str)
-            .collect::<Result<Vec<InscriptionId>, _>>()?;
+            .map(BitcoinInscriptionID::from_str)
+            .collect::<Result<Vec<BitcoinInscriptionID>, _>>()?;
         Ok(OutpointInscriptions {
             outpoint,
             inscriptions,
@@ -123,7 +121,7 @@ impl FromStr for OutpointInscriptions {
 }
 
 fn derive_utxo_inscription_seal(
-    inscriptions: Option<Vec<InscriptionId>>,
+    inscriptions: Option<Vec<BitcoinInscriptionID>>,
 ) -> SimpleMultiMap<MoveString, ObjectID> {
     let obj_ids = derive_inscription_ids(inscriptions);
     if obj_ids.is_empty() {
@@ -250,7 +248,7 @@ impl OutpointInscriptionsMap {
         let mut write_index = 0;
         for read_index in 1..items.len() {
             if items[write_index].outpoint == items[read_index].outpoint {
-                let drained_inscriptions: Vec<InscriptionId> =
+                let drained_inscriptions: Vec<BitcoinInscriptionID> =
                     items[read_index].inscriptions.drain(..).collect();
                 items[write_index].inscriptions.extend(drained_inscriptions);
             } else {
@@ -293,7 +291,7 @@ impl OutpointInscriptionsMap {
         }
     }
 
-    fn search(&self, outpoint: &OutPoint) -> Option<Vec<InscriptionId>> {
+    fn search(&self, outpoint: &OutPoint) -> Option<Vec<BitcoinInscriptionID>> {
         if !self.contains(outpoint) {
             return None;
         }
@@ -462,12 +460,12 @@ mod tests {
         OutPoint { txid, vout }
     }
 
-    fn random_inscription_id() -> InscriptionId {
+    fn random_inscription_id() -> BitcoinInscriptionID {
         let mut rng = rand::thread_rng();
         let txid: Txid = Txid::from_slice(&rng.gen::<[u8; 32]>()).unwrap();
         let index: u32 = rng.gen();
 
-        InscriptionId { txid, index }
+        BitcoinInscriptionID { txid, index }
     }
 
     // all outpoints are unique
@@ -480,7 +478,7 @@ mod tests {
     }
 
     // all inscriptions are unique
-    fn random_inscriptions(n: usize) -> Vec<InscriptionId> {
+    fn random_inscriptions(n: usize) -> Vec<BitcoinInscriptionID> {
         let mut inscriptions = HashSet::new();
         while inscriptions.len() < n {
             inscriptions.insert(random_inscription_id());
