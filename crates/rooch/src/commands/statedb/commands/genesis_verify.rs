@@ -546,8 +546,9 @@ fn verify_inscription(
     );
 }
 
-// clear metadata, because it's not deterministic in genesis cmd
+// clear metadata for comparison
 fn clear_metadata(state: &mut ObjectState) {
+    // which are not deterministic in genesis cmd
     state.metadata.state_root = None;
     state.metadata.created_at = 0;
     state.metadata.updated_at = 0;
@@ -561,29 +562,35 @@ fn write_mismatched_state_output<T: MoveStructState + std::fmt::Debug, R: std::f
     act: Option<ObjectState>,
     src_data: Option<R>, // write source data to output if mismatched for debug
 ) -> (bool, bool) {
+    // mismatched, not_found
     let mut mismatched = false;
     let mut not_found = false;
-    let (act_str, exp_str) = match act {
+    let (act_val_str, exp_val_str, act_meta_str, exp_meta_str) = match act {
         Some(act) => {
             let mut act = act;
-            clear_metadata(&mut act);
             let exp_decoded: Result<T, _> = T::from_bytes(&exp.value);
             let act_decoded: Result<T, _> = T::from_bytes(&act.value);
+            let act_val_str = format!("{:?}", act_decoded.unwrap());
+            let exp_val_str = format!("{:?}", exp_decoded.unwrap());
+            clear_metadata(&mut act);
+            let act_meta_str = format!("{:?}", act.metadata);
+            let exp_meta_str = format!("{:?}", exp.metadata);
+
             if exp != act {
                 mismatched = true;
-                (
-                    format!("{:?}", act_decoded.unwrap()),
-                    format!("{:?}", exp_decoded.unwrap()),
-                )
-            } else {
-                ("".to_string(), "".to_string())
             }
+            (act_val_str, exp_val_str, act_meta_str, exp_meta_str)
         }
         None => {
             mismatched = true;
             not_found = true;
             let exp_decoded: Result<T, _> = T::from_bytes(&exp.value);
-            ("None".to_string(), format!("{:?}", exp_decoded.unwrap()))
+            (
+                "None".to_string(),
+                format!("{:?}", exp_decoded.unwrap()),
+                "None".to_string(),
+                format!("{:?}", exp.metadata),
+            )
         }
     };
     if !mismatched {
@@ -593,8 +600,8 @@ fn write_mismatched_state_output<T: MoveStructState + std::fmt::Debug, R: std::f
     let result = if not_found { "not_found" } else { "mismatched" };
     writeln!(
         output_writer,
-        "{} {}: exp: {:?}, act: {:?}, src_data: {:?}",
-        prefix, result, exp_str, act_str, src_data
+        "{} {}: exp-meta: {:?}, act-meta: {:?}, exp-val: {:?}, act-val: {:?}, src_data: {:?}",
+        prefix, result, exp_meta_str, act_meta_str, exp_val_str, act_val_str, src_data
     )
     .expect("Unable to write line");
     writeln!(output_writer, "--------------------------------").expect("Unable to write line");
