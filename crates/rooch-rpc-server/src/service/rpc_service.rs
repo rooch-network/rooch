@@ -24,7 +24,9 @@ use rooch_rpc_api::jsonrpc_types::{DisplayFieldsView, IndexerObjectStateView, Ob
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::address::{BitcoinAddress, RoochAddress};
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
-use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
+use rooch_types::indexer::event::{
+    AnnotatedIndexerEvent, EventFilter, IndexerEvent, IndexerEventID,
+};
 use rooch_types::indexer::state::{
     IndexerObjectState, IndexerStateID, ObjectStateFilter, ObjectStateType, INSCRIPTION_TYPE_TAG,
     UTXO_TYPE_TAG,
@@ -178,10 +180,21 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn get_events_by_event_ids(
+    pub async fn get_annotated_events_by_event_ids(
         &self,
         event_ids: Vec<EventID>,
     ) -> Result<Vec<Option<AnnotatedEvent>>> {
+        let resp = self
+            .executor
+            .get_annotated_events_by_event_ids(event_ids)
+            .await?;
+        Ok(resp)
+    }
+
+    pub async fn get_events_by_event_ids(
+        &self,
+        event_ids: Vec<EventID>,
+    ) -> Result<Vec<Option<Event>>> {
         let resp = self.executor.get_events_by_event_ids(event_ids).await?;
         Ok(resp)
     }
@@ -243,11 +256,80 @@ impl RpcService {
         limit: usize,
         descending_order: bool,
     ) -> Result<Vec<IndexerEvent>> {
-        let resp = self
+        let indexer_events = self
             .indexer
             .query_events(filter, cursor, limit, descending_order)
             .await?;
-        Ok(resp)
+
+        let event_ids = indexer_events
+            .iter()
+            .map(|m| m.event_id.clone())
+            .collect::<Vec<_>>();
+        let events = self.get_events_by_event_ids(event_ids).await?;
+        let result = indexer_events
+            .into_iter()
+            .zip(events)
+            .filter_map(|(mut v, e_opt)| {
+                match e_opt {
+                    Some(e) => {
+                        v.event_data = Some(e.event_data);
+                        Some(v)
+                    }
+                    None => {
+                        // Sometimes the indexer is delayed, maybe the event is deleted in the event store
+                        tracing::trace!(
+                            "Event {} in the indexer but can not found in event store",
+                            v.event_id
+                        );
+                        None
+                    }
+                }
+            })
+            .collect::<Vec<_>>();
+
+        Ok(result)
+    }
+
+    pub async fn query_annotated_events(
+        &self,
+        filter: EventFilter,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerEventID>,
+        limit: usize,
+        descending_order: bool,
+    ) -> Result<Vec<AnnotatedIndexerEvent>> {
+        let indexer_events = self
+            .indexer
+            .query_events(filter, cursor, limit, descending_order)
+            .await?;
+
+        let event_ids = indexer_events
+            .iter()
+            .map(|m| m.event_id.clone())
+            .collect::<Vec<_>>();
+        let events = self.get_annotated_events_by_event_ids(event_ids).await?;
+        let result = indexer_events
+            .into_iter()
+            .zip(events)
+            .filter_map(|(mut v, e_opt)| {
+                match e_opt {
+                    Some(e) => {
+                        v.event_data = Some(e.event.event_data);
+                        Some(AnnotatedIndexerEvent::new(v, e.decoded_event_data))
+                    }
+                    None => {
+                        // Sometimes the indexer is delayed, maybe the event is deleted in the event store
+                        tracing::trace!(
+                            "Event {} in the indexer but can not found in event store",
+                            v.event_id
+                        );
+                        None
+                    }
+                }
+            })
+            .collect::<Vec<_>>();
+
+        Ok(result)
     }
 
     pub async fn query_object_states(
@@ -304,7 +386,7 @@ impl RpcService {
                             indexer_state_id,
                         )),
                         None => {
-                            // Sometime the indexer is delayed, maybe the object is deleted in the state
+                            // Sometimes the indexer is delayed, maybe the object is deleted in the state
                             tracing::trace!(
                                 "Object {} in the indexer but can not found in state",
                                 object_id
@@ -333,7 +415,7 @@ impl RpcService {
                             indexer_state_id,
                         )),
                         None => {
-                            // Sometime the indexer is delayed, maybe the object is deleted in the state
+                            // Sometimes the indexer is delayed, maybe the object is deleted in the state
                             tracing::trace!(
                                 "Object {} in the indexer but can not found in state",
                                 object_id

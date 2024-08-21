@@ -128,7 +128,10 @@ impl RoochAPIServer for RoochServer {
                     .iter()
                     .map(|e| e.event_id.clone())
                     .collect();
-                let annotated_events = self.rpc_service.get_events_by_event_ids(event_ids).await?;
+                let annotated_events = self
+                    .rpc_service
+                    .get_annotated_events_by_event_ids(event_ids)
+                    .await?;
                 let event_views = annotated_events
                     .into_iter()
                     .map(|event| event.map(EventView::from))
@@ -691,18 +694,31 @@ impl RoochAPIServer for RoochServer {
         let query_option = query_option.unwrap_or_default();
         let descending_order = query_option.descending;
 
-        let mut data = self
-            .rpc_service
-            .query_events(
-                filter.into(),
-                cursor.map(Into::into),
-                limit_of + 1,
-                descending_order,
-            )
-            .await?
-            .into_iter()
-            .map(IndexerEventView::from)
-            .collect::<Vec<_>>();
+        let mut data = if query_option.decode {
+            self.rpc_service
+                .query_annotated_events(
+                    filter.into(),
+                    cursor.map(Into::into),
+                    limit_of + 1,
+                    descending_order,
+                )
+                .await?
+                .into_iter()
+                .map(IndexerEventView::from)
+                .collect::<Vec<_>>()
+        } else {
+            self.rpc_service
+                .query_events(
+                    filter.into(),
+                    cursor.map(Into::into),
+                    limit_of + 1,
+                    descending_order,
+                )
+                .await?
+                .into_iter()
+                .map(IndexerEventView::from)
+                .collect::<Vec<_>>()
+        };
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);

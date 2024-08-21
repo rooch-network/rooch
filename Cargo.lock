@@ -9797,6 +9797,7 @@ dependencies = [
  "move-binary-format",
  "move-command-line-common",
  "move-core-types",
+ "move-resource-viewer",
  "move-vm-types",
  "moveos-types",
  "nostr",

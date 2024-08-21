@@ -21,7 +21,6 @@ use diesel::{
 };
 use function_name::named;
 use move_core_types::language_storage::StructTag;
-use moveos_types::moveos_std::event::EventHandle;
 use moveos_types::moveos_std::object::ObjectID;
 use prometheus::Registry;
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
@@ -188,6 +187,7 @@ impl IndexerReader {
         limit: usize,
         descending_order: bool,
     ) -> IndexerResult<Vec<IndexerTransaction>> {
+        let start = Instant::now();
         let fn_name = function_name!();
         let _timer = self
             .metrics
@@ -267,6 +267,7 @@ impl IndexerReader {
         );
 
         tracing::debug!("query transactions: {}", query);
+        println!("Query transactions: {}", query);
         let stored_transactions = self
             .get_inner_indexer_reader(INDEXER_TRANSACTIONS_TABLE_NAME)?
             .run_query_with_timeout(|conn| {
@@ -280,6 +281,7 @@ impl IndexerReader {
             .map_err(|e| {
                 IndexerError::SQLiteReadError(format!("Cast indexer transactions failed: {:?}", e))
             })?;
+        println!("Query transactions time elapsed: {:?}", start.elapsed());
 
         Ok(result)
     }
@@ -292,6 +294,7 @@ impl IndexerReader {
         limit: usize,
         descending_order: bool,
     ) -> IndexerResult<Vec<IndexerEvent>> {
+        let start = Instant::now();
         let fn_name = function_name!();
         let _timer = self
             .metrics
@@ -320,16 +323,17 @@ impl IndexerReader {
 
         let main_where_clause = match filter {
             EventFilter::EventTypeWithSender { event_type, sender } => {
-                let event_handle_id = EventHandle::derive_event_handle_id(&event_type);
+                // let event_handle_id = EventHandle::derive_event_handle_id(&event_type);
+                // let event_type_str = event_type.to_string();
                 format!(
-                    "{TX_SENDER_STR} = \"{}\" AND {EVENT_HANDLE_ID_STR} = \"{}\"",
+                    "{TX_SENDER_STR} = \"{}\" AND {EVENT_TYPE_STR} = \"{}\"",
                     sender.to_hex_literal(),
-                    event_handle_id
+                    event_type.to_string()
                 )
             }
             EventFilter::EventType(event_type) => {
-                let event_handle_id = EventHandle::derive_event_handle_id(&event_type);
-                format!("{EVENT_HANDLE_ID_STR} = \"{}\"", event_handle_id)
+                // let event_handle_id = EventHandle::derive_event_handle_id(&event_type);
+                format!("{EVENT_TYPE_STR} = \"{}\"", event_type.to_string())
             }
             EventFilter::Sender(sender) => {
                 format!("{TX_SENDER_STR} = \"{}\"", sender.to_hex_literal())
@@ -386,6 +390,7 @@ impl IndexerReader {
         );
 
         tracing::debug!("query events: {}", query);
+        println!("Query events: {}", query);
         let stored_events = self
             .get_inner_indexer_reader(INDEXER_EVENTS_TABLE_NAME)?
             .run_query_with_timeout(|conn| diesel::sql_query(query).load::<StoredEvent>(conn))?;
@@ -397,6 +402,7 @@ impl IndexerReader {
             .map_err(|e| {
                 IndexerError::SQLiteReadError(format!("Cast indexer events failed: {:?}", e))
             })?;
+        println!("Query events time elapsed: {:?}", start.elapsed());
 
         Ok(result)
     }
@@ -515,9 +521,8 @@ impl IndexerReader {
             .run_query_with_timeout(|conn| {
                 diesel::sql_query(query).load::<StoredObjectStateInfo>(conn)
             })?;
-        let duration = start.elapsed();
 
-        println!("Query object states time elapsed: {:?}", duration);
+        println!("Query object states time elapsed: {:?}", start.elapsed());
         Ok(stored_object_state_infos)
     }
 

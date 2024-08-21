@@ -8,7 +8,6 @@ diesel::table! {
         event_handle_id -> Text,
         event_seq -> BigInt,
         event_type -> Text,
-        event_data -> Binary,
         event_index -> BigInt,
         tx_hash -> Text,
         tx_order -> BigInt,
