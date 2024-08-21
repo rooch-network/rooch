@@ -46,10 +46,6 @@ pub struct BuildCommand {
     #[clap(flatten)]
     context: WalletContextOptions,
 
-    /// Output result in command line, otherwise write to a file
-    #[clap(long, default_value = "false")]
-    output: bool,
-
     /// File destination for the file being written
     #[clap(long)]
     file_destination: Option<String>,
@@ -88,7 +84,13 @@ impl CommandAction<Option<String>> for BuildCommand {
             .build_tx_data(sender, action, max_gas_amount)
             .await?;
 
-        if self.output {
+        if let Some(file_destination) = self.file_destination {
+            let mut file = File::create(file_destination)?;
+            file.write_all(&tx_data.encode())?;
+            println!("Write transaction hex succeeded in the destination");
+
+            Ok(None)
+        } else {
             let tx_data_hex = hex::encode(tx_data.encode());
             if self.json {
                 Ok(Some(tx_data_hex))
@@ -100,16 +102,6 @@ impl CommandAction<Option<String>> for BuildCommand {
 
                 Ok(None)
             }
-        } else if let Some(file_destination) = self.file_destination {
-            let mut file = File::create(file_destination)?;
-            file.write_all(&tx_data.encode())?;
-            println!("Write encoded tx data succeeded in the destination");
-
-            Ok(None)
-        } else {
-            return Err(RoochError::CommandArgumentError(
-                "Argument --file-destination is not provided".to_owned(),
-            ));
         }
     }
 }
