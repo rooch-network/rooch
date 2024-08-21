@@ -134,8 +134,8 @@ pub enum ObjectStateFilter {
     /// Query by object type and owner.
     ObjectTypeWithOwner {
         object_type: StructTag,
-        filter_out: bool,
         owner: AccountAddress,
+        filter_out: bool,
     },
     /// Query by object type.
     ObjectType(StructTag),

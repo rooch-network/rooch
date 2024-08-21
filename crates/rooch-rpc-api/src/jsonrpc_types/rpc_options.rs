@@ -77,6 +77,8 @@ pub struct QueryOptions {
     pub decode: bool,
     /// If true, result with display rendered is returned
     pub show_display: bool,
+    /// If true, filter out all match items.
+    pub filter_out: bool,
 }
 
 impl QueryOptions {
@@ -89,6 +91,11 @@ impl QueryOptions {
         self.show_display = show_display;
         self
     }
+
+    pub fn filter_out(mut self, filter_out: bool) -> Self {
+        self.filter_out = filter_out;
+        self
+    }
 }
 
 impl Default for QueryOptions {
@@ -97,6 +104,7 @@ impl Default for QueryOptions {
             descending: true,
             decode: false,
             show_display: false,
+            filter_out: false,
         }
     }
 }

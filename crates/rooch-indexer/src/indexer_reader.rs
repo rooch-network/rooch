@@ -20,6 +20,7 @@ use diesel::{
 };
 use function_name::named;
 use move_core_types::language_storage::StructTag;
+use moveos_types::moveos_std::event::EventHandle;
 use moveos_types::moveos_std::object::ObjectID;
 use prometheus::Registry;
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
@@ -29,6 +30,11 @@ use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
+use std::time::Duration;
+use tokio::runtime::Handle;
+use tokio::time::timeout;
+
+pub const DEFAULT_QUERY_TIMEOUT: u64 = 60; // second
 
 pub const TX_ORDER_STR: &str = "tx_order";
 pub const TX_HASH_STR: &str = "tx_hash";
@@ -98,6 +104,33 @@ impl InnerIndexerReader {
             .transaction(query)
             .map_err(|e| IndexerError::SQLiteReadError(e.to_string()))
     }
+
+    pub fn run_query_with_timeout<T, E, F>(&self, query: F) -> Result<T, IndexerError>
+    where
+        F: FnOnce(&mut SqliteConnection) -> Result<T, E> + Send + 'static,
+        E: From<diesel::result::Error> + std::error::Error + Send,
+        T: Send + 'static,
+    {
+        // default query time out in second
+        let timeout_duration = Duration::from_secs(DEFAULT_QUERY_TIMEOUT);
+        let mut connection = self.get_connection()?;
+
+        tokio::task::block_in_place(|| {
+            Handle::current().block_on(async move {
+                timeout(
+                    timeout_duration,
+                    tokio::task::spawn_blocking(move || {
+                        connection
+                            .deref_mut()
+                            .transaction(query)
+                            .map_err(|e| IndexerError::SQLiteReadError(e.to_string()))
+                    }),
+                )
+                .await
+                .map_err(|e| IndexerError::SQLiteAsyncReadError(e.to_string()))??
+            })
+        })
+    }
 }
 
 #[derive(Clone)]
@@ -165,7 +198,7 @@ impl IndexerReader {
         } else if descending_order {
             let max_tx_order: i64 = self
                 .get_inner_indexer_reader(INDEXER_TRANSACTIONS_TABLE_NAME)?
-                .run_query(|conn| {
+                .run_query_with_timeout(|conn| {
                     transactions::dsl::transactions
                         .select(transactions::tx_order)
                         .order_by(transactions::tx_order.desc())
@@ -235,7 +268,9 @@ impl IndexerReader {
         tracing::debug!("query transactions: {}", query);
         let stored_transactions = self
             .get_inner_indexer_reader(INDEXER_TRANSACTIONS_TABLE_NAME)?
-            .run_query(|conn| diesel::sql_query(query).load::<StoredTransaction>(conn))?;
+            .run_query_with_timeout(|conn| {
+                diesel::sql_query(query).load::<StoredTransaction>(conn)
+            })?;
 
         let result = stored_transactions
             .into_iter()
@@ -271,7 +306,7 @@ impl IndexerReader {
         } else if descending_order {
             let (max_tx_order, event_index): (i64, i64) = self
                 .get_inner_indexer_reader(INDEXER_EVENTS_TABLE_NAME)?
-                .run_query(|conn| {
+                .run_query_with_timeout(|conn| {
                     events::dsl::events
                         .select((events::tx_order, events::event_index))
                         .order_by((events::tx_order.desc(), events::event_index.desc()))
@@ -283,9 +318,17 @@ impl IndexerReader {
         };
 
         let main_where_clause = match filter {
-            EventFilter::EventType(struct_tag) => {
-                let event_type_str = format!("0x{}", struct_tag.to_canonical_string());
-                format!("{EVENT_TYPE_STR} = \"{}\"", event_type_str)
+            EventFilter::EventTypeWithSender { event_type, sender } => {
+                let event_handle_id = EventHandle::derive_event_handle_id(&event_type);
+                format!(
+                    "{TX_SENDER_STR} = \"{}\" AND {EVENT_HANDLE_ID_STR} = \"{}\"",
+                    sender.to_hex_literal(),
+                    event_handle_id
+                )
+            }
+            EventFilter::EventType(event_type) => {
+                let event_handle_id = EventHandle::derive_event_handle_id(&event_type);
+                format!("{EVENT_HANDLE_ID_STR} = \"{}\"", event_handle_id)
             }
             EventFilter::Sender(sender) => {
                 format!("{TX_SENDER_STR} = \"{}\"", sender.to_hex_literal())
@@ -344,7 +387,7 @@ impl IndexerReader {
         tracing::debug!("query events: {}", query);
         let stored_events = self
             .get_inner_indexer_reader(INDEXER_EVENTS_TABLE_NAME)?
-            .run_query(|conn| diesel::sql_query(query).load::<StoredEvent>(conn))?;
+            .run_query_with_timeout(|conn| diesel::sql_query(query).load::<StoredEvent>(conn))?;
 
         let result = stored_events
             .into_iter()
@@ -373,7 +416,7 @@ impl IndexerReader {
         } else if descending_order {
             let (max_tx_order, state_index): (i64, i64) = self
                 .get_inner_indexer_reader(INDEXER_OBJECT_STATES_TABLE_NAME)?
-                .run_query(|conn| {
+                .run_query_with_timeout(|conn| {
                     object_states::dsl::object_states
                         .select((object_states::tx_order, object_states::state_index))
                         .order_by((
@@ -449,7 +492,9 @@ impl IndexerReader {
         tracing::debug!("query object states: {}", query);
         let stored_object_states = self
             .get_inner_indexer_reader(INDEXER_OBJECT_STATES_TABLE_NAME)?
-            .run_query(|conn| diesel::sql_query(query).load::<StoredObjectState>(conn))?;
+            .run_query_with_timeout(|conn| {
+                diesel::sql_query(query).load::<StoredObjectState>(conn)
+            })?;
         Ok(stored_object_states)
     }
 
@@ -516,7 +561,9 @@ impl IndexerReader {
         tracing::debug!("query last state index by tx order: {}", query);
         let stored_object_states = self
             .get_inner_indexer_reader(INDEXER_OBJECT_STATES_TABLE_NAME)?
-            .run_query(|conn| diesel::sql_query(query).load::<StoredObjectState>(conn))?;
+            .run_query_with_timeout(|conn| {
+                diesel::sql_query(query).load::<StoredObjectState>(conn)
+            })?;
         let last_state_index = if stored_object_states.is_empty() {
             0
         } else {

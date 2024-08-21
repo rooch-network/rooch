@@ -17,6 +17,7 @@ rust-version = { workspace = true }
 anyhow = { workspace = true }
 bitcoin = { workspace = true }
 ethers = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
 hex = { workspace = true }
 bcs = { workspace = true }
@@ -26,12 +27,15 @@ tempfile = { workspace = true }
 include_dir = { workspace = true }
 musig2 = { workspace = true }
 miniscript = { workspace = true }
+coerce = { workspace = true }
+tokio = { workspace = true }
 
 move-core-types = { workspace = true }
 
 moveos-types = { workspace = true }
 moveos-store = { workspace = true }
 moveos-config = { workspace = true }
+moveos-eventbus = { workspace = true }
 metrics = { workspace = true }
 
 rooch-genesis = { workspace = true }
@@ -40,6 +44,7 @@ rooch-key = { workspace = true }
 rooch-executor = { workspace = true }
 rooch-config = { workspace = true }
 rooch-db = { workspace = true }
+rooch-event = { workspace = true }
 
 bitcoin-move = { workspace = true }
 

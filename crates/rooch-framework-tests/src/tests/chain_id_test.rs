@@ -5,8 +5,8 @@ use crate::binding_test;
 use moveos_types::{module_binding::MoveFunctionCaller, state_resolver::StateResolver};
 use rooch_types::{framework::chain_id::ChainID, rooch_network::BuiltinChainID};
 
-#[test]
-fn test_chain_id() {
+#[tokio::test]
+async fn test_chain_id() {
     let _ = tracing_subscriber::fmt::try_init();
     let binding_test = binding_test::RustBindingTest::new().unwrap();
     let resolver = binding_test.resolver();

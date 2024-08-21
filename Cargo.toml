@@ -17,6 +17,7 @@ members = [
     "moveos/moveos-wasm",
     "moveos/raw-store",
     "moveos/smt",
+    "moveos/moveos-eventbus",
     "crates/data_verify",
     "crates/rooch",
     "crates/rooch-benchmarks",
@@ -45,6 +46,7 @@ members = [
     "crates/rooch-store",
     "crates/rooch-test-transaction-builder",
     "crates/rooch-types",
+    "crates/rooch-event",
     "crates/testsuite",
     "frameworks/bitcoin-move",
     "frameworks/framework-builder",
@@ -72,7 +74,7 @@ license = "Apache-2.0"
 publish = false
 repository = "https://github.com/rooch-network/rooch"
 rust-version = "1.78.0"
-version = "0.6.6"
+version = "0.6.8"
 
 [workspace.dependencies]
 # Internal crate dependencies.
@@ -91,6 +93,7 @@ moveos-config = { path = "moveos/moveos-config" }
 moveos-wasm = { path = "moveos/moveos-wasm" }
 moveos-object-runtime = { path = "moveos/moveos-object-runtime" }
 moveos-compiler = { path = "moveos/moveos-compiler" }
+moveos-eventbus = { path = "moveos/moveos-eventbus" }
 accumulator = { path = "moveos/moveos-commons/accumulator" }
 
 # crates for Rooch
@@ -123,6 +126,7 @@ rooch-faucet = { path = "crates/rooch-faucet" }
 rooch-test-transaction-builder = { path = "crates/rooch-test-transaction-builder" }
 data-verify = { path = "crates/data_verify" }
 rooch-db = { path = "crates/rooch-db" }
+rooch-event = { path = "crates/rooch-event" }
 
 # frameworks
 framework-types = { path = "frameworks/framework-types" }
@@ -185,10 +189,10 @@ rayon = "1.5.2"
 rand = "0.8.5"
 rand_core = { version = "0.6.3", default-features = false }
 schemars = { version = "0.8.21", features = ["either"] }
-serde = { version = "1.0.205", features = ["derive", "rc"] }
+serde = { version = "1.0.208", features = ["derive", "rc"] }
 serde_bytes = "0.11.15"
 #serde_json = { version = "1.0.111", features = ["preserve_order", "arbitrary_precision"] }
-serde_json = { version = "1.0.122", features = ["preserve_order"] }
+serde_json = { version = "1.0.125", features = ["preserve_order"] }
 serde_yaml = "0.9"
 serde_repr = "0.1"
 serde-name = "0.2"
@@ -203,7 +207,7 @@ smallvec = "1.6.1"
 thiserror = "1.0.63"
 tiny-keccak = { version = "2", features = ["keccak", "sha3"] }
 tiny-bip39 = "1.0.0"
-tokio = { version = "1.39.2", features = ["full"] }
+tokio = { version = "1.39.3", features = ["full"] }
 tonic = { version = "0.8", features = ["gzip"] }
 tracing = "0.1.37"
 tracing-appender = "0.2.2"
@@ -324,7 +328,8 @@ xorf = { version = "0.11.0" }
 vergen-git2 = { version = "1.0.0", features = ["build", "cargo", "rustc"] }
 vergen-pretty = "0.3.4"
 musig2 = { version = "0.0.11" }
-miniscript = "12.1.0"
+miniscript = "12.2.0"
+crossbeam-channel = "0.5.13"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES

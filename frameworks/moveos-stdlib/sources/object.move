@@ -16,6 +16,7 @@ module moveos_std::object {
     friend moveos_std::module_store;
     friend moveos_std::event;
     friend moveos_std::table;
+    friend moveos_std::linked_table;
     friend moveos_std::type_table;
     friend moveos_std::bag;
     friend moveos_std::genesis;

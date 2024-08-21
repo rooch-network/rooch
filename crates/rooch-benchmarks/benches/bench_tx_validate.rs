@@ -1,18 +1,19 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::time::Duration;
+
 use criterion::{criterion_group, criterion_main, Criterion};
+
 use rooch_benchmarks::config::{configure_criterion, BenchTxConfig};
 use rooch_benchmarks::tx::create_l2_tx;
 use rooch_framework_tests::binding_test;
 use rooch_test_transaction_builder::TestTransactionBuilder;
 use rooch_types::crypto::RoochKeyPair;
-use std::time::Duration;
 
 pub fn tx_validate_benchmark(c: &mut Criterion) {
     let config = BenchTxConfig::load();
-
-    let binding_test = binding_test::RustBindingTest::new().unwrap();
+    let binding_test = binding_test::RustBindingTest::new_in_tokio().unwrap();
 
     let rooch_key_pair = RoochKeyPair::generate_secp256k1();
 
@@ -23,7 +24,8 @@ pub fn tx_validate_benchmark(c: &mut Criterion) {
     let tx_cnt = 600;
     let transactions: Vec<_> = (0..tx_cnt)
         .map(|_n| {
-            //Because the validate function do not increase the sequence number, we use the sequence number 0 for all transactions
+            // Because the validate function doesn't increase the sequence number,
+            // use the sequence number 0 for all transactions
             create_l2_tx(&mut test_transaction_builder, 0, tx_type.clone()).unwrap()
         })
         .collect();

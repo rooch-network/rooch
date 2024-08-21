@@ -13,7 +13,7 @@ use rooch_rpc_api::jsonrpc_types::{
 };
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, EventOptions, EventPageView,
-    ObjectIDView, RoochAddressView, StateOptions, StatePageView, StructTagView,
+    FieldKeyView, ObjectIDView, RoochAddressView, StateOptions, StatePageView, StructTagView,
 };
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, ObjectStateView};
 use rooch_rpc_api::jsonrpc_types::{
@@ -180,6 +180,18 @@ impl RoochRpcClient {
         Ok(self
             .http
             .list_states(access_path, cursor, limit.map(Into::into), None)
+            .await?)
+    }
+
+    pub async fn get_field_states(
+        &self,
+        object_id: ObjectIDView,
+        field_key: Vec<FieldKeyView>,
+        state_option: Option<StateOptions>,
+    ) -> Result<Vec<Option<ObjectStateView>>> {
+        Ok(self
+            .http
+            .get_field_states(object_id, field_key, state_option)
             .await?)
     }
 

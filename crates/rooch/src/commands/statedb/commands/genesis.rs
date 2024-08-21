@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use std::sync::mpsc::{Receiver, SyncSender};
 use std::sync::{mpsc, Arc, RwLock};
 use std::thread;
-use std::time::SystemTime;
+use std::time::{Instant, SystemTime};
 
 use clap::Parser;
 
@@ -29,7 +29,7 @@ use crate::commands::statedb::commands::genesis_utxo::{
 };
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes, finish_import_job};
 use crate::commands::statedb::commands::inscription::{
-    create_genesis_inscription_store_object, gen_inscription_ids_update, InscriptionSource,
+    create_genesis_inscription_store_object, gen_inscription_id_update, InscriptionSource,
 };
 use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 
@@ -123,7 +123,6 @@ impl GenesisCommand {
         let apply_inscription_updates_thread = thread::spawn(move || {
             apply_inscription_updates(ord_rx, moveos_store_clone, startup_update_set_clone);
         });
-
         // import utxo
         let utxo_input_path = Arc::new(self.utxo_source.clone());
         let utxo_input_path_clone1 = Arc::clone(&utxo_input_path);
@@ -222,7 +221,7 @@ fn produce_inscription_updates(
             let (key, state, inscription_id) = source.gen_update();
             updates.updates_value_bytes += state.value.len() as u64;
             updates.update_set.put(key, state);
-            let (key2, state2) = gen_inscription_ids_update(sequence_number, inscription_id);
+            let (key2, state2) = gen_inscription_id_update(sequence_number, inscription_id);
             updates.update_set.put(key2, state2);
             sequence_number += 1;
         }
@@ -258,28 +257,35 @@ fn apply_inscription_updates(
     while let Ok(batch) = rx.recv() {
         let loop_start_time = SystemTime::now();
 
+        let gen_nodes_start = Instant::now();
         let mut nodes: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
 
         let cnt = batch.update_set.len();
+
         let mut tree_change_set =
             apply_fields(moveos_store, inscription_store_state_root, batch.update_set).unwrap();
         nodes.append(&mut tree_change_set.nodes);
+        let gen_nodes_cost = gen_nodes_start.elapsed();
 
         inscription_store_state_root = tree_change_set.state_root;
         cursed_inscription_count += batch.cursed_inscription_count;
         blessed_inscription_count += batch.blessed_inscription_count;
 
+        let apply_nodes_start = Instant::now();
         apply_nodes(moveos_store, nodes).expect("failed to apply inscription nodes");
+        let apply_nodes_cost = apply_nodes_start.elapsed();
 
         inscritpion_store_filed_count += cnt as u32;
 
         println!(
-            "{} inscription applied ({} cursed, {} blessed). this batch: value size: {}, cost: {:?}",
+            "{} inscription applied ({} cursed, {} blessed). this batch: value size: {}, cost: {:?}(gen_nodes: {:?}, apply_nodes: {:?})",
             inscritpion_store_filed_count / 2, // both inscription and inscription_id as field
             cursed_inscription_count,
             blessed_inscription_count,
             humanize::human_readable_bytes(batch.updates_value_bytes),
-            loop_start_time.elapsed().unwrap()
+            loop_start_time.elapsed().unwrap(),
+            gen_nodes_cost,
+            apply_nodes_cost,
         );
 
         log::debug!(
