@@ -27,7 +27,7 @@ describe('Bitcoin Assets API', () => {
     expect(result).toBeDefined()
 
     // rooch indexer
-    await testBox.delay(10)
+    await testBox.delay(20)
 
     const utxos = await testBox.getClient().queryUTXO({
       filter: {

@@ -51,6 +51,7 @@ jobs:
           docker --version
           sleep 6
           docker images
+          docker pull lncm/bitcoind:v25.1
           docker pull bitseed/ord:0.18.0-burn
           docker pull bitseed/bitseed:0.1.8
 
