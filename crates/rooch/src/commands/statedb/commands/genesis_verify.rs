@@ -368,7 +368,7 @@ fn verify_utxo(
             rand::random::<u32>() % sample_rate == 0
         };
 
-        if (random_mode && !random_picked) && !is_case {
+        if (random_mode && random_picked) && !is_case {
             continue;
         }
 
@@ -551,7 +551,7 @@ fn verify_inscription(
             rand::random::<u32>() % sample_rate == 0
         };
 
-        if (random_mode && !random_picked) && !is_case {
+        if (random_mode && random_picked) && !is_case {
             continue;
         }
         // check inscription
