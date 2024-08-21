@@ -25,7 +25,7 @@ export class TestBox {
 
   constructor() {
     tmp.setGracefulCleanup()
-    this.tmpDir = tmp.dirSync({ unsafeCleanup: true })
+    this.tmpDir = tmp.dirSync({ unsafeCleanup: true, mode: 777 })
   }
 
   async loadBitcoinEnv(customContainer?: BitcoinContainer, autoMining: boolean = false) {

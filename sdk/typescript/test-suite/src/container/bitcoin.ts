@@ -71,6 +71,7 @@ export class BitcoinContainer extends GenericContainer {
 
     const rpcauth = this.generateRpcauth()
 
+    this.withPrivilegedMode()
     this.withEnvironment({
       RPC_BIND: this.rpcBind,
       RPC_USER: this.rpcUser,
