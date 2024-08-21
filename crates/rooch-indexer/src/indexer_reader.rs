@@ -42,8 +42,6 @@ pub const TX_SENDER_STR: &str = "sender";
 pub const CREATED_AT_STR: &str = "created_at";
 pub const OBJECT_ID_STR: &str = "id";
 
-pub const TRANSACTION_ORIGINAL_ADDRESS_STR: &str = "multichain_original_address";
-
 pub const EVENT_HANDLE_ID_STR: &str = "event_handle_id";
 pub const EVENT_INDEX_STR: &str = "event_index";
 pub const EVENT_SEQ_STR: &str = "event_seq";
@@ -214,16 +212,13 @@ impl IndexerReader {
             TransactionFilter::Sender(sender) => {
                 format!("{TX_SENDER_STR} = \"{}\"", sender.to_hex_literal())
             }
-            TransactionFilter::OriginalAddress(address) => {
-                format!("{TRANSACTION_ORIGINAL_ADDRESS_STR} = \"{}\"", address)
-            }
             TransactionFilter::TxHashes(tx_hashes) => {
-                let in_tx_hashes_str: String = tx_hashes
+                let in_tx_hash_str: String = tx_hashes
                     .iter()
                     .map(|tx_hash| format!("\"{:?}\"", tx_hash))
                     .collect::<Vec<String>>()
                     .join(",");
-                format!("{TX_HASH_STR} in ({})", in_tx_hashes_str)
+                format!("{TX_HASH_STR} in ({})", in_tx_hash_str)
             }
             TransactionFilter::TimeRange {
                 start_time,

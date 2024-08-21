@@ -526,9 +526,9 @@ impl RoochAPIServer for RoochServer {
             (start..end).collect::<Vec<_>>()
         };
 
-        let tx_hashs = self.rpc_service.get_tx_hashs(tx_orders.clone()).await?;
+        let tx_hashes = self.rpc_service.get_tx_hashes(tx_orders.clone()).await?;
 
-        let mut hash_order_pair = tx_hashs
+        let mut hash_order_pair = tx_hashes
             .into_iter()
             .zip(tx_orders)
             .filter_map(|(h, o)| h.map(|h| (h, o)))

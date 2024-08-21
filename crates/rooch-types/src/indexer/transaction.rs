@@ -21,28 +21,17 @@ pub struct IndexerTransaction {
     pub sender: RoochAddress,
     pub action_type: u8,
     pub auth_validator_id: u64,
-    pub authenticator_payload: Vec<u8>,
-    pub tx_accumulator_root: H256,
-    pub state_root: H256,
-    pub size: u64,
-    pub event_root: H256,
-    // the amount of gas used.
-    pub gas_used: u64,
-    // the vm status.
-    pub status: String,
-
     pub created_at: u64,
 }
 
 impl IndexerTransaction {
     pub fn new(
         mut transaction: LedgerTransaction,
-        execution_info: TransactionExecutionInfo,
+        _execution_info: TransactionExecutionInfo,
         move_action: MoveAction,
         tx_context: TxContext,
     ) -> Result<Self> {
-        let status = serde_json::to_string(&execution_info.status)?;
-        let (auth_validator_id, authenticator_payload) = match &transaction.data {
+        let (auth_validator_id, _authenticator_payload) = match &transaction.data {
             LedgerTxData::L1Block(_block) => (0, vec![]),
             LedgerTxData::L1Tx(_tx) => (0, vec![]),
             LedgerTxData::L2Tx(tx) => (
@@ -61,16 +50,6 @@ impl IndexerTransaction {
             sender: tx_context.sender.into(),
             action_type: move_action.action_type(),
             auth_validator_id,
-            authenticator_payload,
-            tx_accumulator_root: transaction.sequence_info.tx_accumulator_root,
-            state_root: execution_info.state_root,
-            size: execution_info.size,
-            event_root: execution_info.event_root,
-            // the amount of gas used.
-            gas_used: execution_info.gas_used,
-            // the vm status.
-            status,
-
             created_at: transaction.sequence_info.tx_timestamp,
         };
         Ok(indexer_transaction)
@@ -82,8 +61,6 @@ impl IndexerTransaction {
 pub enum TransactionFilter {
     /// Query by sender address.
     Sender(RoochAddress),
-    /// Query by multi chain original address.
-    OriginalAddress(String),
     /// Query by the transaction hash list.
     TxHashes(Vec<H256>),
     /// Return transactions in [start_time, end_time) interval

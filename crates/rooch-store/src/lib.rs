@@ -137,8 +137,8 @@ impl TransactionStore for RoochStore {
         self.transaction_store.get_transactions(tx_hashes)
     }
 
-    fn get_tx_hashs(&self, tx_orders: Vec<u64>) -> Result<Vec<Option<H256>>> {
-        self.transaction_store.get_tx_hashs(tx_orders)
+    fn get_tx_hashes(&self, tx_orders: Vec<u64>) -> Result<Vec<Option<H256>>> {
+        self.transaction_store.get_tx_hashes(tx_orders)
     }
 }
 

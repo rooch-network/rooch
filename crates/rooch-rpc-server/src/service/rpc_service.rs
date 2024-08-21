@@ -212,8 +212,8 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn get_tx_hashs(&self, tx_orders: Vec<u64>) -> Result<Vec<Option<H256>>> {
-        let resp = self.sequencer.get_tx_hashs(tx_orders).await?;
+    pub async fn get_tx_hashes(&self, tx_orders: Vec<u64>) -> Result<Vec<Option<H256>>> {
+        let resp = self.sequencer.get_tx_hashes(tx_orders).await?;
         Ok(resp)
     }
 

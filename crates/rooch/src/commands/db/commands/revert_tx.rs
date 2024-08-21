@@ -61,7 +61,9 @@ impl RevertTxCommand {
             last_accumulator_info
         );
 
-        let tx_hashes = rooch_store.transaction_store.get_tx_hashs(vec![tx_order])?;
+        let tx_hashes = rooch_store
+            .transaction_store
+            .get_tx_hashes(vec![tx_order])?;
         // check tx hash exist via tx_order
         if tx_hashes.is_empty() || tx_hashes[0].is_none() {
             return Err(RoochError::from(Error::msg(format!(
@@ -102,7 +104,7 @@ impl RevertTxCommand {
         let previous_tx_order = last_order - 1;
         let previous_tx_hash_opt = rooch_store
             .transaction_store
-            .get_tx_hashs(vec![previous_tx_order])?;
+            .get_tx_hashes(vec![previous_tx_order])?;
         if previous_tx_hash_opt.is_empty() || previous_tx_hash_opt[0].is_none() {
             return Err(RoochError::from(Error::msg(format!(
                 "the previous tx hash not exist via previous_tx_order  {}",
