@@ -1391,41 +1391,27 @@
             "additionalProperties": false
           },
           {
-            "description": "Query by inscription id, represent by bitcoin txid and index",
+            "description": "Query by inscription id, represent by bitcoin {{txid}i{index}}",
             "type": "object",
             "required": [
               "inscription_id"
             ],
             "properties": {
               "inscription_id": {
-                "type": "object",
-                "required": [
-                  "index",
-                  "txid"
-                ],
-                "properties": {
-                  "index": {
-                    "type": "integer",
-                    "format": "uint32",
-                    "minimum": 0.0
-                  },
-                  "txid": {
-                    "type": "string"
-                  }
-                }
+                "$ref": "#/components/schemas/rooch_types::bitcoin::ord::BitcoinInscriptionID"
               }
             },
             "additionalProperties": false
           },
           {
-            "description": "Query by object id.",
+            "description": "Query by object ids.",
             "type": "object",
             "required": [
               "object_id"
             ],
             "properties": {
               "object_id": {
-                "$ref": "#/components/schemas/ObjectID"
+                "$ref": "#/components/schemas/alloc::vec::Vec<moveos_types::moveos_std::object::ObjectID>"
               }
             },
             "additionalProperties": false
@@ -1463,7 +1449,7 @@
             "minimum": 0.0
           },
           "id": {
-            "$ref": "#/components/schemas/ObjectID"
+            "$ref": "#/components/schemas/moveos_types::moveos_std::object::ObjectID"
           },
           "object_type": {
             "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
@@ -2767,19 +2753,6 @@
             "additionalProperties": false
           },
           {
-            "description": "Query by multi chain original address.",
-            "type": "object",
-            "required": [
-              "original_address"
-            ],
-            "properties": {
-              "original_address": {
-                "type": "string"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
             "description": "Query by the given transaction hash.",
             "type": "object",
             "required": [
@@ -2999,14 +2972,14 @@
             "additionalProperties": false
           },
           {
-            "description": "Query by object id.",
+            "description": "Query by object ids.",
             "type": "object",
             "required": [
               "object_id"
             ],
             "properties": {
               "object_id": {
-                "$ref": "#/components/schemas/ObjectID"
+                "$ref": "#/components/schemas/alloc::vec::Vec<moveos_types::moveos_std::object::ObjectID>"
               }
             },
             "additionalProperties": false
@@ -3044,7 +3017,7 @@
             "minimum": 0.0
           },
           "id": {
-            "$ref": "#/components/schemas/ObjectID"
+            "$ref": "#/components/schemas/moveos_types::moveos_std::object::ObjectID"
           },
           "object_type": {
             "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
@@ -3109,7 +3082,7 @@
             "additionalProperties": {
               "type": "array",
               "items": {
-                "$ref": "#/components/schemas/ObjectID"
+                "$ref": "#/components/schemas/moveos_types::moveos_std::object::ObjectID"
               }
             }
           },
@@ -3279,6 +3252,9 @@
       "moveos_types::move_types::FunctionId": {
         "type": "string"
       },
+      "moveos_types::moveos_std::object::ObjectID": {
+        "type": "string"
+      },
       "moveos_types::state::FieldKey": {
         "type": "string"
       },
@@ -3292,6 +3268,9 @@
         "type": "string"
       },
       "rooch_types::address::RoochAddress": {
+        "type": "string"
+      },
+      "rooch_types::bitcoin::ord::BitcoinInscriptionID": {
         "type": "string"
       },
       "rooch_types::repair::RepairIndexerType": {

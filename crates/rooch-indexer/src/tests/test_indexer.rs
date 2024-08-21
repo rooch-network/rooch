@@ -239,15 +239,14 @@ async fn test_escape_transaction() -> Result<()> {
         action: move_action,
     };
 
-    let mut indexer_transaction = IndexerTransaction::new(
+    let indexer_transaction = IndexerTransaction::new(
         random_transaction,
         random_execution_info,
         random_moveos_tx.action.into(),
         random_moveos_tx.ctx.clone(),
     )?;
     // construct escape field
-    let quotes = "Executed: ''There is no escape'";
-    indexer_transaction.status = quotes.to_string();
+    let _quotes = "Executed: ''There is no escape'";
     let transactions = vec![indexer_transaction];
     indexer_store.persist_transactions(transactions)?;
 

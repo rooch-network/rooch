@@ -311,7 +311,7 @@ impl IndexerReader {
                         .order_by((events::tx_order.desc(), events::event_index.desc()))
                         .first::<(i64, i64)>(conn)
                 })?;
-            (max_tx_order, event_index)
+            (max_tx_order, event_index + 1)
         } else {
             (-1, 0)
         };
@@ -323,12 +323,12 @@ impl IndexerReader {
                 format!(
                     "{TX_SENDER_STR} = \"{}\" AND {EVENT_TYPE_STR} = \"{}\"",
                     sender.to_hex_literal(),
-                    event_type.to_string()
+                    event_type
                 )
             }
             EventFilter::EventType(event_type) => {
                 // let event_handle_id = EventHandle::derive_event_handle_id(&event_type);
-                format!("{EVENT_TYPE_STR} = \"{}\"", event_type.to_string())
+                format!("{EVENT_TYPE_STR} = \"{}\"", event_type)
             }
             EventFilter::Sender(sender) => {
                 format!("{TX_SENDER_STR} = \"{}\"", sender.to_hex_literal())
@@ -420,7 +420,7 @@ impl IndexerReader {
         } else if descending_order {
             let last_state_id = self.query_last_indexer_state_id(state_type.clone())?;
             match last_state_id {
-                Some((max_tx_order, state_index)) => (max_tx_order, state_index),
+                Some((max_tx_order, state_index)) => (max_tx_order, state_index + 1),
                 None => (0, 0),
             }
         } else {

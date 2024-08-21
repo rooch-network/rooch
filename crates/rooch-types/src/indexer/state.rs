@@ -9,7 +9,7 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use moveos_types::move_types::type_tag_match;
-use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
+use moveos_types::moveos_std::object::{is_dynamic_field_type, ObjectID, ObjectMeta};
 use moveos_types::state::{MoveStructType, MoveType, ObjectChange, StateChangeSet};
 use once_cell::sync::Lazy;
 use schemars::JsonSchema;
@@ -155,6 +155,11 @@ pub fn handle_object_change(
     let object_id = metadata.id.clone();
     let object_type = metadata.object_type.clone();
     let state_index = state_index_generator.get(&object_type);
+
+    // Do not index dynamic field object
+    if is_dynamic_field_type(&object_type) {
+        return Ok(());
+    }
     if let Some(op) = value {
         match op {
             Op::Modify(_value) => {
