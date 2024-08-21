@@ -6,7 +6,8 @@ module moveos_std::event_queue {
     use std::option::{Self, Option};
     use std::string::String;
     use moveos_std::timestamp;
-    use moveos_std::object::{Self, Object};
+    use moveos_std::event;
+    use moveos_std::object::{Self, Object, ObjectID};
 
     const EVENT_EXPIRE_TIME: u64 = 1000 * 60 * 60 * 24 * 31; // 31 days
     const REMOVE_EXPIRED_EVENT_BATCH_SIZE: u64 = 10;
@@ -15,6 +16,7 @@ module moveos_std::event_queue {
     const ErrorSubscriberNotFound: u64 = 2;
     const ErrorEventNotFound: u64 = 3;
     const ErrorInvalidSequenceNumber: u64 = 4;
+    const ErrorEventQueueNotFound: u64 = 5;
 
     struct EventQueue<phantom E> has key{
         head_sequence_number: u64,
@@ -27,16 +29,31 @@ module moveos_std::event_queue {
         emit_time: u64,
     }
 
+    /// The off-chain event
+    /// Every on-chain event also trigger an off-chain event
+    struct OffChainEvent<E> has copy, drop, store {
+        queue_name: String,
+        /// The event sequence number
+        /// If the event is emitted to the event queue, the sequence number is Some
+        sequence_number: Option<u64>,
+        event: E,
+    }
+
     struct Subscriber<phantom E> has key{
         /// The event queue name
+        //TODO break: change to queue_id ObjectID
         queue_name: String,
         /// The subscriber consume sequence number
         sequence_number: u64,
+    }
+
+    fun queue_id<E : copy + drop + store>(name: String): ObjectID {
+        object::custom_object_id<String, EventQueue<E>>(name)
     }    
 
-    fun event_queue<E : copy + drop + store>(name: String): &mut Object<EventQueue<E>> {
-        let object_id = object::custom_object_id<String, EventQueue<E>>(name);
-        if (!object::exists_object(object_id)) {
+    fun create_or_borrow_mut_queue<E : copy + drop + store>(name: String): &mut Object<EventQueue<E>> {
+        let queue_id = object::custom_object_id<String, EventQueue<E>>(name);
+        if (!object::exists_object(queue_id)) {
             let event_queue_obj = object::new_with_id(name, EventQueue<E> {
                 head_sequence_number: 0,
                 tail_sequence_number: 0,
@@ -46,19 +63,44 @@ module moveos_std::event_queue {
             //And the caller do not need to care about the event queue object
             object::transfer_extend(event_queue_obj, @moveos_std);
         };
-        object::borrow_mut_object_extend<EventQueue<E>>(object_id)
+        object::borrow_mut_object_extend<EventQueue<E>>(queue_id)
+    }
+
+    fun borrow_mut_queue<E : copy + drop + store>(name: String): &mut Object<EventQueue<E>> {
+        let queue_id = object::custom_object_id<String, EventQueue<E>>(name);
+        object::borrow_mut_object_extend<EventQueue<E>>(queue_id)
+    }
+
+    fun exists_queue<E : copy + drop + store>(object_id: ObjectID): bool {
+        object::exists_object_with_type<EventQueue<E>>(object_id)
     }
 
     #[private_generics(E)]
     /// Emit an event to the event queue, the event will be stored in the event queue
     /// But if there are no subscribers, we do not store the event
     public fun emit<E : copy + drop + store>(name: String, event: E) {
-        let event_queue_obj = event_queue<E>(name);
+        let queue_id = queue_id<E>(name);
+        //If the event queue does not exist, we do not emit the event
+        let sequence_number = if(exists_queue<E>(queue_id)){
+            emit_to_queue(queue_id, event)
+        }else{
+            option::none()
+        };
+        let off_chain_event = OffChainEvent {
+            queue_name: name,
+            sequence_number: sequence_number,
+            event: event,
+        };
+        event::emit(off_chain_event);
+    }
+
+    fun emit_to_queue<E : copy + drop + store>(queue_id: ObjectID, event: E) : Option<u64> {
+        let event_queue_obj = object::borrow_mut_object_extend<EventQueue<E>>(queue_id);
         let event_queue = object::borrow(event_queue_obj);
         let subscriber_count = event_queue.subscriber_count;
         //We only write the event to the event queue when there are subscribers
         if(subscriber_count == 0){
-            return
+            return option::none()
         };
         let head_sequence_number = event_queue.head_sequence_number;
         let now = timestamp::now_milliseconds();
@@ -68,14 +110,16 @@ module moveos_std::event_queue {
         };
         object::add_field(event_queue_obj, head_sequence_number, on_chain_event);
         object::borrow_mut(event_queue_obj).head_sequence_number = head_sequence_number + 1;
-        internal_remove_expired_events(event_queue_obj);    
+        internal_remove_expired_events(event_queue_obj);
+        option::some(head_sequence_number)    
     }
 
     /// Consume the event from the event queue
     public fun consume<E: copy + drop + store>(subscriber_obj: &mut Object<Subscriber<E>>) : Option<E> {
         let subscriber = object::borrow_mut(subscriber_obj);
         let subscriber_sequence_number = subscriber.sequence_number;
-        let event_queue_obj = event_queue<E>(subscriber.queue_name);
+        // If the subscriber_obj is exsited, the queue must be existed
+        let event_queue_obj = borrow_mut_queue<E>(subscriber.queue_name);
         internal_remove_expired_events(event_queue_obj);
         let head_sequence_number = object::borrow(event_queue_obj).head_sequence_number;
         let tail_sequence_number = object::borrow(event_queue_obj).tail_sequence_number;
@@ -105,7 +149,8 @@ module moveos_std::event_queue {
     /// Subscribe the event queue of `E` and the given queue name
     /// Return the subscriber object
     public fun subscribe<E: copy + drop + store>(queue_name: String) : Object<Subscriber<E>> {
-        let event_queue_obj = event_queue<E>(queue_name);
+        //We only create the queue when the first subscriber subscribe the event queue
+        let event_queue_obj = create_or_borrow_mut_queue<E>(queue_name);
         let event_queue = object::borrow_mut(event_queue_obj);
         let head_sequence_number = event_queue.head_sequence_number;
         let subscriber = object::new(Subscriber {
@@ -119,7 +164,7 @@ module moveos_std::event_queue {
     /// Unsubscribe the subscriber
     public fun unsubscribe<E: copy + drop + store>(subscriber: Object<Subscriber<E>>) {
         let Subscriber{sequence_number:_, queue_name} = object::remove(subscriber);
-        let event_queue_obj = event_queue<E>(queue_name);
+        let event_queue_obj = borrow_mut_queue<E>(queue_name);
         let event_queue = object::borrow_mut(event_queue_obj);
         event_queue.subscriber_count = event_queue.subscriber_count - 1;
     }
@@ -127,7 +172,7 @@ module moveos_std::event_queue {
     /// Remove the expired events from the event queue
     /// Anyone can call this function to remove the expired events
     public fun remove_expired_events<E: copy + drop + store>(event_queue: String){
-        let event_queue_obj = event_queue<E>(event_queue);
+        let event_queue_obj = borrow_mut_queue<E>(event_queue);
         internal_remove_expired_events(event_queue_obj);
     }
     
