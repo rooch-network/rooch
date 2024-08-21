@@ -4,6 +4,7 @@
 use anyhow::Result;
 use coerce::actor::message::Message;
 use moveos_types::h256::H256;
+use rooch_types::service_status::ServiceStatus;
 use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
 use serde::{Deserialize, Serialize};
 
@@ -51,4 +52,13 @@ pub struct GetSequencerOrderMessage {}
 
 impl Message for GetSequencerOrderMessage {
     type Result = Result<u64>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SetStatusMessage {
+    pub(crate) status: ServiceStatus,
+}
+
+impl Message for SetStatusMessage {
+    type Result = Result<()>;
 }

@@ -3,15 +3,19 @@
 
 use std::collections::HashSet;
 
-use anyhow::Result;
+use anyhow::{Error, Result};
+use moveos_store::transaction_store::TransactionStore as TxExecutionInfoStore;
 use moveos_store::MoveOSStore;
+use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectMeta;
 use prometheus::Registry;
 use raw_store::metrics::DBMetrics;
 use raw_store::{rocks::RocksDB, StoreInstance};
 use rooch_config::store_config::StoreConfig;
 use rooch_indexer::{indexer_reader::IndexerReader, IndexerStore};
+use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
+use rooch_types::sequencer::SequencerInfo;
 
 #[derive(Clone)]
 pub struct RoochDB {
@@ -82,4 +86,81 @@ impl RoochDB {
 
         Ok(startup_info.map(|s| s.into_root_metadata()))
     }
+}
+
+pub fn revert_tx(rooch_store: RoochStore, moveos_store: MoveOSStore, tx_hash: H256) -> Result<()> {
+    let last_sequencer_info = rooch_store
+        .get_meta_store()
+        .get_sequencer_info()?
+        .ok_or_else(|| anyhow::anyhow!("Load sequencer info failed"))?;
+    let (last_order, last_accumulator_info) = (
+        last_sequencer_info.last_order,
+        last_sequencer_info.last_accumulator_info.clone(),
+    );
+    println!("Load latest sequencer order {:?}", last_order);
+    println!(
+        "Load latest sequencer accumulator info {:?}",
+        last_accumulator_info
+    );
+
+    let ledger_tx_opt = rooch_store
+        .transaction_store
+        .get_transaction_by_hash(tx_hash)?;
+    if ledger_tx_opt.is_none() {
+        println!("the ledger tx not exist via tx_hash {}", tx_hash);
+        return Ok(());
+    }
+    let sequencer_info = ledger_tx_opt.unwrap().sequence_info;
+    let tx_order = sequencer_info.tx_order;
+    // check last order equals to sequencer tx order via tx_hash
+    if sequencer_info.tx_order != last_sequencer_info.last_order {
+        return Err(Error::msg(format!(
+            "the last order {} not match current sequencer info tx order {}, tx_hash {}",
+            last_sequencer_info.last_order, sequencer_info.tx_order, tx_hash
+        )));
+    }
+
+    // check only write tx sequence info succ, but not write tx execution info
+    let execution_info = moveos_store
+        .transaction_store
+        .get_tx_execution_info(tx_hash)?;
+    if execution_info.is_some() {
+        return Err(Error::msg(format!(
+            "the tx execution info already exist via tx_hash {}, revert tx failed",
+            tx_hash
+        )));
+    }
+
+    let previous_tx_order = last_order - 1;
+    let previous_tx_hash_opt = rooch_store
+        .transaction_store
+        .get_tx_hashs(vec![previous_tx_order])?;
+    if previous_tx_hash_opt.is_empty() || previous_tx_hash_opt[0].is_none() {
+        return Err(Error::msg(format!(
+            "the previous tx hash not exist via previous_tx_order  {}",
+            previous_tx_order
+        )));
+    }
+    let previous_tx_hash = previous_tx_hash_opt[0].unwrap();
+    let previous_ledger_tx_opt = rooch_store
+        .transaction_store
+        .get_transaction_by_hash(previous_tx_hash)?;
+    if previous_ledger_tx_opt.is_none() {
+        return Err(Error::msg(format!(
+            "the previous ledger tx not exist via tx_hash {}, revert tx failed",
+            previous_tx_hash
+        )));
+    }
+    let previous_sequencer_info = previous_ledger_tx_opt.unwrap().sequence_info;
+
+    let revert_sequencer_info = SequencerInfo::new(
+        previous_tx_order,
+        previous_sequencer_info.tx_accumulator_info(),
+    );
+    rooch_store
+        .meta_store
+        .save_sequencer_info_ignore_check(revert_sequencer_info)?;
+    rooch_store.remove_transaction(tx_hash, tx_order)?;
+
+    Ok(())
 }

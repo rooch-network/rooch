@@ -3,3 +3,6 @@
 
 #[derive(Default, Clone, Debug)]
 pub struct GasUpgradeEvent {}
+
+#[derive(Default, Clone, Debug)]
+pub struct VMPanicErrorEvent {}

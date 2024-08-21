@@ -20,8 +20,11 @@ tracing = { workspace = true }
 prometheus = { workspace = true }
 function_name = { workspace = true }
 
+move-binary-format = { workspace = true }
 
 moveos-types = { workspace = true }
+moveos-stdlib = { workspace = true }
+moveos = { workspace = true }
 metrics = { workspace = true }
 
 rooch-types = { workspace = true }
@@ -29,3 +32,5 @@ rooch-sequencer = { workspace = true }
 rooch-executor = { workspace = true }
 rooch-proposer = { workspace = true }
 rooch-indexer = { workspace = true }
+rooch-event = { workspace = true }
+rooch-db = { workspace = true }

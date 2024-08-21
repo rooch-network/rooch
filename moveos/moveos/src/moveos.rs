@@ -47,6 +47,9 @@ use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
+pub const E_VERIFIER_PANIC: u64 = 999999999999999999;
+pub const E_SYSTEM_CALL_PANIC: u64 = 999999999999999998;
+
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct GasPaymentAccount {
     pub account: AccountAddress,
@@ -477,10 +480,16 @@ impl MoveOS {
             Err(discard_status) => {
                 //This should not happen, if it happens, it means that the VM or verifer has a bug
                 let backtrace = Backtrace::new();
-                panic!(
+                log::error!(
                     "Discard status: {:?}, execute_result: {:?} \n{:?}",
-                    discard_status, execute_result, backtrace
+                    discard_status,
+                    execute_result,
+                    backtrace
                 );
+                return Err(PartialVMError::new(StatusCode::ABORTED)
+                    .with_sub_status(E_VERIFIER_PANIC)
+                    .with_message("Execute Action with Panic".to_string())
+                    .finish(Location::Undefined));
             }
         };
         Ok(status)
@@ -498,14 +507,26 @@ impl MoveOS {
                 if is_system_call && kept_status != KeptVMStatus::Executed {
                     // system call should always success
                     let backtrace = Backtrace::new();
-                    panic!("System call failed: {:?}\n{:?}", kept_status, backtrace);
+                    log::error!("System call failed: {:?}\n{:?}", kept_status, backtrace);
+                    return Err(anyhow::Error::new(
+                        PartialVMError::new(StatusCode::ABORTED)
+                            .with_sub_status(E_SYSTEM_CALL_PANIC)
+                            .with_message("Execute Action with Panic".to_string())
+                            .finish(Location::Undefined),
+                    ));
                 }
                 kept_status
             }
             Err(discard_status) => {
                 //This should not happen, if it happens, it means that the VM or verifer has a bug
                 let backtrace = Backtrace::new();
-                panic!("Discard status: {:?}\n{:?}", discard_status, backtrace);
+                log::error!("Discard status: {:?}\n{:?}", discard_status, backtrace);
+                return Err(anyhow::Error::new(
+                    PartialVMError::new(StatusCode::ABORTED)
+                        .with_sub_status(E_VERIFIER_PANIC)
+                        .with_message("Execute Action with Panic".to_string())
+                        .finish(Location::Undefined),
+                ));
             }
         };
 

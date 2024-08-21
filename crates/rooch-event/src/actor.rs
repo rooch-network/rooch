@@ -7,7 +7,7 @@ use coerce::actor::message::{Handler, Message};
 use coerce::actor::Actor;
 use log;
 use moveos_eventbus::bus::{EventBus, EventNotifier};
-use moveos_eventbus::event::GasUpgradeEvent;
+use moveos_eventbus::event::{GasUpgradeEvent, VMPanicErrorEvent};
 
 #[derive(Default)]
 pub struct EventActor {
@@ -39,6 +39,27 @@ impl Handler<GasUpgradeMessage> for EventActor {
         log::debug!("EventActor receive message {:?}", message);
         self.event_bus
             .notify::<GasUpgradeEvent>(GasUpgradeEvent {})?;
+        Ok(())
+    }
+}
+
+#[derive(Default, Clone, Debug)]
+pub struct VMPanicMessage {}
+
+impl Message for VMPanicMessage {
+    type Result = anyhow::Result<()>;
+}
+
+#[async_trait]
+impl Handler<VMPanicMessage> for EventActor {
+    async fn handle(
+        &mut self,
+        message: VMPanicMessage,
+        _ctx: &mut ActorContext,
+    ) -> anyhow::Result<()> {
+        log::debug!("EventActor receive message {:?}", message);
+        self.event_bus
+            .notify::<VMPanicErrorEvent>(VMPanicErrorEvent {})?;
         Ok(())
     }
 }

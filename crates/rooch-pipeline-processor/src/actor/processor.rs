@@ -3,12 +3,17 @@
 
 use super::messages::{ExecuteL1BlockMessage, ExecuteL1TxMessage, ExecuteL2TxMessage};
 use crate::metrics::PipelineProcessorMetrics;
-use anyhow::Result;
+use anyhow::{Error, Result};
 use async_trait::async_trait;
-use coerce::actor::{context::ActorContext, message::Handler, Actor};
+use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use function_name::named;
+use move_binary_format::errors::VMError;
+use moveos::moveos::{E_SYSTEM_CALL_PANIC, E_VERIFIER_PANIC};
+use moveos_stdlib::natives::helpers::E_NATIVE_FUNCTION_PANIC;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use prometheus::Registry;
+use rooch_db::{revert_tx, RoochDB};
+use rooch_event::actor::{EventActor, VMPanicMessage};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_proposer::proxy::ProposerProxy;
@@ -32,6 +37,8 @@ pub struct PipelineProcessorActor {
     pub(crate) indexer: IndexerProxy,
     pub(crate) service_status: ServiceStatus,
     pub(crate) metrics: Arc<PipelineProcessorMetrics>,
+    event_actor: Option<LocalActorRef<EventActor>>,
+    rooch_db: RoochDB,
 }
 
 impl PipelineProcessorActor {
@@ -42,6 +49,8 @@ impl PipelineProcessorActor {
         indexer: IndexerProxy,
         service_status: ServiceStatus,
         registry: &Registry,
+        event_actor: Option<LocalActorRef<EventActor>>,
+        rooch_db: RoochDB,
     ) -> Self {
         Self {
             executor,
@@ -50,6 +59,8 @@ impl PipelineProcessorActor {
             indexer,
             service_status,
             metrics: Arc::new(PipelineProcessorMetrics::new(registry)),
+            event_actor,
+            rooch_db,
         }
     }
 
@@ -162,7 +173,21 @@ impl PipelineProcessorActor {
             .sequence_transaction(LedgerTxData::L1Tx(l1_tx))
             .await?;
         let size = moveos_tx.ctx.tx_size;
-        let result = self.execute_tx(ledger_tx, moveos_tx).await?;
+        let result = match self.execute_tx(ledger_tx, moveos_tx).await {
+            Ok(v) => v,
+            Err(err) => {
+                if is_vm_panic_error(&err) {
+                    let _ = self
+                        .sequencer
+                        .set_sequencer_status(ServiceStatus::Maintenance)
+                        .await;
+                    if let Some(event_actor) = self.event_actor.clone() {
+                        let _ = event_actor.send(VMPanicMessage {}).await;
+                    }
+                }
+                return Err(err);
+            }
+        };
 
         let gas_used = result.output.gas_used;
         self.metrics
@@ -190,10 +215,23 @@ impl PipelineProcessorActor {
         let moveos_tx = self.executor.validate_l2_tx(tx.clone()).await?;
         let ledger_tx = self
             .sequencer
-            .sequence_transaction(LedgerTxData::L2Tx(tx))
+            .sequence_transaction(LedgerTxData::L2Tx(tx.clone()))
             .await?;
         let size = moveos_tx.ctx.tx_size;
-        let result = self.execute_tx(ledger_tx, moveos_tx).await?;
+        let result = match self.execute_tx(ledger_tx, moveos_tx).await {
+            Ok(v) => v,
+            Err(err) => {
+                if is_vm_panic_error(&err) {
+                    let tx_hash = tx.tx_hash();
+                    revert_tx(
+                        self.rooch_db.rooch_store.clone(),
+                        self.rooch_db.moveos_store.clone(),
+                        tx_hash,
+                    )?;
+                }
+                return Err(err);
+            }
+        };
 
         let gas_used = result.output.gas_used;
         self.metrics
@@ -307,5 +345,20 @@ impl Handler<ExecuteL1TxMessage> for PipelineProcessorActor {
         _ctx: &mut ActorContext,
     ) -> Result<ExecuteTransactionResponse> {
         self.execute_l1_tx(msg.tx).await
+    }
+}
+
+fn is_vm_panic_error(error: &Error) -> bool {
+    if let Some(vm_error) = error.downcast_ref::<VMError>() {
+        if let Some(sub_status) = vm_error.sub_status() {
+            matches!(
+                sub_status,
+                E_VERIFIER_PANIC | E_SYSTEM_CALL_PANIC | E_NATIVE_FUNCTION_PANIC
+            )
+        } else {
+            false
+        }
+    } else {
+        false
     }
 }

@@ -3,12 +3,13 @@
 
 use crate::messages::{
     GetSequencerOrderMessage, GetTransactionByHashMessage, GetTransactionsByHashMessage,
-    GetTxHashsMessage,
+    GetTxHashsMessage, SetStatusMessage,
 };
 use crate::{actor::sequencer::SequencerActor, messages::TransactionSequenceMessage};
 use anyhow::Result;
 use coerce::actor::ActorRef;
 use moveos_types::h256::H256;
+use rooch_types::service_status::ServiceStatus;
 use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
 
 #[derive(Clone)]
@@ -46,5 +47,9 @@ impl SequencerProxy {
 
     pub async fn get_sequencer_order(&self) -> Result<u64> {
         self.actor.send(GetSequencerOrderMessage {}).await?
+    }
+
+    pub async fn set_sequencer_status(&self, status: ServiceStatus) -> Result<()> {
+        self.actor.send(SetStatusMessage { status }).await?
     }
 }

@@ -9303,6 +9303,7 @@ dependencies = [
  "rooch-config",
  "rooch-indexer",
  "rooch-store",
+ "rooch-types",
 ]
 
 [[package]]
@@ -9623,8 +9624,13 @@ dependencies = [
  "function_name",
  "log",
  "metrics",
+ "move-binary-format",
+ "moveos",
+ "moveos-stdlib",
  "moveos-types",
  "prometheus",
+ "rooch-db",
+ "rooch-event",
  "rooch-executor",
  "rooch-indexer",
  "rooch-proposer",
@@ -9663,9 +9669,11 @@ dependencies = [
  "hex",
  "metrics",
  "move-core-types",
+ "moveos-eventbus",
  "moveos-types",
  "prometheus",
  "rooch-config",
+ "rooch-event",
  "rooch-executor",
  "rooch-pipeline-processor",
  "rooch-types",

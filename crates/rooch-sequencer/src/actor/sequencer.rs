@@ -6,7 +6,7 @@ use std::time::SystemTime;
 
 use crate::messages::{
     GetSequencerOrderMessage, GetTransactionByHashMessage, GetTransactionsByHashMessage,
-    GetTxHashsMessage, TransactionSequenceMessage,
+    GetTxHashsMessage, SetStatusMessage, TransactionSequenceMessage,
 };
 use crate::metrics::SequencerMetrics;
 use accumulator::{Accumulator, MerkleAccumulator};
@@ -199,5 +199,13 @@ impl Handler<GetSequencerOrderMessage> for SequencerActor {
         _ctx: &mut ActorContext,
     ) -> Result<u64> {
         Ok(self.last_sequencer_info.last_order)
+    }
+}
+
+#[async_trait]
+impl Handler<SetStatusMessage> for SequencerActor {
+    async fn handle(&mut self, msg: SetStatusMessage, _ctx: &mut ActorContext) -> Result<()> {
+        self.service_status = msg.status;
+        Ok(())
     }
 }
