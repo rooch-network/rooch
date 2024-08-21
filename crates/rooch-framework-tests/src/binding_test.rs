@@ -8,11 +8,15 @@ use move_core_types::vm_status::KeptVMStatus;
 use moveos_config::DataDirPath;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
+use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::moveos_std::event::Event;
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::moveos_std::tx_context::TxContext;
-use moveos_types::state::{ObjectChange, StateChangeSet};
-use moveos_types::state_resolver::{RootObjectResolver, StateReaderExt};
+use moveos_types::state::{FieldKey, ObjectChange, ObjectState, StateChangeSet};
+use moveos_types::state_resolver::{
+    RootObjectResolver, StateKV, StateReaderExt, StateResolver, StatelessResolver,
+};
 use moveos_types::transaction::{FunctionCall, VerifiedMoveOSTransaction};
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
@@ -52,6 +56,7 @@ pub struct RustBindingTest {
     root: ObjectMeta,
     rooch_db: RoochDB,
     pub registry_service: RegistryService,
+    events: Vec<Event>,
 }
 
 impl RustBindingTest {
@@ -105,6 +110,7 @@ impl RustBindingTest {
             reader_executor,
             rooch_db,
             registry_service,
+            events: vec![],
         })
     }
 
@@ -207,7 +213,7 @@ impl RustBindingTest {
     ) -> Result<ExecuteTransactionResult> {
         let result = self.executor.execute(tx)?;
         self.root = result.transaction_info.root_metadata();
-
+        self.events.extend(result.output.events.clone());
         self.reader_executor
             .refresh_state(self.root.clone(), false)?;
         Ok(result)
@@ -237,6 +243,10 @@ impl RustBindingTest {
             .map(|account| account.value.sequence_number)
             .unwrap_or(0))
     }
+
+    pub fn events(&self) -> &Vec<Event> {
+        &self.events
+    }
 }
 
 impl MoveFunctionCaller for RustBindingTest {
@@ -251,5 +261,26 @@ impl MoveFunctionCaller for RustBindingTest {
             function_call,
         );
         Ok(result)
+    }
+}
+
+impl StateResolver for RustBindingTest {
+    fn root(&self) -> &ObjectMeta {
+        &self.root
+    }
+}
+
+impl StatelessResolver for RustBindingTest {
+    fn get_field_at(&self, state_root: H256, key: &FieldKey) -> Result<Option<ObjectState>> {
+        self.resolver().get_field_at(state_root, key)
+    }
+
+    fn list_fields_at(
+        &self,
+        state_root: H256,
+        cursor: Option<FieldKey>,
+        limit: usize,
+    ) -> Result<Vec<StateKV>> {
+        self.resolver().list_fields_at(state_root, cursor, limit)
     }
 }

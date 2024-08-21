@@ -11,10 +11,14 @@ use moveos_types::{
         timestamp::Timestamp,
     },
     state::{MoveState, MoveType, ObjectChange, ObjectState},
+    state_resolver::StateResolver,
 };
 use rooch_relayer::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use rooch_types::{
-    bitcoin::utxo::{BitcoinUTXOStore, UTXO},
+    bitcoin::{
+        ord::InscriptionID,
+        utxo::{BitcoinUTXOStore, UTXO},
+    },
     genesis_config,
     into_address::IntoAddress,
     rooch_network::{BuiltinChainID, RoochNetwork},
@@ -65,6 +69,11 @@ impl BitcoinBlockTester {
         //TODO verify inscription in state with ord rpc result.
         Ok(())
     }
+
+    pub fn get_inscription(&self, inscription_id: &InscriptionID) -> Result<Option<ObjectState>> {
+        let object_id = inscription_id.object_id();
+        self.binding_test.get_object(&object_id)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -96,6 +105,7 @@ impl BitcoinTesterGenesis {
 pub struct TesterGenesisBuilder {
     bitcoin_client: BitcoinClientProxy,
     blocks: Vec<(usize, Block)>,
+    block_txids: HashSet<Txid>,
     utxo_store_change: ObjectChange,
 }
 
@@ -104,22 +114,31 @@ impl TesterGenesisBuilder {
         Ok(Self {
             bitcoin_client,
             blocks: vec![],
+            block_txids: HashSet::new(),
             utxo_store_change: ObjectChange::meta(BitcoinUTXOStore::genesis_object().metadata),
         })
     }
 
     pub async fn add_block(mut self, block_hash: BlockHash) -> Result<Self> {
-        //TODO support multiple blocks
-        ensure!(
-            self.blocks.is_empty(),
-            "GenesisBuilder can only add one block"
-        );
         let block = self.bitcoin_client.get_block(block_hash).await?;
         let block_header_result = self
             .bitcoin_client
             .get_block_header_info(block_hash)
             .await?;
         debug!("Add block: {:?}", block_header_result);
+        if !self.blocks.is_empty() {
+            let last_block = self.blocks.last().unwrap();
+            ensure!(
+                last_block.0 < block_header_result.height,
+                "Block height should be incremental from {} to {}",
+                last_block.0,
+                block_header_result.height
+            );
+        }
+        for tx in &block.txdata {
+            self.block_txids.insert(tx.txid());
+        }
+
         let depdent_txids = block
             .txdata
             .iter()
@@ -136,6 +155,10 @@ impl TesterGenesisBuilder {
             if txid == Txid::all_zeros() {
                 continue;
             }
+            // Skip if tx already in block
+            if self.block_txids.contains(&txid) {
+                continue;
+            }
             debug!("Get tx: {:?}", txid);
             let tx = self.bitcoin_client.get_raw_transaction(txid).await?;
             depdent_txs.insert(txid, tx);
@@ -144,6 +167,9 @@ impl TesterGenesisBuilder {
         for tx in &block.txdata {
             for input in tx.input.iter() {
                 if input.previous_output.txid == Txid::all_zeros() {
+                    continue;
+                }
+                if self.block_txids.contains(&input.previous_output.txid) {
                     continue;
                 }
                 let pre_tx = depdent_txs
