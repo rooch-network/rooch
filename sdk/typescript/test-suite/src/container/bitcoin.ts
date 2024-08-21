@@ -76,7 +76,7 @@ export class BitcoinContainer extends GenericContainer {
       RPC_PASS: this.rpcPass,
       RPC_AUTH: rpcauth,
     })
-      .withWaitStrategy(Wait.forLogMessage('txindex thread start'))
+      .withWaitStrategy(Wait.forListeningPorts())
       .withStartupTimeout(120000)
       .withBindMounts([
         {
