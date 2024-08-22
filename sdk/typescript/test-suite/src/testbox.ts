@@ -249,7 +249,7 @@ export class TestBox {
     tmp.setGracefulCleanup()
     const systemTempDir = getTempDirectory()
     console.log("systemTempDir:", systemTempDir)
-    return tmp.dirSync({ unsafeCleanup: true, tmpdir: systemTempDir, mode: 777 })
+    return tmp.dirSync({ unsafeCleanup: true, tmpdir: systemTempDir })
   }
 }
 

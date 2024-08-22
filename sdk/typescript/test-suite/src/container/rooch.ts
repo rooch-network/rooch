@@ -122,6 +122,7 @@ export class RoochContainer extends GenericContainer {
       throw new Error('Host config path not set. Call withHostConfigPath() before starting.')
     }
 
+    this.withUser("root")
     this.withBindMounts([{ source: this.hostConfigPath, target: this.accountDir }])
 
     const command = [

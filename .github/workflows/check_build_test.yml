@@ -54,10 +54,6 @@ jobs:
           docker pull lncm/bitcoind:v25.1
           docker pull bitseed/ord:0.18.0-burn
           docker pull bitseed/bitseed:0.1.8
-          mkdir -p ${{ runner.temp }}/tmp-61776-fT3vn1LsvpeO/bitcoin
-          mkdir -p ${{ runner.temp }}/tmp-61776-fT3vn1LsvpeO/xxxxx
-          mkdir -p ${{ runner.temp }}/tmp-61776-fT3vn1LsvpeX
-          exit 1
 
       - name: Check code format
         run: cargo fmt -- --check
@@ -103,17 +99,17 @@ jobs:
       - name: Build SDK
         run: pnpm rooch-sdk build
       - name: Test SDK
-        run: RUNNER_TEMP=${{ runner.temp }} pnpm rooch-sdk test
+        run: pnpm rooch-sdk test
       - name: Build SDK KIT
         run: pnpm rooch-sdk-kit build
       - name: Test SDK KIT
-        run: RUNNER_TEMP=${{ runner.temp }} pnpm rooch-sdk-kit test
+        run: pnpm rooch-sdk-kit test
       - name: Lint Bitseed SDK
         run: pnpm bitseed-sdk lint
       - name: Build Bitseed SDK
         run: pnpm bitseed-sdk build
       - name: Test Bitseed SDK
-        run: RUNNER_TEMP=${{ runner.temp }} pnpm bitseed-sdk test
+        run: pnpm bitseed-sdk test
 
       - uses: CatChen/check-git-status-action@v1
         with:

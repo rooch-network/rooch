@@ -98,6 +98,7 @@ export class BitcoinContainer extends GenericContainer {
     ])
 
     // Debug bitcoin log
+    this.withUser("root")
     this.withPrivilegedMode()
     this.withLogConsumer((stream: Readable) => {
       stream.on('data', (chunk) => {

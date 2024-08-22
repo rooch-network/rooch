@@ -52,6 +52,8 @@ export class OrdContainer extends GenericContainer {
       throw new Error('ord bitcoin host data path not init.')
     }
 
+    this.withUser("root")
+    
     this.withBindMounts([
       {
         source: this.bitcoinDataPath,
