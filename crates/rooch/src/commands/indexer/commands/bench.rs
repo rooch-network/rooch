@@ -13,7 +13,7 @@ use rooch_indexer::IndexerStore;
 use rooch_types::bitcoin::ord::Inscription;
 use rooch_types::bitcoin::utxo::UTXO;
 use rooch_types::error::RoochResult;
-use rooch_types::indexer::state::{IndexerStateID, ObjectStateFilter};
+use rooch_types::indexer::state::{IndexerStateID, ObjectStateFilter, ObjectStateType};
 use rooch_types::rooch_network::RoochChainID;
 
 use crate::commands::indexer::commands::init_indexer;
@@ -63,17 +63,31 @@ impl BenchCommand {
     ) -> anyhow::Result<()> {
         let batch_size: u64 = count / 10;
 
-        let filter = match query_filter.as_str() {
-            "utxo" => ObjectStateFilter::ObjectType(UTXO::struct_tag()),
-            "ord" => ObjectStateFilter::ObjectType(Inscription::struct_tag()),
-            _ => ObjectStateFilter::ObjectType(UTXO::struct_tag()),
+        let (filter, state_type) = match query_filter.as_str() {
+            "utxo" => (
+                ObjectStateFilter::ObjectType(UTXO::struct_tag()),
+                ObjectStateType::UTXO,
+            ),
+            "ord" => (
+                ObjectStateFilter::ObjectType(Inscription::struct_tag()),
+                ObjectStateType::Inscription,
+            ),
+            _ => (
+                ObjectStateFilter::ObjectType(UTXO::struct_tag()),
+                ObjectStateType::UTXO,
+            ),
         };
 
         let start = Instant::now();
-        let query_object_states =
-            indexer_reader.query_object_states_with_filter(filter.clone(), None, 1, true)?;
-        let tx_order = query_object_states[0].tx_order;
-        let mut state_index = query_object_states[0].state_index;
+        let query_object_states = indexer_reader.query_object_ids_with_filter(
+            filter.clone(),
+            None,
+            1,
+            true,
+            state_type.clone(),
+        )?;
+        let tx_order = query_object_states[0].1.tx_order;
+        let mut state_index = query_object_states[0].1.state_index;
         log::info!(
             "bench start for tx_order: {}, state_index: {}. init query cost: {:?}",
             tx_order,
@@ -89,11 +103,12 @@ impl BenchCommand {
             }
             let start = Instant::now();
             for _ in 0..batch_size {
-                let query_object_states = indexer_reader.query_object_states_with_filter(
+                let query_object_states = indexer_reader.query_object_ids_with_filter(
                     filter.clone(),
                     Some(IndexerStateID::new(tx_order, state_index)),
                     1,
                     true,
+                    state_type.clone(),
                 )?;
                 assert_eq!(query_object_states.len(), 1);
                 total_query += 1;
