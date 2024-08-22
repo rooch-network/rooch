@@ -4,9 +4,6 @@
 use crate::cli_types::CommandAction;
 use crate::commands::transaction::commands::{
     build::BuildCommand, get_transactions_by_hash::GetTransactionsByHashCommand,
-    get_transactions_by_order::GetTransactionsByOrderCommand, sign::SignCommand,
-    get_transactions_by_order::GetTransactionsByOrderCommand,
-    get_transactions_by_hash::GetTransactionsByHashCommand,
     get_transactions_by_order::GetTransactionsByOrderCommand, submit::SubmitCommand,
 };
 use async_trait::async_trait;
