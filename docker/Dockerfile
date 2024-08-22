@@ -73,6 +73,7 @@ RUN set -eux; \
         ca-certificates \
         wget \
         libssl-dev \
+        build-essential \
         libreadline-dev; \
     rm -rf /var/lib/apt/lists/*
 
