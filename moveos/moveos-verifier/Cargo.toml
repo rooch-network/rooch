@@ -27,7 +27,7 @@ move-binary-format = { workspace = true }
 move-package = { workspace = true }
 move-compiler = { workspace = true }
 move-command-line-common = { workspace = true }
-move-vm-runtime = { workspace = true }
+move-vm-runtime = { workspace = true, features = ["stacktrace", "debugging", "testing"] }
 move-vm-types = { workspace = true }
 move-symbol-pool = { workspace = true }
 move-ir-types = { workspace = true }

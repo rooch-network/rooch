@@ -498,7 +498,10 @@ impl MoveOS {
                 if is_system_call && kept_status != KeptVMStatus::Executed {
                     // system call should always success
                     let backtrace = Backtrace::new();
-                    panic!("System call failed: {:?}\n{:?}", kept_status, backtrace);
+                    panic!(
+                        "System call failed: {:?}, vm_err: {:?} \n{:?}",
+                        kept_status, vm_error_info, backtrace
+                    );
                 }
                 kept_status
             }

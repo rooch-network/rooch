@@ -683,8 +683,8 @@ impl ObjectState {
         Self::new_with_struct(metadata, timestamp).expect("Create Timestamp Object should success")
     }
 
-    /// Create ModuleStore Object
-    pub fn new_module_store() -> Self {
+    /// Create Genesis ModuleStore Object
+    pub fn genesis_module_store() -> Self {
         let id = ModuleStore::object_id();
         let mut metadata = ObjectMeta::genesis_meta(id, ModuleStore::type_tag());
         metadata.to_shared();
@@ -892,9 +892,10 @@ impl AnnotatedState {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ObjectChange {
     pub metadata: ObjectMeta,
+    #[serde(with = "op_serde")]
     pub value: Option<Op<Vec<u8>>>,
     pub fields: BTreeMap<FieldKey, ObjectChange>,
 }
@@ -916,8 +917,33 @@ impl ObjectChange {
         }
     }
 
-    pub fn add_field_change(&mut self, key: FieldKey, field_change: ObjectChange) {
+    pub fn new_object(object: ObjectState) -> Self {
+        let (metadata, value) = object.into_inner();
+        Self::new(metadata, Op::New(value))
+    }
+
+    pub fn add_field_change(&mut self, field_change: ObjectChange) -> Result<()> {
+        ensure!(
+            field_change.metadata.id.parent() == Some(self.metadata.id.clone()),
+            "FieldChange id parent not match with ObjectChange id: {:?} != {:?}",
+            field_change.metadata.id,
+            self.metadata.id
+        );
+        match &field_change.value {
+            Some(op) => match op {
+                Op::New(_) => {
+                    self.metadata.size += 1;
+                }
+                Op::Delete => {
+                    self.metadata.size -= 1;
+                }
+                Op::Modify(_) => {}
+            },
+            None => {}
+        }
+        let key = field_change.metadata.id.field_key();
         self.fields.insert(key, field_change);
+        Ok(())
     }
 
     pub fn update_state_root(&mut self, new_state_root: H256) {
@@ -927,7 +953,7 @@ impl ObjectChange {
 
 /// Global State change set.
 /// The state_root in the ObjectChange is the state_root before the changes
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct StateChangeSet {
     /// The state root of the root Object
     pub state_root: H256,
@@ -937,12 +963,51 @@ pub struct StateChangeSet {
 }
 
 impl StateChangeSet {
+    pub fn new(state_root: H256, global_size: u64) -> Self {
+        Self {
+            state_root,
+            global_size,
+            changes: BTreeMap::new(),
+        }
+    }
+
     pub fn root_metadata(&self) -> ObjectMeta {
         ObjectMeta::root_metadata(self.state_root, self.global_size)
     }
 
     pub fn update_state_root(&mut self, new_state_root: H256) {
         self.state_root = new_state_root;
+    }
+
+    pub fn add_change(&mut self, change: ObjectChange) -> Result<()> {
+        let id = change.metadata.id.clone();
+        let parent = id.parent().expect("No root ObjectChange have parent");
+        if parent.is_root() {
+            let key = id.field_key();
+            match &change.value {
+                Some(op) => match op {
+                    Op::New(_) => self.global_size += 1,
+                    Op::Delete => self.global_size -= 1,
+                    Op::Modify(_) => {}
+                },
+                None => {}
+            }
+            self.changes.insert(key, change);
+        } else {
+            let parent_key = parent.field_key();
+            let parent_change = self
+                .changes
+                .get_mut(&parent_key)
+                .ok_or_else(|| anyhow::anyhow!("Parent ObjectChange not found for id: {:?}", id))?;
+            parent_change.add_field_change(change)?;
+        }
+        Ok(())
+    }
+
+    pub fn add_new_object(&mut self, object: ObjectState) -> Result<()> {
+        let (metadata, value) = object.into_inner();
+        let change = ObjectChange::new(metadata, Op::New(value));
+        self.add_change(change)
     }
 }
 
@@ -953,6 +1018,57 @@ impl Default for StateChangeSet {
             global_size: 0,
             changes: BTreeMap::new(),
         }
+    }
+}
+
+mod op_serde {
+    use super::*;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+    pub enum SerializableOp<T> {
+        New(T),
+        Modify(T),
+        Delete,
+    }
+
+    impl<T> From<Op<T>> for SerializableOp<T> {
+        fn from(op: Op<T>) -> Self {
+            match op {
+                Op::New(value) => SerializableOp::New(value),
+                Op::Modify(value) => SerializableOp::Modify(value),
+                Op::Delete => SerializableOp::Delete,
+            }
+        }
+    }
+
+    impl<T> From<SerializableOp<T>> for Op<T> {
+        fn from(op: SerializableOp<T>) -> Self {
+            match op {
+                SerializableOp::New(value) => Op::New(value),
+                SerializableOp::Modify(value) => Op::Modify(value),
+                SerializableOp::Delete => Op::Delete,
+            }
+        }
+    }
+
+    pub fn serialize<S, T>(option_op: &Option<Op<T>>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: Serialize + Clone,
+    {
+        let op = option_op.as_ref().cloned();
+        op.map(SerializableOp::from).serialize(serializer)
+    }
+
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<Option<Op<T>>, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: Deserialize<'de>,
+    {
+        let op = Option::<SerializableOp<T>>::deserialize(deserializer)
+            .map_err(|e| D::Error::custom(format!("Deserialize the Op<T> error: {:?}", e)))?;
+        Ok(op.map(Op::from))
     }
 }
 

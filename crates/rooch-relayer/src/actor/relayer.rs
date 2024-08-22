@@ -51,7 +51,11 @@ impl RelayerActor {
         }
 
         if let Some(bitcoin_config) = &self.bitcoin_config {
-            let bitcoin_client = BitcoinClientActor::new(bitcoin_config.clone())?;
+            let bitcoin_client = BitcoinClientActor::new(
+                &bitcoin_config.btc_rpc_url,
+                &bitcoin_config.btc_rpc_user_name,
+                &bitcoin_config.btc_rpc_password,
+            )?;
             let bitcoin_client_actor_ref =
                 ctx.spawn("bitcoin_client".into(), bitcoin_client).await?;
             let bitcoin_client_proxy = BitcoinClientProxy::new(bitcoin_client_actor_ref.into());

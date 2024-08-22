@@ -27,7 +27,7 @@ tracing = { workspace = true }
 move-binary-format = { workspace = true }
 move-core-types = { workspace = true }
 move-stdlib = { workspace = true }
-move-vm-runtime = { workspace = true }
+move-vm-runtime = { workspace = true, features = ["stacktrace", "debugging", "testing"] }
 move-vm-types = { workspace = true }
 
 moveos-types = { workspace = true }

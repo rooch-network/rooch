@@ -414,6 +414,11 @@ impl ExecutorActor {
             verified_action,
         ))
     }
+
+    pub fn refresh_state(&mut self, root: ObjectMeta, is_upgrade: bool) -> Result<()> {
+        self.root = root;
+        self.moveos.flush_module_cache(is_upgrade)
+    }
 }
 
 #[async_trait]

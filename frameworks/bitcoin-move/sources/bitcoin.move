@@ -191,6 +191,7 @@ module bitcoin_move::bitcoin{
                         txid: types::tx_id(tx),
                         message: string::utf8(b"utxo not exists"),
                 });
+                std::debug::print(&outpoint);
                 //We allow the utxo not exists in the utxo store, because we may not sync the block from genesis
                 //But we should not allow the utxo not exists in the mainnet
                 if(chain_id::is_main()){
