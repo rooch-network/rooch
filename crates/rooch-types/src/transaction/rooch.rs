@@ -61,10 +61,6 @@ impl RoochTransactionData {
         bcs::to_bytes(self).expect("encode transaction should success")
     }
 
-    pub fn decode(data: Vec<u8>) -> Self {
-        bcs::from_bytes(&data).expect("decode transaction should success")
-    }
-
     pub fn tx_hash(&self) -> H256 {
         moveos_types::h256::sha3_256_of(self.encode().as_slice())
     }
