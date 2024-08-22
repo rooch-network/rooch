@@ -25,9 +25,17 @@ pub struct SignCommand {
     #[clap(flatten)]
     context: WalletContextOptions,
 
+    /// Read data from file, otherwise read transaction data hex from argument
+    #[clap(long, default_value = "false")]
+    read: bool,
+
     /// File location for the file being read
     #[clap(long)]
     file_location: Option<String>,
+
+    /// Output result in command line, otherwise write to a file
+    #[clap(long, default_value = "false")]
+    output: bool,
 
     /// File destination for the file being written
     #[clap(long)]
@@ -75,13 +83,7 @@ impl CommandAction<Option<String>> for SignCommand {
             ));
         }
 
-        if let Some(file_destination) = self.file_destination {
-            let mut file = File::create(file_destination)?;
-            file.write_all(&signed_tx.encode())?;
-            println!("Write signed tx data succeeded in the destination");
-
-            Ok(None)
-        } else {
+        if self.output {
             let signed_tx_hex = hex::encode(signed_tx.encode());
             if self.json {
                 Ok(Some(signed_tx_hex))
@@ -93,6 +95,16 @@ impl CommandAction<Option<String>> for SignCommand {
 
                 Ok(None)
             }
+        } else if let Some(file_destination) = self.file_destination {
+            let mut file = File::create(file_destination)?;
+            file.write_all(&signed_tx.encode())?;
+            println!("Write signed tx data succeeded in the destination");
+
+            Ok(None)
+        } else {
+            return Err(RoochError::CommandArgumentError(
+                "Argument --output or --file-destination are not provided".to_owned(),
+            ));
         }
     }
 }

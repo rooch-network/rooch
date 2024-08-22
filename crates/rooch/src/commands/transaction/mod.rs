@@ -3,8 +3,10 @@
 
 use crate::cli_types::CommandAction;
 use crate::commands::transaction::commands::{
-    build::BuildCommand, get_transactions_by_hash::GetTransactionsByHashCommand,
-    get_transactions_by_order::GetTransactionsByOrderCommand, sign::SignCommand,
+    build::BuildCommand,
+    sign::SignCommand,
+    get_transactions_by_hash::GetTransactionsByHashCommand,
+    get_transactions_by_order::GetTransactionsByOrderCommand
 };
 use async_trait::async_trait;
 use clap::{Parser, Subcommand};
