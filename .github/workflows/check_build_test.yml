@@ -99,17 +99,17 @@ jobs:
       - name: Build SDK
         run: pnpm rooch-sdk build
       - name: Test SDK
-        run: pnpm rooch-sdk test
+        run: RUNNER_TEMP=${{ runner.temp }} pnpm rooch-sdk test
       - name: Build SDK KIT
         run: pnpm rooch-sdk-kit build
       - name: Test SDK KIT
-        run: pnpm rooch-sdk-kit test
+        run: RUNNER_TEMP=${{ runner.temp }} pnpm rooch-sdk-kit test
       - name: Lint Bitseed SDK
         run: pnpm bitseed-sdk lint
       - name: Build Bitseed SDK
         run: pnpm bitseed-sdk build
       - name: Test Bitseed SDK
-        run: pnpm bitseed-sdk test
+        run: RUNNER_TEMP=${{ runner.temp }} pnpm bitseed-sdk test
 
       - uses: CatChen/check-git-status-action@v1
         with:
