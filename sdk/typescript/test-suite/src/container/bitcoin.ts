@@ -71,7 +71,6 @@ export class BitcoinContainer extends GenericContainer {
 
     const rpcauth = this.generateRpcauth()
 
-    this.withPrivilegedMode()
     this.withEnvironment({
       RPC_BIND: this.rpcBind,
       RPC_USER: this.rpcUser,
@@ -98,6 +97,8 @@ export class BitcoinContainer extends GenericContainer {
       `-rpcauth=${rpcauth}`,
     ])
 
+    // Debug bitcoin log
+    this.withPrivilegedMode()
     this.withLogConsumer((stream: Readable) => {
       stream.on('data', (chunk) => {
         console.log(chunk.toString());

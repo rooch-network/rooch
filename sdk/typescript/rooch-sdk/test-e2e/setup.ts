@@ -79,7 +79,7 @@ export class TestBox extends TestBoxA {
   ) {
     tmp.setGracefulCleanup()
 
-    const tmpDir = tmp.dirSync({ unsafeCleanup: true })
+    const tmpDir = box.createTmpDir()
     const namedAddresses = options.namedAddresses.replaceAll(
       'default',
       box.address().toHexAddress(),

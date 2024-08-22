@@ -1,6 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-
+import * as os from 'os';
 import tmp, { DirResult } from 'tmp'
 import * as net from 'net';
 import { execSync } from 'child_process'
@@ -24,8 +24,7 @@ export class TestBox {
   private miningIntervalId: NodeJS.Timeout | null = null
 
   constructor() {
-    tmp.setGracefulCleanup()
-    this.tmpDir = tmp.dirSync({ unsafeCleanup: true, mode: 777 })
+    this.tmpDir = this.createTmpDir()
   }
 
   async loadBitcoinEnv(customContainer?: BitcoinContainer, autoMining: boolean = false) {
@@ -245,6 +244,12 @@ export class TestBox {
 
     return await this.bitcoinContainer.getFaucetBTC(address, amount)
   }
+
+  createTmpDir(): DirResult {
+    tmp.setGracefulCleanup()
+    const systemDir = getTempDirectory()
+    return tmp.dirSync({ unsafeCleanup: true, tmpdir: systemDir })
+  }
 }
 
 export async function getUnusedPort(): Promise<number> {
@@ -261,4 +266,21 @@ export async function getUnusedPort(): Promise<number> {
     });
     server.listen(0); 
   });
+}
+
+/**
+ * Gets the temporary directory path.
+ * Prioritizes $RUNNER_TEMP if available, otherwise uses the system's temp directory.
+ * 
+ * @returns {string} The path to the temporary directory
+ */
+function getTempDirectory(): string {
+  // Check if RUNNER_TEMP environment variable is set (for GitHub Actions)
+  const runnerTemp = process.env.RUNNER_TEMP;
+  if (runnerTemp) {
+      return runnerTemp;
+  }
+
+  // If RUNNER_TEMP is not set, use the system's temp directory
+  return os.tmpdir();
 }
