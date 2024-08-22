@@ -4,7 +4,6 @@
 import fs from 'fs'
 import path from 'node:path'
 import * as crypto from 'crypto'
-import { Readable } from "stream";
 import {
   AbstractStartedContainer,
   GenericContainer,
@@ -71,6 +70,7 @@ export class BitcoinContainer extends GenericContainer {
 
     const rpcauth = this.generateRpcauth()
 
+    this.withUser("root")
     this.withEnvironment({
       RPC_BIND: this.rpcBind,
       RPC_USER: this.rpcUser,
@@ -98,13 +98,14 @@ export class BitcoinContainer extends GenericContainer {
     ])
 
     // Debug bitcoin log
-    this.withUser("root")
-    this.withPrivilegedMode()
+    // import { Readable } from "stream";
+    /*
     this.withLogConsumer((stream: Readable) => {
       stream.on('data', (chunk) => {
         console.log(chunk.toString());
       });
     })
+    */
 
     const container = await super.start()
     return new StartedBitcoinContainer(

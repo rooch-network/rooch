@@ -83,6 +83,17 @@ export class OrdContainer extends GenericContainer {
     command.push('server')
 
     this.withCommand(command)
+
+    // Debug ord log
+    // import { Readable } from "stream";
+    /*
+    this.withLogConsumer((stream: Readable) => {
+      stream.on('data', (chunk) => {
+        console.log(chunk.toString());
+      });
+    })
+    */
+
     const container = await super.start()
     return new StartedOrdContainer(
       container,
