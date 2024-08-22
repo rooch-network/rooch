@@ -25,7 +25,7 @@ use {
 };
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Default)]
-pub struct Inscription {
+pub(crate) struct Inscription {
     pub body: Option<Vec<u8>>,
     pub content_encoding: Option<Vec<u8>>,
     pub content_type: Option<Vec<u8>>,

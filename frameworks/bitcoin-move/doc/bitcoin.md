@@ -8,6 +8,7 @@
 -  [Struct `TxProgressErrorLogEvent`](#0x4_bitcoin_TxProgressErrorLogEvent)
 -  [Struct `RepeatCoinbaseTxEvent`](#0x4_bitcoin_RepeatCoinbaseTxEvent)
 -  [Resource `BitcoinBlockStore`](#0x4_bitcoin_BitcoinBlockStore)
+-  [Struct `TransferUTXOEvent`](#0x4_bitcoin_TransferUTXOEvent)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_bitcoin_genesis_init)
 -  [Function `get_tx`](#0x4_bitcoin_get_tx)
@@ -22,11 +23,14 @@
 -  [Function `contains_header`](#0x4_bitcoin_contains_header)
 
 
-<pre><code><b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::debug</a>;
+<b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
+<b>use</b> <a href="">0x2::address</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::event</a>;
+<b>use</b> <a href="">0x2::event_queue</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::simple_multimap</a>;
@@ -75,6 +79,17 @@
 
 
 <pre><code><b>struct</b> <a href="bitcoin.md#0x4_bitcoin_BitcoinBlockStore">BitcoinBlockStore</a> <b>has</b> key
+</code></pre>
+
+
+
+<a name="0x4_bitcoin_TransferUTXOEvent"></a>
+
+## Struct `TransferUTXOEvent`
+
+
+
+<pre><code><b>struct</b> <a href="bitcoin.md#0x4_bitcoin_TransferUTXOEvent">TransferUTXOEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 

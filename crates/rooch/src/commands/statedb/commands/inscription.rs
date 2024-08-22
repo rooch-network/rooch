@@ -1,22 +1,19 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::str::FromStr;
-
-use move_core_types::account_address::AccountAddress;
-use serde::{Deserialize, Serialize};
-
-use bitcoin_move::natives::ord::inscription_id::InscriptionId;
 use framework_types::addresses::BITCOIN_MOVE_ADDRESS;
+use move_core_types::account_address::AccountAddress;
 use moveos_types::moveos_std::object::{
     DynamicField, ObjectEntity, ObjectID, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
 };
 use moveos_types::state::{FieldKey, ObjectState};
 use rooch_types::address::BitcoinAddress;
 use rooch_types::bitcoin::ord::{
-    derive_inscription_id, Inscription, InscriptionID, InscriptionStore,
+    derive_inscription_id, BitcoinInscriptionID, Inscription, InscriptionID, InscriptionStore,
 };
 use rooch_types::into_address::IntoAddress;
+use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 use crate::commands::statedb::commands::convert_option_string_to_move_type;
 
@@ -27,7 +24,7 @@ const ADDRESS_NON_STANDARD: &str = "non-standard";
 pub struct InscriptionSource {
     pub sequence_number: u32,
     pub inscription_number: i32,
-    pub id: InscriptionId,
+    pub id: BitcoinInscriptionID,
     // ord crate has a different version of bitcoin dependency, using string for compatibility
     pub satpoint_outpoint: String, // txid:vout
     pub satpoint_offset: u64,
@@ -42,7 +39,7 @@ pub struct InscriptionSource {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metaprotocol: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub parent: Option<Vec<InscriptionId>>,
+    pub parent: Option<Vec<BitcoinInscriptionID>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pointer: Option<u64>,
     pub address: String, // <address>, "unbound", "non-standard"
@@ -118,22 +115,17 @@ pub(crate) fn gen_inscription_id_update(
     (key, state)
 }
 
-pub(crate) fn derive_inscription_ids(ids: Option<Vec<InscriptionId>>) -> Vec<ObjectID> {
+pub(crate) fn derive_inscription_ids(ids: Option<Vec<BitcoinInscriptionID>>) -> Vec<ObjectID> {
     if let Some(ids) = ids {
         let mut obj_ids = Vec::with_capacity(ids.len());
         for id in ids {
-            let obj_id = derive_inscription_id(&convert_to_rooch_inscription_id(id));
+            let obj_id = derive_inscription_id(&id.into());
             obj_ids.push(obj_id)
         }
         obj_ids
     } else {
         vec![]
     }
-}
-
-fn convert_to_rooch_inscription_id(id: InscriptionId) -> InscriptionID {
-    let txid: AccountAddress = id.txid.into_address();
-    InscriptionID::new(txid, id.index)
 }
 
 pub(crate) fn create_genesis_inscription_store_object(

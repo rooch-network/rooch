@@ -21,10 +21,7 @@ fn decode_tx(btx_tx_hex: &str) {
             output.script_pubkey.p2wpkh_script_code()
         );
     }
-    let inscriptions = bitcoin_move::natives::ord::from_transaction(&btc_tx);
-    for (i, inscription) in inscriptions.iter().enumerate() {
-        debug!("{}. inscription: {:?}", i, inscription);
-    }
+
     //let binding_test = binding_test::RustBindingTest::new().unwrap();
     //let brc20_module = binding_test.as_module_binding::<rooch_types::bitcoin::brc20::BRC20Module>();
     //let move_btc_tx: rooch_types::bitcoin::types::Transaction = btc_tx.into();
