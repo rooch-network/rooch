@@ -319,8 +319,6 @@ impl IndexerReader {
 
         let main_where_clause = match filter {
             EventFilter::EventTypeWithSender { event_type, sender } => {
-                // let event_handle_id = EventHandle::derive_event_handle_id(&event_type);
-                // let event_type_str = event_type.to_string();
                 format!(
                     "{TX_SENDER_STR} = \"{}\" AND {EVENT_TYPE_STR} = \"{}\"",
                     sender.to_hex_literal(),
@@ -328,7 +326,6 @@ impl IndexerReader {
                 )
             }
             EventFilter::EventType(event_type) => {
-                // let event_handle_id = EventHandle::derive_event_handle_id(&event_type);
                 format!("{EVENT_TYPE_STR} = \"{}\"", event_type)
             }
             EventFilter::Sender(sender) => {

@@ -25,9 +25,6 @@ pub struct StoredUTXO {
     /// The object updated timestamp on chain
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub updated_at: i64,
-    // /// The T struct tag of the object value
-    // #[diesel(sql_type = diesel::sql_types::Text)]
-    // pub object_type: String,
     /// The tx order of this transaction
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub tx_order: i64,
@@ -46,7 +43,6 @@ impl From<IndexerObjectState> for StoredUTXO {
             owner: metadata.owner.to_hex_literal(),
             created_at: metadata.created_at as i64,
             updated_at: metadata.updated_at as i64,
-            // object_type: metadata.object_type.to_string(),
             tx_order: tx_order as i64,
             state_index: state_index as i64,
         }

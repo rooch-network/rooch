@@ -23,9 +23,6 @@ pub struct StoredEvent {
     /// the type of the event data
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub event_type: String,
-    // /// the data payload of the event
-    // #[diesel(sql_type = diesel::sql_types::Blob)]
-    // pub event_data: Vec<u8>,
     /// event index in the transaction events
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub event_index: i64,
