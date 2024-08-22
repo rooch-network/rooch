@@ -9711,6 +9711,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "futures",
+ "hex",
  "jsonrpsee 0.23.2",
  "log",
  "move-core-types",
