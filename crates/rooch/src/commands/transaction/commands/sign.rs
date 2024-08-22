@@ -55,17 +55,26 @@ impl CommandAction<Option<String>> for SignCommand {
         let max_gas_amount = self.tx_options.max_gas_amount;
         let signed_tx;
 
-        if let Some(file_location) = self.file_location {
-            let mut file = File::open(file_location)?;
-            let mut encoded_tx_data = Vec::new();
-            file.read_to_end(&mut encoded_tx_data)?;
-            let tx_data: RoochTransactionData =
-                bcs::from_bytes(&encoded_tx_data).map_err(|_| {
-                    RoochError::BcsError(format!("Invalid encoded tx data: {:?}", encoded_tx_data))
-                })?;
-            signed_tx = context
-                .sign(sender, tx_data.action, password, max_gas_amount)
-                .await?;
+        if self.read {
+            if let Some(file_location) = self.file_location {
+                let mut file = File::open(file_location)?;
+                let mut encoded_tx_data = Vec::new();
+                file.read_to_end(&mut encoded_tx_data)?;
+                let tx_data: RoochTransactionData =
+                    bcs::from_bytes(&encoded_tx_data).map_err(|_| {
+                        RoochError::BcsError(format!(
+                            "Invalid encoded tx data: {:?}",
+                            encoded_tx_data
+                        ))
+                    })?;
+                signed_tx = context
+                    .sign(sender, tx_data.action, password, max_gas_amount)
+                    .await?;
+            } else {
+                return Err(RoochError::CommandArgumentError(
+                    "Argument --file-location is not provided".to_owned(),
+                ));
+            }
         } else if let Some(tx_hex) = self.tx_hex {
             let encoded_tx_data = hex::decode(tx_hex.clone()).map_err(|_| {
                 RoochError::CommandArgumentError(format!("Invalid transaction hex: {}", tx_hex))
@@ -79,7 +88,7 @@ impl CommandAction<Option<String>> for SignCommand {
                 .await?;
         } else {
             return Err(RoochError::CommandArgumentError(
-                "Argument --file-location or --tx-hex are not provided".to_owned(),
+                "Argument --tx-hex is not provided".to_owned(),
             ));
         }
 
@@ -103,7 +112,7 @@ impl CommandAction<Option<String>> for SignCommand {
             Ok(None)
         } else {
             return Err(RoochError::CommandArgumentError(
-                "Argument --output or --file-destination are not provided".to_owned(),
+                "Argument --file-destination is not provided".to_owned(),
             ));
         }
     }
