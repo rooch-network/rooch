@@ -139,11 +139,16 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
         assert_eq!(utxo_object.value.value, tx_out.value.to_sat());
     }
 
+    let ord_module = binding_test.as_module_binding::<rooch_types::bitcoin::ord::OrdModule>();
+
     let inscriptions = txs
         .iter()
         .flat_map(|tx| {
             let txid = tx.txid();
-            bitcoin_move::natives::ord::from_transaction(tx)
+            let rooch_btc_tx = rooch_types::bitcoin::types::Transaction::from(tx.clone());
+            ord_module
+                .from_transaction(&rooch_btc_tx, vec![], 0, 0)
+                .unwrap()
                 .into_iter()
                 .enumerate()
                 .map(move |(idx, i)| (txid, idx, i))
@@ -152,11 +157,9 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
     for (txid, index, inscription) in inscriptions {
         let txid_address = txid.into_address();
         let index = index as u32;
-        debug!(
-            "check inscription: txid: {}, index: {}",
-            txid_address, index
-        );
         let inscription_id = InscriptionID::new(txid_address, index);
+        debug!("check inscription: {:?}", inscription_id);
+
         let object_id = ord::derive_inscription_id(&inscription_id);
         let inscription_state = moveos_resolver
             .get_states(AccessPath::object(object_id))
@@ -173,10 +176,7 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
         let inscription_object = inscription_state.into_object::<Inscription>().unwrap();
         assert_eq!(inscription_object.value.txid, txid.into_address());
         assert_eq!(inscription_object.value.index, index);
-        assert_eq!(
-            inscription_object.value.body,
-            inscription.payload.body.unwrap_or_default()
-        );
+        assert_eq!(inscription_object.value.body, inscription.body,);
     }
 }
 

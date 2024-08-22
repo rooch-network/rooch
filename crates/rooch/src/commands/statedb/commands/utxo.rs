@@ -9,9 +9,7 @@ use move_core_types::account_address::AccountAddress;
 use rustc_hash::FxHashSet;
 
 use framework_types::addresses::{BITCOIN_MOVE_ADDRESS, ROOCH_FRAMEWORK_ADDRESS};
-use moveos_types::moveos_std::object::{
-    ObjectEntity, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
-};
+use moveos_types::moveos_std::object::ObjectEntity;
 use moveos_types::moveos_std::simple_multimap::SimpleMultiMap;
 use moveos_types::state::{FieldKey, ObjectState};
 use rooch_types::address::BitcoinAddress;
@@ -198,17 +196,8 @@ fn derive_bitcoin_address(
     None
 }
 
-pub fn create_genesis_utxo_store_object() -> ObjectEntity<BitcoinUTXOStore> {
-    ObjectEntity::new(
-        BitcoinUTXOStore::object_id(),
-        SYSTEM_OWNER_ADDRESS,
-        SHARED_OBJECT_FLAG_MASK,
-        None,
-        0,
-        0,
-        0,
-        BitcoinUTXOStore { next_tx_index: 0 },
-    )
+pub fn create_genesis_utxo_store_object() -> ObjectState {
+    BitcoinUTXOStore::genesis_object()
 }
 
 pub fn create_genesis_rooch_to_bitcoin_address_mapping_object(

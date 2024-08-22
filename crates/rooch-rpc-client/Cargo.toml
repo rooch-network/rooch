@@ -22,6 +22,7 @@ serde = { workspace = true }
 jsonrpsee = { workspace = true }
 serde_json = { workspace = true }
 log = { workspace = true }
+hex = { workspace = true }
 
 move-core-types = { workspace = true }
 

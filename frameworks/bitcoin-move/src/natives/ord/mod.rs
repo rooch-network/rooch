@@ -184,7 +184,7 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
     make_module_natives(natives)
 }
 
-pub fn from_witness(witness: &bitcoin::Witness) -> Vec<ParsedEnvelope> {
+pub(crate) fn from_witness(witness: &bitcoin::Witness) -> Vec<ParsedEnvelope> {
     witness
         .tapscript()
         .map(|script| match RawEnvelope::from_tapscript(script, 0usize) {
@@ -205,7 +205,8 @@ pub fn from_witness(witness: &bitcoin::Witness) -> Vec<ParsedEnvelope> {
         .unwrap_or_default()
 }
 
-pub fn from_transaction(transaction: &bitcoin::Transaction) -> Vec<ParsedEnvelope> {
+#[allow(dead_code)]
+pub(crate) fn from_transaction(transaction: &bitcoin::Transaction) -> Vec<ParsedEnvelope> {
     transaction
         .input
         .iter()
