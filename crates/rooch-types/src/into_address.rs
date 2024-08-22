@@ -61,6 +61,12 @@ impl IntoAddress for bitcoin::Txid {
     }
 }
 
+impl FromAddress for bitcoin::Txid {
+    fn from_address(addr: AccountAddress) -> Self {
+        bitcoin::Txid::from_byte_array(addr.into())
+    }
+}
+
 impl IntoAddress for bitcoin::TxMerkleNode {
     fn into_address(self) -> AccountAddress {
         AccountAddress::new(self.to_byte_array())

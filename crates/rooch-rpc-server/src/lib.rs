@@ -14,12 +14,14 @@ use coerce::actor::{system::ActorSystem, IntoActor};
 use jsonrpsee::server::middleware::rpc::RpcServiceBuilder;
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
+use moveos_eventbus::bus::EventBus;
 use raw_store::errors::RawStoreError;
 use rooch_config::server_config::ServerConfig;
 use rooch_config::{RoochOpt, ServerOpt};
 use rooch_da::actor::da::DAActor;
 use rooch_da::proxy::DAProxy;
 use rooch_db::RoochDB;
+use rooch_event::actor::EventActor;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
@@ -234,20 +236,39 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         root.size()
     );
 
+    let event_bus = EventBus::new();
+    let event_actor = EventActor::new(event_bus.clone());
+    let event_actor_ref = event_actor
+        .into_actor(Some("EventActor"), &actor_system)
+        .await?;
+
     let executor_actor = ExecutorActor::new(
         root.clone(),
         moveos_store.clone(),
         rooch_store.clone(),
         &prometheus_registry,
+        Some(event_actor_ref.clone()),
     )?;
-    let reader_executor =
-        ReaderExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store.clone())?
-            .into_actor(Some("ReaderExecutor"), &actor_system)
-            .await?;
-    let executor = executor_actor
+
+    let executor_actor_ref = executor_actor
         .into_actor(Some("Executor"), &actor_system)
         .await?;
-    let executor_proxy = ExecutorProxy::new(executor.into(), reader_executor.into());
+
+    let reader_executor = ReaderExecutorActor::new(
+        root.clone(),
+        moveos_store.clone(),
+        rooch_store.clone(),
+        Some(event_actor_ref),
+    )?;
+
+    let read_executor_ref = reader_executor
+        .into_actor(Some("ReadExecutor"), &actor_system)
+        .await?;
+
+    let executor_proxy = ExecutorProxy::new(
+        executor_actor_ref.clone().into(),
+        read_executor_ref.clone().into(),
+    );
 
     // Init sequencer
     info!("RPC Server sequencer address: {:?}", sequencer_account);
@@ -342,7 +363,12 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     }
 
     let bitcoin_client_proxy = if service_status.is_active() && bitcoin_relayer_config.is_some() {
-        let bitcoin_client = BitcoinClientActor::new(bitcoin_relayer_config.unwrap())?;
+        let bitcoin_config = bitcoin_relayer_config.unwrap();
+        let bitcoin_client = BitcoinClientActor::new(
+            &bitcoin_config.btc_rpc_url,
+            &bitcoin_config.btc_rpc_user_name,
+            &bitcoin_config.btc_rpc_password,
+        )?;
         let bitcoin_client_actor_ref = bitcoin_client
             .into_actor(Some("bitcoin_client_for_rpc_service"), &actor_system)
             .await?;

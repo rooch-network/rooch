@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::binding_test;
+use crate::tests::bitcoin_data::load_block;
 use bitcoin::consensus::deserialize;
 use bitcoin::hashes::Hash;
 use bitcoin::{Block, OutPoint, Transaction, TxOut};
 use hex::FromHex;
-use include_dir::{include_dir, Dir};
 use moveos_types::access_path::AccessPath;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::state_resolver::StateReader;
@@ -19,7 +19,6 @@ use rooch_types::into_address::IntoAddress;
 use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::L1BlockWithBody;
 use std::collections::HashMap;
-use std::path::PathBuf;
 use tracing::{debug, info};
 
 #[tokio::test]
@@ -140,11 +139,16 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
         assert_eq!(utxo_object.value.value, tx_out.value.to_sat());
     }
 
+    let ord_module = binding_test.as_module_binding::<rooch_types::bitcoin::ord::OrdModule>();
+
     let inscriptions = txs
         .iter()
         .flat_map(|tx| {
             let txid = tx.txid();
-            bitcoin_move::natives::ord::from_transaction(tx)
+            let rooch_btc_tx = rooch_types::bitcoin::types::Transaction::from(tx.clone());
+            ord_module
+                .from_transaction(&rooch_btc_tx, vec![], 0, 0)
+                .unwrap()
                 .into_iter()
                 .enumerate()
                 .map(move |(idx, i)| (txid, idx, i))
@@ -153,11 +157,9 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
     for (txid, index, inscription) in inscriptions {
         let txid_address = txid.into_address();
         let index = index as u32;
-        debug!(
-            "check inscription: txid: {}, index: {}",
-            txid_address, index
-        );
         let inscription_id = InscriptionID::new(txid_address, index);
+        debug!("check inscription: {:?}", inscription_id);
+
         let object_id = ord::derive_inscription_id(&inscription_id);
         let inscription_state = moveos_resolver
             .get_states(AccessPath::object(object_id))
@@ -174,10 +176,7 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
         let inscription_object = inscription_state.into_object::<Inscription>().unwrap();
         assert_eq!(inscription_object.value.txid, txid.into_address());
         assert_eq!(inscription_object.value.index, index);
-        assert_eq!(
-            inscription_object.value.body,
-            inscription.payload.body.unwrap_or_default()
-        );
+        assert_eq!(inscription_object.value.body, inscription.body,);
     }
 }
 
@@ -206,20 +205,4 @@ async fn test_real_bocks() {
             .collect();
         test_block_process(blocks);
     }
-}
-// Download the bitcoin block via the following command:
-// curl -sSL "https://mempool.space/api/block/00000000000af0aed4792b1acee3d966af36cf5def14935db8de83d6f9306f2f/raw" > crates/rooch-framework-tests/blocks/bitcoin/91812.blob
-// curl -sSL "https://mempool.space/api/block/00000000000a4d0a398161ffc163c503763b1f4360639393e0e4c8e300e0caec/raw" > crates/rooch-framework-tests/blocks/bitcoin/91842.blob
-// curl -sSL "https://mempool.space/api/block/000000000000000000020750f322f4e72e99c2f0b9738fb4f46607860bd18c13/raw" > crates/rooch-framework-tests/blocks/bitcoin/818677.blob
-// curl -sSL "https://mempool.space/testnet/api/block/0000000016412abe1778a347da773ff8bc087ad1a91ae5daad349bc268285c2d/raw" > crates/rooch-framework-tests/blocks/testnet/2821527.blob
-pub(crate) const STATIC_BLOCK_DIR: Dir = include_dir!("blocks");
-
-fn load_block(network: Network, height: u64) -> Block {
-    let block_file = PathBuf::from(network.to_string()).join(format!("{}.blob", height));
-    let btc_block_bytes = STATIC_BLOCK_DIR
-        .get_file(block_file.as_path())
-        .unwrap()
-        .contents();
-    let block: Block = deserialize(btc_block_bytes).unwrap();
-    block
 }

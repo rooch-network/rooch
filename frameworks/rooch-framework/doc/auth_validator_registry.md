@@ -10,13 +10,16 @@
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x3_auth_validator_registry_genesis_init)
 -  [Function `register`](#0x3_auth_validator_registry_register)
+-  [Function `register_by_system`](#0x3_auth_validator_registry_register_by_system)
 -  [Function `register_internal`](#0x3_auth_validator_registry_register_internal)
+-  [Function `is_registered`](#0x3_auth_validator_registry_is_registered)
 -  [Function `borrow_validator`](#0x3_auth_validator_registry_borrow_validator)
 -  [Function `borrow_validator_by_type`](#0x3_auth_validator_registry_borrow_validator_by_type)
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::account</a>;
+<b>use</b> <a href="">0x2::core_addresses</a>;
 <b>use</b> <a href="">0x2::features</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
@@ -87,10 +90,23 @@ Init function called by genesis.
 
 ## Function `register`
 
+Register a new validator. This feature not enabled in the mainnet.
 
 
 <pre><code>#[private_generics(#[ValidatorType])]
 <b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_register">register</a>&lt;ValidatorType: store&gt;(): u64
+</code></pre>
+
+
+
+<a name="0x3_auth_validator_registry_register_by_system"></a>
+
+## Function `register_by_system`
+
+Register a new validator by system. This function is only called by system.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_by_system">register_by_system</a>&lt;ValidatorType: store&gt;(system: &<a href="">signer</a>): u64
 </code></pre>
 
 
@@ -102,6 +118,17 @@ Init function called by genesis.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_internal">register_internal</a>&lt;ValidatorType: store&gt;(): u64
+</code></pre>
+
+
+
+<a name="0x3_auth_validator_registry_is_registered"></a>
+
+## Function `is_registered`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_is_registered">is_registered</a>&lt;ValidatorType: store&gt;(): bool
 </code></pre>
 
 

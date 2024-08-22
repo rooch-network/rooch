@@ -1,20 +1,17 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::str::FromStr;
-
+use crate::address::BitcoinAddress;
 use bitcoin::{block::Header, BlockHash};
-use move_core_types::value::MoveTypeLayout;
-use once_cell::sync::Lazy;
-use serde::{Deserialize, Serialize};
-
 use framework_builder::stdlib_version::StdlibVersion;
+use move_core_types::value::MoveTypeLayout;
 use moveos_types::{
     moveos_std::{module_store::ModuleStore, timestamp::Timestamp},
     state::{MoveState, ObjectState},
 };
-
-use crate::address::BitcoinAddress;
+use once_cell::sync::Lazy;
+use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GenesisConfig {
@@ -91,7 +88,10 @@ pub static G_LOCAL_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
             ObjectState::new_timestamp(Timestamp { milliseconds: 0 }),
             Timestamp::type_layout(),
         ),
-        (ObjectState::new_module_store(), ModuleStore::type_layout()),
+        (
+            ObjectState::genesis_module_store(),
+            ModuleStore::type_layout(),
+        ),
     ],
     stdlib_version: StdlibVersion::Latest,
 });
@@ -115,7 +115,10 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
             ObjectState::new_timestamp(Timestamp { milliseconds: 0 }),
             Timestamp::type_layout(),
         ),
-        (ObjectState::new_module_store(), ModuleStore::type_layout()),
+        (
+            ObjectState::genesis_module_store(),
+            ModuleStore::type_layout(),
+        ),
     ],
     stdlib_version: StdlibVersion::Latest,
 });
@@ -147,7 +150,10 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
                 }),
                 Timestamp::type_layout(),
             ),
-            (ObjectState::new_module_store(), ModuleStore::type_layout()),
+            (
+                ObjectState::genesis_module_store(),
+                ModuleStore::type_layout(),
+            ),
         ],
         stdlib_version: StdlibVersion::Version(1),
     }
@@ -179,7 +185,10 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
             }),
             Timestamp::type_layout(),
         ),
-        (ObjectState::new_module_store(), ModuleStore::type_layout()),
+        (
+            ObjectState::genesis_module_store(),
+            ModuleStore::type_layout(),
+        ),
     ],
     stdlib_version: StdlibVersion::Version(6),
 });

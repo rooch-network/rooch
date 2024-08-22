@@ -2,23 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// Bitcoin multisign account module
-module rooch_nursery::multisign_account{
+module bitcoin_move::multisign_account{
 
     use std::vector;
     use std::option;
     use moveos_std::signer;
     use moveos_std::object::{Object};
     use moveos_std::account::{Self, Account};
-    use moveos_std::table_vec::{Self, TableVec};
-    use moveos_std::table::{Self, Table};
     use moveos_std::bcs;
     use moveos_std::compare;
+    use moveos_std::simple_map::{Self, SimpleMap};
     use bitcoin_move::opcode;
     use bitcoin_move::script_buf::{Self, ScriptBuf};
     use rooch_framework::ecdsa_k1;
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
     use bitcoin_move::taproot_builder;
     use moveos_std::result;
+    use rooch_framework::address_mapping;
 
     const PROPOSAL_STATUS_PENDING: u8 = 0;
     const PROPOSAL_STATUS_APPROVED: u8 = 1;
@@ -46,62 +46,16 @@ module rooch_nursery::multisign_account{
         /// The multisign account threshold
         threshold: u64,
         /// The public keys of the multisign account
-        participants: Table<address, ParticipantInfo>,
-        /// The multisign account proposals on bitcoin
-        bitcoin_proposals: TableVec<BitcoinProposal>,
-        /// The multisign account proposals on rooch
-        rooch_proposals: TableVec<RoochProposal>,
+        participants: SimpleMap<address, ParticipantInfo>,
     }
 
-    struct ParticipantInfo has store {
+    struct ParticipantInfo has store, copy, drop {
         /// The participant address
         participant_address: address,
         /// The participant BitcoinAddress
         participant_bitcoin_address: BitcoinAddress,
         /// The participant public key
         public_key: vector<u8>,
-    }
-
-    struct BitcoinProposal has store {
-        /// The multisign account address
-        multisign_address: address,
-        /// The proposal id
-        proposal_id: u64,
-        /// The proposal transaction id
-        tx_id: address,
-        /// The proposal transaction data to be signed
-        tx_data: vector<u8>,
-        /// The proposal status
-        status: u8,
-        /// The proposal result
-        result: u8,
-        /// The proposal participants
-        participants: vector<address>,
-        /// The proposal signatures
-        signatures: vector<vector<u8>>,
-    }
-
-    struct RoochProposal has store {
-        /// The multisign account address
-        multisign_address: address,
-        /// The proposal id
-        proposal_id: u64,
-        /// The proposal transaction id
-        tx_id: address,
-        /// The proposal transaction data
-        /// The signer will sign the sign_message + tx_id
-        /// We keep the tx_data here for the verify the tx_id and display to the user
-        tx_data: vector<u8>,
-        /// The sign message to be signed
-        sign_message: vector<u8>,
-        /// The proposal status
-        status: u8,
-        /// The proposal result
-        result: u8,
-        /// The proposal participants
-        participants: vector<address>,
-        /// The proposal signatures
-        signatures: vector<vector<u8>>,
     }
 
     /// Initialize a taproot multisign account
@@ -121,7 +75,7 @@ module rooch_nursery::multisign_account{
         check_public_keys(&participant_public_keys);
         let multisign_bitcoin_address = generate_multisign_address(threshold, participant_public_keys);
         let multisign_address = bitcoin_address::to_rooch_address(&multisign_bitcoin_address);
-        let participants = table::new();
+        let participants = simple_map::new();
         let idx = 0;
         let len = vector::length(&participant_public_keys);
         while(idx < len){
@@ -133,7 +87,7 @@ module rooch_nursery::multisign_account{
                 participant_bitcoin_address,
                 public_key,
             };
-            table::add(&mut participants, participant_address, participant_info);
+            simple_map::add(&mut participants, participant_address, participant_info);
             idx = idx + 1;
         };
         let multisign_account_info = MultisignAccountInfo {
@@ -141,10 +95,8 @@ module rooch_nursery::multisign_account{
             multisign_address,
             threshold,
             participants,
-            bitcoin_proposals: table_vec::new(),
-            rooch_proposals: table_vec::new(),
         };
-        let account = borrow_mut_or_create_account(multisign_address);
+        let account = borrow_mut_or_create_account(multisign_address, multisign_bitcoin_address);
         account::account_move_resource_to(account, multisign_account_info);
         multisign_address
     }
@@ -256,7 +208,30 @@ module rooch_nursery::multisign_account{
         };
         let account = borrow_account(multisign_address);
         let multisign_account_info = account::account_borrow_resource<MultisignAccountInfo>(account);
-        table::contains(&multisign_account_info.participants, participant_address)
+        simple_map::contains_key(&multisign_account_info.participants, &participant_address)
+    }
+
+    public fun is_participant_via_public_key(multisign_address: address, public_key: &vector<u8>) : bool {
+        if(!account::exists_at(multisign_address)){
+            return false
+        };
+        let account = borrow_account(multisign_address);
+        let multisign_account_info = account::account_borrow_resource<MultisignAccountInfo>(account);
+        let idx = 0;
+        let values = simple_map::values(&multisign_account_info.participants);
+        let len = vector::length(&values);
+        while(idx < len){
+            let participant_info = vector::borrow(&values, idx);
+            if(&participant_info.public_key == public_key){
+                return true
+            };
+            idx = idx + 1;
+        };
+        false
+    }
+
+    public fun is_multisign_account(multisign_address: address) : bool {
+        account::exists_at(multisign_address) && account::exists_resource<MultisignAccountInfo>(multisign_address)
     }
 
     public fun bitcoin_address(multisign_address: address) : BitcoinAddress {
@@ -265,66 +240,29 @@ module rooch_nursery::multisign_account{
         multisign_account_info.multisign_bitcoin_address
     }
 
-    public fun submit_bitcoin_proposal(
-        sender: &signer,
-        multisign_address: address,
-        tx_id: address,
-        tx_data: vector<u8>,
-        participants: vector<address>,
-    ){
-        assert!(account::exists_at(multisign_address), ErrorMultisignAccountNotFound);
-        let account = borrow_mut_or_create_account(multisign_address);
-        let multisign_account_info = account::account_borrow_mut_resource<MultisignAccountInfo>(account);
-
-        let sender_addr = signer::address_of(sender);
-        assert!(table::contains(&multisign_account_info.participants, sender_addr), ErrorInvalidParticipant);
-
-        let proposal_id = table_vec::length(&multisign_account_info.bitcoin_proposals);
-        let proposal = BitcoinProposal {
-            multisign_address,
-            proposal_id,
-            tx_id,
-            tx_data,
-            status: 0,
-            result: 0,
-            participants,
-            signatures: vector::empty(),
-        };
-        table_vec::push_back(&mut multisign_account_info.bitcoin_proposals, proposal);
+    public fun threshold(multisign_address: address) : u64 {
+        let account = borrow_account(multisign_address);
+        let multisign_account_info = account::account_borrow_resource<MultisignAccountInfo>(account);
+        multisign_account_info.threshold
     }
 
-    public fun sign_bitcoin_proposal(
-        sender: &signer,
-        multisign_address: address,
-        proposal_id: u64,
-        signature: vector<u8>,
-    ){
-        assert!(account::exists_at(multisign_address), ErrorMultisignAccountNotFound);
-        let account = borrow_mut_or_create_account(multisign_address);
-        let multisign_account_info = account::account_borrow_mut_resource<MultisignAccountInfo>(account);
+    // ======== Participant Info functions ========
 
-        let sender_addr = signer::address_of(sender);
-        assert!(table::contains(&multisign_account_info.participants, sender_addr), ErrorInvalidParticipant);
-
-        assert!(table_vec::contains(&multisign_account_info.bitcoin_proposals, proposal_id), ErrorInvalidProposal);
-        
-        let participant = table::borrow(&multisign_account_info.participants, sender_addr);
-        let proposal = table_vec::borrow_mut(&mut multisign_account_info.bitcoin_proposals, proposal_id);
-        assert!(proposal.status == PROPOSAL_STATUS_PENDING, ErrorInvalidProposalStatus);
-        assert!(!vector::contains(&proposal.participants, &sender_addr), ErrorProposalAlreadySigned);
-
-        
-        verify_bitcoin_signature(sender_addr, proposal.tx_id, &signature, &participant.public_key);
-        
-        vector::push_back(&mut proposal.signatures, signature);
-        if(vector::length(&proposal.signatures) >= multisign_account_info.threshold){
-            proposal.status = PROPOSAL_STATUS_APPROVED;
-        }
+    public fun participant_public_key(multisign_address: address, participant_address: address) : vector<u8> {
+        let account = borrow_account(multisign_address);
+        let multisign_account_info = account::account_borrow_resource<MultisignAccountInfo>(account);
+        let participant = simple_map::borrow(&multisign_account_info.participants, &participant_address);
+        participant.public_key
     }
 
+    public fun participant_bitcoin_address(multisign_address: address, participant_address: address) : BitcoinAddress {
+        let account = borrow_account(multisign_address);
+        let multisign_account_info = account::account_borrow_resource<MultisignAccountInfo>(account);
+        let participant = simple_map::borrow(&multisign_account_info.participants, &participant_address);
+        participant.participant_bitcoin_address
+    }
 
-    fun verify_bitcoin_signature(_sender_addr: address, tx_id: address, signature: &vector<u8>, public_key: &vector<u8>) {
-        //TODO verify the public key with sender_addr's BitcoinAddress
+    fun verify_bitcoin_signature(tx_id: address, signature: &vector<u8>, public_key: &vector<u8>) {
         assert!(
             ecdsa_k1::verify(
                 signature,
@@ -336,13 +274,21 @@ module rooch_nursery::multisign_account{
         );
     }
 
-    fun borrow_mut_or_create_account(multisign_address: address) : &mut Object<Account>{
-        let module_signer = signer::module_signer<MultisignAccountInfo>();
-        let signer = if(!account::exists_at(multisign_address)){
-            account::create_account_by_system(&module_signer, multisign_address)
+    fun borrow_mut_or_create_account(multisign_address: address, multisign_bitcoin_address: BitcoinAddress) : &mut Object<Account> {
+        // Maybe the multisign account is created by the Bitcoin transaction
+        if (account::exists_at(multisign_address)){
+            borrow_mut_account(multisign_address)
         }else{
-            account::create_signer_for_system(&module_signer, multisign_address)
-        };
+            let module_signer = signer::module_signer<MultisignAccountInfo>();
+            let signer = account::create_account_by_system(&module_signer, multisign_address);
+            address_mapping::bind_bitcoin_address_by_system(&module_signer, multisign_address, multisign_bitcoin_address);
+            account::borrow_mut_account(&signer)
+        }
+    }
+
+    fun borrow_mut_account(multisign_address: address) : &mut Object<Account>{
+        let module_signer = signer::module_signer<MultisignAccountInfo>();
+        let signer = account::create_signer_for_system(&module_signer, multisign_address);
         account::borrow_mut_account(&signer)
     }
 

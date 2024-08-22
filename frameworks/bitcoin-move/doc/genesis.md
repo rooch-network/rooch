@@ -13,6 +13,7 @@
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="bitcoin.md#0x4_bitcoin">0x4::bitcoin</a>;
+<b>use</b> <a href="bitcoin_multisign_validator.md#0x4_bitcoin_multisign_validator">0x4::bitcoin_multisign_validator</a>;
 <b>use</b> <a href="network.md#0x4_network">0x4::network</a>;
 <b>use</b> <a href="ord.md#0x4_ord">0x4::ord</a>;
 <b>use</b> <a href="pending_block.md#0x4_pending_block">0x4::pending_block</a>;

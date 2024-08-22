@@ -5,8 +5,8 @@ use super::types;
 use crate::addresses::BITCOIN_MOVE_ADDRESS;
 use anyhow::Result;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
-use moveos_types::moveos_std::object::{self};
-use moveos_types::state::MoveStructState;
+use moveos_types::moveos_std::object::{self, ObjectMeta};
+use moveos_types::state::{MoveStructState, MoveType, ObjectState};
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::string::MoveString,
@@ -25,6 +25,14 @@ pub struct BitcoinUTXOStore {
 impl BitcoinUTXOStore {
     pub fn object_id() -> ObjectID {
         object::named_object_id(&Self::struct_tag())
+    }
+
+    pub fn genesis_object() -> ObjectState {
+        let id = Self::object_id();
+        let mut metadata = ObjectMeta::genesis_meta(id, BitcoinUTXOStore::type_tag());
+        metadata.to_shared();
+        ObjectState::new_with_struct(metadata, Self { next_tx_index: 0 })
+            .expect("Create BitcoinUTXOStore Object should success")
     }
 }
 
@@ -80,6 +88,10 @@ impl UTXO {
             value,
             seals,
         }
+    }
+
+    pub fn object_id(&self) -> ObjectID {
+        derive_utxo_id(&types::OutPoint::new(self.txid, self.vout))
     }
 }
 

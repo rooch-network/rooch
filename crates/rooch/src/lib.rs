@@ -5,13 +5,16 @@ use crate::commands::db::DB;
 use crate::commands::event::EventCommand;
 use crate::commands::indexer::Indexer;
 use crate::commands::statedb::Statedb;
-use clap::builder::styling::{AnsiColor, Effects, Styles};
+use clap::builder::{
+    styling::{AnsiColor, Effects},
+    Styles,
+};
 use cli_types::CommandAction;
 use commands::{
     abi::ABI, account::Account, dynamic_field::DynamicField, env::Env, genesis::Genesis,
     init::Init, move_cli::MoveCli, object::ObjectCommand, resource::ResourceCommand, rpc::Rpc,
     server::Server, session_key::SessionKey, state::StateCommand, transaction::Transaction,
-    upgrade::Upgrade, version::Version,
+    upgrade::Upgrade, util::Util, version::Version,
 };
 use once_cell::sync::Lazy;
 use rooch_types::error::RoochResult;
@@ -50,6 +53,7 @@ pub enum Command {
     Object(ObjectCommand),
     DynamicField(DynamicField),
     Resource(ResourceCommand),
+    #[clap(visible_alias = "tx")]
     Transaction(Transaction),
     Event(EventCommand),
     ABI(ABI),
@@ -61,6 +65,7 @@ pub enum Command {
     Genesis(Genesis),
     Upgrade(Upgrade),
     DB(DB),
+    Util(Util),
 }
 
 pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
@@ -85,5 +90,6 @@ pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
         Command::Genesis(genesis) => genesis.execute().await,
         Command::Upgrade(upgrade) => upgrade.execute().await,
         Command::DB(db) => db.execute().await,
+        Command::Util(util) => util.execute().await,
     }
 }

@@ -1,38 +1,37 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::HashSet;
-use std::fs::File;
-use std::io::{BufRead, BufReader, BufWriter, Read, Write};
-use std::path::PathBuf;
-use std::str::FromStr;
-use std::sync::Arc;
-use std::thread;
-use std::time::Instant;
-
+use crate::commands::statedb::commands::inscription::{
+    gen_inscription_id_update, InscriptionSource,
+};
+use crate::commands::statedb::commands::utxo::{AddressMappingData, UTXORawData};
+use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 use bitcoin::OutPoint;
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use move_vm_types::values::Value;
-use rustc_hash::FxHashSet;
-
 use moveos_store::MoveOSStore;
 use moveos_types::moveos_std::object::{DynamicField, ObjectMeta};
 use moveos_types::state::{MoveState, MoveStructState, ObjectState};
 use moveos_types::state_resolver::{RootObjectResolver, StatelessResolver};
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::address::BitcoinAddress;
-use rooch_types::bitcoin::ord::{Inscription, InscriptionID, InscriptionStore};
+use rooch_types::bitcoin::ord::{
+    BitcoinInscriptionID, Inscription, InscriptionID, InscriptionStore,
+};
 use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
 use rooch_types::error::RoochResult;
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::rooch_network::RoochChainID;
-
-use crate::commands::statedb::commands::inscription::{
-    gen_inscription_id_update, InscriptionSource,
-};
-use crate::commands::statedb::commands::utxo::UTXORawData;
-use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
+use rustc_hash::FxHashSet;
+use std::collections::HashSet;
+use std::fs::File;
+use std::io::{BufRead, BufReader, BufWriter, Read, Write};
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
+use std::sync::Arc;
+use std::thread;
+use std::time::{Instant, SystemTime};
 
 /// Import BTC ordinals & UTXO for genesis
 #[derive(Debug, Parser)]
@@ -46,12 +45,12 @@ pub struct GenesisVerifyCommand {
     /// ord source data file. like ~/.rooch/local/ord or ord, ord_input must be sorted by sequence_number
     /// The file format is JSON, and the first line is block height info: # export at block height <N>, ord range: [0, N).
     /// ord_input & utxo_input must be at the same height
-    pub ord_source: PathBuf,
+    pub ord_source: Option<PathBuf>,
     #[clap(
         long,
         help = "outpoint(original):inscriptions(original inscription_id) map dump path"
     )]
-    pub outpoint_inscriptions_map_dump_path: PathBuf,
+    pub outpoint_inscriptions_map_dump_path: Option<PathBuf>,
     #[clap(
         long,
         help = "random mode, for randomly select 1/sample_rate inscriptions & utxos to verify"
@@ -59,24 +58,12 @@ pub struct GenesisVerifyCommand {
     pub random_mode: bool,
     #[clap(
         long,
-        help = "sample rate, for randomly select 1/sample_rate inscriptions & utxos to verify",
+        help = "sample rate, for randomly select 1/sample_rate inscriptions & utxos to verify. Set 0 if you want to verify cases only",
         default_value = "1000"
     )]
     pub sample_rate: u32,
-    #[clap(long, help = "mismatched utxo output path")]
-    pub utxo_mismatched_output: PathBuf,
-    #[clap(long, help = "mismatched ord output path")]
-    pub ord_mismatched_output: PathBuf,
-    #[clap(
-        long,
-        help = "inscription cases must be verified, file is outpoint list"
-    )]
-    pub utxo_cases: Option<PathBuf>,
-    #[clap(
-        long,
-        help = "utxo cases must be verified, file is inscription_number list"
-    )]
-    pub ord_cases: Option<PathBuf>,
+    #[clap(long, help = "mismatched output path")]
+    pub mismatched_output_dir: PathBuf,
 
     #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
@@ -112,13 +99,24 @@ impl UTXOCases {
         }
         Self { cases }
     }
+    fn insert(&mut self, outpoint: OutPoint) {
+        self.cases.insert(outpoint);
+    }
     fn contains(&self, outpoint: &OutPoint) -> bool {
         self.cases.contains(outpoint)
+    }
+    fn dump(&self, path: PathBuf) {
+        let file = File::create(path).expect("Unable to create utxo cases file");
+        let mut writer = BufWriter::new(file);
+        for outpoint in &self.cases {
+            writeln!(writer, "{}", outpoint).expect("Unable to write line");
+        }
+        writer.flush().expect("Unable to flush writer");
     }
 }
 
 struct OrdCases {
-    cases: HashSet<u32>,
+    cases: HashSet<u32>, // sequence_number for easy generating
 }
 
 impl OrdCases {
@@ -141,23 +139,78 @@ impl OrdCases {
         }
         Self { cases }
     }
-    fn contains(&self, inscription_number: u32) -> bool {
-        self.cases.contains(&inscription_number)
+    fn insert(&mut self, sequence_number: u32) {
+        self.cases.insert(sequence_number);
     }
+    fn contains(&self, sequence_number: u32) -> bool {
+        self.cases.contains(&sequence_number)
+    }
+
+    fn dump(&self, path: PathBuf) {
+        let file = File::create(path).expect("Unable to create ord cases file");
+        let mut writer = BufWriter::new(file);
+        for ord in &self.cases {
+            writeln!(writer, "{}", ord).expect("Unable to write line");
+        }
+        writer.flush().expect("Unable to flush writer");
+    }
+}
+
+fn create_output_path(output_dir: &Path, prefix: &str, timestamp: u64) -> PathBuf {
+    let file_name = format!("{}_{:?}", prefix, timestamp);
+    output_dir.join(file_name)
+}
+
+fn find_latest_file_with_prefix(output_dir: &PathBuf, prefix: &str) -> Option<PathBuf> {
+    let mut max_timestamp = None;
+    let mut max_path = None;
+    for entry in std::fs::read_dir(output_dir).unwrap() {
+        let entry = entry.unwrap();
+        let path = entry.path();
+        if path.is_file() {
+            let filename = path.file_name().unwrap().to_str().unwrap();
+            if !filename.starts_with(prefix) {
+                continue;
+            };
+            // get timestamp from file name: <prefix>_<timestamp>
+            let timestamp = filename.split('_').last().unwrap().parse::<u64>().unwrap();
+            if max_timestamp.is_none() || timestamp > max_timestamp.unwrap() {
+                max_timestamp = Some(timestamp);
+                max_path = Some(path);
+            }
+        }
+    }
+    max_path
 }
 
 impl GenesisVerifyCommand {
     pub async fn execute(self) -> RoochResult<()> {
-        let (root, moveos_store, _) = init_job(self.base_data_dir.clone(), self.chain_id.clone());
-        let outpoint_inscriptions_map = OutpointInscriptionsMap::load_or_index(
-            self.outpoint_inscriptions_map_dump_path,
-            self.ord_source.clone(),
-        );
-        let outpoint_inscriptions_map = Arc::new(outpoint_inscriptions_map);
+        let (root, moveos_store, start_time) =
+            init_job(self.base_data_dir.clone(), self.chain_id.clone());
+        let outpoint_inscriptions_map = if self.outpoint_inscriptions_map_dump_path.is_some() {
+            Some(Arc::new(OutpointInscriptionsMap::load_or_index(
+                self.outpoint_inscriptions_map_dump_path.clone().unwrap(),
+                self.ord_source.clone(),
+            )))
+        } else {
+            None
+        };
+        let since_the_epoch = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .expect("Time went backwards");
+        let timestamp = since_the_epoch.as_secs();
         let random_mode = self.random_mode;
         let moveos_store = Arc::new(moveos_store);
         let moveos_store_clone = Arc::clone(&moveos_store);
+        // create dir if self.mismatched_output_dir not exists
+        std::fs::create_dir_all(&self.mismatched_output_dir)?;
+
         // verify inscriptions
+        let ord_mismatched_output =
+            create_output_path(&self.mismatched_output_dir, "ord_mismatched", timestamp);
+        let ord_new_cases_output =
+            create_output_path(&self.mismatched_output_dir, "ord_cases", timestamp);
+        let ord_cases = find_latest_file_with_prefix(&self.mismatched_output_dir, "ord_cases");
         let inscription_source_path = self.ord_source.clone();
         let root_clone_0 = root.clone();
         let verify_inscription_thread = thread::Builder::new()
@@ -165,34 +218,49 @@ impl GenesisVerifyCommand {
             .spawn(move || {
                 verify_inscription(
                     inscription_source_path,
-                    self.ord_cases,
+                    ord_cases,
+                    ord_new_cases_output,
                     moveos_store_clone,
                     root_clone_0,
                     random_mode,
                     self.sample_rate,
-                    self.ord_mismatched_output,
+                    ord_mismatched_output,
                 );
             })
             .unwrap();
+        // verify utxo
+        let utxo_mismatched_output =
+            create_output_path(&self.mismatched_output_dir, "utxo_mismatched", timestamp);
+        let utxo_new_cases_output =
+            create_output_path(&self.mismatched_output_dir, "utxo_cases", timestamp);
+        let utxo_cases = find_latest_file_with_prefix(&self.mismatched_output_dir, "utxo_cases");
         let moveos_store_clone = Arc::clone(&moveos_store);
         let verify_utxo_thread = thread::Builder::new()
             .name("verify-utxo".to_string())
             .spawn(move || {
                 verify_utxo(
                     self.utxo_source,
-                    self.utxo_cases,
+                    utxo_cases,
+                    utxo_new_cases_output,
                     moveos_store_clone,
                     root.clone(),
                     outpoint_inscriptions_map,
                     random_mode,
                     self.sample_rate,
-                    self.utxo_mismatched_output,
+                    utxo_mismatched_output,
                 );
             })
             .unwrap();
 
         verify_inscription_thread.join().unwrap();
         verify_utxo_thread.join().unwrap();
+
+        println!(
+            "genesis verify done, output with timestamp: {:?} in {:?}, cost: {:?}",
+            timestamp,
+            self.mismatched_output_dir,
+            start_time.elapsed()
+        );
 
         Ok(())
     }
@@ -201,9 +269,10 @@ impl GenesisVerifyCommand {
 fn verify_utxo(
     input: PathBuf,
     case_path: Option<PathBuf>,
+    case_new_path: PathBuf,
     moveos_store_arc: Arc<MoveOSStore>,
     root: ObjectMeta,
-    outpoint_inscriptions_map: Arc<OutpointInscriptionsMap>,
+    outpoint_inscriptions_map: Option<Arc<OutpointInscriptionsMap>>,
     random_mode: bool,
     sample_rate: u32,
     mismatched_output: PathBuf,
@@ -238,6 +307,9 @@ fn verify_utxo(
     let mut output_writer = BufWriter::with_capacity(1 << 23, file.try_clone().unwrap());
 
     let cases = UTXOCases::load(case_path);
+    let mut new_cases = UTXOCases {
+        cases: HashSet::new(),
+    };
 
     let mut utxo_total: u32 = 0;
     let mut utxo_checked_count: u32 = 0;
@@ -281,28 +353,42 @@ fn verify_utxo(
             );
         }
 
-        let is_case = cases.contains(&OutPoint {
+        let raw_output = OutPoint {
             txid: utxo_raw.txid,
             vout: utxo_raw.vout,
-        });
+        };
 
-        if (random_mode && rand::random::<u32>() % sample_rate != 0) && !is_case {
+        let need_verify = if !random_mode {
+            true
+        } else {
+            let is_case = cases.contains(&raw_output);
+            if sample_rate == 0 {
+                is_case
+            } else {
+                rand::random::<u32>() % sample_rate == 0 || is_case
+            }
+        };
+
+        if !need_verify {
             continue;
         }
+
         // check utxo
         utxo_checked_count += 1;
         let (exp_utxo_key, exp_utxo_state) =
-            utxo_raw.gen_utxo_update(Some(outpoint_inscriptions_map.clone()));
+            utxo_raw.gen_utxo_update(outpoint_inscriptions_map.clone());
         let act_utxo_state = resolver
             .get_field_at(utxo_store_state_root, &exp_utxo_key)
             .unwrap();
-        let (mismatched, not_found) = write_mismatched_state_output::<UTXO>(
+        let (mismatched, not_found) = write_mismatched_state_output::<UTXO, UTXORawData>(
             &mut output_writer,
             "[utxo]",
             exp_utxo_state,
             act_utxo_state.clone(),
+            Some(utxo_raw.clone()),
         );
         if mismatched {
+            new_cases.insert(raw_output);
             utxo_mismatched_count += 1;
         }
         if not_found {
@@ -315,14 +401,18 @@ fn verify_utxo(
             let act_address_state = resolver
                 .get_field_at(address_mapping_state_root, &exp_addr_key)
                 .unwrap();
-            let (mismatched, not_found) =
-                write_mismatched_state_output::<DynamicField<AccountAddress, BitcoinAddress>>(
-                    &mut output_writer,
-                    "[address_mapping]",
-                    exp_addr_state,
-                    act_address_state.clone(),
-                );
+            let (mismatched, not_found) = write_mismatched_state_output::<
+                DynamicField<AccountAddress, BitcoinAddress>,
+                AddressMappingData,
+            >(
+                &mut output_writer,
+                "[address_mapping]",
+                exp_addr_state,
+                act_address_state.clone(),
+                None,
+            );
             if mismatched {
+                new_cases.insert(raw_output);
                 address_mismatched_count += 1;
             }
             if not_found {
@@ -331,13 +421,14 @@ fn verify_utxo(
         }
     }
     output_writer.flush().expect("Unable to flush writer");
+    new_cases.dump(case_new_path);
 
     let mut result = "OK";
     if act_utxo_store_state.metadata.size != utxo_total as u64 {
         result = "FAILED";
         println!("------------FAILED----------------");
         println!(
-            "[utxo_store] mismatched size: exp: {}, act: {}",
+            "[utxo_store] mismatched metadata.size: exp: {}, act: {}",
             utxo_total, act_utxo_store_state.metadata.size
         )
     };
@@ -345,7 +436,7 @@ fn verify_utxo(
         result = "FAILED";
         println!("------------FAILED----------------");
         println!(
-            "[address_mapping] mismatched size: exp: {}, act: {}",
+            "[address_mapping] mismatched metadata.size: exp: {}, act: {}",
             added_address_set.len(),
             act_address_mapping_state.metadata.size
         )
@@ -369,14 +460,19 @@ fn verify_utxo(
 }
 
 fn verify_inscription(
-    input: PathBuf,
+    input: Option<PathBuf>,
     case_path: Option<PathBuf>,
+    case_new_path: PathBuf,
     moveos_store_arc: Arc<MoveOSStore>,
     root: ObjectMeta,
     random_mode: bool,
     sample_rate: u32,
     mismatched_output: PathBuf,
 ) {
+    if input.is_none() {
+        return;
+    }
+    let input = input.unwrap();
     let start_time = Instant::now();
     let mut src_reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
     let mut is_title_line = true;
@@ -405,6 +501,9 @@ fn verify_inscription(
     let mut output_writer = BufWriter::with_capacity(1 << 23, file.try_clone().unwrap());
 
     let cases = OrdCases::load(case_path);
+    let mut new_cases = OrdCases {
+        cases: HashSet::new(),
+    };
 
     let mut checked_count: u32 = 0;
     let mut mismatched_count: u32 = 0;
@@ -446,9 +545,18 @@ fn verify_inscription(
             );
         }
 
-        let is_case = cases.contains(source.inscription_number as u32);
+        let need_verify = if !random_mode {
+            true
+        } else {
+            let is_case = cases.contains(source.sequence_number);
+            if sample_rate == 0 {
+                is_case
+            } else {
+                rand::random::<u32>() % sample_rate == 0 || is_case
+            }
+        };
 
-        if (random_mode && rand::random::<u32>() % sample_rate != 0) && !is_case {
+        if !need_verify {
             continue;
         }
         // check inscription
@@ -457,33 +565,39 @@ fn verify_inscription(
         let act_inscription_state = resolver
             .get_field_at(inscription_store_state_root, &exp_key)
             .unwrap();
-        let (mismatched, not_found) = write_mismatched_state_output::<Inscription>(
+        let (mismatched, not_found) = write_mismatched_state_output::<Inscription, InscriptionSource>(
             &mut output_writer,
             "[inscription]",
             exp_state,
             act_inscription_state.clone(),
+            Some(source.clone()),
         );
         if mismatched {
             mismatched_count += 1;
+            new_cases.insert(source.sequence_number);
         }
         if not_found {
             not_found_count += 1;
         }
         // check inscription_id
         let (exp_inscription_id_key, exp_inscription_id_state) =
-            gen_inscription_id_update(total - 1, exp_inscription_id.clone());
+            gen_inscription_id_update(total - 1, exp_inscription_id);
         let act_inscription_id_state = resolver
             .get_field_at(inscription_store_state_root, &exp_inscription_id_key)
             .unwrap();
-        let (mismatched, not_found) =
-            write_mismatched_state_output::<DynamicField<u32, InscriptionID>>(
-                &mut output_writer,
-                "[inscription_id]",
-                exp_inscription_id_state,
-                act_inscription_id_state.clone(),
-            );
+        let (mismatched, not_found) = write_mismatched_state_output::<
+            DynamicField<u32, InscriptionID>,
+            BitcoinInscriptionID,
+        >(
+            &mut output_writer,
+            "[inscription_id]",
+            exp_inscription_id_state,
+            act_inscription_id_state.clone(),
+            Some(source.id),
+        );
         if mismatched {
             mismatched_inscription_id_count += 1;
+            new_cases.insert(source.sequence_number);
         }
         if not_found {
             not_found_inscription_id_count += 1;
@@ -491,6 +605,7 @@ fn verify_inscription(
     }
 
     output_writer.flush().expect("Unable to flush writer");
+    new_cases.dump(case_new_path);
 
     let mut result = "OK";
     if act_inscription_store_state.metadata.size != total as u64 * 2
@@ -501,7 +616,7 @@ fn verify_inscription(
         result = "FAILED";
         println!("------------FAILED----------------");
         println!(
-            "[inscription_store] mismatched size. metadata: exp: {}, act: {}; cursed: exp: {}, act: {}; blessed: exp: {}, act: {}; next_sequence_number: exp: {}, act: {}",
+            "[inscription_store] mismatched. metadata.size: exp: {}, act: {}; cursed: exp: {}, act: {}; blessed: exp: {}, act: {}; next_sequence_number: exp: {}, act: {}",
             total * 2,
             act_inscription_store_state.metadata.size,
             cursed_inscription_count,
@@ -531,53 +646,73 @@ fn verify_inscription(
     );
 }
 
-// clear metadata, because it's not deterministic in genesis cmd
+// clear metadata for comparison
 fn clear_metadata(state: &mut ObjectState) {
+    // which are not deterministic in genesis cmd
     state.metadata.state_root = None;
     state.metadata.created_at = 0;
     state.metadata.updated_at = 0;
 }
 
-// if mismatched return true & write output
-fn write_mismatched_state_output<T: MoveStructState + std::fmt::Debug>(
+// if mismatched, return true & write output
+fn write_mismatched_state_output<T: MoveStructState + std::fmt::Debug, R: std::fmt::Debug>(
     output_writer: &mut BufWriter<File>,
     prefix: &str,
     exp: ObjectState,
     act: Option<ObjectState>,
+    src_data: Option<R>, // write source data to output if mismatched for debug
 ) -> (bool, bool) {
+    // mismatched, not_found
     let mut mismatched = false;
     let mut not_found = false;
-    let (act_str, exp_str) = match act {
+    let (act_val_str, exp_val_str, act_meta_str, exp_meta_str) = match act {
         Some(act) => {
             let mut act = act;
-            clear_metadata(&mut act);
             let exp_decoded: Result<T, _> = T::from_bytes(&exp.value);
             let act_decoded: Result<T, _> = T::from_bytes(&act.value);
+            let act_val_str = format!("{:?}", act_decoded.unwrap());
+            let exp_val_str = format!("{:?}", exp_decoded.unwrap());
+            clear_metadata(&mut act);
+            let act_meta_str = format!("{:?}", act.metadata);
+            let exp_meta_str = format!("{:?}", exp.metadata);
+
             if exp != act {
                 mismatched = true;
-                (
-                    format!("{:?}", act_decoded.unwrap()),
-                    format!("{:?}", exp_decoded.unwrap()),
-                )
-            } else {
-                ("".to_string(), "".to_string())
             }
+            (act_val_str, exp_val_str, act_meta_str, exp_meta_str)
         }
         None => {
             mismatched = true;
             not_found = true;
             let exp_decoded: Result<T, _> = T::from_bytes(&exp.value);
-            ("None".to_string(), format!("{:?}", exp_decoded.unwrap()))
+            (
+                "None".to_string(),
+                format!("{:?}", exp_decoded.unwrap()),
+                "None".to_string(),
+                format!("{:?}", exp.metadata),
+            )
         }
     };
     if !mismatched {
         return (false, false);
     }
 
+    let result = if not_found {
+        "not_found".to_string()
+    } else {
+        let mut mismatched = "mismatched".to_string();
+        if exp_meta_str != act_meta_str {
+            mismatched.push_str("_meta");
+        }
+        if exp_val_str != act_val_str {
+            mismatched.push_str("_val");
+        }
+        mismatched
+    };
     writeln!(
         output_writer,
-        "{} mismatched: exp: {:?}, act: {:?}",
-        prefix, exp_str, act_str
+        "{} {}: exp-meta: {:?}, act-meta: {:?}, exp-val: {:?}, act-val: {:?}, src_data: {:?}",
+        prefix, result, exp_meta_str, act_meta_str, exp_val_str, act_val_str, src_data
     )
     .expect("Unable to write line");
     writeln!(output_writer, "--------------------------------").expect("Unable to write line");

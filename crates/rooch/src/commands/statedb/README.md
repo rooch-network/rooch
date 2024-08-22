@@ -118,7 +118,7 @@ if __name__ == "__main__":
 rooch genesis init -n main -d <rooch_datadir>
 ```
 
-#### Commands
+#### Subcommands
 
 **genesis-utxo**:
 
@@ -155,7 +155,7 @@ rooch statedb genesis --utxo-source <utxo_src_path> --ord-source <ord_src_path> 
 rooch statedb export --output {your file} -d {your rooch data dir} -n main -m {export mode}
 ```
 
-**rooch statedb import**:
+**rooch statedb import(WIP)**:
 
 ```shell
 rooch statedb import --input {your file} -d {your rooch data dir} -n main

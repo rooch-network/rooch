@@ -1,12 +1,14 @@
-module rooch_nursery::multisign_account_test{
+module bitcoin_move::multisign_account_test{
     
     use std::vector;
     use std::string::{utf8};
     use rooch_framework::bitcoin_address;
-    use rooch_nursery::multisign_account;
+    use bitcoin_move::multisign_account;
+    use bitcoin_move::genesis;
 
     #[test]
     public fun test_multisign_account(){
+        genesis::init_for_test();
         let u1 = @0x09d7a0b046555338a1f4e62d4597d94dd7a70eb2084083cd82adf1669521e1f3;
         let u2 = @0x364611452c544b067d6d0541f239adf8067f51c6150335fb60de468051b47d88;
         let u3 = @0x49f56b4d1d0ad7320f69fe97b325c74fd9f572d395cd44d5187c457c12f969ef;

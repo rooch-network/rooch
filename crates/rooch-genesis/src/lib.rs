@@ -634,7 +634,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_custom_genesis_init() {
-        let network = RoochNetwork::new(100.into(), BuiltinChainID::Local.genesis_config().clone());
+        let network = RoochNetwork::new(100.into(), BuiltinChainID::Test.genesis_config().clone());
         let genesis = RoochGenesis::build(network.clone()).unwrap();
         genesis_init_test_case(network, genesis);
     }
