@@ -690,7 +690,18 @@ fn write_mismatched_state_output<T: MoveStructState + std::fmt::Debug, R: std::f
         return (false, false);
     }
 
-    let result = if not_found { "not_found" } else { "mismatched" };
+    let result = if not_found {
+        "not_found".to_string()
+    } else {
+        let mut mismatched = "mismatched".to_string();
+        if exp_meta_str != act_meta_str {
+            mismatched.push_str("_meta");
+        }
+        if exp_val_str != act_val_str {
+            mismatched.push_str("_val");
+        }
+        mismatched
+    };
     writeln!(
         output_writer,
         "{} {}: exp-meta: {:?}, act-meta: {:?}, exp-val: {:?}, act-val: {:?}, src_data: {:?}",

@@ -20,7 +20,7 @@ use moveos_types::{
     },
 };
 use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
 
@@ -390,7 +390,7 @@ impl<'a> ModuleBinding<'a> for OrdModule<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize, Hash, Eq)]
+#[derive(Debug, PartialEq, Clone, Copy, Hash, Eq)]
 pub struct BitcoinInscriptionID {
     pub txid: bitcoin::Txid,
     pub index: u32,
@@ -430,13 +430,42 @@ impl FromStr for BitcoinInscriptionID {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        let parts: Vec<&str> = s.split('i').collect();
-        if parts.len() != 2 {
-            bail!("Invalid BitcoinInscriptionID string: {}", s);
+        const TXID_LEN: usize = 64;
+        const MIN_LEN: usize = TXID_LEN + 2;
+        if s.len() < MIN_LEN {
+            bail!(
+                "Invalid BitcoinInscriptionID length: {}",
+                format!("{}, len: {} < {}", s, s.len(), MIN_LEN)
+            );
         }
-        let txid = bitcoin::Txid::from_str(parts[0])?;
-        let index = parts[1].parse()?;
+
+        let txid = bitcoin::Txid::from_str(&s[..TXID_LEN])?;
+        let separator = s.chars().nth(TXID_LEN).unwrap();
+
+        if separator != 'i' {
+            bail!("Invalid BitcoinInscriptionID separator: {}", separator);
+        }
+        let index = &s[TXID_LEN + 1..];
+        let index = index.parse()?;
         Ok(BitcoinInscriptionID { txid, index })
+    }
+}
+
+impl<'de> Deserialize<'de> for BitcoinInscriptionID {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Self::from_str(&String::deserialize(deserializer)?).map_err(serde::de::Error::custom)
+    }
+}
+
+impl Serialize for BitcoinInscriptionID {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.collect_str(self)
     }
 }
 
