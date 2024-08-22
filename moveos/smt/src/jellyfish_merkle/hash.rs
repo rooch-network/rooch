@@ -16,15 +16,13 @@ use primitive_types::H256;
 use proptest_derive::Arbitrary;
 use rand::{rngs::OsRng, Rng};
 use serde::{de, ser};
-use tiny_keccak::{Hasher, Sha3};
 
 pub(crate) fn merkle_hash(left: HashValue, right: HashValue) -> HashValue {
     let mut value = left.to_vec();
     value.extend(right.to_vec());
-    HashValue::sha256_of(&value)
+    HashValue::double_sha256(&value)
 }
 
-//TODO replace HashValue with H256
 /// Output value of our hash function. Intentionally opaque for safety and modularity.
 #[derive(Clone, Copy, Eq, Hash, PartialEq, PartialOrd, Ord)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
@@ -75,44 +73,15 @@ impl HashValue {
         HashValue { hash }
     }
 
-    /// Convenience function that computes a `HashValue` internally equal to
-    /// the sha3_256 of a byte buffer. It will handle hasher creation, data
-    /// feeding and finalization.
-    ///
-    /// Note this will not result in the `<T as CryptoHash>::hash()` for any
-    /// reasonable struct T, as this computes a sha3 without any ornaments.
-    pub fn sha3_256_of(buffer: &[u8]) -> Self {
-        let mut sha3 = Sha3::v256();
-        sha3.update(buffer);
-        HashValue::from_keccak(sha3)
-    }
-
-    pub fn sha256_of(buffer: &[u8]) -> Self {
-        let data = Sha256::digest(buffer);
-        HashValue::new(data.digest)
-    }
-
-    #[cfg(test)]
-    pub fn from_iter_sha3<'a, I>(buffers: I) -> Self
-    where
-        I: IntoIterator<Item = &'a [u8]>,
-    {
-        let mut sha3 = Sha3::v256();
-        for buffer in buffers {
-            sha3.update(buffer);
-        }
-        HashValue::from_keccak(sha3)
+    /// Creates a new `HashValue` from a byte array by applying SHA-256 followed by SHA-256.
+    pub fn double_sha256(data: &[u8]) -> Self {
+        let digest = Sha256::digest(Sha256::digest(data).digest);
+        HashValue::new(digest.digest)
     }
 
     /// Returns the mut reference array
     pub fn as_ref_mut(&mut self) -> &mut [u8] {
         &mut self.hash[..]
-    }
-
-    fn from_keccak(state: Sha3) -> Self {
-        let mut hash = Self::zero();
-        state.finalize(hash.as_ref_mut());
-        hash
     }
 
     /// Returns the `index`-th bit in the bytes.

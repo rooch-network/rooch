@@ -199,7 +199,7 @@ impl<T> SMTHash for SMTObject<T> {
         match self.cached_hash.get() {
             Some(hash) => hash,
             None => {
-                let hash = HashValue::sha256_of(&self.raw);
+                let hash = HashValue::double_sha256(&self.raw);
                 self.cached_hash.set(Some(hash));
                 hash
             }
