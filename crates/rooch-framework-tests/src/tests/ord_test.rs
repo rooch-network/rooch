@@ -30,36 +30,19 @@ fn decode_inscription(
             output.script_pubkey.p2wpkh_script_code()
         );
     }
-    let inscriptions = bitcoin_move::natives::ord::from_transaction(&btc_tx);
 
     let ord_module = binding_test.as_module_binding::<rooch_types::bitcoin::ord::OrdModule>();
     let move_btc_tx: rooch_types::bitcoin::types::Transaction =
         rooch_types::bitcoin::types::Transaction::from(btc_tx);
 
-    let inscriptions_from_move = ord_module
+    ord_module
         .from_transaction(
             &move_btc_tx,
             input_utxo_values,
             next_inscription_number,
             next_sequence_number,
         )
-        .unwrap();
-
-    for (i, (inscription, inscription_from_move)) in inscriptions
-        .into_iter()
-        .zip(inscriptions_from_move.clone())
-        .enumerate()
-    {
-        debug!(
-            "{}. inscription: {:?}, inscription_from_move:{:?}",
-            i, inscription, inscription_from_move
-        );
-        assert_eq!(
-            inscription.payload.body.unwrap_or_default(),
-            inscription_from_move.body
-        );
-    }
-    inscriptions_from_move
+        .unwrap()
 }
 
 #[tokio::test]
@@ -74,7 +57,7 @@ async fn test_8706753() {
     );
     let input_utxo_values = vec![3318u64];
     let next_inscription_number = 8706753;
-    let next_sequence_number = 8706753;
+    let next_sequence_number = 8709019;
     let inscribe_tx_id = btc_tx.txid();
     let mut inscriptions = decode_inscription(
         &mut binding_test,

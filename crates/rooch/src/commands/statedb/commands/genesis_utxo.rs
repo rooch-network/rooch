@@ -20,7 +20,6 @@ use moveos_types::moveos_std::object::GENESIS_STATE_ROOT;
 use moveos_types::state::{FieldKey, ObjectState};
 use rooch_common::fs::file_cache::FileCacheManager;
 use rooch_config::R_OPT_NET_HELP;
-use rooch_types::bitcoin::utxo::BitcoinUTXOStore;
 use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
@@ -335,11 +334,11 @@ pub(crate) fn apply_utxo_updates(
     let mut startup_update_set = startup_update_set.write().unwrap();
 
     let mut genesis_utxostore_object = create_genesis_utxo_store_object();
-    genesis_utxostore_object.size += utxo_count;
-    genesis_utxostore_object.state_root = Some(utxo_store_state_root);
+    genesis_utxostore_object.metadata.size += utxo_count;
+    genesis_utxostore_object.metadata.state_root = Some(utxo_store_state_root);
     startup_update_set.put(
-        BitcoinUTXOStore::object_id().field_key(),
-        genesis_utxostore_object.into_state(),
+        genesis_utxostore_object.metadata.id.field_key(),
+        genesis_utxostore_object,
     );
     println!(
         "genesis BitcoinUTXOStore object updated, state_root: {:?}, count: {}",

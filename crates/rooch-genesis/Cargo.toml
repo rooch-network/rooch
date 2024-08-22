@@ -26,9 +26,7 @@ include_dir = { workspace = true }
 
 
 move-core-types = { workspace = true }
-move-vm-runtime = { workspace = true }
-
-
+move-vm-runtime = { workspace = true, features = ["stacktrace", "debugging", "testing"] }
 moveos-types = { workspace = true }
 moveos = { workspace = true }
 moveos-store = { workspace = true }

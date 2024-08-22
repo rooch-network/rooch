@@ -363,7 +363,12 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     }
 
     let bitcoin_client_proxy = if service_status.is_active() && bitcoin_relayer_config.is_some() {
-        let bitcoin_client = BitcoinClientActor::new(bitcoin_relayer_config.unwrap())?;
+        let bitcoin_config = bitcoin_relayer_config.unwrap();
+        let bitcoin_client = BitcoinClientActor::new(
+            &bitcoin_config.btc_rpc_url,
+            &bitcoin_config.btc_rpc_user_name,
+            &bitcoin_config.btc_rpc_password,
+        )?;
         let bitcoin_client_actor_ref = bitcoin_client
             .into_actor(Some("bitcoin_client_for_rpc_service"), &actor_system)
             .await?;
