@@ -10,7 +10,9 @@ use move_core_types::language_storage::TypeTag;
 use moveos_types::transaction::MoveAction;
 use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
-use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, HumanReadableDisplay, KeptVMStatusView};
+use rooch_rpc_api::jsonrpc_types::{
+    ExecuteTransactionResponseView, HumanReadableDisplay, KeptVMStatusView,
+};
 use rooch_types::function_arg::parse_function_arg;
 use rooch_types::{
     address::RoochAddress,
@@ -83,12 +85,12 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
         let action = MoveAction::new_function_call(function_id, type_args, args);
 
         let dry_run_result = context
-        .dry_run(
-            context
+            .dry_run(
+                context
                     .build_tx_data(sender, action.clone(), max_gas_amount)
-                    .await?
-        )
-        .await;
+                    .await?,
+            )
+            .await;
 
         let mut result = match (self.tx_options.authenticator, self.tx_options.session_key) {
             (Some(authenticator), _) => {
