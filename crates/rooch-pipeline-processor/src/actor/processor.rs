@@ -177,6 +177,7 @@ impl PipelineProcessorActor {
             Ok(v) => v,
             Err(err) => {
                 if is_vm_panic_error(&err) {
+                    println!("Execute L1 Tx failed while VM panic occurred: set sequencer to Maintenance mode and pause the relayer.");
                     let _ = self
                         .sequencer
                         .set_sequencer_status(ServiceStatus::Maintenance)
@@ -222,6 +223,7 @@ impl PipelineProcessorActor {
             Ok(v) => v,
             Err(err) => {
                 if is_vm_panic_error(&err) {
+                    println!("Execute L2 Tx failed while VM panic occurred: revert tx.");
                     let tx_hash = tx.tx_hash();
                     revert_tx(
                         self.rooch_db.rooch_store.clone(),

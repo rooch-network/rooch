@@ -203,7 +203,7 @@ impl Handler<RelayTick> for RelayerActor {
 impl Handler<EventData> for RelayerActor {
     async fn handle(&mut self, message: EventData, _ctx: &mut ActorContext) -> Result<()> {
         if let Ok(_vm_panic_event) = message.data.downcast::<VMPanicErrorEvent>() {
-            log::debug!("RelayerActor: MoveVM panic occurs, set the status to paused...");
+            log::warn!("RelayerActor: MoveVM panic occurs, set the status to paused...");
             self.paused = true;
         }
         Ok(())

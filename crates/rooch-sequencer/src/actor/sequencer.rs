@@ -23,7 +23,7 @@ use rooch_types::crypto::{RoochKeyPair, Signature};
 use rooch_types::sequencer::SequencerInfo;
 use rooch_types::service_status::ServiceStatus;
 use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
-use tracing::info;
+use tracing::{info, log};
 
 pub struct SequencerActor {
     last_sequencer_info: SequencerInfo,
@@ -205,6 +205,7 @@ impl Handler<GetSequencerOrderMessage> for SequencerActor {
 #[async_trait]
 impl Handler<SetStatusMessage> for SequencerActor {
     async fn handle(&mut self, msg: SetStatusMessage, _ctx: &mut ActorContext) -> Result<()> {
+        log::warn!("SequencerActor set self status to {:?}", msg);
         self.service_status = msg.status;
         Ok(())
     }

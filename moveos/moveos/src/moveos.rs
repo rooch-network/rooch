@@ -23,6 +23,7 @@ use move_core_types::{
 use move_vm_runtime::config::VMConfig;
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::native_functions::NativeFunction;
+use moveos_stdlib::natives::helpers::E_NATIVE_FUNCTION_PANIC;
 use moveos_store::config_store::ConfigDBStore;
 use moveos_store::event_store::EventDBStore;
 use moveos_store::state_store::statedb::StateDBStore;
@@ -480,7 +481,7 @@ impl MoveOS {
             Err(discard_status) => {
                 //This should not happen, if it happens, it means that the VM or verifer has a bug
                 let backtrace = Backtrace::new();
-                log::error!(
+                log::debug!(
                     "Discard status: {:?}, execute_result: {:?} \n{:?}",
                     discard_status,
                     execute_result,
@@ -507,7 +508,7 @@ impl MoveOS {
                 if is_system_call && kept_status != KeptVMStatus::Executed {
                     // system call should always success
                     let backtrace = Backtrace::new();
-                    log::error!("System call failed: {:?}\n{:?}", kept_status, backtrace);
+                    log::warn!("System call failed: {:?}\n{:?}", kept_status, backtrace);
                     return Err(anyhow::Error::new(
                         PartialVMError::new(StatusCode::ABORTED)
                             .with_sub_status(E_SYSTEM_CALL_PANIC)
@@ -515,12 +516,22 @@ impl MoveOS {
                             .finish(Location::Undefined),
                     ));
                 }
+
+                if is_vm_panic_error(kept_status.clone()) {
+                    return Err(anyhow::Error::new(
+                        PartialVMError::new(StatusCode::ABORTED)
+                            .with_sub_status(E_VERIFIER_PANIC)
+                            .with_message("Execute Action with Panic".to_string())
+                            .finish(Location::Undefined),
+                    ));
+                }
+
                 kept_status
             }
             Err(discard_status) => {
                 //This should not happen, if it happens, it means that the VM or verifer has a bug
                 let backtrace = Backtrace::new();
-                log::error!("Discard status: {:?}\n{:?}", discard_status, backtrace);
+                log::warn!("Discard status: {:?}\n{:?}", discard_status, backtrace);
                 return Err(anyhow::Error::new(
                     PartialVMError::new(StatusCode::ABORTED)
                         .with_sub_status(E_VERIFIER_PANIC)
@@ -615,4 +626,15 @@ fn func_name_from_db(
     Ok(module_bin_view
         .identifier_at(module_bin_view.function_handle_at(func_def.function).name)
         .to_string())
+}
+
+pub fn is_vm_panic_error(kept_status: KeptVMStatus) -> bool {
+    if let KeptVMStatus::MoveAbort(_, code) = kept_status {
+        matches!(
+            code,
+            E_VERIFIER_PANIC | E_SYSTEM_CALL_PANIC | E_NATIVE_FUNCTION_PANIC
+        )
+    } else {
+        false
+    }
 }

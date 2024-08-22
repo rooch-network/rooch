@@ -162,5 +162,10 @@ pub fn revert_tx(rooch_store: RoochStore, moveos_store: MoveOSStore, tx_hash: H2
         .save_sequencer_info_ignore_check(revert_sequencer_info)?;
     rooch_store.remove_transaction(tx_hash, tx_order)?;
 
+    println!(
+        "revert tx succ, tx_hash: {:?}, tx_order {}",
+        tx_hash, tx_order
+    );
+
     Ok(())
 }

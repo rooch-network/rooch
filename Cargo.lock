@@ -9625,6 +9625,7 @@ dependencies = [
  "log",
  "metrics",
  "move-binary-format",
+ "move-core-types",
  "moveos",
  "moveos-stdlib",
  "moveos-types",
