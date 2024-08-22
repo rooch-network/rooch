@@ -358,15 +358,18 @@ fn verify_utxo(
             vout: utxo_raw.vout,
         };
 
-        let is_case = cases.contains(&raw_output);
-
-        let random_picked = if sample_rate == 0 {
+        let need_verify = if !random_mode {
             true
         } else {
-            rand::random::<u32>() % sample_rate == 0
+            let is_case = cases.contains(&raw_output);
+            if sample_rate == 0 {
+                is_case
+            } else {
+                rand::random::<u32>() % sample_rate == 0 || is_case
+            }
         };
 
-        if (random_mode && random_picked) && !is_case {
+        if !need_verify {
             continue;
         }
 
@@ -542,14 +545,18 @@ fn verify_inscription(
             );
         }
 
-        let is_case = cases.contains(source.sequence_number);
-        let random_picked = if sample_rate == 0 {
+        let need_verify = if !random_mode {
             true
         } else {
-            rand::random::<u32>() % sample_rate == 0
+            let is_case = cases.contains(source.sequence_number);
+            if sample_rate == 0 {
+                is_case
+            } else {
+                rand::random::<u32>() % sample_rate == 0 || is_case
+            }
         };
 
-        if (random_mode && random_picked) && !is_case {
+        if !need_verify {
             continue;
         }
         // check inscription
