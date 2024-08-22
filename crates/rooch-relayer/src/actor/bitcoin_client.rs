@@ -1,27 +1,26 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::messages::{GetChainTipsMessage, GetRawTransactionMessage, GetTxOutMessage};
 use crate::actor::messages::{
     BroadcastTransactionMessage, GetBestBlockHashMessage, GetBlockHashMessage,
     GetBlockHeaderInfoMessage, GetBlockMessage,
 };
 use anyhow::Result;
 use async_trait::async_trait;
+use bitcoin::Transaction;
 use bitcoincore_rpc::{bitcoin::Txid, json, Auth, Client, RpcApi};
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
-use rooch_config::BitcoinRelayerConfig;
-
-use super::messages::GetChainTipsMessage;
 
 pub struct BitcoinClientActor {
     rpc_client: Client,
 }
 
 impl BitcoinClientActor {
-    pub fn new(config: BitcoinRelayerConfig) -> Result<Self> {
+    pub fn new(btc_rpc_url: &str, btc_rpc_user_name: &str, btc_rpc_password: &str) -> Result<Self> {
         let rpc_client = Client::new(
-            config.btc_rpc_url.as_str(),
-            Auth::UserPass(config.btc_rpc_user_name, config.btc_rpc_password),
+            btc_rpc_url,
+            Auth::UserPass(btc_rpc_user_name.to_owned(), btc_rpc_password.to_owned()),
         )?;
         Ok(Self { rpc_client })
     }
@@ -124,5 +123,35 @@ impl Handler<BroadcastTransactionMessage> for BitcoinClientActor {
         // Make the RPC call
         let tx_id: bitcoin::Txid = self.rpc_client.call("sendrawtransaction", &params)?;
         Ok(tx_id)
+    }
+}
+
+#[async_trait]
+impl Handler<GetTxOutMessage> for BitcoinClientActor {
+    async fn handle(
+        &mut self,
+        msg: GetTxOutMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Option<json::GetTxOutResult>> {
+        let GetTxOutMessage {
+            txid,
+            vout,
+            include_mempool,
+        } = msg;
+
+        Ok(self.rpc_client.get_tx_out(&txid, vout, include_mempool)?)
+    }
+}
+
+#[async_trait]
+impl Handler<GetRawTransactionMessage> for BitcoinClientActor {
+    async fn handle(
+        &mut self,
+        msg: GetRawTransactionMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Transaction> {
+        let GetRawTransactionMessage { txid } = msg;
+
+        Ok(self.rpc_client.get_raw_transaction(&txid, None)?)
     }
 }

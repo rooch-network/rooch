@@ -11,7 +11,7 @@ use std::{
 };
 
 #[derive(Debug, PartialEq, Copy, Clone, Hash, Eq)]
-pub struct InscriptionId {
+pub(crate) struct InscriptionId {
     pub txid: Txid,
     pub index: u32,
 }

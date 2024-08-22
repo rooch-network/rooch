@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{RoochTransaction, TransactionSequenceInfo};
-use crate::{address::RoochAddress, multichain_id::MultiChainID};
+use crate::{
+    address::RoochAddress,
+    multichain_id::{MultiChainID, RoochMultiChainID},
+};
 use accumulator::accumulator_info::AccumulatorInfo;
 use anyhow::Result;
 use bitcoin::hashes::Hash;
@@ -35,6 +38,26 @@ impl L1Block {
 pub struct L1BlockWithBody {
     pub block: L1Block,
     pub block_body: Vec<u8>,
+}
+
+impl L1BlockWithBody {
+    pub fn new(block: L1Block, block_body: Vec<u8>) -> Self {
+        Self { block, block_body }
+    }
+
+    pub fn new_bitcoin_block(height: u64, block: bitcoin::Block) -> Self {
+        let block_hash = block.block_hash();
+        let block_body = crate::bitcoin::types::Block::from(block);
+        let l1_block = L1Block {
+            chain_id: RoochMultiChainID::Bitcoin.multichain_id(),
+            block_height: height,
+            block_hash: block_hash.to_byte_array().to_vec(),
+        };
+        Self {
+            block: l1_block,
+            block_body: block_body.encode(),
+        }
+    }
 }
 
 #[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]

@@ -8,10 +8,15 @@ use move_core_types::vm_status::KeptVMStatus;
 use moveos_config::DataDirPath;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
+use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::moveos_std::event::Event;
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::moveos_std::tx_context::TxContext;
-use moveos_types::state_resolver::{RootObjectResolver, StateReaderExt};
+use moveos_types::state::{FieldKey, ObjectChange, ObjectState, StateChangeSet};
+use moveos_types::state_resolver::{
+    RootObjectResolver, StateKV, StateReaderExt, StateResolver, StatelessResolver,
+};
 use moveos_types::transaction::{FunctionCall, VerifiedMoveOSTransaction};
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
@@ -51,6 +56,7 @@ pub struct RustBindingTest {
     root: ObjectMeta,
     rooch_db: RoochDB,
     pub registry_service: RegistryService,
+    events: Vec<Event>,
 }
 
 impl RustBindingTest {
@@ -64,20 +70,21 @@ impl RustBindingTest {
     }
 
     pub fn new() -> Result<Self> {
-        let opt = RoochOpt::new_with_temp_store()?;
-        let store_config = opt.store_config();
-        let registry_service = metrics::RegistryService::default();
-        let rooch_db = RoochDB::init(store_config, &registry_service.default_registry())?;
+        Self::new_with_network(BuiltinChainID::Local.into())
+    }
 
-        let mut network: RoochNetwork = BuiltinChainID::Local.into();
-
+    pub fn new_with_network(mut network: RoochNetwork) -> Result<Self> {
         let kp = RoochKeyPair::generate_secp256k1();
         let sequencer = kp.public().bitcoin_address()?;
 
         network.set_sequencer_account(sequencer.clone());
 
-        let genesis = RoochGenesis::load_or_init(network, &rooch_db)?;
-        let root = genesis.genesis_root().clone();
+        let genesis = RoochGenesis::build(network.clone())?;
+        let opt = RoochOpt::new_with_temp_store()?;
+        let store_config = opt.store_config();
+        let registry_service = metrics::RegistryService::default();
+        let rooch_db = RoochDB::init(store_config, &registry_service.default_registry())?;
+        let root = genesis.init_genesis(&rooch_db)?;
 
         let executor = ExecutorActor::new(
             root.clone(),
@@ -103,6 +110,7 @@ impl RustBindingTest {
             reader_executor,
             rooch_db,
             registry_service,
+            events: vec![],
         })
     }
 
@@ -205,10 +213,27 @@ impl RustBindingTest {
     ) -> Result<ExecuteTransactionResult> {
         let result = self.executor.execute(tx)?;
         self.root = result.transaction_info.root_metadata();
-
+        self.events.extend(result.output.events.clone());
         self.reader_executor
             .refresh_state(self.root.clone(), false)?;
         Ok(result)
+    }
+
+    /// Directly apply a change set to the state and update root
+    pub fn apply_changes(&mut self, changes: Vec<ObjectChange>) -> Result<()> {
+        let mut change_set = StateChangeSet::new(self.root.state_root(), self.root.size);
+        for change in changes {
+            change_set.add_change(change)?;
+        }
+        self.rooch_db
+            .moveos_store
+            .state_store
+            .apply_change_set(&mut change_set)?;
+        self.root = change_set.root_metadata();
+        self.reader_executor
+            .refresh_state(self.root.clone(), false)?;
+        self.executor.refresh_state(self.root.clone(), false)?;
+        Ok(())
     }
 
     pub fn get_account_sequence_number(&self, address: AccountAddress) -> Result<u64> {
@@ -217,6 +242,10 @@ impl RustBindingTest {
             .get_account(address)?
             .map(|account| account.value.sequence_number)
             .unwrap_or(0))
+    }
+
+    pub fn events(&self) -> &Vec<Event> {
+        &self.events
     }
 }
 
@@ -232,5 +261,26 @@ impl MoveFunctionCaller for RustBindingTest {
             function_call,
         );
         Ok(result)
+    }
+}
+
+impl StateResolver for RustBindingTest {
+    fn root(&self) -> &ObjectMeta {
+        &self.root
+    }
+}
+
+impl StatelessResolver for RustBindingTest {
+    fn get_field_at(&self, state_root: H256, key: &FieldKey) -> Result<Option<ObjectState>> {
+        self.resolver().get_field_at(state_root, key)
+    }
+
+    fn list_fields_at(
+        &self,
+        state_root: H256,
+        cursor: Option<FieldKey>,
+        limit: usize,
+    ) -> Result<Vec<StateKV>> {
+        self.resolver().list_fields_at(state_root, cursor, limit)
     }
 }

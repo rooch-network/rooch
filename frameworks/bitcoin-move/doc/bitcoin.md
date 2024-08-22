@@ -23,7 +23,8 @@
 -  [Function `contains_header`](#0x4_bitcoin_contains_header)
 
 
-<pre><code><b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::debug</a>;
+<b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::address</a>;

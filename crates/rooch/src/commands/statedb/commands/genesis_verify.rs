@@ -1,6 +1,29 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::commands::statedb::commands::inscription::{
+    gen_inscription_id_update, InscriptionSource,
+};
+use crate::commands::statedb::commands::utxo::{AddressMappingData, UTXORawData};
+use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
+use bitcoin::OutPoint;
+use clap::Parser;
+use move_core_types::account_address::AccountAddress;
+use move_vm_types::values::Value;
+use moveos_store::MoveOSStore;
+use moveos_types::moveos_std::object::{DynamicField, ObjectMeta};
+use moveos_types::state::{MoveState, MoveStructState, ObjectState};
+use moveos_types::state_resolver::{RootObjectResolver, StatelessResolver};
+use rooch_config::R_OPT_NET_HELP;
+use rooch_types::address::BitcoinAddress;
+use rooch_types::bitcoin::ord::{
+    BitcoinInscriptionID, Inscription, InscriptionID, InscriptionStore,
+};
+use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
+use rooch_types::error::RoochResult;
+use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
+use rooch_types::rooch_network::RoochChainID;
+use rustc_hash::FxHashSet;
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Read, Write};
@@ -9,31 +32,6 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Instant, SystemTime};
-
-use bitcoin::OutPoint;
-use clap::Parser;
-use move_core_types::account_address::AccountAddress;
-use move_vm_types::values::Value;
-use rustc_hash::FxHashSet;
-
-use bitcoin_move::natives::ord::inscription_id::InscriptionId;
-use moveos_store::MoveOSStore;
-use moveos_types::moveos_std::object::{DynamicField, ObjectMeta};
-use moveos_types::state::{MoveState, MoveStructState, ObjectState};
-use moveos_types::state_resolver::{RootObjectResolver, StatelessResolver};
-use rooch_config::R_OPT_NET_HELP;
-use rooch_types::address::BitcoinAddress;
-use rooch_types::bitcoin::ord::{Inscription, InscriptionID, InscriptionStore};
-use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
-use rooch_types::error::RoochResult;
-use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
-use rooch_types::rooch_network::RoochChainID;
-
-use crate::commands::statedb::commands::inscription::{
-    gen_inscription_id_update, InscriptionSource,
-};
-use crate::commands::statedb::commands::utxo::{AddressMappingData, UTXORawData};
-use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 
 /// Import BTC ordinals & UTXO for genesis
 #[derive(Debug, Parser)]
@@ -576,18 +574,20 @@ fn verify_inscription(
         }
         // check inscription_id
         let (exp_inscription_id_key, exp_inscription_id_state) =
-            gen_inscription_id_update(total - 1, exp_inscription_id.clone());
+            gen_inscription_id_update(total - 1, exp_inscription_id);
         let act_inscription_id_state = resolver
             .get_field_at(inscription_store_state_root, &exp_inscription_id_key)
             .unwrap();
-        let (mismatched, not_found) =
-            write_mismatched_state_output::<DynamicField<u32, InscriptionID>, InscriptionId>(
-                &mut output_writer,
-                "[inscription_id]",
-                exp_inscription_id_state,
-                act_inscription_id_state.clone(),
-                Some(source.id),
-            );
+        let (mismatched, not_found) = write_mismatched_state_output::<
+            DynamicField<u32, InscriptionID>,
+            BitcoinInscriptionID,
+        >(
+            &mut output_writer,
+            "[inscription_id]",
+            exp_inscription_id_state,
+            act_inscription_id_state.clone(),
+            Some(source.id),
+        );
         if mismatched {
             mismatched_inscription_id_count += 1;
             new_cases.insert(source.sequence_number);
