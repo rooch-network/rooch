@@ -247,8 +247,9 @@ export class TestBox {
 
   createTmpDir(): DirResult {
     tmp.setGracefulCleanup()
-    const systemDir = getTempDirectory()
-    return tmp.dirSync({ unsafeCleanup: true, tmpdir: systemDir, mode: 777 })
+    const systemTempDir = getTempDirectory()
+    console.log("systemTempDir:", systemTempDir)
+    return tmp.dirSync({ unsafeCleanup: true, tmpdir: systemTempDir, mode: 777 })
   }
 }
 
