@@ -694,7 +694,10 @@ fn write_mismatched_state_output<
     let mut mismatched_val = false;
     let mut mismatched_obj = false;
     let not_found = act.is_none();
-    let (diff_meta, diff_val, exp_meta, exp_val) = match act {
+
+    let exp_decoded = T::from_bytes(&exp.value).unwrap();
+
+    let (diff_meta, diff_val, exp_meta) = match act {
         Some(act) => {
             let mut diff_meta = "".to_string();
             let mut diff_val = "".to_string();
@@ -709,13 +712,12 @@ fn write_mismatched_state_output<
             }
 
             if mismatched_val {
-                let exp_decoded = T::from_bytes(&exp.value).unwrap();
                 let act_decoded = T::from_bytes(&act.value).unwrap();
                 diff_val = compare_and_format::<T>(&exp_decoded, &act_decoded);
             }
-            (diff_meta, diff_val, exp.metadata, exp.value)
+            (diff_meta, diff_val, exp.metadata)
         }
-        None => ("".to_string(), "".to_string(), exp.metadata, exp.value),
+        None => ("".to_string(), "".to_string(), exp.metadata),
     };
 
     let mismatched = mismatched_obj || not_found || mismatched_meta || mismatched_val;
@@ -737,29 +739,29 @@ fn write_mismatched_state_output<
         writeln!(
             output_writer,
             "{} {}. exp_meta: {:?}; exp_val: {:?}; src_data: {:?}",
-            prefix, state, exp_meta, exp_val, src_data
+            prefix, state, exp_meta, exp_decoded, src_data
         )
         .expect("Unable to write line");
     }
     if mismatched_obj {
         writeln!(
             output_writer,
-            "{} {}. <diff-meta: {:?}>; <diff-val: {:?}>. exp_meta: {:?}; exp_val: {:?}; src_data: {:?}",
-            prefix, state, diff_meta, diff_val, exp_meta, exp_val,src_data
+            "{} {}. <diff_meta: {:?}>; <diff_val: {:?}>. exp_meta: {:?}; exp_val: {:?}; src_data: {:?}",
+            prefix, state, diff_meta, diff_val, exp_meta, exp_decoded,src_data
         )
         .expect("Unable to write line");
     } else if mismatched_meta {
         writeln!(
             output_writer,
-            "{} {}. <diff-meta: {:?}>. exp_meta: {:?}; exp_val: {:?}; src_data: {:?}",
-            prefix, state, diff_meta, exp_meta, exp_val, src_data
+            "{} {}. <diff_meta: {:?}>. exp_meta: {:?}; exp_val: {:?}; src_data: {:?}",
+            prefix, state, diff_meta, exp_meta, exp_decoded, src_data
         )
         .expect("Unable to write line");
     } else {
         writeln!(
             output_writer,
-            "{} {}. <diff-val: {:?}>. exp_meta: {:?}, exp_val: {:?}, src_data: {:?}",
-            prefix, state, diff_val, exp_meta, exp_val, src_data
+            "{} {}. <diff_val: {:?}>. exp_meta: {:?}, exp_val: {:?}, src_data: {:?}",
+            prefix, state, diff_val, exp_meta, exp_decoded, src_data
         )
         .expect("Unable to write line");
     }
