@@ -18,21 +18,21 @@ module moveos_std::simple_map {
     /// Map key is not found
     const ErrorKeyNotFound: u64 = 2;
 
-    struct SimpleMap<Key, Value> has store {
+    struct SimpleMap<Key, Value> has copy, drop, store {
         data: vector<Element<Key, Value>>,
     }
 
-    struct Element<Key, Value> has store {
+    struct Element<Key, Value> has copy, drop, store {
         key: Key,
         value: Value,
     }
 
-    public fun length<Key: store, Value: store>(map: &SimpleMap<Key, Value>): u64 {
+    public fun length<Key, Value>(map: &SimpleMap<Key, Value>): u64 {
         vector::length(&map.data)
     }
 
     /// Create an empty SimpleMap.
-    public fun new<Key: store, Value: store>(): SimpleMap<Key, Value> {
+    public fun new<Key, Value>(): SimpleMap<Key, Value> {
         SimpleMap {
             data: vector::empty(),
         }
@@ -41,7 +41,7 @@ module moveos_std::simple_map {
     #[deprecated]
     /// Create an empty SimpleMap.
     /// This function is deprecated, use `new` instead.
-    public fun create<Key: store, Value: store>(): SimpleMap<Key, Value> {
+    public fun create<Key, Value>(): SimpleMap<Key, Value> {
         new()
     }
 
@@ -56,7 +56,7 @@ module moveos_std::simple_map {
         }
     }
 
-    public fun borrow<Key: store, Value: store>(
+    public fun borrow<Key, Value>(
         map: &SimpleMap<Key, Value>,
         key: &Key,
     ): &Value {
@@ -66,7 +66,7 @@ module moveos_std::simple_map {
         &vector::borrow(&map.data, idx).value
     }
 
-    public fun borrow_with_default<Key: store, Value: store>(
+    public fun borrow_with_default<Key, Value>(
         map: &SimpleMap<Key, Value>,
         key: &Key,
         default: &Value,
@@ -80,7 +80,7 @@ module moveos_std::simple_map {
         }
     }
 
-    public fun borrow_mut<Key: store, Value: store>(
+    public fun borrow_mut<Key, Value>(
         map: &mut SimpleMap<Key, Value>,
         key: &Key,
     ): &mut Value {
@@ -90,7 +90,7 @@ module moveos_std::simple_map {
         &mut vector::borrow_mut(&mut map.data, idx).value
     }
 
-    public fun contains_key<Key: store, Value: store>(
+    public fun contains_key<Key, Value>(
         map: &SimpleMap<Key, Value>,
         key: &Key,
     ): bool {
@@ -98,20 +98,18 @@ module moveos_std::simple_map {
         option::is_some(&maybe_idx)
     }
 
-    public fun destroy_empty<Key: store, Value: store>(map: SimpleMap<Key, Value>) {
+    public fun destroy_empty<Key, Value>(map: SimpleMap<Key, Value>) {
         let SimpleMap { data } = map;
         vector::destroy_empty(data);
     }
 
     /// Drop all keys and values in the map. This requires keys and values to be dropable.
-    public fun drop<Key: copy + drop, Value: drop>(map: SimpleMap<Key, Value>) {
-        let SimpleMap { data } = map;
-        vector::for_each(data, |e| {
-            let Element { key:_, value:_ } = e;
-        });
+    /// Deprecated: The `SimpleMap` is dropable if the keys and values are dropable, so we don't need this function.
+    public fun drop<Key: drop, Value: drop>(_map: SimpleMap<Key, Value>) {
+
     }
 
-    public fun add<Key: store, Value: store>(
+    public fun add<Key, Value>(
         map: &mut SimpleMap<Key, Value>,
         key: Key,
         value: Value,
@@ -123,7 +121,7 @@ module moveos_std::simple_map {
     }
 
     /// Insert key/value pair or update an existing key to a new value
-    public fun upsert<Key: store, Value: store>(
+    public fun upsert<Key, Value>(
         map: &mut SimpleMap<Key, Value>,
         key: Key,
         value: Value
@@ -173,7 +171,7 @@ module moveos_std::simple_map {
 
     /// Transform the map into two vectors with the keys and values respectively
     /// Primarily used to destroy a map
-    public fun to_vec_pair<Key: store, Value: store>(
+    public fun to_vec_pair<Key, Value>(
         map: SimpleMap<Key, Value>
     ): (vector<Key>, vector<Value>) {
         let keys: vector<Key> = vector::empty();
@@ -192,7 +190,7 @@ module moveos_std::simple_map {
         (keys, values)
     } 
 
-    public fun remove<Key: store, Value: store>(
+    public fun remove<Key, Value>(
         map: &mut SimpleMap<Key, Value>,
         key: &Key,
     ): (Key, Value) {
@@ -203,7 +201,7 @@ module moveos_std::simple_map {
         (key, value)
     }
 
-    fun find<Key: store, Value: store>(
+    fun find<Key, Value>(
         map: &SimpleMap<Key, Value>,
         key: &Key,
     ): option::Option<u64>{

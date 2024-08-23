@@ -46,7 +46,7 @@ This module provides a solution for unsorted maps, that is it has the properties
 
 
 
-<pre><code><b>struct</b> <a href="simple_map.md#0x2_simple_map_SimpleMap">SimpleMap</a>&lt;Key, Value&gt; <b>has</b> store
+<pre><code><b>struct</b> <a href="simple_map.md#0x2_simple_map_SimpleMap">SimpleMap</a>&lt;Key, Value&gt; <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -57,7 +57,7 @@ This module provides a solution for unsorted maps, that is it has the properties
 
 
 
-<pre><code><b>struct</b> <a href="simple_map.md#0x2_simple_map_Element">Element</a>&lt;Key, Value&gt; <b>has</b> store
+<pre><code><b>struct</b> <a href="simple_map.md#0x2_simple_map_Element">Element</a>&lt;Key, Value&gt; <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -93,7 +93,7 @@ Map key is not found
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_length">length</a>&lt;Key: store, Value: store&gt;(map: &<a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;): u64
+<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_length">length</a>&lt;Key, Value&gt;(map: &<a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;): u64
 </code></pre>
 
 
@@ -105,7 +105,7 @@ Map key is not found
 Create an empty SimpleMap.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_new">new</a>&lt;Key: store, Value: store&gt;(): <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_new">new</a>&lt;Key, Value&gt;(): <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;
 </code></pre>
 
 
@@ -119,7 +119,7 @@ This function is deprecated, use <code>new</code> instead.
 
 
 <pre><code>#[deprecated]
-<b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_create">create</a>&lt;Key: store, Value: store&gt;(): <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;
+<b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_create">create</a>&lt;Key, Value&gt;(): <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;
 </code></pre>
 
 
@@ -141,7 +141,7 @@ This function is deprecated, use <code>new</code> instead.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_borrow">borrow</a>&lt;Key: store, Value: store&gt;(map: &<a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;, key: &Key): &Value
+<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_borrow">borrow</a>&lt;Key, Value&gt;(map: &<a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;, key: &Key): &Value
 </code></pre>
 
 
@@ -152,7 +152,7 @@ This function is deprecated, use <code>new</code> instead.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_borrow_with_default">borrow_with_default</a>&lt;Key: store, Value: store&gt;(map: &<a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;, key: &Key, default: &Value): &Value
+<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_borrow_with_default">borrow_with_default</a>&lt;Key, Value&gt;(map: &<a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;, key: &Key, default: &Value): &Value
 </code></pre>
 
 
@@ -163,7 +163,7 @@ This function is deprecated, use <code>new</code> instead.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_borrow_mut">borrow_mut</a>&lt;Key: store, Value: store&gt;(map: &<b>mut</b> <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;, key: &Key): &<b>mut</b> Value
+<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_borrow_mut">borrow_mut</a>&lt;Key, Value&gt;(map: &<b>mut</b> <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;, key: &Key): &<b>mut</b> Value
 </code></pre>
 
 
@@ -174,7 +174,7 @@ This function is deprecated, use <code>new</code> instead.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_contains_key">contains_key</a>&lt;Key: store, Value: store&gt;(map: &<a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;, key: &Key): bool
+<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_contains_key">contains_key</a>&lt;Key, Value&gt;(map: &<a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;, key: &Key): bool
 </code></pre>
 
 
@@ -185,7 +185,7 @@ This function is deprecated, use <code>new</code> instead.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_destroy_empty">destroy_empty</a>&lt;Key: store, Value: store&gt;(map: <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_destroy_empty">destroy_empty</a>&lt;Key, Value&gt;(map: <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;)
 </code></pre>
 
 
@@ -195,9 +195,10 @@ This function is deprecated, use <code>new</code> instead.
 ## Function `drop`
 
 Drop all keys and values in the map. This requires keys and values to be dropable.
+Deprecated: The <code><a href="simple_map.md#0x2_simple_map_SimpleMap">SimpleMap</a></code> is dropable if the keys and values are dropable, so we don't need this function.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_drop">drop</a>&lt;Key: <b>copy</b>, drop, Value: drop&gt;(map: <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_drop">drop</a>&lt;Key: drop, Value: drop&gt;(_map: <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;)
 </code></pre>
 
 
@@ -208,7 +209,7 @@ Drop all keys and values in the map. This requires keys and values to be dropabl
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_add">add</a>&lt;Key: store, Value: store&gt;(map: &<b>mut</b> <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;, key: Key, value: Value)
+<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_add">add</a>&lt;Key, Value&gt;(map: &<b>mut</b> <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;, key: Key, value: Value)
 </code></pre>
 
 
@@ -220,7 +221,7 @@ Drop all keys and values in the map. This requires keys and values to be dropabl
 Insert key/value pair or update an existing key to a new value
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_upsert">upsert</a>&lt;Key: store, Value: store&gt;(map: &<b>mut</b> <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;, key: Key, value: Value): (<a href="_Option">option::Option</a>&lt;Key&gt;, <a href="_Option">option::Option</a>&lt;Value&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_upsert">upsert</a>&lt;Key, Value&gt;(map: &<b>mut</b> <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;, key: Key, value: Value): (<a href="_Option">option::Option</a>&lt;Key&gt;, <a href="_Option">option::Option</a>&lt;Value&gt;)
 </code></pre>
 
 
@@ -257,7 +258,7 @@ Transform the map into two vectors with the keys and values respectively
 Primarily used to destroy a map
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_to_vec_pair">to_vec_pair</a>&lt;Key: store, Value: store&gt;(map: <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;): (<a href="">vector</a>&lt;Key&gt;, <a href="">vector</a>&lt;Value&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_to_vec_pair">to_vec_pair</a>&lt;Key, Value&gt;(map: <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;): (<a href="">vector</a>&lt;Key&gt;, <a href="">vector</a>&lt;Value&gt;)
 </code></pre>
 
 
@@ -268,5 +269,5 @@ Primarily used to destroy a map
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_remove">remove</a>&lt;Key: store, Value: store&gt;(map: &<b>mut</b> <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;, key: &Key): (Key, Value)
+<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_remove">remove</a>&lt;Key, Value&gt;(map: &<b>mut</b> <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;, key: &Key): (Key, Value)
 </code></pre>
