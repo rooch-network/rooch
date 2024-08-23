@@ -68,6 +68,11 @@ Feature: Rooch CLI integration tests
       Then cmd: "transaction get-transactions-by-order --cursor 0 --limit 1 --descending-order false"
       Then cmd: "transaction get-transactions-by-hash --hashes {{$.transaction[-1].data[0].execution_info.tx_hash}}"
       Then cmd: "transaction build --function rooch_framework::empty::empty --json"
+      Then assert: "'{{$.transaction[-1]}}' not_contains error"
+      Then cmd: "transaction sign --tx-hex {{$.transaction[-1]}} --json"
+      Then assert: "'{{$.transaction[-1]}}' not_contains error"
+      Then cmd: "transaction submit --signed-tx-hex {{$.transaction[-1]}}"
+      Then assert: "{{$.transaction[-1].execution_info.status.type}} == executed"
 
       # alias tx for transaction
       Then cmd: "tx get-transactions-by-order --cursor 1 --limit 2 --descending-order true"

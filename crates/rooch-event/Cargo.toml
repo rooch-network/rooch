@@ -15,3 +15,5 @@ coerce = { workspace = true }
 async-trait = { workspace = true }
 moveos-eventbus = { workspace = true }
 log = { workspace = true }
+
+rooch-types = { workspace = true }

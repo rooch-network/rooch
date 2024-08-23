@@ -258,7 +258,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         root.clone(),
         moveos_store.clone(),
         rooch_store.clone(),
-        Some(event_actor_ref),
+        Some(event_actor_ref.clone()),
     )?;
 
     let read_executor_ref = reader_executor
@@ -277,6 +277,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         rooch_store,
         service_status,
         &prometheus_registry,
+        Some(event_actor_ref.clone()),
     )?
     .into_actor(Some("Sequencer"), &actor_system)
     .await?;
@@ -327,6 +328,8 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         indexer_proxy.clone(),
         service_status,
         &prometheus_registry,
+        Some(event_actor_ref.clone()),
+        rooch_db,
     );
 
     // Only process sequenced tx on startup when service is active
@@ -349,6 +352,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
             processor_proxy.clone(),
             ethereum_relayer_config,
             bitcoin_relayer_config.clone(),
+            Some(event_actor_ref),
         )
         .await?
         .into_actor(Some("Relayer"), &actor_system)
