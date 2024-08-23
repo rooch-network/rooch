@@ -12,7 +12,7 @@ use move_vm_types::{
 };
 use std::{collections::VecDeque, sync::Arc};
 
-pub const E_NATIVE_FUNCTION_PANIC: u64 = 999999999999999997;
+pub const E_NATIVE_FUNCTION_PANIC: u64 = 987654321;
 
 pub fn make_module_natives(
     natives: impl IntoIterator<Item = (impl Into<String>, NativeFunction)>,

@@ -277,6 +277,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         rooch_store,
         service_status,
         &prometheus_registry,
+        Some(event_actor_ref.clone()),
     )?
     .into_actor(Some("Sequencer"), &actor_system)
     .await?;

@@ -15,7 +15,6 @@ use move_core_types::vm_status::VMStatus;
 use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_eventbus::bus::EventData;
-use moveos_eventbus::event::GasUpgradeEvent;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
@@ -28,6 +27,7 @@ use moveos_types::transaction::{FunctionCall, MoveOSTransaction, VerifiedMoveAct
 use moveos_types::transaction::{MoveAction, VerifiedMoveOSTransaction};
 use prometheus::Registry;
 use rooch_event::actor::{EventActor, EventActorSubscribeMessage, GasUpgradeMessage};
+use rooch_event::event::GasUpgradeEvent;
 use rooch_genesis::FrameworksGasParameters;
 use rooch_store::RoochStore;
 use rooch_types::address::{BitcoinAddress, MultiChainAddress};

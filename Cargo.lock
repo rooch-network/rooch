@@ -6800,6 +6800,7 @@ dependencies = [
  "regex",
  "serde 1.0.208",
  "tempfile",
+ "thiserror",
  "tracing-subscriber",
 ]
 
@@ -9315,6 +9316,7 @@ dependencies = [
  "coerce",
  "log",
  "moveos-eventbus",
+ "rooch-types",
 ]
 
 [[package]]
@@ -9787,11 +9789,13 @@ dependencies = [
  "coerce",
  "function_name",
  "metrics",
+ "moveos-eventbus",
  "moveos-types",
  "prometheus",
  "raw-store",
  "rooch-config",
  "rooch-db",
+ "rooch-event",
  "rooch-genesis",
  "rooch-store",
  "rooch-types",

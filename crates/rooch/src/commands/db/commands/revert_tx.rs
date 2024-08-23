@@ -4,12 +4,10 @@
 use anyhow::Error;
 use clap::Parser;
 use metrics::RegistryService;
-use moveos_store::MoveOSStore;
 use moveos_types::moveos_std::object::ObjectMeta;
 use rooch_config::{RoochOpt, R_OPT_NET_HELP};
-use rooch_db::{revert_tx, RoochDB};
+use rooch_db::RoochDB;
 use rooch_genesis::RoochGenesis;
-use rooch_store::RoochStore;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::rooch_network::RoochChainID;
 use std::path::PathBuf;
@@ -40,9 +38,13 @@ pub struct RevertTxCommand {
 impl RevertTxCommand {
     pub async fn execute(self) -> RoochResult<()> {
         let tx_order = self.tx_order;
-        let (_root, moveos_store, rooch_store, _start_time) = self.init();
+        let (_root, rooch_db, _start_time) = self.init();
 
-        let tx_hashes = rooch_store.transaction_store.get_tx_hashs(vec![tx_order])?;
+        let tx_hashes = rooch_db
+            .rooch_store
+            .transaction_store
+            .get_tx_hashs(vec![tx_order])?;
+
         // check tx hash exist via tx_order
         if tx_hashes.is_empty() || tx_hashes[0].is_none() {
             return Err(RoochError::from(Error::msg(format!(
@@ -52,16 +54,12 @@ impl RevertTxCommand {
         }
         let tx_hash = tx_hashes[0].unwrap();
 
-        revert_tx(rooch_store, moveos_store, tx_hash)?;
+        rooch_db.revert_tx(tx_hash)?;
 
-        println!(
-            "revert tx succ, tx_hash: {:?}, tx_order {}",
-            tx_hash, tx_order
-        );
         Ok(())
     }
 
-    fn init(self) -> (ObjectMeta, MoveOSStore, RoochStore, SystemTime) {
+    fn init(self) -> (ObjectMeta, RoochDB, SystemTime) {
         let start_time = SystemTime::now();
 
         let opt = RoochOpt::new_with_default(self.base_data_dir, self.chain_id, None).unwrap();
@@ -70,11 +68,6 @@ impl RevertTxCommand {
             RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
         let genesis = RoochGenesis::load_or_init(opt.network(), &rooch_db).unwrap();
         let root = genesis.genesis_root().clone();
-        (
-            root,
-            rooch_db.moveos_store,
-            rooch_db.rooch_store,
-            start_time,
-        )
+        (root, rooch_db, start_time)
     }
 }

@@ -1,13 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::event::{GasUpgradeEvent, ServiceStatusEvent};
 use async_trait::async_trait;
 use coerce::actor::context::ActorContext;
 use coerce::actor::message::{Handler, Message};
 use coerce::actor::Actor;
 use log;
 use moveos_eventbus::bus::{EventBus, EventNotifier};
-use moveos_eventbus::event::{GasUpgradeEvent, VMPanicErrorEvent};
+use rooch_types::service_status::ServiceStatus;
 
 #[derive(Default)]
 pub struct EventActor {
@@ -44,22 +45,26 @@ impl Handler<GasUpgradeMessage> for EventActor {
 }
 
 #[derive(Default, Clone, Debug)]
-pub struct VMPanicMessage {}
+pub struct ServiceStatusMessage {
+    pub status: ServiceStatus,
+}
 
-impl Message for VMPanicMessage {
+impl Message for ServiceStatusMessage {
     type Result = anyhow::Result<()>;
 }
 
 #[async_trait]
-impl Handler<VMPanicMessage> for EventActor {
+impl Handler<ServiceStatusMessage> for EventActor {
     async fn handle(
         &mut self,
-        message: VMPanicMessage,
+        message: ServiceStatusMessage,
         _ctx: &mut ActorContext,
     ) -> anyhow::Result<()> {
         log::debug!("EventActor receive message {:?}", message);
         self.event_bus
-            .notify::<VMPanicErrorEvent>(VMPanicErrorEvent {})?;
+            .notify::<ServiceStatusEvent>(ServiceStatusEvent {
+                status: message.status,
+            })?;
         Ok(())
     }
 }

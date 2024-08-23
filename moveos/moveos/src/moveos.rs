@@ -6,7 +6,7 @@ use crate::gas::table::{
 };
 use crate::vm::data_cache::MoveosDataCache;
 use crate::vm::moveos_vm::{MoveOSSession, MoveOSVM};
-use anyhow::{bail, Result};
+use anyhow::{bail, format_err, Error, Result};
 use backtrace::Backtrace;
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::errors::VMError;
@@ -23,7 +23,6 @@ use move_core_types::{
 use move_vm_runtime::config::VMConfig;
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::native_functions::NativeFunction;
-use moveos_stdlib::natives::helpers::E_NATIVE_FUNCTION_PANIC;
 use moveos_store::config_store::ConfigDBStore;
 use moveos_store::event_store::EventDBStore;
 use moveos_store::state_store::statedb::StateDBStore;
@@ -48,8 +47,13 @@ use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-pub const E_VERIFIER_PANIC: u64 = 999999999999999999;
-pub const E_SYSTEM_CALL_PANIC: u64 = 999999999999999998;
+#[derive(thiserror::Error, Debug)]
+pub enum VMPanicError {
+    #[error("Verifier panic {0:?}.")]
+    VerifierPanicError(Error),
+    #[error("System call panic {0:?}.")]
+    SystemCallPanicError(Error),
+}
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct GasPaymentAccount {
@@ -480,15 +484,12 @@ impl MoveOS {
             }
             Err(discard_status) => {
                 //This should not happen, if it happens, it means that the VM or verifer has a bug
-                let backtrace = Backtrace::new();
                 log::debug!(
-                    "Discard status: {:?}, execute_result: {:?} \n{:?}",
+                    "Discard status: {:?}, execute_result: {:?}",
                     discard_status,
                     execute_result,
-                    backtrace
                 );
-                return Err(PartialVMError::new(StatusCode::ABORTED)
-                    .with_sub_status(E_VERIFIER_PANIC)
+                return Err(PartialVMError::new(StatusCode::VERIFICATION_ERROR)
                     .with_message("Execute Action with Panic".to_string())
                     .finish(Location::Undefined));
             }
@@ -509,21 +510,9 @@ impl MoveOS {
                     // system call should always success
                     let backtrace = Backtrace::new();
                     log::warn!("System call failed: {:?}\n{:?}", kept_status, backtrace);
-                    return Err(anyhow::Error::new(
-                        PartialVMError::new(StatusCode::ABORTED)
-                            .with_sub_status(E_SYSTEM_CALL_PANIC)
-                            .with_message("Execute Action with Panic".to_string())
-                            .finish(Location::Undefined),
-                    ));
-                }
-
-                if is_vm_panic_error(kept_status.clone()) {
-                    return Err(anyhow::Error::new(
-                        PartialVMError::new(StatusCode::ABORTED)
-                            .with_sub_status(E_VERIFIER_PANIC)
-                            .with_message("Execute Action with Panic".to_string())
-                            .finish(Location::Undefined),
-                    ));
+                    return Err(Error::from(VMPanicError::SystemCallPanicError(
+                        format_err!("Execute system call with Panic {:?}", vm_error_info),
+                    )));
                 }
 
                 kept_status
@@ -532,12 +521,10 @@ impl MoveOS {
                 //This should not happen, if it happens, it means that the VM or verifer has a bug
                 let backtrace = Backtrace::new();
                 log::warn!("Discard status: {:?}\n{:?}", discard_status, backtrace);
-                return Err(anyhow::Error::new(
-                    PartialVMError::new(StatusCode::ABORTED)
-                        .with_sub_status(E_VERIFIER_PANIC)
-                        .with_message("Execute Action with Panic".to_string())
-                        .finish(Location::Undefined),
-                ));
+                return Err(Error::from(VMPanicError::VerifierPanicError(format_err!(
+                    "Execute Action with Panic {:?}",
+                    vm_error_info
+                ))));
             }
         };
 
@@ -626,15 +613,4 @@ fn func_name_from_db(
     Ok(module_bin_view
         .identifier_at(module_bin_view.function_handle_at(func_def.function).name)
         .to_string())
-}
-
-pub fn is_vm_panic_error(kept_status: KeptVMStatus) -> bool {
-    if let KeptVMStatus::MoveAbort(_, code) = kept_status {
-        matches!(
-            code,
-            E_VERIFIER_PANIC | E_SYSTEM_CALL_PANIC | E_NATIVE_FUNCTION_PANIC
-        )
-    } else {
-        false
-    }
 }

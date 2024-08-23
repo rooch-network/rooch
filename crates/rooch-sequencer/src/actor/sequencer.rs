@@ -1,21 +1,25 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::ops::Deref;
 use std::sync::Arc;
 use std::time::SystemTime;
 
 use crate::messages::{
     GetSequencerOrderMessage, GetTransactionByHashMessage, GetTransactionsByHashMessage,
-    GetTxHashsMessage, SetStatusMessage, TransactionSequenceMessage,
+    GetTxHashsMessage, TransactionSequenceMessage,
 };
 use crate::metrics::SequencerMetrics;
 use accumulator::{Accumulator, MerkleAccumulator};
 use anyhow::Result;
 use async_trait::async_trait;
-use coerce::actor::{context::ActorContext, message::Handler, Actor};
+use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use function_name::named;
+use moveos_eventbus::bus::EventData;
 use moveos_types::h256::{self, H256};
 use prometheus::Registry;
+use rooch_event::actor::{EventActor, EventActorSubscribeMessage};
+use rooch_event::event::ServiceStatusEvent;
 use rooch_store::meta_store::MetaStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
@@ -32,6 +36,7 @@ pub struct SequencerActor {
     rooch_store: RoochStore,
     service_status: ServiceStatus,
     metrics: Arc<SequencerMetrics>,
+    event_actor: Option<LocalActorRef<EventActor>>,
 }
 
 impl SequencerActor {
@@ -40,6 +45,7 @@ impl SequencerActor {
         rooch_store: RoochStore,
         service_status: ServiceStatus,
         registry: &Registry,
+        event_actor: Option<LocalActorRef<EventActor>>,
     ) -> Result<Self> {
         // The sequencer info would be inited when genesis, so the sequencer info should not be None
         let last_sequencer_info = rooch_store
@@ -67,7 +73,22 @@ impl SequencerActor {
             rooch_store,
             service_status,
             metrics: Arc::new(SequencerMetrics::new(registry)),
+            event_actor,
         })
+    }
+
+    pub async fn subscribe_event(
+        &self,
+        event_actor_ref: LocalActorRef<EventActor>,
+        executor_actor_ref: LocalActorRef<SequencerActor>,
+    ) {
+        let service_status_event = ServiceStatusEvent::default();
+        let actor_subscribe_message = EventActorSubscribeMessage::new(
+            service_status_event,
+            "sequencer".to_string(),
+            Box::new(executor_actor_ref),
+        );
+        let _ = event_actor_ref.send(actor_subscribe_message).await;
     }
 
     pub fn last_order(&self) -> u64 {
@@ -144,7 +165,15 @@ impl SequencerActor {
     }
 }
 
-impl Actor for SequencerActor {}
+#[async_trait]
+impl Actor for SequencerActor {
+    async fn started(&mut self, ctx: &mut ActorContext) {
+        let local_actor_ref: LocalActorRef<Self> = ctx.actor_ref();
+        if let Some(event_actor) = self.event_actor.clone() {
+            let _ = self.subscribe_event(event_actor, local_actor_ref).await;
+        }
+    }
+}
 
 #[async_trait]
 impl Handler<TransactionSequenceMessage> for SequencerActor {
@@ -203,10 +232,14 @@ impl Handler<GetSequencerOrderMessage> for SequencerActor {
 }
 
 #[async_trait]
-impl Handler<SetStatusMessage> for SequencerActor {
-    async fn handle(&mut self, msg: SetStatusMessage, _ctx: &mut ActorContext) -> Result<()> {
-        log::warn!("SequencerActor set self status to {:?}", msg);
-        self.service_status = msg.status;
+impl Handler<EventData> for SequencerActor {
+    async fn handle(&mut self, msg: EventData, _ctx: &mut ActorContext) -> Result<()> {
+        if let Ok(service_status_event) = msg.data.downcast::<ServiceStatusEvent>() {
+            let service_status = service_status_event.deref().status;
+            log::warn!("SequencerActor set self status to {:?}", service_status);
+            self.service_status = service_status;
+        }
+
         Ok(())
     }
 }

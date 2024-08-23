@@ -12,12 +12,14 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_eventbus::bus::EventData;
-use moveos_eventbus::event::VMPanicErrorEvent;
 use rooch_config::{BitcoinRelayerConfig, EthereumRelayerConfig};
 use rooch_event::actor::{EventActor, EventActorSubscribeMessage};
+use rooch_event::event::ServiceStatusEvent;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
+use rooch_types::service_status::ServiceStatus;
 use rooch_types::transaction::{L1BlockWithBody, L1Transaction};
+use std::ops::Deref;
 use tracing::{error, info, log, warn};
 
 pub struct RelayerActor {
@@ -54,9 +56,9 @@ impl RelayerActor {
         event_actor_ref: LocalActorRef<EventActor>,
         executor_actor_ref: LocalActorRef<RelayerActor>,
     ) {
-        let gas_upgrade_event = VMPanicErrorEvent::default();
+        let service_status_event = ServiceStatusEvent::default();
         let actor_subscribe_message = EventActorSubscribeMessage::new(
-            gas_upgrade_event,
+            service_status_event,
             "relayer".to_string(),
             Box::new(executor_actor_ref),
         );
@@ -206,9 +208,11 @@ impl Handler<RelayTick> for RelayerActor {
 #[async_trait]
 impl Handler<EventData> for RelayerActor {
     async fn handle(&mut self, message: EventData, _ctx: &mut ActorContext) -> Result<()> {
-        if let Ok(_vm_panic_event) = message.data.downcast::<VMPanicErrorEvent>() {
-            log::warn!("RelayerActor: MoveVM panic occurs, set the status to paused...");
-            self.paused = true;
+        if let Ok(service_status_event) = message.data.downcast::<ServiceStatusEvent>() {
+            if service_status_event.deref().status == ServiceStatus::Maintenance {
+                log::warn!("RelayerActor: MoveVM panic occurs, set the status to paused...");
+                self.paused = true;
+            }
         }
         Ok(())
     }
