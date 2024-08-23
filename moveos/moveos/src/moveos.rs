@@ -296,7 +296,8 @@ impl MoveOS {
         }
 
         match self.execute_action(&mut session, action.clone()) {
-            Ok(status) => {
+            Ok(_) => {
+                let status = VMStatus::Executed;
                 if log::log_enabled!(log::Level::Debug) {
                     log::debug!(
                         "execute_action ok tx(hash:{}) vm_status:{:?}",
@@ -467,34 +468,8 @@ impl MoveOS {
         &self,
         session: &mut MoveOSSession<'_, '_, RootObjectResolver<MoveOSStore>, MoveOSGasMeter>,
         action: VerifiedMoveAction,
-    ) -> Result<VMStatus, VMError> {
-        // execute main tx
-        let execute_result = session.execute_move_action(action);
-        let vm_status = vm_status_of_result(execute_result.clone());
-
-        // If the user action failed, we need respawn the session,
-        // then execute system_pre_execute, system_post_execute.
-        let status = match vm_status.clone().keep_or_discard() {
-            Ok(status) => {
-                if status != KeptVMStatus::Executed {
-                    debug_assert!(execute_result.is_err());
-                    return Err(execute_result.unwrap_err());
-                }
-                vm_status
-            }
-            Err(discard_status) => {
-                //This should not happen, if it happens, it means that the VM or verifer has a bug
-                log::debug!(
-                    "Discard status: {:?}, execute_result: {:?}",
-                    discard_status,
-                    execute_result,
-                );
-                return Err(PartialVMError::new(StatusCode::VERIFICATION_ERROR)
-                    .with_message("Execute Action with Panic".to_string())
-                    .finish(Location::Undefined));
-            }
-        };
-        Ok(status)
+    ) -> Result<(), VMError> {
+        session.execute_move_action(action)
     }
 
     fn execution_cleanup(
