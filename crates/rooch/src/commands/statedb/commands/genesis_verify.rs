@@ -891,8 +891,11 @@ fn compare_and_format<T: Serialize + std::fmt::Debug>(exp: &T, act: &T) -> Strin
 
 fn rune_from_json_value(value: &serde_json::Value) -> Option<u128> {
     match value {
-        serde_json::Value::Array(s) => {
-            let rune_bytes: Vec<u8> = s.iter().map(|v| v.as_u64().unwrap() as u8).collect();
+        serde_json::Value::Object(obj) => {
+            // Object {"vec": Array [Array [Number(210), Number(2), Number(150), Number(73)]]}
+            let arr = obj.get("vec").unwrap().as_array().unwrap();
+            let rune_vec = arr.first().unwrap().as_array().unwrap();
+            let rune_bytes: Vec<u8> = rune_vec.iter().map(|v| v.as_u64().unwrap() as u8).collect();
             Some(from_commitment(rune_bytes))
         }
         _ => None,
@@ -911,4 +914,19 @@ fn format_differences(differences: HashMap<String, String>) -> String {
     }
 
     formatted
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::commands::statedb::commands::genesis_verify::{rune_from_json_value, to_commitment};
+    use moveos_types::move_std::option::MoveOption;
+
+    #[test]
+    fn test_rune_from_json_value() {
+        let rune = 1234567890u128;
+        let rune_move_vec = MoveOption::from(to_commitment(Some(rune)));
+        let value = serde_json::to_value(&rune_move_vec).unwrap();
+        let rune_act = rune_from_json_value(&value);
+        assert_eq!(rune_act, Some(rune));
+    }
 }
