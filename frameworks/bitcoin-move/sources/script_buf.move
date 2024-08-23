@@ -52,7 +52,7 @@ module bitcoin_move::script_buf{
     /// Get the script hash from a P2SH script.
     /// This function does not check if the script is a P2SH script, the caller must do that.
     public fun p2sh_script_hash(self: &ScriptBuf): vector<u8>{
-        sub_vector(&self.bytes, 2, 22)
+        vector::sub_vector(&self.bytes, 2, 22)
     }
 
     /// Checks if the given script is a P2PKH script.
@@ -68,7 +68,7 @@ module bitcoin_move::script_buf{
     /// Get the public key hash from a P2PKH script.
     /// This function does not check if the script is a P2PKH script, the caller must do that.
     public fun p2pkh_pubkey_hash(self: &ScriptBuf): vector<u8>{
-        sub_vector(&self.bytes, 3, 23)
+        vector::sub_vector(&self.bytes, 3, 23)
     }
 
     public fun is_witness_program(self: &ScriptBuf): bool{
@@ -85,7 +85,7 @@ module bitcoin_move::script_buf{
 
     /// Get the witness program from a witness program script.
     public fun witness_program(self: &ScriptBuf): vector<u8>{
-        sub_vector(&self.bytes, 2, vector::length(&self.bytes))
+        vector::sub_vector(&self.bytes, 2, vector::length(&self.bytes))
     }
 
      /// try to get a BitcoinAddress from a ScriptBuf.
@@ -103,17 +103,6 @@ module bitcoin_move::script_buf{
         }else{
             option::none()
         }
-    }
-
-    //TODO put this function in a more general module
-    fun sub_vector(bytes: &vector<u8>, start: u64, end: u64): vector<u8>{
-        let result = vector::empty();
-        let i = start;
-        while(i < end) {
-            vector::push_back(&mut result, *vector::borrow(bytes, i));
-            i = i + 1;
-        };
-        result
     }
 
     /// Checks if the given script is an OP_RETURN script.
