@@ -17,6 +17,13 @@ export abstract class Wallet extends Signer {
   abstract connect(): Promise<ThirdPartyAddress[]>
 
   abstract getName(): string
+
+  abstract getIcon(theme?: 'dark' | 'light'): string
+
+  abstract getInstallUrl(): string
+
+  abstract getDescription(): string
+
   /**
    * Signs a message.
    * @param msg - The message to sign.
