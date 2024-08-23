@@ -893,8 +893,8 @@ fn rune_from_json_value(value: &serde_json::Value) -> Option<u128> {
     match value {
         serde_json::Value::Object(obj) => {
             // Object {"vec": Array [Array [Number(210), Number(2), Number(150), Number(73)]]}
-            let arr = obj.get("vec").unwrap().as_array().unwrap();
-            let rune_vec = arr.first().unwrap().as_array().unwrap();
+            let arr = obj.get("vec")?.as_array()?;
+            let rune_vec = arr.first()?.as_array()?;
             let rune_bytes: Vec<u8> = rune_vec.iter().map(|v| v.as_u64().unwrap() as u8).collect();
             Some(from_commitment(rune_bytes))
         }
@@ -918,15 +918,53 @@ fn format_differences(differences: HashMap<String, String>) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::commands::statedb::commands::genesis_verify::{rune_from_json_value, to_commitment};
+    use crate::commands::statedb::commands::genesis_verify::{
+        compare_and_format, rune_from_json_value, to_commitment, InscriptionForComparison,
+    };
+    use crate::commands::statedb::commands::inscription::InscriptionSource;
+    use bitcoin::Txid;
     use moveos_types::move_std::option::MoveOption;
+    use rooch_types::bitcoin::ord::BitcoinInscriptionID;
+    use std::str::FromStr;
 
     #[test]
     fn test_rune_from_json_value() {
-        let rune = 1234567890u128;
-        let rune_move_vec = MoveOption::from(to_commitment(Some(rune)));
-        let value = serde_json::to_value(&rune_move_vec).unwrap();
+        let rune = 449272580684223630017036914u128;
+        let rune_move_opt = MoveOption::from(to_commitment(Some(rune)));
+        let value = serde_json::to_value(rune_move_opt).unwrap();
         let rune_act = rune_from_json_value(&value);
         assert_eq!(rune_act, Some(rune));
+
+        let ins_source = InscriptionSource {
+            sequence_number: 74311915,
+            inscription_number: 73839872,
+            id: BitcoinInscriptionID {
+                txid: Txid::from_str(
+                    "ab324803e78a978872b5a71b4838644c5fc0dbb0ffeb4e93c73462854d54d427",
+                )
+                .unwrap(),
+                index: 0,
+            },
+            satpoint_outpoint: "ab324803e78a978872b5a71b4838644c5fc0dbb0ffeb4e93c73462854d54d427:1"
+                .to_string(),
+            satpoint_offset: 0,
+            body: None,
+            content_encoding: None,
+            content_type: None,
+            metadata: None,
+            metaprotocol: None,
+            parent: None,
+            pointer: None,
+            address: "bc1pl6xn9vvpqna0grwd0tuwyj9z8s55gw8wvrd8885yra9hc9hlkh5s0rcxm2".to_string(),
+            rune: Some(449272580684223630017036914),
+        };
+
+        let ins = ins_source.to_inscription();
+        let ins_cmp = InscriptionForComparison::from(&ins);
+
+        let mut ins_cmp_2 = ins_cmp.clone();
+        ins_cmp_2.rune = MoveOption::none();
+        let diff = compare_and_format(&ins_cmp, &ins_cmp_2);
+        assert_eq!(diff, "diff_rune: Some(449272580684223630017036914) -> None");
     }
 }
