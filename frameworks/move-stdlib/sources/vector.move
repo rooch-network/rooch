@@ -604,6 +604,20 @@ module std::vector {
         for_each_reverse(v, |e| d(e))
     }
 
+    /// Extracts a sub-vector from `v` starting from `start` index to `end` index (exclusive).
+    public fun sub_vector<T: copy + drop>(v: &vector<T>, start: u64, end: u64): vector<T> {
+        assert!(start <= end, EINVALID_RANGE); 
+        assert!(end <= length(v), EINDEX_OUT_OF_BOUNDS); 
+
+        let result = empty<T>();
+        let i = start;
+        while (i < end) {
+            push_back(&mut result, *borrow(v, i));
+            i = i + 1;
+        };
+        result
+    }
+
     // =================================================================
     // Module Specification
 

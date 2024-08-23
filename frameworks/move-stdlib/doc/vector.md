@@ -63,6 +63,7 @@ the return on investment didn't seem worth it for these simple functions.
 -  [Function `any`](#0x1_vector_any)
 -  [Function `all`](#0x1_vector_all)
 -  [Function `destroy`](#0x1_vector_destroy)
+-  [Function `sub_vector`](#0x1_vector_sub_vector)
 -  [Module Specification](#@Module_Specification_1)
 
 
@@ -703,6 +704,18 @@ when used in the context of destroying a vector.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_destroy">destroy</a>&lt;Element&gt;(v: <a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;, d: |Element|())
+</code></pre>
+
+
+
+<a name="0x1_vector_sub_vector"></a>
+
+## Function `sub_vector`
+
+Extracts a sub-vector from <code>v</code> starting from <code>start</code> index to <code>end</code> index (exclusive).
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_sub_vector">sub_vector</a>&lt;T: <b>copy</b>, drop&gt;(v: &<a href="vector.md#0x1_vector">vector</a>&lt;T&gt;, start: <a href="u64.md#0x1_u64">u64</a>, end: <a href="u64.md#0x1_u64">u64</a>): <a href="vector.md#0x1_vector">vector</a>&lt;T&gt;
 </code></pre>
 
 
