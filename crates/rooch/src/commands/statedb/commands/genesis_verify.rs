@@ -24,7 +24,8 @@ use rooch_types::error::RoochResult;
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::rooch_network::RoochChainID;
 use rustc_hash::FxHashSet;
-use std::collections::HashSet;
+use serde::Serialize;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
@@ -663,58 +664,121 @@ fn write_mismatched_state_output<T: MoveStructState + std::fmt::Debug, R: std::f
     src_data: Option<R>, // write source data to output if mismatched for debug
 ) -> (bool, bool) {
     // mismatched, not_found
-    let mut mismatched = false;
-    let mut not_found = false;
-    let (act_val_str, exp_val_str, act_meta_str, exp_meta_str) = match act {
+    let mut mismatched_meta = false;
+    let mut mismatched_val = false;
+    let mut mismatched_obj = false;
+    let not_found = act.is_none();
+    let (diff_meta, diff_val, exp_meta, exp_val) = match act {
         Some(act) => {
+            let mut diff_meta = "".to_string();
+            let mut diff_val = "".to_string();
             let mut act = act;
-            let exp_decoded: Result<T, _> = T::from_bytes(&exp.value);
-            let act_decoded: Result<T, _> = T::from_bytes(&act.value);
-            let act_val_str = format!("{:?}", act_decoded.unwrap());
-            let exp_val_str = format!("{:?}", exp_decoded.unwrap());
-            clear_metadata(&mut act);
-            let act_meta_str = format!("{:?}", act.metadata);
-            let exp_meta_str = format!("{:?}", exp.metadata);
 
-            if exp != act {
-                mismatched = true;
+            clear_metadata(&mut act);
+            mismatched_meta = exp.metadata != act.metadata;
+            if mismatched_meta {
+                diff_meta = compare_and_format::<ObjectMeta>(&exp.metadata, &act.metadata);
             }
-            (act_val_str, exp_val_str, act_meta_str, exp_meta_str)
+
+            mismatched_val = exp.value != act.value;
+            if mismatched_val {
+                let exp_decoded = T::from_bytes(&exp.value).unwrap();
+                let act_decoded = T::from_bytes(&act.value).unwrap();
+                diff_val = compare_and_format::<T>(&exp_decoded, &act_decoded);
+            }
+
+            mismatched_obj = mismatched_meta && mismatched_val;
+            (diff_meta, diff_val, exp.metadata, exp.value)
         }
-        None => {
-            mismatched = true;
-            not_found = true;
-            let exp_decoded: Result<T, _> = T::from_bytes(&exp.value);
-            (
-                "None".to_string(),
-                format!("{:?}", exp_decoded.unwrap()),
-                "None".to_string(),
-                format!("{:?}", exp.metadata),
-            )
-        }
+        None => ("".to_string(), "".to_string(), exp.metadata, exp.value),
     };
+
+    let mismatched = mismatched_obj || not_found || mismatched_meta || mismatched_val;
+
     if !mismatched {
         return (false, false);
     }
 
-    let result = if not_found {
+    let state = if not_found {
         "not_found".to_string()
+    } else if mismatched_meta {
+        "mismatched_meta".to_string()
+    } else if mismatched_val {
+        "mismatched_val".to_string()
     } else {
-        let mut mismatched = "mismatched".to_string();
-        if exp_meta_str != act_meta_str {
-            mismatched.push_str("_meta");
-        }
-        if exp_val_str != act_val_str {
-            mismatched.push_str("_val");
-        }
-        mismatched
+        "mismatched_obj".to_string()
     };
-    writeln!(
-        output_writer,
-        "{} {}: exp-meta: {:?}, act-meta: {:?}, exp-val: {:?}, act-val: {:?}, src_data: {:?}",
-        prefix, result, exp_meta_str, act_meta_str, exp_val_str, act_val_str, src_data
-    )
-    .expect("Unable to write line");
+    if not_found {
+        writeln!(
+            output_writer,
+            "{} {}. exp_meta: {:?}, exp_val: {:?}, src_data: {:?}",
+            prefix, state, exp_meta, exp_val, src_data
+        )
+        .expect("Unable to write line");
+    }
+    if mismatched_obj {
+        writeln!(
+            output_writer,
+            "{} {}. <diff-meta: {:?}>; <diff-val: {:?}>, exp_meta: {:?}, exp_val: {:?}, src_data: {:?}",
+            prefix, state, diff_meta, diff_val, exp_meta, exp_val,src_data
+        )
+        .expect("Unable to write line");
+    } else if mismatched_meta {
+        writeln!(
+            output_writer,
+            "{} {}. <diff-meta: {:?}>, exp_meta: {:?}, exp_val: {:?}, src_data: {:?}",
+            prefix, state, diff_meta, exp_meta, exp_val, src_data
+        )
+        .expect("Unable to write line");
+    } else {
+        writeln!(
+            output_writer,
+            "{} {}. <diff-val: {:?}>, exp_meta: {:?}, exp_val: {:?}, src_data: {:?}",
+            prefix, state, diff_val, exp_meta, exp_val, src_data
+        )
+        .expect("Unable to write line");
+    }
     writeln!(output_writer, "--------------------------------").expect("Unable to write line");
-    (mismatched, not_found)
+    (mismatched_obj, not_found)
+}
+
+fn compare_and_format<T: Serialize + std::fmt::Debug>(exp: &T, act: &T) -> String {
+    let a_json =
+        serde_json::to_value(exp).unwrap_or_else(|_| panic!("Unable to serialize exp: {:?}", exp));
+    let b_json =
+        serde_json::to_value(act).unwrap_or_else(|_| panic!("Unable to serialize act: {:?}", act));
+
+    let a_map = a_json.as_object().unwrap();
+    let b_map = b_json.as_object().unwrap();
+
+    let mut keys: HashSet<String> = a_map.keys().cloned().collect();
+    keys.extend(b_map.keys().cloned());
+
+    let mut differences = HashMap::new();
+
+    for key in keys {
+        let a_value = a_map.get(&key).unwrap_or(&serde_json::Value::Null);
+        let b_value = b_map.get(&key).unwrap_or(&serde_json::Value::Null);
+
+        if a_value != b_value {
+            differences.insert(key.clone(), (a_value.clone(), b_value.clone()));
+        }
+    }
+
+    format_differences(differences)
+}
+
+fn format_differences(
+    differences: HashMap<String, (serde_json::Value, serde_json::Value)>,
+) -> String {
+    let mut formatted = String::new();
+
+    for (key, (a_value, b_value)) in differences {
+        if !formatted.is_empty() {
+            formatted.push(';');
+        }
+        formatted.push_str(&format!("{}, {} -> {}", key, a_value, b_value));
+    }
+
+    formatted
 }
