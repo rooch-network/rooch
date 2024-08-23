@@ -90,7 +90,7 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                     .build_tx_data(sender, action.clone(), max_gas_amount)
                     .await?,
             )
-            .await;
+            .await?;
 
         let mut result = match (self.tx_options.authenticator, self.tx_options.session_key) {
             (Some(authenticator), _) => {
@@ -163,11 +163,9 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             }
         };
 
-        if let Ok(dry_run_resp) = dry_run_result {
-            if dry_run_resp.raw_output.status != KeptVMStatusView::Executed {
-                result.error_info = Some(dry_run_resp);
-            }
-        };
+        if dry_run_result.raw_output.status != KeptVMStatusView::Executed {
+            result.error_info = Some(dry_run_result);
+        }
 
         Ok(result)
     }
