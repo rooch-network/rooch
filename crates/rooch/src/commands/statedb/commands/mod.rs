@@ -305,7 +305,7 @@ impl OutpointInscriptionsMap {
 
     fn load(path: PathBuf) -> Self {
         let file = File::open(path.clone()).expect("Unable to open the file");
-        let reader = BufReader::new(file);
+        let reader = BufReader::with_capacity(8 * 1024 * 1024, file);
         let mut items = Vec::new();
 
         for line in reader.lines() {
@@ -354,7 +354,7 @@ impl OutpointInscriptionsMap {
 
     fn dump(&self, path: PathBuf) {
         let file = File::create(path.clone()).expect("Unable to create the file");
-        let mut writer = BufWriter::new(file.try_clone().unwrap());
+        let mut writer = BufWriter::with_capacity(8 * 1024 * 1024, file.try_clone().unwrap());
 
         for item in &self.items {
             writeln!(writer, "{}", item).expect("Unable to write line");
