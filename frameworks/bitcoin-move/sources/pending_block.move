@@ -6,14 +6,18 @@ module bitcoin_move::pending_block{
     
     use std::vector;
     use std::option::{Self, Option};
+    
     use moveos_std::object::{Self, Object, ObjectID};
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::event;
+    use moveos_std::type_info;
+    
     use bitcoin_move::types::{Self, Transaction, Header, Block, BlockHeightHash};
     use bitcoin_move::ord::{Flotsam};
 
     friend bitcoin_move::genesis;
     friend bitcoin_move::bitcoin;
+    friend bitcoin_move::inscription_updater;
 
     const ErrorBlockAlreadyProcessed:u64 = 1;
     const ErrorPendingBlockNotFound:u64 = 2;
@@ -205,6 +209,28 @@ module bitcoin_move::pending_block{
         header
     }
 
+    public(friend) fun block_height(pending_block: &Object<PendingBlock>): u64{
+        let block = object::borrow(pending_block);
+        block.block_height
+    }
+
+    /// The intermediate is used to store the intermediate state during the tx processing
+    public(friend) fun take_intermediate<I: store>(pending_block: &mut Object<PendingBlock>): I{
+        let intermediate_name = type_info::type_name<I>();
+        let intermediate = object::remove_field(pending_block, intermediate_name);
+        intermediate
+    }
+
+    public(friend) fun add_intermediate<I: store>(pending_block: &mut Object<PendingBlock>, intermediate: I){
+        let intermediate_name = type_info::type_name<I>();
+        object::add_field(pending_block, intermediate_name, intermediate);
+    }
+
+    public(friend) fun exists_intermediate<T>(pending_block: &Object<PendingBlock>): bool{
+        let intermediate_name = type_info::type_name<T>();
+        object::contains_field(pending_block, intermediate_name)
+    }
+
     // ============== Pending Tx Processing ==============
 
     public(friend) fun process_pending_tx(block_hash: address, txid: address): InprocessBlock{
@@ -241,6 +267,10 @@ module bitcoin_move::pending_block{
         let store = borrow_mut_store();
         simple_map::remove(&mut store.pending_blocks, &block_height);
         header
+    }
+
+    public(friend) fun inprocess_block_pending_block(inprocess_block: &mut InprocessBlock): &mut Object<PendingBlock>{
+        &mut inprocess_block.block_obj
     }
 
     public(friend) fun inprocess_block_flotsams_mut(inprocess_block: &mut InprocessBlock): &mut vector<Flotsam>{

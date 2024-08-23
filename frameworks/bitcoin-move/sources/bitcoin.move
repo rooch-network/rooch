@@ -10,7 +10,7 @@ module bitcoin_move::bitcoin{
 
     use moveos_std::timestamp;
     use moveos_std::simple_multimap::SimpleMultiMap;
-    use moveos_std::type_info;
+    // use moveos_std::type_info;
     use moveos_std::table::{Self, Table};
     use moveos_std::bcs;
     use moveos_std::object::{Self, Object};
@@ -25,9 +25,10 @@ module bitcoin_move::bitcoin{
     
     use bitcoin_move::network;
     use bitcoin_move::types::{Self, Block, Header, Transaction, BlockHeightHash};
-    use bitcoin_move::ord::{Self, Inscription,Flotsam, SatPoint};
+    //use bitcoin_move::ord::{Self, Inscription,Flotsam, SatPoint};
+    use bitcoin_move::ord::{Flotsam};
     use bitcoin_move::utxo::{Self, UTXOSeal};
-    use bitcoin_move::pending_block;
+    use bitcoin_move::pending_block::{Self, PendingBlock};
 
     friend bitcoin_move::genesis;
 
@@ -117,8 +118,10 @@ module bitcoin_move::bitcoin{
         btc_block_store.latest_block = option::some(types::new_block_height_hash(block_height, block_hash)); 
     }
 
-    fun process_tx(btc_block_store: &mut BitcoinBlockStore, tx: &Transaction, block_height: u64): vector<Flotsam>{
-        let flotsams = process_utxo(tx, block_height);
+    fun process_tx(btc_block_store: &mut BitcoinBlockStore, pblock: &mut Object<PendingBlock>, tx: &Transaction): vector<Flotsam>{
+        let block_height = pending_block::block_height(pblock);
+        let flotsams = process_utxo(block_height, pblock, tx);
+        
         let txid = types::tx_id(tx);
         table::add(&mut btc_block_store.txs, txid, *tx);
         table::add(&mut btc_block_store.tx_to_height, txid, block_height);
@@ -141,29 +144,31 @@ module bitcoin_move::bitcoin{
         }
     }
 
-    fun process_utxo(tx: &Transaction, block_height: u64): vector<Flotsam>{
+    fun process_utxo(block_height: u64, pending_block: &mut Object<PendingBlock>, tx: &Transaction): vector<Flotsam>{
         let txinput = types::tx_input(tx);
         let flotsams = vector::empty();
 
-        let previous_outputs = vector::empty();
-        vector::for_each(*txinput, |txin| {
-            let outpoint = *types::txin_previous_output(&txin);
-            vector::push_back(&mut previous_outputs, outpoint);
-        });
-        let input_utxo_values = vector::empty();
-        vector::for_each(previous_outputs, |output| {
-            let utxo_value = if(utxo::exists_utxo(output)){
-                let utxo = utxo::borrow_utxo(output);
-                utxo::value(object::borrow(utxo))
-            } else {
-                0
-            };
-            vector::push_back(&mut input_utxo_values, utxo_value);
-        });
+        //let previous_outputs = vector::empty();
+        // vector::for_each(*txinput, |txin| {
+        //     let outpoint = *types::txin_previous_output(&txin);
+        //     vector::push_back(&mut previous_outputs, outpoint);
+        // });
+        //let input_utxo_values = vector::empty();
+        // vector::for_each(previous_outputs, |output| {
+        //     let utxo_value = if(utxo::exists_utxo(output)){
+        //         let utxo = utxo::borrow_utxo(output);
+        //         utxo::value(object::borrow(utxo))
+        //     } else {
+        //         0
+        //     };
+        //     vector::push_back(&mut input_utxo_values, utxo_value);
+        // });
+
+        let input_utxos = vector::empty();
 
         let idx = 0;
         let output_seals = simple_multimap::new<u32, UTXOSeal>();
-        let need_process_oridinal = need_process_oridinals(block_height);
+        //let need_process_oridinal = need_process_oridinals(block_height);
         let sender: Option<address> = option::none<address>();
         let find_sender: bool = false;
         while (idx < vector::length(txinput)) {
@@ -177,15 +182,16 @@ module bitcoin_move::bitcoin{
                     sender = option::some(utxo_owner);
                     find_sender = true;
                 };
-                if(need_process_oridinal) {
-                    let (sat_points, utxo_flotsams) = ord::spend_utxo(&mut utxo_obj, tx, input_utxo_values, idx);
-                    handle_sat_point(sat_points, &mut output_seals);
-                    vector::append(&mut flotsams, utxo_flotsams);
-                };
+                // if(need_process_oridinal) {
+                //     let (sat_points, utxo_flotsams) = ord::spend_utxo(&mut utxo_obj, tx, block_height, input_utxo_values, idx);
+                //     handle_sat_point(sat_points, &mut output_seals);
+                //     vector::append(&mut flotsams, utxo_flotsams);
+                // };
 
-                let seals = utxo::remove(utxo_obj);
+                let utxo = utxo::remove(utxo_obj);
+                vector::push_back(&mut input_utxos, utxo);
                 //The seals should be empty after utxo is spent
-                simple_multimap::destroy_empty(seals);
+                //simple_multimap::destroy_empty(seals);
             }else {
                 event::emit(TxProgressErrorLogEvent{
                         txid: types::tx_id(tx),
@@ -196,40 +202,59 @@ module bitcoin_move::bitcoin{
                 if(chain_id::is_main()){
                     abort ErrorBlockProcessError
                 };
+                let utxo = utxo::mock_utxo(outpoint, 0);
+                vector::push_back(&mut input_utxos, utxo);
             };
 
             idx = idx + 1;
         };
 
         // Transfer and inscribe may happen at the same transaction
-        if(need_process_oridinal) {
-            let sat_points = ord::process_transaction(tx, input_utxo_values);
-            let idx = 0;
-            let protocol = type_info::type_name<Inscription>();
-            let sat_points_len = vector::length(&sat_points);
-            while (idx < sat_points_len) {
-                let sat_point = vector::pop_back(&mut sat_points);
-                let output_index = ord::sat_point_output_index(&sat_point);
-                let seal_object_id = ord::sat_point_object_id(&sat_point);
-                let utxo_seal = utxo::new_utxo_seal(protocol, seal_object_id);
+        // if(need_process_oridinal) {
+        //     inscription_updater::process_tx(pending_block, tx);
+        // }
+        let seal_outs = bitcoin_move::inscription_updater::process_tx(pending_block, tx, &mut input_utxos);
+        let seal_outs_len = vector::length(&seal_outs);
+        if (seal_outs_len > 0) {
+            let seal_out_idx = 0;
+            while (seal_out_idx < seal_outs_len) {
+                let seal_out = vector::pop_back(&mut seal_outs);
+                let (output_index, utxo_seal) = utxo::unpack_seal_out(seal_out);
                 simple_multimap::add(&mut output_seals, output_index, utxo_seal);
-                idx = idx + 1;
+                seal_out_idx = seal_out_idx + 1;
             };
         };
+        // if(need_process_oridinal) {
+        //     let sat_points = ord::process_transaction(tx, block_height, input_utxo_values);
+        //     let idx = 0;
+        //     let protocol = type_info::type_name<Inscription>();
+        //     let sat_points_len = vector::length(&sat_points);
+        //     while (idx < sat_points_len) {
+        //         let sat_point = vector::pop_back(&mut sat_points);
+        //         let output_index = ord::sat_point_output_index(&sat_point);
+        //         let seal_object_id = ord::sat_point_object_id(&sat_point);
+        //         let utxo_seal = utxo::new_utxo_seal(protocol, seal_object_id);
+        //         simple_multimap::add(&mut output_seals, output_index, utxo_seal);
+        //         idx = idx + 1;
+        //     };
+        // };
 
         // create new utxo
         handle_new_utxo(tx, &mut output_seals, false, block_height, sender);
 
         simple_multimap::drop(output_seals);
+        vector::for_each(input_utxos, |utxo| {
+            utxo::drop(utxo);
+        });
         flotsams
     }
 
-    fun process_coinbase_utxo(tx: &Transaction, flotsams: vector<Flotsam>, block_height: u64) : bool{
+    fun process_coinbase_utxo(tx: &Transaction, _flotsams: vector<Flotsam>, block_height: u64) : bool{
         let output_seals = simple_multimap::new<u32, UTXOSeal>();
-        if(need_process_oridinals(block_height)) {
-            let sat_points = ord::handle_coinbase_tx(tx, flotsams, block_height);
-            handle_sat_point(sat_points, &mut output_seals);
-        };
+        // if(need_process_oridinals(block_height)) {
+        //     let sat_points = ord::handle_coinbase_tx(tx, flotsams, block_height);
+        //     handle_sat_point(sat_points, &mut output_seals);
+        // };
 
         // create new utxo
         let repeat_txid = handle_new_utxo(tx, &mut output_seals, true, block_height, option::none());
@@ -237,21 +262,21 @@ module bitcoin_move::bitcoin{
         repeat_txid
     }
 
-    fun handle_sat_point(sat_points: vector<SatPoint>, output_seals: &mut SimpleMultiMap<u32, UTXOSeal>) {
-        if (!vector::is_empty(&sat_points)) {
-            let protocol = type_info::type_name<Inscription>();
-            let j = 0;
-            let sat_points_len = vector::length(&sat_points);
-            while (j < sat_points_len) {
-                let sat_point = vector::pop_back(&mut sat_points);
-                let (output_index, _offset, object_id) = ord::unpack_sat_point(sat_point);
-                let utxo_seal = utxo::new_utxo_seal(protocol, object_id);
-                simple_multimap::add(output_seals, output_index, utxo_seal);
-                j = j + 1;
-            };
-        };
-        // output_seals
-    }
+    // fun handle_sat_point(sat_points: vector<SatPoint>, output_seals: &mut SimpleMultiMap<u32, UTXOSeal>) {
+    //     if (!vector::is_empty(&sat_points)) {
+    //         let protocol = type_info::type_name<Inscription>();
+    //         let j = 0;
+    //         let sat_points_len = vector::length(&sat_points);
+    //         while (j < sat_points_len) {
+    //             let sat_point = vector::pop_back(&mut sat_points);
+    //             let (output_index, _offset, object_id) = ord::unpack_sat_point(sat_point);
+    //             let utxo_seal = utxo::new_utxo_seal(protocol, object_id);
+    //             simple_multimap::add(output_seals, output_index, utxo_seal);
+    //             j = j + 1;
+    //         };
+    //     };
+    //     // output_seals
+    // }
 
     fun handle_new_utxo(tx: &Transaction, output_seals: &mut SimpleMultiMap<u32, UTXOSeal>, is_coinbase: bool, block_height: u64, sender: Option<address>) :bool {
         let txid = types::tx_id(tx);
@@ -269,9 +294,10 @@ module bitcoin_move::bitcoin{
                 //Before BIP34, some coinbase txid may be reused, we need to remove the old utxo
                 //https://github.com/rooch-network/rooch/issues/2178
                 if (object::exists_object(utxo_id)){
-                    let utxo = utxo::take(utxo_id);
-                    let seals = utxo::remove(utxo);
-                    simple_multimap::destroy_empty(seals);
+                    let utxo_obj = utxo::take(utxo_id);
+                    let utxo = utxo::remove(utxo_obj);
+                    utxo::drop(utxo);
+                    //simple_multimap::destroy_empty(seals);
                     event::emit(RepeatCoinbaseTxEvent{
                         txid: txid,
                         vout: vout,
@@ -343,14 +369,15 @@ module bitcoin_move::bitcoin{
         let btc_block_store = object::borrow_mut(btc_block_store_obj);
         let inprocess_block = pending_block::process_pending_tx(block_hash, txid);
         let block_height = pending_block::inprocess_block_height(&inprocess_block);
-        let tx = pending_block::inprocess_block_tx(&inprocess_block);
-        if(types::is_coinbase_tx(tx)){
+        let tx = *pending_block::inprocess_block_tx(&inprocess_block);
+        let pblock = pending_block::inprocess_block_pending_block(&mut inprocess_block);
+        if(types::is_coinbase_tx(&tx)){
             let flotsams = pending_block::inprocess_block_flotsams(&inprocess_block);
-            process_coinbase_tx(btc_block_store, tx, flotsams, block_height);
+            process_coinbase_tx(btc_block_store, &tx, flotsams, block_height);
             let header = pending_block::finish_pending_block(inprocess_block);
             process_block_header(btc_block_store, block_height, block_hash, header);
         }else{
-            let tx_flotsams = process_tx(btc_block_store, tx, block_height);
+            let tx_flotsams = process_tx(btc_block_store, pblock, &tx);
             let flotsams = pending_block::inprocess_block_flotsams_mut(&mut inprocess_block);
             vector::append(flotsams, tx_flotsams);
             pending_block::finish_pending_tx(inprocess_block);

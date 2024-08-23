@@ -16,6 +16,8 @@
 -  [Struct `MetaprotocolValidity`](#0x4_ord_MetaprotocolValidity)
 -  [Resource `InscriptionStore`](#0x4_ord_InscriptionStore)
 -  [Struct `InscriptionEvent`](#0x4_ord_InscriptionEvent)
+-  [Struct `InscriptionCreatedEvent`](#0x4_ord_InscriptionCreatedEvent)
+-  [Struct `InscriptionTransferredEvent`](#0x4_ord_InscriptionTransferredEvent)
 -  [Struct `InscriptionCharm`](#0x4_ord_InscriptionCharm)
 -  [Constants](#@Constants_0)
 -  [Function `curse_duplicate_field`](#0x4_ord_curse_duplicate_field)
@@ -28,20 +30,36 @@
 -  [Function `curse_stutter`](#0x4_ord_curse_stutter)
 -  [Function `curse_unrecognized_even_field`](#0x4_ord_curse_unrecognized_even_field)
 -  [Function `genesis_init`](#0x4_ord_genesis_init)
+-  [Function `borrow_mut_inscription_store`](#0x4_ord_borrow_mut_inscription_store)
+-  [Function `borrow_inscription_store`](#0x4_ord_borrow_inscription_store)
+-  [Function `blessed_inscription_count`](#0x4_ord_blessed_inscription_count)
+-  [Function `cursed_inscription_count`](#0x4_ord_cursed_inscription_count)
+-  [Function `unbound_inscription_count`](#0x4_ord_unbound_inscription_count)
+-  [Function `next_sequence_number`](#0x4_ord_next_sequence_number)
+-  [Function `update_cursed_inscription_count`](#0x4_ord_update_cursed_inscription_count)
+-  [Function `update_blessed_inscription_count`](#0x4_ord_update_blessed_inscription_count)
+-  [Function `update_next_sequence_number`](#0x4_ord_update_next_sequence_number)
+-  [Function `update_unbound_inscription_count`](#0x4_ord_update_unbound_inscription_count)
 -  [Function `new_inscription_id`](#0x4_ord_new_inscription_id)
 -  [Function `derive_inscription_id`](#0x4_ord_derive_inscription_id)
 -  [Function `parse_inscription_id`](#0x4_ord_parse_inscription_id)
 -  [Function `inscription_id_to_string`](#0x4_ord_inscription_id_to_string)
 -  [Function `get_inscription_id_by_sequence_number`](#0x4_ord_get_inscription_id_by_sequence_number)
 -  [Function `get_inscription_next_sequence_number`](#0x4_ord_get_inscription_next_sequence_number)
+-  [Function `create_object`](#0x4_ord_create_object)
+-  [Function `transfer_object`](#0x4_ord_transfer_object)
 -  [Function `exists_inscription`](#0x4_ord_exists_inscription)
 -  [Function `borrow_inscription`](#0x4_ord_borrow_inscription)
 -  [Function `borrow_inscription_by_id`](#0x4_ord_borrow_inscription_by_id)
--  [Function `spend_utxo`](#0x4_ord_spend_utxo)
--  [Function `handle_coinbase_tx`](#0x4_ord_handle_coinbase_tx)
--  [Function `process_transaction`](#0x4_ord_process_transaction)
+-  [Function `take_object`](#0x4_ord_take_object)
+-  [Function `borrow_object`](#0x4_ord_borrow_object)
 -  [Function `txid`](#0x4_ord_txid)
 -  [Function `index`](#0x4_ord_index)
+-  [Function `location`](#0x4_ord_location)
+-  [Function `sequence_number`](#0x4_ord_sequence_number)
+-  [Function `inscription_number`](#0x4_ord_inscription_number)
+-  [Function `is_cursed`](#0x4_ord_is_cursed)
+-  [Function `charms`](#0x4_ord_charms)
 -  [Function `offset`](#0x4_ord_offset)
 -  [Function `body`](#0x4_ord_body)
 -  [Function `content_encoding`](#0x4_ord_content_encoding)
@@ -50,15 +68,17 @@
 -  [Function `metaprotocol`](#0x4_ord_metaprotocol)
 -  [Function `parents`](#0x4_ord_parents)
 -  [Function `pointer`](#0x4_ord_pointer)
+-  [Function `inscription_id`](#0x4_ord_inscription_id)
 -  [Function `inscription_id_txid`](#0x4_ord_inscription_id_txid)
 -  [Function `inscription_id_index`](#0x4_ord_inscription_id_index)
--  [Function `new_sat_point`](#0x4_ord_new_sat_point)
--  [Function `unpack_sat_point`](#0x4_ord_unpack_sat_point)
--  [Function `sat_point_object_id`](#0x4_ord_sat_point_object_id)
--  [Function `sat_point_offset`](#0x4_ord_sat_point_offset)
--  [Function `sat_point_output_index`](#0x4_ord_sat_point_output_index)
+-  [Function `new_satpoint`](#0x4_ord_new_satpoint)
+-  [Function `unpack_satpoint`](#0x4_ord_unpack_satpoint)
+-  [Function `satpoint_offset`](#0x4_ord_satpoint_offset)
+-  [Function `satpoint_outpoint`](#0x4_ord_satpoint_outpoint)
+-  [Function `satpoint_vout`](#0x4_ord_satpoint_vout)
 -  [Function `new_flotsam`](#0x4_ord_new_flotsam)
 -  [Function `unpack_flotsam`](#0x4_ord_unpack_flotsam)
+-  [Function `parse_inscription_from_tx`](#0x4_ord_parse_inscription_from_tx)
 -  [Function `subsidy_by_height`](#0x4_ord_subsidy_by_height)
 -  [Function `add_permanent_state`](#0x4_ord_add_permanent_state)
 -  [Function `contains_permanent_state`](#0x4_ord_contains_permanent_state)
@@ -96,19 +116,15 @@
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bag</a>;
-<b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::core_addresses</a>;
 <b>use</b> <a href="">0x2::event</a>;
-<b>use</b> <a href="">0x2::event_queue</a>;
 <b>use</b> <a href="">0x2::json</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
 <b>use</b> <a href="">0x2::string_utils</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="bitcoin_hash.md#0x4_bitcoin_hash">0x4::bitcoin_hash</a>;
-<b>use</b> <a href="script_buf.md#0x4_script_buf">0x4::script_buf</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
-<b>use</b> <a href="utxo.md#0x4_utxo">0x4::utxo</a>;
 </code></pre>
 
 
@@ -230,6 +246,28 @@
 
 
 <pre><code><b>struct</b> <a href="ord.md#0x4_ord_InscriptionEvent">InscriptionEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_ord_InscriptionCreatedEvent"></a>
+
+## Struct `InscriptionCreatedEvent`
+
+
+
+<pre><code><b>struct</b> <a href="ord.md#0x4_ord_InscriptionCreatedEvent">InscriptionCreatedEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_ord_InscriptionTransferredEvent"></a>
+
+## Struct `InscriptionTransferredEvent`
+
+
+
+<pre><code><b>struct</b> <a href="ord.md#0x4_ord_InscriptionTransferredEvent">InscriptionTransferredEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -544,6 +582,116 @@ How may blocks between halvings.
 
 
 
+<a name="0x4_ord_borrow_mut_inscription_store"></a>
+
+## Function `borrow_mut_inscription_store`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_borrow_mut_inscription_store">borrow_mut_inscription_store</a>(): &<b>mut</b> <a href="ord.md#0x4_ord_InscriptionStore">ord::InscriptionStore</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_borrow_inscription_store"></a>
+
+## Function `borrow_inscription_store`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_borrow_inscription_store">borrow_inscription_store</a>(): &<a href="ord.md#0x4_ord_InscriptionStore">ord::InscriptionStore</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_blessed_inscription_count"></a>
+
+## Function `blessed_inscription_count`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_blessed_inscription_count">blessed_inscription_count</a>(inscription_store: &<a href="ord.md#0x4_ord_InscriptionStore">ord::InscriptionStore</a>): u32
+</code></pre>
+
+
+
+<a name="0x4_ord_cursed_inscription_count"></a>
+
+## Function `cursed_inscription_count`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_cursed_inscription_count">cursed_inscription_count</a>(inscription_store: &<a href="ord.md#0x4_ord_InscriptionStore">ord::InscriptionStore</a>): u32
+</code></pre>
+
+
+
+<a name="0x4_ord_unbound_inscription_count"></a>
+
+## Function `unbound_inscription_count`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_unbound_inscription_count">unbound_inscription_count</a>(inscription_store: &<a href="ord.md#0x4_ord_InscriptionStore">ord::InscriptionStore</a>): u32
+</code></pre>
+
+
+
+<a name="0x4_ord_next_sequence_number"></a>
+
+## Function `next_sequence_number`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_next_sequence_number">next_sequence_number</a>(inscription_store: &<a href="ord.md#0x4_ord_InscriptionStore">ord::InscriptionStore</a>): u32
+</code></pre>
+
+
+
+<a name="0x4_ord_update_cursed_inscription_count"></a>
+
+## Function `update_cursed_inscription_count`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_update_cursed_inscription_count">update_cursed_inscription_count</a>(inscription_store: &<b>mut</b> <a href="ord.md#0x4_ord_InscriptionStore">ord::InscriptionStore</a>, count: u32)
+</code></pre>
+
+
+
+<a name="0x4_ord_update_blessed_inscription_count"></a>
+
+## Function `update_blessed_inscription_count`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_update_blessed_inscription_count">update_blessed_inscription_count</a>(inscription_store: &<b>mut</b> <a href="ord.md#0x4_ord_InscriptionStore">ord::InscriptionStore</a>, count: u32)
+</code></pre>
+
+
+
+<a name="0x4_ord_update_next_sequence_number"></a>
+
+## Function `update_next_sequence_number`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_update_next_sequence_number">update_next_sequence_number</a>(inscription_store: &<b>mut</b> <a href="ord.md#0x4_ord_InscriptionStore">ord::InscriptionStore</a>, count: u32)
+</code></pre>
+
+
+
+<a name="0x4_ord_update_unbound_inscription_count"></a>
+
+## Function `update_unbound_inscription_count`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_update_unbound_inscription_count">update_unbound_inscription_count</a>(inscription_store: &<b>mut</b> <a href="ord.md#0x4_ord_InscriptionStore">ord::InscriptionStore</a>, count: u32)
+</code></pre>
+
+
+
 <a name="0x4_ord_new_inscription_id"></a>
 
 ## Function `new_inscription_id`
@@ -611,6 +759,28 @@ Prase InscriptionID from String
 
 
 
+<a name="0x4_ord_create_object"></a>
+
+## Function `create_object`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_create_object">create_object</a>(id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>, location: <a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>, sequence_number: u32, inscription_number: u32, is_cursed: bool, charms: u16, body: <a href="">vector</a>&lt;u8&gt;, content_encoding: <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, content_type: <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, metadata: <a href="">vector</a>&lt;u8&gt;, metaprotocol: <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, parents: <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>&gt;, pointer: <a href="_Option">option::Option</a>&lt;u64&gt;, rune: <a href="_Option">option::Option</a>&lt;u128&gt;, owner: <b>address</b>): <a href="_ObjectID">object::ObjectID</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_transfer_object"></a>
+
+## Function `transfer_object`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_transfer_object">transfer_object</a>(inscription_obj: <a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;, <b>to</b>: <b>address</b>, new_location: <a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>, is_op_return: bool)
+</code></pre>
+
+
+
 <a name="0x4_ord_exists_inscription"></a>
 
 ## Function `exists_inscription`
@@ -644,35 +814,24 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_spend_utxo"></a>
+<a name="0x4_ord_take_object"></a>
 
-## Function `spend_utxo`
+## Function `take_object`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_spend_utxo">spend_utxo</a>(utxo_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;, tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>, input_utxo_values: <a href="">vector</a>&lt;u64&gt;, input_index: u64): (<a href="">vector</a>&lt;<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>&gt;, <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_Flotsam">ord::Flotsam</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_take_object">take_object</a>(inscription_obj_id: <a href="_ObjectID">object::ObjectID</a>): <a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;
 </code></pre>
 
 
 
-<a name="0x4_ord_handle_coinbase_tx"></a>
+<a name="0x4_ord_borrow_object"></a>
 
-## Function `handle_coinbase_tx`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_handle_coinbase_tx">handle_coinbase_tx</a>(tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>, flotsams: <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_Flotsam">ord::Flotsam</a>&gt;, block_height: u64): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>&gt;
-</code></pre>
+## Function `borrow_object`
 
 
 
-<a name="0x4_ord_process_transaction"></a>
-
-## Function `process_transaction`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_process_transaction">process_transaction</a>(tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>, input_utxo_values: <a href="">vector</a>&lt;u64&gt;): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_borrow_object">borrow_object</a>(inscription_obj_id: <a href="_ObjectID">object::ObjectID</a>): &<a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;
 </code></pre>
 
 
@@ -695,6 +854,61 @@ Prase InscriptionID from String
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_index">index</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): u32
+</code></pre>
+
+
+
+<a name="0x4_ord_location"></a>
+
+## Function `location`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_location">location</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): &<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_sequence_number"></a>
+
+## Function `sequence_number`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_sequence_number">sequence_number</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): u32
+</code></pre>
+
+
+
+<a name="0x4_ord_inscription_number"></a>
+
+## Function `inscription_number`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_inscription_number">inscription_number</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): u32
+</code></pre>
+
+
+
+<a name="0x4_ord_is_cursed"></a>
+
+## Function `is_cursed`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_is_cursed">is_cursed</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): bool
+</code></pre>
+
+
+
+<a name="0x4_ord_charms"></a>
+
+## Function `charms`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_charms">charms</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): u16
 </code></pre>
 
 
@@ -771,7 +985,7 @@ Prase InscriptionID from String
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_parents">parents</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="">vector</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_parents">parents</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>&gt;
 </code></pre>
 
 
@@ -783,6 +997,17 @@ Prase InscriptionID from String
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_pointer">pointer</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="_Option">option::Option</a>&lt;u64&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_inscription_id"></a>
+
+## Function `inscription_id`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_inscription_id">inscription_id</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>
 </code></pre>
 
 
@@ -809,60 +1034,59 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_new_sat_point"></a>
+<a name="0x4_ord_new_satpoint"></a>
 
-## Function `new_sat_point`
+## Function `new_satpoint`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_new_sat_point">new_sat_point</a>(output_index: u32, offset: u64, object_id: <a href="_ObjectID">object::ObjectID</a>): <a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_new_satpoint">new_satpoint</a>(outpoint: <a href="types.md#0x4_types_OutPoint">types::OutPoint</a>, offset: u64): <a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>
 </code></pre>
 
 
 
-<a name="0x4_ord_unpack_sat_point"></a>
+<a name="0x4_ord_unpack_satpoint"></a>
 
-## Function `unpack_sat_point`
+## Function `unpack_satpoint`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_unpack_sat_point">unpack_sat_point</a>(sat_point: <a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>): (u32, u64, <a href="_ObjectID">object::ObjectID</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_unpack_satpoint">unpack_satpoint</a>(satpoint: <a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>): (<a href="types.md#0x4_types_OutPoint">types::OutPoint</a>, u64)
 </code></pre>
 
 
 
-<a name="0x4_ord_sat_point_object_id"></a>
+<a name="0x4_ord_satpoint_offset"></a>
 
-## Function `sat_point_object_id`
-
-Get the SatPoint's object_id
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_sat_point_object_id">sat_point_object_id</a>(sat_point: &<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>): <a href="_ObjectID">object::ObjectID</a>
-</code></pre>
-
-
-
-<a name="0x4_ord_sat_point_offset"></a>
-
-## Function `sat_point_offset`
+## Function `satpoint_offset`
 
 Get the SatPoint's offset
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_sat_point_offset">sat_point_offset</a>(sat_point: &<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_satpoint_offset">satpoint_offset</a>(satpoint: &<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>): u64
 </code></pre>
 
 
 
-<a name="0x4_ord_sat_point_output_index"></a>
+<a name="0x4_ord_satpoint_outpoint"></a>
 
-## Function `sat_point_output_index`
+## Function `satpoint_outpoint`
 
-Get the SatPoint's output_index
+Get the SatPoint's outpoint
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_sat_point_output_index">sat_point_output_index</a>(sat_point: &<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>): u32
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_satpoint_outpoint">satpoint_outpoint</a>(satpoint: &<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>): &<a href="types.md#0x4_types_OutPoint">types::OutPoint</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_satpoint_vout"></a>
+
+## Function `satpoint_vout`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_satpoint_vout">satpoint_vout</a>(satpoint: &<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>): u32
 </code></pre>
 
 
@@ -885,6 +1109,17 @@ Get the SatPoint's output_index
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_unpack_flotsam">unpack_flotsam</a>(flotsam: <a href="ord.md#0x4_ord_Flotsam">ord::Flotsam</a>): (u32, u64, <a href="_ObjectID">object::ObjectID</a>)
+</code></pre>
+
+
+
+<a name="0x4_ord_parse_inscription_from_tx"></a>
+
+## Function `parse_inscription_from_tx`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_parse_inscription_from_tx">parse_inscription_from_tx</a>(tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_Envelope">ord::Envelope</a>&lt;<a href="ord.md#0x4_ord_InscriptionRecord">ord::InscriptionRecord</a>&gt;&gt;
 </code></pre>
 
 
