@@ -8,23 +8,28 @@ use crate::commands::statedb::commands::utxo::{AddressMappingData, UTXORawData};
 use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 use bitcoin::OutPoint;
 use clap::Parser;
+use framework_types::addresses::BITCOIN_MOVE_ADDRESS;
 use move_core_types::account_address::AccountAddress;
+use move_core_types::ident_str;
+use move_core_types::identifier::IdentStr;
 use move_vm_types::values::Value;
 use moveos_store::MoveOSStore;
-use moveos_types::moveos_std::object::{DynamicField, ObjectMeta};
-use moveos_types::state::{MoveState, MoveStructState, ObjectState};
+use moveos_types::move_std::option::MoveOption;
+use moveos_types::move_std::string::MoveString;
+use moveos_types::moveos_std::object::{DynamicField, ObjectID, ObjectMeta};
+use moveos_types::state::{MoveState, MoveStructState, MoveStructType, ObjectState};
 use moveos_types::state_resolver::{RootObjectResolver, StatelessResolver};
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::address::BitcoinAddress;
 use rooch_types::bitcoin::ord::{
-    BitcoinInscriptionID, Inscription, InscriptionID, InscriptionStore,
+    BitcoinInscriptionID, Inscription, InscriptionID, InscriptionStore, MODULE_NAME,
 };
 use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
 use rooch_types::error::RoochResult;
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::rooch_network::RoochChainID;
 use rustc_hash::FxHashSet;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Read, Write};
@@ -566,13 +571,31 @@ fn verify_inscription(
         let act_inscription_state = resolver
             .get_field_at(inscription_store_state_root, &exp_key)
             .unwrap();
-        let (mismatched, not_found) = write_mismatched_state_output::<Inscription, InscriptionSource>(
-            &mut output_writer,
-            "[inscription]",
-            exp_state,
-            act_inscription_state.clone(),
-            Some(source.clone()),
-        );
+        let exp_inscription = Inscription::from_bytes(exp_state.value).unwrap();
+        let exp_inscription_cmp: InscriptionForComparison =
+            InscriptionForComparison::from(&exp_inscription);
+        let exp_state_cmp = ObjectState {
+            metadata: exp_state.metadata,
+            value: exp_inscription_cmp.to_bytes(),
+        };
+        let act_state_cmp = act_inscription_state.clone().map(|state| {
+            let act_inscription = Inscription::from_bytes(state.value).unwrap();
+            let act_inscription_cmp: InscriptionForComparison =
+                InscriptionForComparison::from(&act_inscription);
+            ObjectState {
+                metadata: state.metadata,
+                value: act_inscription_cmp.to_bytes(),
+            }
+        });
+
+        let (mismatched, not_found) =
+            write_mismatched_state_output::<InscriptionForComparison, InscriptionSource>(
+                &mut output_writer,
+                "[inscription]",
+                exp_state_cmp,
+                act_state_cmp,
+                Some(source.clone()),
+            );
         if mismatched {
             mismatched_count += 1;
             new_cases.insert(source.sequence_number);
@@ -656,7 +679,10 @@ fn clear_metadata(state: &mut ObjectState) {
 }
 
 // if mismatched, return true & write output
-fn write_mismatched_state_output<T: MoveStructState + std::fmt::Debug, R: std::fmt::Debug>(
+fn write_mismatched_state_output<
+    T: MoveStructState + std::fmt::Debug + 'static,
+    R: std::fmt::Debug,
+>(
     output_writer: &mut BufWriter<File>,
     prefix: &str,
     exp: ObjectState,
@@ -673,21 +699,20 @@ fn write_mismatched_state_output<T: MoveStructState + std::fmt::Debug, R: std::f
             let mut diff_meta = "".to_string();
             let mut diff_val = "".to_string();
             let mut act = act;
-
             clear_metadata(&mut act);
             mismatched_meta = exp.metadata != act.metadata;
+            mismatched_val = exp.value != act.value;
+            mismatched_obj = mismatched_meta && mismatched_val;
+
             if mismatched_meta {
                 diff_meta = compare_and_format::<ObjectMeta>(&exp.metadata, &act.metadata);
             }
 
-            mismatched_val = exp.value != act.value;
             if mismatched_val {
                 let exp_decoded = T::from_bytes(&exp.value).unwrap();
                 let act_decoded = T::from_bytes(&act.value).unwrap();
                 diff_val = compare_and_format::<T>(&exp_decoded, &act_decoded);
             }
-
-            mismatched_obj = mismatched_meta && mismatched_val;
             (diff_meta, diff_val, exp.metadata, exp.value)
         }
         None => ("".to_string(), "".to_string(), exp.metadata, exp.value),
@@ -711,7 +736,7 @@ fn write_mismatched_state_output<T: MoveStructState + std::fmt::Debug, R: std::f
     if not_found {
         writeln!(
             output_writer,
-            "{} {}. exp_meta: {:?}, exp_val: {:?}, src_data: {:?}",
+            "{} {}. exp_meta: {:?}; exp_val: {:?}; src_data: {:?}",
             prefix, state, exp_meta, exp_val, src_data
         )
         .expect("Unable to write line");
@@ -719,46 +744,126 @@ fn write_mismatched_state_output<T: MoveStructState + std::fmt::Debug, R: std::f
     if mismatched_obj {
         writeln!(
             output_writer,
-            "{} {}. <diff-meta: {:?}>; <diff-val: {:?}>, exp_meta: {:?}, exp_val: {:?}, src_data: {:?}",
+            "{} {}. <diff-meta: {:?}>; <diff-val: {:?}>. exp_meta: {:?}; exp_val: {:?}; src_data: {:?}",
             prefix, state, diff_meta, diff_val, exp_meta, exp_val,src_data
         )
         .expect("Unable to write line");
     } else if mismatched_meta {
         writeln!(
             output_writer,
-            "{} {}. <diff-meta: {:?}>, exp_meta: {:?}, exp_val: {:?}, src_data: {:?}",
+            "{} {}. <diff-meta: {:?}>. exp_meta: {:?}; exp_val: {:?}; src_data: {:?}",
             prefix, state, diff_meta, exp_meta, exp_val, src_data
         )
         .expect("Unable to write line");
     } else {
         writeln!(
             output_writer,
-            "{} {}. <diff-val: {:?}>, exp_meta: {:?}, exp_val: {:?}, src_data: {:?}",
+            "{} {}. <diff-val: {:?}>. exp_meta: {:?}, exp_val: {:?}, src_data: {:?}",
             prefix, state, diff_val, exp_meta, exp_val, src_data
         )
         .expect("Unable to write line");
     }
     writeln!(output_writer, "--------------------------------").expect("Unable to write line");
-    (mismatched_obj, not_found)
+    (mismatched, not_found)
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq)]
+pub struct InscriptionForComparison {
+    pub txid: AccountAddress,
+    pub index: u32,
+    pub offset: u64,
+    pub sequence_number: u32,
+    pub inscription_number: u32,
+    pub is_curse: bool,
+    pub body: Vec<u8>,
+    pub content_encoding: MoveOption<MoveString>,
+    pub content_type: MoveOption<MoveString>,
+    pub metadata: Vec<u8>,
+    pub metaprotocol: MoveOption<MoveString>,
+    pub parents: Vec<ObjectID>,
+    pub pointer: MoveOption<u64>,
+    pub rune: MoveOption<Vec<u8>>, // Changed to Vec<u8> for comparsion
+}
+
+impl From<&Inscription> for InscriptionForComparison {
+    fn from(ins: &Inscription) -> Self {
+        InscriptionForComparison {
+            txid: ins.txid,
+            index: ins.index,
+            offset: ins.offset,
+            sequence_number: ins.sequence_number,
+            inscription_number: ins.inscription_number,
+            is_curse: ins.is_curse,
+            body: ins.body.clone(),
+            content_encoding: ins.content_encoding.clone(),
+            content_type: ins.content_type.clone(),
+            metadata: ins.metadata.clone(),
+            metaprotocol: ins.metaprotocol.clone(),
+            parents: ins.parents.clone(),
+            pointer: ins.pointer.clone(),
+            rune: MoveOption::from(to_commitment(ins.rune.clone().into())),
+        }
+    }
+}
+
+fn to_commitment(rune: Option<u128>) -> Option<Vec<u8>> {
+    rune?;
+    let rune = rune.unwrap();
+    let bytes = rune.to_le_bytes();
+
+    let mut end = bytes.len();
+
+    while end > 0 && bytes[end - 1] == 0 {
+        end -= 1;
+    }
+
+    Some(bytes[..end].into())
+}
+
+impl MoveStructType for InscriptionForComparison {
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Inscription");
+}
+
+impl MoveStructState for InscriptionForComparison {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![
+            AccountAddress::type_layout(),
+            u32::type_layout(),
+            u64::type_layout(),
+            u32::type_layout(),
+            u32::type_layout(),
+            bool::type_layout(),
+            Vec::<u8>::type_layout(),
+            MoveOption::<MoveString>::type_layout(),
+            MoveOption::<MoveString>::type_layout(),
+            Vec::<u8>::type_layout(),
+            MoveOption::<MoveString>::type_layout(),
+            Vec::<ObjectID>::type_layout(),
+            MoveOption::<u64>::type_layout(),
+            MoveOption::<Vec<u8>>::type_layout(),
+        ])
+    }
 }
 
 fn compare_and_format<T: Serialize + std::fmt::Debug>(exp: &T, act: &T) -> String {
-    let a_json =
+    let exp_json =
         serde_json::to_value(exp).unwrap_or_else(|_| panic!("Unable to serialize exp: {:?}", exp));
-    let b_json =
+    let act_json =
         serde_json::to_value(act).unwrap_or_else(|_| panic!("Unable to serialize act: {:?}", act));
 
-    let a_map = a_json.as_object().unwrap();
-    let b_map = b_json.as_object().unwrap();
+    let exp_map = exp_json.as_object().unwrap();
+    let act_map = act_json.as_object().unwrap();
 
-    let mut keys: HashSet<String> = a_map.keys().cloned().collect();
-    keys.extend(b_map.keys().cloned());
+    let mut keys: HashSet<String> = exp_map.keys().cloned().collect();
+    keys.extend(act_map.keys().cloned());
 
     let mut differences = HashMap::new();
 
     for key in keys {
-        let a_value = a_map.get(&key).unwrap_or(&serde_json::Value::Null);
-        let b_value = b_map.get(&key).unwrap_or(&serde_json::Value::Null);
+        let a_value = exp_map.get(&key).unwrap_or(&serde_json::Value::Null);
+        let b_value = act_map.get(&key).unwrap_or(&serde_json::Value::Null);
 
         if a_value != b_value {
             differences.insert(key.clone(), (a_value.clone(), b_value.clone()));
@@ -777,7 +882,8 @@ fn format_differences(
         if !formatted.is_empty() {
             formatted.push(';');
         }
-        formatted.push_str(&format!("{}, {} -> {}", key, a_value, b_value));
+        formatted.push_str(&format!("diff_{}: {} -> {}", key, a_value, b_value));
+        // grep diff_* to find differences
     }
 
     formatted
