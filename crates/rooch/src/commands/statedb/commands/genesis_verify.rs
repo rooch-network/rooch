@@ -784,7 +784,7 @@ pub struct InscriptionForComparison {
     pub metaprotocol: MoveOption<MoveString>,
     pub parents: Vec<ObjectID>,
     pub pointer: MoveOption<u64>,
-    pub rune: MoveOption<Vec<u8>>, // Changed to Vec<u8> for comparsion
+    pub rune: MoveOption<Vec<u8>>, // Changed to Vec<u8> for comparison
 }
 
 impl From<&Inscription> for InscriptionForComparison {
