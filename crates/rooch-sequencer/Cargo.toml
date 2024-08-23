@@ -22,6 +22,7 @@ prometheus = { workspace = true }
 function_name = { workspace = true }
 
 moveos-types = { workspace = true }
+moveos-eventbus = { workspace = true }
 accumulator = { workspace = true }
 metrics = { workspace = true }
 raw-store = { workspace = true }
@@ -31,3 +32,4 @@ rooch-store = { workspace = true }
 rooch-config = { workspace = true }
 rooch-db = { workspace = true }
 rooch-genesis = { workspace = true }
+rooch-event = { workspace = true }

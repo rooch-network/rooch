@@ -36,6 +36,7 @@ pub fn gen_sequencer(
         rooch_store.clone(),
         ServiceStatus::Active,
         registry,
+        None,
     )
 }
 

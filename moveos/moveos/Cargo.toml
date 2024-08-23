@@ -49,3 +49,4 @@ moveos-stdlib = { workspace = true }
 moveos-verifier = { workspace = true }
 moveos-object-runtime = { workspace = true }
 moveos-eventbus = { workspace = true }
+thiserror = "1.0.63"
