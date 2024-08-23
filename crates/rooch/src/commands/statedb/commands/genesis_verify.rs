@@ -822,6 +822,14 @@ fn to_commitment(rune: Option<u128>) -> Option<Vec<u8>> {
     Some(bytes[..end].into())
 }
 
+fn from_commitment(rune_bytes: Vec<u8>) -> u128 {
+    let mut arr = [0u8; 16];
+    for (place, element) in arr.iter_mut().zip(rune_bytes.iter()) {
+        *place = *element;
+    }
+    u128::from_le_bytes(arr)
+}
+
 impl MoveStructType for InscriptionForComparison {
     const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
@@ -864,28 +872,42 @@ fn compare_and_format<T: Serialize + std::fmt::Debug>(exp: &T, act: &T) -> Strin
     let mut differences = HashMap::new();
 
     for key in keys {
-        let a_value = exp_map.get(&key).unwrap_or(&serde_json::Value::Null);
-        let b_value = act_map.get(&key).unwrap_or(&serde_json::Value::Null);
+        let exp_value = exp_map.get(&key).unwrap_or(&serde_json::Value::Null);
+        let act_value = act_map.get(&key).unwrap_or(&serde_json::Value::Null);
 
-        if a_value != b_value {
-            differences.insert(key.clone(), (a_value.clone(), b_value.clone()));
+        if exp_value != act_value {
+            if key == "rune" {
+                let exp_rune = rune_from_json_value(exp_value);
+                let act_rune = rune_from_json_value(act_value);
+                differences.insert(key.clone(), format!("{:?} -> {:?}", exp_rune, act_rune));
+            } else {
+                differences.insert(key.clone(), format!("{:?} -> {:?}", exp_value, act_value));
+            }
         }
     }
 
     format_differences(differences)
 }
 
-fn format_differences(
-    differences: HashMap<String, (serde_json::Value, serde_json::Value)>,
-) -> String {
+fn rune_from_json_value(value: &serde_json::Value) -> Option<u128> {
+    match value {
+        serde_json::Value::Array(s) => {
+            let rune_bytes: Vec<u8> = s.iter().map(|v| v.as_u64().unwrap() as u8).collect();
+            Some(from_commitment(rune_bytes))
+        }
+        _ => None,
+    }
+}
+
+fn format_differences(differences: HashMap<String, String>) -> String {
     let mut formatted = String::new();
 
-    for (key, (a_value, b_value)) in differences {
+    for (key, diff) in differences {
         if !formatted.is_empty() {
             formatted.push(';');
         }
-        formatted.push_str(&format!("diff_{}: {} -> {}", key, a_value, b_value));
         // grep diff_* to find differences
+        formatted.push_str(&format!("diff_{}: {}", key, diff));
     }
 
     formatted
