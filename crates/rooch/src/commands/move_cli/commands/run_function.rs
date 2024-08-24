@@ -92,7 +92,11 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             )
             .await?;
 
-        let mut result = match (self.tx_options.authenticator, self.tx_options.session_key) {
+        if dry_run_result.raw_output.status != KeptVMStatusView::Executed {
+            return Ok(dry_run_result.into());
+        };
+
+        let result = match (self.tx_options.authenticator, self.tx_options.session_key) {
             (Some(authenticator), _) => {
                 let tx_data = context
                     .build_tx_data(sender, action, max_gas_amount)
@@ -162,10 +166,6 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                 }
             }
         };
-
-        if dry_run_result.raw_output.status != KeptVMStatusView::Executed {
-            result.error_info = Some(dry_run_result);
-        }
 
         Ok(result)
     }
