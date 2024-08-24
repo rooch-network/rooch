@@ -11,7 +11,7 @@ use moveos_types::transaction::MoveAction;
 use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{
-    ExecuteTransactionResponseView, HumanReadableDisplay, KeptVMStatusView,
+    DryRunTransactionResponseView, ExecuteTransactionResponseView, HumanReadableDisplay, KeptVMStatusView
 };
 use rooch_types::function_arg::parse_function_arg;
 use rooch_types::{
@@ -92,7 +92,11 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             )
             .await?;
 
-        let mut result = match (self.tx_options.authenticator, self.tx_options.session_key) {
+        if dry_run_result.raw_output.status != KeptVMStatusView::Executed {
+            return Ok(dry_run_result.into());
+        };
+
+        let result = match (self.tx_options.authenticator, self.tx_options.session_key) {
             (Some(authenticator), _) => {
                 let tx_data = context
                     .build_tx_data(sender, action, max_gas_amount)
@@ -162,10 +166,6 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                 }
             }
         };
-
-        if dry_run_result.raw_output.status != KeptVMStatusView::Executed {
-            result.error_info = Some(dry_run_result);
-        }
 
         Ok(result)
     }

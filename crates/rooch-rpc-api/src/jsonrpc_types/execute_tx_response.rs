@@ -5,6 +5,7 @@ use super::BytesView;
 use super::{HumanReadableDisplay, ModuleIdView, StateChangeSetView, StrView};
 use crate::jsonrpc_types::event_view::EventView;
 use crate::jsonrpc_types::H256View;
+use ethers::types::H256;
 use move_core_types::vm_status::{AbortLocation, KeptVMStatus};
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::{TransactionExecutionInfo, VMErrorInfo};
@@ -13,6 +14,7 @@ use rooch_types::transaction::{authenticator::Authenticator, TransactionSequence
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+use std::u64;
 
 pub type AbortLocationView = StrView<AbortLocation>;
 
@@ -103,6 +105,17 @@ pub struct TransactionSequenceInfoView {
     pub tx_timestamp: StrView<u64>,
 }
 
+impl TransactionSequenceInfoView {
+    fn new(tx_order: u64, tx_order_signature: Vec<u8>, tx_accumulator_root: H256, tx_timestamp: u64) -> Self {
+        Self {
+            tx_order: StrView(tx_order),
+            tx_order_signature: tx_order_signature.into(),
+            tx_accumulator_root: tx_accumulator_root.into(),
+            tx_timestamp: StrView(tx_timestamp),
+        }
+    }
+}
+
 impl From<TransactionSequenceInfo> for TransactionSequenceInfoView {
     fn from(transaction_sequence_info: TransactionSequenceInfo) -> Self {
         Self {
@@ -121,6 +134,18 @@ pub struct TransactionExecutionInfoView {
     pub event_root: H256View,
     pub gas_used: StrView<u64>,
     pub status: KeptVMStatusView,
+}
+
+impl TransactionExecutionInfoView {
+    fn new(tx_hash: H256, state_root: H256, event_root: H256, gas_used: StrView<u64>, status: KeptVMStatusView) -> Self {
+        Self {
+            tx_hash: tx_hash.into(),
+            state_root: state_root.into(),
+            event_root: event_root.into(),
+            gas_used: gas_used,
+            status,
+        }
+    }
 }
 
 impl From<TransactionExecutionInfo> for TransactionExecutionInfoView {
@@ -207,6 +232,17 @@ impl ExecuteTransactionResponseView {
             execution_info: response.execution_info.into(),
             output: None,
             error_info: None,
+        }
+    }
+}
+
+impl From<DryRunTransactionResponseView> for ExecuteTransactionResponseView {
+    fn from(response: DryRunTransactionResponseView) -> Self {
+        Self {
+            sequence_info: TransactionSequenceInfoView::new(u64::MIN, Vec::new(), H256::random(), u64::MIN),
+            execution_info: TransactionExecutionInfoView::new(H256::random(), H256::random(), H256::random(), response.raw_output.gas_used.clone(), response.raw_output.status.clone()),
+            output: None,
+            error_info: Some(response),
         }
     }
 }
