@@ -5,6 +5,7 @@ use crate::cli_types::CommandAction;
 use crate::commands::transaction::commands::{
     build::BuildCommand, get_transactions_by_hash::GetTransactionsByHashCommand,
     get_transactions_by_order::GetTransactionsByOrderCommand, sign::SignCommand,
+    submit::SubmitCommand,
 };
 use async_trait::async_trait;
 use clap::{Parser, Subcommand};
@@ -27,6 +28,7 @@ impl CommandAction<String> for Transaction {
             TransactionCommand::GetTransactionsByHash(cmd) => cmd.execute_serialized().await,
             TransactionCommand::Build(cmd) => cmd.execute_serialized().await,
             TransactionCommand::Sign(cmd) => cmd.execute_serialized().await,
+            TransactionCommand::Submit(cmd) => cmd.execute_serialized().await,
         }
     }
 }
@@ -37,4 +39,5 @@ pub enum TransactionCommand {
     GetTransactionsByOrder(GetTransactionsByOrderCommand),
     GetTransactionsByHash(GetTransactionsByHashCommand),
     Sign(SignCommand),
+    Submit(SubmitCommand),
 }

@@ -71,6 +71,8 @@ Feature: Rooch CLI integration tests
       Then assert: "'{{$.transaction[-1]}}' not_contains error"
       Then cmd: "transaction sign --tx-hex {{$.transaction[-1]}} --json"
       Then assert: "'{{$.transaction[-1]}}' not_contains error"
+      Then cmd: "transaction submit --signed-tx-hex {{$.transaction[-1]}}"
+      Then assert: "{{$.transaction[-1].execution_info.status.type}} == executed"
 
       # alias tx for transaction
       Then cmd: "tx get-transactions-by-order --cursor 1 --limit 2 --descending-order true"
