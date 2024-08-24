@@ -17,10 +17,10 @@ impl ListCommand {
         let context = self.context_options.build()?;
 
         println!(
-            "{:^24} | {:^48} | {:^48} | {:^12}",
-            "Env Alias", "RPC URL", "Websocket URL", "Active Env"
+            "{:^24} | {:^48} | {:^48} | {:^48} | {:^12}",
+            "Env Alias", "RPC URL", "Websocket URL", "Proxy", "Active Env"
         );
-        println!("{}", ["-"; 153].join(""));
+        println!("{}", ["-"; 203].join(""));
 
         for env in context.client_config.envs.iter() {
             let mut active = "";
@@ -29,9 +29,11 @@ impl ListCommand {
             }
 
             let ws = env.ws.clone().unwrap_or("Null".to_owned());
+            let proxy = env.proxy.clone().unwrap_or("Null".to_owned());
+
             println!(
-                "{:^24} | {:^48} | {:^48} | {:^12}",
-                env.alias, env.rpc, ws, active
+                "{:^24} | {:^48} | {:^48} | {:^48} | {:^12}",
+                env.alias, env.rpc, ws, proxy, active
             )
         }
 

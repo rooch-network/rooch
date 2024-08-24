@@ -27,7 +27,6 @@ pub struct RequestCommand {
 
     #[clap(flatten)]
     pub(crate) context_options: WalletContextOptions,
-
     /// Return command outputs in json format
     #[clap(long, default_value = "false")]
     json: bool,
@@ -36,7 +35,8 @@ pub struct RequestCommand {
 #[async_trait]
 impl CommandAction<serde_json::Value> for RequestCommand {
     async fn execute(self) -> RoochResult<serde_json::Value> {
-        let client = self.context_options.build()?.get_client().await?;
+        let context = self.context_options.build()?;
+        let client = context.get_client().await?;
         let params = match self.params {
             Some(serde_json::Value::Array(array)) => array,
             Some(value) => {
@@ -51,7 +51,11 @@ impl CommandAction<serde_json::Value> for RequestCommand {
             }
             None => vec![],
         };
-        Ok(client.request(self.method.as_str(), params).await?)
+        let active_env = context.client_config.get_active_env()?;
+
+        Ok(client
+            .request_by_proxy(&active_env.rpc, self.method.as_str(), params)
+            .await?)
     }
 
     /// Executes the command, and serializes it to the common JSON output type

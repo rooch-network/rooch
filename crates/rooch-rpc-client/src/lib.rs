@@ -15,7 +15,9 @@ use moveos_types::{
     function_return_value::FunctionResult, module_binding::MoveFunctionCaller,
     moveos_std::tx_context::TxContext, transaction::FunctionCall,
 };
+use reqwest::Proxy;
 use rooch_client::RoochRpcClient;
+use serde_json::json;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::runtime::Handle;
@@ -27,6 +29,7 @@ pub mod wallet_context;
 pub struct ClientBuilder {
     request_timeout: Duration,
     ws_url: Option<String>,
+    proxy_url: Option<String>,
 }
 
 impl ClientBuilder {
@@ -40,6 +43,11 @@ impl ClientBuilder {
         self
     }
 
+    pub fn proxy_url(mut self, url: impl AsRef<str>) -> Self {
+        self.proxy_url = Some(url.as_ref().to_string());
+        self
+    }
+
     pub async fn build(self, http: impl AsRef<str>) -> Result<Client> {
         // TODO: add verison info
 
@@ -50,9 +58,24 @@ impl ClientBuilder {
                 .build(http)?,
         );
 
+        if let Some(proxy_url) = self.proxy_url {
+            let reqwest_client = Some(Arc::new(
+                reqwest::Client::builder()
+                    .proxy(Proxy::https(proxy_url.clone())?)
+                    .proxy(Proxy::all(proxy_url)?)
+                    .build()?,
+            ));
+            return Ok(Client {
+                http: http_client.clone(),
+                rooch: RoochRpcClient::new(http_client.clone()),
+                reqwest: reqwest_client,
+            });
+        };
+
         Ok(Client {
             http: http_client.clone(),
             rooch: RoochRpcClient::new(http_client.clone()),
+            reqwest: None,
         })
     }
 }
@@ -62,6 +85,7 @@ impl Default for ClientBuilder {
         Self {
             request_timeout: Duration::from_secs(60),
             ws_url: None,
+            proxy_url: None,
         }
     }
 }
@@ -69,6 +93,7 @@ impl Default for ClientBuilder {
 #[derive(Clone)]
 pub struct Client {
     http: Arc<HttpClient>,
+    reqwest: Option<Arc<reqwest::Client>>,
     pub rooch: RoochRpcClient,
 }
 
@@ -85,6 +110,28 @@ impl Client {
         params: Vec<serde_json::Value>,
     ) -> Result<serde_json::Value> {
         Ok(self.http.request(method, params).await?)
+    }
+
+    pub async fn request_by_proxy(
+        &self,
+        url: &str,
+        method: &str,
+        params: Vec<serde_json::Value>,
+    ) -> Result<serde_json::Value> {
+        if let Some(reqwest) = &self.reqwest {
+            let response = reqwest
+                .post(url)
+                .header("Content-Type", "application/json")
+                .json(&json!({
+                    "method": method,
+                    "params": params,
+                }))
+                .send()
+                .await?;
+            return Ok(response.json::<serde_json::Value>().await?);
+        };
+
+        Ok(serde_json::Value::Null)
     }
 }
 
