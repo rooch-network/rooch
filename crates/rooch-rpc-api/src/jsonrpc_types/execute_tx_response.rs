@@ -260,7 +260,7 @@ impl From<DryRunTransactionResponseView> for ExecuteTransactionResponseView {
                 H256::random(),
                 H256::random(),
                 H256::random(),
-                response.raw_output.gas_used.clone(),
+                response.raw_output.gas_used,
                 response.raw_output.status.clone(),
             ),
             output: None,
