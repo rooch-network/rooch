@@ -24,3 +24,4 @@ moveos-store = { workspace = true }
 rooch-config = { workspace = true }
 rooch-store = { workspace = true }
 rooch-indexer = { workspace = true }
+rooch-types = { workspace = true }

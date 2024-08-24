@@ -9,13 +9,18 @@ use crate::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use crate::actor::relayer_proxy::RelayerProxy;
 use anyhow::Result;
 use async_trait::async_trait;
-use coerce::actor::{context::ActorContext, message::Handler, Actor};
+use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use move_core_types::vm_status::KeptVMStatus;
+use moveos_eventbus::bus::EventData;
 use rooch_config::{BitcoinRelayerConfig, EthereumRelayerConfig};
+use rooch_event::actor::{EventActor, EventActorSubscribeMessage};
+use rooch_event::event::ServiceStatusEvent;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
+use rooch_types::service_status::ServiceStatus;
 use rooch_types::transaction::{L1BlockWithBody, L1Transaction};
-use tracing::{error, info, warn};
+use std::ops::Deref;
+use tracing::{error, info, log, warn};
 
 pub struct RelayerActor {
     relayers: Vec<RelayerProxy>,
@@ -23,6 +28,8 @@ pub struct RelayerActor {
     processor: PipelineProcessorProxy,
     ethereum_config: Option<EthereumRelayerConfig>,
     bitcoin_config: Option<BitcoinRelayerConfig>,
+    event_actor: Option<LocalActorRef<EventActor>>,
+    paused: bool,
 }
 
 impl RelayerActor {
@@ -31,6 +38,7 @@ impl RelayerActor {
         processor: PipelineProcessorProxy,
         ethereum_config: Option<EthereumRelayerConfig>,
         bitcoin_config: Option<BitcoinRelayerConfig>,
+        event_actor: Option<LocalActorRef<EventActor>>,
     ) -> Result<Self> {
         Ok(Self {
             relayers: vec![],
@@ -38,7 +46,23 @@ impl RelayerActor {
             processor,
             ethereum_config,
             bitcoin_config,
+            event_actor,
+            paused: false,
         })
+    }
+
+    pub async fn subscribe_event(
+        &self,
+        event_actor_ref: LocalActorRef<EventActor>,
+        executor_actor_ref: LocalActorRef<RelayerActor>,
+    ) {
+        let service_status_event = ServiceStatusEvent::default();
+        let actor_subscribe_message = EventActorSubscribeMessage::new(
+            service_status_event,
+            "relayer".to_string(),
+            Box::new(executor_actor_ref),
+        );
+        let _ = event_actor_ref.send(actor_subscribe_message).await;
     }
 
     async fn init_relayer(&mut self, ctx: &mut ActorContext) -> Result<()> {
@@ -117,6 +141,10 @@ impl RelayerActor {
     async fn sync(&mut self) {
         let relayers = self.relayers.clone();
         for relayer in relayers {
+            if self.paused {
+                tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                continue;
+            }
             let relayer_name = relayer.name();
             if let Err(e) = relayer.sync().await {
                 warn!("Relayer {} sync error: {:?}", relayer_name, e);
@@ -162,6 +190,11 @@ impl Actor for RelayerActor {
         if let Err(err) = self.init_relayer(ctx).await {
             error!("Relayer init error: {:?}", err);
         }
+
+        let local_actor_ref: LocalActorRef<Self> = ctx.actor_ref();
+        if let Some(event_actor) = self.event_actor.clone() {
+            let _ = self.subscribe_event(event_actor, local_actor_ref).await;
+        }
     }
 }
 
@@ -169,5 +202,18 @@ impl Actor for RelayerActor {
 impl Handler<RelayTick> for RelayerActor {
     async fn handle(&mut self, _message: RelayTick, _ctx: &mut ActorContext) {
         self.sync().await
+    }
+}
+
+#[async_trait]
+impl Handler<EventData> for RelayerActor {
+    async fn handle(&mut self, message: EventData, _ctx: &mut ActorContext) -> Result<()> {
+        if let Ok(service_status_event) = message.data.downcast::<ServiceStatusEvent>() {
+            if service_status_event.deref().status == ServiceStatus::Maintenance {
+                log::warn!("RelayerActor: MoveVM panic occurs, set the status to paused...");
+                self.paused = true;
+            }
+        }
+        Ok(())
     }
 }

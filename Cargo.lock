@@ -6800,6 +6800,7 @@ dependencies = [
  "regex",
  "serde 1.0.208",
  "tempfile",
+ "thiserror",
  "tracing-subscriber",
 ]
 
@@ -9303,6 +9304,7 @@ dependencies = [
  "rooch-config",
  "rooch-indexer",
  "rooch-store",
+ "rooch-types",
 ]
 
 [[package]]
@@ -9314,6 +9316,7 @@ dependencies = [
  "coerce",
  "log",
  "moveos-eventbus",
+ "rooch-types",
 ]
 
 [[package]]
@@ -9626,8 +9629,14 @@ dependencies = [
  "function_name",
  "log",
  "metrics",
+ "move-binary-format",
+ "move-core-types",
+ "moveos",
+ "moveos-stdlib",
  "moveos-types",
  "prometheus",
+ "rooch-db",
+ "rooch-event",
  "rooch-executor",
  "rooch-indexer",
  "rooch-proposer",
@@ -9666,9 +9675,11 @@ dependencies = [
  "hex",
  "metrics",
  "move-core-types",
+ "moveos-eventbus",
  "moveos-types",
  "prometheus",
  "rooch-config",
+ "rooch-event",
  "rooch-executor",
  "rooch-pipeline-processor",
  "rooch-types",
@@ -9778,11 +9789,13 @@ dependencies = [
  "coerce",
  "function_name",
  "metrics",
+ "moveos-eventbus",
  "moveos-types",
  "prometheus",
  "raw-store",
  "rooch-config",
  "rooch-db",
+ "rooch-event",
  "rooch-genesis",
  "rooch-store",
  "rooch-types",

@@ -6,7 +6,7 @@ use crate::gas::table::{
 };
 use crate::vm::data_cache::MoveosDataCache;
 use crate::vm::moveos_vm::{MoveOSSession, MoveOSVM};
-use anyhow::{bail, Result};
+use anyhow::{bail, format_err, Error, Result};
 use backtrace::Backtrace;
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::errors::VMError;
@@ -46,6 +46,14 @@ use moveos_types::transaction::{
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+
+#[derive(thiserror::Error, Debug)]
+pub enum VMPanicError {
+    #[error("Verifier panic {0:?}.")]
+    VerifierPanicError(Error),
+    #[error("System call panic {0:?}.")]
+    SystemCallPanicError(Error),
+}
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct GasPaymentAccount {
@@ -288,7 +296,8 @@ impl MoveOS {
         }
 
         match self.execute_action(&mut session, action.clone()) {
-            Ok(status) => {
+            Ok(_) => {
+                let status = VMStatus::Executed;
                 if log::log_enabled!(log::Level::Debug) {
                     log::debug!(
                         "execute_action ok tx(hash:{}) vm_status:{:?}",
@@ -459,31 +468,8 @@ impl MoveOS {
         &self,
         session: &mut MoveOSSession<'_, '_, RootObjectResolver<MoveOSStore>, MoveOSGasMeter>,
         action: VerifiedMoveAction,
-    ) -> Result<VMStatus, VMError> {
-        // execute main tx
-        let execute_result = session.execute_move_action(action);
-        let vm_status = vm_status_of_result(execute_result.clone());
-
-        // If the user action failed, we need respawn the session,
-        // then execute system_pre_execute, system_post_execute.
-        let status = match vm_status.clone().keep_or_discard() {
-            Ok(status) => {
-                if status != KeptVMStatus::Executed {
-                    debug_assert!(execute_result.is_err());
-                    return Err(execute_result.unwrap_err());
-                }
-                vm_status
-            }
-            Err(discard_status) => {
-                //This should not happen, if it happens, it means that the VM or verifer has a bug
-                let backtrace = Backtrace::new();
-                panic!(
-                    "Discard status: {:?}, execute_result: {:?} \n{:?}",
-                    discard_status, execute_result, backtrace
-                );
-            }
-        };
-        Ok(status)
+    ) -> Result<(), VMError> {
+        session.execute_move_action(action)
     }
 
     fn execution_cleanup(
@@ -498,17 +484,22 @@ impl MoveOS {
                 if is_system_call && kept_status != KeptVMStatus::Executed {
                     // system call should always success
                     let backtrace = Backtrace::new();
-                    panic!(
-                        "System call failed: {:?}, vm_err: {:?} \n{:?}",
-                        kept_status, vm_error_info, backtrace
-                    );
+                    log::warn!("System call failed: {:?}\n{:?}", kept_status, backtrace);
+                    return Err(Error::from(VMPanicError::SystemCallPanicError(
+                        format_err!("Execute system call with Panic {:?}", vm_error_info),
+                    )));
                 }
+
                 kept_status
             }
             Err(discard_status) => {
                 //This should not happen, if it happens, it means that the VM or verifer has a bug
                 let backtrace = Backtrace::new();
-                panic!("Discard status: {:?}\n{:?}", discard_status, backtrace);
+                log::warn!("Discard status: {:?}\n{:?}", discard_status, backtrace);
+                return Err(Error::from(VMPanicError::VerifierPanicError(format_err!(
+                    "Execute Action with Panic {:?}",
+                    vm_error_info
+                ))));
             }
         };
 

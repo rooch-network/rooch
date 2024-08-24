@@ -1,13 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::event::{GasUpgradeEvent, ServiceStatusEvent};
 use async_trait::async_trait;
 use coerce::actor::context::ActorContext;
 use coerce::actor::message::{Handler, Message};
 use coerce::actor::Actor;
 use log;
 use moveos_eventbus::bus::{EventBus, EventNotifier};
-use moveos_eventbus::event::GasUpgradeEvent;
+use rooch_types::service_status::ServiceStatus;
 
 #[derive(Default)]
 pub struct EventActor {
@@ -39,6 +40,31 @@ impl Handler<GasUpgradeMessage> for EventActor {
         log::debug!("EventActor receive message {:?}", message);
         self.event_bus
             .notify::<GasUpgradeEvent>(GasUpgradeEvent {})?;
+        Ok(())
+    }
+}
+
+#[derive(Default, Clone, Debug)]
+pub struct ServiceStatusMessage {
+    pub status: ServiceStatus,
+}
+
+impl Message for ServiceStatusMessage {
+    type Result = anyhow::Result<()>;
+}
+
+#[async_trait]
+impl Handler<ServiceStatusMessage> for EventActor {
+    async fn handle(
+        &mut self,
+        message: ServiceStatusMessage,
+        _ctx: &mut ActorContext,
+    ) -> anyhow::Result<()> {
+        log::debug!("EventActor receive message {:?}", message);
+        self.event_bus
+            .notify::<ServiceStatusEvent>(ServiceStatusEvent {
+                status: message.status,
+            })?;
         Ok(())
     }
 }

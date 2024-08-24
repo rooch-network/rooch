@@ -30,9 +30,11 @@ prometheus = { workspace = true }
 move-core-types = { workspace = true }
 
 moveos-types = { workspace = true }
+moveos-eventbus = { workspace = true }
 metrics = { workspace = true }
 
 rooch-types = { workspace = true }
 rooch-config = { workspace = true }
 rooch-executor = { workspace = true }
 rooch-pipeline-processor = { workspace = true }
+rooch-event = { workspace = true }
