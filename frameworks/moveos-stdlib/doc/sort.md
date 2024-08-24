@@ -22,7 +22,7 @@ Utility functions for sorting vector.
 Sorts a vector using quick sort algorithm.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="sort.md#0x2_sort_quick_sort">quick_sort</a>&lt;T: <b>copy</b>, drop&gt;(data: <a href="">vector</a>&lt;T&gt;): <a href="">vector</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="sort.md#0x2_sort_quick_sort">quick_sort</a>&lt;T: <b>copy</b>, drop&gt;(data: &<b>mut</b> <a href="">vector</a>&lt;T&gt;)
 </code></pre>
 
 
@@ -35,5 +35,5 @@ Sorts a vector, returning a new vector with the sorted elements.
 The sort algorithm used is quick sort, it maybe changed in the future.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="sort.md#0x2_sort">sort</a>&lt;T: <b>copy</b>, drop&gt;(data: <a href="">vector</a>&lt;T&gt;): <a href="">vector</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="sort.md#0x2_sort">sort</a>&lt;T: <b>copy</b>, drop&gt;(data: &<b>mut</b> <a href="">vector</a>&lt;T&gt;)
 </code></pre>

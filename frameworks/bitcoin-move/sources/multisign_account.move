@@ -105,10 +105,10 @@ module bitcoin_move::multisign_account{
         let to_x_only_public_keys = to_x_only_public_keys(public_keys);
         //We need to sort the public keys to generate the same multisign address
         //And we sort the x_only_public_keys, not the original public keys
-        let sorted_public_keys = sort::sort(to_x_only_public_keys);
-        let merkle_root = generate_taproot(threshold, &sorted_public_keys);
+        sort::sort(&mut to_x_only_public_keys);
+        let merkle_root = generate_taproot(threshold, &to_x_only_public_keys);
         //Use the sorted first public key as the internal pubkey
-        let internal_pubkey = vector::borrow(&sorted_public_keys, 0);
+        let internal_pubkey = vector::borrow(&to_x_only_public_keys, 0);
         bitcoin_address::p2tr(internal_pubkey, option::some(merkle_root))
     }
 
@@ -278,8 +278,8 @@ module bitcoin_move::multisign_account{
         vector::push_back(&mut public_keys, x"0338121decf4ea2dbfd2ad1fe05a32a67448e78bf97a18bc107b4da177c27af752");
         vector::push_back(&mut public_keys, x"03786e2d94b8aaac17b2846ea908a245ab8b3c9df7ff34be8c75c27beba8e1f579");
         let x_only_public_keys = to_x_only_public_keys(public_keys);
-        let sorted_public_keys = sort::sort(x_only_public_keys);
-        let buf = create_multisign_script(2, &sorted_public_keys);
+        sort::sort(&mut x_only_public_keys);
+        let buf = create_multisign_script(2, &x_only_public_keys);
         std::debug::print(&buf);
         let expect_result = x"2008839c624d3da34ae240086f60196409d619f285365cc3498fdd3a90b72599e4ac2038121decf4ea2dbfd2ad1fe05a32a67448e78bf97a18bc107b4da177c27af752ba20786e2d94b8aaac17b2846ea908a245ab8b3c9df7ff34be8c75c27beba8e1f579ba52a2";
         assert!(script_buf::into_bytes(buf) == expect_result, 1000);
@@ -292,8 +292,8 @@ module bitcoin_move::multisign_account{
         vector::push_back(&mut public_keys, x"0338121decf4ea2dbfd2ad1fe05a32a67448e78bf97a18bc107b4da177c27af752");
         vector::push_back(&mut public_keys, x"03786e2d94b8aaac17b2846ea908a245ab8b3c9df7ff34be8c75c27beba8e1f579");
         let x_only_public_keys = to_x_only_public_keys(public_keys);
-        let sorted_public_keys = sort::sort(x_only_public_keys);
-        let merkle_root = generate_taproot(2, &sorted_public_keys);
+        sort::sort(&mut x_only_public_keys);
+        let merkle_root = generate_taproot(2, &x_only_public_keys);
         //std::debug::print(&merkle_root);
         let expected_root = @0x2dd3a13df28795832b0efbd279ddf0a432f6942ca82172f82abb2e15461c4402;
         assert!(merkle_root == expected_root, 1000);
