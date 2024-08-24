@@ -52,7 +52,7 @@ module bitcoin_move::script_buf{
     /// Get the script hash from a P2SH script.
     /// This function does not check if the script is a P2SH script, the caller must do that.
     public fun p2sh_script_hash(self: &ScriptBuf): vector<u8>{
-        vector::sub_vector(&self.bytes, 2, 22)
+        vector::slice(&self.bytes, 2, 22)
     }
 
     /// Checks if the given script is a P2PKH script.
@@ -68,7 +68,7 @@ module bitcoin_move::script_buf{
     /// Get the public key hash from a P2PKH script.
     /// This function does not check if the script is a P2PKH script, the caller must do that.
     public fun p2pkh_pubkey_hash(self: &ScriptBuf): vector<u8>{
-        vector::sub_vector(&self.bytes, 3, 23)
+        vector::slice(&self.bytes, 3, 23)
     }
 
     public fun is_witness_program(self: &ScriptBuf): bool{
@@ -85,7 +85,7 @@ module bitcoin_move::script_buf{
 
     /// Get the witness program from a witness program script.
     public fun witness_program(self: &ScriptBuf): vector<u8>{
-        vector::sub_vector(&self.bytes, 2, vector::length(&self.bytes))
+        vector::slice(&self.bytes, 2, vector::length(&self.bytes))
     }
 
      /// try to get a BitcoinAddress from a ScriptBuf.

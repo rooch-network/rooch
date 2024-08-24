@@ -18,6 +18,12 @@ module std::vector {
     /// The length of the vectors are not equal.
     const EVECTORS_LENGTH_MISMATCH: u64 = 0x20002;
 
+     /// The step provided in `range` is invalid, must be greater than zero.
+    const EINVALID_STEP: u64 = 0x20003;
+
+    /// The range in `slice` is invalid.
+    const EINVALID_SLICE_RANGE: u64 = 0x20004;
+
     #[bytecode_instruction]
     /// Create an empty vector.
     native public fun empty<Element>(): vector<Element>;
@@ -604,18 +610,34 @@ module std::vector {
         for_each_reverse(v, |e| d(e))
     }
 
-    /// Extracts a sub-vector from `v` starting from `start` index to `end` index (exclusive).
-    public fun sub_vector<T: copy + drop>(v: &vector<T>, start: u64, end: u64): vector<T> {
-        assert!(start <= end, EINVALID_RANGE); 
-        assert!(end <= length(v), EINDEX_OUT_OF_BOUNDS); 
+    public fun range(start: u64, end: u64): vector<u64> {
+        range_with_step(start, end, 1)
+    }
 
-        let result = empty<T>();
-        let i = start;
-        while (i < end) {
-            push_back(&mut result, *borrow(v, i));
-            i = i + 1;
+    public fun range_with_step(start: u64, end: u64, step: u64): vector<u64> {
+        assert!(step > 0, EINVALID_STEP);
+
+        let vec = vector[];
+        while (start < end) {
+            push_back(&mut vec, start);
+            start = start + step;
         };
-        result
+        vec
+    }
+
+    public fun slice<Element: copy>(
+        self: &vector<Element>,
+        start: u64,
+        end: u64
+    ): vector<Element> {
+        assert!(start <= end && end <= length(self), EINVALID_SLICE_RANGE);
+
+        let vec = vector[];
+        while (start < end) {
+            push_back(&mut vec, *borrow(self, start));
+            start = start + 1;
+        };
+        vec
     }
 
     // =================================================================

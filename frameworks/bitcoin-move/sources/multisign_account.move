@@ -149,12 +149,12 @@ module bitcoin_move::multisign_account{
             let public_key = *vector::borrow(&public_keys, idx);
             let public_key_len = vector::length(&public_key);
             let x_only_key = if (public_key_len == BITCOIN_COMPRESSED_PUBLIC_KEY_LEN){
-                vector::sub_vector(&public_key, 1, BITCOIN_COMPRESSED_PUBLIC_KEY_LEN)
+                vector::slice(&public_key, 1, BITCOIN_COMPRESSED_PUBLIC_KEY_LEN)
             }else{
                 //TODO should we support uncompressed public key?
                 abort ErrorInvalidPublicKey
             };
-            vector::sub_vector(&public_key, 1, 33);
+            vector::slice(&public_key, 1, 33);
             vector::push_back(&mut result, x_only_key);
             idx = idx + 1;
         };
