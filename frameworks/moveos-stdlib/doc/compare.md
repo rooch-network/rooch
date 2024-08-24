@@ -10,11 +10,14 @@ Utilities for comparing Move values
 -  [Function `result_equal`](#0x2_compare_result_equal)
 -  [Function `result_less_than`](#0x2_compare_result_less_than)
 -  [Function `result_greater_than`](#0x2_compare_result_greater_than)
+-  [Function `compare`](#0x2_compare_compare)
 -  [Function `compare_vector_u8`](#0x2_compare_compare_vector_u8)
 -  [Function `cmp_bcs_bytes`](#0x2_compare_cmp_bcs_bytes)
 
 
 <pre><code><b>use</b> <a href="">0x1::compare</a>;
+<b>use</b> <a href="">0x1::type_name</a>;
+<b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 </code></pre>
 
 
@@ -80,6 +83,20 @@ Utilities for comparing Move values
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="compare.md#0x2_compare_result_greater_than">result_greater_than</a>(): u8
+</code></pre>
+
+
+
+<a name="0x2_compare_compare"></a>
+
+## Function `compare`
+
+Compare two values of the same type
+This function will detect the type of the value and compare them accordingly
+If the type is numeric, it will compare the numeric value, otherwise it will compare the bytes
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="">compare</a>&lt;T&gt;(a: &T, b: &T): u8
 </code></pre>
 
 
