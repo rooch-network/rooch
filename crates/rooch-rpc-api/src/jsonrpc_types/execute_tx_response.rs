@@ -106,7 +106,12 @@ pub struct TransactionSequenceInfoView {
 }
 
 impl TransactionSequenceInfoView {
-    fn new(tx_order: u64, tx_order_signature: Vec<u8>, tx_accumulator_root: H256, tx_timestamp: u64) -> Self {
+    fn new(
+        tx_order: u64,
+        tx_order_signature: Vec<u8>,
+        tx_accumulator_root: H256,
+        tx_timestamp: u64,
+    ) -> Self {
         Self {
             tx_order: StrView(tx_order),
             tx_order_signature: tx_order_signature.into(),
@@ -137,12 +142,18 @@ pub struct TransactionExecutionInfoView {
 }
 
 impl TransactionExecutionInfoView {
-    fn new(tx_hash: H256, state_root: H256, event_root: H256, gas_used: StrView<u64>, status: KeptVMStatusView) -> Self {
+    fn new(
+        tx_hash: H256,
+        state_root: H256,
+        event_root: H256,
+        gas_used: StrView<u64>,
+        status: KeptVMStatusView,
+    ) -> Self {
         Self {
             tx_hash: tx_hash.into(),
             state_root: state_root.into(),
             event_root: event_root.into(),
-            gas_used: gas_used,
+            gas_used,
             status,
         }
     }
@@ -239,8 +250,19 @@ impl ExecuteTransactionResponseView {
 impl From<DryRunTransactionResponseView> for ExecuteTransactionResponseView {
     fn from(response: DryRunTransactionResponseView) -> Self {
         Self {
-            sequence_info: TransactionSequenceInfoView::new(u64::MIN, Vec::new(), H256::random(), u64::MIN),
-            execution_info: TransactionExecutionInfoView::new(H256::random(), H256::random(), H256::random(), response.raw_output.gas_used.clone(), response.raw_output.status.clone()),
+            sequence_info: TransactionSequenceInfoView::new(
+                u64::MIN,
+                Vec::new(),
+                H256::random(),
+                u64::MIN,
+            ),
+            execution_info: TransactionExecutionInfoView::new(
+                H256::random(),
+                H256::random(),
+                H256::random(),
+                response.raw_output.gas_used.clone(),
+                response.raw_output.status.clone(),
+            ),
             output: None,
             error_info: Some(response),
         }
