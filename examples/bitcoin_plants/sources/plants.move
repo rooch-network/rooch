@@ -192,8 +192,9 @@ module bitcoin_plants::plants {
     #[test]
     fun test() {
         genesis::init_for_test();
+        let id = ord::new_inscription_id(@0x3232423,0);
         let inscription_obj = ord::new_inscription_object_for_test(
-            @0x3232423,
+            id,
             0,
             0,
             vector[],

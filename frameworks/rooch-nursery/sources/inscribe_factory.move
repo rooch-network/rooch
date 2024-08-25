@@ -307,12 +307,9 @@ module rooch_nursery::inscribe_factory {
                 return err_str(b"generator_inscription_id is not validity bitseed")
             };
 
-            let generator_txid = ord::inscription_id_txid(&generator_inscription_id);
-            let generator_index = ord::inscription_id_index(&generator_inscription_id);
-            let inscription_obj = ord::borrow_inscription(generator_txid, generator_index);
+            let inscription = ord::borrow_inscription(generator_inscription_id);
 
-            let inscrption = object::borrow(inscription_obj);
-            let wasm_bytes = ord::body(inscrption);
+            let wasm_bytes = ord::body(inscription);
 
             let (is_valid, reason) = inscribe_verify(wasm_bytes, deploy_args, seed, user_input, metadata, content_type, body);
             if (!is_valid) {

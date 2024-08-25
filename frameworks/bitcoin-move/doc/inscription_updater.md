@@ -14,9 +14,19 @@ https://github.com/ordinals/ord/blob/e59bd3e73d30ed9bc0b252ba2084bba670d6b0db/sr
 -  [Struct `InscriptionUpdater`](#0x4_inscription_updater_InscriptionUpdater)
 -  [Struct `Location`](#0x4_inscription_updater_Location)
 -  [Struct `Range`](#0x4_inscription_updater_Range)
+-  [Struct `ReinscribeCounter`](#0x4_inscription_updater_ReinscribeCounter)
 -  [Constants](#@Constants_0)
 -  [Function `process_tx`](#0x4_inscription_updater_process_tx)
 -  [Function `need_process_oridinals`](#0x4_inscription_updater_need_process_oridinals)
+-  [Function `curse_duplicate_field`](#0x4_inscription_updater_curse_duplicate_field)
+-  [Function `curse_incompleted_field`](#0x4_inscription_updater_curse_incompleted_field)
+-  [Function `curse_not_at_offset_zero`](#0x4_inscription_updater_curse_not_at_offset_zero)
+-  [Function `curse_not_in_first_input`](#0x4_inscription_updater_curse_not_in_first_input)
+-  [Function `curse_pointer`](#0x4_inscription_updater_curse_pointer)
+-  [Function `curse_pushnum`](#0x4_inscription_updater_curse_pushnum)
+-  [Function `curse_reinscription`](#0x4_inscription_updater_curse_reinscription)
+-  [Function `curse_stutter`](#0x4_inscription_updater_curse_stutter)
+-  [Function `curse_unrecognized_even_field`](#0x4_inscription_updater_curse_unrecognized_even_field)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -114,9 +124,102 @@ https://github.com/ordinals/ord/blob/e59bd3e73d30ed9bc0b252ba2084bba670d6b0db/sr
 
 
 
+<a name="0x4_inscription_updater_ReinscribeCounter"></a>
+
+## Struct `ReinscribeCounter`
+
+
+
+<pre><code><b>struct</b> <a href="inscription_updater.md#0x4_inscription_updater_ReinscribeCounter">ReinscribeCounter</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0x4_inscription_updater_CURSE_DUPLICATE_FIELD"></a>
+
+Curse Inscription
+
+
+<pre><code><b>const</b> <a href="inscription_updater.md#0x4_inscription_updater_CURSE_DUPLICATE_FIELD">CURSE_DUPLICATE_FIELD</a>: <a href="">vector</a>&lt;u8&gt; = [68, 117, 112, 108, 105, 99, 97, 116, 101, 70, 105, 101, 108, 100];
+</code></pre>
+
+
+
+<a name="0x4_inscription_updater_CURSE_INCOMPLETE_FIELD"></a>
+
+
+
+<pre><code><b>const</b> <a href="inscription_updater.md#0x4_inscription_updater_CURSE_INCOMPLETE_FIELD">CURSE_INCOMPLETE_FIELD</a>: <a href="">vector</a>&lt;u8&gt; = [73, 110, 99, 111, 109, 112, 108, 101, 116, 101, 70, 105, 101, 108, 100];
+</code></pre>
+
+
+
+<a name="0x4_inscription_updater_CURSE_NOT_AT_OFFSET_ZERO"></a>
+
+
+
+<pre><code><b>const</b> <a href="inscription_updater.md#0x4_inscription_updater_CURSE_NOT_AT_OFFSET_ZERO">CURSE_NOT_AT_OFFSET_ZERO</a>: <a href="">vector</a>&lt;u8&gt; = [78, 111, 116, 65, 116, 79, 102, 102, 115, 101, 116, 90, 101, 114, 111];
+</code></pre>
+
+
+
+<a name="0x4_inscription_updater_CURSE_NOT_IN_FIRST_INPUT"></a>
+
+
+
+<pre><code><b>const</b> <a href="inscription_updater.md#0x4_inscription_updater_CURSE_NOT_IN_FIRST_INPUT">CURSE_NOT_IN_FIRST_INPUT</a>: <a href="">vector</a>&lt;u8&gt; = [78, 111, 116, 73, 110, 70, 105, 114, 115, 116, 73, 110, 112, 117, 116];
+</code></pre>
+
+
+
+<a name="0x4_inscription_updater_CURSE_POINTER"></a>
+
+
+
+<pre><code><b>const</b> <a href="inscription_updater.md#0x4_inscription_updater_CURSE_POINTER">CURSE_POINTER</a>: <a href="">vector</a>&lt;u8&gt; = [80, 111, 105, 110, 116, 101, 114];
+</code></pre>
+
+
+
+<a name="0x4_inscription_updater_CURSE_PUSHNUM"></a>
+
+
+
+<pre><code><b>const</b> <a href="inscription_updater.md#0x4_inscription_updater_CURSE_PUSHNUM">CURSE_PUSHNUM</a>: <a href="">vector</a>&lt;u8&gt; = [80, 117, 115, 104, 110, 117, 109];
+</code></pre>
+
+
+
+<a name="0x4_inscription_updater_CURSE_REINSCRIPTION"></a>
+
+
+
+<pre><code><b>const</b> <a href="inscription_updater.md#0x4_inscription_updater_CURSE_REINSCRIPTION">CURSE_REINSCRIPTION</a>: <a href="">vector</a>&lt;u8&gt; = [82, 101, 105, 110, 115, 99, 114, 105, 112, 116, 105, 111, 110];
+</code></pre>
+
+
+
+<a name="0x4_inscription_updater_CURSE_STUTTER"></a>
+
+
+
+<pre><code><b>const</b> <a href="inscription_updater.md#0x4_inscription_updater_CURSE_STUTTER">CURSE_STUTTER</a>: <a href="">vector</a>&lt;u8&gt; = [83, 116, 117, 116, 116, 101, 114];
+</code></pre>
+
+
+
+<a name="0x4_inscription_updater_CURSE_UNRECOGNIZED_EVEN_FIELD"></a>
+
+
+
+<pre><code><b>const</b> <a href="inscription_updater.md#0x4_inscription_updater_CURSE_UNRECOGNIZED_EVEN_FIELD">CURSE_UNRECOGNIZED_EVEN_FIELD</a>: <a href="">vector</a>&lt;u8&gt; = [85, 110, 114, 101, 99, 111, 103, 110, 105, 122, 101, 100, 69, 118, 101, 110, 70, 105, 101, 108, 100];
+</code></pre>
+
 
 
 <a name="0x4_inscription_updater_ErrorFlotsamNotProcessed"></a>
@@ -164,4 +267,103 @@ https://github.com/ordinals/ord/blob/e59bd3e73d30ed9bc0b252ba2084bba670d6b0db/sr
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="inscription_updater.md#0x4_inscription_updater_need_process_oridinals">need_process_oridinals</a>(block_height: u64): bool
+</code></pre>
+
+
+
+<a name="0x4_inscription_updater_curse_duplicate_field"></a>
+
+## Function `curse_duplicate_field`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="inscription_updater.md#0x4_inscription_updater_curse_duplicate_field">curse_duplicate_field</a>(): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_inscription_updater_curse_incompleted_field"></a>
+
+## Function `curse_incompleted_field`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="inscription_updater.md#0x4_inscription_updater_curse_incompleted_field">curse_incompleted_field</a>(): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_inscription_updater_curse_not_at_offset_zero"></a>
+
+## Function `curse_not_at_offset_zero`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="inscription_updater.md#0x4_inscription_updater_curse_not_at_offset_zero">curse_not_at_offset_zero</a>(): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_inscription_updater_curse_not_in_first_input"></a>
+
+## Function `curse_not_in_first_input`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="inscription_updater.md#0x4_inscription_updater_curse_not_in_first_input">curse_not_in_first_input</a>(): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_inscription_updater_curse_pointer"></a>
+
+## Function `curse_pointer`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="inscription_updater.md#0x4_inscription_updater_curse_pointer">curse_pointer</a>(): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_inscription_updater_curse_pushnum"></a>
+
+## Function `curse_pushnum`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="inscription_updater.md#0x4_inscription_updater_curse_pushnum">curse_pushnum</a>(): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_inscription_updater_curse_reinscription"></a>
+
+## Function `curse_reinscription`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="inscription_updater.md#0x4_inscription_updater_curse_reinscription">curse_reinscription</a>(): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_inscription_updater_curse_stutter"></a>
+
+## Function `curse_stutter`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="inscription_updater.md#0x4_inscription_updater_curse_stutter">curse_stutter</a>(): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_inscription_updater_curse_unrecognized_even_field"></a>
+
+## Function `curse_unrecognized_even_field`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="inscription_updater.md#0x4_inscription_updater_curse_unrecognized_even_field">curse_unrecognized_even_field</a>(): <a href="">vector</a>&lt;u8&gt;
 </code></pre>

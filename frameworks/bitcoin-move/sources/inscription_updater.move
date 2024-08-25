@@ -90,6 +90,11 @@ module bitcoin_move::inscription_updater{
         end: u64,
     }
 
+    struct ReinscribeCounter has copy, drop, store{
+        inscription_id: InscriptionID,
+        count: u64,
+    }
+
     public(friend) fun process_tx(pending_block: &mut Object<PendingBlock>, tx: &Transaction, input_utxos: &mut vector<UTXO>): vector<SealOut> {
         let block_height = pending_block::block_height(pending_block);
         let seal_outs = vector::empty();
@@ -105,10 +110,10 @@ module bitcoin_move::inscription_updater{
         let is_coinbase = types::is_coinbase_tx(tx);
 
         let id_counter = 0;
+        let inscribed_offsets = simple_map::new();
         let floating_inscriptions = vector::empty();
 
-        //TODO define the jubilant
-        let jubilant = true;
+        let jubilant = block_height >= network::jubilee_height();
 
         let total_input_value = 0;
 
@@ -138,7 +143,7 @@ module bitcoin_move::inscription_updater{
                 seal_protocol,
                 flotsams: vector::empty(),
                 lost_sats,
-                reward: ord::subsidy_by_height(block_height),
+                reward: network::subsidy_by_height(block_height),
                 blessed_inscription_count,
                 cursed_inscription_count,
                 unbound_inscription_count,
@@ -152,7 +157,7 @@ module bitcoin_move::inscription_updater{
             let input = vector::borrow(txinput, input_idx);
             // skip subsidy since no inscriptions possible
             if (types::is_null_outpoint(types::txin_previous_output(input))){
-                total_input_value = total_input_value + ord::subsidy_by_height(block_height);
+                total_input_value = total_input_value + network::subsidy_by_height(block_height);
                 input_idx = input_idx + 1;
                 continue
             };
@@ -167,7 +172,7 @@ module bitcoin_move::inscription_updater{
                 let seal_object_id = *vector::borrow(&mut seals, seal_idx);
                 let inscription_obj = ord::borrow_object(seal_object_id);
                 let inscription = object::borrow(inscription_obj);
-                let inscription_id = ord::inscription_id(inscription);
+                let inscription_id = *ord::id(inscription);
 
                 let old_location = ord::location(inscription);
                 
@@ -180,6 +185,7 @@ module bitcoin_move::inscription_updater{
                     old: option::some(*old_location),
                 };
                 vector::push_back(&mut floating_inscriptions, flotsam);
+                simple_map::add(&mut inscribed_offsets, offset, ReinscribeCounter{inscription_id, count: 1});
                 seal_idx = seal_idx + 1;
             };
 
@@ -198,10 +204,13 @@ module bitcoin_move::inscription_updater{
                     break
                 };
                 let inscription_id = ord::new_inscription_id(txid, id_counter);
-                let pointer = ord::inscription_record_pointer(payload);
-                let parents = ord::inscription_record_parents(payload);
+                let pointer = *ord::inscription_record_pointer(payload);
+                let parents = *ord::inscription_record_parents(payload);
                 
                 let unrecongized_even_field = ord::inscription_record_unrecognized_even_field(payload);
+                
+                //handle curse before fix the offset via pointer
+                let curse = handle_curse_inscription(&envelope, offset, &inscribed_offsets);
 
                 let offset = if (option::is_some(&pointer)){
                     let p = option::destroy_some(pointer);
@@ -214,8 +223,6 @@ module bitcoin_move::inscription_updater{
                     offset
                 };
 
-                let curse = ord::handle_curse_inscription(&envelope);
-
                 let flotsam = Flotsam{
                     inscription_id: inscription_id,
                     offset: offset,
@@ -226,10 +233,9 @@ module bitcoin_move::inscription_updater{
                         hidden: false,
                         parents,
                         pointer,
-                        //TODO handle reinscription
-                        reinscription: false,
+                        reinscription: simple_map::contains_key(&inscribed_offsets, &offset),
                         unbound: (utxo::value(utxo) == 0 
-                            || curse == option::some(ord::curse_unrecognized_even_field())
+                            || curse == option::some(curse_unrecognized_even_field())
                             || unrecongized_even_field),
                         vindicated: option::is_some(&curse) && jubilant,
                         envelope: envelope,
@@ -426,36 +432,34 @@ module bitcoin_move::inscription_updater{
             updater.next_sequence_number = updater.next_sequence_number + 1;
 
             let charms = 0u16;
-            //TODO process the charms
 
             if(cursed) {
-                //Charm::Cursed.set(&mut charms);
+                charms = ord::set_charm(charms, ord::charm_cursed_flag());
             };
 
             if(reinscription) {
-                //Charm::Reinscription.set(&mut charms);
+                charms = ord::set_charm(charms, ord::charm_reinscription_flag());
             };   
 
             //We do not handle the Sat
             
-
             if(is_op_return) {
-                //Charm::Burned.set(&mut charms);
+                charms = ord::set_charm(charms, ord::charm_burned_flag());
             };
 
             if(*ord::satpoint_outpoint(&new_satpoint) == types::null_outpoint()) {
-                //Charm::Lost.set(&mut charms);
+                charms = ord::set_charm(charms, ord::charm_lost_flag());
             };
 
             let location = if(unbound) {
-                //Charm::Unbound.set(&mut charms);
+                charms = ord::set_charm(charms, ord::charm_unbound_flag());
                 ord::new_satpoint(types::unbound_outpoint(), (updater.unbound_inscription_count as u64))
             }else{
                 new_satpoint
             };
 
             if(vindicated) {
-                //Charm::Vindicated.set(&mut charms);
+                charms = ord::set_charm(charms, ord::charm_vindicated_flag());
             };
             let inscription_obj_id = ord::create_object(
                 inscription_id,
@@ -489,11 +493,7 @@ module bitcoin_move::inscription_updater{
 
 
     public(friend) fun need_process_oridinals(block_height: u64) : bool {
-        if(network::is_mainnet()){
-            block_height >= ORDINAL_GENESIS_HEIGHT
-        }else{
-            true
-        }
+        block_height >= network::first_inscription_height()
     }
 
     fun find_range_for_pointer(range_to_vout: &SimpleMap<u64, Range>, pointer: u64): (bool, u64, u64) {
@@ -528,4 +528,102 @@ module bitcoin_move::inscription_updater{
         vector::destroy_empty(flotsams);
     }
 
+    //======================= Curse =======================
+
+    /// Curse Inscription
+    const CURSE_DUPLICATE_FIELD: vector<u8> = b"DuplicateField";
+
+    public fun curse_duplicate_field(): vector<u8> {
+        CURSE_DUPLICATE_FIELD
+    }
+
+    const CURSE_INCOMPLETE_FIELD: vector<u8> = b"IncompleteField";
+
+    public fun curse_incompleted_field(): vector<u8> {
+        CURSE_INCOMPLETE_FIELD
+    }
+
+    const CURSE_NOT_AT_OFFSET_ZERO: vector<u8> = b"NotAtOffsetZero";
+
+    public fun curse_not_at_offset_zero(): vector<u8> {
+        CURSE_NOT_AT_OFFSET_ZERO
+    }
+
+    const CURSE_NOT_IN_FIRST_INPUT: vector<u8> = b"NotInFirstInput";
+
+    public fun curse_not_in_first_input(): vector<u8> {
+        CURSE_NOT_IN_FIRST_INPUT
+    }
+
+    const CURSE_POINTER: vector<u8> = b"Pointer";
+
+    public fun curse_pointer(): vector<u8> {
+        CURSE_POINTER
+    }
+
+    const CURSE_PUSHNUM: vector<u8> = b"Pushnum";
+
+    public fun curse_pushnum(): vector<u8> {
+        CURSE_PUSHNUM
+    }
+
+    const CURSE_REINSCRIPTION: vector<u8> = b"Reinscription";
+
+    public fun curse_reinscription(): vector<u8> {
+        CURSE_REINSCRIPTION
+    }
+
+    const CURSE_STUTTER: vector<u8> = b"Stutter";
+
+    public fun curse_stutter(): vector<u8> {
+        CURSE_STUTTER
+    }
+
+    const CURSE_UNRECOGNIZED_EVEN_FIELD: vector<u8> = b"UnrecognizedEvenField";
+
+    public fun curse_unrecognized_even_field(): vector<u8> {
+        CURSE_UNRECOGNIZED_EVEN_FIELD
+    }
+
+    fun handle_curse_inscription(e: &Envelope<InscriptionRecord>, offset: u64, inscribed_offset: &SimpleMap<u64, ReinscribeCounter>): option::Option<vector<u8>> {
+        let record = ord::envelope_payload(e);
+        let curse = if (ord::inscription_record_unrecognized_even_field(record)) {
+            option::some(CURSE_UNRECOGNIZED_EVEN_FIELD)
+        } else if (ord::inscription_record_duplicate_field(record)) {
+            option::some(CURSE_DUPLICATE_FIELD)
+        } else if (ord::inscription_record_incomplete_field(record)) {
+            option::some(CURSE_INCOMPLETE_FIELD)
+        } else if (ord::envelope_input(e) != 0) {
+            option::some(CURSE_NOT_IN_FIRST_INPUT)
+        } else if (ord::envelope_offset(e) != 0) {
+            option::some(CURSE_NOT_AT_OFFSET_ZERO)
+        } else if (option::is_some(ord::inscription_record_pointer(record))) {
+            option::some(CURSE_POINTER)
+        } else if (ord::envelope_pushnum(e)) {
+            option::some(CURSE_PUSHNUM)
+        } else if (ord::envelope_stutter(e)) {
+            option::some(CURSE_STUTTER)
+        }else{
+            if(simple_map::contains_key(inscribed_offset, &offset)){
+                let counter = *simple_map::borrow(inscribed_offset, &offset);
+                if(counter.count > 1){
+                    option::some(CURSE_REINSCRIPTION)
+                }else{
+                    //the counter inscription id is from input, so it should exist
+                    let inscription = ord::borrow_inscription(counter.inscription_id);
+                    let is_cursed = ord::is_cursed(inscription);
+                    let charms = ord::charms(inscription);
+                    let initial_inscription_was_cursed_or_vindicated = is_cursed || ord::is_set_charm(charms, ord::charm_vindicated_flag());
+                    if(initial_inscription_was_cursed_or_vindicated){
+                        option::none()
+                    }else{
+                        option::some(CURSE_REINSCRIPTION)
+                    }
+                }
+            }else{
+                option::none()
+            }
+        };
+        curse
+    }
 }

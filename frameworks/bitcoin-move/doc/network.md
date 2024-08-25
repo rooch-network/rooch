@@ -19,6 +19,9 @@
 -  [Function `from_str`](#0x4_network_from_str)
 -  [Function `network_name`](#0x4_network_network_name)
 -  [Function `bech32_hrp`](#0x4_network_bech32_hrp)
+-  [Function `jubilee_height`](#0x4_network_jubilee_height)
+-  [Function `first_inscription_height`](#0x4_network_first_inscription_height)
+-  [Function `subsidy_by_height`](#0x4_network_subsidy_by_height)
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
@@ -44,11 +47,30 @@ Bitcoin network onchain configuration.
 ## Constants
 
 
+<a name="0x4_network_COIN_VALUE"></a>
+
+How many satoshis are in "one bitcoin".
+
+
+<pre><code><b>const</b> <a href="network.md#0x4_network_COIN_VALUE">COIN_VALUE</a>: u64 = 100000000;
+</code></pre>
+
+
+
 <a name="0x4_network_ErrorUnknownNetwork"></a>
 
 
 
 <pre><code><b>const</b> <a href="network.md#0x4_network_ErrorUnknownNetwork">ErrorUnknownNetwork</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x4_network_FIRST_POST_SUBSIDY_EPOCH"></a>
+
+
+
+<pre><code><b>const</b> <a href="network.md#0x4_network_FIRST_POST_SUBSIDY_EPOCH">FIRST_POST_SUBSIDY_EPOCH</a>: u32 = 33;
 </code></pre>
 
 
@@ -90,6 +112,16 @@ Bitcoin's testnet network.
 
 
 <pre><code><b>const</b> <a href="network.md#0x4_network_NETWORK_TESTNET">NETWORK_TESTNET</a>: u8 = 2;
+</code></pre>
+
+
+
+<a name="0x4_network_SUBSIDY_HALVING_INTERVAL"></a>
+
+How may blocks between halvings.
+
+
+<pre><code><b>const</b> <a href="network.md#0x4_network_SUBSIDY_HALVING_INTERVAL">SUBSIDY_HALVING_INTERVAL</a>: u32 = 210000;
 </code></pre>
 
 
@@ -223,4 +255,42 @@ Get the current network from the onchain configuration.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="network.md#0x4_network_bech32_hrp">bech32_hrp</a>(<a href="network.md#0x4_network">network</a>: u8): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x4_network_jubilee_height"></a>
+
+## Function `jubilee_height`
+
+Ordinals jubilee height.
+https://github.com/ordinals/ord/blob/75bf04b22107155f8f8ab6c77f6eefa8117d9ace/src/chain.rs#L49-L56
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="network.md#0x4_network_jubilee_height">jubilee_height</a>(): u64
+</code></pre>
+
+
+
+<a name="0x4_network_first_inscription_height"></a>
+
+## Function `first_inscription_height`
+
+Ordinals first inscription height.
+https://github.com/ordinals/ord/blob/75bf04b22107155f8f8ab6c77f6eefa8117d9ace/src/chain.rs#L36-L43
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="network.md#0x4_network_first_inscription_height">first_inscription_height</a>(): u64
+</code></pre>
+
+
+
+<a name="0x4_network_subsidy_by_height"></a>
+
+## Function `subsidy_by_height`
+
+Block Rewards
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="network.md#0x4_network_subsidy_by_height">subsidy_by_height</a>(height: u64): u64
 </code></pre>
