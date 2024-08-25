@@ -144,7 +144,7 @@ module bitcoin_move::bitcoin{
             let outpoint = *types::txin_previous_output(txin);
             if (outpoint == types::null_outpoint()) {
                 idx = idx + 1;
-                continue;
+                continue
             };
             if (utxo::exists_utxo(outpoint)) {
                 let object_id = utxo::derive_utxo_id(outpoint);

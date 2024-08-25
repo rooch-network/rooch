@@ -9,7 +9,7 @@ module rooch_nursery::inscribe_factory {
     use moveos_std::address;
     use moveos_std::hash;
     use moveos_std::hex;
-    use moveos_std::object::{Self, Object};
+    use moveos_std::object::Object;
     use moveos_std::string_utils;
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::wasm;
