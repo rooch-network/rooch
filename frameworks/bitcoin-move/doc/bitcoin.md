@@ -21,10 +21,10 @@
 -  [Function `get_latest_block`](#0x4_bitcoin_get_latest_block)
 -  [Function `get_bitcoin_time`](#0x4_bitcoin_get_bitcoin_time)
 -  [Function `contains_header`](#0x4_bitcoin_contains_header)
+-  [Function `unpack_transfer_utxo_event`](#0x4_bitcoin_unpack_transfer_utxo_event)
 
 
-<pre><code><b>use</b> <a href="">0x1::debug</a>;
-<b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::address</a>;
@@ -269,4 +269,15 @@ Get the bitcoin time in seconds
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_contains_header">contains_header</a>(block_header: &<a href="types.md#0x4_types_Header">types::Header</a>): bool
+</code></pre>
+
+
+
+<a name="0x4_bitcoin_unpack_transfer_utxo_event"></a>
+
+## Function `unpack_transfer_utxo_event`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_unpack_transfer_utxo_event">unpack_transfer_utxo_event</a>(<a href="">event</a>: <a href="bitcoin.md#0x4_bitcoin_TransferUTXOEvent">bitcoin::TransferUTXOEvent</a>): (<b>address</b>, <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;, <b>address</b>, u64)
 </code></pre>
