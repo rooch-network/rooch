@@ -24,7 +24,7 @@ Utility functions for sorting vector.
 Sorts a vector using quick sort algorithm.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="sort.md#0x2_sort_quick_sort">quick_sort</a>&lt;T: <b>copy</b>, drop&gt;(data: &<b>mut</b> <a href="">vector</a>&lt;T&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="sort.md#0x2_sort_quick_sort">quick_sort</a>&lt;T&gt;(data: &<b>mut</b> <a href="">vector</a>&lt;T&gt;)
 </code></pre>
 
 
@@ -37,7 +37,7 @@ Sorts a vector, returning a new vector with the sorted elements.
 The sort algorithm used is quick sort, it maybe changed in the future.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="sort.md#0x2_sort">sort</a>&lt;T: <b>copy</b>, drop&gt;(data: &<b>mut</b> <a href="">vector</a>&lt;T&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="sort.md#0x2_sort">sort</a>&lt;T&gt;(data: &<b>mut</b> <a href="">vector</a>&lt;T&gt;)
 </code></pre>
 
 
@@ -50,7 +50,7 @@ Sorts a vector using a custom comparison function.
 The comparison function should return true if the first element is greater than the second.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="sort.md#0x2_sort_sort_by_cmp">sort_by_cmp</a>&lt;T: <b>copy</b>, drop&gt;(data: &<b>mut</b> <a href="">vector</a>&lt;T&gt;, cmp: |(&T, &T)|bool)
+<pre><code><b>public</b> <b>fun</b> <a href="sort.md#0x2_sort_sort_by_cmp">sort_by_cmp</a>&lt;T&gt;(data: &<b>mut</b> <a href="">vector</a>&lt;T&gt;, cmp: |(&T, &T)|bool)
 </code></pre>
 
 
@@ -62,5 +62,5 @@ The comparison function should return true if the first element is greater than 
 Sorts a vector using a custom key function.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="sort.md#0x2_sort_sort_by_key">sort_by_key</a>&lt;T: <b>copy</b>, drop, K: <b>copy</b>, drop&gt;(data: &<b>mut</b> <a href="">vector</a>&lt;T&gt;, key: |&T|K)
+<pre><code><b>public</b> <b>fun</b> <a href="sort.md#0x2_sort_sort_by_key">sort_by_key</a>&lt;T, K&gt;(data: &<b>mut</b> <a href="">vector</a>&lt;T&gt;, key: |&T|&K)
 </code></pre>
