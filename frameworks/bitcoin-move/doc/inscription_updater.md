@@ -9,8 +9,6 @@ https://github.com/ordinals/ord/blob/e59bd3e73d30ed9bc0b252ba2084bba670d6b0db/sr
 
 -  [Struct `FlotsamNew`](#0x4_inscription_updater_FlotsamNew)
 -  [Struct `Flotsam`](#0x4_inscription_updater_Flotsam)
--  [Struct `Envelope`](#0x4_inscription_updater_Envelope)
--  [Struct `InscriptionRecord`](#0x4_inscription_updater_InscriptionRecord)
 -  [Struct `InscriptionCreatedEvent`](#0x4_inscription_updater_InscriptionCreatedEvent)
 -  [Struct `InscriptionTransferredEvent`](#0x4_inscription_updater_InscriptionTransferredEvent)
 -  [Struct `InscriptionUpdater`](#0x4_inscription_updater_InscriptionUpdater)
@@ -19,7 +17,6 @@ https://github.com/ordinals/ord/blob/e59bd3e73d30ed9bc0b252ba2084bba670d6b0db/sr
 -  [Constants](#@Constants_0)
 -  [Function `process_tx`](#0x4_inscription_updater_process_tx)
 -  [Function `need_process_oridinals`](#0x4_inscription_updater_need_process_oridinals)
--  [Function `parse_inscription_from_tx`](#0x4_inscription_updater_parse_inscription_from_tx)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -58,28 +55,6 @@ https://github.com/ordinals/ord/blob/e59bd3e73d30ed9bc0b252ba2084bba670d6b0db/sr
 
 
 <pre><code><b>struct</b> <a href="inscription_updater.md#0x4_inscription_updater_Flotsam">Flotsam</a> <b>has</b> <b>copy</b>, drop, store
-</code></pre>
-
-
-
-<a name="0x4_inscription_updater_Envelope"></a>
-
-## Struct `Envelope`
-
-
-
-<pre><code><b>struct</b> <a href="inscription_updater.md#0x4_inscription_updater_Envelope">Envelope</a>&lt;T&gt; <b>has</b> <b>copy</b>, drop, store
-</code></pre>
-
-
-
-<a name="0x4_inscription_updater_InscriptionRecord"></a>
-
-## Struct `InscriptionRecord`
-
-
-
-<pre><code><b>struct</b> <a href="inscription_updater.md#0x4_inscription_updater_InscriptionRecord">InscriptionRecord</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -144,6 +119,24 @@ https://github.com/ordinals/ord/blob/e59bd3e73d30ed9bc0b252ba2084bba670d6b0db/sr
 ## Constants
 
 
+<a name="0x4_inscription_updater_ErrorFlotsamNotProcessed"></a>
+
+
+
+<pre><code><b>const</b> <a href="inscription_updater.md#0x4_inscription_updater_ErrorFlotsamNotProcessed">ErrorFlotsamNotProcessed</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x4_inscription_updater_ErrorUTXOBalanceNotMatch"></a>
+
+
+
+<pre><code><b>const</b> <a href="inscription_updater.md#0x4_inscription_updater_ErrorUTXOBalanceNotMatch">ErrorUTXOBalanceNotMatch</a>: u64 = 1;
+</code></pre>
+
+
+
 <a name="0x4_inscription_updater_ORDINAL_GENESIS_HEIGHT"></a>
 
 
@@ -171,15 +164,4 @@ https://github.com/ordinals/ord/blob/e59bd3e73d30ed9bc0b252ba2084bba670d6b0db/sr
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="inscription_updater.md#0x4_inscription_updater_need_process_oridinals">need_process_oridinals</a>(block_height: u64): bool
-</code></pre>
-
-
-
-<a name="0x4_inscription_updater_parse_inscription_from_tx"></a>
-
-## Function `parse_inscription_from_tx`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="inscription_updater.md#0x4_inscription_updater_parse_inscription_from_tx">parse_inscription_from_tx</a>(_tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>): <a href="">vector</a>&lt;<a href="inscription_updater.md#0x4_inscription_updater_Envelope">inscription_updater::Envelope</a>&lt;<a href="inscription_updater.md#0x4_inscription_updater_InscriptionRecord">inscription_updater::InscriptionRecord</a>&gt;&gt;
 </code></pre>

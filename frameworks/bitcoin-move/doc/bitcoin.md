@@ -39,10 +39,8 @@
 <b>use</b> <a href="">0x2::timestamp</a>;
 <b>use</b> <a href="">0x3::address_mapping</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
-<b>use</b> <a href="">0x3::chain_id</a>;
 <b>use</b> <a href="inscription_updater.md#0x4_inscription_updater">0x4::inscription_updater</a>;
 <b>use</b> <a href="network.md#0x4_network">0x4::network</a>;
-<b>use</b> <a href="ord.md#0x4_ord">0x4::ord</a>;
 <b>use</b> <a href="pending_block.md#0x4_pending_block">0x4::pending_block</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 <b>use</b> <a href="utxo.md#0x4_utxo">0x4::utxo</a>;
@@ -143,6 +141,15 @@ The reorg is too deep, we need to stop the system and fix the issue
 
 
 <pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ErrorReorgTooDeep">ErrorReorgTooDeep</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="0x4_bitcoin_ErrorUTXONotExists"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ErrorUTXONotExists">ErrorUTXONotExists</a>: u64 = 4;
 </code></pre>
 
 

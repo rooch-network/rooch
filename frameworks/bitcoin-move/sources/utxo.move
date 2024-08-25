@@ -295,6 +295,13 @@ module bitcoin_move::utxo{
         bag::remove(bag, name)
     }
 
+    // Should we require the input utxo exists
+    // Sometimes, we may not sync the Bitcoin block from genesis
+    public(friend) fun check_utxo_input(): bool{
+        //TODO make this to be configurable
+        rooch_framework::chain_id::is_main()
+    }
+
     #[test_only]
     public fun new_for_testing(txid: address, vout: u32, value: u64) : Object<UTXO> {
         new(txid, vout, value)

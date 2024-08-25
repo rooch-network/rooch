@@ -13,7 +13,6 @@ module bitcoin_move::pending_block{
     use moveos_std::type_info;
     
     use bitcoin_move::types::{Self, Transaction, Header, Block, BlockHeightHash};
-    use bitcoin_move::ord::{Flotsam};
 
     friend bitcoin_move::genesis;
     friend bitcoin_move::bitcoin;
@@ -28,7 +27,6 @@ module bitcoin_move::pending_block{
     const ErrorUnsupportedChain:u64 = 7;
 
     const TX_IDS_KEY: vector<u8> = b"tx_ids";
-    const BLOCK_FLOTSAM_KEY: vector<u8> = b"block_flotsam";
 
     struct PendingBlock has key{
         block_height: u64,
@@ -201,9 +199,6 @@ module bitcoin_move::pending_block{
             });
         };
         
-        if(object::contains_field(&obj, BLOCK_FLOTSAM_KEY)){
-            let _flotsam: vector<Flotsam> = object::remove_field(&mut obj, BLOCK_FLOTSAM_KEY);
-        };
         let pending_block = object::remove(obj);
         let PendingBlock{block_height:_, block_hash:_, header, processed_tx:_, next_block_hash:_} = pending_block;
         header
@@ -271,15 +266,6 @@ module bitcoin_move::pending_block{
 
     public(friend) fun inprocess_block_pending_block(inprocess_block: &mut InprocessBlock): &mut Object<PendingBlock>{
         &mut inprocess_block.block_obj
-    }
-
-    public(friend) fun inprocess_block_flotsams_mut(inprocess_block: &mut InprocessBlock): &mut vector<Flotsam>{
-        object::borrow_mut_field_with_default(&mut inprocess_block.block_obj, BLOCK_FLOTSAM_KEY, vector::empty())
-    }
-
-    public(friend) fun inprocess_block_flotsams(inprocess_block: &InprocessBlock): vector<Flotsam>{
-        let default = vector::empty<Flotsam>();
-        *object::borrow_field_with_default(&inprocess_block.block_obj, BLOCK_FLOTSAM_KEY, &default)
     }
 
     public(friend) fun inprocess_block_tx(inprocess_block: &InprocessBlock): &Transaction{

@@ -26,6 +26,9 @@ module bitcoin_move::inscription_updater{
 
     const ORDINAL_GENESIS_HEIGHT:u64 = 767430;
 
+    const ErrorUTXOBalanceNotMatch: u64 = 1;
+    const ErrorFlotsamNotProcessed: u64 = 2;
+
     struct FlotsamNew has copy, drop, store{
         cursed: bool,
         fee: u64,
@@ -93,6 +96,7 @@ module bitcoin_move::inscription_updater{
         if(!need_process_oridinals(block_height)){
             return seal_outs
         };
+        let check_utxo_input = utxo::check_utxo_input();
         let seal_protocol = type_info::type_name<Inscription>();
 
         let txid = types::tx_id(tx);
@@ -120,9 +124,6 @@ module bitcoin_move::inscription_updater{
         //reverse the envelopes for pop back to iterate
         vector::reverse(&mut envelopes);
 
-        std::debug::print(&std::string::utf8(b"inscription_updater"));
-        std::debug::print(&envelopes);
-
         let updater = if (pending_block::exists_intermediate<InscriptionUpdater>(pending_block)){
             pending_block::take_intermediate<InscriptionUpdater>(pending_block)
         }else{
@@ -130,13 +131,14 @@ module bitcoin_move::inscription_updater{
             let blessed_inscription_count = ord::blessed_inscription_count(inscription_store);
             let cursed_inscription_count = ord::cursed_inscription_count(inscription_store);
             let unbound_inscription_count = ord::unbound_inscription_count(inscription_store);
+            let lost_sats = ord::lost_sats(inscription_store);
             let next_sequence_number = ord::next_sequence_number(inscription_store);
             InscriptionUpdater{
                 block_height,
                 seal_protocol,
                 flotsams: vector::empty(),
-                lost_sats: 0,
-                reward: 0,
+                lost_sats,
+                reward: ord::subsidy_by_height(block_height),
                 blessed_inscription_count,
                 cursed_inscription_count,
                 unbound_inscription_count,
@@ -147,11 +149,14 @@ module bitcoin_move::inscription_updater{
         let input_idx = 0;
         let input_len = vector::length(txinput);
         while(input_idx < input_len){
-            //let input = vector::borrow(txinput, input_idx);
-            let utxo = vector::borrow_mut(input_utxos, input_idx);
-            if (is_coinbase){
+            let input = vector::borrow(txinput, input_idx);
+            // skip subsidy since no inscriptions possible
+            if (types::is_null_outpoint(types::txin_previous_output(input))){
                 total_input_value = total_input_value + ord::subsidy_by_height(block_height);
+                input_idx = input_idx + 1;
+                continue
             };
+            let utxo = vector::borrow_mut(input_utxos, input_idx);
 
             //Process inscription transfer
             let seals = utxo::remove_seals_internal<Inscription>(utxo);
@@ -249,7 +254,7 @@ module bitcoin_move::inscription_updater{
 
         sort::sort_by_key(&mut floating_inscriptions, |flotsam| {
             let flotsam: &Flotsam = flotsam;
-            flotsam.offset
+            &flotsam.offset
         });
 
         let range_to_vout = simple_map::new();
@@ -261,6 +266,10 @@ module bitcoin_move::inscription_updater{
         let flotsam_idx = 0;
         let flotsam_len = vector::length(&floating_inscriptions);
         while(output_idx < output_len){
+            //Skip the output process if there is no flotsam
+            if(flotsam_len == 0){
+                break
+            };
             let output = vector::borrow(txoutput, output_idx);
             let value = types::txout_value(output);
             let output_script_buf = types::txout_script_pubkey(output);
@@ -341,10 +350,31 @@ module bitcoin_move::inscription_updater{
                 vector::push_back(&mut updater.flotsams, *flotsam);
                 flotsam_idx = flotsam_idx + 1;
             };
-            updater.reward = updater.reward + total_input_value - total_output_value;
+            let tx_fee = if (total_input_value >= total_output_value){
+                total_input_value - total_output_value
+            }else{
+                if(check_utxo_input){
+                    abort ErrorUTXOBalanceNotMatch
+                };
+                0
+            };
+            updater.reward = updater.reward + tx_fee;
         };
+        
+        let inscription_store = ord::borrow_mut_inscription_store();
+        ord::update_cursed_inscription_count(inscription_store, updater.cursed_inscription_count);
+        ord::update_blessed_inscription_count(inscription_store, updater.blessed_inscription_count);
+        ord::update_unbound_inscription_count(inscription_store, updater.unbound_inscription_count);
+        ord::update_lost_sats(inscription_store, updater.lost_sats);
+        ord::update_next_sequence_number(inscription_store, updater.next_sequence_number);
 
-        pending_block::add_intermediate(pending_block, updater);
+        if(is_coinbase){
+            //The updater lifetime is the same as the pending_block
+            //The coinbase is the last tx to process, so we can drop the updater here
+            drop(updater);
+        }else{
+            pending_block::add_intermediate(pending_block, updater);
+        };
         seal_outs
     }
 
@@ -479,6 +509,23 @@ module bitcoin_move::inscription_updater{
             i = i + 1;
         };
         (false, 0, 0)
+    }
+
+    fun drop(updater: InscriptionUpdater) {
+        let InscriptionUpdater {
+            block_height:_,
+            seal_protocol:_,
+            flotsams,
+            lost_sats:_,
+            reward:_,
+            blessed_inscription_count:_,
+            cursed_inscription_count:_,
+            unbound_inscription_count:_,
+            next_sequence_number:_,
+        } = updater;
+        //The flotsams must be empty after the process_tx
+        assert!(vector::is_empty(&flotsams), ErrorFlotsamNotProcessed);
+        vector::destroy_empty(flotsams);
     }
 
 }

@@ -6,7 +6,6 @@
 
 
 -  [Struct `InscriptionID`](#0x4_ord_InscriptionID)
--  [Struct `Flotsam`](#0x4_ord_Flotsam)
 -  [Struct `SatPoint`](#0x4_ord_SatPoint)
 -  [Resource `Inscription`](#0x4_ord_Inscription)
 -  [Struct `Envelope`](#0x4_ord_Envelope)
@@ -16,8 +15,6 @@
 -  [Struct `MetaprotocolValidity`](#0x4_ord_MetaprotocolValidity)
 -  [Resource `InscriptionStore`](#0x4_ord_InscriptionStore)
 -  [Struct `InscriptionEvent`](#0x4_ord_InscriptionEvent)
--  [Struct `InscriptionCreatedEvent`](#0x4_ord_InscriptionCreatedEvent)
--  [Struct `InscriptionTransferredEvent`](#0x4_ord_InscriptionTransferredEvent)
 -  [Struct `InscriptionCharm`](#0x4_ord_InscriptionCharm)
 -  [Constants](#@Constants_0)
 -  [Function `curse_duplicate_field`](#0x4_ord_curse_duplicate_field)
@@ -35,11 +32,13 @@
 -  [Function `blessed_inscription_count`](#0x4_ord_blessed_inscription_count)
 -  [Function `cursed_inscription_count`](#0x4_ord_cursed_inscription_count)
 -  [Function `unbound_inscription_count`](#0x4_ord_unbound_inscription_count)
+-  [Function `lost_sats`](#0x4_ord_lost_sats)
 -  [Function `next_sequence_number`](#0x4_ord_next_sequence_number)
 -  [Function `update_cursed_inscription_count`](#0x4_ord_update_cursed_inscription_count)
 -  [Function `update_blessed_inscription_count`](#0x4_ord_update_blessed_inscription_count)
 -  [Function `update_next_sequence_number`](#0x4_ord_update_next_sequence_number)
 -  [Function `update_unbound_inscription_count`](#0x4_ord_update_unbound_inscription_count)
+-  [Function `update_lost_sats`](#0x4_ord_update_lost_sats)
 -  [Function `new_inscription_id`](#0x4_ord_new_inscription_id)
 -  [Function `derive_inscription_id`](#0x4_ord_derive_inscription_id)
 -  [Function `parse_inscription_id`](#0x4_ord_parse_inscription_id)
@@ -76,10 +75,15 @@
 -  [Function `satpoint_offset`](#0x4_ord_satpoint_offset)
 -  [Function `satpoint_outpoint`](#0x4_ord_satpoint_outpoint)
 -  [Function `satpoint_vout`](#0x4_ord_satpoint_vout)
--  [Function `new_flotsam`](#0x4_ord_new_flotsam)
--  [Function `unpack_flotsam`](#0x4_ord_unpack_flotsam)
 -  [Function `parse_inscription_from_tx`](#0x4_ord_parse_inscription_from_tx)
+-  [Function `envelope_input`](#0x4_ord_envelope_input)
+-  [Function `envelope_offset`](#0x4_ord_envelope_offset)
+-  [Function `envelope_payload`](#0x4_ord_envelope_payload)
+-  [Function `inscription_record_pointer`](#0x4_ord_inscription_record_pointer)
+-  [Function `inscription_record_parents`](#0x4_ord_inscription_record_parents)
+-  [Function `inscription_record_unrecognized_even_field`](#0x4_ord_inscription_record_unrecognized_even_field)
 -  [Function `subsidy_by_height`](#0x4_ord_subsidy_by_height)
+-  [Function `handle_curse_inscription`](#0x4_ord_handle_curse_inscription)
 -  [Function `add_permanent_state`](#0x4_ord_add_permanent_state)
 -  [Function `contains_permanent_state`](#0x4_ord_contains_permanent_state)
 -  [Function `borrow_permanent_state`](#0x4_ord_borrow_permanent_state)
@@ -117,7 +121,7 @@
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bag</a>;
 <b>use</b> <a href="">0x2::core_addresses</a>;
-<b>use</b> <a href="">0x2::event</a>;
+<b>use</b> <a href="">0x2::event_queue</a>;
 <b>use</b> <a href="">0x2::json</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
@@ -136,17 +140,6 @@
 
 
 <pre><code><b>struct</b> <a href="ord.md#0x4_ord_InscriptionID">InscriptionID</a> <b>has</b> <b>copy</b>, drop, store
-</code></pre>
-
-
-
-<a name="0x4_ord_Flotsam"></a>
-
-## Struct `Flotsam`
-
-
-
-<pre><code><b>struct</b> <a href="ord.md#0x4_ord_Flotsam">Flotsam</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -246,28 +239,6 @@
 
 
 <pre><code><b>struct</b> <a href="ord.md#0x4_ord_InscriptionEvent">InscriptionEvent</a> <b>has</b> <b>copy</b>, drop, store
-</code></pre>
-
-
-
-<a name="0x4_ord_InscriptionCreatedEvent"></a>
-
-## Struct `InscriptionCreatedEvent`
-
-
-
-<pre><code><b>struct</b> <a href="ord.md#0x4_ord_InscriptionCreatedEvent">InscriptionCreatedEvent</a> <b>has</b> <b>copy</b>, drop, store
-</code></pre>
-
-
-
-<a name="0x4_ord_InscriptionTransferredEvent"></a>
-
-## Struct `InscriptionTransferredEvent`
-
-
-
-<pre><code><b>struct</b> <a href="ord.md#0x4_ord_InscriptionTransferredEvent">InscriptionTransferredEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -637,6 +608,17 @@ How may blocks between halvings.
 
 
 
+<a name="0x4_ord_lost_sats"></a>
+
+## Function `lost_sats`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_lost_sats">lost_sats</a>(inscription_store: &<a href="ord.md#0x4_ord_InscriptionStore">ord::InscriptionStore</a>): u64
+</code></pre>
+
+
+
 <a name="0x4_ord_next_sequence_number"></a>
 
 ## Function `next_sequence_number`
@@ -688,6 +670,17 @@ How may blocks between halvings.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_update_unbound_inscription_count">update_unbound_inscription_count</a>(inscription_store: &<b>mut</b> <a href="ord.md#0x4_ord_InscriptionStore">ord::InscriptionStore</a>, count: u32)
+</code></pre>
+
+
+
+<a name="0x4_ord_update_lost_sats"></a>
+
+## Function `update_lost_sats`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_update_lost_sats">update_lost_sats</a>(inscription_store: &<b>mut</b> <a href="ord.md#0x4_ord_InscriptionStore">ord::InscriptionStore</a>, count: u64)
 </code></pre>
 
 
@@ -765,7 +758,7 @@ Prase InscriptionID from String
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_create_object">create_object</a>(id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>, location: <a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>, sequence_number: u32, inscription_number: u32, is_cursed: bool, charms: u16, body: <a href="">vector</a>&lt;u8&gt;, content_encoding: <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, content_type: <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, metadata: <a href="">vector</a>&lt;u8&gt;, metaprotocol: <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, parents: <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>&gt;, pointer: <a href="_Option">option::Option</a>&lt;u64&gt;, rune: <a href="_Option">option::Option</a>&lt;u128&gt;, owner: <b>address</b>): <a href="_ObjectID">object::ObjectID</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_create_object">create_object</a>(id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>, location: <a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>, sequence_number: u32, inscription_number: u32, is_cursed: bool, charms: u16, envelope: <a href="ord.md#0x4_ord_Envelope">ord::Envelope</a>&lt;<a href="ord.md#0x4_ord_InscriptionRecord">ord::InscriptionRecord</a>&gt;, owner: <b>address</b>): <a href="_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
@@ -1091,28 +1084,6 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_new_flotsam"></a>
-
-## Function `new_flotsam`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_new_flotsam">new_flotsam</a>(output_index: u32, offset: u64, object_id: <a href="_ObjectID">object::ObjectID</a>): <a href="ord.md#0x4_ord_Flotsam">ord::Flotsam</a>
-</code></pre>
-
-
-
-<a name="0x4_ord_unpack_flotsam"></a>
-
-## Function `unpack_flotsam`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_unpack_flotsam">unpack_flotsam</a>(flotsam: <a href="ord.md#0x4_ord_Flotsam">ord::Flotsam</a>): (u32, u64, <a href="_ObjectID">object::ObjectID</a>)
-</code></pre>
-
-
-
 <a name="0x4_ord_parse_inscription_from_tx"></a>
 
 ## Function `parse_inscription_from_tx`
@@ -1120,6 +1091,72 @@ Get the SatPoint's outpoint
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_parse_inscription_from_tx">parse_inscription_from_tx</a>(tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_Envelope">ord::Envelope</a>&lt;<a href="ord.md#0x4_ord_InscriptionRecord">ord::InscriptionRecord</a>&gt;&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_envelope_input"></a>
+
+## Function `envelope_input`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_envelope_input">envelope_input</a>(envelope: &<a href="ord.md#0x4_ord_Envelope">ord::Envelope</a>&lt;<a href="ord.md#0x4_ord_InscriptionRecord">ord::InscriptionRecord</a>&gt;): u32
+</code></pre>
+
+
+
+<a name="0x4_ord_envelope_offset"></a>
+
+## Function `envelope_offset`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_envelope_offset">envelope_offset</a>(envelope: &<a href="ord.md#0x4_ord_Envelope">ord::Envelope</a>&lt;<a href="ord.md#0x4_ord_InscriptionRecord">ord::InscriptionRecord</a>&gt;): u32
+</code></pre>
+
+
+
+<a name="0x4_ord_envelope_payload"></a>
+
+## Function `envelope_payload`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_envelope_payload">envelope_payload</a>&lt;T&gt;(envelope: &<a href="ord.md#0x4_ord_Envelope">ord::Envelope</a>&lt;T&gt;): &T
+</code></pre>
+
+
+
+<a name="0x4_ord_inscription_record_pointer"></a>
+
+## Function `inscription_record_pointer`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_inscription_record_pointer">inscription_record_pointer</a>(record: &<a href="ord.md#0x4_ord_InscriptionRecord">ord::InscriptionRecord</a>): <a href="_Option">option::Option</a>&lt;u64&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_inscription_record_parents"></a>
+
+## Function `inscription_record_parents`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_inscription_record_parents">inscription_record_parents</a>(record: &<a href="ord.md#0x4_ord_InscriptionRecord">ord::InscriptionRecord</a>): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_inscription_record_unrecognized_even_field"></a>
+
+## Function `inscription_record_unrecognized_even_field`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_inscription_record_unrecognized_even_field">inscription_record_unrecognized_even_field</a>(record: &<a href="ord.md#0x4_ord_InscriptionRecord">ord::InscriptionRecord</a>): bool
 </code></pre>
 
 
@@ -1132,6 +1169,17 @@ Block Rewards
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_subsidy_by_height">subsidy_by_height</a>(height: u64): u64
+</code></pre>
+
+
+
+<a name="0x4_ord_handle_curse_inscription"></a>
+
+## Function `handle_curse_inscription`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_handle_curse_inscription">handle_curse_inscription</a>(inscription: &<a href="ord.md#0x4_ord_Envelope">ord::Envelope</a>&lt;<a href="ord.md#0x4_ord_InscriptionRecord">ord::InscriptionRecord</a>&gt;): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
 </code></pre>
 
 

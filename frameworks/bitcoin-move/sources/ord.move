@@ -8,8 +8,6 @@ module bitcoin_move::ord {
     use std::vector;
 
     use moveos_std::bag;
-    //use moveos_std::bcs;
-    use moveos_std::event;
     use moveos_std::json;
     use moveos_std::object::{Self, Object, ObjectID};
     use moveos_std::simple_map::{Self, SimpleMap};
@@ -17,9 +15,7 @@ module bitcoin_move::ord {
     use moveos_std::type_info;
 
     use bitcoin_move::bitcoin_hash;
-    //use bitcoin_move::script_buf;
     use bitcoin_move::types::{Self, Transaction, Witness, OutPoint};
-    //use bitcoin_move::utxo::{Self, UTXO};
 
     friend bitcoin_move::genesis;
     friend bitcoin_move::bitcoin;
@@ -102,15 +98,6 @@ module bitcoin_move::ord {
         index: u32,
     }
 
-    struct Flotsam has store, copy, drop {
-        // inscription_id: InscriptionID,
-        // offset: u64,
-        output_index: u32,
-        // start: u64,
-        offset: u64,
-        object_id: ObjectID,
-    }
-
     struct SatPoint has store, copy, drop {
         outpoint: OutPoint,
         offset: u64,
@@ -181,6 +168,7 @@ module bitcoin_move::ord {
         cursed_inscription_count: u32,
         blessed_inscription_count: u32,
         unbound_inscription_count: u32,
+        lost_sats: u64,
         next_sequence_number: u32,
     }
 
@@ -194,29 +182,12 @@ module bitcoin_move::ord {
         event_type: u8,
     }
 
-    //TODO merge the onchain event and offchain event
-    struct InscriptionCreatedEvent has copy, drop, store {
-        block_height: u64,
-        charms: u16,
-        inscription_id: InscriptionID,
-        location: Option<SatPoint>,
-        parent_inscription_ids: vector<InscriptionID>,
-        sequence_number: u32,
-    }
-    
-    struct InscriptionTransferredEvent has copy, drop, store {
-        block_height: u64,
-        inscription_id: InscriptionID,
-        new_location: SatPoint,
-        old_location: SatPoint,
-        sequence_number: u32,
-    }
-
     public(friend) fun genesis_init(_genesis_account: &signer) {
         let store = InscriptionStore {
             cursed_inscription_count: 0,
             blessed_inscription_count: 0,
             unbound_inscription_count: 0,
+            lost_sats: 0,
             next_sequence_number: 0,
         };
         let store_obj = object::new_named_object(store);
@@ -248,6 +219,10 @@ module bitcoin_move::ord {
         inscription_store.unbound_inscription_count
     }
 
+    public(friend) fun lost_sats(inscription_store: &InscriptionStore): u64 {
+        inscription_store.lost_sats
+    }
+
     public(friend) fun next_sequence_number(inscription_store: &InscriptionStore): u32 {
         inscription_store.next_sequence_number
     }
@@ -266,6 +241,10 @@ module bitcoin_move::ord {
 
     public(friend) fun update_unbound_inscription_count(inscription_store: &mut InscriptionStore, count: u32) {
         inscription_store.unbound_inscription_count = count;
+    }
+
+    public(friend) fun update_lost_sats(inscription_store: &mut InscriptionStore, count: u64) {
+        inscription_store.lost_sats = count;
     }
 
     //===== InscriptionID =====//
@@ -331,41 +310,6 @@ module bitcoin_move::ord {
         store.next_sequence_number
     }
 
-    // fun record_to_inscription(
-    //     txid: address,
-    //     index: u32,
-    //     vout: u32,
-    //     offset: u64,
-    //     record: InscriptionRecord,
-    //     charms: u16,
-    //     inscription_number: u32,
-    //     sequence_number: u32
-    // ): Inscription {
-    //     // let parents = vector::empty();
-    //     // vector::for_each(record.parents, |f| {
-    //     //     let parent_id = derive_inscription_id(f);
-    //     //     vector::push_back(&mut parents, parent_id);
-    //     // });
-
-    //     Inscription {
-    //         txid,
-    //         index,
-    //         vout,
-    //         offset,
-    //         sequence_number,
-    //         inscription_number,
-    //         charms,
-    //         body: record.body,
-    //         content_encoding: record.content_encoding,
-    //         content_type: record.content_type,
-    //         metadata: record.metadata,
-    //         metaprotocol: record.metaprotocol,
-    //         parents: record.parents,
-    //         pointer: record.pointer,
-    //         rune: option::none(),
-    //     }
-    // }
-
     public(friend) fun create_object(
         id: InscriptionID,
         location: SatPoint,
@@ -382,6 +326,7 @@ module bitcoin_move::ord {
         // record a sequence_number to InscriptionID mapping
         object::add_field(store_obj, sequence_number, id);
         
+        let metaprotocol = envelope.payload.metaprotocol;
         let inscription = Inscription {
             txid: id.txid,
             index: id.index,
@@ -394,33 +339,46 @@ module bitcoin_move::ord {
             content_encoding: envelope.payload.content_encoding,
             content_type: envelope.payload.content_type,
             metadata: envelope.payload.metadata,
-            metaprotocol: envelope.payload.metaprotocol,
+            metaprotocol,
             parents: envelope.payload.parents,
             pointer: envelope.payload.pointer,
             rune: envelope.payload.rune,
         };
         
         let obj = object::new_with_parent_and_id(store_obj, id, inscription);
-        let obj_id = object::id(&obj);
-        // if (option::is_some(&metaprotocol)) {
-        //     let metaprotocol = option::destroy_some(metaprotocol);
-        //     moveos_std::event_queue::emit(metaprotocol, InscriptionEvent {
-        //         metaprotocol: metaprotocol,
-        //         sequence_number: sequence_number,
-        //         inscription_obj_id: obj_id,
-        //         event_type: InscriptionEventTypeNew,
-        //     });
-        // };
+        let inscription_obj_id = object::id(&obj);
+        
+        if (option::is_some(&metaprotocol)) {
+            let metaprotocol = option::destroy_some(metaprotocol);
+            moveos_std::event_queue::emit(metaprotocol, InscriptionEvent {
+                metaprotocol: metaprotocol,
+                sequence_number: sequence_number,
+                inscription_obj_id,
+                event_type: InscriptionEventTypeNew,
+            });
+        };
         object::transfer_extend(obj, owner);
-        obj_id
+        inscription_obj_id
     }
 
     public(friend) fun transfer_object(inscription_obj: Object<Inscription>, to: address, new_location: SatPoint, is_op_return: bool){
-    
+        
+        drop_temp_area(&mut inscription_obj);
         let inscription = object::borrow_mut(&mut inscription_obj);
         inscription.location = new_location;
-        drop_temp_area(&mut inscription_obj);
         if (is_op_return){
+            let metaprotocol = inscription.metaprotocol;
+            let sequence_number = inscription.sequence_number;
+            let inscription_obj_id = object::id(&inscription_obj);
+            if (option::is_some(&metaprotocol)) {
+                let metaprotocol = option::destroy_some(metaprotocol);
+                moveos_std::event_queue::emit(metaprotocol, InscriptionEvent {
+                    metaprotocol: metaprotocol,
+                    sequence_number,
+                    inscription_obj_id,
+                    event_type: InscriptionEventTypeBurn,
+                });
+            };
             //TODO update the inscription charm to Burned
             object::to_frozen(inscription_obj);
         }else{
@@ -468,315 +426,6 @@ module bitcoin_move::ord {
 
     public(friend) fun borrow_object(inscription_obj_id: ObjectID): &Object<Inscription>{
         object::borrow_object(inscription_obj_id)
-    }
-
-    // public(friend) fun spend_utxo(
-    //     utxo_obj: &mut Object<UTXO>,
-    //     tx: &Transaction,
-    //     block_height: u64,
-    //     input_utxo_values: vector<u64>,
-    //     input_index: u64
-    // ): (vector<SatPoint>, vector<Flotsam>) {
-    //     let utxo = object::borrow_mut(utxo_obj);
-
-    //     let seals = utxo::remove_seals<Inscription>(utxo);
-    //     let new_satpoints = vector::empty();
-    //     let flotsams = vector::empty();
-    //     if (vector::is_empty(&seals)) {
-    //         return (new_satpoints, flotsams)
-    //     };
-    //     let outputs = types::tx_output(tx);
-
-    //     // Track the Inscription via SatPoint
-    //     let j = 0;
-    //     let seals_len = vector::length(&seals);
-    //     while (j < seals_len) {
-    //         let seal_object_id = *vector::borrow(&mut seals, j);
-    //         let inscription_obj = object::take_object_extend<Inscription>(seal_object_id);
-    //         let origin_owner = object::owner(&inscription_obj);
-    //         let inscription = object::borrow_mut(&mut inscription_obj);
-    //         let sequence_number = inscription.sequence_number;
-    //         let metaprotocol = inscription.metaprotocol;
-
-    //         let old_location = SatPoint {
-    //             outpoint: types::new_outpoint(inscription.txid, utxo::vout(utxo)),
-    //             offset: inscription.offset,
-    //         };
-    //         let (is_match, new_satpoint) = match_utxo_and_generate_satpoint(
-    //             inscription.offset,
-    //             seal_object_id,
-    //             tx,
-    //             input_utxo_values,
-    //             input_index
-    //         );
-    //         if (is_match) {
-    //             let new_location = SatPoint {
-    //                 outpoint: types::new_outpoint(types::tx_id(tx), new_satpoint.output_index),
-    //                 offset: new_satpoint.offset,
-    //             };
-    //             let match_output_index = new_satpoint.output_index;
-
-    //             let match_output = vector::borrow(outputs, (match_output_index as u64));
-    //             let to_address = types::txout_object_address(match_output);
-    //             inscription.offset = new_satpoint.offset;
-
-                
-    //             vector::push_back(&mut new_satpoints, new_satpoint);
-
-    //             // flag inscription burned and frozen inscription
-    //             let output_script_buf = types::txout_script_pubkey(match_output);
-    //             if (script_buf::is_op_return(output_script_buf)) {
-    //                 let inscription_clarm = borrow_mut_inscription_charm_inner(&mut inscription_obj);
-    //                 inscription_clarm.burned = true;
-                    
-    //                 // drop the temporary area if the inscription is burned
-    //                 drop_temp_area(&mut inscription_obj);
-                    
-    //                 object::to_frozen(inscription_obj);
-    //                 if (option::is_some(&metaprotocol)) {
-    //                     let metaprotocol = option::destroy_some(metaprotocol);
-    //                     moveos_std::event_queue::emit(metaprotocol, InscriptionEvent {
-    //                         metaprotocol: metaprotocol,
-    //                         sequence_number: sequence_number,
-    //                         inscription_obj_id: seal_object_id,
-    //                         event_type: InscriptionEventTypeBurn,
-    //                     });
-    //                 };
-    //             } else {
-    //                 transfer_object(inscription_obj, to_address, block_height, old_location, new_location);
-    //             };
-    //         } else {
-    //             let flotsam = new_flotsam(new_satpoint.output_index, new_satpoint.offset, new_satpoint.object_id);
-    //             vector::push_back(&mut flotsams, flotsam);
-    //             //if the inscription is not matched, transfer it back to the origin owner, and wait for the coinbase tx to handle it.
-    //             object::transfer_extend(inscription_obj, origin_owner);
-    //         };
-    //         j = j + 1;
-    //     };
-
-    //     (new_satpoints, flotsams)
-    // }
-
-    // public(friend) fun handle_coinbase_tx(
-    //     tx: &Transaction,
-    //     flotsams: vector<Flotsam>,
-    //     block_height: u64
-    // ): vector<SatPoint> {
-    //     let new_satpoints = vector::empty();
-    //     if (vector::is_empty(&flotsams)) {
-    //         return new_satpoints
-    //     };
-    //     let outputs = types::tx_output(tx);
-
-    //     // Track the Inscription via SatPoint
-    //     let j = 0;
-    //     let flotsams_len = vector::length(&flotsams);
-    //     while (j < flotsams_len) {
-    //         let flotsam = *vector::borrow(&mut flotsams, j);
-    //         let inscription_obj = object::take_object_extend<Inscription>(flotsam.object_id);
-    //         let inscription = object::borrow_mut(&mut inscription_obj);
-    //         let old_location = SatPoint {
-    //             outpoint: types::new_outpoint(inscription.txid, flotsam.output_index),
-    //             offset: flotsam.offset,
-    //         };
-    //         let new_satpoint = match_coinbase_and_generate_satpoint(j, tx, flotsams, block_height);
-    //         let match_output_index = new_satpoint.output_index;
-
-    //         let match_output = vector::borrow(outputs, (match_output_index as u64));
-    //         let to_address = types::txout_object_address(match_output);
-
-    //         inscription.offset = new_satpoint.offset;
-
-    //         let new_location = SatPoint {
-    //             outpoint: types::new_outpoint(types::tx_id(tx), new_satpoint.output_index),
-    //             offset: new_satpoint.offset,
-    //         };
-    //         object::transfer_extend(inscription_obj, to_address);
-    //         vector::push_back(&mut new_satpoints, new_satpoint);
-
-    //         j = j + 1;
-    //     };
-
-    //     new_satpoints
-    // }
-
-    /// Match UTXO, via SatPoint offset, generate new SatPoint, UTXO spent follows "First in First out"
-    // fun match_utxo_and_generate_satpoint(
-    //     offset: u64,
-    //     seal_object_id: ObjectID,
-    //     tx: &Transaction,
-    //     input_utxo_values: vector<u64>,
-    //     input_index: u64
-    // ): (bool, SatPoint) {
-    //     let txoutput = types::tx_output(tx);
-
-    //     let idx = 0;
-    //     let input_utxo_value_accumulator = 0;
-    //     while (idx < input_index) {
-    //         let utxo_value = *vector::borrow(&input_utxo_values, idx);
-    //         input_utxo_value_accumulator = input_utxo_value_accumulator + utxo_value;
-
-    //         idx = idx + 1;
-    //     };
-    //     input_utxo_value_accumulator = input_utxo_value_accumulator + offset;
-
-    //     let idx = 0;
-    //     let output_len = vector::length(txoutput);
-    //     let output_utxo_value_accumulator = 0;
-    //     let new_output_index = 0;
-    //     let new_offset = 0;
-    //     while (idx < output_len) {
-    //         let txout = vector::borrow(txoutput, idx);
-    //         let output_value = types::txout_value(txout);
-    //         output_utxo_value_accumulator = output_utxo_value_accumulator + output_value;
-
-    //         if (output_utxo_value_accumulator > input_utxo_value_accumulator) {
-    //             new_output_index = idx;
-    //             new_offset = output_value - (output_utxo_value_accumulator - input_utxo_value_accumulator);
-
-    //             break
-    //         };
-
-    //         idx = idx + 1;
-    //     };
-
-    //     // match utxo output
-    //     if (idx < output_len) {
-    //         let new_satpoint = new_satpoint((new_output_index as u32), new_offset, seal_object_id);
-    //         (true, new_satpoint)
-    //     }else {
-    //         // Paid to miners as transaction fees
-    //         let new_offset = input_utxo_value_accumulator - output_utxo_value_accumulator;
-    //         let new_satpoint = new_satpoint((input_index as u32), new_offset, seal_object_id);
-    //         (false, new_satpoint)
-    //     }
-    // }
-
-    // /// Match Coinbase, via SatPoint offset, generate new SatPoint
-    // fun match_coinbase_and_generate_satpoint(
-    //     flotsam_index: u64,
-    //     tx: &Transaction,
-    //     flotsams: vector<Flotsam>,
-    //     block_height: u64
-    // ): SatPoint {
-    //     let txoutput = types::tx_output(tx);
-
-    //     let idx = 0;
-    //     let reward_value_accumulator = 0;
-    //     let subsidy = subsidy_by_height(block_height);
-    //     reward_value_accumulator = reward_value_accumulator + subsidy;
-    //     while (idx <= flotsam_index) {
-    //         let flotsam = *vector::borrow(&flotsams, idx);
-    //         reward_value_accumulator = reward_value_accumulator + flotsam.offset;
-
-    //         idx = idx + 1;
-    //     };
-
-    //     let idx = 0;
-    //     let output_len = vector::length(txoutput);
-    //     let output_utxo_value_accumulator = 0;
-    //     let new_output_index = 0;
-    //     let new_offset = 0;
-    //     while (idx < output_len) {
-    //         let txout = vector::borrow(txoutput, idx);
-    //         let output_value = types::txout_value(txout);
-    //         output_utxo_value_accumulator = output_utxo_value_accumulator + output_value;
-
-    //         if (output_utxo_value_accumulator > reward_value_accumulator) {
-    //             new_output_index = idx;
-    //             new_offset = output_value - (output_utxo_value_accumulator - reward_value_accumulator);
-
-    //             break
-    //         };
-
-    //         idx = idx + 1;
-    //     };
-
-    //     let flatsam = vector::borrow(&flotsams, flotsam_index);
-    //     let new_satpoint = new_satpoint((new_output_index as u32), new_offset, flatsam.object_id);
-    //     new_satpoint
-    // }
-
-
-    // public(friend) fun process_transaction(tx: &Transaction, block_height: u64, input_utxo_values: vector<u64>): vector<SatPoint> {
-    //     let satpoints = vector::empty();
-    //     let inscription_store = borrow_mut_inscription_store();
-
-    //     let next_inscription_number = inscription_store.blessed_inscription_count;
-    //     let next_sequence_number = inscription_store.next_sequence_number;
-
-    //     let inscriptions = from_transaction(tx, input_utxo_values, next_inscription_number, next_sequence_number);
-        
-    //     let inscriptions_len = vector::length(&inscriptions);
-    //     inscription_store.blessed_inscription_count = inscription_store.blessed_inscription_count + (inscriptions_len as u32);
-    //     inscription_store.next_sequence_number = inscription_store.next_sequence_number + (inscriptions_len as u32);
-        
-    //     if (inscriptions_len == 0) {
-    //         vector::destroy_empty(inscriptions);
-    //         return satpoints
-    //     };
-
-    //     let tx_outputs = types::tx_output(tx);
-    //     let output_len = vector::length(tx_outputs);
-
-    //     // Ord has three mode for inscribe: SameSat,SeparateOutputs,SharedOutput:
-    //     // SameSat and SharedOutput have only one output
-    //     // When SeparateOutputs is used, the number of output and inscription is consistent.
-    //     // https://github.com/ordinals/ord/blob/26fcf05a738e68ef8c9c18fcc0997ccf931d6f41/src/wallet/batch/plan.rs#L270-L307
-    //     let is_separate_outputs = output_len == inscriptions_len;
-    //     let idx = 0;
-    //     // reverse inscriptions and pop from the end
-    //     vector::reverse(&mut inscriptions);
-    //     while (idx < inscriptions_len) {
-    //         let output_index = if (is_separate_outputs) {
-    //             idx
-    //         }else {
-    //             0
-    //         };
-
-    //         let output = vector::borrow(tx_outputs, output_index);
-    //         let to_address = types::txout_object_address(output);
-
-    //         let inscription = vector::pop_back(&mut inscriptions);
-    //         let offset = if (is_separate_outputs) {
-    //             0
-    //         }else {
-    //             inscription.offset
-    //         };
-
-    //         let object_id = create_object(inscription, block_height, (output_index as u32), to_address);
-
-    //         let new_satpoint = new_satpoint((output_index as u32), offset, object_id);
-    //         vector::push_back(&mut satpoints, new_satpoint);
-
-    //         idx = idx + 1;
-    //     };
-    //     vector::destroy_empty(inscriptions);
-    //     satpoints
-    // }
-
-    fun validate_inscription_records(
-        tx_id: address,
-        input_index: u64,
-        record: vector<InscriptionRecord>
-    ): vector<InscriptionRecord> {
-        let len = vector::length(&record);
-        let idx = 0;
-        let valid_records = vector::empty();
-        while (idx < len) {
-            let record = *vector::borrow(&mut record, idx);
-            if (!record.duplicate_field && !record.incomplete_field && !record.unrecognized_even_field) {
-                vector::push_back(&mut valid_records, record);
-            }else {
-                event::emit(InvalidInscriptionEvent {
-                    txid: tx_id,
-                    input_index,
-                    record,
-                });
-            };
-            idx = idx + 1;
-        };
-        valid_records
     }
 
     public fun txid(self: &Inscription): address {
@@ -902,20 +551,6 @@ module bitcoin_move::ord {
         types::outpoint_vout(&satpoint.outpoint)
     }
 
-    // === Flotsam ===
-    public fun new_flotsam(output_index: u32, offset: u64, object_id: ObjectID): Flotsam {
-        Flotsam {
-            output_index,
-            offset,
-            object_id
-        }
-    }
-
-    public fun unpack_flotsam(flotsam: Flotsam): (u32, u64, ObjectID) {
-        let Flotsam { output_index, offset, object_id } = flotsam;
-        (output_index, offset, object_id)
-    }
-
     // ==== InscriptionRecord ==== //
 
     fun unpack_record(record: InscriptionRecord):
@@ -935,69 +570,6 @@ module bitcoin_move::ord {
         } = record;
         (body, content_encoding, content_type, metadata, metaprotocol, parents, pointer)
     }
-
-    // fun from_transaction(tx: &Transaction, input_utxo_values: vector<u64>, next_inscription_number: u32, next_sequence_number: u32): vector<Inscription> {
-    //     let tx_id = types::tx_id(tx);
-    //     let inscriptions = vector::empty();
-    //     let inputs = types::tx_input(tx);
-    //     let len = vector::length(inputs);
-    //     let input_idx = 0;
-    //     let index_counter = 0;
-    //     let next_offset: u64 = 0;
-    //     while (input_idx < len) {
-    //         let input = vector::borrow(inputs, input_idx);
-    //         let witness = types::txin_witness(input);
-    //         let input_value = if (!vector::is_empty(&input_utxo_values)) {
-    //             *vector::borrow(&input_utxo_values, input_idx)
-    //         } else {
-    //             0
-    //         };
-
-    //         let inscription_records_from_witness = parse_inscription_from_witness(witness);
-    //         let inscription_records_len = vector::length(&inscription_records_from_witness);
-    //         let j = 0;
-
-    //         while (j < inscription_records_len) {
-    //             let inscription = vector::borrow(&inscription_records_from_witness, j);
-    //             let record = inscription.payload;
-    //             let pointer = *option::borrow_with_default(&record.pointer, &0u64);
-    //             if (pointer >= input_value) {
-    //                 pointer = 0;
-    //             };
-    //             let offset = next_offset + pointer;
-
-    //             let inscription_number = next_inscription_number;
-    //             let sequence_number = next_sequence_number;
-    //             let inscription = record_to_inscription(
-    //                 tx_id,
-    //                 (index_counter as u32),
-    //                 offset,
-    //                 record,
-    //                 // Inscriptions which are cursed are numbered starting at negative one, counting
-    //                 // down. Cursed inscriptions on and after the jubilee at block 824544 are
-    //                 // vindicated, and are assigned positive inscription numbers.
-    //                 //
-    //                 // Rooch genesis is after 824544, no new cursed inscription
-    //                 false,
-    //                 inscription_number,
-    //                 sequence_number
-    //             );
-    //             vector::push_back(&mut inscriptions, inscription);
-    //             index_counter = index_counter + 1;
-    //             next_inscription_number = next_inscription_number + 1;
-    //             next_sequence_number = next_sequence_number + 1;
-    //             j = j + 1;
-    //         };
-    //         next_offset = next_offset + input_value;
-    //         input_idx = input_idx + 1;
-    //     };
-    //     inscriptions
-    // }
-
-    // fun from_transaction_bytes(transaction_bytes: vector<u8>, input_utxo_values: vector<u64>, next_inscription_number: u32, next_sequence_number: u32): vector<Inscription> {
-    //     let transaction = bcs::from_bytes<Transaction>(transaction_bytes);
-    //     from_transaction(&transaction, input_utxo_values, next_inscription_number, next_sequence_number)
-    // }
 
     // ======= Envelope and InscriptionRecord
 

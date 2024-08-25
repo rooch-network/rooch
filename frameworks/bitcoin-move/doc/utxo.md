@@ -44,6 +44,7 @@
 -  [Function `borrow_temp_state`](#0x4_utxo_borrow_temp_state)
 -  [Function `borrow_mut_temp_state`](#0x4_utxo_borrow_mut_temp_state)
 -  [Function `remove_temp_state`](#0x4_utxo_remove_temp_state)
+-  [Function `check_utxo_input`](#0x4_utxo_check_utxo_input)
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
@@ -52,6 +53,7 @@
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_multimap</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
+<b>use</b> <a href="">0x3::chain_id</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 </code></pre>
 
@@ -508,4 +510,15 @@ Maybe we can provide a new way to seal UTXO in the future
 
 <pre><code>#[private_generics(#[S])]
 <b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_remove_temp_state">remove_temp_state</a>&lt;S: drop, store&gt;(<a href="utxo.md#0x4_utxo">utxo</a>: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;): S
+</code></pre>
+
+
+
+<a name="0x4_utxo_check_utxo_input"></a>
+
+## Function `check_utxo_input`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="utxo.md#0x4_utxo_check_utxo_input">check_utxo_input</a>(): bool
 </code></pre>
