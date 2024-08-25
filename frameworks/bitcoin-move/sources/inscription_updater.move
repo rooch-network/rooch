@@ -45,28 +45,6 @@ module bitcoin_move::inscription_updater{
         old: Option<SatPoint>,
     }
 
-    // struct Envelope<T> has store, copy, drop {
-    //     input: u32,
-    //     offset: u32,
-    //     pushnum: bool,
-    //     stutter: bool,
-    //     payload: T,
-    // }
-
-    // struct InscriptionRecord has store, copy, drop {
-    //     body: vector<u8>,
-    //     content_encoding: Option<String>,
-    //     content_type: Option<String>,
-    //     duplicate_field: bool,
-    //     incomplete_field: bool,
-    //     metadata: vector<u8>,
-    //     metaprotocol: Option<String>,
-    //     parents: vector<InscriptionID>,
-    //     pointer: Option<u64>,
-    //     unrecognized_even_field: bool,
-    //     rune: Option<u128>,
-    // }
-
     //TODO merge the onchain event and offchain event
     struct InscriptionCreatedEvent has copy, drop, store {
         block_height: u64,
@@ -141,6 +119,9 @@ module bitcoin_move::inscription_updater{
         let envelopes = ord::parse_inscription_from_tx(tx);
         //reverse the envelopes for pop back to iterate
         vector::reverse(&mut envelopes);
+
+        std::debug::print(&std::string::utf8(b"inscription_updater"));
+        std::debug::print(&envelopes);
 
         let updater = if (pending_block::exists_intermediate<InscriptionUpdater>(pending_block)){
             pending_block::take_intermediate<InscriptionUpdater>(pending_block)
@@ -254,6 +235,7 @@ module bitcoin_move::inscription_updater{
                 id_counter = id_counter + 1;
                 ins_idx = ins_idx + 1;
             };
+            input_idx = input_idx + 1;
         };
 
         //TODO process the parent

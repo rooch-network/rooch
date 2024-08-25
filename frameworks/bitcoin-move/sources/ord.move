@@ -111,13 +111,6 @@ module bitcoin_move::ord {
         object_id: ObjectID,
     }
 
-    // struct SatPoint has store, copy, drop {
-    //     output_index: u32,
-    //     offset: u64,
-    //     object_id: ObjectID,
-    // }
-
-    //TODO break: remove the SatPoint and replace it with SatPoint
     struct SatPoint has store, copy, drop {
         outpoint: OutPoint,
         offset: u64,
