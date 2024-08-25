@@ -47,6 +47,7 @@ module bitcoin_move::utxo{
         next_tx_index: u64,
     }
 
+    ///TODO break remove the CreatingUTXOEvent and RemovingUTXOEvent
     /// Event for creating UTXO
     struct CreatingUTXOEvent has drop, store, copy {
         /// UTXO object id

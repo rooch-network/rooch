@@ -108,6 +108,7 @@ The UTXO Object
 
 ## Struct `CreatingUTXOEvent`
 
+TODO break remove the CreatingUTXOEvent and RemovingUTXOEvent
 Event for creating UTXO
 
 

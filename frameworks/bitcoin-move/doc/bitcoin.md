@@ -5,7 +5,7 @@
 
 
 
--  [Struct `TxProgressErrorLogEvent`](#0x4_bitcoin_TxProgressErrorLogEvent)
+-  [Struct `UTXONotExistsEvent`](#0x4_bitcoin_UTXONotExistsEvent)
 -  [Struct `RepeatCoinbaseTxEvent`](#0x4_bitcoin_RepeatCoinbaseTxEvent)
 -  [Resource `BitcoinBlockStore`](#0x4_bitcoin_BitcoinBlockStore)
 -  [Struct `TransferUTXOEvent`](#0x4_bitcoin_TransferUTXOEvent)
@@ -48,13 +48,13 @@
 
 
 
-<a name="0x4_bitcoin_TxProgressErrorLogEvent"></a>
+<a name="0x4_bitcoin_UTXONotExistsEvent"></a>
 
-## Struct `TxProgressErrorLogEvent`
+## Struct `UTXONotExistsEvent`
 
 
 
-<pre><code><b>struct</b> <a href="bitcoin.md#0x4_bitcoin_TxProgressErrorLogEvent">TxProgressErrorLogEvent</a> <b>has</b> <b>copy</b>, drop
+<pre><code><b>struct</b> <a href="bitcoin.md#0x4_bitcoin_UTXONotExistsEvent">UTXONotExistsEvent</a> <b>has</b> <b>copy</b>, drop
 </code></pre>
 
 

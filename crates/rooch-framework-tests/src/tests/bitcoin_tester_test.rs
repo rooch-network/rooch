@@ -46,5 +46,5 @@ async fn test_block_790964() {
     // let expected_sequence_number = 8709019u32;
     // assert_eq!(inscription.inscription_number, expected_inscription_number);
     // assert_eq!(inscription.sequence_number, expected_sequence_number);
-    assert_eq!(inscription.offset, 0u64);
+    assert_eq!(inscription.location.offset, 0u64);
 }

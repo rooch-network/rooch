@@ -4,13 +4,11 @@
 module bitcoin_move::bitcoin{
     use std::option::{Self, Option};
     use std::vector;
-    use std::string::{Self, String};
+
     use moveos_std::address::to_string;
     use moveos_std::event_queue;
-
     use moveos_std::timestamp;
     use moveos_std::simple_multimap::SimpleMultiMap;
-    // use moveos_std::type_info;
     use moveos_std::table::{Self, Table};
     use moveos_std::bcs;
     use moveos_std::object::{Self, Object};
@@ -23,8 +21,7 @@ module bitcoin_move::bitcoin{
     use rooch_framework::bitcoin_address::BitcoinAddress;
     
     use bitcoin_move::network;
-    use bitcoin_move::types::{Self, Block, Header, Transaction, BlockHeightHash};
-    //use bitcoin_move::ord::{Self, Inscription,Flotsam, SatPoint};
+    use bitcoin_move::types::{Self, Block, Header, Transaction, BlockHeightHash, OutPoint};
     use bitcoin_move::utxo::{Self, UTXOSeal};
     use bitcoin_move::pending_block::{Self, PendingBlock};
 
@@ -41,9 +38,8 @@ module bitcoin_move::bitcoin{
     /// https://github.com/bitcoin/bips/blob/master/bip-0034.mediawiki
     const BIP_34_HEIGHT:u64 = 227835;
 
-    struct TxProgressErrorLogEvent has copy, drop{
-        txid: address,
-        message: String,
+    struct UTXONotExistsEvent has copy, drop{
+        outpoint: OutPoint,
     }
 
     struct RepeatCoinbaseTxEvent has copy, drop{
@@ -146,6 +142,10 @@ module bitcoin_move::bitcoin{
         while (idx < vector::length(txinput)) {
             let txin = vector::borrow(txinput, idx);
             let outpoint = *types::txin_previous_output(txin);
+            if (outpoint == types::null_outpoint()) {
+                idx = idx + 1;
+                continue;
+            };
             if (utxo::exists_utxo(outpoint)) {
                 let object_id = utxo::derive_utxo_id(outpoint);
                 let utxo_obj = utxo::take(object_id);
@@ -157,9 +157,8 @@ module bitcoin_move::bitcoin{
                 let utxo = utxo::remove(utxo_obj);
                 vector::push_back(&mut input_utxos, utxo);
             }else {
-                event::emit(TxProgressErrorLogEvent{
-                        txid: types::tx_id(tx),
-                        message: string::utf8(b"utxo not exists"),
+                event::emit(UTXONotExistsEvent{
+                        outpoint: outpoint,
                 });
                 //We allow the utxo not exists in the utxo store, because we may not sync the block from genesis
                 //But we should not allow the utxo not exists in the mainnet

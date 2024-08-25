@@ -896,6 +896,23 @@
           }
         }
       },
+      "BitcoinOutPointView": {
+        "type": "object",
+        "required": [
+          "txid",
+          "vout"
+        ],
+        "properties": {
+          "txid": {
+            "$ref": "#/components/schemas/bitcoin::hash_types::newtypes::Txid"
+          },
+          "vout": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0.0
+          }
+        }
+      },
       "DisplayFieldsView": {
         "type": "object",
         "required": [
@@ -1507,23 +1524,24 @@
       "InscriptionView": {
         "type": "object",
         "required": [
-          "bitcoin_txid",
           "body",
-          "index",
+          "charms",
+          "id",
           "inscription_number",
           "is_curse",
+          "location",
           "metadata",
-          "offset",
           "parents",
-          "sequence_number",
-          "txid"
+          "sequence_number"
         ],
         "properties": {
-          "bitcoin_txid": {
-            "$ref": "#/components/schemas/bitcoin::hash_types::newtypes::Txid"
-          },
           "body": {
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          },
+          "charms": {
+            "type": "integer",
+            "format": "uint16",
+            "minimum": 0.0
           },
           "content_encoding": {
             "anyOf": [
@@ -1545,10 +1563,8 @@
               }
             ]
           },
-          "index": {
-            "type": "integer",
-            "format": "uint32",
-            "minimum": 0.0
+          "id": {
+            "$ref": "#/components/schemas/rooch_types::bitcoin::ord::BitcoinInscriptionID"
           },
           "inscription_number": {
             "type": "integer",
@@ -1557,6 +1573,9 @@
           },
           "is_curse": {
             "type": "boolean"
+          },
+          "location": {
+            "$ref": "#/components/schemas/SatPointView"
           },
           "metadata": {
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
@@ -1570,9 +1589,6 @@
                 "type": "null"
               }
             ]
-          },
-          "offset": {
-            "$ref": "#/components/schemas/u64"
           },
           "parents": {
             "$ref": "#/components/schemas/alloc::vec::Vec<moveos_types::moveos_std::object::ObjectID>"
@@ -1591,9 +1607,6 @@
             "type": "integer",
             "format": "uint32",
             "minimum": 0.0
-          },
-          "txid": {
-            "$ref": "#/components/schemas/primitive_types::H256"
           }
         }
       },
@@ -2633,6 +2646,21 @@
           }
         ]
       },
+      "SatPointView": {
+        "type": "object",
+        "required": [
+          "offset",
+          "output"
+        ],
+        "properties": {
+          "offset": {
+            "$ref": "#/components/schemas/u64"
+          },
+          "output": {
+            "$ref": "#/components/schemas/BitcoinOutPointView"
+          }
+        }
+      },
       "ScriptCallView": {
         "type": "object",
         "required": [
@@ -3292,6 +3320,9 @@
         "type": "string"
       },
       "rooch_types::address::RoochAddress": {
+        "type": "string"
+      },
+      "rooch_types::bitcoin::ord::BitcoinInscriptionID": {
         "type": "string"
       },
       "rooch_types::repair::RepairIndexerType": {
