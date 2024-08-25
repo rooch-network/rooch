@@ -191,7 +191,6 @@ module bitcoin_move::bitcoin{
                         txid: types::tx_id(tx),
                         message: string::utf8(b"utxo not exists"),
                 });
-                std::debug::print(&outpoint);
                 //We allow the utxo not exists in the utxo store, because we may not sync the block from genesis
                 //But we should not allow the utxo not exists in the mainnet
                 if(chain_id::is_main()){
@@ -330,12 +329,12 @@ module bitcoin_move::bitcoin{
         let block = bcs::from_bytes<Block>(block_bytes);
         let block_header = types::header(&block);
         let time = types::time(block_header);
-        pending_block::add_pending_block(block_height, block_hash, block);    
+        pending_block::add_pending_block(block_height, block_hash, block);
         //We directly update the global time do not wait the pending block to be confirmed
         //The reorg do not affect the global time
         let timestamp_seconds = (time as u64);
         let module_signer = signer::module_signer<BitcoinBlockStore>();
-        timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));      
+        timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));
     }
 
     /// This is the execute_l1_tx entry point
@@ -356,7 +355,7 @@ module bitcoin_move::bitcoin{
             vector::append(flotsams, tx_flotsams);
             pending_block::finish_pending_tx(inprocess_block);
         };
-    } 
+    }
 
     public fun get_tx(txid: address): Option<Transaction>{
         let btc_block_store_obj = borrow_block_store();
@@ -489,6 +488,11 @@ module bitcoin_move::bitcoin{
         });
         //process coinbase tx last
         execute_l1_tx(block_hash, types::tx_id(&coinbase_tx));
+    }
+
+    public fun unpack_transfer_utxo_event(event: TransferUTXOEvent): (address, Option<address>, address, u64) {
+        let TransferUTXOEvent { txid, sender, receiver, value } = event;
+        (txid, sender, receiver, value)
     }
 
 }

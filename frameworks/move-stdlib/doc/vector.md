@@ -63,6 +63,9 @@ the return on investment didn't seem worth it for these simple functions.
 -  [Function `any`](#0x1_vector_any)
 -  [Function `all`](#0x1_vector_all)
 -  [Function `destroy`](#0x1_vector_destroy)
+-  [Function `range`](#0x1_vector_range)
+-  [Function `range_with_step`](#0x1_vector_range_with_step)
+-  [Function `slice`](#0x1_vector_slice)
 -  [Module Specification](#@Module_Specification_1)
 
 
@@ -91,6 +94,26 @@ The index into the vector is out of bounds
 
 
 <pre><code><b>const</b> <a href="vector.md#0x1_vector_EINVALID_RANGE">EINVALID_RANGE</a>: <a href="u64.md#0x1_u64">u64</a> = 131073;
+</code></pre>
+
+
+
+<a name="0x1_vector_EINVALID_SLICE_RANGE"></a>
+
+The range in <code>slice</code> is invalid.
+
+
+<pre><code><b>const</b> <a href="vector.md#0x1_vector_EINVALID_SLICE_RANGE">EINVALID_SLICE_RANGE</a>: <a href="u64.md#0x1_u64">u64</a> = 131076;
+</code></pre>
+
+
+
+<a name="0x1_vector_EINVALID_STEP"></a>
+
+The step provided in <code>range</code> is invalid, must be greater than zero.
+
+
+<pre><code><b>const</b> <a href="vector.md#0x1_vector_EINVALID_STEP">EINVALID_STEP</a>: <a href="u64.md#0x1_u64">u64</a> = 131075;
 </code></pre>
 
 
@@ -703,6 +726,39 @@ when used in the context of destroying a vector.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_destroy">destroy</a>&lt;Element&gt;(v: <a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;, d: |Element|())
+</code></pre>
+
+
+
+<a name="0x1_vector_range"></a>
+
+## Function `range`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_range">range</a>(start: <a href="u64.md#0x1_u64">u64</a>, end: <a href="u64.md#0x1_u64">u64</a>): <a href="vector.md#0x1_vector">vector</a>&lt;<a href="u64.md#0x1_u64">u64</a>&gt;
+</code></pre>
+
+
+
+<a name="0x1_vector_range_with_step"></a>
+
+## Function `range_with_step`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_range_with_step">range_with_step</a>(start: <a href="u64.md#0x1_u64">u64</a>, end: <a href="u64.md#0x1_u64">u64</a>, step: <a href="u64.md#0x1_u64">u64</a>): <a href="vector.md#0x1_vector">vector</a>&lt;<a href="u64.md#0x1_u64">u64</a>&gt;
+</code></pre>
+
+
+
+<a name="0x1_vector_slice"></a>
+
+## Function `slice`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_slice">slice</a>&lt;Element: <b>copy</b>&gt;(self: &<a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;, start: <a href="u64.md#0x1_u64">u64</a>, end: <a href="u64.md#0x1_u64">u64</a>): <a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;
 </code></pre>
 
 
