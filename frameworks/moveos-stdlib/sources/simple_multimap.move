@@ -10,32 +10,32 @@ module moveos_std::simple_multimap {
     /// Map key is not found
     const ErrorKeyNotFound: u64 = 1;
 
-    struct SimpleMultiMap<Key, Value> has store {
+    struct SimpleMultiMap<Key, Value> has copy, drop, store {
         data: vector<Element<Key, Value>>,
     }
 
-    struct Element<Key, Value> has store {
+    struct Element<Key, Value> has copy, drop, store {
         key: Key,
         value: vector<Value>,
     }
 
     /// Create an empty SimpleMultiMap.
-    public fun new<Key: store, Value: store>(): SimpleMultiMap<Key, Value> {
+    public fun new<Key, Value>(): SimpleMultiMap<Key, Value> {
         SimpleMultiMap {
             data: vector::empty(),
         }
     }
 
     
-    public fun length<Key: store, Value: store>(map: &SimpleMultiMap<Key, Value>): u64 {
+    public fun length<Key, Value>(map: &SimpleMultiMap<Key, Value>): u64 {
         vector::length(&map.data)
     }
 
-    public fun is_empty<Key: store, Value: store>(map: &SimpleMultiMap<Key, Value>): bool {
+    public fun is_empty<Key, Value>(map: &SimpleMultiMap<Key, Value>): bool {
         vector::is_empty(&map.data)
     } 
 
-    public fun borrow<Key: store, Value: store>(
+    public fun borrow<Key, Value>(
         map: &SimpleMultiMap<Key, Value>,
         key: &Key,
     ): &vector<Value> {
@@ -46,7 +46,7 @@ module moveos_std::simple_multimap {
         &element.value
     }
 
-    public fun borrow_mut<Key: store, Value: store>(
+    public fun borrow_mut<Key, Value>(
         map: &mut SimpleMultiMap<Key, Value>,
         key: &Key,
     ): &mut vector<Value> {
@@ -57,7 +57,7 @@ module moveos_std::simple_multimap {
         &mut element.value
     }
 
-    public fun borrow_first<Key: store, Value: store>(
+    public fun borrow_first<Key, Value>(
         map: &SimpleMultiMap<Key, Value>,
         key: &Key,
     ): &Value {
@@ -68,7 +68,7 @@ module moveos_std::simple_multimap {
         vector::borrow(&element.value, 0)
     }
 
-    public fun borrow_first_mut<Key: store, Value: store>(
+    public fun borrow_first_mut<Key, Value>(
         map: &mut SimpleMultiMap<Key, Value>,
         key: &Key,
     ): &mut Value {
@@ -79,7 +79,7 @@ module moveos_std::simple_multimap {
         vector::borrow_mut(&mut element.value, 0)
     }
 
-    public fun borrow_first_with_default<Key: store, Value: store>(
+    public fun borrow_first_with_default<Key, Value>(
         map: &SimpleMultiMap<Key, Value>,
         key: &Key,
         default: &Value,
@@ -98,7 +98,7 @@ module moveos_std::simple_multimap {
         }
     }
 
-    public fun contains_key<Key: store, Value: store>(
+    public fun contains_key<Key, Value>(
         map: &SimpleMultiMap<Key, Value>,
         key: &Key,
     ): bool {
@@ -106,17 +106,14 @@ module moveos_std::simple_multimap {
         option::is_some(&maybe_idx)
     }
 
-    public fun destroy_empty<Key: store, Value: store>(map: SimpleMultiMap<Key, Value>) {
+    public fun destroy_empty<Key, Value>(map: SimpleMultiMap<Key, Value>) {
         let SimpleMultiMap { data } = map;
         vector::destroy_empty(data);
     }
 
     /// Drop all keys and values in the map. This requires keys and values to be dropable.
-    public fun drop<Key: copy + drop, Value: drop>(map: SimpleMultiMap<Key, Value>) {
-        let SimpleMultiMap { data } = map;
-        vector::for_each(data, |e| {
-            let Element { key:_, value:_ } = e;
-        });
+    /// Deprecated: The `SimpleMultiMap` is dropable if the keys and values are dropable, so we don't need this function.
+    public fun drop<Key: drop, Value: drop>(_map: SimpleMultiMap<Key, Value>) {
     }
 
     public fun add<Key: store + drop, Value: store>(
@@ -171,7 +168,7 @@ module moveos_std::simple_multimap {
     /// Transform the map into two vectors with the keys and values respectively
     /// Primarily used to destroy a map
     /// Note: Do not assume the key's order
-    public fun to_vec_pair<Key: store, Value: store>(
+    public fun to_vec_pair<Key, Value>(
         map: SimpleMultiMap<Key, Value>
     ): (vector<Key>, vector<vector<Value>>) {
         let keys: vector<Key> = vector::empty();
@@ -190,7 +187,7 @@ module moveos_std::simple_multimap {
         (keys, values)
     } 
 
-    public fun remove<Key: store, Value: store>(
+    public fun remove<Key, Value>(
         map: &mut SimpleMultiMap<Key, Value>,
         key: &Key,
     ): (Key, vector<Value>) {
@@ -201,7 +198,7 @@ module moveos_std::simple_multimap {
         (key, value)
     }
 
-    fun find<Key: store, Value: store>(
+    fun find<Key, Value>(
         map: &SimpleMultiMap<Key, Value>,
         key: &Key,
     ): option::Option<u64>{

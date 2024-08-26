@@ -506,7 +506,7 @@ impl IndexerReader {
 
         tracing::debug!("Query object states: {}", query);
         let stored_object_state_infos = self
-            .get_inner_indexer_reader(INDEXER_OBJECT_STATES_TABLE_NAME)?
+            .get_inner_indexer_reader(table_name)?
             .run_query_with_timeout(|conn| {
                 diesel::sql_query(query).load::<StoredObjectStateInfo>(conn)
             })?;

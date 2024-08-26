@@ -288,11 +288,14 @@ impl RoochGenesis {
     }
 
     /// Load the genesis from binary, if not exist, build the genesis, only support the builtin chain id
-    pub fn load(chain_id: BuiltinChainID) -> Result<Self> {
+    pub fn load(chain_id: BuiltinChainID, network: Option<RoochNetwork>) -> Result<Self> {
         let genesis = load_genesis_from_binary(chain_id)?;
         match genesis {
             Some(genesis) => Ok(genesis),
-            None => Self::build(RoochNetwork::builtin(chain_id)),
+            None => {
+                let network = network.unwrap_or(RoochNetwork::builtin(chain_id));
+                Self::build(network)
+            }
         }
     }
 
@@ -327,7 +330,7 @@ impl RoochGenesis {
             Some(genesis_info_from_store) => {
                 //if the chain_id is builtin, we should check the genesis version between the store and the binary
                 if let Some(builtin_id) = network.chain_id.to_builtin() {
-                    let genesis_from_binary = Self::load(builtin_id)?;
+                    let genesis_from_binary = Self::load(builtin_id, Some(network.clone()))?;
                     let genesis_info_from_binary = genesis_from_binary.genesis_info();
                     if genesis_info_from_store.root != genesis_info_from_binary.root {
                         return Err(GenesisError::GenesisVersionMismatch {
@@ -342,7 +345,7 @@ impl RoochGenesis {
             None => {
                 //if the chain_id is builtin, we should load the released genesis from binary
                 let genesis = if let Some(builtin_id) = network.chain_id.to_builtin() {
-                    Self::load(builtin_id)?
+                    Self::load(builtin_id, Some(network))?
                 } else {
                     Self::build(network)?
                 };
@@ -612,22 +615,22 @@ mod tests {
         let _ = tracing_subscriber::fmt::try_init();
         {
             let network = BuiltinChainID::Local.into();
-            let genesis = RoochGenesis::load(BuiltinChainID::Local).unwrap();
+            let genesis = RoochGenesis::load(BuiltinChainID::Local, None).unwrap();
             genesis_init_test_case(network, genesis);
         }
         {
             let network = BuiltinChainID::Dev.into();
-            let genesis = RoochGenesis::load(BuiltinChainID::Dev).unwrap();
+            let genesis = RoochGenesis::load(BuiltinChainID::Dev, None).unwrap();
             genesis_init_test_case(network, genesis);
         }
         {
             let network = BuiltinChainID::Test.into();
-            let genesis = RoochGenesis::load(BuiltinChainID::Test).unwrap();
+            let genesis = RoochGenesis::load(BuiltinChainID::Test, None).unwrap();
             genesis_init_test_case(network, genesis);
         }
         {
             let network = BuiltinChainID::Main.into();
-            let genesis = RoochGenesis::load(BuiltinChainID::Main).unwrap();
+            let genesis = RoochGenesis::load(BuiltinChainID::Main, None).unwrap();
             genesis_init_test_case(network, genesis);
         }
     }

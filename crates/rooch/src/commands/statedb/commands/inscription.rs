@@ -10,6 +10,7 @@ use moveos_types::state::{FieldKey, ObjectState};
 use rooch_types::address::BitcoinAddress;
 use rooch_types::bitcoin::ord::{
     derive_inscription_id, BitcoinInscriptionID, Inscription, InscriptionID, InscriptionStore,
+    SatPoint,
 };
 use rooch_types::into_address::IntoAddress;
 use serde::{Deserialize, Serialize};
@@ -71,14 +72,20 @@ impl InscriptionSource {
         let txid: AccountAddress = src.id.txid.into_address();
 
         let parents = derive_inscription_ids(src.parent.clone());
-
-        Inscription {
-            txid,
-            index: src.id.index,
+        let id = InscriptionID::new(txid, src.id.index);
+        let outpoint = bitcoin::OutPoint::from_str(src.satpoint_outpoint.as_str()).unwrap();
+        let location = SatPoint {
+            outpoint: outpoint.into(),
             offset: src.satpoint_offset,
+        };
+        Inscription {
+            id,
+            location,
             sequence_number: src.sequence_number,
             inscription_number: src.inscription_number.unsigned_abs(),
             is_curse: src.inscription_number.is_negative(),
+            //TODO how to get charms
+            charms: 0,
             body: src.body.clone().unwrap_or_default(),
             content_encoding: convert_option_string_to_move_type(src.content_encoding.clone()),
             content_type: convert_option_string_to_move_type(src.content_type.clone()),
@@ -94,7 +101,7 @@ impl InscriptionSource {
         let inscription = self.to_inscription();
         let address = self.derive_account_address().unwrap();
 
-        let inscription_id = InscriptionID::new(inscription.txid, inscription.index);
+        let inscription_id = inscription.id;
         let obj_id = derive_inscription_id(&inscription_id);
         let ord_obj = ObjectEntity::new(obj_id.clone(), address, 0u8, None, 0, 0, 0, inscription);
 
@@ -136,6 +143,9 @@ pub(crate) fn create_genesis_inscription_store_object(
     let inscription_store = InscriptionStore {
         cursed_inscription_count,
         blessed_inscription_count,
+        //TODO set unbound_inscription_count and lost_sats
+        unbound_inscription_count: 0,
+        lost_sats: 0,
         next_sequence_number,
     };
     let obj_id = InscriptionStore::object_id();

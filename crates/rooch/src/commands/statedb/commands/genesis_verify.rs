@@ -790,9 +790,9 @@ pub struct InscriptionForComparison {
 impl From<&Inscription> for InscriptionForComparison {
     fn from(ins: &Inscription) -> Self {
         InscriptionForComparison {
-            txid: ins.txid,
-            index: ins.index,
-            offset: ins.offset,
+            txid: ins.id.txid,
+            index: ins.id.index,
+            offset: ins.location.offset,
             sequence_number: ins.sequence_number,
             inscription_number: ins.inscription_number,
             is_curse: ins.is_curse,

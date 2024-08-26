@@ -11,9 +11,10 @@ use bitcoin::hashes::Hash;
 use bitcoin::Txid;
 
 use moveos_types::state::{MoveState, MoveStructType};
+use rooch_types::bitcoin::types::OutPoint;
 use rooch_types::bitcoin::utxo::{self, UTXO};
 use rooch_types::indexer::state::ObjectStateFilter;
-use rooch_types::into_address::IntoAddress;
+use rooch_types::into_address::{FromAddress, IntoAddress};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -27,6 +28,15 @@ pub struct BitcoinOutPointView {
 impl From<BitcoinOutPointView> for bitcoin::OutPoint {
     fn from(view: BitcoinOutPointView) -> Self {
         bitcoin::OutPoint::new(view.txid.into(), view.vout)
+    }
+}
+
+impl From<OutPoint> for BitcoinOutPointView {
+    fn from(outpoint: OutPoint) -> Self {
+        BitcoinOutPointView {
+            txid: Txid::from_address(outpoint.txid).into(),
+            vout: outpoint.vout,
+        }
     }
 }
 

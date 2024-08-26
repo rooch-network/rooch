@@ -5,7 +5,7 @@
 
 
 
--  [Struct `TxProgressErrorLogEvent`](#0x4_bitcoin_TxProgressErrorLogEvent)
+-  [Struct `UTXONotExistsEvent`](#0x4_bitcoin_UTXONotExistsEvent)
 -  [Struct `RepeatCoinbaseTxEvent`](#0x4_bitcoin_RepeatCoinbaseTxEvent)
 -  [Resource `BitcoinBlockStore`](#0x4_bitcoin_BitcoinBlockStore)
 -  [Struct `TransferUTXOEvent`](#0x4_bitcoin_TransferUTXOEvent)
@@ -21,10 +21,10 @@
 -  [Function `get_latest_block`](#0x4_bitcoin_get_latest_block)
 -  [Function `get_bitcoin_time`](#0x4_bitcoin_get_bitcoin_time)
 -  [Function `contains_header`](#0x4_bitcoin_contains_header)
+-  [Function `unpack_transfer_utxo_event`](#0x4_bitcoin_unpack_transfer_utxo_event)
 
 
-<pre><code><b>use</b> <a href="">0x1::debug</a>;
-<b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::address</a>;
@@ -37,12 +37,10 @@
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::table_vec</a>;
 <b>use</b> <a href="">0x2::timestamp</a>;
-<b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x3::address_mapping</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
-<b>use</b> <a href="">0x3::chain_id</a>;
+<b>use</b> <a href="inscription_updater.md#0x4_inscription_updater">0x4::inscription_updater</a>;
 <b>use</b> <a href="network.md#0x4_network">0x4::network</a>;
-<b>use</b> <a href="ord.md#0x4_ord">0x4::ord</a>;
 <b>use</b> <a href="pending_block.md#0x4_pending_block">0x4::pending_block</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 <b>use</b> <a href="utxo.md#0x4_utxo">0x4::utxo</a>;
@@ -50,13 +48,13 @@
 
 
 
-<a name="0x4_bitcoin_TxProgressErrorLogEvent"></a>
+<a name="0x4_bitcoin_UTXONotExistsEvent"></a>
 
-## Struct `TxProgressErrorLogEvent`
+## Struct `UTXONotExistsEvent`
 
 
 
-<pre><code><b>struct</b> <a href="bitcoin.md#0x4_bitcoin_TxProgressErrorLogEvent">TxProgressErrorLogEvent</a> <b>has</b> <b>copy</b>, drop
+<pre><code><b>struct</b> <a href="bitcoin.md#0x4_bitcoin_UTXONotExistsEvent">UTXONotExistsEvent</a> <b>has</b> <b>copy</b>, drop
 </code></pre>
 
 
@@ -108,6 +106,15 @@
 
 
 
+<a name="0x4_bitcoin_ORDINAL_GENESIS_HEIGHT"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ORDINAL_GENESIS_HEIGHT">ORDINAL_GENESIS_HEIGHT</a>: u64 = 767430;
+</code></pre>
+
+
+
 <a name="0x4_bitcoin_BIP_34_HEIGHT"></a>
 
 https://github.com/bitcoin/bips/blob/master/bip-0034.mediawiki
@@ -138,11 +145,11 @@ The reorg is too deep, we need to stop the system and fix the issue
 
 
 
-<a name="0x4_bitcoin_ORDINAL_GENESIS_HEIGHT"></a>
+<a name="0x4_bitcoin_ErrorUTXONotExists"></a>
 
 
 
-<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ORDINAL_GENESIS_HEIGHT">ORDINAL_GENESIS_HEIGHT</a>: u64 = 767430;
+<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ErrorUTXONotExists">ErrorUTXONotExists</a>: u64 = 4;
 </code></pre>
 
 
@@ -269,4 +276,15 @@ Get the bitcoin time in seconds
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_contains_header">contains_header</a>(block_header: &<a href="types.md#0x4_types_Header">types::Header</a>): bool
+</code></pre>
+
+
+
+<a name="0x4_bitcoin_unpack_transfer_utxo_event"></a>
+
+## Function `unpack_transfer_utxo_event`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_unpack_transfer_utxo_event">unpack_transfer_utxo_event</a>(<a href="">event</a>: <a href="bitcoin.md#0x4_bitcoin_TransferUTXOEvent">bitcoin::TransferUTXOEvent</a>): (<b>address</b>, <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;, <b>address</b>, u64)
 </code></pre>

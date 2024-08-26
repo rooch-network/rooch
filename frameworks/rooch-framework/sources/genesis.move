@@ -16,6 +16,7 @@ module rooch_framework::genesis {
     use rooch_framework::address_mapping;
     use rooch_framework::onchain_config;
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
+    use rooch_framework::upgrade;
 
 
     const ErrorGenesisInit: u64 = 1;
@@ -42,6 +43,7 @@ module rooch_framework::genesis {
         address_mapping::genesis_init(genesis_account);
         let sequencer_addr = bitcoin_address::to_rooch_address(&genesis_context.sequencer);
         onchain_config::genesis_init(genesis_account, sequencer_addr);
+        upgrade::genesis_init(sequencer_addr);
 
         // Some test cases use framework account as sequencer, it may already exist
         if(!moveos_std::account::exists_at(sequencer_addr)){
