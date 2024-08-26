@@ -43,6 +43,7 @@
 -  [Function `unpack_outpoint`](#0x4_types_unpack_outpoint)
 -  [Function `null_outpoint`](#0x4_types_null_outpoint)
 -  [Function `is_null_outpoint`](#0x4_types_is_null_outpoint)
+-  [Function `unbound_outpoint`](#0x4_types_unbound_outpoint)
 -  [Function `txout_value`](#0x4_types_txout_value)
 -  [Function `txout_script_pubkey`](#0x4_types_txout_script_pubkey)
 -  [Function `txout_address`](#0x4_types_txout_address)
@@ -515,6 +516,18 @@ This value is used for coinbase transactions because they don't have any previou
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_is_null_outpoint">is_null_outpoint</a>(self: &<a href="types.md#0x4_types_OutPoint">types::OutPoint</a>): bool
+</code></pre>
+
+
+
+<a name="0x4_types_unbound_outpoint"></a>
+
+## Function `unbound_outpoint`
+
+The Inscription unbound outpoint.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_unbound_outpoint">unbound_outpoint</a>(): <a href="types.md#0x4_types_OutPoint">types::OutPoint</a>
 </code></pre>
 
 

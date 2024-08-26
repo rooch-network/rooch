@@ -29,7 +29,7 @@ module bitcoin_move::genesis{
         let genesis_context = option::destroy_some(genesis_context_option);
         network::genesis_init(genesis_context.network);
         utxo::genesis_init();
-        ord::genesis_init(&genesis_account);
+        ord::genesis_init();
         bitcoin::genesis_init(&genesis_account, genesis_context.genesis_block_height, genesis_context.genesis_block_hash);
         pending_block::genesis_init(genesis_context.reorg_block_count);
         bitcoin_multisign_validator::genesis_init();

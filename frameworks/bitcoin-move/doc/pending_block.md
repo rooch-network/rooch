@@ -14,11 +14,14 @@ PendingStore is used to store the pending blocks and txs, and handle the reorg
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_pending_block_genesis_init)
 -  [Function `add_pending_block`](#0x4_pending_block_add_pending_block)
+-  [Function `block_height`](#0x4_pending_block_block_height)
+-  [Function `take_intermediate`](#0x4_pending_block_take_intermediate)
+-  [Function `add_intermediate`](#0x4_pending_block_add_intermediate)
+-  [Function `exists_intermediate`](#0x4_pending_block_exists_intermediate)
 -  [Function `process_pending_tx`](#0x4_pending_block_process_pending_tx)
 -  [Function `finish_pending_tx`](#0x4_pending_block_finish_pending_tx)
 -  [Function `finish_pending_block`](#0x4_pending_block_finish_pending_block)
--  [Function `inprocess_block_flotsams_mut`](#0x4_pending_block_inprocess_block_flotsams_mut)
--  [Function `inprocess_block_flotsams`](#0x4_pending_block_inprocess_block_flotsams)
+-  [Function `inprocess_block_pending_block`](#0x4_pending_block_inprocess_block_pending_block)
 -  [Function `inprocess_block_tx`](#0x4_pending_block_inprocess_block_tx)
 -  [Function `inprocess_block_header`](#0x4_pending_block_inprocess_block_header)
 -  [Function `inprocess_block_height`](#0x4_pending_block_inprocess_block_height)
@@ -29,12 +32,13 @@ PendingStore is used to store the pending blocks and txs, and handle the reorg
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
+<b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x3::chain_id</a>;
-<b>use</b> <a href="ord.md#0x4_ord">0x4::ord</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 </code></pre>
 
@@ -100,15 +104,6 @@ This is a hot potato struct, can not be store and drop
 <a name="@Constants_0"></a>
 
 ## Constants
-
-
-<a name="0x4_pending_block_BLOCK_FLOTSAM_KEY"></a>
-
-
-
-<pre><code><b>const</b> <a href="pending_block.md#0x4_pending_block_BLOCK_FLOTSAM_KEY">BLOCK_FLOTSAM_KEY</a>: <a href="">vector</a>&lt;u8&gt; = [98, 108, 111, 99, 107, 95, 102, 108, 111, 116, 115, 97, 109];
-</code></pre>
-
 
 
 <a name="0x4_pending_block_ErrorBlockAlreadyProcessed"></a>
@@ -205,6 +200,51 @@ This is a hot potato struct, can not be store and drop
 
 
 
+<a name="0x4_pending_block_block_height"></a>
+
+## Function `block_height`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_block_height">block_height</a>(<a href="pending_block.md#0x4_pending_block">pending_block</a>: &<a href="_Object">object::Object</a>&lt;<a href="pending_block.md#0x4_pending_block_PendingBlock">pending_block::PendingBlock</a>&gt;): u64
+</code></pre>
+
+
+
+<a name="0x4_pending_block_take_intermediate"></a>
+
+## Function `take_intermediate`
+
+The intermediate is used to store the intermediate state during the tx processing
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_take_intermediate">take_intermediate</a>&lt;I: store&gt;(<a href="pending_block.md#0x4_pending_block">pending_block</a>: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="pending_block.md#0x4_pending_block_PendingBlock">pending_block::PendingBlock</a>&gt;): I
+</code></pre>
+
+
+
+<a name="0x4_pending_block_add_intermediate"></a>
+
+## Function `add_intermediate`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_add_intermediate">add_intermediate</a>&lt;I: store&gt;(<a href="pending_block.md#0x4_pending_block">pending_block</a>: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="pending_block.md#0x4_pending_block_PendingBlock">pending_block::PendingBlock</a>&gt;, intermediate: I)
+</code></pre>
+
+
+
+<a name="0x4_pending_block_exists_intermediate"></a>
+
+## Function `exists_intermediate`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_exists_intermediate">exists_intermediate</a>&lt;T&gt;(<a href="pending_block.md#0x4_pending_block">pending_block</a>: &<a href="_Object">object::Object</a>&lt;<a href="pending_block.md#0x4_pending_block_PendingBlock">pending_block::PendingBlock</a>&gt;): bool
+</code></pre>
+
+
+
 <a name="0x4_pending_block_process_pending_tx"></a>
 
 ## Function `process_pending_tx`
@@ -238,24 +278,13 @@ This is a hot potato struct, can not be store and drop
 
 
 
-<a name="0x4_pending_block_inprocess_block_flotsams_mut"></a>
+<a name="0x4_pending_block_inprocess_block_pending_block"></a>
 
-## Function `inprocess_block_flotsams_mut`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_inprocess_block_flotsams_mut">inprocess_block_flotsams_mut</a>(inprocess_block: &<b>mut</b> <a href="pending_block.md#0x4_pending_block_InprocessBlock">pending_block::InprocessBlock</a>): &<b>mut</b> <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_Flotsam">ord::Flotsam</a>&gt;
-</code></pre>
+## Function `inprocess_block_pending_block`
 
 
 
-<a name="0x4_pending_block_inprocess_block_flotsams"></a>
-
-## Function `inprocess_block_flotsams`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_inprocess_block_flotsams">inprocess_block_flotsams</a>(inprocess_block: &<a href="pending_block.md#0x4_pending_block_InprocessBlock">pending_block::InprocessBlock</a>): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_Flotsam">ord::Flotsam</a>&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_inprocess_block_pending_block">inprocess_block_pending_block</a>(inprocess_block: &<b>mut</b> <a href="pending_block.md#0x4_pending_block_InprocessBlock">pending_block::InprocessBlock</a>): &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="pending_block.md#0x4_pending_block_PendingBlock">pending_block::PendingBlock</a>&gt;
 </code></pre>
 
 

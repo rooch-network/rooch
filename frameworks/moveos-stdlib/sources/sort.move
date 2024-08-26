@@ -46,6 +46,11 @@ module moveos_std::sort {
         let len = vector::length(data);
         let swapped = true;
         while(swapped) {
+            //we can not return in the inline function,
+            //so put the length check here.
+            if(len <= 1){
+                break
+            };
             swapped = false;
             let i = 1;
             while(i < len) {
