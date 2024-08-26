@@ -1,7 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-import tmp, { DirResult } from 'tmp'
+
+import * as fs from 'fs';
 import * as net from 'net';
+import tmp, { DirResult } from 'tmp'
 import { execSync } from 'child_process'
 import { Network, StartedNetwork } from 'testcontainers'
 
@@ -91,6 +93,9 @@ export class TestBox {
         port = await getUnusedPort()
       }
 
+      // Generate a random port for metrics
+      const metricsPort = await getUnusedPort();
+
       const cmds = ['server', 'start', '-n', 'local', '-d', 'TMP', '--port', port.toString()]
 
       if (this.bitcoinContainer) {
@@ -108,10 +113,13 @@ export class TestBox {
 
       cmds.push(`> ${this.tmpDir.name}/rooch.log 2>&1 & echo $!`)
 
-      const result = this.roochCommand(cmds)
+      console.log("rooch start cmd:", cmds.join(' '))
+      console.log("rooch log:", `${this.tmpDir.name}/rooch.log`)
+      
+      const result = this.roochCommand(cmds, [`METRICS_HOST_PORT=${metricsPort}`])
       this.roochContainer = parseInt(result.toString().trim(), 10)
       this.roochPort = port;
-      await this.delay(5)
+      await this.waitForRoochServerStart(`${this.tmpDir.name}/rooch.log`, 'JSON-RPC HTTP Server start listening', 120000)
       return
     }
 
@@ -150,7 +158,7 @@ export class TestBox {
       this.roochContainer?.stop()
     }
 
-    this.tmpDir.removeCallback()
+    //this.tmpDir.removeCallback()
   }
 
   delay(second: number) {
@@ -163,10 +171,11 @@ export class TestBox {
     })
   }
 
-  roochCommand(args: string[] | string): string {
-    return execSync(`cargo run --bin rooch ${typeof args === 'string' ? args : args.join(' ')}`, {
+  roochCommand(args: string[] | string, envs: string[] = []): string {
+    const envString = envs.length > 0 ? `${envs.join(' ')} ` : '';
+    return execSync(`${envString} cargo run --bin rooch ${typeof args === 'string' ? args : args.join(' ')}`, {
       encoding: 'utf-8',
-    })
+    });
   }
 
   async cmdPublishPackage(
@@ -244,8 +253,29 @@ export class TestBox {
   }
 
   createTmpDir(): DirResult {
-    tmp.setGracefulCleanup()
+    //tmp.setGracefulCleanup()
     return tmp.dirSync({ unsafeCleanup: true })
+  }
+
+  private async waitForRoochServerStart(logFilePath: string, keyword: string, timeout: number = 60000): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const watcher = fs.watch(logFilePath, (eventType) => {
+        if (eventType === 'change') {
+          const content = fs.readFileSync(logFilePath, 'utf8');
+          console.log('Log file content:', content);
+          
+          if (content.includes(keyword)) {
+            watcher.close();
+            resolve();
+          }
+        }
+      });
+  
+      setTimeout(() => {
+        watcher.close();
+        reject(new Error('Timeout waiting for Rooch server to start'));
+      }, timeout);
+    });
   }
 }
 
