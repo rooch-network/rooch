@@ -10,7 +10,7 @@ Feature: Rooch Bitcoin tests
       
       # mint utxos
       Then cmd bitcoin-cli: "generatetoaddress 101 {{$.account[-1].default.bitcoin_address}}"
-      Then sleep: "30" # wait rooch sync and index
+      Then sleep: "10" # wait rooch sync and index
 
       # query utxos
       Then cmd: "object -t 0x4::utxo::UTXO -o {{$.account[-1].default.bitcoin_address}}"
