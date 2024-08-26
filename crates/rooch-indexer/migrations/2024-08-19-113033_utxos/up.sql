@@ -10,3 +10,4 @@ CREATE TABLE utxos
 );
 
 CREATE INDEX idx_object_state_utxos_owner ON utxos (owner, tx_order, state_index);
+CREATE INDEX idx_object_state_utxos_updated_at ON utxos (updated_at, tx_order, state_index);
