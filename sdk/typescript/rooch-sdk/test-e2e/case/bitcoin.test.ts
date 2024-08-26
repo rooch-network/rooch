@@ -22,7 +22,7 @@ describe('Bitcoin Assets API', () => {
   it('query utxo should be success', async () => {
     const addr = testBox.keypair.getSchnorrPublicKey().buildAddress(1, BitcoinNetowkType.Regtest).toStr()
     console.log(addr)
-    const result = await testBox.bitcoinContainer?.executeRpcCommand('generatetoaddress', [
+    const result = await testBox.bitcoinContainer?.executeRpcCommandRaw([], 'generatetoaddress', [
       '50',
       addr,
     ])
@@ -68,11 +68,11 @@ describe('Bitcoin Assets API', () => {
     expect(result!.exitCode).eq(0)
 
     // mint utxo
-    result = await testBox.bitcoinContainer?.executeRpcCommandRaw([], 'generatetoaddress', ['10', addr])
+    result = await testBox.bitcoinContainer?.executeRpcCommandRaw([], 'generatetoaddress', ['1', addr])
     expect(result).toBeDefined()
 
     // wait rooch indexer
-    await testBox.delay(30)
+    await testBox.delay(60)
 
     const utxos = await testBox.getClient().queryUTXO({
       filter: {

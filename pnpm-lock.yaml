@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      pnpm:
+        specifier: ^9.4.0
+        version: 9.8.0
     devDependencies:
       '@changesets/cli':
         specifier: ^2.26.2
@@ -8344,6 +8348,11 @@ packages:
   playwright@1.45.2:
     resolution: {integrity: sha512-ReywF2t/0teRvNBpfIgh5e4wnrI/8Su8ssdo5XsQKpjxJj+jspm00jSoz9BTg91TT0c9HRjXO7LBNVrgYj9X0g==}
     engines: {node: '>=18'}
+    hasBin: true
+
+  pnpm@9.8.0:
+    resolution: {integrity: sha512-jkw1UPtQDoCNvDC7DOTdHrYU4wscVSRfIRWR7CzfnGEcq9NOE2S0L1ZL1Us5Re0PSdYdG78uyb10uGb83HIydg==}
+    engines: {node: '>=18.12'}
     hasBin: true
 
   possible-typed-array-names@1.0.0:
@@ -19998,6 +20007,8 @@ snapshots:
       playwright-core: 1.45.2
     optionalDependencies:
       fsevents: 2.3.2
+
+  pnpm@9.8.0: {}
 
   possible-typed-array-names@1.0.0: {}
 
