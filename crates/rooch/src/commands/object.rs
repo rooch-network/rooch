@@ -6,10 +6,13 @@ use anyhow::Result;
 use async_trait::async_trait;
 use clap::Parser;
 use move_command_line_common::types::ParsedStructType;
-use rooch_rpc_api::jsonrpc_types::{
-    IndexerObjectStatePageView, ObjectStateFilterView, QueryOptions, RoochAddressView,
-};
+use move_core_types::language_storage::TypeTag;
+use moveos_types::move_types::type_tag_match;
+use rooch_rpc_api::jsonrpc_types::btc::ord::InscriptionFilterView;
+use rooch_rpc_api::jsonrpc_types::btc::utxo::UTXOFilterView;
+use rooch_rpc_api::jsonrpc_types::{ObjectStateFilterView, QueryOptions, RoochAddressView};
 use rooch_types::address::ParsedAddress;
+use rooch_types::indexer::state::{ObjectStateType, INSCRIPTION_TYPE_TAG, UTXO_TYPE_TAG};
 use rooch_types::{error::RoochResult, function_arg::ParsedObjectID};
 
 #[derive(Parser)]
@@ -42,13 +45,17 @@ pub struct ObjectCommand {
     #[clap(long, default_value = "false")]
     pub filter_out: bool,
 
+    /// Return command outputs in json format
+    #[clap(long, default_value = "false")]
+    pub json: bool,
+
     #[clap(flatten)]
     pub(crate) context_options: WalletContextOptions,
 }
 
 #[async_trait]
-impl CommandAction<IndexerObjectStatePageView> for ObjectCommand {
-    async fn execute(self) -> RoochResult<IndexerObjectStatePageView> {
+impl CommandAction<String> for ObjectCommand {
+    async fn execute(self) -> RoochResult<String> {
         let context = self.context_options.build()?;
         let address_mapping = context.address_mapping();
         let client = context.get_client().await?;
@@ -84,6 +91,20 @@ impl CommandAction<IndexerObjectStatePageView> for ObjectCommand {
             filter = Some(ObjectStateFilterView::ObjectType(obj_type.into()));
         }
 
+        let object_state_type = if self.object_type.is_some() {
+            let object_type = self.object_type.clone().unwrap();
+            let obj_type = TypeTag::from(object_type.into_struct_tag(&address_mapping)?);
+            if type_tag_match(&obj_type, &UTXO_TYPE_TAG) {
+                ObjectStateType::UTXO
+            } else if type_tag_match(&obj_type, &INSCRIPTION_TYPE_TAG) {
+                ObjectStateType::Inscription
+            } else {
+                ObjectStateType::ObjectState
+            }
+        } else {
+            ObjectStateType::ObjectState
+        };
+
         let query_options = QueryOptions {
             descending: self.descending_order,
             decode: true,
@@ -98,9 +119,55 @@ impl CommandAction<IndexerObjectStatePageView> for ObjectCommand {
             filter = Some(ObjectStateFilterView::Owner(active_address.into()));
         }
 
-        Ok(client
-            .rooch
-            .query_object_states(filter.unwrap(), None, self.limit, Some(query_options))
-            .await?)
+        let output = match object_state_type {
+            ObjectStateType::UTXO => {
+                let utxo_fitler = match filter.unwrap() {
+                    ObjectStateFilterView::ObjectTypeWithOwner {
+                        object_type: _,
+                        owner,
+                    } => UTXOFilterView::Owner(owner),
+                    ObjectStateFilterView::ObjectType(_object_type) => UTXOFilterView::All,
+                    ObjectStateFilterView::Owner(owner) => UTXOFilterView::Owner(owner),
+                    ObjectStateFilterView::ObjectId(object_id) => {
+                        UTXOFilterView::ObjectId(object_id)
+                    }
+                };
+                let result = client
+                    .rooch
+                    .query_utxos(utxo_fitler, None, self.limit, Some(query_options))
+                    .await?;
+                serde_json::to_string_pretty(&result).unwrap()
+            }
+            ObjectStateType::Inscription => {
+                let inscription_fitler = match filter.unwrap() {
+                    ObjectStateFilterView::ObjectTypeWithOwner {
+                        object_type: _,
+                        owner,
+                    } => InscriptionFilterView::Owner(owner),
+                    ObjectStateFilterView::ObjectType(_object_type) => InscriptionFilterView::All,
+                    ObjectStateFilterView::Owner(owner) => InscriptionFilterView::Owner(owner),
+                    ObjectStateFilterView::ObjectId(object_id) => {
+                        InscriptionFilterView::ObjectId(object_id)
+                    }
+                };
+                let result = client
+                    .rooch
+                    .query_inscriptions(inscription_fitler, None, self.limit, Some(query_options))
+                    .await?;
+                serde_json::to_string_pretty(&result).unwrap()
+            }
+            ObjectStateType::ObjectState => {
+                let result = client
+                    .rooch
+                    .query_object_states(filter.unwrap(), None, self.limit, Some(query_options))
+                    .await?;
+                serde_json::to_string_pretty(&result).unwrap()
+            }
+        };
+
+        if output == "null" {
+            return Ok("".to_string());
+        }
+        Ok(output)
     }
 }
