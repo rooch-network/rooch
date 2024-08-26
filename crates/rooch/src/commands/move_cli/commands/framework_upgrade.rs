@@ -24,6 +24,11 @@ pub struct FrameworkUpgrade {
     #[clap(long = "path", short = 'p', global = true, value_parser)]
     pub package_path: Option<PathBuf>,
 
+    /// TODO: remove this when reset genesis.
+    /// This flag is used to upgrade the framework with old ABI: rooch_framework::upgrade::upgrade_entry
+    #[clap(long, default_value = "false")]
+    pub legacy: bool,
+
     #[clap(flatten)]
     context_options: WalletContextOptions,
 
@@ -44,28 +49,44 @@ impl CommandAction<ExecuteTransactionResponseView> for FrameworkUpgrade {
             .expect("Building context failed.");
 
         let stdlib = Stdlib::load_from_file(package_path)?;
-        let bundles_map: HashMap<_, _> = stdlib
-            .all_module_bundles()
-            .expect("get bundles failed")
-            .into_iter()
-            .collect();
-        let args = vec![
-            bcs::to_bytes(bundles_map.get(&MOVE_STD_ADDRESS).unwrap()).unwrap(),
-            bcs::to_bytes(bundles_map.get(&MOVEOS_STD_ADDRESS).unwrap()).unwrap(),
-            bcs::to_bytes(bundles_map.get(&ROOCH_FRAMEWORK_ADDRESS).unwrap()).unwrap(),
-            bcs::to_bytes(bundles_map.get(&BITCOIN_MOVE_ADDRESS).unwrap()).unwrap(),
-        ];
-        let action = MoveAction::new_function_call(
-            FunctionId::new(
-                ModuleId::new(
-                    ROOCH_FRAMEWORK_ADDRESS,
-                    Identifier::new("upgrade".to_owned()).unwrap(),
+        let action = if self.legacy {
+            let bundles_map: HashMap<_, _> = stdlib
+                .all_module_bundles()
+                .expect("get bundles failed")
+                .into_iter()
+                .collect();
+            let args = vec![
+                bcs::to_bytes(bundles_map.get(&MOVE_STD_ADDRESS).unwrap()).unwrap(),
+                bcs::to_bytes(bundles_map.get(&MOVEOS_STD_ADDRESS).unwrap()).unwrap(),
+                bcs::to_bytes(bundles_map.get(&ROOCH_FRAMEWORK_ADDRESS).unwrap()).unwrap(),
+                bcs::to_bytes(bundles_map.get(&BITCOIN_MOVE_ADDRESS).unwrap()).unwrap(),
+            ];
+            MoveAction::new_function_call(
+                FunctionId::new(
+                    ModuleId::new(
+                        ROOCH_FRAMEWORK_ADDRESS,
+                        Identifier::new("upgrade".to_owned()).unwrap(),
+                    ),
+                    Identifier::new("upgrade_entry".to_owned()).unwrap(),
                 ),
-                Identifier::new("upgrade_entry".to_owned()).unwrap(),
-            ),
-            vec![],
-            args,
-        );
+                vec![],
+                args,
+            )
+        } else {
+            println!("upgrade with new abi: upgrade_v2_entry");
+            let stdlib_bytes = bcs::to_bytes(&stdlib).unwrap();
+            MoveAction::new_function_call(
+                FunctionId::new(
+                    ModuleId::new(
+                        ROOCH_FRAMEWORK_ADDRESS,
+                        Identifier::new("upgrade".to_owned()).unwrap(),
+                    ),
+                    Identifier::new("upgrade_v2_entry".to_owned()).unwrap(),
+                ),
+                vec![],
+                vec![bcs::to_bytes(&stdlib_bytes).unwrap()],
+            )
+        };
 
         // Build context and handle errors
         let sender = context.resolve_address(self.tx_options.sender)?.into();
