@@ -304,11 +304,13 @@ module bitcoin_move::ord {
     }
 
     public(friend) fun transfer_object(inscription_obj: Object<Inscription>, to: address, new_location: SatPoint, is_op_return: bool){
-        
+        //drop the temp area when inscription is transferred
         drop_temp_area(&mut inscription_obj);
         let inscription = object::borrow_mut(&mut inscription_obj);
         inscription.location = new_location;
         if (is_op_return){
+            //if the output is OP_RETURN, set the burn flag and freeze the inscription
+            inscription.charms = set_charm(inscription.charms, charm_burned_flag());
             let metaprotocol = inscription.metaprotocol;
             let sequence_number = inscription.sequence_number;
             let inscription_obj_id = object::id(&inscription_obj);
@@ -321,7 +323,6 @@ module bitcoin_move::ord {
                     event_type: InscriptionEventTypeBurn,
                 });
             };
-            //TODO update the inscription charm to Burned
             object::to_frozen(inscription_obj);
         }else{
             object::transfer_extend(inscription_obj, to);
