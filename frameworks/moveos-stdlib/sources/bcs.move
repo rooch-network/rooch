@@ -74,12 +74,11 @@ module moveos_std::bcs{
 
     /// Read `address` value from the bcs-serialized bytes.
     public fun peel_address(bcs: &mut BCS): address {
-        let bytes = bcs.bytes;
-        assert!(vector::length(&bytes) >= 32, ErrorInvalidLength);
+        assert!(vector::length(&bcs.bytes) >= 32, ErrorInvalidLength);
         let i = 0;
         let addr_bytes = vector::empty<u8>();
         while (i < 32) {
-            let byte = vector::pop_back(&mut bytes);
+            let byte = vector::pop_back(&mut bcs.bytes);
             vector::push_back(&mut addr_bytes, byte);
             i = i + 1;
         };
@@ -100,20 +99,18 @@ module moveos_std::bcs{
 
     /// Read `u8` value from bcs-serialized bytes.
     public fun peel_u8(bcs: &mut BCS): u8 {
-        let bytes = bcs.bytes;
-        assert!(vector::length(&bytes) >= 1, ErrorOutOfRange);
-        vector::pop_back(&mut bytes)
+        assert!(vector::length(&bcs.bytes) >= 1, ErrorOutOfRange);
+        vector::pop_back(&mut bcs.bytes)
     }
 
     /// Read `u16` value from bcs-serialized bytes.
     public fun peel_u16(bcs: &mut BCS): u16 {
-        let bytes = bcs.bytes;
-        assert!(vector::length(&bytes) >= 2, ErrorOutOfRange);
+        assert!(vector::length(&bcs.bytes) >= 2, ErrorOutOfRange);
         let value = 0;
         let i = 0;
         let bits = 16u8;
         while (i < bits) {
-            let byte = (vector::pop_back(&mut bytes) as u16);
+            let byte = (vector::pop_back(&mut bcs.bytes) as u16);
             value = value + (byte << (i as u8));
             i = i + 8;
         };
@@ -123,13 +120,12 @@ module moveos_std::bcs{
 
     /// Read `u32` value from bcs-serialized bytes.
     public fun peel_u32(bcs: &mut BCS): u32 {
-        let bytes = bcs.bytes;
-        assert!(vector::length(&bytes) >= 4, ErrorOutOfRange);
+        assert!(vector::length(&bcs.bytes) >= 4, ErrorOutOfRange);
         let value = 0;
         let i = 0;
         let bits = 32u8;
         while (i < bits) {
-            let byte = (vector::pop_back(&mut bytes) as u32);
+            let byte = (vector::pop_back(&mut bcs.bytes) as u32);
             value = value + (byte << (i as u8));
             i = i + 8;
         };
@@ -139,13 +135,12 @@ module moveos_std::bcs{
 
     /// Read `u64` value from bcs-serialized bytes.
     public fun peel_u64(bcs: &mut BCS): u64 {
-        let bytes = bcs.bytes;
-        assert!(vector::length(&bytes) >= 8, ErrorOutOfRange);
+        assert!(vector::length(&bcs.bytes) >= 8, ErrorOutOfRange);
         let value = 0;
         let i = 0;
         let bits = 64u8;
         while (i < bits) {
-            let byte = (vector::pop_back(&mut bytes) as u64);
+            let byte = (vector::pop_back(&mut bcs.bytes) as u64);
             value = value + (byte << (i as u8));
             i = i + 8;
         };
@@ -155,13 +150,12 @@ module moveos_std::bcs{
 
     /// Read `u128` value from bcs-serialized bytes.
     public fun peel_u128(bcs: &mut BCS): u128 {
-        let bytes = bcs.bytes;
-        assert!(vector::length(&bytes) >= 16, ErrorOutOfRange);
+        assert!(vector::length(&bcs.bytes) >= 16, ErrorOutOfRange);
         let value = 0;
         let i = 0;
         let bits = 128u8;
         while (i < bits) {
-            let byte = (vector::pop_back(&mut bytes) as u128);
+            let byte = (vector::pop_back(&mut bcs.bytes) as u128);
             value = value + (byte << (i as u8));
             i = i + 8;
         };
@@ -171,13 +165,12 @@ module moveos_std::bcs{
 
     /// Read `u256` value from bcs-serialized bytes.
     public fun peel_u256(bcs: &mut BCS): u256 {
-        let bytes = bcs.bytes;
-        assert!(vector::length(&bytes) >= 32, ErrorOutOfRange);
+        assert!(vector::length(&bcs.bytes) >= 32, ErrorOutOfRange);
         let value = 0;
         let i = 0;
         let bits = 256u16;
         while (i < bits) {
-            let byte = (vector::pop_back(&mut bytes) as u256);
+            let byte = (vector::pop_back(&mut bcs.bytes) as u256);
             value = value + (byte << (i as u8));
             i = i + 8;
         };
@@ -193,13 +186,12 @@ module moveos_std::bcs{
     /// In BCS `vector` length is implemented with ULEB128;
     /// See more here: https://en.wikipedia.org/wiki/LEB128
     public fun peel_vec_length(bcs: &mut BCS): u64 {
-        let bytes = bcs.bytes;
         let total = 0u64;
         let shift = 0;
         let len = 0;
         loop {
             assert!(len <= 4, ErrorLengthOutOfRange);
-            let byte = (vector::pop_back(&mut bytes) as u64);
+            let byte = (vector::pop_back(&mut bcs.bytes) as u64);
             len = len + 1;
             total = total | ((byte & 0x7f) << shift);
             if ((byte & 0x80) == 0) {
