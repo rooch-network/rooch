@@ -15,6 +15,9 @@ use rooch_types::address::ParsedAddress;
 use rooch_types::indexer::state::{ObjectStateType, INSCRIPTION_TYPE_TAG, UTXO_TYPE_TAG};
 use rooch_types::{error::RoochResult, function_arg::ParsedObjectID};
 
+pub const QUERY_OBJECT_STATES_METHOD: &str = "rooch_queryObjectStates";
+pub const QUERY_UTXOS_METHOD: &str = "btc_queryUTXOs";
+pub const QUERY_INSCRIPTIONS_METHOD: &str = "btc_queryInscriptions";
 #[derive(Parser)]
 pub struct ObjectCommand {
     /// Object ids. Separate multiple IDs with a space.
@@ -44,10 +47,6 @@ pub struct ObjectCommand {
     /// Is filter not object_type
     #[clap(long, default_value = "false")]
     pub filter_out: bool,
-
-    /// Return command outputs in json format
-    #[clap(long, default_value = "false")]
-    pub json: bool,
 
     #[clap(flatten)]
     pub(crate) context_options: WalletContextOptions,
