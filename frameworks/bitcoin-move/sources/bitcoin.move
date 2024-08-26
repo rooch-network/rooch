@@ -113,11 +113,10 @@ module bitcoin_move::bitcoin{
         btc_block_store.latest_block = option::some(types::new_block_height_hash(block_height, block_hash)); 
     }
 
-    fun process_tx(btc_block_store: &mut BitcoinBlockStore, pblock: &mut Object<PendingBlock>, tx: &Transaction){
+    fun process_tx(btc_block_store: &mut BitcoinBlockStore, pblock: &mut Object<PendingBlock>, tx: &Transaction, is_coinbase: bool){
         let block_height = pending_block::block_height(pblock);
         let txid = types::tx_id(tx);
-        let repeat_txid = process_utxo(block_height, pblock, tx);
-        
+        let repeat_txid = process_utxo(block_height, pblock, tx, is_coinbase);
         
         if (repeat_txid) {
             table::upsert(&mut btc_block_store.txs, txid, *tx);
@@ -131,7 +130,7 @@ module bitcoin_move::bitcoin{
         }
     }
 
-    fun process_utxo(block_height: u64, pending_block: &mut Object<PendingBlock>, tx: &Transaction) : bool{
+    fun process_utxo(block_height: u64, pending_block: &mut Object<PendingBlock>, tx: &Transaction, is_coinbase: bool) : bool{
         let txinput = types::tx_input(tx);
         let input_utxos = vector::empty();
 
@@ -185,7 +184,7 @@ module bitcoin_move::bitcoin{
         };
     
         // create new utxo
-        let repeat_txid = handle_new_utxo(tx, &mut output_seals, false, block_height, sender);
+        let repeat_txid = handle_new_utxo(tx, is_coinbase, &mut output_seals, block_height, sender);
 
         simple_multimap::drop(output_seals);
         vector::for_each(input_utxos, |utxo| {
@@ -194,7 +193,7 @@ module bitcoin_move::bitcoin{
         repeat_txid
     }
 
-    fun handle_new_utxo(tx: &Transaction, output_seals: &mut SimpleMultiMap<u32, UTXOSeal>, is_coinbase: bool, block_height: u64, sender: Option<address>) :bool {
+    fun handle_new_utxo(tx: &Transaction, is_coinbase: bool, output_seals: &mut SimpleMultiMap<u32, UTXOSeal>, block_height: u64, sender: Option<address>) :bool {
         let txid = types::tx_id(tx);
         let txoutput = types::tx_output(tx);
         let idx = 0;
@@ -254,8 +253,7 @@ module bitcoin_move::bitcoin{
                     value
                 });
             };
-
-
+            
             //Auto create address mapping, we ensure when UTXO object create, the address mapping is recored
             let bitcoin_address_opt = types::txout_address(txout);
             bind_bitcoin_address(owner_address, bitcoin_address_opt);
@@ -287,11 +285,9 @@ module bitcoin_move::bitcoin{
         let block_height = pending_block::inprocess_block_height(&inprocess_block);
         let tx = *pending_block::inprocess_block_tx(&inprocess_block);
         let pblock = pending_block::inprocess_block_pending_block(&mut inprocess_block);
-        
-        process_tx(btc_block_store, pblock, &tx);
-        if(types::is_coinbase_tx(&tx)){
-            //let flotsams = pending_block::inprocess_block_flotsams(&inprocess_block);
-            //process_coinbase_tx(btc_block_store, &tx, flotsams, block_height);
+        let is_coinbase = types::is_coinbase_tx(&tx);
+        process_tx(btc_block_store, pblock, &tx, is_coinbase);
+        if(is_coinbase){
             let header = pending_block::finish_pending_block(inprocess_block);
             process_block_header(btc_block_store, block_height, block_hash, header);
         }else{
