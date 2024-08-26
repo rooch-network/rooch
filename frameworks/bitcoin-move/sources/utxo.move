@@ -14,6 +14,7 @@ module bitcoin_move::utxo{
     friend bitcoin_move::genesis;
     friend bitcoin_move::ord;
     friend bitcoin_move::bitcoin;
+    friend bitcoin_move::inscription_updater;
 
     const TEMPORARY_AREA: vector<u8> = b"temporary_area";
 
@@ -34,6 +35,11 @@ module bitcoin_move::utxo{
     struct UTXOSeal has store, copy, drop {
         protocol: String,
         object_id: ObjectID,
+    }
+
+    struct SealOut has store, copy, drop {
+        vout: u32,
+        seal: UTXOSeal,
     } 
 
     struct BitcoinUTXOStore has key{
@@ -41,6 +47,7 @@ module bitcoin_move::utxo{
         next_tx_index: u64,
     }
 
+    ///TODO break remove the CreatingUTXOEvent and RemovingUTXOEvent
     /// Event for creating UTXO
     struct CreatingUTXOEvent has drop, store, copy {
         /// UTXO object id
@@ -100,6 +107,16 @@ module bitcoin_move::utxo{
         utxo_obj
     }
 
+    public(friend) fun mock_utxo(outpoint: OutPoint, value: u64): UTXO {
+        let (txid, vout) = types::unpack_outpoint(outpoint);
+        UTXO{
+            txid,
+            vout,
+            value,
+            seals: simple_multimap::new(),
+        }
+    }
+
     public fun derive_utxo_id(outpoint: OutPoint) : ObjectID {
         let parent_id = object::named_object_id<BitcoinUTXOStore>();
         object::custom_object_id_with_parent<OutPoint, UTXO>(parent_id, outpoint)
@@ -153,7 +170,18 @@ module bitcoin_move::utxo{
     }
 
     #[private_generics(T)]
+    //TODO break: remove this function
     public fun remove_seals<T>(utxo: &mut UTXO): vector<ObjectID> {
+        let protocol = type_info::type_name<T>();
+        if(simple_multimap::contains_key(&utxo.seals, &protocol)){
+            let(_k, value) = simple_multimap::remove(&mut utxo.seals, &protocol);
+            value
+        }else{
+            vector::empty()
+        }
+    }
+
+    public(friend) fun remove_seals_internal<T>(utxo: &mut UTXO): vector<ObjectID>{
         let protocol = type_info::type_name<T>();
         if(simple_multimap::contains_key(&utxo.seals, &protocol)){
             let(_k, value) = simple_multimap::remove(&mut utxo.seals, &protocol);
@@ -178,7 +206,7 @@ module bitcoin_move::utxo{
         object::take_object_extend<UTXO>(object_id)
     }
 
-    public(friend) fun remove(utxo_obj: Object<UTXO>): SimpleMultiMap<String, ObjectID>{
+    public(friend) fun remove(utxo_obj: Object<UTXO>): UTXO{
         if(object::contains_field(&utxo_obj, TEMPORARY_AREA)){
             let bag = object::remove_field(&mut utxo_obj, TEMPORARY_AREA);
             bag::drop(bag);
@@ -187,21 +215,39 @@ module bitcoin_move::utxo{
         event::emit<RemovingUTXOEvent>( RemovingUTXOEvent { id: object::id(&utxo_obj) } );
         
         let utxo = object::remove(utxo_obj);
-        let UTXO{txid:_, vout:_, value:_, seals} = utxo;
-        seals
+        // let UTXO{txid:_, vout:_, value:_, seals} = utxo;
+        // seals
+        utxo
+    }
+
+    public(friend) fun drop(utxo: UTXO) {
+        let UTXO{txid:_, vout:_, value:_, seals:_} = utxo;
+        //simple_multimap::destroy_empty(seals);
     }
 
     // === UTXOSeal ===
-    public fun new_utxo_seal(protocol: String, seal_object_id: ObjectID) : UTXOSeal {
+    public(friend) fun new_utxo_seal(protocol: String, seal_object_id: ObjectID) : UTXOSeal {
         UTXOSeal{
             protocol,
             object_id: seal_object_id,
         }
     }
 
-    public fun unpack_utxo_seal(utxo_seal: UTXOSeal) : (String, ObjectID) {
+    public(friend) fun unpack_utxo_seal(utxo_seal: UTXOSeal) : (String, ObjectID) {
         let UTXOSeal{protocol, object_id} = utxo_seal;
         (protocol, object_id)
+    }
+
+    public(friend) fun new_seal_out(vout: u32, seal: UTXOSeal) : SealOut {
+        SealOut{
+            vout,
+            seal,
+        }
+    }
+
+    public(friend) fun unpack_seal_out(seal_out: SealOut) : (u32, UTXOSeal) {
+        let SealOut{vout, seal} = seal_out;
+        (vout, seal)
     } 
 
     // ==== Temporary Area ===
@@ -250,15 +296,22 @@ module bitcoin_move::utxo{
         bag::remove(bag, name)
     }
 
+    // Should we require the input utxo exists
+    // Sometimes, we may not sync the Bitcoin block from genesis
+    public(friend) fun check_utxo_input(): bool{
+        //TODO make this to be configurable
+        rooch_framework::chain_id::is_main()
+    }
+
     #[test_only]
     public fun new_for_testing(txid: address, vout: u32, value: u64) : Object<UTXO> {
         new(txid, vout, value)
     }
 
     #[test_only]
-    public fun drop_for_testing(utxo: Object<UTXO>){
-        let seals = remove(utxo);
-        simple_multimap::drop(seals);
+    public fun drop_for_testing(utxo_obj: Object<UTXO>){
+        let utxo = remove(utxo_obj);
+        drop(utxo);
     }
 
     #[test]
@@ -275,9 +328,9 @@ module bitcoin_move::utxo{
         genesis_init();
         let txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
         let vout = 0;
-        let utxo = new(txid, vout, 100);
-        let seals = remove(utxo);
-        simple_multimap::drop(seals);
+        let utxo_obj = new(txid, vout, 100);
+        let utxo = remove(utxo_obj);
+        drop(utxo);
     }
 
     #[test_only]
@@ -290,18 +343,18 @@ module bitcoin_move::utxo{
         genesis_init();
         let txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
         let vout = 0;
-        let utxo = new(txid, vout, 100);
-        add_temp_state(&mut utxo, TempState{value: 10});
-        assert!(contains_temp_state<TempState>(&utxo), 1000);
-        assert!(borrow_temp_state<TempState>(&utxo).value == 10, 1001);
+        let utxo_obj = new(txid, vout, 100);
+        add_temp_state(&mut utxo_obj, TempState{value: 10});
+        assert!(contains_temp_state<TempState>(&utxo_obj), 1000);
+        assert!(borrow_temp_state<TempState>(&utxo_obj).value == 10, 1001);
         {
-            let state = borrow_mut_temp_state<TempState>(&mut utxo);
+            let state = borrow_mut_temp_state<TempState>(&mut utxo_obj);
             state.value = 20;
         };
-        let state = remove_temp_state<TempState>(&mut utxo);
+        let state = remove_temp_state<TempState>(&mut utxo_obj);
         assert!(state.value == 20, 1);
-        assert!(!contains_temp_state<TempState>(&utxo), 1002);
-        let seals = remove(utxo);
-        simple_multimap::drop(seals);
+        assert!(!contains_temp_state<TempState>(&utxo_obj), 1002);
+        let utxo = remove(utxo_obj);
+        drop(utxo);
     }
 }

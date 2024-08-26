@@ -5,7 +5,6 @@ use crate::schema::object_states;
 use diesel::prelude::*;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::TypeTag;
-use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
 use rooch_types::indexer::state::{IndexerObjectState, IndexerStateID};
 use std::str::FromStr;
@@ -19,15 +18,6 @@ pub struct StoredObjectState {
     /// The owner of the object
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub owner: String,
-    /// A flag to indicate whether the object is shared or frozen
-    #[diesel(sql_type = diesel::sql_types::SmallInt)]
-    pub flag: i16,
-    /// The table state root of the object
-    #[diesel(sql_type = diesel::sql_types::Text)]
-    pub state_root: String,
-    /// The table length
-    #[diesel(sql_type = diesel::sql_types::BigInt)]
-    pub size: i64,
     /// The object created timestamp on chain
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub created_at: i64,
@@ -53,12 +43,6 @@ impl From<IndexerObjectState> for StoredObjectState {
         Self {
             id: metadata.id.to_string(),
             owner: metadata.owner.to_hex_literal(),
-            flag: metadata.flag as i16,
-            state_root: metadata
-                .state_root
-                .map(|h| format!("{:?}", h))
-                .unwrap_or_default(),
-            size: metadata.size as i64,
             created_at: metadata.created_at as i64,
             updated_at: metadata.updated_at as i64,
             object_type: metadata.object_type.to_string(),
@@ -73,17 +57,13 @@ impl StoredObjectState {
         let id = ObjectID::from_str(self.id.as_str())?;
         let owner = AccountAddress::from_str(self.owner.as_str())?;
         let object_type = TypeTag::from_str(self.object_type.as_str())?;
-        let state_root = if self.state_root.is_empty() {
-            None
-        } else {
-            Some(H256::from_str(self.state_root.as_str())?)
-        };
+        let state_root = None;
         let metadata = ObjectMeta {
             id,
             owner,
-            flag: self.flag as u8,
+            flag: 0, //default 0
             state_root,
-            size: self.size as u64,
+            size: 0, //default 0
             created_at: self.created_at as u64,
             updated_at: self.updated_at as u64,
             object_type,
@@ -95,7 +75,22 @@ impl StoredObjectState {
         };
         Ok(state)
     }
+}
 
+#[derive(Queryable, QueryableByName, Debug)]
+pub struct StoredObjectStateInfo {
+    /// The global state key
+    #[diesel(sql_type = diesel::sql_types::Text)]
+    pub id: String,
+    /// The tx order of this transaction
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub tx_order: i64,
+    /// The state index in the tx
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub state_index: i64,
+}
+
+impl StoredObjectStateInfo {
     pub fn try_parse_id(&self) -> Result<(ObjectID, IndexerStateID), anyhow::Error> {
         let tx_order = self.tx_order as u64;
         let state_index = self.state_index as u64;
@@ -105,4 +100,14 @@ impl StoredObjectState {
         };
         Ok((ObjectID::from_str(self.id.as_str())?, indexer_state_id))
     }
+}
+
+#[derive(Queryable, QueryableByName, Debug)]
+pub struct StoredStateID {
+    /// The tx order of this transaction
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub tx_order: i64,
+    /// The state index in the tx
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub state_index: i64,
 }

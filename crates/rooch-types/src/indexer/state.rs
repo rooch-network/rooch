@@ -1,16 +1,23 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::bitcoin::ord::Inscription;
 use crate::bitcoin::utxo::UTXO;
 use crate::indexer::Filter;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
-use move_core_types::language_storage::StructTag;
-use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
-use moveos_types::state::{MoveStructType, ObjectChange, StateChangeSet};
+use move_core_types::language_storage::{StructTag, TypeTag};
+use moveos_types::move_types::type_tag_match;
+use moveos_types::moveos_std::object::{is_dynamic_field_type, ObjectID, ObjectMeta};
+use moveos_types::state::{MoveStructType, MoveType, ObjectChange, StateChangeSet};
+use once_cell::sync::Lazy;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+pub static UTXO_TYPE_TAG: Lazy<TypeTag> = Lazy::new(UTXO::type_tag);
+
+pub static INSCRIPTION_TYPE_TAG: Lazy<TypeTag> = Lazy::new(Inscription::type_tag);
 
 /// Index all Object state, include child object
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -44,65 +51,149 @@ impl IndexerObjectState {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ObjectStateType {
+    ObjectState, //all object states exclude utxo and inscription
+    UTXO,
+    Inscription,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct IndexerObjectStateChangeSet {
+    pub object_states: IndexerObjectStateChanges,
+    pub object_state_utxos: IndexerObjectStateChanges,
+    pub object_state_inscriptions: IndexerObjectStateChanges,
+}
+
+impl IndexerObjectStateChangeSet {
+    pub fn update_object_states(&mut self, state: IndexerObjectState) {
+        if type_tag_match(&state.metadata.object_type, &UTXO_TYPE_TAG) {
+            self.object_state_utxos.update_object_states.push(state)
+        } else if type_tag_match(&state.metadata.object_type, &INSCRIPTION_TYPE_TAG) {
+            self.object_state_inscriptions
+                .update_object_states
+                .push(state)
+        } else {
+            self.object_states.update_object_states.push(state)
+        }
+    }
+
+    pub fn new_object_states(&mut self, state: IndexerObjectState) {
+        if type_tag_match(&state.metadata.object_type, &UTXO_TYPE_TAG) {
+            self.object_state_utxos.new_object_states.push(state)
+        } else if type_tag_match(&state.metadata.object_type, &INSCRIPTION_TYPE_TAG) {
+            self.object_state_inscriptions.new_object_states.push(state)
+        } else {
+            self.object_states.new_object_states.push(state)
+        }
+    }
+
+    pub fn remove_object_states(&mut self, object_id: ObjectID, object_type: &TypeTag) {
+        if type_tag_match(object_type, &UTXO_TYPE_TAG) {
+            self.object_state_utxos
+                .remove_object_states
+                .push(object_id.to_string())
+        } else if type_tag_match(object_type, &INSCRIPTION_TYPE_TAG) {
+            self.object_state_inscriptions
+                .remove_object_states
+                .push(object_id.to_string())
+        } else {
+            self.object_states
+                .remove_object_states
+                .push(object_id.to_string())
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct IndexerObjectStateChanges {
     pub new_object_states: Vec<IndexerObjectState>,
     pub update_object_states: Vec<IndexerObjectState>,
     pub remove_object_states: Vec<String>,
 }
 
+#[derive(Clone, Debug, Default)]
+pub struct IndexerObjectStatesIndexGenerator {
+    pub object_states_index_generator: u64,
+    pub object_state_utxos_index_generator: u64,
+    pub object_state_inscriptions_generator: u64,
+}
+
+impl IndexerObjectStatesIndexGenerator {
+    pub fn incr(&mut self, object_type: &TypeTag) {
+        if type_tag_match(object_type, &UTXO_TYPE_TAG) {
+            self.object_state_utxos_index_generator += 1;
+        } else if type_tag_match(object_type, &INSCRIPTION_TYPE_TAG) {
+            self.object_state_inscriptions_generator += 1;
+        } else {
+            self.object_states_index_generator += 1;
+        }
+    }
+
+    pub fn get(&mut self, object_type: &TypeTag) -> u64 {
+        if type_tag_match(object_type, &UTXO_TYPE_TAG) {
+            self.object_state_utxos_index_generator
+        } else if type_tag_match(object_type, &INSCRIPTION_TYPE_TAG) {
+            self.object_state_inscriptions_generator
+        } else {
+            self.object_states_index_generator
+        }
+    }
+}
+
 pub fn handle_object_change(
-    mut state_index_generator: u64,
+    state_index_generator: &mut IndexerObjectStatesIndexGenerator,
     tx_order: u64,
-    indexer_object_state_changes: &mut IndexerObjectStateChanges,
+    indexer_object_state_change_set: &mut IndexerObjectStateChangeSet,
     object_change: ObjectChange,
-) -> Result<u64> {
+) -> Result<()> {
     let ObjectChange {
         metadata,
         value,
         fields,
     } = object_change;
     let object_id = metadata.id.clone();
+    let object_type = metadata.object_type.clone();
+    let state_index = state_index_generator.get(&object_type);
+
+    // Do not index dynamic field object
+    if is_dynamic_field_type(&object_type) {
+        return Ok(());
+    }
     if let Some(op) = value {
         match op {
             Op::Modify(_value) => {
-                let state = IndexerObjectState::new(metadata, tx_order, state_index_generator);
-                indexer_object_state_changes
-                    .update_object_states
-                    .push(state);
+                let state = IndexerObjectState::new(metadata.clone(), tx_order, state_index);
+                indexer_object_state_change_set.update_object_states(state);
             }
             Op::Delete => {
-                indexer_object_state_changes
-                    .remove_object_states
-                    .push(object_id.to_string());
+                indexer_object_state_change_set.remove_object_states(object_id, &object_type);
             }
             Op::New(_value) => {
-                let state = IndexerObjectState::new(metadata, tx_order, state_index_generator);
-                indexer_object_state_changes.new_object_states.push(state);
+                let state = IndexerObjectState::new(metadata.clone(), tx_order, state_index);
+                indexer_object_state_change_set.new_object_states(state);
             }
         }
     } else {
         //If value is not changed, we should update the metadata.
-        let state = IndexerObjectState::new(metadata, tx_order, state_index_generator);
-        indexer_object_state_changes
-            .update_object_states
-            .push(state);
+        let state = IndexerObjectState::new(metadata.clone(), tx_order, state_index);
+        indexer_object_state_change_set.update_object_states(state);
     }
 
-    state_index_generator += 1;
+    state_index_generator.incr(&object_type);
     for (_key, change) in fields {
-        state_index_generator = handle_object_change(
+        handle_object_change(
             state_index_generator,
             tx_order,
-            indexer_object_state_changes,
+            indexer_object_state_change_set,
             change,
         )?;
     }
-    Ok(state_index_generator)
+    Ok(())
 }
 
 #[derive(
-    Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize, JsonSchema,
+    Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize, JsonSchema, Default,
 )]
 pub struct IndexerStateID {
     pub tx_order: u64,

@@ -137,7 +137,7 @@ impl RoochDB {
         let previous_tx_hash_opt = self
             .rooch_store
             .transaction_store
-            .get_tx_hashs(vec![previous_tx_order])?;
+            .get_tx_hashes(vec![previous_tx_order])?;
         if previous_tx_hash_opt.is_empty() || previous_tx_hash_opt[0].is_none() {
             return Err(Error::msg(format!(
                 "the previous tx hash not exist via previous_tx_order  {}",
