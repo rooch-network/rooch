@@ -5,6 +5,8 @@ CREATE TABLE transactions (
     sender                              VARCHAR      NOT NULL,
     action_type                         SMALLINT     NOT NULL,
     auth_validator_id                   BIGINT       NOT NULL,
+    gas_used                            BIGINT       NOT NULL,
+    status                              VARCHAR      NOT NULL,
     created_at                          BIGINT       NOT NULL,
     UNIQUE (tx_hash)
 );

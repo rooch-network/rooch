@@ -262,7 +262,6 @@ impl IndexerReader {
         );
 
         tracing::debug!("Query transactions: {}", query);
-        // println!("Query transactions: {}", query);
         let stored_transactions = self
             .get_inner_indexer_reader(INDEXER_TRANSACTIONS_TABLE_NAME)?
             .run_query_with_timeout(|conn| {
@@ -277,7 +276,6 @@ impl IndexerReader {
                 IndexerError::SQLiteReadError(format!("Cast indexer transactions failed: {:?}", e))
             })?;
         tracing::info!("Query transactions time elapsed: {:?}", start.elapsed());
-        // println!("Query transactions time elapsed: {:?}", start.elapsed());
 
         Ok(result)
     }
@@ -383,7 +381,6 @@ impl IndexerReader {
         );
 
         tracing::debug!("Query events: {}", query);
-        // println!("Query events: {}", query);
         let stored_events = self
             .get_inner_indexer_reader(INDEXER_EVENTS_TABLE_NAME)?
             .run_query_with_timeout(|conn| diesel::sql_query(query).load::<StoredEvent>(conn))?;
@@ -396,7 +393,6 @@ impl IndexerReader {
                 IndexerError::SQLiteReadError(format!("Cast indexer events failed: {:?}", e))
             })?;
         tracing::info!("Query events time elapsed: {:?}", start.elapsed());
-        // println!("Query events time elapsed: {:?}", start.elapsed());
 
         Ok(result)
     }
@@ -509,7 +505,6 @@ impl IndexerReader {
         );
 
         tracing::debug!("Query object states: {}", query);
-        // println!("Query object states: {}", query);
         let stored_object_state_infos = self
             .get_inner_indexer_reader(INDEXER_OBJECT_STATES_TABLE_NAME)?
             .run_query_with_timeout(|conn| {
@@ -517,7 +512,6 @@ impl IndexerReader {
             })?;
 
         tracing::info!("Query object states time elapsed: {:?}", start.elapsed());
-        // println!("Query object states time elapsed: {:?}", start.elapsed());
         Ok(stored_object_state_infos)
     }
 

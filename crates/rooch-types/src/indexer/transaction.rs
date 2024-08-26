@@ -21,16 +21,21 @@ pub struct IndexerTransaction {
     pub sender: RoochAddress,
     pub action_type: u8,
     pub auth_validator_id: u64,
+    // the amount of gas used.
+    pub gas_used: u64,
+    // the vm status.
+    pub status: String,
     pub created_at: u64,
 }
 
 impl IndexerTransaction {
     pub fn new(
         mut transaction: LedgerTransaction,
-        _execution_info: TransactionExecutionInfo,
+        execution_info: TransactionExecutionInfo,
         move_action: MoveAction,
         tx_context: TxContext,
     ) -> Result<Self> {
+        let status = serde_json::to_string(&execution_info.status)?;
         let (auth_validator_id, _authenticator_payload) = match &transaction.data {
             LedgerTxData::L1Block(_block) => (0, vec![]),
             LedgerTxData::L1Tx(_tx) => (0, vec![]),
@@ -50,6 +55,10 @@ impl IndexerTransaction {
             sender: tx_context.sender.into(),
             action_type: move_action.action_type(),
             auth_validator_id,
+            // the amount of gas used.
+            gas_used: execution_info.gas_used,
+            // the vm status.
+            status,
             created_at: transaction.sequence_info.tx_timestamp,
         };
         Ok(indexer_transaction)

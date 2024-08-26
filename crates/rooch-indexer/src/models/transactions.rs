@@ -28,6 +28,12 @@ pub struct StoredTransaction {
     pub action_type: i16,
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub auth_validator_id: i64,
+    /// The amount of gas used.
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub gas_used: i64,
+    /// The vm status.
+    #[diesel(sql_type = diesel::sql_types::Text)]
+    pub status: String,
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub created_at: i64,
 }
@@ -41,6 +47,8 @@ impl From<IndexerTransaction> for StoredTransaction {
             sender: transaction.sender.to_hex_literal(),
             action_type: transaction.action_type as i16,
             auth_validator_id: transaction.auth_validator_id as i64,
+            gas_used: transaction.gas_used as i64,
+            status: transaction.status,
             created_at: transaction.created_at as i64,
         }
     }
@@ -60,6 +68,8 @@ impl TryFrom<StoredTransaction> for IndexerTransaction {
             sender,
             action_type: transaction.action_type as u8,
             auth_validator_id: transaction.auth_validator_id as u64,
+            gas_used: transaction.gas_used as u64,
+            status: transaction.status,
             created_at: transaction.created_at as u64,
         };
         Ok(indexer_transaction)
@@ -68,5 +78,6 @@ impl TryFrom<StoredTransaction> for IndexerTransaction {
 
 pub fn escape_transaction(mut transaction: StoredTransaction) -> StoredTransaction {
     transaction.sender = escape_sql_string(transaction.sender.clone());
+    transaction.status = escape_sql_string(transaction.status.clone());
     transaction
 }
