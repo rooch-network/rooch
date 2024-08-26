@@ -43,7 +43,7 @@ impl RevertTxCommand {
         let tx_hashes = rooch_db
             .rooch_store
             .transaction_store
-            .get_tx_hashs(vec![tx_order])?;
+            .get_tx_hashes(vec![tx_order])?;
 
         // check tx hash exist via tx_order
         if tx_hashes.is_empty() || tx_hashes[0].is_none() {

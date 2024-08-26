@@ -35,7 +35,9 @@ use rooch_types::address::BitcoinAddress;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::error::GenesisError;
 use rooch_types::indexer::event::IndexerEvent;
-use rooch_types::indexer::state::{handle_object_change, IndexerObjectStateChanges};
+use rooch_types::indexer::state::{
+    handle_object_change, IndexerObjectStateChangeSet, IndexerObjectStatesIndexGenerator,
+};
 use rooch_types::indexer::transaction::IndexerTransaction;
 use rooch_types::into_address::IntoAddress;
 use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
@@ -445,22 +447,22 @@ impl RoochGenesis {
             .collect();
         rooch_db.indexer_store.persist_events(events)?;
 
-        // 3. update indexer state
-        // indexer state index generator
-        let mut state_index_generator = 0u64;
-        let mut indexer_object_state_changes = IndexerObjectStateChanges::default();
+        // 3. update indexer full object state, including object_states, utxos and inscriptions
+        // indexer object state index generator
+        let mut state_index_generator = IndexerObjectStatesIndexGenerator::default();
+        let mut indexer_object_state_change_set = IndexerObjectStateChangeSet::default();
 
         for (_field_key, object_change) in genesis_tx_output.changeset.changes {
-            state_index_generator = handle_object_change(
-                state_index_generator,
+            handle_object_change(
+                &mut state_index_generator,
                 genesis_tx_order,
-                &mut indexer_object_state_changes,
+                &mut indexer_object_state_change_set,
                 object_change,
             )?;
         }
         rooch_db
             .indexer_store
-            .update_object_states(indexer_object_state_changes)?;
+            .apply_object_states(indexer_object_state_change_set)?;
 
         let genesis_info =
             GenesisInfo::new(self.genesis_hash(), inited_root.clone(), self.encode());

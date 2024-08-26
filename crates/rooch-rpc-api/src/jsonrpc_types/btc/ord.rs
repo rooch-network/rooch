@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::jsonrpc_types::btc::transaction::hex_to_txid;
+use super::utxo::BitcoinOutPointView;
 use crate::jsonrpc_types::{
     BytesView, H256View, IndexerObjectStateView, IndexerStateIDView, MoveStringView,
     ObjectIDVecView, ObjectMetaView, StrView, UnitedAddressView,
@@ -9,17 +9,14 @@ use crate::jsonrpc_types::{
 use anyhow::Result;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::state::MoveState;
-use moveos_types::{moveos_std::object::ObjectID, state::MoveStructType};
+use moveos_types::state::MoveStructType;
 use rooch_types::bitcoin::ord::{self, SatPoint};
 use rooch_types::bitcoin::ord::{BitcoinInscriptionID, Inscription, InscriptionID};
 use rooch_types::indexer::state::ObjectStateFilter;
-use rooch_types::into_address::IntoAddress;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
-
-use super::utxo::BitcoinOutPointView;
 
 pub type BitcoinInscriptionIDView = StrView<BitcoinInscriptionID>;
 
@@ -47,10 +44,10 @@ impl From<InscriptionID> for BitcoinInscriptionIDView {
 pub enum InscriptionFilterView {
     /// Query by owner, support rooch address and bitcoin address
     Owner(UnitedAddressView),
-    /// Query by inscription id, represent by bitcoin txid and index
-    InscriptionId { txid: String, index: u32 },
-    /// Query by object id.
-    ObjectId(ObjectID),
+    /// Query by inscription id, represent by bitcoin {{txid}i{index}}
+    InscriptionId(BitcoinInscriptionIDView),
+    /// Query by object ids.
+    ObjectId(ObjectIDVecView),
     /// Query all.
     All,
 }
@@ -63,14 +60,12 @@ impl InscriptionFilterView {
                 filter_out: false,
                 owner: owner.0.rooch_address.into(),
             },
-            InscriptionFilterView::InscriptionId { txid, index } => {
-                let txid = hex_to_txid(txid.as_str())?;
-                let inscription_id = InscriptionID::new(txid.into_address(), index);
-                let obj_id = ord::derive_inscription_id(&inscription_id);
+            InscriptionFilterView::InscriptionId(inscription_id) => {
+                let obj_id = ord::derive_inscription_id(&inscription_id.0.into());
                 ObjectStateFilter::ObjectId(vec![obj_id])
             }
-            InscriptionFilterView::ObjectId(object_id) => {
-                ObjectStateFilter::ObjectId(vec![object_id])
+            InscriptionFilterView::ObjectId(object_id_vec_view) => {
+                ObjectStateFilter::ObjectId(object_id_vec_view.into())
             }
             InscriptionFilterView::All => ObjectStateFilter::ObjectType(Inscription::struct_tag()),
         })

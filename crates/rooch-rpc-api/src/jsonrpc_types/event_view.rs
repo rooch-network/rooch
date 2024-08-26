@@ -9,7 +9,9 @@ use moveos_types::moveos_std::{
     event::{AnnotatedEvent, Event, EventID, TransactionEvent},
     object::ObjectID,
 };
-use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
+use rooch_types::indexer::event::{
+    AnnotatedIndexerEvent, EventFilter, IndexerEvent, IndexerEventID,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -160,12 +162,27 @@ impl From<IndexerEvent> for IndexerEventView {
             indexer_event_id: event.indexer_event_id.into(),
             event_id: event.event_id.into(),
             event_type: event.event_type.into(),
-            event_data: StrView(event.event_data),
+            event_data: StrView(event.event_data.unwrap_or_default()),
             tx_hash: event.tx_hash.into(),
             sender: event.sender.into(),
             created_at: event.created_at.into(),
 
             decoded_event_data: None,
+        }
+    }
+}
+
+impl From<AnnotatedIndexerEvent> for IndexerEventView {
+    fn from(event: AnnotatedIndexerEvent) -> Self {
+        IndexerEventView {
+            indexer_event_id: event.event.indexer_event_id.into(),
+            event_id: event.event.event_id.into(),
+            event_type: event.event.event_type.into(),
+            event_data: StrView(event.event.event_data.unwrap_or_default()),
+            tx_hash: event.event.tx_hash.into(),
+            sender: event.event.sender.into(),
+            created_at: event.event.created_at.into(),
+            decoded_event_data: Some(event.decoded_event_data.into()),
         }
     }
 }

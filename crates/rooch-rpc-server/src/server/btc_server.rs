@@ -13,6 +13,7 @@ use rooch_rpc_api::jsonrpc_types::{
     BytesView, IndexerStateIDView, InscriptionPageView, StrView, UTXOPageView,
 };
 use rooch_rpc_api::RpcResult;
+use rooch_types::indexer::state::ObjectStateType;
 use std::cmp::min;
 
 pub struct BtcServer {
@@ -51,6 +52,7 @@ impl BtcAPIServer for BtcServer {
                 descending_order,
                 false,
                 false,
+                ObjectStateType::UTXO,
             )
             .await?;
 
@@ -94,6 +96,7 @@ impl BtcAPIServer for BtcServer {
                 descending_order,
                 false,
                 false,
+                ObjectStateType::Inscription,
             )
             .await?;
 

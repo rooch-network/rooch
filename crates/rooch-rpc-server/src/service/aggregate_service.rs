@@ -15,7 +15,7 @@ use rooch_types::address::RoochAddress;
 use rooch_types::framework::account_coin_store::AccountCoinStoreModule;
 use rooch_types::framework::coin::{CoinInfo, CoinModule};
 use rooch_types::framework::coin_store::{CoinStore, CoinStoreInfo};
-use rooch_types::indexer::state::{IndexerObjectState, IndexerStateID, ObjectStateFilter};
+use rooch_types::indexer::state::{IndexerStateID, ObjectStateFilter, ObjectStateType};
 use rooch_types::indexer::transaction::IndexerTransaction;
 use rooch_types::transaction::TransactionWithInfo;
 use std::collections::HashMap;
@@ -112,10 +112,10 @@ impl AggregateService {
         owner: AccountAddress,
         cursor: Option<IndexerStateID>,
         limit: usize,
-    ) -> Result<Vec<IndexerObjectState>> {
+    ) -> Result<Vec<(ObjectID, IndexerStateID)>> {
         self.rpc_service
             .indexer
-            .query_object_states(
+            .query_object_ids(
                 ObjectStateFilter::ObjectTypeWithOwner {
                     object_type: CoinStore::struct_tag_without_coin_type(),
                     filter_out: false,
@@ -124,6 +124,7 @@ impl AggregateService {
                 cursor,
                 limit,
                 false,
+                ObjectStateType::ObjectState,
             )
             .await
     }
@@ -137,7 +138,7 @@ impl AggregateService {
         let indexer_coin_stores = self.query_account_coin_stores(owner, cursor, limit).await?;
         let coin_store_ids = indexer_coin_stores
             .iter()
-            .map(|m| m.metadata.id.clone())
+            .map(|(id, _state_id)| id.clone())
             .collect::<Vec<_>>();
 
         let coin_stores = self.get_coin_stores(coin_store_ids.clone()).await?;
@@ -151,13 +152,9 @@ impl AggregateService {
         let coin_info_map = self.get_coin_infos(coin_types).await?;
 
         let mut result = vec![];
-        for (indexer_coin_store, coin_store) in indexer_coin_stores.into_iter().zip(coin_stores) {
-            let coin_store = coin_store.ok_or_else(|| {
-                anyhow::anyhow!(
-                    "Can not find CoinStore with id: {}",
-                    indexer_coin_store.metadata.id
-                )
-            })?;
+        for ((id, state_id), coin_store) in indexer_coin_stores.into_iter().zip(coin_stores) {
+            let coin_store = coin_store
+                .ok_or_else(|| anyhow::anyhow!("Can not find CoinStore with id: {}", id))?;
             let coin_info = coin_info_map
                 .get(&coin_store.coin_type())
                 .cloned()
@@ -166,7 +163,7 @@ impl AggregateService {
                     anyhow::anyhow!("Can not find CoinInfo for {}", coin_store.coin_type_str())
                 })?;
             let balance_info = BalanceInfoView::new(coin_info.clone(), coin_store.balance());
-            result.push((Some(indexer_coin_store.indexer_state_id()), balance_info))
+            result.push((Some(state_id), balance_info))
         }
 
         Ok(result)
@@ -209,16 +206,27 @@ impl AggregateService {
         &self,
         indexer_txs: Vec<IndexerTransaction>,
     ) -> Result<Vec<TransactionWithInfo>> {
-        let tx_hashs = indexer_txs.iter().map(|m| m.tx_hash).collect::<Vec<_>>();
-        let ledger_txs = self.rpc_service.get_transactions_by_hash(tx_hashs).await?;
+        let tx_hashes = indexer_txs.iter().map(|m| m.tx_hash).collect::<Vec<_>>();
+        let ledger_txs = self
+            .rpc_service
+            .get_transactions_by_hash(tx_hashes.clone())
+            .await?;
+        let execution_infos = self
+            .rpc_service
+            .get_transaction_execution_infos_by_hash(tx_hashes)
+            .await?;
 
         let data = indexer_txs
             .into_iter()
             .zip(ledger_txs)
-            .map(|(indexer_tx, ledger_tx_opt)| {
+            .zip(execution_infos)
+            .map(|((_indexer_tx, ledger_tx_opt), execution_info_opt)| {
                 let ledger_tx =
                     ledger_tx_opt.ok_or(anyhow::anyhow!("LedgerTransaction should have value"))?;
-                TransactionWithInfo::new(ledger_tx, indexer_tx)
+                let execution_info = execution_info_opt.ok_or(anyhow::anyhow!(
+                    "TransactionExecutionInfo should have value"
+                ))?;
+                TransactionWithInfo::new(ledger_tx, execution_info)
             })
             .collect::<Result<Vec<_>>>()?;
         Ok(data)

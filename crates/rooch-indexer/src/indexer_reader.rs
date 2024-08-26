@@ -4,15 +4,16 @@
 use crate::errors::IndexerError;
 use crate::metrics::IndexerReaderMetrics;
 use crate::models::events::StoredEvent;
-use crate::models::states::StoredObjectState;
+use crate::models::states::{StoredObjectStateInfo, StoredStateID};
 use crate::models::transactions::StoredTransaction;
-use crate::schema::object_states;
 use crate::schema::{events, transactions};
 use crate::utils::escape_sql_string;
 use crate::{
-    IndexerResult, IndexerStoreMeta, SqliteConnectionConfig, SqliteConnectionPoolConfig,
-    SqlitePoolConnection, DEFAULT_BUSY_TIMEOUT, INDEXER_EVENTS_TABLE_NAME,
-    INDEXER_OBJECT_STATES_TABLE_NAME, INDEXER_TRANSACTIONS_TABLE_NAME,
+    IndexerResult, IndexerStoreMeta, IndexerTableName, SqliteConnectionConfig,
+    SqliteConnectionPoolConfig, SqlitePoolConnection, DEFAULT_BUSY_TIMEOUT,
+    INDEXER_EVENTS_TABLE_NAME, INDEXER_OBJECT_STATES_TABLE_NAME,
+    INDEXER_OBJECT_STATE_INSCRIPTIONS_TABLE_NAME, INDEXER_OBJECT_STATE_UTXOS_TABLE_NAME,
+    INDEXER_TRANSACTIONS_TABLE_NAME,
 };
 use anyhow::{anyhow, Result};
 use diesel::{
@@ -20,17 +21,16 @@ use diesel::{
 };
 use function_name::named;
 use move_core_types::language_storage::StructTag;
-use moveos_types::moveos_std::event::EventHandle;
 use moveos_types::moveos_std::object::ObjectID;
 use prometheus::Registry;
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
-use rooch_types::indexer::state::{IndexerObjectState, IndexerStateID, ObjectStateFilter};
+use rooch_types::indexer::state::{IndexerStateID, ObjectStateFilter, ObjectStateType};
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::runtime::Handle;
 use tokio::time::timeout;
 
@@ -41,8 +41,6 @@ pub const TX_HASH_STR: &str = "tx_hash";
 pub const TX_SENDER_STR: &str = "sender";
 pub const CREATED_AT_STR: &str = "created_at";
 pub const OBJECT_ID_STR: &str = "id";
-
-pub const TRANSACTION_ORIGINAL_ADDRESS_STR: &str = "multichain_original_address";
 
 pub const EVENT_HANDLE_ID_STR: &str = "event_handle_id";
 pub const EVENT_INDEX_STR: &str = "event_index";
@@ -187,6 +185,7 @@ impl IndexerReader {
         limit: usize,
         descending_order: bool,
     ) -> IndexerResult<Vec<IndexerTransaction>> {
+        let start = Instant::now();
         let fn_name = function_name!();
         let _timer = self
             .metrics
@@ -213,16 +212,13 @@ impl IndexerReader {
             TransactionFilter::Sender(sender) => {
                 format!("{TX_SENDER_STR} = \"{}\"", sender.to_hex_literal())
             }
-            TransactionFilter::OriginalAddress(address) => {
-                format!("{TRANSACTION_ORIGINAL_ADDRESS_STR} = \"{}\"", address)
-            }
             TransactionFilter::TxHashes(tx_hashes) => {
-                let in_tx_hashes_str: String = tx_hashes
+                let in_tx_hash_str: String = tx_hashes
                     .iter()
                     .map(|tx_hash| format!("\"{:?}\"", tx_hash))
                     .collect::<Vec<String>>()
                     .join(",");
-                format!("{TX_HASH_STR} in ({})", in_tx_hashes_str)
+                format!("{TX_HASH_STR} in ({})", in_tx_hash_str)
             }
             TransactionFilter::TimeRange {
                 start_time,
@@ -265,7 +261,7 @@ impl IndexerReader {
             main_where_clause, cursor_clause, order_clause, limit,
         );
 
-        tracing::debug!("query transactions: {}", query);
+        tracing::debug!("Query transactions: {}", query);
         let stored_transactions = self
             .get_inner_indexer_reader(INDEXER_TRANSACTIONS_TABLE_NAME)?
             .run_query_with_timeout(|conn| {
@@ -279,6 +275,7 @@ impl IndexerReader {
             .map_err(|e| {
                 IndexerError::SQLiteReadError(format!("Cast indexer transactions failed: {:?}", e))
             })?;
+        tracing::info!("Query transactions time elapsed: {:?}", start.elapsed());
 
         Ok(result)
     }
@@ -291,6 +288,7 @@ impl IndexerReader {
         limit: usize,
         descending_order: bool,
     ) -> IndexerResult<Vec<IndexerEvent>> {
+        let start = Instant::now();
         let fn_name = function_name!();
         let _timer = self
             .metrics
@@ -312,23 +310,21 @@ impl IndexerReader {
                         .order_by((events::tx_order.desc(), events::event_index.desc()))
                         .first::<(i64, i64)>(conn)
                 })?;
-            (max_tx_order + 1, event_index)
+            (max_tx_order, event_index + 1)
         } else {
             (-1, 0)
         };
 
         let main_where_clause = match filter {
             EventFilter::EventTypeWithSender { event_type, sender } => {
-                let event_handle_id = EventHandle::derive_event_handle_id(&event_type);
                 format!(
-                    "{TX_SENDER_STR} = \"{}\" AND {EVENT_HANDLE_ID_STR} = \"{}\"",
+                    "{TX_SENDER_STR} = \"{}\" AND {EVENT_TYPE_STR} = \"{}\"",
                     sender.to_hex_literal(),
-                    event_handle_id
+                    event_type
                 )
             }
             EventFilter::EventType(event_type) => {
-                let event_handle_id = EventHandle::derive_event_handle_id(&event_type);
-                format!("{EVENT_HANDLE_ID_STR} = \"{}\"", event_handle_id)
+                format!("{EVENT_TYPE_STR} = \"{}\"", event_type)
             }
             EventFilter::Sender(sender) => {
                 format!("{TX_SENDER_STR} = \"{}\"", sender.to_hex_literal())
@@ -384,7 +380,7 @@ impl IndexerReader {
             main_where_clause, cursor_clause, order_clause, limit,
         );
 
-        tracing::debug!("query events: {}", query);
+        tracing::debug!("Query events: {}", query);
         let stored_events = self
             .get_inner_indexer_reader(INDEXER_EVENTS_TABLE_NAME)?
             .run_query_with_timeout(|conn| diesel::sql_query(query).load::<StoredEvent>(conn))?;
@@ -396,17 +392,20 @@ impl IndexerReader {
             .map_err(|e| {
                 IndexerError::SQLiteReadError(format!("Cast indexer events failed: {:?}", e))
             })?;
+        tracing::info!("Query events time elapsed: {:?}", start.elapsed());
 
         Ok(result)
     }
 
-    fn query_stored_object_states_with_filter(
+    fn query_stored_object_state_infos_with_filter(
         &self,
         filter: ObjectStateFilter,
         cursor: Option<IndexerStateID>,
         limit: usize,
         descending_order: bool,
-    ) -> IndexerResult<Vec<StoredObjectState>> {
+        state_type: ObjectStateType,
+    ) -> IndexerResult<Vec<StoredObjectStateInfo>> {
+        let start = Instant::now();
         let (tx_order, state_index) = if let Some(cursor) = cursor {
             let IndexerStateID {
                 tx_order,
@@ -414,21 +413,21 @@ impl IndexerReader {
             } = cursor;
             (tx_order as i64, state_index as i64)
         } else if descending_order {
-            let (max_tx_order, state_index): (i64, i64) = self
-                .get_inner_indexer_reader(INDEXER_OBJECT_STATES_TABLE_NAME)?
-                .run_query_with_timeout(|conn| {
-                    object_states::dsl::object_states
-                        .select((object_states::tx_order, object_states::state_index))
-                        .order_by((
-                            object_states::tx_order.desc(),
-                            object_states::state_index.desc(),
-                        ))
-                        .first::<(i64, i64)>(conn)
-                })?;
-            (max_tx_order + 1, state_index)
+            let last_state_id = self.query_last_indexer_state_id(state_type.clone())?;
+            match last_state_id {
+                Some((max_tx_order, state_index)) => (max_tx_order, state_index + 1),
+                None => (0, 0),
+            }
         } else {
             (-1, 0)
         };
+
+        let table_name = get_table_name_by_state_type(state_type.clone());
+        // Avoid to use "select *". Specify the columns to use.
+        let select_clause = format!(
+            "SELECT {STATE_OBJECT_ID_STR},{TX_ORDER_STR},{STATE_INDEX_STR} FROM {}",
+            table_name
+        );
 
         let main_where_clause = match filter {
             ObjectStateFilter::ObjectTypeWithOwner {
@@ -436,18 +435,32 @@ impl IndexerReader {
                 owner,
                 filter_out,
             } => {
-                let object_query = if filter_out {
-                    not_object_type_query(&object_type)
-                } else {
-                    object_type_query(&object_type)
-                };
-                format!(
-                    "{STATE_OWNER_STR} = \"{}\" AND {}",
-                    owner.to_hex_literal(),
-                    object_query
-                )
+                match state_type {
+                    ObjectStateType::ObjectState => {
+                        let object_query = if filter_out {
+                            not_object_type_query(&object_type)
+                        } else {
+                            object_type_query(&object_type)
+                        };
+                        format!(
+                            "{STATE_OWNER_STR} = \"{}\" AND {}",
+                            owner.to_hex_literal(),
+                            object_query
+                        )
+                    }
+                    _ => {
+                        // Ignore object_type param for utxo and inscription query
+                        format!("{STATE_OWNER_STR} = \"{}\"", owner.to_hex_literal(),)
+                    }
+                }
             }
-            ObjectStateFilter::ObjectType(object_type) => object_type_query(&object_type),
+            ObjectStateFilter::ObjectType(object_type) => {
+                match state_type {
+                    ObjectStateType::ObjectState => object_type_query(&object_type),
+                    // Ignore object_type param for utxo and inscription query
+                    _ => " ".to_string(),
+                }
+            }
 
             ObjectStateFilter::Owner(owner) => {
                 format!("{STATE_OWNER_STR} = \"{}\"", owner.to_hex_literal())
@@ -462,15 +475,17 @@ impl IndexerReader {
             }
         };
 
+        let has_main_where_clause = main_where_clause.ne(" ");
+        let cursor_clause_start = if has_main_where_clause { "AND" } else { " " };
         let cursor_clause = if descending_order {
             format!(
-                "AND ({TX_ORDER_STR} < {} OR ({TX_ORDER_STR} = {} AND {STATE_INDEX_STR} < {}))",
-                tx_order, tx_order, state_index
+                "{} ({TX_ORDER_STR} < {} OR ({TX_ORDER_STR} = {} AND {STATE_INDEX_STR} < {}))",
+                cursor_clause_start, tx_order, tx_order, state_index
             )
         } else {
             format!(
-                "AND ({TX_ORDER_STR} > {} OR ({TX_ORDER_STR} = {} AND {STATE_INDEX_STR} > {}))",
-                tx_order, tx_order, state_index
+                "{} ({TX_ORDER_STR} > {} OR ({TX_ORDER_STR} = {} AND {STATE_INDEX_STR} > {}))",
+                cursor_clause_start, tx_order, tx_order, state_index
             )
         };
         let order_clause = if descending_order {
@@ -481,60 +496,48 @@ impl IndexerReader {
 
         let query = format!(
             "
-                SELECT * FROM object_states \
+                {} \
                 WHERE {} {} \
                 ORDER BY {} \
                 LIMIT {}
             ",
-            main_where_clause, cursor_clause, order_clause, limit,
+            select_clause, main_where_clause, cursor_clause, order_clause, limit,
         );
 
-        tracing::debug!("query object states: {}", query);
-        let stored_object_states = self
-            .get_inner_indexer_reader(INDEXER_OBJECT_STATES_TABLE_NAME)?
+        tracing::debug!("Query object states: {}", query);
+        let stored_object_state_infos = self
+            .get_inner_indexer_reader(table_name)?
             .run_query_with_timeout(|conn| {
-                diesel::sql_query(query).load::<StoredObjectState>(conn)
+                diesel::sql_query(query).load::<StoredObjectStateInfo>(conn)
             })?;
-        Ok(stored_object_states)
+
+        tracing::info!("Query object states time elapsed: {:?}", start.elapsed());
+        Ok(stored_object_state_infos)
     }
 
     #[named]
-    pub fn query_object_states_with_filter(
-        &self,
-        filter: ObjectStateFilter,
-        cursor: Option<IndexerStateID>,
-        limit: usize,
-        descending_order: bool,
-    ) -> IndexerResult<Vec<IndexerObjectState>> {
-        let fn_name = function_name!();
-        let _timer = self
-            .metrics
-            .indexer_reader_query_latency_seconds
-            .with_label_values(&[fn_name])
-            .start_timer();
-        let stored_object_states =
-            self.query_stored_object_states_with_filter(filter, cursor, limit, descending_order)?;
-        let result = stored_object_states
-            .into_iter()
-            .map(|v| v.try_parse_indexer_object_state())
-            .collect::<Result<Vec<_>>>()
-            .map_err(|e| {
-                IndexerError::SQLiteReadError(format!("Cast indexer object states failed: {:?}", e))
-            })?;
-
-        Ok(result)
-    }
-
     pub fn query_object_ids_with_filter(
         &self,
         filter: ObjectStateFilter,
         cursor: Option<IndexerStateID>,
         limit: usize,
         descending_order: bool,
+        state_type: ObjectStateType,
     ) -> IndexerResult<Vec<(ObjectID, IndexerStateID)>> {
-        let stored_object_states =
-            self.query_stored_object_states_with_filter(filter, cursor, limit, descending_order)?;
-        let result = stored_object_states
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .indexer_reader_query_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
+        let stored_object_state_infos = self.query_stored_object_state_infos_with_filter(
+            filter,
+            cursor,
+            limit,
+            descending_order,
+            state_type,
+        )?;
+        let result = stored_object_state_infos
             .into_iter()
             .map(|v| v.try_parse_id())
             .collect::<Result<Vec<_>>>()
@@ -545,34 +548,75 @@ impl IndexerReader {
         Ok(result)
     }
 
-    pub fn query_last_state_index_by_tx_order(&self, tx_order: u64) -> IndexerResult<u64> {
+    pub fn query_last_indexer_state_id(
+        &self,
+        state_type: ObjectStateType,
+    ) -> IndexerResult<Option<(i64, i64)>> {
+        let table_name = get_table_name_by_state_type(state_type);
+        let order_clause = format!("{TX_ORDER_STR} DESC, {STATE_INDEX_STR} DESC");
+        let query = format!(
+            "
+                SELECT {TX_ORDER_STR},{STATE_INDEX_STR} FROM {} \
+                ORDER BY {} \
+                LIMIT 1
+            ",
+            table_name, order_clause,
+        );
+
+        tracing::debug!("query last indexer state id: {}", query);
+        let stored_state_ids = self
+            .get_inner_indexer_reader(table_name)?
+            .run_query_with_timeout(|conn| diesel::sql_query(query).load::<StoredStateID>(conn))?;
+
+        let last_state_id = if stored_state_ids.is_empty() {
+            None
+        } else {
+            Some((
+                stored_state_ids[0].tx_order,
+                stored_state_ids[0].state_index,
+            ))
+        };
+        Ok(last_state_id)
+    }
+
+    pub fn query_last_state_index_by_tx_order(
+        &self,
+        tx_order: u64,
+        state_type: ObjectStateType,
+    ) -> IndexerResult<Option<u64>> {
+        let table_name = get_table_name_by_state_type(state_type);
         let where_clause = format!("{TX_ORDER_STR} = \"{}\"", tx_order as i64);
         let order_clause = format!("{TX_ORDER_STR} DESC, {STATE_INDEX_STR} DESC");
         let query = format!(
             "
-                SELECT * FROM object_states \
+                SELECT {TX_ORDER_STR},{STATE_INDEX_STR} FROM {} \
                 WHERE {} \
                 ORDER BY {} \
                 LIMIT 1
             ",
-            where_clause, order_clause,
+            table_name, where_clause, order_clause,
         );
 
         tracing::debug!("query last state index by tx order: {}", query);
-        let stored_object_states = self
-            .get_inner_indexer_reader(INDEXER_OBJECT_STATES_TABLE_NAME)?
-            .run_query_with_timeout(|conn| {
-                diesel::sql_query(query).load::<StoredObjectState>(conn)
-            })?;
-        let last_state_index = if stored_object_states.is_empty() {
-            0
+        let stored_state_ids = self
+            .get_inner_indexer_reader(table_name)?
+            .run_query_with_timeout(|conn| diesel::sql_query(query).load::<StoredStateID>(conn))?;
+        let last_state_index = if stored_state_ids.is_empty() {
+            None
         } else {
-            stored_object_states[0].state_index as u64 + 1
+            Some(stored_state_ids[0].state_index as u64)
         };
         Ok(last_state_index)
     }
 }
 
+fn get_table_name_by_state_type(state_type: ObjectStateType) -> IndexerTableName {
+    match state_type {
+        ObjectStateType::ObjectState => INDEXER_OBJECT_STATES_TABLE_NAME,
+        ObjectStateType::UTXO => INDEXER_OBJECT_STATE_UTXOS_TABLE_NAME,
+        ObjectStateType::Inscription => INDEXER_OBJECT_STATE_INSCRIPTIONS_TABLE_NAME,
+    }
+}
 fn object_type_query(object_type: &StructTag) -> String {
     let object_type_str = object_type.to_string();
     // if the caller does not specify the type parameters, we will use the prefix match

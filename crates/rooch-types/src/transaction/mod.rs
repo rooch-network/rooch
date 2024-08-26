@@ -7,7 +7,6 @@ use framework_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
-use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::state::{MoveState, MoveStructState, MoveStructType};
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::{h256::H256, transaction::TransactionOutput};
@@ -17,7 +16,6 @@ pub mod authenticator;
 mod ledger_transaction;
 pub mod rooch;
 
-use crate::indexer::transaction::IndexerTransaction;
 use crate::test_utils::random_accumulator_info;
 pub use authenticator::Authenticator;
 pub use ledger_transaction::{
@@ -259,16 +257,10 @@ pub struct TransactionWithInfo {
 }
 
 impl TransactionWithInfo {
-    pub fn new(ledger_tx: LedgerTransaction, indexer_tx: IndexerTransaction) -> Result<Self> {
-        let status: KeptVMStatus = serde_json::from_str(indexer_tx.status.as_str())?;
-        let execution_info = TransactionExecutionInfo {
-            tx_hash: indexer_tx.tx_hash,
-            state_root: indexer_tx.state_root,
-            size: indexer_tx.size,
-            event_root: indexer_tx.event_root,
-            gas_used: indexer_tx.gas_used,
-            status,
-        };
+    pub fn new(
+        ledger_tx: LedgerTransaction,
+        execution_info: TransactionExecutionInfo,
+    ) -> Result<Self> {
         Ok(TransactionWithInfo {
             transaction: ledger_tx,
             execution_info: Some(execution_info),
