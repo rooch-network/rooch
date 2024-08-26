@@ -186,12 +186,9 @@ module bitcoin_plants::plants {
     #[test_only]
     use std::option;
 
-    #[test_only]
-    use rooch_framework::genesis;
-
     #[test]
     fun test() {
-        genesis::init_for_test();
+        bitcoin_move::genesis::init_for_test();
         let id = ord::new_inscription_id(@0x3232423,0);
         let inscription_obj = ord::new_inscription_object_for_test(
             id,
