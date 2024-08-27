@@ -98,7 +98,7 @@ module rooch_framework::oracle {
         object::add_field(&mut oracle.id, ticker, new_data);
     }
 
-    public entry fun archive_data<K: store + copy + drop, V: store + copy + drop>(
+    public fun archive_data<K: store + copy + drop, V: store + copy + drop>(
         oracle_obj: &mut Object<SimpleOracle>,
         ticker: String,
         archival_key: K,

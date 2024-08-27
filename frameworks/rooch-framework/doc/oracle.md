@@ -123,7 +123,7 @@ Create a new shared SimpleOracle object for publishing data.
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="oracle.md#0x3_oracle_submit_data">submit_data</a>&lt;T: <b>copy</b>, drop, store&gt;(oracle_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="oracle.md#0x3_oracle_SimpleOracle">oracle::SimpleOracle</a>&gt;, ticker: <a href="_String">string::String</a>, value: T, identifier: <a href="_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="oracle.md#0x3_oracle_submit_data">submit_data</a>&lt;T: <b>copy</b>, drop, store&gt;(oracle_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="oracle.md#0x3_oracle_SimpleOracle">oracle::SimpleOracle</a>&gt;, ticker: <a href="_String">string::String</a>, value: T, identifier: <a href="_String">string::String</a>)
 </code></pre>
 
 
@@ -134,5 +134,5 @@ Create a new shared SimpleOracle object for publishing data.
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="oracle.md#0x3_oracle_archive_data">archive_data</a>&lt;K: <b>copy</b>, drop, store, V: <b>copy</b>, drop, store&gt;(oracle_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="oracle.md#0x3_oracle_SimpleOracle">oracle::SimpleOracle</a>&gt;, ticker: <a href="_String">string::String</a>, archival_key: K)
+<pre><code><b>public</b> <b>fun</b> <a href="oracle.md#0x3_oracle_archive_data">archive_data</a>&lt;K: <b>copy</b>, drop, store, V: <b>copy</b>, drop, store&gt;(oracle_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="oracle.md#0x3_oracle_SimpleOracle">oracle::SimpleOracle</a>&gt;, ticker: <a href="_String">string::String</a>, archival_key: K)
 </code></pre>
