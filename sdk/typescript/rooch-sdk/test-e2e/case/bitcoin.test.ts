@@ -15,13 +15,15 @@ describe('Bitcoin Assets API', () => {
     await testBox.loadRoochEnv()
   })
 
-  afterAll(() => {
-    testBox.unloadContainer()
+  afterAll(async () => {
+    testBox.cleanEnv()
   })
 
   it('query utxo should be success', async () => {
-    const addr = testBox.keypair.getSchnorrPublicKey().buildAddress(1, BitcoinNetowkType.Regtest).toStr()
-    console.log(addr)
+    const addr = testBox.keypair
+      .getSchnorrPublicKey()
+      .buildAddress(1, BitcoinNetowkType.Regtest)
+      .toStr()
     const result = await testBox.bitcoinContainer?.executeRpcCommand('generatetoaddress', [
       '50',
       addr,
@@ -81,17 +83,11 @@ describe('Bitcoin Assets API', () => {
     })
     expect(utxos.data.length).toBeGreaterThan(0)
 
-    // first make sure don’t break
-    try {
-      const inscriptions = await testBox.getClient().queryInscriptions({
-        filter: {
-          owner: addr,
-        },
-      })
-      // TODO: check inscriptions result
-      expect(inscriptions).toBeDefined()
-    } catch (e) {
-      expect(e).toBeUndefined()
-    }
+    const inscriptions = await testBox.getClient().queryInscriptions({
+      filter: {
+        owner: addr,
+      },
+    })
+    expect(inscriptions.data.length).toBeGreaterThan(0)
   })
 })
