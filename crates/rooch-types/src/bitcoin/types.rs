@@ -4,6 +4,7 @@
 use crate::into_address::FromAddress;
 use crate::{address::BitcoinAddress, addresses::BITCOIN_MOVE_ADDRESS, into_address::IntoAddress};
 use anyhow::Result;
+use bitcoin::Txid;
 use bitcoin::{hashes::Hash, BlockHash};
 use bitcoincore_rpc::bitcoincore_rpc_json::GetBlockHeaderResult;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
@@ -274,7 +275,7 @@ impl MoveStructState for Witness {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Ord, PartialOrd, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Ord, PartialOrd, PartialEq, Eq, Hash)]
 pub struct OutPoint {
     /// The referenced transaction's txid.
     /// Use address to represent sha256d hash
@@ -327,7 +328,9 @@ impl MoveStructState for OutPoint {
 
 impl Display for OutPoint {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{}:{}", self.txid, self.vout)
+        //We use bitcoin txid hex to display
+        let txid = Txid::from_address(self.txid);
+        write!(f, "{}:{}", txid, self.vout)
     }
 }
 
