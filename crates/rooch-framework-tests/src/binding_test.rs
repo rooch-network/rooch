@@ -140,7 +140,7 @@ impl RustBindingTest {
     }
 
     //TODO let the module bundle to execute the function
-    pub fn execute(&mut self, tx: RoochTransaction) -> Result<()> {
+    pub fn execute(&mut self, tx: RoochTransaction) -> Result<ExecuteTransactionResult> {
         let execute_result = self.execute_as_result(tx)?;
         if execute_result.transaction_info.status != KeptVMStatus::Executed {
             bail!(
@@ -148,7 +148,7 @@ impl RustBindingTest {
                 execute_result.transaction_info.status
             );
         }
-        Ok(())
+        Ok(execute_result)
     }
 
     pub fn execute_l1_block_and_tx(&mut self, l1_block: L1BlockWithBody) -> Result<()> {
