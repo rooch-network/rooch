@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@emotion/cache": "11.10.5",
+    "@emotion/cache": "11.10.0",
     "@emotion/react": "11.10.6",
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
     "@radix-ui/react-aspect-ratio": "^1.0.3",
