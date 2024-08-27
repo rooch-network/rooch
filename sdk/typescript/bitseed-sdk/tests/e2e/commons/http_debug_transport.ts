@@ -4,6 +4,7 @@ import debug from 'debug'
 import { sleep } from './time'
 import rooch_sdk from '@roochnetwork/rooch-sdk'
 
+const log = debug('bitseed:e2e:http_debug_transport')
 const { RoochHTTPTransport } = rooch_sdk
 
 export class HTTPDebugTransport extends RoochHTTPTransport {
@@ -20,19 +21,19 @@ export class HTTPDebugTransport extends RoochHTTPTransport {
 
     try {
       if (this.debug) {
-        console.log('rooch http request start:', input)
+        log('rooch http request start:', input)
       }
 
       result = await super.request(input)
 
       if (this.debug) {
-        console.log('rooch http request result:', input, result)
+        log('rooch http request result:', input, result)
 
         if (input.method === 'btc_queryUTXOs') {
           let resp = result as any
 
           if (resp.data.length === 0) {
-            console.log('rooch btc_queryUTXOs result empty, sleep 3s ...')
+            log('rooch btc_queryUTXOs result empty, sleep 3s ...')
 
             await sleep(3000)
           }
@@ -42,7 +43,7 @@ export class HTTPDebugTransport extends RoochHTTPTransport {
       return result
     } catch (e: any) {
       if (this.debug) {
-        console.log('rooch http request error:', input, e)
+        log('rooch http request error:', input, e)
       }
 
       throw e

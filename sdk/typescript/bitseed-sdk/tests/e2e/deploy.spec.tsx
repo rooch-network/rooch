@@ -27,8 +27,8 @@ test.beforeAll(async () => {
   await testBox.loadBitcoinEnv(null, true)
   await testBox.loadRoochEnv('local', 0)
   roochServerAddress = testBox.getRoochServerAddress()
-  console.log("roochServerAddress:", roochServerAddress)
-  
+  console.log('roochServerAddress:', roochServerAddress)
+
   await testBox.getFaucetBTC('bcrt1pz9qq9gwemapvmpntw90ygalhnjzgy2d7tglts0a90avrre902z2s6gng6d', 1)
   await testBox.getFaucetBTC('bcrt1pk6w56zalwe0txflwedv6d4mzszu4334ehtqe2yyjv8m2g36xlgrsnzsp4k', 1)
 
