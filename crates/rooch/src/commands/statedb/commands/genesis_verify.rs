@@ -317,17 +317,18 @@ fn verify_reverse(
     let filter = UTXOFilter::new(input, utxo_output, addr_output, outpoint_inscriptions_map);
 
     let mut writer = ExportWriter::new(None, Some(Box::new(filter)));
+
     ExportCommand::export_object(
         &moveos_store_arc,
         root_state_root,
-        BitcoinUTXOStore::object_id(),
+        RoochToBitcoinAddressMapping::object_id(),
         &mut writer,
     )?;
 
     ExportCommand::export_object(
         &moveos_store_arc,
         root_state_root,
-        RoochToBitcoinAddressMapping::object_id(),
+        BitcoinUTXOStore::object_id(),
         &mut writer,
     )?;
 
