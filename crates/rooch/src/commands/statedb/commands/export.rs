@@ -239,7 +239,7 @@ impl ExportCommand {
             init_job(self.base_data_dir.clone(), self.chain_id.clone());
 
         let output = self.output.clone();
-        let mut writer = ExportWriter::new(Some(output));
+        let mut writer = ExportWriter::new(Some(output), None);
         let root_state_root = self.state_root.unwrap_or(root.state_root());
 
         let mode = self.mode.unwrap_or_default();
@@ -453,7 +453,7 @@ impl ExportCommand {
         Ok(())
     }
 
-    fn export_object(
+    pub(crate) fn export_object(
         moveos_store: &MoveOSStore,
         root_state_root: H256,
         object_id: ObjectID,
