@@ -1,0 +1,11 @@
+# Build directories
+build/*
+dist/*
+public/*
+**/out/*
+**/.next/*
+**/node_modules/*
+
+yarn.lock
+package-lock.json
+jsconfig.json
