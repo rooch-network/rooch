@@ -285,7 +285,8 @@ fn struct_tag_from_canonical_string(s: &str) -> Result<StructTag> {
         .map(|i| i + first_double_colon + 2)
         .ok_or_else(|| anyhow::anyhow!("Invalid struct tag format: missing second '::'"))?;
 
-    let address = AccountAddress::from_hex(&s[..first_double_colon])?;
+    // Accept 0xADDRESS or ADDRESS
+    let address = AccountAddress::from_str(&s[..first_double_colon])?;
     let module = Identifier::new(&s[first_double_colon + 2..second_double_colon])?;
 
     let name_and_generics = &s[second_double_colon + 2..];
@@ -349,16 +350,20 @@ fn parse_type_params(s: &str) -> Result<Vec<TypeTag>, anyhow::Error> {
 
 /// Parse a type tag from a string
 /// This function support parse type tag from TypeTag::to_string() or TypeTag::to_canonical_string()
-/// The canonical string format is:
-/// `0000000000000000000000000000000a::module_name1::type_name1<0000000000000000000000000000000a::module_name2::type_name2<u64>>
+/// The default canonical string format with prefix is:
+/// `0x0000000000000000000000000000000a::module_name1::type_name1<0x0000000000000000000000000000000a::module_name2::type_name2<u64>>
 /// The non-canonical string format is:
 /// `0xa::module_name1::type_name1<0xa::module_name2::type_name2<u64>>`
-/// TODO: Should we unify the canonical and non-canonical string format?
-/// https://github.com/rooch-network/rooch/issues/2395
+/// We unify the canonical and non-canonical string format
+/// And still compatible with canonical string without the 0x prefix
 pub fn parse_type_tag(s: &str) -> Result<TypeTag> {
     let s = s.trim();
     if s.starts_with("0x") {
-        TypeTag::from_str(s)
+        if let Ok(type_tag) = TypeTag::from_str(s) {
+            Ok(type_tag)
+        } else {
+            from_canonical_string(s)
+        }
     } else {
         from_canonical_string(s)
     }
@@ -369,7 +374,11 @@ pub fn parse_type_tag(s: &str) -> Result<TypeTag> {
 pub fn parse_struct_tag(s: &str) -> Result<StructTag> {
     let s = s.trim();
     if s.starts_with("0x") {
-        StructTag::from_str(s)
+        if let Ok(struct_tag) = StructTag::from_str(s) {
+            Ok(struct_tag)
+        } else {
+            struct_tag_from_canonical_string(s)
+        }
     } else {
         struct_tag_from_canonical_string(s)
     }
@@ -383,9 +392,18 @@ mod tests {
     fn test_type_tag() -> Result<()> {
         let type_tag_str = "0x5::test::struct";
         let type_tag_canonical_str =
-            "0000000000000000000000000000000000000000000000000000000000000005::test::struct";
+            "0x0000000000000000000000000000000000000000000000000000000000000005::test::struct";
         let test_type_tag = TypeTag::from_str(type_tag_str)?;
         assert_eq!(type_tag_str, test_type_tag.to_string());
+        assert_eq!(type_tag_canonical_str, test_type_tag.to_canonical_string());
+        Ok(())
+    }
+
+    #[test]
+    fn test_strange_format_type_tag() -> Result<()> {
+        let type_tag_str = "0x900f053234b0ba66ad062b277896b28e049f2813d388da375efcd54b6e429dbe::coin::Coin<0000000000000000000000000000000000000000000000000000000000000003::gas_coin::GasCoin>";
+        let type_tag_canonical_str = "0x900f053234b0ba66ad062b277896b28e049f2813d388da375efcd54b6e429dbe::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000003::gas_coin::GasCoin>";
+        let test_type_tag = parse_type_tag(type_tag_str)?;
         assert_eq!(type_tag_canonical_str, test_type_tag.to_canonical_string());
         Ok(())
     }
