@@ -5,7 +5,9 @@ use crate::binding_test::RustBindingTest;
 use anyhow::{anyhow, bail, ensure, Result};
 use bitcoin::{hashes::Hash, Block, OutPoint, TxOut, Txid};
 use framework_builder::stdlib_version::StdlibVersion;
+use move_core_types::account_address::AccountAddress;
 use moveos_types::{
+    move_std::string::MoveString,
     moveos_std::{
         module_store::ModuleStore, object::ObjectMeta, simple_multimap::SimpleMultiMap,
         timestamp::Timestamp,
@@ -13,10 +15,12 @@ use moveos_types::{
     state::{MoveState, MoveType, ObjectChange, ObjectState},
     state_resolver::StateResolver,
 };
+use rooch_ord::ord_client::{Charm, InscriptionInfo, OrdClient};
 use rooch_relayer::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use rooch_types::{
+    address::BitcoinAddress,
     bitcoin::{
-        ord::InscriptionID,
+        ord::{Inscription, InscriptionID},
         utxo::{self, BitcoinUTXOStore, UTXO},
     },
     genesis_config,
@@ -26,8 +30,9 @@ use rooch_types::{
 };
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeMap, HashMap, HashSet},
     path::{Path, PathBuf},
+    str::FromStr,
     vec,
 };
 use tracing::{debug, info};
@@ -37,7 +42,7 @@ use tracing::{debug, info};
 pub struct BitcoinBlockTester {
     genesis: BitcoinTesterGenesis,
     binding_test: RustBindingTest,
-    executed_block: Option<Block>,
+    executed_block: Option<BlockData>,
 }
 
 impl BitcoinBlockTester {
@@ -59,11 +64,12 @@ impl BitcoinBlockTester {
         if self.genesis.blocks.is_empty() {
             bail!("No block to execute");
         }
-        let (height, block) = self.genesis.blocks.remove(0);
-        info!("Execute block: {}", height);
-        let l1_block = L1BlockWithBody::new_bitcoin_block(height as u64, block.clone());
+        let block_data = self.genesis.blocks.remove(0);
+        info!("Execute block: {}", block_data.height);
+        let l1_block =
+            L1BlockWithBody::new_bitcoin_block(block_data.height, block_data.block.clone());
         self.binding_test.execute_l1_block_and_tx(l1_block)?;
-        self.executed_block = Some(block);
+        self.executed_block = Some(block_data);
         Ok(())
     }
 
@@ -73,8 +79,8 @@ impl BitcoinBlockTester {
             "No block executed, please execute block first"
         );
         let mut utxo_set = HashMap::<OutPoint, TxOut>::new();
-        let block = self.executed_block.as_ref().unwrap();
-        for tx in block.txdata.as_slice() {
+        let block_data = self.executed_block.as_ref().unwrap();
+        for tx in block_data.block.txdata.as_slice() {
             let txid = tx.txid();
             for (index, tx_out) in tx.output.iter().enumerate() {
                 let vout = index as u32;
@@ -88,6 +94,9 @@ impl BitcoinBlockTester {
         }
 
         for (outpoint, tx_out) in utxo_set.into_iter() {
+            if tx_out.script_pubkey.is_op_return() {
+                continue;
+            }
             let utxo_object_id = utxo::derive_utxo_id(&outpoint.into());
             let utxo_obj = self.binding_test.get_object(&utxo_object_id)?;
             ensure!(
@@ -104,12 +113,152 @@ impl BitcoinBlockTester {
                 utxo_state,
                 tx_out
             );
+            //Ensure every utxo's seals are correct
+            let seals = utxo_state.seals;
+            if !seals.is_empty() {
+                let inscription_obj_ids = seals
+                    .borrow(&MoveString::from(
+                        Inscription::type_tag().to_canonical_string(),
+                    ))
+                    .expect("Inscription seal not found");
+                for inscription_obj_id in inscription_obj_ids {
+                    let inscription_obj = self.binding_test.get_object(inscription_obj_id)?;
+                    ensure!(
+                        inscription_obj.is_some(),
+                        "Missing inscription object: {:?}",
+                        inscription_obj_id
+                    );
+                    let inscription = inscription_obj.unwrap().value_as::<Inscription>()?;
+                    ensure!(
+                        inscription.location.outpoint == outpoint.into(),
+                        "Inscription location not match: {:?}, {:?}",
+                        inscription,
+                        outpoint
+                    );
+                    ensure!(
+                        block_data.expect_inscriptions.contains_key(&inscription.id),
+                        "Inscription {:?} not in expect inscriptions",
+                        inscription,
+                    );
+                }
+            }
         }
         Ok(())
     }
 
     pub fn verify_inscriptions(&self) -> Result<()> {
-        //TODO verify inscription in state with ord rpc result.
+        ensure!(
+            self.executed_block.is_some(),
+            "No block executed, please execute block first"
+        );
+        let block_data = self.executed_block.as_ref().unwrap();
+        for (inscription_id, inscription_info) in block_data.expect_inscriptions.iter() {
+            let object_id = inscription_id.object_id();
+            let inscription_obj = self.binding_test.get_object(&object_id)?;
+            ensure!(
+                inscription_obj.is_some(),
+                "Missing inscription object: {:?}",
+                inscription_id
+            );
+            let inscription_obj = inscription_obj.unwrap();
+            let inscription = inscription_obj.value_as::<Inscription>()?;
+            let utxo_object_id = utxo::derive_utxo_id(&inscription.location.outpoint);
+            let utxo_obj = self.binding_test.get_object(&utxo_object_id)?;
+            ensure!(
+                utxo_obj.is_some(),
+                "Missing utxo object: {:?}",
+                inscription.location.outpoint
+            );
+            let utxo = utxo_obj.unwrap().value_as::<UTXO>()?;
+            let seal_obj_ids = utxo.seals.borrow(&MoveString::from(
+                Inscription::type_tag().to_canonical_string(),
+            ));
+            ensure!(
+                seal_obj_ids.is_some(),
+                "Missing inscription seal in utxo: {:?}",
+                utxo
+            );
+            ensure!(
+                seal_obj_ids.unwrap().contains(&object_id),
+                "Inscription seal not match: {:?}, {:?}",
+                seal_obj_ids,
+                object_id
+            );
+            //check the inscription with InscriptionInfo from ord RPC.
+
+            //Because the inscription info from RPC maybe tranfered, and location is changed,
+            //so we only compare the inscription which location same as inscribed location(no transfered).
+            if inscription_info.satpoint.outpoint.txid == utxo.txid {
+                ensure!(
+                    inscription_info.satpoint == inscription.location,
+                    "Inscription location not match, expected: {:?}, act: {:?}",
+                    inscription_info.satpoint,
+                    inscription.location
+                );
+                if let Some(address) = &inscription_info.address {
+                    let bitcoin_addr = BitcoinAddress::from_str(address)?;
+                    let rooch_addr: AccountAddress = bitcoin_addr.to_rooch_address().into();
+                    ensure!(
+                        rooch_addr == inscription_obj.owner(),
+                        "Inscription address not match, expected: {} {}, act: {:?}",
+                        address,
+                        rooch_addr,
+                        inscription_obj.owner()
+                    );
+                }
+            }
+
+            for charm in &inscription_info.charms {
+                match charm {
+                    Charm::Cursed => {
+                        ensure!(
+                            Charm::Cursed.is_set(inscription.charms),
+                            "Inscription should be cursed: {:?}",
+                            inscription
+                        );
+                        ensure!(
+                            inscription.is_curse,
+                            "Inscription is_cursed flag should be true  "
+                        );
+                    }
+                    Charm::Unbound => {
+                        ensure!(
+                            Charm::Unbound.is_set(inscription.charms),
+                            "Inscription should be unbound: {:?}",
+                            inscription
+                        );
+                    }
+                    Charm::Vindicated => {
+                        ensure!(
+                            Charm::Vindicated.is_set(inscription.charms),
+                            "Inscription should be vindicated: {:?}",
+                            inscription
+                        );
+                    }
+                    Charm::Burned => {
+                        // Inscription can be burned via transfer
+                        //ensure!(Charm::Burned.is_set(inscription.charms), "Inscription should be burned: {:?}", inscription);
+                    }
+                    Charm::Reinscription => {
+                        ensure!(
+                            Charm::Reinscription.is_set(inscription.charms),
+                            "Inscription should be reinscription: {:?}",
+                            inscription
+                        );
+                    }
+                    Charm::Lost => {
+                        ensure!(
+                            Charm::Lost.is_set(inscription.charms),
+                            "Inscription should be lost: {:?}",
+                            inscription
+                        );
+                    }
+                    _ => {
+                        //skip other charms
+                    }
+                }
+            }
+        }
         Ok(())
     }
 
@@ -120,9 +269,16 @@ impl BitcoinBlockTester {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct BlockData {
+    pub height: u64,
+    pub block: Block,
+    pub expect_inscriptions: BTreeMap<InscriptionID, InscriptionInfo>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BitcoinTesterGenesis {
     pub height: u64,
-    pub blocks: Vec<(usize, Block)>,
+    pub blocks: Vec<BlockData>,
     pub utxo_store_change: ObjectChange,
     pub network: RoochNetwork,
 }
@@ -147,15 +303,17 @@ impl BitcoinTesterGenesis {
 
 pub struct TesterGenesisBuilder {
     bitcoin_client: BitcoinClientProxy,
-    blocks: Vec<(usize, Block)>,
+    ord_client: OrdClient,
+    blocks: Vec<BlockData>,
     block_txids: HashSet<Txid>,
     utxo_store_change: ObjectChange,
 }
 
 impl TesterGenesisBuilder {
-    pub fn new(bitcoin_client: BitcoinClientProxy) -> Result<Self> {
+    pub fn new(bitcoin_client: BitcoinClientProxy, ord_client: OrdClient) -> Result<Self> {
         Ok(Self {
             bitcoin_client,
+            ord_client,
             blocks: vec![],
             block_txids: HashSet::new(),
             utxo_store_change: ObjectChange::meta(BitcoinUTXOStore::genesis_object().metadata),
@@ -173,12 +331,33 @@ impl TesterGenesisBuilder {
         if !self.blocks.is_empty() {
             let last_block = self.blocks.last().unwrap();
             ensure!(
-                last_block.0 < block_header_result.height,
+                last_block.height < (block_header_result.height as u64),
                 "Block height should be incremental from {} to {}",
-                last_block.0,
+                last_block.height,
                 block_header_result.height
             );
         }
+
+        let inscription_ids = self
+            .ord_client
+            .get_inscriptions_by_block(block_height)
+            .await?;
+        info!(
+            "Inscriptions count: {} in block {}",
+            inscription_ids.len(),
+            block_height
+        );
+
+        let mut expect_inscriptions = BTreeMap::new();
+        for inscription_id in inscription_ids {
+            let inscription_info = self
+                .ord_client
+                .get_inscription(&inscription_id)
+                .await?
+                .ok_or_else(|| anyhow!("Missing inscription: {:?}", inscription_id))?;
+            expect_inscriptions.insert(inscription_id, inscription_info);
+        }
+
         for tx in &block.txdata {
             self.block_txids.insert(tx.txid());
         }
@@ -195,6 +374,7 @@ impl TesterGenesisBuilder {
             .collect::<HashSet<_>>();
 
         let mut depdent_txs = HashMap::new();
+        info!("Get depdent_txs: {:?}", depdent_txids.len());
         for txid in depdent_txids {
             if txid == Txid::all_zeros() {
                 continue;
@@ -203,7 +383,6 @@ impl TesterGenesisBuilder {
             if self.block_txids.contains(&txid) {
                 continue;
             }
-            info!("Get tx: {:?}", txid);
             let tx = self.bitcoin_client.get_raw_transaction(txid).await?;
             depdent_txs.insert(txid, tx);
         }
@@ -246,15 +425,19 @@ impl TesterGenesisBuilder {
                     .add_field_change(ObjectChange::new_object(utxo_obj))?;
             }
         }
-        self.blocks.push((block_header_result.height, block));
+        self.blocks.push(BlockData {
+            height: block_height,
+            block,
+            expect_inscriptions,
+        });
         Ok(self)
     }
 
     pub async fn build(self) -> Result<BitcoinTesterGenesis> {
-        let block_height = self.blocks[0].0 as u64;
-        let timestamp_milliseconds = (self.blocks[0].1.header.time as u64) * 1000;
+        let block_height = self.blocks[0].height;
+        let timestamp_milliseconds = (self.blocks[0].block.header.time as u64) * 1000;
         let mut genesis_config = genesis_config::G_MAIN_CONFIG.clone();
-        genesis_config.bitcoin_block_hash = self.blocks[0].1.block_hash();
+        genesis_config.bitcoin_block_hash = self.blocks[0].block.block_hash();
         genesis_config.bitcoin_block_height = block_height;
         genesis_config.bitcoin_reorg_block_count = 0;
         genesis_config.timestamp = timestamp_milliseconds;

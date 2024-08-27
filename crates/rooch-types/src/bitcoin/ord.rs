@@ -24,7 +24,7 @@ use std::str::FromStr;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("ord");
 
-#[derive(PartialEq, Clone, Copy, Serialize, Deserialize, Hash, Eq)]
+#[derive(PartialEq, Clone, Copy, Hash, Eq, PartialOrd, Ord)]
 pub struct InscriptionID {
     pub txid: AccountAddress,
     pub index: u32,
@@ -75,6 +75,51 @@ impl Display for InscriptionID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let bitcoin_inscription_id: BitcoinInscriptionID = (*self).into();
         write!(f, "{}", bitcoin_inscription_id)
+    }
+}
+
+impl Serialize for InscriptionID {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        if serializer.is_human_readable() {
+            serializer.collect_str(self)
+        } else {
+            #[derive(Serialize)]
+            struct Value {
+                txid: AccountAddress,
+                index: u32,
+            }
+            Value {
+                txid: self.txid,
+                index: self.index,
+            }
+            .serialize(serializer)
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for InscriptionID {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        if deserializer.is_human_readable() {
+            let s = String::deserialize(deserializer)?;
+            Self::from_str(&s).map_err(serde::de::Error::custom)
+        } else {
+            #[derive(Deserialize)]
+            struct Value {
+                txid: AccountAddress,
+                index: u32,
+            }
+            let value = Value::deserialize(deserializer)?;
+            Ok(InscriptionID {
+                txid: value.txid,
+                index: value.index,
+            })
+        }
     }
 }
 
@@ -201,7 +246,7 @@ where
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Default)]
+#[derive(PartialEq, Clone, Serialize, Deserialize, Eq, Default)]
 pub struct InscriptionRecord {
     pub body: Vec<u8>,
     pub content_encoding: MoveOption<MoveString>,
@@ -214,6 +259,24 @@ pub struct InscriptionRecord {
     pub pointer: MoveOption<u64>,
     pub unrecognized_even_field: bool,
     pub rune: Option<u128>,
+}
+
+impl Debug for InscriptionRecord {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("InscriptionRecord")
+            .field("body(len)", &self.body.len())
+            .field("content_encoding", &self.content_encoding)
+            .field("content_type", &self.content_type)
+            .field("duplicate_field", &self.duplicate_field)
+            .field("incomplete_field", &self.incomplete_field)
+            .field("metadata", &self.metadata)
+            .field("metaprotocol", &self.metaprotocol)
+            .field("parents", &self.parents)
+            .field("pointer", &self.pointer)
+            .field("unrecognized_even_field", &self.unrecognized_even_field)
+            .field("rune", &self.rune)
+            .finish()
+    }
 }
 
 impl MoveStructType for InscriptionRecord {
@@ -274,7 +337,7 @@ impl MoveStructState for InscriptionStore {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Eq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Eq)]
 pub struct SatPoint {
     pub outpoint: OutPoint,
     pub offset: u64,
@@ -319,6 +382,58 @@ impl FromStr for SatPoint {
             },
             offset,
         })
+    }
+}
+
+impl Display for SatPoint {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let txid = bitcoin::Txid::from_address(self.outpoint.txid);
+        write!(f, "{}:{}:{}", txid, self.outpoint.vout, self.offset)
+    }
+}
+
+impl Serialize for SatPoint {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        if serializer.is_human_readable() {
+            serializer.collect_str(&self)
+        } else {
+            #[derive(Serialize)]
+            struct Value {
+                outpoint: OutPoint,
+                offset: u64,
+            }
+            Value {
+                outpoint: self.outpoint.clone(),
+                offset: self.offset,
+            }
+            .serialize(serializer)
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for SatPoint {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        if deserializer.is_human_readable() {
+            let s = String::deserialize(deserializer)?;
+            Self::from_str(&s).map_err(serde::de::Error::custom)
+        } else {
+            #[derive(Deserialize)]
+            struct Value {
+                outpoint: OutPoint,
+                offset: u64,
+            }
+            let value = Value::deserialize(deserializer)?;
+            Ok(SatPoint {
+                outpoint: value.outpoint,
+                offset: value.offset,
+            })
+        }
     }
 }
 
@@ -368,7 +483,7 @@ impl<'a> ModuleBinding<'a> for OrdModule<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy, Hash, Eq)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord)]
 pub struct BitcoinInscriptionID {
     pub txid: bitcoin::Txid,
     pub index: u32,
@@ -399,6 +514,12 @@ impl From<InscriptionID> for BitcoinInscriptionID {
 }
 
 impl Display for BitcoinInscriptionID {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}i{}", self.txid, self.index)
+    }
+}
+
+impl Debug for BitcoinInscriptionID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}i{}", self.txid, self.index)
     }

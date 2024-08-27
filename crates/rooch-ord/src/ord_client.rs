@@ -87,15 +87,3 @@ impl OrdClient {
             .await?)
     }
 }
-
-#[tokio::test]
-async fn test() {
-    let ord_client = OrdClient::new("http://localhost:8080".to_string());
-    let inscriptions = ord_client.get_inscriptions_by_block(790964).await.unwrap(); //.http_client.get("http://localhost:8080/inscriptions/block/790964/0").header(header::ACCEPT, "application/json").send().await.unwrap();
-                                                                                    //println!("{}",resp.clone().text().await.unwrap());
-                                                                                    //let inscriptions = resp.json::<Inscriptions>().await.unwrap();
-    println!("{:?}", inscriptions);
-    let id = inscriptions[0].clone();
-    let inscription = ord_client.get_inscription(&id).await.unwrap();
-    println!("{:?}", inscription);
-}
