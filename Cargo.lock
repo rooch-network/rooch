@@ -4844,6 +4844,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "hyper-tls"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "70206fc6890eaca9fde8a0bf71caa2ddfc9fe045ac9e5c70df101a7dbde866e0"
+dependencies = [
+ "bytes",
+ "http-body-util",
+ "hyper 1.3.1",
+ "hyper-util",
+ "native-tls",
+ "tokio",
+ "tokio-native-tls",
+ "tower-service",
+]
+
+[[package]]
 name = "hyper-util"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7510,6 +7526,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "ordinals"
+version = "0.0.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb572a6faac38e826e5a6e8a143d6104d47ce75757a93dfd31912a0b91cada8d"
+dependencies = [
+ "bitcoin 0.30.2",
+ "derive_more",
+ "serde 1.0.208",
+ "serde_with 3.9.0",
+ "thiserror",
+]
+
+[[package]]
 name = "os_str_bytes"
 version = "6.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8862,7 +8891,7 @@ dependencies = [
  "http-body 0.4.6",
  "hyper 0.14.28",
  "hyper-rustls 0.24.2",
- "hyper-tls",
+ "hyper-tls 0.5.0",
  "ipnet",
  "js-sys",
  "log",
@@ -8902,18 +8931,22 @@ checksum = "566cafdd92868e0939d3fb961bd0dc25fcfaaed179291093b3d43e6b3150ea10"
 dependencies = [
  "base64 0.22.1",
  "bytes",
+ "encoding_rs",
  "futures-core",
  "futures-util",
+ "h2 0.4.5",
  "http 1.1.0",
  "http-body 1.0.0",
  "http-body-util",
  "hyper 1.3.1",
  "hyper-rustls 0.26.0",
+ "hyper-tls 0.6.0",
  "hyper-util",
  "ipnet",
  "js-sys",
  "log",
  "mime",
+ "native-tls",
  "once_cell",
  "percent-encoding",
  "pin-project-lite",
@@ -8924,7 +8957,9 @@ dependencies = [
  "serde_json",
  "serde_urlencoded",
  "sync_wrapper 0.1.2",
+ "system-configuration",
  "tokio",
+ "tokio-native-tls",
  "tokio-rustls 0.25.0",
  "tokio-util",
  "tower-service",
@@ -9424,6 +9459,7 @@ dependencies = [
  "rooch-genesis",
  "rooch-integration-test-runner",
  "rooch-key",
+ "rooch-ord",
  "rooch-relayer",
  "rooch-types",
  "serde 1.0.208",
@@ -9618,6 +9654,32 @@ dependencies = [
  "rooch-rpc-api",
  "serde 1.0.208",
  "serde_json",
+]
+
+[[package]]
+name = "rooch-ord"
+version = "0.6.9"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bitcoin 0.31.2",
+ "bitcoincore-rpc",
+ "chrono",
+ "coerce",
+ "ethers",
+ "hex",
+ "metrics",
+ "move-core-types",
+ "moveos-types",
+ "ordinals",
+ "prometheus",
+ "reqwest 0.12.4",
+ "rooch-types",
+ "serde 1.0.208",
+ "serde_json",
+ "tokio",
+ "tonic",
+ "tracing",
 ]
 
 [[package]]
@@ -10716,6 +10778,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_with"
+version = "3.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "69cecfa94848272156ea67b2b1a53f20fc7bc638c4a46d2f8abde08f05f4b857"
+dependencies = [
+ "base64 0.22.1",
+ "chrono",
+ "hex",
+ "indexmap 1.9.3",
+ "indexmap 2.2.6",
+ "serde 1.0.208",
+ "serde_derive",
+ "serde_json",
+ "serde_with_macros 3.9.0",
+ "time",
+]
+
+[[package]]
 name = "serde_with_macros"
 version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10732,6 +10812,18 @@ name = "serde_with_macros"
 version = "2.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "881b6f881b17d13214e5d494c939ebab463d01264ce1811e9d4ac3a882e7695f"
+dependencies = [
+ "darling 0.20.9",
+ "proc-macro2 1.0.86",
+ "quote 1.0.37",
+ "syn 2.0.65",
+]
+
+[[package]]
+name = "serde_with_macros"
+version = "3.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8fee4991ef4f274617a51ad4af30519438dacb2f56ac773b08a1922ff743350"
 dependencies = [
  "darling 0.20.9",
  "proc-macro2 1.0.86",
