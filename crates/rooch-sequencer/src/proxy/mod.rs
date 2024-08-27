@@ -40,7 +40,7 @@ impl SequencerProxy {
             .await?
     }
 
-    pub async fn get_tx_hashs(&self, tx_orders: Vec<u64>) -> Result<Vec<Option<H256>>> {
+    pub async fn get_tx_hashes(&self, tx_orders: Vec<u64>) -> Result<Vec<Option<H256>>> {
         self.actor.send(GetTxHashsMessage { tx_orders }).await?
     }
 

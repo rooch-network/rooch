@@ -32,9 +32,9 @@ pub trait TransactionStore {
         tx_hashes: Vec<H256>,
     ) -> Result<Vec<Option<LedgerTransaction>>>;
 
-    fn get_tx_hashs(&self, tx_orders: Vec<u64>) -> Result<Vec<Option<H256>>>;
+    fn get_tx_hashes(&self, tx_orders: Vec<u64>) -> Result<Vec<Option<H256>>>;
 
-    fn get_tx_hashs_by_order(&self, cursor: Option<u64>, limit: u64) -> Result<Vec<Option<H256>>> {
+    fn get_tx_hashes_by_order(&self, cursor: Option<u64>, limit: u64) -> Result<Vec<Option<H256>>> {
         let start = cursor.unwrap_or(0);
         let end = start + limit;
 
@@ -44,7 +44,7 @@ pub trait TransactionStore {
         } else {
             (start..end).collect()
         };
-        self.get_tx_hashs(tx_orders)
+        self.get_tx_hashes(tx_orders)
     }
 }
 
@@ -83,7 +83,7 @@ impl TransactionDBStore {
         self.tx_store.multiple_get(tx_hashes)
     }
 
-    pub fn get_tx_hashs(&self, tx_orders: Vec<u64>) -> Result<Vec<Option<H256>>> {
+    pub fn get_tx_hashes(&self, tx_orders: Vec<u64>) -> Result<Vec<Option<H256>>> {
         self.tx_sequence_info_mapping_store.multiple_get(tx_orders)
     }
 }

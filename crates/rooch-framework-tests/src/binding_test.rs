@@ -33,6 +33,7 @@ use std::path::Path;
 use std::sync::Arc;
 use tempfile::TempDir;
 use tokio::runtime::Runtime;
+use tracing::info;
 
 pub fn get_data_dir() -> DataDirPath {
     match env::var("ROOCH_TEST_DATA_DIR") {
@@ -139,7 +140,7 @@ impl RustBindingTest {
     }
 
     //TODO let the module bundle to execute the function
-    pub fn execute(&mut self, tx: RoochTransaction) -> Result<()> {
+    pub fn execute(&mut self, tx: RoochTransaction) -> Result<ExecuteTransactionResult> {
         let execute_result = self.execute_as_result(tx)?;
         if execute_result.transaction_info.status != KeptVMStatus::Executed {
             bail!(
@@ -147,14 +148,22 @@ impl RustBindingTest {
                 execute_result.transaction_info.status
             );
         }
-        Ok(())
+        Ok(execute_result)
     }
 
     pub fn execute_l1_block_and_tx(&mut self, l1_block: L1BlockWithBody) -> Result<()> {
         let l1_txs = self.execute_l1_block(l1_block.clone())?;
+        let tx_len = l1_txs.len();
+        let mut total_gas_used = 0;
         for l1_tx in l1_txs {
-            self.execute_l1_tx(l1_tx)?;
+            let resut = self.execute_l1_tx(l1_tx)?;
+            total_gas_used += resut.output.gas_used;
         }
+        let avg_gas_used = total_gas_used / tx_len as u64;
+        info!(
+            "execute l1 block total gas used: {}, avg gas used: {}",
+            total_gas_used, avg_gas_used
+        );
         Ok(())
     }
 
@@ -186,7 +195,7 @@ impl RustBindingTest {
         }
     }
 
-    pub fn execute_l1_tx(&mut self, l1_tx: L1Transaction) -> Result<()> {
+    pub fn execute_l1_tx(&mut self, l1_tx: L1Transaction) -> Result<ExecuteTransactionResult> {
         let verified_tx = self.executor.validate_l1_tx(l1_tx)?;
         self.execute_verified_tx(verified_tx)
     }
@@ -196,7 +205,10 @@ impl RustBindingTest {
         self.execute_verified_tx_as_result(verified_tx)
     }
 
-    pub fn execute_verified_tx(&mut self, tx: VerifiedMoveOSTransaction) -> Result<()> {
+    pub fn execute_verified_tx(
+        &mut self,
+        tx: VerifiedMoveOSTransaction,
+    ) -> Result<ExecuteTransactionResult> {
         let execute_result = self.execute_verified_tx_as_result(tx)?;
         if execute_result.transaction_info.status != KeptVMStatus::Executed {
             bail!(
@@ -204,7 +216,7 @@ impl RustBindingTest {
                 execute_result.transaction_info.status
             );
         }
-        Ok(())
+        Ok(execute_result)
     }
 
     pub fn execute_verified_tx_as_result(

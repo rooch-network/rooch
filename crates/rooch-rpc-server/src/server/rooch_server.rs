@@ -36,7 +36,7 @@ use rooch_rpc_api::{
     jsonrpc_types::BytesView,
     RpcError, RpcResult,
 };
-use rooch_types::indexer::state::IndexerStateID;
+use rooch_types::indexer::state::{IndexerStateID, ObjectStateType};
 use rooch_types::transaction::{RoochTransaction, RoochTransactionData, TransactionWithInfo};
 use std::cmp::min;
 use std::str::FromStr;
@@ -128,7 +128,10 @@ impl RoochAPIServer for RoochServer {
                     .iter()
                     .map(|e| e.event_id.clone())
                     .collect();
-                let annotated_events = self.rpc_service.get_events_by_event_ids(event_ids).await?;
+                let annotated_events = self
+                    .rpc_service
+                    .get_annotated_events_by_event_ids(event_ids)
+                    .await?;
                 let event_views = annotated_events
                     .into_iter()
                     .map(|event| event.map(EventView::from))
@@ -523,9 +526,9 @@ impl RoochAPIServer for RoochServer {
             (start..end).collect::<Vec<_>>()
         };
 
-        let tx_hashs = self.rpc_service.get_tx_hashs(tx_orders.clone()).await?;
+        let tx_hashes = self.rpc_service.get_tx_hashes(tx_orders.clone()).await?;
 
-        let mut hash_order_pair = tx_hashs
+        let mut hash_order_pair = tx_hashes
             .into_iter()
             .zip(tx_orders)
             .filter_map(|(h, o)| h.map(|h| (h, o)))
@@ -584,7 +587,7 @@ impl RoochAPIServer for RoochServer {
         let cursor: Option<IndexerStateID> = cursor.map(Into::into);
         let mut data = self
             .aggregate_service
-            .get_balances(account_addr.into(), cursor, limit_of + 1)
+            .get_balances(account_addr.into(), cursor.clone(), limit_of + 1)
             .await?;
 
         let has_next_page = data.len() > limit_of;
@@ -593,7 +596,7 @@ impl RoochAPIServer for RoochServer {
         let next_cursor = data
             .last()
             .cloned()
-            .map_or(cursor, |(key, _balance_info)| key);
+            .map_or(cursor.clone(), |(key, _balance_info)| key);
 
         Ok(BalanceInfoPageView {
             data: data
@@ -691,18 +694,31 @@ impl RoochAPIServer for RoochServer {
         let query_option = query_option.unwrap_or_default();
         let descending_order = query_option.descending;
 
-        let mut data = self
-            .rpc_service
-            .query_events(
-                filter.into(),
-                cursor.map(Into::into),
-                limit_of + 1,
-                descending_order,
-            )
-            .await?
-            .into_iter()
-            .map(IndexerEventView::from)
-            .collect::<Vec<_>>();
+        let mut data = if query_option.decode {
+            self.rpc_service
+                .query_annotated_events(
+                    filter.into(),
+                    cursor.map(Into::into),
+                    limit_of + 1,
+                    descending_order,
+                )
+                .await?
+                .into_iter()
+                .map(IndexerEventView::from)
+                .collect::<Vec<_>>()
+        } else {
+            self.rpc_service
+                .query_events(
+                    filter.into(),
+                    cursor.map(Into::into),
+                    limit_of + 1,
+                    descending_order,
+                )
+                .await?
+                .into_iter()
+                .map(IndexerEventView::from)
+                .collect::<Vec<_>>()
+        };
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
@@ -744,6 +760,7 @@ impl RoochAPIServer for RoochServer {
                 descending_order,
                 query_option.decode,
                 query_option.show_display,
+                ObjectStateType::ObjectState,
             )
             .await?;
 
