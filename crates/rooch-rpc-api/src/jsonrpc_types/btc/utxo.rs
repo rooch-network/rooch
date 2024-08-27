@@ -3,14 +3,13 @@
 
 use crate::jsonrpc_types::btc::transaction::{hex_to_txid, TxidView};
 use crate::jsonrpc_types::{
-    H256View, IndexerObjectStateView, IndexerStateIDView, ObjectIDView, ObjectMetaView, StrView,
-    UnitedAddressView,
+    H256View, IndexerObjectStateView, IndexerStateIDView, ObjectIDVecView, ObjectIDView,
+    ObjectMetaView, StrView, UnitedAddressView,
 };
 use anyhow::Result;
 use bitcoin::hashes::Hash;
 use bitcoin::Txid;
 
-use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::{MoveState, MoveStructType};
 use rooch_types::bitcoin::types::OutPoint;
 use rooch_types::bitcoin::utxo::{self, UTXO};
@@ -48,8 +47,8 @@ pub enum UTXOFilterView {
     Owner(UnitedAddressView),
     /// Query by bitcoin outpoint, represent by bitcoin txid and vout
     OutPoint { txid: String, vout: u32 },
-    /// Query by object id.
-    ObjectId(ObjectID),
+    /// Query by object ids.
+    ObjectId(ObjectIDVecView),
     /// Query all.
     All,
 }
@@ -69,7 +68,9 @@ impl UTXOFilterView {
                 let utxo_id = utxo::derive_utxo_id(&outpoint);
                 ObjectStateFilter::ObjectId(vec![utxo_id])
             }
-            UTXOFilterView::ObjectId(object_id) => ObjectStateFilter::ObjectId(vec![object_id]),
+            UTXOFilterView::ObjectId(object_id_vec_view) => {
+                ObjectStateFilter::ObjectId(object_id_vec_view.into())
+            }
             UTXOFilterView::All => ObjectStateFilter::ObjectType(UTXO::struct_tag()),
         })
     }

@@ -11,7 +11,7 @@ use rooch_framework_tests::binding_test;
 use rooch_indexer::indexer_reader::IndexerReader;
 use rooch_indexer::store::traits::IndexerStoreTrait;
 use rooch_indexer::IndexerStore;
-use rooch_types::indexer::state::{IndexerObjectState, ObjectStateFilter};
+use rooch_types::indexer::state::{IndexerObjectState, ObjectStateFilter, ObjectStateType};
 use std::cell::RefCell;
 use tokio::runtime::Runtime;
 
@@ -74,11 +74,12 @@ fn bench_read_with_reader(
 
                         rt.borrow().block_on(async {
                             let result1 = indexer_reader
-                                .query_object_states_with_filter(
+                                .query_object_ids_with_filter(
                                     object_state_filter1,
                                     None,
                                     50,
                                     true,
+                                    ObjectStateType::ObjectState,
                                 )
                                 .unwrap();
                             assert!(!result1.is_empty());

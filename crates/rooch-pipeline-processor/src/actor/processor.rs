@@ -72,7 +72,7 @@ impl PipelineProcessorActor {
         for order in (1..=last_order).rev() {
             let tx_hash = self
                 .sequencer
-                .get_tx_hashs(vec![order])
+                .get_tx_hashes(vec![order])
                 .await?
                 .pop()
                 .flatten()

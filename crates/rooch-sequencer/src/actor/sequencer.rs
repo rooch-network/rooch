@@ -216,7 +216,7 @@ impl Handler<GetTxHashsMessage> for SequencerActor {
         _ctx: &mut ActorContext,
     ) -> Result<Vec<Option<H256>>> {
         let GetTxHashsMessage { tx_orders } = msg;
-        self.rooch_store.get_tx_hashs(tx_orders)
+        self.rooch_store.get_tx_hashes(tx_orders)
     }
 }
 

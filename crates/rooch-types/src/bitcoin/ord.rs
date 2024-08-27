@@ -295,6 +295,33 @@ impl MoveStructState for SatPoint {
     }
 }
 
+impl FromStr for SatPoint {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let mut parts = s.split(':');
+        let txid = parts
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("missing txid"))?;
+        let vout = parts
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("missing vout"))?;
+        let offset = parts
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("missing offset"))?;
+        let txid = bitcoin::Txid::from_str(txid)?;
+        let vout = u32::from_str(vout)?;
+        let offset = u64::from_str(offset)?;
+        Ok(SatPoint {
+            outpoint: OutPoint {
+                txid: txid.into_address(),
+                vout,
+            },
+            offset,
+        })
+    }
+}
+
 /// Rust bindings for BitcoinMove ord module
 pub struct OrdModule<'a> {
     caller: &'a dyn MoveFunctionCaller,

@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{
-    ConvertL2TransactionData, DryRunTransactionResult, GetEventsByEventHandleMessage,
-    GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage,
-    ListStatesMessage, RefreshStateMessage, ValidateL1BlockMessage, ValidateL1TxMessage,
+    ConvertL2TransactionData, DryRunTransactionResult, GetAnnotatedEventsByEventIDsMessage,
+    GetEventsByEventHandleMessage, GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage,
+    ListAnnotatedStatesMessage, ListStatesMessage, RefreshStateMessage, ValidateL1BlockMessage,
+    ValidateL1TxMessage,
 };
 use crate::actor::reader_executor::ReaderExecutorActor;
 use crate::actor::{
@@ -194,10 +195,19 @@ impl ExecutorProxy {
             .await?
     }
 
-    pub async fn get_events_by_event_ids(
+    pub async fn get_annotated_events_by_event_ids(
         &self,
         event_ids: Vec<EventID>,
     ) -> Result<Vec<Option<AnnotatedEvent>>> {
+        self.reader_actor
+            .send(GetAnnotatedEventsByEventIDsMessage { event_ids })
+            .await?
+    }
+
+    pub async fn get_events_by_event_ids(
+        &self,
+        event_ids: Vec<EventID>,
+    ) -> Result<Vec<Option<Event>>> {
         self.reader_actor
             .send(GetEventsByEventIDsMessage { event_ids })
             .await?

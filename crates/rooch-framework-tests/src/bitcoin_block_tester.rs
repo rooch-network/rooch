@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::binding_test::RustBindingTest;
-use anyhow::{anyhow, ensure, Result};
-use bitcoin::{hashes::Hash, Block, BlockHash, Txid};
+use anyhow::{anyhow, bail, ensure, Result};
+use bitcoin::{hashes::Hash, Block, OutPoint, TxOut, Txid};
 use framework_builder::stdlib_version::StdlibVersion;
 use moveos_types::{
     moveos_std::{
@@ -17,7 +17,7 @@ use rooch_relayer::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use rooch_types::{
     bitcoin::{
         ord::InscriptionID,
-        utxo::{BitcoinUTXOStore, UTXO},
+        utxo::{self, BitcoinUTXOStore, UTXO},
     },
     genesis_config,
     into_address::IntoAddress,
@@ -37,6 +37,7 @@ use tracing::{debug, info};
 pub struct BitcoinBlockTester {
     genesis: BitcoinTesterGenesis,
     binding_test: RustBindingTest,
+    executed_block: Option<Block>,
 }
 
 impl BitcoinBlockTester {
@@ -49,19 +50,61 @@ impl BitcoinBlockTester {
         Ok(Self {
             genesis,
             binding_test,
+            executed_block: None,
         })
     }
 
+    /// Execute one block from genesis blocks
     pub fn execute(&mut self) -> Result<()> {
-        for (height, block) in &self.genesis.blocks {
-            let l1_block = L1BlockWithBody::new_bitcoin_block(*height as u64, block.clone());
-            self.binding_test.execute_l1_block_and_tx(l1_block)?;
+        if self.genesis.blocks.is_empty() {
+            bail!("No block to execute");
         }
+        let (height, block) = self.genesis.blocks.remove(0);
+        info!("Execute block: {}", height);
+        let l1_block = L1BlockWithBody::new_bitcoin_block(height as u64, block.clone());
+        self.binding_test.execute_l1_block_and_tx(l1_block)?;
+        self.executed_block = Some(block);
         Ok(())
     }
 
     pub fn verify_utxo(&self) -> Result<()> {
-        //TODO verify utxo in state with block output
+        ensure!(
+            self.executed_block.is_some(),
+            "No block executed, please execute block first"
+        );
+        let mut utxo_set = HashMap::<OutPoint, TxOut>::new();
+        let block = self.executed_block.as_ref().unwrap();
+        for tx in block.txdata.as_slice() {
+            let txid = tx.txid();
+            for (index, tx_out) in tx.output.iter().enumerate() {
+                let vout = index as u32;
+                let out_point = OutPoint::new(txid, vout);
+                utxo_set.insert(out_point, tx_out.clone());
+            }
+            //remove spent utxo
+            for tx_in in tx.input.iter() {
+                utxo_set.remove(&tx_in.previous_output);
+            }
+        }
+
+        for (outpoint, tx_out) in utxo_set.into_iter() {
+            let utxo_object_id = utxo::derive_utxo_id(&outpoint.into());
+            let utxo_obj = self.binding_test.get_object(&utxo_object_id)?;
+            ensure!(
+                utxo_obj.is_some(),
+                "Missing utxo object: {}, {}",
+                utxo_object_id,
+                outpoint
+            );
+            let utxo_obj = utxo_obj.unwrap();
+            let utxo_state = utxo_obj.value_as::<UTXO>()?;
+            ensure!(
+                utxo_state.value == tx_out.value.to_sat(),
+                "UTXO not match: {:?}, {:?}",
+                utxo_state,
+                tx_out
+            );
+        }
         Ok(())
     }
 
@@ -119,13 +162,14 @@ impl TesterGenesisBuilder {
         })
     }
 
-    pub async fn add_block(mut self, block_hash: BlockHash) -> Result<Self> {
+    pub async fn add_block(mut self, block_height: u64) -> Result<Self> {
+        let block_hash = self.bitcoin_client.get_block_hash(block_height).await?;
         let block = self.bitcoin_client.get_block(block_hash).await?;
         let block_header_result = self
             .bitcoin_client
             .get_block_header_info(block_hash)
             .await?;
-        debug!("Add block: {:?}", block_header_result);
+        info!("Add block: {:?}", block_header_result);
         if !self.blocks.is_empty() {
             let last_block = self.blocks.last().unwrap();
             ensure!(
@@ -159,7 +203,7 @@ impl TesterGenesisBuilder {
             if self.block_txids.contains(&txid) {
                 continue;
             }
-            debug!("Get tx: {:?}", txid);
+            info!("Get tx: {:?}", txid);
             let tx = self.bitcoin_client.get_raw_transaction(txid).await?;
             depdent_txs.insert(txid, tx);
         }
@@ -193,7 +237,7 @@ impl TesterGenesisBuilder {
                     SimpleMultiMap::create(),
                 );
                 let object_id = utxo.object_id();
-                debug!("Add utxo: {}, {:?}", object_id, utxo);
+                info!("Add utxo: {}, {:?}", object_id, utxo);
                 let mut object_meta = ObjectMeta::genesis_meta(object_id, UTXO::type_tag());
                 object_meta.owner = rooch_pre_output.recipient_address.to_rooch_address().into();
                 let utxo_obj = ObjectState::new_with_struct(object_meta, utxo)?;
