@@ -3,7 +3,7 @@
 
 use crate::binding_test::RustBindingTest;
 use anyhow::{anyhow, bail, ensure, Result};
-use bitcoin::{hashes::Hash, Block, TxOut, Txid, OutPoint};
+use bitcoin::{hashes::Hash, Block, OutPoint, TxOut, Txid};
 use framework_builder::stdlib_version::StdlibVersion;
 use moveos_types::{
     moveos_std::{
