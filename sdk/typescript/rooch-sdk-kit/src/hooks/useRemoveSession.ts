@@ -34,19 +34,18 @@ export function useRemoveSession({
   const setCurrentSession = useSessionStore((state) => state.setCurrentSession)
   const currentSession = useCurrentSession()
   const client = useRoochClient()
-  const curSessionKey = useCurrentSession()
 
   return useMutation({
     mutationKey: roochMutationKeys.removeSession(mutationKey),
     mutationFn: async (args) => {
       try {
-        if (!curSessionKey) {
+        if (!currentSession) {
           return
         }
 
         const result = await client.removeSession({
           authKey: args.authKey,
-          signer: curSessionKey,
+          signer: currentSession,
         })
 
         if (result) {
