@@ -11,7 +11,6 @@
 -  [Function `new`](#0x3_oracle_meta_new)
 -  [Function `add_simple_oracle`](#0x3_oracle_meta_add_simple_oracle)
 -  [Function `median`](#0x3_oracle_meta_median)
--  [Function `quick_sort`](#0x3_oracle_meta_quick_sort)
 -  [Function `data`](#0x3_oracle_meta_data)
 -  [Function `threshold`](#0x3_oracle_meta_threshold)
 -  [Function `time_window_ms`](#0x3_oracle_meta_time_window_ms)
@@ -23,14 +22,11 @@
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="">0x1::type_name</a>;
-<b>use</b> <a href="">0x1::u256</a>;
 <b>use</b> <a href="">0x1::vector</a>;
-<b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::sort</a>;
 <b>use</b> <a href="oracle.md#0x3_oracle">0x3::oracle</a>;
 <b>use</b> <a href="oracle_data.md#0x3_oracle_data">0x3::oracle_data</a>;
-<b>use</b> <a href="oracle_decimal_value.md#0x3_oracle_decimal_value">0x3::oracle_decimal_value</a>;
 </code></pre>
 
 
@@ -110,17 +106,6 @@ take the median value
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="oracle_meta.md#0x3_oracle_meta_median">median</a>&lt;T: <b>copy</b>, drop&gt;(meta_oracle: <a href="oracle_meta.md#0x3_oracle_meta_MetaOracle">oracle_meta::MetaOracle</a>&lt;T&gt;): <a href="oracle_meta.md#0x3_oracle_meta_TrustedData">oracle_meta::TrustedData</a>&lt;T&gt;
-</code></pre>
-
-
-
-<a name="0x3_oracle_meta_quick_sort"></a>
-
-## Function `quick_sort`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="oracle_meta.md#0x3_oracle_meta_quick_sort">quick_sort</a>&lt;T: <b>copy</b>, drop&gt;(data: <a href="">vector</a>&lt;T&gt;): <a href="">vector</a>&lt;T&gt;
 </code></pre>
 
 

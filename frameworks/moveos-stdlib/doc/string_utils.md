@@ -116,7 +116,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_parse_u256_option">parse_u256_option</a>(s: &<a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;u256&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_parse_u256_option">parse_u256_option</a>(s: &<a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="">u256</a>&gt;
 </code></pre>
 
 
@@ -127,7 +127,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_parse_u256">parse_u256</a>(s: &<a href="_String">string::String</a>): u256
+<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_parse_u256">parse_u256</a>(s: &<a href="_String">string::String</a>): <a href="">u256</a>
 </code></pre>
 
 
@@ -138,7 +138,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_parse_decimal_option">parse_decimal_option</a>(s: &<a href="_String">string::String</a>, decimal: u64): <a href="_Option">option::Option</a>&lt;u256&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_parse_decimal_option">parse_decimal_option</a>(s: &<a href="_String">string::String</a>, decimal: u64): <a href="_Option">option::Option</a>&lt;<a href="">u256</a>&gt;
 </code></pre>
 
 
@@ -149,7 +149,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_parse_decimal">parse_decimal</a>(s: &<a href="_String">string::String</a>, decimal: u64): u256
+<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_parse_decimal">parse_decimal</a>(s: &<a href="_String">string::String</a>, decimal: u64): <a href="">u256</a>
 </code></pre>
 
 
@@ -182,7 +182,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_to_string_u256">to_string_u256</a>(n: u256): <a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_to_string_u256">to_string_u256</a>(n: <a href="">u256</a>): <a href="_String">string::String</a>
 </code></pre>
 
 
