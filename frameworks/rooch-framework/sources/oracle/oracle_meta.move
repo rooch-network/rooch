@@ -18,8 +18,8 @@ module rooch_framework::oracle_meta {
     use moveos_std::decimal_value::DecimalValue;
 
 
-    const EValidDataSizeLessThanThreshold: u64 = 0;
-    const EUnsupportedDataType: u64 = 1;
+    const ErrorValidDataSizeLessThanThreshold: u64 = 0;
+    const ErrorUnsupportedDataType: u64 = 1;
 
     struct MetaOracle<T> {
         oracle_data: vector<Option<Data<T>>>,
@@ -70,7 +70,7 @@ module rooch_framework::oracle_meta {
                 };
             };
         };
-        assert!(vector::length(&values) >= threshold, EValidDataSizeLessThanThreshold);
+        assert!(vector::length(&values) >= threshold, ErrorValidDataSizeLessThanThreshold);
         (values, oracles)
     }
 

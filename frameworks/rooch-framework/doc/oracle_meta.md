@@ -58,20 +58,20 @@
 ## Constants
 
 
-<a name="0x3_oracle_meta_EUnsupportedDataType"></a>
+<a name="0x3_oracle_meta_ErrorUnsupportedDataType"></a>
 
 
 
-<pre><code><b>const</b> <a href="oracle_meta.md#0x3_oracle_meta_EUnsupportedDataType">EUnsupportedDataType</a>: u64 = 1;
+<pre><code><b>const</b> <a href="oracle_meta.md#0x3_oracle_meta_ErrorUnsupportedDataType">ErrorUnsupportedDataType</a>: u64 = 1;
 </code></pre>
 
 
 
-<a name="0x3_oracle_meta_EValidDataSizeLessThanThreshold"></a>
+<a name="0x3_oracle_meta_ErrorValidDataSizeLessThanThreshold"></a>
 
 
 
-<pre><code><b>const</b> <a href="oracle_meta.md#0x3_oracle_meta_EValidDataSizeLessThanThreshold">EValidDataSizeLessThanThreshold</a>: u64 = 0;
+<pre><code><b>const</b> <a href="oracle_meta.md#0x3_oracle_meta_ErrorValidDataSizeLessThanThreshold">ErrorValidDataSizeLessThanThreshold</a>: u64 = 0;
 </code></pre>
 
 

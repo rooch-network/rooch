@@ -15,8 +15,8 @@ module rooch_framework::oracle {
 
     use rooch_framework::oracle_data::{Self, Data};
 
-    const ESenderNotOracle: u64 = 0;
-    const ETickerNotExists: u64 = 1;
+    const ErrorSenderNotOracle: u64 = 0;
+    const ErrorTickerNotExists: u64 = 1;
 
     struct TablePlaceholder has key {
         _placeholder: bool,
@@ -80,7 +80,7 @@ module rooch_framework::oracle {
         identifier: String,
     ) {
         let oracle = object::borrow_mut(oracle_obj);
-        assert!(oracle.address == sender(), ESenderNotOracle);
+        assert!(oracle.address == sender(), ErrorSenderNotOracle);
 
         let sequence_number = if (object::contains_field(&oracle.id, ticker)) {
             let old_data: StoredData<T> = object::remove_field(&mut oracle.id, ticker);
@@ -104,8 +104,8 @@ module rooch_framework::oracle {
         archival_key: K,
     ) {
         let oracle = object::borrow_mut(oracle_obj);
-        assert!(oracle.address == sender(), ESenderNotOracle);
-        assert!(object::contains_field(&oracle.id, ticker), ETickerNotExists);
+        assert!(oracle.address == sender(), ErrorSenderNotOracle);
+        assert!(object::contains_field(&oracle.id, ticker), ErrorTickerNotExists);
 
         let latest_data: StoredData<V> = *object::borrow_mut_field(&mut oracle.id, ticker);
 

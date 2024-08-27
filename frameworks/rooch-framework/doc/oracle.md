@@ -65,20 +65,20 @@
 ## Constants
 
 
-<a name="0x3_oracle_ESenderNotOracle"></a>
+<a name="0x3_oracle_ErrorSenderNotOracle"></a>
 
 
 
-<pre><code><b>const</b> <a href="oracle.md#0x3_oracle_ESenderNotOracle">ESenderNotOracle</a>: u64 = 0;
+<pre><code><b>const</b> <a href="oracle.md#0x3_oracle_ErrorSenderNotOracle">ErrorSenderNotOracle</a>: u64 = 0;
 </code></pre>
 
 
 
-<a name="0x3_oracle_ETickerNotExists"></a>
+<a name="0x3_oracle_ErrorTickerNotExists"></a>
 
 
 
-<pre><code><b>const</b> <a href="oracle.md#0x3_oracle_ETickerNotExists">ETickerNotExists</a>: u64 = 1;
+<pre><code><b>const</b> <a href="oracle.md#0x3_oracle_ErrorTickerNotExists">ErrorTickerNotExists</a>: u64 = 1;
 </code></pre>
 
 
