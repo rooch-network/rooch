@@ -2,6 +2,8 @@
 module moveos_std::compare {
     use std::vector;
     use std::type_name;
+    use std::u256;
+    use moveos_std::decimal_value::DecimalValue;
 
     use moveos_std::bcs;
 
@@ -95,7 +97,24 @@ module moveos_std::compare {
             } else {
                 return LESS_THAN
             }
-        }else {
+        } else if (t == type_name::get<DecimalValue>()) {
+            let a_value = bcs::peel_u64(&mut a);
+            let a_decimal = bcs::peel_u8(&mut a);
+            let b_value = bcs::peel_u64(&mut b);
+            let b_decimal = bcs::peel_u8(&mut b);
+            // Normalise the decimal values
+            let a = (a_value as u256) * u256::pow(10, b_decimal);
+            let b = (b_value as u256) * u256::pow(10, a_decimal);
+
+            if (a > b) {
+                return GREATER_THAN
+            } else if (a == b) {
+                return EQUAL
+            } else {
+                return LESS_THAN
+            }
+        }
+        else {
             compare_vector_u8(&bcs::into_remainder_bytes(a), &bcs::into_remainder_bytes(b))
         }
     }

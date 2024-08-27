@@ -10,6 +10,8 @@ module moveos_std::bcs{
 
     use std::option::{Self, Option};
     use std::vector;
+    #[test_only]
+    use std::vector::{is_empty, pop_back};
 
     friend moveos_std::any;
     friend moveos_std::copyable_any;
@@ -566,205 +568,78 @@ module moveos_std::bcs{
     }
 
     #[test]
-    fun test_peel_vec_address_success() {
-        let bytes = x"7fe695faf7047ccfbc85f7dccb6c405d4e9b7b44788e71a71c3891a06ce0ca12";
-        let bcs = new(bytes);
-        let vec_address = peel_vec_address(&mut bcs);
-        let expected_vec_address = vector::empty<address>();
-        let expected_address = @0x7fe695faf7047ccfbc85f7dccb6c405d4e9b7b44788e71a71c3891a06ce0ca12;
-        let i = 0;
-        while (i < vector::length(&vec_address)) {
-            vector::push_back(&mut expected_vec_address, expected_address);
-            i = i + 1;
+    fun test_vec() {
+        let bool_cases = vector[vector[], vector[true], vector[false, true, false]];
+        let excepet_bool_cases =  bool_cases;
+        while (!is_empty(&excepet_bool_cases)) {
+            let case = pop_back(&mut excepet_bool_cases);
+            let bytes = new(to_bytes(&case));
+            assert!(peel_vec_bool(&mut bytes) == case, 0);
+            assert!(is_empty(&into_remainder_bytes(bytes)), 1);
         };
-        assert!(vec_address == expected_vec_address, ErrorLengthOutOfRange);
-    }
 
-    #[test]
-    fun test_peel_vec_bool_success() {
-        let bytes = x"01";
-        let bcs = new(bytes);
-        let vec_bool = peel_vec_bool(&mut bcs);
-        let expected_vec_bool = vector::empty<bool>();
-        let expected_bool = true;
-        vector::push_back(&mut expected_vec_bool, expected_bool);
-        assert!(vec_bool == expected_vec_bool, ErrorLengthOutOfRange);
-    }
-
-    #[test]
-    fun test_peel_vec_u8_success() {
-        let bytes = x"11";
-        let bcs = new(bytes);
-        let u8 = peel_vec_u8(&mut bcs);
-        let expected_vec_u8 = x"1111111111111111111111111111111111";
-        assert!(u8 == expected_vec_u8, ErrorLengthOutOfRange);
-    }
-
-    #[test]
-    fun test_peel_vec_vec_u8_success() {
-        let bytes = x"11";
-        let bcs = new(bytes);
-        let vec_vec_u8 = peel_vec_vec_u8(&mut bcs);
-        let expected_vec_vec_u8 = vector::empty<vector<u8>>();
-        let expected_vec_u8 = x"1111111111111111111111111111111111";
-        let i = 0;
-        while (i < vector::length(&vec_vec_u8)) {
-            vector::push_back(&mut expected_vec_vec_u8, expected_vec_u8);
-            i = i + 1;
+        let u8_cases = vector[vector[], vector[1], vector[0, 2, 0xFF]];
+        let excepet_u8_cases =  u8_cases;
+        while (!is_empty(&excepet_u8_cases)) {
+            let case = pop_back(&mut excepet_u8_cases);
+            let bytes = new(to_bytes(&case));
+            assert!(peel_vec_u8(&mut bytes) == case, 0);
+            assert!(is_empty(&into_remainder_bytes(bytes)), 1);
         };
-        assert!(vec_vec_u8 == expected_vec_vec_u8, ErrorLengthOutOfRange);
-    }
 
-    #[test]
-    fun test_peel_vec_u16_success() {
-        let bytes = x"1111";
-        let bcs = new(bytes);
-        let vec_u16 = peel_vec_u16(&mut bcs);
-        let expected_vec_u16 = vector::empty<u16>();
-        let expected_u16 = 4369u16;
-        let i = 0;
-        while (i < vector::length(&vec_u16)) {
-            vector::push_back(&mut expected_vec_u16, expected_u16);
-            i = i + 1;
+        let u16_cases = vector[vector[], vector[1], vector[0, 2, 0xFFFF]];
+        let excepet_u16_cases =  u16_cases;
+        while (!is_empty(&excepet_u16_cases)) {
+            let case = pop_back(&mut excepet_u16_cases);
+            let bytes = new(to_bytes(&case));
+            assert!(peel_vec_u16(&mut bytes) == case, 0);
+            assert!(is_empty(&into_remainder_bytes(bytes)), 1);
         };
-        assert!(vec_u16 == expected_vec_u16, ErrorLengthOutOfRange);
-    }
 
-    #[test]
-    fun test_peel_vec_u32_success() {
-        let bytes = x"11111111";
-        let bcs = new(bytes);
-        let vec_u32 = peel_vec_u32(&mut bcs);
-        let expected_vec_u32 = vector::empty<u32>();
-        let expected_u32 = 286331153u32;
-        let i = 0;
-        while (i < vector::length(&vec_u32)) {
-            vector::push_back(&mut expected_vec_u32, expected_u32);
-            i = i + 1;
+        let u32_cases = vector[vector[], vector[1], vector[0, 2, 0xFFFF_FFFF]];
+        let excepet_u32_cases =  u32_cases;
+        while (!is_empty(&excepet_u32_cases)) {
+            let case = pop_back(&mut excepet_u32_cases);
+            let bytes = new(to_bytes(&case));
+            assert!(peel_vec_u32(&mut bytes) == case, 0);
+            assert!(is_empty(&into_remainder_bytes(bytes)), 1);
         };
-        assert!(vec_u32 == expected_vec_u32, ErrorLengthOutOfRange);
-    }
 
-    #[test]
-    fun test_peel_vec_u64_success() {
-        let bytes = x"1111111111111111";
-        let bcs = new(bytes);
-        let vec_u64 = peel_vec_u64(&mut bcs);
-        let expected_vec_u64 = vector::empty<u64>();
-        let expected_u64 = 1229782938247303441u64;
-        let i = 0;
-        while (i < vector::length(&vec_u64)) {
-            vector::push_back(&mut expected_vec_u64, expected_u64);
-            i = i + 1;
+        let u64_cases = vector[vector[], vector[1], vector[0, 2, 0xFFFF_FFFF_FFFF_FFFF]];
+        let excepet_u64_cases =  u64_cases;
+        while (!is_empty(&excepet_u64_cases)) {
+            let case = pop_back(&mut excepet_u64_cases);
+            let bytes = new(to_bytes(&case));
+            assert!(peel_vec_u64(&mut bytes) == case, 0);
+            assert!(is_empty(&into_remainder_bytes(bytes)), 1);
         };
-        assert!(vec_u64 == expected_vec_u64, ErrorLengthOutOfRange);
-    }
 
-    #[test]
-    fun test_peel_vec_u128_success() {
-        let bytes = x"11111111111111111111111111111111";
-        let bcs = new(bytes);
-        let vec_u128 = peel_vec_u128(&mut bcs);
-        let expected_vec_u128 = vector::empty<u128>();
-        let expected_u128 = 22685491128062564230891640495451214097u128;
-        let i = 0;
-        while (i < vector::length(&vec_u128)) {
-            vector::push_back(&mut expected_vec_u128, expected_u128);
-            i = i + 1;
+        let u128_cases = vector[vector[], vector[1], vector[0, 2, 0xFFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF]];
+        let excepet_u128_cases =  u128_cases;
+        while (!is_empty(&excepet_u128_cases)) {
+            let case = pop_back(&mut excepet_u128_cases);
+            let bytes = new(to_bytes(&case));
+            assert!(peel_vec_u128(&mut bytes) == case, 0);
+            assert!(is_empty(&into_remainder_bytes(bytes)), 1);
         };
-        assert!(vec_u128 == expected_vec_u128, ErrorLengthOutOfRange);
-    }
 
-    #[test]
-    fun test_peel_vec_u256_success() {
-        let bytes = x"1111111111111111111111111111111111111111111111111111111111111111";
-        let bcs = new(bytes);
-        let vec_u256 = peel_vec_u256(&mut bcs);
-        let expected_vec_u256 = vector::empty<u256>();
-        let expected_u256 = 7719472615821079694904732333912527190217998977709370935963838933860875309329u256;
-        let i = 0;
-        while (i < vector::length(&vec_u256)) {
-            vector::push_back(&mut expected_vec_u256, expected_u256);
-            i = i + 1;
+        let u256_cases = vector[vector[], vector[1], vector[0, 2, 0xFFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF]];
+        let excepet_u256_cases =  u256_cases;
+        while (!is_empty(&excepet_u256_cases)) {
+            let case = pop_back(&mut excepet_u256_cases);
+            let bytes = new(to_bytes(&case));
+            assert!(peel_vec_u256(&mut bytes) == case, 0);
+            assert!(is_empty(&into_remainder_bytes(bytes)), 1);
         };
-        assert!(vec_u256 == expected_vec_u256, ErrorLengthOutOfRange);
-    }
 
-    #[test]
-    fun test_peel_option_address_success() {
-        let bytes = x"017fe695faf7047ccfbc85f7dccb6c405d4e9b7b44788e71a71c3891a06ce0ca12";
-        let bcs = new(bytes);
-        let option_address = peel_option_address(&mut bcs);
-        let expected_option_addr = option::some(@0x17fe695faf7047ccfbc85f7dccb6c405d4e9b7b44788e71a71c3891a06ce0ca);
-        assert!(option_address == expected_option_addr, ErrorInvalidLength);
-    }
+        let address_cases = vector[vector[], vector[@0x0], vector[@0x1, @0x2, @0x3]];
+        let excepet_address_cases =  address_cases;
+        while (!is_empty(&excepet_address_cases)) {
+            let case = pop_back(&mut excepet_address_cases);
+            let bytes = new(to_bytes(&case));
+            assert!(peel_vec_address(&mut bytes) == case, 0);
+            assert!(is_empty(&into_remainder_bytes(bytes)), 1);
+        };
 
-    #[test]
-    fun test_peel_option_bool_success() {
-        let bytes = x"01";
-        let bcs = new(bytes);
-        let option_bool = peel_option_bool(&mut bcs);
-        let expected_option_bool = option::some(true);
-        assert!(option_bool == expected_option_bool, ErrorInvalidBool);
-    }
-
-    #[test]
-    fun test_peel_option_u8_success() {
-        let bytes = x"0101";
-        let bcs = new(bytes);
-        let option_u8 = peel_option_u8(&mut bcs);
-        std::debug::print(&option_u8);
-        let expected_option_u8 = option::some(1);
-        assert!(option_u8 == expected_option_u8, ErrorOutOfRange);
-    }
-
-    #[test]
-    fun test_peel_option_u16_success() {
-        let bytes = x"010011";
-        let bcs = new(bytes);
-        let option_u16 = peel_option_u16(&mut bcs);
-        std::debug::print(&option_u16);
-        let expected_option_u16 = option::some(1);
-        assert!(option_u16 == expected_option_u16, ErrorOutOfRange);
-    }
-
-    #[test]
-    fun test_peel_option_u32_success() {
-        let bytes = x"0100001111";
-        let bcs = new(bytes);
-        let option_u32 = peel_option_u32(&mut bcs);
-        std::debug::print(&option_u32);
-        let expected_option_u32 = option::some(285212673);
-        assert!(option_u32 == expected_option_u32, ErrorOutOfRange);
-    }
-
-    #[test]
-    fun test_peel_option_u64_success() {
-        let bytes = x"010000000011111111";
-        let bcs = new(bytes);
-        let option_u64 = peel_option_u64(&mut bcs);
-        std::debug::print(&option_u64);
-        let expected_option_u64 = option::some(1229782864946528257);
-        assert!(option_u64 == expected_option_u64, ErrorOutOfRange);
-    }
-
-    #[test]
-    fun test_peel_option_u128_success() {
-        let bytes = x"0100000000111111110000000011111111";
-        let bcs = new(bytes);
-        let option_u128 = peel_option_u128(&mut bcs);
-        std::debug::print(&option_u128);
-        let expected_option_u128 = option::some(22685489775901924302271377683643367425);
-        assert!(option_u128 == expected_option_u128, ErrorOutOfRange);
-    }
-
-    #[test]
-    fun test_peel_option_u256_success() {
-        let bytes = x"010000000011111111000000001111111100000000111111110000000011111111";
-        let bcs = new(bytes);
-        let option_u256 = peel_option_u256(&mut bcs);
-        std::debug::print(&option_u256);
-        let expected_option_u256 = option::some(7719472155704656682663016097251860136573850893801914284240011010441236971521);
-        assert!(option_u256 == expected_option_u256, ErrorOutOfRange);
     }
 }

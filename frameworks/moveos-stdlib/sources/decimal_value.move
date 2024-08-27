@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module rooch_framework::oracle_decimal_value {
+module moveos_std::decimal_value {
     struct DecimalValue has store, drop, copy {
         value: u64,
         decimal: u8,
