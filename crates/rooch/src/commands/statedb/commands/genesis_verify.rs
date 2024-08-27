@@ -81,7 +81,7 @@ pub struct GenesisVerifyCommand {
     #[clap(
         long,
         help = "Enable this to verify UTXO source data using state database instead of the default behavior of verifying state database using UTXO source data.\
-        output: FieldKey,ObjecState,UTXO_from_ObjectState"
+        output: FieldKey,ObjecState,metadata,value"
     )]
     pub reverse: bool,
 
