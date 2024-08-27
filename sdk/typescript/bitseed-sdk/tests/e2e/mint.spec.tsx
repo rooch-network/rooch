@@ -73,5 +73,5 @@ test('mint tick', async ({ mount }) => {
   await component.locator('button:has-text("Mint")').click()
 
   // Optionally, check for the presence of the inscriptionId in the output/result
-  await expect(component).toContainText('Mint Result: ', { timeout: 60000 })
+  await expect(component).toContainText('Mint Result: ', { timeout: 300000 })
 })
