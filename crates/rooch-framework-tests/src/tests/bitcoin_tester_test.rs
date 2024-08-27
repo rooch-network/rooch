@@ -3,7 +3,7 @@
 
 use std::str::FromStr;
 
-use rooch_types::bitcoin::ord::{Inscription, InscriptionID};
+use rooch_types::bitcoin::ord::{Inscription, InscriptionID, SatPoint};
 use tracing::{debug, warn};
 
 use crate::bitcoin_block_tester::BitcoinBlockTester;
@@ -18,6 +18,11 @@ async fn test_block_100000() {
     tester.verify_inscriptions().unwrap();
 }
 
+// cargo run -p rooch-framework-tests --  --btc-rpc-url http://localhost:9332 --btc-rpc-username your_username --btc-rpc-password your_pwd --blocks 790964 --blocks 855396
+// This test contains two block: 790964 and 855396
+// The inscription 8706753 inscribed in block 790964 and spend as fee in block 855396
+// https://ordiscan.com/inscription/8706753
+// https://ordinals.com/inscription/8706753
 #[tokio::test]
 async fn test_block_790964() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -28,6 +33,7 @@ async fn test_block_790964() {
     }
 
     let mut tester = BitcoinBlockTester::new(790964).unwrap();
+    //Execute the first block 790964
     tester.execute().unwrap();
     tester.verify_utxo().unwrap();
     tester.verify_inscriptions().unwrap();
@@ -47,4 +53,20 @@ async fn test_block_790964() {
     // assert_eq!(inscription.inscription_number, expected_inscription_number);
     // assert_eq!(inscription.sequence_number, expected_sequence_number);
     assert_eq!(inscription.location.offset, 0u64);
+
+    //Execute the second block 855396
+    tester.execute().unwrap();
+    tester.verify_utxo().unwrap();
+    tester.verify_inscriptions().unwrap();
+
+    let inscription_obj = tester.get_inscription(&inscription_id).unwrap().unwrap();
+    let inscription = inscription_obj.value_as::<Inscription>().unwrap();
+    debug!("Inscription: {:?}", inscription);
+    assert_eq!(
+        inscription.location,
+        SatPoint::from_str(
+            "4a61ddc33e4a0b99fa69aac4d2d5de9efe7c7cc44d5d28a9ac1734f8c3317964:0:316084756"
+        )
+        .unwrap()
+    );
 }
