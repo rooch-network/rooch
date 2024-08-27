@@ -17,7 +17,7 @@ describe('Checkpoints Reading API', () => {
     testBox = TestBox.setup()
   })
 
-  afterAll(async ()=> {
+  afterAll(async () => {
     testBox.cleanEnv()
   })
 

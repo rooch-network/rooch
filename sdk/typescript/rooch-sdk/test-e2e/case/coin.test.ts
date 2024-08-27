@@ -14,7 +14,7 @@ describe('Checkpoints Coin API', () => {
     testBox = TestBox.setup()
   })
 
-  afterAll(async ()=> {
+  afterAll(async () => {
     testBox.cleanEnv()
   })
 
@@ -27,7 +27,6 @@ describe('Checkpoints Coin API', () => {
   })
 
   it('Check balances should be success', async () => {
-
     const tx = new Transaction()
     tx.callFunction({
       target: `${await testBox.defaultCmdAddress()}::fixed_supply_coin::faucet`,
@@ -35,9 +34,9 @@ describe('Checkpoints Coin API', () => {
         Args.object({
           address: await testBox.defaultCmdAddress(),
           module: 'fixed_supply_coin',
-          name:'Treasury'
-        })
-      ]
+          name: 'Treasury',
+        }),
+      ],
     })
 
     let result = await testBox.signAndExecuteTransaction(tx)

@@ -12,7 +12,7 @@ describe('Checkpoints Session API', () => {
     testBox = TestBox.setup()
   })
 
-  afterAll(async ()=> {
+  afterAll(async () => {
     testBox.cleanEnv()
   })
 

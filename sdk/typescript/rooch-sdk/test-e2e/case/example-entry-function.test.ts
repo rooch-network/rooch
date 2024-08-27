@@ -14,7 +14,7 @@ describe('Checkpoints Example Entry Function', () => {
     testBox = TestBox.setup()
   })
 
-  afterAll(async ()=> {
+  afterAll(async () => {
     testBox.cleanEnv()
   })
 
