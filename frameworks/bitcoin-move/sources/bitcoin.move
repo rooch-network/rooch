@@ -67,7 +67,14 @@ module bitcoin_move::bitcoin{
     }
 
 
-    struct TransferUTXOEvent has drop, store, copy {
+    struct SpendUTXOEvent has drop, store, copy {
+        txid: address,
+        sender: address,
+        receiver: Option<address>,
+        value: u64
+    }
+
+    struct ReceiveUTXOEvent has drop, store, copy {
         txid: address,
         sender: Option<address>,
         receiver: address,
@@ -237,7 +244,7 @@ module bitcoin_move::bitcoin{
             let owner_address = types::txout_object_address(txout);
             utxo::transfer(utxo_obj, owner_address);
             if (owner_address != @bitcoin_move){
-                event_queue::emit(to_string(&owner_address), TransferUTXOEvent{
+                event_queue::emit(to_string(&owner_address), ReceiveUTXOEvent {
                     txid,
                     sender,
                     receiver: owner_address,
@@ -246,10 +253,15 @@ module bitcoin_move::bitcoin{
             };
             if (option::is_some(&sender)){
                 let sender_address = option::extract(&mut sender);
-                event_queue::emit(to_string(&sender_address), TransferUTXOEvent{
+                let receiver_address = if (owner_address != @bitcoin_move) {
+                    option::some(owner_address)
+                }else {
+                    option::none<address>()
+                };
+                event_queue::emit(to_string(&sender_address), SpendUTXOEvent {
                     txid,
-                    sender,
-                    receiver: owner_address,
+                    sender: sender_address,
+                    receiver: receiver_address,
                     value
                 });
             };
@@ -420,8 +432,13 @@ module bitcoin_move::bitcoin{
         execute_l1_tx(block_hash, types::tx_id(&coinbase_tx));
     }
 
-    public fun unpack_transfer_utxo_event(event: TransferUTXOEvent): (address, Option<address>, address, u64) {
-        let TransferUTXOEvent { txid, sender, receiver, value } = event;
+    public fun unpack_spend_utxo_event(event: SpendUTXOEvent): (address, address, Option<address>, u64) {
+        let SpendUTXOEvent { txid, sender, receiver, value } = event;
+        (txid, sender, receiver, value)
+    }
+
+    public fun unpack_receive_utxo_event(event: ReceiveUTXOEvent): (address, Option<address>, address, u64) {
+        let ReceiveUTXOEvent { txid, sender, receiver, value } = event;
         (txid, sender, receiver, value)
     }
 

@@ -70,7 +70,7 @@ This module defines Rooch Gas Coin.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_balance">balance</a>(addr: <b>address</b>): u256
+<pre><code><b>public</b> <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_balance">balance</a>(addr: <b>address</b>): <a href="">u256</a>
 </code></pre>
 
 
@@ -93,7 +93,7 @@ This module defines Rooch Gas Coin.
 deduct gas coin from the given account.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_deduct_gas">deduct_gas</a>(addr: <b>address</b>, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">gas_coin::GasCoin</a>&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_deduct_gas">deduct_gas</a>(addr: <b>address</b>, amount: <a href="">u256</a>): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">gas_coin::GasCoin</a>&gt;
 </code></pre>
 
 
@@ -105,7 +105,7 @@ deduct gas coin from the given account.
 Mint gas coin to the given account.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_faucet">faucet</a>(addr: <b>address</b>, amount: u256)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_faucet">faucet</a>(addr: <b>address</b>, amount: <a href="">u256</a>)
 </code></pre>
 
 
@@ -117,7 +117,7 @@ Mint gas coin to the given account.
 Entry point for the faucet, anyone can get Gas via this function on local/dev net, otherwise only sequencer account can call this function.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_faucet_entry">faucet_entry</a>(<a href="">account</a>: &<a href="">signer</a>, amount: u256)
+<pre><code><b>public</b> entry <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_faucet_entry">faucet_entry</a>(<a href="">account</a>: &<a href="">signer</a>, amount: <a href="">u256</a>)
 </code></pre>
 
 

@@ -8,7 +8,8 @@
 -  [Struct `UTXONotExistsEvent`](#0x4_bitcoin_UTXONotExistsEvent)
 -  [Struct `RepeatCoinbaseTxEvent`](#0x4_bitcoin_RepeatCoinbaseTxEvent)
 -  [Resource `BitcoinBlockStore`](#0x4_bitcoin_BitcoinBlockStore)
--  [Struct `TransferUTXOEvent`](#0x4_bitcoin_TransferUTXOEvent)
+-  [Struct `SpendUTXOEvent`](#0x4_bitcoin_SpendUTXOEvent)
+-  [Struct `ReceiveUTXOEvent`](#0x4_bitcoin_ReceiveUTXOEvent)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_bitcoin_genesis_init)
 -  [Function `get_tx`](#0x4_bitcoin_get_tx)
@@ -21,7 +22,8 @@
 -  [Function `get_latest_block`](#0x4_bitcoin_get_latest_block)
 -  [Function `get_bitcoin_time`](#0x4_bitcoin_get_bitcoin_time)
 -  [Function `contains_header`](#0x4_bitcoin_contains_header)
--  [Function `unpack_transfer_utxo_event`](#0x4_bitcoin_unpack_transfer_utxo_event)
+-  [Function `unpack_spend_utxo_event`](#0x4_bitcoin_unpack_spend_utxo_event)
+-  [Function `unpack_receive_utxo_event`](#0x4_bitcoin_unpack_receive_utxo_event)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -81,13 +83,24 @@
 
 
 
-<a name="0x4_bitcoin_TransferUTXOEvent"></a>
+<a name="0x4_bitcoin_SpendUTXOEvent"></a>
 
-## Struct `TransferUTXOEvent`
+## Struct `SpendUTXOEvent`
 
 
 
-<pre><code><b>struct</b> <a href="bitcoin.md#0x4_bitcoin_TransferUTXOEvent">TransferUTXOEvent</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="bitcoin.md#0x4_bitcoin_SpendUTXOEvent">SpendUTXOEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_bitcoin_ReceiveUTXOEvent"></a>
+
+## Struct `ReceiveUTXOEvent`
+
+
+
+<pre><code><b>struct</b> <a href="bitcoin.md#0x4_bitcoin_ReceiveUTXOEvent">ReceiveUTXOEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -280,11 +293,22 @@ Get the bitcoin time in seconds
 
 
 
-<a name="0x4_bitcoin_unpack_transfer_utxo_event"></a>
+<a name="0x4_bitcoin_unpack_spend_utxo_event"></a>
 
-## Function `unpack_transfer_utxo_event`
+## Function `unpack_spend_utxo_event`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_unpack_transfer_utxo_event">unpack_transfer_utxo_event</a>(<a href="">event</a>: <a href="bitcoin.md#0x4_bitcoin_TransferUTXOEvent">bitcoin::TransferUTXOEvent</a>): (<b>address</b>, <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;, <b>address</b>, u64)
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_unpack_spend_utxo_event">unpack_spend_utxo_event</a>(<a href="">event</a>: <a href="bitcoin.md#0x4_bitcoin_SpendUTXOEvent">bitcoin::SpendUTXOEvent</a>): (<b>address</b>, <b>address</b>, <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;, u64)
+</code></pre>
+
+
+
+<a name="0x4_bitcoin_unpack_receive_utxo_event"></a>
+
+## Function `unpack_receive_utxo_event`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_unpack_receive_utxo_event">unpack_receive_utxo_event</a>(<a href="">event</a>: <a href="bitcoin.md#0x4_bitcoin_ReceiveUTXOEvent">bitcoin::ReceiveUTXOEvent</a>): (<b>address</b>, <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;, <b>address</b>, u64)
 </code></pre>
