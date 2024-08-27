@@ -139,7 +139,7 @@ export class Session extends Signer {
   }
 
   isExpired() {
-    return (this.lastActiveTime + this.maxInactiveInterval) * 1000 < Date.now()
+    return this.lastActiveTime + this.maxInactiveInterval * 1000 < Date.now()
   }
 
   getAuthKey(): string {
