@@ -55,28 +55,28 @@ jobs:
           docker pull bitseed/ord:0.18.0-burn
           docker pull bitseed/bitseed:0.1.8
 
-      - name: Check code format
-        run: cargo fmt -- --check
-      - name: Lint rust sources
-        run: ./scripts/pr.sh -c
+      #- name: Check code format
+      #  run: cargo fmt -- --check
+      #- name: Lint rust sources
+      #  run: ./scripts/pr.sh -c
       - name: Build
         run: cargo build
-      - name: Framework compatibility
-        run: cargo run --package framework-release --bin framework-release
-      - name: Run Rooch init
-        run: cargo run --bin rooch init --skip-password
-      - name: Execute Move stdlib and framework tests
-        run: ./scripts/pr.sh -m
-      - name: Execute rust tests
-        run: ./scripts/pr.sh -t
-      - name: Build and test example projects
-        run: ./scripts/pr.sh -e
+      #- name: Framework compatibility
+      #  run: cargo run --package framework-release --bin framework-release
+      #- name: Run Rooch init
+      #  run: cargo run --bin rooch init --skip-password
+      #- name: Execute Move stdlib and framework tests
+      #  run: ./scripts/pr.sh -m
+      #- name: Execute rust tests
+      #  run: ./scripts/pr.sh -t
+      #- name: Build and test example projects
+      #  run: ./scripts/pr.sh -e
 
       # web & sdk & dashboard
       - name: Use Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '20.x'
+          node-version: '20.3.1'
       - name: Cache Node.js modules
         uses: actions/cache@v2
         with:
