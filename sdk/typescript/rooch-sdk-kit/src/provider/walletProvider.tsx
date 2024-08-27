@@ -14,7 +14,12 @@ import {
   useCurrentNetwork,
 } from '../hooks/index.js'
 import { useSessionStore } from '../hooks/useSessionsStore.js'
-import { getDefaultStorage, StorageType, checkWallets } from '../utils/index.js'
+import {
+  getDefaultStorage,
+  StorageType,
+  checkWallets,
+  getInitialValidSession,
+} from '../utils/index.js'
 import { SupportChain, SupportWallet } from '../feature/index.js'
 import { getRegisteredWallets } from '../wellet/util.js'
 import { getWallets } from '../wellet/wallets.js'
@@ -108,10 +113,10 @@ function WalletConnectionManager({ children, preferredWallets }: WalletConnectio
         if (selectedAddress !== currentAddress?.toStr()) {
           setAddressSwitched(new BitcoinAddress(selectedAddress))
           setCurrentSession(undefined)
-          const cur = sessions.find(
-            (item: Session) =>
-              item.getRoochAddress().toStr() === currentAddress?.genRoochAddress().toStr(),
-          )
+
+          const cur =
+            currentAddress && getInitialValidSession(currentAddress.genRoochAddress(), sessions)
+
           if (cur && cur.getAuthKey() !== curSession?.getAuthKey()) {
             setCurrentSession(cur)
           }

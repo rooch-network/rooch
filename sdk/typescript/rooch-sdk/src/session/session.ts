@@ -138,6 +138,10 @@ export class Session extends Signer {
     return this.localCreateSessionTime
   }
 
+  isExpired() {
+    return (this.lastActiveTime + this.maxInactiveInterval) * 1000 < Date.now()
+  }
+
   getAuthKey(): string {
     return this.keypair.getRoochAddress().toHexAddress()
   }
