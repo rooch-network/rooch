@@ -73,7 +73,7 @@ module rooch_framework::oracle {
         object::to_shared(oracle)
     }
 
-    public entry fun submit_data<T: store + copy + drop>(
+    public fun submit_data<T: store + copy + drop>(
         oracle_obj: &mut Object<SimpleOracle>,
         ticker: String,
         value: T,
