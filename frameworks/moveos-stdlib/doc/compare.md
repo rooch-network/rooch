@@ -17,7 +17,9 @@ Utilities for comparing Move values
 
 <pre><code><b>use</b> <a href="">0x1::compare</a>;
 <b>use</b> <a href="">0x1::type_name</a>;
+<b>use</b> <a href="">0x1::u256</a>;
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
+<b>use</b> <a href="decimal_value.md#0x2_decimal_value">0x2::decimal_value</a>;
 </code></pre>
 
 

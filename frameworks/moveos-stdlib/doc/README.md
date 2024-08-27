@@ -25,6 +25,7 @@ This is the reference documentation of the MoveOS standard library.
 -  [`0x2::compare`](compare.md#0x2_compare)
 -  [`0x2::copyable_any`](copyable_any.md#0x2_copyable_any)
 -  [`0x2::core_addresses`](core_addresses.md#0x2_core_addresses)
+-  [`0x2::decimal_value`](decimal_value.md#0x2_decimal_value)
 -  [`0x2::display`](display.md#0x2_display)
 -  [`0x2::event`](event.md#0x2_event)
 -  [`0x2::event_queue`](event_queue.md#0x2_event_queue)

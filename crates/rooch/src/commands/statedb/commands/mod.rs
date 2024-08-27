@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::commands::statedb::commands::inscription::{derive_inscription_ids, InscriptionSource};
 use anyhow::Result;
 use bitcoin::hashes::Hash;
 use bitcoin::OutPoint;
@@ -17,7 +18,7 @@ use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
 use rooch_types::bitcoin::ord::BitcoinInscriptionID;
 use rooch_types::rooch_network::RoochChainID;
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
@@ -25,8 +26,6 @@ use std::str::FromStr;
 use std::time::Instant;
 use xorf::{BinaryFuse8, Filter};
 use xxhash_rust::xxh3::xxh3_64;
-
-use crate::commands::statedb::commands::inscription::{derive_inscription_ids, InscriptionSource};
 
 pub mod export;
 pub mod genesis;
@@ -389,29 +388,49 @@ where
     None
 }
 
+fn new_csv_writer(output: PathBuf) -> Writer<File> {
+    let mut writer_builder = csv::WriterBuilder::new();
+    let writer_builder = writer_builder
+        .delimiter(b',')
+        .double_quote(false)
+        .buffer_capacity(1 << 23);
+    writer_builder.from_path(output).unwrap()
+}
+
+trait ExportWriterPreprocessor {
+    fn process(&mut self, k: &FieldKey, v: &ObjectState) -> (FieldKey, ObjectState);
+    fn flush(&mut self) {}
+}
+
 // ExportWriter is a helper struct to write FieldKey:ObjectState pairs to a csv file
-struct ExportWriter {
+pub(crate) struct ExportWriter {
     writer: Option<Writer<File>>, // option here for nop writer
+    preprocessor: Option<Box<dyn ExportWriterPreprocessor>>,
 }
 
 impl ExportWriter {
-    fn new(output: Option<PathBuf>) -> Self {
+    fn new(
+        output: Option<PathBuf>,
+        preprocessor: Option<Box<dyn ExportWriterPreprocessor>>,
+    ) -> Self {
         let writer = match output {
             Some(output) => {
-                let file_name = output.display().to_string();
-                let mut writer_builder = csv::WriterBuilder::new();
-                let writer_builder = writer_builder
-                    .delimiter(b',')
-                    .double_quote(false)
-                    .buffer_capacity(1 << 23);
-                let writer = writer_builder.from_path(file_name).unwrap();
+                let writer = new_csv_writer(output);
                 Some(writer)
             }
             None => None,
         };
-        ExportWriter { writer }
+        ExportWriter {
+            writer,
+            preprocessor,
+        }
     }
-    fn write_record(&mut self, k: &FieldKey, v: &ObjectState) -> anyhow::Result<()> {
+    fn write_record(&mut self, k: &FieldKey, v: &ObjectState) -> Result<()> {
+        let (k, v) = match &mut self.preprocessor {
+            Some(preprocessor) => preprocessor.process(k, v),
+            None => (*k, v.clone()),
+        };
+
         if let Some(writer) = &mut self.writer {
             writer.write_record([k.to_string().as_str(), v.to_string().as_str()])?;
             Ok(())
@@ -420,6 +439,10 @@ impl ExportWriter {
         }
     }
     fn flush(&mut self) -> Result<()> {
+        if let Some(preprocessor) = &mut self.preprocessor {
+            preprocessor.flush();
+        }
+
         if let Some(writer) = &mut self.writer {
             writer.flush()?;
             Ok(())
@@ -433,11 +456,10 @@ impl ExportWriter {
 mod tests {
     use std::collections::HashSet;
 
+    use super::*;
     use bitcoin::Txid;
     use rand::Rng;
     use tempfile::tempdir;
-
-    use super::*;
 
     impl OutpointInscriptionsMap {
         fn is_sorted_and_merged(&self) -> bool {
