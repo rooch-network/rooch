@@ -237,5 +237,5 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0xa_brc20_get_balance">get_balance</a>(brc20_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="brc20.md#0xa_brc20_BRC20Store">brc20::BRC20Store</a>&gt;, tick: &<a href="_String">string::String</a>, <b>address</b>: <b>address</b>): u256
+<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0xa_brc20_get_balance">get_balance</a>(brc20_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="brc20.md#0xa_brc20_BRC20Store">brc20::BRC20Store</a>&gt;, tick: &<a href="_String">string::String</a>, <b>address</b>: <b>address</b>): <a href="">u256</a>
 </code></pre>

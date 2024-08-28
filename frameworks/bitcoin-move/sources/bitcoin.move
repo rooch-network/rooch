@@ -24,6 +24,7 @@ module bitcoin_move::bitcoin{
     use bitcoin_move::types::{Self, Block, Header, Transaction, BlockHeightHash, OutPoint};
     use bitcoin_move::utxo::{Self, UTXOSeal};
     use bitcoin_move::pending_block::{Self, PendingBlock};
+    use bitcoin_move::script_buf;
 
     friend bitcoin_move::genesis;
 
@@ -67,7 +68,14 @@ module bitcoin_move::bitcoin{
     }
 
 
-    struct TransferUTXOEvent has drop, store, copy {
+    struct SpendUTXOEvent has drop, store, copy {
+        txid: address,
+        sender: address,
+        receiver: Option<address>,
+        value: u64
+    }
+
+    struct ReceiveUTXOEvent has drop, store, copy {
         txid: address,
         sender: Option<address>,
         receiver: address,
@@ -203,6 +211,8 @@ module bitcoin_move::bitcoin{
             let txout = vector::borrow(txoutput, idx);
             let vout = (idx as u32);
             let value = types::txout_value(txout);
+            let output_script_buf = types::txout_script_pubkey(txout);
+            let is_op_return = script_buf::is_op_return(output_script_buf);
             if (is_coinbase &&  ((block_height < BIP_34_HEIGHT && network::is_mainnet()) || !network::is_mainnet())) {
                 let outpoint = types::new_outpoint(txid, vout);
                 let utxo_id = utxo::derive_utxo_id(outpoint);
@@ -221,6 +231,11 @@ module bitcoin_move::bitcoin{
                     repeat_txid = true;
                 };
             };
+            //We should not create UTXO object for OP_RETURN output
+            if(is_op_return){
+                idx = idx + 1;
+                continue
+            };
             let utxo_obj = utxo::new(txid, vout, value);
             let utxo = object::borrow_mut(&mut utxo_obj);
             let seal_index = (idx as u32);
@@ -237,7 +252,7 @@ module bitcoin_move::bitcoin{
             let owner_address = types::txout_object_address(txout);
             utxo::transfer(utxo_obj, owner_address);
             if (owner_address != @bitcoin_move){
-                event_queue::emit(to_string(&owner_address), TransferUTXOEvent{
+                event_queue::emit(to_string(&owner_address), ReceiveUTXOEvent {
                     txid,
                     sender,
                     receiver: owner_address,
@@ -246,10 +261,15 @@ module bitcoin_move::bitcoin{
             };
             if (option::is_some(&sender)){
                 let sender_address = option::extract(&mut sender);
-                event_queue::emit(to_string(&sender_address), TransferUTXOEvent{
+                let receiver_address = if (owner_address != @bitcoin_move) {
+                    option::some(owner_address)
+                }else {
+                    option::none<address>()
+                };
+                event_queue::emit(to_string(&sender_address), SpendUTXOEvent {
                     txid,
-                    sender,
-                    receiver: owner_address,
+                    sender: sender_address,
+                    receiver: receiver_address,
                     value
                 });
             };
@@ -420,8 +440,13 @@ module bitcoin_move::bitcoin{
         execute_l1_tx(block_hash, types::tx_id(&coinbase_tx));
     }
 
-    public fun unpack_transfer_utxo_event(event: TransferUTXOEvent): (address, Option<address>, address, u64) {
-        let TransferUTXOEvent { txid, sender, receiver, value } = event;
+    public fun unpack_spend_utxo_event(event: SpendUTXOEvent): (address, address, Option<address>, u64) {
+        let SpendUTXOEvent { txid, sender, receiver, value } = event;
+        (txid, sender, receiver, value)
+    }
+
+    public fun unpack_receive_utxo_event(event: ReceiveUTXOEvent): (address, Option<address>, address, u64) {
+        let ReceiveUTXOEvent { txid, sender, receiver, value } = event;
         (txid, sender, receiver, value)
     }
 

@@ -32,6 +32,30 @@ impl<Key, Value> SimpleMultiMap<Key, Value> {
     pub fn create() -> Self {
         Self { data: vec![] }
     }
+
+    pub fn new() -> Self {
+        Self { data: vec![] }
+    }
+
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
+    }
+}
+
+impl<Key, Value> Default for SimpleMultiMap<Key, Value> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<Key: PartialEq, Value> SimpleMultiMap<Key, Value> {
+    pub fn borrow(&self, key: &Key) -> Option<&Vec<Value>> {
+        self.data.iter().find(|e| &e.key == key).map(|e| &e.value)
+    }
 }
 
 impl<Key, Value> SimpleMultiMap<Key, Value>

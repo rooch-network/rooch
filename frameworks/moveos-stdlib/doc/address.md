@@ -68,7 +68,7 @@ The length of an address, in bytes
 
 
 
-<pre><code><b>const</b> <a href="address.md#0x2_address_MAX">MAX</a>: u256 = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
+<pre><code><b>const</b> <a href="address.md#0x2_address_MAX">MAX</a>: <a href="">u256</a> = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
 </code></pre>
 
 
@@ -207,7 +207,7 @@ Length of a Rooch address in bytes
 Largest possible address
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_max">max</a>(): u256
+<pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_max">max</a>(): <a href="">u256</a>
 </code></pre>
 
 
