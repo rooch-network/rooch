@@ -4,9 +4,7 @@
 module bitcoin_move::bitcoin{
     use std::option::{Self, Option};
     use std::vector;
-
-    use moveos_std::address::to_string;
-    use moveos_std::event_queue;
+ 
     use moveos_std::timestamp;
     use moveos_std::simple_multimap::SimpleMultiMap;
     use moveos_std::table::{Self, Table};
@@ -65,21 +63,6 @@ module bitcoin_move::bitcoin{
         tx_to_height: Table<address, u64>,
         /// tx id list, we can use this to scan txs
         tx_ids: TableVec<address>,
-    }
-
-
-    struct SpendUTXOEvent has drop, store, copy {
-        txid: address,
-        sender: address,
-        receiver: Option<address>,
-        value: u64
-    }
-
-    struct ReceiveUTXOEvent has drop, store, copy {
-        txid: address,
-        sender: Option<address>,
-        receiver: address,
-        value: u64
     }
 
     public(friend) fun genesis_init(_genesis_account: &signer, genesis_block_height: u64, genesis_block_hash: address){
@@ -146,7 +129,8 @@ module bitcoin_move::bitcoin{
         let output_seals = simple_multimap::new<u32, UTXOSeal>();
         let sender: Option<address> = option::none<address>();
         let find_sender: bool = false;
-        while (idx < vector::length(txinput)) {
+        let input_len = vector::length(txinput);
+        while (idx < input_len) {
             let txin = vector::borrow(txinput, idx);
             let outpoint = *types::txin_previous_output(txin);
             if (outpoint == types::null_outpoint()) {
@@ -245,38 +229,15 @@ module bitcoin_move::bitcoin{
                 let utxo_seals_len = vector::length(utxo_seals);
                 while(j < utxo_seals_len){
                     let utxo_seal = vector::pop_back(utxo_seals);
-                    utxo::add_seal(utxo, utxo_seal);
+                    utxo::add_seal_internal(utxo, utxo_seal);
                     j = j + 1;
                 };
             };
-            let owner_address = types::txout_object_address(txout);
-            utxo::transfer(utxo_obj, owner_address);
-            if (owner_address != @bitcoin_move){
-                event_queue::emit(to_string(&owner_address), ReceiveUTXOEvent {
-                    txid,
-                    sender,
-                    receiver: owner_address,
-                    value
-                })
-            };
-            if (option::is_some(&sender)){
-                let sender_address = option::extract(&mut sender);
-                let receiver_address = if (owner_address != @bitcoin_move) {
-                    option::some(owner_address)
-                }else {
-                    option::none<address>()
-                };
-                event_queue::emit(to_string(&sender_address), SpendUTXOEvent {
-                    txid,
-                    sender: sender_address,
-                    receiver: receiver_address,
-                    value
-                });
-            };
-            
+            let receiver = types::txout_object_address(txout);
+            utxo::transfer(utxo_obj, sender, receiver);
             //Auto create address mapping, we ensure when UTXO object create, the address mapping is recored
             let bitcoin_address_opt = types::txout_address(txout);
-            bind_bitcoin_address(owner_address, bitcoin_address_opt);
+            bind_bitcoin_address(receiver, bitcoin_address_opt);
             idx = idx + 1;
         };
         repeat_txid
@@ -438,16 +399,6 @@ module bitcoin_move::bitcoin{
         });
         //process coinbase tx last
         execute_l1_tx(block_hash, types::tx_id(&coinbase_tx));
-    }
-
-    public fun unpack_spend_utxo_event(event: SpendUTXOEvent): (address, address, Option<address>, u64) {
-        let SpendUTXOEvent { txid, sender, receiver, value } = event;
-        (txid, sender, receiver, value)
-    }
-
-    public fun unpack_receive_utxo_event(event: ReceiveUTXOEvent): (address, Option<address>, address, u64) {
-        let ReceiveUTXOEvent { txid, sender, receiver, value } = event;
-        (txid, sender, receiver, value)
     }
 
 }

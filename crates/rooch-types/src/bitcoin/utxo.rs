@@ -19,7 +19,6 @@ pub const MODULE_NAME: &IdentStr = ident_str!("utxo");
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BitcoinUTXOStore {
-    pub next_tx_index: u64,
 }
 
 impl BitcoinUTXOStore {
@@ -31,7 +30,7 @@ impl BitcoinUTXOStore {
         let id = Self::object_id();
         let mut metadata = ObjectMeta::genesis_meta(id, BitcoinUTXOStore::type_tag());
         metadata.to_shared();
-        ObjectState::new_with_struct(metadata, Self { next_tx_index: 0 })
+        ObjectState::new_with_struct(metadata, Self {})
             .expect("Create BitcoinUTXOStore Object should success")
     }
 }
