@@ -1,13 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{
-    fmt::{self, Debug},
-    str::FromStr,
-};
-
+use bitcoin::hashes::{sha256t_hash_newtype, Hash};
 use bytes::Bytes;
-use fastcrypto::hash::{HashFunction, Sha256};
 use hex::FromHex;
 use more_asserts::debug_assert_lt;
 use once_cell::sync::Lazy;
@@ -16,11 +11,22 @@ use primitive_types::H256;
 use proptest_derive::Arbitrary;
 use rand::{rngs::OsRng, Rng};
 use serde::{de, ser};
+use std::{
+    fmt::{self, Debug},
+    str::FromStr,
+};
+
+sha256t_hash_newtype! {
+    pub struct RoochSmtTag = hash_str("rooch-smt");
+
+    #[hash_newtype(forward)]
+    pub struct RoochSmtHash(_);
+}
 
 pub(crate) fn merkle_hash(left: HashValue, right: HashValue) -> HashValue {
     let mut value = left.to_vec();
     value.extend(right.to_vec());
-    HashValue::double_sha256(&value)
+    HashValue::tag_sha256(&value)
 }
 
 /// Output value of our hash function. Intentionally opaque for safety and modularity.
@@ -73,10 +79,10 @@ impl HashValue {
         HashValue { hash }
     }
 
-    /// Creates a new `HashValue` from a byte array by applying SHA-256 followed by SHA-256.
-    pub fn double_sha256(data: &[u8]) -> Self {
-        let digest = Sha256::digest(Sha256::digest(data).digest);
-        HashValue::new(digest.digest)
+    /// Creates a new `HashValue` by tagging the given `data` with `rooch-smt`.
+    pub fn tag_sha256(data: &[u8]) -> Self {
+        let digest = RoochSmtHash::hash(data);
+        HashValue::new(digest.to_byte_array())
     }
 
     /// Returns the mut reference array
