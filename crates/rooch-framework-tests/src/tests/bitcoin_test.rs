@@ -9,7 +9,6 @@ use bitcoin::{Block, OutPoint, Transaction, TxOut};
 use hex::FromHex;
 use moveos_types::access_path::AccessPath;
 use moveos_types::module_binding::MoveFunctionCaller;
-use moveos_types::state::MoveState;
 use moveos_types::state_resolver::StateReader;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::bitcoin::ord;

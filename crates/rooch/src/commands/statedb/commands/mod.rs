@@ -16,7 +16,7 @@ use moveos_types::state::{FieldKey, MoveType, ObjectState};
 use rooch_common::fs::file_cache::FileCacheManager;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
-use rooch_types::bitcoin::ord::InscriptionID;
+use rooch_types::bitcoin::ord::{Inscription, InscriptionID};
 use rooch_types::rooch_network::RoochChainID;
 use std::fmt::{Debug, Display};
 use std::fs::File;
