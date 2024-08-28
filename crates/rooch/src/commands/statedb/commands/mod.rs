@@ -16,7 +16,7 @@ use moveos_types::state::{FieldKey, MoveType, ObjectState};
 use rooch_common::fs::file_cache::FileCacheManager;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
-use rooch_types::bitcoin::ord::{BitcoinInscriptionID, Inscription};
+use rooch_types::bitcoin::ord::{Inscription, InscriptionID};
 use rooch_types::rooch_network::RoochChainID;
 use std::fmt::{Debug, Display};
 use std::fs::File;
@@ -74,7 +74,7 @@ fn convert_option_string_to_move_type(opt: Option<String>) -> MoveOption<MoveStr
 #[derive(Clone, Default, PartialEq, Debug)]
 pub(crate) struct OutpointInscriptions {
     outpoint: OutPoint,
-    inscriptions: Vec<BitcoinInscriptionID>,
+    inscriptions: Vec<InscriptionID>,
 }
 
 impl OutpointInscriptions {
@@ -113,8 +113,8 @@ impl FromStr for OutpointInscriptions {
         let outpoint = OutPoint::from_str(parts[0])?;
         let inscriptions = parts[1]
             .split(',')
-            .map(BitcoinInscriptionID::from_str)
-            .collect::<Result<Vec<BitcoinInscriptionID>, _>>()?;
+            .map(InscriptionID::from_str)
+            .collect::<Result<Vec<InscriptionID>, _>>()?;
         Ok(OutpointInscriptions {
             outpoint,
             inscriptions,
@@ -123,7 +123,7 @@ impl FromStr for OutpointInscriptions {
 }
 
 fn derive_utxo_inscription_seal(
-    inscriptions: Option<Vec<BitcoinInscriptionID>>,
+    inscriptions: Option<Vec<InscriptionID>>,
 ) -> SimpleMultiMap<MoveString, ObjectID> {
     let obj_ids = derive_inscription_ids(inscriptions);
     if obj_ids.is_empty() {
@@ -250,7 +250,7 @@ impl OutpointInscriptionsMap {
         let mut write_index = 0;
         for read_index in 1..items.len() {
             if items[write_index].outpoint == items[read_index].outpoint {
-                let drained_inscriptions: Vec<BitcoinInscriptionID> =
+                let drained_inscriptions: Vec<InscriptionID> =
                     items[read_index].inscriptions.drain(..).collect();
                 items[write_index].inscriptions.extend(drained_inscriptions);
             } else {
@@ -293,7 +293,7 @@ impl OutpointInscriptionsMap {
         }
     }
 
-    fn search(&self, outpoint: &OutPoint) -> Option<Vec<BitcoinInscriptionID>> {
+    fn search(&self, outpoint: &OutPoint) -> Option<Vec<InscriptionID>> {
         if !self.contains(outpoint) {
             return None;
         }
@@ -462,6 +462,7 @@ mod tests {
     use super::*;
     use bitcoin::Txid;
     use rand::Rng;
+    use rooch_types::into_address::IntoAddress;
     use tempfile::tempdir;
 
     impl OutpointInscriptionsMap {
@@ -485,12 +486,15 @@ mod tests {
         OutPoint { txid, vout }
     }
 
-    fn random_inscription_id() -> BitcoinInscriptionID {
+    fn random_inscription_id() -> InscriptionID {
         let mut rng = rand::thread_rng();
         let txid: Txid = Txid::from_slice(&rng.gen::<[u8; 32]>()).unwrap();
         let index: u32 = rng.gen();
 
-        BitcoinInscriptionID { txid, index }
+        InscriptionID {
+            txid: txid.into_address(),
+            index,
+        }
     }
 
     // all outpoints are unique
@@ -503,7 +507,7 @@ mod tests {
     }
 
     // all inscriptions are unique
-    fn random_inscriptions(n: usize) -> Vec<BitcoinInscriptionID> {
+    fn random_inscriptions(n: usize) -> Vec<InscriptionID> {
         let mut inscriptions = HashSet::new();
         while inscriptions.len() < n {
             inscriptions.insert(random_inscription_id());

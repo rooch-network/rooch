@@ -27,9 +27,7 @@ use moveos_types::state::{
 use moveos_types::state_resolver::{RootObjectResolver, StatelessResolver};
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::address::BitcoinAddress;
-use rooch_types::bitcoin::ord::{
-    BitcoinInscriptionID, Inscription, InscriptionID, InscriptionStore, MODULE_NAME,
-};
+use rooch_types::bitcoin::ord::{Inscription, InscriptionID, InscriptionStore, MODULE_NAME};
 use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
 use rooch_types::error::RoochResult;
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
@@ -673,16 +671,14 @@ fn verify_inscription(
         let act_inscription_id_state = resolver
             .get_field_at(inscription_store_state_root, &exp_inscription_id_key)
             .unwrap();
-        let (mismatched, not_found) = write_mismatched_state_output::<
-            DynamicField<u32, InscriptionID>,
-            BitcoinInscriptionID,
-        >(
-            &mut output_writer,
-            "[inscription_id]",
-            exp_inscription_id_state,
-            act_inscription_id_state.clone(),
-            Some(source.id),
-        );
+        let (mismatched, not_found) =
+            write_mismatched_state_output::<DynamicField<u32, InscriptionID>, InscriptionID>(
+                &mut output_writer,
+                "[inscription_id]",
+                exp_inscription_id_state,
+                act_inscription_id_state.clone(),
+                Some(source.id),
+            );
         if mismatched {
             mismatched_inscription_id_count += 1;
             new_cases.insert(source.sequence_number);
@@ -954,7 +950,7 @@ pub struct InscriptionForComparison {
     pub content_type: MoveOption<MoveString>,
     pub metadata: Vec<u8>,
     pub metaprotocol: MoveOption<MoveString>,
-    pub parents: Vec<ObjectID>,
+    pub parents: Vec<InscriptionID>,
     pub pointer: MoveOption<u64>,
     pub rune: MoveOption<Vec<u8>>, // Changed to Vec<u8> for comparison
 }
@@ -973,7 +969,7 @@ impl From<&Inscription> for InscriptionForComparison {
             content_type: ins.content_type.clone(),
             metadata: ins.metadata.clone(),
             metaprotocol: ins.metaprotocol.clone(),
-            parents: ins.parents.clone(),
+            parents: ins.parents.clone().into_iter().map(Into::into).collect(),
             pointer: ins.pointer.clone(),
             rune: MoveOption::from(to_commitment(ins.rune.clone().into())),
         }
@@ -1096,7 +1092,8 @@ mod tests {
     use crate::commands::statedb::commands::inscription::InscriptionSource;
     use bitcoin::Txid;
     use moveos_types::move_std::option::MoveOption;
-    use rooch_types::bitcoin::ord::BitcoinInscriptionID;
+    use rooch_types::bitcoin::ord::InscriptionID;
+    use rooch_types::into_address::IntoAddress;
     use std::str::FromStr;
 
     #[test]
@@ -1110,11 +1107,12 @@ mod tests {
         let ins_source = InscriptionSource {
             sequence_number: 74311915,
             inscription_number: 73839872,
-            id: BitcoinInscriptionID {
+            id: InscriptionID {
                 txid: Txid::from_str(
                     "ab324803e78a978872b5a71b4838644c5fc0dbb0ffeb4e93c73462854d54d427",
                 )
-                .unwrap(),
+                .unwrap()
+                .into_address(),
                 index: 0,
             },
             satpoint_outpoint: "ab324803e78a978872b5a71b4838644c5fc0dbb0ffeb4e93c73462854d54d427:1"

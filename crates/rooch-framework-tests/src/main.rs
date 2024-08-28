@@ -5,6 +5,7 @@ use anyhow::Result;
 use clap::Parser;
 use coerce::actor::{system::ActorSystem, IntoActor};
 use rooch_framework_tests::bitcoin_block_tester::TesterGenesisBuilder;
+use rooch_ord::ord_client::OrdClient;
 use rooch_relayer::actor::{
     bitcoin_client::BitcoinClientActor, bitcoin_client_proxy::BitcoinClientProxy,
 };
@@ -26,6 +27,14 @@ struct TestBuilderOpts {
     #[clap(long, id = "btc-rpc-password", env = "BTC_RPC_PASSWORD")]
     pub btc_rpc_password: String,
 
+    #[clap(
+        long,
+        id = "ord-rpc-url",
+        env = "ORD_RPC_URL",
+        default_value = "http://localhost:8080"
+    )]
+    pub ord_rpc_url: String,
+
     /// Block heights to execute
     #[clap(long, id = "blocks")]
     pub blocks: Vec<u64>,
@@ -45,7 +54,8 @@ async fn main() -> Result<()> {
         .into_actor(Some("bitcoin_client_for_rpc_service"), &actor_system)
         .await?;
     let bitcoin_client_proxy = BitcoinClientProxy::new(bitcoin_client_actor_ref.into());
-    let mut builder = TesterGenesisBuilder::new(bitcoin_client_proxy)?;
+    let ord_client = OrdClient::new(opts.ord_rpc_url);
+    let mut builder = TesterGenesisBuilder::new(bitcoin_client_proxy, ord_client)?;
     let mut blocks = opts.blocks;
     blocks.sort();
     for block in blocks {

@@ -496,6 +496,13 @@ module bitcoin_move::ord {
             let input = vector::borrow(inputs, input_idx);
             let witness = types::txin_witness(input);
             let inscription_records = parse_inscription_from_witness(witness);
+            let record_len = vector::length(&inscription_records);
+            let record_idx = 0;
+            while (record_idx < record_len) {
+                let record = vector::borrow_mut(&mut inscription_records, record_idx);
+                record.input = (input_idx as u32);
+                record_idx = record_idx + 1;
+            };
             vector::append(&mut records, inscription_records);
             input_idx = input_idx + 1;
         };
