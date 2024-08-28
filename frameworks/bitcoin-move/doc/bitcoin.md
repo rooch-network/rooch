@@ -44,6 +44,7 @@
 <b>use</b> <a href="inscription_updater.md#0x4_inscription_updater">0x4::inscription_updater</a>;
 <b>use</b> <a href="network.md#0x4_network">0x4::network</a>;
 <b>use</b> <a href="pending_block.md#0x4_pending_block">0x4::pending_block</a>;
+<b>use</b> <a href="script_buf.md#0x4_script_buf">0x4::script_buf</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 <b>use</b> <a href="utxo.md#0x4_utxo">0x4::utxo</a>;
 </code></pre>
