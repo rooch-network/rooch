@@ -5774,7 +5774,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c2a198fb6b0eada2a8df47933734e6d35d350665a33a3593d7164fa52c75c19"
 dependencies = [
  "cfg-if",
- "windows-targets 0.52.5",
+ "windows-targets 0.48.5",
 ]
 
 [[package]]
@@ -6957,7 +6957,7 @@ dependencies = [
  "serde 1.0.208",
  "serde_bytes",
  "serde_json",
- "serde_with 2.3.3",
+ "serde_with 3.9.0",
  "smt",
  "tiny-keccak",
  "tracing",
@@ -9577,7 +9577,7 @@ dependencies = [
  "rooch-types",
  "serde 1.0.208",
  "serde_json",
- "serde_with 2.3.3",
+ "serde_with 3.9.0",
  "signature 2.2.0",
  "tiny-bip39",
 ]
@@ -9933,7 +9933,7 @@ dependencies = [
  "schemars",
  "serde 1.0.208",
  "serde_json",
- "serde_with 2.3.3",
+ "serde_with 3.9.0",
  "serde_yaml 0.9.34+deprecated",
  "sha3 0.10.8",
  "strum",
