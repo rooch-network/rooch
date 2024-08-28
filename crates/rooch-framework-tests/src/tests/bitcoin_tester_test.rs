@@ -70,3 +70,33 @@ async fn test_block_790964() {
         .unwrap()
     );
 }
+
+#[tokio::test]
+async fn test_block_781735() {
+    let _ = tracing_subscriber::fmt::try_init();
+
+    if cfg!(debug_assertions) {
+        warn!("test_block_781735 is ignored in debug mode, please run it in release mode");
+        return;
+    }
+
+    let mut tester = BitcoinBlockTester::new(781735).unwrap();
+    tester.execute().unwrap();
+    tester.verify_utxo().unwrap();
+    tester.verify_inscriptions().unwrap();
+
+    //https://ordiscan.com/inscription/-453
+    //is a curse inscription
+    let inscription_id = InscriptionID::from_str(
+        "092111e882a8025f3f05ab791982e8cc7fd7395afe849a5949fd56255b5c41cci24",
+    )
+    .unwrap();
+
+    let inscription_opt = tester.get_inscription(&inscription_id).unwrap();
+    assert!(inscription_opt.is_some());
+    let inscription_obj = inscription_opt.unwrap();
+    let inscription = inscription_obj.value_as::<Inscription>().unwrap();
+    debug!("Inscription: {:?}", inscription);
+    assert_eq!(inscription.id(), inscription_id);
+    assert!(inscription.is_curse);
+}
