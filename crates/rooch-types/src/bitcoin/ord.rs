@@ -53,28 +53,49 @@ impl FromStr for InscriptionID {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        BitcoinInscriptionID::from_str(s).map(Into::into)
-    }
-}
+        const TXID_LEN: usize = 64;
+        const MIN_LEN: usize = TXID_LEN + 2;
+        if s.len() < MIN_LEN {
+            bail!(
+                "Invalid InscriptionID length: {}",
+                format!("{}, len: {} < {}", s, s.len(), MIN_LEN)
+            );
+        }
 
-impl Debug for InscriptionID {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("InscriptionID")
-            .field("txid(move)", &self.txid)
-            .field(
-                "txid(bitcoin)",
-                &bitcoin::Txid::from_address(self.txid).to_string(),
-            )
-            .field("index", &self.index)
-            .field("id", &format!("{}", self))
-            .finish()
+        let txid = bitcoin::Txid::from_str(&s[..TXID_LEN])?;
+        let separator = s.chars().nth(TXID_LEN).unwrap();
+
+        if separator != 'i' {
+            bail!("Invalid InscriptionID separator: {}", separator);
+        }
+        let index = &s[TXID_LEN + 1..];
+        let index = index.parse()?;
+        Ok(InscriptionID {
+            txid: txid.into_address(),
+            index,
+        })
     }
 }
 
 impl Display for InscriptionID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let bitcoin_inscription_id: BitcoinInscriptionID = (*self).into();
-        write!(f, "{}", bitcoin_inscription_id)
+        write!(
+            f,
+            "{}i{}",
+            bitcoin::Txid::from_address(self.txid),
+            self.index
+        )
+    }
+}
+
+impl Debug for InscriptionID {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}i{}",
+            bitcoin::Txid::from_address(self.txid),
+            self.index
+        )
     }
 }
 
@@ -151,7 +172,7 @@ pub struct Inscription {
     pub content_type: MoveOption<MoveString>,
     pub metadata: Vec<u8>,
     pub metaprotocol: MoveOption<MoveString>,
-    pub parents: Vec<ObjectID>,
+    pub parents: Vec<InscriptionID>,
     pub pointer: MoveOption<u64>,
     pub rune: MoveOption<u128>,
 }
@@ -480,91 +501,6 @@ impl<'a> ModuleBinding<'a> for OrdModule<'a> {
         Self: Sized,
     {
         Self { caller }
-    }
-}
-
-#[derive(PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord)]
-pub struct BitcoinInscriptionID {
-    pub txid: bitcoin::Txid,
-    pub index: u32,
-}
-
-impl BitcoinInscriptionID {
-    pub fn new(txid: bitcoin::Txid, index: u32) -> Self {
-        Self { txid, index }
-    }
-}
-
-impl From<BitcoinInscriptionID> for InscriptionID {
-    fn from(inscription: BitcoinInscriptionID) -> Self {
-        InscriptionID {
-            txid: inscription.txid.into_address(),
-            index: inscription.index,
-        }
-    }
-}
-
-impl From<InscriptionID> for BitcoinInscriptionID {
-    fn from(inscription: InscriptionID) -> Self {
-        BitcoinInscriptionID {
-            txid: bitcoin::Txid::from_address(inscription.txid),
-            index: inscription.index,
-        }
-    }
-}
-
-impl Display for BitcoinInscriptionID {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}i{}", self.txid, self.index)
-    }
-}
-
-impl Debug for BitcoinInscriptionID {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}i{}", self.txid, self.index)
-    }
-}
-
-impl FromStr for BitcoinInscriptionID {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        const TXID_LEN: usize = 64;
-        const MIN_LEN: usize = TXID_LEN + 2;
-        if s.len() < MIN_LEN {
-            bail!(
-                "Invalid BitcoinInscriptionID length: {}",
-                format!("{}, len: {} < {}", s, s.len(), MIN_LEN)
-            );
-        }
-
-        let txid = bitcoin::Txid::from_str(&s[..TXID_LEN])?;
-        let separator = s.chars().nth(TXID_LEN).unwrap();
-
-        if separator != 'i' {
-            bail!("Invalid BitcoinInscriptionID separator: {}", separator);
-        }
-        let index = &s[TXID_LEN + 1..];
-        let index = index.parse()?;
-        Ok(BitcoinInscriptionID { txid, index })
-    }
-}
-
-impl<'de> Deserialize<'de> for BitcoinInscriptionID {
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        Self::from_str(&String::deserialize(deserializer)?).map_err(serde::de::Error::custom)
-    }
-}
-
-impl Serialize for BitcoinInscriptionID {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.collect_str(self)
     }
 }
 
