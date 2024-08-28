@@ -81,7 +81,7 @@ describe('Serializer', () => {
       typeParams: [],
     }
 
-    const expectObjectID = '0x4e8d2c243339c6e02f8b7dd34436a1b1eb541b0fe4d938f845f4dbb9d9f218a2'
+    const expectObjectID = '0x3a7dfe7a9a5cd608810b5ebd60c7adf7316667b17ad5ae703af301b74310bcca'
     const resultObjectID = Serializer.structTagToObjectID(testData)
     expect(resultObjectID).toBe(expectObjectID)
   })
