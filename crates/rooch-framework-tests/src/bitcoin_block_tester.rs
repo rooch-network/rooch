@@ -35,7 +35,7 @@ use std::{
     str::FromStr,
     vec,
 };
-use tracing::{debug, info};
+use tracing::{debug, error, info, trace};
 
 /// Execute Bitcoin block and test base a emulated environment
 /// We prepare the Block's previous dependencies and execute the block
@@ -106,7 +106,16 @@ impl BitcoinBlockTester {
                 outpoint
             );
             let utxo_obj = utxo_obj.unwrap();
-            let utxo_state = utxo_obj.value_as::<UTXO>()?;
+            let utxo_state = utxo_obj.value_as::<UTXO>().map_err(|e| {
+                error!("Parse UTXO Error: {:?}, object: {:?}", e, utxo_obj);
+                e
+            })?;
+            trace!(
+                "Check utxo: outpoint {}, utxo obj metadata: {:?}, utxo value: {:?}",
+                outpoint,
+                utxo_obj.metadata,
+                utxo_state
+            );
             ensure!(
                 utxo_state.value == tx_out.value.to_sat(),
                 "UTXO not match: {:?}, {:?}",
@@ -128,18 +137,30 @@ impl BitcoinBlockTester {
                         "Missing inscription object: {:?}",
                         inscription_obj_id
                     );
-                    let inscription = inscription_obj.unwrap().value_as::<Inscription>()?;
+                    let inscription_obj = inscription_obj.unwrap();
+                    let inscription = inscription_obj.value_as::<Inscription>().map_err(|e| {
+                        error!(
+                            "Parse Inscription Error: {:?}, object meta: {:?}, object value: {}",
+                            e,
+                            inscription_obj.metadata,
+                            hex::encode(&inscription_obj.value)
+                        );
+                        e
+                    })?;
                     ensure!(
                         inscription.location.outpoint == outpoint.into(),
                         "Inscription location not match: {:?}, {:?}",
                         inscription,
                         outpoint
                     );
-                    ensure!(
-                        block_data.expect_inscriptions.contains_key(&inscription.id),
-                        "Inscription {:?} not in expect inscriptions",
-                        inscription,
-                    );
+                    //if expect_inscriptions is empty, maybe we can not get the inscription from ord RPC, so skip the check
+                    if !block_data.expect_inscriptions.is_empty() {
+                        ensure!(
+                            block_data.expect_inscriptions.contains_key(&inscription.id),
+                            "Inscription {:?} not in expect inscriptions",
+                            inscription,
+                        );
+                    }
                 }
             }
         }
