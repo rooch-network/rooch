@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::move_std::string::MoveString;
 use crate::moveos_std::object;
 use crate::moveos_std::object::ObjectID;
 use crate::state::FieldKey;
@@ -91,5 +92,57 @@ impl MoveStructType for Package {
 impl MoveStructState for Package {
     fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![MoveTypeLayout::Bool])
+    }
+}
+
+///////////// PackageData ////////////////
+#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
+pub struct PackageData {
+    package_name: MoveString,
+    /// The address of the package to be published.
+    /// This must be same as every module's address in the package.
+    package_id: AccountAddress,
+    /// bytecode of modules.
+    modules: Vec<Vec<u8>>,
+}
+
+impl PackageData {
+    pub fn new(
+        package_name: MoveString,
+        package_id: AccountAddress,
+        modules: Vec<Vec<u8>>,
+    ) -> Self {
+        Self {
+            package_name,
+            package_id,
+            modules,
+        }
+    }
+}
+
+impl MoveStructType for PackageData {
+    const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("PackageData");
+
+    fn struct_tag() -> StructTag {
+        StructTag {
+            address: Self::ADDRESS,
+            module: Self::MODULE_NAME.to_owned(),
+            name: Self::STRUCT_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
+}
+
+impl MoveStructState for PackageData {
+    fn struct_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![
+            MoveTypeLayout::Struct(MoveString::struct_layout()),
+            MoveTypeLayout::Address,
+            MoveTypeLayout::Vector(Box::new(MoveTypeLayout::Vector(Box::new(
+                MoveTypeLayout::U8,
+            )))),
+        ])
     }
 }
