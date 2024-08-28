@@ -12,11 +12,11 @@ use moveos_types::move_std::option::MoveOption;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
 use moveos_types::moveos_std::simple_multimap::{Element, SimpleMultiMap};
-use moveos_types::state::{FieldKey, ObjectState};
+use moveos_types::state::{FieldKey, MoveType, ObjectState};
 use rooch_common::fs::file_cache::FileCacheManager;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
-use rooch_types::bitcoin::ord::BitcoinInscriptionID;
+use rooch_types::bitcoin::ord::{BitcoinInscriptionID, Inscription};
 use rooch_types::rooch_network::RoochChainID;
 use std::fmt::{Debug, Display};
 use std::fs::File;
@@ -41,8 +41,11 @@ pub const GLOBAL_STATE_TYPE_ROOT: &str = "states_root";
 pub const GLOBAL_STATE_TYPE_OBJECT: &str = "states_object";
 pub const GLOBAL_STATE_TYPE_FIELD: &str = "states_field";
 
-const UTXO_SEAL_INSCRIPTION_PROTOCOL: &str =
-    "0000000000000000000000000000000000000000000000000000000000000004::ord::Inscription";
+lazy_static::lazy_static! {
+    static ref UTXO_SEAL_INSCRIPTION_PROTOCOL: String = {
+        Inscription::type_tag().to_canonical_string()
+    };
+}
 
 fn init_job(
     base_data_dir: Option<PathBuf>,
@@ -128,7 +131,7 @@ fn derive_utxo_inscription_seal(
     }
     SimpleMultiMap {
         data: vec![Element {
-            key: MoveString::from_str(UTXO_SEAL_INSCRIPTION_PROTOCOL).unwrap(),
+            key: MoveString::from_str(&UTXO_SEAL_INSCRIPTION_PROTOCOL).unwrap(),
             value: obj_ids,
         }],
     }
