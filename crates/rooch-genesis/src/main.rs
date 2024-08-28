@@ -15,7 +15,8 @@ struct GenesisOpts {
     chain_id: BuiltinChainID,
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
     let opts: GenesisOpts = GenesisOpts::parse();
     match &opts.chain_id {
