@@ -324,7 +324,7 @@ fn verify_reverse(
         RoochToBitcoinAddressMapping::object_id(),
         &mut writer,
     )?;
-
+    writer.flush()?;
     ExportCommand::export_object(
         &moveos_store_arc,
         root_state_root,
