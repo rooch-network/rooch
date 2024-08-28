@@ -18,7 +18,10 @@ use rooch_indexer::indexer_reader::IndexerReader;
 use rooch_indexer::store::traits::IndexerStoreTrait;
 use rooch_indexer::IndexerStore;
 use rooch_types::error::{RoochError, RoochResult};
-use rooch_types::indexer::state::IndexerObjectState;
+use rooch_types::indexer::state::{
+    IndexerObjectState, IndexerObjectStateChangeSet, IndexerObjectStatesIndexGenerator,
+    ObjectStateType,
+};
 use rooch_types::rooch_network::RoochChainID;
 
 use crate::commands::indexer::commands::init_indexer;
@@ -76,7 +79,7 @@ impl RebuildCommand {
 }
 
 struct BatchUpdates {
-    object_states: Vec<IndexerObjectState>,
+    object_state_change_set: IndexerObjectStateChangeSet,
 }
 
 fn produce_updates(
@@ -86,19 +89,32 @@ fn produce_updates(
     batch_size: usize,
 ) -> Result<()> {
     let mut csv_reader = BufReader::new(File::open(input).unwrap());
-    // let mut last_state_type = None;
 
     // set genesis tx_order and state_index_generator for indexer rebuild
     let tx_order: u64 = 0;
-    let mut state_index_generator = indexer_reader.query_last_state_index_by_tx_order(tx_order)?;
+    let state_index_start = indexer_reader
+        .query_last_state_index_by_tx_order(tx_order, ObjectStateType::ObjectState)?
+        .map_or(0, |x| x + 1);
+    let utxo_state_index_start = indexer_reader
+        .query_last_state_index_by_tx_order(tx_order, ObjectStateType::UTXO)?
+        .map_or(0, |x| x + 1);
+    let inscription_state_index_start = indexer_reader
+        .query_last_state_index_by_tx_order(tx_order, ObjectStateType::Inscription)?
+        .map_or(0, |x| x + 1);
+    let mut state_index_generator = IndexerObjectStatesIndexGenerator {
+        object_states_index_generator: state_index_start,
+        object_state_utxos_index_generator: utxo_state_index_start,
+        object_state_inscriptions_generator: inscription_state_index_start,
+    };
+
     println!(
-        "Indexer rebuild. last_state_index starts from: {}",
+        "Indexer rebuild, state_index_generator: {:?} ",
         state_index_generator
     );
 
     loop {
         let mut updates = BatchUpdates {
-            object_states: Vec::with_capacity(batch_size),
+            object_state_change_set: IndexerObjectStateChangeSet::default(),
         };
 
         for line in csv_reader.by_ref().lines().take(batch_size) {
@@ -108,10 +124,14 @@ fn produce_updates(
             let state_result = ObjectState::from_str(&state_str);
             match state_result {
                 Ok(state) => {
+                    let object_type = state.metadata.object_type.clone();
+                    let state_index = state_index_generator.get(&object_type);
                     let indexer_state =
-                        IndexerObjectState::new(state.metadata, tx_order, state_index_generator);
-                    state_index_generator += 1;
-                    updates.object_states.push(indexer_state);
+                        IndexerObjectState::new(state.metadata, tx_order, state_index);
+                    updates
+                        .object_state_change_set
+                        .new_object_states(indexer_state);
+                    state_index_generator.incr(&object_type);
                 }
                 Err(e) => {
                     println!(
@@ -123,7 +143,22 @@ fn produce_updates(
                 }
             }
         }
-        if updates.object_states.is_empty() {
+        if updates
+            .object_state_change_set
+            .object_states
+            .new_object_states
+            .is_empty()
+            && updates
+                .object_state_change_set
+                .object_state_utxos
+                .new_object_states
+                .is_empty()
+            && updates
+                .object_state_change_set
+                .object_state_inscriptions
+                .new_object_states
+                .is_empty()
+        {
             break;
         }
         tx.send(updates).expect("failed to send updates");
@@ -141,12 +176,47 @@ fn apply_updates(
     let mut ok_count: usize = 0;
     while let Ok(batch) = rx.recv() {
         let loop_start_time = Instant::now();
-        let count = batch.object_states.len();
-        indexer_store.persist_or_update_object_states(batch.object_states)?;
+        let object_states_len = batch
+            .object_state_change_set
+            .object_states
+            .new_object_states
+            .len();
+        let utxos_len = batch
+            .object_state_change_set
+            .object_state_utxos
+            .new_object_states
+            .len();
+        let inscriptions_len = batch
+            .object_state_change_set
+            .object_state_inscriptions
+            .new_object_states
+            .len();
+        let count = object_states_len + utxos_len + inscriptions_len;
+        indexer_store.persist_or_update_object_states(
+            batch
+                .object_state_change_set
+                .object_states
+                .new_object_states,
+        )?;
+        indexer_store.persist_or_update_object_state_utxos(
+            batch
+                .object_state_change_set
+                .object_state_utxos
+                .new_object_states,
+        )?;
+        indexer_store.persist_or_update_object_state_inscriptions(
+            batch
+                .object_state_change_set
+                .object_state_inscriptions
+                .new_object_states,
+        )?;
         ok_count += count;
         println!(
-            "{} updates applied. this batch cost: {:?}",
+            "Total {} updates applied. this batch process object states count {}, utxo count {}, inscription count {}. this batch cost: {:?}",
             ok_count,
+            object_states_len,
+            utxos_len,
+            inscriptions_len,
             loop_start_time.elapsed()
         );
     }

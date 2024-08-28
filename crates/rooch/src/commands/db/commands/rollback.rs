@@ -67,7 +67,9 @@ impl RollbackCommand {
             ))));
         }
 
-        let tx_hashes = rooch_store.transaction_store.get_tx_hashs(vec![tx_order])?;
+        let tx_hashes = rooch_store
+            .transaction_store
+            .get_tx_hashes(vec![tx_order])?;
         // check tx hash exist via tx_order
         if tx_hashes.is_empty() || tx_hashes[0].is_none() {
             return Err(RoochError::from(Error::msg(format!(
@@ -102,7 +104,7 @@ impl RollbackCommand {
         let execution_info = execution_info.unwrap();
         let start_order = tx_order + 1;
         for order in (start_order..=last_order).rev() {
-            let tx_hashes = rooch_store.transaction_store.get_tx_hashs(vec![order])?;
+            let tx_hashes = rooch_store.transaction_store.get_tx_hashes(vec![order])?;
             if tx_hashes.is_empty() || tx_hashes[0].is_none() {
                 return Err(RoochError::from(Error::msg(format!(
                     "tx hash not exist via tx order {}",

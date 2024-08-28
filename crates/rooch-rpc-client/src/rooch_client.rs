@@ -6,10 +6,13 @@ use jsonrpsee::http_client::HttpClient;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::account::Account;
 use moveos_types::{access_path::AccessPath, state::ObjectState, transaction::FunctionCall};
+use rooch_rpc_api::api::btc_api::BtcAPIClient;
 use rooch_rpc_api::api::rooch_api::RoochAPIClient;
+use rooch_rpc_api::jsonrpc_types::btc::ord::InscriptionFilterView;
+use rooch_rpc_api::jsonrpc_types::btc::utxo::UTXOFilterView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, transaction_view::TransactionWithInfoView,
-    DryRunTransactionResponseView,
+    DryRunTransactionResponseView, InscriptionPageView, UTXOPageView,
 };
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, EventOptions, EventPageView,
@@ -266,6 +269,42 @@ impl RoochRpcClient {
                 cursor.map(Into::into),
                 limit.map(Into::into),
                 query_options,
+            )
+            .await?)
+    }
+
+    pub async fn query_utxos(
+        &self,
+        filter: UTXOFilterView,
+        cursor: Option<IndexerStateID>,
+        limit: Option<u64>,
+        query_options: Option<QueryOptions>,
+    ) -> Result<UTXOPageView> {
+        Ok(self
+            .http
+            .query_utxos(
+                filter,
+                cursor.map(Into::into),
+                limit.map(Into::into),
+                query_options.map(|v| v.descending),
+            )
+            .await?)
+    }
+
+    pub async fn query_inscriptions(
+        &self,
+        filter: InscriptionFilterView,
+        cursor: Option<IndexerStateID>,
+        limit: Option<u64>,
+        query_options: Option<QueryOptions>,
+    ) -> Result<InscriptionPageView> {
+        Ok(self
+            .http
+            .query_inscriptions(
+                filter,
+                cursor.map(Into::into),
+                limit.map(Into::into),
+                query_options.map(|v| v.descending),
             )
             .await?)
     }

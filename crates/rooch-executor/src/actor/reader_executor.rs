@@ -3,7 +3,8 @@
 
 use super::messages::{
     AnnotatedStatesMessage, ExecuteViewFunctionMessage, GetAnnotatedEventsByEventHandleMessage,
-    GetEventsByEventHandleMessage, RefreshStateMessage, StatesMessage,
+    GetAnnotatedEventsByEventIDsMessage, GetEventsByEventHandleMessage, RefreshStateMessage,
+    StatesMessage,
 };
 use crate::actor::messages::{
     GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage,
@@ -16,7 +17,6 @@ use move_resource_viewer::MoveValueAnnotator;
 use moveos::moveos::MoveOS;
 use moveos::moveos::MoveOSConfig;
 use moveos_eventbus::bus::EventData;
-use moveos_eventbus::event::GasUpgradeEvent;
 use moveos_store::transaction_store::TransactionStore;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
@@ -29,6 +29,7 @@ use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::state_resolver::{AnnotatedStateKV, AnnotatedStateReader, StateKV, StateReader};
 use moveos_types::transaction::TransactionExecutionInfo;
 use rooch_event::actor::{EventActor, EventActorSubscribeMessage};
+use rooch_event::event::GasUpgradeEvent;
 use rooch_genesis::FrameworksGasParameters;
 use rooch_store::RoochStore;
 use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
@@ -243,13 +244,13 @@ impl Handler<GetEventsByEventHandleMessage> for ReaderExecutorActor {
 }
 
 #[async_trait]
-impl Handler<GetEventsByEventIDsMessage> for ReaderExecutorActor {
+impl Handler<GetAnnotatedEventsByEventIDsMessage> for ReaderExecutorActor {
     async fn handle(
         &mut self,
-        msg: GetEventsByEventIDsMessage,
+        msg: GetAnnotatedEventsByEventIDsMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<Option<AnnotatedEvent>>> {
-        let GetEventsByEventIDsMessage { event_ids } = msg;
+        let GetAnnotatedEventsByEventIDsMessage { event_ids } = msg;
         let event_store = self.moveos().event_store();
         let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
         event_store
@@ -264,6 +265,19 @@ impl Handler<GetEventsByEventIDsMessage> for ReaderExecutorActor {
                 None => Ok(None),
             })
             .collect::<Result<Vec<_>>>()
+    }
+}
+
+#[async_trait]
+impl Handler<GetEventsByEventIDsMessage> for ReaderExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: GetEventsByEventIDsMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<Option<Event>>> {
+        let GetEventsByEventIDsMessage { event_ids } = msg;
+        let event_store = self.moveos().event_store();
+        event_store.multi_get_events(event_ids)
     }
 }
 

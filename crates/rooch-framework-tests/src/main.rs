@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use bitcoin::BlockHash;
 use clap::Parser;
 use coerce::actor::{system::ActorSystem, IntoActor};
 use rooch_framework_tests::bitcoin_block_tester::TesterGenesisBuilder;
@@ -27,8 +26,9 @@ struct TestBuilderOpts {
     #[clap(long, id = "btc-rpc-password", env = "BTC_RPC_PASSWORD")]
     pub btc_rpc_password: String,
 
-    #[clap(long, id = "block-hash", env = "BLOCK_HASH")]
-    pub block_hash: BlockHash,
+    /// Block heights to execute
+    #[clap(long, id = "blocks")]
+    pub blocks: Vec<u64>,
 }
 
 #[tokio::main]
@@ -45,8 +45,12 @@ async fn main() -> Result<()> {
         .into_actor(Some("bitcoin_client_for_rpc_service"), &actor_system)
         .await?;
     let bitcoin_client_proxy = BitcoinClientProxy::new(bitcoin_client_actor_ref.into());
-    let builder = TesterGenesisBuilder::new(bitcoin_client_proxy)?;
-    let builder = builder.add_block(opts.block_hash).await?;
+    let mut builder = TesterGenesisBuilder::new(bitcoin_client_proxy)?;
+    let mut blocks = opts.blocks;
+    blocks.sort();
+    for block in blocks {
+        builder = builder.add_block(block).await?;
+    }
     let genesis = builder.build().await?;
     genesis.save()?;
     Ok(())

@@ -263,7 +263,7 @@ Replace given u64 constant to the new ones
 Replace given u256 constant to the new ones
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_constant_u256">replace_constant_u256</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_u256s: <a href="">vector</a>&lt;u256&gt;, new_u256s: <a href="">vector</a>&lt;u256&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_constant_u256">replace_constant_u256</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_u256s: <a href="">vector</a>&lt;<a href="">u256</a>&gt;, new_u256s: <a href="">vector</a>&lt;<a href="">u256</a>&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
 </code></pre>
 
 
@@ -393,5 +393,5 @@ Native function to replace constant u256 in module binary where the length of
 <code>old_u256s</code> must equal to that of <code>new_u256s</code>.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_replace_u256_constant">replace_u256_constant</a>(bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, old_u256s: <a href="">vector</a>&lt;u256&gt;, new_u256s: <a href="">vector</a>&lt;u256&gt;): <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_replace_u256_constant">replace_u256_constant</a>(bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, old_u256s: <a href="">vector</a>&lt;<a href="">u256</a>&gt;, new_u256s: <a href="">vector</a>&lt;<a href="">u256</a>&gt;): <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
 </code></pre>

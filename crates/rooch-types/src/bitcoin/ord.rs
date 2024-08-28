@@ -1,15 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::types::Transaction;
+use super::types::{OutPoint, Transaction};
 use crate::addresses::BITCOIN_MOVE_ADDRESS;
 use crate::into_address::{FromAddress, IntoAddress};
 use anyhow::{bail, Result};
 use move_core_types::language_storage::{StructTag, TypeTag};
 use move_core_types::value::MoveTypeLayout;
-use move_core_types::{
-    account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
-};
+use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use moveos_types::state::{MoveState, MoveStructState, MoveStructType};
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
@@ -20,7 +18,7 @@ use moveos_types::{
     },
 };
 use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
 
@@ -97,12 +95,12 @@ impl MoveStructState for InscriptionID {
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq)]
 pub struct Inscription {
-    pub txid: AccountAddress,
-    pub index: u32,
-    pub offset: u64,
+    pub id: InscriptionID,
+    pub location: SatPoint,
     pub sequence_number: u32,
     pub inscription_number: u32,
     pub is_curse: bool,
+    pub charms: u16,
     pub body: Vec<u8>,
     pub content_encoding: MoveOption<MoveString>,
     pub content_type: MoveOption<MoveString>,
@@ -122,12 +120,12 @@ impl MoveStructType for Inscription {
 impl MoveStructState for Inscription {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
-            AccountAddress::type_layout(),
-            u32::type_layout(),
-            u64::type_layout(),
+            InscriptionID::type_layout(),
+            SatPoint::type_layout(),
             u32::type_layout(),
             u32::type_layout(),
             bool::type_layout(),
+            u16::type_layout(),
             Vec::<u8>::type_layout(),
             MoveOption::<MoveString>::type_layout(),
             MoveOption::<MoveString>::type_layout(),
@@ -142,10 +140,7 @@ impl MoveStructState for Inscription {
 
 impl Inscription {
     pub fn id(&self) -> InscriptionID {
-        InscriptionID {
-            txid: self.txid,
-            index: self.index,
-        }
+        self.id
     }
 
     pub fn object_id(&self) -> ObjectID {
@@ -251,6 +246,8 @@ pub struct InscriptionStore {
     pub cursed_inscription_count: u32,
     /// blessed inscription number generator
     pub blessed_inscription_count: u32,
+    pub unbound_inscription_count: u32,
+    pub lost_sats: u64,
     /// sequence number generator
     pub next_sequence_number: u32,
 }
@@ -279,9 +276,8 @@ impl MoveStructState for InscriptionStore {
 
 #[derive(Debug, PartialEq, Clone, Eq, Serialize, Deserialize)]
 pub struct SatPoint {
-    pub output_index: u32,
+    pub outpoint: OutPoint,
     pub offset: u64,
-    pub object_id: ObjectID,
 }
 
 impl MoveStructType for SatPoint {
@@ -293,10 +289,36 @@ impl MoveStructType for SatPoint {
 impl MoveStructState for SatPoint {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
-            u32::type_layout(),
+            OutPoint::type_layout(),
             u64::type_layout(),
-            ObjectID::type_layout(),
         ])
+    }
+}
+
+impl FromStr for SatPoint {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let mut parts = s.split(':');
+        let txid = parts
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("missing txid"))?;
+        let vout = parts
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("missing vout"))?;
+        let offset = parts
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("missing offset"))?;
+        let txid = bitcoin::Txid::from_str(txid)?;
+        let vout = u32::from_str(vout)?;
+        let offset = u64::from_str(offset)?;
+        Ok(SatPoint {
+            outpoint: OutPoint {
+                txid: txid.into_address(),
+                vout,
+            },
+            offset,
+        })
     }
 }
 
@@ -306,27 +328,19 @@ pub struct OrdModule<'a> {
 }
 
 impl<'a> OrdModule<'a> {
-    pub const FROM_TRANSACTION_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("from_transaction_bytes");
+    pub const PARSE_INSCRIPTION_FROM_TX_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("parse_inscription_from_tx");
     pub const MATCH_UTXO_AND_GENERATE_SAT_POINT_FUNCTION_NAME: &'static IdentStr =
         ident_str!("match_utxo_and_generate_sat_point");
 
-    pub fn from_transaction(
+    pub fn parse_inscription_from_tx(
         &self,
         tx: &Transaction,
-        input_utxo_values: Vec<u64>,
-        next_inscription_number: u32,
-        next_sequence_number: u32,
-    ) -> Result<Vec<Inscription>> {
+    ) -> Result<Vec<Envelope<InscriptionRecord>>> {
         let call = Self::create_function_call(
-            Self::FROM_TRANSACTION_FUNCTION_NAME,
+            Self::PARSE_INSCRIPTION_FROM_TX_FUNCTION_NAME,
             vec![],
-            vec![
-                MoveValue::vector_u8(tx.to_bytes()),
-                input_utxo_values.to_move_value(),
-                next_inscription_number.to_move_value(),
-                next_sequence_number.to_move_value(),
-            ],
+            vec![tx.to_move_value()],
         );
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ONE);
         let inscriptions =
@@ -335,46 +349,10 @@ impl<'a> OrdModule<'a> {
                 .into_result()
                 .map(|mut values| {
                     let value = values.pop().expect("should have one return value");
-                    bcs::from_bytes::<Vec<Inscription>>(&value.value)
+                    bcs::from_bytes::<Vec<Envelope<InscriptionRecord>>>(&value.value)
                         .expect("should be a valid Vec<Inscription>")
                 })?;
         Ok(inscriptions)
-    }
-
-    pub fn match_utxo_and_generate_sat_point(
-        &self,
-        offset: u64,
-        seal_object_id: ObjectID,
-        tx: &Transaction,
-        input_utxo_values: Vec<u64>,
-        input_index: u64,
-    ) -> Result<(bool, SatPoint)> {
-        let call = Self::create_function_call(
-            Self::MATCH_UTXO_AND_GENERATE_SAT_POINT_FUNCTION_NAME,
-            vec![],
-            vec![
-                offset.to_move_value(),
-                seal_object_id.to_move_value(),
-                tx.to_move_value(),
-                input_utxo_values.to_move_value(),
-                input_index.to_move_value(),
-            ],
-        );
-        let ctx = TxContext::new_readonly_ctx(AccountAddress::ONE);
-        let result = self
-            .caller
-            .call_function(&ctx, call)?
-            .into_result()
-            .map(|mut values| {
-                let sat_point_value = values.pop().expect("should have return values");
-                let bool_value = values.pop().expect("should have return values");
-                let sat_point = bcs::from_bytes::<SatPoint>(&sat_point_value.value)
-                    .expect("should be a valid SatPoint");
-                let is_match =
-                    bcs::from_bytes::<bool>(&bool_value.value).expect("should be a valid bool");
-                (is_match, sat_point)
-            })?;
-        Ok(result)
     }
 }
 
@@ -390,7 +368,7 @@ impl<'a> ModuleBinding<'a> for OrdModule<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize, Hash, Eq)]
+#[derive(Debug, PartialEq, Clone, Copy, Hash, Eq)]
 pub struct BitcoinInscriptionID {
     pub txid: bitcoin::Txid,
     pub index: u32,
@@ -430,13 +408,42 @@ impl FromStr for BitcoinInscriptionID {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        let parts: Vec<&str> = s.split('i').collect();
-        if parts.len() != 2 {
-            bail!("Invalid BitcoinInscriptionID string: {}", s);
+        const TXID_LEN: usize = 64;
+        const MIN_LEN: usize = TXID_LEN + 2;
+        if s.len() < MIN_LEN {
+            bail!(
+                "Invalid BitcoinInscriptionID length: {}",
+                format!("{}, len: {} < {}", s, s.len(), MIN_LEN)
+            );
         }
-        let txid = bitcoin::Txid::from_str(parts[0])?;
-        let index = parts[1].parse()?;
+
+        let txid = bitcoin::Txid::from_str(&s[..TXID_LEN])?;
+        let separator = s.chars().nth(TXID_LEN).unwrap();
+
+        if separator != 'i' {
+            bail!("Invalid BitcoinInscriptionID separator: {}", separator);
+        }
+        let index = &s[TXID_LEN + 1..];
+        let index = index.parse()?;
         Ok(BitcoinInscriptionID { txid, index })
+    }
+}
+
+impl<'de> Deserialize<'de> for BitcoinInscriptionID {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Self::from_str(&String::deserialize(deserializer)?).map_err(serde::de::Error::custom)
+    }
+}
+
+impl Serialize for BitcoinInscriptionID {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.collect_str(self)
     }
 }
 

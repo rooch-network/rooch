@@ -56,6 +56,7 @@ async fn test_sequencer() -> Result<()> {
             rooch_db.rooch_store,
             ServiceStatus::Active,
             &registry_service.default_registry(),
+            None,
         )?;
         assert_eq!(sequencer.last_order(), last_tx_order);
         for _ in 0..10 {
@@ -81,6 +82,7 @@ async fn test_sequencer() -> Result<()> {
             rooch_db.rooch_store,
             ServiceStatus::Active,
             &new_registry,
+            None,
         )?;
         assert_eq!(sequencer.last_order(), last_tx_order);
         let tx_data = LedgerTxData::L2Tx(RoochTransaction::mock());
@@ -106,6 +108,7 @@ async fn test_sequencer_concurrent() -> Result<()> {
         rooch_db.rooch_store,
         ServiceStatus::Active,
         &registry_service.default_registry(),
+        None,
     )?
     .into_actor(Some("Sequencer"), &actor_system)
     .await?;

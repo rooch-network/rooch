@@ -171,12 +171,21 @@ impl Message for GetEventsByEventHandleMessage {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct GetAnnotatedEventsByEventIDsMessage {
+    pub event_ids: Vec<EventID>,
+}
+
+impl Message for GetAnnotatedEventsByEventIDsMessage {
+    type Result = Result<Vec<Option<AnnotatedEvent>>>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct GetEventsByEventIDsMessage {
     pub event_ids: Vec<EventID>,
 }
 
 impl Message for GetEventsByEventIDsMessage {
-    type Result = Result<Vec<Option<AnnotatedEvent>>>;
+    type Result = Result<Vec<Option<Event>>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]

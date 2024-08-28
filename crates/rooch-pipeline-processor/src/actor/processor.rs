@@ -3,12 +3,15 @@
 
 use super::messages::{ExecuteL1BlockMessage, ExecuteL1TxMessage, ExecuteL2TxMessage};
 use crate::metrics::PipelineProcessorMetrics;
-use anyhow::Result;
+use anyhow::{Error, Result};
 use async_trait::async_trait;
-use coerce::actor::{context::ActorContext, message::Handler, Actor};
+use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use function_name::named;
+use moveos::moveos::VMPanicError;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use prometheus::Registry;
+use rooch_db::RoochDB;
+use rooch_event::actor::{EventActor, ServiceStatusMessage};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_proposer::proxy::ProposerProxy;
@@ -32,6 +35,8 @@ pub struct PipelineProcessorActor {
     pub(crate) indexer: IndexerProxy,
     pub(crate) service_status: ServiceStatus,
     pub(crate) metrics: Arc<PipelineProcessorMetrics>,
+    event_actor: Option<LocalActorRef<EventActor>>,
+    rooch_db: RoochDB,
 }
 
 impl PipelineProcessorActor {
@@ -42,6 +47,8 @@ impl PipelineProcessorActor {
         indexer: IndexerProxy,
         service_status: ServiceStatus,
         registry: &Registry,
+        event_actor: Option<LocalActorRef<EventActor>>,
+        rooch_db: RoochDB,
     ) -> Self {
         Self {
             executor,
@@ -50,6 +57,8 @@ impl PipelineProcessorActor {
             indexer,
             service_status,
             metrics: Arc::new(PipelineProcessorMetrics::new(registry)),
+            event_actor,
+            rooch_db,
         }
     }
 
@@ -63,7 +72,7 @@ impl PipelineProcessorActor {
         for order in (1..=last_order).rev() {
             let tx_hash = self
                 .sequencer
-                .get_tx_hashs(vec![order])
+                .get_tx_hashes(vec![order])
                 .await?
                 .pop()
                 .flatten()
@@ -162,7 +171,26 @@ impl PipelineProcessorActor {
             .sequence_transaction(LedgerTxData::L1Tx(l1_tx))
             .await?;
         let size = moveos_tx.ctx.tx_size;
-        let result = self.execute_tx(ledger_tx, moveos_tx).await?;
+        let result = match self.execute_tx(ledger_tx, moveos_tx).await {
+            Ok(v) => v,
+            Err(err) => {
+                if is_vm_panic_error(&err) {
+                    log::warn!(
+                        "Execute L1 Tx failed while VM panic occurred then \
+                        set sequencer to Maintenance mode and pause the relayer. error: {:?}",
+                        err
+                    );
+                    if let Some(event_actor) = self.event_actor.clone() {
+                        let _ = event_actor
+                            .send(ServiceStatusMessage {
+                                status: ServiceStatus::Maintenance,
+                            })
+                            .await;
+                    }
+                }
+                return Err(err);
+            }
+        };
 
         let gas_used = result.output.gas_used;
         self.metrics
@@ -190,10 +218,23 @@ impl PipelineProcessorActor {
         let moveos_tx = self.executor.validate_l2_tx(tx.clone()).await?;
         let ledger_tx = self
             .sequencer
-            .sequence_transaction(LedgerTxData::L2Tx(tx))
+            .sequence_transaction(LedgerTxData::L2Tx(tx.clone()))
             .await?;
         let size = moveos_tx.ctx.tx_size;
-        let result = self.execute_tx(ledger_tx, moveos_tx).await?;
+        let result = match self.execute_tx(ledger_tx, moveos_tx).await {
+            Ok(v) => v,
+            Err(err) => {
+                if is_vm_panic_error(&err) {
+                    log::warn!(
+                        "Execute L2 Tx failed while VM panic occurred and revert tx. error: {:?}",
+                        err
+                    );
+                    let tx_hash = tx.tx_hash();
+                    self.rooch_db.revert_tx(tx_hash)?;
+                }
+                return Err(err);
+            }
+        };
 
         let gas_used = result.output.gas_used;
         self.metrics
@@ -307,5 +348,15 @@ impl Handler<ExecuteL1TxMessage> for PipelineProcessorActor {
         _ctx: &mut ActorContext,
     ) -> Result<ExecuteTransactionResponse> {
         self.execute_l1_tx(msg.tx).await
+    }
+}
+
+fn is_vm_panic_error(error: &Error) -> bool {
+    if let Some(vm_error) = error.downcast_ref::<VMPanicError>() {
+        match vm_error {
+            VMPanicError::VerifierPanicError(_) | VMPanicError::SystemCallPanicError(_) => true,
+        }
+    } else {
+        false
     }
 }

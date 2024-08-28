@@ -12,7 +12,7 @@ use move_vm_types::{
 };
 use std::{collections::VecDeque, sync::Arc};
 
-pub const E_NATIVE_FUNCTION_EXECUTING_PANIC: u64 = 987654321;
+pub const E_NATIVE_FUNCTION_PANIC: u64 = 987654321;
 
 pub fn make_module_natives(
     natives: impl IntoIterator<Item = (impl Into<String>, NativeFunction)>,
@@ -70,7 +70,7 @@ where
                     Err(_) => {
                         log::error!("{}", error_message);
                         Err(PartialVMError::new(StatusCode::ABORTED)
-                            .with_sub_status(E_NATIVE_FUNCTION_EXECUTING_PANIC)
+                            .with_sub_status(E_NATIVE_FUNCTION_PANIC)
                             .with_message(error_message))
                     }
                 }
