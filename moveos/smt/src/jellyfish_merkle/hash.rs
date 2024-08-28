@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use bitcoin::hashes::{sha256t_hash_newtype, Hash};
 use bytes::Bytes;
 use hex::FromHex;
 use more_asserts::debug_assert_lt;
@@ -14,15 +15,20 @@ use std::{
     fmt::{self, Debug},
     str::FromStr,
 };
-use tiny_keccak::{Hasher, Sha3};
+
+sha256t_hash_newtype! {
+    pub struct RoochSmtTag = hash_str("rooch-smt");
+
+    #[hash_newtype(forward)]
+    pub struct RoochSmtHash(_);
+}
 
 pub(crate) fn merkle_hash(left: HashValue, right: HashValue) -> HashValue {
     let mut value = left.to_vec();
     value.extend(right.to_vec());
-    HashValue::sha3_256_of(&value)
+    HashValue::tag_sha256(&value)
 }
 
-//TODO replace HashValue with H256
 /// Output value of our hash function. Intentionally opaque for safety and modularity.
 #[derive(Clone, Copy, Eq, Hash, PartialEq, PartialOrd, Ord)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
@@ -73,39 +79,15 @@ impl HashValue {
         HashValue { hash }
     }
 
-    /// Convenience function that computes a `HashValue` internally equal to
-    /// the sha3_256 of a byte buffer. It will handle hasher creation, data
-    /// feeding and finalization.
-    ///
-    /// Note this will not result in the `<T as CryptoHash>::hash()` for any
-    /// reasonable struct T, as this computes a sha3 without any ornaments.
-    pub fn sha3_256_of(buffer: &[u8]) -> Self {
-        let mut sha3 = Sha3::v256();
-        sha3.update(buffer);
-        HashValue::from_keccak(sha3)
-    }
-
-    #[cfg(test)]
-    pub fn from_iter_sha3<'a, I>(buffers: I) -> Self
-    where
-        I: IntoIterator<Item = &'a [u8]>,
-    {
-        let mut sha3 = Sha3::v256();
-        for buffer in buffers {
-            sha3.update(buffer);
-        }
-        HashValue::from_keccak(sha3)
+    /// Creates a new `HashValue` by tagging the given `data` with `rooch-smt`.
+    pub fn tag_sha256(data: &[u8]) -> Self {
+        let digest = RoochSmtHash::hash(data);
+        HashValue::new(digest.to_byte_array())
     }
 
     /// Returns the mut reference array
     pub fn as_ref_mut(&mut self) -> &mut [u8] {
         &mut self.hash[..]
-    }
-
-    fn from_keccak(state: Sha3) -> Self {
-        let mut hash = Self::zero();
-        state.finalize(hash.as_ref_mut());
-        hash
     }
 
     /// Returns the `index`-th bit in the bytes.
