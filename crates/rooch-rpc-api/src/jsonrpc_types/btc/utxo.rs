@@ -117,7 +117,7 @@ impl UTXOView {
     }
 
     pub fn get_value(&self) -> u64 {
-        self.value.0.into()
+        self.value.0
     }
 }
 
