@@ -178,8 +178,10 @@ module bitcoin_move::bitcoin{
         // create new utxo
         let repeat_txid = handle_new_utxo(tx, is_coinbase, &mut output_seals, block_height, sender);
 
-        //ensure the output_seals is empty.
-        simple_multimap::destroy_empty(output_seals);
+        //We do not remove the value from output_seals, for the preformance reason.
+        //So, we can not check the output_seals is empty here. just drop it.
+        let _ = output_seals;
+
         vector::for_each(input_utxos, |utxo| {
             utxo::drop(utxo);
         });
@@ -207,7 +209,6 @@ module bitcoin_move::bitcoin{
                     let utxo_obj = utxo::take(utxo_id);
                     let utxo = utxo::remove(utxo_obj);
                     utxo::drop(utxo);
-                    //simple_multimap::destroy_empty(seals);
                     event::emit(RepeatCoinbaseTxEvent{
                         txid: txid,
                         vout: vout,
