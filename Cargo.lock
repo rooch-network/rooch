@@ -9214,6 +9214,7 @@ dependencies = [
  "rooch-types",
  "rpassword",
  "rustc-hash 2.0.0",
+ "schemars",
  "serde 1.0.208",
  "serde-reflection",
  "serde_json",
