@@ -963,7 +963,7 @@ impl From<&Inscription> for InscriptionForComparison {
             offset: ins.location.offset,
             sequence_number: ins.sequence_number,
             inscription_number: ins.inscription_number,
-            is_curse: ins.is_curse,
+            is_curse: ins.is_cursed,
             body: ins.body.clone(),
             content_encoding: ins.content_encoding.clone(),
             content_type: ins.content_type.clone(),

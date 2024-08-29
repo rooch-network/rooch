@@ -1514,7 +1514,6 @@
           "charms",
           "id",
           "inscription_number",
-          "is_curse",
           "location",
           "metadata",
           "parents",
@@ -1554,11 +1553,7 @@
           },
           "inscription_number": {
             "type": "integer",
-            "format": "uint32",
-            "minimum": 0.0
-          },
-          "is_curse": {
-            "type": "boolean"
+            "format": "int32"
           },
           "location": {
             "$ref": "#/components/schemas/SatPointView"

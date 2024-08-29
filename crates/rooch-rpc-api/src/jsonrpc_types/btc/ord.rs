@@ -86,8 +86,7 @@ pub struct InscriptionView {
     pub id: InscriptionIDView,
     pub location: SatPointView,
     pub sequence_number: u32,
-    pub inscription_number: u32,
-    pub is_curse: bool,
+    pub inscription_number: i32,
     pub charms: u16,
     pub body: BytesView,
     pub content_encoding: Option<MoveStringView>,
@@ -100,12 +99,12 @@ pub struct InscriptionView {
 
 impl From<Inscription> for InscriptionView {
     fn from(inscription: Inscription) -> Self {
+        let inscription_number = inscription.inscription_number();
         InscriptionView {
             id: inscription.id.into(),
             location: inscription.location.into(),
             sequence_number: inscription.sequence_number,
-            inscription_number: inscription.inscription_number,
-            is_curse: inscription.is_curse,
+            inscription_number,
             charms: inscription.charms,
             body: StrView(inscription.body),
             content_encoding: Option::<MoveString>::from(inscription.content_encoding).map(StrView),
