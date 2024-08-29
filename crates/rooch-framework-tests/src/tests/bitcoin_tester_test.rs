@@ -99,7 +99,7 @@ async fn test_block_781735() {
     let inscription = inscription_obj.value_as::<Inscription>().unwrap();
     debug!("Inscription: {:?}", inscription);
     assert_eq!(inscription.id(), inscription_id);
-    assert!(inscription.is_curse);
+    assert!(inscription.is_cursed);
 }
 
 //Inscription use pointer to set the offset, and mint multi inscription in one input.

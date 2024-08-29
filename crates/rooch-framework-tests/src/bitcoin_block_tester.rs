@@ -242,7 +242,7 @@ impl BitcoinBlockTester {
                             inscription
                         );
                         ensure!(
-                            inscription.is_curse,
+                            inscription.is_cursed,
                             "Inscription is_cursed flag should be true  "
                         );
                     }

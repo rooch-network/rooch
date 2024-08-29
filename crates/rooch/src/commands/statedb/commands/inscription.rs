@@ -82,7 +82,7 @@ impl InscriptionSource {
             location,
             sequence_number: src.sequence_number,
             inscription_number: src.inscription_number.unsigned_abs(),
-            is_curse: src.inscription_number.is_negative(),
+            is_cursed: src.inscription_number.is_negative(),
             //TODO how to get charms
             charms: 0,
             body: src.body.clone().unwrap_or_default(),

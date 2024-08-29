@@ -165,7 +165,7 @@ pub struct Inscription {
     pub location: SatPoint,
     pub sequence_number: u32,
     pub inscription_number: u32,
-    pub is_curse: bool,
+    pub is_cursed: bool,
     pub charms: u16,
     pub body: Vec<u8>,
     pub content_encoding: MoveOption<MoveString>,
@@ -211,6 +211,14 @@ impl Inscription {
 
     pub fn object_id(&self) -> ObjectID {
         derive_inscription_id(&self.id())
+    }
+
+    pub fn inscription_number(&self) -> i32 {
+        if self.is_cursed {
+            -(self.inscription_number as i32)
+        } else {
+            self.inscription_number as i32
+        }
     }
 }
 
