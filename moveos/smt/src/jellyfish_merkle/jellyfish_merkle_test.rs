@@ -7,7 +7,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use super::hash::{HashValue, *};
+use super::hash::{SMTNodeHash, *};
 use super::nibble::Nibble;
 use super::node_type::SparseMerkleInternalNode;
 use super::{mock_tree_store::TestValue, *};
@@ -30,7 +30,7 @@ fn update_nibble(original_key: &TestKey, n: usize, nibble: u8) -> TestKey {
     } else {
         key[n / 2] & 0xf0 | nibble
     };
-    TestKey::new_with_hash(HashValue::from_slice(&key).unwrap())
+    TestKey::new_with_hash(SMTNodeHash::from_slice(&key).unwrap())
 }
 
 #[test]
@@ -59,7 +59,7 @@ fn test_delete_from_tree() {
 
     // Tree is initially empty. Root is a null node. We'll insert a key-value pair which creates a
     // leaf node.
-    let key = TestKey::new([0x00u8; HashValue::LENGTH]);
+    let key = TestKey::new([0x00u8; SMTNodeHash::LEN]);
     let value = TestValue::from(vec![1u8, 2u8, 3u8, 4u8]);
 
     let (_new_root_hash, batch) = tree.put_blob_set(None, vec![(key, value.into())]).unwrap();
@@ -97,7 +97,7 @@ fn test_insert_at_leaf_with_internal_created() {
     let db = MockTestStore::new_test();
     let tree = JellyfishMerkleTree::new(&db);
 
-    let key1 = TestKey::new([0x00u8; HashValue::LENGTH]);
+    let key1 = TestKey::new([0x00u8; SMTNodeHash::LEN]);
     let value1 = TestValue::from(vec![1u8, 2u8]);
 
     let (_root0_hash, batch) = tree
@@ -149,7 +149,7 @@ fn test_insert_at_leaf_with_multiple_internals_created() {
     let tree = JellyfishMerkleTree::new(&db);
 
     // 1. Insert the first leaf into empty tree
-    let key1 = TestKey::new([0x00u8; HashValue::LENGTH]);
+    let key1 = TestKey::new([0x00u8; SMTNodeHash::LEN]);
     let value1 = TestValue::from(vec![1u8, 2u8]);
 
     let (_root0_hash, batch) = tree
@@ -253,7 +253,7 @@ fn test_batch_insertion() {
     //
     // Total: 12 nodes
     // ```
-    let key1 = TestKey::new([0x00u8; HashValue::LENGTH]);
+    let key1 = TestKey::new([0x00u8; SMTNodeHash::LEN]);
     let value1 = TestValue::from(vec![1u8]);
 
     let key2 = update_nibble(&key1, 0, 2);
@@ -292,7 +292,7 @@ fn test_batch_insertion() {
     // key2 was updated so we remove it.
     to_verify.remove(1);
     let verify_fn = |tree: &JellyfishMerkleTree<TestKey, TestValue, MockTestStore>,
-                     root: HashValue| {
+                     root: SMTNodeHash| {
         to_verify
             .iter()
             .for_each(|(k, v)| assert_eq!(tree.get(root, *k).unwrap().unwrap(), *v))
@@ -443,7 +443,7 @@ fn test_non_existence() {
     //               1        3
     // Total: 7 nodes
     // ```
-    let key1 = TestKey::new([0x00u8; HashValue::LENGTH]);
+    let key1 = TestKey::new([0x00u8; SMTNodeHash::LEN]);
     let value1 = TestValue::from(vec![1u8]);
 
     let key2 = update_nibble(&key1, 0, 15);
@@ -516,7 +516,7 @@ fn test_non_existence_and_build_new_root_with_proof() {
 
     //test one key in the tree
 
-    let key1 = TestKey::new([0x00u8; HashValue::LENGTH]);
+    let key1 = TestKey::new([0x00u8; SMTNodeHash::LEN]);
     let value1 = TestValue::from(vec![1u8]);
 
     let (root, batch) = tree
@@ -570,7 +570,7 @@ fn test_put_blob_sets() {
     let total_updates = 20;
     for _i in 0..total_updates {
         keys.push(TestKey::random());
-        values.push(TestValue::from(HashValue::random().to_vec()));
+        values.push(TestValue::from(SMTNodeHash::random().to_vec()));
     }
 
     let mut root_hashes_one_by_one = vec![];
@@ -629,8 +629,8 @@ fn many_keys_get_proof_and_verify_tree_root(seed: &[u8], num_keys: usize) {
 
     let mut kvs = vec![];
     for _i in 0..num_keys {
-        let key = HashValue::random_with_rng(&mut rng);
-        let value = TestValue::from(HashValue::random_with_rng(&mut rng).to_vec());
+        let key = SMTNodeHash::random_with_rng(&mut rng);
+        let value = TestValue::from(SMTNodeHash::random_with_rng(&mut rng).to_vec());
         kvs.push((TestKey(key), value.into_object().unwrap()));
     }
 
@@ -664,9 +664,9 @@ fn many_versions_get_proof_and_verify_tree_root(seed: &[u8], num_versions: usize
     let mut kvs = vec![];
 
     for _i in 0..num_versions {
-        let key = TestKey::new_with_hash(HashValue::random_with_rng(&mut rng));
-        let value = TestValue::from(HashValue::random_with_rng(&mut rng).to_vec());
-        let new_value = TestValue::from(HashValue::random_with_rng(&mut rng).to_vec());
+        let key = TestKey::new_with_hash(SMTNodeHash::random_with_rng(&mut rng));
+        let value = TestValue::from(SMTNodeHash::random_with_rng(&mut rng).to_vec());
+        let new_value = TestValue::from(SMTNodeHash::random_with_rng(&mut rng).to_vec());
         kvs.push((key, value.clone(), new_value.clone()));
     }
 
@@ -754,7 +754,7 @@ proptest! {
         key1 in any::<TestKey>()
             .prop_filter(
                 "Can't be 0xffffff...",
-                |key| *key != TestKey::new([0xff; HashValue::LENGTH]),
+                |key| *key != TestKey::new([0xff; SMTNodeHash::LEN]),
             ),
         accounts in vec(any::<TestValue>(), 2),
     ) {
@@ -793,7 +793,7 @@ proptest! {
 
 fn test_existent_keys_impl(
     tree: &JellyfishMerkleTree<'_, TestKey, TestValue, MockTestStore>,
-    root_hash: HashValue,
+    root_hash: SMTNodeHash,
     existent_kvs: &HashMap<TestKey, TestValue>,
 ) {
     for (key, value) in existent_kvs {
@@ -807,7 +807,7 @@ fn test_existent_keys_impl(
 
 fn test_nonexistent_keys_impl(
     tree: &JellyfishMerkleTree<'_, TestKey, TestValue, MockTestStore>,
-    root_hash: HashValue,
+    root_hash: SMTNodeHash,
     nonexistent_keys: &[TestKey],
 ) {
     for key in nonexistent_keys {
@@ -822,9 +822,9 @@ fn test_nonexistent_keys_impl(
 fn test_nonexistent_key_value_update_impl(
     tree: &JellyfishMerkleTree<'_, TestKey, TestValue, MockTestStore>,
     db: &MockTestStore,
-    root_hash: HashValue,
+    root_hash: SMTNodeHash,
     noneexistent_kv: (TestKey, TestValue),
-) -> HashValue {
+) -> SMTNodeHash {
     let (key, value) = noneexistent_kv;
     let (value_in_tree, mut proof) = tree.get_with_proof(root_hash, key).unwrap();
     assert!(value_in_tree.is_none());
@@ -853,7 +853,7 @@ fn test_nonexistent_key_value_update_impl(
 
 /// Checks if we can construct the expected root hash using the entries in the btree and the proof.
 fn verify_range_proof<K: Key, V: Value>(
-    expected_root_hash: HashValue,
+    expected_root_hash: SMTNodeHash,
     btree: BTreeMap<K, V>,
     proof: SparseMerkleRangeProof,
 ) {
@@ -915,8 +915,8 @@ fn verify_range_proof<K: Key, V: Value>(
         buf.push(true);
         // The rest doesn't matter, because they don't affect the position of the node. We just
         // add zeros.
-        buf.resize(HashValue::LENGTH_IN_BITS, false);
-        let key = HashValue::from_bit_iter(buf.into_iter()).unwrap();
+        buf.resize(SMTNodeHash::LEN_IN_BITS, false);
+        let key = SMTNodeHash::from_bit_iter(buf.into_iter()).unwrap();
         btree1.insert(key, (*sibling).into());
     }
 
@@ -947,7 +947,7 @@ fn verify_range_proof<K: Key, V: Value>(
 
 /// Computes the root hash of a sparse Merkle tree. `kvs` consists of the entire set of key-value
 /// pairs stored in the tree.
-fn compute_root_hash(kvs: Vec<(Vec<bool>, HashValue)>) -> HashValue {
+fn compute_root_hash(kvs: Vec<(Vec<bool>, SMTNodeHash)>) -> SMTNodeHash {
     let mut kv_ref = vec![];
     for (key, value) in &kvs {
         kv_ref.push((&key[..], *value));
@@ -955,7 +955,7 @@ fn compute_root_hash(kvs: Vec<(Vec<bool>, HashValue)>) -> HashValue {
     compute_root_hash_impl(kv_ref)
 }
 
-fn compute_root_hash_impl(kvs: Vec<(&[bool], HashValue)>) -> HashValue {
+fn compute_root_hash_impl(kvs: Vec<(&[bool], SMTNodeHash)>) -> SMTNodeHash {
     assert!(!kvs.is_empty());
 
     // If there is only one entry, it is the root.
@@ -990,7 +990,7 @@ fn compute_root_hash_impl(kvs: Vec<(&[bool], HashValue)>) -> HashValue {
 }
 
 /// Reduces the problem by removing the first bit of every key.
-fn reduce<'a>(kvs: &'a [(&[bool], HashValue)]) -> Vec<(&'a [bool], HashValue)> {
+fn reduce<'a>(kvs: &'a [(&[bool], SMTNodeHash)]) -> Vec<(&'a [bool], SMTNodeHash)> {
     kvs.iter().map(|(key, value)| (&key[1..], *value)).collect()
 }
 

@@ -11142,7 +11142,7 @@ dependencies = [
  "anyhow",
  "backtrace",
  "bcs",
- "bitcoin 0.31.2",
+ "bitcoin_hashes 0.13.0",
  "byteorder",
  "bytes",
  "function_name",
