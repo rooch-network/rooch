@@ -1102,7 +1102,7 @@ mod tests {
         //test string
         field_key_derive_test(
             "1",
-            "0xc62df9a91eae549c2ff104f121549251c748185d0a21d5018c87db4be47fd191",
+            "0x5c01fed5cc173458597a3d55ec9942f1a385d5aa66f15e3615378d8a773e4d58",
         );
         //test u8
         field_key_derive_test(

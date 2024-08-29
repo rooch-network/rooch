@@ -6116,7 +6116,7 @@ checksum = "1fafa6961cabd9c63bcd77a45d7e3b7f3b552b70417831fb0f56db717e72407e"
 [[package]]
 name = "move-abigen"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6133,7 +6133,7 @@ dependencies = [
 [[package]]
 name = "move-binary-format"
 version = "0.0.3"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -6148,12 +6148,12 @@ dependencies = [
 [[package]]
 name = "move-borrow-graph"
 version = "0.0.1"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 
 [[package]]
 name = "move-bytecode-source-map"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6168,7 +6168,7 @@ dependencies = [
 [[package]]
 name = "move-bytecode-utils"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -6180,7 +6180,7 @@ dependencies = [
 [[package]]
 name = "move-bytecode-verifier"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "fail",
@@ -6194,7 +6194,7 @@ dependencies = [
 [[package]]
 name = "move-bytecode-viewer"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "clap 4.5.13",
@@ -6211,7 +6211,7 @@ dependencies = [
 [[package]]
 name = "move-cli"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6255,7 +6255,7 @@ dependencies = [
 [[package]]
 name = "move-command-line-common"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "difference",
@@ -6272,7 +6272,7 @@ dependencies = [
 [[package]]
 name = "move-compiler"
 version = "0.0.1"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6301,7 +6301,7 @@ dependencies = [
 [[package]]
 name = "move-core-types"
 version = "0.0.4"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "arbitrary",
@@ -6323,7 +6323,7 @@ dependencies = [
 [[package]]
 name = "move-coverage"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6343,7 +6343,7 @@ dependencies = [
 [[package]]
 name = "move-disassembler"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "clap 4.5.13",
@@ -6361,7 +6361,7 @@ dependencies = [
 [[package]]
 name = "move-docgen"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "codespan",
@@ -6380,7 +6380,7 @@ dependencies = [
 [[package]]
 name = "move-errmapgen"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6394,7 +6394,7 @@ dependencies = [
 [[package]]
 name = "move-ir-compiler"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6413,7 +6413,7 @@ dependencies = [
 [[package]]
 name = "move-ir-to-bytecode"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "codespan-reporting",
@@ -6432,7 +6432,7 @@ dependencies = [
 [[package]]
 name = "move-ir-to-bytecode-syntax"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "hex",
@@ -6445,7 +6445,7 @@ dependencies = [
 [[package]]
 name = "move-ir-types"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "hex",
@@ -6459,7 +6459,7 @@ dependencies = [
 [[package]]
 name = "move-model"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "codespan",
@@ -6486,7 +6486,7 @@ dependencies = [
 [[package]]
 name = "move-package"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6522,7 +6522,7 @@ dependencies = [
 [[package]]
 name = "move-prover"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6559,7 +6559,7 @@ dependencies = [
 [[package]]
 name = "move-prover-boogie-backend"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6588,7 +6588,7 @@ dependencies = [
 [[package]]
 name = "move-resource-viewer"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6603,7 +6603,7 @@ dependencies = [
 [[package]]
 name = "move-stackless-bytecode"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "codespan",
  "codespan-reporting",
@@ -6629,7 +6629,7 @@ dependencies = [
 [[package]]
 name = "move-stdlib"
 version = "0.1.1"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "hex",
@@ -6652,7 +6652,7 @@ dependencies = [
 [[package]]
 name = "move-symbol-pool"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "once_cell",
  "serde 1.0.208",
@@ -6661,7 +6661,7 @@ dependencies = [
 [[package]]
 name = "move-table-extension"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6678,7 +6678,7 @@ dependencies = [
 [[package]]
 name = "move-transactional-test-runner"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "clap 4.5.13",
@@ -6709,7 +6709,7 @@ dependencies = [
 [[package]]
 name = "move-unit-test"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "better_any",
@@ -6739,7 +6739,7 @@ dependencies = [
 [[package]]
 name = "move-vm-runtime"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "better_any",
  "fail",
@@ -6756,7 +6756,7 @@ dependencies = [
 [[package]]
 name = "move-vm-test-utils"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -6770,7 +6770,7 @@ dependencies = [
 [[package]]
 name = "move-vm-types"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=8cadfe162379deb96ae88a3764fac3dea58cb944#8cadfe162379deb96ae88a3764fac3dea58cb944"
+source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "bcs",
  "move-binary-format",

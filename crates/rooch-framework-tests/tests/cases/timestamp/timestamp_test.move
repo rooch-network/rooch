@@ -10,7 +10,7 @@ script {
 }
 
 //Timestamp object as argument.
-//# run --signers test --args object:0x4e8d2c243339c6e02f8b7dd34436a1b1eb541b0fe4d938f845f4dbb9d9f218a2
+//# run --signers test --args object:0x3a7dfe7a9a5cd608810b5ebd60c7adf7316667b17ad5ae703af301b74310bcca
 script {
     use moveos_std::object::{Self, Object};
     use moveos_std::timestamp::{Self, Timestamp};

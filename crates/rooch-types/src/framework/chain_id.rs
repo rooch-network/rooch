@@ -133,7 +133,7 @@ mod tests {
         assert_eq!(
             chain_id_object_id,
             ObjectID::from_str(
-                "0x687e4c198ba77fd246ed82ea1fc88bd165a44ad8614f62f9c33e4e658152d7b1"
+                "0xec610c175ebc424209b0c657851deb77b52ce5f0699b719c77d6a58b89c9bc22"
             )
             .unwrap()
         );

@@ -7,8 +7,8 @@ module std::type_name {
         /// using their source syntax:
         /// "u8", "u64", "u128", "bool", "address", "vector", "signer" for ground types.
         /// Struct types are represented as fully qualified type names; e.g.
-        /// `00000000000000000000000000000001::string::String` or
-        /// `0000000000000000000000000000000a::module_name1::type_name1<0000000000000000000000000000000a::module_name2::type_name2<u64>>`
+        /// `0x00000000000000000000000000000001::string::String` or
+        /// `0x0000000000000000000000000000000a::module_name1::type_name1<0x0000000000000000000000000000000a::module_name2::type_name2<u64>>`
         /// Addresses are hex-encoded lowercase values of length ADDRESS_LENGTH (16, 20, or 32 depending on the Move platform)
         name: String
     }
