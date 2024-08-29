@@ -18,7 +18,7 @@ script {
 }
 
 //call function use FunctionArgs style argument
-//#run --signers tester --args u8:1 u16:1 u32:1 u64:1 u128:1 u256:1 address:0x42 string:hello object_id:0x4e8d2c243339c6e02f8b7dd34436a1b1eb541b0fe4d938f845f4dbb9d9f218a2 object:moveos_std::timestamp::Timestamp
+//#run --signers tester --args u8:1 u16:1 u32:1 u64:1 u128:1 u256:1 address:0x42 string:hello object_id:0x3a7dfe7a9a5cd608810b5ebd60c7adf7316667b17ad5ae703af301b74310bcca object:moveos_std::timestamp::Timestamp
 script {
     
     fun main(

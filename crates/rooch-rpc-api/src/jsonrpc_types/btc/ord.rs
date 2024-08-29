@@ -3,39 +3,33 @@
 
 use super::utxo::BitcoinOutPointView;
 use crate::jsonrpc_types::{
-    BytesView, H256View, IndexerObjectStateView, IndexerStateIDView, MoveStringView,
-    ObjectIDVecView, ObjectMetaView, StrView, UnitedAddressView,
+    BytesView, IndexerObjectStateView, IndexerStateIDView, MoveStringView, ObjectIDVecView,
+    ObjectMetaView, StrView, UnitedAddressView,
 };
 use anyhow::Result;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::state::MoveState;
 use moveos_types::state::MoveStructType;
 use rooch_types::bitcoin::ord::{self, SatPoint};
-use rooch_types::bitcoin::ord::{BitcoinInscriptionID, Inscription, InscriptionID};
+use rooch_types::bitcoin::ord::{Inscription, InscriptionID};
 use rooch_types::indexer::state::ObjectStateFilter;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
 
-pub type BitcoinInscriptionIDView = StrView<BitcoinInscriptionID>;
+pub type InscriptionIDView = StrView<InscriptionID>;
 
-impl FromStr for BitcoinInscriptionIDView {
+impl FromStr for InscriptionIDView {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(StrView(BitcoinInscriptionID::from_str(s)?))
+        Ok(StrView(InscriptionID::from_str(s)?))
     }
 }
 
-impl Display for BitcoinInscriptionIDView {
+impl Display for InscriptionIDView {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.0)
-    }
-}
-
-impl From<InscriptionID> for BitcoinInscriptionIDView {
-    fn from(inscription_id: InscriptionID) -> Self {
-        StrView(BitcoinInscriptionID::from(inscription_id))
     }
 }
 
@@ -45,7 +39,7 @@ pub enum InscriptionFilterView {
     /// Query by owner, support rooch address and bitcoin address
     Owner(UnitedAddressView),
     /// Query by inscription id, represent by bitcoin {{txid}i{index}}
-    InscriptionId(BitcoinInscriptionIDView),
+    InscriptionId(InscriptionIDView),
     /// Query by object ids.
     ObjectId(ObjectIDVecView),
     /// Query all.
@@ -61,7 +55,7 @@ impl InscriptionFilterView {
                 owner: owner.0.rooch_address.into(),
             },
             InscriptionFilterView::InscriptionId(inscription_id) => {
-                let obj_id = ord::derive_inscription_id(&inscription_id.0.into());
+                let obj_id = ord::derive_inscription_id(&inscription_id.0);
                 ObjectStateFilter::ObjectId(vec![obj_id])
             }
             InscriptionFilterView::ObjectId(object_id_vec_view) => {
@@ -70,12 +64,6 @@ impl InscriptionFilterView {
             InscriptionFilterView::All => ObjectStateFilter::ObjectType(Inscription::struct_tag()),
         })
     }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
-pub struct InscriptionIDView {
-    pub txid: H256View,
-    pub index: u32,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -95,7 +83,7 @@ impl From<SatPoint> for SatPointView {
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct InscriptionView {
-    pub id: BitcoinInscriptionIDView,
+    pub id: InscriptionIDView,
     pub location: SatPointView,
     pub sequence_number: u32,
     pub inscription_number: u32,
@@ -106,7 +94,7 @@ pub struct InscriptionView {
     pub content_type: Option<MoveStringView>,
     pub metadata: BytesView,
     pub metaprotocol: Option<MoveStringView>,
-    pub parents: ObjectIDVecView,
+    pub parents: Vec<InscriptionIDView>,
     pub pointer: Option<StrView<u64>>,
 }
 
@@ -124,7 +112,7 @@ impl From<Inscription> for InscriptionView {
             content_type: Option::<MoveString>::from(inscription.content_type).map(StrView),
             metadata: StrView(inscription.metadata),
             metaprotocol: Option::<MoveString>::from(inscription.metaprotocol).map(StrView),
-            parents: inscription.parents.into(),
+            parents: inscription.parents.into_iter().map(Into::into).collect(),
             pointer: Option::<u64>::from(inscription.pointer).map(StrView),
         }
     }

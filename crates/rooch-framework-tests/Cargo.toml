@@ -46,6 +46,7 @@ rooch-config = { workspace = true }
 rooch-db = { workspace = true }
 rooch-event = { workspace = true }
 rooch-relayer = { workspace = true }
+rooch-ord = { workspace = true }
 
 bitcoin-move = { workspace = true }
 framework-builder = { workspace = true }

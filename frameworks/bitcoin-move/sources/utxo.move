@@ -320,7 +320,7 @@ module bitcoin_move::utxo{
         let vout = 0;
         let object_id = derive_utxo_id(types::new_outpoint(txid, vout));
         std::debug::print(&std::bcs::to_bytes(&object_id));
-        assert!(std::bcs::to_bytes(&object_id) == x"02826a5e56581ba5ab84c39976f27cf3578cf524308b4ffc123922dfff507e514db8fc937bf3c15abe49c95fa6906aff29087149f542b48db0cf25dce671a68a63", 1);
+        assert!(std::bcs::to_bytes(&object_id) == x"02f74d177bfec2d8de0c4893f6502d3e5b55f12f75e158d53b035dcbe33782ef166056a4a7b33326d5fb811c95b39cbca0743662e14fa3b904c41fa07d4b5c3956", 1);
     }
 
     #[test]

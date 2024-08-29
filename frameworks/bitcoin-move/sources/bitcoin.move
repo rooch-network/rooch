@@ -24,6 +24,7 @@ module bitcoin_move::bitcoin{
     use bitcoin_move::types::{Self, Block, Header, Transaction, BlockHeightHash, OutPoint};
     use bitcoin_move::utxo::{Self, UTXOSeal};
     use bitcoin_move::pending_block::{Self, PendingBlock};
+    use bitcoin_move::script_buf;
 
     friend bitcoin_move::genesis;
 
@@ -210,6 +211,8 @@ module bitcoin_move::bitcoin{
             let txout = vector::borrow(txoutput, idx);
             let vout = (idx as u32);
             let value = types::txout_value(txout);
+            let output_script_buf = types::txout_script_pubkey(txout);
+            let is_op_return = script_buf::is_op_return(output_script_buf);
             if (is_coinbase &&  ((block_height < BIP_34_HEIGHT && network::is_mainnet()) || !network::is_mainnet())) {
                 let outpoint = types::new_outpoint(txid, vout);
                 let utxo_id = utxo::derive_utxo_id(outpoint);
@@ -227,6 +230,11 @@ module bitcoin_move::bitcoin{
                     });
                     repeat_txid = true;
                 };
+            };
+            //We should not create UTXO object for OP_RETURN output
+            if(is_op_return){
+                idx = idx + 1;
+                continue
             };
             let utxo_obj = utxo::new(txid, vout, value);
             let utxo = object::borrow_mut(&mut utxo_obj);
