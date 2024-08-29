@@ -244,10 +244,7 @@ impl GasParameters {
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
-    let mut natives = [
-        ("parse", make_native(gas_params.parse, parse)),
-    ]
-    .to_vec();
+    let mut natives = [("parse", make_native(gas_params.parse, parse))].to_vec();
 
     if !gas_params.verify_bitcoin_address_with_public_key.is_empty() {
         natives.push((
