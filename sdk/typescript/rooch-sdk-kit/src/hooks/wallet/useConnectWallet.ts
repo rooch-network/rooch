@@ -10,7 +10,6 @@ import { walletMutationKeys } from '../../constants/index.js'
 import { Wallet } from '../../wellet/index.js'
 import { useSessionStore } from '../useSessionsStore.js'
 import { useSession } from '../useSessions.js'
-import { getInitialValidSession } from '../../utils/index.js'
 
 type ConnectWalletArgs = {
   wallet: Wallet
@@ -51,14 +50,12 @@ export function useConnectWallet({
 
         setWalletConnected(wallet, connectAddress, selectedAddress)
 
-        const cur =
-          selectedAddress && getInitialValidSession(selectedAddress.genRoochAddress(), sessions)
+        const cur = sessions.find(
+          (item: Session) =>
+            item.getRoochAddress().toStr() === selectedAddress?.genRoochAddress().toStr(),
+        )
 
-        if (cur) {
-          setCurrentSession(cur)
-        } else {
-          setCurrentSession(undefined)
-        }
+        setCurrentSession(cur)
 
         return connectAddress
       } catch (error) {

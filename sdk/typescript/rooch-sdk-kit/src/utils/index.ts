@@ -3,4 +3,3 @@
 
 export * from './stateStorage.js'
 export * from './walletUtils.js'
-export * from './session.js'
