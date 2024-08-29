@@ -20,7 +20,7 @@ backtrace = { workspace = true }
 bcs = { workspace = true }
 bytes = { workspace = true }
 byteorder = { workspace = true }
-bitcoin = { workspace = true }
+bitcoin_hashes = { workspace = true }
 function_name = { workspace = true }
 hex = { workspace = true }
 log = { workspace = true }

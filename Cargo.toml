@@ -150,6 +150,7 @@ bytes = "1.7.1"
 bech32 = "0.11.0"
 better_any = "0.1.1"
 bitcoin = { version = "0.31.0", features = ["rand-std"] }
+bitcoin_hashes = { version = "0.13.0", features = ["serde-std"]}
 bitcoincore-rpc = "0.18.0"
 bip32 = "0.4.0"
 byteorder = "1.4.3"

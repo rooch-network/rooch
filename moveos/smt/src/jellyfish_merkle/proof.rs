@@ -58,9 +58,9 @@ impl SparseMerkleProof {
         element_blob: Option<V>,
     ) -> Result<()> {
         ensure!(
-            self.siblings.len() <= HashValue::LENGTH_IN_BITS,
+            self.siblings.len() <= SMTNodeHash::LEN_IN_BITS,
             "Sparse Merkle Tree proof has more than {} ({}) siblings.",
-            HashValue::LENGTH_IN_BITS,
+            SMTNodeHash::LEN_IN_BITS,
             self.siblings.len(),
         );
         let element_key_hash = element_key.merkle_hash();
@@ -124,7 +124,7 @@ impl SparseMerkleProof {
                 element_key_hash
                     .iter_bits()
                     .rev()
-                    .skip(HashValue::LENGTH_IN_BITS - self.siblings.len()),
+                    .skip(SMTNodeHash::LEN_IN_BITS - self.siblings.len()),
             )
             .fold(current_hash, |hash, (sibling_hash, bit)| {
                 if bit {
@@ -185,7 +185,7 @@ impl SparseMerkleProof {
                 element_key_hash
                     .iter_bits()
                     .rev()
-                    .skip(HashValue::LENGTH_IN_BITS - self.siblings.len()),
+                    .skip(SMTNodeHash::LEN_IN_BITS - self.siblings.len()),
             )
             .fold(current_hash, |hash, (sibling_hash, bit)| {
                 if bit {

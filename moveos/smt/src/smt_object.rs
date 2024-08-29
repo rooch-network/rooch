@@ -13,7 +13,7 @@ use serde::{
     Deserialize, Serialize,
 };
 
-use crate::jellyfish_merkle::hash::{HashValue, SMTHash};
+use crate::jellyfish_merkle::hash::{SMTHash, SMTNodeHash};
 
 pub trait Key: std::cmp::Ord + Copy + Into<H256> + From<H256> {}
 
@@ -23,7 +23,7 @@ impl<K> SMTHash for K
 where
     K: Key,
 {
-    fn merkle_hash(&self) -> HashValue {
+    fn merkle_hash(&self) -> SMTNodeHash {
         let hash: H256 = (*self).into();
         hash.into()
     }
@@ -69,7 +69,7 @@ where
 pub struct SMTObject<T> {
     pub origin: T,
     pub raw: Vec<u8>,
-    cached_hash: Cell<Option<HashValue>>,
+    cached_hash: Cell<Option<SMTNodeHash>>,
 }
 
 impl<T> SMTObject<T> {
@@ -82,7 +82,7 @@ impl<T> SMTObject<T> {
     }
 
     /// A helper constructor for tests which allows passing in a precomputed hash.
-    pub(crate) fn new_for_test(origin: T, raw: Vec<u8>, hash: HashValue) -> Self {
+    pub(crate) fn new_for_test(origin: T, raw: Vec<u8>, hash: SMTNodeHash) -> Self {
         SMTObject {
             origin,
             raw,
@@ -195,11 +195,11 @@ where
 }
 
 impl<T> SMTHash for SMTObject<T> {
-    fn merkle_hash(&self) -> HashValue {
+    fn merkle_hash(&self) -> SMTNodeHash {
         match self.cached_hash.get() {
             Some(hash) => hash,
             None => {
-                let hash = HashValue::tag_sha256(&self.raw);
+                let hash = SMTNodeHash::tag_sha256(&self.raw);
                 self.cached_hash.set(Some(hash));
                 hash
             }

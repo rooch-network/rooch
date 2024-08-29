@@ -1,125 +1,123 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use bitcoin::hashes::{sha256t_hash_newtype, Hash};
+use bitcoin_hashes::{sha256t_hash_newtype, HashEngine};
 use bytes::Bytes;
 use hex::FromHex;
 use more_asserts::debug_assert_lt;
 use once_cell::sync::Lazy;
 use primitive_types::H256;
 #[cfg(any(test, feature = "fuzzing"))]
-use proptest_derive::Arbitrary;
+use proptest::prelude::*;
 use rand::{rngs::OsRng, Rng};
-use serde::{de, ser};
-use std::{
-    fmt::{self, Debug},
-    str::FromStr,
-};
+use std::fmt::{self, Debug};
+
+pub(crate) use bitcoin_hashes::Hash;
 
 sha256t_hash_newtype! {
-    pub struct RoochSmtTag = hash_str("rooch-smt");
+    pub struct SMTNodeTag = hash_str("SMTNode");
+
 
     #[hash_newtype(forward)]
-    pub struct RoochSmtHash(_);
+    pub struct SMTNodeHash(_);
 }
 
-pub(crate) fn merkle_hash(left: HashValue, right: HashValue) -> HashValue {
+#[cfg(any(test, feature = "fuzzing"))]
+impl Arbitrary for SMTNodeHash {
+    type Parameters = ();
+    type Strategy = BoxedStrategy<Self>;
+
+    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+        any::<[u8; 32]>().prop_map(SMTNodeHash::new).boxed()
+    }
+}
+
+pub(crate) fn merkle_hash(left: SMTNodeHash, right: SMTNodeHash) -> SMTNodeHash {
     let mut value = left.to_vec();
     value.extend(right.to_vec());
-    HashValue::tag_sha256(&value)
+    SMTNodeHash::tag_sha256(&value)
 }
 
-/// Output value of our hash function. Intentionally opaque for safety and modularity.
-#[derive(Clone, Copy, Eq, Hash, PartialEq, PartialOrd, Ord)]
-#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
-pub(crate) struct HashValue {
-    pub hash: [u8; HashValue::LENGTH],
-}
-
-impl HashValue {
-    /// The length of the hash in bytes.
-    pub const LENGTH: usize = 32;
+impl SMTNodeHash {
     /// The length of the hash in bits.
-    pub const LENGTH_IN_BITS: usize = Self::LENGTH * 8;
+    pub const LEN_IN_BITS: usize = Self::LEN * 8;
 
-    /// Create a new [`HashValue`] from a byte array.
-    pub fn new(hash: [u8; HashValue::LENGTH]) -> Self {
-        HashValue { hash }
+    /// Create a new [`SMTNodeHash`] from a byte array.
+    pub fn new(hash: [u8; SMTNodeHash::LEN]) -> Self {
+        Self::from_byte_array(hash)
     }
 
-    /// Create from a slice (e.g. retrieved from storage).
-    pub fn from_slice<T: AsRef<[u8]>>(bytes: T) -> Result<Self, HashValueParseError> {
-        <[u8; Self::LENGTH]>::try_from(bytes.as_ref())
-            .map_err(|_| HashValueParseError)
-            .map(Self::new)
+    /// Computes branch hash given two hashes of the nodes underneath it.
+    pub fn from_node_hashes(a: SMTNodeHash, b: SMTNodeHash) -> SMTNodeHash {
+        Self::combine_node_hashes(a, b)
+    }
+
+    /// Computes branch hash given two hashes of the nodes
+    fn combine_node_hashes(a: SMTNodeHash, b: SMTNodeHash) -> SMTNodeHash {
+        let mut eng = SMTNodeHash::engine();
+        eng.input(a.as_ref());
+        eng.input(b.as_ref());
+        SMTNodeHash::from_engine(eng)
     }
 
     /// Dumps into a vector.
     pub fn to_vec(self) -> Vec<u8> {
-        self.hash.to_vec()
+        self.to_byte_array().to_vec()
     }
 
     /// Creates a zero-initialized instance.
-    pub const fn zero() -> Self {
-        HashValue {
-            hash: [0; HashValue::LENGTH],
-        }
+    pub fn zero() -> Self {
+        Self::all_zeros()
     }
 
     /// Create a cryptographically random instance.
     pub fn random() -> Self {
         let mut rng = OsRng;
-        let hash: [u8; HashValue::LENGTH] = rng.gen();
-        HashValue { hash }
+        let hash: [u8; SMTNodeHash::LEN] = rng.gen();
+        SMTNodeHash::new(hash)
     }
 
     /// Creates a random instance with given rng. Useful in unit tests.
     pub fn random_with_rng<R: Rng>(rng: &mut R) -> Self {
-        let hash: [u8; HashValue::LENGTH] = rng.gen();
-        HashValue { hash }
+        let hash: [u8; SMTNodeHash::LEN] = rng.gen();
+        SMTNodeHash::new(hash)
     }
 
-    /// Creates a new `HashValue` by tagging the given `data` with `rooch-smt`.
+    /// Creates a new `SMTNodeHash` by tagging the given `data` with `SMTNode`.
     pub fn tag_sha256(data: &[u8]) -> Self {
-        let digest = RoochSmtHash::hash(data);
-        HashValue::new(digest.to_byte_array())
-    }
-
-    /// Returns the mut reference array
-    pub fn as_ref_mut(&mut self) -> &mut [u8] {
-        &mut self.hash[..]
+        SMTNodeHash::hash(data)
     }
 
     /// Returns the `index`-th bit in the bytes.
     pub fn bit(&self, index: usize) -> bool {
-        assert!(index < Self::LENGTH_IN_BITS);
+        assert!(index < Self::LEN_IN_BITS);
         let pos = index / 8;
         let bit = 7 - index % 8;
-        (self.hash[pos] >> bit) & 1 != 0
+        (self[pos] >> bit) & 1 != 0
     }
 
     /// Returns the `index`-th nibble in the bytes.
     pub fn nibble(&self, index: usize) -> u8 {
-        assert!(index < Self::LENGTH * 2);
+        assert!(index < Self::LEN * 2);
         let pos = index / 2;
         let shift = if index % 2 == 0 { 4 } else { 0 };
-        (self.hash[pos] >> shift) & 0x0f
+        (self[pos] >> shift) & 0x0f
     }
 
-    /// Returns a `HashValueBitIterator` over all the bits that represent this `HashValue`.
-    pub fn iter_bits(&self) -> HashValueBitIterator<'_> {
-        HashValueBitIterator::new(self)
+    /// Returns a `NodeHashBitIterator` over all the bits that represent this `SMTNodeHash`.
+    pub fn iter_bits(&self) -> NodeHashBitIterator<'_> {
+        NodeHashBitIterator::new(self)
     }
 
-    /// Constructs a `HashValue` from an iterator of bits.
+    /// Constructs a `SMTNodeHash` from an iterator of bits.
     pub fn from_bit_iter(
         iter: impl ExactSizeIterator<Item = bool>,
-    ) -> Result<Self, HashValueParseError> {
-        if iter.len() != Self::LENGTH_IN_BITS {
-            return Err(HashValueParseError);
+    ) -> Result<Self, HashParseError> {
+        if iter.len() != Self::LEN_IN_BITS {
+            return Err(HashParseError);
         }
 
-        let mut buf = [0; Self::LENGTH];
+        let mut buf = [0; Self::LEN];
         for (i, bit) in iter.enumerate() {
             if bit {
                 buf[i / 8] |= 1 << (7 - i % 8);
@@ -129,7 +127,7 @@ impl HashValue {
     }
 
     /// Returns the length of common prefix of `self` and `other` in bits.
-    pub fn common_prefix_bits_len(&self, other: HashValue) -> usize {
+    pub fn common_prefix_bits_len(&self, other: SMTNodeHash) -> usize {
         self.iter_bits()
             .zip(other.iter_bits())
             .take_while(|(x, y)| x == y)
@@ -147,35 +145,35 @@ impl HashValue {
     }
 
     /// Parse a given hex string to a hash value.
-    pub fn from_hex<T: AsRef<[u8]>>(hex: T) -> Result<Self, HashValueParseError> {
-        <[u8; Self::LENGTH]>::from_hex(hex)
-            .map_err(|_| HashValueParseError)
+    pub fn from_hex<T: AsRef<[u8]>>(hex: T) -> Result<Self, HashParseError> {
+        <[u8; Self::LEN]>::from_hex(hex)
+            .map_err(|_| HashParseError)
             .map(Self::new)
     }
 
     /// Create a hash value whose contents are just the given integer. Useful for
     /// generating basic mock hash values.
     ///
-    /// Ex: HashValue::from_u64(0x1234) => HashValue([0, .., 0, 0x12, 0x34])
+    /// Ex: SMTNodeHash::from_u64(0x1234) => SMTNodeHash([0, .., 0, 0x12, 0x34])
     #[cfg(any(test, feature = "fuzzing"))]
     pub fn from_u64(v: u64) -> Self {
-        let mut hash = [0u8; Self::LENGTH];
+        let mut hash = [0u8; Self::LEN];
         let bytes = v.to_be_bytes();
-        hash[Self::LENGTH - bytes.len()..].copy_from_slice(&bytes[..]);
+        hash[Self::LEN - bytes.len()..].copy_from_slice(&bytes[..]);
         Self::new(hash)
     }
 
     /// Parse a given hex string to a hash value
-    pub fn from_hex_literal(literal: &str) -> Result<Self, HashValueParseError> {
+    pub fn from_hex_literal(literal: &str) -> Result<Self, HashParseError> {
         if literal.is_empty() {
-            return Err(HashValueParseError);
+            return Err(HashParseError);
         }
         let literal = literal.strip_prefix("0x").unwrap_or(literal);
         let hex_len = literal.len();
         // If the string is too short, pad it
-        if hex_len < Self::LENGTH * 2 {
-            let mut hex_str = String::with_capacity(Self::LENGTH * 2);
-            for _ in 0..Self::LENGTH * 2 - hex_len {
+        if hex_len < Self::LEN * 2 {
+            let mut hex_str = String::with_capacity(Self::LEN * 2);
+            for _ in 0..Self::LEN * 2 - hex_len {
                 hex_str.push('0');
             }
             hex_str.push_str(literal);
@@ -186,190 +184,89 @@ impl HashValue {
     }
 }
 
-impl ser::Serialize for HashValue {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: ser::Serializer,
-    {
-        if serializer.is_human_readable() {
-            serializer.serialize_str(&self.to_string())
-        } else {
-            // In order to preserve the Serde data model and help analysis tools,
-            // make sure to wrap our value in a container with the same name
-            // as the original type.
-            serializer
-                .serialize_newtype_struct("HashValue", serde_bytes::Bytes::new(&self.hash[..]))
-        }
-    }
-}
-
-impl<'de> de::Deserialize<'de> for HashValue {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: de::Deserializer<'de>,
-    {
-        if deserializer.is_human_readable() {
-            let encoded_hash = <String>::deserialize(deserializer)?;
-            HashValue::from_str(encoded_hash.as_str())
-                .map_err(<D::Error as ::serde::de::Error>::custom)
-        } else {
-            // See comment in serialize.
-            #[derive(::serde::Deserialize)]
-            #[serde(rename = "HashValue")]
-            struct Value<'a>(&'a [u8]);
-
-            let value = Value::deserialize(deserializer)?;
-            Self::from_slice(value.0).map_err(<D::Error as ::serde::de::Error>::custom)
-        }
-    }
-}
-
-impl Default for HashValue {
+impl Default for SMTNodeHash {
     fn default() -> Self {
-        HashValue::zero()
+        SMTNodeHash::zero()
     }
 }
 
-impl AsRef<[u8; HashValue::LENGTH]> for HashValue {
-    fn as_ref(&self) -> &[u8; HashValue::LENGTH] {
-        &self.hash
+impl From<SMTNodeHash> for Bytes {
+    fn from(value: SMTNodeHash) -> Bytes {
+        Bytes::copy_from_slice(value.as_ref())
     }
 }
 
-impl std::ops::Deref for HashValue {
-    type Target = [u8; Self::LENGTH];
-
-    fn deref(&self) -> &Self::Target {
-        &self.hash
+impl From<[u8; SMTNodeHash::LEN]> for SMTNodeHash {
+    fn from(hash: [u8; SMTNodeHash::LEN]) -> Self {
+        SMTNodeHash::new(hash)
     }
 }
 
-impl std::ops::Index<usize> for HashValue {
-    type Output = u8;
-
-    fn index(&self, s: usize) -> &u8 {
-        self.hash.index(s)
+impl From<SMTNodeHash> for [u8; SMTNodeHash::LEN] {
+    fn from(hash_value: SMTNodeHash) -> Self {
+        hash_value.to_byte_array()
     }
 }
 
-impl fmt::Binary for HashValue {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for byte in &self.hash {
-            write!(f, "{:08b}", byte)?;
-        }
-        Ok(())
+impl From<SMTNodeHash> for H256 {
+    fn from(hash_value: SMTNodeHash) -> Self {
+        H256(hash_value.to_byte_array())
     }
 }
 
-impl fmt::LowerHex for HashValue {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if f.alternate() {
-            write!(f, "0x")?;
-        }
-        for byte in &self.hash {
-            write!(f, "{:02x}", byte)?;
-        }
-        Ok(())
-    }
-}
-
-impl fmt::Debug for HashValue {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "HashValue({:#x})", self)
-    }
-}
-
-impl fmt::Display for HashValue {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:#x}", self)
-    }
-}
-
-impl From<HashValue> for Bytes {
-    fn from(value: HashValue) -> Bytes {
-        Bytes::copy_from_slice(value.hash.as_ref())
-    }
-}
-
-impl FromStr for HashValue {
-    type Err = HashValueParseError;
-
-    fn from_str(s: &str) -> Result<Self, HashValueParseError> {
-        HashValue::from_hex_literal(s)
-    }
-}
-
-impl From<[u8; HashValue::LENGTH]> for HashValue {
-    fn from(hash: [u8; HashValue::LENGTH]) -> Self {
-        HashValue::new(hash)
-    }
-}
-
-impl From<HashValue> for [u8; HashValue::LENGTH] {
-    fn from(hash_value: HashValue) -> Self {
-        hash_value.hash
-    }
-}
-
-impl From<HashValue> for H256 {
-    fn from(hash_value: HashValue) -> Self {
-        H256(hash_value.hash)
-    }
-}
-
-impl From<H256> for HashValue {
+impl From<H256> for SMTNodeHash {
     fn from(h256: H256) -> Self {
-        HashValue::new(h256.0)
+        SMTNodeHash::new(h256.0)
     }
 }
 
-impl PartialEq<H256> for HashValue {
+impl PartialEq<H256> for SMTNodeHash {
     fn eq(&self, other: &H256) -> bool {
-        self.hash == other.0
+        self.to_byte_array() == other.0
     }
 }
 
-/// Parse error when attempting to construct a HashValue
+/// Parse error when attempting to construct a SMTNodeHash
 #[derive(Clone, Copy, Debug)]
-pub struct HashValueParseError;
+pub struct HashParseError;
 
-impl fmt::Display for HashValueParseError {
+impl fmt::Display for HashParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "unable to parse HashValue")
+        write!(f, "unable to parse SMTNodeHash")
     }
 }
 
-impl std::error::Error for HashValueParseError {}
+impl std::error::Error for HashParseError {}
 
-/// An iterator over `HashValue` that generates one bit for each iteration.
-pub struct HashValueBitIterator<'a> {
-    /// The reference to the bytes that represent the `HashValue`.
+/// An iterator over `SMTNodeHash` that generates one bit for each iteration.
+pub struct NodeHashBitIterator<'a> {
+    /// The reference to the bytes that represent the `SMTNodeHash`.
     hash_bytes: &'a [u8],
     pos: std::ops::Range<usize>,
-    // invariant hash_bytes.len() == HashValue::LENGTH;
+    // invariant hash_bytes.len() == SMTNodeHash::LEN;
     // invariant pos.end == hash_bytes.len() * 8;
 }
 
-impl<'a> HashValueBitIterator<'a> {
-    /// Constructs a new `HashValueBitIterator` using given `HashValue`.
-    fn new(hash_value: &'a HashValue) -> Self {
-        HashValueBitIterator {
+impl<'a> NodeHashBitIterator<'a> {
+    /// Constructs a new `NodeHashBitIterator` using given `SMTNodeHash`.
+    fn new(hash_value: &'a SMTNodeHash) -> Self {
+        NodeHashBitIterator {
             hash_bytes: hash_value.as_ref(),
-            pos: (0..HashValue::LENGTH_IN_BITS),
+            pos: (0..SMTNodeHash::LEN_IN_BITS),
         }
     }
 
     /// Returns the `index`-th bit in the bytes.
     fn get_bit(&self, index: usize) -> bool {
-        debug_assert_eq!(self.hash_bytes.len(), HashValue::LENGTH); // invariant
-        debug_assert_lt!(index, HashValue::LENGTH_IN_BITS); // assumed precondition
+        debug_assert_eq!(self.hash_bytes.len(), SMTNodeHash::LEN); // invariant
+        debug_assert_lt!(index, SMTNodeHash::LEN_IN_BITS); // assumed precondition
         let pos = index / 8;
         let bit = 7 - index % 8;
         (self.hash_bytes[pos] >> bit) & 1 != 0
     }
 }
 
-impl<'a> std::iter::Iterator for HashValueBitIterator<'a> {
+impl<'a> std::iter::Iterator for NodeHashBitIterator<'a> {
     type Item = bool;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -381,30 +278,30 @@ impl<'a> std::iter::Iterator for HashValueBitIterator<'a> {
     }
 }
 
-impl<'a> std::iter::DoubleEndedIterator for HashValueBitIterator<'a> {
+impl<'a> std::iter::DoubleEndedIterator for NodeHashBitIterator<'a> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.pos.next_back().map(|x| self.get_bit(x))
     }
 }
 
-impl<'a> std::iter::ExactSizeIterator for HashValueBitIterator<'a> {}
+impl<'a> std::iter::ExactSizeIterator for NodeHashBitIterator<'a> {}
 
 /// A type that implements `SMTHash` can be hashed by a cryptographic hash function and produce
-/// a `HashValue`.
+/// a `SMTNodeHash`.
 pub(crate) trait SMTHash {
-    /// Hashes the object and produces a `HashValue`.
-    fn merkle_hash(&self) -> HashValue;
+    /// Hashes the object and produces a `SMTNodeHash`.
+    fn merkle_hash(&self) -> SMTNodeHash;
 }
 
-pub(crate) fn create_literal_hash(word: &str) -> HashValue {
+pub(crate) fn create_literal_hash(word: &str) -> SMTNodeHash {
     let mut s = word.as_bytes().to_vec();
-    assert!(s.len() <= HashValue::LENGTH);
-    s.resize(HashValue::LENGTH, 0);
-    HashValue::from_slice(&s).expect("create literal hash should success")
+    assert!(s.len() <= SMTNodeHash::LEN);
+    s.resize(SMTNodeHash::LEN, 0);
+    SMTNodeHash::from_slice(&s).expect("create literal hash should success")
 }
 
 /// Placeholder hash of `SparseMerkleTree`.
-pub(crate) static SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE: Lazy<HashValue> =
+pub(crate) static SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE: Lazy<SMTNodeHash> =
     Lazy::new(|| create_literal_hash("SPARSE_MERKLE_PLACEHOLDER_HASH"));
 
 pub static SPARSE_MERKLE_PLACEHOLDER_HASH: Lazy<H256> =
