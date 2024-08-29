@@ -23,7 +23,6 @@ use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{
     ExecuteTransactionResponseView, HumanReadableDisplay, KeptVMStatusView,
 };
-use rooch_types::address::RoochAddress;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::rooch::RoochTransaction;
 use rpassword::prompt_password;
@@ -124,20 +123,12 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
             bundles.push(binary);
         }
 
-        // Validate sender account if provided
-        if pkg_address != context.resolve_address(self.tx_options.sender)? {
-            return Err(RoochError::CommandArgumentError(
-                "--sender-account required and the sender account must be the same as the package address"
-                    .to_string(),
-            ));
-        }
-
         // Create a sender RoochAddress
-        let sender: RoochAddress = pkg_address.into();
-        eprintln!("Publish modules to address: {:?}", sender);
+        eprintln!("Publish modules to address: {:?}", pkg_address);
 
         let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
 
+        let sender = context.resolve_address(self.tx_options.sender)?.into();
         // Prepare and execute the transaction based on the action type
         let tx_result = if !self.by_move_action {
             let (entrypoint, args) = if self.legacy {

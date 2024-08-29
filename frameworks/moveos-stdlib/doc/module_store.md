@@ -16,6 +16,8 @@
 -  [Function `module_store_id`](#0x2_module_store_module_store_id)
 -  [Function `init_module_store`](#0x2_module_store_init_module_store)
 -  [Function `issue_upgrade_cap_by_system`](#0x2_module_store_issue_upgrade_cap_by_system)
+-  [Function `issue_upgrade_cap`](#0x2_module_store_issue_upgrade_cap)
+-  [Function `is_upgrade_cap_issued`](#0x2_module_store_is_upgrade_cap_issued)
 -  [Function `borrow_module_store`](#0x2_module_store_borrow_module_store)
 -  [Function `borrow_mut_module_store`](#0x2_module_store_borrow_mut_module_store)
 -  [Function `package_obj_id`](#0x2_module_store_package_obj_id)
@@ -149,6 +151,16 @@ Not allow to publish module
 
 
 
+<a name="0x2_module_store_ErrorUpgradeCapIssued"></a>
+
+Upgrade cap issued already
+
+
+<pre><code><b>const</b> <a href="module_store.md#0x2_module_store_ErrorUpgradeCapIssued">ErrorUpgradeCapIssued</a>: u64 = 3;
+</code></pre>
+
+
+
 <a name="0x2_module_store_module_store_id"></a>
 
 ## Function `module_store_id`
@@ -176,9 +188,34 @@ Create a new module object space
 
 ## Function `issue_upgrade_cap_by_system`
 
+Issue an UpgradeCap for any package by the system accounts.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_issue_upgrade_cap_by_system">issue_upgrade_cap_by_system</a>(system: &<a href="">signer</a>, package_id: <b>address</b>, owner: <b>address</b>)
+</code></pre>
+
+
+
+<a name="0x2_module_store_issue_upgrade_cap"></a>
+
+## Function `issue_upgrade_cap`
+
+Issue an UpgradeCap for package under the sender's account. Then transfer the ownership to the owner.
+This is used to issue an upgrade cap before first publishing.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_issue_upgrade_cap">issue_upgrade_cap</a>(sender: &<a href="">signer</a>, owner: <b>address</b>)
+</code></pre>
+
+
+
+<a name="0x2_module_store_is_upgrade_cap_issued"></a>
+
+## Function `is_upgrade_cap_issued`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_is_upgrade_cap_issued">is_upgrade_cap_issued</a>(package_id: <b>address</b>): bool
 </code></pre>
 
 

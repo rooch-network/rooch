@@ -20,6 +20,8 @@ module moveos_std::module_store {
     const ErrorNotAllowToPublish: u64 = 1;
     /// Have no permission to upgrade package
     const ErrorNoUpgradePermission: u64 = 2;
+    /// Upgrade cap issued already
+    const ErrorUpgradeCapIssued: u64 = 3;
 
     /// Allowlist for module function invocation
     struct Allowlist has key, store {
@@ -54,7 +56,10 @@ module moveos_std::module_store {
     }
 
     /// Package upgrade capability
-    struct UpgradeCap has key, store {}
+    struct UpgradeCap has key, store {
+        /// Package id that the upgrade cap is issued for.
+        package_id: address,
+    }
 
     /// Event for package upgrades. New published modules will also trigger this event.
     struct UpgradeEvent has drop, store, copy {
@@ -74,10 +79,26 @@ module moveos_std::module_store {
         object::to_shared(allowlist);
     }
 
+    /// Issue an UpgradeCap for any package by the system accounts.
     public fun issue_upgrade_cap_by_system(system: &signer, package_id: address, owner: address) {
         core_addresses::assert_system_reserved(system);
-        let upgrade_cap_obj = object::new_account_named_object<UpgradeCap>(package_id, UpgradeCap {});
+        assert!(!is_upgrade_cap_issued(package_id), ErrorUpgradeCapIssued);
+        let upgrade_cap_obj = object::new_account_named_object<UpgradeCap>(package_id, UpgradeCap { package_id });
         object::transfer_extend(upgrade_cap_obj, owner);
+    }
+
+    /// Issue an UpgradeCap for package under the sender's account. Then transfer the ownership to the owner.
+    /// This is used to issue an upgrade cap before first publishing.
+    public fun issue_upgrade_cap(sender: &signer, owner: address) {
+        let package_id = signer::address_of(sender);
+        assert!(!is_upgrade_cap_issued(package_id), ErrorUpgradeCapIssued);
+        let upgrade_cap_obj = object::new_account_named_object<UpgradeCap>(package_id, UpgradeCap { package_id });
+        object::transfer_extend(upgrade_cap_obj, owner);
+    }
+
+    public fun is_upgrade_cap_issued(package_id: address): bool {
+        let id = object::account_named_object_id<UpgradeCap>(package_id);
+        object::exists_object(id)
     }
 
     public fun borrow_module_store(): &Object<ModuleStore> {
@@ -160,13 +181,18 @@ module moveos_std::module_store {
         };
 
         // check first publishing
-        let package_obj_id = package_obj_id(package_data.package_id);
-        let first_publishing = !exists_package_obj(package_obj_id);
-        if (!first_publishing) {
-            assert!(has_upgrade_permission(package_data.package_id, sender_address), ErrorNoUpgradePermission);
+        let first_publishing = !exists_package(package_data.package_id);
+        if (first_publishing) {
+            if (!is_upgrade_cap_issued(package_data.package_id)) {
+                assert!(sender_address == package_data.package_id, ErrorNoUpgradePermission);
+                let upgrade_cap_obj = object::new_account_named_object<UpgradeCap>(
+                    package_data.package_id, UpgradeCap { package_id: package_data.package_id });
+                object::transfer_extend(upgrade_cap_obj, sender_address);
+            } else {
+                assert!(has_upgrade_permission(package_data.package_id, sender_address), ErrorNoUpgradePermission);
+            }
         } else {
-            let upgrade_cap_obj = object::new_account_named_object<UpgradeCap>(package_data.package_id, UpgradeCap {});
-            object::transfer_extend(upgrade_cap_obj, sender_address);
+            assert!(has_upgrade_permission(package_data.package_id, sender_address), ErrorNoUpgradePermission);
         };
 
 
@@ -317,12 +343,6 @@ module moveos_std::module_store {
         vector::contains(&allowlist.publisher, &package_id)
     }
 
-    // Deprecated, rename to ensure_package_id_in_allowlist
-    // TODO: clean this function when reset genesis
-    fun ensure_publisher_in_allowlist(_publisher: address) {
-        abort 9999
-    }
-
     fun ensure_package_id_in_allowlist(package_id: address) {
         if (core_addresses::is_system_reserved_address(package_id)) {
             return
@@ -332,7 +352,6 @@ module moveos_std::module_store {
 
     /// Check if the account has the permission to upgrade the package with the package_id.
     fun has_upgrade_permission(package_id: address, account: address): bool {
-        // TODO: implement this function
         let id = object::account_named_object_id<UpgradeCap>(package_id);
         if (!object::exists_object(id)) {
             return false

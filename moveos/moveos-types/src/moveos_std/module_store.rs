@@ -57,9 +57,8 @@ impl MoveStructState for ModuleStore {
 ///////////// Package ////////////////
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Default)]
 pub struct Package {
-    // // Move VM will auto add a bool field to the empty struct
-    // // So we manually add a bool field to the struct
-    _placeholder: bool,
+    /// Package version
+    version: u64,
 }
 
 impl Package {
@@ -91,7 +90,7 @@ impl MoveStructType for Package {
 
 impl MoveStructState for Package {
     fn struct_layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![MoveTypeLayout::Bool])
+        MoveStructLayout::new(vec![MoveTypeLayout::U64])
     }
 }
 
