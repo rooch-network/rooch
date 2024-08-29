@@ -48,7 +48,14 @@ module bitcoin_move::inscription_updater{
         old: Option<SatPoint>,
     }
 
-    //TODO merge the onchain event and offchain event
+
+    /// Triggered when a new inscription is created
+    /// @param block_height: The block height at which the inscription is created
+    /// @param charms: The charm value of the inscription, representing its special attributes
+    /// @param inscription_id: The unique identifier of the newly created inscription
+    /// @param location: The location of the inscription, which may be None
+    /// @param parent_inscription_ids: A list of parent inscription IDs, used to represent relationships between inscriptions
+    /// @param sequence_number: The sequence number of the inscription
     struct InscriptionCreatedEvent has copy, drop, store {
         block_height: u64,
         charms: u16,
@@ -58,12 +65,20 @@ module bitcoin_move::inscription_updater{
         sequence_number: u32,
     }
     
+    /// Triggered when an inscription is transferred
+    /// @param block_height: The block height at which the inscription is transferred
+    /// @param inscription_id: The unique identifier of the inscription being transferred
+    /// @param new_location: The new location of the inscription
+    /// @param old_location: The old location of the inscription
+    /// @param sequence_number: The sequence number of the inscription
+    /// @param is_burned: A boolean indicating whether the inscription is burned
     struct InscriptionTransferredEvent has copy, drop, store {
         block_height: u64,
         inscription_id: InscriptionID,
         new_location: SatPoint,
         old_location: SatPoint,
         sequence_number: u32,
+        is_burned: bool,
     }
 
     struct InscriptionUpdater has store {
@@ -233,7 +248,7 @@ module bitcoin_move::inscription_updater{
                     new: option::some(FlotsamNew{
                         cursed: option::is_some(&curse) && !jubilant,
                         fee: 0,
-                        //TODO should we handle the hidden
+                        //We do not handle the hidden
                         hidden: false,
                         parents,
                         pointer,
@@ -253,8 +268,8 @@ module bitcoin_move::inscription_updater{
             input_idx = input_idx + 1;
         };
 
-        //TODO process the parent
-        //TODO do we need to handle the fee
+        //We do not validate the parent here.
+        //And we also not store the fee
 
         if(is_coinbase) {
             //remove all the flotsams from the previous txs
@@ -408,6 +423,7 @@ module bitcoin_move::inscription_updater{
                 new_location: new_satpoint,
                 old_location: old_satpoint,
                 sequence_number,
+                is_burned: is_op_return,
             });
             (false, inscription_obj_id)
         }else{
