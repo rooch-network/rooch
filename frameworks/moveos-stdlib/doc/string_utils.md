@@ -25,6 +25,7 @@
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x1::u256</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 </code></pre>
 
@@ -138,7 +139,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_parse_decimal_option">parse_decimal_option</a>(s: &<a href="_String">string::String</a>, decimal: u64): <a href="_Option">option::Option</a>&lt;<a href="">u256</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_parse_decimal_option">parse_decimal_option</a>(s: &<a href="_String">string::String</a>, decimal: u8): <a href="_Option">option::Option</a>&lt;<a href="">u256</a>&gt;
 </code></pre>
 
 
@@ -149,7 +150,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_parse_decimal">parse_decimal</a>(s: &<a href="_String">string::String</a>, decimal: u64): <a href="">u256</a>
+<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_parse_decimal">parse_decimal</a>(s: &<a href="_String">string::String</a>, decimal: u8): <a href="">u256</a>
 </code></pre>
 
 

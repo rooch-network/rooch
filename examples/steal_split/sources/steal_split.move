@@ -122,7 +122,7 @@ module rooch_examples::rooch_examples {
         // Initialize the state object
         let state = State {
             next_game_id: 0,
-            games: simple_map::create()
+            games: simple_map::new()
         };
         // Create a resource account object with account named object
         let account_obj = object::new_account_named_object<ResourceAccount>(account_address, ResourceAccount { sequence_number: 0 });

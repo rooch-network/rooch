@@ -44,7 +44,6 @@ module moveos_std::type_info {
 
     native public fun type_of<T>(): TypeInfo;
 
-    //TODO check the gas cost, and decide whether to implement by native function.
     public fun type_name<T>(): string::String{
         let ascii = std::type_name::into_string(std::type_name::get<T>());
         std::string::utf8(std::ascii::into_bytes(ascii))

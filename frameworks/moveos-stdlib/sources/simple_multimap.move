@@ -109,12 +109,7 @@ module moveos_std::simple_multimap {
     public fun destroy_empty<Key, Value>(map: SimpleMultiMap<Key, Value>) {
         let SimpleMultiMap { data } = map;
         vector::destroy_empty(data);
-    }
-
-    /// Drop all keys and values in the map. This requires keys and values to be dropable.
-    /// Deprecated: The `SimpleMultiMap` is dropable if the keys and values are dropable, so we don't need this function.
-    public fun drop<Key: drop, Value: drop>(_map: SimpleMultiMap<Key, Value>) {
-    }
+    } 
 
     public fun add<Key: store + drop, Value: store>(
         map: &mut SimpleMultiMap<Key, Value>,
@@ -240,7 +235,7 @@ module moveos_std::simple_multimap {
         remove(&mut map, &3);
         assert!(length(&map) == 0, 12);
         assert!(!contains_key(&map, &3), 13);
-        drop(map);
+        
     }
 
     #[test]
@@ -251,7 +246,7 @@ module moveos_std::simple_multimap {
         add(&mut map, 3, 1);
 
         assert!(keys(&map) == vector[2, 3], 1);
-        drop(map);
+        
     }
 
     #[test]
@@ -264,7 +259,7 @@ module moveos_std::simple_multimap {
         let values = values(&map);
         assert!(vector::length(&values) == 3, 1);
         assert!(values == vector[1,2,3], 2);
-        drop(map);
+        
     }
 
     #[test]

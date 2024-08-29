@@ -246,6 +246,18 @@
 
 ## Struct `InscriptionEvent`
 
+Inscription event for metaprotocol
+
+This event is used to record inscription operations related to metaprotocols.
+Compared to the events in inscription_updater, the main differences are:
+1. This event focuses on metaprotocol-related operations, it is an on-chain event.
+2. This event is only emitted when the inscription is created or burned, not when it is transferred.
+3. This event is only emitted if the inscription has a metaprotocol.
+
+@param metaprotocol: The name of the metaprotocol
+@param sequence_number: The sequence number of the inscription
+@param inscription_obj_id: The ID of the inscription object
+@param event_type: Event type, 0 for creation, 1 for burn
 
 
 <pre><code><b>struct</b> <a href="ord.md#0x4_ord_InscriptionEvent">InscriptionEvent</a> <b>has</b> <b>copy</b>, drop, store
