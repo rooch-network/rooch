@@ -224,9 +224,8 @@ module bitcoin_move::utxo{
     }
 
     public(friend) fun drop(utxo: UTXO) {
-        let UTXO{txid:_, vout:_, value:_, seals:_} = utxo;
-        //TODO should ensure the seals are empty
-        //simple_multimap::destroy_empty(seals);
+        let UTXO{txid:_, vout:_, value:_, seals} = utxo;
+        simple_multimap::destroy_empty(seals);
     }
 
     // === UTXOSeal ===

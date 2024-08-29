@@ -64,52 +64,6 @@ pub fn parse(
         smallvec![Value::struct_(addr.to_runtime_value_struct())],
     ))
 }
-
-///TODO remove this function
-/// Returns true if the given pubkey is directly related to the address payload.
-pub fn verify_with_pk(
-    gas_params: &FromBytesGasParameters,
-    _context: &mut NativeContext,
-    _ty_args: Vec<Type>,
-    mut args: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    let pk_bytes = pop_arg!(args, VectorRef);
-    let addr_bytes = pop_arg!(args, VectorRef);
-
-    let pk_ref = pk_bytes.as_bytes_ref();
-    let addr_ref = addr_bytes.as_bytes_ref();
-
-    let cost = gas_params.base
-        + gas_params.per_byte * NumBytes::new((pk_ref.len() + addr_ref.len()) as u64);
-
-    let Ok(pk) = PublicKey::from_slice(&pk_ref) else {
-        return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
-    };
-
-    let Ok(addr_str) = std::str::from_utf8(&addr_ref) else {
-        return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
-    };
-
-    let addr = match Address::from_str(addr_str) {
-        Ok(addr) => addr.assume_checked(),
-        Err(_) => {
-            return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
-        }
-    };
-
-    let is_ok = match addr.address_type() {
-        Some(AddressType::P2tr) => {
-            let xonly_pubkey = XOnlyPublicKey::from(pk.inner);
-            let secp = Secp256k1::verification_only();
-            let trust_addr = Address::p2tr(&secp, xonly_pubkey, None, *addr.network());
-            addr.is_related_to_pubkey(&pk) || trust_addr.to_string() == addr.to_string()
-        }
-        _ => addr.is_related_to_pubkey(&pk),
-    };
-
-    Ok(NativeResult::ok(cost, smallvec![Value::bool(is_ok)]))
-}
-
 #[derive(Debug, Clone)]
 pub struct FromBytesGasParameters {
     pub base: InternalGas,
@@ -171,73 +125,6 @@ pub fn verify_bitcoin_address_with_public_key(
     };
 
     Ok(NativeResult::ok(cost, smallvec![Value::bool(is_ok)]))
-}
-
-// optional function
-pub fn derive_multisig_pubkey_from_pubkeys(
-    gas_params: &FromBytesGasParametersOptional,
-    _context: &mut NativeContext,
-    _ty_args: Vec<Type>,
-    mut args: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    let threshold_bytes = pop_arg!(args, u64);
-    let pk_list = pop_arg!(args, Vec<Value>);
-
-    let mut cost =
-        gas_params.base.unwrap() + gas_params.per_byte.unwrap() * NumBytes::new(threshold_bytes);
-
-    for arg_value in pk_list.iter() {
-        let value = arg_value.copy_value()?;
-        match value.value_as::<Vec<u8>>() {
-            Ok(v) => {
-                cost += gas_params.per_byte.unwrap() * NumBytes::new(v.len() as u64);
-            }
-            Err(_) => {
-                return Ok(NativeResult::err(cost, E_ARG_NOT_VECTOR_U8));
-            }
-        }
-    }
-    Ok(NativeResult::err(cost, E_DEPRECATED))
-}
-
-//TODO remove this function when next release
-pub fn derive_bitcoin_taproot_address_from_pubkey(
-    gas_params: &FromBytesGasParametersOptional,
-    _context: &mut NativeContext,
-    _ty_args: Vec<Type>,
-    mut args: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    let pubkey_bytes = pop_arg!(args, VectorRef);
-
-    let pubkey_ref = pubkey_bytes.as_bytes_ref();
-
-    let cost = gas_params.base.unwrap()
-        + gas_params.per_byte.unwrap() * NumBytes::new(pubkey_ref.len() as u64);
-    let bitcoin_pubkey = match bitcoin::PublicKey::from_slice(&pubkey_ref) {
-        Ok(pubkey) => pubkey,
-        Err(e) => {
-            tracing::debug!(
-                "Failed to parse public key:{:?}, error: {:?}",
-                pubkey_ref.as_hex(),
-                e
-            );
-            return Ok(NativeResult::err(cost, E_INVALID_PUBLIC_KEY));
-        }
-    };
-    let internal_key = XOnlyPublicKey::from(bitcoin_pubkey);
-
-    let secp = bitcoin::secp256k1::Secp256k1::verification_only();
-    let bitcoin_addr = BitcoinAddress::from(bitcoin::Address::p2tr(
-        &secp,
-        internal_key,
-        None,
-        bitcoin::Network::Bitcoin,
-    ));
-
-    Ok(NativeResult::ok(
-        cost,
-        smallvec![Value::struct_(bitcoin_addr.to_runtime_value_struct())],
-    ))
 }
 
 pub fn derive_bitcoin_taproot_address(
@@ -341,22 +228,16 @@ impl FromBytesGasParametersOptional {
 
 #[derive(Debug, Clone)]
 pub struct GasParameters {
-    pub new: FromBytesGasParameters,
-    pub verify_with_pk: FromBytesGasParameters,
+    pub parse: FromBytesGasParameters,
     pub verify_bitcoin_address_with_public_key: FromBytesGasParametersOptional,
-    pub derive_multisig_pubkey_from_pubkeys: FromBytesGasParametersOptional,
-    pub derive_bitcoin_taproot_address_from_pubkey: FromBytesGasParametersOptional,
     pub derive_bitcoin_taproot_address: FromBytesGasParametersOptional,
 }
 
 impl GasParameters {
     pub fn zeros() -> Self {
         Self {
-            new: FromBytesGasParameters::zeros(),
-            verify_with_pk: FromBytesGasParameters::zeros(),
+            parse: FromBytesGasParameters::zeros(),
             verify_bitcoin_address_with_public_key: FromBytesGasParametersOptional::zeros(),
-            derive_multisig_pubkey_from_pubkeys: FromBytesGasParametersOptional::zeros(),
-            derive_bitcoin_taproot_address_from_pubkey: FromBytesGasParametersOptional::zeros(),
             derive_bitcoin_taproot_address: FromBytesGasParametersOptional::zeros(),
         }
     }
@@ -364,11 +245,7 @@ impl GasParameters {
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let mut natives = [
-        ("parse", make_native(gas_params.new, parse)),
-        (
-            "verify_with_pk",
-            make_native(gas_params.verify_with_pk, verify_with_pk),
-        ),
+        ("parse", make_native(gas_params.parse, parse)),
     ]
     .to_vec();
 
@@ -378,29 +255,6 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
             make_native(
                 gas_params.verify_bitcoin_address_with_public_key,
                 verify_bitcoin_address_with_public_key,
-            ),
-        ));
-    }
-
-    if !gas_params.derive_multisig_pubkey_from_pubkeys.is_empty() {
-        natives.push((
-            "derive_multisig_pubkey_from_pubkeys",
-            make_native(
-                gas_params.derive_multisig_pubkey_from_pubkeys,
-                derive_multisig_pubkey_from_pubkeys,
-            ),
-        ));
-    }
-
-    if !gas_params
-        .derive_bitcoin_taproot_address_from_pubkey
-        .is_empty()
-    {
-        natives.push((
-            "derive_bitcoin_taproot_address_from_pubkey",
-            make_native(
-                gas_params.derive_bitcoin_taproot_address_from_pubkey,
-                derive_bitcoin_taproot_address_from_pubkey,
             ),
         ));
     }
