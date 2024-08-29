@@ -18,8 +18,7 @@ use serde::{Deserialize, Serialize};
 pub const MODULE_NAME: &IdentStr = ident_str!("utxo");
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BitcoinUTXOStore {
-}
+pub struct BitcoinUTXOStore {}
 
 impl BitcoinUTXOStore {
     pub fn object_id() -> ObjectID {
