@@ -19,7 +19,6 @@ A simple map that stores key/value pairs in a vector, and support multi values f
 -  [Function `borrow_first_with_default`](#0x2_simple_multimap_borrow_first_with_default)
 -  [Function `contains_key`](#0x2_simple_multimap_contains_key)
 -  [Function `destroy_empty`](#0x2_simple_multimap_destroy_empty)
--  [Function `drop`](#0x2_simple_multimap_drop)
 -  [Function `add`](#0x2_simple_multimap_add)
 -  [Function `keys`](#0x2_simple_multimap_keys)
 -  [Function `values`](#0x2_simple_multimap_values)
@@ -177,19 +176,6 @@ Create an empty SimpleMultiMap.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="simple_multimap.md#0x2_simple_multimap_destroy_empty">destroy_empty</a>&lt;Key, Value&gt;(map: <a href="simple_multimap.md#0x2_simple_multimap_SimpleMultiMap">simple_multimap::SimpleMultiMap</a>&lt;Key, Value&gt;)
-</code></pre>
-
-
-
-<a name="0x2_simple_multimap_drop"></a>
-
-## Function `drop`
-
-Drop all keys and values in the map. This requires keys and values to be dropable.
-Deprecated: The <code><a href="simple_multimap.md#0x2_simple_multimap_SimpleMultiMap">SimpleMultiMap</a></code> is dropable if the keys and values are dropable, so we don't need this function.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="simple_multimap.md#0x2_simple_multimap_drop">drop</a>&lt;Key: drop, Value: drop&gt;(_map: <a href="simple_multimap.md#0x2_simple_multimap_SimpleMultiMap">simple_multimap::SimpleMultiMap</a>&lt;Key, Value&gt;)
 </code></pre>
 
 

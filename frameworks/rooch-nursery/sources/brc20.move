@@ -61,8 +61,7 @@ module rooch_nursery::brc20 {
     }
 
     public fun drop_op(op: Op){
-        let Op{from:_, to:_, json_map} = op;
-        simple_map::drop(json_map);
+        let Op{from:_, to:_, json_map:_} = op;
     }
 
     /// The brc20 deploy operation

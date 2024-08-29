@@ -31,7 +31,7 @@ module moveos_std::cbor {
         let opt_result = native_from_cbor<SimpleMap<String,vector<u8>>>(bytes);
         if(option::is_none(&opt_result)){
             option::destroy_none(opt_result);
-            return simple_map::create()
+            return simple_map::new()
         };
 
         option::destroy_some(opt_result)
@@ -218,7 +218,6 @@ module moveos_std::cbor {
         assert!(option::is_some(&option_string), 17);
         assert!(option::borrow(&option_string) == &std::string::utf8(b"rooch.network"), 18);
 
-        simple_map::drop(map);
     }
 
     #[test]
@@ -226,7 +225,6 @@ module moveos_std::cbor {
         let invalid_bytes = x"abcd";
         let map = to_map(invalid_bytes);
         assert!(simple_map::length(&map) == 0, 1);
-        simple_map::drop(map);
     }
 
     #[test]
@@ -266,7 +264,6 @@ module moveos_std::cbor {
         let test_map = to_map(cbor_bytes);
         // map to cbor
         let cbor2_bytes = to_cbor(&test_map);
-        simple_map::drop(test_map);
 
         let obj = from_cbor<Test>(cbor2_bytes);
         assert!(obj.balance == 170141183460469231731687303715884105728u128, 1);

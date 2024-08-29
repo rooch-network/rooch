@@ -178,7 +178,8 @@ module bitcoin_move::bitcoin{
         // create new utxo
         let repeat_txid = handle_new_utxo(tx, is_coinbase, &mut output_seals, block_height, sender);
 
-        simple_multimap::drop(output_seals);
+        //ensure the output_seals is empty.
+        simple_multimap::destroy_empty(output_seals);
         vector::for_each(input_utxos, |utxo| {
             utxo::drop(utxo);
         });

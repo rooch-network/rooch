@@ -193,9 +193,8 @@ module moveos_std::tx_context {
             tx_hash: _,
             tx_size: _,
             ids_created: _,
-            map,
+            map:_,
         } = self;
-        simple_map::drop(map);
     }
 
     fun borrow(): &TxContext {

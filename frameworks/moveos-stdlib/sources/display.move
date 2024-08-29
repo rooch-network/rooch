@@ -23,7 +23,7 @@ module moveos_std::display {
         let object_id = object::named_object_id<Display<T>>();
         if (!object::exists_object(object_id)) {
             let display_obj = object::new_named_object(Display<T> {
-                sample_map: simple_map::create()
+                sample_map: simple_map::new()
             });
             //We transfer the display object to the moveos_std
             //And the caller do not need to care about the display object
