@@ -91,6 +91,8 @@ jobs:
         run: pnpm lint
         continue-on-error: true
         timeout-minutes: 15
+      - name: Build Test Suite
+        run: pnpm test-suite build
       - name: Build SDK
         run: pnpm rooch-sdk build
       - name: Test SDK

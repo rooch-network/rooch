@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, afterAll } from 'vitest'
 import { Args } from '../../src/bcs/index.js'
 import { Secp256k1Keypair } from '../../src/keypairs/index.js'
 import { BitcoinAddress, BitcoinNetowkType } from '../../src/address/index.js'
@@ -15,6 +15,10 @@ describe('Checkpoints Reading API', () => {
 
   beforeAll(async () => {
     testBox = TestBox.setup()
+  })
+
+  afterAll(async () => {
+    testBox.cleanEnv()
   })
 
   it('Get latest rpc version eq local version', async () => {
@@ -146,6 +150,8 @@ describe('Checkpoints Reading API', () => {
     })
 
     expect(await testBox.signAndExecuteTransaction(tx)).toBeTruthy()
+
+    await testBox.delay(3)
 
     const result1 = await testBox.getClient().getEvents({
       eventHandleType: `${await testBox.defaultCmdAddress()}::event_test::WithdrawEvent`,
