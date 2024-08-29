@@ -220,10 +220,13 @@ const BALANCE_WIDTH: usize = 32;
 
 fn print_balance_table_header() {
     println!(
-        "{0: ^TABLE_WIDTH$} | {1: ^SYMBOL_WIDTH$} | {2: ^DECIMALS_WIDTH$} |  {3: ^BALANCE_WIDTH$} ",
+        "{0: ^TABLE_WIDTH$} | {1: ^SYMBOL_WIDTH$} | {2: ^DECIMALS_WIDTH$} | {3: ^BALANCE_WIDTH$}",
         "Coin Type", "Symbol", "Decimals", "Balance"
     );
-    println!("{}", ["-"; 68].join(""));
+    println!(
+        "{}",
+        "-".repeat(TABLE_WIDTH + SYMBOL_WIDTH + DECIMALS_WIDTH + BALANCE_WIDTH + 5)
+    );
 }
 
 fn print_balance_info(coin_type: String, symbol: String, decimals: u8, balance: String) {
