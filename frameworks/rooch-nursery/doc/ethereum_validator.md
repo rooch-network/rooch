@@ -69,7 +69,7 @@ there defines auth validator id for each blockchain
 Only validate the authenticator's signature.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0xa_ethereum_validator_validate_signature">validate_signature</a>(payload: <a href="_AuthPayload">auth_payload::AuthPayload</a>, tx_hash: <a href="">vector</a>&lt;u8&gt;): <a href="_ETHAddress">ethereum_address::ETHAddress</a>
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0xa_ethereum_validator_validate_signature">validate_signature</a>(payload: &<a href="_AuthPayload">auth_payload::AuthPayload</a>, tx_hash: <a href="">vector</a>&lt;u8&gt;): <a href="_ETHAddress">ethereum_address::ETHAddress</a>
 </code></pre>
 
 

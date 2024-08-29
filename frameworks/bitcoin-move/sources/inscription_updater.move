@@ -110,7 +110,7 @@ module bitcoin_move::inscription_updater{
         let is_coinbase = types::is_coinbase_tx(tx);
 
         let id_counter = 0;
-        let inscribed_offsets = simple_map::new();
+        let inscribed_offsets = simple_map::new<u64, ReinscribeCounter>();
         let floating_inscriptions = vector::empty();
 
         let jubilant = block_height >= network::jubilee_height();
@@ -185,7 +185,12 @@ module bitcoin_move::inscription_updater{
                     old: option::some(*old_location),
                 };
                 vector::push_back(&mut floating_inscriptions, flotsam);
-                simple_map::add(&mut inscribed_offsets, offset, ReinscribeCounter{inscription_id, count: 1});
+                if(simple_map::contains_key(&inscribed_offsets, &offset)){
+                    let counter = simple_map::borrow_mut(&mut inscribed_offsets, &offset);
+                    counter.count = counter.count + 1;
+                }else{
+                    simple_map::add(&mut inscribed_offsets, offset, ReinscribeCounter{inscription_id, count: 1});
+                };
                 seal_idx = seal_idx + 1;
             };
 
@@ -197,10 +202,10 @@ module bitcoin_move::inscription_updater{
 
             while (ins_idx < ins_len) {
                 let envelope = vector::pop_back(&mut envelopes);
-                //let (input, offset, pushnum, stutter, payload) = ord::unpack_envelope(envelope);
                 let input = ord::envelope_input(&envelope);
                 let payload = ord::envelope_payload(&envelope);
                 if (input != (input_idx as u32)){
+                    vector::push_back(&mut envelopes, envelope);
                     break
                 };
                 let inscription_id = ord::new_inscription_id(txid, id_counter);
@@ -211,7 +216,6 @@ module bitcoin_move::inscription_updater{
                 
                 //handle curse before fix the offset via pointer
                 let curse = handle_curse_inscription(&envelope, offset, &inscribed_offsets);
-
                 let offset = if (option::is_some(&pointer)){
                     let p = option::destroy_some(pointer);
                     if (p < total_output_value){

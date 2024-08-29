@@ -115,6 +115,10 @@ impl UTXOView {
             seals: seals_view,
         })
     }
+
+    pub fn get_value(&self) -> u64 {
+        self.value.0
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]

@@ -26,7 +26,7 @@ module test::m {
 }
 
 // test one ref: expect success
-//# run --signers test --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
+//# run --signers test --args object_id:0x1688417d0dfc3020107e88752aa699fbe5709f0b7f91e366c97cb296675901fc
 script {
     use moveos_std::object::{Object};
     use test::m::{TestStruct};
@@ -36,7 +36,7 @@ script {
 }
 
 // test one mut ref: expect success
-//# run --signers test --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
+//# run --signers test --args object_id:0x1688417d0dfc3020107e88752aa699fbe5709f0b7f91e366c97cb296675901fc
 script {
     use moveos_std::object::{Object};
     use test::m::{TestStruct};
@@ -46,7 +46,7 @@ script {
 }
 
 // test one value: expect success
-//# run --signers test --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
+//# run --signers test --args object_id:0x1688417d0dfc3020107e88752aa699fbe5709f0b7f91e366c97cb296675901fc
 script {
     use moveos_std::object::{Self, Object};
     use test::m::{TestStruct};
@@ -57,7 +57,7 @@ script {
 }
 
 // test one value with type args: expect success
-//# run --signers test --type-args 0x42::m::TestStruct --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
+//# run --signers test --type-args 0x42::m::TestStruct --args object_id:0x1688417d0dfc3020107e88752aa699fbe5709f0b7f91e366c97cb296675901fc
 script {
     use moveos_std::object::{Self, Object};
 
@@ -67,7 +67,7 @@ script {
 }
 
 // test mut ref and ref both: expect failure
-//# run --signers test --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
+//# run --signers test --args object_id:0x1688417d0dfc3020107e88752aa699fbe5709f0b7f91e366c97cb296675901fc
 script {
     use moveos_std::object::{Self, Object};
     use test::m::{TestStruct};
@@ -78,7 +78,7 @@ script {
 }
 
 // test two mut ref: expect failure
-//# run --signers test --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
+//# run --signers test --args object_id:0x1688417d0dfc3020107e88752aa699fbe5709f0b7f91e366c97cb296675901fc
 script {
     use moveos_std::object::{Self, Object};
     use test::m::{TestStruct};
@@ -90,7 +90,7 @@ script {
 
 
 // test two repeat mut ref: expect failure
-//# run --signers test --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
+//# run --signers test --args object_id:0x1688417d0dfc3020107e88752aa699fbe5709f0b7f91e366c97cb296675901fc --args object_id:0x1688417d0dfc3020107e88752aa699fbe5709f0b7f91e366c97cb296675901fc
 script {
     use moveos_std::object::{Object};
     use test::m::{TestStruct};
@@ -100,7 +100,7 @@ script {
 }
 
 // test one value and one ref with same object: expect failure
-//# run --signers test --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
+//# run --signers test --args object_id:0x1688417d0dfc3020107e88752aa699fbe5709f0b7f91e366c97cb296675901fc --args object_id:0x1688417d0dfc3020107e88752aa699fbe5709f0b7f91e366c97cb296675901fc
 script {
     use moveos_std::object::{Self, Object};
     use test::m::{TestStruct};
@@ -111,7 +111,7 @@ script {
 }
 
 // test one value and one mut ref with same object: expect failure
-//# run --signers test --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
+//# run --signers test --args object_id:0x1688417d0dfc3020107e88752aa699fbe5709f0b7f91e366c97cb296675901fc --args object_id:0x1688417d0dfc3020107e88752aa699fbe5709f0b7f91e366c97cb296675901fc
 script {
     use moveos_std::object::{Self, Object};
     use test::m::{TestStruct};

@@ -4,11 +4,13 @@
 module bitcoin_move::utxo{
     use std::vector;
     use std::string::String;
+    use std::option::{Self, Option};
     use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::simple_multimap::{Self, SimpleMultiMap};
     use moveos_std::type_info;
     use moveos_std::bag;
-    use moveos_std::event;
+    use moveos_std::event_queue;
+    use moveos_std::address::to_string;
     use bitcoin_move::types::{Self, OutPoint};
 
     friend bitcoin_move::genesis;
@@ -40,29 +42,37 @@ module bitcoin_move::utxo{
     struct SealOut has store, copy, drop {
         vout: u32,
         seal: UTXOSeal,
+    }
+
+    /// Event emitted when a UTXO is spent
+    /// In the Bitcoin UTXO model, there's no inherent concept of sender and receiver.
+    /// However, for simplifying payment scenarios, we define sender and receiver as follows:
+    /// - Sender: The address of the first input UTXO that can be identified
+    /// - Receiver: The address of each output UTXO that can be identified
+    struct SpendUTXOEvent has drop, store, copy {
+        txid: address,
+        sender: address,
+        receiver: Option<address>,
+        value: u64
+    }
+
+    /// Event emitted when a UTXO is received
+    /// In the Bitcoin UTXO model, there's no inherent concept of sender and receiver.
+    /// However, for simplifying payment scenarios, we define sender and receiver as follows:
+    /// - Sender: The address of the first input UTXO that can be identified
+    /// - Receiver: The address of each output UTXO that can be identified
+    struct ReceiveUTXOEvent has drop, store, copy {
+        txid: address,
+        sender: Option<address>,
+        receiver: address,
+        value: u64
     } 
 
     struct BitcoinUTXOStore has key{
-        /// The next tx index to be processed
-        next_tx_index: u64,
-    }
-
-    ///TODO break remove the CreatingUTXOEvent and RemovingUTXOEvent
-    /// Event for creating UTXO
-    struct CreatingUTXOEvent has drop, store, copy {
-        /// UTXO object id
-        id: ObjectID,
-    }
-
-    /// Event for remove UTXO
-    struct RemovingUTXOEvent has drop, store, copy {
-        /// UTXO object id
-        id: ObjectID,
     }
 
     public(friend) fun genesis_init(){
         let btc_utxo_store = BitcoinUTXOStore{
-            next_tx_index: 0,
         };
         let obj = object::new_named_object(btc_utxo_store);
         object::to_shared(obj);
@@ -81,16 +91,6 @@ module bitcoin_move::utxo{
         obj
     }
 
-    public(friend) fun next_tx_index(): u64 {
-        let utxo_store = borrow_utxo_store();
-        object::borrow(utxo_store).next_tx_index
-    }
-
-    public(friend) fun update_next_tx_index(next_tx_index: u64){
-        let utxo_store = borrow_mut_utxo_store();
-        object::borrow_mut(utxo_store).next_tx_index = next_tx_index;
-    }
-
     // ======= UTXO =========
     public(friend) fun new(txid: address, vout: u32, value: u64) : Object<UTXO> {
         let id = types::new_outpoint(txid, vout);
@@ -102,8 +102,6 @@ module bitcoin_move::utxo{
         };
         let uxto_store = borrow_mut_utxo_store();
         let utxo_obj = object::new_with_parent_and_id(uxto_store, id, utxo);
-
-        event::emit<CreatingUTXOEvent>( CreatingUTXOEvent { id: object::id(&utxo_obj) } );
         utxo_obj
     }
 
@@ -147,14 +145,6 @@ module bitcoin_move::utxo{
         object::borrow_object(object_id)
     }
 
-    #[private_generics(T)]
-    /// This function is deprecated
-    /// We can not provide a public function to seal UTXO now,
-    /// Maybe we can provide a new way to seal UTXO in the future
-    public fun seal<T>(_utxo: &mut UTXO, _seal_obj: &Object<T>){
-        abort ErrorDeprecatedFunction
-    }
-
     public fun has_seal<T>(utxo: &UTXO) : bool {
         let protocol = type_info::type_name<T>();
         simple_multimap::contains_key(&utxo.seals, &protocol)
@@ -164,18 +154,6 @@ module bitcoin_move::utxo{
         let protocol = type_info::type_name<T>();
         if(simple_multimap::contains_key(&utxo.seals, &protocol)){
             *simple_multimap::borrow(&utxo.seals, &protocol)
-        }else{
-            vector::empty()
-        }
-    }
-
-    #[private_generics(T)]
-    //TODO break: remove this function
-    public fun remove_seals<T>(utxo: &mut UTXO): vector<ObjectID> {
-        let protocol = type_info::type_name<T>();
-        if(simple_multimap::contains_key(&utxo.seals, &protocol)){
-            let(_k, value) = simple_multimap::remove(&mut utxo.seals, &protocol);
-            value
         }else{
             vector::empty()
         }
@@ -191,15 +169,46 @@ module bitcoin_move::utxo{
         }
     }
 
-    public(friend) fun add_seal(utxo: &mut UTXO, utxo_seal: UTXOSeal){
+    public(friend) fun add_seal_internal(utxo: &mut UTXO, utxo_seal: UTXOSeal){
         let UTXOSeal{protocol, object_id} = utxo_seal;
         simple_multimap::add(&mut utxo.seals, protocol, object_id);
     }
 
     // === Object<UTXO> ===    
 
-    public(friend) fun transfer(utxo_obj: Object<UTXO>, to: address){
-        object::transfer_extend(utxo_obj, to);
+    public(friend) fun transfer(utxo_obj: Object<UTXO>, sender: Option<address>, receiver: address){
+        let utxo = object::borrow(&utxo_obj);
+        let value = utxo.value;
+        let txid = utxo.txid;
+        object::transfer_extend(utxo_obj, receiver);
+
+        if (option::is_some(&sender) && option::borrow(&sender) == &receiver){
+            return
+        };
+        if (receiver != @bitcoin_move){
+            event_queue::emit(to_string(&receiver), ReceiveUTXOEvent {
+                txid,
+                sender,
+                receiver,
+                value
+            });
+        };
+        if (option::is_some(&sender)){
+            let sender_address = option::destroy_some(sender);
+            if (sender_address != @bitcoin_move){
+                let receiver = if (receiver == @bitcoin_move) {
+                    option::none()
+                } else {
+                    option::some(receiver)
+                };
+                event_queue::emit(to_string(&sender_address), SpendUTXOEvent {
+                    txid,
+                    sender: sender_address,
+                    receiver,
+                    value
+                });
+            }
+        };
     }
 
     public(friend) fun take(object_id: ObjectID): Object<UTXO>{
@@ -211,17 +220,12 @@ module bitcoin_move::utxo{
             let bag = object::remove_field(&mut utxo_obj, TEMPORARY_AREA);
             bag::drop(bag);
         };
-
-        event::emit<RemovingUTXOEvent>( RemovingUTXOEvent { id: object::id(&utxo_obj) } );
-        
-        let utxo = object::remove(utxo_obj);
-        // let UTXO{txid:_, vout:_, value:_, seals} = utxo;
-        // seals
-        utxo
+        object::remove(utxo_obj)
     }
 
     public(friend) fun drop(utxo: UTXO) {
         let UTXO{txid:_, vout:_, value:_, seals:_} = utxo;
+        //TODO should ensure the seals are empty
         //simple_multimap::destroy_empty(seals);
     }
 
@@ -303,6 +307,16 @@ module bitcoin_move::utxo{
         rooch_framework::chain_id::is_main()
     }
 
+    public fun unpack_spend_utxo_event(event: SpendUTXOEvent): (address, address, Option<address>, u64) {
+        let SpendUTXOEvent { txid, sender, receiver, value } = event;
+        (txid, sender, receiver, value)
+    }
+
+    public fun unpack_receive_utxo_event(event: ReceiveUTXOEvent): (address, Option<address>, address, u64) {
+        let ReceiveUTXOEvent { txid, sender, receiver, value } = event;
+        (txid, sender, receiver, value)
+    }
+
     #[test_only]
     public fun new_for_testing(txid: address, vout: u32, value: u64) : Object<UTXO> {
         new(txid, vout, value)
@@ -320,7 +334,7 @@ module bitcoin_move::utxo{
         let vout = 0;
         let object_id = derive_utxo_id(types::new_outpoint(txid, vout));
         std::debug::print(&std::bcs::to_bytes(&object_id));
-        assert!(std::bcs::to_bytes(&object_id) == x"02826a5e56581ba5ab84c39976f27cf3578cf524308b4ffc123922dfff507e514db8fc937bf3c15abe49c95fa6906aff29087149f542b48db0cf25dce671a68a63", 1);
+        assert!(std::bcs::to_bytes(&object_id) == x"02f74d177bfec2d8de0c4893f6502d3e5b55f12f75e158d53b035dcbe33782ef166056a4a7b33326d5fb811c95b39cbca0743662e14fa3b904c41fa07d4b5c3956", 1);
     }
 
     #[test]

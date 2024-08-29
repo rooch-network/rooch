@@ -77,7 +77,6 @@ async fn test_8706753() {
     //TODO how to verify the coinbase sat_point
 }
 
-//RUST_LOG=debug cargo test test_from_tx -- --nocapture
 #[tokio::test]
 async fn test_from_tx() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -88,6 +87,21 @@ async fn test_from_tx() {
         "69d52ccb5eb80372b7fc6c4fc3feb17038dd2f58313c5d16302d70f7ef0fff7f",
     );
     decode_inscription(&mut binding_test, btc_tx);
+}
+
+#[tokio::test]
+async fn test_from_tx2() {
+    let _ = tracing_subscriber::fmt::try_init();
+    let mut binding_test = binding_test::RustBindingTest::new().unwrap();
+    //https://mempool.space/api/tx/092111e882a8025f3f05ab791982e8cc7fd7395afe849a5949fd56255b5c41cc/hex
+    let btc_tx = load_tx(
+        Network::Bitcoin,
+        "092111e882a8025f3f05ab791982e8cc7fd7395afe849a5949fd56255b5c41cc",
+    );
+    let inscriptions = decode_inscription(&mut binding_test, btc_tx);
+    for (i, inscription) in inscriptions.iter().enumerate() {
+        debug!("{}. inscription: {:?}", i, inscription);
+    }
 }
 
 #[tokio::test]

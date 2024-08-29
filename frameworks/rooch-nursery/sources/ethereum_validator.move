@@ -25,9 +25,9 @@ module rooch_nursery::ethereum_validator {
     }
 
     /// Only validate the authenticator's signature.
-    public fun validate_signature(payload: AuthPayload, tx_hash: vector<u8>): ETHAddress {
+    public fun validate_signature(payload: &AuthPayload, tx_hash: vector<u8>): ETHAddress {
 
-        let message = auth_payload::encode_full_message(&payload, tx_hash);
+        let message = auth_payload::encode_full_message(payload, tx_hash);
 
         let pk = ecdsa_k1::ecrecover(&auth_payload::signature(payload), &message, ecdsa_k1::keccak256());
         assert!(
@@ -50,7 +50,7 @@ module rooch_nursery::ethereum_validator {
         //let sender = tx_context::sender();
         let tx_hash = tx_context::tx_hash();
         let payload = auth_payload::from_bytes(authenticator_payload);
-        let eth_addr = validate_signature(payload, tx_hash);
+        let eth_addr = validate_signature(&payload, tx_hash);
         let multi_chain_addr = multichain_address::from_eth(eth_addr);
         
         //TODO check if the sender is related to the eth address
