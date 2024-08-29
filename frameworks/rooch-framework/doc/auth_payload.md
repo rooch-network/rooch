@@ -140,7 +140,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_payload.md#0x3_auth_payload_signature">signature</a>(payload: <a href="auth_payload.md#0x3_auth_payload_AuthPayload">auth_payload::AuthPayload</a>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="auth_payload.md#0x3_auth_payload_signature">signature</a>(payload: &<a href="auth_payload.md#0x3_auth_payload_AuthPayload">auth_payload::AuthPayload</a>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -151,7 +151,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_payload.md#0x3_auth_payload_message_prefix">message_prefix</a>(payload: <a href="auth_payload.md#0x3_auth_payload_AuthPayload">auth_payload::AuthPayload</a>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="auth_payload.md#0x3_auth_payload_message_prefix">message_prefix</a>(payload: &<a href="auth_payload.md#0x3_auth_payload_AuthPayload">auth_payload::AuthPayload</a>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -162,7 +162,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_payload.md#0x3_auth_payload_message_info">message_info</a>(payload: <a href="auth_payload.md#0x3_auth_payload_AuthPayload">auth_payload::AuthPayload</a>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="auth_payload.md#0x3_auth_payload_message_info">message_info</a>(payload: &<a href="auth_payload.md#0x3_auth_payload_AuthPayload">auth_payload::AuthPayload</a>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -173,7 +173,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_payload.md#0x3_auth_payload_public_key">public_key</a>(payload: <a href="auth_payload.md#0x3_auth_payload_AuthPayload">auth_payload::AuthPayload</a>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="auth_payload.md#0x3_auth_payload_public_key">public_key</a>(payload: &<a href="auth_payload.md#0x3_auth_payload_AuthPayload">auth_payload::AuthPayload</a>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -184,7 +184,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_payload.md#0x3_auth_payload_from_address">from_address</a>(payload: <a href="auth_payload.md#0x3_auth_payload_AuthPayload">auth_payload::AuthPayload</a>): <a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="auth_payload.md#0x3_auth_payload_from_address">from_address</a>(payload: &<a href="auth_payload.md#0x3_auth_payload_AuthPayload">auth_payload::AuthPayload</a>): <a href="_String">string::String</a>
 </code></pre>
 
 
