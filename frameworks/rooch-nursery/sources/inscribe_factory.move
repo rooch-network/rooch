@@ -12,7 +12,7 @@ module rooch_nursery::inscribe_factory {
     use moveos_std::object::Object;
     use moveos_std::string_utils;
     use moveos_std::simple_map::{Self, SimpleMap};
-    use moveos_std::wasm;
+    use rooch_nursery::wasm;
     use moveos_std::cbor;
 
     use bitcoin_move::types;

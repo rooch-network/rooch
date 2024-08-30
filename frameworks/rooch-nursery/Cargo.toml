@@ -21,6 +21,11 @@ hex = { workspace = true }
 tracing = { workspace = true }
 bitcoin = { workspace = true }
 musig2 = { workspace = true }
+log = { workspace = true }
+serde_json = { workspace = true }
+ciborium = { workspace = true }
+wasmer = { workspace = true }
+libc = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-core-types = { workspace = true }
@@ -32,5 +37,6 @@ move-vm-types = { workspace = true }
 moveos-types = { workspace = true }
 moveos-stdlib = { workspace = true }
 moveos = { workspace = true }
+moveos-wasm = { workspace = true }
 
 rooch-types = { workspace = true }

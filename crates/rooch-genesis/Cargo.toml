@@ -42,3 +42,4 @@ rooch-config = { workspace = true }
 bitcoin-move = { workspace = true }
 framework-builder = { workspace = true }
 framework-release = { workspace = true }
+rooch-nursery = { workspace = true }

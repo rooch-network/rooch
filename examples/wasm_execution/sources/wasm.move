@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_examples::wasm_execution {
-   use moveos_std::wasm;
+   use rooch_nursery::wasm;
    use std::debug;
    use std::string;
    use std::vector;

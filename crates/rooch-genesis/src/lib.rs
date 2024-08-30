@@ -29,6 +29,11 @@ use rooch_framework::natives::gas_parameter::gas_member::{
 };
 use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
 use rooch_indexer::store::traits::IndexerStoreTrait;
+use rooch_nursery::natives::gas_parameter::gas_member::InitialGasSchedule as RoochNurseryInitialGasSchedule;
+use rooch_nursery::natives::gas_parameter::gas_member::{
+    FromOnChainGasSchedule as RoochNurseryFromOnChainGasSchedule,
+    ToOnChainGasSchedule as RoochNurseryToOnChainGasSchedule,
+};
 use rooch_store::meta_store::MetaStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_types::address::BitcoinAddress;
@@ -86,6 +91,7 @@ pub struct FrameworksGasParameters {
     pub vm_gas_params: VMGasParameters,
     pub rooch_framework_gas_params: rooch_framework::natives::NativeGasParameters,
     pub bitcoin_move_gas_params: bitcoin_move::natives::GasParameters,
+    pub rooch_nursery_gas_params: rooch_nursery::natives::GasParameters,
 }
 
 impl FrameworksGasParameters {
@@ -95,6 +101,7 @@ impl FrameworksGasParameters {
             vm_gas_params: VMGasParameters::initial(),
             rooch_framework_gas_params: rooch_framework::natives::NativeGasParameters::initial(),
             bitcoin_move_gas_params: bitcoin_move::natives::GasParameters::initial(),
+            rooch_nursery_gas_params: rooch_nursery::natives::GasParameters::initial(),
         }
     }
 
@@ -104,6 +111,7 @@ impl FrameworksGasParameters {
             vm_gas_params: VMGasParameters::initial(),
             rooch_framework_gas_params: rooch_framework::natives::NativeGasParameters::initial(),
             bitcoin_move_gas_params: bitcoin_move::natives::GasParameters::initial(),
+            rooch_nursery_gas_params: rooch_nursery::natives::GasParameters::initial(),
         };
 
         if LATEST_GAS_SCHEDULE_VERSION >= GAS_SCHEDULE_RELEASE_V1 {
@@ -144,6 +152,7 @@ impl FrameworksGasParameters {
         let mut entries = self.vm_gas_params.to_on_chain_gas_schedule();
         entries.extend(self.rooch_framework_gas_params.to_on_chain_gas_schedule());
         entries.extend(self.bitcoin_move_gas_params.to_on_chain_gas_schedule());
+        entries.extend(self.rooch_nursery_gas_params.to_on_chain_gas_schedule());
         GasScheduleConfig {
             max_gas_amount: self.max_gas_amount,
             entries: entries
@@ -184,11 +193,15 @@ impl FrameworksGasParameters {
         let bitcoin_move_gas_params =
             bitcoin_move::natives::GasParameters::from_on_chain_gas_schedule(&entries)
                 .ok_or_else(|| anyhow::anyhow!("Failed to load bitcoin move gas parameters"))?;
+        let rooch_nursery_gas_params =
+            rooch_nursery::natives::GasParameters::from_on_chain_gas_schedule(&entries)
+                .ok_or_else(|| anyhow::anyhow!("Failed to load rooch nursery gas parameters"))?;
         Ok(Self {
             max_gas_amount,
             vm_gas_params: vm_gas_parameter,
             rooch_framework_gas_params,
             bitcoin_move_gas_params,
+            rooch_nursery_gas_params,
         })
     }
 
@@ -197,7 +210,10 @@ impl FrameworksGasParameters {
             rooch_framework::natives::all_natives(self.rooch_framework_gas_params.clone());
         let bitcoin_move_native_table =
             bitcoin_move::natives::all_natives(self.bitcoin_move_gas_params.clone());
+        let rooch_nursery_native_table =
+            rooch_nursery::natives::all_natives(self.rooch_nursery_gas_params.clone());
         rooch_framework_native_tables.extend(bitcoin_move_native_table);
+        rooch_framework_native_tables.extend(rooch_nursery_native_table);
         rooch_framework_native_tables
     }
 }

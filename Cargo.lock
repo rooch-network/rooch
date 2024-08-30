@@ -9493,6 +9493,7 @@ dependencies = [
  "rooch-db",
  "rooch-framework",
  "rooch-indexer",
+ "rooch-nursery",
  "rooch-store",
  "rooch-types",
  "serde 1.0.208",
@@ -9589,8 +9590,11 @@ version = "0.6.9"
 dependencies = [
  "bcs",
  "bitcoin 0.31.2",
+ "ciborium",
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "hex",
+ "libc",
+ "log",
  "move-binary-format",
  "move-core-types",
  "move-stdlib",
@@ -9599,10 +9603,13 @@ dependencies = [
  "moveos",
  "moveos-stdlib",
  "moveos-types",
+ "moveos-wasm",
  "musig2",
  "rooch-types",
+ "serde_json",
  "smallvec",
  "tracing",
+ "wasmer",
 ]
 
 [[package]]

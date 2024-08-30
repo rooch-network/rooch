@@ -27,12 +27,12 @@ Bitseed inscribe inscription factory
 <b>use</b> <a href="">0x2::result</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
 <b>use</b> <a href="">0x2::string_utils</a>;
-<b>use</b> <a href="">0x2::wasm</a>;
 <b>use</b> <a href="">0x4::bitcoin</a>;
 <b>use</b> <a href="">0x4::ord</a>;
 <b>use</b> <a href="">0x4::types</a>;
 <b>use</b> <a href="bitseed.md#0xa_bitseed">0xa::bitseed</a>;
 <b>use</b> <a href="tick_info.md#0xa_tick_info">0xa::tick_info</a>;
+<b>use</b> <a href="wasm.md#0xa_wasm">0xa::wasm</a>;
 </code></pre>
 
 
