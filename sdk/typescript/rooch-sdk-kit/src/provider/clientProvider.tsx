@@ -8,7 +8,7 @@ import { createContext, useMemo, useState } from 'react'
 import { getRoochNodeUrl, RoochClient, RoochClientOptions } from '@roochnetwork/rooch-sdk'
 
 import { NetworkConfig } from '../hooks/index.js'
-import { useRoochClient } from './useRoochClient.js'
+import { useDefaultClient } from './useDefaultClient.js'
 
 export type NetworkConfigs<T extends NetworkConfig | RoochClient = NetworkConfig | RoochClient> =
   Record<string, T>
@@ -50,7 +50,7 @@ export function RoochClientProvider<T extends NetworkConfigs>(props: RoochClient
   )
   const currentNetwork = props.network ?? selectedNetwork
 
-  const client = useRoochClient({ currentNetwork, networks })
+  const client = useDefaultClient({ currentNetwork, networks })
 
   const ctx = useMemo((): ClientProviderContext => {
     return {

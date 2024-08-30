@@ -29,7 +29,7 @@ interface UseRoochClientParams {
   networks: NetworkConfigs
 }
 
-export function useRoochClient(params: UseRoochClientParams) {
+export function useDefaultClient(params: UseRoochClientParams) {
   const { currentNetwork, networks } = params
 
   const currentSession = useSessionStore((state) => state.currentSession)
