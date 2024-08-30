@@ -5,7 +5,7 @@ import { useRef, useMemo, useState } from 'react';
 import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
 
 import { Box, Card, Chip, Skeleton, CardHeader, Typography, CardContent } from '@mui/material';
-
+import DOMPurify from 'dompurify';
 import { hexToString } from 'src/utils/common';
 
 import { EmptyContent } from 'src/components/empty-content/empty-content';
@@ -71,11 +71,11 @@ export default function OrdinalList({ address }: { address: string }) {
             try {
               parsePlainText =
                 i.value.content_type === 'text/plain;charset=utf-8'
-                  ? JSON.stringify(
+                  ? DOMPurify.sanitize(JSON.stringify(
                       JSON.parse(hexToString(i.value.body as unknown as string)),
                       null,
                       2
-                    )
+                    ))
                   : i.value.content_type;
             } catch (error) {
               parsePlainText = (
