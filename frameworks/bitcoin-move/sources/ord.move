@@ -497,7 +497,7 @@ module bitcoin_move::ord {
 
     // ======= Envelope and InscriptionRecord
 
-    native fun parse_inscription_from_witness(witness: &Witness): vector<Envelope<InscriptionRecord>>;
+    native fun from_witness(witness: &Witness): vector<Envelope<InscriptionRecord>>;
 
     public(friend) fun parse_inscription_from_tx(tx: &Transaction): vector<Envelope<InscriptionRecord>> {
         let inputs = types::tx_input(tx);
@@ -507,7 +507,7 @@ module bitcoin_move::ord {
         while (input_idx < len) {
             let input = vector::borrow(inputs, input_idx);
             let witness = types::txin_witness(input);
-            let inscription_records = parse_inscription_from_witness(witness);
+            let inscription_records = from_witness(witness);
             let record_len = vector::length(&inscription_records);
             let record_idx = 0;
             while (record_idx < record_len) {
