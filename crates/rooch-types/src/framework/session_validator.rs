@@ -20,7 +20,7 @@ pub struct SessionValidator {}
 
 impl SessionValidator {
     pub fn auth_validator_id() -> u64 {
-        BuiltinAuthValidator::Rooch.flag().into()
+        BuiltinAuthValidator::Session.flag().into()
     }
 }
 

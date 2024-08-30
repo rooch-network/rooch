@@ -1,8 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{fs::File, io::Write};
-
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use anyhow::Result;
 use async_trait::async_trait;
@@ -13,6 +11,8 @@ use rooch_types::{
     error::RoochResult,
     function_arg::{parse_function_arg, FunctionArg, ParsedFunctionId},
 };
+
+use super::{FileOutput, FileOutputData};
 
 /// Get transactions by order
 #[derive(Debug, clap::Parser)]
@@ -47,8 +47,9 @@ pub struct BuildCommand {
     context: WalletContextOptions,
 
     /// File destination for the file being written
-    #[clap(long)]
-    file_destination: Option<String>,
+    /// If not specified, will write to current directory
+    #[clap(long, short = 'o')]
+    output: Option<String>,
 
     /// Return command outputs in json format
     #[clap(long, default_value = "false")]
@@ -56,8 +57,8 @@ pub struct BuildCommand {
 }
 
 #[async_trait]
-impl CommandAction<Option<String>> for BuildCommand {
-    async fn execute(self) -> RoochResult<Option<String>> {
+impl CommandAction<Option<FileOutput>> for BuildCommand {
+    async fn execute(self) -> RoochResult<Option<FileOutput>> {
         let context = self.context.build()?;
         let address_mapping = context.address_mapping();
         let sender = context.resolve_address(self.tx_options.sender)?.into();
@@ -84,24 +85,12 @@ impl CommandAction<Option<String>> for BuildCommand {
             .build_tx_data(sender, action, max_gas_amount)
             .await?;
 
-        if let Some(file_destination) = self.file_destination {
-            let mut file = File::create(file_destination)?;
-            file.write_all(&tx_data.encode())?;
-            println!("Write transaction hex succeeded in the destination");
-
-            Ok(None)
+        let output = FileOutput::write_to_file(FileOutputData::RoochTransactionData(tx_data), self.output)?;
+        if self.json {
+            Ok(Some(output))
         } else {
-            let tx_data_hex = hex::encode(tx_data.encode());
-            if self.json {
-                Ok(Some(tx_data_hex))
-            } else {
-                println!(
-                    "Build transaction succeeded with the transaction hex [{}]",
-                    tx_data_hex
-                );
-
-                Ok(None)
-            }
+            println!("Build transaction succeeded write to file: {}", output.path);
+            Ok(None)
         }
     }
 }

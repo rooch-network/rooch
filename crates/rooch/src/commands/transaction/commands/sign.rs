@@ -1,98 +1,200 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
+use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
+use moveos_types::module_binding::MoveFunctionCaller;
+use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::{
+    address::RoochAddress,
+    bitcoin::multisign_account::MultisignAccountModule,
     error::{RoochError, RoochResult},
-    transaction::RoochTransactionData,
+    transaction::{
+        authenticator::BitcoinAuthenticator, rooch::PartiallySignedRoochTransaction,
+        RoochTransaction, RoochTransactionData,
+    },
 };
-use std::{
-    fs::File,
-    io::{Read, Write},
-};
+use std::{fs::File, io::Read, str::FromStr};
+use super::{is_file_path, FileOutput, FileOutputData};
+
+#[derive(Debug, Clone)]
+pub enum SignInput {
+    RoochTransactionData(RoochTransactionData),
+    PartiallySignedRoochTransaction(PartiallySignedRoochTransaction),
+}
+
+impl FromStr for SignInput {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let data_hex = if is_file_path(s) {
+            //load hex from file
+            let mut file = File::open(s).map_err(|e| {
+                RoochError::CommandArgumentError(format!("Failed to open file: {}, err:{:?}", s, e))
+            })?;
+            let mut hex_str = String::new();
+            file.read_to_string(&mut hex_str).map_err(|e| {
+                RoochError::CommandArgumentError(format!("Failed to read file: {}, err:{:?}", s, e))
+            })?;
+            hex_str.strip_prefix("0x").unwrap_or(&hex_str).to_string()
+        } else {
+            s.strip_prefix("0x").unwrap_or(s).to_string()
+        };
+        let data_bytes = hex::decode(&data_hex).map_err(|e| {
+            RoochError::CommandArgumentError(format!(
+                "Failed to decode hex: {}, err:{:?}",
+                data_hex, e
+            ))
+        })?;
+        let input = match bcs::from_bytes(&data_bytes) {
+            Ok(tx_data) => SignInput::RoochTransactionData(tx_data),
+            Err(_) => {
+                let psrt: PartiallySignedRoochTransaction = match bcs::from_bytes(&data_bytes) {
+                    Ok(psrt) => psrt,
+                    Err(_) => {
+                        return Err(anyhow::anyhow!("Invalid tx data or psrt data"));
+                    }
+                };
+                SignInput::PartiallySignedRoochTransaction(psrt)
+            }
+        };
+        Ok(input)
+    }
+}
+
+impl SignInput {
+    pub fn sender(&self) -> RoochAddress {
+        match self {
+            SignInput::RoochTransactionData(tx_data) => tx_data.sender,
+            SignInput::PartiallySignedRoochTransaction(psrt) => psrt.sender(),
+        }
+    }
+}
+
+pub enum SignOutput {
+    SignedRoochTransaction(RoochTransaction),
+    PartiallySignedRoochTransaction(PartiallySignedRoochTransaction),
+}
+
+impl SignOutput {
+    pub fn is_finished(&self) -> bool {
+        matches!(self, SignOutput::SignedRoochTransaction(_))
+    }
+}
+
+impl Into<FileOutputData> for SignOutput {
+    fn into(self) -> FileOutputData {
+        match self {
+            SignOutput::SignedRoochTransaction(tx) => FileOutputData::SignedRoochTransaction(tx),
+            SignOutput::PartiallySignedRoochTransaction(psrt) => {
+                FileOutputData::PartiallySignedRoochTransaction(psrt)
+            }
+        }
+    }
+}
 
 /// Get transactions by order
 #[derive(Debug, clap::Parser)]
 pub struct SignCommand {
-    /// Transaction data hex to be used for signing
-    #[clap(long)]
-    tx_hex: Option<String>,
+    /// Input data to be used for signing
+    /// Input can be a transaction data hex or a partially signed transaction data hex
+    /// or a file path which contains transaction data or partially signed transaction data
+    input: SignInput,
 
-    #[clap(flatten)]
-    tx_options: TransactionOptions,
-
-    #[clap(flatten)]
-    context: WalletContextOptions,
-
-    /// File location for the file being read
-    #[clap(long)]
-    file_location: Option<String>,
-
-    /// File destination for the file being written
-    #[clap(long)]
-    file_destination: Option<String>,
+    /// The output file path for the signed transaction
+    /// If not specified, the signed output will write to current directory.
+    #[clap(long, short = 'o')]
+    output: Option<String>,
 
     /// Return command outputs in json format
     #[clap(long, default_value = "false")]
     json: bool,
+
+    #[clap(flatten)]
+    context: WalletContextOptions,
+}
+
+impl SignCommand {
+    async fn sign(self) -> anyhow::Result<SignOutput> {
+        let context = self.context.build_require_password()?;
+        let client = context.get_client().await?;
+        let multisign_account_module = client.as_module_binding::<MultisignAccountModule>();
+        let sender = self.input.sender();
+        let output = if multisign_account_module.is_multisign_account(sender.into())? {
+            let threshold = multisign_account_module.threshold(sender.into())?;
+            let mut psrt = match self.input {
+                SignInput::RoochTransactionData(tx_data) => {
+                    PartiallySignedRoochTransaction::new(tx_data, threshold)
+                }
+                SignInput::PartiallySignedRoochTransaction(psrt) => psrt,
+            };
+            let participants = multisign_account_module.participants(sender.into())?;
+            let mut has_participant = false;
+            for participant in participants.iter() {
+                if context
+                    .keystore
+                    .contains_address(&participant.participant_address.into())
+                {
+                    has_participant = true;
+                    let kp = context.get_key_pair(&participant.participant_address.into())?;
+                    let authenticator = BitcoinAuthenticator::sign(&kp, &psrt.data);
+                    if psrt.contains_authenticator(&authenticator) {
+                        continue;
+                    }
+                    psrt.add_authenticator(authenticator)?;
+                }
+            }
+            if !has_participant {
+                return Err(anyhow::anyhow!("No participant found in the multisign account from the keystore, participants: {:?}", participants));
+            }
+            if psrt.is_fully_signed() {
+                SignOutput::SignedRoochTransaction(psrt.try_into_rooch_transaction()?)
+            } else {
+                SignOutput::PartiallySignedRoochTransaction(psrt)
+            }
+        } else {
+            let tx_data = match self.input {
+                SignInput::RoochTransactionData(tx_data) => tx_data,
+                SignInput::PartiallySignedRoochTransaction(_) => {
+                    return Err(anyhow::anyhow!(
+                        "Cannot sign a partially signed transaction with a single signer"
+                    ))
+                }
+            };
+            SignOutput::SignedRoochTransaction(context.sign_transaction(sender, tx_data).await?)
+        };
+        Ok(output)
+    }
 }
 
 #[async_trait]
-impl CommandAction<Option<String>> for SignCommand {
-    async fn execute(self) -> RoochResult<Option<String>> {
-        let context = self.context.build()?;
-        let password = context.get_password();
-        let sender = context.resolve_address(self.tx_options.sender)?.into();
-        let max_gas_amount = self.tx_options.max_gas_amount;
-        let signed_tx;
+impl CommandAction<Option<FileOutput>> for SignCommand {
+    async fn execute(self) -> RoochResult<Option<FileOutput>> {
+        let json = self.json;
+        let output = self.output.clone();
+        let sign_output = self.sign().await?;
+        let is_finished = sign_output.is_finished();
 
-        if let Some(file_location) = self.file_location {
-            let mut file = File::open(file_location)?;
-            let mut encoded_tx_data = Vec::new();
-            file.read_to_end(&mut encoded_tx_data)?;
-            let tx_data: RoochTransactionData =
-                bcs::from_bytes(&encoded_tx_data).map_err(|_| {
-                    RoochError::BcsError(format!("Invalid encoded tx data: {:?}", encoded_tx_data))
-                })?;
-            signed_tx = context
-                .sign(sender, tx_data.action, password, max_gas_amount)
-                .await?;
-        } else if let Some(tx_hex) = self.tx_hex {
-            let encoded_tx_data = hex::decode(tx_hex.clone()).map_err(|_| {
-                RoochError::CommandArgumentError(format!("Invalid transaction hex: {}", tx_hex))
-            })?;
-            let tx_data: RoochTransactionData =
-                bcs::from_bytes(&encoded_tx_data).map_err(|_| {
-                    RoochError::BcsError(format!("Invalid encoded tx data: {:?}", encoded_tx_data))
-                })?;
-            signed_tx = context
-                .sign(sender, tx_data.action, password, max_gas_amount)
-                .await?;
-        } else {
-            return Err(RoochError::CommandArgumentError(
-                "Argument --file-location or --tx-hex are not provided".to_owned(),
-            ));
-        }
+        let file_output_data = sign_output.into();
+        let file_output = FileOutput::write_to_file(file_output_data, output)?;
 
-        if let Some(file_destination) = self.file_destination {
-            let mut file = File::create(file_destination)?;
-            file.write_all(&signed_tx.encode())?;
-            println!("Write signed tx data succeeded in the destination");
-
-            Ok(None)
-        } else {
-            let signed_tx_hex = hex::encode(signed_tx.encode());
-            if self.json {
-                Ok(Some(signed_tx_hex))
+        if !json {
+            if is_finished {
+                println!("Signed transaction is written to {:?}", file_output.path);
+                println!(
+                    "You can submit the transaction with `rooch tx submit {}`",
+                    file_output.path
+                );
             } else {
                 println!(
-                    "Sign transaction succeeded with the signed transaction hex [{}]",
-                    signed_tx_hex
+                    "Partially signed transaction is written to {:?}",
+                    file_output.path
                 );
-
-                Ok(None)
+                println!("You can send the partially signed transaction to other signers, and sign it later with `rooch tx sign {}`", file_output.path);
             }
+            Ok(None)
+        } else {
+            Ok(Some(file_output))
         }
     }
 }

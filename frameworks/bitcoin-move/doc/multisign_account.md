@@ -17,8 +17,11 @@ Bitcoin multisign account module
 -  [Function `is_multisign_account`](#0x4_multisign_account_is_multisign_account)
 -  [Function `bitcoin_address`](#0x4_multisign_account_bitcoin_address)
 -  [Function `threshold`](#0x4_multisign_account_threshold)
+-  [Function `participants`](#0x4_multisign_account_participants)
+-  [Function `participant`](#0x4_multisign_account_participant)
 -  [Function `participant_public_key`](#0x4_multisign_account_participant_public_key)
 -  [Function `participant_bitcoin_address`](#0x4_multisign_account_participant_bitcoin_address)
+-  [Function `participant_address`](#0x4_multisign_account_participant_address)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -292,13 +295,35 @@ If the multisign account already exists, we will init the MultisignAccountInfo i
 
 
 
+<a name="0x4_multisign_account_participants"></a>
+
+## Function `participants`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multisign_account.md#0x4_multisign_account_participants">participants</a>(multisign_address: <b>address</b>): <a href="">vector</a>&lt;<a href="multisign_account.md#0x4_multisign_account_ParticipantInfo">multisign_account::ParticipantInfo</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_multisign_account_participant"></a>
+
+## Function `participant`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multisign_account.md#0x4_multisign_account_participant">participant</a>(multisign_address: <b>address</b>, participant_address: <b>address</b>): <a href="multisign_account.md#0x4_multisign_account_ParticipantInfo">multisign_account::ParticipantInfo</a>
+</code></pre>
+
+
+
 <a name="0x4_multisign_account_participant_public_key"></a>
 
 ## Function `participant_public_key`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="multisign_account.md#0x4_multisign_account_participant_public_key">participant_public_key</a>(multisign_address: <b>address</b>, participant_address: <b>address</b>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="multisign_account.md#0x4_multisign_account_participant_public_key">participant_public_key</a>(participant: &<a href="multisign_account.md#0x4_multisign_account_ParticipantInfo">multisign_account::ParticipantInfo</a>): &<a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -309,5 +334,16 @@ If the multisign account already exists, we will init the MultisignAccountInfo i
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="multisign_account.md#0x4_multisign_account_participant_bitcoin_address">participant_bitcoin_address</a>(multisign_address: <b>address</b>, participant_address: <b>address</b>): <a href="_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
+<pre><code><b>public</b> <b>fun</b> <a href="multisign_account.md#0x4_multisign_account_participant_bitcoin_address">participant_bitcoin_address</a>(participant: &<a href="multisign_account.md#0x4_multisign_account_ParticipantInfo">multisign_account::ParticipantInfo</a>): &<a href="_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
+</code></pre>
+
+
+
+<a name="0x4_multisign_account_participant_address"></a>
+
+## Function `participant_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multisign_account.md#0x4_multisign_account_participant_address">participant_address</a>(participant: &<a href="multisign_account.md#0x4_multisign_account_ParticipantInfo">multisign_account::ParticipantInfo</a>): <b>address</b>
 </code></pre>

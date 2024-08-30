@@ -207,18 +207,28 @@ module bitcoin_move::multisign_account{
 
     // ======== Participant Info functions ========
 
-    public fun participant_public_key(multisign_address: address, participant_address: address) : vector<u8> {
+    public fun participants(multisign_address: address) : vector<ParticipantInfo> {
         let account = borrow_account(multisign_address);
         let multisign_account_info = account::account_borrow_resource<MultisignAccountInfo>(account);
-        let participant = simple_map::borrow(&multisign_account_info.participants, &participant_address);
-        participant.public_key
+        simple_map::values(&multisign_account_info.participants)
     }
 
-    public fun participant_bitcoin_address(multisign_address: address, participant_address: address) : BitcoinAddress {
+    public fun participant(multisign_address: address, participant_address: address) : ParticipantInfo {
         let account = borrow_account(multisign_address);
         let multisign_account_info = account::account_borrow_resource<MultisignAccountInfo>(account);
-        let participant = simple_map::borrow(&multisign_account_info.participants, &participant_address);
-        participant.participant_bitcoin_address
+        *simple_map::borrow(&multisign_account_info.participants, &participant_address)
+    }
+
+    public fun participant_public_key(participant: &ParticipantInfo) : &vector<u8> {
+        &participant.public_key
+    }
+
+    public fun participant_bitcoin_address(participant: &ParticipantInfo) : &BitcoinAddress {
+        &participant.participant_bitcoin_address
+    }
+
+    public fun participant_address(participant: &ParticipantInfo) : address {
+        participant.participant_address
     }
 
     fun verify_bitcoin_signature(tx_id: address, signature: &vector<u8>, public_key: &vector<u8>) {

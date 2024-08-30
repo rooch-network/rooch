@@ -1,63 +1,58 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{fs::File, io::Read};
-
-use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
+use super::is_file_path;
+use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_types::{
     error::{RoochError, RoochResult},
     transaction::RoochTransaction,
 };
+use std::{fs::File, io::Read};
 
 /// Get transactions by order
 #[derive(Debug, clap::Parser)]
 pub struct SubmitCommand {
-    /// Transaction data hex to be used for submitting
-    #[clap(long)]
-    signed_tx_hex: Option<String>,
-
-    #[clap(flatten)]
-    tx_options: TransactionOptions,
+    /// Transaction data hex or file location to be used for submitting
+    input: String,
 
     #[clap(flatten)]
     context: WalletContextOptions,
-
-    /// File location for the file being read
-    #[clap(long)]
-    file_location: Option<String>,
 }
 
 #[async_trait]
 impl CommandAction<ExecuteTransactionResponseView> for SubmitCommand {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
         let context = self.context.build()?;
-        let submitted_tx;
 
-        if let Some(file_location) = self.file_location {
-            let mut file = File::open(file_location)?;
-            let mut signed_tx = Vec::new();
-            file.read_to_end(&mut signed_tx)?;
-            let tx: RoochTransaction = bcs::from_bytes(&signed_tx)
-                .map_err(|_| RoochError::BcsError(format!("Invalid signed tx: {:?}", signed_tx)))?;
-            submitted_tx = context.execute(tx).await?;
-        } else if let Some(signed_tx_hex) = self.signed_tx_hex {
-            let signed_tx = hex::decode(signed_tx_hex.clone()).map_err(|_| {
+        let tx_hex = if is_file_path(&self.input) {
+            let mut file = File::open(&self.input).map_err(|e| {
                 RoochError::CommandArgumentError(format!(
-                    "Invalid signed transaction hex: {}",
-                    signed_tx_hex
+                    "Failed to open file: {}, err:{:?}",
+                    self.input, e
                 ))
             })?;
-            let tx: RoochTransaction = bcs::from_bytes(&signed_tx)
-                .map_err(|_| RoochError::BcsError(format!("Invalid signed tx: {:?}", signed_tx)))?;
-            submitted_tx = context.execute(tx).await?;
+            let mut signed_tx = Vec::new();
+            file.read_to_end(&mut signed_tx)?;
+            hex::encode(&signed_tx)
         } else {
-            return Err(RoochError::CommandArgumentError(
-                "Argument --file-location or --signed-tx-hex are not provided".to_owned(),
-            ));
-        }
+            self.input
+        };
+        let tx_bytes = hex::decode(tx_hex.strip_prefix("0x").unwrap_or(&tx_hex)).map_err(|e| {
+            RoochError::CommandArgumentError(format!(
+                "Invalid signed transaction hex, err: {:?}, hex: {}",
+                e, tx_hex
+            ))
+        })?;
+        let signed_tx = bcs::from_bytes::<RoochTransaction>(&tx_bytes).map_err(|e| {
+            RoochError::CommandArgumentError(format!(
+                "Invalid signed transaction hex, err: {:?}, hex: {}",
+                e, tx_hex
+            ))
+        })?;
 
-        Ok(submitted_tx)
+        let response = context.execute(signed_tx).await?;
+        Ok(response)
     }
 }
