@@ -10,6 +10,7 @@
 -  [Struct `SealOut`](#0x4_utxo_SealOut)
 -  [Struct `SpendUTXOEvent`](#0x4_utxo_SpendUTXOEvent)
 -  [Struct `ReceiveUTXOEvent`](#0x4_utxo_ReceiveUTXOEvent)
+-  [Struct `TempStateDropEvent`](#0x4_utxo_TempStateDropEvent)
 -  [Resource `BitcoinUTXOStore`](#0x4_utxo_BitcoinUTXOStore)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_utxo_genesis_init)
@@ -43,17 +44,18 @@
 -  [Function `check_utxo_input`](#0x4_utxo_check_utxo_input)
 -  [Function `unpack_spend_utxo_event`](#0x4_utxo_unpack_spend_utxo_event)
 -  [Function `unpack_receive_utxo_event`](#0x4_utxo_unpack_receive_utxo_event)
+-  [Function `unpack_temp_state_drop_event`](#0x4_utxo_unpack_temp_state_drop_event)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::address</a>;
-<b>use</b> <a href="">0x2::bag</a>;
 <b>use</b> <a href="">0x2::event_queue</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_multimap</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x3::chain_id</a>;
+<b>use</b> <a href="temp_state.md#0x4_temp_state">0x4::temp_state</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 </code></pre>
 
@@ -121,6 +123,20 @@ However, for simplifying payment scenarios, we define sender and receiver as fol
 
 
 <pre><code><b>struct</b> <a href="utxo.md#0x4_utxo_ReceiveUTXOEvent">ReceiveUTXOEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_utxo_TempStateDropEvent"></a>
+
+## Struct `TempStateDropEvent`
+
+Event emitted when the temporary state of a UTXO is dropped
+The temporary state is dropped when the UTXO is spent
+The event is onchain event, and the event_queue name is type_name of the temporary state
+
+
+<pre><code><b>struct</b> <a href="utxo.md#0x4_utxo_TempStateDropEvent">TempStateDropEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -502,4 +518,15 @@ Get the UTXO's vout
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_unpack_receive_utxo_event">unpack_receive_utxo_event</a>(<a href="">event</a>: <a href="utxo.md#0x4_utxo_ReceiveUTXOEvent">utxo::ReceiveUTXOEvent</a>): (<b>address</b>, <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;, <b>address</b>, u64)
+</code></pre>
+
+
+
+<a name="0x4_utxo_unpack_temp_state_drop_event"></a>
+
+## Function `unpack_temp_state_drop_event`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_unpack_temp_state_drop_event">unpack_temp_state_drop_event</a>(<a href="">event</a>: <a href="utxo.md#0x4_utxo_TempStateDropEvent">utxo::TempStateDropEvent</a>): (<a href="_ObjectID">object::ObjectID</a>, <a href="types.md#0x4_types_OutPoint">types::OutPoint</a>, u64)
 </code></pre>

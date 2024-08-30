@@ -8,10 +8,10 @@ module bitcoin_move::utxo{
     use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::simple_multimap::{Self, SimpleMultiMap};
     use moveos_std::type_info;
-    use moveos_std::bag;
     use moveos_std::event_queue;
     use moveos_std::address::to_string;
     use bitcoin_move::types::{Self, OutPoint};
+    use bitcoin_move::temp_state;
 
     friend bitcoin_move::genesis;
     friend bitcoin_move::ord;
@@ -66,6 +66,17 @@ module bitcoin_move::utxo{
         sender: Option<address>,
         receiver: address,
         value: u64
+    }
+
+    /// Event emitted when the temporary state of a UTXO is dropped
+    /// The temporary state is dropped when the UTXO is spent
+    /// The event is onchain event, and the event_queue name is type_name of the temporary state
+    struct TempStateDropEvent has drop, store, copy {
+        utxo_obj_id: ObjectID,
+        /// The outpoint of the UTXO
+        outpoint: OutPoint,
+        /// The value of the UTXO
+        value: u64,
     } 
 
     struct BitcoinUTXOStore has key{
@@ -216,11 +227,30 @@ module bitcoin_move::utxo{
     }
 
     public(friend) fun remove(utxo_obj: Object<UTXO>): UTXO{
-        if(object::contains_field(&utxo_obj, TEMPORARY_AREA)){
-            let bag = object::remove_field(&mut utxo_obj, TEMPORARY_AREA);
-            bag::drop(bag);
-        };
+        drop_temp_area(&mut utxo_obj);
         object::remove(utxo_obj)
+    }
+
+    fun drop_temp_area(utxo_obj: &mut Object<UTXO>){
+        if(object::contains_field(utxo_obj, TEMPORARY_AREA)){
+            let utxo_obj_id = object::id(utxo_obj);
+            let utxo = object::borrow(utxo_obj);
+            let value = utxo.value;
+            let outpoint = types::new_outpoint(utxo.txid, utxo.vout);
+            let temp_state = object::remove_field(utxo_obj, TEMPORARY_AREA);
+            let state_type_names = temp_state::remove(temp_state);
+            let idx = 0;
+            let len = vector::length(&state_type_names);
+            while(idx < len){
+                let state_type_name = vector::pop_back(&mut state_type_names);
+                event_queue::emit(state_type_name, TempStateDropEvent{
+                    utxo_obj_id,
+                    outpoint,
+                    value,
+                });
+                idx = idx + 1;
+            };
+        }
     }
 
     public(friend) fun drop(utxo: UTXO) {
@@ -258,45 +288,39 @@ module bitcoin_move::utxo{
     #[private_generics(S)]
     public fun add_temp_state<S: store + drop>(utxo: &mut Object<UTXO>, state: S){
         if(object::contains_field(utxo, TEMPORARY_AREA)){
-            let bag = object::borrow_mut_field(utxo, TEMPORARY_AREA);
-            let name = type_info::type_name<S>();
-            bag::add_dropable(bag, name, state);
+            let temp_state = object::borrow_mut_field(utxo, TEMPORARY_AREA);
+            temp_state::add_state(temp_state, state);
         }else{
-            let bag = bag::new_dropable();
-            let name = type_info::type_name<S>();
-            bag::add_dropable(&mut bag, name, state);
-            object::add_field(utxo, TEMPORARY_AREA, bag);
+            let temp_state = temp_state::new();
+            temp_state::add_state(&mut temp_state, state);
+            object::add_field(utxo, TEMPORARY_AREA, temp_state);
         }
     }
 
     public fun contains_temp_state<S: store + drop>(utxo: &Object<UTXO>) : bool {
         if(object::contains_field(utxo, TEMPORARY_AREA)){
-            let bag = object::borrow_field(utxo, TEMPORARY_AREA);
-            let name = type_info::type_name<S>();
-            bag::contains(bag, name)
+            let temp_state = object::borrow_field(utxo, TEMPORARY_AREA);
+            temp_state::contains_state<S>(temp_state)
         }else{
             false
         }
     }
 
     public fun borrow_temp_state<S: store + drop>(utxo: &Object<UTXO>) : &S {
-        let bag = object::borrow_field(utxo, TEMPORARY_AREA);
-        let name = type_info::type_name<S>();
-        bag::borrow(bag, name)
+        let temp_state = object::borrow_field(utxo, TEMPORARY_AREA);
+        temp_state::borrow_state(temp_state)
     }
 
     #[private_generics(S)]
     public fun borrow_mut_temp_state<S: store + drop>(utxo: &mut Object<UTXO>) : &mut S {
-        let bag = object::borrow_mut_field(utxo, TEMPORARY_AREA);
-        let name = type_info::type_name<S>();
-        bag::borrow_mut(bag, name)
+        let temp_state = object::borrow_mut_field(utxo, TEMPORARY_AREA);
+        temp_state::borrow_mut_state(temp_state)
     }
 
     #[private_generics(S)]
     public fun remove_temp_state<S: store + drop>(utxo: &mut Object<UTXO>) : S {
-        let bag = object::borrow_mut_field(utxo, TEMPORARY_AREA);
-        let name = type_info::type_name<S>();
-        bag::remove(bag, name)
+        let temp_state = object::borrow_mut_field(utxo, TEMPORARY_AREA);
+        temp_state::remove_state(temp_state)
     }
 
     // Should we require the input utxo exists
@@ -314,6 +338,11 @@ module bitcoin_move::utxo{
     public fun unpack_receive_utxo_event(event: ReceiveUTXOEvent): (address, Option<address>, address, u64) {
         let ReceiveUTXOEvent { txid, sender, receiver, value } = event;
         (txid, sender, receiver, value)
+    }
+
+    public fun unpack_temp_state_drop_event(event: TempStateDropEvent): (ObjectID, OutPoint, u64) {
+        let TempStateDropEvent { utxo_obj_id, outpoint, value } = event;
+        (utxo_obj_id, outpoint, value)
     }
 
     #[test_only]
@@ -347,7 +376,7 @@ module bitcoin_move::utxo{
     }
 
     #[test_only]
-    struct TempState has store, copy, drop {
+    struct TestTempState has store, copy, drop {
         value: u64,
     }
 
@@ -356,18 +385,43 @@ module bitcoin_move::utxo{
         genesis_init();
         let txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
         let vout = 0;
-        let utxo_obj = new(txid, vout, 100);
-        add_temp_state(&mut utxo_obj, TempState{value: 10});
-        assert!(contains_temp_state<TempState>(&utxo_obj), 1000);
-        assert!(borrow_temp_state<TempState>(&utxo_obj).value == 10, 1001);
+        let value = 100;
+        let utxo_obj = new(txid, vout, value);
+        add_temp_state(&mut utxo_obj, TestTempState{value: 10});
+        assert!(contains_temp_state<TestTempState>(&utxo_obj), 1000);
+        assert!(borrow_temp_state<TestTempState>(&utxo_obj).value == 10, 1001);
         {
-            let state = borrow_mut_temp_state<TempState>(&mut utxo_obj);
+            let state = borrow_mut_temp_state<TestTempState>(&mut utxo_obj);
             state.value = 20;
         };
-        let state = remove_temp_state<TempState>(&mut utxo_obj);
+        let state = remove_temp_state<TestTempState>(&mut utxo_obj);
         assert!(state.value == 20, 1);
-        assert!(!contains_temp_state<TempState>(&utxo_obj), 1002);
+        assert!(!contains_temp_state<TestTempState>(&utxo_obj), 1002);
         let utxo = remove(utxo_obj);
         drop(utxo);
+    }
+
+    #[test]
+    fun test_temp_state_drop_event(){
+        genesis_init();
+        let txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
+        let vout = 0;
+        let value = 100;
+        let utxo_obj = new(txid, vout, value);
+        let utxo_obj_id = object::id(&utxo_obj);
+        let outpoint = types::new_outpoint(txid, vout);
+        let subscriber = event_queue::subscribe<TempStateDropEvent>(type_info::type_name<TestTempState>());
+        add_temp_state(&mut utxo_obj, TestTempState{value: 10});
+        let utxo = remove(utxo_obj);
+        
+
+        let event_option = event_queue::consume<TempStateDropEvent>(&mut subscriber);
+        assert!(option::is_some(&event_option), 2);
+        let event = option::destroy_some(event_option);
+        assert!(event.utxo_obj_id == utxo_obj_id, 3);
+        assert!(event.outpoint == outpoint, 4);
+        assert!(event.value == value, 5);
+        drop(utxo);
+        event_queue::unsubscribe(subscriber);
     }
 }
