@@ -3,7 +3,7 @@
 
 import { ReactNode, useCallback, createContext, useEffect, useRef } from 'react'
 import type { StateStorage } from 'zustand/middleware'
-import { BitcoinAddress } from '@roochnetwork/rooch-sdk'
+import { BitcoinAddress, Session } from '@roochnetwork/rooch-sdk'
 
 import { createWalletStore, WalletStore } from './walletStore.js'
 import {
