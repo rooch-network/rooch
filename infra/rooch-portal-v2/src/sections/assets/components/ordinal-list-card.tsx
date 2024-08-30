@@ -1,9 +1,10 @@
+import type { ReactNode } from 'react';
 import type { IndexerStateIDView } from '@roochnetwork/rooch-sdk';
 
 import { useRef, useMemo, useState } from 'react';
 import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
 
-import { Box, Card, Skeleton, CardHeader, Typography, CardContent } from '@mui/material';
+import { Box, Card, Chip, Skeleton, CardHeader, Typography, CardContent } from '@mui/material';
 
 import { hexToString } from 'src/utils/common';
 
@@ -61,33 +62,44 @@ export default function OrdinalList({ address }: { address: string }) {
         }
       >
         {isOrdinalListPending ? (
-          Array.from({ length: 4 }).map((i,index) => <Skeleton key={index} height={256} />)
+          Array.from({ length: 4 }).map((i, index) => <Skeleton key={index} height={256} />)
         ) : ordinalList?.data.length === 0 ? (
           <EmptyContent title="No Ordinals Found" sx={{ py: 3 }} />
         ) : (
-          ordinalList?.data.map((i) => (
-            <Card key={i.id} elevation={0} className="!bg-gray-100 !shadow-none">
-              <CardHeader title={i.value.inscription_number} subheader="Inscriptions #" />
-              <CardContent>
-                <Typography
-                  noWrap
-                  sx={{
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                    overflowWrap: 'break-word',
-                  }}
-                >
-                  {i.value.content_type === 'text/plain;charset=utf-8'
-                    ? JSON.stringify(
-                        JSON.parse(hexToString(i.value.body as unknown as string)),
-                        null,
-                        2
-                      )
-                    : i.value.content_type}
-                </Typography>
-              </CardContent>
-            </Card>
-          ))
+          ordinalList?.data.map((i) => {
+            let parsePlainText: string | null | undefined | ReactNode = '';
+            try {
+              parsePlainText =
+                i.value.content_type === 'text/plain;charset=utf-8'
+                  ? JSON.stringify(
+                      JSON.parse(hexToString(i.value.body as unknown as string)),
+                      null,
+                      2
+                    )
+                  : i.value.content_type;
+            } catch (error) {
+              parsePlainText = (
+                <Chip label="Parse Error" size="small" variant="soft" color="error" />
+              );
+            }
+            return (
+              <Card key={i.id} elevation={0} className="!bg-gray-100 !shadow-none">
+                <CardHeader title={i.value.inscription_number} subheader="Inscriptions #" />
+                <CardContent>
+                  <Typography
+                    noWrap
+                    sx={{
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
+                    }}
+                  >
+                    {parsePlainText}
+                  </Typography>
+                </CardContent>
+              </Card>
+            );
+          })
         )}
       </CardContent>
     </Card>
