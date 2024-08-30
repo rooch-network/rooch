@@ -176,7 +176,7 @@ impl PipelineProcessorActor {
                 if is_vm_panic_error(&err) {
                     log::warn!(
                         "Execute L1 Tx failed while VM panic occurred then \
-                        set sequencer to Maintenance mode and pause the relayer. error: {:?}, tx info {:?}",
+                        set sequencer to Maintenance mode and pause the relayer. error: {:?}, tx info {}",
                         err, l1_tx
                     );
                     if let Some(event_actor) = self.event_actor.clone() {
