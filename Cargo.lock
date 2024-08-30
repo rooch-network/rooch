@@ -9691,6 +9691,7 @@ dependencies = [
  "async-trait",
  "coerce",
  "function_name",
+ "hex",
  "log",
  "metrics",
  "move-binary-format",

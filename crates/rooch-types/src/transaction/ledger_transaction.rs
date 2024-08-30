@@ -87,7 +87,7 @@ impl Display for L1Transaction {
         };
         write!(
             f,
-            "L1Transaction {{ chain_id111: {:?}, block_hash: {}, txid: {} }}",
+            "L1Transaction {{ chain_id: {:?}, block_hash: {}, txid: {} }}",
             self.chain_id, block_hash, txid
         )
     }
