@@ -50,7 +50,6 @@ module display::display{
         };
 
         let obj = object::new(
-            
             obj_type
         );
         let id = object::id(&obj);
@@ -59,5 +58,4 @@ module display::display{
         object::transfer(obj, sender);
         moveos_std::event::emit(NewObjectEvent{id:id});
     }
-
 }

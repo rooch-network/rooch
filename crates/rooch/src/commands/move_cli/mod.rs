@@ -41,7 +41,7 @@ pub enum MoveCommand {
     View(RunViewFunction),
     IntegrationTest(IntegrationTestCommand),
     Explain(ExplainCommand),
-    FrameworkUpgrade(FrameworkUpgrade),
+    FrameworkUpgrade(Box<FrameworkUpgrade>),
 }
 
 #[async_trait]

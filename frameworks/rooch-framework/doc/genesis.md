@@ -11,6 +11,7 @@
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x2::account</a>;
+<b>use</b> <a href="">0x2::module_store</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="account.md#0x3_account">0x3::account</a>;
 <b>use</b> <a href="account_coin_store.md#0x3_account_coin_store">0x3::account_coin_store</a>;
@@ -50,4 +51,40 @@ GenesisContext is a genesis init parameters in the TxContext.
 
 
 <pre><code><b>const</b> <a href="genesis.md#0x3_genesis_ErrorGenesisInit">ErrorGenesisInit</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_genesis_BitcoinMoveAccount"></a>
+
+
+
+<pre><code><b>const</b> <a href="genesis.md#0x3_genesis_BitcoinMoveAccount">BitcoinMoveAccount</a>: <b>address</b> = 0x4;
+</code></pre>
+
+
+
+<a name="0x3_genesis_MoveStdAccount"></a>
+
+
+
+<pre><code><b>const</b> <a href="genesis.md#0x3_genesis_MoveStdAccount">MoveStdAccount</a>: <b>address</b> = 0x1;
+</code></pre>
+
+
+
+<a name="0x3_genesis_MoveosStdAccount"></a>
+
+
+
+<pre><code><b>const</b> <a href="genesis.md#0x3_genesis_MoveosStdAccount">MoveosStdAccount</a>: <b>address</b> = 0x2;
+</code></pre>
+
+
+
+<a name="0x3_genesis_RoochFrameworkAccount"></a>
+
+
+
+<pre><code><b>const</b> <a href="genesis.md#0x3_genesis_RoochFrameworkAccount">RoochFrameworkAccount</a>: <b>address</b> = 0x3;
 </code></pre>

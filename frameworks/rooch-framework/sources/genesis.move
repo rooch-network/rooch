@@ -5,6 +5,7 @@ module rooch_framework::genesis {
 
     use std::option;
     use moveos_std::tx_context;
+    use moveos_std::module_store;
     use rooch_framework::account;
     use rooch_framework::auth_validator_registry;
     use rooch_framework::builtin_validators;
@@ -20,6 +21,11 @@ module rooch_framework::genesis {
 
 
     const ErrorGenesisInit: u64 = 1;
+
+    const MoveStdAccount: address = @0x1;
+    const MoveosStdAccount: address = @0x2;
+    const RoochFrameworkAccount: address = @0x3;
+    const BitcoinMoveAccount: address = @0x4;
 
     /// GenesisContext is a genesis init parameters in the TxContext.
     struct GenesisContext has copy,store,drop{
@@ -50,6 +56,13 @@ module rooch_framework::genesis {
             account::create_account(sequencer_addr);
             address_mapping::bind_bitcoin_address(sequencer_addr, genesis_context.sequencer);
         };
+
+        // issue framework packages upgrade cap to sequencer
+        module_store::issue_upgrade_cap_by_system(genesis_account, MoveStdAccount, sequencer_addr);
+        module_store::issue_upgrade_cap_by_system(genesis_account, MoveosStdAccount, sequencer_addr);
+        module_store::issue_upgrade_cap_by_system(genesis_account, RoochFrameworkAccount, sequencer_addr);
+        module_store::issue_upgrade_cap_by_system(genesis_account, BitcoinMoveAccount, sequencer_addr);
+        
         // give some gas coin to the sequencer
         gas_coin::faucet(sequencer_addr, 1000000_00000000u256);
     }
