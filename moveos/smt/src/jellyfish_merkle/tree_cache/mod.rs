@@ -75,7 +75,7 @@
 #[cfg(test)]
 mod tree_cache_test;
 
-use super::hash::{HashValue, SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE};
+use super::hash::{SMTNodeHash, SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE};
 use super::{
     hash::SMTHash,
     node_type::{Node, NodeKey},
@@ -106,7 +106,7 @@ struct FrozenTreeCache<K, V> {
     num_stale_leaves: usize,
 
     /// Frozen root hashes after each earlier transaction.
-    root_hashes: Vec<HashValue>,
+    root_hashes: Vec<SMTNodeHash>,
 }
 
 impl<K, V> Default for FrozenTreeCache<K, V> {
@@ -125,10 +125,10 @@ impl<K, V> Default for FrozenTreeCache<K, V> {
 /// blobs.
 pub(crate) struct TreeCache<'a, R: 'a + TreeReader<K, V>, K, V> {
     /// `NodeKey` of the current root node in cache.
-    root_node_key: HashValue,
+    root_node_key: SMTNodeHash,
 
     /// Intermediate nodes keyed by node hash
-    node_cache: HashMap<HashValue, Node<K, V>>,
+    node_cache: HashMap<SMTNodeHash, Node<K, V>>,
 
     /// # of leaves in the `node_cache`,
     num_new_leaves: usize,
@@ -153,7 +153,7 @@ where
     V: Value,
 {
     /// Constructs a new `TreeCache` instance.
-    pub fn new(reader: &'a R, state_root_hash: Option<HashValue>) -> Self {
+    pub fn new(reader: &'a R, state_root_hash: Option<SMTNodeHash>) -> Self {
         let mut node_cache = HashMap::new();
         let root_node_key = match state_root_hash {
             None => {
@@ -265,11 +265,11 @@ where
 }
 
 #[allow(clippy::from_over_into)]
-impl<'a, R, K, V> Into<(Vec<HashValue>, TreeUpdateBatch<K, V>)> for TreeCache<'a, R, K, V>
+impl<'a, R, K, V> Into<(Vec<SMTNodeHash>, TreeUpdateBatch<K, V>)> for TreeCache<'a, R, K, V>
 where
     R: 'a + TreeReader<K, V>,
 {
-    fn into(self) -> (Vec<HashValue>, TreeUpdateBatch<K, V>) {
+    fn into(self) -> (Vec<SMTNodeHash>, TreeUpdateBatch<K, V>) {
         (
             self.frozen_cache.root_hashes,
             TreeUpdateBatch {

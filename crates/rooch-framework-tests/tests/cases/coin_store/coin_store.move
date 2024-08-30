@@ -20,7 +20,7 @@ script {
 //# run rooch_framework::gas_coin::faucet_entry --signers test --args u256:100000000000
 
 //Transfer via coin store
-//# run --signers test --args object:0xd073508b9582eff4e01078dc2e62489c15bbef91b6a2e568ac8fb33f0cf54daa
+//# run --signers test --args object:0x5f065f9c2b57613760fc9065bf00f597d7273697699634c16eb3793ef741eec7
 script {
     use moveos_std::object::{Object};
     

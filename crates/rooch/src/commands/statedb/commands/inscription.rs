@@ -9,8 +9,7 @@ use moveos_types::moveos_std::object::{
 use moveos_types::state::{FieldKey, ObjectState};
 use rooch_types::address::BitcoinAddress;
 use rooch_types::bitcoin::ord::{
-    derive_inscription_id, BitcoinInscriptionID, Inscription, InscriptionID, InscriptionStore,
-    SatPoint,
+    derive_inscription_id, Inscription, InscriptionID, InscriptionStore, SatPoint,
 };
 use rooch_types::into_address::IntoAddress;
 use serde::{Deserialize, Serialize};
@@ -25,7 +24,7 @@ const ADDRESS_NON_STANDARD: &str = "non-standard";
 pub struct InscriptionSource {
     pub sequence_number: u32,
     pub inscription_number: i32,
-    pub id: BitcoinInscriptionID,
+    pub id: InscriptionID,
     // ord crate has a different version of bitcoin dependency, using string for compatibility
     pub satpoint_outpoint: String, // txid:vout
     pub satpoint_offset: u64,
@@ -40,7 +39,7 @@ pub struct InscriptionSource {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metaprotocol: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub parent: Option<Vec<BitcoinInscriptionID>>,
+    pub parent: Option<Vec<InscriptionID>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pointer: Option<u64>,
     pub address: String, // <address>, "unbound", "non-standard"
@@ -71,7 +70,7 @@ impl InscriptionSource {
 
         let txid: AccountAddress = src.id.txid.into_address();
 
-        let parents = derive_inscription_ids(src.parent.clone());
+        let parents = src.parent.clone();
         let id = InscriptionID::new(txid, src.id.index);
         let outpoint = bitcoin::OutPoint::from_str(src.satpoint_outpoint.as_str()).unwrap();
         let location = SatPoint {
@@ -83,7 +82,7 @@ impl InscriptionSource {
             location,
             sequence_number: src.sequence_number,
             inscription_number: src.inscription_number.unsigned_abs(),
-            is_curse: src.inscription_number.is_negative(),
+            is_cursed: src.inscription_number.is_negative(),
             //TODO how to get charms
             charms: 0,
             body: src.body.clone().unwrap_or_default(),
@@ -92,7 +91,7 @@ impl InscriptionSource {
             metadata: src.metadata.clone().unwrap_or_default(),
             metaprotocol: convert_option_string_to_move_type(src.metaprotocol.clone()),
             pointer: src.pointer.into(),
-            parents,
+            parents: parents.unwrap_or_default(),
             rune: src.rune.into(),
         }
     }
@@ -122,11 +121,11 @@ pub(crate) fn gen_inscription_id_update(
     (key, state)
 }
 
-pub(crate) fn derive_inscription_ids(ids: Option<Vec<BitcoinInscriptionID>>) -> Vec<ObjectID> {
+pub(crate) fn derive_inscription_ids(ids: Option<Vec<InscriptionID>>) -> Vec<ObjectID> {
     if let Some(ids) = ids {
         let mut obj_ids = Vec::with_capacity(ids.len());
         for id in ids {
-            let obj_id = derive_inscription_id(&id.into());
+            let obj_id = derive_inscription_id(&id);
             obj_ids.push(obj_id)
         }
         obj_ids

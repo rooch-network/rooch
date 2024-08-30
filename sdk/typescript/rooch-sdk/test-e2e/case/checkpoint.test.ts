@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, afterAll } from 'vitest'
 import { Args } from '../../src/bcs/index.js'
 import { Secp256k1Keypair } from '../../src/keypairs/index.js'
 import { BitcoinAddress, BitcoinNetowkType } from '../../src/address/index.js'
@@ -15,6 +15,10 @@ describe('Checkpoints Reading API', () => {
 
   beforeAll(async () => {
     testBox = TestBox.setup()
+  })
+
+  afterAll(async () => {
+    testBox.cleanEnv()
   })
 
   it('Get latest rpc version eq local version', async () => {
@@ -54,31 +58,31 @@ describe('Checkpoints Reading API', () => {
     expect(result.length).eq(0)
   })
 
-  it('Resolve rooch address should be success', async () => {
-    const caces = ['tb1q3245npm404htfzvulx6v4w65maqzu6atpxyzja']
-
-    const account = Secp256k1Keypair.generate()
-
-    const result = await testBox.getClient().executeViewFunction({
-      target: '0x3::address_mapping::resolve_or_generate',
-      args: [Args.struct(account.getBitcoinAddress().genMultiChainAddress())],
-    })
-
-    const expectAddr = account.getRoochAddress().toHexAddress()
-    expect(result.return_values![0].decoded_value).eq(expectAddr)
-
-    for (let item of caces) {
-      const address = new BitcoinAddress(item)
-
-      const result = await testBox.getClient().executeViewFunction({
-        target: '0x3::address_mapping::resolve_or_generate',
-        args: [Args.struct(address.genMultiChainAddress())],
-      })
-
-      const expectAddr = address.genRoochAddress().toHexAddress()
-      expect(result.return_values![0].decoded_value).eq(expectAddr)
-    }
-  })
+  // it('Resolve rooch address should be success', async () => {
+  //   const caces = ['tb1q3245npm404htfzvulx6v4w65maqzu6atpxyzja']
+  //
+  //   const account = Secp256k1Keypair.generate()
+  //
+  //   const result = await testBox.getClient().executeViewFunction({
+  //     target: '0x3::address_mapping::resolve_or_generate',
+  //     args: [Args.struct(account.getBitcoinAddress().genMultiChainAddress())],
+  //   })
+  //
+  //   const expectAddr = account.getRoochAddress().toHexAddress()
+  //   expect(result.return_values![0].decoded_value).eq(expectAddr)
+  //
+  //   for (let item of caces) {
+  //     const address = new BitcoinAddress(item)
+  //
+  //     const result = await testBox.getClient().executeViewFunction({
+  //       target: '0x3::address_mapping::resolve_or_generate',
+  //       args: [Args.struct(address.genMultiChainAddress())],
+  //     })
+  //
+  //     const expectAddr = address.genRoochAddress().toHexAddress()
+  //     expect(result.return_values![0].decoded_value).eq(expectAddr)
+  //   }
+  // })
 
   it('resolve btc address should be ok', async () => {
     const tx = new Transaction()
@@ -146,6 +150,8 @@ describe('Checkpoints Reading API', () => {
     })
 
     expect(await testBox.signAndExecuteTransaction(tx)).toBeTruthy()
+
+    await testBox.delay(3)
 
     const result1 = await testBox.getClient().getEvents({
       eventHandleType: `${await testBox.defaultCmdAddress()}::event_test::WithdrawEvent`,

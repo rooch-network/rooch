@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, afterAll } from 'vitest'
 import { TestBox } from '../setup.js'
 import { Args } from '../../src/bcs/index.js'
 import { Transaction } from '../../src/transactions/index.js'
@@ -12,6 +12,10 @@ describe('Checkpoints Example Entry Function', () => {
 
   beforeAll(async () => {
     testBox = TestBox.setup()
+  })
+
+  afterAll(async () => {
+    testBox.cleanEnv()
   })
 
   it('Cmd publish package should be success', async () => {

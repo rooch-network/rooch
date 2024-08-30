@@ -12,7 +12,7 @@
 //     JellyfishMerkleTree,
 // };
 // use anyhow::Result;
-// use diem_crypto::HashValue;
+// use diem_crypto::SMTNodeHash;
 // use diem_types::{account_state_blob::AccountStateBlob, transaction::Version};
 // use rand::{rngs::StdRng, SeedableRng};
 // use std::{collections::BTreeMap, sync::Arc};
@@ -37,7 +37,7 @@
 //
 //     let mut btree = BTreeMap::new();
 //     for i in 0..n {
-//         let key = HashValue::random_with_rng(&mut rng);
+//         let key = SMTNodeHash::random_with_rng(&mut rng);
 //         let value = AccountStateBlob::from(i.to_be_bytes().to_vec());
 //         assert_eq!(btree.insert(key, value), None);
 //     }
@@ -58,7 +58,7 @@
 //
 //     let mut btree = BTreeMap::new();
 //     for i in 0..n {
-//         let key = HashValue::random_with_rng(&mut rng);
+//         let key = SMTNodeHash::random_with_rng(&mut rng);
 //         let value = AccountStateBlob::from(i.to_be_bytes().to_vec());
 //         assert_eq!(btree.insert(key, value.clone()), None);
 //         let (_root_hash, batch) = tree.put_blob_set(vec![(key, value)], i as Version).unwrap();
@@ -69,12 +69,12 @@
 //
 // fn run_tests(
 //     db: Arc<MockTreeStore>,
-//     btree: &BTreeMap<HashValue, AccountStateBlob>,
+//     btree: &BTreeMap<SMTNodeHash, AccountStateBlob>,
 //     version: Version,
 // ) {
 //     {
 //         let iter =
-//             JellyfishMerkleIterator::new(Arc::clone(&db), version, HashValue::zero()).unwrap();
+//             JellyfishMerkleIterator::new(Arc::clone(&db), version, SMTNodeHash::zero()).unwrap();
 //         assert_eq!(
 //             iter.collect::<Result<Vec<_>>>().unwrap(),
 //             btree.clone().into_iter().collect::<Vec<_>>(),
@@ -107,7 +107,7 @@
 //         let iter = JellyfishMerkleIterator::new(
 //             Arc::clone(&db),
 //             version,
-//             HashValue::new([0xFF; HashValue::LENGTH]),
+//             SMTNodeHash::new([0xFF; SMTNodeHash::LEN]),
 //         )
 //         .unwrap();
 //         assert_eq!(iter.collect::<Result<Vec<_>>>().unwrap(), vec![]);

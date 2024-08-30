@@ -1,11 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::commands::statedb::commands::export::ExportCommand;
 use crate::commands::statedb::commands::inscription::{
     gen_inscription_id_update, InscriptionSource,
 };
 use crate::commands::statedb::commands::utxo::{AddressMappingData, UTXORawData};
-use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
+use crate::commands::statedb::commands::{
+    init_job, new_csv_writer, ExportWriter, ExportWriterPreprocessor, OutpointInscriptionsMap,
+};
 use bitcoin::OutPoint;
 use clap::Parser;
 use framework_types::addresses::BITCOIN_MOVE_ADDRESS;
@@ -14,16 +17,17 @@ use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_vm_types::values::Value;
 use moveos_store::MoveOSStore;
+use moveos_types::h256::H256;
 use moveos_types::move_std::option::MoveOption;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::{DynamicField, ObjectID, ObjectMeta};
-use moveos_types::state::{MoveState, MoveStructState, MoveStructType, ObjectState};
+use moveos_types::state::{
+    FieldKey, MoveState, MoveStructState, MoveStructType, MoveType, ObjectState,
+};
 use moveos_types::state_resolver::{RootObjectResolver, StatelessResolver};
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::address::BitcoinAddress;
-use rooch_types::bitcoin::ord::{
-    BitcoinInscriptionID, Inscription, InscriptionID, InscriptionStore, MODULE_NAME,
-};
+use rooch_types::bitcoin::ord::{Inscription, InscriptionID, InscriptionStore, MODULE_NAME};
 use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
 use rooch_types::error::RoochResult;
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
@@ -38,8 +42,10 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Instant, SystemTime};
+use xorf::{BinaryFuse8, Filter};
+use xxhash_rust::xxh3::xxh3_64;
 
-/// Import BTC ordinals & UTXO for genesis
+/// Verify BTC ordinals & UTXO data in statedb by source data
 #[derive(Debug, Parser)]
 pub struct GenesisVerifyCommand {
     #[clap(long, short = 'i')]
@@ -70,6 +76,12 @@ pub struct GenesisVerifyCommand {
     pub sample_rate: u32,
     #[clap(long, help = "mismatched output path")]
     pub mismatched_output_dir: PathBuf,
+    #[clap(
+        long,
+        help = "Enable this to verify UTXO source data using state database instead of the default behavior of verifying state database using UTXO source data.\
+        output: FieldKey,ObjecState,metadata,value"
+    )]
+    pub reverse: bool,
 
     #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
@@ -79,114 +91,6 @@ pub struct GenesisVerifyCommand {
     /// All data will be deleted when the service is stopped.
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
     pub chain_id: Option<RoochChainID>,
-}
-
-struct UTXOCases {
-    cases: HashSet<OutPoint>,
-}
-
-impl UTXOCases {
-    fn load(path: Option<PathBuf>) -> Self {
-        let path = match path {
-            None => {
-                return Self {
-                    cases: HashSet::new(),
-                }
-            }
-            Some(path) => path,
-        };
-        let mut cases = HashSet::new();
-        let file = File::open(path).expect("Unable to open utxo cases file");
-        let reader = BufReader::new(file);
-        for line in reader.lines() {
-            let line = line.unwrap();
-            let outpoint = OutPoint::from_str(&line).unwrap();
-            cases.insert(outpoint);
-        }
-        Self { cases }
-    }
-    fn insert(&mut self, outpoint: OutPoint) {
-        self.cases.insert(outpoint);
-    }
-    fn contains(&self, outpoint: &OutPoint) -> bool {
-        self.cases.contains(outpoint)
-    }
-    fn dump(&self, path: PathBuf) {
-        let file = File::create(path).expect("Unable to create utxo cases file");
-        let mut writer = BufWriter::new(file);
-        for outpoint in &self.cases {
-            writeln!(writer, "{}", outpoint).expect("Unable to write line");
-        }
-        writer.flush().expect("Unable to flush writer");
-    }
-}
-
-struct OrdCases {
-    cases: HashSet<u32>, // sequence_number for easy generating
-}
-
-impl OrdCases {
-    fn load(path: Option<PathBuf>) -> Self {
-        let path = match path {
-            None => {
-                return Self {
-                    cases: HashSet::new(),
-                }
-            }
-            Some(path) => path,
-        };
-        let mut cases = HashSet::new();
-        let file = File::open(path).expect("Unable to open ord cases file");
-        let reader = BufReader::new(file);
-        for line in reader.lines() {
-            let line = line.unwrap();
-            let ord = line.parse::<u32>().unwrap();
-            cases.insert(ord);
-        }
-        Self { cases }
-    }
-    fn insert(&mut self, sequence_number: u32) {
-        self.cases.insert(sequence_number);
-    }
-    fn contains(&self, sequence_number: u32) -> bool {
-        self.cases.contains(&sequence_number)
-    }
-
-    fn dump(&self, path: PathBuf) {
-        let file = File::create(path).expect("Unable to create ord cases file");
-        let mut writer = BufWriter::new(file);
-        for ord in &self.cases {
-            writeln!(writer, "{}", ord).expect("Unable to write line");
-        }
-        writer.flush().expect("Unable to flush writer");
-    }
-}
-
-fn create_output_path(output_dir: &Path, prefix: &str, timestamp: u64) -> PathBuf {
-    let file_name = format!("{}_{:?}", prefix, timestamp);
-    output_dir.join(file_name)
-}
-
-fn find_latest_file_with_prefix(output_dir: &PathBuf, prefix: &str) -> Option<PathBuf> {
-    let mut max_timestamp = None;
-    let mut max_path = None;
-    for entry in std::fs::read_dir(output_dir).unwrap() {
-        let entry = entry.unwrap();
-        let path = entry.path();
-        if path.is_file() {
-            let filename = path.file_name().unwrap().to_str().unwrap();
-            if !filename.starts_with(prefix) {
-                continue;
-            };
-            // get timestamp from file name: <prefix>_<timestamp>
-            let timestamp = filename.split('_').last().unwrap().parse::<u64>().unwrap();
-            if max_timestamp.is_none() || timestamp > max_timestamp.unwrap() {
-                max_timestamp = Some(timestamp);
-                max_path = Some(path);
-            }
-        }
-    }
-    max_path
 }
 
 impl GenesisVerifyCommand {
@@ -210,6 +114,18 @@ impl GenesisVerifyCommand {
         let moveos_store_clone = Arc::clone(&moveos_store);
         // create dir if self.mismatched_output_dir not exists
         std::fs::create_dir_all(&self.mismatched_output_dir)?;
+
+        if self.reverse {
+            verify_reverse(
+                self.utxo_source,
+                create_output_path(&self.mismatched_output_dir, "utxo_extra", timestamp),
+                create_output_path(&self.mismatched_output_dir, "addr_extra", timestamp),
+                moveos_store,
+                root.clone().state_root.unwrap(),
+                outpoint_inscriptions_map,
+            )?;
+            return Ok(());
+        }
 
         // verify inscriptions
         let ord_mismatched_output =
@@ -270,6 +186,152 @@ impl GenesisVerifyCommand {
 
         Ok(())
     }
+}
+
+struct UTXOFilter {
+    outpoint_filter: BinaryFuse8,
+    utxo_writer: csv::Writer<File>,
+
+    addr_filter: BinaryFuse8,
+    addr_writer: csv::Writer<File>,
+}
+
+impl UTXOFilter {
+    fn new(
+        input: PathBuf,
+        utxo_output: PathBuf,
+        addr_output: PathBuf,
+        outpoint_inscriptions_map: Option<Arc<OutpointInscriptionsMap>>,
+    ) -> UTXOFilter {
+        let start_time = Instant::now();
+        log::info!("start building utxo & address filter");
+
+        let mut reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
+        let mut is_title_line = true;
+        let mut utxo_keys = Vec::with_capacity(200_000_000);
+        let mut addr_keys = Vec::with_capacity(80_000_000);
+        let mut added_address_set: FxHashSet<String> =
+            FxHashSet::with_capacity_and_hasher(60_000_000, Default::default());
+
+        for line in reader.by_ref().lines() {
+            let line = line.unwrap();
+            if is_title_line {
+                is_title_line = false;
+                if line.starts_with("count") {
+                    continue;
+                }
+            }
+
+            let mut utxo_raw = UTXORawData::from_str(&line);
+            let (utxo_key, _) = utxo_raw.gen_utxo_update(outpoint_inscriptions_map.clone());
+            utxo_keys.push(xxh3_64(&utxo_key.0));
+
+            let (_, exp_addr_map) = utxo_raw.gen_address_mapping_data();
+            let addr_updates = if let Some(address_mapping_data) = exp_addr_map {
+                address_mapping_data.gen_update(&mut added_address_set)
+            } else {
+                None
+            };
+            if addr_updates.is_some() {
+                let (addr_key, _) = addr_updates.unwrap();
+                addr_keys.push(xxh3_64(&addr_key.0));
+            }
+        }
+        let outpoint_filter = BinaryFuse8::try_from(&utxo_keys).unwrap();
+        let addr_filter = BinaryFuse8::try_from(&addr_keys).unwrap();
+
+        let utxo_writer = new_csv_writer(utxo_output);
+        let addr_writer = new_csv_writer(addr_output);
+
+        println!("filtering done, cost: {:?}", start_time.elapsed());
+
+        Self {
+            outpoint_filter,
+            addr_filter,
+            utxo_writer,
+            addr_writer,
+        }
+    }
+
+    fn contains(&self, field_key: &FieldKey, is_utxo: bool) -> bool {
+        if is_utxo {
+            self.outpoint_filter.contains(&xxh3_64(&field_key.0))
+        } else {
+            self.addr_filter.contains(&xxh3_64(&field_key.0))
+        }
+    }
+}
+
+impl ExportWriterPreprocessor for UTXOFilter {
+    fn process(&mut self, k: &FieldKey, v: &ObjectState) -> (FieldKey, ObjectState) {
+        let type_tag = v.metadata.object_type.clone();
+        let is_utxo = type_tag == UTXO::type_tag();
+        if !self.contains(k, is_utxo) {
+            let (writer, value_str) = if is_utxo {
+                (
+                    &mut self.utxo_writer,
+                    format!("{:?}", UTXO::from_bytes(v.value.clone()).unwrap()),
+                )
+            } else {
+                (
+                    &mut self.addr_writer,
+                    format_object_value::<DynamicField<AccountAddress, BitcoinAddress>>(
+                        v.value.clone(),
+                    ),
+                )
+            };
+
+            writer
+                .write_record(&[
+                    k.to_string(),
+                    v.to_string(),
+                    format!("{:?}", v.metadata.clone()),
+                    value_str,
+                ])
+                .unwrap();
+        }
+
+        (*k, v.clone())
+    }
+
+    fn flush(&mut self) {
+        self.utxo_writer.flush().unwrap();
+        self.addr_writer.flush().unwrap()
+    }
+}
+
+fn format_object_value<T: MoveStructState + std::fmt::Debug>(value: Vec<u8>) -> String {
+    format!("{:?}", T::from_bytes(value).unwrap())
+}
+
+fn verify_reverse(
+    input: PathBuf,
+    utxo_output: PathBuf,
+    addr_output: PathBuf,
+    moveos_store_arc: Arc<MoveOSStore>,
+    root_state_root: H256,
+    outpoint_inscriptions_map: Option<Arc<OutpointInscriptionsMap>>,
+) -> anyhow::Result<()> {
+    let filter = UTXOFilter::new(input, utxo_output, addr_output, outpoint_inscriptions_map);
+
+    let mut writer = ExportWriter::new(None, Some(Box::new(filter)));
+
+    ExportCommand::export_object(
+        &moveos_store_arc,
+        root_state_root,
+        RoochToBitcoinAddressMapping::object_id(),
+        &mut writer,
+    )?;
+    writer.flush()?;
+    ExportCommand::export_object(
+        &moveos_store_arc,
+        root_state_root,
+        BitcoinUTXOStore::object_id(),
+        &mut writer,
+    )?;
+
+    writer.flush()?;
+    Ok(())
 }
 
 fn verify_utxo(
@@ -609,16 +671,14 @@ fn verify_inscription(
         let act_inscription_id_state = resolver
             .get_field_at(inscription_store_state_root, &exp_inscription_id_key)
             .unwrap();
-        let (mismatched, not_found) = write_mismatched_state_output::<
-            DynamicField<u32, InscriptionID>,
-            BitcoinInscriptionID,
-        >(
-            &mut output_writer,
-            "[inscription_id]",
-            exp_inscription_id_state,
-            act_inscription_id_state.clone(),
-            Some(source.id),
-        );
+        let (mismatched, not_found) =
+            write_mismatched_state_output::<DynamicField<u32, InscriptionID>, InscriptionID>(
+                &mut output_writer,
+                "[inscription_id]",
+                exp_inscription_id_state,
+                act_inscription_id_state.clone(),
+                Some(source.id),
+            );
         if mismatched {
             mismatched_inscription_id_count += 1;
             new_cases.insert(source.sequence_number);
@@ -769,6 +829,114 @@ fn write_mismatched_state_output<
     (mismatched, not_found)
 }
 
+struct UTXOCases {
+    cases: HashSet<OutPoint>,
+}
+
+impl UTXOCases {
+    fn load(path: Option<PathBuf>) -> Self {
+        let path = match path {
+            None => {
+                return Self {
+                    cases: HashSet::new(),
+                }
+            }
+            Some(path) => path,
+        };
+        let mut cases = HashSet::new();
+        let file = File::open(path).expect("Unable to open utxo cases file");
+        let reader = BufReader::new(file);
+        for line in reader.lines() {
+            let line = line.unwrap();
+            let outpoint = OutPoint::from_str(&line).unwrap();
+            cases.insert(outpoint);
+        }
+        Self { cases }
+    }
+    fn insert(&mut self, outpoint: OutPoint) {
+        self.cases.insert(outpoint);
+    }
+    fn contains(&self, outpoint: &OutPoint) -> bool {
+        self.cases.contains(outpoint)
+    }
+    fn dump(&self, path: PathBuf) {
+        let file = File::create(path).expect("Unable to create utxo cases file");
+        let mut writer = BufWriter::new(file);
+        for outpoint in &self.cases {
+            writeln!(writer, "{}", outpoint).expect("Unable to write line");
+        }
+        writer.flush().expect("Unable to flush writer");
+    }
+}
+
+struct OrdCases {
+    cases: HashSet<u32>, // sequence_number for easy generating
+}
+
+impl OrdCases {
+    fn load(path: Option<PathBuf>) -> Self {
+        let path = match path {
+            None => {
+                return Self {
+                    cases: HashSet::new(),
+                }
+            }
+            Some(path) => path,
+        };
+        let mut cases = HashSet::new();
+        let file = File::open(path).expect("Unable to open ord cases file");
+        let reader = BufReader::new(file);
+        for line in reader.lines() {
+            let line = line.unwrap();
+            let ord = line.parse::<u32>().unwrap();
+            cases.insert(ord);
+        }
+        Self { cases }
+    }
+    fn insert(&mut self, sequence_number: u32) {
+        self.cases.insert(sequence_number);
+    }
+    fn contains(&self, sequence_number: u32) -> bool {
+        self.cases.contains(&sequence_number)
+    }
+
+    fn dump(&self, path: PathBuf) {
+        let file = File::create(path).expect("Unable to create ord cases file");
+        let mut writer = BufWriter::new(file);
+        for ord in &self.cases {
+            writeln!(writer, "{}", ord).expect("Unable to write line");
+        }
+        writer.flush().expect("Unable to flush writer");
+    }
+}
+
+fn create_output_path(output_dir: &Path, prefix: &str, timestamp: u64) -> PathBuf {
+    let file_name = format!("{}_{:?}", prefix, timestamp);
+    output_dir.join(file_name)
+}
+
+fn find_latest_file_with_prefix(output_dir: &PathBuf, prefix: &str) -> Option<PathBuf> {
+    let mut max_timestamp = None;
+    let mut max_path = None;
+    for entry in std::fs::read_dir(output_dir).unwrap() {
+        let entry = entry.unwrap();
+        let path = entry.path();
+        if path.is_file() {
+            let filename = path.file_name().unwrap().to_str().unwrap();
+            if !filename.starts_with(prefix) {
+                continue;
+            };
+            // get timestamp from file name: <prefix>_<timestamp>
+            let timestamp = filename.split('_').last().unwrap().parse::<u64>().unwrap();
+            if max_timestamp.is_none() || timestamp > max_timestamp.unwrap() {
+                max_timestamp = Some(timestamp);
+                max_path = Some(path);
+            }
+        }
+    }
+    max_path
+}
+
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq)]
 pub struct InscriptionForComparison {
     pub txid: AccountAddress,
@@ -782,7 +950,7 @@ pub struct InscriptionForComparison {
     pub content_type: MoveOption<MoveString>,
     pub metadata: Vec<u8>,
     pub metaprotocol: MoveOption<MoveString>,
-    pub parents: Vec<ObjectID>,
+    pub parents: Vec<InscriptionID>,
     pub pointer: MoveOption<u64>,
     pub rune: MoveOption<Vec<u8>>, // Changed to Vec<u8> for comparison
 }
@@ -795,13 +963,13 @@ impl From<&Inscription> for InscriptionForComparison {
             offset: ins.location.offset,
             sequence_number: ins.sequence_number,
             inscription_number: ins.inscription_number,
-            is_curse: ins.is_curse,
+            is_curse: ins.is_cursed,
             body: ins.body.clone(),
             content_encoding: ins.content_encoding.clone(),
             content_type: ins.content_type.clone(),
             metadata: ins.metadata.clone(),
             metaprotocol: ins.metaprotocol.clone(),
-            parents: ins.parents.clone(),
+            parents: ins.parents.clone().into_iter().map(Into::into).collect(),
             pointer: ins.pointer.clone(),
             rune: MoveOption::from(to_commitment(ins.rune.clone().into())),
         }
@@ -924,7 +1092,8 @@ mod tests {
     use crate::commands::statedb::commands::inscription::InscriptionSource;
     use bitcoin::Txid;
     use moveos_types::move_std::option::MoveOption;
-    use rooch_types::bitcoin::ord::BitcoinInscriptionID;
+    use rooch_types::bitcoin::ord::InscriptionID;
+    use rooch_types::into_address::IntoAddress;
     use std::str::FromStr;
 
     #[test]
@@ -938,11 +1107,12 @@ mod tests {
         let ins_source = InscriptionSource {
             sequence_number: 74311915,
             inscription_number: 73839872,
-            id: BitcoinInscriptionID {
+            id: InscriptionID {
                 txid: Txid::from_str(
                     "ab324803e78a978872b5a71b4838644c5fc0dbb0ffeb4e93c73462854d54d427",
                 )
-                .unwrap(),
+                .unwrap()
+                .into_address(),
                 index: 0,
             },
             satpoint_outpoint: "ab324803e78a978872b5a71b4838644c5fc0dbb0ffeb4e93c73462854d54d427:1"

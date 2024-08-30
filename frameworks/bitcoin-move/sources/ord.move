@@ -113,6 +113,18 @@ module bitcoin_move::ord {
     const InscriptionEventTypeNew: u8 = 0;
     const InscriptionEventTypeBurn: u8 = 1;
 
+    /// Inscription event for metaprotocol
+    ///
+    /// This event is used to record inscription operations related to metaprotocols.
+    /// Compared to the events in inscription_updater, the main differences are:
+    /// 1. This event focuses on metaprotocol-related operations, it is an on-chain event.
+    /// 2. This event is only emitted when the inscription is created or burned, not when it is transferred.
+    /// 3. This event is only emitted if the inscription has a metaprotocol.
+    ///
+    /// @param metaprotocol: The name of the metaprotocol
+    /// @param sequence_number: The sequence number of the inscription
+    /// @param inscription_obj_id: The ID of the inscription object
+    /// @param event_type: Event type, 0 for creation, 1 for burn
     struct InscriptionEvent has store, copy, drop {
         metaprotocol: String,
         sequence_number: u32,
@@ -485,7 +497,7 @@ module bitcoin_move::ord {
 
     // ======= Envelope and InscriptionRecord
 
-    native fun parse_inscription_from_witness(witness: &Witness): vector<Envelope<InscriptionRecord>>;
+    native fun from_witness(witness: &Witness): vector<Envelope<InscriptionRecord>>;
 
     public(friend) fun parse_inscription_from_tx(tx: &Transaction): vector<Envelope<InscriptionRecord>> {
         let inputs = types::tx_input(tx);
@@ -495,7 +507,14 @@ module bitcoin_move::ord {
         while (input_idx < len) {
             let input = vector::borrow(inputs, input_idx);
             let witness = types::txin_witness(input);
-            let inscription_records = parse_inscription_from_witness(witness);
+            let inscription_records = from_witness(witness);
+            let record_len = vector::length(&inscription_records);
+            let record_idx = 0;
+            while (record_idx < record_len) {
+                let record = vector::borrow_mut(&mut inscription_records, record_idx);
+                record.input = (input_idx as u32);
+                record_idx = record_idx + 1;
+            };
             vector::append(&mut records, inscription_records);
             input_idx = input_idx + 1;
         };

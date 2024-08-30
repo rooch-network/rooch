@@ -199,5 +199,5 @@ Remove the expired events from the event queue
 Anyone can call this function to remove the expired events
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="event_queue.md#0x2_event_queue_remove_expired_events">remove_expired_events</a>&lt;E: <b>copy</b>, drop, store&gt;(<a href="event_queue.md#0x2_event_queue">event_queue</a>: <a href="_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="event_queue.md#0x2_event_queue_remove_expired_events">remove_expired_events</a>&lt;E: <b>copy</b>, drop, store&gt;(queue_name: <a href="_String">string::String</a>)
 </code></pre>

@@ -48,7 +48,14 @@ module bitcoin_move::inscription_updater{
         old: Option<SatPoint>,
     }
 
-    //TODO merge the onchain event and offchain event
+
+    /// Triggered when a new inscription is created
+    /// @param block_height: The block height at which the inscription is created
+    /// @param charms: The charm value of the inscription, representing its special attributes
+    /// @param inscription_id: The unique identifier of the newly created inscription
+    /// @param location: The location of the inscription, which may be None
+    /// @param parent_inscription_ids: A list of parent inscription IDs, used to represent relationships between inscriptions
+    /// @param sequence_number: The sequence number of the inscription
     struct InscriptionCreatedEvent has copy, drop, store {
         block_height: u64,
         charms: u16,
@@ -58,12 +65,20 @@ module bitcoin_move::inscription_updater{
         sequence_number: u32,
     }
     
+    /// Triggered when an inscription is transferred
+    /// @param block_height: The block height at which the inscription is transferred
+    /// @param inscription_id: The unique identifier of the inscription being transferred
+    /// @param new_location: The new location of the inscription
+    /// @param old_location: The old location of the inscription
+    /// @param sequence_number: The sequence number of the inscription
+    /// @param is_burned: A boolean indicating whether the inscription is burned
     struct InscriptionTransferredEvent has copy, drop, store {
         block_height: u64,
         inscription_id: InscriptionID,
         new_location: SatPoint,
         old_location: SatPoint,
         sequence_number: u32,
+        is_burned: bool,
     }
 
     struct InscriptionUpdater has store {
@@ -110,7 +125,7 @@ module bitcoin_move::inscription_updater{
         let is_coinbase = types::is_coinbase_tx(tx);
 
         let id_counter = 0;
-        let inscribed_offsets = simple_map::new();
+        let inscribed_offsets = simple_map::new<u64, ReinscribeCounter>();
         let floating_inscriptions = vector::empty();
 
         let jubilant = block_height >= network::jubilee_height();
@@ -185,7 +200,12 @@ module bitcoin_move::inscription_updater{
                     old: option::some(*old_location),
                 };
                 vector::push_back(&mut floating_inscriptions, flotsam);
-                simple_map::add(&mut inscribed_offsets, offset, ReinscribeCounter{inscription_id, count: 1});
+                if(simple_map::contains_key(&inscribed_offsets, &offset)){
+                    let counter = simple_map::borrow_mut(&mut inscribed_offsets, &offset);
+                    counter.count = counter.count + 1;
+                }else{
+                    simple_map::add(&mut inscribed_offsets, offset, ReinscribeCounter{inscription_id, count: 1});
+                };
                 seal_idx = seal_idx + 1;
             };
 
@@ -197,10 +217,10 @@ module bitcoin_move::inscription_updater{
 
             while (ins_idx < ins_len) {
                 let envelope = vector::pop_back(&mut envelopes);
-                //let (input, offset, pushnum, stutter, payload) = ord::unpack_envelope(envelope);
                 let input = ord::envelope_input(&envelope);
                 let payload = ord::envelope_payload(&envelope);
                 if (input != (input_idx as u32)){
+                    vector::push_back(&mut envelopes, envelope);
                     break
                 };
                 let inscription_id = ord::new_inscription_id(txid, id_counter);
@@ -211,7 +231,6 @@ module bitcoin_move::inscription_updater{
                 
                 //handle curse before fix the offset via pointer
                 let curse = handle_curse_inscription(&envelope, offset, &inscribed_offsets);
-
                 let offset = if (option::is_some(&pointer)){
                     let p = option::destroy_some(pointer);
                     if (p < total_output_value){
@@ -229,7 +248,7 @@ module bitcoin_move::inscription_updater{
                     new: option::some(FlotsamNew{
                         cursed: option::is_some(&curse) && !jubilant,
                         fee: 0,
-                        //TODO should we handle the hidden
+                        //We do not handle the hidden
                         hidden: false,
                         parents,
                         pointer,
@@ -249,8 +268,8 @@ module bitcoin_move::inscription_updater{
             input_idx = input_idx + 1;
         };
 
-        //TODO process the parent
-        //TODO do we need to handle the fee
+        //We do not validate the parent here.
+        //And we also not store the fee
 
         if(is_coinbase) {
             //remove all the flotsams from the previous txs
@@ -404,6 +423,7 @@ module bitcoin_move::inscription_updater{
                 new_location: new_satpoint,
                 old_location: old_satpoint,
                 sequence_number,
+                is_burned: is_op_return,
             });
             (false, inscription_obj_id)
         }else{

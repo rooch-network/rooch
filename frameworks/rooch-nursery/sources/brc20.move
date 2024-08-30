@@ -17,7 +17,7 @@ module rooch_nursery::brc20 {
         tick: String,
         max: u256,
         lim: u256,
-        dec: u64,
+        dec: u8,
         supply: u256,
     }
 
@@ -61,8 +61,7 @@ module rooch_nursery::brc20 {
     }
 
     public fun drop_op(op: Op){
-        let Op{from:_, to:_, json_map} = op;
-        simple_map::drop(json_map);
+        let Op{from:_, to:_, json_map:_} = op;
     }
 
     /// The brc20 deploy operation
@@ -161,7 +160,7 @@ module rooch_nursery::brc20 {
         
         let tick = deploy.tick;
 
-        let dec = option::destroy_with_default(string_utils::parse_u64_option(&deploy.dec), 18u64);
+        let dec = option::destroy_with_default(string_utils::parse_u8_option(&deploy.dec), 18u8);
         let max_opt = string_utils::parse_decimal_option(&deploy.max, dec);
         if(option::is_none(&max_opt)){
             return false

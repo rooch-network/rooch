@@ -3,6 +3,7 @@
 
 module moveos_std::string_utils {
     use std::vector;
+    use std::u256;
     use std::option::{Self,Option};
     use std::string::{Self,String};
 
@@ -96,22 +97,10 @@ module moveos_std::string_utils {
         option::destroy_some(result)
     }
 
-    //TODO introduce math module and replace this function
-    fun pow10(n: u64): u256 {
-        let i = 0;
-        let result = 1u256;
-        while (i < n) {
-            result = result * 10;
-            i = i + 1;
-        };
-        result
-    }
-
-    public fun parse_decimal_option(s: &String, decimal: u64): Option<u256> {
+    public fun parse_decimal_option(s: &String, decimal: u8): Option<u256> {
         let bytes = string::bytes(s);
         let i = 0;
         let result = 0u256;
-        let decimal = (decimal as u256);
         let decimal_place = false;
         let decimal_count = 0;
         let remaining_count = decimal;
@@ -133,10 +122,10 @@ module moveos_std::string_utils {
             };
             i = i + 1;
         };
-        option::some(result * pow10((remaining_count as u64)))
+        option::some(result * u256::pow(10, remaining_count))
     }
 
-    public fun parse_decimal(s: &String, decimal: u64): u256 {
+    public fun parse_decimal(s: &String, decimal: u8): u256 {
         let result = parse_decimal_option(s, decimal);
         assert!(option::is_some(&result), ErrorInvalidStringNumber);
         option::destroy_some(result)

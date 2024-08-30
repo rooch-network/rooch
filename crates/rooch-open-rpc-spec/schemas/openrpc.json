@@ -1415,7 +1415,7 @@
             ],
             "properties": {
               "inscription_id": {
-                "$ref": "#/components/schemas/rooch_types::bitcoin::ord::BitcoinInscriptionID"
+                "$ref": "#/components/schemas/rooch_types::bitcoin::ord::InscriptionID"
               }
             },
             "additionalProperties": false
@@ -1514,7 +1514,6 @@
           "charms",
           "id",
           "inscription_number",
-          "is_curse",
           "location",
           "metadata",
           "parents",
@@ -1550,15 +1549,11 @@
             ]
           },
           "id": {
-            "$ref": "#/components/schemas/rooch_types::bitcoin::ord::BitcoinInscriptionID"
+            "$ref": "#/components/schemas/rooch_types::bitcoin::ord::InscriptionID"
           },
           "inscription_number": {
             "type": "integer",
-            "format": "uint32",
-            "minimum": 0.0
-          },
-          "is_curse": {
-            "type": "boolean"
+            "format": "int32"
           },
           "location": {
             "$ref": "#/components/schemas/SatPointView"
@@ -1577,7 +1572,10 @@
             ]
           },
           "parents": {
-            "$ref": "#/components/schemas/alloc::vec::Vec<moveos_types::moveos_std::object::ObjectID>"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/rooch_types::bitcoin::ord::InscriptionID"
+            }
           },
           "pointer": {
             "anyOf": [
@@ -3298,7 +3296,7 @@
       "rooch_types::address::RoochAddress": {
         "type": "string"
       },
-      "rooch_types::bitcoin::ord::BitcoinInscriptionID": {
+      "rooch_types::bitcoin::ord::InscriptionID": {
         "type": "string"
       },
       "rooch_types::repair::RepairIndexerType": {

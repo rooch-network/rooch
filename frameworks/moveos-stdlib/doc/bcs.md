@@ -311,10 +311,10 @@ Read <code>u128</code> value from bcs-serialized bytes.
 
 ## Function `peel_u256`
 
-Read <code>u256</code> value from bcs-serialized bytes.
+Read <code><a href="">u256</a></code> value from bcs-serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_u256">peel_u256</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): u256
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_u256">peel_u256</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="">u256</a>
 </code></pre>
 
 
@@ -435,10 +435,10 @@ Peel a vector of <code>u128</code> from serialized bytes.
 
 ## Function `peel_vec_u256`
 
-Peel a vector of <code>u256</code> from serialized bytes.
+Peel a vector of <code><a href="">u256</a></code> from serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_u256">peel_vec_u256</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="">vector</a>&lt;u256&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_vec_u256">peel_vec_u256</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="">vector</a>&lt;<a href="">u256</a>&gt;
 </code></pre>
 
 
@@ -531,10 +531,10 @@ Peel <code>Option&lt;u128&gt;</code> from serialized bytes.
 
 ## Function `peel_option_u256`
 
-Peel <code>Option&lt;u256&gt;</code> from serialized bytes.
+Peel <code>Option&lt;<a href="">u256</a>&gt;</code> from serialized bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_option_u256">peel_option_u256</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="_Option">option::Option</a>&lt;u256&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_peel_option_u256">peel_option_u256</a>(<a href="">bcs</a>: &<b>mut</b> bcs::BCS): <a href="_Option">option::Option</a>&lt;<a href="">u256</a>&gt;
 </code></pre>
 
 

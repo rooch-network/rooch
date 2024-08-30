@@ -73,6 +73,13 @@ https://github.com/ordinals/ord/blob/e59bd3e73d30ed9bc0b252ba2084bba670d6b0db/sr
 
 ## Struct `InscriptionCreatedEvent`
 
+Triggered when a new inscription is created
+@param block_height: The block height at which the inscription is created
+@param charms: The charm value of the inscription, representing its special attributes
+@param inscription_id: The unique identifier of the newly created inscription
+@param location: The location of the inscription, which may be None
+@param parent_inscription_ids: A list of parent inscription IDs, used to represent relationships between inscriptions
+@param sequence_number: The sequence number of the inscription
 
 
 <pre><code><b>struct</b> <a href="inscription_updater.md#0x4_inscription_updater_InscriptionCreatedEvent">InscriptionCreatedEvent</a> <b>has</b> <b>copy</b>, drop, store
@@ -84,6 +91,13 @@ https://github.com/ordinals/ord/blob/e59bd3e73d30ed9bc0b252ba2084bba670d6b0db/sr
 
 ## Struct `InscriptionTransferredEvent`
 
+Triggered when an inscription is transferred
+@param block_height: The block height at which the inscription is transferred
+@param inscription_id: The unique identifier of the inscription being transferred
+@param new_location: The new location of the inscription
+@param old_location: The old location of the inscription
+@param sequence_number: The sequence number of the inscription
+@param is_burned: A boolean indicating whether the inscription is burned
 
 
 <pre><code><b>struct</b> <a href="inscription_updater.md#0x4_inscription_updater_InscriptionTransferredEvent">InscriptionTransferredEvent</a> <b>has</b> <b>copy</b>, drop, store
