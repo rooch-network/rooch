@@ -167,7 +167,7 @@ impl PipelineProcessorActor {
         let moveos_tx = self.executor.validate_l1_tx(l1_tx.clone()).await?;
         let ledger_tx = self
             .sequencer
-            .sequence_transaction(LedgerTxData::L1Tx(l1_tx))
+            .sequence_transaction(LedgerTxData::L1Tx(l1_tx.clone()))
             .await?;
         let size = moveos_tx.ctx.tx_size;
         let result = match self.execute_tx(ledger_tx, moveos_tx).await {
@@ -176,8 +176,8 @@ impl PipelineProcessorActor {
                 if is_vm_panic_error(&err) {
                     log::warn!(
                         "Execute L1 Tx failed while VM panic occurred then \
-                        set sequencer to Maintenance mode and pause the relayer. error: {:?}",
-                        err
+                        set sequencer to Maintenance mode and pause the relayer. error: {:?}, tx info {:?}",
+                        err, l1_tx
                     );
                     if let Some(event_actor) = self.event_actor.clone() {
                         let _ = event_actor
@@ -225,8 +225,8 @@ impl PipelineProcessorActor {
             Err(err) => {
                 if is_vm_panic_error(&err) {
                     log::warn!(
-                        "Execute L2 Tx failed while VM panic occurred and revert tx. error: {:?}",
-                        err
+                        "Execute L2 Tx failed while VM panic occurred and revert tx. error: {:?} tx info {}",
+                        err, tx
                     );
                     let tx_hash = tx.tx_hash();
                     self.rooch_db.revert_tx(tx_hash)?;
