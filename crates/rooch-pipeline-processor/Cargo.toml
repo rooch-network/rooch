@@ -36,3 +36,4 @@ rooch-indexer = { workspace = true }
 rooch-event = { workspace = true }
 rooch-db = { workspace = true }
 hex = { workspace = true }
+bcs = { workspace = true }

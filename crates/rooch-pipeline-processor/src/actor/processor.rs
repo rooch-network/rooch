@@ -174,10 +174,11 @@ impl PipelineProcessorActor {
             Ok(v) => v,
             Err(err) => {
                 if is_vm_panic_error(&err) {
+                    let l1_tx_bcs_bytes = bcs::to_bytes(&l1_tx)?;
                     log::warn!(
                         "Execute L1 Tx failed while VM panic occurred then \
                         set sequencer to Maintenance mode and pause the relayer. error: {:?}, tx bytes {}",
-                        err, hex::encode(&l1_tx)
+                        err, hex::encode(&l1_tx_bcs_bytes)
                     );
                     if let Some(event_actor) = self.event_actor.clone() {
                         let _ = event_actor
@@ -224,9 +225,10 @@ impl PipelineProcessorActor {
             Ok(v) => v,
             Err(err) => {
                 if is_vm_panic_error(&err) {
+                    let l2_tx_bcs_bytes = bcs::to_bytes(&tx)?;
                     log::warn!(
                         "Execute L2 Tx failed while VM panic occurred and revert tx. error: {:?} tx info {}",
-                        err, hex::encode(&tx)
+                        err, hex::encode(l2_tx_bcs_bytes)
                     );
                     let tx_hash = tx.tx_hash();
                     self.rooch_db.revert_tx(tx_hash)?;
