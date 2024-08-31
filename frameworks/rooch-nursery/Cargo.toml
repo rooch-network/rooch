@@ -40,3 +40,4 @@ moveos = { workspace = true }
 moveos-wasm = { workspace = true }
 
 rooch-types = { workspace = true }
+rooch-framework = { workspace = true }

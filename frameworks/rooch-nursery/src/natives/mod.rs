@@ -1,10 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::natives::gas_parameter::gas_member::{
+use move_vm_runtime::native_functions::{make_table_from_iter, NativeFunctionTable};
+use rooch_framework::natives::gas_parameter::gas_member::{
     FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule,
 };
-use move_vm_runtime::native_functions::{make_table_from_iter, NativeFunctionTable};
 use rooch_types::addresses::ROOCH_NURSERY_ADDRESS;
 use std::collections::BTreeMap;
 

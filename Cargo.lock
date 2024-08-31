@@ -9605,6 +9605,7 @@ dependencies = [
  "moveos-types",
  "moveos-wasm",
  "musig2",
+ "rooch-framework",
  "rooch-types",
  "serde_json",
  "smallvec",

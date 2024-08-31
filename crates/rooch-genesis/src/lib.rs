@@ -29,11 +29,6 @@ use rooch_framework::natives::gas_parameter::gas_member::{
 };
 use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
 use rooch_indexer::store::traits::IndexerStoreTrait;
-use rooch_nursery::natives::gas_parameter::gas_member::InitialGasSchedule as RoochNurseryInitialGasSchedule;
-use rooch_nursery::natives::gas_parameter::gas_member::{
-    FromOnChainGasSchedule as RoochNurseryFromOnChainGasSchedule,
-    ToOnChainGasSchedule as RoochNurseryToOnChainGasSchedule,
-};
 use rooch_store::meta_store::MetaStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_types::address::BitcoinAddress;
