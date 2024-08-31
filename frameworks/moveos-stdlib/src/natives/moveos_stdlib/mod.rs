@@ -19,4 +19,3 @@ pub mod signer;
 pub mod test_helper;
 pub mod tx_context;
 pub mod type_info;
-pub mod wasm;

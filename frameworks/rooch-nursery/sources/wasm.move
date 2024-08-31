@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module moveos_std::wasm {
-    
+module rooch_nursery::wasm {
+
     use std::option::{Self,Option};
     use moveos_std::features;
 
@@ -57,7 +57,7 @@ module moveos_std::wasm {
 
     public fun execute_wasm_function_option(instance: &mut WASMInstance, func_name: vector<u8>, args: vector<u64>): Option<u64> {
         features::ensure_wasm_enabled();
-        
+
         let (ret_val, error_code) = native_execute_wasm_function(instance.id, func_name, args);
         if (error_code > 0) {
             return option::none()
@@ -94,32 +94,32 @@ module moveos_std::wasm {
 
     native fun native_release_wasm_instance(instance: WASMInstance): bool;
 
-    #[test_only] 
+    #[test_only]
     use std::vector;
 
     #[test]
     fun test_trap() {
-      features::init_and_enable_all_features_for_test();
+        features::init_and_enable_all_features_for_test();
 
-      let wasm_code: vector<u8> = b"(module (func (export \"div_s\") (param $x i32) (param $y i32) (result i32) (i32.div_s (local.get $x) (local.get $y))))";
+        let wasm_code: vector<u8> = b"(module (func (export \"div_s\") (param $x i32) (param $y i32) (result i32) (i32.div_s (local.get $x) (local.get $y))))";
 
-      // 1. create wasm VM instance (required step)
-      let wasm_instance = create_wasm_instance(wasm_code);
-    //   std::debug::print(&std::std::string::utf8(b"wasm_instance:"));
-    //   std::debug::print(&wasm_instance);
+        // 1. create wasm VM instance (required step)
+        let wasm_instance = create_wasm_instance(wasm_code);
+        //   std::debug::print(&std::std::string::utf8(b"wasm_instance:"));
+        //   std::debug::print(&wasm_instance);
 
-      // 2. run 10/0
-      let function_name = b"div_s";
-      let arg_list = vector::empty<u64>();
-      vector::push_back(&mut arg_list, 10u64);
-      vector::push_back(&mut arg_list, 0u64);
-    //   std::debug::print(&arg_list);
+        // 2. run 10/0
+        let function_name = b"div_s";
+        let arg_list = vector::empty<u64>();
+        vector::push_back(&mut arg_list, 10u64);
+        vector::push_back(&mut arg_list, 0u64);
+        //   std::debug::print(&arg_list);
 
-      let ret_val_option = execute_wasm_function_option(&mut wasm_instance, function_name, arg_list);
-      assert!(option::is_none(&ret_val_option), 1);
+        let ret_val_option = execute_wasm_function_option(&mut wasm_instance, function_name, arg_list);
+        assert!(option::is_none(&ret_val_option), 1);
 
-      // 3. release the wasm VM instance (required step)
-      release_wasm_instance(wasm_instance);
+        // 3. release the wasm VM instance (required step)
+        release_wasm_instance(wasm_instance);
     }
 
     #[test]
