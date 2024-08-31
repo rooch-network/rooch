@@ -9689,8 +9689,10 @@ version = "0.6.9"
 dependencies = [
  "anyhow",
  "async-trait",
+ "bcs",
  "coerce",
  "function_name",
+ "hex",
  "log",
  "metrics",
  "move-binary-format",

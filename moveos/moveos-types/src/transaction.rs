@@ -20,7 +20,7 @@ use serde::{
     de::{self, Visitor},
     Deserialize, Deserializer, Serialize,
 };
-use std::fmt::{self, Display};
+use std::fmt::{self, Display, Formatter};
 
 #[cfg(any(test, feature = "fuzzing"))]
 use crate::move_types::type_tag_prop_strategy;
@@ -194,6 +194,43 @@ impl From<FunctionCall> for MoveAction {
 impl From<ScriptCall> for MoveAction {
     fn from(call: ScriptCall) -> Self {
         MoveAction::Script(call)
+    }
+}
+
+impl Display for MoveAction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            MoveAction::Script(script) => {
+                let code_hex = hex::encode(script.code.clone());
+                let mut arg_list = vec![];
+                for arg in script.args.iter() {
+                    arg_list.push(format!("0x{:}", hex::encode(arg)));
+                }
+                write!(
+                    f,
+                    "MoveAction::ScriptCall( code: 0x{:?},  type_args: {:?}, args: {:?})",
+                    code_hex, script.ty_args, arg_list
+                )
+            }
+            MoveAction::Function(function) => {
+                let mut arg_list = vec![];
+                for arg in function.args.iter() {
+                    arg_list.push(format!("0x{:}", hex::encode(arg)));
+                }
+                write!(
+                    f,
+                    "MoveAction::FunctionCall( function_id: 0x{:?},  type_args: {:?}, args: {:?})",
+                    function.function_id, function.ty_args, arg_list
+                )
+            }
+            MoveAction::ModuleBundle(module_bundle) => {
+                let mut module_list = vec![];
+                for arg in module_bundle.iter() {
+                    module_list.push(format!("0x{:}", hex::encode(arg)));
+                }
+                write!(f, "MoveAction::ModuleBundle( {:?} )", module_list)
+            }
+        }
     }
 }
 
