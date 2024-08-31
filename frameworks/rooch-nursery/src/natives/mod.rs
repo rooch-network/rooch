@@ -26,9 +26,7 @@ impl GasParameters {
 
 impl FromOnChainGasSchedule for GasParameters {
     fn from_on_chain_gas_schedule(gas_schedule: &BTreeMap<String, u64>) -> Option<Self> {
-        Some(Self {
-            wasm: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
-        })
+        FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).map(|v| Self { wasm: v })
     }
 }
 
