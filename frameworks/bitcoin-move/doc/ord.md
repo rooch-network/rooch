@@ -15,6 +15,7 @@
 -  [Struct `MetaprotocolValidity`](#0x4_ord_MetaprotocolValidity)
 -  [Resource `InscriptionStore`](#0x4_ord_InscriptionStore)
 -  [Struct `InscriptionEvent`](#0x4_ord_InscriptionEvent)
+-  [Struct `TempStateDropEvent`](#0x4_ord_TempStateDropEvent)
 -  [Struct `InscriptionCharm`](#0x4_ord_InscriptionCharm)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_ord_genesis_init)
@@ -108,6 +109,7 @@
 -  [Function `unpack_inscription_event`](#0x4_ord_unpack_inscription_event)
 -  [Function `inscription_event_type_new`](#0x4_ord_inscription_event_type_new)
 -  [Function `inscription_event_type_burn`](#0x4_ord_inscription_event_type_burn)
+-  [Function `unpack_temp_state_drop_event`](#0x4_ord_unpack_temp_state_drop_event)
 -  [Function `charm_coin_flag`](#0x4_ord_charm_coin_flag)
 -  [Function `charm_cursed_flag`](#0x4_ord_charm_cursed_flag)
 -  [Function `charm_epic_flag`](#0x4_ord_charm_epic_flag)
@@ -138,6 +140,7 @@
 <b>use</b> <a href="">0x2::string_utils</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="bitcoin_hash.md#0x4_bitcoin_hash">0x4::bitcoin_hash</a>;
+<b>use</b> <a href="temp_state.md#0x4_temp_state">0x4::temp_state</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 </code></pre>
 
@@ -261,6 +264,20 @@ Compared to the events in inscription_updater, the main differences are:
 
 
 <pre><code><b>struct</b> <a href="ord.md#0x4_ord_InscriptionEvent">InscriptionEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_ord_TempStateDropEvent"></a>
+
+## Struct `TempStateDropEvent`
+
+Event emitted when the temporary state of an Inscription is dropped
+The temporary state is dropped when the inscription is transferred
+The event is onchain event, and the event_queue name is type_name of the temporary state
+
+
+<pre><code><b>struct</b> <a href="ord.md#0x4_ord_TempStateDropEvent">TempStateDropEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -1490,6 +1507,17 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_inscription_event_type_burn">inscription_event_type_burn</a>(): u8
+</code></pre>
+
+
+
+<a name="0x4_ord_unpack_temp_state_drop_event"></a>
+
+## Function `unpack_temp_state_drop_event`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_unpack_temp_state_drop_event">unpack_temp_state_drop_event</a>(<a href="">event</a>: <a href="ord.md#0x4_ord_TempStateDropEvent">ord::TempStateDropEvent</a>): (<a href="_ObjectID">object::ObjectID</a>, <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>)
 </code></pre>
 
 

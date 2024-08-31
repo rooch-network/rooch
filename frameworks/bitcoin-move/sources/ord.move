@@ -13,9 +13,11 @@ module bitcoin_move::ord {
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::string_utils;
     use moveos_std::type_info;
+    use moveos_std::event_queue;
 
     use bitcoin_move::bitcoin_hash;
     use bitcoin_move::types::{Self, Transaction, Witness, OutPoint};
+    use bitcoin_move::temp_state;
 
     friend bitcoin_move::genesis;
     friend bitcoin_move::bitcoin;
@@ -131,6 +133,14 @@ module bitcoin_move::ord {
         inscription_obj_id: ObjectID,
         event_type: u8,
     }
+
+    /// Event emitted when the temporary state of an Inscription is dropped
+    /// The temporary state is dropped when the inscription is transferred
+    /// The event is onchain event, and the event_queue name is type_name of the temporary state
+    struct TempStateDropEvent has drop, store, copy {
+        inscription_obj_id: ObjectID,
+        inscription_id: InscriptionID,
+    } 
 
     public(friend) fun genesis_init() {
         let store = InscriptionStore {
@@ -644,52 +654,58 @@ module bitcoin_move::ord {
     #[private_generics(S)]
     public fun add_temp_state<S: store + drop>(inscription: &mut Object<Inscription>, state: S) {
         if (object::contains_field(inscription, TEMPORARY_AREA)) {
-            let bag = object::borrow_mut_field(inscription, TEMPORARY_AREA);
-            let name = type_info::type_name<S>();
-            bag::add_dropable(bag, name, state);
+            let temp_state = object::borrow_mut_field(inscription, TEMPORARY_AREA);
+            temp_state::add_state(temp_state, state);
         }else {
-            let bag = bag::new_dropable();
-            let name = type_info::type_name<S>();
-            bag::add_dropable(&mut bag, name, state);
-            object::add_field(inscription, TEMPORARY_AREA, bag);
+            let temp_state = temp_state::new();
+            temp_state::add_state(&mut temp_state, state);
+            object::add_field(inscription, TEMPORARY_AREA, temp_state);
         }
     }
 
     public fun contains_temp_state<S: store + drop>(inscription: &Object<Inscription>): bool {
         if (object::contains_field(inscription, TEMPORARY_AREA)) {
-            let bag = object::borrow_field(inscription, TEMPORARY_AREA);
-            let name = type_info::type_name<S>();
-            bag::contains(bag, name)
+            let temp_state = object::borrow_field(inscription, TEMPORARY_AREA);
+            temp_state::contains_state<S>(temp_state)
         }else {
             false
         }
     }
 
     public fun borrow_temp_state<S: store + drop>(inscription: &Object<Inscription>): &S {
-        let bag = object::borrow_field(inscription, TEMPORARY_AREA);
-        let name = type_info::type_name<S>();
-        bag::borrow(bag, name)
+        let temp_state = object::borrow_field(inscription, TEMPORARY_AREA);
+        temp_state::borrow_state(temp_state)
     }
 
     #[private_generics(S)]
     public fun borrow_mut_temp_state<S: store + drop>(inscription: &mut Object<Inscription>): &mut S {
-        let bag = object::borrow_mut_field(inscription, TEMPORARY_AREA);
-        let name = type_info::type_name<S>();
-        bag::borrow_mut(bag, name)
+        let temp_state = object::borrow_mut_field(inscription, TEMPORARY_AREA);
+        temp_state::borrow_mut_state(temp_state)
     }
 
     #[private_generics(S)]
     public fun remove_temp_state<S: store + drop>(inscription: &mut Object<Inscription>): S {
-        let bag = object::borrow_mut_field(inscription, TEMPORARY_AREA);
-        let name = type_info::type_name<S>();
-        bag::remove(bag, name)
+        let temp_state = object::borrow_mut_field(inscription, TEMPORARY_AREA);
+        temp_state::remove_state(temp_state)
     }
 
     /// Drop the bag, whether it's empty or not
     public(friend) fun drop_temp_area(inscription: &mut Object<Inscription>) {
         if (object::contains_field(inscription, TEMPORARY_AREA)) {
-            let bag = object::remove_field(inscription, TEMPORARY_AREA);
-            bag::drop(bag);
+            let inscription_obj_id = object::id(inscription);
+            let inscription_id = object::borrow(inscription).id;
+            let temp_state = object::remove_field(inscription, TEMPORARY_AREA);
+            let state_type_names = temp_state::remove(temp_state);
+            let idx = 0;
+            let len = vector::length(&state_type_names);
+            while(idx < len){
+                let state_type_name = vector::pop_back(&mut state_type_names);
+                event_queue::emit(state_type_name, TempStateDropEvent{
+                    inscription_obj_id,
+                    inscription_id,
+                });
+                idx = idx + 1;
+            };
         }
     }
 
@@ -845,6 +861,11 @@ module bitcoin_move::ord {
 
     public fun inscription_event_type_burn(): u8 {
         InscriptionEventTypeBurn
+    }
+
+    public fun unpack_temp_state_drop_event(event: TempStateDropEvent): (ObjectID, InscriptionID) {
+        let TempStateDropEvent { inscription_obj_id, inscription_id } = event;
+        (inscription_obj_id, inscription_id)
     }
 
     // ==== Inscription Charm ==== //
@@ -1131,7 +1152,7 @@ module bitcoin_move::ord {
     }
 
     #[test_only]
-    struct TempState has store, copy, drop {
+    struct TestTempState has store, copy, drop {
         value: u64,
     }
 
@@ -1152,16 +1173,16 @@ module bitcoin_move::ord {
             vector[],
             option::none(),
         );
-        add_temp_state(&mut inscription_obj, TempState { value: 10 });
-        assert!(contains_temp_state<TempState>(&inscription_obj), 1);
-        assert!(borrow_temp_state<TempState>(&inscription_obj).value == 10, 2);
+        add_temp_state(&mut inscription_obj, TestTempState { value: 10 });
+        assert!(contains_temp_state<TestTempState>(&inscription_obj), 1);
+        assert!(borrow_temp_state<TestTempState>(&inscription_obj).value == 10, 2);
         {
-            let state = borrow_mut_temp_state<TempState>(&mut inscription_obj);
+            let state = borrow_mut_temp_state<TestTempState>(&mut inscription_obj);
             state.value = 20;
         };
-        let state = remove_temp_state<TempState>(&mut inscription_obj);
+        let state = remove_temp_state<TestTempState>(&mut inscription_obj);
         assert!(state.value == 20, 1);
-        assert!(!contains_temp_state<TempState>(&inscription_obj), 3);
+        assert!(!contains_temp_state<TestTempState>(&inscription_obj), 3);
 
         drop_temp_area(&mut inscription_obj);
         drop_inscription_object_for_test(inscription_obj);
@@ -1191,8 +1212,9 @@ module bitcoin_move::ord {
             vector[],
             option::none(),
         );
-
-        add_temp_state(&mut inscription_obj, TempState { value: 10 });
+        let state_type_name = type_info::type_name<TestTempState>();
+        let subscriber = event_queue::subscribe<TempStateDropEvent>(state_type_name);
+        add_temp_state(&mut inscription_obj, TestTempState { value: 10 });
         add_permanent_state(&mut inscription_obj, PermanentState { value: 10 });
         let object_id = object::id(&inscription_obj);
 
@@ -1202,8 +1224,17 @@ module bitcoin_move::ord {
         };
 
         let inscription_obj = object::borrow_object<Inscription>(object_id);
-        assert!(!contains_temp_state<TempState>(inscription_obj), 1);
-        assert!(contains_permanent_state<PermanentState>(inscription_obj), 2);
+        assert!(!contains_temp_state<TestTempState>(inscription_obj), 1);
+
+        let event_option = event_queue::consume<TempStateDropEvent>(&mut subscriber);
+        assert!(option::is_some(&event_option), 2);
+        let event = option::destroy_some(event_option);
+        assert!(event.inscription_obj_id == object_id, 3);
+        assert!(event.inscription_id == id, 4);
+
+        assert!(contains_permanent_state<PermanentState>(inscription_obj), 5);
+
+        event_queue::unsubscribe(subscriber);
     }
 
 
