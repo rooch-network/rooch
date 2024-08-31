@@ -5,22 +5,23 @@ use crate::binding_test::RustBindingTest;
 use anyhow::{anyhow, bail, ensure, Result};
 use bitcoin::{hashes::Hash, Block, OutPoint, TxOut, Txid};
 use framework_builder::stdlib_version::StdlibVersion;
-use move_core_types::account_address::AccountAddress;
 use moveos_types::{
     move_std::string::MoveString,
     moveos_std::{
         module_store::ModuleStore, object::ObjectMeta, simple_multimap::SimpleMultiMap,
         timestamp::Timestamp,
     },
-    state::{MoveState, MoveType, ObjectChange, ObjectState},
+    state::{MoveState, MoveStructType, MoveType, ObjectChange, ObjectState},
     state_resolver::StateResolver,
 };
-use rooch_ord::ord_client::{Charm, InscriptionInfo, OrdClient};
+use rooch_ord::ord_client::Charm;
 use rooch_relayer::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use rooch_types::{
-    address::BitcoinAddress,
     bitcoin::{
-        ord::{Inscription, InscriptionID},
+        inscription_updater::{
+            InscriptionCreatedEvent, InscriptionTransferredEvent, InscriptionUpdaterEvent,
+        },
+        ord::{Inscription, InscriptionID, SatPoint},
         utxo::{self, BitcoinUTXOStore, UTXO},
     },
     genesis_config,
@@ -30,9 +31,8 @@ use rooch_types::{
 };
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeSet, HashMap, HashSet},
     path::{Path, PathBuf},
-    str::FromStr,
     vec,
 };
 use tracing::{debug, error, info, trace};
@@ -64,11 +64,46 @@ impl BitcoinBlockTester {
         if self.genesis.blocks.is_empty() {
             bail!("No block to execute");
         }
-        let block_data = self.genesis.blocks.remove(0);
+        let mut block_data = self.genesis.blocks.remove(0);
         info!("Execute block: {}", block_data.height);
         let l1_block =
             L1BlockWithBody::new_bitcoin_block(block_data.height, block_data.block.clone());
-        self.binding_test.execute_l1_block_and_tx(l1_block)?;
+        let results = self.binding_test.execute_l1_block_and_tx(l1_block)?;
+        for result in results {
+            for event in result.output.events {
+                if event.event_type == InscriptionCreatedEvent::struct_tag() {
+                    let event = InscriptionCreatedEvent::from_bytes(&event.event_data)?;
+                    block_data
+                        .events_from_move
+                        .push(InscriptionUpdaterEvent::InscriptionCreated(event));
+                } else if event.event_type == InscriptionTransferredEvent::struct_tag() {
+                    let event = InscriptionTransferredEvent::from_bytes(&event.event_data)?;
+                    block_data
+                        .events_from_move
+                        .push(InscriptionUpdaterEvent::InscriptionTransferred(event));
+                }
+            }
+        }
+
+        block_data.expect_inscriptions = block_data
+            .events_from_ord
+            .iter()
+            .filter_map(|event| {
+                if let rooch_ord::event::Event::InscriptionCreated { inscription_id, .. } = event {
+                    Some(*inscription_id)
+                } else {
+                    None
+                }
+            })
+            .collect::<BTreeSet<_>>();
+
+        info!(
+            "Execute block: {} done, events from move: {}, events from ord: {}, expect inscriptions: {}",
+            block_data.height,
+            block_data.events_from_move.len(),
+            block_data.events_from_ord.len(),
+            block_data.expect_inscriptions.len()
+        );
         self.executed_block = Some(block_data);
         Ok(())
     }
@@ -153,14 +188,6 @@ impl BitcoinBlockTester {
                         inscription,
                         outpoint
                     );
-                    //if expect_inscriptions is empty, maybe we can not get the inscription from ord RPC, so skip the check
-                    if !block_data.expect_inscriptions.is_empty() {
-                        ensure!(
-                            block_data.expect_inscriptions.contains_key(&inscription.id),
-                            "Inscription {:?} not in expect inscriptions",
-                            inscription,
-                        );
-                    }
                 }
             }
         }
@@ -173,11 +200,143 @@ impl BitcoinBlockTester {
             "No block executed, please execute block first"
         );
         let block_data = self.executed_block.as_ref().unwrap();
-        debug!(
+        info!(
             "verify {} inscriptions in block",
             block_data.expect_inscriptions.len()
         );
-        for (inscription_id, inscription_info) in block_data.expect_inscriptions.iter() {
+        let inscription_created_events_from_ord = block_data
+            .events_from_ord
+            .iter()
+            .filter_map(|event| {
+                if matches!(event, rooch_ord::event::Event::InscriptionCreated { .. }) {
+                    Some(event.clone())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let inscription_created_events_from_move = block_data
+            .events_from_move
+            .iter()
+            .filter_map(|event| {
+                if matches!(event, InscriptionUpdaterEvent::InscriptionCreated(_)) {
+                    Some(event.clone())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        ensure!(
+            inscription_created_events_from_ord.len() == inscription_created_events_from_move.len(),
+            "Inscription created events not match: ord: {}, move: {}",
+            inscription_created_events_from_ord.len(),
+            inscription_created_events_from_move.len()
+        );
+
+        for (event_from_ord, event_from_move) in inscription_created_events_from_ord
+            .iter()
+            .zip(inscription_created_events_from_move.iter())
+        {
+            match (event_from_ord, event_from_move) {
+                (
+                    rooch_ord::event::Event::InscriptionCreated {
+                        charms,
+                        inscription_id,
+                        location,
+                        ..
+                    },
+                    InscriptionUpdaterEvent::InscriptionCreated(event),
+                ) => {
+                    ensure!(
+                        inscription_id == &event.inscription_id,
+                        "Inscription id not match: {:?}, {:?}",
+                        inscription_id,
+                        event.inscription_id
+                    );
+                    let location_from_move: Option<SatPoint> = event.location.clone().into();
+                    ensure!(
+                        location == &location_from_move,
+                        "Inscription {} location not match: {:?}, {:?}",
+                        inscription_id,
+                        location,
+                        location_from_move
+                    );
+                    if charms != &event.charms {
+                        let charms_from_ord = Charm::charms(*charms);
+                        let charms_from_move = Charm::charms(event.charms);
+                        debug!("charms from ord: {:?}", charms_from_ord);
+                        debug!("charms from move: {:?}", charms_from_move);
+                        let charms_from_ord = charms_from_ord
+                            .into_iter()
+                            .filter(|charm| match charm {
+                                //we skip the reinscription charm, because the previous inscription may be not in testcase state.
+                                Charm::Reinscription => false,
+                                _ => true,
+                            })
+                            .collect::<Vec<_>>();
+                        if charms_from_ord != charms_from_move {
+                            bail!(
+                                "Inscription {} charms not match: ord: {:?}, move: {:?}",
+                                inscription_id,
+                                charms_from_ord,
+                                charms_from_move
+                            );
+                        }
+                    }
+                }
+                _ => {
+                    bail!(
+                        "Inscription created events not match: {:?}, {:?}",
+                        event_from_ord,
+                        event_from_move
+                    );
+                }
+            }
+        }
+
+        // Because the block_tester do not contains all previous block's inscriptions
+        // So we only verify the transferred inscriptions occurred in Move
+        let inscription_transferred_events_from_move = block_data
+            .events_from_move
+            .iter()
+            .filter_map(|event| {
+                if let InscriptionUpdaterEvent::InscriptionTransferred(e) = event {
+                    Some(e.clone())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+
+        info!(
+            "Verify {} transferred inscriptions",
+            inscription_transferred_events_from_move.len()
+        );
+        for event in inscription_transferred_events_from_move {
+            let find = block_data.events_from_ord.iter().find(|ord_event| {
+                if let rooch_ord::event::Event::InscriptionTransferred {
+                    inscription_id,
+                    new_location,
+                    old_location,
+                    ..
+                } = ord_event
+                {
+                    inscription_id == &event.inscription_id
+                        && new_location == &event.new_location
+                        && old_location == &event.old_location
+                } else {
+                    false
+                }
+            });
+            ensure!(
+                find.is_some(),
+                "Missing inscription transferred event: {:?} from ord.",
+                event
+            );
+        }
+
+        for inscription_id in block_data.expect_inscriptions.iter() {
             let object_id = inscription_id.object_id();
             let inscription_obj = self.binding_test.get_object(&object_id)?;
             ensure!(
@@ -209,80 +368,6 @@ impl BitcoinBlockTester {
                 seal_obj_ids,
                 object_id
             );
-            //check the inscription with InscriptionInfo from ord RPC.
-
-            //Because the inscription info from RPC maybe tranfered, and location is changed,
-            //so we only compare the inscription which location same as inscribed location(no transfered).
-            if inscription_info.satpoint.outpoint.txid == utxo.txid {
-                ensure!(
-                    inscription_info.satpoint == inscription.location,
-                    "Inscription location not match, expected: {:?}, act: {:?}",
-                    inscription_info.satpoint,
-                    inscription.location
-                );
-                if let Some(address) = &inscription_info.address {
-                    let bitcoin_addr = BitcoinAddress::from_str(address)?;
-                    let rooch_addr: AccountAddress = bitcoin_addr.to_rooch_address().into();
-                    ensure!(
-                        rooch_addr == inscription_obj.owner(),
-                        "Inscription address not match, expected: {} {}, act: {:?}",
-                        address,
-                        rooch_addr,
-                        inscription_obj.owner()
-                    );
-                }
-            }
-
-            for charm in &inscription_info.charms {
-                match charm {
-                    Charm::Cursed => {
-                        ensure!(
-                            Charm::Cursed.is_set(inscription.charms),
-                            "Inscription should be cursed: {:?}",
-                            inscription
-                        );
-                        ensure!(
-                            inscription.is_cursed,
-                            "Inscription is_cursed flag should be true  "
-                        );
-                    }
-                    Charm::Unbound => {
-                        ensure!(
-                            Charm::Unbound.is_set(inscription.charms),
-                            "Inscription should be unbound: {:?}",
-                            inscription
-                        );
-                    }
-                    Charm::Vindicated => {
-                        ensure!(
-                            Charm::Vindicated.is_set(inscription.charms),
-                            "Inscription should be vindicated: {:?}",
-                            inscription
-                        );
-                    }
-                    Charm::Burned => {
-                        // Inscription can be burned via transfer
-                        //ensure!(Charm::Burned.is_set(inscription.charms), "Inscription should be burned: {:?}", inscription);
-                    }
-                    Charm::Reinscription => {
-                        // ensure!(
-                        //     Charm::Reinscription.is_set(inscription.charms),
-                        //     "Inscription should be reinscription: {:?}",
-                        //     inscription
-                        // );
-                    }
-                    Charm::Lost => {
-                        ensure!(
-                            Charm::Lost.is_set(inscription.charms),
-                            "Inscription should be lost: {:?}",
-                            inscription
-                        );
-                    }
-                    _ => {
-                        //skip other charms
-                    }
-                }
-            }
         }
         Ok(())
     }
@@ -297,7 +382,9 @@ impl BitcoinBlockTester {
 pub struct BlockData {
     pub height: u64,
     pub block: Block,
-    pub expect_inscriptions: BTreeMap<InscriptionID, InscriptionInfo>,
+    pub expect_inscriptions: BTreeSet<InscriptionID>,
+    pub events_from_ord: Vec<rooch_ord::event::Event>,
+    pub events_from_move: Vec<InscriptionUpdaterEvent>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -328,17 +415,20 @@ impl BitcoinTesterGenesis {
 
 pub struct TesterGenesisBuilder {
     bitcoin_client: BitcoinClientProxy,
-    ord_client: OrdClient,
+    ord_event_dir: PathBuf,
     blocks: Vec<BlockData>,
     block_txids: HashSet<Txid>,
     utxo_store_change: ObjectChange,
 }
 
 impl TesterGenesisBuilder {
-    pub fn new(bitcoin_client: BitcoinClientProxy, ord_client: OrdClient) -> Result<Self> {
+    pub fn new<P: AsRef<Path>>(
+        bitcoin_client: BitcoinClientProxy,
+        ord_event_dir: P,
+    ) -> Result<Self> {
         Ok(Self {
             bitcoin_client,
-            ord_client,
+            ord_event_dir: ord_event_dir.as_ref().to_path_buf(),
             blocks: vec![],
             block_txids: HashSet::new(),
             utxo_store_change: ObjectChange::meta(BitcoinUTXOStore::genesis_object().metadata),
@@ -362,26 +452,24 @@ impl TesterGenesisBuilder {
                 block_header_result.height
             );
         }
-
-        let inscription_ids = self
-            .ord_client
-            .get_inscriptions_by_block(block_height)
-            .await?;
+        let ord_events = rooch_ord::event::load_events(
+            self.ord_event_dir.join(format!("{}.blk", block_height)),
+        )?;
         info!(
-            "Inscriptions count: {} in block {}",
-            inscription_ids.len(),
+            "Load ord events: {} in block {}",
+            ord_events.len(),
             block_height
         );
 
-        let mut expect_inscriptions = BTreeMap::new();
-        for inscription_id in inscription_ids {
-            let inscription_info = self
-                .ord_client
-                .get_inscription(&inscription_id)
-                .await?
-                .ok_or_else(|| anyhow!("Missing inscription: {:?}", inscription_id))?;
-            expect_inscriptions.insert(inscription_id, inscription_info);
-        }
+        // let mut expect_inscriptions = BTreeMap::new();
+        // for inscription_id in inscription_ids {
+        //     let inscription_info = self
+        //         .ord_client
+        //         .get_inscription(&inscription_id)
+        //         .await?
+        //         .ok_or_else(|| anyhow!("Missing inscription: {:?}", inscription_id))?;
+        //     expect_inscriptions.insert(inscription_id, inscription_info);
+        // }
 
         for tx in &block.txdata {
             self.block_txids.insert(tx.txid());
@@ -441,7 +529,7 @@ impl TesterGenesisBuilder {
                     SimpleMultiMap::create(),
                 );
                 let object_id = utxo.object_id();
-                info!("Add utxo: {}, {:?}", object_id, utxo);
+                debug!("Add utxo: {}, {:?}", object_id, utxo);
                 let mut object_meta = ObjectMeta::genesis_meta(object_id, UTXO::type_tag());
                 object_meta.owner = rooch_pre_output.recipient_address.to_rooch_address().into();
                 let utxo_obj = ObjectState::new_with_struct(object_meta, utxo)?;
@@ -453,7 +541,10 @@ impl TesterGenesisBuilder {
         self.blocks.push(BlockData {
             height: block_height,
             block,
-            expect_inscriptions,
+            //we calculate expect_inscriptions from ord events
+            expect_inscriptions: BTreeSet::new(),
+            events_from_ord: ord_events,
+            events_from_move: vec![],
         });
         Ok(self)
     }
