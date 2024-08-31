@@ -25,9 +25,8 @@ module moveos_std::module_store {
 
     /// Allowlist for module function invocation
     struct Allowlist has key, store {
-        /// Allow list for publishing modules
-        publisher: vector<address>,
-
+        /// Allow list for packages
+        packages: vector<address>,
     }
 
     /// Used to store packages.
@@ -75,7 +74,7 @@ module moveos_std::module_store {
     public(friend) fun init_module_store() {
         // The ModuleStore object will initialize before the genesis.
 
-        let allowlist = object::new_named_object(Allowlist { publisher: vector::empty() });
+        let allowlist = object::new_named_object(Allowlist { packages: vector::empty() });
         object::to_shared(allowlist);
     }
 
@@ -137,38 +136,7 @@ module moveos_std::module_store {
         let package = borrow_package(package_obj_id);
         object::contains_field(package, name)
     }
-
-    /// Publish modules to the account's storage
-    public fun publish_modules(module_store: &mut Object<ModuleStore>, account: &signer, modules: vector<MoveModule>) {
-        let account_address = signer::address_of(account);
-        if (features::module_publishing_allowlist_enabled()) {
-            ensure_package_id_in_allowlist(account_address);
-        };
-        
-        let upgrade_flag = publish_modules_internal(module_store, account_address, modules);
-        // Store ModuleUpgradeFlag in tx_context which will be fetched in VM in Rust, 
-        // and then announce to the VM that the code loading cache should be considered outdated. 
-        tx_context::set_module_upgrade_flag(upgrade_flag);
-    }
-   
-    // Deprecated
-    // TODO: clean this function when reset genesis
-    /// Entry function to publish modules to the account's storage
-    /// The order of modules must be sorted by dependency order.
-    public entry fun publish_modules_entry(account: &signer, modules: vector<vector<u8>>) {
-        let n_modules = vector::length(&modules);
-        let i = 0;
-        let module_vec = vector::empty<MoveModule>();
-        while (i < n_modules) {
-            let code_bytes = vector::pop_back(&mut modules);
-            let m = move_module::new(code_bytes);
-            vector::push_back(&mut module_vec, m);
-            i = i + 1;
-        };
-        let module_store = borrow_mut_module_store(); 
-        Self::publish_modules(module_store, account, module_vec);
-    }
-
+  
     /// Entry function to publish package
     /// The order of modules must be sorted by dependency order.
     public entry fun publish_package_entry(account: &signer, package_bytes: vector<u8>) {
@@ -324,8 +292,8 @@ module moveos_std::module_store {
         core_addresses::assert_system_reserved_address(sender);
         
         let allowlist = borrow_mut_allowlist();
-        if (!vector::contains(&allowlist.publisher, &package_id)) {
-            vector::push_back(&mut allowlist.publisher, package_id);
+        if (!vector::contains(&allowlist.packages, &package_id)) {
+            vector::push_back(&mut allowlist.packages, package_id);
         };
     }
 
@@ -334,13 +302,13 @@ module moveos_std::module_store {
         let sender = signer::address_of(account);
         core_addresses::assert_system_reserved_address(sender);
         let allowlist = borrow_mut_allowlist();
-        let _ = vector::remove_value(&mut allowlist.publisher, &package_id);
+        let _ = vector::remove_value(&mut allowlist.packages, &package_id);
     }
 
     /// Check if a package id is in the allowlist.
     public fun is_in_allowlist(package_id: address): bool {
         let allowlist = borrow_allowlist();
-        vector::contains(&allowlist.publisher, &package_id)
+        vector::contains(&allowlist.packages, &package_id)
     }
 
     fun ensure_package_id_in_allowlist(package_id: address) {
@@ -381,7 +349,13 @@ module moveos_std::module_store {
         let module_bytes = COUNTER_MV_BYTES;
         let m: MoveModule = move_module::new(module_bytes);
 
-        Self::publish_modules(module_object, account, vector::singleton(m));
+        let pkg_data = PackageData {
+            package_name: std::string::utf8(b"counter"),
+            package_id: @0x42,
+            modules: vector::singleton(module_bytes),
+        };
+
+        Self::publish_package_entry(account, bcs::to_bytes(&pkg_data));
         assert!(exists_module(@0x42, std::string::utf8(b"counter")), 1);
     }
 
@@ -394,10 +368,13 @@ module moveos_std::module_store {
             vector[features::get_module_publishing_allowlist_feature()], 
             vector[]
         );
-        let module_object = borrow_mut_module_store();
         let module_bytes = COUNTER_MV_BYTES;
-        let m: MoveModule = move_module::new(module_bytes);
-        Self::publish_modules(module_object, sender, vector::singleton(m));
+        let pkg_data = PackageData {
+            package_name: std::string::utf8(b"counter"),
+            package_id: @0x42,
+            modules: vector::singleton(module_bytes),
+        };
+        Self::publish_package_entry(sender, bcs::to_bytes(&pkg_data));
     }
 
     #[test(account=@0x42)]
@@ -411,10 +388,13 @@ module moveos_std::module_store {
         let system_account = signer::module_signer<Allowlist>();
         add_to_allowlist(&system_account, signer::address_of(account));
 
-        let module_object = borrow_mut_module_store();
         let module_bytes = COUNTER_MV_BYTES;
-        let m: MoveModule = move_module::new(module_bytes);
-        Self::publish_modules(module_object, account, vector::singleton(m));
+        let pkg_data = PackageData {
+            package_name: std::string::utf8(b"counter"),
+            package_id: @0x42,
+            modules: vector::singleton(module_bytes),
+        };
+        Self::publish_package_entry(account, bcs::to_bytes(&pkg_data));
     }
 
     #[test(_account=@moveos_std)]
@@ -436,17 +416,21 @@ module moveos_std::module_store {
         init_module_store();
         features::init_feature_store_for_test();
         
-        let module_object = borrow_mut_module_store();
         let module_bytes = COUNTER_MV_BYTES;
-        let m: MoveModule = move_module::new(module_bytes);
 
-        publish_modules(module_object, account, vector::singleton(m));
-        publish_modules(module_object, account, vector::singleton(m));
+        let pkg_data = PackageData {
+            package_name: std::string::utf8(b"counter"),
+            package_id: @0x42,
+            modules: vector::singleton(module_bytes),
+        };
+        let args = bcs::to_bytes(&pkg_data);
+        Self::publish_package_entry(account, args);
+        Self::publish_package_entry(account, args);
 
         let package_obj_id = package_obj_id(signer::address_of(account));
         let package = object::take_object_extend<Package>(package_obj_id);
         freeze_package(package);
-        publish_modules(module_object, account, vector::singleton(m));
+        Self::publish_package_entry(account, args);
     }
 }
 

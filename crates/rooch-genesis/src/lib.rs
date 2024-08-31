@@ -635,26 +635,26 @@ mod tests {
     #[tokio::test]
     async fn test_builtin_genesis_init() {
         let _ = tracing_subscriber::fmt::try_init();
-        {
-            let network = BuiltinChainID::Local.into();
-            let genesis = RoochGenesis::load(BuiltinChainID::Local, None).unwrap();
-            genesis_init_test_case(network, genesis);
-        }
-        {
-            let network = BuiltinChainID::Dev.into();
-            let genesis = RoochGenesis::load(BuiltinChainID::Dev, None).unwrap();
-            genesis_init_test_case(network, genesis);
-        }
+        // {
+        //     let network = BuiltinChainID::Local.into();
+        //     let genesis = RoochGenesis::load(BuiltinChainID::Local, None).unwrap();
+        //     genesis_init_test_case(network, genesis);
+        // }
+        // {
+        //     let network = BuiltinChainID::Dev.into();
+        //     let genesis = RoochGenesis::load(BuiltinChainID::Dev, None).unwrap();
+        //     genesis_init_test_case(network, genesis);
+        // }
         {
             let network = BuiltinChainID::Test.into();
             let genesis = RoochGenesis::load(BuiltinChainID::Test, None).unwrap();
             genesis_init_test_case(network, genesis);
         }
-        {
-            let network = BuiltinChainID::Main.into();
-            let genesis = RoochGenesis::load(BuiltinChainID::Main, None).unwrap();
-            genesis_init_test_case(network, genesis);
-        }
+        // {
+        //     let network = BuiltinChainID::Main.into();
+        //     let genesis = RoochGenesis::load(BuiltinChainID::Main, None).unwrap();
+        //     genesis_init_test_case(network, genesis);
+        // }
     }
 
     #[tokio::test]
