@@ -7,6 +7,7 @@ This module is used to store temporary states for UTXO and Inscription.
 
 
 -  [Struct `TempState`](#0x4_temp_state_TempState)
+-  [Constants](#@Constants_0)
 -  [Function `new`](#0x4_temp_state_new)
 -  [Function `add_state`](#0x4_temp_state_add_state)
 -  [Function `borrow_state`](#0x4_temp_state_borrow_state)
@@ -17,6 +18,7 @@ This module is used to store temporary states for UTXO and Inscription.
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bag</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 </code></pre>
@@ -30,6 +32,38 @@ This module is used to store temporary states for UTXO and Inscription.
 
 
 <pre><code><b>struct</b> <a href="temp_state.md#0x4_temp_state_TempState">TempState</a> <b>has</b> store
+</code></pre>
+
+
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x4_temp_state_ErrorMaxTempStateExceeded"></a>
+
+
+
+<pre><code><b>const</b> <a href="temp_state.md#0x4_temp_state_ErrorMaxTempStateExceeded">ErrorMaxTempStateExceeded</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x4_temp_state_ErrorTempStateNotFound"></a>
+
+
+
+<pre><code><b>const</b> <a href="temp_state.md#0x4_temp_state_ErrorTempStateNotFound">ErrorTempStateNotFound</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x4_temp_state_MAX_TEMP_STATES"></a>
+
+
+
+<pre><code><b>const</b> <a href="temp_state.md#0x4_temp_state_MAX_TEMP_STATES">MAX_TEMP_STATES</a>: u64 = 20;
 </code></pre>
 
 
