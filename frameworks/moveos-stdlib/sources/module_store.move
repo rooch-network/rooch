@@ -345,9 +345,7 @@ module moveos_std::module_store {
         init_module_store();
         features::init_feature_store_for_test();
         let _ = account;
-        let module_object = borrow_mut_module_store();
         let module_bytes = COUNTER_MV_BYTES;
-        let m: MoveModule = move_module::new(module_bytes);
 
         let pkg_data = PackageData {
             package_name: std::string::utf8(b"counter"),
