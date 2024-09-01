@@ -30,6 +30,7 @@ import {
   RoochTransport,
   PaginatedInscriptionStateViews,
   InscriptionStateView,
+  InscriptionView,
   UTXOStateView,
   UTXOView,
   QueryInscriptionsParams,
@@ -111,12 +112,8 @@ export class RoochDataSource implements IDatasource {
   async getInscription({ id, decodeMetadata }: GetInscriptionOptions): Promise<Inscription> {
     const response: PaginatedInscriptionStateViews = await this.roochClient.queryInscriptions({
       filter: {
-        inscription_id: {
-          txid: id.split('i')[0],
-          index: parseInt(id.split('i')[1]),
-        },
-      },
-      limit: '1',
+        inscription_id: id,
+      }
     })
 
     if (response.data.length === 0) {
@@ -124,7 +121,7 @@ export class RoochDataSource implements IDatasource {
     }
 
     const inscriptionState: InscriptionStateView = response.data[0]
-    const inscriptionView = inscriptionState.value
+    const inscriptionView = inscriptionState.value as InscriptionView;
 
     let body: any | null = null
     if (inscriptionView.body) {
@@ -136,15 +133,15 @@ export class RoochDataSource implements IDatasource {
 
     // Convert the Rooch inscription state to the Inscription type expected by IDatasource
     const inscription: Inscription = {
-      id: `${inscriptionView.bitcoin_txid}i${inscriptionView.index}`,
+      id: `${inscriptionView.id}`,
       number: inscriptionView.inscription_number,
       owner: inscriptionState.owner ?? '',
       mediaContent: body ? Buffer.from(body).toString('base64') : '',
       mediaSize: body ? body.length : 0,
       mediaType: inscriptionView.content_type ?? '',
       timestamp: new Date(inscriptionState.created_at).getTime(),
-      genesis: inscriptionView.bitcoin_txid,
-      outpoint: `${inscriptionView.txid}:${inscriptionView.offset}`,
+      genesis: inscriptionView.location.output.txid,
+      outpoint: `${inscriptionView.location.output.txid}:${inscriptionView.location.output.vout}`,
       fee: 0,
       height: 0,
       sat: 0,
@@ -291,10 +288,10 @@ export class RoochDataSource implements IDatasource {
     }
 
     const inscription: Inscription = {
-      id: `${inscriptionView.bitcoin_txid}i${inscriptionView.index}`,
-      outpoint: `${inscriptionView.txid}:${inscriptionView.offset}`,
+      id: inscriptionView.id,
+      outpoint: `${inscriptionView.location.output.txid}:${inscriptionView.location.output.vout}`,
       owner: inscriptionState.owner ?? '',
-      genesis: inscriptionView.bitcoin_txid,
+      genesis: inscriptionView.location.output.txid,
       fee: 0, // Rooch doesn't provide this information
       height: 0, // Rooch doesn't provide this information
       number: inscriptionView.inscription_number,

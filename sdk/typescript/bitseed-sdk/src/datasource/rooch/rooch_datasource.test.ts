@@ -145,17 +145,21 @@ describe('RoochDataSource', () => {
           {
             owner: 'mockOwner',
             value: {
-              bitcoin_txid: 'mocktxid',
-              index: 0,
+              id: 'mocktxidi0',
               inscription_number: 1,
               body: '0x6d6f636b426f6479', // hex encoded 'mockBody'
               content_type: 'text/plain',
-              txid: 'mocktxid',
-              offset: '0',
               metadata: '0x6d6f636b4d65746164617461', // hex encoded 'mockMetadata'
-              parents: '',
-              is_curse: false,
+              parents: [],
               sequence_number: 0,
+              charms: 0,
+              location: {
+                output: {
+                  txid: 'mocktxid',
+                  vout: 0,
+                },
+                offset: '0'
+              }
             },
             created_at: '2023-01-01T00:00:00Z',
             flag: 0,
@@ -211,17 +215,21 @@ describe('RoochDataSource', () => {
           {
             owner: 'mockOwner',
             value: {
-              bitcoin_txid: 'mocktxid',
-              index: 0,
+              id: 'mocktxidi0',
               inscription_number: 1,
               body: '6d6f636b426f6479', // hex encoded 'mockBody'
               content_type: 'text/plain',
-              txid: 'mocktxid',
-              offset: '0',
               metadata: base64EncodedMetadata,
-              parents: '',
-              is_curse: false,
+              parents: [],
               sequence_number: 0,
+              charms: 0,
+              location: {
+                output: {
+                  txid: 'mocktxid',
+                  vout: 0,
+                },
+                offset: '0'
+              }
             },
             created_at: '2023-01-01T00:00:00Z',
             flag: 0,
@@ -267,17 +275,21 @@ describe('RoochDataSource', () => {
           {
             owner: 'mockOwner',
             value: {
-              bitcoin_txid: 'mocktxid',
-              index: 0,
+              id: 'mocktxidi0',
               inscription_number: 1,
               body: '6d6f636b426f6479', // hex encoded 'mockBody'
               content_type: 'text/plain',
-              txid: 'mocktxid',
-              offset: '0',
               metadata: base64EncodedMetadata,
-              parents: '',
-              is_curse: false,
+              parents: [],
               sequence_number: 0,
+              charms: 0,
+              location: {
+                output: {
+                  txid: 'mocktxid',
+                  vout: 0,
+                },
+                offset: '0'
+              }
             },
             created_at: '2023-01-01T00:00:00Z',
             flag: 0,
@@ -351,17 +363,21 @@ describe('RoochDataSource', () => {
           {
             owner: 'mockOwner',
             value: {
-              bitcoin_txid: 'mocktxid',
-              index: 0,
+              id: 'mocktxidi0',
               inscription_number: 1,
               body: '0x6d6f636b426f6479', // hex encoded 'mockBody'
               content_type: 'text/plain',
-              txid: 'mocktxid',
-              offset: '0',
               metadata: invalidEncodedMetadata,
-              parents: '',
-              is_curse: false,
+              parents: [],
               sequence_number: 0,
+              charms: 0,
+              location: {
+                output: {
+                  txid: 'mocktxid',
+                  vout: 0,
+                },
+                offset: '0'
+              }
             },
             created_at: '2023-01-01T00:00:00Z',
             flag: 0,
@@ -407,17 +423,21 @@ describe('RoochDataSource', () => {
           {
             owner: 'mockOwner',
             value: {
-              bitcoin_txid: 'mocktxid',
-              index: 0,
+              id: 'mocktxidi0',
               inscription_number: 1,
               body: '6d6f636b426f6479', // hex encoded 'mockBody'
               content_type: 'text/plain',
-              txid: 'mocktxid',
-              offset: '0',
               metadata: "", 
-              parents: '',
-              is_curse: false,
+              parents: [],
               sequence_number: 0,
+              charms: 0,
+              location: {
+                output: {
+                  txid: 'mocktxid',
+                  vout: 0,
+                },
+                offset: '0'
+              }
             },
             created_at: '2023-01-01T00:00:00Z',
             flag: 0,
@@ -480,9 +500,14 @@ describe('RoochDataSource', () => {
       mockTransport.setMockResponse('btc_queryInscriptions', {
         data: [{
           value: {
-            bitcoin_txid: 'mocktxid',
-            index: 0,
-            outpoint: 'mocktxid:0'
+            id: 'mocktxidi0',
+            location: {
+              output: {
+                txid: 'mocktxid',
+                vout: 0,
+              },
+              offset: '0'
+            }
           }
         }],
         has_next_page: false,
@@ -533,9 +558,14 @@ describe('RoochDataSource', () => {
       mockTransport.setMockResponse('btc_queryInscriptions', {
         data: [{
           value: {
-            bitcoin_txid: 'mocktxid',
-            index: 0,
-            outpoint: 'mocktxid:0'
+            id: 'mocktxidi0',
+            location: {
+              output: {
+                txid: 'mocktxid',
+                vout: 0,
+              },
+              offset: '0'
+            }
           }
         }],
         has_next_page: false,
@@ -578,9 +608,14 @@ describe('RoochDataSource', () => {
       mockTransport.setMockResponse('btc_queryInscriptions', {
         data: [{
           value: {
-            bitcoin_txid: 'mocktxid',
-            index: 0,
-            outpoint: 'mocktxid:0'
+            id: 'mocktxidi0',
+            location: {
+              output: {
+                txid: 'mocktxid',
+                vout: 0,
+              },
+              offset: '0'
+            }
           }
         }],
         has_next_page: false,
@@ -622,9 +657,14 @@ describe('RoochDataSource', () => {
       mockTransport.setMockResponse('btc_queryInscriptions', {
         data: [{
           value: {
-            bitcoin_txid: 'mocktxid',
-            index: 0,
-            outpoint: 'mocktxid:0'
+            id: 'mocktxidi0',
+            location: {
+              output: {
+                txid: 'mocktxid',
+                vout: 0,
+              },
+              offset: '0'
+            }
           }
         }],
         has_next_page: false,
@@ -649,17 +689,21 @@ describe('RoochDataSource', () => {
         {
           owner: mockOwner,
           value: {
-            bitcoin_txid: 'mocktxid1',
-            index: 0,
+            id: 'mocktxid1i0',
             inscription_number: 1,
             body: '6d6f636b426f647931', // hex encoded 'mockBody1'
             content_type: 'text/plain',
-            txid: 'mocktxid1',
-            offset: '0',
             metadata: '',
-            parents: '',
-            is_curse: false,
+            parents: [],
             sequence_number: 0,
+            charms: 0,
+            location: {
+              output: {
+                txid: 'mocktxid1',
+                vout: 0,
+              },
+              offset: '0'
+            }
           },
           created_at: '2023-01-01T00:00:00Z',
           flag: 0,
@@ -711,17 +755,21 @@ describe('RoochDataSource', () => {
         {
           owner: mockOwner,
           value: {
-            bitcoin_txid: 'mocktxid1',
-            index: 0,
+            id: 'mocktxid1i0',
             inscription_number: 1,
             body: '6d6f636b426f647931', // hex encoded 'mockBody1'
             content_type: 'text/plain',
-            txid: 'mocktxid1',
-            offset: '0',
             metadata: '',
-            parents: '',
-            is_curse: false,
+            parents: [],
             sequence_number: 0,
+            charms: 0,
+            location: {
+              output: {
+                txid: 'mocktxid1',
+                vout: 0,
+              },
+              offset: '0'
+            }
           },
           created_at: '2023-01-01T00:00:00Z',
           flag: 0,
@@ -738,17 +786,21 @@ describe('RoochDataSource', () => {
         {
           owner: mockOwner,
           value: {
-            bitcoin_txid: 'mocktxid2',
-            index: 1,
+            id: 'mocktxid2i1',
             inscription_number: 2,
             body: '6d6f636b426f647932', // hex encoded 'mockBody2'
             content_type: 'text/plain',
-            txid: 'mocktxid2',
-            offset: '0',
             metadata: '',
-            parents: '',
-            is_curse: false,
+            parents: [],
             sequence_number: 0,
+            charms: 0,
+            location: {
+              output: {
+                txid: 'mocktxid2',
+                vout: 1,
+              },
+              offset: '0'
+            }
           },
           created_at: '2023-01-02T00:00:00Z',
           flag: 0,
@@ -807,7 +859,7 @@ describe('RoochDataSource', () => {
           mediaType: 'text/plain',
           timestamp: new Date('2023-01-02T00:00:00Z').getTime(),
           genesis: 'mocktxid2',
-          outpoint: 'mocktxid2:0',
+          outpoint: 'mocktxid2:1',
           fee: 0,
           height: 0,
           sat: 0,
@@ -830,17 +882,21 @@ describe('RoochDataSource', () => {
         {
           owner: mockOwner,
           value: {
-            bitcoin_txid: 'mocktxid1',
-            index: 0,
+            id: 'mocktxid1i0',
             inscription_number: 1,
             body: '6d6f636b426f647931', // hex encoded 'mockBody1'
             content_type: 'text/plain',
-            txid: 'mocktxid1',
-            offset: '0',
             metadata: base64EncodedMetadata,
-            parents: '',
-            is_curse: false,
+            parents: [],
             sequence_number: 0,
+            charms: 0,
+            location: {
+              output: {
+                txid: 'mocktxid1',
+                vout: 0,
+              },
+              offset: '0'
+            }
           },
           created_at: '2023-01-01T00:00:00Z',
           flag: 0,
@@ -944,17 +1000,21 @@ describe('RoochDataSource', () => {
         {
           owner: mockOwner,
           value: {
-            bitcoin_txid: 'mocktxid1',
-            index: 0,
+            id: 'mocktxid1i0',
             inscription_number: 1,
             body: '6d6f636b426f647931', // hex encoded 'mockBody1'
             content_type: 'text/plain',
-            txid: 'mocktxid1',
-            offset: '0',
             metadata: invalidEncodedMetadata,
-            parents: '',
-            is_curse: false,
+            parents: [],
             sequence_number: 0,
+            charms: 0,
+            location: {
+              output: {
+                txid: 'mocktxid1',
+                vout: 0,
+              },
+              offset: '0'
+            }
           },
           created_at: '2023-01-01T00:00:00Z',
           flag: 0,

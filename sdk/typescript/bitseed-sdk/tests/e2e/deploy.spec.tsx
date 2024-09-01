@@ -46,7 +46,7 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
-  await testBox.unloadContainer()
+  await testBox.cleanEnv()
 })
 
 test('Deploy move tick with simple', async ({ page, mount }) => {
@@ -74,5 +74,5 @@ test('Deploy move tick with simple', async ({ page, mount }) => {
   await expect(component).toContainText(`Rooch Server: ${roochServerAddress}`)
 
   // Optionally, check for the presence of the inscriptionId in the output/result
-  await expect(component).toContainText('Deploy Result: ', { timeout: 300000 })
+  await expect(component).toContainText('Deploy Result: ', { timeout: 20000 })
 })

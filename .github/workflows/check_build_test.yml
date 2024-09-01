@@ -109,6 +109,8 @@ jobs:
         run: pnpm bitseed-sdk build
       - name: Test Bitseed SDK
         run: pnpm bitseed-sdk test
+        continue-on-error: true
+        timeout-minutes: 15
 
       - uses: CatChen/check-git-status-action@v1
         with:

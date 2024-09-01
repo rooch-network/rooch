@@ -15,7 +15,7 @@
     "test:unit": "vitest run src",
     "test:unit:debug": "vitest run src/bitseed.test.ts",
     "test:e2e": "pnpm run build && playwright test -c playwright-ct.config.ts",
-    "test:e2e:debug": "pnpm run build && playwright test -c playwright-ct.config.ts -g deploy",
+    "test:e2e:debug": "pnpm run build && playwright test -c playwright-ct.config.ts --debug -g mint",
     "eslint:check": "eslint --max-warnings=0 .",
     "eslint:fix": "pnpm eslint:check --fix",
     "prettier:check": "prettier -c --ignore-unknown .",

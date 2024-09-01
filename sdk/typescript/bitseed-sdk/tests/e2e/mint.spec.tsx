@@ -42,16 +42,18 @@ test.beforeAll(async () => {
       bitseed,
       path.join(__dirname, '../data/generator.wasm'),
     )
+    console.log("mint generatorID:", generatorID)
     await sleep(10000)
 
     const deployArg = `{"height":{"type":"range","data":{"min":1,"max":1000}}}`
     moveTickInscriptionId = await deployTestTick(bitseed, generatorID, 'move', 1000, deployArg)
+    console.log("mint moveTickInscriptionId:", moveTickInscriptionId)
     await sleep(10000)
   }
 })
 
 test.afterAll(async () => {
-  await testBox.unloadContainer()
+  await testBox.cleanEnv()
 })
 
 test('mint tick', async ({ mount }) => {
@@ -69,9 +71,11 @@ test('mint tick', async ({ mount }) => {
   await component.locator('input[placeholder="TickDeployID"]').fill(moveTickInscriptionId)
   await component.locator('input[placeholder="UserInput"]').fill('20240306')
 
+  await sleep(1000)
+
   // Click the mint button
   await component.locator('button:has-text("Mint")').click()
 
   // Optionally, check for the presence of the inscriptionId in the output/result
-  await expect(component).toContainText('Mint Result: ', { timeout: 300000 })
+  await expect(component).toContainText('Mint Result: ', { timeout: 20000 })
 })

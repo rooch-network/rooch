@@ -12,7 +12,7 @@ describe('Bitcoin Assets API', () => {
     testBox = TestBox.setup()
     await testBox.loadBitcoinEnv()
     await testBox.loadORDEnv()
-    await testBox.loadRoochEnv("local", 0)
+    await testBox.loadRoochEnv('local', 0)
   })
 
   afterAll(async () => {
@@ -51,7 +51,10 @@ describe('Bitcoin Assets API', () => {
     const addr = JSON.parse(result!.output).addresses[0]
 
     // mint utxo
-    result = await testBox.bitcoinContainer?.executeRpcCommandRaw([], 'generatetoaddress', ['101', addr])
+    result = await testBox.bitcoinContainer?.executeRpcCommandRaw([], 'generatetoaddress', [
+      '101',
+      addr,
+    ])
     expect(result).toBeDefined()
 
     // Then sleep: "10" wait ord sync and index
@@ -70,7 +73,10 @@ describe('Bitcoin Assets API', () => {
     expect(result!.exitCode).eq(0)
 
     // mint utxo
-    result = await testBox.bitcoinContainer?.executeRpcCommandRaw([], 'generatetoaddress', ['1', addr])
+    result = await testBox.bitcoinContainer?.executeRpcCommandRaw([], 'generatetoaddress', [
+      '1',
+      addr,
+    ])
     expect(result).toBeDefined()
 
     // wait rooch indexer

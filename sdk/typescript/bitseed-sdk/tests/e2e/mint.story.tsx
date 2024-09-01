@@ -45,6 +45,7 @@ export default function MintStory({ roochServerAddress }: MintStoryProps) {
         },
       }
 
+      console.log(`handleMint tick:${tick}, userInput:${userInput}, mintOptions:${mintOptions}`)
       const inscriptionId = await bitseed.mint(tick, userInput, mintOptions)
 
       setMintResult(inscriptionId)
