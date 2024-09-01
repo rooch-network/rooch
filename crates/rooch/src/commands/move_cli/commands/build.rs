@@ -11,7 +11,10 @@ use async_trait::async_trait;
 use bcs;
 use clap::Parser;
 use move_cli::{base::reroot_path, Move};
+use moveos_types::move_std::string::MoveString;
+use moveos_types::moveos_std::module_store::PackageData;
 use moveos_verifier::build::run_verifier;
+use rooch_types::error::RoochError;
 use rooch_types::error::RoochResult;
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -88,8 +91,25 @@ impl CommandAction<Option<Value>> for BuildCommand {
                 .map(|unit| unit.unit.serialize(None))
                 .collect::<Vec<_>>();
 
+            // Get the modules from the package
+            let modules = package.root_modules_map();
+            let empty_modules = modules.iter_modules_owned().is_empty();
+            let pkg_address = if !empty_modules {
+                let first_module = &modules.iter_modules_owned()[0];
+                first_module.self_id().address().to_owned()
+            } else {
+                return Err(RoochError::MoveCompilationError(format!(
+                    "compiling move modules error! Is the project or module empty: {:?}",
+                    empty_modules,
+                )));
+            };
+            let package_data = PackageData::new(
+                MoveString::from(package.compiled_package_info.package_name.as_str()),
+                pkg_address,
+                blob,
+            );
             let mut file = BufWriter::new(File::create(export_path.clone())?);
-            bcs::serialize_into(&mut file, &blob)?;
+            bcs::serialize_into(&mut file, &package_data)?;
             file.flush()?;
 
             println!("Exported package to {}", export_path.display());
