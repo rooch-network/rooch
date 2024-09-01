@@ -112,7 +112,8 @@ impl<'a> MultisignAccountModule<'a> {
     const GENERATE_MULTISIGN_ADDRESS_FUNCTION_NAME: &'static IdentStr =
         ident_str!("generate_multisign_address");
     const IS_PARTICIPANT_FUNCTION_NAME: &'static IdentStr = ident_str!("is_participant");
-    const IS_MULTISIG_ACCOUNT_FUNCTION_NAME: &'static IdentStr = ident_str!("is_multisig_account");
+    const IS_MULTISIGN_ACCOUNT_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("is_multisign_account");
     const PARTICIPANTS_FUNCTION_NAME: &'static IdentStr = ident_str!("participants");
     const THRESHOLD_FUNCTION_NAME: &'static IdentStr = ident_str!("threshold");
 
@@ -177,12 +178,12 @@ impl<'a> MultisignAccountModule<'a> {
 
     pub fn is_multisign_account(&self, multisign_address: AccountAddress) -> Result<bool> {
         let function_call = Self::create_function_call(
-            Self::IS_MULTISIG_ACCOUNT_FUNCTION_NAME,
+            Self::IS_MULTISIGN_ACCOUNT_FUNCTION_NAME,
             vec![],
             vec![multisign_address.to_move_value()],
         );
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
-        let is_multisig_account = self
+        let is_multisign_account = self
             .caller
             .call_function(&ctx, function_call)?
             .into_result()
@@ -190,7 +191,7 @@ impl<'a> MultisignAccountModule<'a> {
                 let value = values.pop().expect("should have one return value");
                 bcs::from_bytes::<bool>(&value.value).expect("should be a valid bool")
             })?;
-        Ok(is_multisig_account)
+        Ok(is_multisign_account)
     }
 
     pub fn threshold(&self, multisign_address: AccountAddress) -> Result<u64> {
