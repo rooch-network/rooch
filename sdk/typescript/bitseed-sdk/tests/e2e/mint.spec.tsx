@@ -42,12 +42,12 @@ test.beforeAll(async () => {
       bitseed,
       path.join(__dirname, '../data/generator.wasm'),
     )
-    console.log("mint generatorID:", generatorID)
+    console.log('mint generatorID:', generatorID)
     await sleep(10000)
 
     const deployArg = `{"height":{"type":"range","data":{"min":1,"max":1000}}}`
     moveTickInscriptionId = await deployTestTick(bitseed, generatorID, 'move', 1000, deployArg)
-    console.log("mint moveTickInscriptionId:", moveTickInscriptionId)
+    console.log('mint moveTickInscriptionId:', moveTickInscriptionId)
     await sleep(10000)
   }
 })

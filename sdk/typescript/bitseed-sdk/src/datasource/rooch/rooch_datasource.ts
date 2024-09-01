@@ -113,7 +113,7 @@ export class RoochDataSource implements IDatasource {
     const response: PaginatedInscriptionStateViews = await this.roochClient.queryInscriptions({
       filter: {
         inscription_id: id,
-      }
+      },
     })
 
     if (response.data.length === 0) {
@@ -121,7 +121,7 @@ export class RoochDataSource implements IDatasource {
     }
 
     const inscriptionState: InscriptionStateView = response.data[0]
-    const inscriptionView = inscriptionState.value as InscriptionView;
+    const inscriptionView = inscriptionState.value as InscriptionView
 
     let body: any | null = null
     if (inscriptionView.body) {
