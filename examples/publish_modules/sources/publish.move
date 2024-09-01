@@ -8,18 +8,12 @@
 /// 2. Run the following command to get the bytecode of the compiled module: `xxd -c 99999 -p examples/counter/build/counter/bytecode_modules/counter.mv`
 /// 3. Copy the bytecode of the compiled module from the output of the above command, and update the `module_bytes` variable in the tests below.
 module rooch_examples::publish {
-    use std::vector;
-    use moveos_std::move_module::{Self, MoveModule};
-    use moveos_std::module_store;
-    
-
-    public entry fun publish_modules_entry(account: &signer, module_bytes: vector<u8>) {
-        let m: MoveModule = move_module::new(module_bytes);
-        let module_store = module_store::borrow_mut_module_store();
-        module_store::publish_modules(module_store, account, vector::singleton(m));
-    }
-
     // TODO: uncomment when the move_module::binding_module_address is ready
+
+    // use std::vector;
+    // use moveos_std::move_module::{Self, MoveModule};
+    // use moveos_std::module_store;
+        
     // public entry fun publish_counter_example(account: &signer) {
     //     // The following is the bytes and hex of the compiled module: example/counter/sources/counter.move
     //     // with account 0x42

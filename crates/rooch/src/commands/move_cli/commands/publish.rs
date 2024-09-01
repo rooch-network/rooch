@@ -57,11 +57,6 @@ pub struct Publish {
     #[clap(long)]
     pub by_move_action: bool,
 
-    // TODO: remove this when reset genesis.
-    /// This flag is used to publish modules with old ABI: moveos_std::module_store::publish_modules_entry
-    #[clap(long, default_value = "false")]
-    pub legacy: bool,
-
     /// Return command outputs in json format
     #[clap(long, default_value = "false")]
     json: bool,
@@ -131,29 +126,20 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         let sender = context.resolve_address(self.tx_options.sender)?.into();
         // Prepare and execute the transaction based on the action type
         let tx_result = if !self.by_move_action {
-            let (entrypoint, args) = if self.legacy {
-                let args = bcs::to_bytes(&bundles).unwrap();
-                println!("[Warning] You are publishing modules with old abi: publish_modules_entry. This is deprecated and will be removed in the future.");
-                ("publish_modules_entry".to_owned(), args)
-            } else {
-                let pkg_data = PackageData::new(
-                    MoveString::from(package.compiled_package_info.package_name.as_str()),
-                    pkg_address,
-                    bundles,
-                );
-                let pkg_bytes = bcs::to_bytes(&pkg_data).unwrap();
-                (
-                    "publish_package_entry".to_owned(),
-                    bcs::to_bytes(&pkg_bytes).unwrap(),
-                )
-            };
+            let pkg_data = PackageData::new(
+                MoveString::from(package.compiled_package_info.package_name.as_str()),
+                pkg_address,
+                bundles,
+            );
+            let pkg_bytes = bcs::to_bytes(&pkg_data).unwrap();
+            let args = bcs::to_bytes(&pkg_bytes).unwrap();
             let action = MoveAction::new_function_call(
                 FunctionId::new(
                     ModuleId::new(
                         MOVEOS_STD_ADDRESS,
                         Identifier::new("module_store".to_owned()).unwrap(),
                     ),
-                    Identifier::new(entrypoint).unwrap(),
+                    Identifier::new("publish_package_entry".to_owned()).unwrap(),
                 ),
                 vec![],
                 vec![args],

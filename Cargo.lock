@@ -4041,6 +4041,7 @@ dependencies = [
  "move-model",
  "move-package",
  "moveos-compiler",
+ "moveos-types",
  "moveos-verifier",
  "once_cell",
  "serde 1.0.208",

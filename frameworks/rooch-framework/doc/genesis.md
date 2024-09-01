@@ -24,7 +24,6 @@
 <b>use</b> <a href="gas_coin.md#0x3_gas_coin">0x3::gas_coin</a>;
 <b>use</b> <a href="onchain_config.md#0x3_onchain_config">0x3::onchain_config</a>;
 <b>use</b> <a href="transaction_fee.md#0x3_transaction_fee">0x3::transaction_fee</a>;
-<b>use</b> <a href="upgrade.md#0x3_upgrade">0x3::upgrade</a>;
 </code></pre>
 
 
@@ -55,6 +54,15 @@ GenesisContext is a genesis init parameters in the TxContext.
 
 
 
+<a name="0x3_genesis_MoveosStdAccount"></a>
+
+
+
+<pre><code><b>const</b> <a href="genesis.md#0x3_genesis_MoveosStdAccount">MoveosStdAccount</a>: <b>address</b> = 0x2;
+</code></pre>
+
+
+
 <a name="0x3_genesis_BitcoinMoveAccount"></a>
 
 
@@ -69,15 +77,6 @@ GenesisContext is a genesis init parameters in the TxContext.
 
 
 <pre><code><b>const</b> <a href="genesis.md#0x3_genesis_MoveStdAccount">MoveStdAccount</a>: <b>address</b> = 0x1;
-</code></pre>
-
-
-
-<a name="0x3_genesis_MoveosStdAccount"></a>
-
-
-
-<pre><code><b>const</b> <a href="genesis.md#0x3_genesis_MoveosStdAccount">MoveosStdAccount</a>: <b>address</b> = 0x2;
 </code></pre>
 
 
