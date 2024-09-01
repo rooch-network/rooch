@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { beforeAll, describe, it, expect } from 'vitest'
+import { beforeAll, describe, it, expect, afterAll } from 'vitest'
 
 import { TestBox } from '../setup.js'
 
@@ -10,6 +10,10 @@ describe('Module Abi API', () => {
 
   beforeAll(async () => {
     testBox = TestBox.setup()
+  })
+
+  afterAll(async () => {
+    testBox.cleanEnv()
   })
 
   it('Get module abi', async () => {

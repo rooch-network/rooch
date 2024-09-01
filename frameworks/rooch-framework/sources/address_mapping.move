@@ -105,19 +105,7 @@ module rooch_framework::address_mapping{
     public fun resolve_bitcoin(rooch_address: address): Option<BitcoinAddress> {
         let am = Self::borrow_rooch_to_bitcoin();
         Self::resolve_bitcoin_address(am, rooch_address)
-    }
-
-    /// Generate a rooch address via bitcoin multi-chain address
-    /// This function will deprecated in the future, client should directly generate rooch address via bitcoin address.
-    public fun resolve_or_generate(maddress: MultiChainAddress): address {
-        if (multichain_address::is_rooch_address(&maddress)) {
-            return multichain_address::into_rooch_address(maddress)
-        };
-        if (multichain_address::is_bitcoin_address(&maddress)) {
-            return bitcoin_address::to_rooch_address(&multichain_address::into_bitcoin_address(maddress))
-        };
-        abort ErrorUnsupportedAddress
-    }
+    } 
 
     /// Check if a multi-chain address is bound to a rooch address
     public fun exists_mapping(maddress: MultiChainAddress): bool {

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import * as fs from 'fs'
-import tmp from 'tmp'
 import { RoochAddress } from '../src/address/index.js'
 import { getRoochNodeUrl, RoochClient } from '../src/client/index.js'
 import { Secp256k1Keypair } from '../src/keypairs/index.js'
@@ -14,12 +13,13 @@ import { TestBox as TestBoxA, RoochContainer } from '@roochnetwork/test-suite'
 export const DEFAULT_NODE_URL = import.meta.env.VITE_FULLNODE_URL ?? getRoochNodeUrl('localnet')
 
 export class TestBox extends TestBoxA {
-  private client?: RoochClient
+  private client: RoochClient
   keypair: Secp256k1Keypair
 
   constructor(keypair: Secp256k1Keypair) {
     super()
     this.keypair = keypair
+    this.client = new RoochClient({ url: DEFAULT_NODE_URL })
   }
 
   static setup(): TestBox {
@@ -40,19 +40,8 @@ export class TestBox extends TestBoxA {
     return
   }
 
-  getClient(url = DEFAULT_NODE_URL): RoochClient {
-    if (url === DEFAULT_NODE_URL) {
-      if (!this.client) {
-        this.client = new RoochClient({
-          url,
-        })
-      }
-      return this.client
-    }
-
-    return new RoochClient({
-      url,
-    })
+  getClient(): RoochClient {
+    return this.client
   }
 
   address(): RoochAddress {
@@ -77,20 +66,17 @@ export class TestBox extends TestBoxA {
       namedAddresses: 'rooch_examples=default',
     },
   ) {
-    tmp.setGracefulCleanup()
-
-    const tmpDir = box.createTmpDir()
     const namedAddresses = options.namedAddresses.replaceAll(
       'default',
       box.address().toHexAddress(),
     )
     this.roochCommand(
-      `move build -p ${packagePath} --named-addresses ${namedAddresses} --install-dir ${tmpDir.name} --export --json`,
+      `move build -p ${packagePath} --named-addresses ${namedAddresses} --install-dir ${this.tmpDir.name} --export --json`,
     )
 
     let fileBytes: Uint8Array
     try {
-      fileBytes = fs.readFileSync(tmpDir.name + '/package.blob')
+      fileBytes = fs.readFileSync(this.tmpDir.name + '/package.blob')
       const tx = new Transaction()
       tx.callFunction({
         target: '0x2::module_store::publish_modules_entry',

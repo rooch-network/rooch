@@ -7,7 +7,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use super::super::hash::{HashValue, SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE};
+use super::super::hash::{SMTNodeHash, SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE};
 use super::super::nibble_path::NibblePath;
 use super::*;
 use crate::{
@@ -17,17 +17,17 @@ use crate::{
 use proptest::prelude::*;
 use std::{panic, rc::Rc};
 
-fn hash_internal(left: HashValue, right: HashValue) -> HashValue {
+fn hash_internal(left: SMTNodeHash, right: SMTNodeHash) -> SMTNodeHash {
     SparseMerkleInternalNode::new(left, right).merkle_hash()
 }
 
-fn hash_leaf(key: HashValue, value_hash: HashValue) -> HashValue {
+fn hash_leaf(key: SMTNodeHash, value_hash: SMTNodeHash) -> SMTNodeHash {
     SparseMerkleLeafNode::new(key, value_hash).merkle_hash()
 }
 
 // Generate a random node key with 63 nibbles.
 fn random_63nibblepath() -> NibblePath {
-    let hash = HashValue::random();
+    let hash = SMTNodeHash::random();
     let mut bytes = hash.to_vec();
     *bytes.last_mut().unwrap() &= 0xf0;
     NibblePath::new_odd(bytes)
@@ -39,7 +39,7 @@ fn gen_leaf_keys(nibble_path: &NibblePath, nibble: Nibble) -> TestKey {
     assert_eq!(nibble_path.num_nibbles(), 63);
     let mut np = nibble_path.clone();
     np.push(nibble);
-    TestKey(HashValue::from_slice(np.bytes()).unwrap())
+    TestKey(SMTNodeHash::from_slice(np.bytes()).unwrap())
 }
 
 #[test]
@@ -58,7 +58,7 @@ fn test_encode_decode() {
     children.insert(Nibble::from(1), Child::new(leaf1_node.merkle_hash(), true));
     children.insert(Nibble::from(2), Child::new(leaf2_node.merkle_hash(), true));
 
-    let account_key = TestKey(HashValue::random());
+    let account_key = TestKey(SMTNodeHash::random());
     let nodes = vec![
         Node::new_internal(children),
         Node::new_leaf(account_key, TestValue::from(vec![0x02])),
@@ -110,7 +110,7 @@ fn test_internal_validity() {
         let mut children = Children::default();
         children.insert(
             Nibble::from(1),
-            Child::new(HashValue::random(), true /* is_leaf */),
+            Child::new(SMTNodeHash::random(), true /* is_leaf */),
         );
         InternalNode::new(children);
     });
@@ -425,8 +425,8 @@ fn test_internal_hash_and_proof() {
 
         let index1 = Nibble::from(4);
         let index2 = Nibble::from(15);
-        let hash1 = HashValue::random();
-        let hash2 = HashValue::random();
+        let hash1 = SMTNodeHash::random();
+        let hash2 = SMTNodeHash::random();
         children.insert(index1, Child::new(hash1, false));
         children.insert(index2, Child::new(hash2, false));
         let internal_node = InternalNode::new(children);
@@ -518,8 +518,8 @@ fn test_internal_hash_and_proof() {
 
         let index1 = Nibble::from(0);
         let index2 = Nibble::from(7);
-        let hash1 = HashValue::random();
-        let hash2 = HashValue::random();
+        let hash1 = SMTNodeHash::random();
+        let hash2 = SMTNodeHash::random();
 
         children.insert(index1, Child::new(hash1, false));
         children.insert(index2, Child::new(hash2, false));
@@ -636,7 +636,7 @@ impl BinaryTreeNode {
         })
     }
 
-    fn hash(&self) -> HashValue {
+    fn hash(&self) -> SMTNodeHash {
         match self {
             BinaryTreeNode::Internal(node) => node.hash,
             BinaryTreeNode::Child(node) => node.hash,
@@ -646,7 +646,7 @@ impl BinaryTreeNode {
 }
 
 impl SMTHash for BinaryTreeNode {
-    fn merkle_hash(&self) -> HashValue {
+    fn merkle_hash(&self) -> SMTNodeHash {
         self.hash()
     }
 }
@@ -670,7 +670,7 @@ struct BinaryTreeInternalNode {
     width: u8,
     left: Rc<BinaryTreeNode>,
     right: Rc<BinaryTreeNode>,
-    hash: HashValue,
+    hash: SMTNodeHash,
 }
 
 impl BinaryTreeInternalNode {
@@ -690,7 +690,7 @@ impl BinaryTreeInternalNode {
 #[derive(Clone, Copy)]
 struct BinaryTreeChildNode {
     index: u8,
-    hash: HashValue,
+    hash: SMTNodeHash,
     is_leaf: bool,
 }
 
@@ -734,7 +734,7 @@ impl NaiveInternalNode {
         BinaryTreeNode::new_internal(begin, width, left, right)
     }
 
-    fn get_child_with_siblings(&self, n: u8) -> (Option<NodeKey>, Vec<HashValue>) {
+    fn get_child_with_siblings(&self, n: u8) -> (Option<NodeKey>, Vec<SMTNodeHash>) {
         let mut current_node = Rc::clone(&self.root);
         let mut siblings = Vec::new();
 

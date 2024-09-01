@@ -48,6 +48,8 @@ xorf = { workspace = true }
 xxhash-rust = { workspace = true, features = ["xxh3"] }
 vergen-pretty = { workspace = true }
 prometheus = { workspace = true }
+lazy_static = { workspace = true }
+schemars = { workspace = true }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }

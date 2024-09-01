@@ -7,7 +7,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use super::hash::HashValue;
+use super::hash::*;
 use super::{
     node_type::{Node, NodeKey},
     NodeBatch, StaleNodeIndex, TreeReader, TreeUpdateBatch, TreeWriter,
@@ -25,7 +25,7 @@ use std::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
-pub(crate) struct TestKey(pub HashValue);
+pub(crate) struct TestKey(pub SMTNodeHash);
 
 impl From<H256> for TestKey {
     fn from(hash: H256) -> Self {
@@ -40,16 +40,16 @@ impl From<TestKey> for H256 {
 }
 
 impl TestKey {
-    pub fn new(value: [u8; HashValue::LENGTH]) -> TestKey {
-        Self(HashValue::new(value))
+    pub fn new(value: [u8; SMTNodeHash::LEN]) -> TestKey {
+        Self(SMTNodeHash::new(value))
     }
 
-    pub fn new_with_hash(hash_value: HashValue) -> TestKey {
+    pub fn new_with_hash(hash_value: SMTNodeHash) -> TestKey {
         Self(hash_value)
     }
 
     pub fn random() -> TestKey {
-        Self::new_with_hash(HashValue::random())
+        Self::new_with_hash(SMTNodeHash::random())
     }
 
     pub fn to_vec(self) -> Vec<u8> {
@@ -72,7 +72,7 @@ pub(crate) struct TestValue {
 impl TestValue {
     pub fn random() -> Self {
         Self {
-            value: HashValue::random().to_vec(),
+            value: SMTNodeHash::random().to_vec(),
         }
     }
 }
@@ -152,7 +152,7 @@ impl<K, V> MockTreeStore<K, V> {
         Ok(())
     }
 
-    pub fn purge_stale_nodes(&self, state_root_hash: HashValue) -> Result<()> {
+    pub fn purge_stale_nodes(&self, state_root_hash: SMTNodeHash) -> Result<()> {
         let mut wlocked = self.0.write().unwrap();
 
         // Only records retired before or at `least_readable_version` can be purged in order

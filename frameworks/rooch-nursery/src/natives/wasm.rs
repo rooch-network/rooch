@@ -21,7 +21,7 @@ use moveos_wasm::wasm::{
     create_wasm_instance, get_instance_pool, insert_wasm_instance, put_data_on_stack,
 };
 
-use crate::natives::helpers::{make_module_natives, make_native};
+use moveos_stdlib::natives::helpers::{make_module_natives, make_native};
 
 const E_INSTANCE_NO_EXISTS: u64 = 1;
 // const E_ARG_NOT_U32: u64 = 2;

@@ -29,6 +29,7 @@ pub mod bitcoin_multisign_validator;
 /// Module binding for the Framework
 pub mod brc20;
 pub mod genesis;
+pub mod inscription_updater;
 pub mod multisign_account;
 pub mod network;
 pub mod ord;

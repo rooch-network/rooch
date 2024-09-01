@@ -28,9 +28,9 @@ use rooch_types::crypto::RoochKeyPair;
 use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
 use rooch_types::transaction::{L1BlockWithBody, L1Transaction, RoochTransaction};
 use std::collections::VecDeque;
-use std::env;
 use std::path::Path;
 use std::sync::Arc;
+use std::{env, vec};
 use tempfile::TempDir;
 use tokio::runtime::Runtime;
 use tracing::info;
@@ -151,20 +151,25 @@ impl RustBindingTest {
         Ok(execute_result)
     }
 
-    pub fn execute_l1_block_and_tx(&mut self, l1_block: L1BlockWithBody) -> Result<()> {
+    pub fn execute_l1_block_and_tx(
+        &mut self,
+        l1_block: L1BlockWithBody,
+    ) -> Result<Vec<ExecuteTransactionResult>> {
         let l1_txs = self.execute_l1_block(l1_block.clone())?;
         let tx_len = l1_txs.len();
         let mut total_gas_used = 0;
+        let mut results = vec![];
         for l1_tx in l1_txs {
             let resut = self.execute_l1_tx(l1_tx)?;
             total_gas_used += resut.output.gas_used;
+            results.push(resut);
         }
         let avg_gas_used = total_gas_used / tx_len as u64;
         info!(
             "execute l1 block total gas used: {}, avg gas used: {}",
             total_gas_used, avg_gas_used
         );
-        Ok(())
+        Ok(results)
     }
 
     pub fn execute_l1_block(&mut self, l1_block: L1BlockWithBody) -> Result<Vec<L1Transaction>> {

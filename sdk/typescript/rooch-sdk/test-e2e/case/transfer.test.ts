@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, afterAll } from 'vitest'
 import { TestBox } from '../setup.js'
 import { Transaction } from '../../src/transactions/index.js'
 import { Secp256k1Keypair } from '../../src/keypairs/index.js'
@@ -12,6 +12,10 @@ describe('Checkpoints Transfer API', () => {
 
   beforeAll(async () => {
     testBox = TestBox.setup()
+  })
+
+  afterAll(async () => {
+    testBox.cleanEnv()
   })
 
   it('Transfer gas coin should be success', async () => {

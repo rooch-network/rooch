@@ -12,7 +12,7 @@ module rooch_nursery::inscribe_factory {
     use moveos_std::object::Object;
     use moveos_std::string_utils;
     use moveos_std::simple_map::{Self, SimpleMap};
-    use moveos_std::wasm;
+    use rooch_nursery::wasm;
     use moveos_std::cbor;
 
     use bitcoin_move::types;
@@ -167,18 +167,18 @@ module rooch_nursery::inscribe_factory {
         let generator = get_SFT_string_attribute(&attributes, b"generator");
         let factory = get_SFT_string_attribute(&attributes, b"factory");
         if (option::is_none(&generator) && option::is_none(&factory)) {
-            simple_map::drop(attributes);
+            
             return err_str(b"metadata.attributes.generator or metadata.attributes.factory is required")
         };
 
         if (option::is_some(&generator) && option::is_some(&factory)) {
-            simple_map::drop(attributes);
+            
             return err_str(b"metadata.attributes.generator and metadata.attributes.factory can not exist at the same time")
         };
         if (option::is_some(&generator)) {
             let is_valid_result= is_valid_generator_uri(option::borrow(&generator));
             if (is_err(&is_valid_result)) {
-                simple_map::drop(attributes);
+                
                 return is_valid_result
             };
         };
@@ -186,7 +186,7 @@ module rooch_nursery::inscribe_factory {
             //TODO check factory
         };
 
-        simple_map::drop(attributes);
+        
         ok(true)
     }
 
@@ -260,7 +260,7 @@ module rooch_nursery::inscribe_factory {
 
         
         tick_info::deploy_tick(bitseed::metaprotocol(), tick, inscription_id_option, factory_option, max, repeat, has_user_input, deploy_args);
-        simple_map::drop(attributes);
+        
         (true, option::none<String>())
     }
     
@@ -275,7 +275,7 @@ module rooch_nursery::inscribe_factory {
         let amount = get_SFT_amount(metadata);
 
         if (!tick_info::is_deployed(bitseed::metaprotocol(), tick)) {
-            simple_map::drop(attributes);
+            
             return err_str(b"the tick is not deployed")
         };
         let tick_info = tick_info::borrow_tick_info(bitseed::metaprotocol(), tick);
@@ -287,7 +287,7 @@ module rooch_nursery::inscribe_factory {
             //TODO handle user input
             let user_input_option = get_SFT_string_attribute(&attributes, b"id");
             if (option::is_none(&user_input_option)) {
-                simple_map::drop(attributes);
+                
                 return err_str(b"metadata.attributes.user_input is required")
             };
 
@@ -297,13 +297,13 @@ module rooch_nursery::inscribe_factory {
         if(tick != utf8(BIT_SEED_GENERATOR_TICK)) {
             let generator_inscription_id_option = tick_info::generator(tick_info);
             if (option::is_none(&generator_inscription_id_option)) {
-                simple_map::drop(attributes);
+                
                 return err_str(b"the tick can not mint on Bitcoin")
             };
 
             let generator_inscription_id = option::destroy_some(generator_inscription_id_option);
             if (!ord::exists_metaprotocol_validity(generator_inscription_id)) {
-                simple_map::drop(attributes);
+                
                 return err_str(b"generator_inscription_id is not validity bitseed")
             };
 
@@ -313,12 +313,12 @@ module rooch_nursery::inscribe_factory {
 
             let (is_valid, reason) = inscribe_verify(wasm_bytes, deploy_args, seed, user_input, metadata, content_type, body);
             if (!is_valid) {
-                simple_map::drop(attributes);
+                
                 return result::err(option::destroy_with_default(reason, utf8(b"inscribe verify fail")))
             };
         };
         let bitseed_result = tick_info::mint_on_bitcoin(bitseed::metaprotocol(), tick, amount);
-        simple_map::drop(attributes);
+        
         bitseed_result
     }
 
@@ -418,10 +418,8 @@ module rooch_nursery::inscribe_factory {
 
         let output_bytes = cbor::to_cbor(&output);
 
-        let InscribeGenerateOutput{amount:_, attributes, content}=output;
-        simple_map::drop(attributes);
-        simple_map::drop(content);
-
+        let InscribeGenerateOutput{amount:_, attributes:_, content:_}=output;
+        
         output_bytes
     }
 
@@ -500,16 +498,14 @@ module rooch_nursery::inscribe_factory {
                     if (is_err(&is_valid_result)) {
                         let reason = result::unwrap_err(is_valid_result);
                         bitseed::seal_metaprotocol_validity(inscription_id, false, option::some(reason));
-
-                        simple_map::drop(metadata);
+                        
                         return ()
                     };
 
                     let (ok, reason) = deploy_tick(&metadata);
                     if (!ok) {
                         bitseed::seal_metaprotocol_validity(inscription_id, false, reason);
-
-                        simple_map::drop(metadata);
+                        
                         return ()
                     };
 
@@ -523,8 +519,7 @@ module rooch_nursery::inscribe_factory {
                     if (is_err(&bitseed_result)) {
                         let reason = result::unwrap_err(bitseed_result);
                         bitseed::seal_metaprotocol_validity(inscription_id, false, option::some(reason));
-
-                        simple_map::drop(metadata);
+                        
                         return ()
                     }else{
                         let bitseed_obj = result::unwrap(bitseed_result);
@@ -542,7 +537,6 @@ module rooch_nursery::inscribe_factory {
                 bitseed::seal_metaprotocol_validity(inscription_id, false, option::some(string::utf8(b"op not found")));
             };
 
-            simple_map::drop(metadata)
         }
     }
 
@@ -557,7 +551,7 @@ module rooch_nursery::inscribe_factory {
         let metadata_bytes = x"a4626f70666465706c6f79647469636b646d6f766566616d6f756e74016a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f373764666332666535393834313962303036343163323936313831613936636631363934333639376635373334383062303233623737636365383261646132316930";
         let metadata = cbor::to_map(metadata_bytes);
         let is_valid_result = is_valid_bitseed_deploy(&metadata);
-        simple_map::drop(metadata);
+        
 
         assert!(is_ok(&is_valid_result), 1);
         //assert!(option::is_none(&reason), 1);
@@ -568,7 +562,7 @@ module rooch_nursery::inscribe_factory {
         let metadata_bytes = x"a4626f70666465706c6f79647469636bf766616d6f756e74016a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f653839633162343830356538626235303236323038373632326263656662383533343232356364376138633264343832366433366630633161653333303831316931";
         let metadata = cbor::to_map(metadata_bytes);
         let is_valid_result = is_valid_bitseed_deploy(&metadata);
-        simple_map::drop(metadata);
+        
 
         assert!(is_err(&is_valid_result), 1);
         assert!(result::unwrap_err(is_valid_result) == std::string::utf8(b"metadata.tick is required"), 1);
@@ -579,7 +573,7 @@ module rooch_nursery::inscribe_factory {
         let metadata_bytes = x"a4626f70666465706c6f79647469636b6378787866616d6f756e74016a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f653839633162343830356538626235303236323038373632326263656662383533343232356364376138633264343832366433366630633161653333303831316931";
         let metadata = cbor::to_map(metadata_bytes);
         let is_valid_result = is_valid_bitseed_deploy(&metadata);
-        simple_map::drop(metadata);
+        
 
         assert!(is_err(&is_valid_result), 1);
         assert!(result::unwrap_err(is_valid_result) == std::string::utf8(b"metadata.tick must be 4-32 characters"), 1);
@@ -590,7 +584,7 @@ module rooch_nursery::inscribe_factory {
         let metadata_bytes = x"a4626f70666465706c6f79647469636b78227878787878787878787878787878787878787878787878787878787878787878787866616d6f756e74016a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f653839633162343830356538626235303236323038373632326263656662383533343232356364376138633264343832366433366630633161653333303831316931";
         let metadata = cbor::to_map(metadata_bytes);
         let is_valid_result = is_valid_bitseed_deploy(&metadata);
-        simple_map::drop(metadata);
+        
 
         assert!(is_err(&is_valid_result), 1);
         assert!(result::unwrap_err(is_valid_result) == std::string::utf8(b"metadata.tick must be 4-32 characters"), 1);
@@ -601,7 +595,7 @@ module rooch_nursery::inscribe_factory {
         let metadata_bytes = x"a4626f70666465706c6f79647469636b68746573745469636b66616d6f756e74f76a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f653839633162343830356538626235303236323038373632326263656662383533343232356364376138633264343832366433366630633161653333303831316931";
         let metadata = cbor::to_map(metadata_bytes);
         let is_valid_result = is_valid_bitseed_deploy(&metadata);
-        simple_map::drop(metadata);
+        
 
         assert!(is_err(&is_valid_result), 1);
         assert!(result::unwrap_err(is_valid_result) == std::string::utf8(b"metadata.amount is required"), 1);
@@ -613,7 +607,7 @@ module rooch_nursery::inscribe_factory {
         let metadata_bytes = x"a4626f70666465706c6f79647469636b68746573745469636b66616d6f756e74016a61747472696275746573a0";
         let metadata = cbor::to_map(metadata_bytes);
         let is_valid_result = is_valid_bitseed_deploy(&metadata);
-        simple_map::drop(metadata);
+        
         assert!(is_err(&is_valid_result), 1);
         assert!(result::unwrap_err(is_valid_result) == std::string::utf8(b"metadata.attributes.generator or metadata.attributes.factory is required"), 1);
     }
@@ -623,7 +617,7 @@ module rooch_nursery::inscribe_factory {
         let metadata_bytes = x"a4626f70666465706c6f79647469636b646d6f766566616d6f756e74016a61747472696275746573a16967656e657261746f7278472f7878782f653839633162343830356538626235303236323038373632326263656662383533343232356364376138633264343832366433366630633161653333303831316931";
         let metadata = cbor::to_map(metadata_bytes);
         let is_valid_result = is_valid_bitseed_deploy(&metadata);
-        simple_map::drop(metadata);
+        
 
         assert!(is_err(&is_valid_result), 1);
         assert!(result::unwrap_err(is_valid_result) == std::string::utf8(b"metadata.attributes.generator not start with /inscription/"), 1);
@@ -634,7 +628,7 @@ module rooch_nursery::inscribe_factory {
         let metadata_bytes = x"a4626f70666465706c6f79647469636b646d6f766566616d6f756e74016a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f377864666332666535393834313962303036343163323936313831613936636631363934333639376635373334383062303233623737636365383261646132316930";
         let metadata = cbor::to_map(metadata_bytes);
         let is_valid_result = is_valid_bitseed_deploy(&metadata);
-        simple_map::drop(metadata);
+        
 
         assert!(is_err(&is_valid_result), 1);
         assert!(result::unwrap_err(is_valid_result) == std::string::utf8(b"metadata.attributes.generator inscription_id parse fail"), 1);
@@ -647,7 +641,7 @@ module rooch_nursery::inscribe_factory {
         let metadata_bytes = x"a4626f70666465706c6f79647469636b646d6f766566616d6f756e74016a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f373764666332666535393834313962303036343163323936313831613936636631363934333639376635373334383062303233623737636365383261646132316930";
         let metadata = cbor::to_map(metadata_bytes);
         let is_valid_result = is_valid_bitseed_deploy(&metadata);
-        simple_map::drop(metadata);
+        
 
         assert!(is_err(&is_valid_result), 1);
         assert!(result::unwrap_err(is_valid_result) == std::string::utf8(b"metadata.attributes.generator inscription not exists"), 1);
@@ -660,7 +654,7 @@ module rooch_nursery::inscribe_factory {
         let metadata_bytes = x"a4626f70666465706c6f79647469636b646d6f766566616d6f756e74016a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f373764666332666535393834313962303036343163323936313831613936636631363934333639376635373334383062303233623737636365383261646132316930";
         let metadata = cbor::to_map(metadata_bytes);
         let is_valid_result = is_valid_bitseed_deploy(&metadata);
-        simple_map::drop(metadata);
+        
 
         assert!(is_err(&is_valid_result), 1);
         assert!(result::unwrap_err(is_valid_result) == std::string::utf8(b"metadata.attributes.generator inscription metaprotocol validity not exists"), 1);
@@ -674,7 +668,7 @@ module rooch_nursery::inscribe_factory {
         let metadata_bytes = x"a4626f70666465706c6f79647469636b646d6f766566616d6f756e74016a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f373764666332666535393834313962303036343163323936313831613936636631363934333639376635373334383062303233623737636365383261646132316930";
         let metadata = cbor::to_map(metadata_bytes);
         let is_valid_result = is_valid_bitseed_deploy(&metadata);
-        simple_map::drop(metadata);
+        
 
         assert!(is_err(&is_valid_result), 1);
         assert!(result::unwrap_err(is_valid_result) == std::string::utf8(b"metadata.attributes.generator inscription metaprotocol validity protocol not match"), 1);
@@ -688,7 +682,7 @@ module rooch_nursery::inscribe_factory {
         let metadata_bytes = x"a4626f70666465706c6f79647469636b646d6f766566616d6f756e74016a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f373764666332666535393834313962303036343163323936313831613936636631363934333639376635373334383062303233623737636365383261646132316930";
         let metadata = cbor::to_map(metadata_bytes);
         let is_valid_result = is_valid_bitseed_deploy(&metadata);
-        simple_map::drop(metadata);
+        
 
         assert!(is_err(&is_valid_result), 1);
         assert!(result::unwrap_err(is_valid_result) == std::string::utf8(b"metadata.attributes.generator inscription metaprotocol validity not valid"), 1);
@@ -704,7 +698,7 @@ module rooch_nursery::inscribe_factory {
         let metadata_bytes = x"a4626f70666465706c6f79647469636b646d6f766566616d6f756e74016a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f373764666332666535393834313962303036343163323936313831613936636631363934333639376635373334383062303233623737636365383261646132316930";
         let metadata = cbor::to_map(metadata_bytes);
         let (ok, reason) = deploy_tick(&metadata);
-        simple_map::drop(metadata);
+        
 
         assert!(ok, 1);
         assert!(option::is_none(&reason), 1);
@@ -762,7 +756,7 @@ module rooch_nursery::inscribe_factory {
         let content_type = option::none();
         let body = vector::empty();
         let bitseed_result = mint_bitseed(&metadata, seed, content_type, body);
-        simple_map::drop(metadata);
+        
 
         assert!(is_err(&bitseed_result), 1);
         assert!(result::unwrap_err(bitseed_result) == std::string::utf8(b"the tick is not deployed"), 1);
@@ -785,7 +779,7 @@ module rooch_nursery::inscribe_factory {
         assert!(ok, 1);
         assert!(option::is_none(&reason), 1);
 
-        simple_map::drop(metadata);
+        
 
         let metadata_bytes = x"a4626f70646d696e74647469636b646d6f766566616d6f756e7418646a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f377864666332666535393834313962303036343163323936313831613936636631363934333639376635373334383062303233623737636365383261646132316930";
         let metadata = cbor::to_map(metadata_bytes);
@@ -793,7 +787,7 @@ module rooch_nursery::inscribe_factory {
         let content_type = option::none();
         let body = vector::empty();
         let mint_result = mint_bitseed(&metadata, seed, content_type, body);
-        simple_map::drop(metadata);
+        
 
         assert!(is_err(&mint_result), 1);
         //std::debug::print(&mint_result);
@@ -819,7 +813,7 @@ module rooch_nursery::inscribe_factory {
         assert!(ok, 1);
         assert!(option::is_none(&reason), 1);
 
-        simple_map::drop(metadata);
+        
 
         let metadata_bytes = x"a4626f70646d696e74647469636b646d6f766566616d6f756e7418646a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f377864666332666535393834313962303036343163323936313831613936636631363934333639376635373334383062303233623737636365383261646132316930";
         let metadata = cbor::to_map(metadata_bytes);
@@ -827,7 +821,7 @@ module rooch_nursery::inscribe_factory {
         let content_type = option::none();
         let body = vector::empty();
         let mint_result = mint_bitseed(&metadata, seed, content_type, body);
-        simple_map::drop(metadata);
+        
 
         assert!(is_err(&mint_result), 1);
         assert!(result::unwrap_err(mint_result) == std::string::utf8(b"metadata.attributes.user_input is required"), 1);
@@ -852,7 +846,7 @@ module rooch_nursery::inscribe_factory {
         assert!(ok, 1);
         assert!(option::is_none(&reason), 1);
 
-        simple_map::drop(metadata);
+        
 
         let metadata_bytes = x"a4626f70646d696e74647469636b646d6f766566616d6f756e74016a61747472696275746573a16a757365725f696e70757463787878";
         let metadata = cbor::to_map(metadata_bytes);
@@ -860,7 +854,7 @@ module rooch_nursery::inscribe_factory {
         let content_type = option::none();
         let body = vector::empty();
         let mint_result = mint_bitseed(&metadata, seed, content_type, body);
-        simple_map::drop(metadata);
+        
 
         assert!(is_err(&mint_result), 1);
         let _err = result::unwrap_err(mint_result);

@@ -16,7 +16,6 @@ use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::proxy::SequencerProxy;
-use rooch_types::transaction::TransactionSequenceInfoV1;
 use rooch_types::{
     service_status::ServiceStatus,
     transaction::{
@@ -168,17 +167,18 @@ impl PipelineProcessorActor {
         let moveos_tx = self.executor.validate_l1_tx(l1_tx.clone()).await?;
         let ledger_tx = self
             .sequencer
-            .sequence_transaction(LedgerTxData::L1Tx(l1_tx))
+            .sequence_transaction(LedgerTxData::L1Tx(l1_tx.clone()))
             .await?;
         let size = moveos_tx.ctx.tx_size;
         let result = match self.execute_tx(ledger_tx, moveos_tx).await {
             Ok(v) => v,
             Err(err) => {
                 if is_vm_panic_error(&err) {
+                    let l1_tx_bcs_bytes = bcs::to_bytes(&l1_tx)?;
                     log::warn!(
                         "Execute L1 Tx failed while VM panic occurred then \
-                        set sequencer to Maintenance mode and pause the relayer. error: {:?}",
-                        err
+                        set sequencer to Maintenance mode and pause the relayer. error: {:?}, tx bytes {}",
+                        err, hex::encode(&l1_tx_bcs_bytes)
                     );
                     if let Some(event_actor) = self.event_actor.clone() {
                         let _ = event_actor
@@ -225,9 +225,10 @@ impl PipelineProcessorActor {
             Ok(v) => v,
             Err(err) => {
                 if is_vm_panic_error(&err) {
+                    let l2_tx_bcs_bytes = bcs::to_bytes(&tx)?;
                     log::warn!(
-                        "Execute L2 Tx failed while VM panic occurred and revert tx. error: {:?}",
-                        err
+                        "Execute L2 Tx failed while VM panic occurred and revert tx. error: {:?} tx info {}",
+                        err, hex::encode(l2_tx_bcs_bytes)
                     );
                     let tx_hash = tx.tx_hash();
                     self.rooch_db.revert_tx(tx_hash)?;
@@ -262,10 +263,6 @@ impl PipelineProcessorActor {
             .start_timer();
         // Add sequence info to tx context, let the Move contract can get the sequence info
         moveos_tx.ctx.add(tx.sequence_info.clone())?;
-        // We must add TransactionSequenceInfo and TransactionSequenceInfoV1 both to the tx_context because the rust code is upgraded first, then the framework is upgraded.
-        // The old framework will read the TransactionSequenceInfoV1.
-        let tx_sequence_info_v1 = TransactionSequenceInfoV1::from(tx.sequence_info.clone());
-        moveos_tx.ctx.add(tx_sequence_info_v1)?;
 
         // Then execute
         let size = moveos_tx.ctx.tx_size;

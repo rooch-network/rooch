@@ -119,28 +119,23 @@ module rooch_framework::auth_payload {
         full_message
     }
 
-    //TODO break change: make payload to &AuthPayload
-    public fun signature(payload: AuthPayload): vector<u8> {
+    public fun signature(payload: &AuthPayload): vector<u8> {
         payload.signature
     }
 
-    //TODO break change: make payload to &AuthPayload
-    public fun message_prefix(payload: AuthPayload): vector<u8> {
+    public fun message_prefix(payload: &AuthPayload): vector<u8> {
         payload.message_prefix
     }
 
-    //TODO break change: make payload to &AuthPayload
-    public fun message_info(payload: AuthPayload): vector<u8> {
+    public fun message_info(payload: &AuthPayload): vector<u8> {
         payload.message_info
     }
 
-    //TODO break change: make payload to &AuthPayload
-    public fun public_key(payload: AuthPayload): vector<u8> {
+    public fun public_key(payload: &AuthPayload): vector<u8> {
         payload.public_key
     }
 
-    //TODO break change: make payload to &AuthPayload
-    public fun from_address(payload: AuthPayload): String {
+    public fun from_address(payload: &AuthPayload): String {
         payload.from_address
     }
 

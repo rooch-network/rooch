@@ -15,6 +15,7 @@ use moveos_types::{
     transaction::{MoveAction, MoveOSTransaction},
 };
 use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RoochTransactionData {
@@ -72,6 +73,16 @@ impl RoochTransactionData {
     pub fn sign(&self, kp: &RoochKeyPair) -> RoochTransaction {
         let auth = Authenticator::sign(kp, self);
         RoochTransaction::new(self.clone(), auth)
+    }
+}
+
+impl Display for RoochTransactionData {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{{ sender: {}, sequence_number {}, chain_id: {}, max_gas_amount: {}, action: {} }}",
+            self.sender, self.sequence_number, self.chain_id, self.max_gas_amount, self.action
+        )
     }
 }
 
@@ -205,5 +216,15 @@ impl TryFrom<RawTransaction> for RoochTransaction {
     fn try_from(raw: RawTransaction) -> Result<Self> {
         let tx = RoochTransaction::decode(raw.raw.as_slice())?;
         Ok(tx)
+    }
+}
+
+impl Display for RoochTransaction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "RoochTransaction {{ data: {}, authenticator: {}, data_hash {:?} }}",
+            self.data, self.authenticator, self.data_hash
+        )
     }
 }

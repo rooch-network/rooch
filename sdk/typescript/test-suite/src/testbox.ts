@@ -3,8 +3,11 @@
 
 import * as fs from 'fs';
 import * as net from 'net';
-import tmp, { DirResult } from 'tmp'
+import path from 'node:path'
 import { execSync } from 'child_process'
+import { spawn } from 'child_process'
+
+import tmp, { DirResult } from 'tmp'
 import { Network, StartedNetwork } from 'testcontainers'
 
 import { OrdContainer, StartedOrdContainer } from './container/ord.js'
@@ -21,11 +24,18 @@ export class TestBox {
   ordContainer?: StartedOrdContainer
   bitcoinContainer?: StartedBitcoinContainer
   roochContainer?: StartedRoochContainer | number
+  roochDir: string
+
   roochPort?: number
   private miningIntervalId: NodeJS.Timeout | null = null
 
   constructor() {
-    this.tmpDir = this.createTmpDir()
+    tmp.setGracefulCleanup()
+    this.tmpDir = tmp.dirSync({ unsafeCleanup: true })
+    this.roochDir = path.join(this.tmpDir.name, '.rooch_test')
+    fs.mkdirSync(this.roochDir, { recursive: true })
+    this.roochCommand(['init', '--config-dir', `${this.roochDir}`, '--skip-password'])
+    this.roochCommand(['env', 'switch', '--config-dir', `${this.roochDir}`, '--alias', 'local'])
   }
 
   async loadBitcoinEnv(customContainer?: BitcoinContainer, autoMining: boolean = false) {
@@ -107,19 +117,21 @@ export class TestBox {
             this.bitcoinContainer.getRpcUser(),
             '--btc-rpc-password',
             this.bitcoinContainer.getRpcPass(),
+            '--btc-sync-block-interval',
+            '1',
           ],
         )
       }
 
-      cmds.push(`> ${this.tmpDir.name}/rooch.log 2>&1 & echo $!`)
+      const result: string = await this.roochAsyncCommand(
+        cmds,
+        `JSON-RPC HTTP Server start listening 0.0.0.0:${port}`,
+        [`METRICS_HOST_PORT=${metricsPort}`]
+      )
 
-      console.log("rooch start cmd:", cmds.join(' '))
-      console.log("rooch log:", `${this.tmpDir.name}/rooch.log`)
-      
-      const result = this.roochCommand(cmds, [`METRICS_HOST_PORT=${metricsPort}`])
       this.roochContainer = parseInt(result.toString().trim(), 10)
       this.roochPort = port;
-      await this.waitForRoochServerStart(`${this.tmpDir.name}/rooch.log`, 'JSON-RPC HTTP Server start listening', 120000)
+
       return
     }
 
@@ -142,7 +154,7 @@ export class TestBox {
     this.roochContainer = await container.start()
   }
 
-  unloadContainer() {
+  cleanEnv() {
     // Clear mining interval before stopping containers
     if (this.miningIntervalId) {
       clearInterval(this.miningIntervalId)
@@ -171,11 +183,60 @@ export class TestBox {
     })
   }
 
-  roochCommand(args: string[] | string, envs: string[] = []): string {
+  private buildRoochCommand(args: string[] | string, envs: string[] = []) {
+    const root = this.findRootDir('pnpm-workspace.yaml')
+    const roochDir = path.join(root!, 'target', 'debug')
+
     const envString = envs.length > 0 ? `${envs.join(' ')} ` : '';
-    return execSync(`${envString} cargo run --bin rooch ${typeof args === 'string' ? args : args.join(' ')}`, {
+    return `${envString} ${roochDir}/./rooch ${typeof args === 'string' ? args : args.join(' ')}`
+  }
+
+  // TODO: support container
+  roochCommand(args: string[] | string, envs: string[] = []): string {
+    return execSync(this.buildRoochCommand(args, envs), {
       encoding: 'utf-8',
     });
+  }
+
+  // TODO: support container
+  async roochAsyncCommand(args: string[] | string, waitFor: string, envs: string[] = []): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const command = this.buildRoochCommand(args, envs)
+      const child = spawn(command, { shell: true })
+
+      let output = ''
+      let pidOutput = ''
+
+      child.on('spawn', () => {
+        if (child.pid) {
+          pidOutput = child.pid.toString()
+        } else {
+          reject(new Error('Failed to obtain PID of the process'))
+        }
+      })
+
+      child.stdout.on('data', (data) => {
+        output += data.toString()
+
+        if (output.includes(waitFor)) {
+          resolve(pidOutput.trim())
+        }
+      })
+
+      child.stderr.on('data', (data) => {
+        process.stderr.write(data)
+      })
+
+      child.on('error', (error) => {
+        reject(error)
+      })
+
+      child.on('close', () => {
+        if (!output.includes(waitFor)) {
+          reject(new Error('Expected output not found'))
+        }
+      })
+    })
   }
 
   async cmdPublishPackage(
@@ -187,7 +248,7 @@ export class TestBox {
     },
   ) {
     const result = this.roochCommand(
-      `move publish -p ${packagePath} --named-addresses ${options.namedAddresses} --json`,
+      `move publish -p ${packagePath} --config-dir ${this.roochDir} --named-addresses ${options.namedAddresses} --json`,
     )
     const { execution_info } = JSON.parse(result)
 
@@ -205,7 +266,9 @@ export class TestBox {
    */
   async defaultCmdAddress(): Promise<string> {
     if (!_defaultCmdAddress) {
-      const accounts = JSON.parse(this.roochCommand(['account', 'list', '--json']))
+      const accounts = JSON.parse(
+        this.roochCommand(['account', 'list', '--config-dir', this.roochDir, '--json']),
+      )
 
       if (Array.isArray(accounts)) {
         for (const account of accounts) {
@@ -252,30 +315,18 @@ export class TestBox {
     return await this.bitcoinContainer.getFaucetBTC(address, amount)
   }
 
-  createTmpDir(): DirResult {
-    //tmp.setGracefulCleanup()
-    return tmp.dirSync({ unsafeCleanup: true })
-  }
+  private findRootDir(targetName: string) {
+    let currentDir = process.cwd()
 
-  private async waitForRoochServerStart(logFilePath: string, keyword: string, timeout: number = 60000): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const watcher = fs.watch(logFilePath, (eventType) => {
-        if (eventType === 'change') {
-          const content = fs.readFileSync(logFilePath, 'utf8');
-          console.log('Log file content:', content);
-          
-          if (content.includes(keyword)) {
-            watcher.close();
-            resolve();
-          }
-        }
-      });
-  
-      setTimeout(() => {
-        watcher.close();
-        reject(new Error('Timeout waiting for Rooch server to start'));
-      }, timeout);
-    });
+    while (currentDir !== path.parse(currentDir).root) {
+      const targetPath = path.join(currentDir, targetName)
+      if (fs.existsSync(targetPath)) {
+        return currentDir
+      }
+      currentDir = path.dirname(currentDir)
+    }
+
+    return null
   }
 }
 

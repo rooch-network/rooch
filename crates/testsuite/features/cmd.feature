@@ -10,21 +10,22 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::account::Account'"
       Then cmd: "rpc request --method rooch_listStates --params '["/resource/0x3", null, null, {"decode":true}]' --json"
       Then assert: "'{{$.rpc[-1]}}' contains '0x3::account_coin_store::AutoAcceptCoins'"
-      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x4e8d2c243339c6e02f8b7dd34436a1b1eb541b0fe4d938f845f4dbb9d9f218a2",{"decode":true}]' --json"
+            # named_object_id(0x2::timestamp::Timestamp) == 0x3a7dfe7a9a5cd608810b5ebd60c7adf7316667b17ad5ae703af301b74310bcca
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3a7dfe7a9a5cd608810b5ebd60c7adf7316667b17ad5ae703af301b74310bcca",{"decode":true}]' --json"
       Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::timestamp::Timestamp'"
       Then assert: "{{$.rpc[-1][0].decoded_value.value.milliseconds}} == 0"
       Then cmd: "rpc request --method rooch_getStates --params '["/object/0x2::timestamp::Timestamp",{"decode":true}]' --json"
       Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::timestamp::Timestamp'"
-      Then cmd: "rpc request --method rooch_getObjectStates --params '["0x4e8d2c243339c6e02f8b7dd34436a1b1eb541b0fe4d938f845f4dbb9d9f218a2", {"decode":false}]' --json"
-      Then cmd: "rpc request --method rooch_getObjectStates --params '["0x4e8d2c243339c6e02f8b7dd34436a1b1eb541b0fe4d938f845f4dbb9d9f218a2", {"decode":true}]' --json"
+      Then cmd: "rpc request --method rooch_getObjectStates --params '["0x3a7dfe7a9a5cd608810b5ebd60c7adf7316667b17ad5ae703af301b74310bcca", {"decode":false}]' --json"
+      Then cmd: "rpc request --method rooch_getObjectStates --params '["0x3a7dfe7a9a5cd608810b5ebd60c7adf7316667b17ad5ae703af301b74310bcca", {"decode":true}]' --json"
       Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::timestamp::Timestamp'"
       Then assert: "{{$.rpc[-1][0].value}} == {{$.rpc[-2][0].value}}"
       # ModuleStore is a named object, so we can directly use the struct tag as ObjectID arguments.
-      # named_object_id(0x2::module_store::ModuleStore) == 0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb
+      # named_object_id(0x2::module_store::ModuleStore) == 0x14481947570f6c2f50d190f9a13bf549ab2f0c9debc41296cd4d506002379659
       # 0x3 is the rooch_framwork package address, the package's field key is the package address.
       Then cmd: "rpc request --method rooch_getFieldStates --params '["0x2::module_store::ModuleStore", ["0x3"], {"decode": true, "showDisplay": true}]' --json"
       Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::module_store::Package'"
-      Then cmd: "rpc request --method rooch_listFieldStates --params '["0x2214495c6abca5dd5a2bf0f2a28a74541ff10c89818a1244af24c4874325ebdb", null, "2", {"decode": false, "showDisplay": false}]' --json"
+      Then cmd: "rpc request --method rooch_listFieldStates --params '["0x14481947570f6c2f50d190f9a13bf549ab2f0c9debc41296cd4d506002379659", null, "2", {"decode": false, "showDisplay": false}]' --json"
       Then assert: "{{$.rpc[-1].has_next_page}} == true"
       Then cmd: "rpc request --method rooch_getModuleABI --params '["0x2", "display"]'"
       Then assert: "{{$.rpc[-1].name}} == 'display'"
@@ -52,7 +53,7 @@ Feature: Rooch CLI integration tests
       Then cmd: "move run --function rooch_framework::gas_coin::faucet_entry --args u256:10000000000 --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
-      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x4e8d2c243339c6e02f8b7dd34436a1b1eb541b0fe4d938f845f4dbb9d9f218a2",{"decode":true}]' --json"
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3a7dfe7a9a5cd608810b5ebd60c7adf7316667b17ad5ae703af301b74310bcca",{"decode":true}]' --json"
       Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::timestamp::Timestamp'"
       # ensure the tx_timestamp update the global timestamp
       Then assert: "{{$.rpc[-1][0].decoded_value.value.milliseconds}} != 0"
@@ -91,7 +92,7 @@ Feature: Rooch CLI integration tests
       Then cmd: "object -i 0x3" 
       Then cmd: "object -i 0x2::timestamp::Timestamp"
       Then cmd: "dynamic-field list-field-states --object-id 0x3"
-      Then cmd: "dynamic-field get-field-states --object-id 0x3 --field-keys 0x064a9d6a507002868e9500d1a59e5b2760708a8d0bd64c78a55b9cc2cafdf6a0"
+      Then cmd: "dynamic-field get-field-states --object-id 0x3 --field-keys 0x385f84a2110d6b31412fab278ea8c321d160fdcfa7b745e66e5bf76106280dc5"
       Then assert: "{{$.dynamic-field[-2].data[0].state.id}} == {{$.dynamic-field[-1][0].id}}"
       Then cmd: "state --access-path /object/0x2::timestamp::Timestamp"
       Then assert: "{{$.state[-1][0].object_type}} == '0x2::timestamp::Timestamp'"

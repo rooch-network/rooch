@@ -7,9 +7,8 @@
 
 -  [Struct `BitcoinAddress`](#0x3_bitcoin_address_BitcoinAddress)
 -  [Constants](#@Constants_0)
--  [Function `new_p2pkh`](#0x3_bitcoin_address_new_p2pkh)
--  [Function `new_p2sh`](#0x3_bitcoin_address_new_p2sh)
--  [Function `new_witness_program`](#0x3_bitcoin_address_new_witness_program)
+-  [Function `p2pkh`](#0x3_bitcoin_address_p2pkh)
+-  [Function `p2sh`](#0x3_bitcoin_address_p2sh)
 -  [Function `p2tr`](#0x3_bitcoin_address_p2tr)
 -  [Function `new`](#0x3_bitcoin_address_new)
 -  [Function `is_p2pkh`](#0x3_bitcoin_address_is_p2pkh)
@@ -22,7 +21,6 @@
 -  [Function `verify_with_public_key`](#0x3_bitcoin_address_verify_with_public_key)
 -  [Function `to_rooch_address`](#0x3_bitcoin_address_to_rooch_address)
 -  [Function `verify_bitcoin_address_with_public_key`](#0x3_bitcoin_address_verify_bitcoin_address_with_public_key)
--  [Function `derive_multisig_pubkey_from_pubkeys`](#0x3_bitcoin_address_derive_multisig_pubkey_from_pubkeys)
 -  [Function `derive_bitcoin_taproot_address_from_pubkey`](#0x3_bitcoin_address_derive_bitcoin_taproot_address_from_pubkey)
 
 
@@ -207,38 +205,24 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_new_p2pkh"></a>
+<a name="0x3_bitcoin_address_p2pkh"></a>
 
-## Function `new_p2pkh`
-
-TODO break: rename to p2pkh and add tests
+## Function `p2pkh`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_p2pkh">new_p2pkh</a>(pubkey_hash: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_p2pkh">p2pkh</a>(pubkey_hash: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
 </code></pre>
 
 
 
-<a name="0x3_bitcoin_address_new_p2sh"></a>
+<a name="0x3_bitcoin_address_p2sh"></a>
 
-## Function `new_p2sh`
-
-TODO break: rename to p2sh and add tests
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_p2sh">new_p2sh</a>(script_hash: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
-</code></pre>
+## Function `p2sh`
 
 
 
-<a name="0x3_bitcoin_address_new_witness_program"></a>
-
-## Function `new_witness_program`
-
-TODO break: make this function private
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_witness_program">new_witness_program</a>(program: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_p2sh">p2sh</a>(script_hash: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
 </code></pre>
 
 
@@ -375,18 +359,6 @@ verify bitcoin address according to the pk bytes, the pk is Secp256k1 public key
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_verify_bitcoin_address_with_public_key">verify_bitcoin_address_with_public_key</a>(bitcoin_addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>, pk: &<a href="">vector</a>&lt;u8&gt;): bool
-</code></pre>
-
-
-
-<a name="0x3_bitcoin_address_derive_multisig_pubkey_from_pubkeys"></a>
-
-## Function `derive_multisig_pubkey_from_pubkeys`
-
-Deprecated: this function is deprecated.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_derive_multisig_pubkey_from_pubkeys">derive_multisig_pubkey_from_pubkeys</a>(_public_keys: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, _threshold: u64): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 

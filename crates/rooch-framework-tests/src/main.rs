@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::path::PathBuf;
+
 use anyhow::Result;
 use clap::Parser;
 use coerce::actor::{system::ActorSystem, IntoActor};
@@ -26,6 +28,9 @@ struct TestBuilderOpts {
     #[clap(long, id = "btc-rpc-password", env = "BTC_RPC_PASSWORD")]
     pub btc_rpc_password: String,
 
+    #[clap(long, id = "ord-events-dir")]
+    pub ord_events_dir: PathBuf,
+
     /// Block heights to execute
     #[clap(long, id = "blocks")]
     pub blocks: Vec<u64>,
@@ -45,7 +50,7 @@ async fn main() -> Result<()> {
         .into_actor(Some("bitcoin_client_for_rpc_service"), &actor_system)
         .await?;
     let bitcoin_client_proxy = BitcoinClientProxy::new(bitcoin_client_actor_ref.into());
-    let mut builder = TesterGenesisBuilder::new(bitcoin_client_proxy)?;
+    let mut builder = TesterGenesisBuilder::new(bitcoin_client_proxy, opts.ord_events_dir)?;
     let mut blocks = opts.blocks;
     blocks.sort();
     for block in blocks {

@@ -9,7 +9,7 @@ use move_core_types::effects::Op;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
 use moveos_compiler::dependency_order::sort_by_dependency_order;
 use moveos_types::move_std::string::MoveString;
-use moveos_types::moveos_std::module_store::ModuleStore;
+use moveos_types::moveos_std::module_store::{ModuleStore, PackageData};
 use moveos_types::moveos_std::move_module::MoveModule;
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::{
@@ -23,7 +23,6 @@ use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{
     ExecuteTransactionResponseView, HumanReadableDisplay, KeptVMStatusView,
 };
-use rooch_types::address::RoochAddress;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::rooch::RoochTransaction;
 use rpassword::prompt_password;
@@ -51,12 +50,17 @@ pub struct Publish {
 
     /// Whether publish modules by `MoveAction::ModuleBundle`?
     /// If not set, publish moduels through Move entry function
-    /// `moveos_std::module_store::publish_modules_entry`.
+    /// `moveos_std::module_store::publish_package_entry`.
     /// **Deprecated**! Publish modules by `MoveAction::ModuleBundle` is no longer used anymore.
     /// So you should never add this option.
     /// For now, the option is kept for test only.
     #[clap(long)]
     pub by_move_action: bool,
+
+    // TODO: remove this when reset genesis.
+    /// This flag is used to publish modules with old ABI: moveos_std::module_store::publish_modules_entry
+    #[clap(long, default_value = "false")]
+    pub legacy: bool,
 
     /// Return command outputs in json format
     #[clap(long, default_value = "false")]
@@ -119,30 +123,37 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
             bundles.push(binary);
         }
 
-        // Validate sender account if provided
-        if pkg_address != context.resolve_address(self.tx_options.sender)? {
-            return Err(RoochError::CommandArgumentError(
-                "--sender-account required and the sender account must be the same as the package address"
-                    .to_string(),
-            ));
-        }
-
         // Create a sender RoochAddress
-        let sender: RoochAddress = pkg_address.into();
-        eprintln!("Publish modules to address: {:?}", sender);
+        eprintln!("Publish modules to address: {:?}", pkg_address);
 
         let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
 
+        let sender = context.resolve_address(self.tx_options.sender)?.into();
         // Prepare and execute the transaction based on the action type
         let tx_result = if !self.by_move_action {
-            let args = bcs::to_bytes(&bundles).unwrap();
+            let (entrypoint, args) = if self.legacy {
+                let args = bcs::to_bytes(&bundles).unwrap();
+                println!("[Warning] You are publishing modules with old abi: publish_modules_entry. This is deprecated and will be removed in the future.");
+                ("publish_modules_entry".to_owned(), args)
+            } else {
+                let pkg_data = PackageData::new(
+                    MoveString::from(package.compiled_package_info.package_name.as_str()),
+                    pkg_address,
+                    bundles,
+                );
+                let pkg_bytes = bcs::to_bytes(&pkg_data).unwrap();
+                (
+                    "publish_package_entry".to_owned(),
+                    bcs::to_bytes(&pkg_bytes).unwrap(),
+                )
+            };
             let action = MoveAction::new_function_call(
                 FunctionId::new(
                     ModuleId::new(
                         MOVEOS_STD_ADDRESS,
                         Identifier::new("module_store".to_owned()).unwrap(),
                     ),
-                    Identifier::new("publish_modules_entry".to_owned()).unwrap(),
+                    Identifier::new(entrypoint).unwrap(),
                 ),
                 vec![],
                 vec![args],

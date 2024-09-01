@@ -149,10 +149,9 @@ module rooch_nursery::bitseed {
             amount:_,
             content_type:_,
             body:_,
-            attributes,
+            attributes:_,
             content_attributes_hash:_,
         } = bitseed;
-        simple_map::drop(attributes);
     }
 
 }

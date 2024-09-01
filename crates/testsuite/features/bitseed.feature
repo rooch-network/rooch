@@ -118,7 +118,7 @@ Feature: Rooch CLI bitseed tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # deploy
-      Then cmd bitseed: "deploy --fee-rate 1 --factory 000000000000000000000000000000000000000000000000000000000000000a::mint_get_factory::MintGetFactory --tick test --amount 210000000000"
+      Then cmd bitseed: "deploy --fee-rate 1 --factory 0x000000000000000000000000000000000000000000000000000000000000000a::mint_get_factory::MintGetFactory --tick test --amount 210000000000"
       Then assert: "'{{$.deploy[-1]}}' not_contains error"
 
       # mine a block

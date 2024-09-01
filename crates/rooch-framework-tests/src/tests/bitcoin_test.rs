@@ -113,6 +113,9 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
     let moveos_resolver = binding_test.resolver();
 
     for (outpoint, tx_out) in utxo_set.into_iter() {
+        if tx_out.script_pubkey.is_op_return() {
+            continue;
+        }
         let outpoint: types::OutPoint = outpoint.into();
         debug!("check utxo: outpoint {}", outpoint);
         assert!(

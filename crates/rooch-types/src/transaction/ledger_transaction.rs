@@ -12,6 +12,7 @@ use bitcoin::hashes::Hash;
 use core::fmt;
 use moveos_types::h256::H256;
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 
 #[derive(Clone, Debug, Default, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct L1Block {
@@ -60,7 +61,7 @@ impl L1BlockWithBody {
     }
 }
 
-#[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Hash, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct L1Transaction {
     pub chain_id: MultiChainID,
     pub block_hash: Vec<u8>,
@@ -68,7 +69,7 @@ pub struct L1Transaction {
     pub txid: Vec<u8>,
 }
 
-impl fmt::Debug for L1Transaction {
+impl Display for L1Transaction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let block_hash = if self.chain_id.is_bitcoin() {
             bitcoin::BlockHash::from_slice(&self.block_hash)

@@ -99,6 +99,8 @@ module rooch_framework::upgrade {
         event::emit<FrameworkUpgradeEvent>(FrameworkUpgradeEvent { version: onchain_config::framework_version() });
     }
 
+    // Deprecated upgrade function. 
+    // TODO: clean up this function when reset genesis.
     /// Upgrade the framework package
     /// `package_bytes` is the serialized `StdlibPackage`
     entry fun upgrade_v2_entry(account: &signer, package_bytes: vector<u8>) {

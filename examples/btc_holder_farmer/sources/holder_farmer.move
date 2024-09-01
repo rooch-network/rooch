@@ -2,21 +2,28 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module btc_holder_farmer::hold_farmer {
+    
     use std::string;
+    use std::option;
+    
     use moveos_std::event::emit;
-    use bitcoin_move::utxo;
     use moveos_std::tx_context::sender;
-    use rooch_framework::account_coin_store;
-    use rooch_framework::coin;
-    use rooch_framework::coin::{CoinInfo, Coin};
     use moveos_std::table;
     use moveos_std::table::Table;
     use moveos_std::object;
     use moveos_std::signer;
-    use bitcoin_move::utxo::{UTXO, value};
     use moveos_std::object::{Object, ObjectID, transfer};
     use moveos_std::timestamp;
     use moveos_std::account;
+    use moveos_std::event_queue::{Self, Subscriber};
+    use moveos_std::type_info;
+
+    use rooch_framework::account_coin_store;
+    use rooch_framework::coin;
+    use rooch_framework::coin::{CoinInfo, Coin};
+    
+    use bitcoin_move::utxo::{Self, UTXO, value, TempStateDropEvent};
+    
 
     const DEPLOYER: address = @btc_holder_farmer;
 
@@ -153,9 +160,19 @@ module btc_holder_farmer::hold_farmer {
         account: address,
     }
 
+    struct SubscriberInfo has key {
+        subscriber: Object<Subscriber<TempStateDropEvent>>,
+    }
+
     fun init() {
         let admin_cap = object::new_named_object(AdminCap {});
-        transfer(admin_cap, sender())
+        transfer(admin_cap, @btc_holder_farmer);
+        let state_info_name = type_info::type_name<StakeInfo>();
+        let subscriber = event_queue::subscribe<TempStateDropEvent>(state_info_name);
+        let btc_holder_farmer_signer = signer::module_signer<StakeInfo>();
+        account::move_resource_to(&btc_holder_farmer_signer, SubscriberInfo {
+            subscriber
+        });
     }
 
 
@@ -229,6 +246,7 @@ module btc_holder_farmer::hold_farmer {
         signer: &signer,
         asset: &mut Object<UTXO>,
     ) {
+        process_expired_state();
         assert!(!utxo::contains_temp_state<StakeInfo>(asset), ErrorAlreadyStaked);
 
         let asset_weight = value(object::borrow(asset));
@@ -294,6 +312,7 @@ module btc_holder_farmer::hold_farmer {
     }
 
     public fun do_unstake(signer: &signer, asset: &mut Object<UTXO>): Coin<HDC> {
+        process_expired_state();
         utxo::remove_temp_state<StakeInfo>(asset);
         let account = signer::address_of(signer);
         let farming_asset = account::borrow_mut_resource<FarmingAsset>(DEPLOYER);
@@ -337,6 +356,7 @@ module btc_holder_farmer::hold_farmer {
     }
 
     public fun do_harvest(signer:&signer, asset: &mut Object<UTXO>): Coin<HDC> {
+        process_expired_state();
         let farming_asset = account::borrow_mut_resource<FarmingAsset>(DEPLOYER);
         let account = signer::address_of(signer);
         let stake_table = account::borrow_mut_resource<UserStake>(account);
@@ -518,29 +538,43 @@ module btc_holder_farmer::hold_farmer {
         };
         return (false, 0)
     }
-    //
-    // public entry fun remove_expired_stake(asset_id: ObjectID) {
-    //     assert!(check_asset_is_staked(asset_id), ErrorNotStaked);
-    //     assert!(!object::exists_object_with_type<UTXO>(asset_id), ErrorAssetExist);
-    //     let farming_asset = account::borrow_mut_resource<FarmingAsset>(DEPLOYER);
-    //     let account = table::remove(&mut farming_asset.stake_table, asset_id);
-    //     let user_stake = account::borrow_mut_resource<UserStake>(account);
-    //     let Stake {
-    //         asset_weight,
-    //         last_harvest_index: _,
-    //         gain: _ } = table::remove(&mut user_stake.stake, asset_id);
-    //     emit(RemoveExpiredEvent{
-    //         asset_id,
-    //         account
-    //     });
-    //     farming_asset.asset_total_weight = farming_asset.asset_total_weight - asset_weight;
-    // }
+
+    public fun process_expired_state(){
+        let subscriber_info = account::borrow_mut_resource<SubscriberInfo>(@btc_holder_farmer);
+        let event = event_queue::consume(&mut subscriber_info.subscriber);
+        if (option::is_some(&event)){
+            let event = option::destroy_some(event);
+            let (asset_id, _outpoint, _value) = utxo::unpack_temp_state_drop_event(event);
+            remove_expired_stake(asset_id);
+        }
+    }
+    
+    public entry fun remove_expired_stake(asset_id: ObjectID) {
+        let (is_staked, _) = check_asset_is_staked(asset_id);
+        assert!(is_staked, ErrorNotStaked);
+        assert!(!object::exists_object_with_type<UTXO>(asset_id), ErrorAssetExist);
+        let farming_asset = account::borrow_mut_resource<FarmingAsset>(DEPLOYER);
+        let account = table::remove(&mut farming_asset.stake_table, asset_id);
+        let user_stake = account::borrow_mut_resource<UserStake>(account);
+        let Stake {
+            asset_weight,
+            last_harvest_index: _,
+            gain: _ } = table::remove(&mut user_stake.stake, asset_id);
+        emit(RemoveExpiredEvent{
+            asset_id,
+            account
+        });
+        farming_asset.asset_total_weight = farming_asset.asset_total_weight - asset_weight;
+    }
 
     #[test(sender=@0x42)]
     fun test_stake(sender: signer) {
         bitcoin_move::genesis::init_for_test();
-        let admin_cap = object::new_named_object(AdminCap {});
-        deploy(&sender, 1, 0, 200, b"BTC Holder Coin", b"HDC", 6, &mut admin_cap);
+        init();
+        let admin_cap_id = object::named_object_id<AdminCap>();
+        let btc_holder_farmer_signer = signer::module_signer<AdminCap>();
+        let admin_cap = object::borrow_mut_object<AdminCap>(&btc_holder_farmer_signer, admin_cap_id);
+        deploy(&sender, 1, 0, 200, b"BTC Holder Coin", b"HDC", 6, admin_cap);
         let seconds = 100;
         let tx_id = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
         let sat_value = 100000000;
@@ -567,6 +601,5 @@ module btc_holder_farmer::hold_farmer {
         // remove_expired_stake(utxo_id2);
         utxo::drop_for_testing(utxo);
         coin::destroy_for_testing(coin);
-        object::to_shared(admin_cap)
     }
 }

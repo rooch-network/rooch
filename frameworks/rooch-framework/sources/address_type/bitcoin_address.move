@@ -40,8 +40,7 @@ module rooch_framework::bitcoin_address {
         bytes: vector<u8>,
     }
 
-    ///TODO break: rename to p2pkh and add tests
-    public fun new_p2pkh(pubkey_hash: vector<u8>): BitcoinAddress{
+    public fun p2pkh(pubkey_hash: vector<u8>): BitcoinAddress{
         assert!(vector::length(&pubkey_hash) == PUBKEY_HASH_LEN, ErrorInvalidAddress);
         //we do not distinguish between mainnet and testnet in Move
         let bytes = vector::singleton<u8>(PAY_LOAD_TYPE_PUBKEY_HASH);
@@ -51,20 +50,12 @@ module rooch_framework::bitcoin_address {
         }
     }
 
-    ///TODO break: rename to p2sh and add tests
-    public fun new_p2sh(script_hash: vector<u8>): BitcoinAddress{
+    public fun p2sh(script_hash: vector<u8>): BitcoinAddress{
         assert!(vector::length(&script_hash) == SCRIPT_HASH_LEN, ErrorInvalidAddress);
         let bytes = vector::singleton<u8>(PAY_LOAD_TYPE_SCRIPT_HASH);
         vector::append(&mut bytes, script_hash);
         BitcoinAddress {
             bytes: bytes,
-        }
-    }
-
-    ///TODO break: make this function private
-    public fun new_witness_program(program: vector<u8>): BitcoinAddress{
-        BitcoinAddress {
-            bytes: program,
         }
     }
 
@@ -128,10 +119,6 @@ module rooch_framework::bitcoin_address {
     /// verify bitcoin address according to the pk bytes, the pk is Secp256k1 public key format.
     public native fun verify_bitcoin_address_with_public_key(bitcoin_addr: &BitcoinAddress, pk: &vector<u8>): bool;
 
-    /// Deprecated: this function is deprecated. 
-    public fun derive_multisig_pubkey_from_pubkeys(_public_keys: vector<vector<u8>>, _threshold: u64): vector<u8>{
-        abort ErrorDeprecated
-    }
  
     // derive bitcoin taproot address from a secp256k1 pubkey or x-only pubkey
     public fun derive_bitcoin_taproot_address_from_pubkey(pubkey: &vector<u8>): BitcoinAddress{
@@ -144,7 +131,9 @@ module rooch_framework::bitcoin_address {
     #[test_only]
     public fun random_address_for_testing(): BitcoinAddress {
         let bytes = moveos_std::bcs::to_bytes(&moveos_std::tx_context::fresh_address_for_testing());
-        new_witness_program(bytes)
+        BitcoinAddress{
+            bytes
+        }
     }
 
     #[test]

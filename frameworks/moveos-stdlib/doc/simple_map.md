@@ -18,14 +18,12 @@ This module provides a solution for unsorted maps, that is it has the properties
 -  [Constants](#@Constants_0)
 -  [Function `length`](#0x2_simple_map_length)
 -  [Function `new`](#0x2_simple_map_new)
--  [Function `create`](#0x2_simple_map_create)
 -  [Function `clone`](#0x2_simple_map_clone)
 -  [Function `borrow`](#0x2_simple_map_borrow)
 -  [Function `borrow_with_default`](#0x2_simple_map_borrow_with_default)
 -  [Function `borrow_mut`](#0x2_simple_map_borrow_mut)
 -  [Function `contains_key`](#0x2_simple_map_contains_key)
 -  [Function `destroy_empty`](#0x2_simple_map_destroy_empty)
--  [Function `drop`](#0x2_simple_map_drop)
 -  [Function `add`](#0x2_simple_map_add)
 -  [Function `upsert`](#0x2_simple_map_upsert)
 -  [Function `keys`](#0x2_simple_map_keys)
@@ -110,20 +108,6 @@ Create an empty SimpleMap.
 
 
 
-<a name="0x2_simple_map_create"></a>
-
-## Function `create`
-
-Create an empty SimpleMap.
-This function is deprecated, use <code>new</code> instead.
-
-
-<pre><code>#[deprecated]
-<b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_create">create</a>&lt;Key, Value&gt;(): <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;
-</code></pre>
-
-
-
 <a name="0x2_simple_map_clone"></a>
 
 ## Function `clone`
@@ -186,19 +170,6 @@ This function is deprecated, use <code>new</code> instead.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_destroy_empty">destroy_empty</a>&lt;Key, Value&gt;(map: <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;)
-</code></pre>
-
-
-
-<a name="0x2_simple_map_drop"></a>
-
-## Function `drop`
-
-Drop all keys and values in the map. This requires keys and values to be dropable.
-Deprecated: The <code><a href="simple_map.md#0x2_simple_map_SimpleMap">SimpleMap</a></code> is dropable if the keys and values are dropable, so we don't need this function.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_drop">drop</a>&lt;Key: drop, Value: drop&gt;(_map: <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;)
 </code></pre>
 
 

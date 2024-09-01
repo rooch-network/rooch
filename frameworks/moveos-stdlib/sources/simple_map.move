@@ -38,13 +38,6 @@ module moveos_std::simple_map {
         }
     } 
 
-    #[deprecated]
-    /// Create an empty SimpleMap.
-    /// This function is deprecated, use `new` instead.
-    public fun create<Key, Value>(): SimpleMap<Key, Value> {
-        new()
-    }
-
     public fun clone<Key: store+copy, Value: store+copy>(map: &SimpleMap<Key,Value>): SimpleMap<Key, Value>{
         let data = vector::empty();
         vector::for_each_ref(&map.data, |e|{ 
@@ -101,12 +94,6 @@ module moveos_std::simple_map {
     public fun destroy_empty<Key, Value>(map: SimpleMap<Key, Value>) {
         let SimpleMap { data } = map;
         vector::destroy_empty(data);
-    }
-
-    /// Drop all keys and values in the map. This requires keys and values to be dropable.
-    /// Deprecated: The `SimpleMap` is dropable if the keys and values are dropable, so we don't need this function.
-    public fun drop<Key: drop, Value: drop>(_map: SimpleMap<Key, Value>) {
-
     }
 
     public fun add<Key, Value>(
@@ -219,7 +206,7 @@ module moveos_std::simple_map {
 
     #[test]
     public fun add_remove_many() {
-        let map = create<u64, u64>();
+        let map = new<u64, u64>();
 
         assert!(length(&map) == 0, 0);
         assert!(!contains_key(&map, &3), 1);
@@ -252,30 +239,30 @@ module moveos_std::simple_map {
 
     #[test]
     public fun test_keys() {
-        let map = create<u64, u64>();
+        let map = new<u64, u64>();
         assert!(keys(&map) == vector[], 0);
         add(&mut map, 2, 1);
         add(&mut map, 3, 1);
 
         assert!(keys(&map) == vector[2, 3], 0);
-        drop(map);
+        
     }
 
     #[test]
     public fun test_values() {
-        let map = create<u64, u64>();
+        let map = new<u64, u64>();
         assert!(values(&map) == vector[], 0);
         add(&mut map, 2, 1);
         add(&mut map, 3, 2);
 
         assert!(values(&map) == vector[1, 2], 0);
-        drop(map);
+        
     }
 
     #[test]
     #[expected_failure]
     public fun add_twice() {
-        let map = create<u64, u64>();
+        let map = new<u64, u64>();
         add(&mut map, 3, 1);
         add(&mut map, 3, 1);
 
@@ -286,7 +273,7 @@ module moveos_std::simple_map {
     #[test]
     #[expected_failure]
     public fun remove_twice() {
-        let map = create<u64, u64>();
+        let map = new<u64, u64>();
         add(&mut map, 3, 1);
         remove(&mut map, &3);
         remove(&mut map, &3);
@@ -296,7 +283,7 @@ module moveos_std::simple_map {
 
     #[test]
     public fun upsert_test() {
-        let map = create<u64, u64>();
+        let map = new<u64, u64>();
         // test adding 3 elements using upsert
         upsert<u64, u64>(&mut map, 1, 1 );
         upsert(&mut map, 2, 2 );
@@ -317,19 +304,18 @@ module moveos_std::simple_map {
         assert!(contains_key(&map, &1), 8);
         assert!(borrow(&map, &1) == &4, 9);
 
-        drop(map);
+        
     }
 
     #[test]
     public fun test_clone(){
-        let map = create<u64, u64>();
+        let map = new<u64, u64>();
         add(&mut map, 1, 1);
         add(&mut map, 2, 2);
         let map2 = clone(&map);
         assert!(length(&map2) == 2, 0);
         assert!(contains_key(&map2, &1), 1);
         assert!(contains_key(&map2, &2), 2);
-        drop(map);
-        drop(map2);
+        
     }
 }

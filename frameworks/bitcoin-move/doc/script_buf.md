@@ -19,7 +19,6 @@
 -  [Function `p2pkh_pubkey_hash`](#0x4_script_buf_p2pkh_pubkey_hash)
 -  [Function `is_witness_program`](#0x4_script_buf_is_witness_program)
 -  [Function `witness_program`](#0x4_script_buf_witness_program)
--  [Function `get_address`](#0x4_script_buf_get_address)
 -  [Function `is_op_return`](#0x4_script_buf_is_op_return)
 -  [Function `push_opcode`](#0x4_script_buf_push_opcode)
 -  [Function `push_data`](#0x4_script_buf_push_data)
@@ -28,9 +27,7 @@
 -  [Function `push_x_only_key`](#0x4_script_buf_push_x_only_key)
 
 
-<pre><code><b>use</b> <a href="">0x1::option</a>;
-<b>use</b> <a href="">0x1::vector</a>;
-<b>use</b> <a href="">0x3::bitcoin_address</a>;
+<pre><code><b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="opcode.md#0x4_opcode">0x4::opcode</a>;
 </code></pre>
 
@@ -215,18 +212,6 @@ Get the witness program from a witness program script.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_witness_program">witness_program</a>(self: &<a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>): <a href="">vector</a>&lt;u8&gt;
-</code></pre>
-
-
-
-<a name="0x4_script_buf_get_address"></a>
-
-## Function `get_address`
-
-try to get a BitcoinAddress from a ScriptBuf.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_get_address">get_address</a>(s: &<a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>): <a href="_Option">option::Option</a>&lt;<a href="_BitcoinAddress">bitcoin_address::BitcoinAddress</a>&gt;
 </code></pre>
 
 

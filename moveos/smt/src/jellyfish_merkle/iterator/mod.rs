@@ -15,7 +15,7 @@
 #[cfg(test)]
 mod iterator_test;
 
-use super::hash::HashValue;
+use super::hash::SMTNodeHash;
 use super::{
     hash::SMTHash,
     nibble::Nibble,
@@ -103,7 +103,7 @@ pub(crate) struct JellyfishMerkleIterator<'a, K, V, R: 'a + TreeReader<K, V>> {
     reader: &'a R,
 
     /// The root hash of the tree this iterator is running on.
-    state_root_hash: HashValue,
+    state_root_hash: SMTNodeHash,
 
     /// The stack used for depth first traversal.
     parent_stack: Vec<NodeVisitInfo>,
@@ -126,14 +126,18 @@ where
     /// Constructs a new iterator. This puts the internal state in the correct position, so the
     /// following `next` call will yield the smallest key that is greater or equal to
     /// `starting_key`.
-    pub fn new(reader: &'a R, state_root_hash: HashValue, starting_key: Option<K>) -> Result<Self> {
+    pub fn new(
+        reader: &'a R,
+        state_root_hash: SMTNodeHash,
+        starting_key: Option<K>,
+    ) -> Result<Self> {
         let mut parent_stack = vec![];
         let mut done = false;
 
         let mut current_node_key = state_root_hash;
         let starting_key_hash = starting_key
             .map(|k| k.merkle_hash())
-            .unwrap_or(HashValue::zero());
+            .unwrap_or(SMTNodeHash::zero());
         let nibble_path = NibblePath::new(starting_key_hash.to_vec());
         let mut nibble_iter = nibble_path.nibbles();
 
@@ -294,7 +298,7 @@ pub(crate) struct JellyfishMerkleIntoIterator<K, V, R: TreeReader<K, V>> {
     reader: R,
 
     /// The root hash of the tree this iterator is running on.
-    state_root_hash: HashValue,
+    state_root_hash: SMTNodeHash,
 
     /// The stack used for depth first traversal.
     parent_stack: Vec<NodeVisitInfo>,
@@ -317,7 +321,7 @@ where
     /// Constructs a new iterator. This puts the internal state in the correct position, so the
     /// following `next` call will yield the smallest key that is greater or equal to
     /// `starting_key`.
-    pub fn new(reader: R, state_root_hash: HashValue, starting_key: HashValue) -> Result<Self> {
+    pub fn new(reader: R, state_root_hash: SMTNodeHash, starting_key: SMTNodeHash) -> Result<Self> {
         let mut parent_stack = vec![];
         let mut done = false;
 

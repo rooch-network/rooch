@@ -5,13 +5,21 @@ use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
 use framework_builder::Stdlib;
+use move_core_types::account_address::AccountAddress;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
-use moveos_types::addresses::{MOVEOS_STD_ADDRESS, MOVE_STD_ADDRESS};
+use moveos_types::addresses::{
+    MOVEOS_STD_ADDRESS, MOVEOS_STD_ADDRESS_NAME, MOVE_STD_ADDRESS, MOVE_STD_ADDRESS_NAME,
+};
+use moveos_types::move_std::string::MoveString;
+use moveos_types::moveos_std::module_store::PackageData;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
 use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
-use rooch_types::addresses::{BITCOIN_MOVE_ADDRESS, ROOCH_FRAMEWORK_ADDRESS};
+use rooch_types::addresses::{
+    BITCOIN_MOVE_ADDRESS, BITCOIN_MOVE_ADDRESS_NAME, ROOCH_FRAMEWORK_ADDRESS,
+    ROOCH_FRAMEWORK_ADDRESS_NAME,
+};
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::rooch::RoochTransaction;
 use rpassword::prompt_password;
@@ -24,7 +32,12 @@ pub struct FrameworkUpgrade {
     #[clap(long = "path", short = 'p', global = true, value_parser)]
     pub package_path: Option<PathBuf>,
 
-    /// TODO: remove this when reset genesis.
+    /// The address of the package to upgrade.
+    /// Available options are: 0x1, 0x2, 0x3, 0x4
+    #[clap(long)]
+    pub package_id: AccountAddress,
+
+    // TODO: remove this when reset genesis.
     /// This flag is used to upgrade the framework with old ABI: rooch_framework::upgrade::upgrade_entry
     #[clap(long, default_value = "false")]
     pub legacy: bool,
@@ -49,12 +62,14 @@ impl CommandAction<ExecuteTransactionResponseView> for FrameworkUpgrade {
             .expect("Building context failed.");
 
         let stdlib = Stdlib::load_from_file(package_path)?;
+        let bundles_map: HashMap<_, _> = stdlib
+            .all_module_bundles()
+            .expect("get bundles failed")
+            .into_iter()
+            .collect();
+
         let action = if self.legacy {
-            let bundles_map: HashMap<_, _> = stdlib
-                .all_module_bundles()
-                .expect("get bundles failed")
-                .into_iter()
-                .collect();
+            println!("[Warning] upgrade with old abi: upgrade_entry");
             let args = vec![
                 bcs::to_bytes(bundles_map.get(&MOVE_STD_ADDRESS).unwrap()).unwrap(),
                 bcs::to_bytes(bundles_map.get(&MOVEOS_STD_ADDRESS).unwrap()).unwrap(),
@@ -73,18 +88,34 @@ impl CommandAction<ExecuteTransactionResponseView> for FrameworkUpgrade {
                 args,
             )
         } else {
-            println!("upgrade with new abi: upgrade_v2_entry");
-            let stdlib_bytes = bcs::to_bytes(&stdlib).unwrap();
+            let pkg_id = self.package_id;
+            let pkg_name = match pkg_id {
+                MOVE_STD_ADDRESS => MOVE_STD_ADDRESS_NAME,
+                MOVEOS_STD_ADDRESS => MOVEOS_STD_ADDRESS_NAME,
+                ROOCH_FRAMEWORK_ADDRESS => ROOCH_FRAMEWORK_ADDRESS_NAME,
+                BITCOIN_MOVE_ADDRESS => BITCOIN_MOVE_ADDRESS_NAME,
+                _ => {
+                    return Err(RoochError::CommandArgumentError(
+                        "Invalid package id".to_owned(),
+                    ))
+                }
+            };
+            let package_data = PackageData::new(
+                MoveString::from(pkg_name),
+                pkg_id,
+                bundles_map.get(&pkg_id).unwrap().clone(),
+            );
+            let pkg_bytes = bcs::to_bytes(&package_data).unwrap();
             MoveAction::new_function_call(
                 FunctionId::new(
                     ModuleId::new(
-                        ROOCH_FRAMEWORK_ADDRESS,
-                        Identifier::new("upgrade".to_owned()).unwrap(),
+                        MOVEOS_STD_ADDRESS,
+                        Identifier::new("module_store".to_owned()).unwrap(),
                     ),
-                    Identifier::new("upgrade_v2_entry".to_owned()).unwrap(),
+                    Identifier::new("publish_package_entry".to_owned()).unwrap(),
                 ),
                 vec![],
-                vec![bcs::to_bytes(&stdlib_bytes).unwrap()],
+                vec![bcs::to_bytes(&pkg_bytes).unwrap()],
             )
         };
 

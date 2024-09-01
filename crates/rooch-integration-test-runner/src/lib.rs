@@ -24,6 +24,8 @@ use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos::moveos_test_runner::{CompiledState, MoveOSTestAdapter, TaskInput};
 use moveos_config::DataDirPath;
 use moveos_store::MoveOSStore;
+use moveos_types::move_std::string::MoveString;
+use moveos_types::moveos_std::module_store::PackageData;
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
@@ -166,14 +168,20 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         let id = module.self_id();
         let sender = *id.address();
 
-        let args = bcs::to_bytes(&vec![module_bytes]).unwrap();
+        let pkg_data = PackageData::new(
+            MoveString::from(id.name().as_str()), // The package name is just a placeholder.
+            sender,
+            vec![module_bytes],
+        );
+        let pkg_bytes = bcs::to_bytes(&pkg_data).unwrap();
+        let args = bcs::to_bytes(&pkg_bytes).unwrap();
         let action = MoveAction::new_function_call(
             FunctionId::new(
                 ModuleId::new(
                     MOVEOS_STD_ADDRESS,
                     Identifier::new("module_store".to_owned()).unwrap(),
                 ),
-                Identifier::new("publish_modules_entry".to_owned()).unwrap(),
+                Identifier::new("publish_package_entry".to_owned()).unwrap(),
             ),
             vec![],
             vec![args],
