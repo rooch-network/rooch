@@ -31,6 +31,9 @@ export interface QueryUTXOsParams {
   limit?: string | null | undefined
   descendingOrder?: boolean | null | undefined
 }
+export interface DryRunRawTransactionParams {
+  txBcsHex: string
+}
 /**
  * Send the signed transaction in bcs hex format This method blocks waiting for the transaction to be
  * executed.
@@ -132,6 +135,11 @@ export interface QueryTransactionsParams {
   cursor?: string | null | undefined
   limit?: string | null | undefined
   queryOption?: RpcTypes.QueryOptions | null | undefined
+}
+/** Repair indexer by sync from states */
+export interface RepairIndexerParams {
+  repairType: string
+  repairParams: RpcTypes.RepairIndexerParamsView
 }
 /**
  * Send the signed transaction in bcs hex format This method does not block waiting for the transaction

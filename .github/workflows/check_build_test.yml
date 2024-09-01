@@ -51,6 +51,7 @@ jobs:
           docker --version
           sleep 6
           docker images
+          docker pull lncm/bitcoind:v25.1
           docker pull bitseed/ord:0.18.0-burn
           docker pull bitseed/bitseed:0.1.8
 
@@ -70,13 +71,12 @@ jobs:
         run: ./scripts/pr.sh -t
       - name: Build and test example projects
         run: ./scripts/pr.sh -e
-      
 
       # web & sdk & dashboard
       - name: Use Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '20.x'
+          node-version: '20.3.1'
       - name: Cache Node.js modules
         uses: actions/cache@v2
         with:
@@ -87,6 +87,8 @@ jobs:
             ## Build and test app start
       - name: Install pnpm dependencies
         run: npm install pnpm@9.4.0 -g && pnpm install
+      - name: Install playwright browsers
+        run: pnpm bitseed-sdk playwright-deps
       - name: Lint
         run: pnpm lint
         continue-on-error: true
@@ -101,6 +103,14 @@ jobs:
         run: pnpm rooch-sdk-kit build
       - name: Test SDK KIT
         run: pnpm rooch-sdk-kit test
+      - name: Lint Bitseed SDK
+        run: pnpm bitseed-sdk lint
+      - name: Build Bitseed SDK
+        run: pnpm bitseed-sdk build
+      - name: Test Bitseed SDK
+        run: pnpm bitseed-sdk test
+        continue-on-error: true
+        timeout-minutes: 15
 
       - uses: CatChen/check-git-status-action@v1
         with:

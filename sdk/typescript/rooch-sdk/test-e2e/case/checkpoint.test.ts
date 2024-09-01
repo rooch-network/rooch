@@ -3,8 +3,7 @@
 
 import { beforeAll, describe, expect, it, afterAll } from 'vitest'
 import { Args } from '../../src/bcs/index.js'
-import { Secp256k1Keypair } from '../../src/keypairs/index.js'
-import { BitcoinAddress, BitcoinNetowkType } from '../../src/address/index.js'
+import { BitcoinNetowkType } from '../../src/address/index.js'
 import { Transaction } from '../../src/transactions/index.js'
 import { TARGETED_RPC_VERSION } from '../../src/version.js'
 

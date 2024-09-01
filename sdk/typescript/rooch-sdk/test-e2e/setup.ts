@@ -32,8 +32,10 @@ export class TestBox extends TestBoxA {
     port: number = 6768,
   ): Promise<void> {
     await super.loadRoochEnv(target, port)
+    const roochServerAddress = super.getRoochServerAddress()
+
     this.client = new RoochClient({
-      url: `http://127.0.0.1:${port}`,
+      url: `http://${roochServerAddress}`,
     })
     return
   }

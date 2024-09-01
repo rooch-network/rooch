@@ -1,7 +1,7 @@
 {
   "name": "@roochnetwork/test-suite",
   "author": "Rooch.network <opensource@rooch.network>",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Rooch Test Suite",
   "license": "Apache-2.0",
   "engines": {

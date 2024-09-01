@@ -1,0 +1,35 @@
+node_modules
+dist
+
+.env
+.DS_Store
+*/**/.DS_Store
+npm-debug.log
+.npm/
+/coverage
+/tmp
+node_modules
+.idea/
+.history/
+.vscode/
+dist/
+.nyc_output/
+build/
+
+# Doc generation output
+docs/
+
+# client generation output
+generated/
+
+# yarn error
+yarn-error.log
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
