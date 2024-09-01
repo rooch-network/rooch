@@ -19,6 +19,10 @@ pub struct SubmitCommand {
 
     #[clap(flatten)]
     context: WalletContextOptions,
+
+    /// Return command outputs in json format
+    #[clap(long, default_value = "false")]
+    json: bool,
 }
 
 #[async_trait]
@@ -33,9 +37,14 @@ impl CommandAction<ExecuteTransactionResponseView> for SubmitCommand {
                     self.input, e
                 ))
             })?;
-            let mut signed_tx = Vec::new();
-            file.read_to_end(&mut signed_tx)?;
-            hex::encode(&signed_tx)
+            let mut hex_str = String::new();
+            file.read_to_string(&mut hex_str).map_err(|e| {
+                RoochError::CommandArgumentError(format!(
+                    "Failed to read file: {}, err:{:?}",
+                    self.input, e
+                ))
+            })?;
+            hex_str
         } else {
             self.input
         };
@@ -52,6 +61,7 @@ impl CommandAction<ExecuteTransactionResponseView> for SubmitCommand {
             ))
         })?;
 
+        //TODO support no json output
         let response = context.execute(signed_tx).await?;
         Ok(response)
     }

@@ -26,7 +26,6 @@ pub(crate) enum FileOutputData {
 }
 
 impl FileOutputData {
-
     pub fn tx_hash(&self) -> H256 {
         match self {
             FileOutputData::RoochTransactionData(data) => data.tx_hash(),
@@ -52,15 +51,16 @@ impl FileOutputData {
     }
 
     pub fn default_output_file_path(&self) -> Result<PathBuf> {
-        let current_dir = env::current_dir()?;
+        let temp_dir = env::temp_dir();
         let tx_hash = self.tx_hash();
         let file_name = format!("{}.{}", hex::encode(&tx_hash[..8]), self.file_suffix());
-        Ok(current_dir.join(file_name))
+        Ok(temp_dir.join(file_name))
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct FileOutput {
+    pub content: String,
     pub path: String,
 }
 
@@ -71,8 +71,12 @@ impl FileOutput {
             None => data.default_output_file_path()?,
         };
         let mut file = File::create(&path)?;
-        file.write_all(&data.encode())?;
+        // we write the hex encoded data to the file
+        // not the binary data, for better readability
+        let hex = hex::encode(data.encode());
+        file.write_all(hex.as_bytes())?;
         Ok(FileOutput {
+            content: hex,
             path: path.to_string_lossy().to_string(),
         })
     }

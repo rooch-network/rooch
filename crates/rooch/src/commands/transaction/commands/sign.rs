@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::{is_file_path, FileOutput, FileOutputData};
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use moveos_types::module_binding::MoveFunctionCaller;
@@ -15,7 +16,6 @@ use rooch_types::{
     },
 };
 use std::{fs::File, io::Read, str::FromStr};
-use super::{is_file_path, FileOutput, FileOutputData};
 
 #[derive(Debug, Clone)]
 pub enum SignInput {
@@ -82,9 +82,9 @@ impl SignOutput {
     }
 }
 
-impl Into<FileOutputData> for SignOutput {
-    fn into(self) -> FileOutputData {
-        match self {
+impl From<SignOutput> for FileOutputData {
+    fn from(val: SignOutput) -> Self {
+        match val {
             SignOutput::SignedRoochTransaction(tx) => FileOutputData::SignedRoochTransaction(tx),
             SignOutput::PartiallySignedRoochTransaction(psrt) => {
                 FileOutputData::PartiallySignedRoochTransaction(psrt)

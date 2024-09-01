@@ -85,7 +85,8 @@ impl CommandAction<Option<FileOutput>> for BuildCommand {
             .build_tx_data(sender, action, max_gas_amount)
             .await?;
 
-        let output = FileOutput::write_to_file(FileOutputData::RoochTransactionData(tx_data), self.output)?;
+        let output =
+            FileOutput::write_to_file(FileOutputData::RoochTransactionData(tx_data), self.output)?;
         if self.json {
             Ok(Some(output))
         } else {

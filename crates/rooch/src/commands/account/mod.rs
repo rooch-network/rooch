@@ -4,9 +4,9 @@
 use crate::cli_types::CommandAction;
 use async_trait::async_trait;
 use commands::{
-    balance::BalanceCommand, create::CreateCommand, export::ExportCommand, import::ImportCommand,
-    list::ListCommand, nullify::NullifyCommand, sign::SignCommand, switch::SwitchCommand,
-    transfer::TransferCommand,
+    balance::BalanceCommand, create::CreateCommand, create_multisign::CreateMultisignCommand,
+    export::ExportCommand, import::ImportCommand, list::ListCommand, nullify::NullifyCommand,
+    sign::SignCommand, switch::SwitchCommand, transfer::TransferCommand,
 };
 use rooch_types::error::RoochResult;
 use std::path::PathBuf;
@@ -27,6 +27,9 @@ impl CommandAction<String> for Account {
     async fn execute(self) -> RoochResult<String> {
         match self.cmd {
             AccountCommand::Create(create) => create.execute_serialized().await,
+            AccountCommand::CreateMultisign(create_multisign) => {
+                create_multisign.execute_serialized().await
+            }
             AccountCommand::List(list) => list.execute_serialized().await,
             AccountCommand::Switch(switch) => switch.execute_serialized().await,
             AccountCommand::Nullify(nullify) => nullify.execute_serialized().await,
@@ -43,6 +46,7 @@ impl CommandAction<String> for Account {
 #[clap(name = "account")]
 pub enum AccountCommand {
     Create(CreateCommand),
+    CreateMultisign(CreateMultisignCommand),
     List(ListCommand),
     Switch(SwitchCommand),
     Nullify(NullifyCommand),
