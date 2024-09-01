@@ -9,6 +9,7 @@ use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     state::{MoveStructState, MoveStructType},
 };
+use anyhow::Result;
 use move_core_types::language_storage::StructTag;
 use move_core_types::{
     account_address::AccountAddress,
@@ -17,6 +18,9 @@ use move_core_types::{
     value::{MoveStructLayout, MoveTypeLayout},
 };
 use serde::{Deserialize, Serialize};
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("module_store");
 
@@ -97,12 +101,12 @@ impl MoveStructState for Package {
 ///////////// PackageData ////////////////
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
 pub struct PackageData {
-    package_name: MoveString,
+    pub package_name: MoveString,
     /// The address of the package to be published.
     /// This must be same as every module's address in the package.
-    package_id: AccountAddress,
+    pub package_id: AccountAddress,
     /// bytecode of modules.
-    modules: Vec<Vec<u8>>,
+    pub modules: Vec<Vec<u8>>,
 }
 
 impl PackageData {
@@ -116,6 +120,13 @@ impl PackageData {
             package_id,
             modules,
         }
+    }
+
+    pub fn save_to_file<P: AsRef<Path>>(&self, file: P) -> Result<()> {
+        let mut file = File::create(file)?;
+        let contents = bcs::to_bytes(&self)?;
+        file.write_all(&contents)?;
+        Ok(())
     }
 }
 

@@ -59,6 +59,10 @@ impl StdlibVersion {
         release_dir().join(self.dir_with_file())
     }
 
+    pub fn output_dir(&self) -> PathBuf {
+        release_dir().join(self.to_string())
+    }
+
     pub fn create_dir(&self) -> Result<()> {
         let dir = release_dir().join(self.to_string());
         if dir.exists() {
@@ -67,11 +71,14 @@ impl StdlibVersion {
         std::fs::create_dir_all(&dir).map_err(|e| anyhow!("Create dir {:?} failed: {:?}", dir, e))
     }
 
+    /// Deprecated
     pub(crate) fn load_from_file(&self) -> Result<Stdlib> {
         let file = self.output_file();
         Stdlib::load_from_file(file)
     }
 
+    /// Deprecated
+    /// We will save each package separately
     pub fn save(&self, stdlib: &Stdlib) -> Result<()> {
         let file = self.output_file();
         let parent = file
@@ -84,6 +91,32 @@ impl StdlibVersion {
         stdlib
             .save_to_file(&file)
             .map_err(|e| anyhow!("Save stdlib to {:?} failed: {:?}", file, e))
+    }
+
+    /// Save each package in the stdlib to a separate file
+    pub fn save_each_package(&self, stdlib: &Stdlib) -> Result<()> {
+        let dir = self.output_dir();
+        if !dir.exists() {
+            std::fs::create_dir_all(&dir)
+                .map_err(|e| anyhow!("Create dir {:?} failed: {:?}", dir, e))?;
+        }
+        for package in &stdlib.packages {
+            let package_data = package.as_package_data();
+            let file = dir
+                .join(package.genesis_account.to_hex_literal())
+                .join("package.rpd");
+            let parent = file
+                .parent()
+                .ok_or_else(|| anyhow!("Parent dir not found"))?;
+            if !parent.exists() {
+                std::fs::create_dir_all(parent)
+                    .map_err(|e| anyhow!("Create dir {:?} failed: {:?}", parent, e))?;
+            }
+            package_data
+                .save_to_file(&file)
+                .map_err(|e| anyhow!("Save package to {:?} failed: {:?}", file, e))?;
+        }
+        Ok(())
     }
 }
 

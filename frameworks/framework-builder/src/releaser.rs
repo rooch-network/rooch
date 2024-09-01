@@ -82,7 +82,8 @@ pub fn release(version: StdlibVersion, check_compatibility: bool) -> Result<Vec<
         }
     }
 
-    version.save(&curr_stdlib)?;
+    version.save(&curr_stdlib)?; // save the whole stdlib(legacy format).
+    version.save_each_package(&curr_stdlib)?;
     info!(
         "Release stdlib version {:?} successfully.",
         version.as_string()

@@ -240,9 +240,9 @@ Feature: Rooch CLI integration tests
       Given a server for publish_through_entry_function
 
       # The counter example, publishing from saved package binary.
-      Then cmd: "move build -p ../../examples/counter  --named-addresses rooch_examples=default --export --json"
+      Then cmd: "move build -p ../../examples/counter  --named-addresses rooch_examples=default --json"
       Then assert: "{{$.move[-1].Result}} == Success"
-      Then cmd: "move run --function 0x2::module_store::publish_package_entry --sender default --args 'file:../../examples/counter/build/counter/package.blob' --json"
+      Then cmd: "move run --function 0x2::module_store::publish_package_entry --sender default --args 'file:../../examples/counter/build/counter/package.rpd' --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move view --function default::counter::value"
       Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 0"

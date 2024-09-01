@@ -39,10 +39,6 @@ pub struct BuildCommand {
     #[clap(flatten)]
     move_args: Move,
 
-    /// If true, export package binary to the output directory with name `package.blob`
-    #[clap(long, default_value = "false")]
-    export: bool,
-
     /// Return command outputs in json format
     #[clap(long, default_value = "false")]
     json: bool,
@@ -76,44 +72,43 @@ impl CommandAction<Option<Value>> for BuildCommand {
 
         run_verifier(rerooted_path.clone(), config_cloned.clone(), &mut package)?;
 
-        if self.export {
-            let export_path = match &config_cloned.install_dir {
-                None => rerooted_path
-                    .join("build")
-                    .join(package.compiled_package_info.package_name.as_str())
-                    .join("package.blob"),
-                Some(value) => value.clone().join("package.blob"),
-            };
+        // export bcs serialized package data to `package.rpd`(rpd for Rooch Package Data).
+        let export_path = match &config_cloned.install_dir {
+            None => rerooted_path
+                .join("build")
+                .join(package.compiled_package_info.package_name.as_str())
+                .join("package.rpd"),
+            Some(value) => value.clone().join("package.rpd"),
+        };
 
-            let blob = package
-                .root_compiled_units
-                .iter()
-                .map(|unit| unit.unit.serialize(None))
-                .collect::<Vec<_>>();
+        let blob = package
+            .root_compiled_units
+            .iter()
+            .map(|unit| unit.unit.serialize(None))
+            .collect::<Vec<_>>();
 
-            // Get the modules from the package
-            let modules = package.root_modules_map();
-            let empty_modules = modules.iter_modules_owned().is_empty();
-            let pkg_address = if !empty_modules {
-                let first_module = &modules.iter_modules_owned()[0];
-                first_module.self_id().address().to_owned()
-            } else {
-                return Err(RoochError::MoveCompilationError(format!(
-                    "compiling move modules error! Is the project or module empty: {:?}",
-                    empty_modules,
-                )));
-            };
-            let package_data = PackageData::new(
-                MoveString::from(package.compiled_package_info.package_name.as_str()),
-                pkg_address,
-                blob,
-            );
-            let mut file = BufWriter::new(File::create(export_path.clone())?);
-            bcs::serialize_into(&mut file, &package_data)?;
-            file.flush()?;
+        // Get the modules from the package
+        let modules = package.root_modules_map();
+        let empty_modules = modules.iter_modules_owned().is_empty();
+        let pkg_address = if !empty_modules {
+            let first_module = &modules.iter_modules_owned()[0];
+            first_module.self_id().address().to_owned()
+        } else {
+            return Err(RoochError::MoveCompilationError(format!(
+                "compiling move modules error! Is the project or module empty: {:?}",
+                empty_modules,
+            )));
+        };
+        let package_data = PackageData::new(
+            MoveString::from(package.compiled_package_info.package_name.as_str()),
+            pkg_address,
+            blob,
+        );
+        let mut file = BufWriter::new(File::create(export_path.clone())?);
+        bcs::serialize_into(&mut file, &package_data)?;
+        file.flush()?;
 
-            println!("Exported package to {}", export_path.display());
-        }
+        println!("Exported package to {}", export_path.display());
 
         print_serialized_success(self.json)
     }
