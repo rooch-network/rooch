@@ -21,7 +21,9 @@ Feature: Rooch CLI multisign integration tests
       # transaction
       Then cmd: "tx build --sender {{$.account[-2].multisign_address}}  --function rooch_framework::empty::empty --json"
       Then assert: "'{{$.tx[-1]}}' not_contains error"
-      Then cmd: "tx sign {{$.tx[-1].path}} --json"
+      Then cmd: "tx sign {{$.tx[-1].path}} -s {{$.account[-2].participants[0].participant_address}}  --json"
+      Then assert: "'{{$.tx[-1]}}' not_contains error"
+      Then cmd: "tx sign {{$.tx[-1].path}} -s {{$.account[-2].participants[1].participant_address}}  --json"
       Then assert: "'{{$.tx[-1]}}' not_contains error"
       Then cmd: "tx submit {{$.tx[-1].path}} --json"
       Then assert: "{{$.tx[-1].execution_info.status.type}} == executed"

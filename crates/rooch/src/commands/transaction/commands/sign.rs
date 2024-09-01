@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use moveos_types::module_binding::MoveFunctionCaller;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::{
-    address::RoochAddress,
+    address::{ParsedAddress, RoochAddress},
     bitcoin::multisign_account::MultisignAccountModule,
     error::{RoochError, RoochResult},
     transaction::{
@@ -101,6 +101,11 @@ pub struct SignCommand {
     /// or a file path which contains transaction data or partially signed transaction data
     input: SignInput,
 
+    /// The address of the signer when the transaction is a multisign account transaction
+    /// If not specified, we will auto find the existing participants in the multisign account from the keystore
+    #[clap(short = 's', long, value_parser=ParsedAddress::parse)]
+    signer: Option<ParsedAddress>,
+
     /// The output file path for the signed transaction
     /// If not specified, the signed output will write to current directory.
     #[clap(long, short = 'o')]
@@ -128,25 +133,48 @@ impl SignCommand {
                 }
                 SignInput::PartiallySignedRoochTransaction(psrt) => psrt,
             };
-            let participants = multisign_account_module.participants(sender.into())?;
-            let mut has_participant = false;
-            for participant in participants.iter() {
-                if context
-                    .keystore
-                    .contains_address(&participant.participant_address.into())
-                {
-                    has_participant = true;
-                    let kp = context.get_key_pair(&participant.participant_address.into())?;
+            match self.signer {
+                Some(signer) => {
+                    let signer = context.resolve_address(signer)?;
+                    if !multisign_account_module.is_participant(sender.into(), signer)? {
+                        return Err(anyhow::anyhow!(
+                            "The signer address {} is not a participant in the multisign account",
+                            signer
+                        ));
+                    }
+                    let kp = context.get_key_pair(&signer.into())?;
                     let authenticator = BitcoinAuthenticator::sign(&kp, &psrt.data);
                     if psrt.contains_authenticator(&authenticator) {
-                        continue;
+                        return Err(anyhow::anyhow!(
+                            "The signer has already signed the transaction"
+                        ));
                     }
                     psrt.add_authenticator(authenticator)?;
                 }
+                None => {
+                    let participants = multisign_account_module.participants(sender.into())?;
+                    let mut has_participant = false;
+                    for participant in participants.iter() {
+                        if context
+                            .keystore
+                            .contains_address(&participant.participant_address.into())
+                        {
+                            has_participant = true;
+                            let kp =
+                                context.get_key_pair(&participant.participant_address.into())?;
+                            let authenticator = BitcoinAuthenticator::sign(&kp, &psrt.data);
+                            if psrt.contains_authenticator(&authenticator) {
+                                continue;
+                            }
+                            psrt.add_authenticator(authenticator)?;
+                        }
+                    }
+                    if !has_participant {
+                        return Err(anyhow::anyhow!("No participant found in the multisign account from the keystore, participants: {:?}", participants));
+                    }
+                }
             }
-            if !has_participant {
-                return Err(anyhow::anyhow!("No participant found in the multisign account from the keystore, participants: {:?}", participants));
-            }
+
             if psrt.is_fully_signed() {
                 SignOutput::SignedRoochTransaction(psrt.try_into_rooch_transaction()?)
             } else {
