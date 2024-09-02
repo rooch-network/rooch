@@ -60,15 +60,15 @@ pub fn instantiate(
 }
 
 #[entry_point]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(_deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
   match msg {
-      QueryMsg::InscribeGenerate(input) => to_json_binary(&query_inscribe_generate(deps, input)?),
-      QueryMsg::InscribeVerify { input, output } => to_json_binary(&inscribe_verify(deps, input, output)?),
-      QueryMsg::IndexerGenerate(input) => to_json_binary(&indexer_generate(deps, input)?),
+      QueryMsg::InscribeGenerate(input) => to_json_binary(&inscribe_generate(input)?),
+      QueryMsg::InscribeVerify { input, output } => to_json_binary(&inscribe_verify(input, output)?),
+      QueryMsg::IndexerGenerate(input) => to_json_binary(&indexer_generate(input)?),
   }
 }
 
-fn query_inscribe_generate(_deps: Deps, input: InputData) -> StdResult<OutputData> {
+fn inscribe_generate(input: InputData) -> StdResult<OutputData> {
   let hash_value = hash_str_uint32(&format!("{}{}", input.seed, input.user_input));
 
   let mut attributes = vec![
@@ -115,13 +115,13 @@ fn query_inscribe_generate(_deps: Deps, input: InputData) -> StdResult<OutputDat
   })
 }
 
-fn inscribe_verify(deps: Deps, input: InputData, output: OutputData) -> StdResult<bool> {
-  let generated_output = query_inscribe_generate(deps, input)?;
+fn inscribe_verify(input: InputData, output: OutputData) -> StdResult<bool> {
+  let generated_output = inscribe_generate(input)?;
   Ok(generated_output == output)
 }
 
-fn indexer_generate(deps: Deps, input: InputData) -> StdResult<OutputData> {
-  query_inscribe_generate(deps, input)
+fn indexer_generate(input: InputData) -> StdResult<OutputData> {
+  inscribe_generate(input)
 }
 
 fn hash_str_uint32(str: &str) -> u32 {
@@ -214,7 +214,7 @@ mod tests {
         };
 
         // Generate expected output
-        let expected_output = query_inscribe_generate(deps.as_ref(), input.clone()).unwrap();
+        let expected_output = inscribe_generate( input.clone()).unwrap();
 
         // Test verification with correct output
         let query_msg = QueryMsg::InscribeVerify {
@@ -238,5 +238,5 @@ mod tests {
         let result: bool = from_json(&binary_response).unwrap();
         assert!(!result);
     }
-    
+
 }
