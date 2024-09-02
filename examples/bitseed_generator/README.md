@@ -11,14 +11,10 @@ A CosmWasm smart contract for generating and verifying custom attributes for dig
 
 ## Build and Test
 
-### Prerequisites
-
-- Rust and Cargo (latest stable version)
-
 ### Build
 
 ```
-cargo build
+cargo wasm
 ```
 
 ### Test
