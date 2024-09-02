@@ -456,7 +456,6 @@ Borrow the CoinInfo<CoinType>
 
 ## Function `upsert_icon_url`
 
-Upsert icon_url as<code>CoinType</code> dynamic field
 This function is protected by <code>private_generics</code>, so it can only be called by the <code>CoinType</code> module.
 
 
