@@ -88,6 +88,10 @@ impl AccountKeystore for BaseKeyStore {
         Ok(accounts.into_values().collect())
     }
 
+    fn contains_address(&self, address: &RoochAddress) -> bool {
+        self.keys.contains_key(address)
+    }
+
     // TODO: deal with the Rooch and Nostr's get_key_pair() function. Consider Nostr scenario
     fn get_key_pair(
         &self,
@@ -229,7 +233,7 @@ impl AccountKeystore for BaseKeyStore {
             .decrypt_with_type(password)
             .map_err(signature::Error::from_source)?;
 
-        let auth = authenticator::Authenticator::rooch(&kp, &msg);
+        let auth = authenticator::Authenticator::session(&kp, &msg);
         Ok(RoochTransaction::new(msg, auth))
     }
 

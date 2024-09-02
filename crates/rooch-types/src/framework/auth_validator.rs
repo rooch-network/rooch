@@ -45,21 +45,21 @@ pub const MODULE_NAME: &IdentStr = ident_str!("auth_validator");
 )]
 #[strum(serialize_all = "lowercase")]
 pub enum BuiltinAuthValidator {
-    Rooch,
+    Session,
     Bitcoin,
     BitcoinMultisign,
     Ethereum,
 }
 
 impl BuiltinAuthValidator {
-    const ROOCH_FLAG: u8 = 0x00;
+    const SESSION_FLAG: u8 = 0x00;
     const BITCOIN_FLAG: u8 = 0x01;
     const BITCOIN_MULTISIGN: u8 = 0x02;
     const ETHEREUM_FLAG: u8 = 0x03;
 
     pub fn flag(&self) -> u8 {
         match self {
-            BuiltinAuthValidator::Rooch => Self::ROOCH_FLAG,
+            BuiltinAuthValidator::Session => Self::SESSION_FLAG,
             BuiltinAuthValidator::Bitcoin => Self::BITCOIN_FLAG,
             BuiltinAuthValidator::BitcoinMultisign => Self::BITCOIN_MULTISIGN,
             BuiltinAuthValidator::Ethereum => Self::ETHEREUM_FLAG,
@@ -75,7 +75,7 @@ impl BuiltinAuthValidator {
 
     pub fn from_flag_byte(byte_int: u8) -> Result<BuiltinAuthValidator, RoochError> {
         match byte_int {
-            Self::ROOCH_FLAG => Ok(BuiltinAuthValidator::Rooch),
+            Self::SESSION_FLAG => Ok(BuiltinAuthValidator::Session),
             Self::BITCOIN_FLAG => Ok(BuiltinAuthValidator::Bitcoin),
             Self::BITCOIN_MULTISIGN => Ok(BuiltinAuthValidator::BitcoinMultisign),
             Self::ETHEREUM_FLAG => Ok(BuiltinAuthValidator::Ethereum),
@@ -87,7 +87,7 @@ impl BuiltinAuthValidator {
 
     pub fn auth_validator(&self) -> AuthValidator {
         match self {
-            BuiltinAuthValidator::Rooch => AuthValidator {
+            BuiltinAuthValidator::Session => AuthValidator {
                 id: self.flag().into(),
                 module_address: ROOCH_FRAMEWORK_ADDRESS,
                 module_name: MoveString::from_str("session_validator").expect("Should be valid"),

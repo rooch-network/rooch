@@ -18,6 +18,7 @@ use rooch_rpc_api::jsonrpc_types::{
 use rooch_types::address::ParsedAddress;
 use rooch_types::address::RoochAddress;
 use rooch_types::addresses;
+use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::rooch::{RoochTransaction, RoochTransactionData};
 use std::collections::BTreeMap;
@@ -164,6 +165,17 @@ impl WalletContext {
         Ok(tx)
     }
 
+    pub async fn sign_transaction(
+        &self,
+        signer: RoochAddress,
+        tx_data: RoochTransactionData,
+    ) -> RoochResult<RoochTransaction> {
+        let tx = self
+            .keystore
+            .sign_transaction(&signer, tx_data, self.password.clone())?;
+        Ok(tx)
+    }
+
     pub async fn execute(
         &self,
         tx: RoochTransaction,
@@ -191,6 +203,10 @@ impl WalletContext {
     ) -> RoochResult<ExecuteTransactionResponseView> {
         let tx = self.sign(sender, action, password, max_gas_amount).await?;
         self.execute(tx).await
+    }
+
+    pub fn get_key_pair(&self, address: &RoochAddress) -> Result<RoochKeyPair> {
+        self.keystore.get_key_pair(address, self.password.clone())
     }
 
     pub async fn dry_run(

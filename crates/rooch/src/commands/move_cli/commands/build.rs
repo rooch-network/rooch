@@ -57,6 +57,8 @@ impl CommandAction<Option<Value>> for BuildCommand {
             .additional_named_addresses
             .extend(context.parse_and_resolve_addresses(self.named_addresses)?);
 
+        let original_current_dir = std::env::current_dir()?;
+
         let rerooted_path = reroot_path(path)?;
         if config.fetch_deps_only {
             if config.test_mode {
@@ -107,6 +109,9 @@ impl CommandAction<Option<Value>> for BuildCommand {
         let mut file = BufWriter::new(File::create(export_path.clone())?);
         bcs::serialize_into(&mut file, &package_data)?;
         file.flush()?;
+
+        //reset the current directory to the original
+        std::env::set_current_dir(original_current_dir)?;
 
         println!("Exported package to {}", export_path.display());
 
