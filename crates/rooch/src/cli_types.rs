@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use async_trait::async_trait;
-use clap::Parser;
+use clap::{ArgGroup, Parser};
+use moveos_types::h256::H256;
 use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_client::wallet_context::WalletContext;
@@ -97,6 +98,32 @@ pub struct TransactionOptions {
     /// This option conflicts with `authenticator`
     #[clap(long, conflicts_with = "authenticator")]
     pub(crate) session_key: Option<AuthenticationKey>,
+}
+
+#[derive(Debug, Parser)]
+#[clap(group = ArgGroup::new("filter").required(true).multiple(true))]
+pub struct TransactionFilterOptions {
+    /// Sender address
+    #[clap(long, value_parser=ParsedAddress::parse, group = "filter")]
+    pub(crate) sender: Option<ParsedAddress>,
+
+    /// Transaction's hashes
+    #[clap(long, value_delimiter = ',', group = "filter")]
+    pub(crate) tx_hashes: Option<Vec<H256>>,
+
+    /// [start-time, end-time) interval, unit: millisecond
+    #[clap(long, requires = "end_time", group = "filter")]
+    pub(crate) start_time: Option<u64>,
+    /// [start-time, end-time) interval, unit: millisecond
+    #[clap(long, requires = "start_time", group = "filter")]
+    pub(crate) end_time: Option<u64>,
+
+    /// [from-order, to-order) interval
+    #[clap(long, requires = "to_order", group = "filter")]
+    pub(crate) from_order: Option<u64>,
+    /// [from-order, to-order) interval
+    #[clap(long, requires = "from_order", group = "filter")]
+    pub(crate) to_order: Option<u64>,
 }
 
 #[derive(Debug, Parser)]
