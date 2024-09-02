@@ -243,6 +243,7 @@ impl RoochGenesis {
         let genesis_ctx = rooch_types::framework::genesis::GenesisContext::new(
             network.chain_id.id,
             genesis_config.sequencer_account,
+            genesis_config.rooch_dao.multisign_bitcoin_address.clone(),
         );
         let moveos_genesis_ctx =
             moveos_types::moveos_std::genesis::GenesisContext::new(genesis_config.timestamp);
@@ -251,6 +252,7 @@ impl RoochGenesis {
             genesis_config.bitcoin_block_height,
             genesis_config.bitcoin_block_hash.into_address(),
             genesis_config.bitcoin_reorg_block_count,
+            genesis_config.rooch_dao,
         );
 
         let bundles = stdlib.all_module_bundles()?;

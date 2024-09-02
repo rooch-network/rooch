@@ -28,6 +28,8 @@ module rooch_framework::genesis {
         chain_id: u64,
         /// Sequencer account
         sequencer: BitcoinAddress, 
+        /// Rooch DAO multisign account
+        rooch_dao: BitcoinAddress, 
     }
 
     fun init(){
@@ -57,15 +59,16 @@ module rooch_framework::genesis {
             account::create_account(sequencer_addr);
             address_mapping::bind_bitcoin_address(sequencer_addr, genesis_context.sequencer);
         };
+        let rooch_dao_address = bitcoin_address::to_rooch_address(&genesis_context.rooch_dao);
 
-        // issue framework packages upgrade cap to sequencer
+        // issue framework packages upgrade cap to rooch dao
         let system_addresses = core_addresses::list_system_reserved_addresses();
         vector::for_each(system_addresses, |addr| {
-            module_store::issue_upgrade_cap_by_system(genesis_account, addr, sequencer_addr);
+            module_store::issue_upgrade_cap_by_system(genesis_account, addr, rooch_dao_address);
         });
         
         // give some gas coin to the sequencer
-        gas_coin::faucet(sequencer_addr, 1000000_00000000u256);
+        gas_coin::faucet(rooch_dao_address, 1000000_00000000u256);
     }
 
 
@@ -76,8 +79,8 @@ module rooch_framework::genesis {
     /// init the genesis context for test
     public fun init_for_test(){
         let genesis_account = moveos_std::signer::module_signer<GenesisContext>();
-        let sequencer = bitcoin_address::from_string(&std::string::utf8(b"1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"));
-        tx_context::add_attribute_via_system(&genesis_account, GenesisContext{chain_id: 3, sequencer});
+        let sequencer = bitcoin_address::from_string(&std::string::utf8(b"bc1pxup9p7um3t5knqn0yxfrq5d0mgul9ts993j32tsfxn68qa4pl3nq2qhh2e"));
+        tx_context::add_attribute_via_system(&genesis_account, GenesisContext{chain_id: 3, sequencer, rooch_dao: @0xd10165036fe6e26dc68b9aad7b6c979bb952d8b0ed9c583bb7e6ff13ee321f69});
         genesis::init_for_test();
         init();
     }
