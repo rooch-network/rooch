@@ -4,6 +4,7 @@
 #[test_only]
 /// This test module is used to test the account_coin_store module.
 module rooch_framework::account_coin_store_test{
+    use std::option;
     use std::signer;
     use std::string;
     
@@ -26,6 +27,7 @@ module rooch_framework::account_coin_store_test{
         coin::register_extend<FakeCoin>(
             string::utf8(b"Fake coin"),
             string::utf8(b"FCD"),
+            option::none(),
             decimals,
         )
     }

@@ -94,6 +94,7 @@ module rooch_framework::transfer_test{
         coin::register_extend<FakeCoin>(
             string::utf8(b"Fake coin"),
             string::utf8(b"FCD"),
+            option::none(),
             decimals,
         )
     }

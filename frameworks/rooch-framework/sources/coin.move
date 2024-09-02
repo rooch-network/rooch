@@ -233,6 +233,7 @@ module rooch_framework::coin {
     public fun register_extend<CoinType: key>(
         name: string::String,
         symbol: string::String,
+        icon_url: Option<string::String>,
         decimals: u8,
     ): Object<CoinInfo<CoinType>> {
         assert!(
@@ -249,7 +250,7 @@ module rooch_framework::coin {
             coin_type,
             name,
             symbol,
-            icon_url: option::none(),
+            icon_url,
             decimals,
             supply: 0u256,
         };

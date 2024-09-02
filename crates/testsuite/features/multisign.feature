@@ -15,7 +15,7 @@ Feature: Rooch CLI multisign integration tests
       Then assert: "'{{$.account[-1]}}' not_contains error"
 
       #transfer some gas to multisign account
-      Then cmd: "account transfer --to {{$.account[-1].multisign_address}} --amount 10000000000 --coin-type rooch_framework::gas_coin::GasCoin"
+      Then cmd: "account transfer --to {{$.account[-1].multisign_address}} --amount 10000000000 --coin-type rooch_framework::gas_coin::RGas"
       Then assert: "{{$.account[-1].execution_info.status.type}} == executed"  
 
       # transaction

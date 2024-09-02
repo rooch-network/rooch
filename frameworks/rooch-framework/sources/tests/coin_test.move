@@ -4,6 +4,7 @@
 #[test_only]
 /// This test module is used to test the coin logic in coin and account module.
 module rooch_framework::coin_test{
+    use std::option;
     use std::string;
     
     use moveos_std::object::{Self, Object};
@@ -24,6 +25,7 @@ module rooch_framework::coin_test{
         coin::register_extend<FakeCoin>(
             string::utf8(b"Fake coin"),
             string::utf8(b"FCD"),
+            option::none(),
             decimals,
         )
     }
@@ -38,9 +40,9 @@ module rooch_framework::coin_test{
         let decimals = 9u8;
 
         let coin_info_obj = register_extend<FakeCoin>(
-            
             name,
             symbol,
+            option::none(),
             decimals,
         );
         {
@@ -78,17 +80,17 @@ module rooch_framework::coin_test{
         rooch_framework::genesis::init_for_test();
 
         let coin_info_obj = register_extend<FakeCoin>(
-            
             string::utf8(b"Fake coin"),
             string::utf8(b"FCD"),
+            option::none(),
             9,
         );
         object::transfer(coin_info_obj, @rooch_framework);
 
         let coin_info_obj = register_extend<FakeCoin>(
-            
             string::utf8(b"Fake coin"),
             string::utf8(b"FCD"),
+            option::none(),
             9,
         );
         object::transfer(coin_info_obj, @rooch_framework);
