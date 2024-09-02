@@ -25,6 +25,7 @@
 
 ```move
 module coins::fixed_supply_coin {
+    use std::option;
     use std::string;
     use moveos_std::signer;
     use moveos_std::object::{Self, Object};
@@ -44,6 +45,7 @@ module coins::fixed_supply_coin {
         let coin_info_obj = coin::register_extend<FSC>(    
             string::utf8(b"Fixed Supply Coin"),
             string::utf8(b"FSC"),
+            option::none(),
             DECIMALS,
         );
         // Mint the total supply of coins, and store it to the treasury
@@ -91,6 +93,7 @@ module coins::fixed_supply_coin {
 ```move
 module coins::private_coin {
 
+    use std::option;
     use std::string;
     use moveos_std::signer;
     use moveos_std::object::{Self, Object};
@@ -112,6 +115,7 @@ module coins::private_coin {
         let coin_info_obj = coin::register_extend<PRC>(
             string::utf8(b"Private Coin"),
             string::utf8(b"PRC"),
+            option::none(),
             1,
         );
         object::transfer(coin_info_obj, @coins);

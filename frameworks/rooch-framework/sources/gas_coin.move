@@ -3,6 +3,7 @@
 
 /// This module defines Rooch Gas Coin.
 module rooch_framework::gas_coin {
+    use std::option;
     use std::string;
     use moveos_std::signer;
     use moveos_std::object::{Self, Object};
@@ -14,8 +15,9 @@ module rooch_framework::gas_coin {
     friend rooch_framework::genesis;
     friend rooch_framework::transaction_validator;
 
-    //If not, we can remove `store` ability from GasCoin.
-    struct GasCoin has key, store {}
+    /// RGas is the symbol of Rooch Gas Coin
+    //If not, we can remove `store` ability from RGas.
+    struct RGas has key, store {}
 
     const DECIMALS: u8 = 8;
     public fun decimals() : u8 {
@@ -23,39 +25,39 @@ module rooch_framework::gas_coin {
     }
 
     public fun balance(addr: address): u256 {
-        account_coin_store::balance<GasCoin>(addr)
+        account_coin_store::balance<RGas>(addr)
     }
 
-    fun borrow_mut_coin_info() : &mut Object<CoinInfo<GasCoin>> {
-        let signer = signer::module_signer<GasCoin>();
-        let coin_info_id = coin::coin_info_id<GasCoin>();
-        object::borrow_mut_object<CoinInfo<GasCoin>>(&signer, coin_info_id)
+    fun borrow_mut_coin_info() : &mut Object<CoinInfo<RGas>> {
+        let signer = signer::module_signer<RGas>();
+        let coin_info_id = coin::coin_info_id<RGas>();
+        object::borrow_mut_object<CoinInfo<RGas>>(&signer, coin_info_id)
     }
 
-    fun mint(amount: u256): Coin<GasCoin> {
+    fun mint(amount: u256): Coin<RGas> {
         let coin_info = borrow_mut_coin_info();
-        coin::mint_extend<GasCoin>(coin_info, amount)
+        coin::mint_extend<RGas>(coin_info, amount)
     }
 
     #[test_only]
-    public fun mint_for_test(amount: u256) : Coin<GasCoin> {
+    public fun mint_for_test(amount: u256) : Coin<RGas> {
         mint(amount)
     }
 
-    public fun burn(coin: Coin<GasCoin>) {
+    public fun burn(coin: Coin<RGas>) {
         let coin_info = borrow_mut_coin_info(); 
-        coin::burn_extend<GasCoin>(coin_info, coin);
+        coin::burn_extend<RGas>(coin_info, coin);
     }
 
     /// deduct gas coin from the given account.
-    public(friend) fun deduct_gas(addr: address, amount: u256):Coin<GasCoin> {
-        account_coin_store::withdraw_extend<GasCoin>(addr, amount)
+    public(friend) fun deduct_gas(addr: address, amount: u256):Coin<RGas> {
+        account_coin_store::withdraw_extend<RGas>(addr, amount)
     }
 
     /// Mint gas coin to the given account.
     public(friend) fun faucet(addr: address, amount: u256) {
         let coin = mint(amount);
-        account_coin_store::deposit_extend<GasCoin>(addr, coin);
+        account_coin_store::deposit_extend<RGas>(addr, coin);
     }
 
     #[test_only]
@@ -74,9 +76,10 @@ module rooch_framework::gas_coin {
 
     /// Can only be called during genesis to initialize the Rooch coin.
     public(friend) fun genesis_init(_genesis_account: &signer){
-        let coin_info_obj = coin::register_extend<GasCoin>(
+        let coin_info_obj = coin::register_extend<RGas>(
             string::utf8(b"Rooch Gas Coin"),
-            string::utf8(b"RGC"),
+            string::utf8(b"RGAS"),
+            option::none(),
             DECIMALS, // decimals
         );
         object::transfer(coin_info_obj, @rooch_framework);

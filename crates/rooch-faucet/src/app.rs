@@ -63,7 +63,7 @@ impl App {
             .rooch
             .get_balance(
                 faucet_address.into(),
-                StructTagView::from_str("0x3::gas_coin::GasCoin").unwrap(),
+                StructTagView::from_str("0x3::gas_coin::RGas").unwrap(),
             )
             .await
             .map_err(FaucetError::internal)?;

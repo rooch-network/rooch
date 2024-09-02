@@ -96,13 +96,13 @@ describe('Serializer', () => {
           Struct: {
             address: '0x3',
             module: 'gas_coin',
-            name: 'GasCoin',
+            name: 'RGas',
             typeParams: [],
           },
         },
       ],
     }
-    const expectObjectID = '0xfcdeeab90012518f19a6879b1435d0294be6e911791fa618520d1a4d00757d84'
+    const expectObjectID = '0xfdda11f9cc18bb30973779eb3610329d7e0e3c6ecce05b4d77b5a839063bff66'
     const resultObjectID = Serializer.structTagToObjectID(testData)
     expect(resultObjectID).toBe(expectObjectID)
   })

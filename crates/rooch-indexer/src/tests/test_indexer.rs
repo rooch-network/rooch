@@ -16,7 +16,7 @@ use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransact
 use rand::random;
 use rooch_config::store_config::DEFAULT_DB_INDEXER_SUBDIR;
 use rooch_types::framework::coin_store::CoinStore;
-use rooch_types::framework::gas_coin::GasCoin;
+use rooch_types::framework::gas_coin::RGas;
 use rooch_types::indexer::event::{EventFilter, IndexerEvent};
 use rooch_types::indexer::state::{IndexerObjectState, ObjectStateFilter, ObjectStateType};
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
@@ -158,14 +158,14 @@ async fn test_object_type_query() -> Result<()> {
         0,
         0,
         0,
-        CoinStore::<GasCoin>::new(100u64.into(), false),
+        CoinStore::<RGas>::new(100u64.into(), false),
     );
     let raw_obj = coin_store_obj.into_state();
     let state = IndexerObjectState::new(raw_obj.metadata, 0, 0);
     let object_states = vec![state];
     indexer_store.persist_or_update_object_states(object_states.clone())?;
     // filter by exact object type
-    let filter = ObjectStateFilter::ObjectType(CoinStore::<GasCoin>::struct_tag());
+    let filter = ObjectStateFilter::ObjectType(CoinStore::<RGas>::struct_tag());
     let query_object_states = indexer_reader.query_object_ids_with_filter(
         filter,
         None,
@@ -176,7 +176,7 @@ async fn test_object_type_query() -> Result<()> {
     assert_eq!(query_object_states.len(), 1);
     // filter by object type and owner
     let filter = ObjectStateFilter::ObjectTypeWithOwner {
-        object_type: CoinStore::<GasCoin>::struct_tag(),
+        object_type: CoinStore::<RGas>::struct_tag(),
         filter_out: false,
         owner,
     };

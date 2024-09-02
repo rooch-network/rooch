@@ -193,6 +193,7 @@ module btc_holder_farmer::hold_farmer {
         let coin_info = coin::register_extend<HDC>(
             string::utf8(name),
             string::utf8(symbol),
+            option::none(),
             decimals,
         );
         account::move_resource_to(signer, FarmingAsset {

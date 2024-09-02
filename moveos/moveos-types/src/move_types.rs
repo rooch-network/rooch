@@ -332,7 +332,7 @@ mod tests {
         )
         .is_err());
         assert!(parse_type_tag(
-            "0x900f053234b0ba66ad062b277896b28e049f2813d388da375efcd54b6e429dbe::coin::Coin<0000000000000000000000000000000000000000000000000000000000000003::gas_coin::GasCoin>"
+            "0x900f053234b0ba66ad062b277896b28e049f2813d388da375efcd54b6e429dbe::coin::Coin<0000000000000000000000000000000000000000000000000000000000000003::gas_coin::RGas>"
         )
             .is_err());
     }
@@ -377,7 +377,7 @@ mod tests {
         assert_eq!(multi_generic.type_params.len(), 2);
 
         // nested generic
-        let nested_generic = parse_struct_tag("0x0000000000000000000000000000000000000000000000000000000000000001::complex::Type<vector<0x0000000000000000000000000000000000000000000000000000000000000001::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000001::gas_coin::GasCoin>>>").unwrap();
+        let nested_generic = parse_struct_tag("0x0000000000000000000000000000000000000000000000000000000000000001::complex::Type<vector<0x0000000000000000000000000000000000000000000000000000000000000001::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000001::gas_coin::RGas>>>").unwrap();
         assert_eq!(
             nested_generic.address,
             AccountAddress::from_hex_literal("0x1").unwrap()
@@ -393,9 +393,9 @@ mod tests {
                 assert_eq!(coin_struct.type_params.len(), 1);
                 if let TypeTag::Struct(gas_coin_struct) = &coin_struct.type_params[0] {
                     assert_eq!(gas_coin_struct.module.as_str(), "gas_coin");
-                    assert_eq!(gas_coin_struct.name.as_str(), "GasCoin");
+                    assert_eq!(gas_coin_struct.name.as_str(), "RGas");
                 } else {
-                    panic!("Expected Struct TypeTag for GasCoin");
+                    panic!("Expected Struct TypeTag for RGas");
                 }
             } else {
                 panic!("Expected Struct TypeTag for Coin");

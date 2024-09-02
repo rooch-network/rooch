@@ -3,6 +3,7 @@
 
 module coins::private_coin {
 
+    use std::option;
     use std::string;
     use moveos_std::signer;
     use moveos_std::object::{Self, Object};
@@ -22,9 +23,9 @@ module coins::private_coin {
 
     fun init() {
         let coin_info_obj = coin::register_extend<PRC>(
-            
             string::utf8(b"Private Coin"),
             string::utf8(b"PRC"),
+            option::none(),
             1,
         );
         object::transfer(coin_info_obj, @coins);

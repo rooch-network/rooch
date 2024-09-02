@@ -18,7 +18,7 @@ pub enum FaucetError {
     InvalidAddress(String),
 
     #[error("Timed out waiting for a coin from the gas coin pool")]
-    NoGasCoinAvailable,
+    NoRGasAvailable,
 
     #[error("Wallet Error: `{0}`")]
     Wallet(String),

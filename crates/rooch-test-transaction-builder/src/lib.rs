@@ -15,7 +15,7 @@ use moveos_verifier::build::run_verifier;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::RoochError;
 use rooch_types::framework::empty::Empty;
-use rooch_types::framework::gas_coin::GasCoin;
+use rooch_types::framework::gas_coin::RGas;
 use rooch_types::framework::transfer::TransferModule;
 use rooch_types::test_utils::{random_string, random_string_with_size};
 use rooch_types::transaction::rooch::RoochTransactionData;
@@ -78,7 +78,7 @@ impl TestTransactionBuilder {
 
     pub fn call_transfer_create(&self) -> MoveAction {
         TransferModule::create_transfer_coin_action(
-            GasCoin::struct_tag(),
+            RGas::struct_tag(),
             AccountAddress::random(),
             U256::from(100u128),
         )

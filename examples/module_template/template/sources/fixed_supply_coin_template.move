@@ -3,6 +3,7 @@
 
 module template::coin_module_identifier_placeholder {
 
+    use std::option;
     use std::string;
     use moveos_std::signer;
     
@@ -24,9 +25,9 @@ module template::coin_module_identifier_placeholder {
 
     fun init() {
         let coin_info_obj = coin::register_extend<COIN_STRUCT_IDENTIFIER_PLACEHOLDER>(
-            
             string::utf8(b"COIN_NAME_PLACEHOLDER"),
             string::utf8(b"COIN_SYMBOL_PLACEHOLDER"),
+            option::none(),
             DECIMALS,
         );
         // Mint the total supply of coins, and store it to the treasury
