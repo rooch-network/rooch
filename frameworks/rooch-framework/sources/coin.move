@@ -3,6 +3,7 @@
 
 /// This module provides the foundation for typesafe Coins.
 module rooch_framework::coin {
+    use std::option;
     use std::option::Option;
     use std::string;
     use std::string::String;
@@ -81,6 +82,8 @@ module rooch_framework::coin {
         /// Symbol of the coin, usually a shorter version of the name.
         /// For example, Singapore Dollar is SGD.
         symbol: string::String,
+        /// Icon url of the coin
+        icon_url: Option<string::String>,
         /// Number of decimals used to get its user representation.
         /// For example, if `decimals` equals `2`, a balance of `505` coins should
         /// be displayed to a user as `5.05` (`505 / 10 ** 2`).
@@ -156,8 +159,10 @@ module rooch_framework::coin {
     }
 
     /// Returns the icon url of coin.
-    public fun icon_url<CoinType: key>(coin_info: &Object<CoinInfo<CoinType>>): Option<String> {
-        *object::borrow_field<CoinInfo<CoinType>, String, Option<String>>(coin_info, string::utf8(b"icon_url"))
+    // public fun icon_url<CoinType: key>(coin_info: &Object<CoinInfo<CoinType>>): Option<String> {
+    public fun icon_url<CoinType: key>(coin_info: &CoinInfo<CoinType>): Option<String> {
+        // *object::borrow_field<CoinInfo<CoinType>, String, Option<String>>(coin_info, string::utf8(b"icon_url"))
+        coin_info.icon_url
     }
 
     /// Return true if the type `CoinType1` is same with `CoinType2`
@@ -221,7 +226,8 @@ module rooch_framework::coin {
     /// Upsert icon_url as`CoinType` dynamic field
     /// This function is protected by `private_generics`, so it can only be called by the `CoinType` module.
     public fun upsert_icon_url<CoinType: key>(coin_info_obj: &mut Object<CoinInfo<CoinType>>, icon_url: String){
-        object::upsert_field(coin_info_obj, string::utf8(b"icon_url"), icon_url);
+        // object::upsert_field(coin_info_obj, string::utf8(b"icon_url"), icon_url);
+        object::borrow_mut(coin_info_obj).icon_url = option::some(icon_url);
     }
 
 
@@ -229,7 +235,6 @@ module rooch_framework::coin {
     /// Creates a new Coin with given `CoinType`
     /// This function is protected by `private_generics`, so it can only be called by the `CoinType` module.
     public fun register_extend<CoinType: key>(
-        
         name: string::String,
         symbol: string::String,
         decimals: u8,
@@ -248,6 +253,7 @@ module rooch_framework::coin {
             coin_type,
             name,
             symbol,
+            icon_url: option::none(),
             decimals,
             supply: 0u256,
         };

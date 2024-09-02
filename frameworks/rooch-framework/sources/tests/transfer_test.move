@@ -9,7 +9,7 @@ module rooch_framework::transfer_test{
     use std::option;
     use moveos_std::object::{Self, Object};
     use rooch_framework::transfer;
-    use rooch_framework::gas_coin::{Self, GasCoin};
+    use rooch_framework::gas_coin::{Self, RGas};
     use rooch_framework::multichain_address::{Self, MultiChainAddress};
     use rooch_framework::bitcoin_address;
     use rooch_framework::address_mapping;
@@ -37,7 +37,7 @@ module rooch_framework::transfer_test{
 
         let original_balance = gas_coin::balance(from);
         let amount = 11u256;
-        transfer::transfer_coin<GasCoin>(&from_signer, to, amount);
+        transfer::transfer_coin<RGas>(&from_signer, to, amount);
 
         assert!(gas_coin::balance(from) == original_balance - amount, 1001);
         assert!(gas_coin::balance(to) == amount, 1002);
@@ -53,13 +53,13 @@ module rooch_framework::transfer_test{
 
         let original_balance = gas_coin::balance(from);
         let amount = 11u256;
-        transfer::transfer_coin_to_multichain_address<GasCoin>(&from_signer, multichain_address::multichain_id(&to), *multichain_address::raw_address(&to), amount);
+        transfer::transfer_coin_to_multichain_address<RGas>(&from_signer, multichain_address::multichain_id(&to), *multichain_address::raw_address(&to), amount);
 
         assert!(gas_coin::balance(from) == original_balance - amount, 1002);
         assert!(gas_coin::balance(to_address) == amount, 1003);
 
         //transfer again
-        transfer::transfer_coin_to_multichain_address<GasCoin>(&from_signer, multichain_address::multichain_id(&to), *multichain_address::raw_address(&to), amount);
+        transfer::transfer_coin_to_multichain_address<RGas>(&from_signer, multichain_address::multichain_id(&to), *multichain_address::raw_address(&to), amount);
         assert!(gas_coin::balance(to_address) == amount*2, 1004);        
     }
 
@@ -78,7 +78,7 @@ module rooch_framework::transfer_test{
         let to_rooch_address = bitcoin_address::to_rooch_address(&btc_address);
 
         let original_balance = gas_coin::balance(from);
-        transfer::transfer_coin_to_bitcoin_address<GasCoin>(&from_signer, bitcoin_address_str, 11u256);
+        transfer::transfer_coin_to_bitcoin_address<RGas>(&from_signer, bitcoin_address_str, 11u256);
         assert!(gas_coin::balance(from) == original_balance - 11u256, 1002);
         assert!(gas_coin::balance(to_rooch_address) == 11u256, 1003);
     }

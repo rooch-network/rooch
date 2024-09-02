@@ -26,7 +26,7 @@ pub struct TransferCommand {
     to: ParsedAddress,
 
     /// Struct name as `<ADDRESS>::<MODULE_ID>::<STRUCT_NAME><TypeParam>`
-    /// Example: `0x3::gas_coin::GasCoin`, `0x123::Coin::Box<0x123::coin_box::FCoin>`
+    /// Example: `0x3::gas_coin::RGas`, `0x123::Coin::Box<0x123::coin_box::FCoin>`
     #[clap(short = 'c', long, value_parser=ParsedStructType::parse)]
     coin_type: ParsedStructType,
 

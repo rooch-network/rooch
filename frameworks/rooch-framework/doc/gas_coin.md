@@ -6,7 +6,7 @@
 This module defines Rooch Gas Coin.
 
 
--  [Resource `GasCoin`](#0x3_gas_coin_GasCoin)
+-  [Resource `RGas`](#0x3_gas_coin_RGas)
 -  [Constants](#@Constants_0)
 -  [Function `decimals`](#0x3_gas_coin_decimals)
 -  [Function `balance`](#0x3_gas_coin_balance)
@@ -28,13 +28,14 @@ This module defines Rooch Gas Coin.
 
 
 
-<a name="0x3_gas_coin_GasCoin"></a>
+<a name="0x3_gas_coin_RGas"></a>
 
-## Resource `GasCoin`
+## Resource `RGas`
+
+RGas is the symbol of Rooch Gas Coin
 
 
-
-<pre><code><b>struct</b> <a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a> <b>has</b> store, key
+<pre><code><b>struct</b> <a href="gas_coin.md#0x3_gas_coin_RGas">RGas</a> <b>has</b> store, key
 </code></pre>
 
 
@@ -81,7 +82,7 @@ This module defines Rooch Gas Coin.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_burn">burn</a>(<a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">gas_coin::GasCoin</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_burn">burn</a>(<a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;<a href="gas_coin.md#0x3_gas_coin_RGas">gas_coin::RGas</a>&gt;)
 </code></pre>
 
 
@@ -93,7 +94,7 @@ This module defines Rooch Gas Coin.
 deduct gas coin from the given account.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_deduct_gas">deduct_gas</a>(addr: <b>address</b>, amount: <a href="">u256</a>): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">gas_coin::GasCoin</a>&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_deduct_gas">deduct_gas</a>(addr: <b>address</b>, amount: <a href="">u256</a>): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;<a href="gas_coin.md#0x3_gas_coin_RGas">gas_coin::RGas</a>&gt;
 </code></pre>
 
 

@@ -45,8 +45,8 @@ Feature: Rooch CLI integration tests
       # use nostr_public_key
       Then cmd: "account nullify -a {{$.account[-2].account0.nostr_public_key}}"
 
-      Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::GasCoin"]' --json"
-      Then assert: "'{{$.rpc[-1].coin_type}}' == '0x3::gas_coin::GasCoin'"
+      Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::RGas"]' --json"
+      Then assert: "'{{$.rpc[-1].coin_type}}' == '0x3::gas_coin::RGas'"
       Then assert: "'{{$.rpc[-1].balance}}' == '0'"
 
       # Get gas
@@ -80,8 +80,8 @@ Feature: Rooch CLI integration tests
 
       # account balance
       Then cmd: "account balance"
-      Then cmd: "account balance --coin-type rooch_framework::gas_coin::GasCoin"
-      Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::GasCoin"]' --json"
+      Then cmd: "account balance --coin-type rooch_framework::gas_coin::RGas"
+      Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::RGas"]' --json"
       Then assert: "'{{$.rpc[-1].balance}}' != '0'"
 
       Then stop the server
@@ -101,8 +101,8 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.state[-1][0].decoded_value.value.id}} == 4"
       Then cmd: "state --access-path /object/0x3::address_mapping::RoochToBitcoinAddressMapping"
       Then assert: "{{$.state[-1][0].object_type}} == '0x3::address_mapping::RoochToBitcoinAddressMapping'"
-      Then cmd: "state --access-path /object/0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>"
-      Then assert: "{{$.state[-1][0].object_type}} == '0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>'"
+      Then cmd: "state --access-path /object/0x3::coin::CoinInfo<0x3::gas_coin::RGas>"
+      Then assert: "{{$.state[-1][0].object_type}} == '0x3::coin::CoinInfo<0x3::gas_coin::RGas>'"
       Then stop the server
 
     @serial
@@ -161,7 +161,7 @@ Feature: Rooch CLI integration tests
     # Sync states
     Then cmd: "object -t 0x3::coin::CoinInfo --limit 10 -d"
     Then assert: "{{$.object[-1].data[0].tx_order}} == 1"
-    Then assert: "{{$.object[-1].data[0].object_type}} == 0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>"
+    Then assert: "{{$.object[-1].data[0].object_type}} == 0x3::coin::CoinInfo<0x3::gas_coin::RGas>"
     Then assert: "{{$.object[-1].has_next_page}} == false"
 
     Then cmd: "rpc request --method rooch_listFieldStates --params '["{{$.address_mapping.default}}", null, "10", {"descending": true,"showDisplay":false}]' --json"

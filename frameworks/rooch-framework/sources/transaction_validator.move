@@ -120,9 +120,9 @@ module rooch_framework::transaction_validator {
         //Auto create account if not exist
         if (!account::exists_at(sender)) {
             account_entry::create_account(sender);
-            //if the chain is local or dev, give the sender some RGC
+            //if the chain is local or dev, give the sender some RGAS
             if (chain_id::is_local_or_dev()) {
-                //10000 RGC
+                //10000 RGAS
                 let init_gas = 1000_000_000_000u256;
                 gas_coin::faucet(sender, init_gas); 
             };

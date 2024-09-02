@@ -349,7 +349,7 @@ Returns the amount of coin in existence.
 Returns the icon url of coin.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_icon_url">icon_url</a>&lt;CoinType: key&gt;(coin_info: &<a href="_Object">object::Object</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;&gt;): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_icon_url">icon_url</a>&lt;CoinType: key&gt;(coin_info: &<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 

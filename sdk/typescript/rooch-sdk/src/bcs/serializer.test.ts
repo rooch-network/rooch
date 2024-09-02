@@ -96,7 +96,7 @@ describe('Serializer', () => {
           Struct: {
             address: '0x3',
             module: 'gas_coin',
-            name: 'GasCoin',
+            name: 'RGas',
             typeParams: [],
           },
         },

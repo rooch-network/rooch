@@ -6,17 +6,17 @@ module rooch_framework::transaction_fee {
     use moveos_std::object::{Self, Object};
     use rooch_framework::coin_store::{Self, CoinStore};
     use rooch_framework::coin::Coin;
-    use rooch_framework::gas_coin::{GasCoin};
+    use rooch_framework::gas_coin::{RGas};
 
     friend rooch_framework::genesis;
     friend rooch_framework::transaction_validator;
 
     struct TransactionFeePool has key {
-        fee: Object<CoinStore<GasCoin>>,
+        fee: Object<CoinStore<RGas>>,
     }
 
     public(friend) fun genesis_init(_genesis_account: &signer)  {
-        let fee_store = coin_store::create_coin_store<GasCoin>();
+        let fee_store = coin_store::create_coin_store<RGas>();
         let obj = object::new_named_object(TransactionFeePool{
             fee: fee_store,
         });
@@ -34,17 +34,17 @@ module rooch_framework::transaction_fee {
         (gas_amount as u256) * (get_gas_factor() as u256)
     }
 
-    public(friend) fun withdraw_fee(amount: u256) : Coin<GasCoin> {
+    public(friend) fun withdraw_fee(amount: u256) : Coin<RGas> {
         let object_id = object::named_object_id<TransactionFeePool>();
         let pool_object = object::borrow_mut_object_extend<TransactionFeePool>(object_id);
         let pool = object::borrow_mut(pool_object);
-        coin_store::withdraw<GasCoin>(&mut pool.fee, amount)
+        coin_store::withdraw<RGas>(&mut pool.fee, amount)
     }
 
-    public(friend) fun deposit_fee(gas_coin: Coin<GasCoin>) {
+    public(friend) fun deposit_fee(gas_coin: Coin<RGas>) {
         let object_id = object::named_object_id<TransactionFeePool>();
         let pool_object = object::borrow_mut_object_extend<TransactionFeePool>(object_id);
         let pool = object::borrow_mut(pool_object);
-        coin_store::deposit<GasCoin>(&mut pool.fee, gas_coin);
+        coin_store::deposit<RGas>(&mut pool.fee, gas_coin);
     }
 }
