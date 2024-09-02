@@ -172,7 +172,7 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     bitcoin_network: crate::bitcoin::network::Network::Bitcoin.to_num(),
     bitcoin_block_height: MAIN_GENESIS_HEIGHT_HEADER.0,
     bitcoin_block_hash: MAIN_GENESIS_HEIGHT_HEADER.1.block_hash(),
-    bitcoin_reorg_block_count: 0,
+    bitcoin_reorg_block_count: 3,
     timestamp: MAIN_GENESIS_HEIGHT_HEADER.1.time as u64 * 1000,
     sequencer_account: BitcoinAddress::from_str(
         "bcrt1p56tdhxkcpc5xvdurfnufn9lkkywsh0gxttv5ktkvlezj0t23nasqawwrla",
