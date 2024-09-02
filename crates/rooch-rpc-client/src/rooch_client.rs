@@ -10,6 +10,7 @@ use rooch_rpc_api::api::btc_api::BtcAPIClient;
 use rooch_rpc_api::api::rooch_api::RoochAPIClient;
 use rooch_rpc_api::jsonrpc_types::btc::ord::InscriptionFilterView;
 use rooch_rpc_api::jsonrpc_types::btc::utxo::UTXOFilterView;
+use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, transaction_view::TransactionWithInfoView,
     DryRunTransactionResponseView, InscriptionPageView, UTXOPageView,
@@ -123,6 +124,24 @@ impl RoochRpcClient {
                 cursor.map(Into::into),
                 limit.map(Into::into),
                 descending_order,
+            )
+            .await?)
+    }
+
+    pub async fn query_transactions(
+        &self,
+        filter: TransactionFilterView,
+        cursor: Option<u64>,
+        limit: Option<u64>,
+        query_options: Option<QueryOptions>,
+    ) -> Result<TransactionWithInfoPageView> {
+        Ok(self
+            .http
+            .query_transactions(
+                filter,
+                cursor.map(Into::into),
+                limit.map(Into::into),
+                query_options,
             )
             .await?)
     }
