@@ -177,7 +177,8 @@ impl OutpointInscriptionsMap {
                 }
             }
             let src: InscriptionSource = InscriptionSource::from_str(&line);
-            let satpoint_output = OutPoint::from_str(src.satpoint_outpoint.as_str()).unwrap();
+            let satpoint_output = OutPoint::from_str(src.satpoint_outpoint.as_str())
+                .expect(format!("Invalid outpoint: {}", src.satpoint_outpoint).as_str());
             if satpoint_output == unbound_outpoint() {
                 unbound_count += 1;
                 continue; // skip unbounded outpoint

@@ -15,6 +15,7 @@ use rooch_types::into_address::IntoAddress;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use serde_with::DisplayFromStr;
+use std::io::BufRead;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -154,7 +155,10 @@ pub(crate) struct InscriptionStats {
 impl InscriptionStats {
     pub(crate) fn load_from_file(file_path: PathBuf) -> Self {
         let file = std::fs::File::open(file_path).unwrap();
-        serde_json::from_reader(file).unwrap()
+        let mut reader = std::io::BufReader::new(file);
+        let mut line = String::new();
+        reader.read_line(&mut line).unwrap();
+        serde_json::from_str(line.as_str()).unwrap()
     }
 }
 
