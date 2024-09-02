@@ -71,6 +71,13 @@ impl AccountKeystore for Keystore {
         }
     }
 
+    fn contains_address(&self, address: &RoochAddress) -> bool {
+        match self {
+            Keystore::File(file_keystore) => file_keystore.contains_address(address),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.contains_address(address),
+        }
+    }
+
     fn get_accounts(
         &self,
         password: Option<String>,

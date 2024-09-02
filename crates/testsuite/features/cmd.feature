@@ -70,9 +70,9 @@ Feature: Rooch CLI integration tests
       Then cmd: "transaction get-transactions-by-hash --hashes {{$.transaction[-1].data[0].execution_info.tx_hash}}"
       Then cmd: "transaction build --function rooch_framework::empty::empty --json"
       Then assert: "'{{$.transaction[-1]}}' not_contains error"
-      Then cmd: "transaction sign --tx-hex {{$.transaction[-1]}} --json"
+      Then cmd: "transaction sign {{$.transaction[-1].path}} --json"
       Then assert: "'{{$.transaction[-1]}}' not_contains error"
-      Then cmd: "transaction submit --signed-tx-hex {{$.transaction[-1]}}"
+      Then cmd: "transaction submit {{$.transaction[-1].path}}"
       Then assert: "{{$.transaction[-1].execution_info.status.type}} == executed"
 
       # alias tx for transaction

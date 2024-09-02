@@ -5,7 +5,7 @@ use crate::{
     crypto::{RoochSignature, Signature, SignatureScheme},
     transaction::RoochTransactionData,
 };
-use anyhow::Result;
+use anyhow::{ensure, Result};
 use fastcrypto::{
     hash::Sha256,
     secp256k1::{Secp256k1PublicKey, Secp256k1Signature},
@@ -139,6 +139,10 @@ impl AuthPayload {
         pk.verify_with_hash::<Sha256>(&message_hash, &signature)?;
         Ok(())
     }
+
+    pub fn from_address(&self) -> Result<String> {
+        Ok(String::from_utf8(self.from_address.to_vec())?)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -149,6 +153,34 @@ pub struct MultisignAuthPayload {
     pub public_keys: Vec<Vec<u8>>,
 }
 
+impl MultisignAuthPayload {
+    pub fn build_multisig_payload(mut payloads: Vec<AuthPayload>) -> Result<Self> {
+        ensure!(payloads.len() > 1, "At least two signatures are required");
+        let first_payload = payloads.remove(0);
+        let message_prefix = first_payload.message_prefix.clone();
+        let message_info = first_payload.message_info.clone();
+        let mut signatures = vec![first_payload.signature];
+        let mut public_keys = vec![first_payload.public_key];
+        for payload in payloads {
+            ensure!(
+                payload.message_prefix == message_prefix,
+                "All signatures must have the same message prefix"
+            );
+            ensure!(
+                payload.message_info == message_info,
+                "All signatures must have the same message info"
+            );
+            signatures.push(payload.signature);
+            public_keys.push(payload.public_key);
+        }
+        Ok(Self {
+            signatures,
+            public_keys,
+            message_prefix,
+            message_info,
+        })
+    }
+}
 impl MoveStructType for MultisignAuthPayload {
     const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;

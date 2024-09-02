@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { isValidBitcoinAddress } from '@roochnetwork/rooch-sdk';
 
 import { Card, Stack, Button, TextField, CardHeader, CardContent } from '@mui/material';
 
-import { RouterLink } from 'src/routes/components';
+import { useRouter } from 'src/routes/hooks';
 
 import { DashboardContent } from 'src/layouts/dashboard';
 
@@ -12,6 +13,8 @@ const placeholder = 'tb1pjugffa0n2ts0vra032t3phae7xrehdjfzkg284ymvf260vjh225s5u4
 
 export default function SearchView() {
   const [account, setAccount] = useState('');
+  const [errorMsg, setErrorMsg] = useState<string>();
+  const router = useRouter();
 
   return (
     <DashboardContent maxWidth="xl">
@@ -22,17 +25,27 @@ export default function SearchView() {
           sx={{ mb: 2 }}
         />
         <CardContent className="!pt-0">
-          <Stack direction="row" alignItems="center" className="w-full" spacing={2}>
+          <Stack direction="row" alignItems="flex-start" className="w-full" spacing={2}>
             <TextField
               size="small"
               className="w-full"
               value={account}
               placeholder={placeholder}
+              error={Boolean(errorMsg)}
+              helperText={errorMsg}
               onChange={(e) => {
                 setAccount(e.target.value);
               }}
             />
-            <Button component={RouterLink} href={`/account/${account || placeholder}`}>
+            <Button
+              onClick={() => {
+                if (account && !isValidBitcoinAddress(account)) {
+                  setErrorMsg('Invalid address');
+                  return;
+                }
+                router.push(`/account/${account || placeholder}`);
+              }}
+            >
               Search
             </Button>
           </Stack>

@@ -1,5 +1,5 @@
 [package]
-name = "examples/steal_split"
+name = "steal_split"
 version = "0.0.1"
 
 [dependencies]
