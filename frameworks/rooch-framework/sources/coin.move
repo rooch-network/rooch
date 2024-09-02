@@ -159,9 +159,7 @@ module rooch_framework::coin {
     }
 
     /// Returns the icon url of coin.
-    // public fun icon_url<CoinType: key>(coin_info: &Object<CoinInfo<CoinType>>): Option<String> {
     public fun icon_url<CoinType: key>(coin_info: &CoinInfo<CoinType>): Option<String> {
-        // *object::borrow_field<CoinInfo<CoinType>, String, Option<String>>(coin_info, string::utf8(b"icon_url"))
         coin_info.icon_url
     }
 
@@ -223,10 +221,8 @@ module rooch_framework::coin {
     //
 
     #[private_generics(CoinType)]
-    /// Upsert icon_url as`CoinType` dynamic field
     /// This function is protected by `private_generics`, so it can only be called by the `CoinType` module.
     public fun upsert_icon_url<CoinType: key>(coin_info_obj: &mut Object<CoinInfo<CoinType>>, icon_url: String){
-        // object::upsert_field(coin_info_obj, string::utf8(b"icon_url"), icon_url);
         object::borrow_mut(coin_info_obj).icon_url = option::some(icon_url);
     }
 
