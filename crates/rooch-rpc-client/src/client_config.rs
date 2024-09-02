@@ -71,6 +71,7 @@ pub struct Env {
     pub alias: String,
     pub rpc: String,
     pub ws: Option<String>,
+    pub proxy: Option<String>,
 }
 
 impl Env {
@@ -83,6 +84,9 @@ impl Env {
         if let Some(ws_url) = &self.ws {
             builder = builder.ws_url(ws_url);
         }
+        if let Some(proxy_url) = &self.proxy {
+            builder = builder.proxy_url(proxy_url);
+        }
 
         builder.build(&self.rpc).await
     }
@@ -92,6 +96,7 @@ impl Env {
             alias: BuiltinChainID::Dev.chain_name(),
             rpc: ROOCH_DEV_NET_URL.into(),
             ws: None,
+            proxy: None,
         }
     }
 
@@ -100,6 +105,7 @@ impl Env {
             alias: BuiltinChainID::Test.chain_name(),
             rpc: ROOCH_TEST_NET_URL.into(),
             ws: None,
+            proxy: None,
         }
     }
 
@@ -121,6 +127,7 @@ impl Default for Env {
             alias: BuiltinChainID::Local.chain_name(),
             rpc: ServerConfig::default().url(false),
             ws: None,
+            proxy: None,
         }
     }
 }

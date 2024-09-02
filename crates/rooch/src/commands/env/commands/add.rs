@@ -18,14 +18,23 @@ pub struct AddCommand {
     pub rpc: String,
     #[clap(long, value_hint = ValueHint::Url)]
     pub ws: Option<String>,
+    #[clap(long, value_hint = ValueHint::Url)]
+    pub proxy: Option<String>,
 }
 
 impl AddCommand {
     pub async fn execute(self) -> RoochResult<()> {
         let mut context = self.context_options.build()?;
-        let AddCommand { alias, rpc, ws, .. } = self;
+        let AddCommand {
+            alias,
+            rpc,
+            ws,
+            proxy,
+            ..
+        } = self;
         let env = Env {
             ws,
+            proxy,
             rpc,
             alias: alias.clone(),
         };

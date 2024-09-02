@@ -77,6 +77,7 @@ impl CommandAction<()> for Init {
                         alias: "custom".to_string(),
                         rpc: chain_url[1].to_owned(),
                         ws: None,
+                        proxy: None,
                     })
                 }
 
@@ -112,6 +113,7 @@ impl CommandAction<()> for Init {
                             alias,
                             rpc: url,
                             ws: None,
+                            proxy: None,
                         }
                     })
                 }
