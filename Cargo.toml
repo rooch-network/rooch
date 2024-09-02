@@ -212,7 +212,7 @@ smallvec = "1.6.1"
 thiserror = "1.0.63"
 tiny-keccak = { version = "2", features = ["keccak", "sha3"] }
 tiny-bip39 = "1.0.0"
-tokio = { version = "1.39.3", features = ["full"] }
+tokio = { version = "1.40.0", features = ["full"] }
 tonic = { version = "0.8", features = ["gzip"] }
 tracing = "0.1.37"
 tracing-appender = "0.2.2"

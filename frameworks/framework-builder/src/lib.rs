@@ -9,6 +9,8 @@ use move_core_types::account_address::AccountAddress;
 use move_model::model::GlobalEnv;
 use move_package::{compilation::compiled_package::CompiledPackage, BuildConfig, ModelConfig};
 use moveos_compiler::dependency_order::sort_by_dependency_order;
+use moveos_types::move_std::string::MoveString;
+use moveos_types::moveos_std::module_store::PackageData;
 use moveos_verifier::build::run_verifier;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -67,6 +69,14 @@ impl StdlibPackage {
                 Ok(compiled_module)
             })
             .collect::<Result<Vec<CompiledModule>>>()
+    }
+
+    pub fn as_package_data(&self) -> PackageData {
+        PackageData::new(
+            MoveString::from(self.package_name.as_str()),
+            self.genesis_account,
+            self.modules.clone(),
+        )
     }
 }
 

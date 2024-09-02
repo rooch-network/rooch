@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+#[test_only]
 module moveos_std::result_tests {
 
     use std::string::String;

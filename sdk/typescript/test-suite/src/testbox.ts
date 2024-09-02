@@ -1,16 +1,18 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import tmp, { DirResult } from 'tmp'
+import * as fs from 'fs';
+import * as net from 'net';
+import path from 'node:path'
 import { execSync } from 'child_process'
-import { Network, StartedNetwork } from 'testcontainers'
 import { spawn } from 'child_process'
+
+import tmp, { DirResult } from 'tmp'
+import { Network, StartedNetwork } from 'testcontainers'
 
 import { OrdContainer, StartedOrdContainer } from './container/ord.js'
 import { RoochContainer, StartedRoochContainer } from './container/rooch.js'
 import { BitcoinContainer, StartedBitcoinContainer } from './container/bitcoin.js'
-import path from 'node:path'
-import fs from 'fs'
 
 const ordNetworkAlias = 'ord'
 const bitcoinNetworkAlias = 'bitcoind'
@@ -24,6 +26,9 @@ export class TestBox {
   roochContainer?: StartedRoochContainer | number
   roochDir: string
 
+  roochPort?: number
+  private miningIntervalId: NodeJS.Timeout | null = null
+
   constructor() {
     tmp.setGracefulCleanup()
     this.tmpDir = tmp.dirSync({ unsafeCleanup: true })
@@ -33,19 +38,30 @@ export class TestBox {
     this.roochCommand(['env', 'switch', '--config-dir', `${this.roochDir}`, '--alias', 'local'])
   }
 
-  async loadBitcoinEnv(customContainer?: BitcoinContainer) {
+  async loadBitcoinEnv(customContainer?: BitcoinContainer, autoMining: boolean = false) {
     if (customContainer) {
       this.bitcoinContainer = await customContainer.start()
-      return
-    }
-
-    this.bitcoinContainer = await new BitcoinContainer()
+    } else {
+      this.bitcoinContainer = await new BitcoinContainer()
       .withHostDataPath(this.tmpDir.name)
       .withNetwork(await this.getNetwork())
       .withNetworkAliases(bitcoinNetworkAlias)
       .start()
+    }
 
     await this.delay(5)
+
+    if (autoMining) {
+      // Preprea Faucet
+      await this.bitcoinContainer.prepareFaucet()
+
+      // Start mining interval after Bitcoin container is started
+      this.miningIntervalId = setInterval(async () => {
+        if (this.bitcoinContainer) {
+          await this.bitcoinContainer.mineBlock()
+        }
+      }, 1000) // Mine every 1 second
+    }
   }
 
   async loadORDEnv(customContainer?: OrdContainer) {
@@ -83,13 +99,20 @@ export class TestBox {
 
     // The container test in the linux environment is incomplete, so use it first
     if (target === 'local') {
+      if (port == 0) {
+        port = await getUnusedPort()
+      }
+
+      // Generate a random port for metrics
+      const metricsPort = await getUnusedPort();
+
       const cmds = ['server', 'start', '-n', 'local', '-d', 'TMP', '--port', port.toString()]
 
       if (this.bitcoinContainer) {
         cmds.push(
           ...[
             '--btc-rpc-url',
-            'http://127.0.0.1:18443',
+            this.bitcoinContainer.getRpcUrl(),
             '--btc-rpc-username',
             this.bitcoinContainer.getRpcUser(),
             '--btc-rpc-password',
@@ -100,15 +123,15 @@ export class TestBox {
         )
       }
 
-      // cmds.push(`> ${this.tmpDir.name}/rooch.log 2>&1 & echo $!`)
-
       const result: string = await this.roochAsyncCommand(
         cmds,
         `JSON-RPC HTTP Server start listening 0.0.0.0:${port}`,
+        [`METRICS_HOST_PORT=${metricsPort}`]
       )
-      this.roochContainer = parseInt(result.toString().trim(), 10)
 
-      await this.delay(5)
+      this.roochContainer = parseInt(result.toString().trim(), 10)
+      this.roochPort = port;
+
       return
     }
 
@@ -117,7 +140,6 @@ export class TestBox {
 
     container
       .withNetwork(await this.getNetwork())
-      .withNetworkName('local')
       .withDataDir('TMP')
       .withPort(port)
 
@@ -133,6 +155,12 @@ export class TestBox {
   }
 
   cleanEnv() {
+    // Clear mining interval before stopping containers
+    if (this.miningIntervalId) {
+      clearInterval(this.miningIntervalId)
+      this.miningIntervalId = null
+    }
+
     this.bitcoinContainer?.stop()
     this.ordContainer?.stop()
 
@@ -142,7 +170,7 @@ export class TestBox {
       this.roochContainer?.stop()
     }
 
-    this.tmpDir.removeCallback()
+    //this.tmpDir.removeCallback()
   }
 
   delay(second: number) {
@@ -155,23 +183,25 @@ export class TestBox {
     })
   }
 
-  private buildRoochCommand(args: string[] | string) {
+  private buildRoochCommand(args: string[] | string, envs: string[] = []) {
     const root = this.findRootDir('pnpm-workspace.yaml')
     const roochDir = path.join(root!, 'target', 'debug')
-    return `${roochDir}/./rooch ${typeof args === 'string' ? args : args.join(' ')}`
+
+    const envString = envs.length > 0 ? `${envs.join(' ')} ` : '';
+    return `${envString} ${roochDir}/./rooch ${typeof args === 'string' ? args : args.join(' ')}`
   }
 
   // TODO: support container
-  roochCommand(args: string[] | string): string {
-    return execSync(this.buildRoochCommand(args), {
+  roochCommand(args: string[] | string, envs: string[] = []): string {
+    return execSync(this.buildRoochCommand(args, envs), {
       encoding: 'utf-8',
-    })
+    });
   }
 
   // TODO: support container
-  async roochAsyncCommand(args: string[] | string, waitFor: string): Promise<string> {
+  async roochAsyncCommand(args: string[] | string, waitFor: string, envs: string[] = []): Promise<string> {
     return new Promise((resolve, reject) => {
-      const command = this.buildRoochCommand(args)
+      const command = this.buildRoochCommand(args, envs)
       const child = spawn(command, { shell: true })
 
       let output = ''
@@ -266,6 +296,25 @@ export class TestBox {
     return this.network
   }
 
+  getRoochServerAddress(): string | null {
+    if (this.roochContainer && this.roochContainer instanceof StartedRoochContainer) {
+      const startedRoochContainer = this.roochContainer as StartedRoochContainer
+      return startedRoochContainer.getConnectionAddress()
+    } else if (this.roochPort) {
+      return `127.0.0.1:${this.roochPort}`
+    }
+
+    return `127.0.0.1:6767`
+  }
+
+  async getFaucetBTC(address: string, amount: number = 0.001): Promise<string> {
+    if (!this.bitcoinContainer) {
+      throw new Error('bitcoin container not start')
+    }
+
+    return await this.bitcoinContainer.getFaucetBTC(address, amount)
+  }
+
   private findRootDir(targetName: string) {
     let currentDir = process.cwd()
 
@@ -279,4 +328,20 @@ export class TestBox {
 
     return null
   }
+}
+
+export async function getUnusedPort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.on('error', (_err: any) => {
+      server.close();
+      getUnusedPort().then(resolve).catch(reject);
+    });
+    server.on('listening', () => {
+      const address = server.address() as net.AddressInfo;
+      server.close();
+      resolve(address.port);
+    });
+    server.listen(0); 
+  });
 }

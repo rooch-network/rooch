@@ -16,5 +16,5 @@ log = { workspace = true }
 once_cell = { workspace = true }
 crossbeam-channel = { workspace = true }
 coerce = { workspace = true }
-tokio = "1.39.3"
+tokio = "1.40.0"
 thiserror = "1.0.63"

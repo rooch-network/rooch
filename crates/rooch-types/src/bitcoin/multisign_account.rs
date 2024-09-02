@@ -10,13 +10,38 @@ use bitcoin::taproot::TaprootBuilder;
 use bitcoin::{ScriptBuf, XOnlyPublicKey};
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use moveos_types::moveos_std::tx_context::TxContext;
+use moveos_types::state::{MoveStructState, MoveStructType};
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     state::MoveState,
     transaction::MoveAction,
 };
+use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("multisign_account");
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ParticipantInfo {
+    pub participant_address: AccountAddress,
+    pub participant_bitcoin_address: BitcoinAddress,
+    pub public_key: Vec<u8>,
+}
+
+impl MoveStructType for ParticipantInfo {
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("ParticipantInfo");
+}
+
+impl MoveStructState for ParticipantInfo {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![
+            AccountAddress::type_layout(),
+            BitcoinAddress::type_layout(),
+            Vec::<u8>::type_layout(),
+        ])
+    }
+}
 
 pub fn generate_multisign_address(
     threshold: usize,
@@ -87,6 +112,10 @@ impl<'a> MultisignAccountModule<'a> {
     const GENERATE_MULTISIGN_ADDRESS_FUNCTION_NAME: &'static IdentStr =
         ident_str!("generate_multisign_address");
     const IS_PARTICIPANT_FUNCTION_NAME: &'static IdentStr = ident_str!("is_participant");
+    const IS_MULTISIGN_ACCOUNT_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("is_multisign_account");
+    const PARTICIPANTS_FUNCTION_NAME: &'static IdentStr = ident_str!("participants");
+    const THRESHOLD_FUNCTION_NAME: &'static IdentStr = ident_str!("threshold");
 
     pub fn initialize_multisig_account_action(
         threshold: u64,
@@ -145,6 +174,62 @@ impl<'a> MultisignAccountModule<'a> {
                 bcs::from_bytes::<bool>(&value.value).expect("should be a valid bool")
             })?;
         Ok(is_participant)
+    }
+
+    pub fn is_multisign_account(&self, multisign_address: AccountAddress) -> Result<bool> {
+        let function_call = Self::create_function_call(
+            Self::IS_MULTISIGN_ACCOUNT_FUNCTION_NAME,
+            vec![],
+            vec![multisign_address.to_move_value()],
+        );
+        let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
+        let is_multisign_account = self
+            .caller
+            .call_function(&ctx, function_call)?
+            .into_result()
+            .map(|mut values| {
+                let value = values.pop().expect("should have one return value");
+                bcs::from_bytes::<bool>(&value.value).expect("should be a valid bool")
+            })?;
+        Ok(is_multisign_account)
+    }
+
+    pub fn threshold(&self, multisign_address: AccountAddress) -> Result<u64> {
+        let function_call = Self::create_function_call(
+            Self::THRESHOLD_FUNCTION_NAME,
+            vec![],
+            vec![multisign_address.to_move_value()],
+        );
+        let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
+        let threshold = self
+            .caller
+            .call_function(&ctx, function_call)?
+            .into_result()
+            .map(|mut values| {
+                let value = values.pop().expect("should have one return value");
+                bcs::from_bytes::<u64>(&value.value).expect("should be a valid u64")
+            })?;
+        Ok(threshold)
+    }
+
+    pub fn participants(&self, multisign_address: AccountAddress) -> Result<Vec<ParticipantInfo>> {
+        let function_call = Self::create_function_call(
+            Self::PARTICIPANTS_FUNCTION_NAME,
+            vec![],
+            vec![multisign_address.to_move_value()],
+        );
+
+        let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
+        let participants = self
+            .caller
+            .call_function(&ctx, function_call)?
+            .into_result()
+            .map(|mut values| {
+                let value = values.pop().expect("should have one return value");
+                bcs::from_bytes::<Vec<ParticipantInfo>>(&value.value)
+                    .expect("should be a valid vector of ParticipantInfo")
+            })?;
+        Ok(participants)
     }
 }
 

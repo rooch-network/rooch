@@ -70,9 +70,9 @@ Feature: Rooch CLI integration tests
       Then cmd: "transaction get-transactions-by-hash --hashes {{$.transaction[-1].data[0].execution_info.tx_hash}}"
       Then cmd: "transaction build --function rooch_framework::empty::empty --json"
       Then assert: "'{{$.transaction[-1]}}' not_contains error"
-      Then cmd: "transaction sign --tx-hex {{$.transaction[-1]}} --json"
+      Then cmd: "transaction sign {{$.transaction[-1].path}} --json"
       Then assert: "'{{$.transaction[-1]}}' not_contains error"
-      Then cmd: "transaction submit --signed-tx-hex {{$.transaction[-1]}}"
+      Then cmd: "transaction submit {{$.transaction[-1].path}}"
       Then assert: "{{$.transaction[-1].execution_info.status.type}} == executed"
 
       # alias tx for transaction
@@ -239,8 +239,10 @@ Feature: Rooch CLI integration tests
   Scenario: publish_through_entry_function publish through Move entry function and module upgrade
       Given a server for publish_through_entry_function
 
-      # The counter example
-      Then cmd: "move publish -p ../../examples/counter  --named-addresses rooch_examples=default --json"
+      # The counter example, publishing from saved package binary.
+      Then cmd: "move build -p ../../examples/counter  --named-addresses rooch_examples=default --json"
+      Then assert: "{{$.move[-1].Result}} == Success"
+      Then cmd: "move run --function 0x2::module_store::publish_package_entry --sender default --args 'file:../../examples/counter/build/counter/package.rpd' --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move view --function default::counter::value"
       Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 0"

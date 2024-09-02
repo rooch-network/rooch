@@ -7,7 +7,6 @@ pub mod disassemble;
 pub mod docgen;
 pub mod errmap;
 pub mod explain;
-pub mod framework_upgrade;
 pub mod info;
 pub mod integration_test;
 pub mod new;

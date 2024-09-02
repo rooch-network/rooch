@@ -32,8 +32,10 @@ export class TestBox extends TestBoxA {
     port: number = 6768,
   ): Promise<void> {
     await super.loadRoochEnv(target, port)
+    const roochServerAddress = super.getRoochServerAddress()
+
     this.client = new RoochClient({
-      url: `http://127.0.0.1:${port}`,
+      url: `http://${roochServerAddress}`,
     })
     return
   }
@@ -61,23 +63,23 @@ export class TestBox extends TestBoxA {
     options: {
       namedAddresses: string
     } = {
-      namedAddresses: 'rooch_examples=default',
-    },
+        namedAddresses: 'rooch_examples=default',
+      },
   ) {
     const namedAddresses = options.namedAddresses.replaceAll(
       'default',
       box.address().toHexAddress(),
     )
     this.roochCommand(
-      `move build -p ${packagePath} --named-addresses ${namedAddresses} --install-dir ${this.tmpDir.name} --export --json`,
+      `move build -p ${packagePath} --named-addresses ${namedAddresses} --install-dir ${this.tmpDir.name} --json`,
     )
 
     let fileBytes: Uint8Array
     try {
-      fileBytes = fs.readFileSync(this.tmpDir.name + '/package.blob')
+      fileBytes = fs.readFileSync(this.tmpDir.name + '/package.rpd')
       const tx = new Transaction()
       tx.callFunction({
-        target: '0x2::module_store::publish_modules_entry',
+        target: '0x2::module_store::publish_package_entry',
         args: [Args.vec('u8', Array.from(fileBytes))],
       })
 

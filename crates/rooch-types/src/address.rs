@@ -575,9 +575,38 @@ impl TryFrom<u8> for BitcoinAddressPayloadType {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[serde_as]
 pub struct BitcoinAddress {
     bytes: Vec<u8>,
+}
+
+impl Serialize for BitcoinAddress {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        if serializer.is_human_readable() {
+            self.to_string().serialize(serializer)
+        } else {
+            self.bytes.serialize(serializer)
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for BitcoinAddress {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        if deserializer.is_human_readable() {
+            let s = <String>::deserialize(deserializer)?;
+            Self::from_str(&s).map_err(serde::de::Error::custom)
+        } else {
+            let bytes = Vec::<u8>::deserialize(deserializer)?;
+            Ok(Self { bytes })
+        }
+    }
 }
 
 impl fmt::Display for BitcoinAddress {

@@ -46,7 +46,11 @@ use rooch_indexer::store::metrics::IndexerDBMetrics;
 /// }
 /// ```
 pub fn start_basic_prometheus_server() -> Registry {
-    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), METRICS_HOST_PORT);
+    let port = std::env::var("METRICS_HOST_PORT")
+        .ok()
+        .map(|s| s.parse().unwrap_or(METRICS_HOST_PORT))
+        .unwrap_or(METRICS_HOST_PORT);
+    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), port);
     start_prometheus_server(addr).default_registry()
 }
 

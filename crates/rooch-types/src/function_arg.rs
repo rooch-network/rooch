@@ -40,6 +40,7 @@ pub enum FunctionArgType {
     U256,
     Raw,
     Vector(Box<FunctionArgType>),
+    File,
 }
 
 impl Display for FunctionArgType {
@@ -58,6 +59,7 @@ impl Display for FunctionArgType {
             FunctionArgType::U256 => write!(f, "u256"),
             FunctionArgType::Raw => write!(f, "raw"),
             FunctionArgType::Vector(inner) => write!(f, "vector<{}>", inner),
+            FunctionArgType::File => write!(f, "file"),
         }
     }
 }
@@ -87,6 +89,7 @@ impl FunctionArgType {
                 }
                 Ok(FunctionArg::Vector(inner.clone(), parsed_args))
             }
+            FunctionArgType::File => Ok(FunctionArg::File(std::fs::read(arg)?)),
         }
     }
 }
@@ -108,6 +111,7 @@ impl FromStr for FunctionArgType {
             "u128" => Ok(FunctionArgType::U128),
             "u256" => Ok(FunctionArgType::U256),
             "raw" => Ok(FunctionArgType::Raw),
+            "file" => Ok(FunctionArgType::File),
             str => {
                 // If it's a vector, go one level inside
                 if str.starts_with("vector<") && str.ends_with('>') {
@@ -263,6 +267,7 @@ pub enum FunctionArg {
     U256(U256),
     Raw(Vec<u8>),
     Vector(Box<FunctionArgType>, Vec<FunctionArg>),
+    File(Vec<u8>),
 }
 
 impl FunctionArg {
@@ -281,6 +286,7 @@ impl FunctionArg {
             FunctionArg::U256(_) => FunctionArgType::U256,
             FunctionArg::Raw(_) => FunctionArgType::Raw,
             FunctionArg::Vector(element_type, _) => FunctionArgType::Vector(element_type.clone()),
+            FunctionArg::File(_) => FunctionArgType::File,
         }
     }
 
@@ -313,6 +319,7 @@ impl FunctionArg {
                 }
                 MoveValue::Vector(move_elements)
             }
+            FunctionArg::File(arg) => MoveValue::vector_u8(arg),
         })
     }
 

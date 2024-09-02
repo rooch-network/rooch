@@ -137,8 +137,9 @@ module rooch_nursery::multisign_wallet{
         assert!(proposal.status == PROPOSAL_STATUS_PENDING, ErrorInvalidProposalStatus);
         assert!(!vector::contains(&proposal.participants, &sender_addr), ErrorProposalAlreadySigned);
 
-        let participant_public_key = multisign_account::participant_public_key(multisign_address, sender_addr);
-        verify_bitcoin_signature(proposal.tx_id, &signature, &participant_public_key);
+        let participant = multisign_account::participant(multisign_address, sender_addr);
+        let participant_public_key = multisign_account::participant_public_key(&participant);
+        verify_bitcoin_signature(proposal.tx_id, &signature, participant_public_key);
         let threshold = multisign_account::threshold(multisign_address);
         vector::push_back(&mut proposal.signatures, signature);
         if(vector::length(&proposal.signatures) >= threshold){
