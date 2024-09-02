@@ -13,6 +13,9 @@ use rooch_types::bitcoin::ord::{
 };
 use rooch_types::into_address::IntoAddress;
 use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+use serde_with::DisplayFromStr;
+use std::path::PathBuf;
 use std::str::FromStr;
 
 use crate::commands::statedb::commands::convert_option_string_to_move_type;
@@ -20,12 +23,14 @@ use crate::commands::statedb::commands::convert_option_string_to_move_type;
 const ADDRESS_UNBOUND: &str = "unbound";
 const ADDRESS_NON_STANDARD: &str = "non-standard";
 
+#[serde_as]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct InscriptionSource {
     pub sequence_number: u32,
     pub inscription_number: i32,
+    #[serde_as(as = "DisplayFromStr")]
     pub id: InscriptionID,
-    // ord crate has a different version of bitcoin dependency, using string for compatibility
+    // ord crate may have a different version of bitcoin dependency, using string for compatibility
     pub satpoint_outpoint: String, // txid:vout
     pub satpoint_offset: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -38,13 +43,16 @@ pub struct InscriptionSource {
     pub metadata: Option<Vec<u8>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metaprotocol: Option<String>,
+    #[serde_as(as = "Option<Vec<DisplayFromStr>>")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parent: Option<Vec<InscriptionID>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pointer: Option<u64>,
     pub address: String, // <address>, "unbound", "non-standard"
+    #[serde_as(as = "Option<DisplayFromStr>")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rune: Option<u128>,
+    pub charms: u16,
 }
 
 impl InscriptionSource {
@@ -69,7 +77,6 @@ impl InscriptionSource {
         let src = self;
 
         let txid: AccountAddress = src.id.txid.into_address();
-
         let parents = src.parent.clone();
         let id = InscriptionID::new(txid, src.id.index);
         let outpoint = bitcoin::OutPoint::from_str(src.satpoint_outpoint.as_str()).unwrap();
@@ -77,14 +84,14 @@ impl InscriptionSource {
             outpoint: outpoint.into(),
             offset: src.satpoint_offset,
         };
+
         Inscription {
             id,
             location,
             sequence_number: src.sequence_number,
             inscription_number: src.inscription_number.unsigned_abs(),
             is_cursed: src.inscription_number.is_negative(),
-            //TODO how to get charms
-            charms: 0,
+            charms: src.charms,
             body: src.body.clone().unwrap_or_default(),
             content_encoding: convert_option_string_to_move_type(src.content_encoding.clone()),
             content_type: convert_option_string_to_move_type(src.content_type.clone()),
@@ -134,18 +141,32 @@ pub(crate) fn derive_inscription_ids(ids: Option<Vec<InscriptionID>>) -> Vec<Obj
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+pub(crate) struct InscriptionStats {
+    pub block_height: u32,
+    pub cursed_inscription_count: u32,
+    pub blessed_inscription_count: u32,
+    pub unbound_inscription_count: u32,
+    pub lost_sats: u64,
+    pub next_sequence_number: u32,
+}
+
+impl InscriptionStats {
+    pub(crate) fn load_from_file(file_path: PathBuf) -> Self {
+        let file = std::fs::File::open(file_path).unwrap();
+        serde_json::from_reader(file).unwrap()
+    }
+}
+
 pub(crate) fn create_genesis_inscription_store_object(
-    cursed_inscription_count: u32,
-    blessed_inscription_count: u32,
-    next_sequence_number: u32, // ord count
+    stats: &InscriptionStats,
 ) -> ObjectEntity<InscriptionStore> {
     let inscription_store = InscriptionStore {
-        cursed_inscription_count,
-        blessed_inscription_count,
-        //TODO set unbound_inscription_count and lost_sats
-        unbound_inscription_count: 0,
-        lost_sats: 0,
-        next_sequence_number,
+        cursed_inscription_count: stats.cursed_inscription_count,
+        blessed_inscription_count: stats.blessed_inscription_count,
+        unbound_inscription_count: stats.unbound_inscription_count,
+        lost_sats: stats.lost_sats,
+        next_sequence_number: stats.next_sequence_number,
     };
     let obj_id = InscriptionStore::object_id();
     ObjectEntity::new(

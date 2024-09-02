@@ -30,6 +30,7 @@ use crate::commands::statedb::commands::genesis_utxo::{
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes, finish_import_job};
 use crate::commands::statedb::commands::inscription::{
     create_genesis_inscription_store_object, gen_inscription_id_update, InscriptionSource,
+    InscriptionStats,
 };
 use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 
@@ -46,6 +47,8 @@ pub struct GenesisCommand {
     /// The file format is JSON, and the first line is block height info: # export at block height <N>, ord range: [0, N).
     /// ord_input & utxo_input must be at the same height
     pub ord_source: PathBuf,
+    /// ord stats file, like ~/.rooch/local/ord_stats or ord_stats
+    pub ord_stats: PathBuf,
     #[clap(
         long,
         default_value = "1048576",
@@ -113,6 +116,7 @@ impl GenesisCommand {
         let moveos_store = Arc::new(moveos_store);
         let startup_update_set = Arc::new(RwLock::new(UpdateSet::new()));
         // import inscriptions
+        let inscription_stats = InscriptionStats::load_from_file(self.ord_stats.clone());
         let input_path = self.ord_source.clone();
         let batch_size = self.ord_batch_size.unwrap();
         let (ord_tx, ord_rx) = mpsc::sync_channel(2);
@@ -121,7 +125,12 @@ impl GenesisCommand {
         let moveos_store_clone = Arc::clone(&moveos_store);
         let startup_update_set_clone = Arc::clone(&startup_update_set);
         let apply_inscription_updates_thread = thread::spawn(move || {
-            apply_inscription_updates(ord_rx, moveos_store_clone, startup_update_set_clone);
+            apply_inscription_updates(
+                ord_rx,
+                moveos_store_clone,
+                startup_update_set_clone,
+                inscription_stats,
+            );
         });
         // import utxo
         let utxo_input_path = Arc::new(self.utxo_source.clone());
@@ -247,6 +256,7 @@ fn apply_inscription_updates(
     rx: Receiver<InscriptionUpdates>,
     moveos_store_arc: Arc<MoveOSStore>,
     startup_update_set: Arc<RwLock<UpdateSet<FieldKey, ObjectState>>>,
+    inscription_stats: InscriptionStats,
 ) {
     let mut inscription_store_state_root = *GENESIS_STATE_ROOT;
     let mut last_inscription_store_state_root = inscription_store_state_root;
@@ -301,11 +311,8 @@ fn apply_inscription_updates(
 
     let mut startup_update_set = startup_update_set.write().unwrap();
 
-    let mut genesis_inscription_store_object = create_genesis_inscription_store_object(
-        cursed_inscription_count,
-        blessed_inscription_count,
-        inscritpion_store_filed_count / 2,
-    );
+    let mut genesis_inscription_store_object =
+        create_genesis_inscription_store_object(&inscription_stats);
     genesis_inscription_store_object.size += inscritpion_store_filed_count as u64;
     genesis_inscription_store_object.state_root = Some(inscription_store_state_root);
     let parent_id = InscriptionStore::object_id();
