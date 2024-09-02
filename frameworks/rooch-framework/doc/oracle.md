@@ -7,6 +7,7 @@
 
 -  [Resource `TablePlaceholder`](#0x3_oracle_TablePlaceholder)
 -  [Resource `SimpleOracle`](#0x3_oracle_SimpleOracle)
+-  [Resource `AdminCap`](#0x3_oracle_AdminCap)
 -  [Struct `StoredData`](#0x3_oracle_StoredData)
 -  [Constants](#@Constants_0)
 -  [Function `get_historical_data`](#0x3_oracle_get_historical_data)
@@ -45,6 +46,17 @@
 
 
 <pre><code><b>struct</b> <a href="oracle.md#0x3_oracle_SimpleOracle">SimpleOracle</a> <b>has</b> store, key
+</code></pre>
+
+
+
+<a name="0x3_oracle_AdminCap"></a>
+
+## Resource `AdminCap`
+
+
+
+<pre><code><b>struct</b> <a href="oracle.md#0x3_oracle_AdminCap">AdminCap</a> <b>has</b> store, key
 </code></pre>
 
 
@@ -112,7 +124,7 @@
 Create a new shared SimpleOracle object for publishing data.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="oracle.md#0x3_oracle_create">create</a>(name: <a href="_String">string::String</a>, url: <a href="_String">string::String</a>, description: <a href="_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="oracle.md#0x3_oracle_create">create</a>(name: <a href="_String">string::String</a>, url: <a href="_String">string::String</a>, description: <a href="_String">string::String</a>): <a href="_Object">object::Object</a>&lt;<a href="oracle.md#0x3_oracle_AdminCap">oracle::AdminCap</a>&gt;
 </code></pre>
 
 
@@ -123,7 +135,7 @@ Create a new shared SimpleOracle object for publishing data.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="oracle.md#0x3_oracle_submit_data">submit_data</a>&lt;T: <b>copy</b>, drop, store&gt;(oracle_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="oracle.md#0x3_oracle_SimpleOracle">oracle::SimpleOracle</a>&gt;, ticker: <a href="_String">string::String</a>, value: T, identifier: <a href="_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="oracle.md#0x3_oracle_submit_data">submit_data</a>&lt;T: <b>copy</b>, drop, store&gt;(oracle_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="oracle.md#0x3_oracle_SimpleOracle">oracle::SimpleOracle</a>&gt;, ticker: <a href="_String">string::String</a>, value: T, identifier: <a href="_String">string::String</a>, admin_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="oracle.md#0x3_oracle_AdminCap">oracle::AdminCap</a>&gt;)
 </code></pre>
 
 
@@ -134,5 +146,5 @@ Create a new shared SimpleOracle object for publishing data.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="oracle.md#0x3_oracle_archive_data">archive_data</a>&lt;K: <b>copy</b>, drop, store, V: <b>copy</b>, drop, store&gt;(oracle_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="oracle.md#0x3_oracle_SimpleOracle">oracle::SimpleOracle</a>&gt;, ticker: <a href="_String">string::String</a>, archival_key: K)
+<pre><code><b>public</b> <b>fun</b> <a href="oracle.md#0x3_oracle_archive_data">archive_data</a>&lt;K: <b>copy</b>, drop, store, V: <b>copy</b>, drop, store&gt;(oracle_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="oracle.md#0x3_oracle_SimpleOracle">oracle::SimpleOracle</a>&gt;, ticker: <a href="_String">string::String</a>, archival_key: K, admin_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="oracle.md#0x3_oracle_AdminCap">oracle::AdminCap</a>&gt;)
 </code></pre>

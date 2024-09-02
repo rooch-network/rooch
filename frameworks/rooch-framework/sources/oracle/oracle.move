@@ -9,7 +9,7 @@ module rooch_framework::oracle {
     use moveos_std::timestamp::now_milliseconds;
     use moveos_std::tx_context::sender;
     use moveos_std::object;
-    use moveos_std::object::Object;
+    use moveos_std::object::{Object, ObjectID};
     use moveos_std::table::Table;
     use moveos_std::table;
 
@@ -32,6 +32,10 @@ module rooch_framework::oracle {
         description: String,
         /// The URL of the oracle.
         url: String,
+    }
+
+    struct AdminCap has key, store {
+        oracle_id: ObjectID
     }
 
     struct StoredData<T: store> has copy, store, drop {
@@ -68,9 +72,13 @@ module rooch_framework::oracle {
     }
 
     /// Create a new shared SimpleOracle object for publishing data.
-    public entry fun create(name: String, url: String, description: String) {
+    public fun create(name: String, url: String, description: String): Object<AdminCap> {
         let oracle = object::new(SimpleOracle { id: object::new(TablePlaceholder{_placeholder: false}), address: sender(), name, description, url });
-        object::to_shared(oracle)
+        let oracle_id = object::id(&oracle);
+        object::to_shared(oracle);
+        object::new(AdminCap{
+            oracle_id
+        })
     }
 
     public fun submit_data<T: store + copy + drop>(
@@ -78,9 +86,12 @@ module rooch_framework::oracle {
         ticker: String,
         value: T,
         identifier: String,
+        admin_obj: &mut Object<AdminCap>,
     ) {
+        let oracle_id = object::id(oracle_obj);
+        let admin_id = object::borrow(admin_obj).oracle_id;
+        assert!(oracle_id == admin_id, ErrorSenderNotOracle);
         let oracle = object::borrow_mut(oracle_obj);
-        assert!(oracle.address == sender(), ErrorSenderNotOracle);
 
         let sequence_number = if (object::contains_field(&oracle.id, ticker)) {
             let old_data: StoredData<T> = object::remove_field(&mut oracle.id, ticker);
@@ -102,9 +113,12 @@ module rooch_framework::oracle {
         oracle_obj: &mut Object<SimpleOracle>,
         ticker: String,
         archival_key: K,
+        admin_obj: &mut Object<AdminCap>,
     ) {
+        let oracle_id = object::id(oracle_obj);
+        let admin_id = object::borrow(admin_obj).oracle_id;
+        assert!(oracle_id == admin_id, ErrorSenderNotOracle);
         let oracle = object::borrow_mut(oracle_obj);
-        assert!(oracle.address == sender(), ErrorSenderNotOracle);
         assert!(object::contains_field(&oracle.id, ticker), ErrorTickerNotExists);
 
         let latest_data: StoredData<V> = *object::borrow_mut_field(&mut oracle.id, ticker);
