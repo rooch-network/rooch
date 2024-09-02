@@ -90,4 +90,30 @@ module rooch_framework::session_validator {
         assert!(session_key::in_session_scope(&session_key), auth_validator::error_validate_function_call_beyond_session_scope());
         auth_key
     }
+
+    #[test]
+    fun test_validate_signature_success() {
+        let tx_hash = x"fdacd89ff32c5dedb2b49117ffa457b29cb932055e34be2629064887c0f4e2c6";
+        let authenticator_payload = x"008b91427a5eaea2970a093a5a996a947fd7073d0155eaf85db9367715572662b20ddeb9fbb56a3d2a9ebd9d41c8cfc0089e7f7c6b2b2da954c4764527a8a2bd077495252f4c098ae79597de12da55e446256953a5a05d95e54adcd5e1e561cbe0";
+
+        validate_signature(&authenticator_payload, &tx_hash);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = 1010, location = Self)]
+    fun test_validate_signature_fail_with_scheme() {
+        let tx_hash = x"fdacd89ff32c5dedb2b49117ffa457b29cb932055e34be2629064887c0f4e2c6";
+        let authenticator_payload = x"018b91427a5eaea2970a093a5a996a947fd7073d0155eaf85db9367715572662b20ddeb9fbb56a3d2a9ebd9d41c8cfc0089e7f7c6b2b2da954c4764527a8a2bd077495252f4c098ae79597de12da55e446256953a5a05d95e54adcd5e1e561cbe0";
+
+        validate_signature(&authenticator_payload, &tx_hash);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = 1010, location = Self)]
+    fun test_validate_signature_fail_verify() {
+        let tx_hash = x"fdacd89ff32c5dedb2b49117ffa457b29cb932055e34be2629064887c0f4e2c5";
+        let authenticator_payload = x"008b91427a5eaea2970a093a5a996a947fd7073d0155eaf85db9367715572662b20ddeb9fbb56a3d2a9ebd9d41c8cfc0089e7f7c6b2b2da954c4764527a8a2bd077495252f4c098ae79597de12da55e446256953a5a05d95e54adcd5e1e561cbe0";
+
+        validate_signature(&authenticator_payload, &tx_hash);
+    }
 }

@@ -65,7 +65,6 @@ async fn test_session_key_rooch() {
     let tx = keystore
         .sign_transaction_via_session_key(&sender, tx_data, &session_auth_key, None)
         .unwrap();
-
     binding_test.execute(tx).unwrap();
 
     // test the session key call function which not in the scope of session key, it should be rejected.
