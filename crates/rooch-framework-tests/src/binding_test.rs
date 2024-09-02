@@ -78,7 +78,7 @@ impl RustBindingTest {
         let kp = RoochKeyPair::generate_secp256k1();
         let sequencer = kp.public().bitcoin_address()?;
 
-        network.set_sequencer_account(sequencer.clone());
+        network.mock_genesis_account(&kp)?;
 
         let genesis = RoochGenesis::build(network.clone())?;
         let opt = RoochOpt::new_with_temp_store()?;

@@ -31,7 +31,6 @@ use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
 use rooch_indexer::store::traits::IndexerStoreTrait;
 use rooch_store::meta_store::MetaStore;
 use rooch_store::transaction_store::TransactionStore;
-use rooch_types::address::BitcoinAddress;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::error::GenesisError;
 use rooch_types::framework::chain_id::ChainID;
@@ -52,10 +51,7 @@ use std::str::FromStr;
 use std::{fs::File, io::Write, path::Path};
 
 pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
-    let mut network: RoochNetwork = BuiltinChainID::Local.into();
-    let sequencer_account = BitcoinAddress::from_str("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
-        .expect("parse bitcoin address should success");
-    network.set_sequencer_account(sequencer_account);
+    let network: RoochNetwork = BuiltinChainID::Local.into();
     RoochGenesis::build(network).expect("build rooch genesis failed")
 });
 pub const LATEST_GAS_SCHEDULE_VERSION: u64 = GAS_SCHEDULE_RELEASE_V1;
