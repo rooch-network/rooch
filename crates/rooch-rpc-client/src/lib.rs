@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use fast_socks5::client::Socks5Stream;
+use fast_socks5::server::{Config, Socks5Socket};
 use jsonrpsee::core::client::ClientT;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
+use jsonrpsee::ws_client::{WsClient, WsClientBuilder};
 use move_core_types::language_storage::ModuleId;
 use move_core_types::metadata::Metadata;
 use move_core_types::resolver::ModuleResolver;
@@ -15,9 +18,13 @@ use moveos_types::{
     function_return_value::FunctionResult, module_binding::MoveFunctionCaller,
     moveos_std::tx_context::TxContext, transaction::FunctionCall,
 };
+use pin_project::pin_project;
 use rooch_client::RoochRpcClient;
+use std::env;
+use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::net::{TcpListener, TcpStream};
 use tokio::runtime::Handle;
 
 pub mod client_config;
@@ -56,10 +63,66 @@ impl ClientBuilder {
                 .build(http)?,
         );
 
+        let server_addr = self.socks_server_no_auth().await;
+        let server_url = format!("ws://{}", server_addr);
+        // TODO: build_with_stream
+        let ws_client = Arc::new(WsClientBuilder::default().build(&server_url).await.unwrap());
+
         Ok(Client {
             http: http_client.clone(),
+            ws: ws_client.clone(),
             rooch: RoochRpcClient::new(http_client.clone()),
         })
+    }
+
+    pub async fn socks_server_no_auth(self) -> SocketAddr {
+        let mut config = Config::default();
+        config.set_dns_resolve(false);
+        let config = Arc::new(config);
+
+        let proxy_url = if self.proxy_url.is_some() {
+            self.proxy_url.clone().unwrap()
+        } else {
+            env::var("ALL_PROXY").unwrap()
+        };
+
+        let listener = TcpListener::bind(proxy_url).await.unwrap();
+        let proxy_addr = listener.local_addr().unwrap();
+        self.spawn_socks_server(listener, config).await;
+
+        proxy_addr
+    }
+
+    pub async fn spawn_socks_server(self, listener: TcpListener, config: Arc<Config>) {
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            loop {
+                let (stream, _) = listener.accept().await.unwrap();
+                let mut socks5_socket = Socks5Socket::new(stream, config.clone());
+                socks5_socket.set_reply_ip(addr.ip());
+
+                socks5_socket.upgrade_to_socks5().await.unwrap();
+            }
+        });
+    }
+
+    pub async fn connect_over_socks_stream(
+        self,
+        server_addr: SocketAddr,
+    ) -> Socks5Stream<TcpStream> {
+        let target_addr = server_addr.ip().to_string();
+        let target_port = server_addr.port();
+
+        let socks_server = self.socks_server_no_auth().await;
+
+        Socks5Stream::connect(
+            socks_server,
+            target_addr,
+            target_port,
+            fast_socks5::client::Config::default(),
+        )
+        .await
+        .unwrap()
     }
 }
 
@@ -76,6 +139,7 @@ impl Default for ClientBuilder {
 #[derive(Clone)]
 pub struct Client {
     http: Arc<HttpClient>,
+    ws: Arc<WsClient>,
     pub rooch: RoochRpcClient,
 }
 
@@ -92,6 +156,14 @@ impl Client {
         params: Vec<serde_json::Value>,
     ) -> Result<serde_json::Value> {
         Ok(self.http.request(method, params).await?)
+    }
+
+    pub async fn request_with_ws(
+        &self,
+        method: &str,
+        params: Vec<serde_json::Value>,
+    ) -> Result<serde_json::Value> {
+        Ok(self.ws.request(method, params).await?)
     }
 }
 
@@ -127,5 +199,16 @@ impl ModuleResolver for &Client {
                     .transpose()
             })
         })
+    }
+}
+
+#[pin_project]
+pub struct DataStream<T: tokio::io::AsyncRead + tokio::io::AsyncWrite + std::marker::Unpin>(
+    #[pin] Socks5Stream<T>,
+);
+
+impl<T: tokio::io::AsyncRead + tokio::io::AsyncWrite + std::marker::Unpin> DataStream<T> {
+    pub fn new(t: Socks5Stream<T>) -> Self {
+        Self(t)
     }
 }

@@ -51,11 +51,8 @@ impl CommandAction<serde_json::Value> for RequestCommand {
             }
             None => vec![],
         };
-        let active_env = context.client_config.get_active_env()?;
 
-        Ok(client
-            .request_by_proxy(&active_env.rpc, self.method.as_str(), params)
-            .await?)
+        Ok(client.request_with_ws(&self.method, params).await?)
     }
 
     /// Executes the command, and serializes it to the common JSON output type
