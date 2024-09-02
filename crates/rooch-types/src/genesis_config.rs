@@ -159,11 +159,11 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-//curl -sSL https://mempool.space/api/block/$(curl -sSL https://mempool.space/api/block-height/852203)/header
+//curl -sSL https://mempool.space/api/block/$(curl -sSL https://mempool.space/api/block-height/859000)/header
 
 static MAIN_GENESIS_HEIGHT_HEADER: Lazy<(u64, Header)> = Lazy::new(|| {
-    (852203, bitcoin::consensus::deserialize(
-        &hex::decode("0000002aeab3d78df1e6bdd612df31107b32470b2946758410920100000000000000000012c85f974f244dce28142748dd6dc0a8d2a8cdca6706442e6df4b3b52c0d985d794c94666d8a031729521ec6")
+    (859000, bitcoin::consensus::deserialize(
+        &hex::decode("000000285e0683a9e4add89c9bead199a768bb25040fe165a41f00000000000000000000d57cb8c2ecb8f33f548772a0bffe6a156137ac63a96f11bad1c1e334ca44f444a3e8d0665b250317bc183bd0")
             .expect("Should be valid"),
     ).expect("Should be valid"))
 });
@@ -172,7 +172,7 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     bitcoin_network: crate::bitcoin::network::Network::Bitcoin.to_num(),
     bitcoin_block_height: MAIN_GENESIS_HEIGHT_HEADER.0,
     bitcoin_block_hash: MAIN_GENESIS_HEIGHT_HEADER.1.block_hash(),
-    bitcoin_reorg_block_count: 3,
+    bitcoin_reorg_block_count: 0,
     timestamp: MAIN_GENESIS_HEIGHT_HEADER.1.time as u64 * 1000,
     sequencer_account: BitcoinAddress::from_str(
         "bcrt1p56tdhxkcpc5xvdurfnufn9lkkywsh0gxttv5ktkvlezj0t23nasqawwrla",
