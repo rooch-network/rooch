@@ -47,6 +47,7 @@ pub struct GenesisCommand {
     /// The file format is JSON, and the first line is block height info: # export at block height <N>, ord range: [0, N).
     /// ord_input & utxo_input must be at the same height
     pub ord_source: PathBuf,
+    #[clap(long)]
     /// ord stats file, like ~/.rooch/local/ord_stats or ord_stats
     pub ord_stats: PathBuf,
     #[clap(
