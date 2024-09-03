@@ -290,9 +290,13 @@ impl MoveOS {
         if !is_system_call {
             // system pre_execute
             // we do not charge gas for system_pre_execute function
-            session
-                .execute_function_call(self.system_pre_execute_functions.clone(), false)
-                .expect("system_pre_execute should not fail.");
+            match session.execute_function_call(self.system_pre_execute_functions.clone(), false) {
+                Ok(_) => {}
+                Err(error) => {
+                    log::warn!("System pre execution failed: {:?}", error);
+                    return Err(Error::from(error));
+                }
+            }
         }
 
         match self.execute_action(&mut session, action.clone()) {
