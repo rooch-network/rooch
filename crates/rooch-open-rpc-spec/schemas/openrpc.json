@@ -885,6 +885,12 @@
             "format": "uint8",
             "minimum": 0.0
           },
+          "icon_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "name": {
             "type": "string"
           },
