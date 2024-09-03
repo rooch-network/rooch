@@ -7,18 +7,16 @@ use async_trait::async_trait;
 use clap::Parser;
 use move_command_line_common::types::ParsedStructType;
 use move_core_types::language_storage::TypeTag;
-use moveos_types::transaction::MoveAction;
+use moveos_types::{state::MoveState, transaction::MoveAction};
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::{
     error::RoochResult,
     framework::auth_payload::{AuthPayload, SignData},
     function_arg::{parse_function_arg, FunctionArg, ParsedFunctionId},
 };
+use serde::{Deserialize, Serialize};
 
-/// Sign an msg with current account private key (sign_hashed)
-///
-/// This operation must be specified with -a or
-/// --address to export only one address with a private key.
+/// Sign a tx with an account
 #[derive(Debug, Parser)]
 pub struct SignCommand {
     /// Function name as `<ADDRESS>::<MODULE_ID>::<FUNCTION_NAME>`
@@ -55,9 +53,24 @@ pub struct SignCommand {
     json: bool,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SignOutput {
+    pub tx_data: String,
+    pub auth_payload: String,
+}
+
+impl SignOutput {
+    pub fn new(tx_data: String, auth_payload: String) -> Self {
+        Self {
+            tx_data,
+            auth_payload,
+        }
+    }
+}
+
 #[async_trait]
-impl CommandAction<Option<AuthPayload>> for SignCommand {
-    async fn execute(self) -> RoochResult<Option<AuthPayload>> {
+impl CommandAction<Option<SignOutput>> for SignCommand {
+    async fn execute(self) -> RoochResult<Option<SignOutput>> {
         let context = self.context_options.build_require_password()?;
         let password = context.get_password();
         let address_mapping = context.address_mapping();
@@ -91,10 +104,17 @@ impl CommandAction<Option<AuthPayload>> for SignCommand {
         let signature = kp.sign(data_hash.as_bytes());
         let auth_payload = AuthPayload::new(sign_data, signature, bitcoin_address.to_string());
 
+        let result = SignOutput::new(
+            hex::encode(tx_data.encode()),
+            hex::encode(auth_payload.to_bytes()),
+        );
         if self.json {
-            Ok(Some(auth_payload))
+            Ok(Some(result))
         } else {
-            println!("Sign succeeded with the auth payload: {:?}", auth_payload);
+            println!(
+                "Sign tx data {} succeeded with the auth payload: {}",
+                result.tx_data, result.auth_payload
+            );
             Ok(None)
         }
     }
