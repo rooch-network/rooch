@@ -3,15 +3,15 @@
 
 module moveos_std::decimal_value {
     struct DecimalValue has store, drop, copy {
-        value: u64,
+        value: u256,
         decimal: u8,
     }
 
-    public fun new(value: u64, decimal: u8): DecimalValue {
+    public fun new(value: u256, decimal: u8): DecimalValue {
         DecimalValue { value, decimal }
     }
 
-    public fun value(self: &DecimalValue): u64 {
+    public fun value(self: &DecimalValue): u256 {
         self.value
     }
 
