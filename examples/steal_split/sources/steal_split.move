@@ -604,7 +604,6 @@ module rooch_examples::rooch_examples {
         let player_one = &account_entry::create_account_for_testing(@0xACE);
         let player_two = &account_entry::create_account_for_testing(@0xCAFE);
 
-        let _move_os = &account_entry::create_account_for_testing(@moveos_std);
         timestamp::set_time_has_started_for_testing();
 
         init_coin(account);

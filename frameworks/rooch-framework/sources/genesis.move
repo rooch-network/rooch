@@ -52,14 +52,15 @@ module rooch_framework::genesis {
         transaction_fee::genesis_init(genesis_account);
         address_mapping::genesis_init(genesis_account);
         let sequencer_addr = bitcoin_address::to_rooch_address(&genesis_context.sequencer);
-        onchain_config::genesis_init(genesis_account, sequencer_addr);
-
+        
         // Some test cases use framework account as sequencer, it may already exist
         if(!moveos_std::account::exists_at(sequencer_addr)){
             account::create_account(sequencer_addr);
             address_mapping::bind_bitcoin_address(sequencer_addr, genesis_context.sequencer);
         };
         let rooch_dao_address = bitcoin_address::to_rooch_address(&genesis_context.rooch_dao);
+
+        onchain_config::genesis_init(genesis_account, sequencer_addr, rooch_dao_address);
 
         // issue framework packages upgrade cap to the rooch dao
         let system_addresses = core_addresses::list_system_reserved_addresses();
