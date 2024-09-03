@@ -178,7 +178,7 @@ mod tests {
         let binary_response = query(deps.as_ref(), env, query_msg).unwrap();
 
         // Step 4: Parse the response
-        let output: OutputData = from_json(&binary_response).unwrap();
+        let output: OutputData = from_json(binary_response).unwrap();
 
         // Step 5: Validate the results
         assert_eq!(output.amount, 1000);
@@ -191,7 +191,7 @@ mod tests {
         // Validate test_range attribute
         assert_eq!(output.attributes[1].key, "test_range");
         let range_value: u32 = output.attributes[1].value.parse().unwrap();
-        assert!(range_value >= 1 && range_value <= 10);
+        assert!((1..=10).contains(&range_value));
 
         // Validate test_list attribute
         assert_eq!(output.attributes[2].key, "test_list");
@@ -227,7 +227,7 @@ mod tests {
             output: expected_output.clone(),
         };
         let binary_response = query(deps.as_ref(), env.clone(), query_msg).unwrap();
-        let result: bool = from_json(&binary_response).unwrap();
+        let result: bool = from_json(binary_response).unwrap();
         assert!(result);
 
         // Test verification with incorrect output
@@ -240,7 +240,7 @@ mod tests {
             output: incorrect_output,
         };
         let binary_response = query(deps.as_ref(), env, query_msg).unwrap();
-        let result: bool = from_json(&binary_response).unwrap();
+        let result: bool = from_json(binary_response).unwrap();
         assert!(!result);
     }
 }
