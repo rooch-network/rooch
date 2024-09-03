@@ -6,12 +6,13 @@
 
 
 -  [Resource `OnchainConfig`](#0x3_onchain_config_OnchainConfig)
--  [Resource `AdminCap`](#0x3_onchain_config_AdminCap)
+-  [Resource `ConfigUpdateCap`](#0x3_onchain_config_ConfigUpdateCap)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x3_onchain_config_genesis_init)
 -  [Function `admin`](#0x3_onchain_config_admin)
 -  [Function `ensure_admin`](#0x3_onchain_config_ensure_admin)
 -  [Function `sequencer`](#0x3_onchain_config_sequencer)
+-  [Function `rooch_dao`](#0x3_onchain_config_rooch_dao)
 -  [Function `update_framework_version`](#0x3_onchain_config_update_framework_version)
 -  [Function `framework_version`](#0x3_onchain_config_framework_version)
 -  [Function `onchain_config`](#0x3_onchain_config_onchain_config)
@@ -41,14 +42,14 @@ OnchainConfig is framework configurations stored on chain.
 
 
 
-<a name="0x3_onchain_config_AdminCap"></a>
+<a name="0x3_onchain_config_ConfigUpdateCap"></a>
 
-## Resource `AdminCap`
+## Resource `ConfigUpdateCap`
 
-AdminCap is the capability for admin operations, such as update onchain configurations.
+ConfigUpdateCap is the capability for admin operations, such as update onchain configurations.
 
 
-<pre><code><b>struct</b> <a href="onchain_config.md#0x3_onchain_config_AdminCap">AdminCap</a> <b>has</b> store, key
+<pre><code><b>struct</b> <a href="onchain_config.md#0x3_onchain_config_ConfigUpdateCap">ConfigUpdateCap</a> <b>has</b> store, key
 </code></pre>
 
 
@@ -73,7 +74,7 @@ AdminCap is the capability for admin operations, such as update onchain configur
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_genesis_init">genesis_init</a>(genesis_account: &<a href="">signer</a>, sequencer: <b>address</b>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_genesis_init">genesis_init</a>(genesis_account: &<a href="">signer</a>, sequencer: <b>address</b>, rooch_dao: <b>address</b>)
 </code></pre>
 
 
@@ -107,6 +108,17 @@ AdminCap is the capability for admin operations, such as update onchain configur
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_sequencer">sequencer</a>(): <b>address</b>
+</code></pre>
+
+
+
+<a name="0x3_onchain_config_rooch_dao"></a>
+
+## Function `rooch_dao`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_rooch_dao">rooch_dao</a>(): <b>address</b>
 </code></pre>
 
 

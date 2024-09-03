@@ -214,7 +214,9 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let mut network = opt.network();
     if network.chain_id == BuiltinChainID::Local.chain_id() {
         // local chain use current active account as sequencer account
-        network.set_sequencer_account(sequencer_bitcoin_address);
+        let rooch_dao_bitcoin_address = network.mock_genesis_account(&sequencer_keypair)?;
+        let rooch_dao_address = rooch_dao_bitcoin_address.to_rooch_address();
+        println!("Rooch DAO address: {:?}", rooch_dao_address);
     } else {
         ensure!(
             network.genesis_config.sequencer_account == sequencer_bitcoin_address,

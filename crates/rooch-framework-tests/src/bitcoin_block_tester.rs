@@ -49,7 +49,32 @@ impl BitcoinBlockTester {
     pub fn new(height: u64) -> Result<Self> {
         let genesis = BitcoinTesterGenesis::load(height)?;
         let utxo_store_change = genesis.utxo_store_change.clone();
-        let mut binding_test = RustBindingTest::new_with_network(genesis.network.clone())?;
+
+        let block_height = genesis.blocks[0].height;
+        let timestamp_milliseconds = (genesis.blocks[0].block.header.time as u64) * 1000;
+        let mut genesis_config = genesis_config::G_MAIN_CONFIG.clone();
+        genesis_config.bitcoin_block_hash = genesis.blocks[0].block.block_hash();
+        genesis_config.bitcoin_block_height = block_height;
+        genesis_config.bitcoin_reorg_block_count = 0;
+        genesis_config.timestamp = timestamp_milliseconds;
+        genesis_config.stdlib_version = StdlibVersion::Latest;
+        genesis_config.genesis_objects = vec![
+            (
+                ObjectState::new_timestamp(Timestamp {
+                    milliseconds: timestamp_milliseconds,
+                }),
+                Timestamp::type_layout(),
+            ),
+            (
+                ObjectState::genesis_module_store(),
+                ModuleStore::type_layout(),
+            ),
+        ];
+
+        let chain_id = BuiltinChainID::Main.chain_id();
+        let network = RoochNetwork::new(chain_id, genesis_config);
+
+        let mut binding_test = RustBindingTest::new_with_network(network)?;
         let root_changes = vec![utxo_store_change];
         binding_test.apply_changes(root_changes)?;
         Ok(Self {
@@ -392,7 +417,6 @@ pub struct BitcoinTesterGenesis {
     pub height: u64,
     pub blocks: Vec<BlockData>,
     pub utxo_store_change: ObjectChange,
-    pub network: RoochNetwork,
 }
 
 impl BitcoinTesterGenesis {
@@ -460,16 +484,6 @@ impl TesterGenesisBuilder {
             ord_events.len(),
             block_height
         );
-
-        // let mut expect_inscriptions = BTreeMap::new();
-        // for inscription_id in inscription_ids {
-        //     let inscription_info = self
-        //         .ord_client
-        //         .get_inscription(&inscription_id)
-        //         .await?
-        //         .ok_or_else(|| anyhow!("Missing inscription: {:?}", inscription_id))?;
-        //     expect_inscriptions.insert(inscription_id, inscription_info);
-        // }
 
         for tx in &block.txdata {
             self.block_txids.insert(tx.txid());
@@ -550,27 +564,6 @@ impl TesterGenesisBuilder {
     }
 
     pub async fn build(self) -> Result<BitcoinTesterGenesis> {
-        let block_height = self.blocks[0].height;
-        let timestamp_milliseconds = (self.blocks[0].block.header.time as u64) * 1000;
-        let mut genesis_config = genesis_config::G_MAIN_CONFIG.clone();
-        genesis_config.bitcoin_block_hash = self.blocks[0].block.block_hash();
-        genesis_config.bitcoin_block_height = block_height;
-        genesis_config.bitcoin_reorg_block_count = 0;
-        genesis_config.timestamp = timestamp_milliseconds;
-        genesis_config.stdlib_version = StdlibVersion::Latest;
-        genesis_config.genesis_objects = vec![
-            (
-                ObjectState::new_timestamp(Timestamp {
-                    milliseconds: timestamp_milliseconds,
-                }),
-                Timestamp::type_layout(),
-            ),
-            (
-                ObjectState::genesis_module_store(),
-                ModuleStore::type_layout(),
-            ),
-        ];
-
         debug!(
             "utxo store changes: {}",
             self.utxo_store_change.metadata.size
@@ -578,13 +571,11 @@ impl TesterGenesisBuilder {
         debug_assert!(
             self.utxo_store_change.metadata.size == (self.utxo_store_change.fields.len() as u64)
         );
-        let chain_id = BuiltinChainID::Main.chain_id();
-        let network = RoochNetwork::new(chain_id, genesis_config);
+        let block_height = self.blocks[0].height;
         let bitcoin_block_genesis = BitcoinTesterGenesis {
             height: block_height,
             blocks: self.blocks,
             utxo_store_change: self.utxo_store_change,
-            network,
         };
 
         Ok(bitcoin_block_genesis)
