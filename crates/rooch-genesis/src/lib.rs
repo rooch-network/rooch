@@ -31,7 +31,6 @@ use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
 use rooch_indexer::store::traits::IndexerStoreTrait;
 use rooch_store::meta_store::MetaStore;
 use rooch_store::transaction_store::TransactionStore;
-use rooch_types::address::BitcoinAddress;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::error::GenesisError;
 use rooch_types::framework::chain_id::ChainID;
@@ -52,10 +51,7 @@ use std::str::FromStr;
 use std::{fs::File, io::Write, path::Path};
 
 pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
-    let mut network: RoochNetwork = BuiltinChainID::Local.into();
-    let sequencer_account = BitcoinAddress::from_str("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
-        .expect("parse bitcoin address should success");
-    network.set_sequencer_account(sequencer_account);
+    let network: RoochNetwork = BuiltinChainID::Local.into();
     RoochGenesis::build(network).expect("build rooch genesis failed")
 });
 pub const LATEST_GAS_SCHEDULE_VERSION: u64 = GAS_SCHEDULE_RELEASE_V1;
@@ -243,6 +239,7 @@ impl RoochGenesis {
         let genesis_ctx = rooch_types::framework::genesis::GenesisContext::new(
             network.chain_id.id,
             genesis_config.sequencer_account,
+            genesis_config.rooch_dao.multisign_bitcoin_address.clone(),
         );
         let moveos_genesis_ctx =
             moveos_types::moveos_std::genesis::GenesisContext::new(genesis_config.timestamp);
@@ -251,6 +248,7 @@ impl RoochGenesis {
             genesis_config.bitcoin_block_height,
             genesis_config.bitcoin_block_hash.into_address(),
             genesis_config.bitcoin_reorg_block_count,
+            genesis_config.rooch_dao,
         );
 
         let bundles = stdlib.all_module_bundles()?;

@@ -19,29 +19,31 @@ module rooch_framework::onchain_config {
     struct OnchainConfig has key {
         framework_version: u64,
         sequencer: address,
+        rooch_dao: address,
     }
 
-    /// AdminCap is the capability for admin operations, such as update onchain configurations.
-    struct AdminCap has key, store {}
+    /// ConfigUpdateCap is the capability for admin operations, such as update onchain configurations.
+    struct ConfigUpdateCap has key, store {}
 
 
-    public(friend) fun genesis_init(genesis_account: &signer, sequencer: address){
+    public(friend) fun genesis_init(genesis_account: &signer, sequencer: address, rooch_dao: address){
         let config = OnchainConfig{
             framework_version: 0,
             sequencer,
+            rooch_dao,
         };
         let obj = object::new_named_object(config);
         object::transfer_extend(obj, @rooch_framework);
 
-        let admin_cap = object::new_named_object(AdminCap{});
-        object::transfer(admin_cap, sequencer);
+        let admin_cap = object::new_named_object(ConfigUpdateCap{});
+        object::transfer(admin_cap, rooch_dao);
 
         set_code_features(genesis_account);
     }
 
     public fun admin(): address {
-        let object_id = object::named_object_id<AdminCap>();
-        let obj = object::borrow_object<AdminCap>(object_id);
+        let object_id = object::named_object_id<ConfigUpdateCap>();
+        let obj = object::borrow_object<ConfigUpdateCap>(object_id);
         object::owner(obj)
     }
 
@@ -53,6 +55,10 @@ module rooch_framework::onchain_config {
 
     public fun sequencer(): address {
         onchain_config().sequencer
+    }
+
+    public fun rooch_dao(): address {
+        onchain_config().rooch_dao
     }
 
     public(friend) fun update_framework_version() {

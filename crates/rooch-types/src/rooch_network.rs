@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::address::BitcoinAddress;
+use crate::bitcoin::genesis::MultisignAccountConfig;
+use crate::bitcoin::multisign_account;
+use crate::crypto::RoochKeyPair;
 use crate::framework::chain_id::ChainID;
 use crate::genesis_config::{self, GenesisConfig};
 use anyhow::{bail, format_err, Result};
@@ -303,7 +306,18 @@ impl RoochNetwork {
         Self::builtin(BuiltinChainID::Main)
     }
 
-    pub fn set_sequencer_account(&mut self, account: BitcoinAddress) {
-        self.genesis_config.sequencer_account = account;
+    /// Mock the genesis account for local dev or unit test.
+    pub fn mock_genesis_account(&mut self, kp: &RoochKeyPair) -> Result<BitcoinAddress> {
+        let bitcoin_address = kp.public().bitcoin_address()?;
+        let bitcoin_public_key = kp.bitcoin_public_key()?;
+        let multisign_bitcoin_address =
+            multisign_account::generate_multisign_address(1, vec![bitcoin_public_key.to_bytes()])?;
+        self.genesis_config.sequencer_account = bitcoin_address;
+        self.genesis_config.rooch_dao = MultisignAccountConfig {
+            multisign_bitcoin_address: multisign_bitcoin_address.clone(),
+            threshold: 1,
+            participant_public_keys: vec![bitcoin_public_key.to_bytes()],
+        };
+        Ok(multisign_bitcoin_address)
     }
 }
