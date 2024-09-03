@@ -9,15 +9,15 @@ use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::account_sign_view::AccountSignView;
 use rooch_types::error::{RoochError, RoochResult};
 
-/// Sign an msg with current account private key (sign_hashed)
+/// Verify a signed message
 ///
-/// This operation must be specified with -a or
-/// --address to export only one address with a private key.
+/// This operation must be specified with -m, or
+/// --message to verify the signed message
 #[derive(Debug, Parser)]
 pub struct VerifyCommand {
-    /// signature that will be verified
-    #[clap(long, required = true)]
-    signature: String,
+    /// the message to be verified
+    #[clap(short = 'm', long, required = true)]
+    message: String,
 
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
@@ -34,14 +34,8 @@ impl CommandAction<Option<AccountSignView>> for VerifyCommand {
         let password = context.get_password();
 
         let mapping = context.address_mapping();
-        let addrss = self.signature.into_rooch_address(&mapping).map_err(|e| {
-            RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
-        })?;
 
-        let mut msg_body = Vec::<u8>::new();
-        msg_body.copy_from_slice(&auth_payload.message_prefix);
-        msg_body.copy_from_slice(&self.msg.clone().into_bytes());
-
+        self.message;
         let signature = context.keystore.sign_hashed(&addrss, &msg_body, password)?;
 
         if self.json {

@@ -18,6 +18,7 @@ use moveos_types::{
     h256::{sha2_256_of, H256},
     state::{MoveStructState, MoveStructType},
 };
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::io;
 
@@ -94,7 +95,7 @@ impl Decodable for SignData {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct AuthPayload {
     // Message signature
     pub signature: Vec<u8>,
