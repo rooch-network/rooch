@@ -1,23 +1,50 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_types::{CommandAction, WalletContextOptions};
+use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use async_trait::async_trait;
+use bitcoin::hex::DisplayHex;
 use clap::Parser;
-use hex::ToHex;
+use move_command_line_common::types::ParsedStructType;
+use move_core_types::language_storage::TypeTag;
+use moveos_types::transaction::MoveAction;
 use rooch_key::keystore::account_keystore::AccountKeystore;
-use rooch_rpc_api::jsonrpc_types::account_sign_view::AccountSignView;
-use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::{
+    error::{RoochResult},
+    framework::auth_payload::{AuthPayload},
+    function_arg::{parse_function_arg, FunctionArg, ParsedFunctionId},
+    transaction::Authenticator,
+};
+use anyhow::Result;
 
 /// Verify a signed message
-///
-/// This operation must be specified with -m, or
-/// --message to verify the signed message
 #[derive(Debug, Parser)]
 pub struct VerifyCommand {
-    /// the message to be verified
-    #[clap(short = 'm', long, required = true)]
-    message: String,
+    /// Function name as `<ADDRESS>::<MODULE_ID>::<FUNCTION_NAME>`
+    /// Example: `0x42::message::set_message`, `rooch_framework::empty::empty`
+    #[clap(long)]
+    pub function: ParsedFunctionId,
+
+    /// TypeTag arguments separated by spaces.
+    ///
+    /// Example: `0x1::M::T1 0x1::M::T2 rooch_framework::empty::Empty`
+    #[clap(
+        long = "type-args",
+        value_parser=ParsedStructType::parse,
+    )]
+    pub type_args: Vec<ParsedStructType>,
+
+    /// Arguments combined with their type separated by spaces.
+    ///
+    /// Supported types [u8, u16, u32, u64, u128, u256, bool, object_id, string, address, vector<inner_type>]
+    ///
+    /// Example: `address:0x1 bool:true u8:0 u256:1234 'vector<u32>:a,b,c,d'`
+    ///     address and uint can be written in short form like `@0x1 1u8 4123u256`.
+    #[clap(long = "args", value_parser=parse_function_arg)]
+    pub args: Vec<FunctionArg>,
+
+    #[clap(flatten)]
+    pub tx_options: TransactionOptions,
 
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
@@ -28,24 +55,47 @@ pub struct VerifyCommand {
 }
 
 #[async_trait]
-impl CommandAction<Option<AccountSignView>> for VerifyCommand {
-    async fn execute(self) -> RoochResult<Option<AccountSignView>> {
+impl CommandAction<Option<String>> for VerifyCommand {
+    async fn execute(self) -> RoochResult<Option<String>> {
         let context = self.context_options.build_require_password()?;
         let password = context.get_password();
+        let address_mapping = context.address_mapping();
+        let sender = context.resolve_address(self.tx_options.sender)?.into();
+        let kp = context.keystore.get_key_pair(&sender, password)?;
+        let max_gas_amount = self.tx_options.max_gas_amount;
 
-        let mapping = context.address_mapping();
+        let function_id = self.function.into_function_id(&address_mapping)?;
+        let args = self
+            .args
+            .into_iter()
+            .map(|arg| arg.into_bytes(&address_mapping))
+            .collect::<Result<Vec<_>>>()?;
+        let type_args = self
+            .type_args
+            .into_iter()
+            .map(|tag| {
+                Ok(TypeTag::Struct(Box::new(
+                    tag.into_struct_tag(&address_mapping)?,
+                )))
+            })
+            .collect::<Result<Vec<_>>>()?;
+        let action = MoveAction::new_function_call(function_id, type_args, args);
 
-        self.message;
-        let signature = context.keystore.sign_hashed(&addrss, &msg_body, password)?;
+        let tx_data = context
+            .build_tx_data(sender, action, max_gas_amount)
+            .await?;
+
+        let auth = Authenticator::bitcoin(&kp, &tx_data);
+        let auth_payload = bcs::from_bytes::<AuthPayload>(&auth.payload)?;
+        auth_payload.verify(&tx_data)?;
 
         if self.json {
-            Ok(Some(AccountSignView::new(
-                self.msg.clone(),
-                signature.encode_hex(),
-            )))
+            Ok(Some(auth_payload.signature.as_hex().to_string()))
         } else {
-            println!("Msg you input : {}", &self.msg);
-            println!("Signature : {}", signature.encode_hex::<String>());
+            println!(
+                "Verify auth payload succeeded with the signature: {}",
+                auth_payload.signature.as_hex()
+            );
             Ok(None)
         }
     }

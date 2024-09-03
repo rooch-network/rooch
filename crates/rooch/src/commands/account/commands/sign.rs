@@ -23,7 +23,7 @@ use rooch_types::{
 pub struct SignCommand {
     /// Function name as `<ADDRESS>::<MODULE_ID>::<FUNCTION_NAME>`
     /// Example: `0x42::message::set_message`, `rooch_framework::empty::empty`
-    #[clap(long, required = true)]
+    #[clap(long)]
     pub function: ParsedFunctionId,
 
     /// TypeTag arguments separated by spaces.
@@ -45,7 +45,7 @@ pub struct SignCommand {
     pub args: Vec<FunctionArg>,
 
     #[clap(flatten)]
-    tx_options: TransactionOptions,
+    pub tx_options: TransactionOptions,
 
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
@@ -94,7 +94,7 @@ impl CommandAction<Option<AuthPayload>> for SignCommand {
         if self.json {
             Ok(Some(auth_payload))
         } else {
-            println!("Auth Payload: {:?}", auth_payload);
+            println!("Sign succeeded with the auth payload: {:?}", auth_payload);
             Ok(None)
         }
     }
