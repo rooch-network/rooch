@@ -424,6 +424,8 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
 
     // Build server
     let server = ServerBuilder::default()
+        .max_request_body_size(12 * 1024 * 1024)
+        .max_response_body_size(12 * 1024 * 1024)
         .set_http_middleware(middleware)
         .set_rpc_middleware(rpc_middleware)
         .build(&addr)
