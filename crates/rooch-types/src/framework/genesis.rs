@@ -13,6 +13,8 @@ pub struct GenesisContext {
     pub chain_id: u64,
     /// Sequencer account
     pub sequencer: BitcoinAddress,
+    /// The rooch dao account
+    pub rooch_dao: BitcoinAddress,
 }
 
 impl MoveStructType for GenesisContext {
@@ -26,15 +28,17 @@ impl MoveStructState for GenesisContext {
         move_core_types::value::MoveStructLayout::new(vec![
             move_core_types::value::MoveTypeLayout::U64,
             BitcoinAddress::type_layout(),
+            BitcoinAddress::type_layout(),
         ])
     }
 }
 
 impl GenesisContext {
-    pub fn new(chain_id: u64, sequencer: BitcoinAddress) -> Self {
+    pub fn new(chain_id: u64, sequencer: BitcoinAddress, rooch_dao: BitcoinAddress) -> Self {
         Self {
             chain_id,
             sequencer,
+            rooch_dao,
         }
     }
 }

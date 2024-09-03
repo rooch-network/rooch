@@ -91,6 +91,16 @@ impl RoochKeyPair {
         RoochKeyPair::Secp256k1(secp256k1_keypair)
     }
 
+    pub fn from_ed25519_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
+        Ok(RoochKeyPair::Ed25519(Ed25519KeyPair::from_bytes(bytes)?))
+    }
+
+    pub fn from_secp256k1_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
+        Ok(RoochKeyPair::Secp256k1(Secp256k1KeyPair::from_bytes(
+            bytes,
+        )?))
+    }
+
     pub fn sign(&self, msg: &[u8]) -> Signature {
         Signer::sign(self, msg)
     }
