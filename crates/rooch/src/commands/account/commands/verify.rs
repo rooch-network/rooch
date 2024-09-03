@@ -1,24 +1,25 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_types::{CommandAction, WalletContextOptions};
+use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
+use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::{
     error::{RoochError, RoochResult},
-    framework::auth_payload::AuthPayload, transaction::RoochTransactionData,
+    framework::auth_payload::AuthPayload,
+    transaction::{Authenticator, RoochTransactionData},
 };
 
 /// Verify a tx with a auth payload
 #[derive(Debug, Parser)]
 pub struct VerifyCommand {
-    /// tx data hex
+    /// input for tx data hex
     #[clap(long, required = true)]
-    tx_data: String,
+    input: String,
 
-    /// auth payload hex
-    #[clap(long, required = true)]
-    auth_payload: String,
+    #[clap(flatten)]
+    pub tx_options: TransactionOptions,
 
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
@@ -31,21 +32,21 @@ pub struct VerifyCommand {
 #[async_trait]
 impl CommandAction<Option<String>> for VerifyCommand {
     async fn execute(self) -> RoochResult<Option<String>> {
-        let tx_data_bytes = hex::decode(&self.tx_data).map_err(|e| {
+        let context = self.context_options.build_require_password()?;
+        let password = context.get_password();
+        let sender = context.resolve_address(self.tx_options.sender)?.into();
+        let kp = context.keystore.get_key_pair(&sender, password)?;
+
+        let tx_data_bytes = hex::decode(&self.input).map_err(|e| {
             RoochError::CommandArgumentError(format!(
                 "Failed to decode tx hex: {}, err:{:?}",
-                self.tx_data, e
-            ))
-        })?;
-        let auth_payload_bytes = hex::decode(&self.auth_payload).map_err(|e| {
-            RoochError::CommandArgumentError(format!(
-                "Failed to decode auth payload hex: {}, err:{:?}",
-                self.auth_payload, e
+                self.input, e
             ))
         })?;
 
         let tx_data = RoochTransactionData::decode(&tx_data_bytes)?;
-        let auth_payload = bcs::from_bytes::<AuthPayload>(&auth_payload_bytes)?;
+        let auth = Authenticator::bitcoin(&kp, &tx_data);
+        let auth_payload = bcs::from_bytes::<AuthPayload>(&auth.payload).unwrap();
         let _ = auth_payload.verify(&tx_data);
 
         if self.json {
