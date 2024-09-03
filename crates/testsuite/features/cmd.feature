@@ -74,6 +74,14 @@ Feature: Rooch CLI integration tests
       Then assert: "'{{$.transaction[-1]}}' not_contains error"
       Then cmd: "transaction submit {{$.transaction[-1].path}}"
       Then assert: "{{$.transaction[-1].execution_info.status.type}} == executed"
+      Then cmd: "transaction query --sender default --limit 1"
+      Then assert: "'{{$.transaction[-1]}}' not_contains error"
+      Then cmd: "transaction query --tx-hashes {{$.transaction[-1].data[0].execution_info.tx_hash}}"
+      Then assert: "'{{$.transaction[-1].data[0].execution_info.status.type}}' == executed"
+      Then cmd: "transaction query --from-order 1 --to-order 2"
+      Then assert: "'{{$.transaction[-1]}}' not_contains error"
+      Then cmd: "transaction query --start-time 0 --end-time 1735689600 --limit 1"
+      Then assert: "'{{$.transaction[-1]}}' not_contains error"
 
       # alias tx for transaction
       Then cmd: "tx get-transactions-by-order --cursor 1 --limit 2 --descending-order true"
