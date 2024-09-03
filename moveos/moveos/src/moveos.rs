@@ -294,7 +294,9 @@ impl MoveOS {
                 Ok(_) => {}
                 Err(error) => {
                     log::warn!("System pre execution failed: {:?}", error);
-                    return Err(Error::from(error));
+                    return Err(Error::from(VMPanicError::SystemCallPanicError(
+                        format_err!("Execute System Pre call Panic {:?}", error),
+                    )));
                 }
             }
         }
