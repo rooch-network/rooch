@@ -483,7 +483,7 @@ impl TesterGenesisBuilder {
             "Load ord events: {} in block {}",
             ord_events.len(),
             block_height
-        ); 
+        );
 
         for tx in &block.txdata {
             self.block_txids.insert(tx.txid());
@@ -564,8 +564,6 @@ impl TesterGenesisBuilder {
     }
 
     pub async fn build(self) -> Result<BitcoinTesterGenesis> {
-        
-
         debug!(
             "utxo store changes: {}",
             self.utxo_store_change.metadata.size
@@ -573,7 +571,7 @@ impl TesterGenesisBuilder {
         debug_assert!(
             self.utxo_store_change.metadata.size == (self.utxo_store_change.fields.len() as u64)
         );
-        let block_height = self.blocks[0].height; 
+        let block_height = self.blocks[0].height;
         let bitcoin_block_genesis = BitcoinTesterGenesis {
             height: block_height,
             blocks: self.blocks,
