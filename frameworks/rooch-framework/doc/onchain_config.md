@@ -6,13 +6,15 @@
 
 
 -  [Resource `OnchainConfig`](#0x3_onchain_config_OnchainConfig)
+-  [Resource `AdminCap`](#0x3_onchain_config_AdminCap)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x3_onchain_config_genesis_init)
+-  [Function `admin`](#0x3_onchain_config_admin)
+-  [Function `ensure_admin`](#0x3_onchain_config_ensure_admin)
 -  [Function `sequencer`](#0x3_onchain_config_sequencer)
 -  [Function `update_framework_version`](#0x3_onchain_config_update_framework_version)
 -  [Function `framework_version`](#0x3_onchain_config_framework_version)
 -  [Function `onchain_config`](#0x3_onchain_config_onchain_config)
--  [Function `ensure_sequencer`](#0x3_onchain_config_ensure_sequencer)
 -  [Function `add_to_publishing_allowlist`](#0x3_onchain_config_add_to_publishing_allowlist)
 -  [Function `remove_from_publishing_allowlist`](#0x3_onchain_config_remove_from_publishing_allowlist)
 -  [Function `change_feature_flags`](#0x3_onchain_config_change_feature_flags)
@@ -39,16 +41,28 @@ OnchainConfig is framework configurations stored on chain.
 
 
 
+<a name="0x3_onchain_config_AdminCap"></a>
+
+## Resource `AdminCap`
+
+AdminCap is the capability for admin operations, such as update onchain configurations.
+
+
+<pre><code><b>struct</b> <a href="onchain_config.md#0x3_onchain_config_AdminCap">AdminCap</a> <b>has</b> store, key
+</code></pre>
+
+
+
 <a name="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_onchain_config_ErrorNotSequencer"></a>
+<a name="0x3_onchain_config_ErrorNotAdmin"></a>
 
 
 
-<pre><code><b>const</b> <a href="onchain_config.md#0x3_onchain_config_ErrorNotSequencer">ErrorNotSequencer</a>: u64 = 1;
+<pre><code><b>const</b> <a href="onchain_config.md#0x3_onchain_config_ErrorNotAdmin">ErrorNotAdmin</a>: u64 = 1;
 </code></pre>
 
 
@@ -60,6 +74,28 @@ OnchainConfig is framework configurations stored on chain.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_genesis_init">genesis_init</a>(genesis_account: &<a href="">signer</a>, sequencer: <b>address</b>)
+</code></pre>
+
+
+
+<a name="0x3_onchain_config_admin"></a>
+
+## Function `admin`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_admin">admin</a>(): <b>address</b>
+</code></pre>
+
+
+
+<a name="0x3_onchain_config_ensure_admin"></a>
+
+## Function `ensure_admin`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_ensure_admin">ensure_admin</a>(<a href="">account</a>: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -108,27 +144,15 @@ OnchainConfig is framework configurations stored on chain.
 
 
 
-<a name="0x3_onchain_config_ensure_sequencer"></a>
-
-## Function `ensure_sequencer`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_ensure_sequencer">ensure_sequencer</a>(<a href="">account</a>: &<a href="">signer</a>)
-</code></pre>
-
-
-
 <a name="0x3_onchain_config_add_to_publishing_allowlist"></a>
 
 ## Function `add_to_publishing_allowlist`
 
-When module_publishing_allowlist_feature is enabled, only address in allowlist
-can publish modules.
-Add <code>publisher</code> to publishing allowlist.
+When module_publishing_allowlist_feature is enabled, only packed_id in allowlist can be published.
+Add <code>package_id</code> to publishing allowlist.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_add_to_publishing_allowlist">add_to_publishing_allowlist</a>(<a href="">account</a>: &<a href="">signer</a>, publisher: <b>address</b>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_add_to_publishing_allowlist">add_to_publishing_allowlist</a>(<a href="">account</a>: &<a href="">signer</a>, package_id: <b>address</b>)
 </code></pre>
 
 
@@ -137,10 +161,10 @@ Add <code>publisher</code> to publishing allowlist.
 
 ## Function `remove_from_publishing_allowlist`
 
-Remove <code>publisher</code> from publishing allowlist.
+Remove <code>package_id</code> from publishing allowlist.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_remove_from_publishing_allowlist">remove_from_publishing_allowlist</a>(<a href="">account</a>: &<a href="">signer</a>, publisher: <b>address</b>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_remove_from_publishing_allowlist">remove_from_publishing_allowlist</a>(<a href="">account</a>: &<a href="">signer</a>, package_id: <b>address</b>)
 </code></pre>
 
 

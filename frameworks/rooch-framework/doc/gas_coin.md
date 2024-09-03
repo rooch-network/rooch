@@ -116,7 +116,7 @@ Mint gas coin to the given account.
 
 ## Function `faucet_entry`
 
-Entry point for the faucet, anyone can get Gas via this function on local/dev net, otherwise only sequencer account can call this function.
+Entry point for the faucet, anyone can get Gas via this function on local/dev net, otherwise only admin account can call this function.
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_faucet_entry">faucet_entry</a>(<a href="">account</a>: &<a href="">signer</a>, amount: <a href="">u256</a>)

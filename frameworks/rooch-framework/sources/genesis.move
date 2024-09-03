@@ -4,8 +4,11 @@
 module rooch_framework::genesis {
 
     use std::option;
+    use std::vector;
+    use moveos_std::signer;
     use moveos_std::tx_context;
     use moveos_std::module_store;
+    use moveos_std::core_addresses;
     use rooch_framework::account;
     use rooch_framework::auth_validator_registry;
     use rooch_framework::builtin_validators;
@@ -20,11 +23,6 @@ module rooch_framework::genesis {
 
     const ErrorGenesisInit: u64 = 1;
 
-    const MoveStdAccount: address = @0x1;
-    const MoveosStdAccount: address = @0x2;
-    const RoochFrameworkAccount: address = @0x3;
-    const BitcoinMoveAccount: address = @0x4;
-
     /// GenesisContext is a genesis init parameters in the TxContext.
     struct GenesisContext has copy,store,drop{
         chain_id: u64,
@@ -33,7 +31,13 @@ module rooch_framework::genesis {
     }
 
     fun init(){
-        let genesis_account = &account::create_system_account(@rooch_framework);
+        // create all system accounts
+        let system_addresses = core_addresses::list_system_reserved_addresses();
+        vector::for_each(system_addresses, |addr| {
+            let _ = account::create_system_account(addr);
+        });
+
+        let genesis_account = &signer::module_signer<GenesisContext>();
         let genesis_context_option = tx_context::get_attribute<GenesisContext>();
         assert!(option::is_some(&genesis_context_option), ErrorGenesisInit);
         let genesis_context = option::extract(&mut genesis_context_option);
@@ -55,10 +59,10 @@ module rooch_framework::genesis {
         };
 
         // issue framework packages upgrade cap to sequencer
-        module_store::issue_upgrade_cap_by_system(genesis_account, MoveStdAccount, sequencer_addr);
-        module_store::issue_upgrade_cap_by_system(genesis_account, MoveosStdAccount, sequencer_addr);
-        module_store::issue_upgrade_cap_by_system(genesis_account, RoochFrameworkAccount, sequencer_addr);
-        module_store::issue_upgrade_cap_by_system(genesis_account, BitcoinMoveAccount, sequencer_addr);
+        let system_addresses = core_addresses::list_system_reserved_addresses();
+        vector::for_each(system_addresses, |addr| {
+            module_store::issue_upgrade_cap_by_system(genesis_account, addr, sequencer_addr);
+        });
         
         // give some gas coin to the sequencer
         gas_coin::faucet(sequencer_addr, 1000000_00000000u256);
