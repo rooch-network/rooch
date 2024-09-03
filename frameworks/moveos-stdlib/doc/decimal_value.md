@@ -32,7 +32,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="decimal_value.md#0x2_decimal_value_new">new</a>(value: u64, decimal: u8): <a href="decimal_value.md#0x2_decimal_value_DecimalValue">decimal_value::DecimalValue</a>
+<pre><code><b>public</b> <b>fun</b> <a href="decimal_value.md#0x2_decimal_value_new">new</a>(value: <a href="">u256</a>, decimal: u8): <a href="decimal_value.md#0x2_decimal_value_DecimalValue">decimal_value::DecimalValue</a>
 </code></pre>
 
 
@@ -43,7 +43,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="decimal_value.md#0x2_decimal_value_value">value</a>(self: &<a href="decimal_value.md#0x2_decimal_value_DecimalValue">decimal_value::DecimalValue</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="decimal_value.md#0x2_decimal_value_value">value</a>(self: &<a href="decimal_value.md#0x2_decimal_value_DecimalValue">decimal_value::DecimalValue</a>): <a href="">u256</a>
 </code></pre>
 
 
