@@ -72,13 +72,32 @@ module rooch_framework::oracle {
     }
 
     /// Create a new shared SimpleOracle object for publishing data.
-    public fun create(name: String, url: String, description: String): Object<AdminCap> {
-        let oracle = object::new(SimpleOracle { id: object::new(TablePlaceholder{_placeholder: false}), address: sender(), name, description, url });
+    public entry fun create_entry(name: String, url: String, description: String) {
+        let oracle = object::new(
+            SimpleOracle {
+                id: object::new(TablePlaceholder { _placeholder: false }), address: sender(
+                ), name, description, url
+            }
+        );
         let oracle_id = object::id(&oracle);
         object::to_shared(oracle);
-        object::new(AdminCap{
+        object::transfer(object::new(AdminCap {
             oracle_id
-        })
+        }), sender())
+    }
+
+    /// Create a new SimpleOracle object for publishing data.
+    public fun create(name: String, url: String, description: String): (Object<SimpleOracle>, Object<AdminCap>) {
+        let oracle = object::new(
+            SimpleOracle {
+                id: object::new(TablePlaceholder { _placeholder: false }), address: sender(
+                ), name, description, url
+            }
+        );
+        let oracle_id = object::id(&oracle);
+        (oracle, object::new(AdminCap {
+            oracle_id
+        }))
     }
 
     public fun submit_data<T: store + copy + drop>(
