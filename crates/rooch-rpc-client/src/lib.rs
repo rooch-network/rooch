@@ -46,6 +46,7 @@ impl ClientBuilder {
         let http_client = Arc::new(
             HttpClientBuilder::default()
                 .max_request_size(2 << 30)
+                .max_response_size(2 << 30)
                 .request_timeout(self.request_timeout)
                 .build(http)?,
         );
