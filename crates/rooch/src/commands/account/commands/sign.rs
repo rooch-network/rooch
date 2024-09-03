@@ -12,6 +12,10 @@ use rooch_types::{
     error::{RoochError, RoochResult},
 };
 
+struct AuthPayload {
+    message_prefix: Vec<u8>,
+}
+
 /// Sign an msg with current account private key (sign_hashed)
 ///
 /// This operation must be specified with -a or
@@ -43,10 +47,18 @@ impl CommandAction<Option<AccountSignView>> for SignCommand {
             RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
         })?;
 
+        let auth_payload = AuthPayload {
+            message_prefix: "Bitcoin Signed Message:\n".into()
+        };
+
+        let mut msg_body = Vec::<u8>::new();
+        msg_body.copy_from_slice(&auth_payload.message_prefix);
+        msg_body.copy_from_slice(&self.msg.clone().into_bytes());
+
         let signature =
             context
                 .keystore
-                .sign_hashed(&addrss, &self.msg.clone().into_bytes(), password)?;
+                .sign_hashed(&addrss, &msg_body, password)?;
 
         if self.json {
             Ok(Some(AccountSignView::new(
