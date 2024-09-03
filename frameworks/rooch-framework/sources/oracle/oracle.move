@@ -34,7 +34,7 @@ module rooch_framework::oracle {
         url: String,
     }
 
-    struct AdminCap has key, store {
+    struct OracleAdminCap has key, store {
         oracle_id: ObjectID
     }
 
@@ -81,13 +81,13 @@ module rooch_framework::oracle {
         );
         let oracle_id = object::id(&oracle);
         object::to_shared(oracle);
-        object::transfer(object::new(AdminCap {
+        object::transfer(object::new(OracleAdminCap {
             oracle_id
         }), sender())
     }
 
     /// Create a new SimpleOracle object for publishing data.
-    public fun create(name: String, url: String, description: String): (Object<SimpleOracle>, Object<AdminCap>) {
+    public fun create(name: String, url: String, description: String): (Object<SimpleOracle>, Object<OracleAdminCap>) {
         let oracle = object::new(
             SimpleOracle {
                 id: object::new(TablePlaceholder { _placeholder: false }), address: sender(
@@ -95,7 +95,7 @@ module rooch_framework::oracle {
             }
         );
         let oracle_id = object::id(&oracle);
-        (oracle, object::new(AdminCap {
+        (oracle, object::new(OracleAdminCap {
             oracle_id
         }))
     }
@@ -105,7 +105,7 @@ module rooch_framework::oracle {
         ticker: String,
         value: T,
         identifier: String,
-        admin_obj: &mut Object<AdminCap>,
+        admin_obj: &mut Object<OracleAdminCap>,
     ) {
         let oracle_id = object::id(oracle_obj);
         let admin_id = object::borrow(admin_obj).oracle_id;
@@ -132,7 +132,7 @@ module rooch_framework::oracle {
         oracle_obj: &mut Object<SimpleOracle>,
         ticker: String,
         archival_key: K,
-        admin_obj: &mut Object<AdminCap>,
+        admin_obj: &mut Object<OracleAdminCap>,
     ) {
         let oracle_id = object::id(oracle_obj);
         let admin_id = object::borrow(admin_obj).oracle_id;
