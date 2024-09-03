@@ -5,16 +5,17 @@ use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
 use hex::ToHex;
+use moveos_types::state::MoveState;
 use rooch_key::keystore::account_keystore::AccountKeystore;
-use rooch_rpc_api::jsonrpc_types::account_sign_view::AccountSignView;
+use rooch_rpc_api::jsonrpc_types::{
+    account_sign_view::{AccountSignView, AuthPayloadView},
+    BytesView,
+};
 use rooch_types::{
     address::ParsedAddress,
     error::{RoochError, RoochResult},
 };
-
-struct AuthPayload {
-    message_prefix: Vec<u8>,
-}
+use std::str::FromStr;
 
 /// Sign an msg with current account private key (sign_hashed)
 ///
@@ -43,28 +44,28 @@ impl CommandAction<Option<AccountSignView>> for SignCommand {
         let password = context.get_password();
 
         let mapping = context.address_mapping();
-        let addrss = self.address.into_rooch_address(&mapping).map_err(|e| {
+        let address = self.address.into_rooch_address(&mapping).map_err(|e| {
             RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
         })?;
 
-        let auth_payload = AuthPayload {
-            message_prefix: "Bitcoin Signed Message:\n".into()
-        };
+        let signature = context.keystore.sign_hashed(
+            &address,
+            &self.msg.clone().to_bytes(),
+            password.clone(),
+        )?;
 
-        let mut msg_body = Vec::<u8>::new();
-        msg_body.copy_from_slice(&auth_payload.message_prefix);
-        msg_body.copy_from_slice(&self.msg.clone().into_bytes());
+        let kp = context.keystore.get_key_pair(&address, password)?;
 
-        let signature =
-            context
-                .keystore
-                .sign_hashed(&addrss, &msg_body, password)?;
+        let auth_payload = AuthPayloadView::new(
+            BytesView::from(signature.as_ref().to_vec()),
+            BytesView::from_str("Bitcoin Signed Message:\n")?,
+            BytesView::from_str("Rooch Transaction:\n")?,
+            BytesView::from(kp.public().as_ref().to_vec()),
+            address.clone().to_bech32(),
+        );
 
         if self.json {
-            Ok(Some(AccountSignView::new(
-                self.msg.clone(),
-                signature.encode_hex(),
-            )))
+            Ok(Some(AccountSignView::new(self.msg.clone(), auth_payload)))
         } else {
             println!("Msg you input : {}", &self.msg);
             println!("Signature : {}", signature.encode_hex::<String>());
