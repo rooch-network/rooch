@@ -6,14 +6,16 @@ use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use anyhow::{Ok, Result};
 use move_core_types::value::MoveTypeLayout;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
-use moveos_types::moveos_std::object;
 use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::state::{MoveStructState, MoveStructType};
+use moveos_types::moveos_std::object::{self, ObjectMeta};
+use moveos_types::state::{MoveStructState, MoveStructType, ObjectState};
 use moveos_types::{
+    h256::H256,
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::option::MoveOption,
     moveos_std::tx_context::TxContext,
     state::MoveState,
+    state::MoveType,
     transaction::FunctionCall,
 };
 use serde::{Deserialize, Serialize};
@@ -66,6 +68,16 @@ impl MoveStructState for RoochToBitcoinAddressMapping {
 impl RoochToBitcoinAddressMapping {
     pub fn object_id() -> ObjectID {
         object::named_object_id(&Self::struct_tag())
+    }
+
+    pub fn genesis_with_state_root(state_root: H256, size: u64) -> ObjectState {
+        let id = Self::object_id();
+        let mut metadata = ObjectMeta::genesis_meta(id, Self::type_tag());
+        metadata.state_root = Some(state_root);
+        metadata.size = size;
+        metadata.owner = ROOCH_FRAMEWORK_ADDRESS;
+        ObjectState::new_with_struct(metadata, Self::default())
+            .expect("Create MultiChainAddressMapping Object should success")
     }
 }
 

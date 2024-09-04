@@ -5,6 +5,7 @@ use super::types;
 use crate::addresses::BITCOIN_MOVE_ADDRESS;
 use anyhow::Result;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
+use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::{self, ObjectMeta};
 use moveos_types::state::{MoveStructState, MoveType, ObjectState};
 use moveos_types::{
@@ -17,8 +18,10 @@ use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("utxo");
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BitcoinUTXOStore {}
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct BitcoinUTXOStore {
+    _placeholder: bool,
+}
 
 impl BitcoinUTXOStore {
     pub fn object_id() -> ObjectID {
@@ -29,7 +32,17 @@ impl BitcoinUTXOStore {
         let id = Self::object_id();
         let mut metadata = ObjectMeta::genesis_meta(id, BitcoinUTXOStore::type_tag());
         metadata.to_shared();
-        ObjectState::new_with_struct(metadata, Self {})
+        ObjectState::new_with_struct(metadata, Self::default())
+            .expect("Create BitcoinUTXOStore Object should success")
+    }
+
+    pub fn genesis_with_state_root(state_root: H256, size: u64) -> ObjectState {
+        let id = Self::object_id();
+        let mut metadata = ObjectMeta::genesis_meta(id, BitcoinUTXOStore::type_tag());
+        metadata.state_root = Some(state_root);
+        metadata.size = size;
+        metadata.to_shared();
+        ObjectState::new_with_struct(metadata, Self::default())
             .expect("Create BitcoinUTXOStore Object should success")
     }
 }

@@ -30,6 +30,7 @@ miniscript = { workspace = true }
 coerce = { workspace = true }
 tokio = { workspace = true }
 clap = { features = ["derive", ], workspace = true }
+rand = { workspace = true }
 
 move-core-types = { workspace = true }
 moveos-types = { workspace = true }

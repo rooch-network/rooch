@@ -51,19 +51,23 @@ pub fn generate_multisign_address(
         .into_iter()
         .map(|pk| {
             let x_only_pk = if pk.len() == SCHNORR_PUBLIC_KEY_SIZE {
-                XOnlyPublicKey::from_slice(&pk)?
+                pk
             } else {
                 let pubkey = bitcoin::PublicKey::from_slice(&pk)?;
-                XOnlyPublicKey::from(pubkey)
+                XOnlyPublicKey::from(pubkey).serialize().to_vec()
             };
             Ok(x_only_pk)
         })
         .collect::<Result<Vec<_>>>()?;
 
     // Sort public keys to ensure the same script is generated for the same set of keys
-    // Note: we sort on the x-only public key
+    // Note: we sort on the x-only public key bytes
     x_only_public_keys.sort();
 
+    let x_only_public_keys = x_only_public_keys
+        .into_iter()
+        .map(|pk| XOnlyPublicKey::from_slice(&pk))
+        .collect::<Result<Vec<_>, bitcoin::secp256k1::Error>>()?;    
     let multisig_script = create_multisig_script(threshold, &x_only_public_keys);
 
     let builder = TaprootBuilder::new().add_leaf(0, multisig_script)?;

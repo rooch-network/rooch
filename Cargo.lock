@@ -9459,6 +9459,7 @@ dependencies = [
  "moveos-store",
  "moveos-types",
  "musig2",
+ "rand 0.8.5",
  "rooch-config",
  "rooch-db",
  "rooch-event",
