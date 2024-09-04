@@ -378,6 +378,8 @@ impl MoveStructState for InscriptionStore {
             u32::type_layout(),
             u32::type_layout(),
             u32::type_layout(),
+            u64::type_layout(),
+            u32::type_layout(),
         ])
     }
 }

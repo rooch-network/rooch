@@ -311,13 +311,31 @@ module bitcoin_move::multisign_account{
     }
 
     #[test]
-    fun test_multisign_bitcoin_address(){
+    fun test_multisign_bitcoin_address_from_less_than_eight_pubkeys(){
         let public_keys = vector::empty();
-        vector::push_back(&mut public_keys, x"0308839c624d3da34ae240086f60196409d619f285365cc3498fdd3a90b72599e4");
-        vector::push_back(&mut public_keys, x"0338121decf4ea2dbfd2ad1fe05a32a67448e78bf97a18bc107b4da177c27af752");
+        vector::push_back(&mut public_keys, x"032d4fb9f88a63f52d8bffd1a46ad40411310150a539913203265c3f46b0397f8c");
+        vector::push_back(&mut public_keys, x"039c9f399047d1ca911827c8c9b445ea55e84a68dcfe39641bc1f423c6a7cd99d0");
+        vector::push_back(&mut public_keys, x"03ad953cc82a6ed91c8eb3a6400e55965de4735bc5f8a107eabd2e4e7531f64c61");
+        vector::push_back(&mut public_keys, x"0346b64846c11f23ccec99811b476aaf68f421f15762287b872fcb896c92caa677");
+        vector::push_back(&mut public_keys, x"03730cb693e9a1bc6eaec5537c2e317a75bb6c8107a59fda018810c46c270670be");
+        let bitcoin_address = generate_multisign_address(3, public_keys);
+        let expected_bitcoin_address = bitcoin_address::from_string(&std::string::utf8(b"bc1pwee7tfs79xapsaamzqnnwn8d5w2z3cfzp2v8nhvsyddlyk4l67gqa0x3w5"));
+        assert!(bitcoin_address == expected_bitcoin_address, 1000);
+    }
+
+    #[test]
+    fun test_multisign_bitcoin_address_from_great_than_or_equal_eight_pubkeys(){
+        let public_keys = vector::empty();
+        vector::push_back(&mut public_keys, x"032d4fb9f88a63f52d8bffd1a46ad40411310150a539913203265c3f46b0397f8c");
+        vector::push_back(&mut public_keys, x"039c9f399047d1ca911827c8c9b445ea55e84a68dcfe39641bc1f423c6a7cd99d0");
+        vector::push_back(&mut public_keys, x"03ad953cc82a6ed91c8eb3a6400e55965de4735bc5f8a107eabd2e4e7531f64c61");
+        vector::push_back(&mut public_keys, x"0346b64846c11f23ccec99811b476aaf68f421f15762287b872fcb896c92caa677");
+        vector::push_back(&mut public_keys, x"03730cb693e9a1bc6eaec5537c2e317a75bb6c8107a59fda018810c46c270670be");
+        vector::push_back(&mut public_keys, x"0259a40918150bc16ca1852fb55be383ec0fcf2b6058a73a25f0dfd87394dd92db");
+        vector::push_back(&mut public_keys, x"028fd25b727bf77e42d7a99cad4b1fa564d41cdb3bbddaf15219a4529f486a775a");
         vector::push_back(&mut public_keys, x"03786e2d94b8aaac17b2846ea908a245ab8b3c9df7ff34be8c75c27beba8e1f579");
-        let bitcoin_address = generate_multisign_address(2, public_keys);
-        let expected_bitcoin_address = bitcoin_address::from_string(&std::string::utf8(b"tb1phldgaz7jzshk4zw60hvveeac498jt57dst25kuhuut96dkl6kvcskvg57y"));
+        let bitcoin_address = generate_multisign_address(3, public_keys);
+        let expected_bitcoin_address = bitcoin_address::from_string(&std::string::utf8(b"bc1p5pmmc8jmfeqx3fx0he3qgylr8q9cmduf43jclgplpk2kcjyrrmzq5tejw6"));
         assert!(bitcoin_address == expected_bitcoin_address, 1000);
     }
 }

@@ -33,14 +33,20 @@ module rooch_framework::address_mapping{
     }
 
     public(friend) fun genesis_init(_genesis_account: &signer) {
-        let multichain_mapping = object::new_named_object(MultiChainAddressMapping{
-            _placeholder: false
-        });
-        let rooch_to_bitcoin_mapping = object::new_named_object(RoochToBitcoinAddressMapping{
-            _placeholder: false
-        });
-        object::transfer_extend(multichain_mapping, @rooch_framework);
-        object::transfer_extend(rooch_to_bitcoin_mapping, @rooch_framework);
+        let multichain_mapping_id = object::named_object_id<MultiChainAddressMapping>();
+        if(!object::exists_object(multichain_mapping_id)){
+            let multichain_mapping = object::new_named_object(MultiChainAddressMapping{
+                _placeholder: false
+            });
+            object::transfer_extend(multichain_mapping, @rooch_framework);
+        };
+        let rooch_to_bitcoin_mapping_id = object::named_object_id<RoochToBitcoinAddressMapping>();
+        if(!object::exists_object(rooch_to_bitcoin_mapping_id)){
+            let rooch_to_bitcoin_mapping = object::new_named_object(RoochToBitcoinAddressMapping{
+                _placeholder: false
+            });
+            object::transfer_extend(rooch_to_bitcoin_mapping, @rooch_framework);
+        };
     }
 
     fun borrow_multichain() : &Object<MultiChainAddressMapping> {

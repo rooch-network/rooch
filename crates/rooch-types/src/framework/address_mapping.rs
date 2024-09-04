@@ -70,14 +70,19 @@ impl RoochToBitcoinAddressMapping {
         object::named_object_id(&Self::struct_tag())
     }
 
-    pub fn genesis_with_state_root(state_root: H256, size: u64) -> ObjectState {
+    pub fn genesis() -> ObjectState {
         let id = Self::object_id();
         let mut metadata = ObjectMeta::genesis_meta(id, Self::type_tag());
-        metadata.state_root = Some(state_root);
-        metadata.size = size;
         metadata.owner = ROOCH_FRAMEWORK_ADDRESS;
         ObjectState::new_with_struct(metadata, Self::default())
-            .expect("Create MultiChainAddressMapping Object should success")
+            .expect("Create RoochToBitcoinAddressMapping Object should success")
+    }
+
+    pub fn genesis_with_state_root(state_root: H256, size: u64) -> ObjectState {
+        let mut object = Self::genesis();
+        object.metadata.state_root = Some(state_root);
+        object.metadata.size = size;
+        object
     }
 }
 

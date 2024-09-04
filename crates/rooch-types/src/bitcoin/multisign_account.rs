@@ -67,14 +67,13 @@ pub fn generate_multisign_address(
     let x_only_public_keys = x_only_public_keys
         .into_iter()
         .map(|pk| XOnlyPublicKey::from_slice(&pk))
-        .collect::<Result<Vec<_>, bitcoin::secp256k1::Error>>()?;    
+        .collect::<Result<Vec<_>, bitcoin::secp256k1::Error>>()?;
     let multisig_script = create_multisig_script(threshold, &x_only_public_keys);
 
     let builder = TaprootBuilder::new().add_leaf(0, multisig_script)?;
     let secp = Secp256k1::verification_only();
     //Use the first public key after sorted as the internal key
     let internal_key = x_only_public_keys[0];
-
     let spend_info = builder.finalize(&secp, internal_key).unwrap();
 
     let address = bitcoin::Address::p2tr(
@@ -323,6 +322,49 @@ mod tests {
             let script = create_multisig_script(threshold, &pubkeys);
             //println!("script: {:?}", script.to_hex_string());
             assert_eq!(script, expected_script);
+        }
+    }
+
+    #[test]
+    fn test_multisign_bitcoin_address_from_less_than_eight_pubkeys() {
+        let cases = vec![(
+            3,
+            vec![
+                "032d4fb9f88a63f52d8bffd1a46ad40411310150a539913203265c3f46b0397f8c",
+                "039c9f399047d1ca911827c8c9b445ea55e84a68dcfe39641bc1f423c6a7cd99d0",
+                "03ad953cc82a6ed91c8eb3a6400e55965de4735bc5f8a107eabd2e4e7531f64c61",
+                "0346b64846c11f23ccec99811b476aaf68f421f15762287b872fcb896c92caa677",
+                "03730cb693e9a1bc6eaec5537c2e317a75bb6c8107a59fda018810c46c270670be",
+            ],
+            "bc1pwee7tfs79xapsaamzqnnwn8d5w2z3cfzp2v8nhvsyddlyk4l67gqa0x3w5",
+        )];
+        for (threshold, pubkeys, expected_address) in cases {
+            let pubkeys = pubkeys.iter().map(|pk| hex::decode(pk).unwrap()).collect();
+            //let expected_address = bitcoin::Address::from_str(expected_address).unwrap();
+            test_multisign_address_gen(threshold, pubkeys, Some(expected_address.to_owned()));
+        }
+    }
+
+    #[test]
+    fn test_multisign_bitcoin_address_from_great_than_or_equal_eight_pubkeys() {
+        let cases = vec![(
+            3,
+            vec![
+                "032d4fb9f88a63f52d8bffd1a46ad40411310150a539913203265c3f46b0397f8c",
+                "039c9f399047d1ca911827c8c9b445ea55e84a68dcfe39641bc1f423c6a7cd99d0",
+                "03ad953cc82a6ed91c8eb3a6400e55965de4735bc5f8a107eabd2e4e7531f64c61",
+                "0346b64846c11f23ccec99811b476aaf68f421f15762287b872fcb896c92caa677",
+                "03730cb693e9a1bc6eaec5537c2e317a75bb6c8107a59fda018810c46c270670be",
+                "0259a40918150bc16ca1852fb55be383ec0fcf2b6058a73a25f0dfd87394dd92db",
+                "028fd25b727bf77e42d7a99cad4b1fa564d41cdb3bbddaf15219a4529f486a775a",
+                "03786e2d94b8aaac17b2846ea908a245ab8b3c9df7ff34be8c75c27beba8e1f579",
+            ],
+            "bc1p5pmmc8jmfeqx3fx0he3qgylr8q9cmduf43jclgplpk2kcjyrrmzq5tejw6",
+        )];
+        for (threshold, pubkeys, expected_address) in cases {
+            let pubkeys = pubkeys.iter().map(|pk| hex::decode(pk).unwrap()).collect();
+            //let expected_address = bitcoin::Address::from_str(expected_address).unwrap();
+            test_multisign_address_gen(threshold, pubkeys, Some(expected_address.to_owned()));
         }
     }
 }

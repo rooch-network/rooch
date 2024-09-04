@@ -46,7 +46,7 @@ module bitcoin_move::taproot_builder {
         builder
     }
 
-    fun new_leaf(script_buf: ScriptBuf): NodeInfo {
+    fun  new_leaf(script_buf: ScriptBuf): NodeInfo {
         let ver = TAPROOT_LEAF_TAPSCRIPT;
         let hash = calculate_leaf_hash(&script_buf, ver);
         NodeInfo { hash, is_leaf: true }
@@ -90,8 +90,19 @@ module bitcoin_move::taproot_builder {
     fun calculate_leaf_hash(script_buf: &ScriptBuf, ver: u8): address {
         let bytes = vector::empty();
         vector::push_back(&mut bytes, ver);
-        //use bcs::to_bytes to write length and then the bytes
-        vector::append(&mut bytes, bcs::to_bytes(script_buf::bytes(script_buf)));
+        // https://github.com/rust-bitcoin/rust-bitcoin/blob/f6287fb44542661a93aceb94cb986e8f4faf7507/bitcoin/src/consensus/encode.rs#L699-L711
+        // direct write length and then the script_buf bytes
+        let script_buf_bytes = script_buf::bytes(script_buf);
+        let script_buf_bytes_len = vector::length(script_buf_bytes);
+        if (script_buf_bytes_len <= 252 ) {
+            vector::append(&mut bytes, bcs::to_bytes(&(script_buf_bytes_len as u8)));
+            vector::append(&mut bytes, *script_buf_bytes);
+            // The maximum number of pubkeys supported is 1985
+        } else {
+            vector::append(&mut bytes, x"FD");
+            vector::append(&mut bytes, bcs::to_bytes(&(script_buf_bytes_len as u16)));
+            vector::append(&mut bytes, *script_buf_bytes);
+        };
         tagged_hash(TAG_TAP_LEAF, bytes)
     }
 

@@ -55,7 +55,7 @@ impl MoveStructType for BitcoinUTXOStore {
 
 impl MoveStructState for BitcoinUTXOStore {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
-        move_core_types::value::MoveStructLayout::new(vec![u64::type_layout()])
+        move_core_types::value::MoveStructLayout::new(vec![bool::type_layout()])
     }
 }
 
