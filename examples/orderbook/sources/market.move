@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 module orderbook::market {
     use std::option;
-    use std::option::{Option, is_some};
+    use std::option::{Option, is_some, destroy_none};
     use std::string;
     use std::string::String;
     use moveos_std::object;
@@ -274,7 +274,8 @@ module orderbook::market {
         let option_coin = do_buy(signer, market_obj, order_id, assert_order_exist);
         if (is_some(&option_coin)) {
             account_coin_store::deposit(receiver, option::extract(&mut option_coin))
-        }
+        };
+        destroy_none(option_coin)
     }
 
     ///purchase
@@ -330,7 +331,8 @@ module orderbook::market {
         let option_coin = do_accept_bid(signer, market_obj, order_id, assert_order_exist);
         if (is_some(&option_coin)) {
             account_coin_store::deposit(receiver, option::extract(&mut option_coin))
-        }
+        };
+        destroy_none(option_coin)
     }
 
     public fun do_accept_bid<BaseAsset: key + store, QuoteAsset: key + store>(
