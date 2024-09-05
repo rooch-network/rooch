@@ -6,6 +6,7 @@ use crate::{
     transaction::RoochTransactionData,
 };
 use anyhow::{ensure, Result};
+use bitcoin::consensus::{Decodable, Encodable};
 use fastcrypto::{
     hash::Sha256,
     secp256k1::{Secp256k1PublicKey, Secp256k1Signature},
@@ -18,11 +19,12 @@ use moveos_types::{
     state::{MoveStructState, MoveStructType},
 };
 use serde::{Deserialize, Serialize};
+use std::io;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("auth_payload");
 
 /// The original message prefix of the Bitcoin wallet includes the length of the message `x18`
-/// We remove the length because the bcs serialization format already contains the length information
+/// We remove the length because the bitcoin consensus codec serialization format already contains the length information
 const MESSAGE_INFO_PREFIX: &[u8] = b"Bitcoin Signed Message:\n";
 const MESSAGE_INFO: &[u8] = b"Rooch Transaction:\n";
 
@@ -57,7 +59,10 @@ impl SignData {
     }
 
     pub fn encode(&self) -> Vec<u8> {
-        bcs::to_bytes(self).expect("Serialize SignData should success")
+        let mut data = Vec::new();
+        self.consensus_encode(&mut data)
+            .expect("Serialize SignData should success");
+        data
     }
 
     /// The message info without tx hash, the verifier should append the tx hash to the message info
@@ -68,6 +73,24 @@ impl SignData {
     pub fn data_hash(&self) -> H256 {
         let data = self.encode();
         sha2_256_of(&data)
+    }
+}
+
+impl Encodable for SignData {
+    fn consensus_encode<S: io::Write + ?Sized>(&self, s: &mut S) -> Result<usize, io::Error> {
+        let len = self.message_prefix.consensus_encode(s)?;
+        Ok(len + self.message_info.consensus_encode(s)?)
+    }
+}
+
+impl Decodable for SignData {
+    fn consensus_decode<D: io::Read + ?Sized>(
+        d: &mut D,
+    ) -> Result<Self, bitcoin::consensus::encode::Error> {
+        Ok(SignData {
+            message_prefix: Decodable::consensus_decode(d)?,
+            message_info: Decodable::consensus_decode(d)?,
+        })
     }
 }
 

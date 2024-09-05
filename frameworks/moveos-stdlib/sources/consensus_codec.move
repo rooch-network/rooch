@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// This module implements the Bitcoin consensus encode/decode functions
-module bitcoin_move::consensus_codec{
+module moveos_std::consensus_codec{
 
     use std::vector;
 
