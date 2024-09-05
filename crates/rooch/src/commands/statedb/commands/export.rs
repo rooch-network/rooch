@@ -11,6 +11,7 @@ use std::time::Instant;
 
 use anyhow::Result;
 use clap::Parser;
+use rustc_hash::FxHashSet;
 use serde::{Deserialize, Serialize};
 
 use moveos_store::MoveOSStore;
@@ -200,7 +201,7 @@ pub struct ExportCommand {
 
     #[clap(long, short = 'o')]
     /// export output file. like ~/.rooch/local/statedb.csv or ./statedb.csv
-    pub output: PathBuf,
+    pub output: Option<PathBuf>,
 
     #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
@@ -227,6 +228,12 @@ pub struct ExportCommand {
     #[clap(long)]
     pub object_name: Option<ExportObjectName>,
 
+    #[clap(
+        long,
+        help = "dir to export ord/utxo/address_map output for ExportMode::Genesis"
+    )]
+    pub genesis_output: Option<PathBuf>,
+
     /// If local chainid, start the service with a temporary data store.
     /// All data will be deleted when the service is stopped.
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
@@ -239,13 +246,14 @@ impl ExportCommand {
             init_job(self.base_data_dir.clone(), self.chain_id.clone());
 
         let output = self.output.clone();
-        let mut writer = ExportWriter::new(Some(output), None);
+        let mut writer = ExportWriter::new(output, None);
         let root_state_root = self.state_root.unwrap_or(root.state_root());
 
         let mode = self.mode.unwrap_or_default();
         match mode {
             ExportMode::Genesis => {
-                todo!()
+                self.export_genesis_from_file()?;
+                // TODO: export genesis from resolver
             }
             ExportMode::Full => {
                 todo!()
@@ -269,6 +277,44 @@ impl ExportCommand {
 
         writer.flush()?;
         log::info!("Done in {:?}.", start_time.elapsed(),);
+        Ok(())
+    }
+
+    fn export_genesis_from_file(&self) -> Result<()> {
+        let genesis_output = self
+            .genesis_output
+            .clone()
+            .expect("genesis output must be existed");
+        let utxo_output = genesis_output.join("utxo");
+        let ord_output = genesis_output.join("ord");
+        let address_map_output = genesis_output.join("address_map");
+
+        let utxo_path = self
+            .utxo_source_path
+            .clone()
+            .expect("utxo source path must be existed");
+        let ord_path = self
+            .ord_source_path
+            .clone()
+            .expect("ord source path must be existed if utxo path is provided");
+        let outpoint_inscriptions_map_path = self
+            .outpoint_inscriptions_map_path
+            .clone()
+            .expect("outpoint_inscriptions_map path must be existed if utxo path is provided");
+        let mut utxo_writer = ExportWriter::new(Some(utxo_output), None);
+        Self::export_utxo_store(
+            utxo_path.clone(),
+            ord_path.clone(),
+            outpoint_inscriptions_map_path,
+            None,
+            &mut utxo_writer,
+        )?;
+
+        let mut ord_writer = ExportWriter::new(Some(ord_output), None);
+        Self::export_ord_store(ord_path, None, &mut ord_writer)?;
+
+        let mut address_map_writer = ExportWriter::new(Some(address_map_output), None);
+        Self::export_address_map(utxo_path, None, &mut address_map_writer)?;
         Ok(())
     }
 
@@ -301,7 +347,7 @@ impl ExportCommand {
                 utxo_path,
                 ord_path.clone(),
                 outpoint_inscriptions_map_path,
-                utxo_store_state_root,
+                Some(utxo_store_state_root),
                 writer,
             )?;
             let inscription_store_object_id = InscriptionStore::object_id();
@@ -310,7 +356,7 @@ impl ExportCommand {
                 root_state_root,
                 inscription_store_object_id.field_key(),
             );
-            Self::export_ord_store(ord_path, inscription_store_state_root, writer)?;
+            Self::export_ord_store(ord_path, Some(inscription_store_state_root), writer)?;
         } else {
             object_ids.push(BitcoinUTXOStore::object_id());
             object_ids.push(InscriptionStore::object_id());
@@ -322,7 +368,7 @@ impl ExportCommand {
 
     fn export_ord_store(
         ord_path: PathBuf,
-        obj_state_root: H256,
+        obj_state_root: Option<H256>,
         writer: &mut ExportWriter,
     ) -> Result<()> {
         let start_time = Instant::now();
@@ -375,16 +421,72 @@ impl ExportCommand {
         Ok(())
     }
 
-    fn export_utxo_store(
+    fn export_address_map(
         utxo_path: PathBuf,
-        ord_path: PathBuf,
-        outpoint_inscriptions_map_path: PathBuf,
-        obj_state_root: H256,
+        obj_state_root: Option<H256>,
         writer: &mut ExportWriter,
     ) -> Result<()> {
         let start_time = Instant::now();
 
-        let mut reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(utxo_path).unwrap());
+        let object_id = RoochToBitcoinAddressMapping::object_id();
+        let object_name = ExportObjectName::from_object_id(object_id.clone()).to_string();
+
+        let mut reader = BufReader::with_capacity(256 * 1024, File::open(utxo_path)?);
+        let mut is_title_line = true;
+        let mut added_address_set: FxHashSet<String> =
+            FxHashSet::with_capacity_and_hasher(60_000_000, Default::default());
+
+        let mut count: u64 = 0;
+        let mut loop_time = Instant::now();
+
+        for line in reader.by_ref().lines() {
+            let line = line.unwrap();
+            if is_title_line {
+                is_title_line = false;
+                if line.starts_with("count") {
+                    continue;
+                }
+            }
+
+            let mut utxo_raw = UTXORawData::from_str(&line);
+            let (_, address_mapping_data) = utxo_raw.gen_address_mapping_data();
+            if let Some(address_mapping_data) = address_mapping_data {
+                if let Some((field_key, object_state)) =
+                    address_mapping_data.gen_update(&mut added_address_set)
+                {
+                    writer.write_record(&field_key, &object_state)?;
+                    count += 1;
+                    if count % 1_000_000 == 0 {
+                        println!(
+                            "exporting top_level_fields of object_id: {:?}({}), exported count: {}. cost: {:?}",
+                            object_id, object_name, count, loop_time.elapsed()
+                        );
+                        loop_time = Instant::now();
+                    }
+                }
+            }
+        }
+        println!(
+            "Done. export_top_level_fields of object_id: {:?}({}), state_root: {:?}, exported count: {}. cost: {:?}",
+            object_id,
+            object_name,
+            obj_state_root,
+            count,
+            start_time.elapsed()
+        );
+        Ok(())
+    }
+
+    fn export_utxo_store(
+        utxo_path: PathBuf,
+        ord_path: PathBuf,
+        outpoint_inscriptions_map_path: PathBuf,
+        obj_state_root: Option<H256>,
+        writer: &mut ExportWriter,
+    ) -> Result<()> {
+        let start_time = Instant::now();
+
+        let mut reader = BufReader::with_capacity(256 * 1024, File::open(utxo_path)?);
         let mut is_title_line = true;
         let mut max_height = 0;
         let mut count: u64 = 0;

@@ -55,55 +55,8 @@ bitcoin-utxo-dump -f count,txid,vout,height,coinbase,amount,script,type,address 
 
 > - check max height of utxo dump file is <h> by python script:
 
-```python
-import pandas as pd
-import argparse
-import sys
-
-def find_max_column_value_in_chunks(filename, column_name='height', chunksize=10000):
-    """
-    Read a CSV file in chunks and find the maximum value in the specified column
-
-    :param filename: Path to the CSV file
-    :param column_name: Name of the column to find the maximum value
-    :param chunksize: Number of rows to read at a time
-    :return: Maximum value in the specified column
-    """
-    try:
-        max_value = None
-        for chunk in pd.read_csv(filename, chunksize=chunksize):
-            if column_name not in chunk.columns:
-                raise ValueError(f"Column '{column_name}' does not exist in the file '{filename}'")
-            current_max = chunk[column_name].max()
-            if max_value is None or current_max > max_value:
-                max_value = current_max
-        return max_value
-
-    except FileNotFoundError:
-        print(f"The file '{filename}' does not exist")
-        sys.exit(1)
-    except pd.errors.EmptyDataError:
-        print(f"The file '{filename}' is empty")
-        sys.exit(1)
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        sys.exit(1)
-
-if __name__ == "__main__":
-    # Set up argument parser
-    parser = argparse.ArgumentParser(description='Find the maximum value in a specified column of a CSV file')
-    parser.add_argument('filename', type=str, help='Path to the CSV file')
-    parser.add_argument('--column_name', type=str, default='height', help='Name of the column to find the maximum value (default is height)')
-    parser.add_argument('--chunksize', type=int, default=10000, help='Number of rows to read at a time (default is 10000)')
-
-    # Parse arguments
-    args = parser.parse_args()
-
-    # Find the maximum value in the specified column
-    max_value = find_max_column_value_in_chunks(args.filename, args.column_name, args.chunksize)
-
-    # Print the result
-    print(f"The maximum value in column '{args.column_name}' is: {max_value}")
+```shell
+awk -F, 'NR > 1 { if ($4 > max) max = $4 } END { print max }' <utxo_list_path>
 ```
 
 4. prepare ord source file(if needed):

@@ -12,9 +12,9 @@ use std::path::Path;
 
 use anyhow::{ensure, format_err, Error, Result};
 use rocksdb::{
-    AsColumnFamilyRef, BlockBasedIndexType, BlockBasedOptions, CStrLike, Cache,
-    ColumnFamily, ColumnFamilyDescriptor, DBCompressionType, DBRawIterator, DBRecoveryMode,
-    Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB,
+    AsColumnFamilyRef, BlockBasedIndexType, BlockBasedOptions, CStrLike, Cache, ColumnFamily,
+    ColumnFamilyDescriptor, DBCompressionType, DBRawIterator, DBRecoveryMode, Options, ReadOptions,
+    WriteBatch as DBWriteBatch, WriteOptions, DB,
 };
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -129,7 +129,7 @@ impl RocksDB {
         table_opts.set_pin_top_level_index_and_filter(true);
         table_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
 
-        let cache = Cache::new_lru_cache(48 * 1024 * 1024 * 1024);
+        let cache = Cache::new_lru_cache(rocksdb_config.block_cache_size as usize);
         table_opts.set_block_cache(&cache);
 
         let inner = DB::open_cf_descriptors(
@@ -247,7 +247,7 @@ impl RocksDB {
         db_opts.set_bytes_per_sync(config.bytes_per_sync);
         db_opts.set_max_background_jobs(config.max_background_jobs as c_int);
         db_opts.set_max_write_buffer_number(config.max_write_buffer_numer as c_int);
-        let cache = Cache::new_lru_cache(8 * 1024 * 1024 * 1024);
+        let cache = Cache::new_lru_cache(config.row_cache_size as usize);
         db_opts.set_row_cache(&cache);
         db_opts.set_enable_pipelined_write(true);
         db_opts.set_wal_recovery_mode(DBRecoveryMode::PointInTime); // for memtable crash recovery
