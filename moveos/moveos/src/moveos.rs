@@ -37,7 +37,7 @@ use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::moveos_std::tx_result::TxResult;
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{MoveStructState, MoveStructType, ObjectState};
-use moveos_types::state_resolver::RootObjectResolver;
+use moveos_types::state_resolver::{GenesisResolver, RootObjectResolver};
 use moveos_types::transaction::{FunctionCall, VMErrorInfo};
 use moveos_types::transaction::{
     MoveOSTransaction, RawTransactionOutput, TransactionOutput, VerifiedMoveAction,
@@ -154,8 +154,8 @@ impl MoveOS {
         genesis_objects: Vec<(ObjectState, MoveTypeLayout)>,
     ) -> Result<TransactionOutput> {
         let MoveOSTransaction { root, ctx, action } = tx;
-
-        let resolver = RootObjectResolver::new(root, &self.db);
+        assert!(root.is_genesis());
+        let resolver = GenesisResolver::default();
         let mut session = self.vm.new_genesis_session(&resolver, ctx, genesis_objects);
 
         let verified_action = session.verify_move_action(action).map_err(|e| {
@@ -360,6 +360,8 @@ impl MoveOS {
         self.execute(tx)
     }
 
+    //TODO refactor this function
+    //Put this function in the MoveOSStore and merge with handle tx out
     pub fn apply_transaction_output(
         db: &MoveOSStore,
         output: RawTransactionOutput,

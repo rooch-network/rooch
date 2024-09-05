@@ -33,6 +33,7 @@ Bitcoin multisign account module
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
 <b>use</b> <a href="">0x2::sort</a>;
+<b>use</b> <a href="">0x3::address_mapping</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
 <b>use</b> <a href="">0x3::ecdsa_k1</a>;
 <b>use</b> <a href="opcode.md#0x4_opcode">0x4::opcode</a>;
