@@ -18,7 +18,7 @@ module bitcoin_move::multisign_account{
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
     use bitcoin_move::taproot_builder;
     use moveos_std::result;
-    use rooch_framework::address_mapping;
+    //use rooch_framework::address_mapping;
 
     const PROPOSAL_STATUS_PENDING: u8 = 0;
     const PROPOSAL_STATUS_APPROVED: u8 = 1;
@@ -244,14 +244,15 @@ module bitcoin_move::multisign_account{
         );
     }
 
-    fun borrow_mut_or_create_account(multisign_address: address, multisign_bitcoin_address: BitcoinAddress) : &mut Object<Account> {
+    fun borrow_mut_or_create_account(multisign_address: address, _multisign_bitcoin_address: BitcoinAddress) : &mut Object<Account> {
         // Maybe the multisign account is created by the Bitcoin transaction
         if (account::exists_at(multisign_address)){
             borrow_mut_account(multisign_address)
         }else{
             let module_signer = signer::module_signer<MultisignAccountInfo>();
             let signer = account::create_account_by_system(&module_signer, multisign_address);
-            address_mapping::bind_bitcoin_address_by_system(&module_signer, multisign_address, multisign_bitcoin_address);
+            //TODO we temporarily do not bind the bitcoin address to the multisign account for genesis init
+            //address_mapping::bind_bitcoin_address_by_system(&module_signer, multisign_address, multisign_bitcoin_address);
             account::borrow_mut_account(&signer)
         }
     }

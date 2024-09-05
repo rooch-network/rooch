@@ -20,6 +20,7 @@ Taproot is a module that provides Bitcoin Taproot related functions.
 <b>use</b> <a href="">0x2::compare</a>;
 <b>use</b> <a href="">0x2::hash</a>;
 <b>use</b> <a href="">0x2::result</a>;
+<b>use</b> <a href="consensus_codec.md#0x4_consensus_codec">0x4::consensus_codec</a>;
 <b>use</b> <a href="script_buf.md#0x4_script_buf">0x4::script_buf</a>;
 </code></pre>
 

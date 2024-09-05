@@ -279,22 +279,14 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
             ),
             InscriptionStore::type_layout(),
         ),
-        // (
-        //     RoochToBitcoinAddressMapping::genesis_with_state_root(
-        //         H256::from_str(
-        //             "0x908b63a475a886571a2bef1533589866f92fb3ef01b243a0b8bb1cda27655172",
-        //         )
-        //         .unwrap(),
-        //         52397723,
-        //     ),
-        //     RoochToBitcoinAddressMapping::type_layout(),
-        // ),
-        //TODO how to set the state root for the mapping object
-        //Because the genesis init will write data to mapping,
-        //and it will check if the key exists in the mapping,
-        //If we set the state root, the genesis init will fail
         (
-            RoochToBitcoinAddressMapping::genesis(),
+            RoochToBitcoinAddressMapping::genesis_with_state_root(
+                H256::from_str(
+                    "0x908b63a475a886571a2bef1533589866f92fb3ef01b243a0b8bb1cda27655172",
+                )
+                .unwrap(),
+                52397723,
+            ),
             RoochToBitcoinAddressMapping::type_layout(),
         ),
     ],
