@@ -11,7 +11,6 @@ use rooch_types::{
     address::BitcoinAddress,
     error::RoochResult,
     framework::auth_payload::{AuthPayload, SignData, MESSAGE_INFO, MESSAGE_INFO_PREFIX},
-    function_arg::{parse_function_arg, FunctionArg, ParsedFunctionId},
 };
 
 /// Sign a message with the bitcoin address
@@ -52,7 +51,11 @@ impl CommandAction<Option<String>> for SignCommand {
             password,
         )?;
 
-        let auth_payload = AuthPayload::new_without_tx_hash(sign_data, signature, self.bitcoin_address.to_string());
+        let auth_payload = AuthPayload::new_without_tx_hash(
+            sign_data,
+            signature,
+            self.bitcoin_address.to_string(),
+        );
         let auth_payload_hex = auth_payload.to_bytes().encode_hex();
 
         if self.json {

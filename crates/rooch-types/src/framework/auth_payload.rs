@@ -164,7 +164,11 @@ impl AuthPayload {
         }
     }
 
-    pub fn new_without_tx_hash(sign_data: SignData, signature: Signature, bitcoin_address: String) -> Self {
+    pub fn new_without_tx_hash(
+        sign_data: SignData,
+        signature: Signature,
+        bitcoin_address: String,
+    ) -> Self {
         debug_assert_eq!(signature.scheme(), SignatureScheme::Secp256k1);
         AuthPayload {
             signature: signature.signature_bytes().to_vec(),
@@ -182,6 +186,17 @@ impl AuthPayload {
             self.message_info.clone(),
             tx_data,
         );
+        let message = sign_data.encode();
+        let message_hash = sha2_256_of(&message).0.to_vec();
+        let signature = Secp256k1Signature::from_bytes(&self.signature)?;
+        pk.verify_with_hash::<Sha256>(&message_hash, &signature)?;
+        Ok(())
+    }
+
+    pub fn verify_without_tx_hash(&self) -> Result<()> {
+        let pk = Secp256k1PublicKey::from_bytes(&self.public_key)?;
+        let sign_data =
+            SignData::new_without_tx_hash(self.message_prefix.clone(), self.message_info.clone());
         let message = sign_data.encode();
         let message_hash = sha2_256_of(&message).0.to_vec();
         let signature = Secp256k1Signature::from_bytes(&self.signature)?;
