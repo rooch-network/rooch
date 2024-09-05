@@ -34,30 +34,6 @@ module bitcoin_move::multisign_account_test{
         assert!(multisign_bitcoin_addr == multisign_account::bitcoin_address(multisign_addr), 1005);
     }
 
-    // rooch_dao: MultisignAccountConfig {
-    //         multisign_bitcoin_address: BitcoinAddress::from_str(
-    //             "bc1prcajaj9n7e29u4dfp33x3hcf52yqeegspdpcd79pqu4fpr6llx4sugkfjt",
-    //         )
-    //         .unwrap(),
-    //         threshold: 5,
-    //         participant_public_keys: vec![
-    //             hex::decode("032d4fb9f88a63f52d8bffd1a46ad40411310150a539913203265c3f46b0397f8c")
-    //                 .unwrap(),
-    //             hex::decode("039c9f399047d1ca911827c8c9b445ea55e84a68dcfe39641bc1f423c6a7cd99d0")
-    //                 .unwrap(),
-    //             hex::decode("03ad953cc82a6ed91c8eb3a6400e55965de4735bc5f8a107eabd2e4e7531f64c61")
-    //                 .unwrap(),
-    //             hex::decode("0346b64846c11f23ccec99811b476aaf68f421f15762287b872fcb896c92caa677")
-    //                 .unwrap(),
-    //             hex::decode("03730cb693e9a1bc6eaec5537c2e317a75bb6c8107a59fda018810c46c270670be")
-    //                 .unwrap(),
-    //             hex::decode("0259a40918150bc16ca1852fb55be383ec0fcf2b6058a73a25f0dfd87394dd92db")
-    //                 .unwrap(),
-    //             hex::decode("028fd25b727bf77e42d7a99cad4b1fa564d41cdb3bbddaf15219a4529f486a775a")
-    //                 .unwrap(),
-    //         ],
-    //     },
-
     #[test]
     fun test_genesis_multisign_account(){
         genesis::init_for_test();
