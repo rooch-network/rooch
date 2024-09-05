@@ -20,7 +20,7 @@ use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::gas_schedule::{GasEntry, GasSchedule, GasScheduleConfig};
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::state::ObjectState;
-use moveos_types::transaction::{MoveAction, MoveOSTransaction};
+use moveos_types::transaction::{MoveAction, MoveOSTransaction, RawTransactionOutput};
 use moveos_types::{h256, state_resolver};
 use once_cell::sync::Lazy;
 use rooch_db::RoochDB;
@@ -31,7 +31,6 @@ use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
 use rooch_indexer::store::traits::IndexerStoreTrait;
 use rooch_store::meta_store::MetaStore;
 use rooch_store::transaction_store::TransactionStore;
-use rooch_types::address::BitcoinAddress;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::error::GenesisError;
 use rooch_types::framework::chain_id::ChainID;
@@ -52,10 +51,7 @@ use std::str::FromStr;
 use std::{fs::File, io::Write, path::Path};
 
 pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
-    let mut network: RoochNetwork = BuiltinChainID::Local.into();
-    let sequencer_account = BitcoinAddress::from_str("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
-        .expect("parse bitcoin address should success");
-    network.set_sequencer_account(sequencer_account);
+    let network: RoochNetwork = BuiltinChainID::Local.into();
     RoochGenesis::build(network).expect("build rooch genesis failed")
 });
 pub const LATEST_GAS_SCHEDULE_VERSION: u64 = GAS_SCHEDULE_RELEASE_V1;
@@ -226,8 +222,8 @@ impl FrameworksGasParameters {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RoochGenesis {
-    /// The root object after genesis initialization
-    pub root: ObjectMeta,
+    /// The genesis tx output
+    pub tx_output: RawTransactionOutput,
     pub initial_gas_config: GasScheduleConfig,
     pub genesis_objects: Vec<(ObjectState, MoveTypeLayout)>,
     pub genesis_tx: RoochTransaction,
@@ -243,6 +239,7 @@ impl RoochGenesis {
         let genesis_ctx = rooch_types::framework::genesis::GenesisContext::new(
             network.chain_id.id,
             genesis_config.sequencer_account,
+            genesis_config.rooch_dao.multisign_bitcoin_address.clone(),
         );
         let moveos_genesis_ctx =
             moveos_types::moveos_std::genesis::GenesisContext::new(genesis_config.timestamp);
@@ -251,6 +248,7 @@ impl RoochGenesis {
             genesis_config.bitcoin_block_height,
             genesis_config.bitcoin_block_hash.into_address(),
             genesis_config.bitcoin_reorg_block_count,
+            genesis_config.rooch_dao,
         );
 
         let bundles = stdlib.all_module_bundles()?;
@@ -301,7 +299,7 @@ impl RoochGenesis {
         )?;
 
         Ok(Self {
-            root: output.changeset.root_metadata(),
+            tx_output: output,
             initial_gas_config: gas_config,
             genesis_objects: genesis_config.genesis_objects,
             genesis_tx,
@@ -309,14 +307,19 @@ impl RoochGenesis {
         })
     }
 
-    /// Load the genesis from binary, if not exist, build the genesis, only support the builtin chain id
-    pub fn load(chain_id: BuiltinChainID, network: Option<RoochNetwork>) -> Result<Self> {
-        let genesis = load_genesis_from_binary(chain_id)?;
+    /// Load the genesis from binary or build the genesis if not exist
+    pub fn load_or_build(network: RoochNetwork) -> Result<Self> {
+        let genesis = if let Some(builtin_id) = network.chain_id.to_builtin() {
+            load_genesis_from_binary(builtin_id)?
+        } else {
+            None
+        };
+
         match genesis {
             Some(genesis) => Ok(genesis),
             None => {
-                let network = network.unwrap_or(RoochNetwork::builtin(chain_id));
-                Self::build(network)
+                let genesis = Self::build(network)?;
+                Ok(genesis)
             }
         }
     }
@@ -333,14 +336,9 @@ impl RoochGenesis {
         h256::sha3_256_of(self.encode().as_slice())
     }
 
-    pub fn genesis_root(&self) -> &ObjectMeta {
-        &self.root
-    }
-
     pub fn genesis_info(&self) -> GenesisInfo {
         GenesisInfo {
             genesis_package_hash: self.genesis_hash(),
-            root: self.genesis_root().clone(),
             genesis_bin: self.encode(),
         }
     }
@@ -350,27 +348,24 @@ impl RoochGenesis {
         let genesis_info = rooch_db.moveos_store.get_config_store().get_genesis()?;
         match genesis_info {
             Some(genesis_info_from_store) => {
-                //if the chain_id is builtin, we should check the genesis version between the store and the binary
-                if let Some(builtin_id) = network.chain_id.to_builtin() {
-                    let genesis_from_binary = Self::load(builtin_id, Some(network.clone()))?;
-                    let genesis_info_from_binary = genesis_from_binary.genesis_info();
-                    if genesis_info_from_store.root != genesis_info_from_binary.root {
-                        return Err(GenesisError::GenesisVersionMismatch {
-                            from_store: Box::new(genesis_info_from_store),
-                            from_binary: Box::new(genesis_info_from_binary),
-                        }
-                        .into());
+                //if the genesis_info in the store we should check the genesis version between the store and the binary
+
+                let genesis_from_binary = Self::load_or_build(network)?;
+
+                let genesis_info_from_binary = genesis_from_binary.genesis_info();
+                if genesis_info_from_store.genesis_package_hash
+                    != genesis_info_from_binary.genesis_package_hash
+                {
+                    return Err(GenesisError::GenesisVersionMismatch {
+                        from_store: Box::new(genesis_info_from_store),
+                        from_binary: Box::new(genesis_info_from_binary),
                     }
+                    .into());
                 }
                 Self::decode(&genesis_info_from_store.genesis_bin)
             }
             None => {
-                //if the chain_id is builtin, we should load the released genesis from binary
-                let genesis = if let Some(builtin_id) = network.chain_id.to_builtin() {
-                    Self::load(builtin_id, Some(network))?
-                } else {
-                    Self::build(network)?
-                };
+                let genesis = Self::load_or_build(network)?;
                 genesis.init_genesis(rooch_db)?;
                 Ok(genesis)
             }
@@ -400,19 +395,18 @@ impl RoochGenesis {
             vec![],
         )?;
 
-        let genesis_tx_output =
+        let genesis_raw_output =
             moveos.init_genesis(self.genesis_moveos_tx(), self.genesis_objects.clone())?;
 
-        let inited_root = genesis_tx_output.changeset.root_metadata();
         debug_assert!(
-            inited_root == *self.genesis_root(),
-            "Genesis state root mismatch"
+            genesis_raw_output == self.tx_output,
+            "Genesis output mismatch"
         );
 
         let tx_hash = self.genesis_tx().tx_hash();
-        let genesis_execution_info = rooch_db
+        let (output, genesis_execution_info) = rooch_db
             .moveos_store
-            .handle_tx_output(tx_hash, genesis_tx_output.clone())?;
+            .handle_tx_output(tx_hash, genesis_raw_output.clone())?;
 
         // Save the genesis txs to sequencer
         let genesis_tx_order: u64 = 0;
@@ -456,7 +450,7 @@ impl RoochGenesis {
         rooch_db.indexer_store.persist_transactions(transactions)?;
 
         // 2. update indexer event
-        let events: Vec<_> = genesis_tx_output
+        let events: Vec<_> = output
             .events
             .into_iter()
             .map(|event| {
@@ -474,7 +468,7 @@ impl RoochGenesis {
         let mut state_index_generator = IndexerObjectStatesIndexGenerator::default();
         let mut indexer_object_state_change_set = IndexerObjectStateChangeSet::default();
 
-        for (_field_key, object_change) in genesis_tx_output.changeset.changes {
+        for (_field_key, object_change) in genesis_raw_output.changeset.changes {
             handle_object_change(
                 &mut state_index_generator,
                 genesis_tx_order,
@@ -486,13 +480,12 @@ impl RoochGenesis {
             .indexer_store
             .apply_object_states(indexer_object_state_change_set)?;
 
-        let genesis_info =
-            GenesisInfo::new(self.genesis_hash(), inited_root.clone(), self.encode());
+        let genesis_info = GenesisInfo::new(self.genesis_hash(), self.encode());
         rooch_db
             .moveos_store
             .get_config_store()
             .save_genesis(genesis_info)?;
-        Ok(inited_root)
+        Ok(genesis_execution_info.root_metadata())
     }
 
     pub fn build_stdlib() -> Result<Stdlib> {
@@ -539,14 +532,17 @@ mod tests {
     use super::*;
     use move_core_types::identifier::Identifier;
     use move_core_types::language_storage::ModuleId;
-    use move_core_types::resolver::ModuleResolver;
+    use move_core_types::resolver::{ModuleResolver, MoveResolver};
     use moveos_types::moveos_std::module_store::{ModuleStore, Package};
+    use moveos_types::state::MoveStructType;
     use moveos_types::state_resolver::{RootObjectResolver, StateResolver};
     use rooch_config::RoochOpt;
     use rooch_db::RoochDB;
     use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
+    use rooch_types::bitcoin::multisign_account::MultisignAccountInfo;
     use rooch_types::bitcoin::network::BitcoinNetwork;
     use rooch_types::rooch_network::RoochNetwork;
+    use state_resolver::StateReaderExt;
     use tracing::info;
 
     fn genesis_init_test_case(network: RoochNetwork, genesis: RoochGenesis) {
@@ -630,36 +626,58 @@ mod tests {
             bitcoin_network.value.network,
             network.genesis_config.bitcoin_network
         );
+
+        let rooch_dao_config = network.genesis_config.rooch_dao;
+        let rooch_dao_address = rooch_dao_config
+            .multisign_bitcoin_address
+            .to_rooch_address();
+        let rooch_dao_account = resolver.get_account(rooch_dao_address.into()).unwrap();
+        assert!(rooch_dao_account.is_some());
+        let multisign_account_info_data = resolver
+            .get_resource(
+                &rooch_dao_address.into(),
+                &MultisignAccountInfo::struct_tag(),
+            )
+            .unwrap();
+        assert!(multisign_account_info_data.is_some());
+        let multisign_account_info: MultisignAccountInfo =
+            bcs::from_bytes(&multisign_account_info_data.unwrap()).unwrap();
+        assert!(
+            multisign_account_info.multisign_bitcoin_address
+                == rooch_dao_config.multisign_bitcoin_address
+        );
     }
 
     #[tokio::test]
     async fn test_builtin_genesis_init() {
         let _ = tracing_subscriber::fmt::try_init();
         {
-            let network = BuiltinChainID::Local.into();
-            let genesis = RoochGenesis::load(BuiltinChainID::Local, None).unwrap();
+            let network: RoochNetwork = BuiltinChainID::Local.into();
+            let genesis = RoochGenesis::load_or_build(network.clone()).unwrap();
             genesis_init_test_case(network, genesis);
         }
         {
-            let network = BuiltinChainID::Dev.into();
-            let genesis = RoochGenesis::load(BuiltinChainID::Dev, None).unwrap();
+            let network: RoochNetwork = BuiltinChainID::Dev.into();
+            let genesis = RoochGenesis::load_or_build(network.clone()).unwrap();
             genesis_init_test_case(network, genesis);
         }
         {
-            let network = BuiltinChainID::Test.into();
-            let genesis = RoochGenesis::load(BuiltinChainID::Test, None).unwrap();
+            let network: RoochNetwork = BuiltinChainID::Test.into();
+            let genesis = RoochGenesis::load_or_build(network.clone()).unwrap();
             genesis_init_test_case(network, genesis);
         }
-        {
-            let network = BuiltinChainID::Main.into();
-            let genesis = RoochGenesis::load(BuiltinChainID::Main, None).unwrap();
-            genesis_init_test_case(network, genesis);
-        }
+        //We need to import the pre genesis state tree to init the mainnet genesis
+        // {
+        //     let network: RoochNetwork = BuiltinChainID::Main.into();
+        //     let genesis = RoochGenesis::load_or_build(network.clone()).unwrap();
+        //     genesis_init_test_case(network, genesis);
+        // }
     }
 
     #[tokio::test]
     async fn test_custom_genesis_init() {
-        let network = RoochNetwork::new(100.into(), BuiltinChainID::Test.genesis_config().clone());
+        let network: RoochNetwork =
+            RoochNetwork::new(100.into(), BuiltinChainID::Test.genesis_config().clone());
         let genesis = RoochGenesis::build(network.clone()).unwrap();
         genesis_init_test_case(network, genesis);
     }

@@ -14,7 +14,7 @@ dependencies = [
 
 [[package]]
 name = "accumulator"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -1131,7 +1131,7 @@ checksum = "340e09e8399c7bd8912f495af6aa58bea0c9214773417ffaa8f6460f93aaee56"
 
 [[package]]
 name = "bitcoin-move"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "axum 0.7.5",
@@ -1345,7 +1345,7 @@ source = "git+https://github.com/eigerco/celestia-node-rs.git?rev=129272e8d926b4
 dependencies = [
  "async-trait",
  "cid",
- "dashmap",
+ "dashmap 5.5.3",
  "multihash",
  "thiserror",
 ]
@@ -1740,7 +1740,7 @@ dependencies = [
  "num-traits 0.2.19",
  "serde 1.0.208",
  "wasm-bindgen",
- "windows-targets 0.52.5",
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -2658,6 +2658,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "dashmap"
+version = "6.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "804c8821570c3f8b70230c2ba75ffa5c0f9a4189b9a432b6656c536712acae28"
+dependencies = [
+ "cfg-if",
+ "crossbeam-utils",
+ "hashbrown 0.14.5",
+ "lock_api",
+ "once_cell",
+ "parking_lot_core 0.9.10",
+]
+
+[[package]]
 name = "data-encoding"
 version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2685,7 +2699,7 @@ dependencies = [
 
 [[package]]
 name = "data-verify"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "rooch-rpc-api",
@@ -2872,9 +2886,9 @@ checksum = "339544cc9e2c4dc3fc7149fd630c5f22263a4fdf18a98afd0075784968b5cf00"
 
 [[package]]
 name = "diesel"
-version = "2.2.3"
+version = "2.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65e13bab2796f412722112327f3e575601a3e9cdcbe426f0d30dbf43f3f5dc71"
+checksum = "158fe8e2e68695bd615d7e4f3227c0727b151330d3e253b525086c348d055d5e"
 dependencies = [
  "chrono",
  "diesel_derives",
@@ -4026,7 +4040,7 @@ dependencies = [
 
 [[package]]
 name = "framework-builder"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "bcs",
@@ -4041,6 +4055,7 @@ dependencies = [
  "move-model",
  "move-package",
  "moveos-compiler",
+ "moveos-types",
  "moveos-verifier",
  "once_cell",
  "serde 1.0.208",
@@ -4049,7 +4064,7 @@ dependencies = [
 
 [[package]]
 name = "framework-release"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "bcs",
@@ -4065,7 +4080,7 @@ dependencies = [
 
 [[package]]
 name = "framework-types"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "move-core-types",
  "moveos-stdlib",
@@ -5109,7 +5124,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ab388864246d58a276e60e7569a833d9cc4cd75c66e5ca77c177dad38e59996"
 dependencies = [
  "ahash 0.7.8",
- "dashmap",
+ "dashmap 5.5.3",
  "hashbrown 0.12.3",
  "once_cell",
  "parking_lot 0.12.3",
@@ -5774,7 +5789,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c2a198fb6b0eada2a8df47933734e6d35d350665a33a3593d7164fa52c75c19"
 dependencies = [
  "cfg-if",
- "windows-targets 0.52.5",
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -5913,15 +5928,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mach"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b823e83b2affd8f40a9ee8c29dbc56404c1e34cd2710921f2801e2cf29527afa"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "mach2"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5990,13 +5996,13 @@ dependencies = [
 
 [[package]]
 name = "metrics"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-trait",
  "axum 0.7.5",
  "axum-server",
- "dashmap",
+ "dashmap 6.0.1",
  "futures",
  "once_cell",
  "parking_lot 0.12.3",
@@ -6782,7 +6788,7 @@ dependencies = [
 
 [[package]]
 name = "moveos"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -6822,7 +6828,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-common"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6834,7 +6840,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-compiler"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -6843,7 +6849,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-config"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "clap 4.5.13",
  "serde 1.0.208",
@@ -6852,7 +6858,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-eventbus"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "coerce",
@@ -6866,7 +6872,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-object-runtime"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "better_any",
  "hex",
@@ -6882,7 +6888,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-stdlib"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "bech32 0.11.0",
@@ -6916,7 +6922,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-store"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -6938,7 +6944,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-types"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6965,7 +6971,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-verifier"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6991,7 +6997,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-wasm"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "once_cell",
@@ -7691,7 +7697,7 @@ dependencies = [
  "libc",
  "redox_syscall 0.5.1",
  "smallvec",
- "windows-targets 0.52.5",
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -8673,7 +8679,7 @@ dependencies = [
 
 [[package]]
 name = "raw-store"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "metrics",
@@ -9143,7 +9149,7 @@ dependencies = [
 
 [[package]]
 name = "rooch"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9234,7 +9240,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-benchmarks"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9289,14 +9295,14 @@ dependencies = [
 
 [[package]]
 name = "rooch-common"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "libc",
 ]
 
 [[package]]
 name = "rooch-config"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "clap 4.5.13",
@@ -9312,7 +9318,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-da"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9332,7 +9338,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-db"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "moveos-store",
@@ -9347,7 +9353,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-event"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9359,7 +9365,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-executor"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9385,7 +9391,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-faucet"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "axum 0.7.5",
@@ -9411,7 +9417,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-framework"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "bcs",
  "bitcoin 0.31.2",
@@ -9433,7 +9439,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-framework-tests"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9454,6 +9460,7 @@ dependencies = [
  "moveos-store",
  "moveos-types",
  "musig2",
+ "rand 0.8.5",
  "rooch-config",
  "rooch-db",
  "rooch-event",
@@ -9474,7 +9481,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-genesis"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9505,7 +9512,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-indexer"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9535,7 +9542,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-integration-test-runner"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9568,7 +9575,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-key"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "argon2",
@@ -9587,7 +9594,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-nursery"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "bcs",
  "bitcoin 0.31.2",
@@ -9616,7 +9623,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "clap 4.5.13",
@@ -9631,7 +9638,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-macros"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "derive-syn-parse",
  "itertools 0.13.0",
@@ -9643,7 +9650,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-spec"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "clap 4.5.13",
  "pretty_assertions",
@@ -9655,7 +9662,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-spec-builder"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "clap 4.5.13",
@@ -9668,7 +9675,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-ord"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9694,7 +9701,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-pipeline-processor"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9722,7 +9729,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-proposer"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9738,7 +9745,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-relayer"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9767,7 +9774,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-api"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9792,7 +9799,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-client"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9813,7 +9820,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-server"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "axum 0.7.5",
@@ -9856,7 +9863,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-sequencer"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9881,7 +9888,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-store"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9896,7 +9903,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-test-transaction-builder"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9910,7 +9917,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-types"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -10879,7 +10886,7 @@ dependencies = [
  "base64 0.22.1",
  "bitflags 2.5.0",
  "bytes",
- "dashmap",
+ "dashmap 5.5.3",
  "flate2",
  "futures",
  "fxhash",
@@ -11149,7 +11156,7 @@ checksum = "b7c388c1b5e93756d0c740965c41e8822f866621d41acbdf6336a6a168f8840c"
 
 [[package]]
 name = "smt"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -11529,14 +11536,15 @@ checksum = "e1fc403891a21bcfb7c37834ba66a547a8f402146eba7265b5a6d88059c9ff2f"
 
 [[package]]
 name = "tempfile"
-version = "3.10.1"
+version = "3.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85b77fafb263dd9d05cbeac119526425676db3784113aa9295c88498cbf8bff1"
+checksum = "04cbcdd0c794ebb0d4cf35e88edd2f7d2c4c3e9a5a6dab322839b321c6a87a64"
 dependencies = [
  "cfg-if",
  "fastrand",
+ "once_cell",
  "rustix",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -11660,7 +11668,7 @@ dependencies = [
 
 [[package]]
 name = "testsuite"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -11771,7 +11779,7 @@ dependencies = [
 
 [[package]]
 name = "timeout-join-handler"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "thiserror",
@@ -12850,9 +12858,9 @@ dependencies = [
 
 [[package]]
 name = "wasmer"
-version = "4.3.1"
+version = "4.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ce4a267a570e121c9375136adefa2c48810273907de9c6817bc19db4d6144bc"
+checksum = "3be5fa49d7d97f83e095f090dcc178d923f2970f588443283cd7a94974ab8cbe"
 dependencies = [
  "bytes",
  "cfg-if",
@@ -12874,14 +12882,14 @@ dependencies = [
  "wasmer-types",
  "wasmer-vm",
  "wat",
- "winapi",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
 name = "wasmer-compiler"
-version = "4.3.1"
+version = "4.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9c23098e86ef1038155684fe50f0c1079a0e2a2e70f115b789df17e6ba98d20"
+checksum = "9696a040f935903db440078cd287c0288ab152394122de442fdd21b3eaa8cd2c"
 dependencies = [
  "backtrace",
  "bytes",
@@ -12890,6 +12898,7 @@ dependencies = [
  "enumset",
  "lazy_static 1.5.0",
  "leb128",
+ "libc",
  "memmap2 0.5.10",
  "more-asserts 0.2.2",
  "region",
@@ -12901,15 +12910,15 @@ dependencies = [
  "wasmer-types",
  "wasmer-vm",
  "wasmparser",
- "winapi",
+ "windows-sys 0.59.0",
  "xxhash-rust",
 ]
 
 [[package]]
 name = "wasmer-compiler-cranelift"
-version = "4.3.1"
+version = "4.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "95287b79973ad5f485215733ef9f0d4bb951a6b7e655585d2bd3d4a4ba1253c9"
+checksum = "c5959da148d41a5870d1b18a880e19353add47c0ca95e510061275ea467b6b44"
 dependencies = [
  "cranelift-codegen",
  "cranelift-entity",
@@ -12926,9 +12935,9 @@ dependencies = [
 
 [[package]]
 name = "wasmer-compiler-singlepass"
-version = "4.3.1"
+version = "4.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00d78d59be3ce78ad859e176b88f0d5bec0120ece0684922d7c5da1289e251b1"
+checksum = "5fcaa0fa11a5680268d85b17dc032ec90b63138caa66c8484b8f8f6923d7619f"
 dependencies = [
  "byteorder",
  "dynasm",
@@ -12967,9 +12976,9 @@ dependencies = [
 
 [[package]]
 name = "wasmer-derive"
-version = "4.3.1"
+version = "4.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e48f36aeeecb655f15fdd358bdf6e4cec27df181468fa4226084157e8462bd5e"
+checksum = "6f448efbe12d656ba96d997c9e338f15cd80934c81f2286c2730cb9224d4e41d"
 dependencies = [
  "proc-macro-error",
  "proc-macro2 1.0.86",
@@ -12979,9 +12988,9 @@ dependencies = [
 
 [[package]]
 name = "wasmer-types"
-version = "4.3.1"
+version = "4.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83cb97b6b20084757a2a8d548dc0d4179c3fe9e2d711740423a1e6aa3f8b9091"
+checksum = "c8b383ef63005176be3bc2056d3b4078ae1497b324f573d79acbf81036f1c9ec"
 dependencies = [
  "bytecheck",
  "enum-iterator",
@@ -13000,30 +13009,30 @@ dependencies = [
 
 [[package]]
 name = "wasmer-vm"
-version = "4.3.1"
+version = "4.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc1e19d986844b17b927ec8b0c7f3da6a7a2c2cb3b0f8ca5d4cb1a1f71bfb124"
+checksum = "3c371597ec33248e775de641c7a475173fb60f2b5ea085c74d34cee9fad06b83"
 dependencies = [
  "backtrace",
  "cc",
  "cfg-if",
  "corosensei",
  "crossbeam-queue",
- "dashmap",
+ "dashmap 6.0.1",
  "derivative",
  "enum-iterator",
  "fnv",
  "indexmap 1.9.3",
  "lazy_static 1.5.0",
  "libc",
- "mach",
+ "mach2",
  "memoffset",
  "more-asserts 0.2.2",
  "region",
  "scopeguard",
  "thiserror",
  "wasmer-types",
- "winapi",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -13166,7 +13175,7 @@ version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "33ab640c8d7e35bf8ba19b884ba838ceb4fba93a4e8c65a9059d08afcfc683d9"
 dependencies = [
- "windows-targets 0.52.5",
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -13197,7 +13206,16 @@ version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "282be5f36a8ce781fad8c8ae18fa3f9beff57ec1b52cb3de0789201425d9a33d"
 dependencies = [
- "windows-targets 0.52.5",
+ "windows-targets 0.52.6",
+]
+
+[[package]]
+name = "windows-sys"
+version = "0.59.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e38bc4d79ed67fd075bcc251a1c39b32a1776bbe92e5bef1f0bf1f8c531853b"
+dependencies = [
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -13217,18 +13235,18 @@ dependencies = [
 
 [[package]]
 name = "windows-targets"
-version = "0.52.5"
+version = "0.52.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f0713a46559409d202e70e28227288446bf7841d3211583a4b53e3f6d96e7eb"
+checksum = "9b724f72796e036ab90c1021d4780d4d3d648aca59e491e6b98e725b84e99973"
 dependencies = [
- "windows_aarch64_gnullvm 0.52.5",
- "windows_aarch64_msvc 0.52.5",
- "windows_i686_gnu 0.52.5",
+ "windows_aarch64_gnullvm 0.52.6",
+ "windows_aarch64_msvc 0.52.6",
+ "windows_i686_gnu 0.52.6",
  "windows_i686_gnullvm",
- "windows_i686_msvc 0.52.5",
- "windows_x86_64_gnu 0.52.5",
- "windows_x86_64_gnullvm 0.52.5",
- "windows_x86_64_msvc 0.52.5",
+ "windows_i686_msvc 0.52.6",
+ "windows_x86_64_gnu 0.52.6",
+ "windows_x86_64_gnullvm 0.52.6",
+ "windows_x86_64_msvc 0.52.6",
 ]
 
 [[package]]
@@ -13239,9 +13257,9 @@ checksum = "2b38e32f0abccf9987a4e3079dfb67dcd799fb61361e53e2882c3cbaf0d905d8"
 
 [[package]]
 name = "windows_aarch64_gnullvm"
-version = "0.52.5"
+version = "0.52.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7088eed71e8b8dda258ecc8bac5fb1153c5cffaf2578fc8ff5d61e23578d3263"
+checksum = "32a4622180e7a0ec044bb555404c800bc9fd9ec262ec147edd5989ccd0c02cd3"
 
 [[package]]
 name = "windows_aarch64_msvc"
@@ -13257,9 +13275,9 @@ checksum = "dc35310971f3b2dbbf3f0690a219f40e2d9afcf64f9ab7cc1be722937c26b4bc"
 
 [[package]]
 name = "windows_aarch64_msvc"
-version = "0.52.5"
+version = "0.52.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9985fd1504e250c615ca5f281c3f7a6da76213ebd5ccc9561496568a2752afb6"
+checksum = "09ec2a7bb152e2252b53fa7803150007879548bc709c039df7627cabbd05d469"
 
 [[package]]
 name = "windows_i686_gnu"
@@ -13275,15 +13293,15 @@ checksum = "a75915e7def60c94dcef72200b9a8e58e5091744960da64ec734a6c6e9b3743e"
 
 [[package]]
 name = "windows_i686_gnu"
-version = "0.52.5"
+version = "0.52.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88ba073cf16d5372720ec942a8ccbf61626074c6d4dd2e745299726ce8b89670"
+checksum = "8e9b5ad5ab802e97eb8e295ac6720e509ee4c243f69d781394014ebfe8bbfa0b"
 
 [[package]]
 name = "windows_i686_gnullvm"
-version = "0.52.5"
+version = "0.52.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87f4261229030a858f36b459e748ae97545d6f1ec60e5e0d6a3d32e0dc232ee9"
+checksum = "0eee52d38c090b3caa76c563b86c3a4bd71ef1a819287c19d586d7334ae8ed66"
 
 [[package]]
 name = "windows_i686_msvc"
@@ -13299,9 +13317,9 @@ checksum = "8f55c233f70c4b27f66c523580f78f1004e8b5a8b659e05a4eb49d4166cca406"
 
 [[package]]
 name = "windows_i686_msvc"
-version = "0.52.5"
+version = "0.52.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db3c2bf3d13d5b658be73463284eaf12830ac9a26a90c717b7f771dfe97487bf"
+checksum = "240948bc05c5e7c6dabba28bf89d89ffce3e303022809e73deaefe4f6ec56c66"
 
 [[package]]
 name = "windows_x86_64_gnu"
@@ -13317,9 +13335,9 @@ checksum = "53d40abd2583d23e4718fddf1ebec84dbff8381c07cae67ff7768bbf19c6718e"
 
 [[package]]
 name = "windows_x86_64_gnu"
-version = "0.52.5"
+version = "0.52.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e4246f76bdeff09eb48875a0fd3e2af6aada79d409d33011886d3e1581517d9"
+checksum = "147a5c80aabfbf0c7d901cb5895d1de30ef2907eb21fbbab29ca94c5b08b1a78"
 
 [[package]]
 name = "windows_x86_64_gnullvm"
@@ -13329,9 +13347,9 @@ checksum = "0b7b52767868a23d5bab768e390dc5f5c55825b6d30b86c844ff2dc7414044cc"
 
 [[package]]
 name = "windows_x86_64_gnullvm"
-version = "0.52.5"
+version = "0.52.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "852298e482cd67c356ddd9570386e2862b5673c85bd5f88df9ab6802b334c596"
+checksum = "24d5b23dc417412679681396f2b49f3de8c1473deb516bd34410872eff51ed0d"
 
 [[package]]
 name = "windows_x86_64_msvc"
@@ -13347,9 +13365,9 @@ checksum = "ed94fce61571a4006852b7389a063ab983c02eb1bb37b47f8272ce92d06d9538"
 
 [[package]]
 name = "windows_x86_64_msvc"
-version = "0.52.5"
+version = "0.52.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bec47e5bfd1bff0eeaf6d8b485cc1074891a197ab4225d504cb7a1ab88b02bf0"
+checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 
 [[package]]
 name = "winnow"

@@ -264,7 +264,7 @@ export function TxView({ hash }: { hash: string }) {
                           ROOCH_GAS_COIN_DECIMALS,
                           8
                         )}{' '}
-                        RGC
+                        RGAS
                       </Box>
                     )}
                   </PropsValueItem>

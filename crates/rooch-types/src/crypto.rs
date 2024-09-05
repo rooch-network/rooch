@@ -10,7 +10,7 @@ use crate::{
     error::{RoochError, RoochResult},
     rooch_key::ROOCH_SECRET_KEY_HRP,
 };
-use anyhow::bail;
+use anyhow::{anyhow, bail};
 use bech32::{encode, Bech32, EncodeError};
 use derive_more::{AsMut, AsRef, From};
 pub use enum_dispatch::enum_dispatch;
@@ -89,6 +89,16 @@ impl RoochKeyPair {
         let rng = &mut rand::thread_rng();
         let secp256k1_keypair = Secp256k1KeyPair::generate(rng);
         RoochKeyPair::Secp256k1(secp256k1_keypair)
+    }
+
+    pub fn from_ed25519_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
+        Ok(RoochKeyPair::Ed25519(Ed25519KeyPair::from_bytes(bytes)?))
+    }
+
+    pub fn from_secp256k1_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
+        Ok(RoochKeyPair::Secp256k1(Secp256k1KeyPair::from_bytes(
+            bytes,
+        )?))
     }
 
     pub fn sign(&self, msg: &[u8]) -> Signature {
@@ -280,7 +290,7 @@ impl Serialize for PublicKey {
     where
         S: Serializer,
     {
-        let s = self.encode_base64();
+        let s = self.to_string();
         serializer.serialize_str(&s)
     }
 }
@@ -292,8 +302,7 @@ impl<'de> Deserialize<'de> for PublicKey {
     {
         use serde::de::Error;
         let s = String::deserialize(deserializer)?;
-        <PublicKey as EncodeDecodeBase64>::decode_base64(&s)
-            .map_err(|e| Error::custom(e.to_string()))
+        Self::from_str(s.as_str()).map_err(|e| Error::custom(e.to_string()))
     }
 }
 
@@ -346,6 +355,58 @@ impl PublicKey {
             }
             _ => bail!("Only secp256k1 public key can be converted to nostr bech32 public key"),
         }
+    }
+
+    pub fn to_hex(&self) -> String {
+        hex::encode(self.as_ref())
+    }
+
+    pub fn to_hex_literal(&self) -> String {
+        format!("0x{}", self.to_hex())
+    }
+
+    pub fn from_hex(hex: &str) -> Result<Self, anyhow::Error> {
+        let bytes = hex::decode(hex.strip_prefix("0x").unwrap_or(hex))?;
+        match SignatureScheme::from_flag_byte(
+            *bytes
+                .first()
+                .ok_or_else(|| anyhow!("Invalid public key length"))?,
+        ) {
+            Ok(x) => match x {
+                SignatureScheme::Ed25519 => {
+                    let pk: Ed25519PublicKey = Ed25519PublicKey::from_bytes(
+                        bytes
+                            .get(1..)
+                            .ok_or_else(|| anyhow!("Invalid public key length"))?,
+                    )?;
+                    Ok(PublicKey::Ed25519((&pk).into()))
+                }
+                SignatureScheme::Secp256k1 => {
+                    let pk: Secp256k1PublicKey = Secp256k1PublicKey::from_bytes(
+                        bytes
+                            .get(1..)
+                            .ok_or_else(|| anyhow!("Invalid public key length"))?,
+                    )?;
+                    Ok(PublicKey::Secp256k1((&pk).into()))
+                }
+            },
+            Err(e) => Err(anyhow!("Invalid bytes :{}", e)),
+        }
+    }
+}
+
+impl std::fmt::Display for PublicKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_hex_literal())
+    }
+}
+
+impl FromStr for PublicKey {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let pk = Self::from_hex(s).map_err(|e| anyhow!("{}", e.to_string()))?;
+        Ok(pk)
     }
 }
 

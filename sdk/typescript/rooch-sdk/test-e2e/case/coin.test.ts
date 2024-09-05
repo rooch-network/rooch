@@ -63,7 +63,7 @@ describe('Checkpoints Coin API', () => {
 
   it('Transfer gas coin should be success', async () => {
     const amount = BigInt(10000000)
-    const coinType = '0x3::gas_coin::GasCoin'
+    const coinType = '0x3::gas_coin::RGas'
     const [sender, recipient] = [testBox.keypair, Secp256k1Keypair.generate()]
 
     // get gas

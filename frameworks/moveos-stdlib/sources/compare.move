@@ -98,9 +98,9 @@ module moveos_std::compare {
                 return LESS_THAN
             }
         } else if (t == type_name::get<DecimalValue>()) {
-            let a_value = bcs::peel_u64(&mut a);
+            let a_value = bcs::peel_u256(&mut a);
             let a_decimal = bcs::peel_u8(&mut a);
-            let b_value = bcs::peel_u64(&mut b);
+            let b_value = bcs::peel_u256(&mut b);
             let b_decimal = bcs::peel_u8(&mut b);
             // Normalise the decimal values
             let a = (a_value as u256) * u256::pow(10, b_decimal);

@@ -5,6 +5,7 @@ module rooch_framework::auth_payload {
 
     use std::string::String;
     use std::vector;
+    use moveos_std::consensus_codec;
     use moveos_std::bcs;
     use moveos_std::hex;
 
@@ -86,13 +87,13 @@ module rooch_framework::auth_payload {
             // After the js sdk is update, we can remove this branch
             encode_full_message_legacy(self, tx_hash)
         }else{
-            encode_full_message_bcs(self, tx_hash)
+            encode_full_message_consensus(self, tx_hash)
         };
         full_message
     }
     
-    // The bcs version of the full message encoding, which has `1a` prefix than the legacy version
-    fun encode_full_message_bcs(self: &AuthPayload, tx_hash: vector<u8>): vector<u8> {
+    // The bitcoin consensus encoding the full message, which has `1a` prefix than the legacy version
+    fun encode_full_message_consensus(self: &AuthPayload, tx_hash: vector<u8>): vector<u8> {
         let tx_hex = hex::encode(tx_hash);
         let message_info = self.message_info;
         vector::append(&mut message_info, tx_hex);
@@ -100,7 +101,8 @@ module rooch_framework::auth_payload {
             message_prefix: self.message_prefix,
             message_info: message_info,
         };
-        bcs::to_bytes(&sign_data)
+
+        conseneus_encode_sign_data(&sign_data)
     }
 
     fun encode_full_message_legacy(self: &AuthPayload, tx_hash: vector<u8>): vector<u8> {
@@ -169,6 +171,13 @@ module rooch_framework::auth_payload {
             message_prefix: self.message_prefix,
             message_info: message_info,
         };
-        bcs::to_bytes(&sign_data)
+        conseneus_encode_sign_data(&sign_data)
+    }
+
+    fun conseneus_encode_sign_data(sign_data: &SignData): vector<u8> {
+        let encoder = consensus_codec::encoder();
+        consensus_codec::emit_var_slice(&mut encoder, sign_data.message_prefix);
+        consensus_codec::emit_var_slice(&mut encoder, sign_data.message_info);
+        consensus_codec::unpack_encoder(encoder)
     }
 }

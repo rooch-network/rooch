@@ -96,6 +96,7 @@ pub struct CoinInfoView {
     pub coin_type: StructTagView,
     pub name: String,
     pub symbol: String,
+    pub icon_url: Option<String>,
     pub decimals: u8,
     pub supply: StrView<U256>,
 }
@@ -109,6 +110,7 @@ impl<CoinType> From<CoinInfo<CoinType>> for CoinInfoView {
             coin_type: coin_info.coin_type_tag().into(),
             name: coin_info.name(),
             symbol: coin_info.symbol(),
+            icon_url: coin_info.icon_url(),
             decimals: coin_info.decimals(),
             supply: StrView(coin_info.supply()),
         }

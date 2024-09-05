@@ -6,6 +6,7 @@ use move_core_types::language_storage::StructTag;
 use move_core_types::u256::U256;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use moveos_types::module_binding::{ModuleBinding, MoveFunctionCaller};
+use moveos_types::move_std::option::MoveOption;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::move_types;
 use moveos_types::moveos_std::object::{self, ObjectID};
@@ -93,6 +94,7 @@ pub struct CoinInfo<CoinType> {
     coin_type: MoveString,
     name: MoveString,
     symbol: MoveString,
+    icon_url: MoveOption<MoveString>,
     decimals: u8,
     supply: U256,
     phantom: std::marker::PhantomData<CoinType>,
@@ -125,6 +127,7 @@ where
             MoveString::type_layout(),
             MoveString::type_layout(),
             MoveString::type_layout(),
+            MoveOption::<MoveString>::type_layout(),
             move_core_types::value::MoveTypeLayout::U8,
             move_core_types::value::MoveTypeLayout::U256,
         ])
@@ -168,6 +171,9 @@ impl<CoinType> CoinInfo<CoinType> {
     }
     pub fn symbol(&self) -> String {
         self.symbol.to_string()
+    }
+    pub fn icon_url(&self) -> Option<String> {
+        self.icon_url.clone().map(|v| v.to_string()).into()
     }
     pub fn decimals(&self) -> u8 {
         self.decimals

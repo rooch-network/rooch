@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::authenticator::{BitcoinAuthenticator, BitcoinMultisignAuthenticator};
 use super::RawTransaction;
 use super::{authenticator::Authenticator, AuthenticatorInfo};
 use crate::address::RoochAddress;
@@ -86,10 +87,77 @@ impl Display for RoochTransactionData {
     }
 }
 
+/// PartiallySignedRoochTransaction(PSRT) is a transaction that has been signed by partial signers.
+/// It can be used for multi-signatures.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct PartiallySignedRoochTransaction {
+    pub data: RoochTransactionData,
+    /// The threshold of the signatures.
+    pub threshold: u64,
+    /// The signatures of the partial signers.
+    pub authenticators: Vec<BitcoinAuthenticator>,
+}
+
+impl PartiallySignedRoochTransaction {
+    pub fn new(data: RoochTransactionData, threshold: u64) -> Self {
+        Self {
+            data,
+            threshold,
+            authenticators: vec![],
+        }
+    }
+
+    pub fn sender(&self) -> RoochAddress {
+        self.data.sender
+    }
+
+    pub fn contains_authenticator(&self, authenticator: &BitcoinAuthenticator) -> bool {
+        self.authenticators
+            .iter()
+            .any(|a| a.payload.public_key == authenticator.payload.public_key)
+    }
+
+    pub fn add_authenticator(&mut self, authenticator: BitcoinAuthenticator) -> Result<()> {
+        if self.contains_authenticator(&authenticator) {
+            return Err(anyhow::anyhow!(
+                "Authenticator from address {:?} already exists",
+                authenticator.payload.from_address()
+            ));
+        }
+        self.authenticators.push(authenticator);
+        Ok(())
+    }
+
+    pub fn threshold(&self) -> u64 {
+        self.threshold
+    }
+
+    pub fn is_fully_signed(&self) -> bool {
+        self.authenticators.len() as u64 >= self.threshold
+    }
+
+    pub fn try_into_rooch_transaction(self) -> Result<RoochTransaction> {
+        if !self.is_fully_signed() {
+            return Err(anyhow::anyhow!(
+                "Not enough signatures to complete transaction"
+            ));
+        }
+
+        let authenticator =
+            BitcoinMultisignAuthenticator::build_multisig_authenticator(self.authenticators)?
+                .into();
+        Ok(RoochTransaction::new(self.data, authenticator))
+    }
+
+    pub fn encode(&self) -> Vec<u8> {
+        bcs::to_bytes(self).expect("encode transaction should success")
+    }
+}
+
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RoochTransaction {
-    data: RoochTransactionData,
-    authenticator: Authenticator,
+    pub data: RoochTransactionData,
+    pub authenticator: Authenticator,
 
     #[serde(skip_serializing, skip_deserializing)]
     data_hash: Option<H256>,

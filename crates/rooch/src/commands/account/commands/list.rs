@@ -7,7 +7,6 @@ use clap::Parser;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::types::LocalAccount;
 use rooch_types::{
-    crypto::EncodeDecodeBase64,
     error::RoochResult,
     rooch_network::{BuiltinChainID, RoochNetwork},
 };
@@ -47,7 +46,7 @@ impl LocalAccountView {
                 .format(btc_network)
                 .expect("Failed to format bitcoin address"),
             nostr_public_key: account.nostr_bech32_public_key,
-            public_key: account.public_key.encode_base64(),
+            public_key: account.public_key.to_string(),
             has_session_key: account.has_session_key,
         }
     }

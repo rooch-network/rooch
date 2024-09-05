@@ -349,7 +349,7 @@ Returns the amount of coin in existence.
 Returns the icon url of coin.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_icon_url">icon_url</a>&lt;CoinType: key&gt;(coin_info: &<a href="_Object">object::Object</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;&gt;): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_icon_url">icon_url</a>&lt;CoinType: key&gt;(coin_info: &<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 
@@ -456,7 +456,6 @@ Borrow the CoinInfo<CoinType>
 
 ## Function `upsert_icon_url`
 
-Upsert icon_url as<code>CoinType</code> dynamic field
 This function is protected by <code>private_generics</code>, so it can only be called by the <code>CoinType</code> module.
 
 
@@ -475,7 +474,7 @@ This function is protected by <code>private_generics</code>, so it can only be c
 
 
 <pre><code>#[private_generics(#[CoinType])]
-<b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_register_extend">register_extend</a>&lt;CoinType: key&gt;(name: <a href="_String">string::String</a>, symbol: <a href="_String">string::String</a>, decimals: u8): <a href="_Object">object::Object</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;&gt;
+<b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_register_extend">register_extend</a>&lt;CoinType: key&gt;(name: <a href="_String">string::String</a>, symbol: <a href="_String">string::String</a>, icon_url: <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, decimals: u8): <a href="_Object">object::Object</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;&gt;
 </code></pre>
 
 

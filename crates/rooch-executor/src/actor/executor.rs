@@ -140,11 +140,8 @@ impl ExecutorActor {
         let size = tx.ctx.tx_size;
         let (raw_output, _) = self.moveos.execute_only(tx)?;
         let is_gas_upgrade = raw_output.is_gas_upgrade;
-        let output = MoveOS::apply_transaction_output(&self.moveos.db, raw_output)?;
 
-        let execution_info = self
-            .moveos_store
-            .handle_tx_output(tx_hash, output.clone())?;
+        let (output, execution_info) = self.moveos_store.handle_tx_output(tx_hash, raw_output)?;
 
         self.root = execution_info.root_metadata();
         self.metrics

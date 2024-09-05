@@ -45,8 +45,8 @@ Feature: Rooch CLI integration tests
       # use nostr_public_key
       Then cmd: "account nullify -a {{$.account[-2].account0.nostr_public_key}}"
 
-      Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::GasCoin"]' --json"
-      Then assert: "'{{$.rpc[-1].coin_type}}' == '0x3::gas_coin::GasCoin'"
+      Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::RGas"]' --json"
+      Then assert: "'{{$.rpc[-1].coin_type}}' == '0x3::gas_coin::RGas'"
       Then assert: "'{{$.rpc[-1].balance}}' == '0'"
 
       # Get gas
@@ -70,18 +70,26 @@ Feature: Rooch CLI integration tests
       Then cmd: "transaction get-transactions-by-hash --hashes {{$.transaction[-1].data[0].execution_info.tx_hash}}"
       Then cmd: "transaction build --function rooch_framework::empty::empty --json"
       Then assert: "'{{$.transaction[-1]}}' not_contains error"
-      Then cmd: "transaction sign --tx-hex {{$.transaction[-1]}} --json"
+      Then cmd: "transaction sign {{$.transaction[-1].path}} --json"
       Then assert: "'{{$.transaction[-1]}}' not_contains error"
-      Then cmd: "transaction submit --signed-tx-hex {{$.transaction[-1]}}"
+      Then cmd: "transaction submit {{$.transaction[-1].path}}"
       Then assert: "{{$.transaction[-1].execution_info.status.type}} == executed"
+      Then cmd: "transaction query --sender default --limit 1"
+      Then assert: "'{{$.transaction[-1]}}' not_contains error"
+      Then cmd: "transaction query --tx-hashes {{$.transaction[-1].data[0].execution_info.tx_hash}}"
+      Then assert: "'{{$.transaction[-1].data[0].execution_info.status.type}}' == executed"
+      Then cmd: "transaction query --from-order 1 --to-order 2"
+      Then assert: "'{{$.transaction[-1]}}' not_contains error"
+      Then cmd: "transaction query --start-time 0 --end-time 1735689600 --limit 1"
+      Then assert: "'{{$.transaction[-1]}}' not_contains error"
 
       # alias tx for transaction
       Then cmd: "tx get-transactions-by-order --cursor 1 --limit 2 --descending-order true"
 
       # account balance
       Then cmd: "account balance"
-      Then cmd: "account balance --coin-type rooch_framework::gas_coin::GasCoin"
-      Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::GasCoin"]' --json"
+      Then cmd: "account balance --coin-type rooch_framework::gas_coin::RGas"
+      Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::RGas"]' --json"
       Then assert: "'{{$.rpc[-1].balance}}' != '0'"
 
       Then stop the server
@@ -101,8 +109,8 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.state[-1][0].decoded_value.value.id}} == 4"
       Then cmd: "state --access-path /object/0x3::address_mapping::RoochToBitcoinAddressMapping"
       Then assert: "{{$.state[-1][0].object_type}} == '0x3::address_mapping::RoochToBitcoinAddressMapping'"
-      Then cmd: "state --access-path /object/0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>"
-      Then assert: "{{$.state[-1][0].object_type}} == '0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>'"
+      Then cmd: "state --access-path /object/0x3::coin::CoinInfo<0x3::gas_coin::RGas>"
+      Then assert: "{{$.state[-1][0].object_type}} == '0x3::coin::CoinInfo<0x3::gas_coin::RGas>'"
       Then stop the server
 
     @serial
@@ -161,7 +169,7 @@ Feature: Rooch CLI integration tests
     # Sync states
     Then cmd: "object -t 0x3::coin::CoinInfo --limit 10 -d"
     Then assert: "{{$.object[-1].data[0].tx_order}} == 1"
-    Then assert: "{{$.object[-1].data[0].object_type}} == 0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>"
+    Then assert: "{{$.object[-1].data[0].object_type}} == 0x3::coin::CoinInfo<0x3::gas_coin::RGas>"
     Then assert: "{{$.object[-1].has_next_page}} == false"
 
     Then cmd: "rpc request --method rooch_listFieldStates --params '["{{$.address_mapping.default}}", null, "10", {"descending": true,"showDisplay":false}]' --json"
@@ -239,8 +247,10 @@ Feature: Rooch CLI integration tests
   Scenario: publish_through_entry_function publish through Move entry function and module upgrade
       Given a server for publish_through_entry_function
 
-      # The counter example
-      Then cmd: "move publish -p ../../examples/counter  --named-addresses rooch_examples=default --json"
+      # The counter example, publishing from saved package binary.
+      Then cmd: "move build -p ../../examples/counter  --named-addresses rooch_examples=default --json"
+      Then assert: "{{$.move[-1].Result}} == Success"
+      Then cmd: "move run --function 0x2::module_store::publish_package_entry --sender default --args 'file:../../examples/counter/build/counter/package.rpd' --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move view --function default::counter::value"
       Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 0"

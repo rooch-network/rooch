@@ -7,12 +7,12 @@ module rooch_framework::gas_coin_test{
 
     use rooch_framework::account as account_entry;
     use rooch_framework::coin;
-    use rooch_framework::gas_coin::{Self, GasCoin};
+    use rooch_framework::gas_coin::{Self, RGas};
 
     #[test]
     fun test_gas_coin_init(){
         rooch_framework::genesis::init_for_test();
-        assert!(coin::is_registered<GasCoin>(), 1000);
+        assert!(coin::is_registered<RGas>(), 1000);
         
     }
 

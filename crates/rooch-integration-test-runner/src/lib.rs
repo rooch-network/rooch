@@ -54,6 +54,7 @@ pub struct MoveOSTestRunner<'a> {
     _temp_dir: DataDirPath,
     //debug: bool,
     moveos: MoveOS,
+    moveos_store: MoveOSStore,
     root: ObjectMeta,
 }
 
@@ -117,7 +118,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         let genesis_gas_parameter = FrameworksGasParameters::initial();
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_LOCAL_GENESIS;
         let moveos = MoveOS::new(
-            moveos_store,
+            moveos_store.clone(),
             genesis_gas_parameter.all_natives(),
             MoveOSConfig::default(),
             rooch_types::framework::system_pre_execute_functions(),
@@ -125,9 +126,11 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         )
         .unwrap();
 
-        let output = moveos
+        let raw_output = moveos
             .init_genesis(genesis.genesis_moveos_tx(), genesis.genesis_objects.clone())
             .unwrap();
+        let tx_hash = genesis.genesis_tx().tx_hash();
+        let (_output, exe_info) = moveos_store.handle_tx_output(tx_hash, raw_output).unwrap();
 
         let mut named_address_mapping = rooch_framework::rooch_framework_named_addresses()
             .into_iter()
@@ -148,7 +151,8 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             default_syntax,
             _temp_dir: temp_dir,
             moveos,
-            root: output.changeset.root_metadata(),
+            moveos_store,
+            root: exe_info.root_metadata(),
         };
         debug!("init moveos test adapter");
         (adapter, None)
@@ -188,9 +192,10 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         );
 
         let tx = MoveOSTransaction::new_for_test(self.root.clone(), sender, action);
+        let tx_hash = tx.ctx.tx_hash();
         let verified_tx = self.validate_tx(tx)?;
         let (raw_output, _) = self.moveos.execute_only(verified_tx)?;
-        let output = MoveOS::apply_transaction_output(&self.moveos.db, raw_output)?;
+        let (output, _exe_info) = self.moveos_store.handle_tx_output(tx_hash, raw_output)?;
         self.root = output.changeset.root_metadata();
         Ok((Some(tx_output_to_str(output)), module))
     }
@@ -227,9 +232,11 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             signers.pop().unwrap(),
             MoveAction::new_script_call(script_bytes, type_args, args),
         );
+        let tx_hash = tx.ctx.tx_hash();
         let verified_tx = self.validate_tx(tx)?;
         let (raw_output, _) = self.moveos.execute_only(verified_tx)?;
-        let output = MoveOS::apply_transaction_output(&self.moveos.db, raw_output)?;
+
+        let (output, _exe_info) = self.moveos_store.handle_tx_output(tx_hash, raw_output)?;
         self.root = output.changeset.root_metadata();
         //TODO return values
         let value = SerializedReturnValues {
@@ -269,9 +276,11 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             signers.pop().unwrap(),
             MoveAction::new_function_call(function_id, type_args, args),
         );
+        let tx_hash = tx.ctx.tx_hash();
         let verified_tx = self.validate_tx(tx)?;
         let (raw_output, _) = self.moveos.execute_only(verified_tx)?;
-        let output = MoveOS::apply_transaction_output(&self.moveos.db, raw_output)?;
+
+        let (output, _exe_info) = self.moveos_store.handle_tx_output(tx_hash, raw_output)?;
         self.root = output.changeset.root_metadata();
         debug_assert!(
             output.status == move_core_types::vm_status::KeptVMStatus::Executed,

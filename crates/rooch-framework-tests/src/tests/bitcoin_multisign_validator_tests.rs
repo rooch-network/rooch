@@ -12,7 +12,7 @@ use rooch_types::crypto::{RoochKeyPair, RoochSignature};
 use rooch_types::framework::auth_payload::{MultisignAuthPayload, SignData};
 use rooch_types::framework::auth_validator::BuiltinAuthValidator;
 use rooch_types::framework::empty::Empty;
-use rooch_types::framework::gas_coin::GasCoin;
+use rooch_types::framework::gas_coin::RGas;
 use rooch_types::framework::transfer::TransferModule;
 use rooch_types::transaction::rooch::RoochTransactionData;
 use rooch_types::transaction::{Authenticator, RoochTransaction};
@@ -56,7 +56,7 @@ async fn test_validate() {
     //transfer gas free to multisign account
 
     let gas_action = TransferModule::create_transfer_coin_action(
-        GasCoin::struct_tag(),
+        RGas::struct_tag(),
         multisign_address.into(),
         U256::from(1000000000u128),
     );

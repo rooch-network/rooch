@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 module orderbook::market {
     use std::option;
-    use std::option::Option;
+    use std::option::{Option, is_some, destroy_none};
     use std::string;
     use std::string::String;
     use moveos_std::object;
@@ -158,15 +158,16 @@ module orderbook::market {
     }
 
     ///Listing NFT in the collection
-    public fun list<BaseAsset: key + store, QuoteAsset: key + store>(
+    public entry fun list<BaseAsset: key + store, QuoteAsset: key + store>(
+        signer: &signer,
         market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
-        coin: Coin<BaseAsset>,
+        quantity: u256,
         unit_price: u64,
     ) {
+        let coin= account_coin_store::withdraw<BaseAsset>(signer, quantity);
         let market = object::borrow_mut(market_obj);
         assert!(market.version == VERSION, ErrorWrongVersion);
         assert!(market.is_paused == false, ErrorWrongPaused);
-        let quantity = coin::value(&coin);
         let order_id = market.next_ask_order_id;
         market.next_ask_order_id = market.next_ask_order_id + 1;
         // TODO here maybe wrap to u512?
@@ -197,10 +198,9 @@ module orderbook::market {
 
     }
 
-
-    public fun create_bid<BaseAsset: key + store, QuoteAsset: key + store>(
+    public entry fun create_bid<BaseAsset: key + store, QuoteAsset: key + store>(
+        signer: &signer,
         market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
-        paid: &mut Coin<QuoteAsset>,
         unit_price: u64,
         quantity: u256,
     ) {
@@ -211,7 +211,7 @@ module orderbook::market {
         assert!(unit_price > 0, ErrorWrongCreateBid);
         // TODO here maybe wrap to u512?
         let price = (unit_price as u256) * quantity;
-        assert!(price <= coin::value(paid), ErrorInputCoin);
+        let paid = account_coin_store::withdraw<QuoteAsset>(signer, price);
         let order_id = market.next_bid_order_id;
         market.next_bid_order_id = market.next_bid_order_id + 1;
         let bid = Order {
@@ -221,7 +221,7 @@ module orderbook::market {
             owner: sender(),
             is_bid: true,
         };
-        coin_store::deposit(&mut market.quote_asset, coin::extract(paid, price));
+        coin_store::deposit(&mut market.quote_asset, paid);
 
         let (find_price, index) = critbit::find_leaf(&market.bids, unit_price);
         if (!find_price) {
@@ -264,13 +264,27 @@ module orderbook::market {
         }
     }
 
-
-    ///purchase
-    public fun buy<BaseAsset: key + store, QuoteAsset: key + store>(
+    public entry fun buy<BaseAsset: key + store, QuoteAsset: key + store>(
+        signer: &signer,
         market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
         order_id: u64,
         assert_order_exist: bool,
-        paid: &mut Coin<BaseAsset>,
+        receiver: address
+    ){
+        let option_coin = do_buy(signer, market_obj, order_id, assert_order_exist);
+        if (is_some(&option_coin)) {
+            account_coin_store::deposit(receiver, option::extract(&mut option_coin))
+        };
+        destroy_none(option_coin)
+    }
+
+    ///purchase
+    public fun do_buy<BaseAsset: key + store, QuoteAsset: key + store>(
+        signer: &signer,
+        market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
+        order_id: u64,
+        assert_order_exist: bool,
+        // paid: &mut Coin<BaseAsset>,
     ): Option<Coin<QuoteAsset>> {
         let market = object::borrow_mut(market_obj);
         assert!(market.is_paused == false, ErrorWrongPaused);
@@ -286,8 +300,7 @@ module orderbook::market {
         let order = remove_order(&mut market.asks, usr_open_orders, tick_index, order_id, sender());
         // TODO here maybe wrap to u512?
         let total_price = order.quantity * (order.unit_price as u256);
-        let trade_coin = coin::extract(paid, total_price);
-        assert!(coin::value(paid) >= total_price, ErrorInputCoin);
+        let trade_coin = account_coin_store::withdraw<BaseAsset>(signer, total_price);
         let trade_info = &mut market.trade_info;
         trade_info.total_volume = trade_info.total_volume + total_price;
         trade_info.txs = trade_info.txs + 1;
@@ -307,11 +320,27 @@ module orderbook::market {
         option::some(coin_store::withdraw(&mut market.quote_asset, order.quantity))
     }
 
+
     public fun accept_bid<BaseAsset: key + store, QuoteAsset: key + store>(
+        signer: &signer,
         market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
         order_id: u64,
         assert_order_exist: bool,
-        paid: &mut Coin<QuoteAsset>
+        receiver: address
+    ){
+        let option_coin = do_accept_bid(signer, market_obj, order_id, assert_order_exist);
+        if (is_some(&option_coin)) {
+            account_coin_store::deposit(receiver, option::extract(&mut option_coin))
+        };
+        destroy_none(option_coin)
+    }
+
+    public fun do_accept_bid<BaseAsset: key + store, QuoteAsset: key + store>(
+        signer: &signer,
+        market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
+        order_id: u64,
+        assert_order_exist: bool,
+        // paid: &mut Coin<QuoteAsset>
     ): Option<Coin<BaseAsset>>
     {
         let market = object::borrow_mut(market_obj);
@@ -327,8 +356,9 @@ module orderbook::market {
         assert!(tick_exists, ErrorInvalidOrderId);
 
         let order = remove_order(&mut market.bids, usr_open_orders, tick_index, order_id, sender());
-        assert!(coin::value(paid) >=  order.quantity, ErrorInputCoin);
-        let trade_coin = coin::extract(paid, order.quantity);
+        let trade_coin = account_coin_store::withdraw<QuoteAsset>(signer, order.quantity);
+        // assert!(coin::value(paid) >=  order.quantity, ErrorInputCoin);
+        // let trade_coin = coin::extract(paid, order.quantity);
 
         // TODO here maybe wrap to u512?
         let total_price = (order.unit_price as u256) * order.quantity;

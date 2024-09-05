@@ -3,6 +3,7 @@
 
 module moveos_std::core_addresses {
     use std::signer;
+    use std::vector;
 
     /// The operation can only be performed by the VM
     const ErrorNotVM: u64 = 1;
@@ -53,5 +54,22 @@ module moveos_std::core_addresses {
     /// Return true if `addr` is either the VM address or an Rooch system address.
     public fun is_reserved_address(addr: address): bool {
         is_system_reserved_address(addr) || is_vm_address(addr)
+    }
+
+    /// List all the on chain governance's reserved addresses.
+    public fun list_system_reserved_addresses(): vector<address> {
+        let addrs = vector::empty<address>();
+        vector::push_back(&mut addrs, @0x1);
+        vector::push_back(&mut addrs, @0x2);
+        vector::push_back(&mut addrs, @0x3);
+        vector::push_back(&mut addrs, @0x4);
+        vector::push_back(&mut addrs, @0x5);
+        vector::push_back(&mut addrs, @0x6);
+        vector::push_back(&mut addrs, @0x7);
+        vector::push_back(&mut addrs, @0x8);
+        vector::push_back(&mut addrs, @0x9);
+        vector::push_back(&mut addrs, @0xa);
+
+        addrs
     }
 }

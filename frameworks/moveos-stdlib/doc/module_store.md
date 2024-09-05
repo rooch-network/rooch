@@ -23,8 +23,6 @@
 -  [Function `package_obj_id`](#0x2_module_store_package_obj_id)
 -  [Function `exists_package`](#0x2_module_store_exists_package)
 -  [Function `exists_module`](#0x2_module_store_exists_module)
--  [Function `publish_modules`](#0x2_module_store_publish_modules)
--  [Function `publish_modules_entry`](#0x2_module_store_publish_modules_entry)
 -  [Function `publish_package_entry`](#0x2_module_store_publish_package_entry)
 -  [Function `package_version`](#0x2_module_store_package_version)
 -  [Function `publish_modules_internal`](#0x2_module_store_publish_modules_internal)
@@ -274,31 +272,6 @@ name: the name of the module
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_exists_module">exists_module</a>(package_id: <b>address</b>, name: <a href="_String">string::String</a>): bool
-</code></pre>
-
-
-
-<a name="0x2_module_store_publish_modules"></a>
-
-## Function `publish_modules`
-
-Publish modules to the account's storage
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_publish_modules">publish_modules</a>(<a href="module_store.md#0x2_module_store">module_store</a>: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="module_store.md#0x2_module_store_ModuleStore">module_store::ModuleStore</a>&gt;, <a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;)
-</code></pre>
-
-
-
-<a name="0x2_module_store_publish_modules_entry"></a>
-
-## Function `publish_modules_entry`
-
-Entry function to publish modules to the account's storage
-The order of modules must be sorted by dependency order.
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="module_store.md#0x2_module_store_publish_modules_entry">publish_modules_entry</a>(<a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;)
 </code></pre>
 
 

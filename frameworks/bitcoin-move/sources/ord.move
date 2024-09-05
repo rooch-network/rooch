@@ -143,15 +143,20 @@ module bitcoin_move::ord {
     } 
 
     public(friend) fun genesis_init() {
-        let store = InscriptionStore {
-            cursed_inscription_count: 0,
-            blessed_inscription_count: 0,
-            unbound_inscription_count: 0,
-            lost_sats: 0,
-            next_sequence_number: 0,
-        };
-        let store_obj = object::new_named_object(store);
-        object::to_shared(store_obj);
+        let store_id = object::named_object_id<InscriptionStore>();
+        // Create the InscriptionStore if it doesn't exist
+        // The InscriptionStore maybe created via the genesis_config Object.
+        if (!object::exists_object(store_id)) {
+            let store = InscriptionStore {
+                cursed_inscription_count: 0,
+                blessed_inscription_count: 0,
+                unbound_inscription_count: 0,
+                lost_sats: 0,
+                next_sequence_number: 0,
+            };
+            let store_obj = object::new_named_object(store);
+            object::to_shared(store_obj);
+        }
     }
 
     public(friend) fun borrow_mut_inscription_store(): &mut InscriptionStore {

@@ -8,8 +8,10 @@ use anyhow::{bail, Result};
 use move_core_types::language_storage::{StructTag, TypeTag};
 use move_core_types::value::MoveTypeLayout;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
-use moveos_types::state::{MoveState, MoveStructState, MoveStructType};
+use moveos_types::moveos_std::object::ObjectMeta;
+use moveos_types::state::{MoveState, MoveStructState, MoveStructType, MoveType, ObjectState};
 use moveos_types::{
+    h256::H256,
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::{option::MoveOption, string::MoveString},
     moveos_std::{
@@ -348,6 +350,20 @@ impl InscriptionStore {
     pub fn object_id() -> ObjectID {
         object::named_object_id(&Self::struct_tag())
     }
+
+    pub fn genesis_with_state_root(
+        state_root: H256,
+        size: u64,
+        store: InscriptionStore,
+    ) -> ObjectState {
+        let id = Self::object_id();
+        let mut metadata = ObjectMeta::genesis_meta(id, Self::type_tag());
+        metadata.state_root = Some(state_root);
+        metadata.size = size;
+        metadata.to_shared();
+        ObjectState::new_with_struct(metadata, store)
+            .expect("Create InscriptionStore Object should success")
+    }
 }
 
 impl MoveStructType for InscriptionStore {
@@ -361,6 +377,8 @@ impl MoveStructState for InscriptionStore {
         move_core_types::value::MoveStructLayout::new(vec![
             u32::type_layout(),
             u32::type_layout(),
+            u32::type_layout(),
+            u64::type_layout(),
             u32::type_layout(),
         ])
     }

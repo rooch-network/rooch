@@ -12,7 +12,7 @@
       "name": "Apache-2.0",
       "url": "https://raw.githubusercontent.com/rooch-network/rooch/main/LICENSE"
     },
-    "version": "0.6.9"
+    "version": "0.7.0"
   },
   "methods": [
     {
@@ -884,6 +884,12 @@
             "type": "integer",
             "format": "uint8",
             "minimum": 0.0
+          },
+          "icon_url": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "name": {
             "type": "string"
