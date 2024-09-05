@@ -28,6 +28,7 @@
 <pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
+<b>use</b> <a href="">0x2::consensus_codec</a>;
 <b>use</b> <a href="">0x2::hex</a>;
 </code></pre>
 

@@ -23,6 +23,7 @@ This is the reference documentation of the MoveOS standard library.
 -  [`0x2::bls12381`](bls12381.md#0x2_bls12381)
 -  [`0x2::cbor`](cbor.md#0x2_cbor)
 -  [`0x2::compare`](compare.md#0x2_compare)
+-  [`0x2::consensus_codec`](consensus_codec.md#0x2_consensus_codec)
 -  [`0x2::copyable_any`](copyable_any.md#0x2_copyable_any)
 -  [`0x2::core_addresses`](core_addresses.md#0x2_core_addresses)
 -  [`0x2::decimal_value`](decimal_value.md#0x2_decimal_value)
