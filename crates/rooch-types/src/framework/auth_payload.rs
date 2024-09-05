@@ -26,8 +26,8 @@ pub const MODULE_NAME: &IdentStr = ident_str!("auth_payload");
 
 /// The original message prefix of the Bitcoin wallet includes the length of the message `x18`
 /// We remove the length because the bitcoin consensus codec serialization format already contains the length information
-const MESSAGE_INFO_PREFIX: &[u8] = b"Bitcoin Signed Message:\n";
-const MESSAGE_INFO: &[u8] = b"Rooch Transaction:\n";
+pub const MESSAGE_INFO_PREFIX: &[u8] = b"Bitcoin Signed Message:\n";
+pub const MESSAGE_INFO: &[u8] = b"Rooch Transaction:\n";
 
 const TX_HASH_HEX_LENGTH: usize = 64;
 
@@ -55,8 +55,22 @@ impl SignData {
         }
     }
 
+    pub fn new_without_tx_hash(
+        message_prefix: Vec<u8>,
+        message_info_without_tx_hash: Vec<u8>,
+    ) -> Self {
+        SignData {
+            message_prefix,
+            message_info: message_info_without_tx_hash,
+        }
+    }
+
     pub fn new_with_default(tx_data: &RoochTransactionData) -> Self {
         Self::new(MESSAGE_INFO_PREFIX.to_vec(), MESSAGE_INFO.to_vec(), tx_data)
+    }
+
+    pub fn new_without_tx_hash_with_default() -> Self {
+        Self::new_without_tx_hash(MESSAGE_INFO_PREFIX.to_vec(), MESSAGE_INFO.to_vec())
     }
 
     pub fn encode(&self) -> Vec<u8> {
