@@ -86,11 +86,9 @@ Feature: Rooch CLI integration tests
       # alias tx for transaction
       Then cmd: "tx get-transactions-by-order --cursor 1 --limit 2 --descending-order true"
 
-      # account sign
-      Then cmd: "account sign --function 0x3::empty::empty --json"
-
-      # account verify
-      Then cmd: "account verify --input {{$.account[-1].tx_data}}"
+      # account sign and verify
+      Then cmd: "account sign -a {{$.account[-1].account0.bitcoin_address}} -m 'empty' --json"
+      Then cmd: "account verify --input {{$.account[-1]}}"
 
       # account balance
       Then cmd: "account balance"

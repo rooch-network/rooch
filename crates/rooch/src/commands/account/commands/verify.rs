@@ -13,7 +13,7 @@ use rooch_types::{
 #[derive(Debug, Parser)]
 pub struct VerifyCommand {
     /// an auth payload hex for verify
-    #[clap(long, required = true)]
+    #[clap(long)]
     input: String,
 
     #[clap(flatten)]
@@ -27,11 +27,10 @@ pub struct VerifyCommand {
 #[async_trait]
 impl CommandAction<Option<String>> for VerifyCommand {
     async fn execute(self) -> RoochResult<Option<String>> {
-        let auth_payload_hex = self.input;
-        let auth_payload = hex::decode(&auth_payload_hex).map_err(|e| {
+        let auth_payload = hex::decode(&self.input).map_err(|e| {
             RoochError::CommandArgumentError(format!(
                 "Failed to decode hex: {}, err: {:?}",
-                auth_payload_hex, e
+                self.input, e
             ))
         })?;
 
