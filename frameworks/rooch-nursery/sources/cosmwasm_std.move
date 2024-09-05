@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_nursery::cosmwasm_std {
+    use std::vector;
     use std::string::String;
-    use std::vector::{Self, Vec};
-    use moveos_std::account::Account;
-    use moveos_std::object::Object;
+    use std::option::Option;
+
+    use moveos_std::result::{Result, err};
 
     // Basic types
     struct Coin {
@@ -32,43 +33,43 @@ module rooch_nursery::cosmwasm_std {
         address: Addr,
     }
 
-    public struct Env {
+    struct Env {
         block: BlockInfo,
         contract: ContractInfo,
         transaction: Option<TransactionInfo>,
     }
 
-    public struct MessageInfo {
+    struct MessageInfo {
         sender: Addr,
-        funds: Vec<Coin>,
+        funds: vector<Coin>,
     }
 
     // Response types
-    public struct Attribute {
+    struct Attribute {
         key: String,
         value: String,
     }
 
-    public struct Event {
+    struct Event {
         ty: String,
-        attributes: Vec<Attribute>
+        attributes: vector<Attribute>
     }
 
-    public struct Response {
-        messages: Vec<SubMsg>,
-        attributes: Vec<Attribute>,
-        events: Vec<Event>,
-        data: Vec<u8>
+    struct Response {
+        messages: vector<SubMsg>,
+        attributes: vector<Attribute>,
+        events: vector<Event>,
+        data: vector<u8>
     }
 
-    public struct SubMsg {
+    struct SubMsg {
         id: u64,
-        msg: Vec<u8>,
+        msg: vector<u8>,
         gas_limit: Option<u64>,
         reply_on: ReplyOn,
     }
 
-    public struct Error {
+    struct Error {
         code: u32,
         message: String,
     }
@@ -102,7 +103,7 @@ module rooch_nursery::cosmwasm_std {
         vector::push_back(&mut response.events, event);
     }
 
-    public fun set_data(response: &mut Response, data: Vec<u8>) {
+    public fun set_data(response: &mut Response, data: vector<u8>) {
         response.data = data;
     }
 
@@ -118,7 +119,7 @@ module rooch_nursery::cosmwasm_std {
         Addr { address }
     }
 
-    public fun new_sub_msg(id: u64, msg: Vec<u8>, gas_limit: Option<u64>, reply_on: u8): SubMsg {
+    public fun new_sub_msg(id: u64, msg: vector<u8>, gas_limit: Option<u64>, reply_on: u8): SubMsg {
         SubMsg {
             id,
             msg,
@@ -131,6 +132,10 @@ module rooch_nursery::cosmwasm_std {
         Error { code, message }
     }
 
+    public fun new_error_result<T>(code: u32, message: String): Result<T, Error> {
+        err(new_error(code, message))
+    }
+
     // Helper functions
 
     public fun addr_to_string(addr: &Addr): String {
@@ -139,6 +144,38 @@ module rooch_nursery::cosmwasm_std {
 
     public fun string_to_addr(s: String): Addr {
         Addr { address: s }
+    }
+
+
+    // Helper functions (these would need to be implemented)
+    public fun serialize_env(_env: &Env): vector<u8> {
+        // Implementation to serialize Env struct to bytes
+        vector::empty<u8>() // Placeholder
+    }
+
+    public fun serialize_message_info(_info: &MessageInfo): vector<u8> {
+        // Implementation to serialize MessageInfo struct to bytes
+        vector::empty<u8>() // Placeholder
+    }
+
+    public fun deserialize_response(raw: vector<u8>): Response {
+        // Implementation to deserialize bytes to Response struct
+        Response { 
+            messages: vector::empty(), 
+            attributes: vector::empty(), 
+            events: vector::empty(), 
+            data: raw 
+        } // Placeholder
+    }
+
+    public fun deserialize_error(raw: vector<u8>): String {
+        // Implementation to deserialize bytes to Error string
+        std::string::utf8(raw) // Placeholder
+    }
+
+    public fun error_code_to_string(_code: u64): String {
+        // Implementation to convert error code to string
+        std::string::utf8(vector::empty()) // Placeholder
     }
 
 }

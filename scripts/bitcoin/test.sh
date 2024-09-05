@@ -53,7 +53,7 @@ export RUST_LOG=info
 export RUST_BACKTRACE=1
 
 if [ ! -z "$UNIT_TEST" ]; then
-  cargo run --bin rooch move test -p frameworks/rooch-nursery bitseed 
+  cargo run --bin rooch move test -p frameworks/rooch-nursery cosmwasm_vm 
 fi
 
 if [ ! -z "$WASM_INT_TEST" ]; then
