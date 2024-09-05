@@ -81,6 +81,17 @@ module rooch_nursery::cosmwasm_vm {
         }
     }
 
+    /// Destroys an Instance and releases associated resources.
+    public fun destroy_instance(instance: Instance): Result<(), Error> {
+        let Instance { id } = instance;
+        let error_code = native_destroy_instance(id);
+        if (error_code == 0) {
+            ok(())
+        } else {
+            err_str(error_code_to_string(error_code))
+        }
+    }
+
     /// Deserialize a slice of bytes into the given type T.
     /// This function mimics the behavior of cosmwasm_vm::from_slice.
     public fun from_slice<T>(data: vector<u8>): Result<T, Error> {
@@ -95,6 +106,7 @@ module rooch_nursery::cosmwasm_vm {
 
     // Native function declarations
     native fun native_create_instance(code: vector<u8>): (u64, u64);
+    native fun native_destroy_instance(instance_id: u64): u64;
     native fun native_call_instantiate_raw(instance_id: u64, env: vector<u8>, info: vector<u8>, msg: vector<u8>): (bool, vector<u8>);
     native fun native_call_execute_raw(instance_id: u64, env: vector<u8>, info: vector<u8>, msg: vector<u8>): (bool, vector<u8>);
     native fun native_call_query_raw(instance_id: u64, env: vector<u8>, msg: vector<u8>): (bool, vector<u8>);
