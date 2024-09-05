@@ -22,7 +22,7 @@ export function middleware(request: NextRequest) {
     },
     {
       name: 'style-src',
-      values: ["'self'", `'nonce-${nonce}'`],
+      values: ["'self'", "'unsafe-inline'"],
     },
     { name: 'img-src', values: ["'self'", 'data:', 'blob:'] },
     { name: 'font-src', values: ["'self'", 'data:'] },
