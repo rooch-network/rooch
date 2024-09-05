@@ -10,7 +10,8 @@ import '@fontsource-variable/red-hat-mono';
 import { primary } from 'src/theme/core/palette';
 import { DashboardLayout } from 'src/layouts/dashboard';
 import { ThemeProvider } from 'src/theme/theme-provider';
-import { getInitColorSchemeScript } from 'src/theme/color-scheme-script';
+import { schemeConfig } from 'src/theme/color-scheme-script';
+import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
 
 import { Snackbar } from 'src/components/snackbar';
 import { ProgressBar } from 'src/components/progress-bar';
@@ -40,7 +41,7 @@ export default async function RootLayout({ children }: Props) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        {getInitColorSchemeScript}
+        <InitColorSchemeScript {...schemeConfig} nonce={nonce} />
         <RoochDappProvider>
           <SettingsProvider settings={settings} caches="localStorage">
             <ThemeProvider nonce={nonce}>
