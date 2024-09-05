@@ -14,7 +14,7 @@ use rooch_types::{
     function_arg::{parse_function_arg, FunctionArg, ParsedFunctionId},
 };
 
-/// Sign a tx with an account
+/// Sign a message with the bitcoin address
 #[derive(Debug, Parser)]
 pub struct SignCommand {
     // the address to be used
@@ -52,7 +52,7 @@ impl CommandAction<Option<String>> for SignCommand {
             password,
         )?;
 
-        let auth_payload = AuthPayload::new(sign_data, signature, self.bitcoin_address.to_string());
+        let auth_payload = AuthPayload::new_without_tx_hash(sign_data, signature, self.bitcoin_address.to_string());
         let auth_payload_hex = auth_payload.to_bytes().encode_hex();
 
         if self.json {

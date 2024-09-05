@@ -164,6 +164,17 @@ impl AuthPayload {
         }
     }
 
+    pub fn new_without_tx_hash(sign_data: SignData, signature: Signature, bitcoin_address: String) -> Self {
+        debug_assert_eq!(signature.scheme(), SignatureScheme::Secp256k1);
+        AuthPayload {
+            signature: signature.signature_bytes().to_vec(),
+            message_prefix: sign_data.message_prefix,
+            message_info: sign_data.message_info,
+            public_key: signature.public_key_bytes().to_vec(),
+            from_address: bitcoin_address.into_bytes(),
+        }
+    }
+
     pub fn verify(&self, tx_data: &RoochTransactionData) -> Result<()> {
         let pk = Secp256k1PublicKey::from_bytes(&self.public_key)?;
         let sign_data = SignData::new(
