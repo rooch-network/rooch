@@ -295,7 +295,7 @@ serenity = { version = "0.12.2", default-features = false, features = [
 tap = "1.0.1"
 dotenvy = "0.15"
 sized-chunks = { version = "0.6" }
-dashmap = "6.0.1"
+dashmap = "6.1.0"
 criterion = { version = "0.5.1", features = [
     "async",
     "async_tokio",
