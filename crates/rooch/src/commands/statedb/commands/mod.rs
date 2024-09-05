@@ -32,6 +32,7 @@ pub mod genesis;
 pub mod genesis_utxo;
 pub mod genesis_verify;
 pub mod import;
+pub mod re_genesis;
 
 mod inscription;
 mod utxo;

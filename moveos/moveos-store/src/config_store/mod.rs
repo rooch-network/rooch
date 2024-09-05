@@ -57,6 +57,10 @@ impl ConfigDBStore {
             .put_sync(STARTUP_INFO_KEY.to_string(), startup_info)
     }
 
+    pub fn delete_startup_info(&self) -> Result<()> {
+        self.startup_store.remove(STARTUP_INFO_KEY.to_string())
+    }
+
     pub fn get_genesis(&self) -> Result<Option<GenesisInfo>> {
         self.genesis_store.kv_get(GENESIS_KEY.to_string())
     }
@@ -64,5 +68,9 @@ impl ConfigDBStore {
     pub fn save_genesis(&self, genesis_info: GenesisInfo) -> Result<()> {
         self.genesis_store
             .put_sync(GENESIS_KEY.to_string(), genesis_info)
+    }
+
+    pub fn delete_genesis(&self) -> Result<()> {
+        self.genesis_store.remove(GENESIS_KEY.to_string())
     }
 }
