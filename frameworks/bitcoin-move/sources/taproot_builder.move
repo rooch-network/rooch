@@ -10,9 +10,9 @@ module bitcoin_move::taproot_builder {
     use moveos_std::bcs;
     use moveos_std::compare;
     use moveos_std::result::{err, ok, Result};
+    use moveos_std::consensus_codec;
 
     use bitcoin_move::script_buf::{Self,ScriptBuf};
-    use bitcoin_move::consensus_codec;
 
     /// Tapscript leaf version.
     // https://github.com/bitcoin/bitcoin/blob/e826b22da252e0599c61d21c98ff89f366b3120f/src/script_buf/interpreter.h#L226
