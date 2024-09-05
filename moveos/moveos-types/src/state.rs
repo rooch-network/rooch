@@ -892,7 +892,7 @@ impl AnnotatedState {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ObjectChange {
     pub metadata: ObjectMeta,
     #[serde(with = "op_serde")]
@@ -953,7 +953,7 @@ impl ObjectChange {
 
 /// Global State change set.
 /// The state_root in the ObjectChange is the state_root before the changes
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct StateChangeSet {
     /// The state root of the root Object
     pub state_root: H256,

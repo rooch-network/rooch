@@ -423,10 +423,11 @@ impl Default for VMErrorInfo {
 }
 
 /// RawTransactionOutput is the execution result of a MoveOS transaction
-//TODO make RawTransactionOutput serializable
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct RawTransactionOutput {
     pub status: KeptVMStatus,
+    //The changeset in RawTransactionOutput is not the same as the changeset in TransactionOutput
+    //Because the changeset do not apply to the state tree, so it's StateRoot not updated
     pub changeset: StateChangeSet,
     pub events: Vec<TransactionEvent>,
     pub gas_used: u64,
@@ -435,8 +436,7 @@ pub struct RawTransactionOutput {
 }
 
 /// TransactionOutput is the execution result of a MoveOS transaction, and pack TransactionEvent to Event
-//TODO make TransactionOutput serializable
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransactionOutput {
     pub status: KeptVMStatus,
     pub changeset: StateChangeSet,

@@ -73,13 +73,15 @@ pub trait StateResolver: StatelessResolver {
     fn root(&self) -> &ObjectMeta;
 }
 
-pub struct GenesisResolver{
+pub struct GenesisResolver {
     root: ObjectMeta,
 }
 
 impl GenesisResolver {
     pub fn new() -> Self {
-        Self { root: ObjectMeta::genesis_root() }
+        Self {
+            root: ObjectMeta::genesis_root(),
+        }
     }
 }
 

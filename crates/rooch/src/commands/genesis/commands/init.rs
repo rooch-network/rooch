@@ -6,7 +6,10 @@ use metrics::RegistryService;
 use rooch_config::{RoochOpt, R_OPT_NET_HELP};
 use rooch_db::RoochDB;
 use rooch_genesis::RoochGenesis;
-use rooch_types::{error::RoochResult, rooch_network::RoochChainID};
+use rooch_types::{
+    error::{RoochError, RoochResult},
+    rooch_network::RoochChainID,
+};
 use std::path::PathBuf;
 
 /// Init genesis statedb
@@ -35,11 +38,14 @@ impl InitCommand {
         let registry_service = RegistryService::default();
         let rooch_db = RoochDB::init(store_config, &registry_service.default_registry())?;
         let network = opt.network();
-        let genesis = RoochGenesis::load_or_init(network, &rooch_db)?;
+        let _genesis = RoochGenesis::load_or_init(network, &rooch_db)?;
+        let root = rooch_db
+            .latest_root()?
+            .ok_or_else(|| RoochError::from(anyhow::anyhow!("Load latest root failed")))?;
         println!(
             "Genesis statedb initialized at {:?} successfully, state_root: {:?}",
             opt.base().data_dir(),
-            genesis.genesis_root().state_root()
+            root.state_root()
         );
         Ok(())
     }
