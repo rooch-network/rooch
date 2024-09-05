@@ -96,8 +96,8 @@ impl ImportCommand {
         let registry_service = RegistryService::default();
         let rooch_db =
             RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
-        let genesis = RoochGenesis::load_or_init(opt.network(), &rooch_db).unwrap();
-        let root = genesis.genesis_root().clone();
+        let _genesis = RoochGenesis::load_or_init(opt.network(), &rooch_db).unwrap();
+        let root = rooch_db.latest_root().unwrap().unwrap();
         println!(
             "task progress started at {}, batch_size: {}",
             datetime,

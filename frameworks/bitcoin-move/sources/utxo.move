@@ -83,10 +83,13 @@ module bitcoin_move::utxo{
     }
 
     public(friend) fun genesis_init(){
-        let btc_utxo_store = BitcoinUTXOStore{
-        };
-        let obj = object::new_named_object(btc_utxo_store);
-        object::to_shared(obj);
+        let utxo_store_id = object::named_object_id<BitcoinUTXOStore>();
+        // Create the UTXO store if it doesn't exist
+        // The UTXOStore maybe initialized in the genesis_config Object.
+        if(!object::exists_object(utxo_store_id)){
+            let obj = object::new_named_object(BitcoinUTXOStore{});
+            object::to_shared(obj);
+        }
     }
 
     // ======= UTOXStore =========

@@ -1,11 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{address::BitcoinAddress, bitcoin::genesis::MultisignAccountConfig};
+use crate::{
+    address::BitcoinAddress,
+    bitcoin::{genesis::MultisignAccountConfig, ord::InscriptionStore, utxo::BitcoinUTXOStore},
+    framework::address_mapping::RoochToBitcoinAddressMapping,
+};
 use bitcoin::{block::Header, BlockHash};
 use framework_builder::stdlib_version::StdlibVersion;
 use move_core_types::value::MoveTypeLayout;
 use moveos_types::{
+    h256::H256,
     moveos_std::{module_store::ModuleStore, timestamp::Timestamp},
     state::{MoveState, ObjectState},
 };
@@ -135,10 +140,10 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     stdlib_version: StdlibVersion::Latest,
 });
 
-//curl -sSL https://mempool.space/testnet/api/block/$(curl -sSL https://mempool.space/testnet/api/block-height/2867700)/header
+//curl -sSL https://mempool.space/testnet/api/block/$(curl -sSL https://mempool.space/testnet/api/block-height/2902859)/header
 static TESTNET_GENESIS_HEIGHT_HEADER: Lazy<(u64, Header)> = Lazy::new(|| {
-    (2867900, bitcoin::consensus::deserialize(
-        &hex::decode("00e0962bd97a2b80ffb30abf34c2dc211c167a3e35dc6e5bdba5ac1d23208d6f0000000011059bafb1e9ceb8f2e494671c078863589574f5964548f4c0aa3ba0da733ebfa47f9266129422199e86b520")
+    (2902859, bitcoin::consensus::deserialize(
+        &hex::decode("000000207a518c54d035787e573beab94dcaa241116629f2d1b578fc6e4bcbbc000000001cb54b96888834d31e7418652c0e6ddeeee956b4b261766d92d5ff59d030ea52fdc2d766c0ff3f19b8051295")
             .expect("Should be valid"),
     ).expect("Should be valid"))
 });
@@ -157,16 +162,24 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         .expect("Should be valid"),
         rooch_dao: MultisignAccountConfig {
             multisign_bitcoin_address: BitcoinAddress::from_str(
-                "bc1pmk3767wmd3pjhnyeajckqpdgk8uxp8mmc2vqxa54at77ykml888sllqrpk",
+                "bc1prcajaj9n7e29u4dfp33x3hcf52yqeegspdpcd79pqu4fpr6llx4sugkfjt",
             )
             .unwrap(),
-            threshold: 2,
+            threshold: 5,
             participant_public_keys: vec![
-                hex::decode("026c9e5a00643a706d3826424f766bbbb08adada4dc357c1b279ad4662d2fd1e2e")
+                hex::decode("032d4fb9f88a63f52d8bffd1a46ad40411310150a539913203265c3f46b0397f8c")
                     .unwrap(),
-                hex::decode("030fd15c2abac203b2e819cc7cd95b0206e200c61b360027160cdb3c727d071968")
+                hex::decode("039c9f399047d1ca911827c8c9b445ea55e84a68dcfe39641bc1f423c6a7cd99d0")
                     .unwrap(),
-                hex::decode("039ef579cd92104255ea7e18abbc1c761f9cd40f19d940d72e6849c6b2b930e7f0")
+                hex::decode("03ad953cc82a6ed91c8eb3a6400e55965de4735bc5f8a107eabd2e4e7531f64c61")
+                    .unwrap(),
+                hex::decode("0346b64846c11f23ccec99811b476aaf68f421f15762287b872fcb896c92caa677")
+                    .unwrap(),
+                hex::decode("03730cb693e9a1bc6eaec5537c2e317a75bb6c8107a59fda018810c46c270670be")
+                    .unwrap(),
+                hex::decode("0259a40918150bc16ca1852fb55be383ec0fcf2b6058a73a25f0dfd87394dd92db")
+                    .unwrap(),
+                hex::decode("028fd25b727bf77e42d7a99cad4b1fa564d41cdb3bbddaf15219a4529f486a775a")
                     .unwrap(),
             ],
         },
@@ -186,11 +199,11 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-//curl -sSL https://mempool.space/api/block/$(curl -sSL https://mempool.space/api/block-height/852203)/header
+//curl -sSL https://mempool.space/api/block/$(curl -sSL https://mempool.space/api/block-height/859000)/header
 
 static MAIN_GENESIS_HEIGHT_HEADER: Lazy<(u64, Header)> = Lazy::new(|| {
-    (852203, bitcoin::consensus::deserialize(
-        &hex::decode("0000002aeab3d78df1e6bdd612df31107b32470b2946758410920100000000000000000012c85f974f244dce28142748dd6dc0a8d2a8cdca6706442e6df4b3b52c0d985d794c94666d8a031729521ec6")
+    (859000, bitcoin::consensus::deserialize(
+        &hex::decode("000000285e0683a9e4add89c9bead199a768bb25040fe165a41f00000000000000000000d57cb8c2ecb8f33f548772a0bffe6a156137ac63a96f11bad1c1e334ca44f444a3e8d0665b250317bc183bd0")
             .expect("Should be valid"),
     ).expect("Should be valid"))
 });
@@ -201,24 +214,30 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     bitcoin_block_hash: MAIN_GENESIS_HEIGHT_HEADER.1.block_hash(),
     bitcoin_reorg_block_count: 3,
     timestamp: MAIN_GENESIS_HEIGHT_HEADER.1.time as u64 * 1000,
-    //TODO update sequencer account
     sequencer_account: BitcoinAddress::from_str(
-        "bc1p56tdhxkcpc5xvdurfnufn9lkkywsh0gxttv5ktkvlezj0t23nasq8lj2sg",
+        "bc1pwxpq9pxgv2jnvzu2pjska3jkfurxsdt075yds3u0rsj9cu39g4esjdzt8z",
     )
     .expect("Should be valid"),
-    //TODO update rooch dao multisign account
     rooch_dao: MultisignAccountConfig {
         multisign_bitcoin_address: BitcoinAddress::from_str(
-            "bc1pmk3767wmd3pjhnyeajckqpdgk8uxp8mmc2vqxa54at77ykml888sllqrpk",
+            "bc1prcajaj9n7e29u4dfp33x3hcf52yqeegspdpcd79pqu4fpr6llx4sugkfjt",
         )
         .unwrap(),
-        threshold: 2,
+        threshold: 5,
         participant_public_keys: vec![
-            hex::decode("026c9e5a00643a706d3826424f766bbbb08adada4dc357c1b279ad4662d2fd1e2e")
+            hex::decode("032d4fb9f88a63f52d8bffd1a46ad40411310150a539913203265c3f46b0397f8c")
                 .unwrap(),
-            hex::decode("030fd15c2abac203b2e819cc7cd95b0206e200c61b360027160cdb3c727d071968")
+            hex::decode("039c9f399047d1ca911827c8c9b445ea55e84a68dcfe39641bc1f423c6a7cd99d0")
                 .unwrap(),
-            hex::decode("039ef579cd92104255ea7e18abbc1c761f9cd40f19d940d72e6849c6b2b930e7f0")
+            hex::decode("03ad953cc82a6ed91c8eb3a6400e55965de4735bc5f8a107eabd2e4e7531f64c61")
+                .unwrap(),
+            hex::decode("0346b64846c11f23ccec99811b476aaf68f421f15762287b872fcb896c92caa677")
+                .unwrap(),
+            hex::decode("03730cb693e9a1bc6eaec5537c2e317a75bb6c8107a59fda018810c46c270670be")
+                .unwrap(),
+            hex::decode("0259a40918150bc16ca1852fb55be383ec0fcf2b6058a73a25f0dfd87394dd92db")
+                .unwrap(),
+            hex::decode("028fd25b727bf77e42d7a99cad4b1fa564d41cdb3bbddaf15219a4529f486a775a")
                 .unwrap(),
         ],
     },
@@ -232,6 +251,43 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
         (
             ObjectState::genesis_module_store(),
             ModuleStore::type_layout(),
+        ),
+        (
+            BitcoinUTXOStore::genesis_with_state_root(
+                H256::from_str(
+                    "0x8ec77de7cd44c27a30c84aaa36c4e107aae7aaade2ae3ee1741aad437015a219",
+                )
+                .unwrap(),
+                185390577,
+            ),
+            BitcoinUTXOStore::type_layout(),
+        ),
+        (
+            InscriptionStore::genesis_with_state_root(
+                H256::from_str(
+                    "0x0951812ce3dd8ffc17e81a08327f317dcf06cd4190e1f602e2aac9545927a306",
+                )
+                .unwrap(),
+                150953628,
+                InscriptionStore {
+                    cursed_inscription_count: 472043,
+                    blessed_inscription_count: 75004771,
+                    unbound_inscription_count: 20723,
+                    lost_sats: 0,
+                    next_sequence_number: 75476814,
+                },
+            ),
+            InscriptionStore::type_layout(),
+        ),
+        (
+            RoochToBitcoinAddressMapping::genesis_with_state_root(
+                H256::from_str(
+                    "0x908b63a475a886571a2bef1533589866f92fb3ef01b243a0b8bb1cda27655172",
+                )
+                .unwrap(),
+                52397723,
+            ),
+            RoochToBitcoinAddressMapping::type_layout(),
         ),
     ],
     stdlib_version: StdlibVersion::Version(8),
@@ -250,7 +306,7 @@ mod tests {
             config.rooch_dao.participant_public_keys.clone(),
         )
         .unwrap();
-        //println!("multisign_account: {}", multisign_account);
+        println!("multisign_account: {}", multisign_account);
         assert_eq!(
             config.rooch_dao.multisign_bitcoin_address,
             multisign_account

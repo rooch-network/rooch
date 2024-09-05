@@ -6,10 +6,13 @@ module bitcoin_move::taproot_builder {
 
     use std::vector;
     use std::option::{Self, Option, is_none, is_some, none, destroy_some};
+    
     use moveos_std::bcs;
     use moveos_std::compare;
-    use bitcoin_move::script_buf::{Self,ScriptBuf};
     use moveos_std::result::{err, ok, Result};
+    use moveos_std::consensus_codec;
+
+    use bitcoin_move::script_buf::{Self,ScriptBuf};
 
     /// Tapscript leaf version.
     // https://github.com/bitcoin/bitcoin/blob/e826b22da252e0599c61d21c98ff89f366b3120f/src/script_buf/interpreter.h#L226
@@ -46,7 +49,7 @@ module bitcoin_move::taproot_builder {
         builder
     }
 
-    fun new_leaf(script_buf: ScriptBuf): NodeInfo {
+    fun  new_leaf(script_buf: ScriptBuf): NodeInfo {
         let ver = TAPROOT_LEAF_TAPSCRIPT;
         let hash = calculate_leaf_hash(&script_buf, ver);
         NodeInfo { hash, is_leaf: true }
@@ -88,10 +91,10 @@ module bitcoin_move::taproot_builder {
     }
 
     fun calculate_leaf_hash(script_buf: &ScriptBuf, ver: u8): address {
-        let bytes = vector::empty();
-        vector::push_back(&mut bytes, ver);
-        //use bcs::to_bytes to write length and then the bytes
-        vector::append(&mut bytes, bcs::to_bytes(script_buf::bytes(script_buf)));
+        let encoder = consensus_codec::encoder();
+        consensus_codec::emit_u8(&mut encoder, ver);
+        consensus_codec::emit_var_slice(&mut encoder, *script_buf::bytes(script_buf));
+        let bytes = consensus_codec::unpack_encoder(encoder);
         tagged_hash(TAG_TAP_LEAF, bytes)
     }
 

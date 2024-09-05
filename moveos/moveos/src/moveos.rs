@@ -30,18 +30,15 @@ use moveos_store::transaction_store::TransactionDBStore;
 use moveos_store::MoveOSStore;
 use moveos_types::addresses::MOVEOS_STD_ADDRESS;
 use moveos_types::function_return_value::FunctionResult;
-use moveos_types::moveos_std::event::Event;
 use moveos_types::moveos_std::gas_schedule::{GasScheduleConfig, GasScheduleUpdated};
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::moveos_std::tx_result::TxResult;
-use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{MoveStructState, MoveStructType, ObjectState};
-use moveos_types::state_resolver::RootObjectResolver;
+use moveos_types::state_resolver::{GenesisResolver, RootObjectResolver};
 use moveos_types::transaction::{FunctionCall, VMErrorInfo};
 use moveos_types::transaction::{
-    MoveOSTransaction, RawTransactionOutput, TransactionOutput, VerifiedMoveAction,
-    VerifiedMoveOSTransaction,
+    MoveOSTransaction, RawTransactionOutput, VerifiedMoveAction, VerifiedMoveOSTransaction,
 };
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
@@ -114,8 +111,11 @@ impl Clone for MoveOSConfig {
 
 pub struct MoveOS {
     vm: MoveOSVM,
-    pub db: MoveOSStore,
-    pub cost_table: Arc<RwLock<Option<CostTable>>>,
+    //MoveOS do not need to hold the db
+    //It just need a StateResolver to get the state.
+    //TODO remove the db from MoveOS
+    db: MoveOSStore,
+    cost_table: Arc<RwLock<Option<CostTable>>>,
     system_pre_execute_functions: Vec<FunctionCall>,
     system_post_execute_functions: Vec<FunctionCall>,
 }
@@ -144,7 +144,7 @@ impl MoveOS {
         &self,
         genesis_tx: MoveOSTransaction,
         genesis_objects: Vec<(ObjectState, MoveTypeLayout)>,
-    ) -> Result<TransactionOutput> {
+    ) -> Result<RawTransactionOutput> {
         self.verify_and_execute_genesis_tx(genesis_tx, genesis_objects)
     }
 
@@ -152,10 +152,10 @@ impl MoveOS {
         &self,
         tx: MoveOSTransaction,
         genesis_objects: Vec<(ObjectState, MoveTypeLayout)>,
-    ) -> Result<TransactionOutput> {
+    ) -> Result<RawTransactionOutput> {
         let MoveOSTransaction { root, ctx, action } = tx;
-
-        let resolver = RootObjectResolver::new(root, &self.db);
+        assert!(root.is_genesis());
+        let resolver = GenesisResolver::default();
         let mut session = self.vm.new_genesis_session(&resolver, ctx, genesis_objects);
 
         let verified_action = session.verify_move_action(action).map_err(|e| {
@@ -179,13 +179,7 @@ impl MoveOS {
         if raw_output.status != KeptVMStatus::Executed {
             bail!("genesis tx should success, error: {:?}", raw_output.status);
         }
-        let output = Self::apply_transaction_output(&self.db, raw_output.clone())?;
-        log::info!(
-            "execute genesis tx state_root:{:?}, state_size:{}",
-            output.changeset.state_root,
-            output.changeset.global_size
-        );
-        Ok(output)
+        Ok(raw_output)
     }
 
     fn load_cost_table(&self, root: &ObjectMeta) -> VMResult<CostTable> {
@@ -358,57 +352,6 @@ impl MoveOS {
         tx: VerifiedMoveOSTransaction,
     ) -> Result<(RawTransactionOutput, Option<VMErrorInfo>)> {
         self.execute(tx)
-    }
-
-    pub fn apply_transaction_output(
-        db: &MoveOSStore,
-        output: RawTransactionOutput,
-    ) -> Result<TransactionOutput> {
-        let RawTransactionOutput {
-            status,
-            mut changeset,
-            events: tx_events,
-            gas_used,
-            is_upgrade,
-            is_gas_upgrade: _,
-        } = output;
-
-        db.get_state_store()
-            .apply_change_set(&mut changeset)
-            .map_err(|e| {
-                PartialVMError::new(StatusCode::STORAGE_ERROR)
-                    .with_message(e.to_string())
-                    .finish(Location::Undefined)
-            })?;
-        let event_ids = db
-            .get_event_store()
-            .save_events(tx_events.clone())
-            .map_err(|e| {
-                PartialVMError::new(StatusCode::STORAGE_ERROR)
-                    .with_message(e.to_string())
-                    .finish(Location::Undefined)
-            })?;
-        let events = tx_events
-            .clone()
-            .into_iter()
-            .zip(event_ids)
-            .map(|(event, event_id)| Event::new_with_event_id(event_id, event))
-            .collect::<Vec<_>>();
-
-        let new_state_root = changeset.state_root;
-        let size = changeset.global_size;
-
-        db.get_config_store()
-            .save_startup_info(StartupInfo::new(new_state_root, size))
-            .map_err(|e| {
-                PartialVMError::new(StatusCode::STORAGE_ERROR)
-                    .with_message(e.to_string())
-                    .finish(Location::Undefined)
-            })?;
-
-        Ok(TransactionOutput::new(
-            status, changeset, events, gas_used, is_upgrade,
-        ))
     }
 
     /// Execute readonly view function

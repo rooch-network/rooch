@@ -226,12 +226,11 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         );
     }
 
-    let genesis = RoochGenesis::load_or_init(network.clone(), &rooch_db)?;
+    let _genesis = RoochGenesis::load_or_init(network.clone(), &rooch_db)?;
 
-    let root = match rooch_db.latest_root()? {
-        Some(root) => root,
-        None => genesis.genesis_root().clone(),
-    };
+    let root = rooch_db
+        .latest_root()?
+        .ok_or_else(|| anyhow::anyhow!("No root object should exist after genesis init."))?;
     info!(
         "The latest Root object state root: {:?}, size: {}",
         root.state_root(),
