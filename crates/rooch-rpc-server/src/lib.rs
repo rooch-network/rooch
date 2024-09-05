@@ -54,8 +54,8 @@ use std::sync::Arc;
 use std::time::Duration;
 use std::{env, panic, process};
 use tokio::signal;
-use tokio::sync::watch;
-use tokio::sync::watch::Sender;
+use tokio::sync::broadcast;
+use tokio::sync::broadcast::Sender;
 use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
@@ -70,7 +70,7 @@ pub mod service;
 static R_EXIT_CODE_NEED_HELP: i32 = 120;
 
 pub struct ServerHandle {
-    shutdown_tx: Sender<bool>,
+    shutdown_tx: Sender<()>,
     timers: Vec<Timer>,
     _opt: RoochOpt,
     _prometheus_registry: prometheus::Registry,
@@ -81,7 +81,7 @@ impl ServerHandle {
         for timer in self.timers {
             timer.stop();
         }
-        let _ = self.shutdown_tx.send(true);
+        let _ = self.shutdown_tx.send(());
         Ok(())
     }
 }
@@ -423,14 +423,14 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         .allow_headers([axum::http::header::CONTENT_TYPE]);
 
     // init limit
-    // Allow bursts with up to five requests per IP address
+    // Allow bursts with up to 8 requests per IP address
     // and replenishes one element every two seconds
     // We Box it because Axum 0.6 requires all Layers to be Clone
     // and thus we need a static reference to it
     let governor_conf = Arc::new(
         GovernorConfigBuilder::default()
             .per_second(2)
-            .burst_size(5)
+            .burst_size(1000)
             .use_headers()
             .error_handler(move |error1| ErrorHandler::default().0(error1))
             .finish()
@@ -439,9 +439,18 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
 
     let governor_limiter = governor_conf.limiter().clone();
     let interval = Duration::from_secs(60);
+    let (shutdown_tx, mut governor_rx): (broadcast::Sender<()>, broadcast::Receiver<()>) =
+        broadcast::channel(16);
+
     // a separate background task to clean up
     std::thread::spawn(move || loop {
+        if governor_rx.try_recv().is_ok() {
+            info!("Background thread received cancel signal, stopping.");
+            break;
+        }
+
         std::thread::sleep(interval);
+
         tracing::info!("rate limiting storage size: {}", governor_limiter.len());
         governor_limiter.retain_recent();
     });
@@ -491,22 +500,23 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     let addr = listener.local_addr()?;
 
-    let (shutdown_tx, mut shutdown_rx) = watch::channel::<bool>(false);
-
-    axum::serve(
-        listener,
-        app.into_make_service_with_connect_info::<SocketAddr>(),
-    )
-    .with_graceful_shutdown(async move {
-        tokio::select! {
+    let mut axum_rx = shutdown_tx.subscribe();
+    tokio::spawn(async move {
+        axum::serve(
+            listener,
+            app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .with_graceful_shutdown(async move {
+            tokio::select! {
             _ = shutdown_signal() => {},
-            _ = shutdown_rx.changed() => {
-                    info!("shutdown signal received, starting graceful shutdown");
+            _ = axum_rx.recv() => {
+                info!("shutdown signal received, starting graceful shutdown");
                 },
-        }
-    })
-    .await
-    .unwrap();
+            }
+        })
+        .await
+        .unwrap();
+    });
 
     info!("JSON-RPC HTTP Server start listening {:?}", addr);
     info!("Available JSON-RPC methods : {:?}", methods_names);
