@@ -22,7 +22,7 @@ export function middleware(request: NextRequest) {
     },
     {
       name: 'style-src',
-      values: ["'self'", "'unsafe-inline'"],
+      values: ["'self'", `'nonce-${nonce}'`],
     },
     { name: 'img-src', values: ["'self'", 'data:', 'blob:'] },
     { name: 'font-src', values: ["'self'", 'data:'] },
@@ -38,9 +38,7 @@ export function middleware(request: NextRequest) {
   ];
 
   const contentSecurityPolicyHeaderValue = csp
-    .map((directive) => {
-      return `${directive.name} ${directive.values.join(' ')}`;
-    })
+    .map((directive) => `${directive.name} ${directive.values.join(' ')}`)
     .join('; ');
 
   const requestHeaders = new Headers(request.headers);
