@@ -6002,7 +6002,7 @@ dependencies = [
  "async-trait",
  "axum 0.7.5",
  "axum-server",
- "dashmap 5.5.3",
+ "dashmap 6.0.1",
  "futures",
  "once_cell",
  "parking_lot 0.12.3",
