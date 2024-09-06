@@ -7,7 +7,10 @@ use clap::Parser;
 use moveos_types::state::MoveState;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::{
-    address::ParsedAddress, crypto::Signature, error::RoochResult, framework::auth_payload::{SignData, MESSAGE_INFO_PREFIX}
+    address::ParsedAddress,
+    crypto::Signature,
+    error::RoochResult,
+    framework::auth_payload::{SignData, MESSAGE_INFO_PREFIX},
 };
 
 /// Sign a message with a parsed address
@@ -49,10 +52,7 @@ impl CommandAction<Option<Signature>> for SignCommand {
         if self.json {
             Ok(Some(signature))
         } else {
-            println!(
-                "Sign message succeeded with the signatue {:?}",
-                signature
-            );
+            println!("Sign message succeeded with the signatue {:?}", signature);
             Ok(None)
         }
     }

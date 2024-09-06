@@ -53,7 +53,7 @@ impl CommandAction<Option<bool>> for VerifyCommand {
             SignData::new_without_tx_hash(MESSAGE_INFO_PREFIX.to_vec(), self.message.to_bytes());
         let encoded_sign_data = sign_data.encode();
         let message_hash = sha2_256_of(&encoded_sign_data).0.to_vec();
-        
+
         pk.verify_with_hash::<Sha256>(&message_hash, &sig)
             .map_err(|e| RoochError::CommandArgumentError(format!("Failed verification: {}", e)))?;
 
