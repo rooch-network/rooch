@@ -11,7 +11,7 @@ use rooch_types::{
     address::ParsedAddress,
     crypto::Signature,
     error::RoochResult,
-    framework::auth_payload::{AuthPayload, SignData, MESSAGE_INFO, MESSAGE_INFO_PREFIX},
+    framework::auth_payload::{SignData, MESSAGE_INFO, MESSAGE_INFO_PREFIX},
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

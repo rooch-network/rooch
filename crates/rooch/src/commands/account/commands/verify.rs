@@ -6,26 +6,20 @@ use async_trait::async_trait;
 use clap::Parser;
 use fastcrypto::{
     hash::Sha256,
-    secp256k1::{self, Secp256k1PublicKey, Secp256k1Signature},
+    secp256k1::{Secp256k1PublicKey, Secp256k1Signature},
     traits::ToFromBytes,
 };
-use moveos_types::{h256::sha2_256_of, state::MoveState};
+use moveos_types::state::MoveState;
 use rooch_types::{
-    address::ParsedAddress,
-    crypto::{PublicKey, RoochSignature, Signature},
+    crypto::{RoochSignature, Signature},
     error::{RoochError, RoochResult},
-    framework::auth_payload::{AuthPayload, SignData},
 };
 
 /// Verify a signature
 #[derive(Debug, Parser)]
 pub struct VerifyCommand {
-    // An address to be used
-    #[clap(short = 'a', long = "address", value_parser=ParsedAddress::parse, default_value = "")]
-    address: ParsedAddress,
-
     /// A signature for verify
-    #[clap(long)]
+    #[clap(short = 's', long)]
     signature: String,
 
     /// A hashed message to be verified
