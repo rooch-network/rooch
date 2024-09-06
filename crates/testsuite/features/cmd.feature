@@ -37,6 +37,10 @@ Feature: Rooch CLI integration tests
 
       Then cmd: "account create"
       Then cmd: "account list --json"
+      # account sign and verify
+      Then cmd: "account sign -a {{$.account[-1].account0.address}} -m 'empty' --json"
+      Then cmd: "account verify -s {{$.account[-1].signature_hash}} -m {{$.account[-1].message_hash}}"
+      Then cmd: "account list --json"
       Then cmd: "account export"
       Then cmd: "account export -a {{$.account[-1].account0.address}} --json"
       # use bitcoin_address
@@ -85,10 +89,6 @@ Feature: Rooch CLI integration tests
 
       # alias tx for transaction
       Then cmd: "tx get-transactions-by-order --cursor 1 --limit 2 --descending-order true"
-
-      # account sign and verify
-      Then cmd: "account sign -a {{$.account[-1].account0.address}} -m 'empty' --json"
-      Then cmd: "account verify -s {{$.account[-1].signature_hash}} -m {{$.account[-1].message_hash}}"
 
       # account balance
       Then cmd: "account balance"
