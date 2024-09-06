@@ -88,7 +88,7 @@ Feature: Rooch CLI integration tests
 
       # account sign and verify
       Then cmd: "account sign -a {{$.account[-1].account0.address}} -m 'empty' --json"
-      Then cmd: "account verify -s {{$.account[-1].signature}} -m {{$.account[-1].message_hash}}"
+      Then cmd: "account verify -s {{$.account[-1].signature_hash}} -m {{$.account[-1].message_hash}}"
 
       # account balance
       Then cmd: "account balance"

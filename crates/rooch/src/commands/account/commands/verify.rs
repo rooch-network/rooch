@@ -9,7 +9,6 @@ use fastcrypto::{
     secp256k1::{Secp256k1PublicKey, Secp256k1Signature},
     traits::ToFromBytes,
 };
-use moveos_types::state::MoveState;
 use rooch_types::{
     crypto::{RoochSignature, Signature},
     error::{RoochError, RoochResult},
@@ -20,7 +19,7 @@ use rooch_types::{
 pub struct VerifyCommand {
     /// A signature for verify
     #[clap(short = 's', long)]
-    signature: String,
+    signature_hash: String,
 
     /// A hashed message to be verified
     #[clap(short = 'm', long)]
@@ -37,7 +36,9 @@ pub struct VerifyCommand {
 #[async_trait]
 impl CommandAction<Option<bool>> for VerifyCommand {
     async fn execute(self) -> RoochResult<Option<bool>> {
-        let signature_bytes = self.signature.to_bytes();
+        let signature_bytes = hex::decode(self.signature_hash).map_err(|e| {
+            RoochError::CommandArgumentError(format!("Decode hex failed: {}", e.to_string()))
+        })?;
         let signatrue = Signature::from_bytes(&signature_bytes).map_err(|e| {
             RoochError::CommandArgumentError(format!(
                 "Invalid signature argument: {}",
@@ -65,7 +66,7 @@ impl CommandAction<Option<bool>> for VerifyCommand {
             Ok(Some(true))
         } else {
             println!("Verification succeeded");
-            Ok(Some(true))
+            Ok(None)
         }
     }
 }

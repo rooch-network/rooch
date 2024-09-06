@@ -9,7 +9,6 @@ use moveos_types::state::MoveState;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::{
     address::ParsedAddress,
-    crypto::Signature,
     error::RoochResult,
     framework::auth_payload::{SignData, MESSAGE_INFO, MESSAGE_INFO_PREFIX},
 };
@@ -37,7 +36,7 @@ pub struct SignCommand {
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct SignAccountOutput {
-    pub signature: Signature,
+    pub signature_hash: String,
     pub message_hash: String,
 }
 
@@ -62,14 +61,17 @@ impl CommandAction<Option<SignAccountOutput>> for SignCommand {
                 .sign_hashed(&rooch_address, &encoded_sign_data, password)?;
 
         let output = SignAccountOutput {
-            signature,
+            signature_hash: signature.encode_hex(),
             message_hash: encoded_sign_data.encode_hex(),
         };
 
         if self.json {
             Ok(Some(output))
         } else {
-            println!("Sign message succeeded with the sign output: {:?}", output);
+            println!(
+                "Sign message succeeded with the signatue hash {} and the message hash: {}",
+                output.signature_hash, output.message_hash
+            );
             Ok(None)
         }
     }
