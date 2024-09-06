@@ -9,21 +9,24 @@ use fastcrypto::{
     secp256k1::{Secp256k1PublicKey, Secp256k1Signature},
     traits::ToFromBytes,
 };
+use moveos_types::{h256::sha2_256_of, state::MoveState};
 use rooch_types::{
     crypto::{RoochSignature, Signature},
     error::{RoochError, RoochResult},
+    framework::auth_payload::{SignData, MESSAGE_INFO_PREFIX},
+    rooch_signature::ParsedSignature,
 };
 
 /// Verify a signature
 #[derive(Debug, Parser)]
 pub struct VerifyCommand {
     /// A signature for verify
-    #[clap(short = 's', long)]
-    signature_hash: String,
+    #[clap(short = 's', long, value_parser=ParsedSignature::parse)]
+    signature: ParsedSignature,
 
-    /// A hashed message to be verified
+    /// An original message to be verified
     #[clap(short = 'm', long)]
-    message_hash: String,
+    message: String,
 
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
@@ -36,18 +39,21 @@ pub struct VerifyCommand {
 #[async_trait]
 impl CommandAction<Option<bool>> for VerifyCommand {
     async fn execute(self) -> RoochResult<Option<bool>> {
-        let signature_bytes = hex::decode(self.signature_hash)
-            .map_err(|e| RoochError::CommandArgumentError(format!("Decode hex failed: {}", e)))?;
-        let signatrue = Signature::from_bytes(&signature_bytes).map_err(|e| {
-            RoochError::CommandArgumentError(format!("Invalid signature argument: {}", e))
-        })?;
+        let signatrue =
+            Signature::from_bytes(self.signature.into_inner().as_ref()).map_err(|e| {
+                RoochError::CommandArgumentError(format!("Invalid signature argument: {}", e))
+            })?;
         let pk = Secp256k1PublicKey::from_bytes(signatrue.public_key_bytes())
             .map_err(|e| RoochError::CommandArgumentError(format!("Invalid public key: {}", e)))?;
         let sig = Secp256k1Signature::from_bytes(signatrue.signature_bytes()).map_err(|e| {
             RoochError::CommandArgumentError(format!("Invalid signature argument: {}", e))
         })?;
-        let message_hash = hex::decode(self.message_hash)
-            .map_err(|e| RoochError::CommandArgumentError(format!("Decode hex failed: {}", e)))?;
+
+        let sign_data =
+            SignData::new_without_tx_hash(MESSAGE_INFO_PREFIX.to_vec(), self.message.to_bytes());
+        let encoded_sign_data = sign_data.encode();
+        let message_hash = sha2_256_of(&encoded_sign_data).0.to_vec();
+        
         pk.verify_with_hash::<Sha256>(&message_hash, &sig)
             .map_err(|e| RoochError::CommandArgumentError(format!("Failed verification: {}", e)))?;
 

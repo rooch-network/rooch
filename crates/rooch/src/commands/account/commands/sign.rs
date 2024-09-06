@@ -4,16 +4,11 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use hex::ToHex;
 use moveos_types::state::MoveState;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::{
-    address::ParsedAddress,
-    error::RoochResult,
-    framework::auth_payload::{SignData, MESSAGE_INFO, MESSAGE_INFO_PREFIX},
+    address::ParsedAddress, crypto::Signature, error::RoochResult, framework::auth_payload::{SignData, MESSAGE_INFO_PREFIX}
 };
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 
 /// Sign a message with a parsed address
 #[derive(Debug, Parser)]
@@ -34,25 +29,16 @@ pub struct SignCommand {
     json: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct SignAccountOutput {
-    pub signature_hash: String,
-    pub message_hash: String,
-}
-
 #[async_trait]
-impl CommandAction<Option<SignAccountOutput>> for SignCommand {
-    async fn execute(self) -> RoochResult<Option<SignAccountOutput>> {
+impl CommandAction<Option<Signature>> for SignCommand {
+    async fn execute(self) -> RoochResult<Option<Signature>> {
         let context = self.context_options.build_require_password()?;
         let password = context.get_password();
         let mapping = context.address_mapping();
         let rooch_address = self.address.into_rooch_address(&mapping)?;
 
-        let mut message_info = Vec::new();
-        message_info.append(&mut MESSAGE_INFO.to_vec());
-        message_info.append(&mut self.message.to_bytes());
-
-        let sign_data = SignData::new_without_tx_hash(MESSAGE_INFO_PREFIX.to_vec(), message_info);
+        let sign_data =
+            SignData::new_without_tx_hash(MESSAGE_INFO_PREFIX.to_vec(), self.message.to_bytes());
         let encoded_sign_data = sign_data.encode();
 
         let signature =
@@ -60,17 +46,12 @@ impl CommandAction<Option<SignAccountOutput>> for SignCommand {
                 .keystore
                 .sign_hashed(&rooch_address, &encoded_sign_data, password)?;
 
-        let output = SignAccountOutput {
-            signature_hash: signature.encode_hex(),
-            message_hash: encoded_sign_data.encode_hex(),
-        };
-
         if self.json {
-            Ok(Some(output))
+            Ok(Some(signature))
         } else {
             println!(
-                "Sign message succeeded with the signatue hash {} and the message hash: {}",
-                output.signature_hash, output.message_hash
+                "Sign message succeeded with the signatue {:?}",
+                signature
             );
             Ok(None)
         }
