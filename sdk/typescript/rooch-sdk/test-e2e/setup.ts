@@ -63,8 +63,8 @@ export class TestBox extends TestBoxA {
     options: {
       namedAddresses: string
     } = {
-        namedAddresses: 'rooch_examples=default',
-      },
+      namedAddresses: 'rooch_examples=default',
+    },
   ) {
     const namedAddresses = options.namedAddresses.replaceAll(
       'default',

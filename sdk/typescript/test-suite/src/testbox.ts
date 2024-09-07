@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import * as fs from 'fs';
-import * as net from 'net';
+import * as fs from 'fs'
+import * as net from 'net'
 import path from 'node:path'
 import { execSync } from 'child_process'
 import { spawn } from 'child_process'
@@ -43,10 +43,10 @@ export class TestBox {
       this.bitcoinContainer = await customContainer.start()
     } else {
       this.bitcoinContainer = await new BitcoinContainer()
-      .withHostDataPath(this.tmpDir.name)
-      .withNetwork(await this.getNetwork())
-      .withNetworkAliases(bitcoinNetworkAlias)
-      .start()
+        .withHostDataPath(this.tmpDir.name)
+        .withNetwork(await this.getNetwork())
+        .withNetworkAliases(bitcoinNetworkAlias)
+        .start()
     }
 
     await this.delay(5)
@@ -99,12 +99,12 @@ export class TestBox {
 
     // The container test in the linux environment is incomplete, so use it first
     if (target === 'local') {
-      if (port == 0) {
+      if (port === 0) {
         port = await getUnusedPort()
       }
 
       // Generate a random port for metrics
-      const metricsPort = await getUnusedPort();
+      const metricsPort = await getUnusedPort()
 
       const cmds = ['server', 'start', '-n', 'local', '-d', 'TMP', '--port', port.toString()]
 
@@ -123,14 +123,17 @@ export class TestBox {
         )
       }
 
+      cmds.push('--traffic-per-second', '1')
+      cmds.push('--traffic-burst-size', '5000')
+
       const result: string = await this.roochAsyncCommand(
         cmds,
         `JSON-RPC HTTP Server start listening 0.0.0.0:${port}`,
-        [`METRICS_HOST_PORT=${metricsPort}`]
+        [`METRICS_HOST_PORT=${metricsPort}`],
       )
 
       this.roochContainer = parseInt(result.toString().trim(), 10)
-      this.roochPort = port;
+      this.roochPort = port
 
       return
     }
@@ -170,7 +173,7 @@ export class TestBox {
       this.roochContainer?.stop()
     }
 
-    //this.tmpDir.removeCallback()
+    this.tmpDir.removeCallback()
   }
 
   delay(second: number) {
@@ -187,7 +190,7 @@ export class TestBox {
     const root = this.findRootDir('pnpm-workspace.yaml')
     const roochDir = path.join(root!, 'target', 'debug')
 
-    const envString = envs.length > 0 ? `${envs.join(' ')} ` : '';
+    const envString = envs.length > 0 ? `${envs.join(' ')} ` : ''
     return `${envString} ${roochDir}/./rooch ${typeof args === 'string' ? args : args.join(' ')}`
   }
 
@@ -195,11 +198,15 @@ export class TestBox {
   roochCommand(args: string[] | string, envs: string[] = []): string {
     return execSync(this.buildRoochCommand(args, envs), {
       encoding: 'utf-8',
-    });
+    })
   }
 
   // TODO: support container
-  async roochAsyncCommand(args: string[] | string, waitFor: string, envs: string[] = []): Promise<string> {
+  async roochAsyncCommand(
+    args: string[] | string,
+    waitFor: string,
+    envs: string[] = [],
+  ): Promise<string> {
     return new Promise((resolve, reject) => {
       const command = this.buildRoochCommand(args, envs)
       const child = spawn(command, { shell: true })
@@ -247,10 +254,16 @@ export class TestBox {
       namedAddresses: 'rooch_examples=default',
     },
   ) {
+    let addr = await this.defaultCmdAddress()
+    let fixedNamedAddresses = options.namedAddresses.replace('default', addr)
     const result = this.roochCommand(
-      `move publish -p ${packagePath} --config-dir ${this.roochDir} --named-addresses ${options.namedAddresses} --json`,
+      `move publish -p ${packagePath} --config-dir ${this.roochDir} --named-addresses ${fixedNamedAddresses} --json`,
     )
     const { execution_info } = JSON.parse(result)
+
+    console.log(fixedNamedAddresses)
+    console.log(result)
+    console.log(this.tmpDir)
 
     return execution_info?.status?.type === 'executed'
   }
@@ -332,16 +345,16 @@ export class TestBox {
 
 export async function getUnusedPort(): Promise<number> {
   return new Promise((resolve, reject) => {
-    const server = net.createServer();
+    const server = net.createServer()
     server.on('error', (_err: any) => {
-      server.close();
-      getUnusedPort().then(resolve).catch(reject);
-    });
+      server.close()
+      getUnusedPort().then(resolve).catch(reject)
+    })
     server.on('listening', () => {
-      const address = server.address() as net.AddressInfo;
-      server.close();
-      resolve(address.port);
-    });
-    server.listen(0); 
-  });
+      const address = server.address() as net.AddressInfo
+      server.close()
+      resolve(address.port)
+    })
+    server.listen(0)
+  })
 }

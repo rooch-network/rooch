@@ -12,18 +12,17 @@ describe('Checkpoints Coin API', () => {
 
   beforeAll(async () => {
     testBox = TestBox.setup()
-  })
-
-  afterAll(async () => {
-    testBox.cleanEnv()
-  })
-
-  it('Cmd publish package should be success', async () => {
     const result = await testBox.cmdPublishPackage('../../../examples/coins', {
       namedAddresses: 'coins=default',
     })
 
+    console.log(result)
+
     expect(result).toBeTruthy()
+  })
+
+  afterAll(async () => {
+    testBox.cleanEnv()
   })
 
   it('Check balances should be success', async () => {
@@ -42,7 +41,7 @@ describe('Checkpoints Coin API', () => {
     let result = await testBox.signAndExecuteTransaction(tx)
     expect(result).toBeTruthy()
 
-    await testBox.delay(3)
+    await testBox.delay(10)
 
     let result1 = await testBox.getClient().getBalances({
       owner: testBox.address().toHexAddress(),
@@ -87,7 +86,7 @@ describe('Checkpoints Coin API', () => {
 
     expect(transferResult.execution_info.status.type === 'executed').toBeTruthy()
 
-    await testBox.delay(3)
+    await testBox.delay(10)
 
     // check balance
     const recipientBalance = await testBox.getClient().getBalance({

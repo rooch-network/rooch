@@ -15,6 +15,11 @@ export default defineConfig({
     maxThreads: 8,
     hookTimeout: 1000000,
     testTimeout: 1000000,
+    poolOptions: {
+      threads: {
+        singleThread: true,
+      }
+    },
     env: {
       NODE_ENV: 'test',
     },

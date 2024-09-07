@@ -12,16 +12,13 @@ describe('Checkpoints Example Entry Function', () => {
 
   beforeAll(async () => {
     testBox = TestBox.setup()
+    const result = await testBox.cmdPublishPackage('../../../examples/entry_function_arguments/')
+
+    expect(result).toBeTruthy()
   })
 
   afterAll(async () => {
     testBox.cleanEnv()
-  })
-
-  it('Cmd publish package should be success', async () => {
-    const result = await testBox.cmdPublishPackage('../../../examples/entry_function_arguments/')
-
-    expect(result).toBeTruthy()
   })
 
   it('Emit object id should be success', async () => {

@@ -22,6 +22,8 @@ export class RoochContainer extends GenericContainer {
   private btcEndBlockHeight?: number
   private btcSyncBlockInterval?: number
   private hostConfigPath?: string
+  private trafficBurstSize?: number
+  private trafficPerSecond?: number
 
   constructor(image = 'ghcr.io/rooch-network/rooch:main_debug') {
     super(image)
@@ -80,6 +82,16 @@ export class RoochContainer extends GenericContainer {
     return this
   }
 
+  public withTrafficBurstSize(burstSize: number): this {
+    this.trafficBurstSize = burstSize
+    return this
+  }
+
+  public withTrafficPerSecond(perSecond: number): this {
+    this.trafficPerSecond = perSecond
+    return this
+  }
+
   public async initializeRooch(): Promise<void> {
     if (!this.hostConfigPath) {
       throw new Error('Host config path not set. Call withHostConfigPath() before initializing.')
@@ -102,7 +114,7 @@ export class RoochContainer extends GenericContainer {
     if (!this.hostConfigPath) {
       throw new Error('Host config path not set. Call withHostConfigPath() before initializing.')
     }
-    
+
     await new GenericContainer(this.imageName.string)
       .withStartupTimeout(10_000)
       .withBindMounts([{ source: this.hostConfigPath, target: this.accountDir }])
@@ -116,13 +128,12 @@ export class RoochContainer extends GenericContainer {
       .start()
   }
 
-
   public override async start(): Promise<StartedRoochContainer> {
     if (!this.hostConfigPath) {
       throw new Error('Host config path not set. Call withHostConfigPath() before starting.')
     }
 
-    this.withUser("root")
+    this.withUser('root')
     this.withBindMounts([{ source: this.hostConfigPath, target: this.accountDir }])
 
     const command = [
@@ -160,6 +171,14 @@ export class RoochContainer extends GenericContainer {
       command.push('--btc-sync-block-interval', this.btcSyncBlockInterval.toString())
     }
 
+    if (this.trafficPerSecond !== undefined) {
+      command.push('--traffic-per-second', this.trafficPerSecond.toString())
+    }
+
+    if (this.trafficBurstSize !== undefined) {
+      command.push('--traffic-burst-size', this.trafficBurstSize.toString())
+    }
+
     this.withCommand(command)
 
     const startedContainer = await super.start()
@@ -175,6 +194,8 @@ export class RoochContainer extends GenericContainer {
       this.btcRpcPassword,
       this.btcEndBlockHeight,
       this.btcSyncBlockInterval,
+      this.trafficBurstSize,
+      this.trafficPerSecond,
     )
   }
 }
@@ -193,6 +214,8 @@ export class StartedRoochContainer extends AbstractStartedContainer {
     private readonly btcRpcPassword?: string,
     private readonly btcEndBlockHeight?: number,
     private readonly btcSyncBlockInterval?: number,
+    private readonly trafficBurstSize?: number,
+    private readonly trafficPerSecond?: number,
   ) {
     super(startedTestContainer)
     this.mappedPort = startedTestContainer.getMappedPort(this.containerPort)
@@ -232,6 +255,12 @@ export class StartedRoochContainer extends AbstractStartedContainer {
 
   public getBtcSyncBlockInterval(): number | undefined {
     return this.btcSyncBlockInterval
+  }
+  public getTrafficBurstSize(): number | undefined {
+    return this.trafficBurstSize
+  }
+  public getTrafficPerSecond(): number | undefined {
+    return this.trafficPerSecond
   }
 
   public getConnectionAddress(): string {

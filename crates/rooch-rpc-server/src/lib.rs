@@ -423,14 +423,14 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         .allow_headers([axum::http::header::CONTENT_TYPE]);
 
     // init limit
-    // Allow bursts with up to 8 requests per IP address
-    // and replenishes one element every two seconds
+    // Allow bursts with up to x requests per IP address
+    // and replenishes one element every x seconds
     // We Box it because Axum 0.6 requires all Layers to be Clone
     // and thus we need a static reference to it
     let governor_conf = Arc::new(
         GovernorConfigBuilder::default()
-            .per_second(2)
-            .burst_size(1000)
+            .per_second(opt.traffic_per_second.unwrap_or(2))
+            .burst_size(opt.traffic_burst_size.unwrap_or(10))
             .use_headers()
             .error_handler(move |error1| ErrorHandler::default().0(error1))
             .finish()

@@ -11,9 +11,6 @@ describe('Events API', () => {
 
   beforeAll(async () => {
     testBox = TestBox.setup()
-  })
-
-  it('Cmd publish package should be success', async () => {
     const result = await testBox.cmdPublishPackage('../../../examples/event')
     expect(result).toBeTruthy()
   })
