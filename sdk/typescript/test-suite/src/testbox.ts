@@ -254,16 +254,12 @@ export class TestBox {
       namedAddresses: 'rooch_examples=default',
     },
   ) {
-    let addr = await this.defaultCmdAddress()
-    let fixedNamedAddresses = options.namedAddresses.replace('default', addr)
+    // let addr = await this.defaultCmdAddress()
+    // let fixedNamedAddresses = options.namedAddresses.replace('default', addr)
     const result = this.roochCommand(
-      `move publish -p ${packagePath} --config-dir ${this.roochDir} --named-addresses ${fixedNamedAddresses} --json`,
+      `move publish -p ${packagePath} --config-dir ${this.roochDir} --named-addresses ${options.namedAddresses} --json`,
     )
     const { execution_info } = JSON.parse(result)
-
-    console.log(fixedNamedAddresses)
-    console.log(result)
-    console.log(this.tmpDir)
 
     return execution_info?.status?.type === 'executed'
   }

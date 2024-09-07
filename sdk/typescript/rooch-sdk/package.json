@@ -17,7 +17,7 @@
     "test": "pnpm test:unit && pnpm test:e2e",
     "test:unit": "vitest run src",
     "test:e2e:nowait": "vitest run e2e",
-    "test:e2e": "pnpm prepare:e2e && wait-on tcp:0.0.0.0:6767 -l --timeout 180000 && vitest run e2e; pnpm stop:e2e",
+    "test:e2e": "pnpm prepare:e2e && wait-on tcp:0.0.0.0:6767 -l --timeout 180000 && vitest run e2e || exit 1; pnpm stop:e2e",
     "prepare:e2e": "nohup cargo run --bin rooch server start -n local -d TMP --port 6767 --traffic-per-second 1 --traffic-burst-size 5000 > /dev/null 2>&1 &",
     "stop:e2e": "lsof -ti:6767 | tee /dev/stderr | xargs -r kill -9",
     "prepublishOnly": "pnpm build",
