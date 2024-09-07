@@ -8,7 +8,6 @@ use moveos_types::state::MoveState;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::{
     address::ParsedAddress,
-    crypto::Signature,
     error::RoochResult,
     framework::auth_payload::{SignData, MESSAGE_INFO_PREFIX},
 };
@@ -33,8 +32,8 @@ pub struct SignCommand {
 }
 
 #[async_trait]
-impl CommandAction<Option<Signature>> for SignCommand {
-    async fn execute(self) -> RoochResult<Option<Signature>> {
+impl CommandAction<Option<String>> for SignCommand {
+    async fn execute(self) -> RoochResult<Option<String>> {
         let context = self.context_options.build_require_password()?;
         let password = context.get_password();
         let mapping = context.address_mapping();
@@ -49,10 +48,16 @@ impl CommandAction<Option<Signature>> for SignCommand {
                 .keystore
                 .sign_hashed(&rooch_address, &encoded_sign_data, password)?;
 
+        let signature_bytes = signature.as_ref();
+        let signature_hex = hex::encode(signature_bytes);
+
         if self.json {
-            Ok(Some(signature))
+            Ok(Some(signature_hex))
         } else {
-            println!("Sign message succeeded with the signatue {:?}", signature);
+            println!(
+                "Sign message succeeded with the signatue {:?}",
+                signature_hex
+            );
             Ok(None)
         }
     }

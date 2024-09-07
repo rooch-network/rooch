@@ -19,6 +19,9 @@ impl ParsedSignature {
     }
 
     pub fn parse(s: &str) -> anyhow::Result<Self, anyhow::Error> {
-        Ok(Self::from_signature(Signature::from_bytes(s.as_bytes())?))
+        let signature_bytes = hex::decode(s)?;
+        Ok(Self::from_signature(Signature::from_bytes(
+            &signature_bytes,
+        )?))
     }
 }
