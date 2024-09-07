@@ -46,13 +46,27 @@ export interface BalanceInfoView {
   supply: string
   symbol: string
 }
+export interface BitcoinOutPointView {
+  txid: string
+  vout: number
+}
 export interface DisplayFieldsView {
   fields: {
     [key: string]: string
   }
 }
+export interface DryRunTransactionResponseView {
+  raw_output: RawTransactionOutputView
+  vm_error_info: VMErrorInfo
+}
 export type EventFilterView =
-  /** Query by event type. */
+  /** Query by event type with sender */
+  | {
+      event_type_with_sender: {
+        event_type: string
+        sender: string
+      }
+    } /** Query by event type. */
   | {
       event_type: string
     } /** Query by sender address. */
@@ -96,6 +110,7 @@ export interface EventView {
   event_type: string
 }
 export interface ExecuteTransactionResponseView {
+  error_info?: DryRunTransactionResponseView | null
   execution_info: TransactionExecutionInfoView
   output?: TransactionOutputView | null
   sequence_info: TransactionSequenceInfoView
@@ -148,13 +163,10 @@ export type InscriptionFilterView =
   /** Query by owner, support rooch address and bitcoin address */
   | {
       owner: string
-    } /** Query by inscription id, represent by bitcoin txid and index */
+    } /** Query by inscription id, represent by bitcoin {{txid}i{index}} */
   | {
-      inscription_id: {
-        index: number
-        txid: string
-      }
-    } /** Query by object id. */
+      inscription_id: string
+    } /** Query by object ids. */
   | {
       object_id: string
     }
@@ -174,20 +186,18 @@ export interface InscriptionStateView {
   value: InscriptionView
 }
 export interface InscriptionView {
-  bitcoin_txid: string
   body: string
+  charms: number
   content_encoding?: string | null
   content_type?: string | null
-  index: number
+  id: string
   inscription_number: number
-  is_curse: boolean
+  location: SatPointView
   metadata: string
   metaprotocol?: string | null
-  offset: string
-  parents: string
+  parents: string[]
   pointer?: string | null
   sequence_number: number
-  txid: string
 }
 export type KeptVMStatusView =
   | {
@@ -443,8 +453,27 @@ export interface QueryOptions {
   decode?: boolean
   /** If true, return query items in descending order. */
   descending?: boolean
+  /** If true, filter out all match items. */
+  filterOut?: boolean
   /** If true, result with display rendered is returned */
   showDisplay?: boolean
+}
+export interface RawTransactionOutputView {
+  gas_used: string
+  is_upgrade: boolean
+  status: KeptVMStatusView
+}
+export type RepairIndexerParamsView =
+  /** Repair by owner. */
+  | {
+      owner: string
+    } /** Repair by object ids. */
+  | {
+      object_id: string
+    }
+export interface SatPointView {
+  offset: string
+  output: BitcoinOutPointView
 }
 export interface ScriptCallView {
   args: string[]
@@ -479,9 +508,6 @@ export type TransactionFilterView =
   /** Query by sender address. */
   | {
       sender: string
-    } /** Query by multi chain original address. */
-  | {
-      original_address: string
     } /** Query by the given transaction hash. */
   | {
       tx_hashes: string[]
@@ -520,6 +546,11 @@ export interface TransactionWithInfoView {
   transaction: LedgerTransactionView
 }
 export interface TxOptions {
+  /**
+   * If true, the event is decoded and the decoded value is returned in the response. Only valid when
+   * with_output is true.
+   */
+  decode?: boolean
   /** If true, the TransactionOutput is returned in the response. */
   withOutput?: boolean
 }
@@ -533,7 +564,7 @@ export type UTXOFilterView =
         txid: string
         vout: number
       }
-    } /** Query by object id. */
+    } /** Query by object ids. */
   | {
       object_id: string
     }
@@ -556,13 +587,20 @@ export interface UTXOView {
   /** The txid of the UTXO */
   bitcoin_txid: string
   /** Protocol seals */
-  seals: string
+  seals: /** Protocol seals */
+  {
+    [key: string]: string[]
+  }
   /** The txid of the UTXO */
   txid: string
   /** The value of the UTXO */
   value: string
   /** The vout of the UTXO */
   vout: number
+}
+export interface VMErrorInfo {
+  error_message: string
+  execution_state: string[]
 }
 export type VMStatusView =
   | 'Executed'

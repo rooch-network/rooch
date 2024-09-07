@@ -44,7 +44,6 @@ module moveos_std::type_info {
 
     native public fun type_of<T>(): TypeInfo;
 
-    //TODO check the gas cost, and decide whether to implement by native function.
     public fun type_name<T>(): string::String{
         let ascii = std::type_name::into_string(std::type_name::get<T>());
         std::string::utf8(std::ascii::into_bytes(ascii))
@@ -75,7 +74,6 @@ module moveos_std::type_info {
 
     #[test]
     fun test_type_name() {
-        //use moveos_std::table::Table;
 
         assert!(type_name<bool>() == string::utf8(b"bool"), 0);
         assert!(type_name<u8>() == string::utf8(b"u8"), 1);
@@ -92,14 +90,14 @@ module moveos_std::type_info {
         // aptos_std::type_info::type_name<T> return the types name in short_str_lossless and with `0x` prefix
         // TBD use which format?
         //assert!(type_name<vector<vector<TypeInfo>>>() == string::utf8(b"vector<vector<0x1::type_info::TypeInfo>>"), 8);
-        assert!(type_name<vector<vector<TypeInfo>>>() == string::utf8(b"vector<vector<0000000000000000000000000000000000000000000000000000000000000002::type_info::TypeInfo>>"), 8);
+        assert!(type_name<vector<vector<TypeInfo>>>() == string::utf8(b"vector<vector<0x0000000000000000000000000000000000000000000000000000000000000002::type_info::TypeInfo>>"), 8);
         
 
         // struct
         //assert!(type_name<TypeInfo>() == string::utf8(b"0x1::type_info::TypeInfo"), 9);
-        assert!(type_name<TypeInfo>() == string::utf8(b"0000000000000000000000000000000000000000000000000000000000000002::type_info::TypeInfo"), 9);
+        assert!(type_name<TypeInfo>() == string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000000002::type_info::TypeInfo"), 9);
 
-        assert!(type_name<TestMultiGenerics<u8, u64, vector<u8>>>() == string::utf8(b"0000000000000000000000000000000000000000000000000000000000000002::type_info::TestMultiGenerics<u8,u64,vector<u8>>"), 10);
+        assert!(type_name<TestMultiGenerics<u8, u64, vector<u8>>>() == string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000000002::type_info::TestMultiGenerics<u8,u64,vector<u8>>"), 10);
         
         // assert!(type_name<
         //     Table<

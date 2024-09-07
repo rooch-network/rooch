@@ -5,28 +5,38 @@ use crate::errors::{Context, IndexerError};
 use anyhow::Result;
 use diesel::QueryDsl;
 use diesel::{ExpressionMethods, RunQueryDsl};
+use function_name::named;
 use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::indexer::state::IndexerObjectState;
 use rooch_types::indexer::transaction::IndexerTransaction;
+use std::sync::Arc;
 use tracing::log;
 
 use crate::models::events::StoredEvent;
+use crate::models::inscriptions::StoredInscription;
 use crate::models::states::StoredObjectState;
 use crate::models::transactions::{escape_transaction, StoredTransaction};
-use crate::schema::{events, object_states, transactions};
+use crate::models::utxos::StoredUTXO;
+use crate::schema::{events, inscriptions, object_states, transactions, utxos};
+use crate::store::metrics::IndexerDBMetrics;
 use crate::utils::escape_sql_string;
 use crate::{get_sqlite_pool_connection, SqliteConnectionPool};
 
 #[derive(Clone)]
 pub struct SqliteIndexerStore {
     pub(crate) connection_pool: SqliteConnectionPool,
+    db_metrics: Arc<IndexerDBMetrics>,
 }
 
 impl SqliteIndexerStore {
-    pub fn new(connection_pool: SqliteConnectionPool) -> Self {
-        Self { connection_pool }
+    pub fn new(connection_pool: SqliteConnectionPool, db_metrics: Arc<IndexerDBMetrics>) -> Self {
+        Self {
+            connection_pool,
+            db_metrics,
+        }
     }
 
+    #[named]
     pub fn persist_or_update_object_states(
         &self,
         states: Vec<IndexerObjectState>,
@@ -35,6 +45,13 @@ impl SqliteIndexerStore {
             return Ok(());
         }
 
+        let fn_name = function_name!();
+        let _timer = self
+            .db_metrics
+            .indexer_store_metrics
+            .indexer_persist_or_update_or_delete_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
         let states = states
             .into_iter()
@@ -46,13 +63,10 @@ impl SqliteIndexerStore {
             .into_iter()
             .map(|state| {
                 format!(
-                    "('{}', '{}', {}, '{}', '{}', {}, {}, {}, {}, {})",
+                    "('{}', '{}', '{}', {}, {}, {}, {})",
                     escape_sql_string(state.id),
                     escape_sql_string(state.owner),
-                    state.flag,
                     escape_sql_string(state.object_type),
-                    escape_sql_string(state.state_root),
-                    state.size,
                     state.tx_order,
                     state.state_index,
                     state.created_at,
@@ -63,13 +77,10 @@ impl SqliteIndexerStore {
             .join(",");
         let query = format!(
             "
-                INSERT INTO object_states (id, owner, flag, object_type, state_root, size, tx_order, state_index, created_at, updated_at) \
+                INSERT INTO object_states (id, owner, object_type, tx_order, state_index, created_at, updated_at) \
                 VALUES {} \
                 ON CONFLICT (id) DO UPDATE SET \
                 owner = excluded.owner, \
-                flag = excluded.flag, \
-                state_root = excluded.state_root, \
-                size = excluded.size, \
                 tx_order = excluded.tx_order, \
                 state_index = excluded.state_index, \
                 updated_at = excluded.updated_at
@@ -105,11 +116,145 @@ impl SqliteIndexerStore {
         Ok(())
     }
 
+    #[named]
+    pub fn persist_or_update_object_state_utxos(
+        &self,
+        states: Vec<IndexerObjectState>,
+    ) -> Result<(), IndexerError> {
+        if states.is_empty() {
+            return Ok(());
+        }
+
+        let fn_name = function_name!();
+        let _timer = self
+            .db_metrics
+            .indexer_store_metrics
+            .indexer_persist_or_update_or_delete_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
+        let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
+        let states = states.into_iter().map(StoredUTXO::from).collect::<Vec<_>>();
+
+        // Diesel for SQLite don't support batch update yet, so implements batch update directly via raw SQL
+        let values_clause = states
+            .into_iter()
+            .map(|state| {
+                format!(
+                    "('{}', '{}', {}, {}, {}, {})",
+                    escape_sql_string(state.id),
+                    escape_sql_string(state.owner),
+                    state.tx_order,
+                    state.state_index,
+                    state.created_at,
+                    state.updated_at,
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        let query = format!(
+            "
+                INSERT INTO utxos (id, owner, tx_order, state_index, created_at, updated_at) \
+                VALUES {} \
+                ON CONFLICT (id) DO UPDATE SET \
+                owner = excluded.owner, \
+                tx_order = excluded.tx_order, \
+                state_index = excluded.state_index, \
+                updated_at = excluded.updated_at
+            ",
+            values_clause
+        );
+
+        // Execute the raw SQL query
+        diesel::sql_query(query.clone())
+            .execute(&mut connection)
+            .map_err(|e| {
+                log::error!("Upsert object state utxos Executing Query error: {}", query);
+                IndexerError::SQLiteWriteError(e.to_string())
+            })
+            .context("Failed to write or update object state utxos to SQLiteDB")?;
+
+        Ok(())
+    }
+
+    #[named]
+    pub fn persist_or_update_object_state_inscriptions(
+        &self,
+        states: Vec<IndexerObjectState>,
+    ) -> Result<(), IndexerError> {
+        if states.is_empty() {
+            return Ok(());
+        }
+
+        let fn_name = function_name!();
+        let _timer = self
+            .db_metrics
+            .indexer_store_metrics
+            .indexer_persist_or_update_or_delete_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
+        let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
+        let states = states
+            .into_iter()
+            .map(StoredInscription::from)
+            .collect::<Vec<_>>();
+
+        // Diesel for SQLite don't support batch update yet, so implements batch update directly via raw SQL
+        let values_clause = states
+            .into_iter()
+            .map(|state| {
+                format!(
+                    "('{}', '{}', {}, {}, {}, {})",
+                    escape_sql_string(state.id),
+                    escape_sql_string(state.owner),
+                    state.tx_order,
+                    state.state_index,
+                    state.created_at,
+                    state.updated_at,
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        let query = format!(
+            "
+                INSERT INTO inscriptions (id, owner, tx_order, state_index, created_at, updated_at) \
+                VALUES {} \
+                ON CONFLICT (id) DO UPDATE SET \
+                owner = excluded.owner, \
+                tx_order = excluded.tx_order, \
+                state_index = excluded.state_index, \
+                updated_at = excluded.updated_at
+            ",
+            values_clause
+        );
+
+        // Execute the raw SQL query
+        diesel::sql_query(query.clone())
+            .execute(&mut connection)
+            .map_err(|e| {
+                log::error!(
+                    "Upsert object state inscriptions Executing Query error: {}",
+                    query
+                );
+                IndexerError::SQLiteWriteError(e.to_string())
+            })
+            .context("Failed to write or update object state inscriptions to SQLiteDB")?;
+
+        Ok(())
+    }
+
+    #[named]
     pub fn delete_object_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError> {
         if state_pks.is_empty() {
             return Ok(());
         }
 
+        let fn_name = function_name!();
+        let _timer = self
+            .db_metrics
+            .indexer_store_metrics
+            .indexer_persist_or_update_or_delete_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
 
         diesel::delete(object_states::table.filter(object_states::id.eq_any(state_pks.as_slice())))
@@ -120,6 +265,56 @@ impl SqliteIndexerStore {
         Ok(())
     }
 
+    #[named]
+    pub fn delete_object_state_utxos(&self, state_pks: Vec<String>) -> Result<(), IndexerError> {
+        if state_pks.is_empty() {
+            return Ok(());
+        }
+
+        let fn_name = function_name!();
+        let _timer = self
+            .db_metrics
+            .indexer_store_metrics
+            .indexer_persist_or_update_or_delete_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
+        let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
+
+        diesel::delete(utxos::table.filter(utxos::id.eq_any(state_pks.as_slice())))
+            .execute(&mut connection)
+            .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
+            .context("Failed to delete object state utxos to SQLiteDB")?;
+
+        Ok(())
+    }
+
+    #[named]
+    pub fn delete_object_state_inscriptions(
+        &self,
+        state_pks: Vec<String>,
+    ) -> Result<(), IndexerError> {
+        if state_pks.is_empty() {
+            return Ok(());
+        }
+
+        let fn_name = function_name!();
+        let _timer = self
+            .db_metrics
+            .indexer_store_metrics
+            .indexer_persist_or_update_or_delete_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
+        let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
+
+        diesel::delete(inscriptions::table.filter(inscriptions::id.eq_any(state_pks.as_slice())))
+            .execute(&mut connection)
+            .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
+            .context("Failed to delete object state inscriptions to SQLiteDB")?;
+
+        Ok(())
+    }
+
+    #[named]
     pub fn persist_transactions(
         &self,
         transactions: Vec<IndexerTransaction>,
@@ -128,6 +323,13 @@ impl SqliteIndexerStore {
             return Ok(());
         }
 
+        let fn_name = function_name!();
+        let _timer = self
+            .db_metrics
+            .indexer_store_metrics
+            .indexer_persist_or_update_or_delete_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
         let transactions = transactions
             .into_iter()
@@ -143,11 +345,19 @@ impl SqliteIndexerStore {
         Ok(())
     }
 
+    #[named]
     pub fn persist_events(&self, events: Vec<IndexerEvent>) -> Result<(), IndexerError> {
         if events.is_empty() {
             return Ok(());
         }
 
+        let fn_name = function_name!();
+        let _timer = self
+            .db_metrics
+            .indexer_store_metrics
+            .indexer_persist_or_update_or_delete_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
         let events = events
             .into_iter()

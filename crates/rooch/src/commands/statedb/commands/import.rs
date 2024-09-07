@@ -14,9 +14,9 @@ use std::time::{Instant, SystemTime};
 use anyhow::{Error, Result};
 use chrono::{DateTime, Local};
 use clap::Parser;
-use metrics::RegistryService;
 use serde::{Deserialize, Serialize};
 
+use metrics::RegistryService;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta, GENESIS_STATE_ROOT};
@@ -96,8 +96,8 @@ impl ImportCommand {
         let registry_service = RegistryService::default();
         let rooch_db =
             RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
-        let genesis = RoochGenesis::load_or_init(opt.network(), &rooch_db).unwrap();
-        let root = genesis.genesis_root().clone();
+        let _genesis = RoochGenesis::load_or_init(opt.network(), &rooch_db).unwrap();
+        let root = rooch_db.latest_root().unwrap().unwrap();
         println!(
             "task progress started at {}, batch_size: {}",
             datetime,
@@ -149,7 +149,7 @@ fn produce_updates(
                 if line.starts_with(GLOBAL_STATE_TYPE_ROOT) {
                     break;
                 }
-                let (_c1, c2) = parse_state_data_from_csv_line(&line)?;
+                let (_c1, c2) = parse_csv_fields(&line)?;
                 let export_id = ExportID::from_str(&c2)?;
                 // let eventual_state_root = export_id.parent_state_root;
                 // // TODO add cache to avoid duplicate read smt
@@ -162,7 +162,7 @@ fn produce_updates(
                 continue;
             }
 
-            let (c1, c2) = parse_state_data_from_csv_line(&line)?;
+            let (c1, c2) = parse_csv_fields(&line)?;
             let key_state = FieldKey::from_str(&c1)?;
             let state = ObjectState::from_str(&c2)?;
             let state_id = last_state_id.clone().expect("State ID should have value");
@@ -180,7 +180,7 @@ fn produce_updates(
 }
 
 // csv format: c1,c2
-pub fn parse_state_data_from_csv_line(line: &str) -> Result<(String, String)> {
+pub fn parse_csv_fields(line: &str) -> Result<(String, String)> {
     let str_list: Vec<&str> = line.trim().split(',').collect();
     if str_list.len() != 2 {
         return Err(Error::from(RoochError::from(Error::msg(format!(

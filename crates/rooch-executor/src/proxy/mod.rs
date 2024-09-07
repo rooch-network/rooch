@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{
+    ConvertL2TransactionData, DryRunTransactionResult, GetAnnotatedEventsByEventIDsMessage,
     GetEventsByEventHandleMessage, GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage,
     ListAnnotatedStatesMessage, ListStatesMessage, RefreshStateMessage, ValidateL1BlockMessage,
     ValidateL1TxMessage,
@@ -37,7 +38,9 @@ use moveos_types::{
 };
 use rooch_types::bitcoin::network::BitcoinNetwork;
 use rooch_types::framework::chain_id::ChainID;
-use rooch_types::transaction::{L1BlockWithBody, L1Transaction, RoochTransaction};
+use rooch_types::transaction::{
+    L1BlockWithBody, L1Transaction, RoochTransaction, RoochTransactionData,
+};
 use tokio::runtime::Handle;
 
 #[derive(Clone)]
@@ -61,6 +64,15 @@ impl ExecutorProxy {
         self.actor.send(ValidateL2TxMessage { tx }).await?
     }
 
+    pub async fn convert_to_verified_tx(
+        &self,
+        tx_data: RoochTransactionData,
+    ) -> Result<VerifiedMoveOSTransaction> {
+        self.actor
+            .send(ConvertL2TransactionData { tx_data })
+            .await?
+    }
+
     pub async fn validate_l1_block(
         &self,
         l1_block: L1BlockWithBody,
@@ -82,6 +94,17 @@ impl ExecutorProxy {
             .send(crate::actor::messages::ExecuteTransactionMessage { tx })
             .await??;
         Ok((result.output, result.transaction_info))
+    }
+
+    pub async fn dry_run_transaction(
+        &self,
+        tx: VerifiedMoveOSTransaction,
+    ) -> Result<DryRunTransactionResult> {
+        let result = self
+            .actor
+            .send(crate::actor::messages::DryRunTransactionMessage { tx })
+            .await??;
+        Ok(result)
     }
 
     pub async fn execute_view_function(
@@ -172,10 +195,19 @@ impl ExecutorProxy {
             .await?
     }
 
-    pub async fn get_events_by_event_ids(
+    pub async fn get_annotated_events_by_event_ids(
         &self,
         event_ids: Vec<EventID>,
     ) -> Result<Vec<Option<AnnotatedEvent>>> {
+        self.reader_actor
+            .send(GetAnnotatedEventsByEventIDsMessage { event_ids })
+            .await?
+    }
+
+    pub async fn get_events_by_event_ids(
+        &self,
+        event_ids: Vec<EventID>,
+    ) -> Result<Vec<Option<Event>>> {
         self.reader_actor
             .send(GetEventsByEventIDsMessage { event_ids })
             .await?

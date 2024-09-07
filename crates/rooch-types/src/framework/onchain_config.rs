@@ -20,6 +20,7 @@ pub const MODULE_NAME: &IdentStr = ident_str!("onchain_config");
 pub struct OnchainConfig {
     pub framework_version: u64,
     pub sequencer: AccountAddress,
+    pub rooch_dao: AccountAddress,
 }
 
 impl MoveStructType for OnchainConfig {
@@ -30,7 +31,11 @@ impl MoveStructType for OnchainConfig {
 
 impl MoveStructState for OnchainConfig {
     fn struct_layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![MoveTypeLayout::U64, MoveTypeLayout::Address])
+        MoveStructLayout::new(vec![
+            MoveTypeLayout::U64,
+            MoveTypeLayout::Address,
+            MoveTypeLayout::Address,
+        ])
     }
 }
 

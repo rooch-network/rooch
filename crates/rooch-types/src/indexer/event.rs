@@ -6,6 +6,7 @@ use crate::indexer::Filter;
 use crate::transaction::LedgerTransaction;
 use anyhow::Result;
 use move_core_types::language_storage::StructTag;
+use move_resource_viewer::AnnotatedMoveStruct;
 use moveos_types::h256::H256;
 use moveos_types::move_types::struct_tag_match;
 use moveos_types::moveos_std::event::{Event, EventID};
@@ -22,7 +23,7 @@ pub struct IndexerEvent {
     /// The type of the data
     pub event_type: StructTag,
     /// The data payload of the event
-    pub event_data: Vec<u8>,
+    pub event_data: Option<Vec<u8>>,
 
     /// the hash of this transaction.
     pub tx_hash: H256,
@@ -43,7 +44,7 @@ impl IndexerEvent {
             event_id: event.event_id,
 
             event_type: event.event_type,
-            event_data: event.event_data,
+            event_data: Some(event.event_data),
             tx_hash: ledger_transaction.tx_hash(),
             sender: ctx.sender.into(),
 
@@ -82,6 +83,11 @@ impl IndexerEventID {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum EventFilter {
+    /// Query by event type with sender
+    EventTypeWithSender {
+        event_type: StructTag,
+        sender: RoochAddress,
+    },
     /// Query by event type.
     EventType(StructTag),
     /// Query by sender address.
@@ -107,19 +113,22 @@ pub enum EventFilter {
 impl EventFilter {
     fn try_matches(&self, item: &IndexerEvent) -> Result<bool> {
         Ok(match self {
+            EventFilter::EventTypeWithSender {
+                event_type, sender, ..
+            } => struct_tag_match(&item.event_type, event_type) && sender == &item.sender,
             EventFilter::EventType(event_type) => struct_tag_match(&item.event_type, event_type),
             EventFilter::Sender(sender) => sender == &item.sender,
             EventFilter::TxHash(tx_hash) => tx_hash == &item.tx_hash,
             EventFilter::TimeRange {
                 start_time,
                 end_time,
-            } => *start_time <= item.created_at && *end_time > item.created_at,
+            } => *start_time <= item.created_at && item.created_at < *end_time,
             EventFilter::TxOrderRange {
                 from_order,
                 to_order,
             } => {
                 *from_order <= item.indexer_event_id.tx_order
-                    && *to_order > item.indexer_event_id.tx_order
+                    && item.indexer_event_id.tx_order < *to_order
             }
         })
     }
@@ -128,5 +137,20 @@ impl EventFilter {
 impl Filter<IndexerEvent> for EventFilter {
     fn matches(&self, item: &IndexerEvent) -> bool {
         self.try_matches(item).unwrap_or_default()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AnnotatedIndexerEvent {
+    pub event: IndexerEvent,
+    pub decoded_event_data: AnnotatedMoveStruct,
+}
+
+impl AnnotatedIndexerEvent {
+    pub fn new(event: IndexerEvent, decoded_event_data: AnnotatedMoveStruct) -> Self {
+        AnnotatedIndexerEvent {
+            event,
+            decoded_event_data,
+        }
     }
 }

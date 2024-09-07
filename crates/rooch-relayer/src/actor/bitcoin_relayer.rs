@@ -5,7 +5,6 @@ use super::messages::{GetReadyL1BlockMessage, GetReadyL1TxsMessage, SyncTick};
 use crate::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use anyhow::Result;
 use async_trait::async_trait;
-use bitcoin::hashes::Hash;
 use bitcoin::{Block, BlockHash};
 use bitcoincore_rpc::bitcoincore_rpc_json::GetBlockHeaderResult;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
@@ -17,7 +16,7 @@ use rooch_types::into_address::{FromAddress, IntoAddress};
 use rooch_types::{
     bitcoin::{pending_block::PendingBlockModule, BitcoinModule},
     multichain_id::RoochMultiChainID,
-    transaction::{L1Block, L1BlockWithBody, L1Transaction},
+    transaction::{L1BlockWithBody, L1Transaction},
 };
 use tracing::{debug, error, info};
 
@@ -156,17 +155,11 @@ impl BitcoinRelayer {
             );
             debug!("GetBlockHeaderResult: {:?}", block_result);
 
-            let block_height = block_result.header_info.height;
-            let block_body = rooch_types::bitcoin::types::Block::from(block_result.block);
-
-            Ok(Some(L1BlockWithBody {
-                block: L1Block {
-                    chain_id: RoochMultiChainID::Bitcoin.multichain_id(),
-                    block_height: block_height as u64,
-                    block_hash: block_hash.to_byte_array().to_vec(),
-                },
-                block_body: block_body.encode(),
-            }))
+            let block_height = block_result.header_info.height as u64;
+            Ok(Some(L1BlockWithBody::new_bitcoin_block(
+                block_height,
+                block_result.block,
+            )))
         }
     }
 

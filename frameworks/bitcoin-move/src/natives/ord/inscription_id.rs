@@ -11,7 +11,7 @@ use std::{
 };
 
 #[derive(Debug, PartialEq, Copy, Clone, Hash, Eq)]
-pub struct InscriptionId {
+pub(crate) struct InscriptionId {
     pub txid: Txid,
     pub index: u32,
 }
@@ -87,7 +87,7 @@ impl Display for ParseError {
         match self {
             Self::Character(c) => write!(f, "invalid character: '{c}'"),
             Self::Length(len) => write!(f, "invalid length: {len}"),
-            Self::Separator(c) => write!(f, "invalid seprator: `{c}`"),
+            Self::Separator(c) => write!(f, "invalid separator: `{c}`"),
             Self::Txid(err) => write!(f, "invalid txid: {err}"),
             Self::Index(err) => write!(f, "invalid index: {err}"),
         }

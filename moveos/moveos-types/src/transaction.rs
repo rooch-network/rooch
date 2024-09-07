@@ -16,18 +16,24 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
     vm_status::KeptVMStatus,
 };
-use serde::{Deserialize, Serialize};
-use std::fmt::Display;
+use serde::{
+    de::{self, Visitor},
+    Deserialize, Deserializer, Serialize,
+};
+use std::fmt::{self, Display, Formatter};
 
 #[cfg(any(test, feature = "fuzzing"))]
 use crate::move_types::type_tag_prop_strategy;
 use crate::moveos_std::event::Event;
+use crate::test_utils::random_state_change_set;
 #[cfg(any(test, feature = "fuzzing"))]
 use move_core_types::identifier::Identifier;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::prelude::*;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
+use rand::random;
+use schemars::JsonSchema;
 
 /// Call a Move script
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -191,6 +197,43 @@ impl From<ScriptCall> for MoveAction {
     }
 }
 
+impl Display for MoveAction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            MoveAction::Script(script) => {
+                let code_hex = hex::encode(script.code.clone());
+                let mut arg_list = vec![];
+                for arg in script.args.iter() {
+                    arg_list.push(format!("0x{:}", hex::encode(arg)));
+                }
+                write!(
+                    f,
+                    "MoveAction::ScriptCall( code: 0x{:?},  type_args: {:?}, args: {:?})",
+                    code_hex, script.ty_args, arg_list
+                )
+            }
+            MoveAction::Function(function) => {
+                let mut arg_list = vec![];
+                for arg in function.args.iter() {
+                    arg_list.push(format!("0x{:}", hex::encode(arg)));
+                }
+                write!(
+                    f,
+                    "MoveAction::FunctionCall( function_id: 0x{:?},  type_args: {:?}, args: {:?})",
+                    function.function_id, function.ty_args, arg_list
+                )
+            }
+            MoveAction::ModuleBundle(module_bundle) => {
+                let mut module_list = vec![];
+                for arg in module_bundle.iter() {
+                    module_list.push(format!("0x{:}", hex::encode(arg)));
+                }
+                write!(f, "MoveAction::ModuleBundle( {:?} )", module_list)
+            }
+        }
+    }
+}
+
 /// The MoveAction after verifier
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum VerifiedMoveAction {
@@ -238,15 +281,11 @@ impl Display for VerifiedMoveAction {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize)]
 pub struct MoveOSTransaction {
     pub root: ObjectMeta,
     pub ctx: TxContext,
     pub action: MoveAction,
-    /// if the pre_execute_functions is not empty, the MoveOS will call the functions before the transaction is executed.
-    pub pre_execute_functions: Vec<FunctionCall>,
-    /// if the post_execute_functions is not empty, the MoveOS will call the functions after the transaction is executed.
-    pub post_execute_functions: Vec<FunctionCall>,
 }
 
 impl MoveOSTransaction {
@@ -269,21 +308,83 @@ impl MoveOSTransaction {
     pub fn new(root: ObjectMeta, mut ctx: TxContext, action: MoveAction) -> Self {
         ctx.add(TxMeta::new_from_move_action(&action))
             .expect("add TxMeta to TxContext should success");
-        Self {
-            root,
-            ctx,
-            action,
-            pre_execute_functions: vec![],
-            post_execute_functions: vec![],
+        Self { root, ctx, action }
+    }
+}
+
+/// Custom deserialization logic for MoveOSTransaction
+/// `MoveOSTransaction` has been changed from a struct with 5 fields to a struct with 3 fields.
+/// The old one was defined:
+/// ```rust
+/// pub struct MoveOSTransaction {
+///     pub root: ObjectMeta,
+///     pub ctx: TxContext,
+///     pub action: MoveAction,
+///     pub pre_execute_functions: Vec<FunctionCall>,
+///     pub post_execute_functions: Vec<FunctionCall>,
+/// }
+/// ```
+/// Some old transactions are still stored in the database or genesis file,
+/// so we need to support deserializing the old format.
+impl<'de> Deserialize<'de> for MoveOSTransaction {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct MoveOSTransactionVisitor;
+
+        impl<'de> Visitor<'de> for MoveOSTransactionVisitor {
+            type Value = MoveOSTransaction;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct MoveOSTransaction with 5 or 3 fields")
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: de::SeqAccess<'de>,
+            {
+                let root = seq
+                    .next_element::<ObjectMeta>()?
+                    .ok_or_else(|| de::Error::invalid_length(0, &self))?;
+                let ctx = seq
+                    .next_element::<TxContext>()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let action = seq
+                    .next_element::<MoveAction>()?
+                    .ok_or_else(|| de::Error::invalid_length(2, &self))?;
+
+                let _pre_execution_functions: Vec<FunctionCall> =
+                    match seq.next_element::<Vec<FunctionCall>>() {
+                        Ok(Some(pre_execution_functions)) => pre_execution_functions,
+                        Ok(None) => vec![],
+                        Err(_e) => {
+                            vec![]
+                        }
+                    };
+                let _post_execution_functions: Vec<FunctionCall> =
+                    match seq.next_element::<Vec<FunctionCall>>() {
+                        Ok(Some(post_execution_functions)) => post_execution_functions,
+                        Ok(None) => vec![],
+                        Err(_e) => {
+                            vec![]
+                        }
+                    };
+                Ok(MoveOSTransaction { root, ctx, action })
+            }
         }
-    }
 
-    pub fn append_pre_execute_functions(&mut self, functions: Vec<FunctionCall>) {
-        self.pre_execute_functions.extend(functions);
-    }
-
-    pub fn append_post_execute_functions(&mut self, functions: Vec<FunctionCall>) {
-        self.post_execute_functions.extend(functions);
+        deserializer.deserialize_struct(
+            "MoveOSTransaction",
+            &[
+                "root",
+                "ctx",
+                "action",
+                "pre_execution_functions",
+                "post_execution_functions",
+            ],
+            MoveOSTransactionVisitor,
+        )
     }
 }
 
@@ -298,36 +399,44 @@ pub struct VerifiedMoveOSTransaction {
     pub root: ObjectMeta,
     pub ctx: TxContext,
     pub action: VerifiedMoveAction,
-    pub pre_execute_functions: Vec<FunctionCall>,
-    pub post_execute_functions: Vec<FunctionCall>,
 }
 
 impl VerifiedMoveOSTransaction {
     pub fn new(root: ObjectMeta, ctx: TxContext, action: VerifiedMoveAction) -> Self {
+        Self { root, ctx, action }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct VMErrorInfo {
+    pub error_message: String,
+    pub execution_state: Vec<String>,
+}
+
+impl Default for VMErrorInfo {
+    fn default() -> Self {
         Self {
-            root,
-            ctx,
-            action,
-            pre_execute_functions: vec![],
-            post_execute_functions: vec![],
+            error_message: "".to_string(),
+            execution_state: vec![],
         }
     }
 }
 
 /// RawTransactionOutput is the execution result of a MoveOS transaction
-//TODO make RawTransactionOutput serializable
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct RawTransactionOutput {
     pub status: KeptVMStatus,
+    //The changeset in RawTransactionOutput is not the same as the changeset in TransactionOutput
+    //Because the changeset do not apply to the state tree, so it's StateRoot not updated
     pub changeset: StateChangeSet,
     pub events: Vec<TransactionEvent>,
     pub gas_used: u64,
     pub is_upgrade: bool,
+    pub is_gas_upgrade: bool,
 }
 
 /// TransactionOutput is the execution result of a MoveOS transaction, and pack TransactionEvent to Event
-//TODO make TransactionOutput serializable
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransactionOutput {
     pub status: KeptVMStatus,
     pub changeset: StateChangeSet,
@@ -351,6 +460,16 @@ impl TransactionOutput {
             gas_used,
             is_upgrade,
         }
+    }
+
+    pub fn random() -> Self {
+        TransactionOutput::new(
+            KeptVMStatus::Executed,
+            random_state_change_set(),
+            vec![],
+            0,
+            false,
+        )
     }
 }
 
@@ -404,6 +523,17 @@ impl TransactionExecutionInfo {
 
     pub fn root_metadata(&self) -> ObjectMeta {
         ObjectMeta::root_metadata(self.state_root, self.size)
+    }
+
+    pub fn random() -> Self {
+        TransactionExecutionInfo::new(
+            H256::random(),
+            H256::random(),
+            random(),
+            H256::random(),
+            rand::random(),
+            KeptVMStatus::Executed,
+        )
     }
 }
 

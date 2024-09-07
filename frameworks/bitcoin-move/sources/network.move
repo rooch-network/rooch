@@ -5,9 +5,17 @@ module bitcoin_move::network{
     use std::string::{Self, String};
     use moveos_std::object;
 
-    const ErrorUnknownNetwork: u64 = 1;
+    /// How may blocks between halvings.
+    const SUBSIDY_HALVING_INTERVAL: u32 = 210_000;
+
+    const FIRST_POST_SUBSIDY_EPOCH: u32 = 33;
+
+    /// How many satoshis are in "one bitcoin".
+    const COIN_VALUE: u64 = 100_000_000;
 
     friend bitcoin_move::genesis;
+
+    const ErrorUnknownNetwork: u64 = 1;
 
     /// Bitcoin network onchain configuration.
     struct BitcoinNetwork has key{
@@ -101,6 +109,50 @@ module bitcoin_move::network{
             string::utf8(b"bcrt")
         } else {
             abort ErrorUnknownNetwork
+        }
+    }
+
+    /// Ordinals jubilee height.
+    /// https://github.com/ordinals/ord/blob/75bf04b22107155f8f8ab6c77f6eefa8117d9ace/src/chain.rs#L49-L56
+    public fun jubilee_height(): u64 {
+        let n = network();
+        if (n == NETWORK_BITCOIN) {
+            824544
+        } else if (n == NETWORK_REGTEST) {
+            110
+        } else if (n == NETWORK_SIGNET) {
+            175392
+        } else if (n == NETWORK_TESTNET) {
+            2544192
+        } else {
+            abort ErrorUnknownNetwork
+        }
+    }
+
+    /// Ordinals first inscription height.
+    /// https://github.com/ordinals/ord/blob/75bf04b22107155f8f8ab6c77f6eefa8117d9ace/src/chain.rs#L36-L43
+    public fun first_inscription_height() : u64 {
+        let n = network();
+        if (n == NETWORK_BITCOIN) {
+            767430
+        } else if (n == NETWORK_REGTEST) {
+            0
+        } else if (n == NETWORK_SIGNET) {
+            112402
+        } else if (n == NETWORK_TESTNET) {
+            2413343
+        } else {
+            abort ErrorUnknownNetwork
+        }
+    }
+
+    /// Block Rewards
+    public fun subsidy_by_height(height: u64): u64 {
+        let epoch = (height as u32) / SUBSIDY_HALVING_INTERVAL;
+        if (epoch < FIRST_POST_SUBSIDY_EPOCH) {
+            (50 * COIN_VALUE) >> (epoch as u8)
+        } else {
+            0
         }
     }
 

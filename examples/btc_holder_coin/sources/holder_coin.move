@@ -3,6 +3,7 @@
 
 module btc_holder_coin::holder_coin {
 
+    use std::option;
     use std::string;
     use moveos_std::timestamp;
     use moveos_std::tx_context;
@@ -37,6 +38,7 @@ module btc_holder_coin::holder_coin {
         let coin_info_obj = coin::register_extend<HDC>(
             string::utf8(b"BTC Holder Coin"),
             string::utf8(b"HDC"),
+            option::none(),
             DECIMALS,
         );
         let coin_info_holder_obj = object::new_named_object(CoinInfoHolder { coin_info: coin_info_obj });
@@ -77,7 +79,6 @@ module btc_holder_coin::holder_coin {
 
     #[test]
     fun test_stake_claim() {
-        rooch_framework::genesis::init_for_test();
         bitcoin_move::genesis::init_for_test();
         init();
         let seconds = 100;

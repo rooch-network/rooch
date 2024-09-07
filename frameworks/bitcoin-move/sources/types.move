@@ -244,6 +244,14 @@ module bitcoin_move::types {
         *self == null_outpoint()
     }
 
+    /// The Inscription unbound outpoint.
+    public fun unbound_outpoint(): OutPoint {
+        OutPoint {
+            txid: address::zero(),
+            vout: 0,
+        }
+    }
+
     #[data_struct]
     struct TxOut has store, copy, drop {
         /// The value of the output, in satoshis.

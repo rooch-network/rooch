@@ -176,7 +176,7 @@ impl Faucet {
         let state = self.state.write().await;
 
         let move_action = TransferModule::create_transfer_coin_to_multichain_address_action(
-            StructTag::from_str("0x3::gas_coin::GasCoin").unwrap(),
+            StructTag::from_str("0x3::gas_coin::RGas").unwrap(),
             recipient,
             state.config.faucet_grant_amount.into(),
         );
@@ -190,7 +190,7 @@ impl Faucet {
         let state = self.state.write().await;
 
         let move_action = TransferModule::create_transfer_coin_action(
-            StructTag::from_str("0x3::gas_coin::GasCoin").unwrap(),
+            StructTag::from_str("0x3::gas_coin::RGas").unwrap(),
             recipient.into(),
             state.config.faucet_grant_amount.into(),
         );

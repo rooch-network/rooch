@@ -24,15 +24,17 @@ derive_store!(
 
 pub trait TransactionStore {
     fn save_transaction(&self, transaction: LedgerTransaction) -> Result<()>;
+
+    fn remove_transaction(&self, tx_hash: H256, tx_order: u64) -> Result<()>;
     fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<LedgerTransaction>>;
     fn get_transactions_by_hash(
         &self,
         tx_hashes: Vec<H256>,
     ) -> Result<Vec<Option<LedgerTransaction>>>;
 
-    fn get_tx_hashs(&self, tx_orders: Vec<u64>) -> Result<Vec<Option<H256>>>;
+    fn get_tx_hashes(&self, tx_orders: Vec<u64>) -> Result<Vec<Option<H256>>>;
 
-    fn get_tx_hashs_by_order(&self, cursor: Option<u64>, limit: u64) -> Result<Vec<Option<H256>>> {
+    fn get_tx_hashes_by_order(&self, cursor: Option<u64>, limit: u64) -> Result<Vec<Option<H256>>> {
         let start = cursor.unwrap_or(0);
         let end = start + limit;
 
@@ -42,7 +44,7 @@ pub trait TransactionStore {
         } else {
             (start..end).collect()
         };
-        self.get_tx_hashs(tx_orders)
+        self.get_tx_hashes(tx_orders)
     }
 }
 
@@ -68,6 +70,11 @@ impl TransactionDBStore {
             .kv_put(tx_order, tx_hash)
     }
 
+    pub fn remove_transaction(&self, tx_hash: H256, tx_order: u64) -> Result<()> {
+        self.tx_store.remove(tx_hash)?;
+        self.tx_sequence_info_mapping_store.remove(tx_order)
+    }
+
     pub fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<LedgerTransaction>> {
         self.tx_store.kv_get(hash)
     }
@@ -76,7 +83,7 @@ impl TransactionDBStore {
         self.tx_store.multiple_get(tx_hashes)
     }
 
-    pub fn get_tx_hashs(&self, tx_orders: Vec<u64>) -> Result<Vec<Option<H256>>> {
+    pub fn get_tx_hashes(&self, tx_orders: Vec<u64>) -> Result<Vec<Option<H256>>> {
         self.tx_sequence_info_mapping_store.multiple_get(tx_orders)
     }
 }

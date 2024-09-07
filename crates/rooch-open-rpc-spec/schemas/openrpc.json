@@ -12,7 +12,7 @@
       "name": "Apache-2.0",
       "url": "https://raw.githubusercontent.com/rooch-network/rooch/main/LICENSE"
     },
-    "version": "0.6.4"
+    "version": "0.7.0"
   },
   "methods": [
     {
@@ -122,6 +122,25 @@
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/PageView_for_UTXOStateView_and_IndexerStateIDView"
+        }
+      }
+    },
+    {
+      "name": "rooch_dryRunRawTransaction",
+      "params": [
+        {
+          "name": "tx_bcs_hex",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          }
+        }
+      ],
+      "result": {
+        "name": "DryRunTransactionResponseView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/DryRunTransactionResponseView"
         }
       }
     },
@@ -682,6 +701,33 @@
       }
     },
     {
+      "name": "rooch_repairIndexer",
+      "description": "Repair indexer by sync from states",
+      "params": [
+        {
+          "name": "repair_type",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/rooch_types::repair::RepairIndexerType"
+          }
+        },
+        {
+          "name": "repair_params",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/RepairIndexerParamsView"
+          }
+        }
+      ],
+      "result": {
+        "name": "()",
+        "required": true,
+        "schema": {
+          "type": "null"
+        }
+      }
+    },
+    {
       "name": "rooch_sendRawTransaction",
       "description": "Send the signed transaction in bcs hex format This method does not block waiting for the transaction to be executed.",
       "params": [
@@ -839,6 +885,12 @@
             "format": "uint8",
             "minimum": 0.0
           },
+          "icon_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "name": {
             "type": "string"
           },
@@ -847,6 +899,23 @@
           },
           "symbol": {
             "type": "string"
+          }
+        }
+      },
+      "BitcoinOutPointView": {
+        "type": "object",
+        "required": [
+          "txid",
+          "vout"
+        ],
+        "properties": {
+          "txid": {
+            "$ref": "#/components/schemas/bitcoin::hash_types::newtypes::Txid"
+          },
+          "vout": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0.0
           }
         }
       },
@@ -864,8 +933,48 @@
           }
         }
       },
+      "DryRunTransactionResponseView": {
+        "type": "object",
+        "required": [
+          "raw_output",
+          "vm_error_info"
+        ],
+        "properties": {
+          "raw_output": {
+            "$ref": "#/components/schemas/RawTransactionOutputView"
+          },
+          "vm_error_info": {
+            "$ref": "#/components/schemas/VMErrorInfo"
+          }
+        }
+      },
       "EventFilterView": {
         "oneOf": [
+          {
+            "description": "Query by event type with sender",
+            "type": "object",
+            "required": [
+              "event_type_with_sender"
+            ],
+            "properties": {
+              "event_type_with_sender": {
+                "type": "object",
+                "required": [
+                  "event_type",
+                  "sender"
+                ],
+                "properties": {
+                  "event_type": {
+                    "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+                  },
+                  "sender": {
+                    "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::UnitedAddress"
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
           {
             "description": "Query by event type.",
             "type": "object",
@@ -1052,6 +1161,16 @@
           "sequence_info"
         ],
         "properties": {
+          "error_info": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DryRunTransactionResponseView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "execution_info": {
             "$ref": "#/components/schemas/TransactionExecutionInfoView"
           },
@@ -1295,41 +1414,27 @@
             "additionalProperties": false
           },
           {
-            "description": "Query by inscription id, represent by bitcoin txid and index",
+            "description": "Query by inscription id, represent by bitcoin {{txid}i{index}}",
             "type": "object",
             "required": [
               "inscription_id"
             ],
             "properties": {
               "inscription_id": {
-                "type": "object",
-                "required": [
-                  "index",
-                  "txid"
-                ],
-                "properties": {
-                  "index": {
-                    "type": "integer",
-                    "format": "uint32",
-                    "minimum": 0.0
-                  },
-                  "txid": {
-                    "type": "string"
-                  }
-                }
+                "$ref": "#/components/schemas/rooch_types::bitcoin::ord::InscriptionID"
               }
             },
             "additionalProperties": false
           },
           {
-            "description": "Query by object id.",
+            "description": "Query by object ids.",
             "type": "object",
             "required": [
               "object_id"
             ],
             "properties": {
               "object_id": {
-                "$ref": "#/components/schemas/ObjectID"
+                "$ref": "#/components/schemas/alloc::vec::Vec<moveos_types::moveos_std::object::ObjectID>"
               }
             },
             "additionalProperties": false
@@ -1367,7 +1472,7 @@
             "minimum": 0.0
           },
           "id": {
-            "$ref": "#/components/schemas/ObjectID"
+            "$ref": "#/components/schemas/moveos_types::moveos_std::object::ObjectID"
           },
           "object_type": {
             "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
@@ -1411,23 +1516,23 @@
       "InscriptionView": {
         "type": "object",
         "required": [
-          "bitcoin_txid",
           "body",
-          "index",
+          "charms",
+          "id",
           "inscription_number",
-          "is_curse",
+          "location",
           "metadata",
-          "offset",
           "parents",
-          "sequence_number",
-          "txid"
+          "sequence_number"
         ],
         "properties": {
-          "bitcoin_txid": {
-            "$ref": "#/components/schemas/bitcoin::hash_types::newtypes::Txid"
-          },
           "body": {
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          },
+          "charms": {
+            "type": "integer",
+            "format": "uint16",
+            "minimum": 0.0
           },
           "content_encoding": {
             "anyOf": [
@@ -1449,18 +1554,15 @@
               }
             ]
           },
-          "index": {
-            "type": "integer",
-            "format": "uint32",
-            "minimum": 0.0
+          "id": {
+            "$ref": "#/components/schemas/rooch_types::bitcoin::ord::InscriptionID"
           },
           "inscription_number": {
             "type": "integer",
-            "format": "uint32",
-            "minimum": 0.0
+            "format": "int32"
           },
-          "is_curse": {
-            "type": "boolean"
+          "location": {
+            "$ref": "#/components/schemas/SatPointView"
           },
           "metadata": {
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
@@ -1475,11 +1577,11 @@
               }
             ]
           },
-          "offset": {
-            "$ref": "#/components/schemas/u64"
-          },
           "parents": {
-            "$ref": "#/components/schemas/alloc::vec::Vec<moveos_types::moveos_std::object::ObjectID>"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/rooch_types::bitcoin::ord::InscriptionID"
+            }
           },
           "pointer": {
             "anyOf": [
@@ -1495,9 +1597,6 @@
             "type": "integer",
             "format": "uint32",
             "minimum": 0.0
-          },
-          "txid": {
-            "$ref": "#/components/schemas/primitive_types::H256"
           }
         }
       },
@@ -2067,14 +2166,10 @@
               "object_type_with_owner": {
                 "type": "object",
                 "required": [
-                  "filter_out",
                   "object_type",
                   "owner"
                 ],
                 "properties": {
-                  "filter_out": {
-                    "type": "boolean"
-                  },
                   "object_type": {
                     "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
                   },
@@ -2480,10 +2575,79 @@
             "default": true,
             "type": "boolean"
           },
+          "filterOut": {
+            "description": "If true, filter out all match items.",
+            "default": false,
+            "type": "boolean"
+          },
           "showDisplay": {
             "description": "If true, result with display rendered is returned",
             "default": false,
             "type": "boolean"
+          }
+        }
+      },
+      "RawTransactionOutputView": {
+        "type": "object",
+        "required": [
+          "gas_used",
+          "is_upgrade",
+          "status"
+        ],
+        "properties": {
+          "gas_used": {
+            "$ref": "#/components/schemas/u64"
+          },
+          "is_upgrade": {
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/KeptVMStatusView"
+          }
+        }
+      },
+      "RepairIndexerParamsView": {
+        "oneOf": [
+          {
+            "description": "Repair by owner.",
+            "type": "object",
+            "required": [
+              "owner"
+            ],
+            "properties": {
+              "owner": {
+                "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::UnitedAddress"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Repair by object ids.",
+            "type": "object",
+            "required": [
+              "object_id"
+            ],
+            "properties": {
+              "object_id": {
+                "$ref": "#/components/schemas/alloc::vec::Vec<moveos_types::moveos_std::object::ObjectID>"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "SatPointView": {
+        "type": "object",
+        "required": [
+          "offset",
+          "output"
+        ],
+        "properties": {
+          "offset": {
+            "$ref": "#/components/schemas/u64"
+          },
+          "output": {
+            "$ref": "#/components/schemas/BitcoinOutPointView"
           }
         }
       },
@@ -2616,19 +2780,6 @@
             "properties": {
               "sender": {
                 "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::UnitedAddress"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "description": "Query by multi chain original address.",
-            "type": "object",
-            "required": [
-              "original_address"
-            ],
-            "properties": {
-              "original_address": {
-                "type": "string"
               }
             },
             "additionalProperties": false
@@ -2798,6 +2949,11 @@
       "TxOptions": {
         "type": "object",
         "properties": {
+          "decode": {
+            "description": "If true, the event is decoded and the decoded value is returned in the response. Only valid when with_output is true.",
+            "default": false,
+            "type": "boolean"
+          },
           "withOutput": {
             "description": "If true, the TransactionOutput is returned in the response.",
             "default": false,
@@ -2848,14 +3004,14 @@
             "additionalProperties": false
           },
           {
-            "description": "Query by object id.",
+            "description": "Query by object ids.",
             "type": "object",
             "required": [
               "object_id"
             ],
             "properties": {
               "object_id": {
-                "$ref": "#/components/schemas/ObjectID"
+                "$ref": "#/components/schemas/alloc::vec::Vec<moveos_types::moveos_std::object::ObjectID>"
               }
             },
             "additionalProperties": false
@@ -2893,7 +3049,7 @@
             "minimum": 0.0
           },
           "id": {
-            "$ref": "#/components/schemas/ObjectID"
+            "$ref": "#/components/schemas/moveos_types::moveos_std::object::ObjectID"
           },
           "object_type": {
             "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
@@ -2958,7 +3114,7 @@
             "additionalProperties": {
               "type": "array",
               "items": {
-                "$ref": "#/components/schemas/ObjectID"
+                "$ref": "#/components/schemas/moveos_types::moveos_std::object::ObjectID"
               }
             }
           },
@@ -2983,6 +3139,24 @@
             "type": "integer",
             "format": "uint32",
             "minimum": 0.0
+          }
+        }
+      },
+      "VMErrorInfo": {
+        "type": "object",
+        "required": [
+          "error_message",
+          "execution_state"
+        ],
+        "properties": {
+          "error_message": {
+            "type": "string"
+          },
+          "execution_state": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -3110,6 +3284,9 @@
       "moveos_types::move_types::FunctionId": {
         "type": "string"
       },
+      "moveos_types::moveos_std::object::ObjectID": {
+        "type": "string"
+      },
       "moveos_types::state::FieldKey": {
         "type": "string"
       },
@@ -3123,6 +3300,12 @@
         "type": "string"
       },
       "rooch_types::address::RoochAddress": {
+        "type": "string"
+      },
+      "rooch_types::bitcoin::ord::InscriptionID": {
+        "type": "string"
+      },
+      "rooch_types::repair::RepairIndexerType": {
         "type": "string"
       },
       "u128": {

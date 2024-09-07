@@ -21,7 +21,9 @@ use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{FieldKey, ObjectState};
 use moveos_types::state_resolver::{StateKV, StatelessResolver};
-use moveos_types::transaction::{TransactionExecutionInfo, TransactionOutput};
+use moveos_types::transaction::{
+    RawTransactionOutput, TransactionExecutionInfo, TransactionOutput,
+};
 use once_cell::sync::Lazy;
 use prometheus::Registry;
 use raw_store::metrics::DBMetrics;
@@ -138,31 +140,52 @@ impl MoveOSStore {
     pub fn handle_tx_output(
         &self,
         tx_hash: H256,
-        output: TransactionOutput,
-    ) -> Result<TransactionExecutionInfo> {
-        let state_root = output.changeset.state_root;
-        let size = output.changeset.global_size;
+        output: RawTransactionOutput,
+    ) -> Result<(TransactionOutput, TransactionExecutionInfo)> {
+        let RawTransactionOutput {
+            status,
+            mut changeset,
+            events: tx_events,
+            gas_used,
+            is_upgrade,
+            is_gas_upgrade: _,
+        } = output;
+
+        self.state_store.apply_change_set(&mut changeset)?;
+        let event_ids = self.event_store.save_events(tx_events.clone())?;
+        let events = tx_events
+            .clone()
+            .into_iter()
+            .zip(event_ids)
+            .map(|(event, event_id)| Event::new_with_event_id(event_id, event))
+            .collect::<Vec<_>>();
+
+        let new_state_root = changeset.state_root;
+        let size = changeset.global_size;
+
+        self.config_store
+            .save_startup_info(StartupInfo::new(new_state_root, size))?;
 
         if log::log_enabled!(log::Level::Debug) {
             log::debug!(
                 "tx_hash: {}, state_root: {}, size: {}, gas_used: {}, status: {:?}",
                 tx_hash,
-                state_root,
+                new_state_root,
                 size,
-                output.gas_used,
-                output.status
+                gas_used,
+                status
             );
         }
-        let event_hashes: Vec<_> = output.events.iter().map(|e| e.hash()).collect();
+        let event_hashes: Vec<_> = events.iter().map(|e| e.hash()).collect();
         let event_root = InMemoryAccumulator::from_leaves(event_hashes.as_slice()).root_hash();
 
         let transaction_info = TransactionExecutionInfo::new(
             tx_hash,
-            state_root,
+            new_state_root,
             size,
             event_root,
-            output.gas_used,
-            output.status.clone(),
+            gas_used,
+            status.clone(),
         );
         self.transaction_store
             .save_tx_execution_info(transaction_info.clone())
@@ -173,7 +196,9 @@ impl MoveOSStore {
                     e
                 )
             })?;
-        Ok(transaction_info)
+
+        let out = TransactionOutput::new(status, changeset, events, gas_used, is_upgrade);
+        Ok((out, transaction_info))
     }
 }
 
@@ -259,6 +284,11 @@ impl TransactionStore for MoveOSStore {
     ) -> Result<Vec<Option<TransactionExecutionInfo>>> {
         self.get_transaction_store()
             .multi_get_tx_execution_infos(tx_hashes)
+    }
+
+    fn remove_tx_execution_info(&self, tx_hash: H256) -> Result<()> {
+        self.get_transaction_store()
+            .remove_tx_execution_info(tx_hash)
     }
 }
 

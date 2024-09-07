@@ -1,36 +1,35 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::jsonrpc_types::btc::transaction::{hex_to_txid, TxidView};
+use super::utxo::BitcoinOutPointView;
 use crate::jsonrpc_types::{
-    BytesView, H256View, IndexerObjectStateView, IndexerStateIDView, MoveStringView,
-    ObjectIDVecView, ObjectMetaView, StrView, UnitedAddressView,
+    BytesView, IndexerObjectStateView, IndexerStateIDView, MoveStringView, ObjectIDVecView,
+    ObjectMetaView, StrView, UnitedAddressView,
 };
 use anyhow::Result;
-use bitcoin::hashes::Hash;
-use bitcoin::Txid;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::state::MoveState;
-use moveos_types::{moveos_std::object::ObjectID, state::MoveStructType};
-use rooch_types::bitcoin::ord;
-use rooch_types::bitcoin::ord::{BitcoinInscriptionID, Inscription, InscriptionID};
+use moveos_types::state::MoveStructType;
+use rooch_types::bitcoin::ord::{self, SatPoint};
+use rooch_types::bitcoin::ord::{Inscription, InscriptionID};
 use rooch_types::indexer::state::ObjectStateFilter;
-use rooch_types::into_address::IntoAddress;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
+use std::str::FromStr;
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, JsonSchema)]
-pub struct BitcoinInscriptionIDView {
-    pub txid: TxidView,
-    pub index: u32,
+pub type InscriptionIDView = StrView<InscriptionID>;
+
+impl FromStr for InscriptionIDView {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(StrView(InscriptionID::from_str(s)?))
+    }
 }
 
-impl From<BitcoinInscriptionIDView> for BitcoinInscriptionID {
-    fn from(inscription: BitcoinInscriptionIDView) -> Self {
-        BitcoinInscriptionID {
-            txid: inscription.txid.into(),
-            index: inscription.index,
-        }
+impl Display for InscriptionIDView {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -39,10 +38,10 @@ impl From<BitcoinInscriptionIDView> for BitcoinInscriptionID {
 pub enum InscriptionFilterView {
     /// Query by owner, support rooch address and bitcoin address
     Owner(UnitedAddressView),
-    /// Query by inscription id, represent by bitcoin txid and index
-    InscriptionId { txid: String, index: u32 },
-    /// Query by object id.
-    ObjectId(ObjectID),
+    /// Query by inscription id, represent by bitcoin {{txid}i{index}}
+    InscriptionId(InscriptionIDView),
+    /// Query by object ids.
+    ObjectId(ObjectIDVecView),
     /// Query all.
     All,
 }
@@ -55,14 +54,12 @@ impl InscriptionFilterView {
                 filter_out: false,
                 owner: owner.0.rooch_address.into(),
             },
-            InscriptionFilterView::InscriptionId { txid, index } => {
-                let txid = hex_to_txid(txid.as_str())?;
-                let inscription_id = InscriptionID::new(txid.into_address(), index);
-                let obj_id = ord::derive_inscription_id(&inscription_id);
+            InscriptionFilterView::InscriptionId(inscription_id) => {
+                let obj_id = ord::derive_inscription_id(&inscription_id.0);
                 ObjectStateFilter::ObjectId(vec![obj_id])
             }
-            InscriptionFilterView::ObjectId(object_id) => {
-                ObjectStateFilter::ObjectId(vec![object_id])
+            InscriptionFilterView::ObjectId(object_id_vec_view) => {
+                ObjectStateFilter::ObjectId(object_id_vec_view.into())
             }
             InscriptionFilterView::All => ObjectStateFilter::ObjectType(Inscription::struct_tag()),
         })
@@ -70,45 +67,51 @@ impl InscriptionFilterView {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
-pub struct InscriptionIDView {
-    pub txid: H256View,
-    pub index: u32,
+pub struct SatPointView {
+    pub output: BitcoinOutPointView,
+    pub offset: StrView<u64>,
+}
+
+impl From<SatPoint> for SatPointView {
+    fn from(sat_point: SatPoint) -> Self {
+        SatPointView {
+            output: sat_point.outpoint.into(),
+            offset: StrView(sat_point.offset),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct InscriptionView {
-    pub txid: H256View,
-    pub bitcoin_txid: TxidView,
-    pub index: u32,
-    pub offset: StrView<u64>,
+    pub id: InscriptionIDView,
+    pub location: SatPointView,
     pub sequence_number: u32,
-    pub inscription_number: u32,
-    pub is_curse: bool,
+    pub inscription_number: i32,
+    pub charms: u16,
     pub body: BytesView,
     pub content_encoding: Option<MoveStringView>,
     pub content_type: Option<MoveStringView>,
     pub metadata: BytesView,
     pub metaprotocol: Option<MoveStringView>,
-    pub parents: ObjectIDVecView,
+    pub parents: Vec<InscriptionIDView>,
     pub pointer: Option<StrView<u64>>,
 }
 
 impl From<Inscription> for InscriptionView {
     fn from(inscription: Inscription) -> Self {
+        let inscription_number = inscription.inscription_number();
         InscriptionView {
-            txid: inscription.txid.into(),
-            bitcoin_txid: StrView(Txid::from_byte_array(inscription.txid.into_bytes())),
-            index: inscription.index,
-            offset: inscription.offset.into(),
+            id: inscription.id.into(),
+            location: inscription.location.into(),
             sequence_number: inscription.sequence_number,
-            inscription_number: inscription.inscription_number,
-            is_curse: inscription.is_curse,
+            inscription_number,
+            charms: inscription.charms,
             body: StrView(inscription.body),
             content_encoding: Option::<MoveString>::from(inscription.content_encoding).map(StrView),
             content_type: Option::<MoveString>::from(inscription.content_type).map(StrView),
             metadata: StrView(inscription.metadata),
             metaprotocol: Option::<MoveString>::from(inscription.metaprotocol).map(StrView),
-            parents: inscription.parents.into(),
+            parents: inscription.parents.into_iter().map(Into::into).collect(),
             pointer: Option::<u64>::from(inscription.pointer).map(StrView),
         }
     }

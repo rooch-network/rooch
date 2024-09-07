@@ -26,11 +26,12 @@
 		"@vanilla-extract/esbuild-plugin": "^2.3.0",
 		"autoprefixer": "^10.4.14",
 		"esbuild": "^0.17.6",
+		"esbuild-plugin-polyfill-node": "^0.3.0",
 		"postcss": "^8.4.31",
 		"postcss-prefix-selector": "^1.16.0",
 		"typescript": "^5.3.3"
 	},
 	"dependencies": {
-		"@types/node": "^20.4.2"
+		"@types/node": "^20.14.10"
 	}
 }

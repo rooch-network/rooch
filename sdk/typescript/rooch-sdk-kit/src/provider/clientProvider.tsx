@@ -1,20 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { ReactNode, useCallback } from 'react'
+import { ReactNode } from 'react'
 
 import { createContext, useMemo, useState } from 'react'
 
-import {
-  getRoochNodeUrl,
-  isRoochClient,
-  RoochClient,
-  RoochClientOptions,
-} from '@roochnetwork/rooch-sdk'
+import { getRoochNodeUrl, RoochClient, RoochClientOptions } from '@roochnetwork/rooch-sdk'
 
 import { NetworkConfig } from '../hooks/index.js'
-import { useSessionStore } from '../hooks/useSessionsStore.js'
-import { HTTPTransport } from '../http/httpTransport.js'
+import { useDefaultClient } from './useDefaultClient.js'
 
 export type NetworkConfigs<T extends NetworkConfig | RoochClient = NetworkConfig | RoochClient> =
   Record<string, T>
@@ -48,47 +42,15 @@ const DEFAULT_NETWORKS = {
   localnet: { url: getRoochNodeUrl('localnet') },
 }
 
-const DEFAULT_CREATE_CLIENT = function createClient(
-  _name: string,
-  config: NetworkConfig | RoochClient,
-  setCurrentSession: any,
-) {
-  if (isRoochClient(config)) {
-    return config
-  }
-
-  config.transport = new HTTPTransport(
-    {
-      url: config.url!.toString(),
-    },
-    setCurrentSession,
-  )
-
-  return new RoochClient(config)
-}
-
 export function RoochClientProvider<T extends NetworkConfigs>(props: RoochClientProviderProps<T>) {
   const { onNetworkChange, network, children } = props
-  const setCurrentSession = useSessionStore((state) => state.setCurrentSession)
   const networks = (props.networks ?? DEFAULT_NETWORKS) as T
   const [selectedNetwork, setSelectedNetwork] = useState<keyof T & string>(
     props.network ?? props.defaultNetwork ?? (Object.keys(networks)[0] as keyof T & string),
   )
   const currentNetwork = props.network ?? selectedNetwork
 
-  const clearSession = useCallback(() => {
-    try {
-      setCurrentSession(undefined)
-    } catch (e) {
-      console.log(e)
-    }
-  }, [setCurrentSession])
-
-  const client = useMemo(() => {
-    return DEFAULT_CREATE_CLIENT(currentNetwork, networks[currentNetwork], () => {
-      clearSession()
-    })
-  }, [currentNetwork, networks, clearSession])
+  const client = useDefaultClient({ currentNetwork, networks })
 
   const ctx = useMemo((): ClientProviderContext => {
     return {

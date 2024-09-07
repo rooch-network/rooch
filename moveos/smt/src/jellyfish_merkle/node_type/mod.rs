@@ -40,20 +40,20 @@ use std::{
 };
 use thiserror::Error;
 
-pub(crate) type NodeKey = HashValue;
+pub(crate) type NodeKey = SMTNodeHash;
 
 /// Each child of [`InternalNode`] encapsulates a nibble forking at this node.
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub(crate) struct Child {
     // The hash value of this child node.
-    pub hash: HashValue,
+    pub hash: SMTNodeHash,
     // Whether the child is a leaf node.
     pub is_leaf: bool,
 }
 
 impl Child {
-    pub fn new(hash: HashValue, is_leaf: bool) -> Self {
+    pub fn new(hash: SMTNodeHash, is_leaf: bool) -> Self {
         Self { hash, is_leaf }
     }
 }
@@ -72,7 +72,7 @@ pub(crate) struct InternalNode {
     // Up to 16 children.
     children: Children,
     //Node's hash cache
-    cached_hash: Cell<Option<HashValue>>,
+    cached_hash: Cell<Option<SMTNodeHash>>,
 }
 
 /// Computes the hash of internal node according to [`JellyfishTree`](super::JellyfishTree)
@@ -122,7 +122,7 @@ pub(crate) struct InternalNode {
 /// Note: @ denotes placeholder hash.
 /// ```
 impl SMTHash for InternalNode {
-    fn merkle_hash(&self) -> HashValue {
+    fn merkle_hash(&self) -> SMTNodeHash {
         match self.cached_hash.get() {
             Some(hash) => hash,
             None => {
@@ -218,7 +218,7 @@ impl InternalNode {
             let pos = reader.position() as usize;
             let remaining = len - pos;
             ensure!(
-                remaining >= size_of::<HashValue>(),
+                remaining >= size_of::<SMTNodeHash>(),
                 "not enough bytes left, children: {}, bytes: {}",
                 existence_bitmap.count_ones(),
                 remaining
@@ -227,12 +227,14 @@ impl InternalNode {
             children.insert(
                 Nibble::from(next_child),
                 Child::new(
-                    HashValue::from_slice(&reader.get_ref()[pos..pos + size_of::<HashValue>()])?,
+                    SMTNodeHash::from_slice(
+                        &reader.get_ref()[pos..pos + size_of::<SMTNodeHash>()],
+                    )?,
                     // version,
                     (leaf_bitmap & child_bit) != 0,
                 ),
             );
-            reader.seek(SeekFrom::Current(size_of::<HashValue>() as i64))?;
+            reader.seek(SeekFrom::Current(size_of::<SMTNodeHash>() as i64))?;
             existence_bitmap &= !child_bit;
         }
         assert_eq!(existence_bitmap, 0);
@@ -283,7 +285,7 @@ impl InternalNode {
         start: u8,
         width: u8,
         (existence_bitmap, leaf_bitmap): (u16, u16),
-    ) -> HashValue {
+    ) -> SMTNodeHash {
         // Given a bit [start, 1 << nibble_height], return the value of that range.
         let (range_existence_bitmap, range_leaf_bitmap) =
             Self::range_bitmaps(start, width, (existence_bitmap, leaf_bitmap));
@@ -335,7 +337,7 @@ impl InternalNode {
     ///     |   MSB|<---------------------- uint 16 ---------------------------->|LSB
     ///  height    chs: `child_half_start`         shs: `sibling_half_start`
     /// ```
-    pub fn get_child_with_siblings(&self, n: Nibble) -> (Option<NodeKey>, Vec<HashValue>) {
+    pub fn get_child_with_siblings(&self, n: Nibble) -> (Option<NodeKey>, Vec<SMTNodeHash>) {
         let mut siblings = vec![];
         let (existence_bitmap, leaf_bitmap) = self.generate_bitmaps();
 
@@ -389,7 +391,7 @@ impl InternalNode {
     }
 
     /// Get all child hash
-    pub fn all_child(&self) -> Vec<HashValue> {
+    pub fn all_child(&self) -> Vec<SMTNodeHash> {
         self.children.values().map(|c| c.hash).collect()
     }
 }
@@ -416,7 +418,7 @@ pub(crate) struct LeafNode<K, V> {
     key: K,
     /// The blob value associated with `key`.
     value: SMTObject<V>,
-    cached_hash: Cell<Option<HashValue>>,
+    cached_hash: Cell<Option<SMTNodeHash>>,
 }
 
 impl<K, V> LeafNode<K, V>
@@ -433,7 +435,7 @@ where
         }
     }
 
-    pub fn cached_hash(&self) -> HashValue {
+    pub fn cached_hash(&self) -> SMTNodeHash {
         match self.cached_hash.get() {
             Some(hash) => hash,
             None => {
@@ -450,12 +452,12 @@ where
     }
 
     /// Gets the hash of origin key.
-    pub fn key_hash(&self) -> HashValue {
+    pub fn key_hash(&self) -> SMTNodeHash {
         self.key.merkle_hash()
     }
 
     /// Gets the hash of associated blob.
-    pub fn value_hash(&self) -> HashValue {
+    pub fn value_hash(&self) -> SMTNodeHash {
         self.value.merkle_hash()
     }
 
@@ -524,7 +526,7 @@ where
     K: Key,
     V: Value,
 {
-    fn merkle_hash(&self) -> HashValue {
+    fn merkle_hash(&self) -> SMTNodeHash {
         SparseMerkleLeafNode::new(self.key.merkle_hash(), self.value.merkle_hash()).merkle_hash()
     }
 }
@@ -631,7 +633,7 @@ where
     K: Key,
     V: Value,
 {
-    fn merkle_hash(&self) -> HashValue {
+    fn merkle_hash(&self) -> SMTNodeHash {
         match self {
             Node::Null => *SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE,
             Node::Internal(internal_node) => internal_node.merkle_hash(),
@@ -669,12 +671,12 @@ where
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct SparseMerkleInternalNode {
-    left_child: HashValue,
-    right_child: HashValue,
+    left_child: SMTNodeHash,
+    right_child: SMTNodeHash,
 }
 
 impl SparseMerkleInternalNode {
-    pub fn new(left_child: HashValue, right_child: HashValue) -> Self {
+    pub fn new(left_child: SMTNodeHash, right_child: SMTNodeHash) -> Self {
         Self {
             left_child,
             right_child,
@@ -683,19 +685,19 @@ impl SparseMerkleInternalNode {
 }
 
 impl SMTHash for SparseMerkleInternalNode {
-    fn merkle_hash(&self) -> HashValue {
-        merkle_hash(self.left_child, self.right_child)
+    fn merkle_hash(&self) -> SMTNodeHash {
+        SMTNodeHash::from_node_hashes(self.left_child, self.right_child)
     }
 }
 
 #[derive(Deserialize, Serialize)]
 pub(crate) struct SparseMerkleLeafNode {
-    pub key_hash: HashValue,
-    pub value_hash: HashValue,
+    pub key_hash: SMTNodeHash,
+    pub value_hash: SMTNodeHash,
 }
 
 impl SparseMerkleLeafNode {
-    pub fn new(key_hash: HashValue, value_hash: HashValue) -> Self {
+    pub fn new(key_hash: SMTNodeHash, value_hash: SMTNodeHash) -> Self {
         SparseMerkleLeafNode {
             key_hash,
             value_hash,
@@ -704,8 +706,8 @@ impl SparseMerkleLeafNode {
 }
 
 impl SMTHash for SparseMerkleLeafNode {
-    fn merkle_hash(&self) -> HashValue {
-        merkle_hash(self.key_hash, self.value_hash)
+    fn merkle_hash(&self) -> SMTNodeHash {
+        SMTNodeHash::from_node_hashes(self.key_hash, self.value_hash)
     }
 }
 

@@ -6,7 +6,7 @@
 This module defines Rooch Gas Coin.
 
 
--  [Resource `GasCoin`](#0x3_gas_coin_GasCoin)
+-  [Resource `RGas`](#0x3_gas_coin_RGas)
 -  [Constants](#@Constants_0)
 -  [Function `decimals`](#0x3_gas_coin_decimals)
 -  [Function `balance`](#0x3_gas_coin_balance)
@@ -17,7 +17,8 @@ This module defines Rooch Gas Coin.
 -  [Function `genesis_init`](#0x3_gas_coin_genesis_init)
 
 
-<pre><code><b>use</b> <a href="">0x1::string</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="account_coin_store.md#0x3_account_coin_store">0x3::account_coin_store</a>;
@@ -28,13 +29,14 @@ This module defines Rooch Gas Coin.
 
 
 
-<a name="0x3_gas_coin_GasCoin"></a>
+<a name="0x3_gas_coin_RGas"></a>
 
-## Resource `GasCoin`
+## Resource `RGas`
+
+RGas is the symbol of Rooch Gas Coin
 
 
-
-<pre><code><b>struct</b> <a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a> <b>has</b> store, key
+<pre><code><b>struct</b> <a href="gas_coin.md#0x3_gas_coin_RGas">RGas</a> <b>has</b> store, key
 </code></pre>
 
 
@@ -70,7 +72,7 @@ This module defines Rooch Gas Coin.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_balance">balance</a>(addr: <b>address</b>): u256
+<pre><code><b>public</b> <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_balance">balance</a>(addr: <b>address</b>): <a href="">u256</a>
 </code></pre>
 
 
@@ -81,7 +83,7 @@ This module defines Rooch Gas Coin.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_burn">burn</a>(<a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">gas_coin::GasCoin</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_burn">burn</a>(<a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;<a href="gas_coin.md#0x3_gas_coin_RGas">gas_coin::RGas</a>&gt;)
 </code></pre>
 
 
@@ -93,7 +95,7 @@ This module defines Rooch Gas Coin.
 deduct gas coin from the given account.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_deduct_gas">deduct_gas</a>(addr: <b>address</b>, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">gas_coin::GasCoin</a>&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_deduct_gas">deduct_gas</a>(addr: <b>address</b>, amount: <a href="">u256</a>): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;<a href="gas_coin.md#0x3_gas_coin_RGas">gas_coin::RGas</a>&gt;
 </code></pre>
 
 
@@ -105,7 +107,7 @@ deduct gas coin from the given account.
 Mint gas coin to the given account.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_faucet">faucet</a>(addr: <b>address</b>, amount: u256)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_faucet">faucet</a>(addr: <b>address</b>, amount: <a href="">u256</a>)
 </code></pre>
 
 
@@ -114,10 +116,10 @@ Mint gas coin to the given account.
 
 ## Function `faucet_entry`
 
-Entry point for the faucet, anyone can get Gas via this function on local/dev net, otherwise only sequencer account can call this function.
+Entry point for the faucet, anyone can get Gas via this function on local/dev net, otherwise only admin account can call this function.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_faucet_entry">faucet_entry</a>(<a href="">account</a>: &<a href="">signer</a>, amount: u256)
+<pre><code><b>public</b> entry <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_faucet_entry">faucet_entry</a>(<a href="">account</a>: &<a href="">signer</a>, amount: <a href="">u256</a>)
 </code></pre>
 
 

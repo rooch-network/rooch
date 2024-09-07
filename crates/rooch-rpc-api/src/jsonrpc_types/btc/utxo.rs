@@ -3,18 +3,18 @@
 
 use crate::jsonrpc_types::btc::transaction::{hex_to_txid, TxidView};
 use crate::jsonrpc_types::{
-    H256View, IndexerObjectStateView, IndexerStateIDView, ObjectIDView, ObjectMetaView, StrView,
-    UnitedAddressView,
+    H256View, IndexerObjectStateView, IndexerStateIDView, ObjectIDVecView, ObjectIDView,
+    ObjectMetaView, StrView, UnitedAddressView,
 };
 use anyhow::Result;
 use bitcoin::hashes::Hash;
 use bitcoin::Txid;
 
-use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::{MoveState, MoveStructType};
+use rooch_types::bitcoin::types::OutPoint;
 use rooch_types::bitcoin::utxo::{self, UTXO};
 use rooch_types::indexer::state::ObjectStateFilter;
-use rooch_types::into_address::IntoAddress;
+use rooch_types::into_address::{FromAddress, IntoAddress};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -31,6 +31,15 @@ impl From<BitcoinOutPointView> for bitcoin::OutPoint {
     }
 }
 
+impl From<OutPoint> for BitcoinOutPointView {
+    fn from(outpoint: OutPoint) -> Self {
+        BitcoinOutPointView {
+            txid: Txid::from_address(outpoint.txid).into(),
+            vout: outpoint.vout,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum UTXOFilterView {
@@ -38,8 +47,8 @@ pub enum UTXOFilterView {
     Owner(UnitedAddressView),
     /// Query by bitcoin outpoint, represent by bitcoin txid and vout
     OutPoint { txid: String, vout: u32 },
-    /// Query by object id.
-    ObjectId(ObjectID),
+    /// Query by object ids.
+    ObjectId(ObjectIDVecView),
     /// Query all.
     All,
 }
@@ -59,7 +68,9 @@ impl UTXOFilterView {
                 let utxo_id = utxo::derive_utxo_id(&outpoint);
                 ObjectStateFilter::ObjectId(vec![utxo_id])
             }
-            UTXOFilterView::ObjectId(object_id) => ObjectStateFilter::ObjectId(vec![object_id]),
+            UTXOFilterView::ObjectId(object_id_vec_view) => {
+                ObjectStateFilter::ObjectId(object_id_vec_view.into())
+            }
             UTXOFilterView::All => ObjectStateFilter::ObjectType(UTXO::struct_tag()),
         })
     }
@@ -103,6 +114,10 @@ impl UTXOView {
             value: utxo.value.into(),
             seals: seals_view,
         })
+    }
+
+    pub fn get_value(&self) -> u64 {
+        self.value.0
     }
 }
 

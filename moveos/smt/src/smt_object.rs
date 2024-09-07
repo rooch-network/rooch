@@ -4,14 +4,16 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::jellyfish_merkle::hash::{HashValue, SMTHash};
+use std::{cell::Cell, fmt};
+
 use anyhow::Result;
 use primitive_types::H256;
 use serde::{
     de::{self, DeserializeOwned},
     Deserialize, Serialize,
 };
-use std::{cell::Cell, fmt};
+
+use crate::jellyfish_merkle::hash::{SMTHash, SMTNodeHash};
 
 pub trait Key: std::cmp::Ord + Copy + Into<H256> + From<H256> {}
 
@@ -21,7 +23,7 @@ impl<K> SMTHash for K
 where
     K: Key,
 {
-    fn merkle_hash(&self) -> HashValue {
+    fn merkle_hash(&self) -> SMTNodeHash {
         let hash: H256 = (*self).into();
         hash.into()
     }
@@ -67,7 +69,7 @@ where
 pub struct SMTObject<T> {
     pub origin: T,
     pub raw: Vec<u8>,
-    cached_hash: Cell<Option<HashValue>>,
+    cached_hash: Cell<Option<SMTNodeHash>>,
 }
 
 impl<T> SMTObject<T> {
@@ -80,7 +82,7 @@ impl<T> SMTObject<T> {
     }
 
     /// A helper constructor for tests which allows passing in a precomputed hash.
-    pub(crate) fn new_for_test(origin: T, raw: Vec<u8>, hash: HashValue) -> Self {
+    pub(crate) fn new_for_test(origin: T, raw: Vec<u8>, hash: SMTNodeHash) -> Self {
         SMTObject {
             origin,
             raw,
@@ -193,11 +195,11 @@ where
 }
 
 impl<T> SMTHash for SMTObject<T> {
-    fn merkle_hash(&self) -> HashValue {
+    fn merkle_hash(&self) -> SMTNodeHash {
         match self.cached_hash.get() {
             Some(hash) => hash,
             None => {
-                let hash = HashValue::sha3_256_of(&self.raw);
+                let hash = SMTNodeHash::tag_sha256(&self.raw);
                 self.cached_hash.set(Some(hash));
                 hash
             }

@@ -115,5 +115,5 @@ export function normalizeRoochAddress(input: string, forceAdd0x: boolean = false
 }
 
 export function canonicalRoochAddress(input: string, forceAdd0x: boolean = false): string {
-  return normalizeRoochAddress(input, forceAdd0x).slice(2)
+  return normalizeRoochAddress(input, forceAdd0x)
 }

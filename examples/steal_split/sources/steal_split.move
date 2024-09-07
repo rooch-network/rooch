@@ -108,7 +108,7 @@ module rooch_examples::rooch_examples {
         // Get address of account
         let account_address = signer::address_of(account);
         // Register and mint WGBCOIN
-        let coin_info = coin::register_extend<WGBCOIN>(string::utf8(b"WGBCOIN"),string::utf8(b"WGB"), 8);
+        let coin_info = coin::register_extend<WGBCOIN>(string::utf8(b"WGBCOIN"),string::utf8(b"WGB"), option::none(),8);
         let coin = coin::mint_extend<WGBCOIN>(&mut coin_info, 1000 * 1000 * 1000);
         account_coin_store::do_accept_coin<WGBCOIN>(account);
         account_coin_store::deposit_extend(account_address, coin);
@@ -122,7 +122,7 @@ module rooch_examples::rooch_examples {
         // Initialize the state object
         let state = State {
             next_game_id: 0,
-            games: simple_map::create()
+            games: simple_map::new()
         };
         // Create a resource account object with account named object
         let account_obj = object::new_account_named_object<ResourceAccount>(account_address, ResourceAccount { sequence_number: 0 });
@@ -448,7 +448,7 @@ module rooch_examples::rooch_examples {
         genesis::init_for_test();
         
         let account = &account_entry::create_account_for_testing(@rooch_examples);
-        let _move_os = &account_entry::create_account_for_testing(@moveos_std);
+        // let _move_os = &account_entry::create_account_for_testing(@moveos_std);
         timestamp::set_time_has_started_for_testing();
 
         init_coin(account);
@@ -463,7 +463,7 @@ module rooch_examples::rooch_examples {
         genesis::init_for_test();
         
         let account = &account_entry::create_account_for_testing(@rooch_examples);
-        let _move_os = &account_entry::create_account_for_testing(@moveos_std);
+        // let _move_os = &account_entry::create_account_for_testing(@moveos_std);
         timestamp::set_time_has_started_for_testing();
  
         init_coin(account);
@@ -511,7 +511,7 @@ module rooch_examples::rooch_examples {
         let player_one = &account_entry::create_account_for_testing(@0xACE);
         let player_two = &account_entry::create_account_for_testing(@0xCAFE);
 
-        let _move_os = &account_entry::create_account_for_testing(@moveos_std);
+        // let _move_os = &account_entry::create_account_for_testing(@moveos_std);
         timestamp::set_time_has_started_for_testing();
 
         init_coin(player_one);
@@ -568,7 +568,7 @@ module rooch_examples::rooch_examples {
         let player_one = &account_entry::create_account_for_testing(@0xACE);
         let player_two = &account_entry::create_account_for_testing(@0xCAFE);
 
-        let _move_os = &account_entry::create_account_for_testing(@moveos_std);
+        // let _move_os = &account_entry::create_account_for_testing(@moveos_std);
         timestamp::set_time_has_started_for_testing();
 
         init_coin(player_one);
@@ -604,7 +604,6 @@ module rooch_examples::rooch_examples {
         let player_one = &account_entry::create_account_for_testing(@0xACE);
         let player_two = &account_entry::create_account_for_testing(@0xCAFE);
 
-        let _move_os = &account_entry::create_account_for_testing(@moveos_std);
         timestamp::set_time_has_started_for_testing();
 
         init_coin(account);

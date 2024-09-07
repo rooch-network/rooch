@@ -11,7 +11,6 @@
 -  [Function `genesis_init`](#0x3_address_mapping_genesis_init)
 -  [Function `resolve`](#0x3_address_mapping_resolve)
 -  [Function `resolve_bitcoin`](#0x3_address_mapping_resolve_bitcoin)
--  [Function `resolve_or_generate`](#0x3_address_mapping_resolve_or_generate)
 -  [Function `exists_mapping`](#0x3_address_mapping_exists_mapping)
 -  [Function `bind_bitcoin_address`](#0x3_address_mapping_bind_bitcoin_address)
 -  [Function `bind_bitcoin_address_by_system`](#0x3_address_mapping_bind_bitcoin_address_by_system)
@@ -125,19 +124,6 @@ Resolve a rooch address to a bitcoin address
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve_bitcoin">resolve_bitcoin</a>(rooch_address: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>&gt;
-</code></pre>
-
-
-
-<a name="0x3_address_mapping_resolve_or_generate"></a>
-
-## Function `resolve_or_generate`
-
-Generate a rooch address via bitcoin multi-chain address
-This function will deprecated in the future, client should directly generate rooch address via bitcoin address.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve_or_generate">resolve_or_generate</a>(maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>): <b>address</b>
 </code></pre>
 
 

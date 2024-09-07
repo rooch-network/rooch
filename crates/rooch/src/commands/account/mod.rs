@@ -2,18 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::CommandAction;
-use crate::commands::account::commands::balance::BalanceCommand;
-use crate::commands::account::commands::export::ExportCommand;
 use async_trait::async_trait;
 use commands::{
-    create::CreateCommand, import::ImportCommand, list::ListCommand, nullify::NullifyCommand,
-    switch::SwitchCommand, transfer::TransferCommand,
+    balance::BalanceCommand, create::CreateCommand, create_multisign::CreateMultisignCommand,
+    export::ExportCommand, import::ImportCommand, list::ListCommand, nullify::NullifyCommand,
+    sign::SignCommand, switch::SwitchCommand, transfer::TransferCommand,
 };
 use rooch_types::error::RoochResult;
 use std::path::PathBuf;
 
 pub mod commands;
-
 /// Tool for interacting with accounts
 #[derive(clap::Parser)]
 pub struct Account {
@@ -29,6 +27,9 @@ impl CommandAction<String> for Account {
     async fn execute(self) -> RoochResult<String> {
         match self.cmd {
             AccountCommand::Create(create) => create.execute_serialized().await,
+            AccountCommand::CreateMultisign(create_multisign) => {
+                create_multisign.execute_serialized().await
+            }
             AccountCommand::List(list) => list.execute_serialized().await,
             AccountCommand::Switch(switch) => switch.execute_serialized().await,
             AccountCommand::Nullify(nullify) => nullify.execute_serialized().await,
@@ -36,6 +37,7 @@ impl CommandAction<String> for Account {
             AccountCommand::Transfer(transfer) => transfer.execute_serialized().await,
             AccountCommand::Export(export) => export.execute_serialized().await,
             AccountCommand::Import(import) => import.execute_serialized().await,
+            AccountCommand::Sign(sign) => sign.execute_serialized().await,
         }
     }
 }
@@ -44,6 +46,7 @@ impl CommandAction<String> for Account {
 #[clap(name = "account")]
 pub enum AccountCommand {
     Create(CreateCommand),
+    CreateMultisign(CreateMultisignCommand),
     List(ListCommand),
     Switch(SwitchCommand),
     Nullify(NullifyCommand),
@@ -51,4 +54,5 @@ pub enum AccountCommand {
     Transfer(TransferCommand),
     Export(ExportCommand),
     Import(ImportCommand),
+    Sign(SignCommand),
 }

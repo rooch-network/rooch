@@ -73,6 +73,70 @@ pub trait StateResolver: StatelessResolver {
     fn root(&self) -> &ObjectMeta;
 }
 
+pub struct GenesisResolver {
+    root: ObjectMeta,
+}
+
+impl GenesisResolver {
+    pub fn new() -> Self {
+        Self {
+            root: ObjectMeta::genesis_root(),
+        }
+    }
+}
+
+impl Default for GenesisResolver {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl StatelessResolver for GenesisResolver {
+    fn get_field_at(
+        &self,
+        _state_root: H256,
+        _key: &FieldKey,
+    ) -> Result<Option<ObjectState>, anyhow::Error> {
+        Ok(None)
+    }
+
+    fn list_fields_at(
+        &self,
+        _state_root: H256,
+        _cursor: Option<FieldKey>,
+        _limit: usize,
+    ) -> Result<Vec<StateKV>, anyhow::Error> {
+        Ok(vec![])
+    }
+}
+
+impl StateResolver for GenesisResolver {
+    fn root(&self) -> &ObjectMeta {
+        &self.root
+    }
+}
+
+impl ResourceResolver for GenesisResolver {
+    fn get_resource_with_metadata(
+        &self,
+        _address: &AccountAddress,
+        _resource_tag: &StructTag,
+        _metadata: &[Metadata],
+    ) -> Result<(Option<Vec<u8>>, usize), Error> {
+        Ok((None, 0))
+    }
+}
+
+impl ModuleResolver for GenesisResolver {
+    fn get_module_metadata(&self, _module_id: &ModuleId) -> Vec<Metadata> {
+        vec![]
+    }
+
+    fn get_module(&self, _module_id: &ModuleId) -> Result<Option<Vec<u8>>, Error> {
+        Ok(None)
+    }
+}
+
 pub struct RootObjectResolver<'a, R> {
     root: ObjectMeta,
     resolver: &'a R,

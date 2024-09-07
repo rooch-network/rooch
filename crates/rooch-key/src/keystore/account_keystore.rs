@@ -92,6 +92,8 @@ pub trait AccountKeystore {
 
     fn get_accounts(&self, password: Option<String>) -> Result<Vec<LocalAccount>, anyhow::Error>;
 
+    fn contains_address(&self, address: &RoochAddress) -> bool;
+
     fn add_address_encryption_data_to_keys(
         &mut self,
         address: RoochAddress,

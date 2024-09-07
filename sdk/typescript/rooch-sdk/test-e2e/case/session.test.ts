@@ -1,19 +1,23 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { beforeAll, describe, expect, it } from 'vitest'
-import { setup, TestBox } from '../setup.js'
+import { beforeAll, describe, expect, it, afterAll } from 'vitest'
+import { TestBox } from '../setup.js'
 import { Transaction } from '../../src/transactions/index.js'
 
 describe('Checkpoints Session API', () => {
   let testBox: TestBox
 
   beforeAll(async () => {
-    testBox = await setup()
+    testBox = TestBox.setup()
+  })
+
+  afterAll(async () => {
+    testBox.cleanEnv()
   })
 
   it('Create session should be success', async () => {
-    const session = await testBox.client.createSession({
+    const session = await testBox.getClient().createSession({
       sessionArgs: {
         appName: 'sdk-e2e-test',
         appUrl: 'https://sdk-e2e.com',
@@ -34,7 +38,7 @@ describe('Checkpoints Session API', () => {
       signer: testBox.keypair,
     })
 
-    const sessions = await testBox.client.getSessionKeys({
+    const sessions = await testBox.getClient().getSessionKeys({
       address: testBox.address().toHexAddress(),
     })
     const createdSessionExists = sessions.data.find(
@@ -45,7 +49,7 @@ describe('Checkpoints Session API', () => {
   })
 
   it('Check session is expired should be false', async () => {
-    const session = await testBox.client.createSession({
+    const session = await testBox.getClient().createSession({
       sessionArgs: {
         appName: 'sdk-e2e-test',
         appUrl: 'https://sdk-e2e.com',
@@ -54,7 +58,7 @@ describe('Checkpoints Session API', () => {
       signer: testBox.keypair,
     })
 
-    const result = await testBox.client.sessionIsExpired({
+    const result = await testBox.getClient().sessionIsExpired({
       address: session.getRoochAddress().toHexAddress(),
       authKey: session.getAuthKey(),
     })
@@ -63,7 +67,7 @@ describe('Checkpoints Session API', () => {
   })
 
   it('Call function with session auth should be success', async () => {
-    const session = await testBox.client.createSession({
+    const session = await testBox.getClient().createSession({
       sessionArgs: {
         appName: 'sdk-e2e-test',
         appUrl: 'https://sdk-e2e.com',
@@ -77,7 +81,7 @@ describe('Checkpoints Session API', () => {
       target: '0x3::empty::empty_with_signer',
     })
 
-    const result = await testBox.client.signAndExecuteTransaction({
+    const result = await testBox.getClient().signAndExecuteTransaction({
       transaction: tx,
       signer: session,
     })
@@ -86,7 +90,7 @@ describe('Checkpoints Session API', () => {
   })
 
   it('Get session keys should be success', async () => {
-    const session = await testBox.client.createSession({
+    const session = await testBox.getClient().createSession({
       sessionArgs: {
         appName: 'sdk-e2e-test',
         appUrl: 'https://sdk-e2e.com',
@@ -97,7 +101,7 @@ describe('Checkpoints Session API', () => {
 
     expect(session).toBeDefined()
 
-    const sessions = await testBox.client.getSessionKeys({
+    const sessions = await testBox.getClient().getSessionKeys({
       address: testBox.address().toHexAddress(),
       limit: 10,
     })

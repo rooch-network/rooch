@@ -16,34 +16,25 @@ rust-version = { workspace = true }
 [dependencies]
 
 anyhow = { workspace = true }
+backtrace = { workspace = true }
 bcs = { workspace = true }
 bytes = { workspace = true }
 byteorder = { workspace = true }
-backtrace = { workspace = true }
+bitcoin_hashes = { workspace = true }
+function_name = { workspace = true }
 hex = { workspace = true }
-itertools = { workspace = true }
 log = { workspace = true }
-lazy_static = { workspace = true }
+metrics = { workspace = true }
 more-asserts = { workspace = true }
 num-derive = { workspace = true }
 num-traits = { workspace = true }
 once_cell = { workspace = true }
 primitive-types = { workspace = true }
+prometheus = { workspace = true }
 proptest = { workspace = true }
 proptest-derive = { workspace = true }
 parking_lot = { workspace = true }
-rayon = { workspace = true }
 rand = { workspace = true }
-rand_core = { workspace = true, default-features = false }
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_bytes = { workspace = true }
-serde_json = { workspace = true }
-sha2 = { workspace = true }
 thiserror = { workspace = true }
-tiny-keccak = { workspace = true, features = ["keccak", "sha3"] }
-tracing = { workspace = true }
-tap = { workspace = true }
-prometheus = { workspace = true }
-function_name = { workspace = true }
-
-metrics = { workspace = true }

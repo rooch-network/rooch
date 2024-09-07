@@ -30,4 +30,3 @@ opendal = { workspace = true }
 rooch-config = { workspace = true }
 serde_yaml = { workspace = true }
 xxhash-rust = { workspace = true, features = ["xxh3"] }
-base64 = {workspace = true}

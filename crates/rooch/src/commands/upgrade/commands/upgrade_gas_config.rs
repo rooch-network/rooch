@@ -16,6 +16,7 @@ use rooch_framework::natives::gas_parameter::gas_member::ToOnChainGasSchedule;
 use rooch_genesis::{FrameworksGasParameters, LATEST_GAS_SCHEDULE_VERSION};
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::rooch_network::BuiltinChainID;
 use rooch_types::transaction::RoochTransaction;
 
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
@@ -135,7 +136,8 @@ impl CommandAction<ExecuteTransactionResponseView> for UpgradeGasConfigCommand {
             }
         };
 
-        let latest_gas_schedule = local_latest_gas_parameters.to_gas_schedule_config();
+        let latest_gas_schedule =
+            local_latest_gas_parameters.to_gas_schedule_config(BuiltinChainID::Test.chain_id());
         let gas_schedule_bytes = latest_gas_schedule
             .to_move_value()
             .simple_serialize()

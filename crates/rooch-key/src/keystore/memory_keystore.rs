@@ -24,6 +24,10 @@ impl AccountKeystore for InMemKeystore {
         self.keystore.get_accounts(password)
     }
 
+    fn contains_address(&self, address: &RoochAddress) -> bool {
+        self.keystore.contains_address(address)
+    }
+
     fn add_address_encryption_data_to_keys(
         &mut self,
         address: RoochAddress,

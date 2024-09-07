@@ -20,8 +20,8 @@ use rooch_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, framework::empty::Empty};
 use rooch_types::{framework::session_key::SessionScope, transaction::rooch::RoochTransactionData};
 use std::str::FromStr;
 
-#[test]
-fn test_session_key_rooch() {
+#[tokio::test]
+async fn test_session_key_rooch() {
     let _ = tracing_subscriber::fmt::try_init();
     let mut binding_test = binding_test::RustBindingTest::new().unwrap();
 

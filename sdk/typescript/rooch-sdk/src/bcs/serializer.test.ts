@@ -9,20 +9,20 @@ import { Serializer } from './serializer.js'
 describe('Serializer', () => {
   it('struct tag to string with no type params', () => {
     const testData: StructTag = {
-      address: '00000000000000000000000000000001',
+      address: '0x00000000000000000000000000000001',
       module: 'module1',
       name: 'name1',
     }
 
     const expectStr =
-      '0000000000000000000000000000000000000000000000000000000000000001::module1::name1'
+      '0x0000000000000000000000000000000000000000000000000000000000000001::module1::name1'
     const resultStr = Serializer.structTagToCanonicalString(testData)
     expect(resultStr).toBe(expectStr)
   })
 
   it('struct tag to string with type_params', () => {
     const testData: StructTag = {
-      address: '00000000000000000000000000000001',
+      address: '0x00000000000000000000000000000001',
       module: 'module1',
       name: 'name1',
       typeParams: [
@@ -30,7 +30,7 @@ describe('Serializer', () => {
         { Vector: 'u64' },
         {
           Struct: {
-            address: '0000000000000000000000000000000a',
+            address: '0x0000000000000000000000000000000a',
             module: 'module2',
             name: 'name2',
           },
@@ -39,7 +39,7 @@ describe('Serializer', () => {
     }
 
     const expectStr =
-      '0000000000000000000000000000000000000000000000000000000000000001::module1::name1<u8,vector<u64>,000000000000000000000000000000000000000000000000000000000000000a::module2::name2>'
+      '0x0000000000000000000000000000000000000000000000000000000000000001::module1::name1<u8,vector<u64>,0x000000000000000000000000000000000000000000000000000000000000000a::module2::name2>'
     const resultStr = Serializer.structTagToCanonicalString(testData)
     expect(resultStr).toBe(expectStr)
   })
@@ -55,7 +55,7 @@ describe('Serializer', () => {
   it('type tag to string with struct type', () => {
     const testData: TypeTag = {
       Struct: {
-        address: '0000000000000000000000000000000a',
+        address: '0x0000000000000000000000000000000a',
         module: 'module2',
         name: 'name2',
       },
@@ -63,7 +63,7 @@ describe('Serializer', () => {
 
     const resultStr = Serializer.typeTagToString(testData)
     expect(resultStr).toBe(
-      '000000000000000000000000000000000000000000000000000000000000000a::module2::name2',
+      '0x000000000000000000000000000000000000000000000000000000000000000a::module2::name2',
     )
   })
 
@@ -81,7 +81,7 @@ describe('Serializer', () => {
       typeParams: [],
     }
 
-    const expectObjectID = '0x4e8d2c243339c6e02f8b7dd34436a1b1eb541b0fe4d938f845f4dbb9d9f218a2'
+    const expectObjectID = '0x3a7dfe7a9a5cd608810b5ebd60c7adf7316667b17ad5ae703af301b74310bcca'
     const resultObjectID = Serializer.structTagToObjectID(testData)
     expect(resultObjectID).toBe(expectObjectID)
   })
@@ -96,13 +96,13 @@ describe('Serializer', () => {
           Struct: {
             address: '0x3',
             module: 'gas_coin',
-            name: 'GasCoin',
+            name: 'RGas',
             typeParams: [],
           },
         },
       ],
     }
-    const expectObjectID = '0x9fe449ea079f937dbc977733d6b0ae450ec44ba22ec8793076026606db1c9f49'
+    const expectObjectID = '0xfdda11f9cc18bb30973779eb3610329d7e0e3c6ecce05b4d77b5a839063bff66'
     const resultObjectID = Serializer.structTagToObjectID(testData)
     expect(resultObjectID).toBe(expectObjectID)
   })

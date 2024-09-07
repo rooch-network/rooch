@@ -50,6 +50,8 @@ pub enum RoochError {
     SignMessageError(String),
     #[error("Transaction error: {0}")]
     TransactionError(String),
+    #[error("DryRun Transaction error: {0}")]
+    DryRunTransactionError(String),
     #[error("View function error: {0}")]
     ViewFunctionError(String),
     #[error("Import account error: {0}")]

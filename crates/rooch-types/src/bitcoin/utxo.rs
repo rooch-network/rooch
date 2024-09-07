@@ -5,8 +5,9 @@ use super::types;
 use crate::addresses::BITCOIN_MOVE_ADDRESS;
 use anyhow::Result;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
-use moveos_types::moveos_std::object::{self};
-use moveos_types::state::MoveStructState;
+use moveos_types::h256::H256;
+use moveos_types::moveos_std::object::{self, ObjectMeta};
+use moveos_types::state::{MoveStructState, MoveType, ObjectState};
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::string::MoveString,
@@ -17,14 +18,32 @@ use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("utxo");
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct BitcoinUTXOStore {
-    pub next_tx_index: u64,
+    _placeholder: bool,
 }
 
 impl BitcoinUTXOStore {
     pub fn object_id() -> ObjectID {
         object::named_object_id(&Self::struct_tag())
+    }
+
+    pub fn genesis_object() -> ObjectState {
+        let id = Self::object_id();
+        let mut metadata = ObjectMeta::genesis_meta(id, BitcoinUTXOStore::type_tag());
+        metadata.to_shared();
+        ObjectState::new_with_struct(metadata, Self::default())
+            .expect("Create BitcoinUTXOStore Object should success")
+    }
+
+    pub fn genesis_with_state_root(state_root: H256, size: u64) -> ObjectState {
+        let id = Self::object_id();
+        let mut metadata = ObjectMeta::genesis_meta(id, BitcoinUTXOStore::type_tag());
+        metadata.state_root = Some(state_root);
+        metadata.size = size;
+        metadata.to_shared();
+        ObjectState::new_with_struct(metadata, Self::default())
+            .expect("Create BitcoinUTXOStore Object should success")
     }
 }
 
@@ -36,7 +55,7 @@ impl MoveStructType for BitcoinUTXOStore {
 
 impl MoveStructState for BitcoinUTXOStore {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
-        move_core_types::value::MoveStructLayout::new(vec![u64::type_layout()])
+        move_core_types::value::MoveStructLayout::new(vec![bool::type_layout()])
     }
 }
 
@@ -80,6 +99,10 @@ impl UTXO {
             value,
             seals,
         }
+    }
+
+    pub fn object_id(&self) -> ObjectID {
+        derive_utxo_id(&types::OutPoint::new(self.txid, self.vout))
     }
 }
 
@@ -144,12 +167,12 @@ mod tests {
             0,
         );
         let object_id = derive_utxo_id(&outpoint);
-        //println!("{}", hex::encode(object_id.to_bytes()));
+        // println!("{}", hex::encode(object_id.to_bytes()));
         //ensure the object id is same as utxo.move
         assert_eq!(
             object_id,
             ObjectID::from_bytes(
-                hex::decode("02826a5e56581ba5ab84c39976f27cf3578cf524308b4ffc123922dfff507e514db8fc937bf3c15abe49c95fa6906aff29087149f542b48db0cf25dce671a68a63").unwrap()
+                hex::decode("02f74d177bfec2d8de0c4893f6502d3e5b55f12f75e158d53b035dcbe33782ef166056a4a7b33326d5fb811c95b39cbca0743662e14fa3b904c41fa07d4b5c3956").unwrap()
             )
             .unwrap()
         );

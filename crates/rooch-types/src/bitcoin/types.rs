@@ -4,6 +4,7 @@
 use crate::into_address::FromAddress;
 use crate::{address::BitcoinAddress, addresses::BITCOIN_MOVE_ADDRESS, into_address::IntoAddress};
 use anyhow::Result;
+use bitcoin::Txid;
 use bitcoin::{hashes::Hash, BlockHash};
 use bitcoincore_rpc::bitcoincore_rpc_json::GetBlockHeaderResult;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
@@ -12,6 +13,7 @@ use moveos_types::state::{MoveState, MoveStructState, MoveStructType};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fmt::{Display, Formatter};
+use std::str::FromStr;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("types");
 
@@ -274,7 +276,7 @@ impl MoveStructState for Witness {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Ord, PartialOrd, PartialEq, Eq)]
+#[derive(Debug, Clone, Ord, PartialOrd, PartialEq, Eq, Hash)]
 pub struct OutPoint {
     /// The referenced transaction's txid.
     /// Use address to represent sha256d hash
@@ -327,7 +329,59 @@ impl MoveStructState for OutPoint {
 
 impl Display for OutPoint {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{}:{}", self.txid, self.vout)
+        //We use bitcoin txid hex to display
+        let txid = Txid::from_address(self.txid);
+        write!(f, "{}:{}", txid, self.vout)
+    }
+}
+
+impl FromStr for OutPoint {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let parts: Vec<&str> = s.split(':').collect();
+        if parts.len() != 2 {
+            return Err(anyhow::anyhow!("Invalid OutPoint format"));
+        }
+        let txid = Txid::from_str(parts[0])?;
+        let vout = parts[1].parse()?;
+        Ok(OutPoint::new(txid.into_address(), vout))
+    }
+}
+
+impl Serialize for OutPoint {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        if serializer.is_human_readable() {
+            serializer.collect_str(&self)
+        } else {
+            #[derive(Serialize)]
+            struct Value {
+                txid: AccountAddress,
+                vout: u32,
+            }
+            Value {
+                txid: self.txid,
+                vout: self.vout,
+            }
+            .serialize(serializer)
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for OutPoint {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        if deserializer.is_human_readable() {
+            let s = String::deserialize(deserializer)?;
+            s.parse().map_err(serde::de::Error::custom)
+        } else {
+            #[derive(Deserialize)]
+            struct Value {
+                txid: AccountAddress,
+                vout: u32,
+            }
+            let value = Value::deserialize(deserializer)?;
+            Ok(OutPoint::new(value.txid, value.vout))
+        }
     }
 }
 

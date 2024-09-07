@@ -1,17 +1,25 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::ops::Deref;
+use std::sync::Arc;
 use std::time::SystemTime;
 
 use crate::messages::{
     GetSequencerOrderMessage, GetTransactionByHashMessage, GetTransactionsByHashMessage,
     GetTxHashsMessage, TransactionSequenceMessage,
 };
+use crate::metrics::SequencerMetrics;
 use accumulator::{Accumulator, MerkleAccumulator};
 use anyhow::Result;
 use async_trait::async_trait;
-use coerce::actor::{context::ActorContext, message::Handler, Actor};
+use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
+use function_name::named;
+use moveos_eventbus::bus::EventData;
 use moveos_types::h256::{self, H256};
+use prometheus::Registry;
+use rooch_event::actor::{EventActor, EventActorSubscribeMessage};
+use rooch_event::event::ServiceStatusEvent;
 use rooch_store::meta_store::MetaStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
@@ -19,7 +27,7 @@ use rooch_types::crypto::{RoochKeyPair, Signature};
 use rooch_types::sequencer::SequencerInfo;
 use rooch_types::service_status::ServiceStatus;
 use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
-use tracing::info;
+use tracing::{info, log};
 
 pub struct SequencerActor {
     last_sequencer_info: SequencerInfo,
@@ -27,6 +35,8 @@ pub struct SequencerActor {
     sequencer_key: RoochKeyPair,
     rooch_store: RoochStore,
     service_status: ServiceStatus,
+    metrics: Arc<SequencerMetrics>,
+    event_actor: Option<LocalActorRef<EventActor>>,
 }
 
 impl SequencerActor {
@@ -34,6 +44,8 @@ impl SequencerActor {
         sequencer_key: RoochKeyPair,
         rooch_store: RoochStore,
         service_status: ServiceStatus,
+        registry: &Registry,
+        event_actor: Option<LocalActorRef<EventActor>>,
     ) -> Result<Self> {
         // The sequencer info would be inited when genesis, so the sequencer info should not be None
         let last_sequencer_info = rooch_store
@@ -60,14 +72,38 @@ impl SequencerActor {
             sequencer_key,
             rooch_store,
             service_status,
+            metrics: Arc::new(SequencerMetrics::new(registry)),
+            event_actor,
         })
+    }
+
+    pub async fn subscribe_event(
+        &self,
+        event_actor_ref: LocalActorRef<EventActor>,
+        executor_actor_ref: LocalActorRef<SequencerActor>,
+    ) {
+        let service_status_event = ServiceStatusEvent::default();
+        let actor_subscribe_message = EventActorSubscribeMessage::new(
+            service_status_event,
+            "sequencer".to_string(),
+            Box::new(executor_actor_ref),
+        );
+        let _ = event_actor_ref.send(actor_subscribe_message).await;
     }
 
     pub fn last_order(&self) -> u64 {
         self.last_sequencer_info.last_order
     }
 
+    #[named]
     pub fn sequence(&mut self, mut tx_data: LedgerTxData) -> Result<LedgerTransaction> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .sequencer_sequence_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
+
         match self.service_status {
             ServiceStatus::ReadOnlyMode => {
                 return Err(anyhow::anyhow!("The service is in read-only mode"));
@@ -106,29 +142,38 @@ impl SequencerActor {
             .to_vec();
 
         // Calc transaction accumulator
-        let tx_accumulator_root = self.tx_accumulator.append(vec![hash].as_slice())?;
+        let _tx_accumulator_root = self.tx_accumulator.append(vec![hash].as_slice())?;
         self.tx_accumulator.flush()?;
 
+        let tx_accumulator_info = self.tx_accumulator.get_info();
         let tx = LedgerTransaction::build_ledger_transaction(
             tx_data,
             tx_timestamp,
             tx_order,
             tx_order_signature,
-            tx_accumulator_root,
+            tx_accumulator_info.clone(),
         );
 
-        let sequencer_info =
-            SequencerInfo::new(tx.sequence_info.tx_order, self.tx_accumulator.get_info());
+        let sequencer_info = SequencerInfo::new(tx.sequence_info.tx_order, tx_accumulator_info);
         self.rooch_store
             .save_sequencer_info(sequencer_info.clone())?;
         self.rooch_store.save_transaction(tx.clone())?;
         info!("sequencer tx: {} order: {:?}", hash, tx_order);
         self.last_sequencer_info = sequencer_info;
+
         Ok(tx)
     }
 }
 
-impl Actor for SequencerActor {}
+#[async_trait]
+impl Actor for SequencerActor {
+    async fn started(&mut self, ctx: &mut ActorContext) {
+        let local_actor_ref: LocalActorRef<Self> = ctx.actor_ref();
+        if let Some(event_actor) = self.event_actor.clone() {
+            let _ = self.subscribe_event(event_actor, local_actor_ref).await;
+        }
+    }
+}
 
 #[async_trait]
 impl Handler<TransactionSequenceMessage> for SequencerActor {
@@ -171,7 +216,7 @@ impl Handler<GetTxHashsMessage> for SequencerActor {
         _ctx: &mut ActorContext,
     ) -> Result<Vec<Option<H256>>> {
         let GetTxHashsMessage { tx_orders } = msg;
-        self.rooch_store.get_tx_hashs(tx_orders)
+        self.rooch_store.get_tx_hashes(tx_orders)
     }
 }
 
@@ -183,5 +228,18 @@ impl Handler<GetSequencerOrderMessage> for SequencerActor {
         _ctx: &mut ActorContext,
     ) -> Result<u64> {
         Ok(self.last_sequencer_info.last_order)
+    }
+}
+
+#[async_trait]
+impl Handler<EventData> for SequencerActor {
+    async fn handle(&mut self, msg: EventData, _ctx: &mut ActorContext) -> Result<()> {
+        if let Ok(service_status_event) = msg.data.downcast::<ServiceStatusEvent>() {
+            let service_status = service_status_event.deref().status;
+            log::warn!("SequencerActor set self status to {:?}", service_status);
+            self.service_status = service_status;
+        }
+
+        Ok(())
     }
 }

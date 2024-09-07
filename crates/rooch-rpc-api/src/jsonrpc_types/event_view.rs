@@ -2,13 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::{
-    AnnotatedMoveStructView, H256View, RoochAddressView, StrView, StructTagView, UnitedAddressView,
+    AnnotatedMoveStructView, H256View, HumanReadableDisplay, RoochAddressView, StrView,
+    StructTagView, UnitedAddressView,
 };
 use moveos_types::moveos_std::{
     event::{AnnotatedEvent, Event, EventID, TransactionEvent},
     object::ObjectID,
 };
-use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
+use rooch_types::indexer::event::{
+    AnnotatedIndexerEvent, EventFilter, IndexerEvent, IndexerEventID,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -103,6 +106,18 @@ impl From<AnnotatedEvent> for EventView {
     }
 }
 
+impl HumanReadableDisplay for EventView {
+    fn to_human_readable_string(&self, _verbose: bool, indent: usize) -> String {
+        format!(
+            "{indent}event handle id: {}\n{indent}event seq      : {}\n{indent}event type     : {}",
+            self.event_id.event_handle_id,
+            self.event_id.event_seq.0,
+            self.event_type,
+            indent = " ".repeat(indent),
+        )
+    }
+}
+
 #[derive(
     Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize, JsonSchema,
 )]
@@ -147,7 +162,7 @@ impl From<IndexerEvent> for IndexerEventView {
             indexer_event_id: event.indexer_event_id.into(),
             event_id: event.event_id.into(),
             event_type: event.event_type.into(),
-            event_data: StrView(event.event_data),
+            event_data: StrView(event.event_data.unwrap_or_default()),
             tx_hash: event.tx_hash.into(),
             sender: event.sender.into(),
             created_at: event.created_at.into(),
@@ -157,9 +172,29 @@ impl From<IndexerEvent> for IndexerEventView {
     }
 }
 
+impl From<AnnotatedIndexerEvent> for IndexerEventView {
+    fn from(event: AnnotatedIndexerEvent) -> Self {
+        IndexerEventView {
+            indexer_event_id: event.event.indexer_event_id.into(),
+            event_id: event.event.event_id.into(),
+            event_type: event.event.event_type.into(),
+            event_data: StrView(event.event.event_data.unwrap_or_default()),
+            tx_hash: event.event.tx_hash.into(),
+            sender: event.event.sender.into(),
+            created_at: event.event.created_at.into(),
+            decoded_event_data: Some(event.decoded_event_data.into()),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum EventFilterView {
+    /// Query by event type with sender
+    EventTypeWithSender {
+        event_type: StructTagView,
+        sender: UnitedAddressView,
+    },
     /// Query by event type.
     EventType(StructTagView),
     /// Query by sender address.
@@ -186,6 +221,12 @@ pub enum EventFilterView {
 impl From<EventFilterView> for EventFilter {
     fn from(event_filter: EventFilterView) -> Self {
         match event_filter {
+            EventFilterView::EventTypeWithSender { event_type, sender } => {
+                Self::EventTypeWithSender {
+                    event_type: event_type.into(),
+                    sender: sender.into(),
+                }
+            }
             EventFilterView::EventType(event_type) => Self::EventType(event_type.into()),
             EventFilterView::Sender(address) => Self::Sender(address.into()),
             EventFilterView::TxHash(tx_hash) => Self::TxHash(tx_hash.into()),

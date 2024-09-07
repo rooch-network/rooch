@@ -11,15 +11,15 @@ pub const MODULE_NAME: &IdentStr = ident_str!("gas_coin");
 pub const DECIMALS: u8 = 18;
 
 #[derive(Debug, Clone)]
-pub struct GasCoin;
+pub struct RGas;
 
-impl MoveStructType for GasCoin {
+impl MoveStructType for RGas {
     const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = ident_str!("GasCoin");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("RGas");
 }
 
-impl GasCoin {
+impl RGas {
     pub fn scaling<I: Into<U256>>(value: I) -> U256 {
         U256::from(10u64.pow(DECIMALS as u32)) * value.into()
     }

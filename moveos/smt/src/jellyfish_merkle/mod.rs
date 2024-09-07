@@ -91,7 +91,7 @@ pub(crate) mod tree_cache;
 use crate::{Key, SMTObject, Value};
 use anyhow::{bail, ensure, format_err, Result};
 use backtrace::Backtrace;
-use hash::{HashValue, SMTHash};
+use hash::{Hash, SMTHash, SMTNodeHash};
 use log::debug;
 use nibble_path::{skip_common_prefix, NibbleIterator, NibblePath};
 use node_type::{Child, Children, InternalNode, LeafNode, Node, NodeKey};
@@ -102,7 +102,7 @@ use std::marker::PhantomData;
 use tree_cache::TreeCache;
 
 /// The hardcoded maximum height of a [`JellyfishMerkleTree`] in nibbles.
-pub const ROOT_NIBBLE_HEIGHT: usize = HashValue::LENGTH * 2;
+pub const ROOT_NIBBLE_HEIGHT: usize = SMTNodeHash::LEN * 2;
 
 /// `TreeReader` defines the interface between
 /// [`JellyfishMerkleTree`](struct.JellyfishMerkleTree.html)
@@ -136,7 +136,7 @@ pub(crate) type StaleNodeIndexBatch = BTreeSet<StaleNodeIndex>;
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(crate) struct StaleNodeIndex {
     /// The version since when the node is overwritten and becomes stale.
-    pub stale_since_version: HashValue,
+    pub stale_since_version: SMTNodeHash,
     /// The [`NodeKey`](node_type/struct.NodeKey.html) identifying the node associated with this
     /// record.
     pub node_key: NodeKey,
@@ -190,9 +190,9 @@ where
     #[cfg(test)]
     pub fn put_blob_set(
         &self,
-        state_root_hash: Option<HashValue>,
+        state_root_hash: Option<SMTNodeHash>,
         blob_set: Vec<(K, SMTObject<V>)>,
-    ) -> Result<(HashValue, TreeUpdateBatch<K, V>)> {
+    ) -> Result<(SMTNodeHash, TreeUpdateBatch<K, V>)> {
         let blob_set = blob_set
             .into_iter()
             .map(|(k, v)| (k, Some(v)))
@@ -201,7 +201,11 @@ where
     }
 
     #[cfg(test)]
-    pub fn print_tree<PK: Into<K>>(&self, state_root_hash: HashValue, start_key: PK) -> Result<()> {
+    pub fn print_tree<PK: Into<K>>(
+        &self,
+        state_root_hash: SMTNodeHash,
+        start_key: PK,
+    ) -> Result<()> {
         let iter = self::iterator::JellyfishMerkleIterator::new(
             self.reader,
             state_root_hash,
@@ -214,18 +218,18 @@ where
     #[cfg(test)]
     pub fn delete<DK: Into<K>>(
         &self,
-        state_root_hash: Option<HashValue>,
+        state_root_hash: Option<SMTNodeHash>,
         key: DK,
-    ) -> Result<(HashValue, TreeUpdateBatch<K, V>)> {
+    ) -> Result<(SMTNodeHash, TreeUpdateBatch<K, V>)> {
         self.updates(state_root_hash, vec![(key.into(), None)])
     }
 
     /// Insert all kvs in `blob_set` into tree, return updated root hash and tree updates
     pub fn insert_all(
         &self,
-        state_root_hash: Option<HashValue>,
+        state_root_hash: Option<SMTNodeHash>,
         blob_set: Vec<(K, SMTObject<V>)>,
-    ) -> Result<(HashValue, TreeUpdateBatch<K, V>)> {
+    ) -> Result<(SMTNodeHash, TreeUpdateBatch<K, V>)> {
         let blob_set = blob_set
             .into_iter()
             .map(|(k, v)| (k, Some(v)))
@@ -235,9 +239,9 @@ where
 
     pub fn updates<S: Into<Vec<(K, Option<SMTObject<V>>)>>>(
         &self,
-        state_root_hash: Option<HashValue>,
+        state_root_hash: Option<SMTNodeHash>,
         blob_set: S,
-    ) -> Result<(HashValue, TreeUpdateBatch<K, V>)> {
+    ) -> Result<(SMTNodeHash, TreeUpdateBatch<K, V>)> {
         let (root_hashes, tree_update_batch) = self.puts(state_root_hash, vec![blob_set.into()])?;
         assert_eq!(
             root_hashes.len(),
@@ -292,9 +296,9 @@ where
     #[allow(clippy::type_complexity)]
     fn puts(
         &self,
-        state_root_hash: Option<HashValue>,
+        state_root_hash: Option<SMTNodeHash>,
         blob_sets: Vec<Vec<(K, Option<SMTObject<V>>)>>,
-    ) -> Result<(Vec<HashValue>, TreeUpdateBatch<K, V>)> {
+    ) -> Result<(Vec<SMTNodeHash>, TreeUpdateBatch<K, V>)> {
         let mut tree_cache = TreeCache::new(self.reader, state_root_hash);
         for blob_set in blob_sets.into_iter() {
             assert!(
@@ -563,7 +567,7 @@ where
         tree_cache: &mut TreeCache<R, K, V>,
     ) -> Result<(NodeKey, Node<K, V>)> {
         // Get the underlying bytes of nibble_iter which must be a key, i.e., hashed account address
-        // with `HashValue::LENGTH` bytes.
+        // with `SMTNodeHash::LEN` bytes.
         let new_leaf_node = Node::new_leaf(key, blob);
         let node_key = new_leaf_node.merkle_hash();
         tree_cache.put_node(node_key, new_leaf_node.clone())?;
@@ -573,7 +577,7 @@ where
     /// Returns the account state blob (if applicable) and the corresponding merkle proof.
     pub fn get_with_proof<GK: Into<K>>(
         &self,
-        state_root_hash: HashValue,
+        state_root_hash: SMTNodeHash,
         key: GK,
     ) -> Result<(Option<SMTObject<V>>, SparseMerkleProof)> {
         // Empty tree just returns proof with no sibling hash.
@@ -648,7 +652,7 @@ where
     /// Gets the proof that shows a list of keys up to `rightmost_key_to_prove` exist at `version`.
     pub fn get_range_proof(
         &self,
-        state_root_hash: HashValue,
+        state_root_hash: SMTNodeHash,
         rightmost_key_to_prove: K,
     ) -> Result<SparseMerkleRangeProof> {
         let key_hash = rightmost_key_to_prove.merkle_hash();
@@ -676,7 +680,7 @@ where
     #[cfg(test)]
     pub fn get<GK: Into<K>>(
         &self,
-        state_root_hash: HashValue,
+        state_root_hash: SMTNodeHash,
         key: GK,
     ) -> Result<Option<SMTObject<V>>> {
         Ok(self.get_with_proof(state_root_hash, key)?.0)

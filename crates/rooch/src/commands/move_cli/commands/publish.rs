@@ -9,7 +9,7 @@ use move_core_types::effects::Op;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
 use moveos_compiler::dependency_order::sort_by_dependency_order;
 use moveos_types::move_std::string::MoveString;
-use moveos_types::moveos_std::module_store::ModuleStore;
+use moveos_types::moveos_std::module_store::{ModuleStore, PackageData};
 use moveos_types::moveos_std::move_module::MoveModule;
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::{
@@ -20,8 +20,9 @@ use moveos_verifier::build::run_verifier;
 use moveos_verifier::verifier;
 use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
-use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
-use rooch_types::address::RoochAddress;
+use rooch_rpc_api::jsonrpc_types::{
+    ExecuteTransactionResponseView, HumanReadableDisplay, KeptVMStatusView,
+};
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::rooch::RoochTransaction;
 use rpassword::prompt_password;
@@ -49,7 +50,7 @@ pub struct Publish {
 
     /// Whether publish modules by `MoveAction::ModuleBundle`?
     /// If not set, publish moduels through Move entry function
-    /// `moveos_std::module_store::publish_modules_entry`.
+    /// `moveos_std::module_store::publish_package_entry`.
     /// **Deprecated**! Publish modules by `MoveAction::ModuleBundle` is no longer used anymore.
     /// So you should never add this option.
     /// For now, the option is kept for test only.
@@ -117,37 +118,43 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
             bundles.push(binary);
         }
 
-        // Validate sender account if provided
-        if pkg_address != context.resolve_address(self.tx_options.sender)? {
-            return Err(RoochError::CommandArgumentError(
-                "--sender-account required and the sender account must be the same as the package address"
-                    .to_string(),
-            ));
-        }
-
         // Create a sender RoochAddress
-        let sender: RoochAddress = pkg_address.into();
-        eprintln!("Publish modules to address: {:?}", sender);
+        eprintln!("Publish modules to address: {:?}", pkg_address);
 
         let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
 
+        let sender = context.resolve_address(self.tx_options.sender)?.into();
         // Prepare and execute the transaction based on the action type
         let tx_result = if !self.by_move_action {
-            let args = bcs::to_bytes(&bundles).unwrap();
+            let pkg_data = PackageData::new(
+                MoveString::from(package.compiled_package_info.package_name.as_str()),
+                pkg_address,
+                bundles,
+            );
+            let pkg_bytes = bcs::to_bytes(&pkg_data).unwrap();
+            let args = bcs::to_bytes(&pkg_bytes).unwrap();
             let action = MoveAction::new_function_call(
                 FunctionId::new(
                     ModuleId::new(
                         MOVEOS_STD_ADDRESS,
                         Identifier::new("module_store".to_owned()).unwrap(),
                     ),
-                    Identifier::new("publish_modules_entry".to_owned()).unwrap(),
+                    Identifier::new("publish_package_entry".to_owned()).unwrap(),
                 ),
                 vec![],
                 vec![args],
             );
 
+            let dry_run_result = context
+                .dry_run(
+                    context
+                        .build_tx_data(sender, action.clone(), max_gas_amount)
+                        .await?,
+                )
+                .await;
+
             // Handle transaction with or without authenticator
-            match self.tx_options.authenticator {
+            let mut result = match self.tx_options.authenticator {
                 Some(authenticator) => {
                     let tx_data = context
                         .build_tx_data(sender, action, max_gas_amount)
@@ -179,7 +186,15 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                             .await?
                     }
                 }
+            };
+
+            if let Ok(dry_run_resp) = dry_run_result {
+                if dry_run_resp.raw_output.status != KeptVMStatusView::Executed {
+                    result.error_info = Some(dry_run_resp);
+                }
             }
+
+            result
         } else {
             // Handle MoveAction.ModuleBundle case
             let action = MoveAction::ModuleBundle(bundles);
@@ -235,21 +250,24 @@ impl Publish {
 
         // print execution info
         let exe_info = &txn_response.execution_info;
-        output.push_str(&format!(
-            r#"Execution info:
-    status: {:?}
-    gas used: {}
-    tx hash: {}
-    state root: {}
-    event root: {}"#,
-            exe_info.status,
-            exe_info.gas_used,
-            exe_info.tx_hash,
-            exe_info.state_root,
-            exe_info.event_root
-        ));
+        output.push_str(&exe_info.to_human_readable_string(false, 0));
 
         if let Some(txn_output) = &txn_response.output {
+            // print error info
+            if let Some(error_info) = txn_response.clone().error_info {
+                output.push_str(
+                    format!(
+                        "\n\n\nTransaction dry run failed:\n {:?}",
+                        error_info.vm_error_info.error_message
+                    )
+                    .as_str(),
+                );
+                output.push_str("\nCallStack trace:\n".to_string().as_str());
+                for (idx, item) in error_info.vm_error_info.execution_state.iter().enumerate() {
+                    output.push_str(format!("{} {}\n", idx, item).as_str());
+                }
+            };
+
             // print modules
             let changes = &txn_output.changeset.changes;
             let module_store_id = ModuleStore::object_id();
@@ -306,6 +324,15 @@ impl Publish {
                     output.push_str(&format!("\n    {}", module.short_str_lossless()));
                 }
             };
+
+            // print objects changes
+            output.push_str("\n\n");
+            output.push_str(
+                txn_output
+                    .changeset
+                    .to_human_readable_string(false, 0)
+                    .as_str(),
+            );
         }
 
         Ok(output)

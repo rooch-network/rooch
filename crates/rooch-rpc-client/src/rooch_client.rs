@@ -6,13 +6,18 @@ use jsonrpsee::http_client::HttpClient;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::account::Account;
 use moveos_types::{access_path::AccessPath, state::ObjectState, transaction::FunctionCall};
+use rooch_rpc_api::api::btc_api::BtcAPIClient;
 use rooch_rpc_api::api::rooch_api::RoochAPIClient;
+use rooch_rpc_api::jsonrpc_types::btc::ord::InscriptionFilterView;
+use rooch_rpc_api::jsonrpc_types::btc::utxo::UTXOFilterView;
+use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, transaction_view::TransactionWithInfoView,
+    DryRunTransactionResponseView, InscriptionPageView, UTXOPageView,
 };
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, EventOptions, EventPageView,
-    ObjectIDView, RoochAddressView, StateOptions, StatePageView, StructTagView,
+    FieldKeyView, ObjectIDView, RoochAddressView, StateOptions, StatePageView, StructTagView,
 };
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, ObjectStateView};
 use rooch_rpc_api::jsonrpc_types::{
@@ -20,6 +25,7 @@ use rooch_rpc_api::jsonrpc_types::{
 };
 use rooch_rpc_api::jsonrpc_types::{TransactionWithInfoPageView, TxOptions};
 use rooch_types::indexer::state::IndexerStateID;
+use rooch_types::transaction::RoochTransactionData;
 use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
 use std::sync::Arc;
 
@@ -48,6 +54,17 @@ impl RoochRpcClient {
         let tx_payload = bcs::to_bytes(&tx)?;
         self.http
             .execute_raw_transaction(tx_payload.into(), tx_option)
+            .await
+            .map_err(|e| anyhow::anyhow!(e))
+    }
+
+    pub async fn dry_run_tx(
+        &self,
+        tx: RoochTransactionData,
+    ) -> Result<DryRunTransactionResponseView> {
+        let tx_payload = bcs::to_bytes(&tx)?;
+        self.http
+            .dry_run(tx_payload.into())
             .await
             .map_err(|e| anyhow::anyhow!(e))
     }
@@ -111,6 +128,24 @@ impl RoochRpcClient {
             .await?)
     }
 
+    pub async fn query_transactions(
+        &self,
+        filter: TransactionFilterView,
+        cursor: Option<u64>,
+        limit: Option<u64>,
+        query_options: Option<QueryOptions>,
+    ) -> Result<TransactionWithInfoPageView> {
+        Ok(self
+            .http
+            .query_transactions(
+                filter,
+                cursor.map(Into::into),
+                limit.map(Into::into),
+                query_options,
+            )
+            .await?)
+    }
+
     pub async fn get_transactions_by_hash(
         &self,
         tx_hashes: Vec<H256>,
@@ -167,6 +202,18 @@ impl RoochRpcClient {
         Ok(self
             .http
             .list_states(access_path, cursor, limit.map(Into::into), None)
+            .await?)
+    }
+
+    pub async fn get_field_states(
+        &self,
+        object_id: ObjectIDView,
+        field_key: Vec<FieldKeyView>,
+        state_option: Option<StateOptions>,
+    ) -> Result<Vec<Option<ObjectStateView>>> {
+        Ok(self
+            .http
+            .get_field_states(object_id, field_key, state_option)
             .await?)
     }
 
@@ -241,6 +288,42 @@ impl RoochRpcClient {
                 cursor.map(Into::into),
                 limit.map(Into::into),
                 query_options,
+            )
+            .await?)
+    }
+
+    pub async fn query_utxos(
+        &self,
+        filter: UTXOFilterView,
+        cursor: Option<IndexerStateID>,
+        limit: Option<u64>,
+        query_options: Option<QueryOptions>,
+    ) -> Result<UTXOPageView> {
+        Ok(self
+            .http
+            .query_utxos(
+                filter,
+                cursor.map(Into::into),
+                limit.map(Into::into),
+                query_options.map(|v| v.descending),
+            )
+            .await?)
+    }
+
+    pub async fn query_inscriptions(
+        &self,
+        filter: InscriptionFilterView,
+        cursor: Option<IndexerStateID>,
+        limit: Option<u64>,
+        query_options: Option<QueryOptions>,
+    ) -> Result<InscriptionPageView> {
+        Ok(self
+            .http
+            .query_inscriptions(
+                filter,
+                cursor.map(Into::into),
+                limit.map(Into::into),
+                query_options.map(|v| v.descending),
             )
             .await?)
     }

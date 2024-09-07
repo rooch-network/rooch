@@ -6,9 +6,12 @@ use move_core_types::language_storage::StructTag;
 use move_core_types::u256::U256;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use moveos_types::module_binding::{ModuleBinding, MoveFunctionCaller};
+use moveos_types::move_std::option::MoveOption;
 use moveos_types::move_std::string::MoveString;
+use moveos_types::move_types;
 use moveos_types::moveos_std::object::{self, ObjectID};
 use moveos_types::state::{MoveState, MoveStructState, MoveStructType, PlaceholderStruct};
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("coin");
@@ -91,6 +94,7 @@ pub struct CoinInfo<CoinType> {
     coin_type: MoveString,
     name: MoveString,
     symbol: MoveString,
+    icon_url: MoveOption<MoveString>,
     decimals: u8,
     supply: U256,
     phantom: std::marker::PhantomData<CoinType>,
@@ -123,6 +127,7 @@ where
             MoveString::type_layout(),
             MoveString::type_layout(),
             MoveString::type_layout(),
+            MoveOption::<MoveString>::type_layout(),
             move_core_types::value::MoveTypeLayout::U8,
             move_core_types::value::MoveTypeLayout::U256,
         ])
@@ -142,21 +147,33 @@ where
         }
     }
 }
+
+/// The StructTag for the InvalidCoinType error
+static INVALID_COIN_TYPE: Lazy<StructTag> = Lazy::new(|| StructTag {
+    address: ROOCH_FRAMEWORK_ADDRESS,
+    module: MODULE_NAME.to_owned(),
+    name: ident_str!("InvalidCoinType").to_owned(),
+    type_params: vec![],
+});
+
 impl<CoinType> CoinInfo<CoinType> {
     pub fn coin_type(&self) -> String {
         self.coin_type.to_string()
     }
     pub fn coin_type_tag(&self) -> StructTag {
-        let coin_type_str = format!("0x{}", self.coin_type);
-        coin_type_str
-            .parse::<StructTag>()
-            .expect("CoinType in CoinInfo should be valid StructTag")
+        //Because the coin_type is a canonical string, we can parse it to a StructTag
+        //For avoid panic, we use unwrap_or to return InvalidCoinType if the parsing failed
+        move_types::parse_struct_tag(&self.coin_type.to_string())
+            .unwrap_or(INVALID_COIN_TYPE.clone())
     }
     pub fn name(&self) -> String {
         self.name.to_string()
     }
     pub fn symbol(&self) -> String {
         self.symbol.to_string()
+    }
+    pub fn icon_url(&self) -> Option<String> {
+        self.icon_url.clone().map(|v| v.to_string()).into()
     }
     pub fn decimals(&self) -> u8 {
         self.decimals

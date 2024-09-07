@@ -18,32 +18,25 @@ module moveos_std::simple_map {
     /// Map key is not found
     const ErrorKeyNotFound: u64 = 2;
 
-    struct SimpleMap<Key, Value> has store {
+    struct SimpleMap<Key, Value> has copy, drop, store {
         data: vector<Element<Key, Value>>,
     }
 
-    struct Element<Key, Value> has store {
+    struct Element<Key, Value> has copy, drop, store {
         key: Key,
         value: Value,
     }
 
-    public fun length<Key: store, Value: store>(map: &SimpleMap<Key, Value>): u64 {
+    public fun length<Key, Value>(map: &SimpleMap<Key, Value>): u64 {
         vector::length(&map.data)
     }
 
     /// Create an empty SimpleMap.
-    public fun new<Key: store, Value: store>(): SimpleMap<Key, Value> {
+    public fun new<Key, Value>(): SimpleMap<Key, Value> {
         SimpleMap {
             data: vector::empty(),
         }
     } 
-
-    #[deprecated]
-    /// Create an empty SimpleMap.
-    /// This function is deprecated, use `new` instead.
-    public fun create<Key: store, Value: store>(): SimpleMap<Key, Value> {
-        new()
-    }
 
     public fun clone<Key: store+copy, Value: store+copy>(map: &SimpleMap<Key,Value>): SimpleMap<Key, Value>{
         let data = vector::empty();
@@ -56,7 +49,7 @@ module moveos_std::simple_map {
         }
     }
 
-    public fun borrow<Key: store, Value: store>(
+    public fun borrow<Key, Value>(
         map: &SimpleMap<Key, Value>,
         key: &Key,
     ): &Value {
@@ -66,7 +59,7 @@ module moveos_std::simple_map {
         &vector::borrow(&map.data, idx).value
     }
 
-    public fun borrow_with_default<Key: store, Value: store>(
+    public fun borrow_with_default<Key, Value>(
         map: &SimpleMap<Key, Value>,
         key: &Key,
         default: &Value,
@@ -80,7 +73,7 @@ module moveos_std::simple_map {
         }
     }
 
-    public fun borrow_mut<Key: store, Value: store>(
+    public fun borrow_mut<Key, Value>(
         map: &mut SimpleMap<Key, Value>,
         key: &Key,
     ): &mut Value {
@@ -90,7 +83,7 @@ module moveos_std::simple_map {
         &mut vector::borrow_mut(&mut map.data, idx).value
     }
 
-    public fun contains_key<Key: store, Value: store>(
+    public fun contains_key<Key, Value>(
         map: &SimpleMap<Key, Value>,
         key: &Key,
     ): bool {
@@ -98,20 +91,12 @@ module moveos_std::simple_map {
         option::is_some(&maybe_idx)
     }
 
-    public fun destroy_empty<Key: store, Value: store>(map: SimpleMap<Key, Value>) {
+    public fun destroy_empty<Key, Value>(map: SimpleMap<Key, Value>) {
         let SimpleMap { data } = map;
         vector::destroy_empty(data);
     }
 
-    /// Drop all keys and values in the map. This requires keys and values to be dropable.
-    public fun drop<Key: copy + drop, Value: drop>(map: SimpleMap<Key, Value>) {
-        let SimpleMap { data } = map;
-        vector::for_each(data, |e| {
-            let Element { key:_, value:_ } = e;
-        });
-    }
-
-    public fun add<Key: store, Value: store>(
+    public fun add<Key, Value>(
         map: &mut SimpleMap<Key, Value>,
         key: Key,
         value: Value,
@@ -123,7 +108,7 @@ module moveos_std::simple_map {
     }
 
     /// Insert key/value pair or update an existing key to a new value
-    public fun upsert<Key: store, Value: store>(
+    public fun upsert<Key, Value>(
         map: &mut SimpleMap<Key, Value>,
         key: Key,
         value: Value
@@ -173,7 +158,7 @@ module moveos_std::simple_map {
 
     /// Transform the map into two vectors with the keys and values respectively
     /// Primarily used to destroy a map
-    public fun to_vec_pair<Key: store, Value: store>(
+    public fun to_vec_pair<Key, Value>(
         map: SimpleMap<Key, Value>
     ): (vector<Key>, vector<Value>) {
         let keys: vector<Key> = vector::empty();
@@ -192,7 +177,7 @@ module moveos_std::simple_map {
         (keys, values)
     } 
 
-    public fun remove<Key: store, Value: store>(
+    public fun remove<Key, Value>(
         map: &mut SimpleMap<Key, Value>,
         key: &Key,
     ): (Key, Value) {
@@ -203,7 +188,7 @@ module moveos_std::simple_map {
         (key, value)
     }
 
-    fun find<Key: store, Value: store>(
+    fun find<Key, Value>(
         map: &SimpleMap<Key, Value>,
         key: &Key,
     ): option::Option<u64>{
@@ -221,7 +206,7 @@ module moveos_std::simple_map {
 
     #[test]
     public fun add_remove_many() {
-        let map = create<u64, u64>();
+        let map = new<u64, u64>();
 
         assert!(length(&map) == 0, 0);
         assert!(!contains_key(&map, &3), 1);
@@ -254,30 +239,30 @@ module moveos_std::simple_map {
 
     #[test]
     public fun test_keys() {
-        let map = create<u64, u64>();
+        let map = new<u64, u64>();
         assert!(keys(&map) == vector[], 0);
         add(&mut map, 2, 1);
         add(&mut map, 3, 1);
 
         assert!(keys(&map) == vector[2, 3], 0);
-        drop(map);
+        
     }
 
     #[test]
     public fun test_values() {
-        let map = create<u64, u64>();
+        let map = new<u64, u64>();
         assert!(values(&map) == vector[], 0);
         add(&mut map, 2, 1);
         add(&mut map, 3, 2);
 
         assert!(values(&map) == vector[1, 2], 0);
-        drop(map);
+        
     }
 
     #[test]
     #[expected_failure]
     public fun add_twice() {
-        let map = create<u64, u64>();
+        let map = new<u64, u64>();
         add(&mut map, 3, 1);
         add(&mut map, 3, 1);
 
@@ -288,7 +273,7 @@ module moveos_std::simple_map {
     #[test]
     #[expected_failure]
     public fun remove_twice() {
-        let map = create<u64, u64>();
+        let map = new<u64, u64>();
         add(&mut map, 3, 1);
         remove(&mut map, &3);
         remove(&mut map, &3);
@@ -298,7 +283,7 @@ module moveos_std::simple_map {
 
     #[test]
     public fun upsert_test() {
-        let map = create<u64, u64>();
+        let map = new<u64, u64>();
         // test adding 3 elements using upsert
         upsert<u64, u64>(&mut map, 1, 1 );
         upsert(&mut map, 2, 2 );
@@ -319,19 +304,18 @@ module moveos_std::simple_map {
         assert!(contains_key(&map, &1), 8);
         assert!(borrow(&map, &1) == &4, 9);
 
-        drop(map);
+        
     }
 
     #[test]
     public fun test_clone(){
-        let map = create<u64, u64>();
+        let map = new<u64, u64>();
         add(&mut map, 1, 1);
         add(&mut map, 2, 2);
         let map2 = clone(&map);
         assert!(length(&map2) == 2, 0);
         assert!(contains_key(&map2, &1), 1);
         assert!(contains_key(&map2, &2), 2);
-        drop(map);
-        drop(map2);
+        
     }
 }

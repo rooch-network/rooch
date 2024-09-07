@@ -12,13 +12,10 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
-serde = { workspace = true }
-serde_json = { workspace = true }
 once_cell = { workspace = true }
 wasmer = { workspace = true }
 wasmer-types = { workspace = true }
 wasmer-compiler-singlepass = { workspace = true }
-ciborium = { workspace = true }
 rand = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }

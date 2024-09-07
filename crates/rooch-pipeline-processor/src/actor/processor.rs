@@ -2,10 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::messages::{ExecuteL1BlockMessage, ExecuteL1TxMessage, ExecuteL2TxMessage};
-use anyhow::Result;
+use crate::metrics::PipelineProcessorMetrics;
+use anyhow::{Error, Result};
 use async_trait::async_trait;
-use coerce::actor::{context::ActorContext, message::Handler, Actor};
+use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
+use function_name::named;
+use moveos::moveos::VMPanicError;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
+use prometheus::Registry;
+use rooch_db::RoochDB;
+use rooch_event::actor::{EventActor, ServiceStatusMessage};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_proposer::proxy::ProposerProxy;
@@ -17,6 +23,7 @@ use rooch_types::{
         LedgerTxData, RoochTransaction,
     },
 };
+use std::sync::Arc;
 use tracing::{debug, info};
 
 /// PipelineProcessor aggregates the executor, sequencer, proposer, and indexer to process transactions.
@@ -26,6 +33,9 @@ pub struct PipelineProcessorActor {
     pub(crate) proposer: ProposerProxy,
     pub(crate) indexer: IndexerProxy,
     pub(crate) service_status: ServiceStatus,
+    pub(crate) metrics: Arc<PipelineProcessorMetrics>,
+    event_actor: Option<LocalActorRef<EventActor>>,
+    rooch_db: RoochDB,
 }
 
 impl PipelineProcessorActor {
@@ -35,6 +45,9 @@ impl PipelineProcessorActor {
         proposer: ProposerProxy,
         indexer: IndexerProxy,
         service_status: ServiceStatus,
+        registry: &Registry,
+        event_actor: Option<LocalActorRef<EventActor>>,
+        rooch_db: RoochDB,
     ) -> Self {
         Self {
             executor,
@@ -42,6 +55,9 @@ impl PipelineProcessorActor {
             proposer,
             indexer,
             service_status,
+            metrics: Arc::new(PipelineProcessorMetrics::new(registry)),
+            event_actor,
+            rooch_db,
         }
     }
 
@@ -55,7 +71,7 @@ impl PipelineProcessorActor {
         for order in (1..=last_order).rev() {
             let tx_hash = self
                 .sequencer
-                .get_tx_hashs(vec![order])
+                .get_tx_hashes(vec![order])
                 .await?
                 .pop()
                 .flatten()
@@ -107,51 +123,149 @@ impl PipelineProcessorActor {
         Ok(())
     }
 
+    #[named]
     pub async fn execute_l1_block(
         &mut self,
         l1_block: L1BlockWithBody,
     ) -> Result<ExecuteTransactionResponse> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .pipeline_processor_execution_tx_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let moveos_tx = self.executor.validate_l1_block(l1_block.clone()).await?;
         let ledger_tx = self
             .sequencer
             .sequence_transaction(LedgerTxData::L1Block(l1_block.block))
             .await?;
-        self.execute_tx(ledger_tx, moveos_tx).await
+        let size = moveos_tx.ctx.tx_size;
+        let result = self.execute_tx(ledger_tx, moveos_tx).await?;
+
+        let gas_used = result.output.gas_used;
+        self.metrics
+            .pipeline_processor_l1_block_gas_used
+            .inc_by(gas_used);
+        self.metrics
+            .pipeline_processor_execution_tx_bytes
+            .with_label_values(&[fn_name])
+            .observe(size as f64);
+        Ok(result)
     }
 
+    #[named]
     pub async fn execute_l1_tx(
         &mut self,
         l1_tx: L1Transaction,
     ) -> Result<ExecuteTransactionResponse> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .pipeline_processor_execution_tx_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let moveos_tx = self.executor.validate_l1_tx(l1_tx.clone()).await?;
         let ledger_tx = self
             .sequencer
-            .sequence_transaction(LedgerTxData::L1Tx(l1_tx))
+            .sequence_transaction(LedgerTxData::L1Tx(l1_tx.clone()))
             .await?;
-        self.execute_tx(ledger_tx, moveos_tx).await
+        let size = moveos_tx.ctx.tx_size;
+        let result = match self.execute_tx(ledger_tx, moveos_tx).await {
+            Ok(v) => v,
+            Err(err) => {
+                if is_vm_panic_error(&err) {
+                    let l1_tx_bcs_bytes = bcs::to_bytes(&l1_tx)?;
+                    log::warn!(
+                        "Execute L1 Tx failed while VM panic occurred then \
+                        set sequencer to Maintenance mode and pause the relayer. error: {:?}, tx bytes {}",
+                        err, hex::encode(&l1_tx_bcs_bytes)
+                    );
+                    if let Some(event_actor) = self.event_actor.clone() {
+                        let _ = event_actor
+                            .send(ServiceStatusMessage {
+                                status: ServiceStatus::Maintenance,
+                            })
+                            .await;
+                    }
+                }
+                return Err(err);
+            }
+        };
+
+        let gas_used = result.output.gas_used;
+        self.metrics
+            .pipeline_processor_l1_tx_gas_used
+            .inc_by(gas_used);
+        self.metrics
+            .pipeline_processor_execution_tx_bytes
+            .with_label_values(&[fn_name])
+            .observe(size as f64);
+        Ok(result)
     }
 
+    #[named]
     pub async fn execute_l2_tx(
         &mut self,
         mut tx: RoochTransaction,
     ) -> Result<ExecuteTransactionResponse> {
         debug!("pipeline execute_l2_tx: {:?}", tx.tx_hash());
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .pipeline_processor_execution_tx_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         let moveos_tx = self.executor.validate_l2_tx(tx.clone()).await?;
         let ledger_tx = self
             .sequencer
-            .sequence_transaction(LedgerTxData::L2Tx(tx))
+            .sequence_transaction(LedgerTxData::L2Tx(tx.clone()))
             .await?;
-        self.execute_tx(ledger_tx, moveos_tx).await
+        let size = moveos_tx.ctx.tx_size;
+        let result = match self.execute_tx(ledger_tx, moveos_tx).await {
+            Ok(v) => v,
+            Err(err) => {
+                if is_vm_panic_error(&err) {
+                    let l2_tx_bcs_bytes = bcs::to_bytes(&tx)?;
+                    log::warn!(
+                        "Execute L2 Tx failed while VM panic occurred and revert tx. error: {:?} tx info {}",
+                        err, hex::encode(l2_tx_bcs_bytes)
+                    );
+                    let tx_hash = tx.tx_hash();
+                    self.rooch_db.revert_tx(tx_hash)?;
+                }
+                return Err(err);
+            }
+        };
+
+        let gas_used = result.output.gas_used;
+        self.metrics
+            .pipeline_processor_l2_tx_gas_used
+            .inc_by(gas_used);
+        self.metrics
+            .pipeline_processor_execution_tx_bytes
+            .with_label_values(&[fn_name])
+            .observe(size as f64);
+
+        Ok(result)
     }
 
+    #[named]
     pub async fn execute_tx(
         &mut self,
         tx: LedgerTransaction,
         mut moveos_tx: VerifiedMoveOSTransaction,
     ) -> Result<ExecuteTransactionResponse> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .pipeline_processor_execution_tx_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
         // Add sequence info to tx context, let the Move contract can get the sequence info
         moveos_tx.ctx.add(tx.sequence_info.clone())?;
+
         // Then execute
+        let size = moveos_tx.ctx.tx_size;
         let (output, execution_info) = self.executor.execute_transaction(moveos_tx.clone()).await?;
         self.proposer
             .propose_transaction(tx.clone(), execution_info.clone())
@@ -184,6 +298,11 @@ impl PipelineProcessorActor {
                 Err(error) => log::error!("Update indexer error: {}", error),
             };
         };
+
+        self.metrics
+            .pipeline_processor_execution_tx_bytes
+            .with_label_values(&[fn_name])
+            .observe(size as f64);
 
         Ok(ExecuteTransactionResponse {
             sequence_info,
@@ -226,5 +345,15 @@ impl Handler<ExecuteL1TxMessage> for PipelineProcessorActor {
         _ctx: &mut ActorContext,
     ) -> Result<ExecuteTransactionResponse> {
         self.execute_l1_tx(msg.tx).await
+    }
+}
+
+fn is_vm_panic_error(error: &Error) -> bool {
+    if let Some(vm_error) = error.downcast_ref::<VMPanicError>() {
+        match vm_error {
+            VMPanicError::VerifierPanicError(_) | VMPanicError::SystemCallPanicError(_) => true,
+        }
+    } else {
+        false
     }
 }

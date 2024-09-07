@@ -10,6 +10,7 @@ use bitcoin::hex::FromHex;
 use bitcoincore_rpc::RpcApi;
 use bitcoincore_rpc_json::bitcoin;
 use bitcoincore_rpc_json::bitcoin::Block;
+use prometheus::Registry;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_store::RoochStore;
 use rooch_test_transaction_builder::TestTransactionBuilder;
@@ -25,8 +26,18 @@ use tracing::info;
 pub const EXAMPLE_SIMPLE_BLOG_PACKAGE_NAME: &str = "simple_blog";
 pub const EXAMPLE_SIMPLE_BLOG_NAMED_ADDRESS: &str = "simple_blog";
 
-pub fn gen_sequencer(keypair: RoochKeyPair, rooch_store: RoochStore) -> Result<SequencerActor> {
-    SequencerActor::new(keypair, rooch_store.clone(), ServiceStatus::Active)
+pub fn gen_sequencer(
+    keypair: RoochKeyPair,
+    rooch_store: RoochStore,
+    registry: &Registry,
+) -> Result<SequencerActor> {
+    SequencerActor::new(
+        keypair,
+        rooch_store.clone(),
+        ServiceStatus::Active,
+        registry,
+        None,
+    )
 }
 
 pub fn create_publish_transaction(

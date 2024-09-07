@@ -12,10 +12,13 @@ use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG};
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::file_keystore::FileBasedKeystore;
 use rooch_key::keystore::Keystore;
-use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView, TxOptions};
+use rooch_rpc_api::jsonrpc_types::{
+    DryRunTransactionResponseView, ExecuteTransactionResponseView, KeptVMStatusView, TxOptions,
+};
 use rooch_types::address::ParsedAddress;
 use rooch_types::address::RoochAddress;
 use rooch_types::addresses;
+use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::rooch::{RoochTransaction, RoochTransactionData};
 use std::collections::BTreeMap;
@@ -90,7 +93,7 @@ impl WalletContext {
         }
     }
 
-    /// Parse and resolve addresses from a map of name to address string    
+    /// Parse and resolve addresses from a map of name to address string
     pub fn parse_and_resolve_addresses(
         &self,
         addresses: BTreeMap<String, String>,
@@ -162,6 +165,17 @@ impl WalletContext {
         Ok(tx)
     }
 
+    pub async fn sign_transaction(
+        &self,
+        signer: RoochAddress,
+        tx_data: RoochTransactionData,
+    ) -> RoochResult<RoochTransaction> {
+        let tx = self
+            .keystore
+            .sign_transaction(&signer, tx_data, self.password.clone())?;
+        Ok(tx)
+    }
+
     pub async fn execute(
         &self,
         tx: RoochTransaction,
@@ -169,7 +183,13 @@ impl WalletContext {
         let client = self.get_client().await?;
         client
             .rooch
-            .execute_tx(tx, Some(TxOptions { with_output: true }))
+            .execute_tx(
+                tx,
+                Some(TxOptions {
+                    with_output: true,
+                    decode: true,
+                }),
+            )
             .await
             .map_err(|e| RoochError::TransactionError(e.to_string()))
     }
@@ -183,6 +203,22 @@ impl WalletContext {
     ) -> RoochResult<ExecuteTransactionResponseView> {
         let tx = self.sign(sender, action, password, max_gas_amount).await?;
         self.execute(tx).await
+    }
+
+    pub fn get_key_pair(&self, address: &RoochAddress) -> Result<RoochKeyPair> {
+        self.keystore.get_key_pair(address, self.password.clone())
+    }
+
+    pub async fn dry_run(
+        &self,
+        tx: RoochTransactionData,
+    ) -> RoochResult<DryRunTransactionResponseView> {
+        let client = self.get_client().await?;
+        client
+            .rooch
+            .dry_run_tx(tx)
+            .await
+            .map_err(|e| RoochError::DryRunTransactionError(e.to_string()))
     }
 
     pub fn assert_execute_success(

@@ -10,7 +10,9 @@ use move_core_types::language_storage::TypeTag;
 use moveos_types::transaction::MoveAction;
 use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
-use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
+use rooch_rpc_api::jsonrpc_types::{
+    ExecuteTransactionResponseView, HumanReadableDisplay, KeptVMStatusView,
+};
 use rooch_types::function_arg::parse_function_arg;
 use rooch_types::{
     address::RoochAddress,
@@ -52,6 +54,10 @@ pub struct RunFunction {
 
     #[clap(flatten)]
     tx_options: TransactionOptions,
+
+    /// Return command outputs in json format
+    #[clap(long, default_value = "false")]
+    json: bool,
 }
 
 #[async_trait]
@@ -77,7 +83,20 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             })
             .collect::<Result<Vec<_>>>()?;
         let action = MoveAction::new_function_call(function_id, type_args, args);
-        match (self.tx_options.authenticator, self.tx_options.session_key) {
+
+        let dry_run_result = context
+            .dry_run(
+                context
+                    .build_tx_data(sender, action.clone(), max_gas_amount)
+                    .await?,
+            )
+            .await?;
+
+        if dry_run_result.raw_output.status != KeptVMStatusView::Executed {
+            return Ok(dry_run_result.into());
+        };
+
+        let result = match (self.tx_options.authenticator, self.tx_options.session_key) {
             (Some(authenticator), _) => {
                 let tx_data = context
                     .build_tx_data(sender, action, max_gas_amount)
@@ -85,7 +104,7 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                 //TODO the authenticator usually is associated with the RoochTransactinData
                 //So we need to find a way to let user generate the authenticator based on the tx_data.
                 let tx = RoochTransaction::new(tx_data, authenticator.into());
-                context.execute(tx).await
+                context.execute(tx).await?
             }
             (_, Some(session_key)) => {
                 let tx_data = context
@@ -120,13 +139,13 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                         )
                         .map_err(|e| RoochError::SignMessageError(e.to_string()))?
                 };
-                context.execute(tx).await
+                context.execute(tx).await?
             }
             (None, None) => {
                 if context.keystore.get_if_password_is_empty() {
                     context
                         .sign_and_execute(sender, action, None, max_gas_amount)
-                        .await
+                        .await?
                 } else {
                     let password =
                         prompt_password("Enter the password to run functions:").unwrap_or_default();
@@ -143,9 +162,58 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
 
                     context
                         .sign_and_execute(sender, action, Some(password), max_gas_amount)
-                        .await
+                        .await?
                 }
             }
+        };
+
+        Ok(result)
+    }
+
+    /// Executes the command, and serializes it to the common JSON output type
+    async fn execute_serialized(self) -> RoochResult<String> {
+        let json = self.json;
+        let result = self.execute().await?;
+
+        if json {
+            let output = serde_json::to_string_pretty(&result).unwrap();
+            if output == "null" {
+                return Ok("".to_string());
+            }
+            Ok(output)
+        } else {
+            let mut output = String::new();
+            // print execution info
+            let exe_info = &result.execution_info;
+            output.push_str(&exe_info.to_human_readable_string(false, 0));
+
+            if let Some(txn_output) = &result.output {
+                // print error info
+                if let Some(error_info) = result.clone().error_info {
+                    output.push_str(
+                        format!(
+                            "\n\n\nTransaction dry run failed:\n {:?}",
+                            error_info.vm_error_info.error_message
+                        )
+                        .as_str(),
+                    );
+                    output.push_str("\nCallStack trace:\n".to_string().as_str());
+                    for (idx, item) in error_info.vm_error_info.execution_state.iter().enumerate() {
+                        output.push_str(format!("{} {}\n", idx, item).as_str());
+                    }
+                };
+
+                // print objects changes
+                output.push_str("\n\n");
+                output.push_str(&txn_output.changeset.to_human_readable_string(false, 0));
+
+                // print events
+                output.push_str("\n\n");
+                output.push_str("Events:\n");
+                output.push_str(&txn_output.events.to_human_readable_string(false, 4));
+            };
+
+            Ok(output)
         }
     }
 }

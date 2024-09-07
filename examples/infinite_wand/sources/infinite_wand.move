@@ -3,6 +3,7 @@
 
 module infinite_wand::infinite_wand {
 
+    use std::option;
     use std::string;
     use moveos_std::timestamp::now_milliseconds;
     use moveos_std::table::Table;
@@ -53,6 +54,7 @@ module infinite_wand::infinite_wand {
         let coin_info_obj = coin::register_extend<InfiniteGold>(
             string::utf8(b"PreToken of InfiniteGames DAO"),
             string::utf8(b"InfiniteGold"),
+            option::none(),
             DECIMALS,
         );
         let admin_cap = object::new_named_object(AdminCap {});

@@ -39,7 +39,10 @@ fn publish_and_load_module() {
                 ObjectState::new_timestamp(Timestamp { milliseconds: 0 }),
                 Timestamp::type_layout(),
             ),
-            (ObjectState::new_module_store(), ModuleStore::type_layout()),
+            (
+                ObjectState::genesis_module_store(),
+                ModuleStore::type_layout(),
+            ),
         ],
     )));
 

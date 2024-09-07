@@ -7,7 +7,6 @@ module bitcoin_move::bitcoin_test {
 
     #[test]
     fun test_submit_block() {
-        rooch_framework::genesis::init_for_test();
         bitcoin_move::genesis::init_for_test();
 
         //https://mempool.space/block/00000000b0c5a240b2a61d2e75692224efd4cbecdf6eaf4cc2cf477ca7c270e7

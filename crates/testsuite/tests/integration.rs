@@ -565,7 +565,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
         match (first, op, second) {
             (Some(first), Some(op), Some(second)) => match op.as_str() {
                 "==" => assert_eq!(first, second, "Assert {:?} == {:?} failed", first, second),
-                "!=" => assert_ne!(first, second, "Assert {:?} 1= {:?} failed", first, second),
+                "!=" => assert_ne!(first, second, "Assert {:?} != {:?} failed", first, second),
                 "contains" => assert!(
                     first.contains(&second),
                     "Assert {:?} contains {:?} failed",

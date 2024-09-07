@@ -5,10 +5,10 @@ use async_trait::async_trait;
 use clap::{Parser, Subcommand};
 use commands::{
     build::BuildCommand, coverage::CoverageCommand, disassemble::DisassembleCommand,
-    docgen::DocgenCommand, errmap::ErrmapCommand, framework_upgrade::FrameworkUpgrade,
-    info::InfoCommand, integration_test::IntegrationTestCommand, new::NewCommand,
-    prove::ProveCommand, publish::Publish, run_function::RunFunction,
-    run_view_function::RunViewFunction, unit_test::TestCommand,
+    docgen::DocgenCommand, errmap::ErrmapCommand, info::InfoCommand,
+    integration_test::IntegrationTestCommand, new::NewCommand, prove::ProveCommand,
+    publish::Publish, run_function::RunFunction, run_view_function::RunViewFunction,
+    unit_test::TestCommand,
 };
 use rooch_types::error::RoochResult;
 use serde_json::{json, Value};
@@ -41,7 +41,6 @@ pub enum MoveCommand {
     View(RunViewFunction),
     IntegrationTest(IntegrationTestCommand),
     Explain(ExplainCommand),
-    FrameworkUpgrade(FrameworkUpgrade),
 }
 
 #[async_trait]
@@ -62,7 +61,6 @@ impl CommandAction<String> for MoveCli {
             MoveCommand::View(c) => c.execute_serialized().await,
             MoveCommand::IntegrationTest(c) => c.execute_serialized().await,
             MoveCommand::Explain(c) => c.execute_serialized().await,
-            MoveCommand::FrameworkUpgrade(c) => c.execute_serialized().await,
         }
     }
 }

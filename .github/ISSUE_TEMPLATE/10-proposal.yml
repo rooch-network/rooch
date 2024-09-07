@@ -1,0 +1,15 @@
+name: Proposals
+description: New external API or other notable changes
+title: "proposal: commands/rpc: proposal title"
+labels: [ "proposal" ]
+body:
+  - type: markdown
+    attributes:
+      value: "Thanks for helping us improve! 🙏 Please answer these questions and provide as much information as possible about your proposal."
+  - type: textarea
+    id: proposal-details
+    attributes:
+      label: "Proposal Details"
+      description: "Please provide the details of your proposal here."
+    validations:
+      required: true

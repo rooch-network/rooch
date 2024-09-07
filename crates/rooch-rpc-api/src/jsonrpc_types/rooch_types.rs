@@ -45,21 +45,22 @@ where
     T: HumanReadableDisplay,
     C: std::fmt::Display,
 {
-    fn to_human_readable_string(&self, verbose: bool) -> String {
+    fn to_human_readable_string(&self, verbose: bool, indent: usize) -> String {
         let _ = verbose;
         format!(
-            r#"Data: 
-{}
+            r#"{indent}Data: 
+{indent}{}
     
-Next cursor: 
-    {}
+{indent}Next cursor: 
+{indent}    {}
     
-Has next page: {:?}"#,
-            self.data.to_human_readable_string(verbose),
+{indent}Has next page: {:?}"#,
+            self.data.to_human_readable_string(verbose, 4),
             self.next_cursor
                 .as_ref()
                 .map_or("None".to_string(), |c| c.to_string()),
-            self.has_next_page
+            self.has_next_page,
+            indent = " ".repeat(indent)
         )
     }
 }
@@ -95,6 +96,7 @@ pub struct CoinInfoView {
     pub coin_type: StructTagView,
     pub name: String,
     pub symbol: String,
+    pub icon_url: Option<String>,
     pub decimals: u8,
     pub supply: StrView<U256>,
 }
@@ -108,6 +110,7 @@ impl<CoinType> From<CoinInfo<CoinType>> for CoinInfoView {
             coin_type: coin_info.coin_type_tag().into(),
             name: coin_info.name(),
             symbol: coin_info.symbol(),
+            icon_url: coin_info.icon_url(),
             decimals: coin_info.decimals(),
             supply: StrView(coin_info.supply()),
         }

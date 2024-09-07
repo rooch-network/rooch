@@ -1,22 +1,19 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::str::FromStr;
-
-use move_core_types::account_address::AccountAddress;
-use serde::{Deserialize, Serialize};
-
-use bitcoin_move::natives::ord::inscription_id::InscriptionId;
 use framework_types::addresses::BITCOIN_MOVE_ADDRESS;
+use move_core_types::account_address::AccountAddress;
 use moveos_types::moveos_std::object::{
-    ObjectEntity, ObjectID, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
+    DynamicField, ObjectEntity, ObjectID, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
 };
 use moveos_types::state::{FieldKey, ObjectState};
 use rooch_types::address::BitcoinAddress;
 use rooch_types::bitcoin::ord::{
-    derive_inscription_id, Inscription, InscriptionID, InscriptionStore,
+    derive_inscription_id, Inscription, InscriptionID, InscriptionStore, SatPoint,
 };
 use rooch_types::into_address::IntoAddress;
+use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 use crate::commands::statedb::commands::convert_option_string_to_move_type;
 
@@ -27,8 +24,8 @@ const ADDRESS_NON_STANDARD: &str = "non-standard";
 pub struct InscriptionSource {
     pub sequence_number: u32,
     pub inscription_number: i32,
-    pub id: InscriptionId,
-    // ord crate has different version of bitcoin dependency, using string for compatibility
+    pub id: InscriptionID,
+    // ord crate has a different version of bitcoin dependency, using string for compatibility
     pub satpoint_outpoint: String, // txid:vout
     pub satpoint_offset: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -42,7 +39,7 @@ pub struct InscriptionSource {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metaprotocol: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub parent: Option<Vec<InscriptionId>>,
+    pub parent: Option<Vec<InscriptionID>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pointer: Option<u64>,
     pub address: String, // <address>, "unbound", "non-standard"
@@ -73,22 +70,28 @@ impl InscriptionSource {
 
         let txid: AccountAddress = src.id.txid.into_address();
 
-        let parents = derive_inscription_ids(src.parent.clone());
-
-        Inscription {
-            txid,
-            index: src.id.index,
+        let parents = src.parent.clone();
+        let id = InscriptionID::new(txid, src.id.index);
+        let outpoint = bitcoin::OutPoint::from_str(src.satpoint_outpoint.as_str()).unwrap();
+        let location = SatPoint {
+            outpoint: outpoint.into(),
             offset: src.satpoint_offset,
+        };
+        Inscription {
+            id,
+            location,
             sequence_number: src.sequence_number,
             inscription_number: src.inscription_number.unsigned_abs(),
-            is_curse: src.inscription_number.is_negative(),
+            is_cursed: src.inscription_number.is_negative(),
+            //TODO how to get charms
+            charms: 0,
             body: src.body.clone().unwrap_or_default(),
             content_encoding: convert_option_string_to_move_type(src.content_encoding.clone()),
             content_type: convert_option_string_to_move_type(src.content_type.clone()),
             metadata: src.metadata.clone().unwrap_or_default(),
             metaprotocol: convert_option_string_to_move_type(src.metaprotocol.clone()),
             pointer: src.pointer.into(),
-            parents,
+            parents: parents.unwrap_or_default(),
             rune: src.rune.into(),
         }
     }
@@ -97,7 +100,7 @@ impl InscriptionSource {
         let inscription = self.to_inscription();
         let address = self.derive_account_address().unwrap();
 
-        let inscription_id = InscriptionID::new(inscription.txid, inscription.index);
+        let inscription_id = inscription.id;
         let obj_id = derive_inscription_id(&inscription_id);
         let ord_obj = ObjectEntity::new(obj_id.clone(), address, 0u8, None, 0, 0, 0, inscription);
 
@@ -106,33 +109,29 @@ impl InscriptionSource {
 }
 
 // sequence_number:inscription_id
-pub(crate) fn gen_inscription_ids_update(
+pub(crate) fn gen_inscription_id_update(
     sequence_number: u32,
     inscription_id: InscriptionID,
 ) -> (FieldKey, ObjectState) {
     let parent_id = InscriptionStore::object_id();
-    let field = ObjectEntity::new_dynamic_field(parent_id, sequence_number, inscription_id);
+    let field: ObjectEntity<DynamicField<u32, InscriptionID>> =
+        ObjectEntity::new_dynamic_field(parent_id, sequence_number, inscription_id);
     let state = field.into_state();
     let key = state.id().field_key();
     (key, state)
 }
 
-pub(crate) fn derive_inscription_ids(ids: Option<Vec<InscriptionId>>) -> Vec<ObjectID> {
+pub(crate) fn derive_inscription_ids(ids: Option<Vec<InscriptionID>>) -> Vec<ObjectID> {
     if let Some(ids) = ids {
         let mut obj_ids = Vec::with_capacity(ids.len());
         for id in ids {
-            let obj_id = derive_inscription_id(&convert_to_rooch_inscription_id(id));
+            let obj_id = derive_inscription_id(&id);
             obj_ids.push(obj_id)
         }
         obj_ids
     } else {
         vec![]
     }
-}
-
-fn convert_to_rooch_inscription_id(id: InscriptionId) -> InscriptionID {
-    let txid: AccountAddress = id.txid.into_address();
-    InscriptionID::new(txid, id.index)
 }
 
 pub(crate) fn create_genesis_inscription_store_object(
@@ -143,6 +142,9 @@ pub(crate) fn create_genesis_inscription_store_object(
     let inscription_store = InscriptionStore {
         cursed_inscription_count,
         blessed_inscription_count,
+        //TODO set unbound_inscription_count and lost_sats
+        unbound_inscription_count: 0,
+        lost_sats: 0,
         next_sequence_number,
     };
     let obj_id = InscriptionStore::object_id();

@@ -14,7 +14,6 @@ rust-version = { workspace = true }
 [dependencies]
 anyhow = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
 once_cell = { workspace = true }
 codespan-reporting = { workspace = true }
 termcolor = { workspace = true }
@@ -28,7 +27,7 @@ move-binary-format = { workspace = true }
 move-package = { workspace = true }
 move-compiler = { workspace = true }
 move-command-line-common = { workspace = true }
-move-vm-runtime = { workspace = true }
+move-vm-runtime = { workspace = true, features = ["stacktrace", "debugging", "testing"] }
 move-vm-types = { workspace = true }
 move-symbol-pool = { workspace = true }
 move-ir-types = { workspace = true }

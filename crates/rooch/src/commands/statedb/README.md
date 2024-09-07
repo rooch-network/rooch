@@ -118,7 +118,7 @@ if __name__ == "__main__":
 rooch genesis init -n main -d <rooch_datadir>
 ```
 
-#### Commands
+#### Subcommands
 
 **genesis-utxo**:
 
@@ -138,13 +138,24 @@ rooch statedb genesis --utxo-source <utxo_src_path> --ord-source <ord_src_path> 
 > - `--batch-size`/`--utxo-batch-size` is optional, default is 2M. Set it smaller if memory is limited.
 > - `--ord-batch-size` is optional, default is 1M. Set it smaller if memory is limited.
 
+**genesis-verify**:
+
+```shell
+rooch statedb genesis --utxo-source <utxo_src_path> --ord-source <ord_src_path> -d <rooch_datadir> -n main --outpoint-inscriptions-map-dump-path <dump_path>
+```
+
+**tips**:
+
+> - `--random-mode` is optional, default is false. Set it true if you want a fast check. Highly recommend passing it if
+    you have a big data set.
+
 **rooch statedb export**:
 
 ```shell
 rooch statedb export --output {your file} -d {your rooch data dir} -n main -m {export mode}
 ```
 
-**rooch statedb import**:
+**rooch statedb import(WIP)**:
 
 ```shell
 rooch statedb import --input {your file} -d {your rooch data dir} -n main

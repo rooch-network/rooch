@@ -1,7 +1,7 @@
 {
   "name": "@roochnetwork/rooch-sdk-kit",
   "author": "Rooch.network <opensource@rooch.network>",
-  "version": "0.2.2",
+  "version": "0.2.4",
   "description": "Rooch SDK Kit",
   "license": "Apache-2.0",
   "engines": {
@@ -72,7 +72,8 @@
     "size-limit": "^8.2.6",
     "typescript": "^5.3.3",
     "vite": "^4.4.4",
-    "vitest": "^1.6.0"
+    "vitest": "^1.6.0",
+    "sats-connect": "2.7.0"
   },
   "dependencies": {
     "clsx": "^2.0.0",

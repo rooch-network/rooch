@@ -13,6 +13,7 @@
 -  [Function `assert_system_reserved_address`](#0x2_core_addresses_assert_system_reserved_address)
 -  [Function `is_system_reserved_address`](#0x2_core_addresses_is_system_reserved_address)
 -  [Function `is_reserved_address`](#0x2_core_addresses_is_reserved_address)
+-  [Function `list_system_reserved_addresses`](#0x2_core_addresses_list_system_reserved_addresses)
 
 
 <pre><code><b>use</b> <a href="">0x1::signer</a>;
@@ -123,4 +124,16 @@ Return true if <code>addr</code> is either the VM address or an Rooch system add
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x2_core_addresses_is_reserved_address">is_reserved_address</a>(addr: <b>address</b>): bool
+</code></pre>
+
+
+
+<a name="0x2_core_addresses_list_system_reserved_addresses"></a>
+
+## Function `list_system_reserved_addresses`
+
+List all the on chain governance's reserved addresses.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x2_core_addresses_list_system_reserved_addresses">list_system_reserved_addresses</a>(): <a href="">vector</a>&lt;<b>address</b>&gt;
 </code></pre>

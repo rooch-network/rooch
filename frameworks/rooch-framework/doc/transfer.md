@@ -46,7 +46,7 @@ Transfer <code>amount</code> of coins <code>CoinType</code> from <code>from</cod
 This public entry function requires the <code>CoinType</code> to have <code>key</code> and <code>store</code> abilities.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin">transfer_coin</a>&lt;CoinType: store, key&gt;(from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, amount: u256)
+<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin">transfer_coin</a>&lt;CoinType: store, key&gt;(from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, amount: <a href="">u256</a>)
 </code></pre>
 
 
@@ -58,7 +58,7 @@ This public entry function requires the <code>CoinType</code> to have <code>key<
 Transfer <code>amount</code> of coins <code>CoinType</code> from <code>from</code> to a Bitcoin Address.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin_to_bitcoin_address">transfer_coin_to_bitcoin_address</a>&lt;CoinType: store, key&gt;(from: &<a href="">signer</a>, <b>to</b>: <a href="_String">string::String</a>, amount: u256)
+<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin_to_bitcoin_address">transfer_coin_to_bitcoin_address</a>&lt;CoinType: store, key&gt;(from: &<a href="">signer</a>, <b>to</b>: <a href="_String">string::String</a>, amount: <a href="">u256</a>)
 </code></pre>
 
 
@@ -72,7 +72,7 @@ The MultiChainAddress is represented by <code>multichain_id</code> and <code>raw
 This public entry function requires the <code>CoinType</code> to have <code>key</code> and <code>store</code> abilities.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin_to_multichain_address">transfer_coin_to_multichain_address</a>&lt;CoinType: store, key&gt;(from: &<a href="">signer</a>, multichain_id: u64, raw_address: <a href="">vector</a>&lt;u8&gt;, amount: u256)
+<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin_to_multichain_address">transfer_coin_to_multichain_address</a>&lt;CoinType: store, key&gt;(from: &<a href="">signer</a>, multichain_id: u64, raw_address: <a href="">vector</a>&lt;u8&gt;, amount: <a href="">u256</a>)
 </code></pre>
 
 

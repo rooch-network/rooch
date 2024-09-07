@@ -34,11 +34,9 @@ The authentication validator should include the following methods:
 
 ```move
 public fun validate(ctx: &Context, authenticator_payload: vector<u8>);
-fun pre_execute(ctx: &mut Context);
-fun post_execute(ctx: &mut Context);
 ```
 
-The `validate` method is used to check the validity of a transaction, while `pre_execute` and `post_execute` methods are used for operations before and after the transaction execution, such as the initialization and updating of states.
+The `validate` method is used to check the validity of a transaction.
 
 To express in the transaction which `validator` is being used, the Rooch transactions include an `authenticator` field:
 

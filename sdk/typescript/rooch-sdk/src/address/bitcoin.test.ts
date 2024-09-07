@@ -6,10 +6,6 @@ import { Ed25519Keypair } from '../keypairs/index.js'
 import { RoochAddress, BitcoinAddress, isValidAddress } from '../address/index.js'
 
 const TEST_CASES: { btcAddr: string; roochAddr: string; hexAddr: string }[] = [
-  // {
-  //   btcAddr: 'bcrt1pwflflg6dz72e8f96f93yzve88yac3nekjl66g52stqauxc5lff6s0peuke',
-  //   roochAddr: '0x57330c8bc64a6068df6a84d3c459e46450b7a15fafae57fe85cb4f95c2ed0198',
-  // }
   {
     btcAddr: '18cBEMRxXHqzWWCxZNtU91F5sbUNKhL5PX',
     roochAddr: 'rooch1gxterelcypsyvh8cc9kg73dtnyct822ykx8pmu383qruzt4r93jshtc9fj',
@@ -53,5 +49,14 @@ describe('Bitcoin address', () => {
       expect(genRoochAddr).eq(item.roochAddr)
       expect(genRoochHexAddr).eq(item.hexAddr)
     }
+  })
+
+  it('From hex address', () => {
+    const hexAddr = '020145966003624094dae2deeb30815eedd38f96c45c3fdb1261f5d697fc4137e0de'
+    const expectBTCAddr = 'bc1pgktxqqmzgz2d4ck7avcgzhhd6w8ed3zu8ld3yc0466tlcsfhur0qj3y0wm'
+
+    const btcAddr = new BitcoinAddress(hexAddr)
+
+    expect(btcAddr.toStr()).eq(expectBTCAddr)
   })
 })

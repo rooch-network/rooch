@@ -17,14 +17,27 @@ RUN set -eux; \
         g++ \
         cmake \
         make \
-        libsqlite3-dev \
         libprotobuf-dev \
-        protobuf-compiler; \
+        protobuf-compiler \
+        build-essential \
+        libreadline-dev; \
     rm -rf /var/lib/apt/lists/*
+
+# Install SQLite 3.46.1 with multi-threading enabled
+RUN set -eux; \
+    wget https://www.sqlite.org/2024/sqlite-autoconf-3460100.tar.gz; \
+    tar xvf sqlite-autoconf-3460100.tar.gz; \
+    cd sqlite-autoconf-3460100; \
+    CFLAGS="-DSQLITE_THREADSAFE=2" ./configure --prefix=/usr/local; \
+    make; \
+    make install; \
+    cd ..; \
+    rm -rf sqlite-autoconf-3460100 sqlite-autoconf-3460100.tar.gz; \
+    ldconfig
 
 ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
-    PATH=/usr/local/cargo/bin:$PATH \
+    PATH=/usr/local/cargo/bin:/usr/local/bin:$PATH \
     RUSTUP_VERSION=1.26.0 \
     RUSTUP_SHA256=0b2f6c8f85a3d02fde2efc0ced4657869d73fccfce59defb4e8d29233116e6db \
     RUST_ARCH=x86_64-unknown-linux-gnu
@@ -36,8 +49,8 @@ RUN set -eux; \
     chmod +x rustup-init
 
 RUN set -eux; \
-    wget "http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.22_amd64.deb"; \
-    DEBIAN_FRONTEND=noninteractive dpkg -i libssl1.1_1.1.1f-1ubuntu2.22_amd64.deb;
+    wget "http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.23_amd64.deb"; \
+    DEBIAN_FRONTEND=noninteractive dpkg -i libssl1.1_1.1.1f-1ubuntu2.23_amd64.deb;
 
 ENV RUST_VERSION=1.78.0
 
@@ -58,14 +71,27 @@ RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
         ca-certificates \
-        libsqlite3-dev \
         wget \
-        libssl-dev; \
+        libssl-dev \
+        build-essential \
+        libreadline-dev; \
     rm -rf /var/lib/apt/lists/*
 
+# Install SQLite 3.46.1 with multi-threading enabled
 RUN set -eux; \
-    wget "http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.22_amd64.deb"; \
-    DEBIAN_FRONTEND=noninteractive dpkg -i libssl1.1_1.1.1f-1ubuntu2.22_amd64.deb;
+    wget https://www.sqlite.org/2024/sqlite-autoconf-3460100.tar.gz; \
+    tar xvf sqlite-autoconf-3460100.tar.gz; \
+    cd sqlite-autoconf-3460100; \
+    CFLAGS="-DSQLITE_THREADSAFE=2" ./configure --prefix=/usr/local; \
+    make; \
+    make install; \
+    cd ..; \
+    rm -rf sqlite-autoconf-3460100 sqlite-autoconf-3460100.tar.gz; \
+    ldconfig
+
+RUN set -eux; \
+    wget "http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.23_amd64.deb"; \
+    DEBIAN_FRONTEND=noninteractive dpkg -i libssl1.1_1.1.1f-1ubuntu2.23_amd64.deb;
 
 ENV RELEASE_PATH="/rooch/target/release"
 COPY --from=builder $RELEASE_PATH/rooch \

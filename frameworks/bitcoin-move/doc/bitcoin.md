@@ -5,7 +5,7 @@
 
 
 
--  [Struct `TxProgressErrorLogEvent`](#0x4_bitcoin_TxProgressErrorLogEvent)
+-  [Struct `UTXONotExistsEvent`](#0x4_bitcoin_UTXONotExistsEvent)
 -  [Struct `RepeatCoinbaseTxEvent`](#0x4_bitcoin_RepeatCoinbaseTxEvent)
 -  [Resource `BitcoinBlockStore`](#0x4_bitcoin_BitcoinBlockStore)
 -  [Constants](#@Constants_0)
@@ -23,7 +23,6 @@
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
-<b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::event</a>;
@@ -33,26 +32,25 @@
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::table_vec</a>;
 <b>use</b> <a href="">0x2::timestamp</a>;
-<b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x3::address_mapping</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
-<b>use</b> <a href="">0x3::chain_id</a>;
+<b>use</b> <a href="inscription_updater.md#0x4_inscription_updater">0x4::inscription_updater</a>;
 <b>use</b> <a href="network.md#0x4_network">0x4::network</a>;
-<b>use</b> <a href="ord.md#0x4_ord">0x4::ord</a>;
 <b>use</b> <a href="pending_block.md#0x4_pending_block">0x4::pending_block</a>;
+<b>use</b> <a href="script_buf.md#0x4_script_buf">0x4::script_buf</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 <b>use</b> <a href="utxo.md#0x4_utxo">0x4::utxo</a>;
 </code></pre>
 
 
 
-<a name="0x4_bitcoin_TxProgressErrorLogEvent"></a>
+<a name="0x4_bitcoin_UTXONotExistsEvent"></a>
 
-## Struct `TxProgressErrorLogEvent`
+## Struct `UTXONotExistsEvent`
 
 
 
-<pre><code><b>struct</b> <a href="bitcoin.md#0x4_bitcoin_TxProgressErrorLogEvent">TxProgressErrorLogEvent</a> <b>has</b> <b>copy</b>, drop
+<pre><code><b>struct</b> <a href="bitcoin.md#0x4_bitcoin_UTXONotExistsEvent">UTXONotExistsEvent</a> <b>has</b> <b>copy</b>, drop
 </code></pre>
 
 
@@ -93,6 +91,15 @@
 
 
 
+<a name="0x4_bitcoin_ORDINAL_GENESIS_HEIGHT"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ORDINAL_GENESIS_HEIGHT">ORDINAL_GENESIS_HEIGHT</a>: u64 = 767430;
+</code></pre>
+
+
+
 <a name="0x4_bitcoin_BIP_34_HEIGHT"></a>
 
 https://github.com/bitcoin/bips/blob/master/bip-0034.mediawiki
@@ -123,11 +130,11 @@ The reorg is too deep, we need to stop the system and fix the issue
 
 
 
-<a name="0x4_bitcoin_ORDINAL_GENESIS_HEIGHT"></a>
+<a name="0x4_bitcoin_ErrorUTXONotExists"></a>
 
 
 
-<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ORDINAL_GENESIS_HEIGHT">ORDINAL_GENESIS_HEIGHT</a>: u64 = 767430;
+<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ErrorUTXONotExists">ErrorUTXONotExists</a>: u64 = 4;
 </code></pre>
 
 
