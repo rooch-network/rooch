@@ -4,7 +4,8 @@
 use framework_types::addresses::BITCOIN_MOVE_ADDRESS;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::moveos_std::object::{
-    DynamicField, ObjectEntity, ObjectID, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
+    DynamicField, ObjectEntity, ObjectID, FROZEN_OBJECT_FLAG_MASK, SHARED_OBJECT_FLAG_MASK,
+    SYSTEM_OWNER_ADDRESS,
 };
 use moveos_types::state::{FieldKey, ObjectState};
 use rooch_types::address::BitcoinAddress;
@@ -23,6 +24,8 @@ use crate::commands::statedb::commands::convert_option_string_to_move_type;
 
 const ADDRESS_UNBOUND: &str = "unbound";
 const ADDRESS_NON_STANDARD: &str = "non-standard";
+
+const CHARM_BURNED_FLAG: u16 = 1 << 12;
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -110,7 +113,15 @@ impl InscriptionSource {
 
         let inscription_id = inscription.id;
         let obj_id = derive_inscription_id(&inscription_id);
-        let ord_obj = ObjectEntity::new(obj_id.clone(), address, 0u8, None, 0, 0, 0, inscription);
+
+        let mut owner = address;
+        let mut flag = 0u8;
+        if self.charms == CHARM_BURNED_FLAG {
+            flag = FROZEN_OBJECT_FLAG_MASK;
+            owner = SYSTEM_OWNER_ADDRESS;
+        }
+
+        let ord_obj = ObjectEntity::new(obj_id.clone(), owner, flag, None, 0, 0, 0, inscription);
 
         (ord_obj.id.field_key(), ord_obj.into_state(), inscription_id)
     }
