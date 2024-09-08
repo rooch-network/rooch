@@ -29,6 +29,7 @@ use xxhash_rust::xxh3::xxh3_64;
 
 pub mod export;
 pub mod genesis;
+pub mod genesis_ord;
 pub mod genesis_utxo;
 pub mod genesis_verify;
 pub mod import;

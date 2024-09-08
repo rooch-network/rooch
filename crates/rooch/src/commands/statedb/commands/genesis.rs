@@ -53,14 +53,14 @@ pub struct GenesisCommand {
     #[clap(
         long,
         default_value = "1048576",
-        help = "batch size submited to state db. Set it smaller if memory is limited."
+        help = "batch size submitted to state db. Set it smaller if memory is limited."
     )]
     pub utxo_batch_size: Option<usize>,
     #[clap(
         long,
         default_value = "1048576",
-        help = "batch size submited to state db. Set it smaller if memory is limited."
-    )] // ord may have large body, so set a smaller batch
+        help = "batch size submitted to state db. Set it smaller if memory is limited."
+    )] // ord may have a large body, so set a smaller batch
     pub ord_batch_size: Option<usize>,
     #[clap(
         long,
@@ -129,7 +129,7 @@ impl GenesisCommand {
             apply_inscription_updates(
                 ord_rx,
                 moveos_store_clone,
-                startup_update_set_clone,
+                Some(startup_update_set_clone),
                 inscription_stats,
             );
         });
@@ -181,7 +181,7 @@ impl GenesisCommand {
     }
 }
 
-struct InscriptionUpdates {
+pub(crate) struct InscriptionUpdates {
     update_set: UpdateSet<FieldKey, ObjectState>,
     cursed_inscription_count: u32,
     blessed_inscription_count: u32,
@@ -189,7 +189,7 @@ struct InscriptionUpdates {
     updates_value_bytes: u64, // stat for optimization
 }
 
-fn produce_inscription_updates(
+pub(crate) fn produce_inscription_updates(
     tx: SyncSender<InscriptionUpdates>,
     input: PathBuf,
     batch_size: usize,
@@ -253,10 +253,10 @@ fn produce_inscription_updates(
     drop(tx);
 }
 
-fn apply_inscription_updates(
+pub(crate) fn apply_inscription_updates(
     rx: Receiver<InscriptionUpdates>,
     moveos_store_arc: Arc<MoveOSStore>,
-    startup_update_set: Arc<RwLock<UpdateSet<FieldKey, ObjectState>>>,
+    startup_update_set: Option<Arc<RwLock<UpdateSet<FieldKey, ObjectState>>>>,
     inscription_stats: InscriptionStats,
 ) {
     let mut inscription_store_state_root = *GENESIS_STATE_ROOT;
@@ -310,17 +310,22 @@ fn apply_inscription_updates(
 
     drop(rx);
 
-    let mut startup_update_set = startup_update_set.write().unwrap();
+    println!("expect InscriptionStats: {:?}", inscription_stats);
 
-    let mut genesis_inscription_store_object =
-        create_genesis_inscription_store_object(&inscription_stats);
-    genesis_inscription_store_object.size += inscritpion_store_filed_count as u64;
-    genesis_inscription_store_object.state_root = Some(inscription_store_state_root);
-    let parent_id = InscriptionStore::object_id();
-    startup_update_set.put(
-        parent_id.field_key(),
-        genesis_inscription_store_object.into_state(),
-    );
+    if let Some(startup_update_set) = startup_update_set {
+        let mut startup_update_set = startup_update_set.write().unwrap();
+
+        let mut genesis_inscription_store_object =
+            create_genesis_inscription_store_object(&inscription_stats);
+        genesis_inscription_store_object.size += inscritpion_store_filed_count as u64;
+        genesis_inscription_store_object.state_root = Some(inscription_store_state_root);
+        let parent_id = InscriptionStore::object_id();
+        startup_update_set.put(
+            parent_id.field_key(),
+            genesis_inscription_store_object.into_state(),
+        );
+    }
+
     println!(
         "genesis InscriptionStore object updated, state_root: {:?}, cursed: {}, blessed: {}, total: {}",
         inscription_store_state_root, cursed_inscription_count, blessed_inscription_count, inscritpion_store_filed_count / 2
