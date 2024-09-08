@@ -48,15 +48,19 @@ lazy_static::lazy_static! {
     };
 }
 
+fn init_rooch_db(base_data_dir: Option<PathBuf>, chain_id: Option<RoochChainID>) -> RoochDB {
+    let opt = RoochOpt::new_with_default(base_data_dir.clone(), chain_id.clone(), None).unwrap();
+    let registry_service = RegistryService::default();
+    RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap()
+}
+
 fn init_job(
     base_data_dir: Option<PathBuf>,
     chain_id: Option<RoochChainID>,
 ) -> (ObjectMeta, MoveOSStore, Instant) {
     let start_time = Instant::now();
 
-    let opt = RoochOpt::new_with_default(base_data_dir.clone(), chain_id.clone(), None).unwrap();
-    let registry_service = RegistryService::default();
-    let rooch_db = RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
+    let rooch_db = init_rooch_db(base_data_dir, chain_id);
     let root = rooch_db
         .latest_root()
         .unwrap()
@@ -179,7 +183,7 @@ impl OutpointInscriptionsMap {
             }
             let src: InscriptionSource = InscriptionSource::from_str(&line);
             let satpoint_output = OutPoint::from_str(src.satpoint_outpoint.as_str())
-                .expect(format!("Invalid outpoint: {}", src.satpoint_outpoint).as_str());
+                .unwrap_or_else(|_| panic!("Invalid outpoint: {}", src.satpoint_outpoint));
             if satpoint_output == unbound_outpoint() {
                 unbound_count += 1;
                 continue; // skip unbounded outpoint

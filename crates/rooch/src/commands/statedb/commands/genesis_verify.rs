@@ -1127,6 +1127,7 @@ mod tests {
             pointer: None,
             address: "bc1pl6xn9vvpqna0grwd0tuwyj9z8s55gw8wvrd8885yra9hc9hlkh5s0rcxm2".to_string(),
             rune: Some(449272580684223630017036914),
+            charms: 0,
         };
 
         let ins = ins_source.to_inscription();

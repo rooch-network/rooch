@@ -1,20 +1,51 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::commands::statedb::commands::init_rooch_db;
 use clap::Parser;
-use metrics::RegistryService;
-use rooch_config::RoochOpt;
 use rooch_config::R_OPT_NET_HELP;
-use rooch_db::RoochDB;
-use rooch_genesis::RoochGenesis;
 use rooch_store::meta_store::MetaStore;
 use rooch_types::error::RoochResult;
-use rooch_types::rooch_network::BuiltinChainID::Main;
-use rooch_types::rooch_network::{BuiltinChainID, RoochChainID, RoochNetwork};
+use rooch_types::rooch_network::RoochChainID;
+use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 use std::io::{BufRead, Write};
 use std::path::PathBuf;
+use std::str::FromStr;
 
-/// Import BTC ordinals & UTXO for genesis
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum ReGenesisMode {
+    #[default]
+    Export, // dump GensisInfo, StartupInfo, SequencerInfo
+    Remove,  // remove GensisInfo, StartupInfo, SequencerInfo, indexer directory
+    Restore, // restore GensisInfo, StartupInfo, SequencerInfo
+}
+
+impl Display for ReGenesisMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ReGenesisMode::Export => write!(f, "export"),
+            ReGenesisMode::Remove => write!(f, "remove"),
+            ReGenesisMode::Restore => write!(f, "restore"),
+        }
+    }
+}
+
+impl FromStr for ReGenesisMode {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "export" => Ok(ReGenesisMode::Export),
+            "remove" => Ok(ReGenesisMode::Remove),
+            "restore" => Ok(ReGenesisMode::Restore),
+            _ => Err("re-genesis-mode no match"),
+        }
+    }
+}
+
+/// Toolkits for modifying genesis and startup info, for development and testing start rooch server with certain genesis.
 #[derive(Debug, Parser)]
 pub struct ReGenesisCommand {
     #[clap(long = "data-dir", short = 'd')]
@@ -27,184 +58,109 @@ pub struct ReGenesisCommand {
     pub chain_id: Option<RoochChainID>,
 
     #[clap(long)]
-    pub startup_backup_path: PathBuf,
-
+    pub export_path: PathBuf,
     #[clap(long)]
-    pub restore: bool,
-
-    #[clap(long)]
-    pub output_only: bool,
-
-    #[clap(long)]
-    pub restore_genesis: bool,
+    pub mode: Option<ReGenesisMode>,
 }
 
 impl ReGenesisCommand {
     pub async fn execute(self) -> RoochResult<()> {
-        if self.restore_genesis {
-            restore_genesis(self.base_data_dir.clone(), self.chain_id.clone());
-            return Ok(());
-        }
-
-        if self.output_only {
-            write_startup(
-                self.base_data_dir.clone(),
-                self.chain_id.clone(),
-                self.startup_backup_path.clone(),
-            );
-            return Ok(());
-        }
-
-        if self.restore {
-            restore_startup(
-                self.base_data_dir.clone(),
-                self.chain_id.clone(),
-                self.startup_backup_path.clone(),
-            );
-        } else {
-            clean_startup(self.base_data_dir.clone(), self.chain_id.clone());
+        let mode = self.mode.unwrap_or_default();
+        match mode {
+            ReGenesisMode::Export => self.export(),
+            ReGenesisMode::Remove => self.remove(),
+            ReGenesisMode::Restore => self.restore(),
         }
 
         Ok(())
     }
-}
 
-fn restore_genesis(base_data_dir: Option<PathBuf>, chain_id: Option<RoochChainID>) {
-    let opt = RoochOpt::new_with_default(base_data_dir.clone(), chain_id.clone(), None).unwrap();
-    let registry_service = RegistryService::default();
-    let rooch_db = RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
+    fn export(&self) {
+        let rooch_db = init_rooch_db(self.base_data_dir.clone(), self.chain_id.clone());
 
-    let network: RoochNetwork = Main.into();
+        let writer = std::fs::File::create(self.export_path.clone()).unwrap();
+        let mut writer = std::io::BufWriter::new(writer);
 
-    let genesis = RoochGenesis::build(network).unwrap();
+        let mut outputs = Vec::new();
+        let mut outputed = Vec::new();
 
-    rooch_db
-        .moveos_store
-        .config_store
-        .save_genesis(genesis.genesis_info())
-        .unwrap();
-    log::info!("Restore genesis info success");
-}
+        let genesis_info = rooch_db.moveos_store.config_store.get_genesis().unwrap();
+        if let Some(genesis_info) = genesis_info {
+            outputs.push(serde_json::to_string(&genesis_info).unwrap());
+            outputed.push("genesis_info");
+        }
 
-fn restore_startup_info() {}
+        let startup_info = rooch_db
+            .moveos_store
+            .config_store
+            .get_startup_info()
+            .unwrap();
+        if let Some(startup_info) = startup_info {
+            outputs.push(serde_json::to_string(&startup_info).unwrap());
+            outputed.push("startup_info");
+        }
 
-fn write_startup(
-    base_data_dir: Option<PathBuf>,
-    chain_id: Option<RoochChainID>,
-    startup_backup_path: PathBuf,
-) {
-    let opt = RoochOpt::new_with_default(base_data_dir.clone(), chain_id.clone(), None).unwrap();
-    let registry_service = RegistryService::default();
-    let rooch_db = RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
+        let sequencer_info = rooch_db.rooch_store.get_sequencer_info().unwrap();
+        if let Some(sequencer_info) = sequencer_info {
+            outputs.push(serde_json::to_string(&sequencer_info).unwrap());
+            outputed.push("sequencer_info");
+        }
 
-    let writer = std::fs::File::create(startup_backup_path).unwrap();
-    let mut writer = std::io::BufWriter::new(writer);
+        for output in outputs {
+            writeln!(writer, "{}", output).expect("write failed");
+        }
+        writer.flush().unwrap();
 
-    let startup_info = rooch_db
-        .moveos_store
-        .config_store
-        .get_startup_info()
-        .unwrap();
-    if let Some(startup_info) = startup_info {
-        writeln!(writer, "{}", serde_json::to_string(&startup_info).unwrap())
-            .expect("write failed");
+        log::info!("Export {} success", outputed.join(", "));
     }
 
-    let origin_genesis_info = rooch_db.moveos_store.config_store.get_genesis().unwrap();
+    fn remove(&self) {
+        let rooch_db = init_rooch_db(self.base_data_dir.clone(), self.chain_id.clone());
 
-    if let Some(origin_genesis_info) = origin_genesis_info {
-        writeln!(
-            writer,
-            "{}",
-            serde_json::to_string(&origin_genesis_info).unwrap()
-        )
-        .expect("write failed");
+        rooch_db.moveos_store.config_store.remove_genesis().unwrap();
+        rooch_db
+            .moveos_store
+            .config_store
+            .remove_startup_info()
+            .unwrap();
+        rooch_db.rooch_store.remove_sequencer_info().unwrap();
+
+        // remove indexer directory:
+        // base_data_dir/chain_network_name/rooch/indexer
+        let base_data_dir = self.base_data_dir.clone().unwrap();
+        let chain_network_name = self.chain_id.clone().unwrap().to_string();
+        let indexer_dir = base_data_dir
+            .join(chain_network_name)
+            .join("roochdb/indexer");
+        std::fs::remove_dir_all(indexer_dir).unwrap();
+        log::info!("Remove genesis info, startup info and sequencer info success");
     }
 
-    writer.flush().unwrap();
-}
+    fn restore(&self) {
+        let reader = std::fs::File::open(self.export_path.clone()).unwrap();
+        let reader = std::io::BufReader::new(reader);
+        let mut lines = reader.lines();
+        let genesis_info = serde_json::from_str(&lines.next().unwrap().unwrap()).unwrap();
+        let startup_info = serde_json::from_str(&lines.next().unwrap().unwrap()).unwrap();
+        let sequencer_info = serde_json::from_str(&lines.next().unwrap().unwrap()).unwrap();
 
-fn restore_startup(
-    base_data_dir: Option<PathBuf>,
-    chain_id: Option<RoochChainID>,
-    startup_backup_path: PathBuf,
-) {
-    let opt = RoochOpt::new_with_default(base_data_dir.clone(), chain_id.clone(), None).unwrap();
-    let registry_service = RegistryService::default();
-    let rooch_db = RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
+        let rooch_db = init_rooch_db(self.base_data_dir.clone(), self.chain_id.clone());
 
-    let reader = std::fs::File::open(startup_backup_path).unwrap();
-    let reader = std::io::BufReader::new(reader);
-    let mut lines = reader.lines();
-    let network: RoochNetwork = BuiltinChainID::Main.into();
-
-    let genesis = RoochGenesis::build(network).unwrap();
-    let startup_info = serde_json::from_str(&lines.next().unwrap().unwrap()).unwrap();
-
-    rooch_db
-        .moveos_store
-        .config_store
-        .save_genesis(genesis.genesis_info())
-        .unwrap();
-    rooch_db
-        .moveos_store
-        .config_store
-        .save_startup_info(startup_info)
-        .unwrap();
-
-    log::info!("Restore startup info and genesis info success");
-}
-
-fn clean_startup(base_data_dir: Option<PathBuf>, chain_id: Option<RoochChainID>) {
-    let opt = RoochOpt::new_with_default(base_data_dir.clone(), chain_id.clone(), None).unwrap();
-    let registry_service = RegistryService::default();
-    let rooch_db = RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
-
-    // let origin_startup_info = rooch_db
-    //     .moveos_store
-    //     .config_store
-    //     .get_startup_info()
-    //     .unwrap()
-    //     .unwrap();
-    // let origin_genesis_info = rooch_db
-    //     .moveos_store
-    //     .config_store
-    //     .get_genesis()
-    //     .unwrap()
-    //     .unwrap();
-    //
-    // let writer = std::fs::File::create(startup_backup_path).unwrap();
-    // let mut writer = std::io::BufWriter::new(writer);
-    // writeln!(
-    //     writer,
-    //     "{}",
-    //     serde_json::to_string(&origin_genesis_info).unwrap()
-    // )
-    // .unwrap();
-    // writeln!(
-    //     writer,
-    //     "{}",
-    //     serde_json::to_string(&origin_startup_info).unwrap()
-    // )
-    // .unwrap();
-    // writer.flush().unwrap();
-
-    rooch_db
-        .moveos_store
-        .config_store
-        .delete_startup_info()
-        .unwrap();
-    rooch_db.moveos_store.config_store.delete_genesis().unwrap();
-    println!(
-        "{:?}",
+        rooch_db
+            .moveos_store
+            .config_store
+            .save_genesis(genesis_info)
+            .unwrap();
+        rooch_db
+            .moveos_store
+            .config_store
+            .save_startup_info(startup_info)
+            .unwrap();
         rooch_db
             .rooch_store
-            .get_sequencer_info()
-            .unwrap()
-            .unwrap()
-            .to_string()
-    );
-    rooch_db.rooch_store.clean_sequencer_info().unwrap();
+            .save_sequencer_info(sequencer_info)
+            .unwrap();
 
-    log::info!("Clean startup info and genesis info success");
+        log::info!("Restore genesis info, startup info and sequencer info success");
+    }
 }

@@ -151,7 +151,7 @@ impl MetaStore for RoochStore {
         self.get_meta_store().save_sequencer_info(sequencer_info)
     }
 
-    fn clean_sequencer_info(&self) -> Result<()> {
+    fn remove_sequencer_info(&self) -> Result<()> {
         self.get_meta_store().clean_sequencer_info()
     }
 }

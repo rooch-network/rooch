@@ -20,7 +20,7 @@ pub trait MetaStore {
     fn get_sequencer_info(&self) -> Result<Option<SequencerInfo>>;
 
     fn save_sequencer_info(&self, sequencer_info: SequencerInfo) -> Result<()>;
-    fn clean_sequencer_info(&self) -> Result<()>;
+    fn remove_sequencer_info(&self) -> Result<()>;
 }
 
 #[derive(Clone)]
