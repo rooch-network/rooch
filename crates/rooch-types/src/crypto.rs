@@ -367,6 +367,10 @@ impl PublicKey {
 
     pub fn from_hex(hex: &str) -> Result<Self, anyhow::Error> {
         let bytes = hex::decode(hex.strip_prefix("0x").unwrap_or(hex))?;
+        Self::from_bytes(&bytes)
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, anyhow::Error> {
         match SignatureScheme::from_flag_byte(
             *bytes
                 .first()
@@ -392,6 +396,12 @@ impl PublicKey {
             },
             Err(e) => Err(anyhow!("Invalid bytes :{}", e)),
         }
+    }
+
+    pub fn from_bitcoin_pubkey(pk: &bitcoin::PublicKey) -> Result<Self, anyhow::Error> {
+        let bytes = pk.to_bytes();
+        let pk = Secp256k1PublicKey::from_bytes(&bytes)?;
+        Ok(PublicKey::Secp256k1((&pk).into()))
     }
 }
 

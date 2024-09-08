@@ -1234,7 +1234,7 @@ mod test {
         let address_str = bitcoin_address.format(network::Network::Bitcoin)?;
         let btc_address = bitcoin::Address::from_str(&address_str).unwrap();
         let btc_address = btc_address.assume_checked();
-        let btc_address2 = bitcoin_address.to_bitcoin_address(bitcoin::Network::Regtest)?;
+        let btc_address2 = bitcoin_address.to_bitcoin_address(network::Network::Bitcoin)?;
         assert_eq!(btc_address, btc_address2);
         println!(
             "test_convert_bitcoin_address bitcoin address {} ",

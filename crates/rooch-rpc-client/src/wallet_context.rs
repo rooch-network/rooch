@@ -4,6 +4,10 @@
 use crate::client_config::{ClientConfig, DEFAULT_EXPIRATION_SECS};
 use crate::Client;
 use anyhow::{anyhow, Result};
+use bitcoin::key::Secp256k1;
+use bitcoin::psbt::{GetKey, KeyRequest};
+use bitcoin::secp256k1::Signing;
+use bitcoin::PrivateKey;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::moveos_std::gas_schedule::GasScheduleConfig;
 use moveos_types::transaction::MoveAction;
@@ -17,12 +21,12 @@ use rooch_rpc_api::jsonrpc_types::{
 };
 use rooch_types::address::RoochAddress;
 use rooch_types::address::{BitcoinAddress, ParsedAddress};
-use rooch_types::addresses;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
 use rooch_types::transaction::rooch::{RoochTransaction, RoochTransactionData};
+use rooch_types::{addresses, crypto};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -297,5 +301,34 @@ impl WalletContext {
             rooch_network.genesis_config.bitcoin_network,
         );
         Ok(bitcoin_network)
+    }
+}
+
+impl GetKey for WalletContext {
+    type Error = anyhow::Error;
+
+    fn get_key<C: Signing>(
+        &self,
+        key_request: KeyRequest,
+        _secp: &Secp256k1<C>,
+    ) -> Result<Option<PrivateKey>, Self::Error> {
+        let address = match key_request {
+            KeyRequest::Pubkey(pubkey) => {
+                let rooch_public_key = crypto::PublicKey::from_bitcoin_pubkey(&pubkey)?;
+                rooch_public_key.rooch_address()?
+            }
+            KeyRequest::Bip32(_key_source) => {
+                anyhow::bail!("BIP32 key source is not supported");
+            }
+            _ => anyhow::bail!("Unsupported key request: {:?}", key_request),
+        };
+
+        let kp = self
+            .keystore
+            .get_key_pair(&address, self.password.clone())?;
+        Ok(Some(PrivateKey::from_slice(
+            kp.private(),
+            bitcoin::Network::Bitcoin,
+        )?))
     }
 }

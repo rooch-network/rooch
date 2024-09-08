@@ -9911,6 +9911,7 @@ version = "0.7.0"
 dependencies = [
  "anyhow",
  "bcs",
+ "bitcoin 0.32.2",
  "futures",
  "hex",
  "jsonrpsee 0.23.2",
