@@ -52,7 +52,7 @@ impl UTXOSelector {
                     if !utxo.seals.is_empty() {
                         bail!("UTXO {} is has seals: {:?}, please use --skip-seal-check to skip this check", utxo.outpoint(), utxo.seals);
                     }
-                    let dust_value = self.sender.script_pubkey().dust_value();
+                    let dust_value = self.sender.script_pubkey().minimal_non_dust();
                     if utxo.amount() <= dust_value {
                         bail!("UTXO {} is less than dust value: {}, please use --skip-dust-check to skip this check", utxo.outpoint(), dust_value);
                     }
@@ -81,7 +81,7 @@ impl UTXOSelector {
             )
             .await?;
         debug!("loaded utxos: {:?}", utxo_page.data.len());
-        let dust_value = self.sender.script_pubkey().dust_value();
+        let dust_value = self.sender.script_pubkey().minimal_non_dust();
         for utxo_view in utxo_page.data {
             let utxo: UTXO = utxo_view.value.into();
             if !self.skip_seal_check {

@@ -62,12 +62,12 @@ impl std::fmt::Display for Network {
 }
 
 impl Network {
-    pub fn bech32_hrp(&self) -> bitcoin::bech32::Hrp {
+    pub fn bech32_hrp(&self) -> bech32::Hrp {
         match self {
-            Network::Bitcoin => bitcoin::bech32::hrp::BC,
-            Network::Testnet => bitcoin::bech32::hrp::TB,
-            Network::Signet => bitcoin::bech32::hrp::TB,
-            Network::Regtest => bitcoin::bech32::hrp::BCRT,
+            Network::Bitcoin => bech32::hrp::BC,
+            Network::Testnet => bech32::hrp::TB,
+            Network::Signet => bech32::hrp::TB,
+            Network::Regtest => bech32::hrp::BCRT,
         }
     }
 

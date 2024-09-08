@@ -21,6 +21,7 @@ pub struct Bitcoin {
     cmd: BitcoinCommands,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Subcommand)]
 pub enum BitcoinCommands {
     BuildTx(BuildTx),

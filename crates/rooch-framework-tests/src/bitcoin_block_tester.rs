@@ -141,7 +141,7 @@ impl BitcoinBlockTester {
         let mut utxo_set = HashMap::<OutPoint, TxOut>::new();
         let block_data = self.executed_block.as_ref().unwrap();
         for tx in block_data.block.txdata.as_slice() {
-            let txid = tx.txid();
+            let txid = tx.compute_txid();
             for (index, tx_out) in tx.output.iter().enumerate() {
                 let vout = index as u32;
                 let out_point = OutPoint::new(txid, vout);
@@ -486,7 +486,7 @@ impl TesterGenesisBuilder {
         );
 
         for tx in &block.txdata {
-            self.block_txids.insert(tx.txid());
+            self.block_txids.insert(tx.compute_txid());
         }
 
         let depdent_txids = block

@@ -27,7 +27,7 @@ impl FromStr for ParsedInput {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.contains(":") {
+        if s.contains(':') {
             let outpoint = OutPoint::from_str(s)?;
             Ok(ParsedInput::OutPoint(outpoint))
         } else {

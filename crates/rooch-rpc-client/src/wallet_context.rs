@@ -94,7 +94,7 @@ impl WalletContext {
         parsed_address: ParsedAddress,
     ) -> RoochResult<RoochAddress> {
         match parsed_address {
-            ParsedAddress::Numerical(address) => Ok(address.into()),
+            ParsedAddress::Numerical(address) => Ok(address),
             ParsedAddress::Named(name) => self
                 .address_mapping
                 .get(&name)

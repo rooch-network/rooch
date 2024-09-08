@@ -6,7 +6,10 @@ use crate::{
     transaction::RoochTransactionData,
 };
 use anyhow::{ensure, Result};
-use bitcoin::consensus::{Decodable, Encodable};
+use bitcoin::{
+    consensus::{Decodable, Encodable},
+    io::BufRead,
+};
 use fastcrypto::{
     hash::Sha256,
     secp256k1::{Secp256k1PublicKey, Secp256k1Signature},
@@ -20,7 +23,6 @@ use moveos_types::{
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::io;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("auth_payload");
 
@@ -92,14 +94,17 @@ impl SignData {
 }
 
 impl Encodable for SignData {
-    fn consensus_encode<S: io::Write + ?Sized>(&self, s: &mut S) -> Result<usize, io::Error> {
+    fn consensus_encode<S: bitcoin::io::Write + ?Sized>(
+        &self,
+        s: &mut S,
+    ) -> Result<usize, bitcoin::io::Error> {
         let len = self.message_prefix.consensus_encode(s)?;
         Ok(len + self.message_info.consensus_encode(s)?)
     }
 }
 
 impl Decodable for SignData {
-    fn consensus_decode<D: io::Read + ?Sized>(
+    fn consensus_decode<D: BufRead + ?Sized>(
         d: &mut D,
     ) -> Result<Self, bitcoin::consensus::encode::Error> {
         Ok(SignData {

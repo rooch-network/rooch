@@ -6,7 +6,7 @@ use bitcoin::{
     hashes::Hash,
     hex::DisplayHex,
     secp256k1::Secp256k1,
-    PublicKey, TapNodeHash, XOnlyPublicKey,
+    KnownHrp, PublicKey, TapNodeHash, XOnlyPublicKey,
 };
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{
@@ -101,14 +101,12 @@ pub fn verify_bitcoin_address_with_public_key(
         + gas_params.per_byte.unwrap()
             * NumBytes::new((pk_ref.len() + bitcoin_addr.to_bytes().len()) as u64);
 
-    // TODO: convert to internal rooch public key and to bitcoin address?
     let Ok(pk) = PublicKey::from_slice(&pk_ref) else {
         return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
     };
 
-    // TODO: compare the input bitcoin address with the converted bitcoin address
-    let addr = match Address::from_str(&bitcoin_addr.to_string()) {
-        Ok(addr) => addr.assume_checked(),
+    let addr = match Address::try_from(bitcoin_addr) {
+        Ok(addr) => addr,
         Err(_) => {
             return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
         }
@@ -118,7 +116,7 @@ pub fn verify_bitcoin_address_with_public_key(
         Some(AddressType::P2tr) => {
             let xonly_pubkey = XOnlyPublicKey::from(pk.inner);
             let secp = Secp256k1::verification_only();
-            let trust_addr = Address::p2tr(&secp, xonly_pubkey, None, *addr.network());
+            let trust_addr = Address::p2tr(&secp, xonly_pubkey, None, KnownHrp::Mainnet);
             addr.is_related_to_pubkey(&pk) || trust_addr.to_string() == addr.to_string()
         }
         _ => addr.is_related_to_pubkey(&pk),
