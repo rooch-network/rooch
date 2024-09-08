@@ -6,6 +6,8 @@
 
 
 -  [Struct `Instance`](#0xa_cosmwasm_vm_Instance)
+-  [Function `code_checksum`](#0xa_cosmwasm_vm_code_checksum)
+-  [Function `store`](#0xa_cosmwasm_vm_store)
 -  [Function `from_code`](#0xa_cosmwasm_vm_from_code)
 -  [Function `call_instantiate`](#0xa_cosmwasm_vm_call_instantiate)
 -  [Function `call_execute`](#0xa_cosmwasm_vm_call_execute)
@@ -35,6 +37,28 @@
 
 
 <pre><code><b>struct</b> <a href="cosmwasm_vm.md#0xa_cosmwasm_vm_Instance">Instance</a>
+</code></pre>
+
+
+
+<a name="0xa_cosmwasm_vm_code_checksum"></a>
+
+## Function `code_checksum`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_vm.md#0xa_cosmwasm_vm_code_checksum">code_checksum</a>(instance: &<a href="cosmwasm_vm.md#0xa_cosmwasm_vm_Instance">cosmwasm_vm::Instance</a>): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0xa_cosmwasm_vm_store"></a>
+
+## Function `store`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_vm.md#0xa_cosmwasm_vm_store">store</a>(instance: &<a href="cosmwasm_vm.md#0xa_cosmwasm_vm_Instance">cosmwasm_vm::Instance</a>): &<a href="_Table">table::Table</a>&lt;<a href="_String">string::String</a>, <a href="">vector</a>&lt;u8&gt;&gt;
 </code></pre>
 
 

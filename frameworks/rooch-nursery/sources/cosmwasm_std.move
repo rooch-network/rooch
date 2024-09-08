@@ -69,7 +69,7 @@ module rooch_nursery::cosmwasm_std {
         reply_on: ReplyOn,
     }
 
-    struct Error {
+    struct Error has store, copy, drop {
         code: u32,
         message: String,
     }

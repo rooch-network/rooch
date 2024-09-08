@@ -172,7 +172,7 @@
 
 
 
-<pre><code><b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_Error">Error</a>
+<pre><code><b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_Error">Error</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
