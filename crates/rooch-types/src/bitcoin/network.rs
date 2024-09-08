@@ -23,16 +23,14 @@ pub enum Network {
     Regtest = 4,
 }
 
-impl TryFrom<u8> for Network {
-    type Error = anyhow::Error;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+impl From<u8> for Network {
+    fn from(value: u8) -> Self {
         match value {
-            1 => Ok(Network::Bitcoin),
-            2 => Ok(Network::Testnet),
-            3 => Ok(Network::Signet),
-            4 => Ok(Network::Regtest),
-            _ => Err(anyhow::anyhow!("Bitcoin network {} is invalid", value)),
+            1 => Network::Bitcoin,
+            2 => Network::Testnet,
+            3 => Network::Signet,
+            4 => Network::Regtest,
+            _ => Network::Bitcoin,
         }
     }
 }

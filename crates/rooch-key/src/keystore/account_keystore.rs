@@ -90,7 +90,20 @@ pub trait AccountKeystore {
         Ok(())
     }
 
+    /// Get all local accounts
+    //TODO refactor the keystore, save the public key out of the encryption data, so that we don't need to require password to get the public key
     fn get_accounts(&self, password: Option<String>) -> Result<Vec<LocalAccount>, anyhow::Error>;
+
+    /// Get local account by address
+    fn get_account(
+        &self,
+        address: &RoochAddress,
+        password: Option<String>,
+    ) -> Result<Option<LocalAccount>, anyhow::Error> {
+        let accounts = self.get_accounts(password)?;
+        let account = accounts.iter().find(|account| account.address == *address);
+        Ok(account.cloned())
+    }
 
     fn contains_address(&self, address: &RoochAddress) -> bool;
 

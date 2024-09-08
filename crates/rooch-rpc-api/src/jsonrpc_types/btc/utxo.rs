@@ -10,6 +10,7 @@ use anyhow::Result;
 use bitcoin::hashes::Hash;
 use bitcoin::Txid;
 
+use moveos_types::move_std::string::MoveString;
 use moveos_types::state::{MoveState, MoveStructType};
 use rooch_types::bitcoin::types::OutPoint;
 use rooch_types::bitcoin::utxo::{self, UTXO};
@@ -54,6 +55,11 @@ pub enum UTXOFilterView {
 }
 
 impl UTXOFilterView {
+    pub fn owner<A: Into<UnitedAddressView>>(owner: A) -> Self {
+        let addr: UnitedAddressView = owner.into();
+        UTXOFilterView::Owner(addr)
+    }
+
     pub fn into_global_state_filter(filter_opt: UTXOFilterView) -> Result<ObjectStateFilter> {
         Ok(match filter_opt {
             UTXOFilterView::Owner(owner) => ObjectStateFilter::ObjectTypeWithOwner {
@@ -121,6 +127,26 @@ impl UTXOView {
     }
 }
 
+impl From<UTXOView> for UTXO {
+    fn from(view: UTXOView) -> Self {
+        UTXO {
+            txid: view.txid.0.into_address(),
+            vout: view.vout,
+            value: view.value.0,
+            seals: view
+                .seals
+                .into_iter()
+                .map(|(k, v)| {
+                    (
+                        MoveString::from(k),
+                        v.into_iter().map(|id| id.0).collect::<Vec<_>>(),
+                    )
+                })
+                .collect::<Vec<_>>()
+                .into(),
+        }
+    }
+}
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct UTXOStateView {
     #[serde(flatten)]

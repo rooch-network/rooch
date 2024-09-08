@@ -312,6 +312,15 @@ impl From<bitcoin::OutPoint> for OutPoint {
     }
 }
 
+impl From<OutPoint> for bitcoin::OutPoint {
+    fn from(out_point: OutPoint) -> Self {
+        Self {
+            txid: Txid::from_address(out_point.txid),
+            vout: out_point.vout,
+        }
+    }
+}
+
 impl MoveStructType for OutPoint {
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("OutPoint");

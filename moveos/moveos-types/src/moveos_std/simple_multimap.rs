@@ -117,3 +117,20 @@ where
         ))])
     }
 }
+
+impl<Key, Value> From<SimpleMultiMap<Key, Value>> for Vec<(Key, Vec<Value>)> {
+    fn from(map: SimpleMultiMap<Key, Value>) -> Self {
+        map.data.into_iter().map(|e| (e.key, e.value)).collect()
+    }
+}
+
+impl<Key, Value> From<Vec<(Key, Vec<Value>)>> for SimpleMultiMap<Key, Value> {
+    fn from(data: Vec<(Key, Vec<Value>)>) -> Self {
+        SimpleMultiMap {
+            data: data
+                .into_iter()
+                .map(|(key, value)| Element { key, value })
+                .collect(),
+        }
+    }
+}

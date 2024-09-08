@@ -3,8 +3,11 @@
 
 use anyhow::{Ok, Result};
 use jsonrpsee::http_client::HttpClient;
+use move_core_types::account_address::AccountAddress;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::account::Account;
+use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::state::FieldKey;
 use moveos_types::{access_path::AccessPath, state::ObjectState, transaction::FunctionCall};
 use rooch_rpc_api::api::btc_api::BtcAPIClient;
 use rooch_rpc_api::api::rooch_api::RoochAPIClient;
@@ -17,13 +20,16 @@ use rooch_rpc_api::jsonrpc_types::{
 };
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, EventOptions, EventPageView,
-    FieldKeyView, ObjectIDView, RoochAddressView, StateOptions, StatePageView, StructTagView,
+    FieldKeyView, ObjectIDVecView, ObjectIDView, RoochAddressView, StateOptions, StatePageView,
+    StructTagView,
 };
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, ObjectStateView};
 use rooch_rpc_api::jsonrpc_types::{
     IndexerObjectStatePageView, ObjectStateFilterView, QueryOptions,
 };
 use rooch_rpc_api::jsonrpc_types::{TransactionWithInfoPageView, TxOptions};
+use rooch_types::address::BitcoinAddress;
+use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::transaction::RoochTransactionData;
 use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
@@ -217,6 +223,24 @@ impl RoochRpcClient {
             .await?)
     }
 
+    pub async fn resolve_bitcoin_address(
+        &self,
+        address: RoochAddress,
+    ) -> Result<Option<BitcoinAddress>> {
+        let object_id = RoochToBitcoinAddressMapping::object_id();
+        let field_key = FieldKey::derive_from_address(&address.into());
+        let mut field = self
+            .get_field_states(object_id.into(), vec![field_key.into()], None)
+            .await?;
+        let field_obj = field.pop().flatten();
+        let bitcoin_address = field_obj.map(|state_view| {
+            let state = ObjectState::from(state_view);
+            let df = state.value_as_df::<AccountAddress, BitcoinAddress>()?;
+            Ok(df.value)
+        });
+        bitcoin_address.transpose()
+    }
+
     pub async fn list_field_states(
         &self,
         object_id: ObjectIDView,
@@ -271,6 +295,20 @@ impl RoochRpcClient {
                 cursor.map(Into::into),
                 limit.map(Into::into),
             )
+            .await?)
+    }
+
+    pub async fn get_object_states(
+        &self,
+        object_ids: Vec<ObjectID>,
+        state_option: Option<StateOptions>,
+    ) -> Result<Vec<Option<ObjectStateView>>> {
+        if object_ids.is_empty() {
+            return Ok(vec![]);
+        }
+        Ok(self
+            .http
+            .get_object_states(ObjectIDVecView::from(object_ids), state_option)
             .await?)
     }
 

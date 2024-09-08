@@ -51,6 +51,7 @@ vergen-pretty = { workspace = true }
 prometheus = { workspace = true }
 lazy_static = { workspace = true }
 schemars = { workspace = true }
+bitcoin = { workspace = true }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }
@@ -86,7 +87,6 @@ framework-builder = { workspace = true }
 framework-types = { workspace = true }
 raw-store = { workspace = true }
 smt = { workspace = true }
-bitcoin = { workspace = true }
 bitcoin-move = { workspace = true }
 
 rooch-key = { workspace = true }

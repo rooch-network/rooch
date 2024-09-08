@@ -66,6 +66,7 @@ impl From<RoochAddressView> for AccountAddress {
     }
 }
 
+//TODO directly use UnitedAddress and remove UnitedAddressView
 #[derive(Debug, Clone)]
 pub struct UnitedAddress {
     pub rooch_address: RoochAddress,
@@ -163,5 +164,36 @@ impl TryFrom<UnitedAddressView> for NostrPublicKey {
             Some(nostr_public_key) => Ok(nostr_public_key),
             None => Err(anyhow::anyhow!("No Nostr public key found")),
         }
+    }
+}
+
+impl From<BitcoinAddress> for UnitedAddressView {
+    fn from(value: BitcoinAddress) -> Self {
+        StrView(UnitedAddress {
+            rooch_address: value.to_rooch_address(),
+            bitcoin_address: Some(value),
+            nostr_public_key: None,
+        })
+    }
+}
+
+impl From<RoochAddress> for UnitedAddressView {
+    fn from(value: RoochAddress) -> Self {
+        StrView(UnitedAddress {
+            rooch_address: value,
+            bitcoin_address: None,
+            nostr_public_key: None,
+        })
+    }
+}
+
+impl From<bitcoin::Address> for UnitedAddressView {
+    fn from(value: bitcoin::Address) -> Self {
+        let value = BitcoinAddress::from(value);
+        StrView(UnitedAddress {
+            rooch_address: value.to_rooch_address(),
+            bitcoin_address: Some(value),
+            nostr_public_key: None,
+        })
     }
 }

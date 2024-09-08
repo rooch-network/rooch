@@ -3,7 +3,9 @@
 
 use super::types;
 use crate::addresses::BITCOIN_MOVE_ADDRESS;
+use crate::into_address::FromAddress;
 use anyhow::Result;
+use bitcoin::{Amount, Txid};
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::{self, ObjectMeta};
@@ -103,6 +105,18 @@ impl UTXO {
 
     pub fn object_id(&self) -> ObjectID {
         derive_utxo_id(&types::OutPoint::new(self.txid, self.vout))
+    }
+
+    pub fn amount(&self) -> Amount {
+        Amount::from_sat(self.value)
+    }
+
+    pub fn txid(&self) -> Txid {
+        Txid::from_address(self.txid)
+    }
+
+    pub fn outpoint(&self) -> types::OutPoint {
+        types::OutPoint::new(self.txid, self.vout)
     }
 }
 

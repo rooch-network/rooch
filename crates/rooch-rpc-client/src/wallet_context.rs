@@ -15,11 +15,13 @@ use rooch_key::keystore::Keystore;
 use rooch_rpc_api::jsonrpc_types::{
     DryRunTransactionResponseView, ExecuteTransactionResponseView, KeptVMStatusView, TxOptions,
 };
-use rooch_types::address::ParsedAddress;
 use rooch_types::address::RoochAddress;
+use rooch_types::address::{BitcoinAddress, ParsedAddress};
 use rooch_types::addresses;
+use rooch_types::bitcoin::network::Network;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
 use rooch_types::transaction::rooch::{RoochTransaction, RoochTransactionData};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -83,12 +85,50 @@ impl WalletContext {
     }
 
     pub fn resolve_address(&self, parsed_address: ParsedAddress) -> RoochResult<AccountAddress> {
+        self.resolve_rooch_address(parsed_address)
+            .map(|address| address.into())
+    }
+
+    pub fn resolve_rooch_address(
+        &self,
+        parsed_address: ParsedAddress,
+    ) -> RoochResult<RoochAddress> {
         match parsed_address {
             ParsedAddress::Numerical(address) => Ok(address.into()),
-            ParsedAddress::Named(name) => {
-                self.address_mapping.get(&name).cloned().ok_or_else(|| {
+            ParsedAddress::Named(name) => self
+                .address_mapping
+                .get(&name)
+                .cloned()
+                .map(|address| address.into())
+                .ok_or_else(|| {
                     RoochError::CommandArgumentError(format!("Unknown named address: {}", name))
-                })
+                }),
+            ParsedAddress::Bitcoin(address) => Ok(address.to_rooch_address()),
+        }
+    }
+
+    pub async fn resolve_bitcoin_address(
+        &self,
+        parsed_address: ParsedAddress,
+    ) -> RoochResult<BitcoinAddress> {
+        match parsed_address {
+            ParsedAddress::Bitcoin(address) => Ok(address),
+            _ => {
+                let address = self.resolve_rooch_address(parsed_address)?;
+                let account = self.keystore.get_account(&address, self.password.clone())?;
+                if let Some(account) = account {
+                    let bitcoin_address = account.bitcoin_address;
+                    Ok(bitcoin_address)
+                } else {
+                    let client = self.get_client().await?;
+                    let bitcoin_address = client.rooch.resolve_bitcoin_address(address).await?;
+                    bitcoin_address.ok_or_else(|| {
+                        RoochError::CommandArgumentError(format!(
+                            "Cannot resolve bitcoin address from {}",
+                            address
+                        ))
+                    })
+                }
             }
         }
     }
@@ -241,5 +281,21 @@ impl WalletContext {
 
     pub fn get_password(&self) -> Option<String> {
         self.password.clone()
+    }
+
+    pub async fn get_rooch_network(&self) -> Result<RoochNetwork> {
+        let client = self.get_client().await?;
+        let chain_id = client.rooch.get_chain_id().await?;
+        //TODO support custom chain id
+        let builtin_chain_id = BuiltinChainID::try_from(chain_id)?;
+        Ok(builtin_chain_id.into())
+    }
+
+    pub async fn get_bitcoin_network(&self) -> Result<Network> {
+        let rooch_network = self.get_rooch_network().await?;
+        let bitcoin_network = rooch_types::bitcoin::network::Network::from(
+            rooch_network.genesis_config.bitcoin_network,
+        );
+        Ok(bitcoin_network)
     }
 }
