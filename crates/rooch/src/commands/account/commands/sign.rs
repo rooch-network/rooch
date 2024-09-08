@@ -4,58 +4,60 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use hex::ToHex;
+use moveos_types::state::MoveState;
 use rooch_key::keystore::account_keystore::AccountKeystore;
-use rooch_rpc_api::jsonrpc_types::account_sign_view::AccountSignView;
 use rooch_types::{
     address::ParsedAddress,
-    error::{RoochError, RoochResult},
+    error::RoochResult,
+    framework::auth_payload::{SignData, MESSAGE_INFO_PREFIX},
 };
 
-/// Sign an msg with current account private key (sign_hashed)
-///
-/// This operation must be specified with -a or
-/// --address to export only one address with a private key.
+/// Sign a message with a parsed address
 #[derive(Debug, Parser)]
 pub struct SignCommand {
+    // An address to be used
     #[clap(short = 'a', long = "address", value_parser=ParsedAddress::parse, default_value = "")]
     address: ParsedAddress,
+
+    /// A message to be signed
+    #[clap(short = 'm', long)]
+    message: String,
+
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
 
     /// Return command outputs in json format
     #[clap(long, default_value = "false")]
     json: bool,
-
-    /// Msg command will sign
-    #[clap(long, default_value = "")]
-    msg: String,
 }
 
 #[async_trait]
-impl CommandAction<Option<AccountSignView>> for SignCommand {
-    async fn execute(self) -> RoochResult<Option<AccountSignView>> {
+impl CommandAction<Option<String>> for SignCommand {
+    async fn execute(self) -> RoochResult<Option<String>> {
         let context = self.context_options.build_require_password()?;
         let password = context.get_password();
-
         let mapping = context.address_mapping();
-        let addrss = self.address.into_rooch_address(&mapping).map_err(|e| {
-            RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
-        })?;
+        let rooch_address = self.address.into_rooch_address(&mapping)?;
+
+        let sign_data =
+            SignData::new_without_tx_hash(MESSAGE_INFO_PREFIX.to_vec(), self.message.to_bytes());
+        let encoded_sign_data = sign_data.encode();
 
         let signature =
             context
                 .keystore
-                .sign_hashed(&addrss, &self.msg.clone().into_bytes(), password)?;
+                .sign_hashed(&rooch_address, &encoded_sign_data, password)?;
+
+        let signature_bytes = signature.as_ref();
+        let signature_hex = hex::encode(signature_bytes);
 
         if self.json {
-            Ok(Some(AccountSignView::new(
-                self.msg.clone(),
-                signature.encode_hex(),
-            )))
+            Ok(Some(signature_hex))
         } else {
-            println!("Msg you input : {}", &self.msg);
-            println!("Signature : {}", signature.encode_hex::<String>());
+            println!(
+                "Sign message succeeded with the signatue {:?}",
+                signature_hex
+            );
             Ok(None)
         }
     }
