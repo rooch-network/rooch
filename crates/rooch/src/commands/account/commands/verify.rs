@@ -4,7 +4,7 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use moveos_types::{h256::sha2_256_of, state::MoveState};
+use moveos_types::state::MoveState;
 use rooch_types::{
     crypto::RoochSignature,
     error::RoochResult,
@@ -37,13 +37,16 @@ impl CommandAction<Option<bool>> for VerifyCommand {
         let sign_data =
             SignData::new_without_tx_hash(MESSAGE_INFO_PREFIX.to_vec(), self.message.to_bytes());
         let encoded_sign_data = sign_data.encode();
-        let message_hash = sha2_256_of(&encoded_sign_data).0.to_vec();
-        let _ = self.signature.into_inner().verify(&message_hash);
+        let verify_result = self
+            .signature
+            .into_inner()
+            .verify(&encoded_sign_data)
+            .is_ok();
 
         if self.json {
-            Ok(Some(true))
+            Ok(Some(verify_result))
         } else {
-            println!("Verification succeeded");
+            println!("Verification result: {}", verify_result);
             Ok(None)
         }
     }
