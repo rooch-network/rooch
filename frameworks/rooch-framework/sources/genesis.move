@@ -23,6 +23,8 @@ module rooch_framework::genesis {
 
     const ErrorGenesisInit: u64 = 1;
 
+    const GENESIS_INIT_GAS_AMOUNT: u256 = 500000000_00000000u256;
+
     /// GenesisContext is a genesis init parameters in the TxContext.
     struct GenesisContext has copy,store,drop{
         chain_id: u64,
@@ -68,8 +70,13 @@ module rooch_framework::genesis {
             module_store::issue_upgrade_cap_by_system(genesis_account, addr, rooch_dao_address);
         });
         
-        // give some gas coin to the rooch dao
-        gas_coin::faucet(rooch_dao_address, 1000000_00000000u256);
+        // give initial gas to the rooch dao
+        gas_coin::faucet(rooch_dao_address, GENESIS_INIT_GAS_AMOUNT);
+
+        // give initial gas to the sequencer if it's local or dev
+        if(chain_id::is_local_or_dev()){
+            gas_coin::faucet(sequencer_addr, GENESIS_INIT_GAS_AMOUNT);
+        }
     }
 
 

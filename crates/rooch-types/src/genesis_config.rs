@@ -289,7 +289,7 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
             RoochToBitcoinAddressMapping::type_layout(),
         ),
     ],
-    stdlib_version: StdlibVersion::Version(8),
+    stdlib_version: StdlibVersion::Version(9),
 });
 
 #[cfg(test)]
