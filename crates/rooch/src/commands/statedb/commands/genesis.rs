@@ -110,7 +110,6 @@ impl GenesisCommand {
         let utxo_source_path = self.source_data_dir.join("utxo");
         let outpoint_inscriptions_map_path = self.source_data_dir.join("outpoint_inscriptions_map");
 
-        log::info!("indexing and dumping outpoint_inscriptions_map...");
         let outpoint_inscriptions_map = Arc::new(OutpointInscriptionsMap::load_or_index(
             outpoint_inscriptions_map_path.clone(),
             Some(ord_source_path.clone()),
@@ -238,7 +237,11 @@ impl GenesisCommand {
             for line in content.lines() {
                 let parts: Vec<&str> = line.split(':').collect();
                 if parts.len() == 2 {
-                    checksum.insert(parts[0].to_string(), parts[1].parse().unwrap());
+                    let digest = match u64::from_str_radix(parts[1], 16) {
+                        Ok(value) => value,
+                        Err(e) => panic!("invalid checksum digest: {}", e),
+                    };
+                    checksum.insert(parts[0].to_string(), digest);
                 } else {
                     panic!("invalid checksum file format");
                 }
