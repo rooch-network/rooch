@@ -12,9 +12,9 @@ use std::path::Path;
 
 use anyhow::{ensure, format_err, Error, Result};
 use rocksdb::{
-    AsColumnFamilyRef, BlockBasedIndexType, BlockBasedOptions, CStrLike, Cache, ColumnFamily,
-    ColumnFamilyDescriptor, DBCompressionType, DBRawIterator, DBRecoveryMode, Options, ReadOptions,
-    WriteBatch as DBWriteBatch, WriteOptions, DB,
+    statistics, AsColumnFamilyRef, BlockBasedIndexType, BlockBasedOptions, CStrLike, Cache,
+    ColumnFamily, ColumnFamilyDescriptor, DBCompressionType, DBRawIterator, DBRecoveryMode,
+    Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB,
 };
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -141,11 +141,11 @@ impl RocksDB {
                 cf_opts.set_compression_per_level(&[
                     DBCompressionType::None,
                     DBCompressionType::None,
-                    DBCompressionType::None,
-                    DBCompressionType::None,
-                    DBCompressionType::None,
-                    DBCompressionType::None,
-                    DBCompressionType::None,
+                    DBCompressionType::Lz4,
+                    DBCompressionType::Lz4,
+                    DBCompressionType::Lz4,
+                    DBCompressionType::Lz4,
+                    DBCompressionType::Lz4,
                 ]);
                 cf_opts.set_block_based_table_factory(&table_opts);
 
@@ -251,8 +251,8 @@ impl RocksDB {
         db_opts.set_row_cache(&cache);
         db_opts.set_enable_pipelined_write(true);
         db_opts.set_wal_recovery_mode(DBRecoveryMode::PointInTime); // for memtable crash recovery
-                                                                    // db_opts.enable_statistics();
-                                                                    // db_opts.set_statistics_level(statistics::StatsLevel::ExceptTimeForMutex);
+        db_opts.enable_statistics();
+        db_opts.set_statistics_level(statistics::StatsLevel::ExceptTimeForMutex);
         db_opts
     }
     fn iter_with_direction<K, V>(

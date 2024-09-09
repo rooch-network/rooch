@@ -40,7 +40,7 @@ impl MetaDBStore {
             .kv_get(SEQUENCER_INFO_KEY.to_string())
     }
 
-    pub fn clean_sequencer_info(&self) -> Result<()> {
+    pub fn remove_sequence_info(&self) -> Result<()> {
         self.sequencer_info_store
             .remove(SEQUENCER_INFO_KEY.to_string())
     }
