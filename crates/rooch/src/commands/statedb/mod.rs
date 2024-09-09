@@ -9,9 +9,10 @@ use rooch_types::error::RoochResult;
 
 use crate::cli_types::CommandAction;
 use crate::commands::statedb::commands::genesis::GenesisCommand;
+use crate::commands::statedb::commands::genesis_ord::GenesisOrdCommand;
 use crate::commands::statedb::commands::genesis_utxo::GenesisUTXOCommand;
 use crate::commands::statedb::commands::genesis_verify::GenesisVerifyCommand;
-use crate::commands::statedb::commands::import::ImportCommand;
+use crate::commands::statedb::commands::re_genesis::ReGenesisCommand;
 
 pub mod commands;
 
@@ -29,10 +30,10 @@ impl CommandAction<String> for Statedb {
             StatedbCommand::Export(export) => export.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
-            StatedbCommand::Import(import) => import.execute().await.map(|resp| {
+            StatedbCommand::GenesisUTXO(genesis_utxo) => genesis_utxo.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
-            StatedbCommand::GenesisUTXO(genesis_utxo) => genesis_utxo.execute().await.map(|resp| {
+            StatedbCommand::GenesisOrd(genesis_ord) => genesis_ord.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
             StatedbCommand::Genesis(genesis) => genesis.execute().await.map(|resp| {
@@ -43,6 +44,9 @@ impl CommandAction<String> for Statedb {
                     serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
                 })
             }
+            StatedbCommand::ReGenesis(re_genesis) => re_genesis.execute().await.map(|resp| {
+                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
+            }),
         }
     }
 }
@@ -51,8 +55,9 @@ impl CommandAction<String> for Statedb {
 #[clap(name = "statedb")]
 pub enum StatedbCommand {
     Export(ExportCommand),
-    Import(ImportCommand),
-    GenesisUTXO(GenesisUTXOCommand),
     Genesis(GenesisCommand),
+    GenesisUTXO(GenesisUTXOCommand),
+    GenesisOrd(GenesisOrdCommand),
     GenesisVerify(GenesisVerifyCommand),
+    ReGenesis(ReGenesisCommand),
 }

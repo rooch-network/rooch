@@ -9304,6 +9304,7 @@ dependencies = [
  "serde 1.0.208",
  "serde-reflection",
  "serde_json",
+ "serde_with 2.3.3",
  "serde_yaml 0.9.34+deprecated",
  "smt",
  "tempfile",
