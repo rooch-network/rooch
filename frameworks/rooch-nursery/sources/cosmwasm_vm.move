@@ -7,6 +7,7 @@ module rooch_nursery::cosmwasm_vm {
     use std::option::{Self, Option};
     
     use moveos_std::features;
+    use moveos_std::object::{ObjectID};
     use moveos_std::table::{Self, Table};
     use moveos_std::result::{Self, Result, ok};
 
@@ -30,8 +31,9 @@ module rooch_nursery::cosmwasm_vm {
         features::ensure_wasm_enabled();
 
         let store = table::new<String, vector<u8>>();
+        let store_handle = table::handle(&store);
 
-        let (checksum, error_code) = native_create_instance(code, &mut store);
+        let (checksum, error_code) = native_create_instance(code, store_handle);
         if (error_code == 0) {
             ok(Instance { 
                 code_checksum: checksum,
@@ -124,7 +126,7 @@ module rooch_nursery::cosmwasm_vm {
  
 
     // Native function declarations
-    native fun native_create_instance(code: vector<u8>, store: &mut Table<String, vector<u8>>): (vector<u8>, u32);
+    native fun native_create_instance(code: vector<u8>, store_handle: ObjectID): (vector<u8>, u32);
     native fun native_destroy_instance(code_checksum: vector<u8>): u32;
     native fun native_call_instantiate_raw(code_checksum: vector<u8>, store: &mut Table<String, vector<u8>>, env: vector<u8>, info: vector<u8>, msg: vector<u8>): (vector<u8>, u32);
     native fun native_call_execute_raw(code_checksum: vector<u8>, store: &mut Table<String, vector<u8>>, env: vector<u8>, info: vector<u8>, msg: vector<u8>): (vector<u8>, u32);

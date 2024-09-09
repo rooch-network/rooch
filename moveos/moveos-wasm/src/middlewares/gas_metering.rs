@@ -68,7 +68,7 @@ impl ModuleMiddleware for GasMiddleware {
     fn transform_module_info(
         &self,
         module_info: &mut wasmer_types::ModuleInfo,
-    ) -> Result<(), MiddlewareError> {
+    ) {
         // Insert the signature for the charge function
         let charge_signature = FunctionType::new(vec![Type::I64], vec![]);
         let charge_signature_index = module_info.signatures.push(charge_signature);
@@ -143,7 +143,6 @@ impl ModuleMiddleware for GasMiddleware {
 
         let mut charge_function_index_lock = self.charge_function_index.lock().unwrap();
         *charge_function_index_lock = Some(charge_function_index);
-        Ok(())
     }
 }
 

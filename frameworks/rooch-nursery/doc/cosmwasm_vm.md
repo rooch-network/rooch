@@ -23,6 +23,7 @@
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::features</a>;
+<b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::result</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std">0xa::cosmwasm_std</a>;
