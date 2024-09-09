@@ -4,8 +4,7 @@
 use framework_types::addresses::BITCOIN_MOVE_ADDRESS;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::moveos_std::object::{
-    DynamicField, ObjectEntity, ObjectID, FROZEN_OBJECT_FLAG_MASK, SHARED_OBJECT_FLAG_MASK,
-    SYSTEM_OWNER_ADDRESS,
+    DynamicField, ObjectEntity, ObjectID, FROZEN_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
 };
 use moveos_types::state::{FieldKey, ObjectState};
 use rooch_types::address::BitcoinAddress;
@@ -171,27 +170,4 @@ impl InscriptionStats {
         reader.read_line(&mut line).unwrap();
         serde_json::from_str(line.as_str()).unwrap()
     }
-}
-
-pub(crate) fn create_genesis_inscription_store_object(
-    stats: &InscriptionStats,
-) -> ObjectEntity<InscriptionStore> {
-    let inscription_store = InscriptionStore {
-        cursed_inscription_count: stats.cursed_inscription_count,
-        blessed_inscription_count: stats.blessed_inscription_count,
-        unbound_inscription_count: stats.unbound_inscription_count,
-        lost_sats: stats.lost_sats,
-        next_sequence_number: stats.next_sequence_number,
-    };
-    let obj_id = InscriptionStore::object_id();
-    ObjectEntity::new(
-        obj_id,
-        SYSTEM_OWNER_ADDRESS,
-        SHARED_OBJECT_FLAG_MASK,
-        None,
-        0,
-        0,
-        0,
-        inscription_store,
-    )
 }

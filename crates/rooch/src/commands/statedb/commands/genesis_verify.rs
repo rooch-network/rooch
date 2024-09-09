@@ -55,7 +55,6 @@ pub struct GenesisVerifyCommand {
     pub utxo_source: PathBuf,
     #[clap(long)]
     /// ord source data file. like ~/.rooch/local/ord or ord, ord_input must be sorted by sequence_number
-    /// The file format is JSON, and the first line is block height info: # export at block height <N>, ord range: [0, N).
     /// ord_input & utxo_input must be at the same height
     pub ord_source: Option<PathBuf>,
     #[clap(
@@ -148,8 +147,7 @@ impl GenesisVerifyCommand {
                     self.sample_rate,
                     ord_mismatched_output,
                 );
-            })
-            .unwrap();
+            })?;
         // verify utxo
         let utxo_mismatched_output =
             create_output_path(&self.mismatched_output_dir, "utxo_mismatched", timestamp);
@@ -171,8 +169,7 @@ impl GenesisVerifyCommand {
                     self.sample_rate,
                     utxo_mismatched_output,
                 );
-            })
-            .unwrap();
+            })?;
 
         verify_inscription_thread.join().unwrap();
         verify_utxo_thread.join().unwrap();
@@ -922,13 +919,13 @@ fn find_latest_file_with_prefix(output_dir: &PathBuf, prefix: &str) -> Option<Pa
         let entry = entry.unwrap();
         let path = entry.path();
         if path.is_file() {
-            let filename = path.file_name().unwrap().to_str().unwrap();
+            let filename = path.file_name()?.to_str()?;
             if !filename.starts_with(prefix) {
                 continue;
             };
             // get timestamp from file name: <prefix>_<timestamp>
-            let timestamp = filename.split('_').last().unwrap().parse::<u64>().unwrap();
-            if max_timestamp.is_none() || timestamp > max_timestamp.unwrap() {
+            let timestamp = filename.split('_').last()?.parse::<u64>().unwrap();
+            if max_timestamp.is_none() || timestamp > max_timestamp? {
                 max_timestamp = Some(timestamp);
                 max_path = Some(path);
             }
@@ -978,7 +975,7 @@ impl From<&Inscription> for InscriptionForComparison {
 
 fn to_commitment(rune: Option<u128>) -> Option<Vec<u8>> {
     rune?;
-    let rune = rune.unwrap();
+    let rune = rune?;
     let bytes = rune.to_le_bytes();
 
     let mut end = bytes.len();

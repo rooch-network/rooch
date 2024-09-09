@@ -198,36 +198,27 @@ pub struct ExportCommand {
     /// export state root, default latest state root
     #[clap(long, short = 's')]
     pub state_root: Option<H256>,
-
     #[clap(long, short = 'o')]
     /// export output file. like ~/.rooch/local/statedb.csv or ./statedb.csv
     pub output: Option<PathBuf>,
+    #[clap(long, help = "path to ord source path")]
+    pub ord_source_path: Option<PathBuf>,
+    #[clap(long, help = "path to utxo source path")]
+    pub utxo_source_path: Option<PathBuf>,
+    #[clap(long, help = "path to outpoint_inscriptions_map path")]
+    pub outpoint_inscriptions_map_path: Option<PathBuf>,
+    #[clap(long, short = 'm')]
+    /// statedb export mode, default is genesis mode
+    pub mode: Option<ExportMode>,
+    /// export object id, for object mode
+    #[clap(long, short = 'i')]
+    pub object_id: Option<ObjectID>,
+    #[clap(long)]
+    pub object_name: Option<ExportObjectName>,
 
     #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
     pub base_data_dir: Option<PathBuf>,
-
-    #[clap(long, help = "path to ord source path")]
-    pub ord_source_path: Option<PathBuf>,
-
-    #[clap(long, help = "path to utxo source path")]
-    pub utxo_source_path: Option<PathBuf>,
-
-    #[clap(long, help = "path to outpoint_inscriptions_map path")]
-    pub outpoint_inscriptions_map_path: Option<PathBuf>,
-
-    // #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long, short = 'm')]
-    /// statedb export mode, default is genesis mode
-    pub mode: Option<ExportMode>,
-
-    /// export object id, for object mode
-    #[clap(long, short = 'i')]
-    pub object_id: Option<ObjectID>,
-
-    #[clap(long)]
-    pub object_name: Option<ExportObjectName>,
-
     #[clap(
         long,
         help = "dir to export ord/utxo/address_map output for ExportMode::Genesis"

@@ -12,7 +12,6 @@ use crate::commands::statedb::commands::genesis::GenesisCommand;
 use crate::commands::statedb::commands::genesis_ord::GenesisOrdCommand;
 use crate::commands::statedb::commands::genesis_utxo::GenesisUTXOCommand;
 use crate::commands::statedb::commands::genesis_verify::GenesisVerifyCommand;
-use crate::commands::statedb::commands::import::ImportCommand;
 use crate::commands::statedb::commands::re_genesis::ReGenesisCommand;
 
 pub mod commands;
@@ -29,9 +28,6 @@ impl CommandAction<String> for Statedb {
     async fn execute(self) -> RoochResult<String> {
         match self.cmd {
             StatedbCommand::Export(export) => export.execute().await.map(|resp| {
-                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
-            }),
-            StatedbCommand::Import(import) => import.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
             StatedbCommand::GenesisUTXO(genesis_utxo) => genesis_utxo.execute().await.map(|resp| {
@@ -59,7 +55,6 @@ impl CommandAction<String> for Statedb {
 #[clap(name = "statedb")]
 pub enum StatedbCommand {
     Export(ExportCommand),
-    Import(ImportCommand),
     Genesis(GenesisCommand),
     GenesisUTXO(GenesisUTXOCommand),
     GenesisOrd(GenesisOrdCommand),
