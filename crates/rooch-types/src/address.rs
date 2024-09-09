@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::bitcoin::network;
+use crate::crypto::RoochKeyPair;
+use crate::to_bech32::{FromBech32, ToBech32, PREFIX_BECH32_PUBLIC_KEY};
 use crate::{
     addresses::ROOCH_FRAMEWORK_ADDRESS,
     multichain_id::{MultiChainID, RoochMultiChainID},
@@ -12,11 +14,11 @@ use bech32::{Bech32m, Hrp};
 use bitcoin::address::AddressData;
 use bitcoin::hashes::Hash;
 use bitcoin::params::Params;
-use bitcoin::CompressedPublicKey;
 use bitcoin::{
     address::Address, secp256k1::Secp256k1, Network, PrivateKey, Script, WitnessProgram,
     WitnessVersion,
 };
+use bitcoin::{CompressedPublicKey, XOnlyPublicKey};
 use ethers::types::H160;
 use fastcrypto::hash::Blake2b256;
 use fastcrypto::hash::HashFunction;
@@ -35,10 +37,6 @@ use moveos_types::{
     h256::H256,
     state::{MoveStructState, MoveStructType},
 };
-use nostr::prelude::{FromBech32, ToBech32, PREFIX_BECH32_PUBLIC_KEY};
-use nostr::secp256k1::XOnlyPublicKey;
-use nostr::Keys;
-use once_cell::sync::Lazy;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::{collection::vec, prelude::*};
 use rand::{seq::SliceRandom, thread_rng};
@@ -210,7 +208,7 @@ impl MoveStructState for MultiChainAddress {
     }
 }
 
-pub static ROOCH_HRP: Lazy<Hrp> = Lazy::new(|| Hrp::parse("rooch").expect("rooch is a valid HRP"));
+pub const ROOCH_HRP: Hrp = Hrp::parse_unchecked("rooch");
 
 /// Rooch address type
 #[derive(Copy, Clone, Ord, PartialOrd, PartialEq, Eq, Hash)]
@@ -232,7 +230,7 @@ impl RoochAddress {
 
     pub fn to_bech32(&self) -> String {
         let data = self.0.as_bytes();
-        bech32::encode::<Bech32m>(*ROOCH_HRP, data).expect("bech32 encode should success")
+        bech32::encode::<Bech32m>(ROOCH_HRP, data).expect("bech32 encode should success")
     }
 
     pub fn to_vec(&self) -> Vec<u8> {
@@ -245,7 +243,7 @@ impl RoochAddress {
 
     pub fn from_bech32(bech32: &str) -> Result<Self> {
         let (hrp, data) = bech32::decode(bech32)?;
-        anyhow::ensure!(hrp == *ROOCH_HRP, "invalid rooch hrp");
+        anyhow::ensure!(hrp == ROOCH_HRP, "invalid rooch hrp");
         anyhow::ensure!(data.len() == Self::LENGTH, "invalid rooch address length");
         let hash = H256::from_slice(data.as_slice());
         Ok(Self(hash))
@@ -916,7 +914,12 @@ impl NostrPublicKey {
 
 impl RoochSupportedAddress for NostrPublicKey {
     fn random() -> Self {
-        Self(Keys::generate().public_key())
+        Self(
+            RoochKeyPair::generate_secp256k1()
+                .public()
+                .xonly_public_key()
+                .unwrap(),
+        )
     }
 }
 

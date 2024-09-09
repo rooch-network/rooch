@@ -1,13 +1,19 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::BTreeMap;
+use std::str::FromStr;
+
 use crate::address::BitcoinAddress;
 use crate::addresses::BITCOIN_MOVE_ADDRESS;
-use anyhow::Result;
+use crate::crypto::RoochKeyPair;
+use anyhow::{bail, Result};
+use bitcoin::bip32::{DerivationPath, Fingerprint};
 use bitcoin::key::constants::SCHNORR_PUBLIC_KEY_SIZE;
 use bitcoin::key::Secp256k1;
-use bitcoin::taproot::TaprootBuilder;
-use bitcoin::{ScriptBuf, XOnlyPublicKey};
+use bitcoin::sighash::{Prevouts, SighashCache};
+use bitcoin::taproot::{LeafVersion, TaprootBuilder};
+use bitcoin::{Psbt, ScriptBuf, TapLeafHash, TapSighashType, XOnlyPublicKey};
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use moveos_types::moveos_std::simple_map::SimpleMap;
 use moveos_types::moveos_std::tx_context::TxContext;
@@ -132,6 +138,109 @@ fn create_multisig_script(threshold: usize, public_keys: &Vec<XOnlyPublicKey>) -
     builder = builder.push_opcode(bitcoin::opcodes::all::OP_GREATERTHANOREQUAL);
 
     builder.into_script()
+}
+
+pub fn update_multisig_psbt(psbt: &mut Psbt, account_info: &MultisignAccountInfo) -> Result<()> {
+    let secp = Secp256k1::new();
+
+    let threshold = account_info.threshold as usize;
+    let participant_pubkeys = account_info
+        .participants
+        .values()
+        .into_iter()
+        .map(|info| Ok(XOnlyPublicKey::from_slice(&info.public_key)?))
+        .collect::<Result<Vec<_>>>()?;
+    let multisig_script = create_multisig_script(threshold, &participant_pubkeys);
+
+    let mut builder = TaprootBuilder::new();
+    builder = builder.add_leaf(0, multisig_script.clone())?;
+
+    let internal_key = participant_pubkeys[0];
+    let tap_tree = builder
+        .finalize(&secp, internal_key)
+        .map_err(|_| anyhow::anyhow!("Failed to finalize taproot tree"))?;
+
+    let tap_leaf_hash = TapLeafHash::from_script(&multisig_script, LeafVersion::TapScript);
+
+    let mut tap_key_origins = BTreeMap::new();
+    for pubkey in &participant_pubkeys {
+        let default_key_source = (
+            Fingerprint::default(),
+            DerivationPath::from_str("m").unwrap(),
+        );
+        tap_key_origins.insert(*pubkey, (vec![tap_leaf_hash], default_key_source));
+    }
+
+    for input in psbt.inputs.iter_mut() {
+        if let Some(utxo) = &input.witness_utxo {
+            let bitcoin_addr = BitcoinAddress::from(utxo.script_pubkey.clone());
+            if bitcoin_addr != account_info.multisign_bitcoin_address {
+                continue;
+            }
+            input.tap_internal_key = Some(internal_key);
+            input.tap_key_origins = tap_key_origins.clone();
+            input.tap_merkle_root = tap_tree.merkle_root();
+
+            let control_block = tap_tree
+                .control_block(&(multisig_script.clone(), LeafVersion::TapScript))
+                .unwrap();
+            input.tap_scripts.insert(
+                control_block,
+                (multisig_script.clone(), LeafVersion::TapScript),
+            );
+        }
+    }
+
+    Ok(())
+}
+
+pub fn sign_taproot_multisig(psbt: &mut Psbt, kp: &RoochKeyPair) -> Result<(), anyhow::Error> {
+    let secp = Secp256k1::new();
+    let mut sighash_cache = SighashCache::new(&psbt.unsigned_tx);
+    let kp = kp.secp256k1_keypair().expect("should have secret key");
+    let (our_pubkey, _) = kp.x_only_public_key();
+
+    let spend_utxos = (0..psbt.inputs.len())
+        .map(|i| psbt.spend_utxo(i).ok().cloned())
+        .collect::<Vec<_>>();
+
+    if !spend_utxos.iter().all(Option::is_some) {
+        bail!("Missing spend utxo");
+    }
+
+    let all_spend_utxos = spend_utxos.into_iter().flatten().collect::<Vec<_>>();
+    let prevouts = Prevouts::All(&all_spend_utxos);
+    for (input_index, input) in psbt.inputs.iter_mut().enumerate() {
+        if let Some(_tap_internal_key) = input.tap_internal_key {
+            let (_control_block, (multisig_script, leaf_version)) =
+                input.tap_scripts.iter().next().ok_or_else(|| {
+                    anyhow::anyhow!("No tap script found for input {}", input_index)
+                })?;
+
+            let tap_leaf_hash = TapLeafHash::from_script(multisig_script, *leaf_version);
+
+            let hash_ty = TapSighashType::Default;
+
+            let sighash = sighash_cache.taproot_script_spend_signature_hash(
+                input_index,
+                &prevouts,
+                tap_leaf_hash,
+                hash_ty,
+            )?;
+
+            let signature = secp.sign_schnorr(&sighash.into(), &kp);
+
+            input.tap_script_sigs.insert(
+                (our_pubkey, tap_leaf_hash),
+                bitcoin::taproot::Signature {
+                    signature,
+                    sighash_type: hash_ty,
+                },
+            );
+        }
+    }
+
+    Ok(())
 }
 
 /// Rust bindings for multisign_acount module

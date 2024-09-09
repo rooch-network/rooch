@@ -3,11 +3,12 @@
 
 use crate::jsonrpc_types::StrView;
 use anyhow::Result;
+use bitcoin::XOnlyPublicKey;
 use move_core_types::account_address::AccountAddress;
-use nostr::{key::XOnlyPublicKey, prelude::FromBech32};
 use rooch_types::{
     address::{BitcoinAddress, NostrPublicKey, RoochAddress},
     bitcoin::network::Network,
+    to_bech32::FromBech32,
 };
 use std::str::FromStr;
 
@@ -91,6 +92,7 @@ impl std::fmt::Display for UnitedAddressView {
 impl FromStr for UnitedAddressView {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        //TODO use the prefix to determine the type of address
         match RoochAddress::from_str(s) {
             Ok(rooch_address) => Ok(StrView(UnitedAddress {
                 rooch_address,

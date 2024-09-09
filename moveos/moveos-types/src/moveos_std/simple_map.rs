@@ -30,6 +30,10 @@ impl<Key, Value> SimpleMap<Key, Value> {
     pub fn create() -> Self {
         Self { data: vec![] }
     }
+
+    pub fn values(&self) -> Vec<&Value> {
+        self.data.iter().map(|element| &element.value).collect()
+    }
 }
 
 impl<Key, Value> SimpleMap<Key, Value>

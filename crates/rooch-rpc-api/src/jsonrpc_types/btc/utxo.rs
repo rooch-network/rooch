@@ -1,14 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::jsonrpc_types::btc::transaction::{hex_to_txid, TxidView};
+use crate::jsonrpc_types::btc::transaction::TxidView;
 use crate::jsonrpc_types::{
     H256View, IndexerObjectStateView, IndexerStateIDView, ObjectIDVecView, ObjectIDView,
     ObjectMetaView, StrView, UnitedAddressView,
 };
 use anyhow::Result;
 use bitcoin::hashes::Hash;
-use bitcoin::Txid;
+use bitcoin::{Amount, Txid};
 
 use moveos_types::move_std::string::MoveString;
 use moveos_types::state::{MoveState, MoveStructType};
@@ -19,6 +19,7 @@ use rooch_types::into_address::{FromAddress, IntoAddress};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::str::FromStr;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, JsonSchema)]
 pub struct BitcoinOutPointView {
@@ -60,6 +61,11 @@ impl UTXOFilterView {
         UTXOFilterView::Owner(addr)
     }
 
+    pub fn object_ids<A: Into<ObjectIDVecView>>(object_ids: A) -> Self {
+        let object_ids: ObjectIDVecView = object_ids.into();
+        UTXOFilterView::ObjectId(object_ids)
+    }
+
     pub fn into_global_state_filter(filter_opt: UTXOFilterView) -> Result<ObjectStateFilter> {
         Ok(match filter_opt {
             UTXOFilterView::Owner(owner) => ObjectStateFilter::ObjectTypeWithOwner {
@@ -68,7 +74,7 @@ impl UTXOFilterView {
                 owner: owner.0.rooch_address.into(),
             },
             UTXOFilterView::OutPoint { txid, vout } => {
-                let txid = hex_to_txid(txid.as_str())?;
+                let txid = Txid::from_str(&txid)?;
                 let outpoint =
                     rooch_types::bitcoin::types::OutPoint::new(txid.into_address(), vout);
                 let utxo_id = utxo::derive_utxo_id(&outpoint);
@@ -85,15 +91,15 @@ impl UTXOFilterView {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct UTXOView {
     /// The txid of the UTXO
-    txid: H256View,
+    pub txid: H256View,
     /// The txid of the UTXO
-    bitcoin_txid: TxidView,
+    pub bitcoin_txid: TxidView,
     /// The vout of the UTXO
-    vout: u32,
+    pub vout: u32,
     /// The value of the UTXO
-    value: StrView<u64>,
+    pub value: StrView<u64>,
     /// Protocol seals
-    seals: HashMap<String, Vec<ObjectIDView>>,
+    pub seals: HashMap<String, Vec<ObjectIDView>>,
 }
 
 impl UTXOView {
@@ -122,8 +128,23 @@ impl UTXOView {
         })
     }
 
-    pub fn get_value(&self) -> u64 {
+    pub fn value(&self) -> u64 {
         self.value.0
+    }
+
+    pub fn txid(&self) -> Txid {
+        self.bitcoin_txid.0
+    }
+
+    pub fn amount(&self) -> Amount {
+        Amount::from_sat(self.value())
+    }
+
+    pub fn outpoint(&self) -> OutPoint {
+        OutPoint {
+            txid: self.txid.0.into_address(),
+            vout: self.vout,
+        }
     }
 }
 

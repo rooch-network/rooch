@@ -6,6 +6,7 @@ use crate::keystore::account_keystore::AccountKeystore;
 use anyhow::{ensure, Ok};
 use rooch_types::framework::session_key::SessionKey;
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
+use rooch_types::to_bech32::ToBech32;
 use rooch_types::{
     address::RoochAddress,
     authentication_key::AuthenticationKey,
@@ -74,7 +75,7 @@ impl AccountKeystore for BaseKeyStore {
             let keypair: RoochKeyPair = encryption.decrypt_with_type(password.clone())?;
             let public_key = keypair.public();
             let bitcoin_address = public_key.bitcoin_address()?;
-            let nostr_bech32_public_key = public_key.nostr_bech32_public_key()?;
+            let nostr_bech32_public_key = public_key.xonly_public_key()?.to_bech32()?;
             let has_session_key = self.session_keys.contains_key(address);
             let local_account = LocalAccount {
                 address: *address,

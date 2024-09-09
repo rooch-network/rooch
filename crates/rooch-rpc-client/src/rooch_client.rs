@@ -5,9 +5,10 @@ use anyhow::{Ok, Result};
 use jsonrpsee::http_client::HttpClient;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::h256::H256;
+use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::account::Account;
 use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::state::FieldKey;
+use moveos_types::state::{FieldKey, MoveStructState};
 use moveos_types::{access_path::AccessPath, state::ObjectState, transaction::FunctionCall};
 use rooch_rpc_api::api::btc_api::BtcAPIClient;
 use rooch_rpc_api::api::rooch_api::RoochAPIClient;
@@ -364,5 +365,21 @@ impl RoochRpcClient {
                 query_options.map(|v| v.descending),
             )
             .await?)
+    }
+
+    pub async fn get_resource<T: MoveStructState>(
+        &self,
+        account: RoochAddress,
+    ) -> Result<Option<T>> {
+        let access_path = AccessPath::resource(account.into(), T::struct_tag());
+        let mut states = self.get_states(access_path).await?;
+        let state = states.pop().flatten();
+        if let Some(state) = state {
+            let state = ObjectState::from(state);
+            let resource = state.value_as_df::<MoveString, T>()?;
+            Ok(Some(resource.value))
+        } else {
+            Ok(None)
+        }
     }
 }

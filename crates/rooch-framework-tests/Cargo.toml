@@ -25,8 +25,6 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tempfile = { workspace = true }
 include_dir = { workspace = true }
-musig2 = { workspace = true }
-miniscript = { workspace = true }
 coerce = { workspace = true }
 tokio = { workspace = true }
 clap = { features = ["derive", ], workspace = true }
