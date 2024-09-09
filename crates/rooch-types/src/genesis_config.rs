@@ -199,7 +199,7 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-//
+// curl -sSL "https://mempool.space/api/block/$(curl -sSL https://mempool.space/api/block-height/859001)/header"
 static MAIN_GENESIS_HEIGHT_HEADER: Lazy<(u64, Header)> = Lazy::new(|| {
     (859001, bitcoin::consensus::deserialize(
         &hex::decode("00e0ff274e6e46285bf4133faaafcf248ed461ffcdf8e2b33fba020000000000000000004275ffbb1e17c5b8abb04a9e57bc479c83dcf44c7bed3bc7f94c8449b6c2250619ecd0665b250317b7bc8d78")
