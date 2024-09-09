@@ -135,6 +135,12 @@ pub struct RoochOpt {
     #[clap(long, default_value_t, value_enum)]
     pub service_status: ServiceStatus,
 
+    #[clap(long)]
+    pub traffic_burst_size: Option<u32>,
+
+    #[clap(long)]
+    pub traffic_per_second: Option<u64>,
+
     #[serde(skip)]
     #[clap(skip)]
     base: Option<Arc<BaseConfig>>,
@@ -168,6 +174,8 @@ impl RoochOpt {
             proposer_account: None,
             da: DAConfig::default(),
             service_status: ServiceStatus::default(),
+            traffic_per_second: None,
+            traffic_burst_size: None,
             base: None,
         };
         opt.init()?;

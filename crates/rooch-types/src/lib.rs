@@ -20,6 +20,7 @@ pub mod nursery;
 pub mod repair;
 pub mod rooch_key;
 pub mod rooch_network;
+pub mod rooch_signature;
 pub mod sequencer;
 pub mod service_status;
 pub mod test_utils;

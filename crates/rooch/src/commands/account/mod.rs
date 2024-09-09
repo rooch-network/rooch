@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use commands::{
     balance::BalanceCommand, create::CreateCommand, create_multisign::CreateMultisignCommand,
     export::ExportCommand, import::ImportCommand, list::ListCommand, nullify::NullifyCommand,
-    sign::SignCommand, switch::SwitchCommand, transfer::TransferCommand,
+    sign::SignCommand, switch::SwitchCommand, transfer::TransferCommand, verify::VerifyCommand,
 };
 use rooch_types::error::RoochResult;
 use std::path::PathBuf;
@@ -38,6 +38,7 @@ impl CommandAction<String> for Account {
             AccountCommand::Export(export) => export.execute_serialized().await,
             AccountCommand::Import(import) => import.execute_serialized().await,
             AccountCommand::Sign(sign) => sign.execute_serialized().await,
+            AccountCommand::Verify(verify) => verify.execute_serialized().await,
         }
     }
 }
@@ -55,4 +56,5 @@ pub enum AccountCommand {
     Export(ExportCommand),
     Import(ImportCommand),
     Sign(SignCommand),
+    Verify(VerifyCommand),
 }
