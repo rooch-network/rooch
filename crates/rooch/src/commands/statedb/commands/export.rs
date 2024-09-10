@@ -280,32 +280,32 @@ impl ExportCommand {
         let ord_output = genesis_output.join("ord");
         let address_map_output = genesis_output.join("address_map");
 
-        let utxo_path = self
-            .utxo_source_path
-            .clone()
-            .expect("utxo source path must be existed");
-        let ord_path = self
-            .ord_source_path
-            .clone()
-            .expect("ord source path must be existed if utxo path is provided");
-        let outpoint_inscriptions_map_path = self
-            .outpoint_inscriptions_map_path
-            .clone()
-            .expect("outpoint_inscriptions_map path must be existed if utxo path is provided");
-        let mut utxo_writer = ExportWriter::new(Some(utxo_output), None);
-        Self::export_utxo_store(
-            utxo_path.clone(),
-            ord_path.clone(),
-            outpoint_inscriptions_map_path,
-            None,
-            &mut utxo_writer,
-        )?;
+        let utxo_path = self.utxo_source_path.clone();
+        let ord_path = self.ord_source_path.clone();
+        let outpoint_inscriptions_map_path = self.outpoint_inscriptions_map_path.clone();
 
-        let mut ord_writer = ExportWriter::new(Some(ord_output), None);
-        Self::export_ord_store(ord_path, None, &mut ord_writer)?;
+        if let Some(ord_path) = ord_path.clone() {
+            let mut ord_writer = ExportWriter::new(Some(ord_output), None);
+            Self::export_ord_store(ord_path, None, &mut ord_writer)?;
+        }
 
-        let mut address_map_writer = ExportWriter::new(Some(address_map_output), None);
-        Self::export_address_map(utxo_path, None, &mut address_map_writer)?;
+        if let Some(utxo_path) = utxo_path {
+            let ord_path =
+                ord_path.expect("ord source path must be existed if utxo path is provided");
+            let outpoint_inscriptions_map_path = outpoint_inscriptions_map_path
+                .expect("outpoint_inscriptions_map path must be existed if utxo path is provided");
+            let mut utxo_writer = ExportWriter::new(Some(utxo_output), None);
+            Self::export_utxo_store(
+                utxo_path.clone(),
+                ord_path.clone(),
+                outpoint_inscriptions_map_path,
+                None,
+                &mut utxo_writer,
+            )?;
+            let mut address_map_writer = ExportWriter::new(Some(address_map_output), None);
+            Self::export_address_map(utxo_path, None, &mut address_map_writer)?;
+        }
+
         Ok(())
     }
 
