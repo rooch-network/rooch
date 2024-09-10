@@ -153,7 +153,7 @@ pub enum TransactionFilterView {
 impl From<TransactionFilterView> for TransactionFilter {
     fn from(event_filter: TransactionFilterView) -> Self {
         match event_filter {
-            TransactionFilterView::Sender(address) => Self::Sender(address.into()),
+            TransactionFilterView::Sender(address) => Self::Sender(address.0.rooch_address.into()),
             TransactionFilterView::TxHashes(tx_hashes) => {
                 Self::TxHashes(tx_hashes.into_iter().map(Into::into).collect())
             }
