@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::BTreeMap;
+
 use crate::{
     cli_types::{CommandAction, FileOrHexInput, WalletContextOptions},
     commands::bitcoin::{FileOutput, FileOutputData},
@@ -133,26 +135,25 @@ pub(crate) async fn sign_psbt(
 
                 //Try to finalize the psbt
                 if input.tap_script_sigs.len() >= account_info.threshold as usize {
-                    let mut signatures = Vec::new();
-
+                    
                     //TODO handle multiple tap_leaf case
                     //make sure the signature order same as the public key order
-
+                    let mut ordered_signatures = BTreeMap::new();
                     for participant in account_info.participants.values() {
                         let xonly_pubkey = participant.x_only_public_key()?;
                         if let Some(sig) =
                             input.tap_script_sigs.remove(&(xonly_pubkey, tap_leaf_hash))
                         {
-                            signatures.push(sig.to_vec());
+                            ordered_signatures.insert(xonly_pubkey, sig);
                         }
                     }
 
-                    debug!("Signatures: {:?}", signatures.len());
+                    debug!("Signatures: {:?}", ordered_signatures.len());
 
                     let mut witness = Witness::new();
 
-                    for sig in signatures.iter().take(account_info.threshold as usize) {
-                        witness.push(sig);
+                    for (_, sig) in ordered_signatures.iter().take(account_info.threshold as usize) {
+                        witness.push(sig.to_vec());
                     }
 
                     witness.push(multisig_script.as_bytes());
