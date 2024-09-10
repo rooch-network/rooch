@@ -83,6 +83,7 @@ impl FromStr for ObjectIDVecView {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let ids = s
             .split(',')
+            .filter(|s| !s.is_empty())
             .map(ObjectID::from_str)
             .collect::<Result<Vec<_>, _>>()?;
         Ok(StrView(ids))
