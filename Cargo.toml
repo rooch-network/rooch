@@ -310,6 +310,7 @@ wasmer = "4.2.5"
 wasmer-types = "4.2.5"
 wasmer-compiler-singlepass = "4.2.2"
 cosmwasm-vm = "2.1.3"
+cosmwasm-std = "2.1.3"
 ciborium = "0.2.1"
 pprof = { version = "0.13.0", features = ["flamegraph", "criterion", "cpp", "frame-pointer", "protobuf-codec"] }
 celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }

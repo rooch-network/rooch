@@ -9503,6 +9503,7 @@ version = "0.7.0"
 dependencies = [
  "accumulator",
  "anyhow",
+ "cosmwasm-std",
  "cosmwasm-vm",
  "move-binary-format",
  "move-core-types",
