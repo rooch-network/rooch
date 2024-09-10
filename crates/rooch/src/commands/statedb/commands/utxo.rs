@@ -8,12 +8,12 @@ use bitcoin::{OutPoint, PublicKey, ScriptBuf, Txid};
 use move_core_types::account_address::AccountAddress;
 use rustc_hash::FxHashSet;
 
-use framework_types::addresses::{BITCOIN_MOVE_ADDRESS, ROOCH_FRAMEWORK_ADDRESS};
+use framework_types::addresses::BITCOIN_MOVE_ADDRESS;
 use moveos_types::moveos_std::object::ObjectEntity;
 use moveos_types::moveos_std::simple_multimap::SimpleMultiMap;
 use moveos_types::state::{FieldKey, ObjectState};
 use rooch_types::address::BitcoinAddress;
-use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
+use rooch_types::bitcoin::utxo::UTXO;
 use rooch_types::bitcoin::{types, utxo};
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::into_address::IntoAddress;
@@ -194,24 +194,6 @@ fn derive_bitcoin_address(
         return Some(BitcoinAddress::new_p2pkh(&pubkey_hash));
     };
     None
-}
-
-pub fn create_genesis_utxo_store_object() -> ObjectState {
-    BitcoinUTXOStore::genesis_object()
-}
-
-pub fn create_genesis_rooch_to_bitcoin_address_mapping_object(
-) -> ObjectEntity<RoochToBitcoinAddressMapping> {
-    ObjectEntity::new(
-        RoochToBitcoinAddressMapping::object_id(),
-        ROOCH_FRAMEWORK_ADDRESS,
-        0u8,
-        None,
-        0,
-        0,
-        0,
-        RoochToBitcoinAddressMapping::default(),
-    )
 }
 
 #[cfg(test)]

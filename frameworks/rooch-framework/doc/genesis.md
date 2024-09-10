@@ -54,3 +54,12 @@ GenesisContext is a genesis init parameters in the TxContext.
 
 <pre><code><b>const</b> <a href="genesis.md#0x3_genesis_ErrorGenesisInit">ErrorGenesisInit</a>: u64 = 1;
 </code></pre>
+
+
+
+<a name="0x3_genesis_GENESIS_INIT_GAS_AMOUNT"></a>
+
+
+
+<pre><code><b>const</b> <a href="genesis.md#0x3_genesis_GENESIS_INIT_GAS_AMOUNT">GENESIS_INIT_GAS_AMOUNT</a>: <a href="">u256</a> = 50000000000000000;
+</code></pre>

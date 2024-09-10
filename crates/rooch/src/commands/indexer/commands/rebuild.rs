@@ -25,7 +25,7 @@ use rooch_types::indexer::state::{
 use rooch_types::rooch_network::RoochChainID;
 
 use crate::commands::indexer::commands::init_indexer;
-use crate::commands::statedb::commands::import::parse_csv_fields;
+use crate::commands::statedb::commands::parse_states_csv_fields;
 
 /// Rebuild indexer
 #[derive(Debug, Parser)]
@@ -120,7 +120,7 @@ fn produce_updates(
         for line in csv_reader.by_ref().lines().take(batch_size) {
             let line = line?;
 
-            let (_c1, state_str) = parse_csv_fields(&line)?;
+            let (_c1, state_str) = parse_states_csv_fields(&line)?;
             let state_result = ObjectState::from_str(&state_str);
             match state_result {
                 Ok(state) => {

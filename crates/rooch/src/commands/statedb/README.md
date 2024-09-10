@@ -1,162 +1,34 @@
 ## Rooch Statedb tool
 
-A tool to export and import rooch statedb.
+A tool to export/import rooch statedb.
 
 ### Usage
 
-#### Prerequisite for genesis-* command
+#### genesis
 
-1. bitcoind synced with `-txindex=1` and `-server=1` option:
+`genesis` is a subcommand to generate rooch statedb from utxo and ord source files. Run it before starting rooch node.
 
-```shell
-bitcoind -datadir=<datadir> -txindex=1 -server=1
-```
+Source data needed by `genesis` for Rooch MainNet could be found [here](TODO).
 
-2. set block height to genesis block height:
+For protecting the data integrity, verify checksum file's sha256 before running `genesis` command.
 
-expect height: `<h>`
+checksum file's sha256:
 
-get `<h+1>` block hash:
+`cbd0c0a9f4c0f308c29b83dc50b4b4f2684f7eb17df0d66446f8b1f86589dce5`
 
-```shell
-bitcoin-cli -datadir=<datadir> -conf=<datadir/bitcoin.conf> -rpccookiefile=<datadir/.cookie> getblockhash <h+1>
-<h+1 block hash>
-```
-
-invalid `<h+1>` block:
+calculated by:
 
 ```shell
-bitcoin-cli -datadir=<datadir> -conf=<datadir/bitcoin.conf> -rpccookiefile=<datadir/.cookie> invalidateblock <h+1 block hash>
+sha256sum checksum
 ```
 
-check block height is expected:
+result:
 
 ```shell
-bitcoin-cli -datadir=<datadir> -conf=<datadir/bitcoin.conf> -rpccookiefile=<datadir/.cookie> getblockcount
-<h>
+sha256sum checksum
+cbd0c0a9f4c0f308c29b83dc50b4b4f2684f7eb17df0d66446f8b1f86589dce5  checksum
 ```
 
-3. prepare utxo source file:
+#### Other Subcommands
 
-> - stop bitcoind first
-> - clone chainstate:
-
-```shell
-rsync --delete -av <datadir/chainstate/> <chainstate_clone_path>
-```
-
-> - dump utxo source file(each line is a utxo record, format
-    is `count,txid,vout,height,coinbase,amount,script,type,address`) by
-    [bitcoin-utxo-dump](https://github.com/in3rsha/bitcoin-utxo-dump):
-
-```shell
-bitcoin-utxo-dump -f count,txid,vout,height,coinbase,amount,script,type,address -db <chainstate_clone_path> -o <output>
-```
-
-> - check max height of utxo dump file is <h> by python script:
-
-```python
-import pandas as pd
-import argparse
-import sys
-
-def find_max_column_value_in_chunks(filename, column_name='height', chunksize=10000):
-    """
-    Read a CSV file in chunks and find the maximum value in the specified column
-
-    :param filename: Path to the CSV file
-    :param column_name: Name of the column to find the maximum value
-    :param chunksize: Number of rows to read at a time
-    :return: Maximum value in the specified column
-    """
-    try:
-        max_value = None
-        for chunk in pd.read_csv(filename, chunksize=chunksize):
-            if column_name not in chunk.columns:
-                raise ValueError(f"Column '{column_name}' does not exist in the file '{filename}'")
-            current_max = chunk[column_name].max()
-            if max_value is None or current_max > max_value:
-                max_value = current_max
-        return max_value
-
-    except FileNotFoundError:
-        print(f"The file '{filename}' does not exist")
-        sys.exit(1)
-    except pd.errors.EmptyDataError:
-        print(f"The file '{filename}' is empty")
-        sys.exit(1)
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        sys.exit(1)
-
-if __name__ == "__main__":
-    # Set up argument parser
-    parser = argparse.ArgumentParser(description='Find the maximum value in a specified column of a CSV file')
-    parser.add_argument('filename', type=str, help='Path to the CSV file')
-    parser.add_argument('--column_name', type=str, default='height', help='Name of the column to find the maximum value (default is height)')
-    parser.add_argument('--chunksize', type=int, default=10000, help='Number of rows to read at a time (default is 10000)')
-
-    # Parse arguments
-    args = parser.parse_args()
-
-    # Find the maximum value in the specified column
-    max_value = find_max_column_value_in_chunks(args.filename, args.column_name, args.chunksize)
-
-    # Print the result
-    print(f"The maximum value in column '{args.column_name}' is: {max_value}")
-```
-
-4. prepare ord source file(if needed):
-
-> - start bitcoind again
-> - dump ord source file by
-    [ord](https://github.com/popcnt1/ord):
-
-5. prepare genesis env:
-
-```shell
-rooch genesis init -n main -d <rooch_datadir>
-```
-
-#### Subcommands
-
-**genesis-utxo**:
-
-```shell
-rooch statedb genesis-utxo --input <utxo_src_path> -d <rooch_datadir> -n main --batch-size <utxo_batch_size>
-```
-
-**genesis**:
-
-```shell
-rooch statedb genesis --utxo-source <utxo_src_path> --ord-source <ord_src_path> -d <rooch_datadir> -n main --outpoint-inscriptions-map-dump-path <dump_path> --utxo-batch-size <utxo_batch_size> --ord-batch-size <ord_batch_size>
-```
-
-***tips***:
-
-> - `--utxo-ord-map` is redb database file path. We could reuse it in `genesis-utxo` command.
-> - `--batch-size`/`--utxo-batch-size` is optional, default is 2M. Set it smaller if memory is limited.
-> - `--ord-batch-size` is optional, default is 1M. Set it smaller if memory is limited.
-
-**genesis-verify**:
-
-```shell
-rooch statedb genesis --utxo-source <utxo_src_path> --ord-source <ord_src_path> -d <rooch_datadir> -n main --outpoint-inscriptions-map-dump-path <dump_path>
-```
-
-**tips**:
-
-> - `--random-mode` is optional, default is false. Set it true if you want a fast check. Highly recommend passing it if
-    you have a big data set.
-
-**rooch statedb export**:
-
-```shell
-rooch statedb export --output {your file} -d {your rooch data dir} -n main -m {export mode}
-```
-
-**rooch statedb import(WIP)**:
-
-```shell
-rooch statedb import --input {your file} -d {your rooch data dir} -n main
-```
+TODO

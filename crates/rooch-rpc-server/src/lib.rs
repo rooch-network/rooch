@@ -294,7 +294,6 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
 
     // Init DA
     let da_config = opt.da_config().clone();
-
     let da_proxy = DAProxy::new(
         DAActor::new(da_config, &actor_system)
             .await?
