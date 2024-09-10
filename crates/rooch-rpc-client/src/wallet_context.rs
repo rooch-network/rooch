@@ -32,7 +32,9 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
+use tracing::{debug, info};
 
+#[derive(Debug)]
 pub struct WalletContext {
     client: Arc<RwLock<Option<Client>>>,
     pub client_config: PersistedConfig<ClientConfig>,
@@ -54,7 +56,7 @@ impl WalletContext {
             )
         })?;
 
-        let client_config = client_config.persisted(&client_config_path);
+        let mut client_config = client_config.persisted(&client_config_path);
 
         let keystore_result = FileBasedKeystore::load(&client_config.keystore_path);
         let keystore = match keystore_result {
@@ -66,7 +68,21 @@ impl WalletContext {
         address_mapping.extend(addresses::rooch_framework_named_addresses());
 
         //TODO support account name alias name.
-        if let Some(active_address) = client_config.active_address {
+        if let Some(active_address) = &client_config.active_address {
+            let active_address = if !keystore.contains_address(active_address) {
+                //The active address is not in the keystore, maybe the user reset the keystore.
+                //We auto change the active address to the first address in the keystore.
+                let first_address = keystore
+                    .addresses()
+                    .pop()
+                    .ok_or_else(|| anyhow!("No address in the keystore"))?;
+                info!("The active address {} is not in the keystore, auto change the active address to the first address in the keystore: {}", active_address, first_address);
+                client_config.active_address = Some(first_address);
+                client_config.save()?;
+                first_address
+            } else {
+                *active_address
+            };
             address_mapping.insert("default".to_string(), active_address.into());
         }
 
@@ -312,6 +328,7 @@ impl GetKey for WalletContext {
         key_request: KeyRequest,
         _secp: &Secp256k1<C>,
     ) -> Result<Option<PrivateKey>, Self::Error> {
+        debug!("Get key for key_request: {:?}", key_request);
         let address = match key_request {
             KeyRequest::Pubkey(pubkey) => {
                 let rooch_public_key = crypto::PublicKey::from_bitcoin_pubkey(&pubkey)?;
@@ -322,7 +339,7 @@ impl GetKey for WalletContext {
             }
             _ => anyhow::bail!("Unsupported key request: {:?}", key_request),
         };
-
+        debug!("Get key for address: {:?}", address);
         let kp = self
             .keystore
             .get_key_pair(&address, self.password.clone())?;

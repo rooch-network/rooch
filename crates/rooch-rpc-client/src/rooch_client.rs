@@ -20,9 +20,9 @@ use rooch_rpc_api::jsonrpc_types::{
     DryRunTransactionResponseView, InscriptionPageView, UTXOPageView,
 };
 use rooch_rpc_api::jsonrpc_types::{
-    AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, EventOptions, EventPageView,
-    FieldKeyView, ObjectIDVecView, ObjectIDView, RoochAddressView, StateOptions, StatePageView,
-    StructTagView,
+    AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
+    EventPageView, FieldKeyView, ObjectIDVecView, ObjectIDView, RoochAddressView, StateOptions,
+    StatePageView, StructTagView,
 };
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, ObjectStateView};
 use rooch_rpc_api::jsonrpc_types::{
@@ -30,6 +30,7 @@ use rooch_rpc_api::jsonrpc_types::{
 };
 use rooch_rpc_api::jsonrpc_types::{TransactionWithInfoPageView, TxOptions};
 use rooch_types::address::BitcoinAddress;
+use rooch_types::bitcoin::multisign_account::MultisignAccountInfo;
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::transaction::RoochTransactionData;
@@ -336,7 +337,7 @@ impl RoochRpcClient {
         filter: UTXOFilterView,
         cursor: Option<IndexerStateID>,
         limit: Option<u64>,
-        query_options: Option<QueryOptions>,
+        descending_order: Option<bool>,
     ) -> Result<UTXOPageView> {
         Ok(self
             .http
@@ -344,7 +345,7 @@ impl RoochRpcClient {
                 filter,
                 cursor.map(Into::into),
                 limit.map(Into::into),
-                query_options.map(|v| v.descending),
+                descending_order,
             )
             .await?)
     }
@@ -381,5 +382,28 @@ impl RoochRpcClient {
         } else {
             Ok(None)
         }
+    }
+
+    pub async fn get_multisign_account_info(
+        &self,
+        address: RoochAddress,
+    ) -> Result<MultisignAccountInfo> {
+        Ok(self
+            .get_resource::<MultisignAccountInfo>(address)
+            .await?
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Can not find multisign account info for address {}",
+                    address
+                )
+            })?)
+    }
+
+    pub async fn broadcast_bitcoin_tx(
+        &self,
+        raw_tx: BytesView,
+        maxfeerate: Option<f64>,
+    ) -> Result<String> {
+        Ok(self.http.broadcast_tx(raw_tx, maxfeerate, None).await?)
     }
 }

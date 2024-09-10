@@ -16,10 +16,6 @@ pub mod query;
 pub mod sign;
 pub mod submit;
 
-pub(crate) fn is_file_path(s: &str) -> bool {
-    s.contains('/') || s.contains('\\') || s.contains('.')
-}
-
 pub(crate) enum FileOutputData {
     RoochTransactionData(RoochTransactionData),
     SignedRoochTransaction(RoochTransaction),

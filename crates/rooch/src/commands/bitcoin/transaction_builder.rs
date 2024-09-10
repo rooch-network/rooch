@@ -1,24 +1,25 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{collections::HashSet, str::FromStr};
+use std::str::FromStr;
 
 use super::utxo_selector::UTXOSelector;
 use anyhow::{anyhow, bail, Result};
 use bitcoin::{
-    absolute::LockTime, transaction::Version, Address, Amount, FeeRate, OutPoint, Psbt, ScriptBuf,
-    Sequence, Transaction, TxIn, TxOut, Witness,
+    absolute::LockTime, bip32::Fingerprint, transaction::Version, Address, Amount, FeeRate,
+    OutPoint, Psbt, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Witness,
 };
 use moveos_types::{module_binding::MoveFunctionCaller, moveos_std::object::ObjectID};
 use rooch_rpc_api::jsonrpc_types::{btc::utxo::UTXOView, ObjectMetaView};
-use rooch_rpc_client::Client;
+use rooch_rpc_client::{wallet_context::WalletContext, Client};
 use rooch_types::{
     address::BitcoinAddress,
-    bitcoin::multisign_account::{self, MultisignAccountInfo},
+    bitcoin::multisign_account::{self},
 };
 
 #[derive(Debug)]
-pub struct TransactionBuilder {
+pub struct TransactionBuilder<'a> {
+    wallet_context: &'a WalletContext,
     client: Client,
     utxo_selector: UTXOSelector,
     fee_rate: FeeRate,
@@ -26,12 +27,13 @@ pub struct TransactionBuilder {
     lock_time: Option<LockTime>,
 }
 
-impl TransactionBuilder {
+impl<'a> TransactionBuilder<'a> {
     const ADDITIONAL_INPUT_VBYTES: usize = 58;
     const ADDITIONAL_OUTPUT_VBYTES: usize = 43;
     const SCHNORR_SIGNATURE_SIZE: usize = 64;
 
     pub async fn new(
+        wallet_context: &'a WalletContext,
         client: Client,
         sender: Address,
         inputs: Vec<ObjectID>,
@@ -40,6 +42,7 @@ impl TransactionBuilder {
         let utxo_selector =
             UTXOSelector::new(client.clone(), sender.clone(), inputs, skip_seal_check).await?;
         Ok(Self {
+            wallet_context,
             client,
             utxo_selector,
             fee_rate: FeeRate::from_sat_per_vb(10).unwrap(),
@@ -158,8 +161,12 @@ impl TransactionBuilder {
             });
         }
         let mut psbt = Psbt::from_unsigned_tx(tx)?;
-        let mut utxo_addresses = HashSet::new();
+
+        let multisign_account_module = self
+            .client
+            .as_module_binding::<multisign_account::MultisignAccountModule>();
         for (idx, (utxo_obj_meta, utxo)) in utxos.iter().enumerate() {
+            let input = &mut psbt.inputs[idx];
             let bitcoin_addr_str =
                 utxo_obj_meta
                     .owner_bitcoin_address
@@ -178,36 +185,33 @@ impl TransactionBuilder {
                 None => true,
             };
             if is_witness {
-                psbt.inputs[idx].witness_utxo = Some(TxOut {
+                input.witness_utxo = Some(TxOut {
                     value: utxo.amount(),
                     script_pubkey: bitcoin_addr.script_pubkey(),
                 });
             } else {
                 //TODO add non-witness utxo
             }
-            utxo_addresses.insert(bitcoin_addr);
-        }
-        let multisign_account_module = self
-            .client
-            .as_module_binding::<multisign_account::MultisignAccountModule>();
-        for addr in utxo_addresses {
-            let bitcoin_addr: BitcoinAddress = addr.into();
-            let rooch_addr = bitcoin_addr.to_rooch_address();
+
+            let rooch_addr = BitcoinAddress::from(bitcoin_addr.clone()).to_rooch_address();
+
             if multisign_account_module.is_multisign_account(rooch_addr.into())? {
                 let account_info = self
                     .client
                     .rooch
-                    .get_resource::<MultisignAccountInfo>(rooch_addr)
-                    .await?
-                    .ok_or_else(|| {
-                        anyhow!(
-                            "Can not find multisign account info for address {}",
-                            rooch_addr
-                        )
-                    })?;
-                multisign_account::update_multisig_psbt(&mut psbt, &account_info)?;
+                    .get_multisign_account_info(rooch_addr)
+                    .await?;
+                multisign_account::update_multisig_psbt(input, &account_info)?;
+            } else {
+                let kp = self.wallet_context.get_key_pair(&rooch_addr)?;
+
+                input.bip32_derivation.insert(
+                    kp.bitcoin_public_key()?.inner,
+                    (Fingerprint::default(), Default::default()),
+                );
             }
         }
+
         Ok(psbt)
     }
 

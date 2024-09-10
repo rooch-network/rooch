@@ -103,10 +103,9 @@ impl AccountKeystore for BaseKeyStore {
             let keypair: RoochKeyPair = encryption.decrypt_with_type::<RoochKeyPair>(password)?;
             Ok(keypair)
         } else {
-            Err(anyhow::Error::new(RoochError::SignMessageError(format!(
-                "Cannot find key for address: [{:?}]",
-                address
-            ))))
+            Err(anyhow::Error::new(RoochError::CommandArgumentError(
+                format!("Cannot find key for address: [{:?}]", address),
+            )))
         }
     }
 

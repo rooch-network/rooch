@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::transaction_builder::TransactionBuilder;
+use super::FileOutput;
 use crate::cli_types::{CommandAction, WalletContextOptions};
-use anyhow::ensure;
+use crate::commands::bitcoin::FileOutputData;
 use async_trait::async_trait;
 use bitcoin::absolute::LockTime;
 use bitcoin::{Amount, FeeRate, OutPoint};
@@ -13,7 +14,7 @@ use rooch_types::address::ParsedAddress;
 use rooch_types::bitcoin::utxo::derive_utxo_id;
 use rooch_types::error::{RoochError, RoochResult};
 use std::str::FromStr;
-use tracing::info;
+use tracing::debug;
 
 #[derive(Debug, Clone)]
 pub enum ParsedInput {
@@ -56,11 +57,15 @@ impl FromStr for ParsedOutput {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts: Vec<&str> = s.split(':').collect();
-        ensure!(parts.len() == 2, "Invalid output format: {}", s);
-        let address = ParsedAddress::parse(parts[0])?;
-        let amount = Amount::from_str(parts[1])?;
-        Ok(ParsedOutput { address, amount })
+        let (addr_part, amount_part) = s
+            .split_once(':')
+            .ok_or_else(|| RoochError::CommandArgumentError("Invalid output format".to_string()))?;
+        let address = ParsedAddress::parse(addr_part)?;
+        let amount = u64::from_str(amount_part)?;
+        Ok(ParsedOutput {
+            address,
+            amount: Amount::from_sat(amount),
+        })
     }
 }
 
@@ -75,15 +80,14 @@ pub struct BuildTx {
     #[clap(long, short = 'i')]
     inputs: Vec<ParsedInput>,
 
-    /// The to address of the transaction, if not specified, the outputs will be used
-    #[clap(long, short = 't', conflicts_with = "outputs", group = "to", value_parser=ParsedAddress::parse)]
-    to: Option<ParsedAddress>,
+    // /// The to address of the transaction, if not specified, the outputs will be used
+    // #[clap(long, short = 't', conflicts_with = "outputs", group = "to", value_parser=ParsedAddress::parse)]
+    // to: Option<ParsedAddress>,
 
-    /// The amount of the transaction, if not specified, the amount will be calculated automatically
-    #[clap(long, short = 'a', conflicts_with = "outputs", group = "to")]
-    amount: Option<Amount>,
-
-    #[clap(long, short = 'o')]
+    // /// The amount of the transaction, if not specified, the amount will be calculated automatically
+    // #[clap(long, short = 'a', conflicts_with = "outputs", group = "to")]
+    // amount: Option<Amount>,
+    #[clap(long, short = 'o', required = true, num_args = 1..)]
     outputs: Vec<ParsedOutput>,
 
     /// The fee rate of the transaction, if not specified, the fee will be calculated automatically
@@ -103,17 +107,19 @@ pub struct BuildTx {
     #[clap(long)]
     skip_check_seal: bool,
 
-    #[clap(long, default_value = "unsigned_tx.json")]
-    output_file: String,
+    /// The output file path for the psbt
+    /// If not specified, the output will write to temp directory.
+    #[clap(long)]
+    output_file: Option<String>,
 
     #[clap(flatten)]
     pub(crate) context_options: WalletContextOptions,
 }
 
 #[async_trait]
-impl CommandAction<String> for BuildTx {
-    async fn execute(self) -> RoochResult<String> {
-        let context = self.context_options.build()?;
+impl CommandAction<FileOutput> for BuildTx {
+    async fn execute(self) -> RoochResult<FileOutput> {
+        let context = self.context_options.build_require_password()?;
         let client = context.get_client().await?;
 
         let bitcoin_network = context.get_bitcoin_network().await?;
@@ -126,6 +132,7 @@ impl CommandAction<String> for BuildTx {
             .map(|input| input.into_object_id())
             .collect();
         let mut tx_builder = TransactionBuilder::new(
+            &context,
             client,
             sender.to_bitcoin_address(bitcoin_network)?,
             inputs,
@@ -144,25 +151,17 @@ impl CommandAction<String> for BuildTx {
             tx_builder =
                 tx_builder.with_change_address(change_address.to_bitcoin_address(bitcoin_network)?);
         }
-        let psbt = if let Some(to) = self.to {
-            let amount = self.amount.ok_or_else(|| {
-                RoochError::CommandArgumentError("Amount is required".to_string())
-            })?;
-            let to = context.resolve_bitcoin_address(to).await?;
-            tx_builder
-                .build_transfer(to.to_bitcoin_address(bitcoin_network)?, amount)
-                .await?
-        } else {
-            let mut outputs = Vec::new();
-            for output in self.outputs.iter() {
-                let address = context
-                    .resolve_bitcoin_address(output.address.clone())
-                    .await?;
-                outputs.push((address.to_bitcoin_address(bitcoin_network)?, output.amount));
-            }
-            tx_builder.build(outputs).await?
-        };
-        info!("PSBT: {}", serde_json::to_string_pretty(&psbt).unwrap());
-        Ok(psbt.serialize_hex())
+
+        let mut outputs = Vec::new();
+        for output in self.outputs.iter() {
+            let address = context
+                .resolve_bitcoin_address(output.address.clone())
+                .await?;
+            outputs.push((address.to_bitcoin_address(bitcoin_network)?, output.amount));
+        }
+        let psbt = tx_builder.build(outputs).await?;
+        debug!("PSBT: {}", serde_json::to_string_pretty(&psbt).unwrap());
+        let fileout = FileOutput::write_to_file(FileOutputData::Psbt(psbt), self.output_file)?;
+        Ok(fileout)
     }
 }

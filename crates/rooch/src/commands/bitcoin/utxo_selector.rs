@@ -41,6 +41,9 @@ impl UTXOSelector {
     }
 
     async fn load_specific_utxos(&mut self) -> Result<()> {
+        if self.specific_utxos.is_empty() {
+            return Ok(());
+        }
         let utxos_objs = self
             .client
             .rooch
@@ -84,7 +87,7 @@ impl UTXOSelector {
                 UTXOFilterView::owner(self.sender.clone()),
                 next_cursor.map(Into::into),
                 None,
-                None,
+                Some(false),
             )
             .await?;
         debug!("loaded utxos: {:?}", utxo_page.data.len());

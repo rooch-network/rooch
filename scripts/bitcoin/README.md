@@ -13,11 +13,11 @@ This directory contains scripts for setting up a local development environment f
 
 ## Development on rooch
 
-1. Run `rooch server start --btc-rpc-url http://127.0.0.1:18443 --btc-rpc-username roochuser --btc-rpc-password roochpass`
+1. Run `rooch server start -n local --btc-sync-block-interval 1 --btc-rpc-url http://127.0.0.1:18443 --btc-rpc-username roochuser --btc-rpc-password roochpass`
 2. Run `rooch account list --json` to get the `bitcoin_address`
 3. Run `bitcoin-cli generatetoaddress 101 <bitcoin_address>` to generate 101 blocks to the address
-2. Run `rooch rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x4::utxo::UTXO"},  null, "2", {"descending": true,"showDisplay":false}]'` to query the UTXO set
-3. Run `rooch rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x4::ord::Inscription"},  null, "2", {"descending": true,"showDisplay":false}]'` to query the Inscription set
+2. Run `rooch rpc request --method btc_queryUTXOs --params '["all",  null, "2", true]'` to query the UTXO set
+3. Run `rooch rpc request --method btc_queryInscriptions --params '["all",  null, "2", true]'` to query the Inscription set
 
 ## Usage
 
