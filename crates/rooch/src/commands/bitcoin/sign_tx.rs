@@ -101,6 +101,7 @@ pub(crate) async fn sign_psbt(
                     .ok_or_else(|| anyhow::anyhow!("No tap script found for input {}", idx))?;
 
                 let tap_leaf_hash = TapLeafHash::from_script(multisig_script, *leaf_version);
+                debug!("Tap leaf hash: {:?}", tap_leaf_hash);
 
                 let hash_ty = TapSighashType::Default;
 
@@ -110,7 +111,7 @@ pub(crate) async fn sign_psbt(
                     tap_leaf_hash,
                     hash_ty,
                 )?;
-
+                debug!("Calculated sighash: {:?}", sighash);
                 for participant in account_info.participants.values() {
                     let participant_addr: RoochAddress = participant.participant_address.into();
                     if context.keystore.contains_address(&participant_addr) {
@@ -135,7 +136,6 @@ pub(crate) async fn sign_psbt(
 
                 //Try to finalize the psbt
                 if input.tap_script_sigs.len() >= account_info.threshold as usize {
-                    
                     //TODO handle multiple tap_leaf case
                     //make sure the signature order same as the public key order
                     let mut ordered_signatures = BTreeMap::new();
@@ -148,16 +148,21 @@ pub(crate) async fn sign_psbt(
                         }
                     }
 
-                    debug!("Signatures: {:?}", ordered_signatures.len());
+                    debug!("Collected signatures: {}", ordered_signatures.len());
 
                     let mut witness = Witness::new();
 
-                    for (_, sig) in ordered_signatures.iter().take(account_info.threshold as usize) {
+                    for (_, sig) in ordered_signatures
+                        .iter()
+                        .take(account_info.threshold as usize)
+                    {
                         witness.push(sig.to_vec());
                     }
 
                     witness.push(multisig_script.as_bytes());
                     witness.push(control_block.serialize());
+
+                    debug!("Final witness: {:?}", witness);
                     input.final_script_witness = Some(witness);
                 }
             } else {
