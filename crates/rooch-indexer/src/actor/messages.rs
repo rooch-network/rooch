@@ -6,7 +6,7 @@ use coerce::actor::message::Message;
 use moveos_types::moveos_std::event::Event;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
 use moveos_types::moveos_std::tx_context::TxContext;
-use moveos_types::state::StateChangeSet;
+use moveos_types::state::{StateChangeSet, StateChangeSetExt};
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
@@ -146,5 +146,18 @@ pub struct IndexerApplyObjectStatesMessage {
 }
 
 impl Message for IndexerApplyObjectStatesMessage {
+    type Result = Result<()>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct IndexerRevertStatesMessage {
+    pub revert_tx_order: u64,
+    pub revert_ledger_tx: LedgerTransaction,
+    pub revert_execution_info: TransactionExecutionInfo,
+    pub revert_state_change_set: StateChangeSetExt,
+    pub root: ObjectMeta,
+}
+
+impl Message for IndexerRevertStatesMessage {
     type Result = Result<()>;
 }

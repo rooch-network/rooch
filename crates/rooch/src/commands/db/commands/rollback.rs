@@ -12,6 +12,7 @@ use moveos_types::startup_info;
 use rooch_config::{RoochOpt, R_OPT_NET_HELP};
 use rooch_db::RoochDB;
 use rooch_genesis::RoochGenesis;
+use rooch_store::state_store::StateStore;
 use rooch_store::RoochStore;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::rooch_network::RoochChainID;
@@ -44,9 +45,10 @@ pub struct RollbackCommand {
 impl RollbackCommand {
     pub async fn execute(self) -> RoochResult<()> {
         let tx_order = self.tx_order;
-        let (_root, moveos_store, rooch_store, _start_time) = self.init();
+        let (_root, rooch_db, _start_time) = self.init();
 
-        let last_sequencer_info = rooch_store
+        let last_sequencer_info = rooch_db
+            .rooch_store
             .get_meta_store()
             .get_sequencer_info()?
             .ok_or_else(|| anyhow::anyhow!("Load sequencer info failed"))?;
@@ -67,7 +69,8 @@ impl RollbackCommand {
             ))));
         }
 
-        let tx_hashes = rooch_store
+        let tx_hashes = rooch_db
+            .rooch_store
             .transaction_store
             .get_tx_hashes(vec![tx_order])?;
         // check tx hash exist via tx_order
@@ -79,7 +82,8 @@ impl RollbackCommand {
         }
         let tx_hash = tx_hashes[0].unwrap();
 
-        let ledger_tx_opt = rooch_store
+        let ledger_tx_opt = rooch_db
+            .rooch_store
             .transaction_store
             .get_transaction_by_hash(tx_hash)?;
         if ledger_tx_opt.is_none() {
@@ -90,7 +94,8 @@ impl RollbackCommand {
         assert_eq!(sequencer_info.tx_order, tx_order);
         let tx_order = sequencer_info.tx_order;
 
-        let execution_info = moveos_store
+        let execution_info = rooch_db
+            .moveos_store
             .transaction_store
             .get_tx_execution_info(tx_hash)?;
 
@@ -104,7 +109,10 @@ impl RollbackCommand {
         let execution_info = execution_info.unwrap();
         let start_order = tx_order + 1;
         for order in (start_order..=last_order).rev() {
-            let tx_hashes = rooch_store.transaction_store.get_tx_hashes(vec![order])?;
+            let tx_hashes = rooch_db
+                .rooch_store
+                .transaction_store
+                .get_tx_hashes(vec![order])?;
             if tx_hashes.is_empty() || tx_hashes[0].is_none() {
                 return Err(RoochError::from(Error::msg(format!(
                     "tx hash not exist via tx order {}",
@@ -112,7 +120,8 @@ impl RollbackCommand {
                 ))));
             }
             let tx_hash = tx_hashes[0].unwrap();
-            let ledger_tx_opt = rooch_store
+            let ledger_tx_opt = rooch_db
+                .rooch_store
                 .transaction_store
                 .get_transaction_by_hash(tx_hash)?;
 
@@ -123,29 +132,43 @@ impl RollbackCommand {
 
             let sequencer_info = ledger_tx_opt.unwrap().sequence_info;
             let tx_order = sequencer_info.tx_order;
-            rooch_store
+            rooch_db
+                .rooch_store
                 .transaction_store
                 .remove_transaction(tx_hash, tx_order)?;
-            moveos_store
+            rooch_db
+                .moveos_store
                 .transaction_store
                 .remove_tx_execution_info(tx_hash)?;
             println!(
                 "remove tx succ, tx_hash: {:?}, tx_order {}",
                 tx_hash, tx_order
             );
+
+            // remove the state change set
+            let state_change_set_ext_opt = rooch_db.rooch_store.get_state_change_set(tx_order)?;
+            if state_change_set_ext_opt.is_some() {
+                rooch_db.rooch_store.remove_state_change_set(tx_order)?;
+            }
+
+            // revert the indexer
+            if state_change_set_ext_opt.is_some() {
+                let state_change_set_ext = state_change_set_ext_opt.unwrap();
+            }
         }
 
         let rollback_sequencer_info = SequencerInfo {
             last_order: tx_order,
             last_accumulator_info: sequencer_info.tx_accumulator_info(),
         };
-        rooch_store
+        rooch_db
+            .rooch_store
             .meta_store
             .save_sequencer_info_ignore_check(rollback_sequencer_info)?;
         let startup_info =
             startup_info::StartupInfo::new(execution_info.state_root, execution_info.size);
 
-        moveos_store.save_startup_info(startup_info)?;
+        rooch_db.moveos_store.save_startup_info(startup_info)?;
 
         println!(
             "rollback succ, tx_hash: {:?}, tx_order {}, state_root: {:?}",
@@ -154,7 +177,7 @@ impl RollbackCommand {
         Ok(())
     }
 
-    fn init(self) -> (ObjectMeta, MoveOSStore, RoochStore, SystemTime) {
+    fn init(self) -> (ObjectMeta, RoochDB, SystemTime) {
         let start_time = SystemTime::now();
 
         let opt = RoochOpt::new_with_default(self.base_data_dir, self.chain_id, None).unwrap();
@@ -163,11 +186,6 @@ impl RollbackCommand {
             RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
         let _genesis = RoochGenesis::load_or_init(opt.network(), &rooch_db).unwrap();
         let root = rooch_db.latest_root().unwrap().unwrap();
-        (
-            root,
-            rooch_db.moveos_store,
-            rooch_db.rooch_store,
-            start_time,
-        )
+        (root, rooch_db, start_time)
     }
 }

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::errors::IndexerError;
+use crate::{INDEXER_EVENTS_TABLE_NAME, INDEXER_TRANSACTIONS_TABLE_NAME};
 use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::indexer::state::{IndexerObjectState, IndexerObjectStateChangeSet};
 use rooch_types::indexer::transaction::IndexerTransaction;
@@ -39,4 +40,8 @@ pub trait IndexerStoreTrait: Send + Sync {
     ) -> Result<(), IndexerError>;
 
     fn persist_events(&self, events: Vec<IndexerEvent>) -> Result<(), IndexerError>;
+
+    fn delete_transactions(&self, tx_orders: Vec<u64>) -> anyhow::Result<(), IndexerError>;
+
+    fn delete_events(&self, tx_orders: Vec<u64>) -> anyhow::Result<(), IndexerError>;
 }

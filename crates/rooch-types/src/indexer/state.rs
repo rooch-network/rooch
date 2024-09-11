@@ -192,6 +192,62 @@ pub fn handle_object_change(
     Ok(())
 }
 
+pub fn handle_revert_object_change(
+    state_index_generator: &mut IndexerObjectStatesIndexGenerator,
+    tx_order: u64,
+    indexer_object_state_change_set: &mut IndexerObjectStateChangeSet,
+    object_change: ObjectChange,
+) -> Result<()> {
+    let ObjectChange {
+        metadata,
+        value,
+        fields,
+    } = object_change;
+    let object_id = metadata.id.clone();
+    let object_type = metadata.object_type.clone();
+    let state_index = state_index_generator.get(&object_type);
+
+    // Do not index dynamic field object
+    if is_dynamic_field_type(&object_type) {
+        return Ok(());
+    }
+    if let Some(op) = value {
+        match op {
+            Op::Modify(_value) => {
+                let state = IndexerObjectState::new(metadata.clone(), tx_order, state_index);
+                indexer_object_state_change_set.update_object_states(state);
+            }
+            Op::Delete => {
+                // indexer_object_state_change_set.remove_object_states(object_id, &object_type);
+
+                let state = IndexerObjectState::new(metadata.clone(), tx_order, state_index);
+                indexer_object_state_change_set.new_object_states(state);
+            }
+            Op::New(_value) => {
+                // let state = IndexerObjectState::new(metadata.clone(), tx_order, state_index);
+                // indexer_object_state_change_set.new_object_states(state);
+
+                indexer_object_state_change_set.remove_object_states(object_id, &object_type);
+            }
+        }
+    } else {
+        //If value is not changed, do nothing.
+        // let state = IndexerObjectState::new(metadata.clone(), tx_order, state_index);
+        // indexer_object_state_change_set.update_object_states(state);
+    }
+
+    state_index_generator.incr(&object_type);
+    for (_key, change) in fields {
+        handle_revert_object_change(
+            state_index_generator,
+            tx_order,
+            indexer_object_state_change_set,
+            change,
+        )?;
+    }
+    Ok(())
+}
+
 #[derive(
     Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize, JsonSchema, Default,
 )]
