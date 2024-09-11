@@ -399,11 +399,11 @@ importers:
         specifier: ^7.7.0
         version: 7.14.0(@emotion/react@11.13.3(@types/react@18.3.3)(react@18.3.1))(@emotion/styled@11.13.0(@emotion/react@11.13.3(@types/react@18.3.3)(react@18.3.1))(@types/react@18.3.3)(react@18.3.1))(@mui/material@5.16.7(@emotion/react@11.13.3(@types/react@18.3.3)(react@18.3.1))(@emotion/styled@11.13.0(@emotion/react@11.13.3(@types/react@18.3.3)(react@18.3.1))(@types/react@18.3.3)(react@18.3.1))(@types/react@18.3.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@types/react@18.3.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@roochnetwork/rooch-sdk':
-        specifier: ^0.2.3
-        version: 0.2.3
+        specifier: ^0.2.4
+        version: 0.2.4
       '@roochnetwork/rooch-sdk-kit':
-        specifier: ^0.2.3
-        version: 0.2.3(@tanstack/react-query@5.52.2(react@18.3.1))(@types/react@18.3.3)(immer@9.0.21)(react@18.3.1)
+        specifier: ^0.2.4
+        version: 0.2.4(@tanstack/react-query@5.52.2(react@18.3.1))(@types/react@18.3.3)(immer@9.0.21)(react@18.3.1)
       '@tanstack/react-query':
         specifier: ^5.51.11
         version: 5.52.2(react@18.3.1)
@@ -801,7 +801,7 @@ importers:
         version: 4.5.3(@types/node@20.14.14)(terser@5.31.1)
       vitest:
         specifier: ^1.6.0
-        version: 1.6.0(@types/node@20.14.14)(happy-dom@14.12.0)(jsdom@23.2.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))(terser@5.31.1)
+        version: 1.6.0(@types/node@20.14.14)(happy-dom@14.12.0)(jsdom@23.2.0)(terser@5.31.1)
       wait-on:
         specifier: ^7.0.1
         version: 7.2.0
@@ -886,7 +886,7 @@ importers:
         version: 4.5.3(@types/node@20.14.14)(terser@5.31.1)
       vitest:
         specifier: ^1.6.0
-        version: 1.6.0(@types/node@20.14.14)(happy-dom@14.12.0)(jsdom@23.2.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))(terser@5.31.1)
+        version: 1.6.0(@types/node@20.14.14)(happy-dom@14.12.0)(jsdom@23.2.0)(terser@5.31.1)
 
   sdk/typescript/templates/react-counter:
     dependencies:
@@ -974,7 +974,7 @@ importers:
         version: 4.5.3(@types/node@20.14.14)(terser@5.31.1)
       vitest:
         specifier: ^1.6.0
-        version: 1.6.0(@types/node@20.14.14)(happy-dom@14.12.0)(jsdom@23.2.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))(terser@5.31.1)
+        version: 1.6.0(@types/node@20.14.14)(happy-dom@14.12.0)(jsdom@23.2.0)(terser@5.31.1)
 
 packages:
 
@@ -4388,8 +4388,19 @@ packages:
       '@tanstack/react-query': ^5.0.0
       react: '*'
 
+  '@roochnetwork/rooch-sdk-kit@0.2.4':
+    resolution: {integrity: sha512-dwrvObq7xuFsM8CjimoOdgNP5biTmwA/k/qy0Zl4KWYCFyh80si5lYhS5oL2muggcMxv6/SYF+xeOCzjUwsNjA==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      '@tanstack/react-query': ^5.0.0
+      react: '*'
+
   '@roochnetwork/rooch-sdk@0.2.3':
     resolution: {integrity: sha512-9OrkxjtWBg+bvvoMdnqiNFZk8nBHRMbZtEM/cSpCJgTC4UYbfd0LXk6WLGtEagU/FAaBP3p5G6CdBdg/4DdlGA==}
+    engines: {node: '>=18.0.0'}
+
+  '@roochnetwork/rooch-sdk@0.2.4':
+    resolution: {integrity: sha512-YhPQlAbUJ+zbFXXDyR7r40HruMmy8k/tvO03PJj55LG0EfjJ/UfZ7dC+/I9S6Vt7CGJ8ZExcMne6H6cq1IqECA==}
     engines: {node: '>=18.0.0'}
 
   '@rushstack/eslint-patch@1.10.3':
@@ -15142,9 +15153,9 @@ snapshots:
       - babel-plugin-macros
       - immer
 
-  '@roochnetwork/rooch-sdk-kit@0.2.3(@tanstack/react-query@5.52.2(react@18.3.1))(@types/react@18.3.3)(immer@9.0.21)(react@18.3.1)':
+  '@roochnetwork/rooch-sdk-kit@0.2.4(@tanstack/react-query@5.52.2(react@18.3.1))(@types/react@18.3.3)(immer@9.0.21)(react@18.3.1)':
     dependencies:
-      '@roochnetwork/rooch-sdk': 0.2.3
+      '@roochnetwork/rooch-sdk': 0.2.4
       '@tanstack/react-query': 5.52.2(react@18.3.1)
       '@vanilla-extract/css': 1.15.3(babel-plugin-macros@3.1.0)
       '@vanilla-extract/dynamic': 2.1.1
@@ -15168,6 +15179,21 @@ snapshots:
       '@suchipi/femver': 1.0.0
       bech32: 2.0.0
       bs58check: 2.1.2
+      tweetnacl: 1.0.3
+      valibot: 0.25.0
+
+  '@roochnetwork/rooch-sdk@0.2.4':
+    dependencies:
+      '@mysten/bcs': 1.0.2
+      '@noble/curves': 1.4.0
+      '@noble/hashes': 1.4.0
+      '@scure/base': 1.1.7
+      '@scure/bip32': 1.4.0
+      '@scure/bip39': 1.3.0
+      '@suchipi/femver': 1.0.0
+      bech32: 2.0.0
+      bs58check: 2.1.2
+      buffer: 6.0.3
       tweetnacl: 1.0.3
       valibot: 0.25.0
 
@@ -23837,7 +23863,7 @@ snapshots:
       fsevents: 2.3.3
       terser: 5.31.1
 
-  vitest@1.6.0(@types/node@20.14.14)(happy-dom@14.12.0)(jsdom@23.2.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))(terser@5.31.1):
+  vitest@1.6.0(@types/node@20.14.14)(happy-dom@14.12.0)(jsdom@23.2.0)(terser@5.31.1):
     dependencies:
       '@vitest/expect': 1.6.0
       '@vitest/runner': 1.6.0
