@@ -11,10 +11,10 @@ use clap::builder::{
 };
 use cli_types::CommandAction;
 use commands::{
-    abi::ABI, account::Account, dynamic_field::DynamicField, env::Env, genesis::Genesis,
-    init::Init, move_cli::MoveCli, object::ObjectCommand, resource::ResourceCommand, rpc::Rpc,
-    server::Server, session_key::SessionKey, state::StateCommand, transaction::Transaction,
-    upgrade::Upgrade, util::Util, version::Version,
+    abi::ABI, account::Account, bitcoin::Bitcoin, dynamic_field::DynamicField, env::Env,
+    genesis::Genesis, init::Init, move_cli::MoveCli, object::ObjectCommand,
+    resource::ResourceCommand, rpc::Rpc, server::Server, session_key::SessionKey,
+    state::StateCommand, transaction::Transaction, upgrade::Upgrade, util::Util, version::Version,
 };
 use once_cell::sync::Lazy;
 use rooch_types::error::RoochResult;
@@ -46,6 +46,7 @@ static LONG_VERSION: Lazy<String> = Lazy::new(|| {
 pub enum Command {
     Version(Version),
     Account(Account),
+    Bitcoin(Bitcoin),
     Init(Init),
     Move(MoveCli),
     Server(Server),
@@ -72,6 +73,7 @@ pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
     match opt.cmd {
         Command::Version(version) => version.execute().await,
         Command::Account(account) => account.execute().await,
+        Command::Bitcoin(bitcoin) => bitcoin.execute().await,
         Command::Move(move_cli) => move_cli.execute().await,
         Command::Server(server) => server.execute().await,
         Command::Init(init) => init.execute_serialized().await,

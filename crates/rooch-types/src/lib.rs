@@ -24,4 +24,5 @@ pub mod rooch_signature;
 pub mod sequencer;
 pub mod service_status;
 pub mod test_utils;
+pub mod to_bech32;
 pub mod transaction;

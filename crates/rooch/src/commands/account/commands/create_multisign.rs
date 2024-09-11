@@ -8,8 +8,8 @@ use clap::Parser;
 use moveos_types::module_binding::MoveFunctionCaller;
 use rooch_rpc_api::jsonrpc_types::BytesView;
 use rooch_types::{
-    address::{BitcoinAddress, RoochAddress},
-    bitcoin::multisign_account::{self, MultisignAccountModule, ParticipantInfo},
+    address::RoochAddress,
+    bitcoin::multisign_account::{self, MultisignAccountModule},
     error::RoochResult,
 };
 use serde::{Deserialize, Serialize};
@@ -39,24 +39,14 @@ pub struct CreateMultisignCommand {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ParticipantInfoView {
     pub participant_address: RoochAddress,
-    pub participant_bitcoin_address: BitcoinAddress,
+    pub participant_bitcoin_address: String,
     pub public_key: BytesView,
-}
-
-impl From<ParticipantInfo> for ParticipantInfoView {
-    fn from(participant: ParticipantInfo) -> Self {
-        ParticipantInfoView {
-            participant_address: participant.participant_address.into(),
-            participant_bitcoin_address: participant.participant_bitcoin_address,
-            public_key: participant.public_key.into(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MultisignAccountOutput {
     pub multisign_address: RoochAddress,
-    pub multisign_bitcoin_address: BitcoinAddress,
+    pub multisign_bitcoin_address: String,
     pub participants: Vec<ParticipantInfoView>,
 }
 
@@ -66,6 +56,7 @@ impl CommandAction<Option<MultisignAccountOutput>> for CreateMultisignCommand {
         let context = self.context_options.build_require_password()?;
 
         let sender: RoochAddress = context.resolve_address(self.tx_options.sender)?.into();
+        let bitcoin_network = context.get_bitcoin_network().await?;
 
         let client = context.get_client().await?;
         let multisign_account_module = client.as_module_binding::<MultisignAccountModule>();
@@ -101,8 +92,20 @@ impl CommandAction<Option<MultisignAccountOutput>> for CreateMultisignCommand {
 
         let output: MultisignAccountOutput = MultisignAccountOutput {
             multisign_address,
-            multisign_bitcoin_address,
-            participants: participants.into_iter().map(|p| p.into()).collect(),
+            multisign_bitcoin_address: multisign_bitcoin_address
+                .format(bitcoin_network)
+                .expect("format multisign address should success"),
+            participants: participants
+                .into_iter()
+                .map(|p| ParticipantInfoView {
+                    participant_address: p.participant_address.into(),
+                    participant_bitcoin_address: p
+                        .participant_bitcoin_address
+                        .format(bitcoin_network)
+                        .expect("format participant address should success"),
+                    public_key: p.public_key.into(),
+                })
+                .collect(),
         };
         if self.json {
             Ok(Some(output))

@@ -8,7 +8,8 @@ use move_core_types::value::MoveTypeLayout;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::object::{self, ObjectMeta};
-use moveos_types::state::{MoveStructState, MoveStructType, ObjectState};
+use moveos_types::state::{FieldKey, MoveStructState, MoveStructType, ObjectState};
+use moveos_types::state_resolver::StateResolver;
 use moveos_types::{
     h256::H256,
     module_binding::{ModuleBinding, MoveFunctionCaller},
@@ -83,6 +84,23 @@ impl RoochToBitcoinAddressMapping {
         object.metadata.state_root = Some(state_root);
         object.metadata.size = size;
         object
+    }
+
+    pub fn resolve_bitcoin_address(
+        state_resolver: &impl StateResolver,
+        address: AccountAddress,
+    ) -> Result<Option<BitcoinAddress>> {
+        let address_mapping_object_id = RoochToBitcoinAddressMapping::object_id();
+        let object_state = state_resolver.get_field(
+            &address_mapping_object_id,
+            &FieldKey::derive_from_address(&address),
+        )?;
+        if let Some(object_state) = object_state {
+            let df = object_state.value_as_df::<AccountAddress, BitcoinAddress>()?;
+            Ok(Some(df.value))
+        } else {
+            Ok(None)
+        }
     }
 }
 

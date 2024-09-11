@@ -199,7 +199,7 @@ async fn get_total_utxo_value(
 
         for utxo in page.data {
             total_value = total_value
-                .checked_add(utxo.value.get_value())
+                .checked_add(utxo.value.value())
                 .ok_or_else(|| anyhow::anyhow!("UTXO value overflow"))?;
         }
 

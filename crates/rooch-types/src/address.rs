@@ -2,19 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::bitcoin::network;
+use crate::crypto::RoochKeyPair;
+use crate::to_bech32::{FromBech32, ToBech32, PREFIX_BECH32_PUBLIC_KEY};
 use crate::{
     addresses::ROOCH_FRAMEWORK_ADDRESS,
     multichain_id::{MultiChainID, RoochMultiChainID},
 };
 use anyhow::{bail, Result};
+use bech32::segwit::encode_to_fmt_unchecked;
 use bech32::{Bech32m, Hrp};
-use bitcoin::address::Payload;
-use bitcoin::bech32::segwit::encode_to_fmt_unchecked;
-use bitcoin::script::PushBytesBuf;
+use bitcoin::address::AddressData;
+use bitcoin::hashes::Hash;
+use bitcoin::params::Params;
 use bitcoin::{
     address::Address, secp256k1::Secp256k1, Network, PrivateKey, Script, WitnessProgram,
     WitnessVersion,
 };
+use bitcoin::{CompressedPublicKey, XOnlyPublicKey};
 use ethers::types::H160;
 use fastcrypto::hash::Blake2b256;
 use fastcrypto::hash::HashFunction;
@@ -33,10 +37,6 @@ use moveos_types::{
     h256::H256,
     state::{MoveStructState, MoveStructType},
 };
-use nostr::prelude::{FromBech32, ToBech32, PREFIX_BECH32_PUBLIC_KEY};
-use nostr::secp256k1::XOnlyPublicKey;
-use nostr::Keys;
-use once_cell::sync::Lazy;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::{collection::vec, prelude::*};
 use rand::{seq::SliceRandom, thread_rng};
@@ -208,7 +208,7 @@ impl MoveStructState for MultiChainAddress {
     }
 }
 
-pub static ROOCH_HRP: Lazy<Hrp> = Lazy::new(|| Hrp::parse("rooch").expect("rooch is a valid HRP"));
+pub const ROOCH_HRP: Hrp = Hrp::parse_unchecked("rooch");
 
 /// Rooch address type
 #[derive(Copy, Clone, Ord, PartialOrd, PartialEq, Eq, Hash)]
@@ -230,7 +230,7 @@ impl RoochAddress {
 
     pub fn to_bech32(&self) -> String {
         let data = self.0.as_bytes();
-        bech32::encode::<Bech32m>(*ROOCH_HRP, data).expect("bech32 encode should success")
+        bech32::encode::<Bech32m>(ROOCH_HRP, data).expect("bech32 encode should success")
     }
 
     pub fn to_vec(&self) -> Vec<u8> {
@@ -243,7 +243,7 @@ impl RoochAddress {
 
     pub fn from_bech32(bech32: &str) -> Result<Self> {
         let (hrp, data) = bech32::decode(bech32)?;
-        anyhow::ensure!(hrp == *ROOCH_HRP, "invalid rooch hrp");
+        anyhow::ensure!(hrp == ROOCH_HRP, "invalid rooch hrp");
         anyhow::ensure!(data.len() == Self::LENGTH, "invalid rooch address length");
         let hash = H256::from_slice(data.as_slice());
         Ok(Self(hash))
@@ -575,7 +575,7 @@ impl TryFrom<u8> for BitcoinAddressPayloadType {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 #[serde_as]
 pub struct BitcoinAddress {
     bytes: Vec<u8>,
@@ -609,6 +609,12 @@ impl<'de> Deserialize<'de> for BitcoinAddress {
     }
 }
 
+impl fmt::Debug for BitcoinAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
 impl fmt::Display for BitcoinAddress {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Write the Bitcoin address as a hexadecimal string
@@ -631,16 +637,16 @@ impl BitcoinAddress {
         Self { bytes }
     }
 
-    pub fn get_pubkey_address_prefix(network: u8) -> u8 {
-        if network::Network::Bitcoin.to_num() == network {
+    pub fn get_pubkey_address_prefix(network: network::Network) -> u8 {
+        if network::Network::Bitcoin == network {
             bitcoin::constants::PUBKEY_ADDRESS_PREFIX_MAIN
         } else {
             bitcoin::constants::PUBKEY_ADDRESS_PREFIX_TEST
         }
     }
 
-    pub fn get_script_address_prefix(network: u8) -> u8 {
-        if network::Network::Bitcoin.to_num() == network {
+    pub fn get_script_address_prefix(network: network::Network) -> u8 {
+        if network::Network::Bitcoin == network {
             bitcoin::constants::SCRIPT_ADDRESS_PREFIX_MAIN
         } else {
             bitcoin::constants::SCRIPT_ADDRESS_PREFIX_TEST
@@ -688,11 +694,37 @@ impl BitcoinAddress {
         RoochAddress(H256(g_arr.digest))
     }
 
+    pub fn to_bitcoin_address<N: Into<network::Network>>(
+        &self,
+        network: N,
+    ) -> Result<bitcoin::Address, anyhow::Error> {
+        let network: network::Network = network.into();
+        let network = bitcoin::network::Network::from(network);
+        let payload_type = BitcoinAddressPayloadType::try_from(self.bytes[0])?;
+        let addr = match payload_type {
+            BitcoinAddressPayloadType::PubkeyHash => {
+                let pubkey_hash = bitcoin::PubkeyHash::from_slice(&self.bytes[1..])?;
+                bitcoin::address::Address::p2pkh(pubkey_hash, network)
+            }
+            BitcoinAddressPayloadType::ScriptHash => {
+                let script_hash = bitcoin::ScriptHash::from_slice(&self.bytes[1..])?;
+                bitcoin::address::Address::p2sh_from_hash(script_hash, network)
+            }
+            BitcoinAddressPayloadType::WitnessProgram => {
+                let version = WitnessVersion::try_from(self.bytes[1])?;
+                let witness_program = WitnessProgram::new(version, &self.bytes[2..])?;
+                bitcoin::address::Address::from_witness_program(witness_program, network)
+            }
+        };
+        Ok(addr)
+    }
+
     ///  Format the base58 as a hexadecimal string
-    pub fn format(&self, network: u8) -> Result<String, anyhow::Error> {
+    pub fn format<N: Into<network::Network>>(&self, network: N) -> Result<String, anyhow::Error> {
         if self.bytes.is_empty() {
             anyhow::bail!("bitcoin address is empty");
         }
+        let network: network::Network = network.into();
         let payload_type = BitcoinAddressPayloadType::try_from(self.bytes[0])?;
         match payload_type {
             BitcoinAddressPayloadType::PubkeyHash => {
@@ -708,14 +740,14 @@ impl BitcoinAddress {
                 Ok(bs58::encode(&prefixed[..]).with_check().into_string())
             }
             BitcoinAddressPayloadType::WitnessProgram => {
-                let hrp = network::Network::try_from(network)?.bech32_hrp();
+                let hrp = network.bech32_hrp();
                 let version = WitnessVersion::try_from(self.bytes[1])?;
-                let buf = PushBytesBuf::try_from(self.bytes[2..].to_vec())?;
-                let witness_program = WitnessProgram::new(version, buf)?;
+
+                let witness_program = WitnessProgram::new(version, &self.bytes[2..])?;
                 let program: &[u8] = witness_program.program().as_ref();
 
                 let mut address_formatter = String::new();
-                encode_to_fmt_unchecked(&mut address_formatter, &hrp, version.to_fe(), program)?;
+                encode_to_fmt_unchecked(&mut address_formatter, hrp, version.to_fe(), program)?;
                 Ok(address_formatter)
             }
         }
@@ -740,7 +772,7 @@ impl RoochSupportedAddress for BitcoinAddress {
 
         let secp = Secp256k1::new();
         let p2pkh_address = Address::p2pkh(
-            &PrivateKey::generate(bitcoin_network).public_key(&secp),
+            PrivateKey::generate(bitcoin_network).public_key(&secp),
             bitcoin_network,
         );
         let p2sh_address = Address::p2sh(
@@ -748,11 +780,12 @@ impl RoochSupportedAddress for BitcoinAddress {
             bitcoin_network,
         )
         .unwrap();
+
+        let sk = PrivateKey::generate(bitcoin_network);
         let segwit_address = Address::p2wpkh(
-            &PrivateKey::generate(bitcoin_network).public_key(&secp),
+            &CompressedPublicKey::from_private_key(&secp, &sk).unwrap(),
             bitcoin_network,
-        )
-        .unwrap();
+        );
 
         // Create an array of addresses bitcoin protocols
         let addresses = [p2pkh_address, p2sh_address, segwit_address];
@@ -775,25 +808,33 @@ impl FromStr for BitcoinAddress {
 
 impl From<bitcoin::Address> for BitcoinAddress {
     fn from(address: bitcoin::Address) -> Self {
-        address.payload().into()
+        address.to_address_data().into()
     }
 }
 
-impl From<&bitcoin::address::Payload> for BitcoinAddress {
-    fn from(payload: &bitcoin::address::Payload) -> Self {
+impl TryFrom<BitcoinAddress> for bitcoin::Address {
+    type Error = anyhow::Error;
+
+    fn try_from(value: BitcoinAddress) -> Result<Self, Self::Error> {
+        value.to_bitcoin_address(network::Network::Bitcoin)
+    }
+}
+
+impl From<&bitcoin::address::AddressData> for BitcoinAddress {
+    fn from(payload: &bitcoin::address::AddressData) -> Self {
         match payload {
-            bitcoin::address::Payload::PubkeyHash(pubkey_hash) => Self::new_p2pkh(pubkey_hash),
-            bitcoin::address::Payload::ScriptHash(bytes) => Self::new_p2sh(bytes),
-            bitcoin::address::Payload::WitnessProgram(program) => {
-                Self::new_witness_program(program)
+            bitcoin::address::AddressData::P2pkh { pubkey_hash } => Self::new_p2pkh(pubkey_hash),
+            bitcoin::address::AddressData::P2sh { script_hash } => Self::new_p2sh(script_hash),
+            bitcoin::address::AddressData::Segwit { witness_program } => {
+                Self::new_witness_program(witness_program)
             }
             _ => BitcoinAddress::default(),
         }
     }
 }
 
-impl From<bitcoin::address::Payload> for BitcoinAddress {
-    fn from(payload: bitcoin::address::Payload) -> Self {
+impl From<bitcoin::address::AddressData> for BitcoinAddress {
+    fn from(payload: bitcoin::address::AddressData) -> Self {
         Self::from(&payload)
     }
 }
@@ -806,18 +847,19 @@ impl From<bitcoin::ScriptBuf> for BitcoinAddress {
 
 impl From<&bitcoin::ScriptBuf> for BitcoinAddress {
     fn from(script: &bitcoin::ScriptBuf) -> Self {
-        let address_opt = bitcoin::address::Payload::from_script(script).ok();
-        let payload: Option<Payload> = match address_opt {
+        let address_opt = bitcoin::address::Address::from_script(script, &Params::MAINNET).ok();
+        let payload: Option<AddressData> = match address_opt {
             None => {
                 if script.is_p2pk() {
                     let p2pk_pubkey = script.p2pk_public_key();
-                    p2pk_pubkey
-                        .map(|pubkey| bitcoin::address::Payload::PubkeyHash(pubkey.pubkey_hash()))
+                    p2pk_pubkey.map(|pubkey| bitcoin::address::AddressData::P2pkh {
+                        pubkey_hash: pubkey.pubkey_hash(),
+                    })
                 } else {
                     None
                 }
             }
-            Some(address_opt) => Some(address_opt),
+            Some(address) => Some(address.to_address_data()),
         };
         payload.map(|payload| payload.into()).unwrap_or_default()
     }
@@ -854,9 +896,12 @@ impl NostrPublicKey {
     }
 
     /// Convert from the Nostr XOnlyPublicKey to Bitcoin Taproot address. BIP-086.
-    pub fn to_bitcoin_address(&self, network: u8) -> Result<BitcoinAddress, anyhow::Error> {
+    pub fn to_bitcoin_address<N: Into<network::Network>>(
+        &self,
+        network: N,
+    ) -> Result<BitcoinAddress, anyhow::Error> {
         // get the network
-        let network = network::Network::try_from(network)?;
+        let network: network::Network = network.into();
         // change use of XOnlyPublicKey from nostr to bitcoin lib
         let internal_key = bitcoin::XOnlyPublicKey::from_slice(&self.0.serialize())?;
         // new verification crypto
@@ -875,7 +920,12 @@ impl NostrPublicKey {
 
 impl RoochSupportedAddress for NostrPublicKey {
     fn random() -> Self {
-        Self(Keys::generate().public_key())
+        Self(
+            RoochKeyPair::generate_secp256k1()
+                .public()
+                .xonly_public_key()
+                .unwrap(),
+        )
     }
 }
 
@@ -916,11 +966,12 @@ impl fmt::Display for NostrPublicKey {
     }
 }
 
-// Parsed Address, either a name or a numerical address
+// Parsed Address, either a name or a numerical address, or Bitcoin Address
 #[derive(Eq, PartialEq, Debug, Clone)]
 pub enum ParsedAddress {
     Named(String),
     Numerical(RoochAddress),
+    Bitcoin(BitcoinAddress),
 }
 
 impl ParsedAddress {
@@ -933,6 +984,7 @@ impl ParsedAddress {
                 .map(Into::into)
                 .ok_or_else(|| anyhow::anyhow!("Unbound named address: '{}'", n)),
             Self::Numerical(a) => Ok(a),
+            Self::Bitcoin(a) => Ok(a.to_rooch_address()),
         }
     }
 
@@ -949,18 +1001,24 @@ impl ParsedAddress {
         } else if s.starts_with(ROOCH_HRP.as_str()) && s.len() == RoochAddress::LENGTH_BECH32 {
             Ok(Self::Numerical(RoochAddress::from_bech32(s)?))
         } else if s.starts_with(PREFIX_BECH32_PUBLIC_KEY) {
-            Ok(Self::Numerical(BitcoinAddress::to_rooch_address(
-                &NostrPublicKey::to_bitcoin_address(
-                    &NostrPublicKey::from_str(s)?,
-                    network::Network::Bitcoin.to_num(),
-                )?,
-            )))
+            Ok(Self::Bitcoin(NostrPublicKey::to_bitcoin_address(
+                &NostrPublicKey::from_str(s)?,
+                network::Network::Bitcoin.to_num(),
+            )?))
         } else {
             match BitcoinAddress::from_str(s) {
-                Ok(a) => Ok(Self::Numerical(a.to_rooch_address())),
+                Ok(a) => Ok(Self::Bitcoin(a)),
                 Err(_) => Ok(Self::Named(s.to_string())),
             }
         }
+    }
+}
+
+impl FromStr for ParsedAddress {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        ParsedAddress::parse(s)
     }
 }
 
@@ -1151,7 +1209,7 @@ mod test {
         let bitcoin_address = BitcoinAddress {
             bytes: bytes.clone(),
         };
-        let address_str = bitcoin_address.format(network::Network::Bitcoin.to_num())?;
+        let address_str = bitcoin_address.format(network::Network::Bitcoin)?;
         println!("test_bitcoin_address bitcoin address {} ", address_str);
         let maddress = MultiChainAddress::new(RoochMultiChainID::Bitcoin, bytes.clone());
 
@@ -1164,6 +1222,12 @@ mod test {
         assert_eq!(maddress, new_maddress);
         assert_eq!(bitcoin_address, new_bitcoin_address);
         assert_eq!(address_str, "bc1qjlxl7n7na4hcsh25554hn4azzsg89t3lcty7gp");
+
+        let btc_address = bitcoin::Address::from_str(&address_str).unwrap();
+        let btc_address = btc_address.assume_checked();
+        let btc_address2 = bitcoin_address.to_bitcoin_address(bitcoin::Network::Bitcoin)?;
+        assert_eq!(btc_address, btc_address2);
+
         Ok(())
     }
 
@@ -1176,7 +1240,11 @@ mod test {
         let bitcoin_address = BitcoinAddress {
             bytes: bytes.clone(),
         };
-        let address_str = bitcoin_address.format(network::Network::Bitcoin.to_num())?;
+        let address_str = bitcoin_address.format(network::Network::Bitcoin)?;
+        let btc_address = bitcoin::Address::from_str(&address_str).unwrap();
+        let btc_address = btc_address.assume_checked();
+        let btc_address2 = bitcoin_address.to_bitcoin_address(network::Network::Bitcoin)?;
+        assert_eq!(btc_address, btc_address2);
         println!(
             "test_convert_bitcoin_address bitcoin address {} ",
             address_str

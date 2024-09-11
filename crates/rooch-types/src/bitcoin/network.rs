@@ -23,16 +23,14 @@ pub enum Network {
     Regtest = 4,
 }
 
-impl TryFrom<u8> for Network {
-    type Error = anyhow::Error;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+impl From<u8> for Network {
+    fn from(value: u8) -> Self {
         match value {
-            1 => Ok(Network::Bitcoin),
-            2 => Ok(Network::Testnet),
-            3 => Ok(Network::Signet),
-            4 => Ok(Network::Regtest),
-            _ => Err(anyhow::anyhow!("Bitcoin network {} is invalid", value)),
+            1 => Network::Bitcoin,
+            2 => Network::Testnet,
+            3 => Network::Signet,
+            4 => Network::Regtest,
+            _ => Network::Bitcoin,
         }
     }
 }
@@ -64,12 +62,12 @@ impl std::fmt::Display for Network {
 }
 
 impl Network {
-    pub fn bech32_hrp(&self) -> bitcoin::bech32::Hrp {
+    pub fn bech32_hrp(&self) -> bech32::Hrp {
         match self {
-            Network::Bitcoin => bitcoin::bech32::hrp::BC,
-            Network::Testnet => bitcoin::bech32::hrp::TB,
-            Network::Signet => bitcoin::bech32::hrp::TB,
-            Network::Regtest => bitcoin::bech32::hrp::BCRT,
+            Network::Bitcoin => bech32::hrp::BC,
+            Network::Testnet => bech32::hrp::TB,
+            Network::Signet => bech32::hrp::TB,
+            Network::Regtest => bech32::hrp::BCRT,
         }
     }
 

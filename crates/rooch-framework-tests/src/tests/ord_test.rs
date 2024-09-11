@@ -17,7 +17,8 @@ fn decode_inscription(
     binding_test: &mut binding_test::RustBindingTest,
     btc_tx: Transaction,
 ) -> Vec<Envelope<InscriptionRecord>> {
-    debug!("tx_id: {}", btc_tx.txid());
+    let txid = btc_tx.compute_txid();
+    debug!("tx_id: {}", txid);
     for (i, input) in btc_tx.input.iter().enumerate() {
         debug!("{}. input: {:?}", i, input.previous_output);
     }

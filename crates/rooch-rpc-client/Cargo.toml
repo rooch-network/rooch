@@ -23,6 +23,8 @@ jsonrpsee = { workspace = true }
 serde_json = { workspace = true }
 log = { workspace = true }
 hex = { workspace = true }
+bitcoin = { workspace = true }
+tracing = { workspace = true }
 
 move-core-types = { workspace = true }
 

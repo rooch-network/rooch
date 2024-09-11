@@ -3,8 +3,12 @@
 
 use anyhow::{Ok, Result};
 use jsonrpsee::http_client::HttpClient;
+use move_core_types::account_address::AccountAddress;
 use moveos_types::h256::H256;
+use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::account::Account;
+use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::state::{FieldKey, MoveStructState};
 use moveos_types::{access_path::AccessPath, state::ObjectState, transaction::FunctionCall};
 use rooch_rpc_api::api::btc_api::BtcAPIClient;
 use rooch_rpc_api::api::rooch_api::RoochAPIClient;
@@ -16,14 +20,18 @@ use rooch_rpc_api::jsonrpc_types::{
     DryRunTransactionResponseView, InscriptionPageView, UTXOPageView,
 };
 use rooch_rpc_api::jsonrpc_types::{
-    AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, EventOptions, EventPageView,
-    FieldKeyView, ObjectIDView, RoochAddressView, StateOptions, StatePageView, StructTagView,
+    AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
+    EventPageView, FieldKeyView, ObjectIDVecView, ObjectIDView, RoochAddressView, StateOptions,
+    StatePageView, StructTagView,
 };
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, ObjectStateView};
 use rooch_rpc_api::jsonrpc_types::{
     IndexerObjectStatePageView, ObjectStateFilterView, QueryOptions,
 };
 use rooch_rpc_api::jsonrpc_types::{TransactionWithInfoPageView, TxOptions};
+use rooch_types::address::BitcoinAddress;
+use rooch_types::bitcoin::multisign_account::MultisignAccountInfo;
+use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::transaction::RoochTransactionData;
 use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
@@ -217,6 +225,24 @@ impl RoochRpcClient {
             .await?)
     }
 
+    pub async fn resolve_bitcoin_address(
+        &self,
+        address: RoochAddress,
+    ) -> Result<Option<BitcoinAddress>> {
+        let object_id = RoochToBitcoinAddressMapping::object_id();
+        let field_key = FieldKey::derive_from_address(&address.into());
+        let mut field = self
+            .get_field_states(object_id.into(), vec![field_key.into()], None)
+            .await?;
+        let field_obj = field.pop().flatten();
+        let bitcoin_address = field_obj.map(|state_view| {
+            let state = ObjectState::from(state_view);
+            let df = state.value_as_df::<AccountAddress, BitcoinAddress>()?;
+            Ok(df.value)
+        });
+        bitcoin_address.transpose()
+    }
+
     pub async fn list_field_states(
         &self,
         object_id: ObjectIDView,
@@ -274,6 +300,20 @@ impl RoochRpcClient {
             .await?)
     }
 
+    pub async fn get_object_states(
+        &self,
+        object_ids: Vec<ObjectID>,
+        state_option: Option<StateOptions>,
+    ) -> Result<Vec<Option<ObjectStateView>>> {
+        if object_ids.is_empty() {
+            return Ok(vec![]);
+        }
+        Ok(self
+            .http
+            .get_object_states(ObjectIDVecView::from(object_ids), state_option)
+            .await?)
+    }
+
     pub async fn query_object_states(
         &self,
         filter: ObjectStateFilterView,
@@ -297,7 +337,7 @@ impl RoochRpcClient {
         filter: UTXOFilterView,
         cursor: Option<IndexerStateID>,
         limit: Option<u64>,
-        query_options: Option<QueryOptions>,
+        descending_order: Option<bool>,
     ) -> Result<UTXOPageView> {
         Ok(self
             .http
@@ -305,7 +345,7 @@ impl RoochRpcClient {
                 filter,
                 cursor.map(Into::into),
                 limit.map(Into::into),
-                query_options.map(|v| v.descending),
+                descending_order,
             )
             .await?)
     }
@@ -326,5 +366,44 @@ impl RoochRpcClient {
                 query_options.map(|v| v.descending),
             )
             .await?)
+    }
+
+    pub async fn get_resource<T: MoveStructState>(
+        &self,
+        account: RoochAddress,
+    ) -> Result<Option<T>> {
+        let access_path = AccessPath::resource(account.into(), T::struct_tag());
+        let mut states = self.get_states(access_path).await?;
+        let state = states.pop().flatten();
+        if let Some(state) = state {
+            let state = ObjectState::from(state);
+            let resource = state.value_as_df::<MoveString, T>()?;
+            Ok(Some(resource.value))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub async fn get_multisign_account_info(
+        &self,
+        address: RoochAddress,
+    ) -> Result<MultisignAccountInfo> {
+        Ok(self
+            .get_resource::<MultisignAccountInfo>(address)
+            .await?
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Can not find multisign account info for address {}",
+                    address
+                )
+            })?)
+    }
+
+    pub async fn broadcast_bitcoin_tx(
+        &self,
+        raw_tx: BytesView,
+        maxfeerate: Option<f64>,
+    ) -> Result<String> {
+        Ok(self.http.broadcast_tx(raw_tx, maxfeerate, None).await?)
     }
 }

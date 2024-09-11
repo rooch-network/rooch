@@ -100,7 +100,8 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
     for tx in txs.as_slice() {
         for (index, tx_out) in tx.output.iter().enumerate() {
             let vout = index as u32;
-            let out_point = OutPoint::new(tx.txid(), vout);
+            let txid = tx.compute_txid();
+            let out_point = OutPoint::new(txid, vout);
             utxo_set.insert(out_point, tx_out.clone());
         }
         for tx_in in tx.input.iter() {
@@ -147,7 +148,7 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
     let inscriptions = txs
         .iter()
         .flat_map(|tx| {
-            let txid = tx.txid();
+            let txid = tx.compute_txid();
             let rooch_btc_tx = rooch_types::bitcoin::types::Transaction::from(tx.clone());
             ord_module
                 .parse_inscription_from_tx(&rooch_btc_tx)

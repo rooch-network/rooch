@@ -1,21 +1,20 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{is_file_path, FileOutput, FileOutputData};
-use crate::cli_types::{CommandAction, WalletContextOptions};
+use super::{FileOutput, FileOutputData};
+use crate::cli_types::{CommandAction, FileOrHexInput, WalletContextOptions};
 use async_trait::async_trait;
 use moveos_types::module_binding::MoveFunctionCaller;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::{
     address::{ParsedAddress, RoochAddress},
     bitcoin::multisign_account::MultisignAccountModule,
-    error::{RoochError, RoochResult},
+    error::RoochResult,
     transaction::{
         authenticator::BitcoinAuthenticator, rooch::PartiallySignedRoochTransaction,
         RoochTransaction, RoochTransactionData,
     },
 };
-use std::{fs::File, io::Read, str::FromStr};
 
 #[derive(Debug, Clone)]
 pub enum SignInput {
@@ -23,33 +22,14 @@ pub enum SignInput {
     PartiallySignedRoochTransaction(PartiallySignedRoochTransaction),
 }
 
-impl FromStr for SignInput {
-    type Err = anyhow::Error;
+impl TryFrom<FileOrHexInput> for SignInput {
+    type Error = anyhow::Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let data_hex = if is_file_path(s) {
-            //load hex from file
-            let mut file = File::open(s).map_err(|e| {
-                RoochError::CommandArgumentError(format!("Failed to open file: {}, err:{:?}", s, e))
-            })?;
-            let mut hex_str = String::new();
-            file.read_to_string(&mut hex_str).map_err(|e| {
-                RoochError::CommandArgumentError(format!("Failed to read file: {}, err:{:?}", s, e))
-            })?;
-            hex_str.strip_prefix("0x").unwrap_or(&hex_str).to_string()
-        } else {
-            s.strip_prefix("0x").unwrap_or(s).to_string()
-        };
-        let data_bytes = hex::decode(&data_hex).map_err(|e| {
-            RoochError::CommandArgumentError(format!(
-                "Failed to decode hex: {}, err:{:?}",
-                data_hex, e
-            ))
-        })?;
-        let input = match bcs::from_bytes(&data_bytes) {
+    fn try_from(value: FileOrHexInput) -> Result<Self, Self::Error> {
+        let input = match bcs::from_bytes::<RoochTransactionData>(&value.data) {
             Ok(tx_data) => SignInput::RoochTransactionData(tx_data),
             Err(_) => {
-                let psrt: PartiallySignedRoochTransaction = match bcs::from_bytes(&data_bytes) {
+                let psrt: PartiallySignedRoochTransaction = match bcs::from_bytes(&value.data) {
                     Ok(psrt) => psrt,
                     Err(_) => {
                         return Err(anyhow::anyhow!("Invalid tx data or psrt data"));
@@ -99,7 +79,7 @@ pub struct SignCommand {
     /// Input data to be used for signing
     /// Input can be a transaction data hex or a partially signed transaction data hex
     /// or a file path which contains transaction data or partially signed transaction data
-    input: SignInput,
+    input: FileOrHexInput,
 
     /// The address of the signer when the transaction is a multisign account transaction
     /// If not specified, we will auto find the existing participants in the multisign account from the keystore
@@ -107,7 +87,7 @@ pub struct SignCommand {
     signer: Option<ParsedAddress>,
 
     /// The output file path for the signed transaction
-    /// If not specified, the signed output will write to current directory.
+    /// If not specified, the signed output will write to temp directory.
     #[clap(long, short = 'o')]
     output: Option<String>,
 
@@ -124,10 +104,12 @@ impl SignCommand {
         let context = self.context.build_require_password()?;
         let client = context.get_client().await?;
         let multisign_account_module = client.as_module_binding::<MultisignAccountModule>();
-        let sender = self.input.sender();
+        let sign_input = SignInput::try_from(self.input)?;
+        let sender = sign_input.sender();
         let output = if multisign_account_module.is_multisign_account(sender.into())? {
             let threshold = multisign_account_module.threshold(sender.into())?;
-            let mut psrt = match self.input {
+
+            let mut psrt = match sign_input {
                 SignInput::RoochTransactionData(tx_data) => {
                     PartiallySignedRoochTransaction::new(tx_data, threshold)
                 }
@@ -181,7 +163,7 @@ impl SignCommand {
                 SignOutput::PartiallySignedRoochTransaction(psrt)
             }
         } else {
-            let tx_data = match self.input {
+            let tx_data = match sign_input {
                 SignInput::RoochTransactionData(tx_data) => tx_data,
                 SignInput::PartiallySignedRoochTransaction(_) => {
                     return Err(anyhow::anyhow!(

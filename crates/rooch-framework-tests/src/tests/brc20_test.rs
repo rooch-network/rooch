@@ -9,7 +9,8 @@ fn decode_tx(btx_tx_hex: &str) {
     let btc_tx_bytes = Vec::from_hex(btx_tx_hex).unwrap();
     let btc_tx: bitcoin::Transaction =
         Decodable::consensus_decode(&mut btc_tx_bytes.as_slice()).unwrap();
-    debug!("tx_id: {}", btc_tx.txid());
+    let txid = btc_tx.compute_txid();
+    debug!("tx_id: {}", txid);
     for (i, input) in btc_tx.input.iter().enumerate() {
         debug!("{}. input: {:?}", i, input.previous_output);
     }
