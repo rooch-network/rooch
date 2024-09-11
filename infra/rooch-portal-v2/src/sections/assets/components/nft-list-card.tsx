@@ -59,7 +59,6 @@ export default function NFTList({ address }: { address: string }) {
     filter: {
       object_type_with_owner: {
         owner: address,
-        filter_out: false,
         object_type: FMNFT.objType,
       },
     },
