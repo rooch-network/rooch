@@ -3,7 +3,7 @@
 
 use crate::address::BitcoinAddress;
 use crate::addresses::BITCOIN_MOVE_ADDRESS;
-use anyhow::Result;
+use anyhow::{ensure, Result};
 use bitcoin::bip32::{DerivationPath, Fingerprint};
 use bitcoin::key::constants::SCHNORR_PUBLIC_KEY_SIZE;
 use bitcoin::key::Secp256k1;
@@ -97,6 +97,11 @@ pub fn generate_multisign_address(
     threshold: usize,
     public_keys: Vec<Vec<u8>>,
 ) -> Result<BitcoinAddress> {
+    ensure!(
+        threshold > 0 && threshold <= public_keys.len(),
+        "Invalid threshold: {}",
+        threshold
+    );
     let mut x_only_public_keys = public_keys
         .into_iter()
         .map(|pk| {
@@ -132,6 +137,7 @@ pub fn generate_multisign_address(
 
 /// Create a multisig script, the caller should ensure the public keys are sorted
 fn create_multisig_script(threshold: usize, public_keys: &Vec<XOnlyPublicKey>) -> ScriptBuf {
+    debug_assert!(threshold <= public_keys.len());
     let mut builder = bitcoin::script::Builder::new();
 
     for pubkey in public_keys {
