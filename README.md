@@ -3,7 +3,7 @@
   <br />
   <a href="https://rooch.network"><img alt="Rooch" src="https://rooch.network/logo/rooch_black_combine.svg" width=384></a>
   <br />
-  <h3><a href="https://rooch.network">Rooch</a> is a VApp Container with <a href="https://github.com/move-language/move">Move</a> language.</h3>
+  <h3><a href="https://rooch.network">Rooch</a> is a VApp Container with <a href="https://github.com/move-language/move">Move</a> language for Bitcoin ecosystem.</h3>
   <br />
 </div>
 
@@ -18,9 +18,19 @@
 
 * Name: dev
 * ChainID: 3
+* Bitcoin Network: regtest
 * RPC: https://dev-seed.rooch.network/
 
 Please refer to [Connect to Developer Test Network](https://rooch.network/build/getting-started/connect-to-rooch/connect-devnet) for more information.
+
+## Developer Network Information
+
+* Name: test
+* ChainID: 2
+* Bitcoin Network: test
+* RPC: https://test-seed.rooch.network/
+
+Please refer to [Connect to Test Network](https://rooch.network/build/getting-started/connect-to-rooch/connect-testnet) for more information.
 
 ## MoveStd & MoveosStd & RoochFramework documentation
 
@@ -52,12 +62,18 @@ Please refer to [Rooch's built-in library](https://rooch.network/learn/core-conc
     cd my_move_project && rooch move build
     ```
    
-5. Starting the server
+5. Starting a local server
     ```bash
-    rooch server start
+    rooch server start -n local
     ```
    * *`RUST_LOG=debug rooch server start` for debugging information*
-   * You can directly use the devnet and skip this step.
+   * You can directly use the devnet or testnet to skip this step.
+   * If you want to program with Bitcoin UTXO or Inscription, please setup the local Bitcoin development env and start the server with:
+    ```bash
+    rooch server start -n local  --btc-rpc-url http://127.0.0.1:18443 --btc-rpc-username roochuser --btc-rpc-password roochpass --btc-sync-block-interval 1 
+    ```
+    * Please refer to  [Bitcoin local development environment](./scripts/bitcoin/README.md) for setup the local Bitcoin development env.
+
 
 6. Publishing the Move project
     ```bash
