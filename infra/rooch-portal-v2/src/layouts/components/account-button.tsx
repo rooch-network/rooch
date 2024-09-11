@@ -1,8 +1,10 @@
 import type { IconButtonProps } from '@mui/material/IconButton';
 
-import { useWallets, useConnectWallet } from '@roochnetwork/rooch-sdk-kit';
+import { useState } from 'react';
 
 import { Button } from '@mui/material';
+
+import WalletSelectModal from './wallet-select-modal';
 
 export type AccountButtonProps = IconButtonProps & {
   open: boolean;
@@ -11,17 +13,21 @@ export type AccountButtonProps = IconButtonProps & {
 };
 
 export function AccountButton() {
-  const wallets = useWallets();
-  const { mutateAsync: connectWallet } = useConnectWallet();
+  const [showWalletSelectModal, setShowWalletSelectModal] = useState(false);
 
   return (
-    <Button
-      variant="outlined"
-      onClick={async () => {
-        await connectWallet({ wallet: wallets[0] });
-      }}
-    >
-      Connect Wallet
-    </Button>
+    <>
+      <Button
+        variant="outlined"
+        onClick={() => {
+          setShowWalletSelectModal(true);
+        }}
+      >
+        Connect Wallet
+      </Button>
+      {showWalletSelectModal && (
+        <WalletSelectModal onSelect={() => setShowWalletSelectModal(false)} />
+      )}
+    </>
   );
 }
