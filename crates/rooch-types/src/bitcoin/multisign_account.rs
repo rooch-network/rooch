@@ -20,6 +20,7 @@ use moveos_types::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use tracing::debug;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("multisign_account");
 
@@ -100,23 +101,22 @@ pub fn generate_multisign_address(
         .into_iter()
         .map(|pk| {
             let x_only_pk = if pk.len() == SCHNORR_PUBLIC_KEY_SIZE {
-                pk
+                XOnlyPublicKey::from_slice(&pk)?
             } else {
                 let pubkey = bitcoin::PublicKey::from_slice(&pk)?;
-                XOnlyPublicKey::from(pubkey).serialize().to_vec()
+                XOnlyPublicKey::from(pubkey)
             };
             Ok(x_only_pk)
         })
         .collect::<Result<Vec<_>>>()?;
 
     // Sort public keys to ensure the same script is generated for the same set of keys
-    // Note: we sort on the x-only public key bytes
     x_only_public_keys.sort();
 
-    let x_only_public_keys = x_only_public_keys
-        .into_iter()
-        .map(|pk| XOnlyPublicKey::from_slice(&pk))
-        .collect::<Result<Vec<_>, bitcoin::secp256k1::Error>>()?;
+    // let x_only_public_keys = x_only_public_keys
+    //     .into_iter()
+    //     .map(|pk| XOnlyPublicKey::from_slice(&pk))
+    //     .collect::<Result<Vec<_>, bitcoin::secp256k1::Error>>()?;
     let multisig_script = create_multisig_script(threshold, &x_only_public_keys);
 
     let builder = TaprootBuilder::new().add_leaf(0, multisig_script)?;
@@ -160,12 +160,21 @@ pub fn update_multisig_psbt(
     let secp = Secp256k1::new();
 
     let threshold = account_info.threshold as usize;
-    let participant_pubkeys = account_info
+    let mut participant_pubkeys = account_info
         .participants
         .values()
         .into_iter()
         .map(|info| info.x_only_public_key())
         .collect::<Result<Vec<_>>>()?;
+
+    // Sort public keys to ensure the same script is generated for the same set of keys
+    participant_pubkeys.sort();
+
+    debug!(
+        "Ordered public keys when build psbt sign: {:?}",
+        participant_pubkeys
+    );
+
     let multisig_script = create_multisig_script(threshold, &participant_pubkeys);
 
     let mut builder = TaprootBuilder::new();
@@ -196,6 +205,18 @@ pub fn update_multisig_psbt(
         (multisig_script.clone(), LeafVersion::TapScript),
     );
 
+    let address = bitcoin::Address::p2tr(
+        &secp,
+        internal_key,
+        tap_tree.merkle_root(),
+        bitcoin::Network::Bitcoin,
+    );
+    let rebuild_address = BitcoinAddress::from(address);
+    if rebuild_address != account_info.multisign_bitcoin_address {
+        anyhow::bail!(
+            "The multisign address in the psbt is not equal to the on-chain multisign address"
+        );
+    }
     Ok(())
 }
 

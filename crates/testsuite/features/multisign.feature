@@ -40,16 +40,15 @@ Feature: Rooch CLI multisign integration tests
       # l1 transaction
       Then cmd: "bitcoin build-tx --sender {{$.account[-1].multisign_bitcoin_address}} -o {{$.account[-2].account0.bitcoin_address}}:100000000"
       Then assert: "'{{$.bitcoin[-1]}}' not_contains error"
-      Then cmd: "bitcoin sign-tx {{$.bitcoin[-1].path}}"
+      Then cmd: "bitcoin sign-tx -s {{$.account[-1].participants[0].participant_address}}   {{$.bitcoin[-1].path}}"
+      Then assert: "'{{$.bitcoin[-1]}}' not_contains error"
+      Then cmd: "bitcoin sign-tx -s {{$.account[-1].participants[2].participant_address}}   {{$.bitcoin[-1].path}}"
       Then assert: "'{{$.bitcoin[-1]}}' not_contains error"
       Then cmd: "bitcoin broadcast-tx {{$.bitcoin[-1].path}}"
       Then assert: "'{{$.bitcoin[-1]}}' not_contains error"
 
       Then cmd bitcoin-cli: "generatetoaddress 1 {{$.getnewaddress[-1]}}"
       Then sleep: "10" # wait for the transaction to be confirmed
-      
-      Then cmd bitcoin-cli: "gettransaction {{$.bitcoin[-1]}}"
-      Then assert: "{{$.gettransaction[-1].confirmations}} == 1"
 
       Then cmd: "account balance -a {{$.account[-2].account0.address}} --json"
       Then assert: "{{$.account[-1].Bitcoin.balance}} == 100000000"

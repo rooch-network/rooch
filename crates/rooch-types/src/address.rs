@@ -575,7 +575,7 @@ impl TryFrom<u8> for BitcoinAddressPayloadType {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 #[serde_as]
 pub struct BitcoinAddress {
     bytes: Vec<u8>,
@@ -606,6 +606,12 @@ impl<'de> Deserialize<'de> for BitcoinAddress {
             let bytes = Vec::<u8>::deserialize(deserializer)?;
             Ok(Self { bytes })
         }
+    }
+}
+
+impl fmt::Debug for BitcoinAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self)
     }
 }
 

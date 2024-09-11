@@ -69,7 +69,7 @@ impl CommandAction<String> for Transfer {
             .build_transfer(to.to_bitcoin_address(bitcoin_network)?, amount)
             .await?;
         debug!("PSBT: {}", serde_json::to_string_pretty(&psbt).unwrap());
-        let sign_out = sign_psbt(psbt, &context, &client).await?;
+        let sign_out = sign_psbt(psbt, None, &context, &client).await?;
         match sign_out {
             SignOutput::Psbt(_psbt) => {
                 return Err(RoochError::CommandArgumentError(

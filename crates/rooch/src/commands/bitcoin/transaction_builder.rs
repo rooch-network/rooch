@@ -16,6 +16,7 @@ use rooch_types::{
     address::BitcoinAddress,
     bitcoin::multisign_account::{self},
 };
+use tracing::debug;
 
 #[derive(Debug)]
 pub struct TransactionBuilder<'a> {
@@ -201,6 +202,7 @@ impl<'a> TransactionBuilder<'a> {
                     .rooch
                     .get_multisign_account_info(rooch_addr)
                     .await?;
+                debug!("Multisign account: {:?}", account_info);
                 multisign_account::update_multisig_psbt(input, &account_info)?;
             } else {
                 let kp = self.wallet_context.get_key_pair(&rooch_addr)?;

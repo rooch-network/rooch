@@ -1,13 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::BTreeMap;
-
 use crate::{
     cli_types::{CommandAction, FileOrHexInput, WalletContextOptions},
     commands::bitcoin::{FileOutput, FileOutputData},
 };
 use anyhow::bail;
+use anyhow::Result;
 use async_trait::async_trait;
 use bitcoin::{
     key::{Keypair, Secp256k1, TapTweak},
@@ -19,7 +18,7 @@ use moveos_types::module_binding::MoveFunctionCaller;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_client::{wallet_context::WalletContext, Client};
 use rooch_types::{
-    address::{BitcoinAddress, RoochAddress},
+    address::{BitcoinAddress, ParsedAddress, RoochAddress},
     bitcoin::multisign_account::MultisignAccountModule,
     error::{RoochError, RoochResult},
 };
@@ -29,6 +28,11 @@ use tracing::debug;
 pub struct SignTx {
     /// The input psbt file path or hex string
     input: FileOrHexInput,
+
+    /// The address of the signer when the transaction is a multisign account transaction
+    /// If not specified, we will auto find the existing participants in the multisign account from the keystore
+    #[clap(short = 's', long)]
+    signer: Option<ParsedAddress>,
 
     /// The output file path
     /// If not provided, the file will be written to temp directory
@@ -53,7 +57,7 @@ impl CommandAction<FileOutput> for SignTx {
 
         let psbt = Psbt::deserialize(&self.input.data)?;
         debug!("psbt before sign: {:?}", psbt);
-        let output = sign_psbt(psbt, &context, &client).await?;
+        let output = sign_psbt(psbt, self.signer, &context, &client).await?;
         debug!("sign output: {:?}", output);
 
         let file_output_data = match output {
@@ -67,10 +71,16 @@ impl CommandAction<FileOutput> for SignTx {
 
 pub(crate) async fn sign_psbt(
     mut psbt: Psbt,
+    signer: Option<ParsedAddress>,
     context: &WalletContext,
     client: &Client,
 ) -> Result<SignOutput, anyhow::Error> {
     let secp = Secp256k1::new();
+
+    let signer = match signer {
+        Some(signer) => Some(context.resolve_bitcoin_address(signer).await?),
+        None => None,
+    };
 
     let multisign_account_module = client.as_module_binding::<MultisignAccountModule>();
 
@@ -93,7 +103,7 @@ pub(crate) async fn sign_psbt(
             let rooch_addr = addr.to_rooch_address();
             if multisign_account_module.is_multisign_account(rooch_addr.into())? {
                 let account_info = client.rooch.get_multisign_account_info(rooch_addr).await?;
-
+                debug!("Account info: {:?}", account_info);
                 let (control_block, (multisig_script, leaf_version)) = input
                     .tap_scripts
                     .iter()
@@ -113,6 +123,11 @@ pub(crate) async fn sign_psbt(
                 )?;
                 debug!("Calculated sighash: {:?}", sighash);
                 for participant in account_info.participants.values() {
+                    if let Some(signer) = &signer {
+                        if signer != &participant.participant_bitcoin_address {
+                            continue;
+                        }
+                    }
                     let participant_addr: RoochAddress = participant.participant_address.into();
                     if context.keystore.contains_address(&participant_addr) {
                         debug!("Signing for participant: {}", participant_addr);
@@ -137,26 +152,44 @@ pub(crate) async fn sign_psbt(
                 //Try to finalize the psbt
                 if input.tap_script_sigs.len() >= account_info.threshold as usize {
                     //TODO handle multiple tap_leaf case
+
                     //make sure the signature order same as the public key order
-                    let mut ordered_signatures = BTreeMap::new();
-                    for participant in account_info.participants.values() {
-                        let xonly_pubkey = participant.x_only_public_key()?;
+                    let mut ordered_signatures = vec![];
+                    let mut x_only_public_keys = account_info
+                        .participants
+                        .values()
+                        .iter()
+                        .map(|p| p.x_only_public_key())
+                        .collect::<Result<Vec<_>>>()?;
+                    x_only_public_keys.sort();
+                    //Becase the stack is LIFO, we need to reverse the order
+                    x_only_public_keys.reverse();
+
+                    debug!("Ordered public keys before sign: {:?}", x_only_public_keys);
+
+                    for xonly_pubkey in x_only_public_keys {
                         if let Some(sig) =
                             input.tap_script_sigs.remove(&(xonly_pubkey, tap_leaf_hash))
                         {
-                            ordered_signatures.insert(xonly_pubkey, sig);
+                            ordered_signatures.push(sig.to_vec());
+                        } else {
+                            //insert empty signature to ensure the order
+                            ordered_signatures.push(vec![]);
                         }
                     }
 
-                    debug!("Collected signatures: {}", ordered_signatures.len());
+                    debug!("Collected signatures: {:?}", ordered_signatures);
 
                     let mut witness = Witness::new();
-
-                    for (_, sig) in ordered_signatures
-                        .iter()
-                        .take(account_info.threshold as usize)
-                    {
-                        witness.push(sig.to_vec());
+                    //let mut valid_sig_count:u64 = 0;
+                    for sig in ordered_signatures {
+                        // if !sig.is_empty() {
+                        //     valid_sig_count += 1;
+                        // }
+                        witness.push(sig);
+                        // if valid_sig_count >= account_info.threshold {
+                        //     break;
+                        // }
                     }
 
                     witness.push(multisig_script.as_bytes());
