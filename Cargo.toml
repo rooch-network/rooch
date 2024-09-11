@@ -131,6 +131,7 @@ data-verify = { path = "crates/data_verify" }
 rooch-db = { path = "crates/rooch-db" }
 rooch-event = { path = "crates/rooch-event" }
 rooch-ord = { path = "crates/rooch-ord" }
+rooch-cosmwasm-vm = { path = "crates/rooch-cosmwasm-vm" }
 
 # frameworks
 framework-types = { path = "frameworks/framework-types" }

@@ -14,6 +14,26 @@ use moveos_types::{
 };
 use std::collections::VecDeque;
 
+
+
+#[derive(Debug, Clone)]
+pub struct CommonGasParameters {
+    pub load_base: InternalGas,
+    pub load_per_byte: InternalGasPerByte,
+    pub load_failure: InternalGas,
+}
+
+impl CommonGasParameters {
+    fn calculate_load_cost(&self, loaded: Option<Option<NumBytes>>) -> InternalGas {
+        self.load_base
+            + match loaded {
+                Some(Some(num_bytes)) => self.load_per_byte * num_bytes,
+                Some(None) => self.load_failure,
+                None => 0.into(),
+            }
+    }
+}
+
 // =========================================================================================
 // Helpers
 
