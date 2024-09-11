@@ -1,16 +1,22 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{ensure, Error, Result};
 use jsonrpsee::core::client::ClientT;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
-use move_core_types::language_storage::ModuleId;
+use move_core_types::account_address::AccountAddress;
+use move_core_types::language_storage::{ModuleId, StructTag};
 use move_core_types::metadata::Metadata;
-use move_core_types::resolver::ModuleResolver;
+use move_core_types::resolver::{ModuleResolver, ResourceResolver};
 use moveos_types::access_path::AccessPath;
+use moveos_types::h256::H256;
 use moveos_types::move_std::string::MoveString;
+use moveos_types::moveos_std::account::Account;
 use moveos_types::moveos_std::move_module::MoveModule;
-use moveos_types::state::ObjectState;
+use moveos_types::moveos_std::object::{ObjectID, ObjectMeta, RawField};
+use moveos_types::state::{FieldKey, MoveType, ObjectState};
+use moveos_types::state_resolver::{StateKV, StateResolver, StatelessResolver};
+use moveos_types::state_root_hash::StateRootHash;
 use moveos_types::{
     function_return_value::FunctionResult, module_binding::MoveFunctionCaller,
     moveos_std::tx_context::TxContext, transaction::FunctionCall,
@@ -109,7 +115,10 @@ impl ModuleResolver for &Client {
     fn get_module(&self, id: &ModuleId) -> Result<Option<Vec<u8>>> {
         tokio::task::block_in_place(|| {
             Handle::current().block_on(async {
-                let mut states = self.rooch.get_states(AccessPath::module(id)).await?;
+                let mut states = self
+                    .rooch
+                    .get_states(AccessPath::module(id), StateRootHash::empty())
+                    .await?;
                 states
                     .pop()
                     .flatten()
@@ -121,5 +130,116 @@ impl ModuleResolver for &Client {
                     .transpose()
             })
         })
+    }
+}
+
+#[derive(Clone)]
+pub struct ClientResolver {
+    root: ObjectMeta,
+    client: Client,
+}
+
+impl ClientResolver {
+    pub fn new(client: Client, root: ObjectMeta) -> Self {
+        Self { root, client }
+    }
+}
+
+impl ResourceResolver for ClientResolver {
+    fn get_resource_with_metadata(
+        &self,
+        address: &AccountAddress,
+        resource_tag: &StructTag,
+        _metadata: &[Metadata],
+    ) -> std::result::Result<(Option<Vec<u8>>, usize), Error> {
+        let account_object_id = Account::account_object_id(*address);
+
+        let key = FieldKey::derive_resource_key(resource_tag);
+        let result = self
+            .get_field(&account_object_id, &key)?
+            .map(|s| {
+                ensure!(
+                    s.match_dynamic_field_type(MoveString::type_tag(), resource_tag.clone().into()),
+                    "Resource type mismatch, expected field value type: {:?}, actual: {:?}",
+                    resource_tag,
+                    s.object_type()
+                );
+                let field = RawField::parse_resource_field(&s.value, resource_tag.clone().into())?;
+                Ok(field.value)
+            })
+            .transpose();
+
+        match result {
+            Ok(opt) => {
+                if let Some(data) = opt {
+                    Ok((Some(data), 0))
+                } else {
+                    Ok((None, 0))
+                }
+            }
+            Err(err) => Err(err),
+        }
+    }
+}
+
+impl ModuleResolver for ClientResolver {
+    fn get_module_metadata(&self, _module_id: &ModuleId) -> Vec<Metadata> {
+        vec![]
+    }
+
+    fn get_module(&self, id: &ModuleId) -> std::result::Result<Option<Vec<u8>>, Error> {
+        (&self.client).get_module(id)
+    }
+}
+
+impl StatelessResolver for ClientResolver {
+    fn get_field_at(&self, state_root: H256, key: &FieldKey) -> Result<Option<ObjectState>, Error> {
+        tokio::task::block_in_place(|| {
+            Handle::current().block_on(async {
+                let access_path = AccessPath::object(ObjectID::new(key.0));
+                let mut object_state_view_list = self
+                    .client
+                    .rooch
+                    .get_states(
+                        access_path,
+                        StateRootHash::new(hex::encode(state_root.0.as_slice()).as_str()),
+                    )
+                    .await?;
+                Ok(object_state_view_list.pop().flatten().map(|state_view| {
+                    let v: ObjectState = state_view.into();
+                    v
+                }))
+            })
+        })
+    }
+
+    fn list_fields_at(
+        &self,
+        state_root: H256,
+        cursor: Option<FieldKey>,
+        limit: usize,
+    ) -> Result<Vec<StateKV>> {
+        tokio::task::block_in_place(|| {
+            Handle::current().block_on(async {
+                let object_id = ObjectID::new(state_root.0);
+                let field_cursor = cursor.map(|field_key| field_key.to_hex_literal());
+                let fields_states = self
+                    .client
+                    .rooch
+                    .list_field_states(object_id.into(), field_cursor, Some(limit as u64), None)
+                    .await?;
+                Ok(fields_states
+                    .data
+                    .iter()
+                    .map(|item| StateKV::from((item.field_key.into(), item.state.clone().into())))
+                    .collect())
+            })
+        })
+    }
+}
+
+impl StateResolver for ClientResolver {
+    fn root(&self) -> &ObjectMeta {
+        &self.root
     }
 }

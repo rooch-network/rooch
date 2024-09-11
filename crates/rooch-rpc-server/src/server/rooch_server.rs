@@ -8,6 +8,7 @@ use jsonrpsee::{core::async_trait, RpcModule};
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
 };
+use moveos_types::state_root_hash::StateRootHash;
 use moveos_types::{
     access_path::AccessPath,
     h256::H256,
@@ -25,8 +26,9 @@ use rooch_rpc_api::jsonrpc_types::{
     IndexerEventPageView, IndexerObjectStatePageView, IndexerStateIDView, ModuleABIView,
     ObjectIDVecView, ObjectStateFilterView, ObjectStateView, QueryOptions,
     RawTransactionOutputView, RoochAddressView, StateChangeSetPageView,
-    StateChangeSetWithTxOrderView, StateKVView, StateOptions, StatePageView, StrView,
-    StructTagView, SyncStateFilterView, TransactionWithInfoPageView, TxOptions, UnitedAddressView,
+    StateChangeSetWithTxOrderView, StateKVView, StateOptions, StatePageView, StateRootHashView,
+    StrView, StructTagView, SyncStateFilterView, TransactionWithInfoPageView, TxOptions,
+    UnitedAddressView,
 };
 use rooch_rpc_api::{
     api::rooch_api::RoochAPIServer,
@@ -196,6 +198,7 @@ impl RoochAPIServer for RoochServer {
     async fn get_states(
         &self,
         access_path: AccessPathView,
+        state_root: StateRootHashView,
         state_option: Option<StateOptions>,
     ) -> RpcResult<Vec<Option<ObjectStateView>>> {
         let state_option = state_option.unwrap_or_default();
@@ -212,7 +215,7 @@ impl RoochAPIServer for RoochServer {
                 let valid_states = states.iter().filter_map(|s| s.as_ref()).collect::<Vec<_>>();
                 let mut valid_display_field_views = self
                     .rpc_service
-                    .get_display_fields_and_render(valid_states.as_slice())
+                    .get_display_fields_and_render(valid_states.as_slice(), state_root.0)
                     .await?;
                 valid_display_field_views.reverse();
                 states
@@ -236,7 +239,7 @@ impl RoochAPIServer for RoochServer {
             }
         } else {
             self.rpc_service
-                .get_states(access_path.into())
+                .get_states(access_path.into(), state_root.0)
                 .await?
                 .into_iter()
                 .map(|s| s.map(ObjectStateView::from))
@@ -275,7 +278,7 @@ impl RoochAPIServer for RoochServer {
             if show_display {
                 let display_field_views = self
                     .rpc_service
-                    .get_display_fields_and_render(state_refs.as_slice())
+                    .get_display_fields_and_render(state_refs.as_slice(), StateRootHash::empty())
                     .await?;
                 key_states
                     .into_iter()
@@ -335,7 +338,7 @@ impl RoochAPIServer for RoochServer {
             let mut valid_display_field_views = if show_display {
                 let valid_states = states.iter().filter_map(|s| s.as_ref()).collect::<Vec<_>>();
                 self.rpc_service
-                    .get_display_fields_and_render(valid_states.as_slice())
+                    .get_display_fields_and_render(valid_states.as_slice(), StateRootHash::empty())
                     .await?
             } else {
                 vec![]
@@ -368,7 +371,7 @@ impl RoochAPIServer for RoochServer {
             }
         } else {
             self.rpc_service
-                .get_states(access_path)
+                .get_states(access_path, StateRootHash::empty())
                 .await?
                 .into_iter()
                 .map(|s| s.map(Into::into))
@@ -621,7 +624,7 @@ impl RoochAPIServer for RoochServer {
         let access_path = AccessPath::module(&module_id);
         let module = self
             .rpc_service
-            .get_states(access_path)
+            .get_states(access_path, StateRootHash::empty())
             .await?
             .pop()
             .flatten();

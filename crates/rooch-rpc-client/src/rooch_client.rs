@@ -10,6 +10,7 @@ use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::account::Account;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::{FieldKey, MoveStructState};
+use moveos_types::state_root_hash::StateRootHash;
 use moveos_types::{access_path::AccessPath, state::ObjectState, transaction::FunctionCall};
 use rooch_rpc_api::api::btc_api::BtcAPIClient;
 use rooch_rpc_api::api::rooch_api::RoochAPIClient;
@@ -92,18 +93,24 @@ impl RoochRpcClient {
     pub async fn get_states(
         &self,
         access_path: AccessPath,
+        state_root: StateRootHash,
     ) -> Result<Vec<Option<ObjectStateView>>> {
-        Ok(self.http.get_states(access_path.into(), None).await?)
+        Ok(self
+            .http
+            .get_states(access_path.into(), state_root.into(), None)
+            .await?)
     }
 
     pub async fn get_decoded_states(
         &self,
         access_path: AccessPath,
+        state_root: StateRootHash,
     ) -> Result<Vec<Option<ObjectStateView>>> {
         Ok(self
             .http
             .get_states(
                 access_path.into(),
+                state_root.into(),
                 Some(StateOptions::default().decode(true)),
             )
             .await?)
@@ -117,6 +124,7 @@ impl RoochRpcClient {
             .http
             .get_states(
                 access_path.into(),
+                StateRootHash::empty().into(),
                 Some(StateOptions::default().decode(true).show_display(true)),
             )
             .await?)
@@ -168,9 +176,10 @@ impl RoochRpcClient {
 
     pub async fn get_sequence_number(&self, sender: RoochAddress) -> Result<u64> {
         Ok(self
-            .get_states(AccessPath::object(Account::account_object_id(
-                sender.into(),
-            )))
+            .get_states(
+                AccessPath::object(Account::account_object_id(sender.into())),
+                StateRootHash::empty(),
+            )
             .await?
             .pop()
             .flatten()
@@ -375,7 +384,7 @@ impl RoochRpcClient {
         account: RoochAddress,
     ) -> Result<Option<T>> {
         let access_path = AccessPath::resource(account.into(), T::struct_tag());
-        let mut states = self.get_states(access_path).await?;
+        let mut states = self.get_states(access_path, StateRootHash::empty()).await?;
         let state = states.pop().flatten();
         if let Some(state) = state {
             let state = ObjectState::from(state);

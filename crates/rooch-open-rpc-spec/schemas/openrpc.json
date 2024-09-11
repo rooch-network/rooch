@@ -424,6 +424,13 @@
           }
         },
         {
+          "name": "state_root",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/moveos_types::state_root_hash::StateRootHash"
+          }
+        },
+        {
           "name": "state_option",
           "schema": {
             "$ref": "#/components/schemas/StateOptions"
@@ -3400,6 +3407,9 @@
         "type": "string"
       },
       "moveos_types::state::FieldKey": {
+        "type": "string"
+      },
+      "moveos_types::state_root_hash::StateRootHash": {
         "type": "string"
       },
       "primitive_types::H256": {

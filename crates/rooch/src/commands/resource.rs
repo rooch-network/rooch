@@ -6,6 +6,7 @@ use async_trait::async_trait;
 use clap::Parser;
 use move_command_line_common::types::ParsedStructType;
 use moveos_types::access_path::AccessPath;
+use moveos_types::state_root_hash::StateRootHash;
 use rooch_rpc_api::jsonrpc_types::ObjectStateView;
 use rooch_types::{address::ParsedAddress, error::RoochResult};
 
@@ -49,7 +50,10 @@ impl CommandAction<Option<ObjectStateView>> for ResourceCommand {
         } else {
             client
                 .rooch
-                .get_decoded_states(AccessPath::resource(address, resource))
+                .get_decoded_states(
+                    AccessPath::resource(address, resource),
+                    StateRootHash::empty(),
+                )
                 .await?
                 .pop()
                 .flatten()

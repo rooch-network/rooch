@@ -28,6 +28,7 @@ use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::{FieldKey, StateChangeSetExt};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
+use moveos_types::state_root_hash::StateRootHash;
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
@@ -116,9 +117,16 @@ impl ExecutorProxy {
             .await?
     }
 
-    pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<ObjectState>>> {
+    pub async fn get_states(
+        &self,
+        access_path: AccessPath,
+        state_root: StateRootHash,
+    ) -> Result<Vec<Option<ObjectState>>> {
         self.reader_actor
-            .send(StatesMessage { access_path })
+            .send(StatesMessage {
+                state_root,
+                access_path,
+            })
             .await?
     }
 
@@ -261,29 +269,38 @@ impl ExecutorProxy {
     }
 
     pub async fn chain_id(&self) -> Result<ChainID> {
-        self.get_states(AccessPath::object(ChainID::chain_id_object_id()))
-            .await?
-            .into_iter()
-            .next()
-            .ok_or_else(|| anyhow::anyhow!("chain id not found"))
-            .and_then(|state| state.ok_or_else(|| anyhow::anyhow!("chain id not found")))
-            .and_then(|state| Ok(state.into_object::<ChainID>()?.value))
+        self.get_states(
+            AccessPath::object(ChainID::chain_id_object_id()),
+            StateRootHash::empty(),
+        )
+        .await?
+        .into_iter()
+        .next()
+        .ok_or_else(|| anyhow::anyhow!("chain id not found"))
+        .and_then(|state| state.ok_or_else(|| anyhow::anyhow!("chain id not found")))
+        .and_then(|state| Ok(state.into_object::<ChainID>()?.value))
     }
 
     pub async fn bitcoin_network(&self) -> Result<BitcoinNetwork> {
-        self.get_states(AccessPath::object(BitcoinNetwork::object_id()))
-            .await?
-            .into_iter()
-            .next()
-            .ok_or_else(|| anyhow::anyhow!("bitcoin network not found"))
-            .and_then(|state| state.ok_or_else(|| anyhow::anyhow!("bitcoin network not found")))
-            .and_then(|state| Ok(state.into_object::<BitcoinNetwork>()?.value))
+        self.get_states(
+            AccessPath::object(BitcoinNetwork::object_id()),
+            StateRootHash::empty(),
+        )
+        .await?
+        .into_iter()
+        .next()
+        .ok_or_else(|| anyhow::anyhow!("bitcoin network not found"))
+        .and_then(|state| state.ok_or_else(|| anyhow::anyhow!("bitcoin network not found")))
+        .and_then(|state| Ok(state.into_object::<BitcoinNetwork>()?.value))
     }
 
     //TODO provide a trait to abstract the async state reader, elemiate the duplicated code bwteen RpcService and Client
     pub async fn get_sequence_number(&self, address: AccountAddress) -> Result<u64> {
         Ok(self
-            .get_states(AccessPath::object(Account::account_object_id(address)))
+            .get_states(
+                AccessPath::object(Account::account_object_id(address)),
+                StateRootHash::empty(),
+            )
             .await?
             .pop()
             .flatten()
