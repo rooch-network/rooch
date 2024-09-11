@@ -113,10 +113,6 @@ pub fn generate_multisign_address(
     // Sort public keys to ensure the same script is generated for the same set of keys
     x_only_public_keys.sort();
 
-    // let x_only_public_keys = x_only_public_keys
-    //     .into_iter()
-    //     .map(|pk| XOnlyPublicKey::from_slice(&pk))
-    //     .collect::<Result<Vec<_>, bitcoin::secp256k1::Error>>()?;
     let multisig_script = create_multisig_script(threshold, &x_only_public_keys);
 
     let builder = TaprootBuilder::new().add_leaf(0, multisig_script)?;
