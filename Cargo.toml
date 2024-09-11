@@ -75,7 +75,7 @@ license = "Apache-2.0"
 publish = false
 repository = "https://github.com/rooch-network/rooch"
 rust-version = "1.78.0"
-version = "0.7.0"
+version = "0.7.1"
 
 [workspace.dependencies]
 # Internal crate dependencies.
