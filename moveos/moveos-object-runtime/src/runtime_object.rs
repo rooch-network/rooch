@@ -28,7 +28,7 @@ use moveos_types::{
         timestamp::Timestamp,
     },
     state::{FieldKey, MoveState, MoveType, ObjectChange, ObjectState},
-    state_resolver::{StatelessResolver, StateKV},
+    state_resolver::StatelessResolver,
 };
 use std::collections::{btree_map::Entry, BTreeMap};
 
@@ -248,24 +248,20 @@ impl RuntimeObject {
     ) -> PartialVMResult<(RuntimeObject, Option<Option<NumBytes>>)> {
         let state_root = self.state_root()?;
         let field_obj_id = self.id().child_id(field_key);
-       
+
         match resolver
             .get_field_at(state_root, &field_key)
             .map_err(|err| {
-                partial_extension_error(format!(
-                    "remote object resolver failure: {}",
-                    err
-                ))
+                partial_extension_error(format!("remote object resolver failure: {}", err))
             })? {
             Some(obj_state) => {
                 debug_assert!(
                     obj_state.metadata.id == field_obj_id,
                     "The loaded object id should be equal to the expected field object id"
                 );
-                let value_layout =
-                    layout_loader.get_type_layout(obj_state.object_type())?;
+                let value_layout = layout_loader.get_type_layout(obj_state.object_type())?;
                 let state_bytes_len = obj_state.value.len() as u64;
-    
+
                 Ok((
                     RuntimeObject::load(value_layout, obj_state)?,
                     Some(Some(NumBytes::new(state_bytes_len))),
@@ -275,8 +271,8 @@ impl RuntimeObject {
         }
     }
 
-     /// List fields of the object from the state store.
-     pub fn list_fields(
+    /// List fields of the object from the state store.
+    pub fn list_fields(
         &self,
         layout_loader: &dyn TypeLayoutLoader,
         resolver: &dyn StatelessResolver,
@@ -287,21 +283,17 @@ impl RuntimeObject {
         let state_kvs = resolver
             .list_fields_at(state_root, cursor, limit)
             .map_err(|err| {
-                partial_extension_error(format!(
-                    "remote object resolver failure: {}",
-                    err
-                ))
+                partial_extension_error(format!("remote object resolver failure: {}", err))
             })?;
 
         let mut fields = Vec::new();
-        for (key, obj_state ) in state_kvs {
+        for (key, obj_state) in state_kvs {
             let field_obj_id = self.id().child_id(key);
             debug_assert!(
                 obj_state.metadata.id == field_obj_id,
                 "The loaded object id should be equal to the expected field object id"
             );
-            let value_layout =
-                layout_loader.get_type_layout(obj_state.object_type())?;
+            let value_layout = layout_loader.get_type_layout(obj_state.object_type())?;
             let state_bytes_len = obj_state.value.len() as u64;
             fields.push((
                 key,
@@ -312,7 +304,7 @@ impl RuntimeObject {
 
         Ok(fields)
     }
-    
+
     pub fn get_loaded_field(&self, field_key: &FieldKey) -> Option<&RuntimeObject> {
         self.fields
             .get(field_key)

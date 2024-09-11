@@ -65,10 +65,7 @@ impl ModuleMiddleware for GasMiddleware {
         })
     }
 
-    fn transform_module_info(
-        &self,
-        module_info: &mut wasmer_types::ModuleInfo,
-    ) {
+    fn transform_module_info(&self, module_info: &mut wasmer_types::ModuleInfo) {
         // Insert the signature for the charge function
         let charge_signature = FunctionType::new(vec![Type::I64], vec![]);
         let charge_signature_index = module_info.signatures.push(charge_signature);

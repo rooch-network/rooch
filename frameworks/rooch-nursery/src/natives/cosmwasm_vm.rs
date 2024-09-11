@@ -25,7 +25,6 @@ use moveos_stdlib::natives::helpers::{make_module_natives, make_native};
 
 use crate::natives::helper::pop_object_id;
 
-
 const E_WASM_ERROR: u64 = 1;
 
 #[derive(Debug, Clone)]
@@ -42,34 +41,31 @@ impl CosmWasmCreateInstanceGasParameters {
 /***************************************************************************************************
  * native fun native_create_instance
  **************************************************************************************************/
- #[inline]
- fn native_create_instance(
+#[inline]
+fn native_create_instance(
     gas_parameters: &CosmWasmCreateInstanceGasParameters,
-     _context: &mut NativeContext,
-     ty_args: Vec<Type>,
-     mut args: VecDeque<Value>,
- ) -> PartialVMResult<NativeResult> {
+    _context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
     assert!(ty_args.len() == 0, "Wrong number of type arguments");
     assert!(args.len() == 2, "Wrong number of arguments");
- 
+
     let store_obj_id = pop_object_id(&mut args)?;
     let wasm_bytes = pop_arg!(args, Vec<u8>);
-  
+
     info!("native_create_instance wasm_bytes:{:?}", wasm_bytes);
     info!("native_create_instance store_obj_id:{:?}", store_obj_id);
 
-     // Mock implementation: Always return a fixed instance ID
-     let instance_id = b"mock_instance_id".to_vec();
-     let result_code = 0u64; // 0 indicates success
- 
-     Ok(NativeResult::ok(
+    // Mock implementation: Always return a fixed instance ID
+    let instance_id = b"mock_instance_id".to_vec();
+    let result_code = 0u64; // 0 indicates success
+
+    Ok(NativeResult::ok(
         gas_parameters.base,
-         smallvec![
-             Value::vector_u8(instance_id),
-             Value::u64(result_code),
-         ],
-     ))
- }
+        smallvec![Value::vector_u8(instance_id), Value::u64(result_code),],
+    ))
+}
 
 #[derive(Debug, Clone)]
 pub struct CosmWasmDestroyInstanceGasParameters {
@@ -97,8 +93,6 @@ fn native_destroy_instance(
 
     Ok(NativeResult::ok(gas_params.base, smallvec![Value::u64(0)]))
 }
-
-
 
 /***************************************************************************************************
  * module
