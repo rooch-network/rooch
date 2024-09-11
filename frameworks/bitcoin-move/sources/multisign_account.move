@@ -104,6 +104,7 @@ module bitcoin_move::multisign_account{
     }
 
     public fun generate_multisign_address(threshold: u64, public_keys: vector<vector<u8>>): BitcoinAddress{
+        assert!(vector::length(&public_keys) >= threshold, ErrorInvalidThreshold);
         let to_x_only_public_keys = to_x_only_public_keys(public_keys);
         //We need to sort the public keys to generate the same multisign address
         //And we sort the x_only_public_keys, not the original public keys
