@@ -1021,6 +1021,24 @@ impl Default for StateChangeSet {
     }
 }
 
+/// Global State change set ext.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct StateChangeSetExt {
+    /// The state change set
+    pub state_change_set: StateChangeSet,
+    /// Sequence number of this transaction corresponding to sender's account.
+    pub sequence_number: u64,
+}
+
+impl StateChangeSetExt {
+    pub fn new(state_change_set: StateChangeSet, sequence_number: u64) -> Self {
+        Self {
+            state_change_set,
+            sequence_number,
+        }
+    }
+}
+
 mod op_serde {
     use super::*;
     use serde::{Deserialize, Deserializer, Serialize, Serializer};

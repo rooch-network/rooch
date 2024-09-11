@@ -4,8 +4,8 @@
 use crate::actor::messages::{
     ConvertL2TransactionData, DryRunTransactionResult, GetAnnotatedEventsByEventIDsMessage,
     GetEventsByEventHandleMessage, GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage,
-    ListAnnotatedStatesMessage, ListStatesMessage, RefreshStateMessage, ValidateL1BlockMessage,
-    ValidateL1TxMessage,
+    ListAnnotatedStatesMessage, ListStatesMessage, RefreshStateMessage, SaveStateChangeSetMessage,
+    ValidateL1BlockMessage, ValidateL1TxMessage,
 };
 use crate::actor::reader_executor::ReaderExecutorActor;
 use crate::actor::{
@@ -15,7 +15,7 @@ use crate::actor::{
         StatesMessage, ValidateL2TxMessage,
     },
 };
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use coerce::actor::ActorRef;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
@@ -26,7 +26,7 @@ use moveos_types::moveos_std::account::Account;
 use moveos_types::moveos_std::event::{Event, EventID};
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::moveos_std::tx_context::TxContext;
-use moveos_types::state::FieldKey;
+use moveos_types::state::{FieldKey, StateChangeSetExt};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
@@ -235,6 +235,20 @@ impl ExecutorProxy {
             .send(crate::actor::messages::GetRootMessage {})
             .await??;
         self.refresh_state(root.metadata, false).await
+    }
+
+    pub async fn save_state_change_set(
+        &self,
+        tx_order: u64,
+        state_change_set: StateChangeSetExt,
+    ) -> Result<()> {
+        self.actor
+            .notify(SaveStateChangeSetMessage {
+                tx_order,
+                state_change_set,
+            })
+            .await
+            .map_err(|e| anyhow!(format!("Save state change set error: {:?}", e)))
     }
 
     pub async fn chain_id(&self) -> Result<ChainID> {
