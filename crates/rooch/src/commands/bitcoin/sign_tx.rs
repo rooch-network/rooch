@@ -181,15 +181,8 @@ pub(crate) async fn sign_psbt(
                     debug!("Collected signatures: {:?}", ordered_signatures);
 
                     let mut witness = Witness::new();
-                    //let mut valid_sig_count:u64 = 0;
                     for sig in ordered_signatures {
-                        // if !sig.is_empty() {
-                        //     valid_sig_count += 1;
-                        // }
                         witness.push(sig);
-                        // if valid_sig_count >= account_info.threshold {
-                        //     break;
-                        // }
                     }
 
                     witness.push(multisig_script.as_bytes());
