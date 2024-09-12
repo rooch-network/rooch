@@ -3,6 +3,7 @@
 
 use super::{FileOutput, FileOutputData};
 use crate::cli_types::{CommandAction, FileOrHexInput, WalletContextOptions};
+use crate::utils::prompt_yes_no;
 use async_trait::async_trait;
 use moveos_types::module_binding::MoveFunctionCaller;
 use rooch_key::keystore::account_keystore::AccountKeystore;
@@ -50,7 +51,6 @@ impl SignInput {
         }
     }
 }
-
 pub enum SignOutput {
     SignedRoochTransaction(RoochTransaction),
     PartiallySignedRoochTransaction(PartiallySignedRoochTransaction),
@@ -90,6 +90,10 @@ pub struct SignCommand {
     /// If not specified, the signed output will write to temp directory.
     #[clap(long, short = 'o')]
     output: Option<String>,
+
+    /// Automatically answer 'yes' to all prompts
+    #[clap(long = "yes", short = 'y')]
+    answer_yes: bool,
 
     /// Return command outputs in json format
     #[clap(long, default_value = "false")]
@@ -175,11 +179,47 @@ impl SignCommand {
         };
         Ok(output)
     }
+
+    fn print_tx_details(input: &SignInput) {
+        let tx_data = |tx_data: &RoochTransactionData| -> String {
+            format!(
+                " Sender: {}\n Sequence number: {}\n Chain id: {}\n Max gas amount: {}\n Action: {}\n Transaction hash: {}\n",
+                tx_data.sender,
+                tx_data.sequence_number,
+                tx_data.chain_id,
+                tx_data.max_gas_amount,
+                tx_data.action,
+                tx_data.tx_hash()
+            )
+        };
+
+        match input {
+            SignInput::RoochTransactionData(tx) => {
+                println!("Transaction data:\n{}", tx_data(tx));
+            }
+            SignInput::PartiallySignedRoochTransaction(pstx) => {
+                println!(
+                    "Partially signed transaction data:\n{}",
+                    tx_data(&pstx.data)
+                );
+                println!(
+                    " Collected signatures: {}/{}",
+                    pstx.authenticators.len(),
+                    pstx.threshold
+                );
+            }
+        }
+    }
 }
 
 #[async_trait]
 impl CommandAction<Option<FileOutput>> for SignCommand {
     async fn execute(self) -> RoochResult<Option<FileOutput>> {
+        let sign_input = SignInput::try_from(self.input.clone())?;
+        SignCommand::print_tx_details(&sign_input);
+        if !self.answer_yes && !prompt_yes_no("Do you want to sign this transaction?") {
+            return Ok(None);
+        }
         let json = self.json;
         let output = self.output.clone();
         let sign_output = self.sign().await?;
