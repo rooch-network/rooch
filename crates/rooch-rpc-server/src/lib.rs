@@ -55,6 +55,7 @@ use std::{env, panic, process};
 use tokio::signal;
 use tokio::sync::broadcast;
 use tokio::sync::broadcast::Sender;
+use tower_governor::key_extractor::PeerIpKeyExtractor;
 use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
@@ -421,50 +422,55 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         .allow_origin(acl)
         .allow_headers([axum::http::header::CONTENT_TYPE]);
 
-    // init limit
-    // Allow bursts with up to x requests per IP address
-    // and replenishes one element every x seconds
-    // We Box it because Axum 0.6 requires all Layers to be Clone
-    // and thus we need a static reference to it
-    let governor_conf = Arc::new(
-        GovernorConfigBuilder::default()
-            .per_second(opt.traffic_per_second.unwrap_or(1))
-            .burst_size(opt.traffic_burst_size.unwrap_or(100))
-            .use_headers()
-            .error_handler(move |error1| ErrorHandler::default().0(error1))
-            .finish()
-            .unwrap(),
-    );
-
-    let governor_limiter = governor_conf.limiter().clone();
-    let interval = Duration::from_secs(60);
     let (shutdown_tx, mut governor_rx): (broadcast::Sender<()>, broadcast::Receiver<()>) =
         broadcast::channel(16);
 
-    // a separate background task to clean up
-    std::thread::spawn(move || loop {
-        if governor_rx.try_recv().is_ok() {
-            info!("Background thread received cancel signal, stopping.");
-            break;
-        }
+    let _ = if network.chain_id != BuiltinChainID::Local.chain_id() {
+        // init limit
+        // Allow bursts with up to x requests per IP address
+        // and replenishes one element every x seconds
+        // We Box it because Axum 0.6 requires all Layers to be Clone
+        // and thus we need a static reference to it
+        let governor_conf = Arc::new(
+            GovernorConfigBuilder::default()
+                .per_second(opt.traffic_per_second.unwrap_or(1))
+                .burst_size(opt.traffic_burst_size.unwrap_or(100))
+                .use_headers()
+                .error_handler(move |error1| ErrorHandler::default().0(error1))
+                .finish()
+                .unwrap(),
+        );
 
-        std::thread::sleep(interval);
+        let governor_limiter = governor_conf.limiter().clone();
+        let interval = Duration::from_secs(60);
 
-        tracing::info!("rate limiting storage size: {}", governor_limiter.len());
-        governor_limiter.retain_recent();
-    });
+        // a separate background task to clean up
+        std::thread::spawn(move || loop {
+            if governor_rx.try_recv().is_ok() {
+                info!("Background thread received cancel signal, stopping.");
+                break;
+            }
+
+            std::thread::sleep(interval);
+
+            tracing::info!("rate limiting storage size: {}", governor_limiter.len());
+            governor_limiter.retain_recent();
+        });
+
+        Some(GovernorLayer {
+            config: governor_conf,
+        })
+    } else {
+        None
+    };
 
     let blocklist_config = Arc::new(BlocklistConfig::default());
 
     let middleware = tower::ServiceBuilder::new()
         .layer(TraceLayer::new_for_http())
         .layer(cors)
-        // .layer_fn(RpcLogger)
         .layer(BlockListLayer {
             config: blocklist_config,
-        })
-        .layer(GovernorLayer {
-            config: governor_conf,
         });
 
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
