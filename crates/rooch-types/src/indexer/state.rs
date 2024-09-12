@@ -293,7 +293,6 @@ pub fn collect_revert_object_change_ids(
             }
             Op::New(_value) => {}
         }
-    } else {
     }
 
     for (_key, change) in fields {
@@ -365,13 +364,6 @@ impl Filter<IndexerObjectState> for ObjectStateFilter {
     fn matches(&self, item: &IndexerObjectState) -> bool {
         self.try_matches(item).unwrap_or_default()
     }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum StateSyncFilter {
-    /// Query by object id.
-    ObjectId(ObjectID),
 }
 
 #[derive(Clone, Debug)]

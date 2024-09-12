@@ -214,8 +214,6 @@ impl IndexerProxy {
     pub async fn revert_indexer(
         &self,
         revert_tx_order: u64,
-        // revert_ledger_tx: LedgerTransaction,
-        // revert_execution_info: TransactionExecutionInfo,
         revert_state_change_set: StateChangeSetExt,
         root: ObjectMeta,
         object_mapping: HashMap<ObjectID, ObjectMeta>,
@@ -223,8 +221,6 @@ impl IndexerProxy {
         self.actor
             .notify(IndexerRevertMessage {
                 revert_tx_order,
-                // revert_ledger_tx,
-                // revert_execution_info,
                 revert_state_change_set,
                 root,
                 object_mapping,

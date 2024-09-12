@@ -163,7 +163,6 @@ impl RollbackCommand {
                 .rooch_store
                 .get_state_change_set(previous_tx_order)?;
             if previous_state_change_set_ext_opt.is_some() && state_change_set_ext_opt.is_some() {
-                // let previoud_state_root = previous_state_change_set_ext_opt.unwrap().state_change_set.state_root;
                 let previous_state_change_set_ext = previous_state_change_set_ext_opt.unwrap();
                 let state_change_set_ext = state_change_set_ext_opt.unwrap();
 
@@ -171,7 +170,7 @@ impl RollbackCommand {
                 for (_feild_key, object_change) in
                     state_change_set_ext.state_change_set.changes.clone()
                 {
-                    let _ = collect_revert_object_change_ids(object_change, &mut object_ids)?;
+                    collect_revert_object_change_ids(object_change, &mut object_ids)?;
                 }
 
                 let root = ObjectMeta::root_metadata(
@@ -185,8 +184,6 @@ impl RollbackCommand {
                     .flatten()
                     .map(|v| (v.metadata.id.clone(), v.metadata))
                     .collect::<HashMap<_, _>>();
-                // let
-                // rooch_db.indexer_store.
 
                 // 1. revert indexer transaction
                 rooch_db
@@ -205,16 +202,8 @@ impl RollbackCommand {
                 let mut state_index_generator = IndexerObjectStatesIndexGenerator::default();
                 let mut indexer_object_state_change_set = IndexerObjectStateChangeSet::default();
 
-                // // set genesis tx_order and state_index_generator for new indexer revert
-                // let tx_order: u64 = 0;
-                // let last_state_index = self
-                //     .query_last_state_index_by_tx_order(tx_order, state_type.clone())
-                //     .await?;
-                // let mut state_index_generator = last_state_index.map_or(0, |x| x + 1);
-
-                // let object_mapping = HashMap::<ObjectID, ObjectMeta>::new();
                 for (_feild_key, object_change) in state_change_set_ext.state_change_set.changes {
-                    let _ = handle_revert_object_change(
+                    handle_revert_object_change(
                         &mut state_index_generator,
                         tx_order,
                         &mut indexer_object_state_change_set,

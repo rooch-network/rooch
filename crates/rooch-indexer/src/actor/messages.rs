@@ -153,8 +153,6 @@ impl Message for IndexerApplyObjectStatesMessage {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IndexerRevertMessage {
     pub revert_tx_order: u64,
-    // pub revert_ledger_tx: LedgerTransaction,
-    // pub revert_execution_info: TransactionExecutionInfo,
     pub revert_state_change_set: StateChangeSetExt,
     pub root: ObjectMeta,
     pub object_mapping: HashMap<ObjectID, ObjectMeta>,

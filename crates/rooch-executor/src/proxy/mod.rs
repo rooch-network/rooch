@@ -3,9 +3,9 @@
 
 use crate::actor::messages::{
     ConvertL2TransactionData, DryRunTransactionResult, GetAnnotatedEventsByEventIDsMessage,
-    GetEventsByEventHandleMessage, GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage,
-    ListAnnotatedStatesMessage, ListStatesMessage, RefreshStateMessage, SaveStateChangeSetMessage,
-    ValidateL1BlockMessage, ValidateL1TxMessage,
+    GetEventsByEventHandleMessage, GetEventsByEventIDsMessage, GetStateChangeSetsMessage,
+    GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage, ListStatesMessage,
+    RefreshStateMessage, SaveStateChangeSetMessage, ValidateL1BlockMessage, ValidateL1TxMessage,
 };
 use crate::actor::reader_executor::ReaderExecutorActor;
 use crate::actor::{
@@ -249,6 +249,15 @@ impl ExecutorProxy {
             })
             .await
             .map_err(|e| anyhow!(format!("Save state change set error: {:?}", e)))
+    }
+
+    pub async fn get_state_change_sets(
+        &self,
+        tx_orders: Vec<u64>,
+    ) -> Result<Vec<Option<StateChangeSetExt>>> {
+        self.reader_actor
+            .send(GetStateChangeSetsMessage { tx_orders })
+            .await?
     }
 
     pub async fn chain_id(&self) -> Result<ChainID> {

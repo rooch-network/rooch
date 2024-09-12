@@ -971,6 +971,18 @@ impl StateChangeSet {
         }
     }
 
+    pub fn new_with_changes(
+        state_root: H256,
+        global_size: u64,
+        changes: BTreeMap<FieldKey, ObjectChange>,
+    ) -> Self {
+        Self {
+            state_root,
+            global_size,
+            changes,
+        }
+    }
+
     pub fn root_metadata(&self) -> ObjectMeta {
         ObjectMeta::root_metadata(self.state_root, self.global_size)
     }

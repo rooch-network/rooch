@@ -237,15 +237,12 @@ impl Handler<IndexerRevertMessage> for IndexerActor {
     async fn handle(&mut self, msg: IndexerRevertMessage, _ctx: &mut ActorContext) -> Result<()> {
         let IndexerRevertMessage {
             revert_tx_order,
-            // revert_ledger_tx,
-            // revert_execution_info,
             revert_state_change_set,
             root,
             object_mapping,
         } = msg;
 
         self.root = root;
-        // let tx_order = ledger_transaction.sequence_info.tx_order;
 
         // 1. revert indexer transaction
         self.indexer_store
@@ -259,14 +256,6 @@ impl Handler<IndexerRevertMessage> for IndexerActor {
         let mut state_index_generator = IndexerObjectStatesIndexGenerator::default();
         let mut indexer_object_state_change_set = IndexerObjectStateChangeSet::default();
 
-        // // set genesis tx_order and state_index_generator for new indexer revert
-        // let tx_order: u64 = 0;
-        // let last_state_index = self
-        //     .query_last_state_index_by_tx_order(tx_order, state_type.clone())
-        //     .await?;
-        // let mut state_index_generator = last_state_index.map_or(0, |x| x + 1);
-
-        // let object_mapping = HashMap::<ObjectID, ObjectMeta>::new();
         for (_feild_key, object_change) in revert_state_change_set.state_change_set.changes {
             let _ = handle_revert_object_change(
                 &mut state_index_generator,
@@ -279,7 +268,6 @@ impl Handler<IndexerRevertMessage> for IndexerActor {
         self.indexer_store
             .apply_object_states(indexer_object_state_change_set)?;
 
-        // self.indexer_store.revert_states(object_state_change_set)?;
         Ok(())
     }
 }

@@ -223,3 +223,12 @@ pub struct SaveStateChangeSetMessage {
 impl Message for SaveStateChangeSetMessage {
     type Result = Result<()>;
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetStateChangeSetsMessage {
+    pub tx_orders: Vec<u64>,
+}
+
+impl Message for GetStateChangeSetsMessage {
+    type Result = Result<Vec<Option<StateChangeSetExt>>>;
+}
