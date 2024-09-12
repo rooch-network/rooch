@@ -212,9 +212,9 @@ dependencies = [
 
 [[package]]
 name = "anstyle"
-version = "1.0.7"
+version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "038dfcf04a5feb68e9c60b21c9625a54c2c0616e79b72b0fd87075a056ae1d1b"
+checksum = "1bec1de6f59aedf83baf9ff929c98f2ad654b97c9510f4e70cf6f661d49fd5b1"
 
 [[package]]
 name = "anstyle-parse"
@@ -1810,9 +1810,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.13"
+version = "4.5.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0fbb260a053428790f3de475e304ff84cdbc4face759ea7a3e64c1edd938a7fc"
+checksum = "3e5a21b8495e732f1b3c364c9949b201ca7bae518c502c80256c96ad79eaf6ac"
 dependencies = [
  "clap_builder",
  "clap_derive 4.5.13",
@@ -1820,9 +1820,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.13"
+version = "4.5.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64b17d7ea74e9f833c7dbf2cbe4fb12ff26783eda4782a8975b72f895c9b4d99"
+checksum = "8cf2dd12af7a047ad9d6da2b6b249759a22a7abc0f474c1dae1777afa4b21a73"
 dependencies = [
  "anstream",
  "anstyle",
@@ -2241,7 +2241,7 @@ dependencies = [
  "anes",
  "cast",
  "ciborium",
- "clap 4.5.13",
+ "clap 4.5.17",
  "criterion-plot",
  "futures",
  "is-terminal",
@@ -2432,7 +2432,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6cd12917efc3a8b069a4975ef3cb2f2d835d42d04b3814d90838488f9dd9bf69"
 dependencies = [
  "anyhow",
- "clap 4.5.13",
+ "clap 4.5.17",
  "console",
  "cucumber-codegen",
  "cucumber-expressions",
@@ -2671,7 +2671,7 @@ name = "datatest-stable"
 version = "0.1.1"
 source = "git+https://github.com/rooch-network/diem-devtools?branch=feature/pub-test-opts#c65933ee5aa5721ca0e6602995f1464ce0a93a53"
 dependencies = [
- "clap 4.5.13",
+ "clap 4.5.17",
  "regex",
  "termcolor",
  "walkdir",
@@ -4037,7 +4037,7 @@ version = "0.7.1"
 dependencies = [
  "anyhow",
  "bcs",
- "clap 4.5.13",
+ "clap 4.5.17",
  "framework-builder",
  "framework-types",
  "include_dir",
@@ -4783,23 +4783,6 @@ dependencies = [
 
 [[package]]
 name = "hyper-rustls"
-version = "0.26.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0bea761b46ae2b24eb4aef630d8d1c398157b6fc29e6350ecf090a0b70c952c"
-dependencies = [
- "futures-util",
- "http 1.1.0",
- "hyper 1.3.1",
- "hyper-util",
- "rustls 0.22.4",
- "rustls-pki-types",
- "tokio",
- "tokio-rustls 0.25.0",
- "tower-service",
-]
-
-[[package]]
-name = "hyper-rustls"
 version = "0.27.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5ee4be2c948921a1a5320b629c4193916ed787a7f7f293fd3f7f5a6c9de74155"
@@ -4814,6 +4797,7 @@ dependencies = [
  "tokio",
  "tokio-rustls 0.26.0",
  "tower-service",
+ "webpki-roots 0.26.1",
 ]
 
 [[package]]
@@ -6185,7 +6169,7 @@ version = "0.1.0"
 source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
- "clap 4.5.13",
+ "clap 4.5.17",
  "crossterm 0.26.1",
  "move-binary-format",
  "move-bytecode-source-map",
@@ -6203,7 +6187,7 @@ source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d7
 dependencies = [
  "anyhow",
  "bcs",
- "clap 4.5.13",
+ "clap 4.5.17",
  "codespan-reporting",
  "colored",
  "difference",
@@ -6264,7 +6248,7 @@ source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d7
 dependencies = [
  "anyhow",
  "bcs",
- "clap 4.5.13",
+ "clap 4.5.17",
  "codespan-reporting",
  "difference",
  "hex",
@@ -6315,7 +6299,7 @@ source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d7
 dependencies = [
  "anyhow",
  "bcs",
- "clap 4.5.13",
+ "clap 4.5.17",
  "codespan",
  "colored",
  "move-binary-format",
@@ -6334,7 +6318,7 @@ version = "0.1.0"
 source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
- "clap 4.5.13",
+ "clap 4.5.17",
  "colored",
  "move-binary-format",
  "move-bytecode-source-map",
@@ -6386,7 +6370,7 @@ source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d7
 dependencies = [
  "anyhow",
  "bcs",
- "clap 4.5.13",
+ "clap 4.5.17",
  "move-binary-format",
  "move-bytecode-source-map",
  "move-bytecode-verifier",
@@ -6478,7 +6462,7 @@ source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d7
 dependencies = [
  "anyhow",
  "bcs",
- "clap 4.5.13",
+ "clap 4.5.17",
  "colored",
  "dirs-next",
  "itertools 0.10.5",
@@ -6515,7 +6499,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "atty",
- "clap 4.5.13",
+ "clap 4.5.17",
  "codespan",
  "codespan-reporting",
  "futures",
@@ -6669,7 +6653,7 @@ version = "0.1.0"
 source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d73be4f69d8d325e62#c05b5f71a24beb498eb743d73be4f69d8d325e62"
 dependencies = [
  "anyhow",
- "clap 4.5.13",
+ "clap 4.5.17",
  "colored",
  "move-binary-format",
  "move-bytecode-source-map",
@@ -6701,7 +6685,7 @@ source = "git+https://github.com/rooch-network/move?rev=c05b5f71a24beb498eb743d7
 dependencies = [
  "anyhow",
  "better_any",
- "clap 4.5.13",
+ "clap 4.5.17",
  "codespan-reporting",
  "colored",
  "itertools 0.10.5",
@@ -6774,7 +6758,7 @@ version = "0.7.1"
 dependencies = [
  "anyhow",
  "backtrace",
- "clap 4.5.13",
+ "clap 4.5.17",
  "codespan",
  "codespan-reporting",
  "itertools 0.13.0",
@@ -6833,7 +6817,7 @@ dependencies = [
 name = "moveos-config"
 version = "0.7.1"
 dependencies = [
- "clap 4.5.13",
+ "clap 4.5.17",
  "serde 1.0.210",
  "tempfile",
 ]
@@ -7427,7 +7411,7 @@ dependencies = [
  "percent-encoding",
  "quick-xml 0.31.0",
  "reqsign",
- "reqwest 0.12.4",
+ "reqwest 0.12.7",
  "serde 1.0.210",
  "serde_json",
  "tokio",
@@ -8531,6 +8515,54 @@ dependencies = [
 ]
 
 [[package]]
+name = "quinn"
+version = "0.11.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c7c5fdde3cdae7203427dc4f0a68fe0ed09833edc525a03456b153b79828684"
+dependencies = [
+ "bytes",
+ "pin-project-lite",
+ "quinn-proto",
+ "quinn-udp",
+ "rustc-hash 2.0.0",
+ "rustls 0.23.10",
+ "socket2",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "quinn-proto"
+version = "0.11.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fadfaed2cd7f389d0161bb73eeb07b7b78f8691047a6f3e73caaeae55310a4a6"
+dependencies = [
+ "bytes",
+ "rand 0.8.5",
+ "ring 0.17.8",
+ "rustc-hash 2.0.0",
+ "rustls 0.23.10",
+ "slab",
+ "thiserror",
+ "tinyvec",
+ "tracing",
+]
+
+[[package]]
+name = "quinn-udp"
+version = "0.5.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8bffec3605b73c6f1754535084a85229fa8a30f86014e6c81aeec4abb68b0285"
+dependencies = [
+ "libc",
+ "once_cell",
+ "socket2",
+ "tracing",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
 name = "quote"
 version = "0.6.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8865,7 +8897,7 @@ dependencies = [
  "log",
  "percent-encoding",
  "rand 0.8.5",
- "reqwest 0.12.4",
+ "reqwest 0.12.7",
  "rsa 0.9.6",
  "serde 1.0.210",
  "serde_json",
@@ -8905,7 +8937,7 @@ dependencies = [
  "serde_json",
  "serde_urlencoded",
  "sync_wrapper 0.1.2",
- "system-configuration",
+ "system-configuration 0.5.1",
  "tokio",
  "tokio-native-tls",
  "tokio-rustls 0.24.1",
@@ -8917,14 +8949,14 @@ dependencies = [
  "wasm-streams",
  "web-sys",
  "webpki-roots 0.25.4",
- "winreg 0.50.0",
+ "winreg",
 ]
 
 [[package]]
 name = "reqwest"
-version = "0.12.4"
+version = "0.12.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "566cafdd92868e0939d3fb961bd0dc25fcfaaed179291093b3d43e6b3150ea10"
+checksum = "f8f4955649ef5c38cc7f9e8aa41761d48fb9677197daea9984dc54f56aad5e63"
 dependencies = [
  "base64 0.22.1",
  "bytes",
@@ -8936,7 +8968,7 @@ dependencies = [
  "http-body 1.0.0",
  "http-body-util",
  "hyper 1.3.1",
- "hyper-rustls 0.26.0",
+ "hyper-rustls 0.27.2",
  "hyper-tls 0.6.0",
  "hyper-util",
  "ipnet",
@@ -8947,17 +8979,18 @@ dependencies = [
  "once_cell",
  "percent-encoding",
  "pin-project-lite",
- "rustls 0.22.4",
+ "quinn",
+ "rustls 0.23.10",
  "rustls-pemfile 2.1.2",
  "rustls-pki-types",
  "serde 1.0.210",
  "serde_json",
  "serde_urlencoded",
- "sync_wrapper 0.1.2",
- "system-configuration",
+ "sync_wrapper 1.0.1",
+ "system-configuration 0.6.1",
  "tokio",
  "tokio-native-tls",
- "tokio-rustls 0.25.0",
+ "tokio-rustls 0.26.0",
  "tokio-util",
  "tower-service",
  "url",
@@ -8966,7 +8999,7 @@ dependencies = [
  "wasm-streams",
  "web-sys",
  "webpki-roots 0.26.1",
- "winreg 0.52.0",
+ "windows-registry",
 ]
 
 [[package]]
@@ -9149,7 +9182,7 @@ dependencies = [
  "bitcoin 0.32.2",
  "bitcoin-move",
  "chrono",
- "clap 4.5.13",
+ "clap 4.5.17",
  "codespan-reporting",
  "csv",
  "datatest-stable 0.1.1",
@@ -9238,7 +9271,7 @@ dependencies = [
  "bitcoin 0.32.2",
  "bitcoincore-rpc",
  "bitcoincore-rpc-json",
- "clap 4.5.13",
+ "clap 4.5.17",
  "criterion",
  "ethers",
  "hex",
@@ -9296,7 +9329,7 @@ name = "rooch-config"
 version = "0.7.1"
 dependencies = [
  "anyhow",
- "clap 4.5.13",
+ "clap 4.5.17",
  "dirs",
  "dirs-next",
  "moveos-config",
@@ -9387,7 +9420,7 @@ dependencies = [
  "anyhow",
  "axum 0.7.5",
  "axum-server",
- "clap 4.5.13",
+ "clap 4.5.17",
  "futures",
  "move-core-types",
  "moveos-types",
@@ -9435,7 +9468,7 @@ dependencies = [
  "bcs",
  "bitcoin 0.32.2",
  "bitcoin-move",
- "clap 4.5.13",
+ "clap 4.5.17",
  "coerce",
  "datatest-stable 0.1.3",
  "ethers",
@@ -9475,7 +9508,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "bitcoin-move",
- "clap 4.5.13",
+ "clap 4.5.17",
  "framework-builder",
  "framework-release",
  "include_dir",
@@ -9534,7 +9567,7 @@ version = "0.7.1"
 dependencies = [
  "anyhow",
  "bcs",
- "clap 4.5.13",
+ "clap 4.5.17",
  "codespan-reporting",
  "datatest-stable 0.1.3",
  "move-binary-format",
@@ -9613,7 +9646,7 @@ name = "rooch-open-rpc"
 version = "0.7.1"
 dependencies = [
  "anyhow",
- "clap 4.5.13",
+ "clap 4.5.17",
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "rand 0.8.5",
  "schemars",
@@ -9639,7 +9672,7 @@ dependencies = [
 name = "rooch-open-rpc-spec"
 version = "0.7.1"
 dependencies = [
- "clap 4.5.13",
+ "clap 4.5.17",
  "pretty_assertions",
  "rooch-open-rpc-spec-builder",
  "rooch-rpc-api",
@@ -9652,12 +9685,34 @@ name = "rooch-open-rpc-spec-builder"
 version = "0.7.1"
 dependencies = [
  "anyhow",
- "clap 4.5.13",
+ "clap 4.5.17",
  "rand 0.8.5",
  "rooch-open-rpc",
  "rooch-rpc-api",
  "serde 1.0.210",
  "serde_json",
+]
+
+[[package]]
+name = "rooch-oracle"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "clap 4.5.17",
+ "futures-util",
+ "log",
+ "move-core-types",
+ "moveos-types",
+ "reqwest 0.12.7",
+ "rooch-rpc-api",
+ "rooch-rpc-client",
+ "rooch-types",
+ "serde_json",
+ "tokio",
+ "tokio-tungstenite 0.23.1",
+ "tracing-subscriber",
+ "tungstenite 0.24.0",
 ]
 
 [[package]]
@@ -9677,7 +9732,7 @@ dependencies = [
  "moveos-types",
  "ordinals",
  "prometheus",
- "reqwest 0.12.4",
+ "reqwest 0.12.7",
  "rooch-types",
  "serde 1.0.210",
  "serde_json",
@@ -9923,7 +9978,7 @@ dependencies = [
  "bitcoincore-rpc",
  "bs58 0.5.1",
  "chacha20poly1305",
- "clap 4.5.13",
+ "clap 4.5.17",
  "derive_more",
  "enum_dispatch",
  "ethers",
@@ -11426,6 +11481,9 @@ name = "sync_wrapper"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7065abeca94b6a8a577f9bd45aa0867a2238b74e8eb67cf10d492bc39351394"
+dependencies = [
+ "futures-core",
+]
 
 [[package]]
 name = "synthez"
@@ -11468,7 +11526,18 @@ checksum = "ba3a3adc5c275d719af8cb4272ea1c4a6d668a777f37e115f6d11ddbc1c8e0e7"
 dependencies = [
  "bitflags 1.3.2",
  "core-foundation",
- "system-configuration-sys",
+ "system-configuration-sys 0.5.0",
+]
+
+[[package]]
+name = "system-configuration"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c879d448e9d986b661742763247d3693ed13609438cf3d006f51f5368a5ba6b"
+dependencies = [
+ "bitflags 2.5.0",
+ "core-foundation",
+ "system-configuration-sys 0.6.0",
 ]
 
 [[package]]
@@ -11476,6 +11545,16 @@ name = "system-configuration-sys"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a75fb188eb626b924683e3b95e3a48e63551fcfb51949de2f06a9d91dbee93c9"
+dependencies = [
+ "core-foundation-sys",
+ "libc",
+]
+
+[[package]]
+name = "system-configuration-sys"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e1d1b10ced5ca923a1fcb8d03e96b8d3268065d724548c0211415ff6ac6bac4"
 dependencies = [
  "core-foundation-sys",
  "libc",
@@ -11643,7 +11722,7 @@ dependencies = [
  "anyhow",
  "assert_cmd",
  "backtrace",
- "clap 4.5.13",
+ "clap 4.5.17",
  "cucumber",
  "env_logger",
  "futures",
@@ -11939,6 +12018,20 @@ dependencies = [
  "tokio-rustls 0.25.0",
  "tungstenite 0.21.0",
  "webpki-roots 0.26.1",
+]
+
+[[package]]
+name = "tokio-tungstenite"
+version = "0.23.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6989540ced10490aaf14e6bad2e3d33728a2813310a0c71d1574304c49631cd"
+dependencies = [
+ "futures-util",
+ "log",
+ "native-tls",
+ "tokio",
+ "tokio-native-tls",
+ "tungstenite 0.23.0",
 ]
 
 [[package]]
@@ -12309,6 +12402,43 @@ dependencies = [
  "sha1",
  "thiserror",
  "url",
+ "utf-8",
+]
+
+[[package]]
+name = "tungstenite"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e2e2ce1e47ed2994fd43b04c8f618008d4cabdd5ee34027cf14f9d918edd9c8"
+dependencies = [
+ "byteorder",
+ "bytes",
+ "data-encoding",
+ "http 1.1.0",
+ "httparse",
+ "log",
+ "native-tls",
+ "rand 0.8.5",
+ "sha1",
+ "thiserror",
+ "utf-8",
+]
+
+[[package]]
+name = "tungstenite"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18e5b8366ee7a95b16d32197d0b2604b43a0be89dc5fac9f8e96ccafbaedda8a"
+dependencies = [
+ "byteorder",
+ "bytes",
+ "data-encoding",
+ "http 1.1.0",
+ "httparse",
+ "log",
+ "rand 0.8.5",
+ "sha1",
+ "thiserror",
  "utf-8",
 ]
 
@@ -13153,6 +13283,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "windows-registry"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e400001bb720a623c1c69032f8e3e4cf09984deec740f007dd2b03ec864804b0"
+dependencies = [
+ "windows-result",
+ "windows-strings",
+ "windows-targets 0.52.6",
+]
+
+[[package]]
+name = "windows-result"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d1043d8214f791817bab27572aaa8af63732e11bf84aa21a45a78d6c317ae0e"
+dependencies = [
+ "windows-targets 0.52.6",
+]
+
+[[package]]
+name = "windows-strings"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4cd9b125c486025df0eabcb585e62173c6c9eddcec5d117d3b6e8c30e2ee4d10"
+dependencies = [
+ "windows-result",
+ "windows-targets 0.52.6",
+]
+
+[[package]]
 name = "windows-sys"
 version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13366,16 +13526,6 @@ name = "winreg"
 version = "0.50.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "524e57b2c537c0f9b1e69f1965311ec12182b4122e45035b1508cd24d2adadb1"
-dependencies = [
- "cfg-if",
- "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "winreg"
-version = "0.52.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a277a57398d4bfa075df44f501a17cfdf8542d224f0d36095a2adc7aee4ef0a5"
 dependencies = [
  "cfg-if",
  "windows-sys 0.48.0",
