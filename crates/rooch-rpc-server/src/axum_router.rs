@@ -6,10 +6,15 @@ use axum::extract::{ConnectInfo, State};
 use axum::http::HeaderMap;
 use axum::response::Response;
 use axum::Json;
+use jsonrpsee::server::RandomIntegerIdProvider;
 use jsonrpsee::types::{ErrorCode, ErrorObject, Id, InvalidRequest, Params, Request};
-use jsonrpsee::{core::server::Methods, ConnectionId, MethodCallback, MethodKind, MethodResponse};
+use jsonrpsee::{
+    core::server::Methods, BoundedSubscriptions, ConnectionId, MethodCallback, MethodKind,
+    MethodResponse, MethodSink,
+};
 use serde_json::value::RawValue;
 use std::net::SocketAddr;
+use std::sync::Arc;
 use tokio::time::Instant;
 
 pub const MAX_RESPONSE_SIZE: u32 = 2 << 30;
@@ -30,11 +35,16 @@ pub struct JsonRpcService {
     /// Registered server methods.
     methods: Methods,
     metrics: ServiceMetrics,
+    id_provider: Arc<RandomIntegerIdProvider>,
 }
 
 impl JsonRpcService {
     pub fn new(methods: Methods, metrics: ServiceMetrics) -> Self {
-        Self { methods, metrics }
+        Self {
+            methods,
+            metrics,
+            id_provider: Arc::new(RandomIntegerIdProvider),
+        }
     }
 
     fn call_data(&self) -> CallData<'_> {
@@ -50,12 +60,12 @@ impl JsonRpcService {
         &'a self,
         bounded_subscriptions: BoundedSubscriptions,
         sink: &'b MethodSink,
-    ) -> ws::WsCallData<'c, L> {
+    ) -> ws::WsCallData<'c> {
         ws::WsCallData {
             metrics: &self.metrics,
             methods: &self.methods,
             max_response_body_size: MAX_RESPONSE_SIZE,
-            request_start: self.logger.on_request(TransportProtocol::Http),
+            request_start: self.metrics.on_request(TransportProtocol::Http),
             bounded_subscriptions,
             id_provider: &*self.id_provider,
             sink,
@@ -229,6 +239,7 @@ async fn process_request(req: Request<'_>, call: CallData<'_>) -> MethodResponse
 }
 
 pub mod ws {
+    use super::*;
     use axum::{
         extract::{
             ws::{Message, WebSocket},
@@ -236,10 +247,11 @@ pub mod ws {
         },
         response::Response,
     };
+    use jsonrpsee::{
+        core::server::helpers::MethodSink, core::server::BoundedSubscriptions, server::IdProvider,
+        types::error::reject_too_many_subscriptions, SubscriptionState,
+    };
     use tokio::sync::mpsc;
-    use jsonrpsee::{core::server::BoundedSubscriptions, core::server::helpers::MethodSink, server::IdProvider, types::error::reject_too_many_subscriptions, SubscriptionState};
-    use rooch_types::function_arg::FunctionArgType::String;
-    use super::*;
 
     #[derive(Debug, Clone)]
     pub(crate) struct WsCallData<'a> {
@@ -255,7 +267,7 @@ pub mod ws {
     // A WebSocket handler that echos any message it receives.
     //
     // This one we'll be integration testing so it can be written in the regular way.
-    pub async fn ws_json_rpc_upgrade<>(
+    pub async fn ws_json_rpc_upgrade(
         ws: WebSocketUpgrade,
         State(service): State<JsonRpcService>,
     ) -> Response {
@@ -304,7 +316,7 @@ pub mod ws {
         } else if let Ok(_batch) = serde_json::from_str::<Vec<&RawValue>>(raw_request) {
             Some(MethodResponse::error(
                 Id::Null,
-                ErrorObject::borrowed(NOT_SUPPORTED_CODE, &NOT_SUPPORTED_MSG, None),
+                ErrorObject::borrowed(NOT_SUPPORTED_CODE, NOT_SUPPORTED_MSG, None),
             ))
         } else {
             let (id, code) = prepare_error(raw_request);
@@ -312,10 +324,7 @@ pub mod ws {
         }
     }
 
-    async fn process_request(
-        req: Request<'_>,
-        call: WsCallData<'_,>,
-    ) -> Option<MethodResponse> {
+    async fn process_request(req: Request<'_>, call: WsCallData<'_>) -> Option<MethodResponse> {
         let WsCallData {
             methods,
             metrics,
@@ -325,9 +334,9 @@ pub mod ws {
             id_provider,
             sink,
         } = call;
-        let conn_id = 0; // unused
+        let conn_id = ConnectionId::from(0u32); // unused
 
-        let params = Params::new(req.params.map(|params| params.get()));
+        let params = Params::new(req.params.as_ref().map(|params| params.get()));
         let name = &req.method;
         let id = req.id;
 
@@ -344,7 +353,7 @@ pub mod ws {
                     ErrorObject::from(ErrorCode::MethodNotFound),
                 ))
             }
-            Some((name, method)) => match method.inner() {
+            Some((name, method)) => match method {
                 MethodCallback::Sync(callback) => {
                     metrics.on_call(
                         name,
@@ -352,7 +361,12 @@ pub mod ws {
                         MethodKind::MethodCall,
                         TransportProtocol::Http,
                     );
-                    Some((callback)(id, params, max_response_body_size as usize))
+                    Some((callback)(
+                        id,
+                        params,
+                        max_response_body_size as usize,
+                        req.extensions,
+                    ))
                 }
                 MethodCallback::Async(callback) => {
                     metrics.on_call(
@@ -366,8 +380,14 @@ pub mod ws {
                     let params = params.into_owned();
 
                     Some(
-                        (callback)(id, params, conn_id, max_response_body_size as usize, None)
-                            .await,
+                        (callback)(
+                            id,
+                            params,
+                            conn_id,
+                            max_response_body_size as usize,
+                            req.extensions,
+                        )
+                        .await,
                     )
                 }
 
@@ -384,7 +404,8 @@ pub mod ws {
                             subscription_permit: sp,
                             id_provider,
                         };
-                        callback(id.clone(), params, sink.clone(), conn_state, None).await;
+                        callback(id.clone(), params, sink.clone(), conn_state, req.extensions)
+                            .await;
                         None
                     } else {
                         Some(MethodResponse::error(
@@ -407,6 +428,7 @@ pub mod ws {
                         params,
                         conn_id,
                         max_response_body_size as usize,
+                        req.extensions,
                     ))
                 }
             },

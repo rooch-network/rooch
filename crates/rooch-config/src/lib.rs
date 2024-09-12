@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::da_config::DAConfig;
+use crate::store_config::StoreConfig;
 use anyhow::Result;
 use clap::Parser;
 use moveos_config::{temp_dir, DataDirPath};
@@ -9,14 +11,12 @@ use rooch_types::crypto::RoochKeyPair;
 use rooch_types::genesis_config::GenesisConfig;
 use rooch_types::rooch_network::{BuiltinChainID, RoochChainID, RoochNetwork};
 use rooch_types::service_status::ServiceStatus;
+use rooch_types::service_type::ServiceType;
 use serde::{Deserialize, Serialize};
 use std::fs::create_dir_all;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::{fmt::Debug, path::Path, path::PathBuf};
-use rooch_types::service_type::ServiceType;
-use crate::da_config::DAConfig;
-use crate::store_config::StoreConfig;
 
 pub mod config;
 pub mod da_config;
@@ -360,6 +360,8 @@ impl ServerOpt {
     }
 
     pub fn get_active_env(&self) -> String {
-        self.active_env.clone().unwrap_or_else(|| RoochChainID::default().chain_name())
+        self.active_env
+            .clone()
+            .unwrap_or_else(|| RoochChainID::default().chain_name())
     }
 }

@@ -45,6 +45,7 @@ use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::address::RoochAddress;
 use rooch_types::error::{GenesisError, RoochError};
 use rooch_types::rooch_network::BuiltinChainID;
+use rooch_types::service_type::ServiceType;
 use serde_json::json;
 use std::fmt::Debug;
 use std::net::SocketAddr;
@@ -58,7 +59,6 @@ use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::{error, info};
-use rooch_types::service_type::ServiceType;
 
 mod axum_router;
 pub mod metrics_server;
@@ -288,8 +288,8 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         &prometheus_registry,
         Some(event_actor_ref.clone()),
     )?
-        .into_actor(Some("Sequencer"), &actor_system)
-        .await?;
+    .into_actor(Some("Sequencer"), &actor_system)
+    .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
 
     // Init DA
@@ -362,9 +362,9 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
             bitcoin_relayer_config.clone(),
             Some(event_actor_ref),
         )
-            .await?
-            .into_actor(Some("Relayer"), &actor_system)
-            .await?;
+        .await?
+        .into_actor(Some("Relayer"), &actor_system)
+        .await?;
         let relay_tick_in_seconds: u64 = 1;
         let relayer_timer = Timer::start(
             relayer,
@@ -511,10 +511,11 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
             router = router.route("/", axum::routing::post(axum_router::json_rpc_handler));
         }
         ServiceType::WebSocket => {
-            router = router.route(
-                "/",
-                axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
-            )
+            router = router
+                .route(
+                    "/",
+                    axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
+                )
                 .route(
                     "/subscribe",
                     axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
@@ -533,16 +534,16 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
             listener,
             app.into_make_service_with_connect_info::<SocketAddr>(),
         )
-            .with_graceful_shutdown(async move {
-                tokio::select! {
+        .with_graceful_shutdown(async move {
+            tokio::select! {
             _ = shutdown_signal() => {},
             _ = axum_rx.recv() => {
                 info!("shutdown signal received, starting graceful shutdown");
                 },
             }
-            })
-            .await
-            .unwrap();
+        })
+        .await
+        .unwrap();
     });
 
     info!("JSON-RPC HTTP Server start listening {:?}", addr);
