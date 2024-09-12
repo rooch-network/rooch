@@ -18,6 +18,9 @@ module gas_market::gas_market {
     use moveos_std::object;
     use rooch_framework::gas_coin::RGas;
     use rooch_framework::coin_store;
+    #[test_only]
+    use moveos_std::decimal_value;
+
     struct AdminCap has store, key {}
 
     struct RGasMarket has key, store{
@@ -172,6 +175,23 @@ module gas_market::gas_market {
         let token_price = value(&price_info);
         // TODO If the input quantity of rgas is too small, the return value is 0, and should return u64?
         rgas_amount * DEFAULT_UNIT_PRICE / token_price
+    }
+
+    #[test]
+    fun test_btc_to_rgas(){
+        let price_info = decimal_value::new(5005206000000, 8);
+        let token_price = value(&price_info);
+        let a = 100000000 * token_price / DEFAULT_UNIT_PRICE;
+        assert!(a == 500520600000000, 1);
+    }
+
+    #[test]
+    fun test_rgas_to_btc() {
+        let rgas_amount = 500520600000000;
+        let price_info = decimal_value::new(5005206000000, 8);
+        let token_price = value(&price_info);
+        let b = rgas_amount * DEFAULT_UNIT_PRICE /  token_price;
+        assert!(b == 100000000, 2);
     }
 
 
