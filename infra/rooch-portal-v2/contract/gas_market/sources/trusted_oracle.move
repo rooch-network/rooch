@@ -110,7 +110,7 @@ module gas_market::trusted_oracle {
         transfer(admin_cap2, sender());
         transfer(admin_cap3, sender());
         let price = trusted_price(utf8(b"BTCUSD"));
-        assert!(price.value() == 5805206000000, 1);
-        assert!(price.decimal() == 8, 1);
+        assert!(value(&price) == 5805206000000, 1);
+        assert!(decimal(&price) == 8, 1);
     }
 }

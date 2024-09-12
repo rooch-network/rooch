@@ -62,7 +62,7 @@ impl Pyth {
     pub async fn subscribe(&self, package_id: &str) {
         let (tx, mut rx) = mpsc::channel(1);
         let url = self.pyth_config.pyth_url.clone();
-        let interval = self.pyth_config.pyth_submit_interval.clone();
+        let interval = self.pyth_config.pyth_submit_interval;
         let handle = tokio::spawn(async move {
             subscribe_http(url, tx, interval).await;
         });

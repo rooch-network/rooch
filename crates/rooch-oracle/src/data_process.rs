@@ -72,14 +72,13 @@ pub async fn subscribe_websocket(
 pub async fn subscribe_http(url: String, tx: mpsc::Sender<Value>, interval: u64) {
     loop {
         match reqwest::get(&url).await {
-            Ok(response) => match response.json::<Value>().await {
-                Ok(value) => {
+            Ok(response) => {
+                if let Ok(value) = response.json::<Value>().await {
                     if let Err(e) = tx.send(value).await {
                         warn!("Failed to send message through channel: {}", e);
                     }
                 }
-                Err(_) => {}
-            },
+            }
             Err(e) => {
                 warn!("Failed to fetch price: {}", e);
             }

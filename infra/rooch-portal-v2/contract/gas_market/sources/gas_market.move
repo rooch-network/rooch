@@ -34,8 +34,9 @@ module gas_market::gas_market {
         uncheck_info: Table<address, u256>
     }
 
-    // 0.1 U = BTC decimal / (RGas decimal * 10)
-    const DEFAULT_UNIT_PRICE: u256 = 1;
+    // 0.01 U = (BTC decimal * BTC Price decimal / RGas decimal) * 0.01
+    //  (10**8 * 10**8 / 10**8) * 0.01
+    const DEFAULT_UNIT_PRICE: u256 = 1000000;
     const BTC_USD: vector<u8> = b"BTCUSD";
 
     const ErrorMarketNotOpen: u64 = 0;
@@ -101,10 +102,7 @@ module gas_market::gas_market {
         let consume_event = option::extract(&mut consume(subscriber_obj));
         let (txid, sender, receiver, value) = unpack_receive_utxo_event(consume_event);
         assert!(receiver == rgas_market.receive_btc_address, ErrorReceiverAddress);
-        let price_info = trusted_price(utf8(BTC_USD));
-        let token_price = value(&price_info);
-        // BTC decimal is 10**9 RGas decimal is 10**8 RGas price is 0.1U
-        let withdraw_amount = (value as u256) * token_price / rgas_market.unit_price;
+        let withdraw_amount = btc_to_rgas(value);
         if (option::is_some(&sender)){
             let sender_addr = option::extract(&mut sender);
             let rgas_coin = coin_store::withdraw<RGas>(&mut rgas_market.rgas_store, withdraw_amount);
@@ -162,5 +160,19 @@ module gas_market::gas_market {
         let market_info_mut = borrow_mut_resource<MarketInfo>(address_of(&module_signer<MarketInfo>()));
         table::remove(&mut market_info_mut.uncheck_info, txid);
     }
+
+    public fun btc_to_rgas(sats_amount: u64): u256 {
+        let price_info = trusted_price(utf8(BTC_USD));
+        let btc_price = value(&price_info);
+        (sats_amount as u256) * btc_price / DEFAULT_UNIT_PRICE
+    }
+
+    public fun rgas_to_btc(rgas_amount: u256): u256 {
+        let price_info = trusted_price(utf8(BTC_USD));
+        let token_price = value(&price_info);
+        // TODO If the input quantity of rgas is too small, the return value is 0, and should return u64?
+        rgas_amount * DEFAULT_UNIT_PRICE / token_price
+    }
+
 
 }
