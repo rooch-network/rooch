@@ -1,24 +1,28 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::BTreeMap;
-use std::str::FromStr;
-use tokio::sync::{mpsc, RwLockWriteGuard};
-use std::time::Duration;
+use anyhow::Result;
 use futures_util::{SinkExt, StreamExt};
 use log::{error, info, warn};
-use serde_json::Value;
-use tokio_tungstenite::connect_async;
-use tokio_tungstenite::tungstenite::Message;
+use move_core_types::account_address::AccountAddress;
 use moveos_types::transaction::MoveAction;
-use rooch_types::address::RoochAddress;
 use rooch_rpc_api::jsonrpc_types::KeptVMStatusView;
 use rooch_rpc_client::wallet_context::WalletContext;
-use anyhow::Result;
-use move_core_types::account_address::AccountAddress;
+use rooch_types::address::RoochAddress;
 use rooch_types::function_arg::FunctionArg;
+use serde_json::Value;
+use std::collections::BTreeMap;
+use std::str::FromStr;
+use std::time::Duration;
+use tokio::sync::{mpsc, RwLockWriteGuard};
+use tokio_tungstenite::connect_async;
+use tokio_tungstenite::tungstenite::Message;
 
-pub async fn subscribe_websocket(url: String, tx: mpsc::Sender<String>, subscribe_msg: Option<Value>) {
+pub async fn subscribe_websocket(
+    url: String,
+    tx: mpsc::Sender<String>,
+    subscribe_msg: Option<Value>,
+) {
     loop {
         let (ws_stream, _) = match connect_async(&url).await {
             Ok(stream) => stream,
@@ -34,12 +38,14 @@ pub async fn subscribe_websocket(url: String, tx: mpsc::Sender<String>, subscrib
         let (mut write, mut read) = ws_stream.split();
 
         if subscribe_msg.is_some() {
-            if let Err(e) = write.send(Message::Text(subscribe_msg.clone().unwrap().to_string())).await {
+            if let Err(e) = write
+                .send(Message::Text(subscribe_msg.clone().unwrap().to_string()))
+                .await
+            {
                 warn!("Failed to send message: {}", e);
                 continue;
             }
         }
-
 
         while let Some(message) = read.next().await {
             match message {
@@ -50,7 +56,7 @@ pub async fn subscribe_websocket(url: String, tx: mpsc::Sender<String>, subscrib
                             break;
                         }
                     }
-                },
+                }
                 Err(e) => {
                     warn!("Error: {}", e);
                     break;
@@ -63,20 +69,17 @@ pub async fn subscribe_websocket(url: String, tx: mpsc::Sender<String>, subscrib
     }
 }
 
-
 pub async fn subscribe_http(url: String, tx: mpsc::Sender<Value>, interval: u64) {
     loop {
         match reqwest::get(&url).await {
-            Ok(response) => {
-                match response.json::<Value>().await {
-                    Ok(value) => {
-                        if let Err(e) = tx.send(value).await {
-                            warn!("Failed to send message through channel: {}", e);
-                        }
+            Ok(response) => match response.json::<Value>().await {
+                Ok(value) => {
+                    if let Err(e) = tx.send(value).await {
+                        warn!("Failed to send message through channel: {}", e);
                     }
-                    Err(_) => {}
                 }
-            }
+                Err(_) => {}
+            },
             Err(e) => {
                 warn!("Failed to fetch price: {}", e);
             }
@@ -97,16 +100,14 @@ pub async fn execute_transaction<'a>(
 ) -> Result<()> {
     let sender: RoochAddress = state.context.client_config.active_address.unwrap();
     let pwd = state.wallet_pwd.clone();
-    let result = state.context
-            .sign_and_execute(sender, action, pwd, None)
-            .await;
+    let result = state
+        .context
+        .sign_and_execute(sender, action, pwd, None)
+        .await;
     match result {
         Ok(tx) => match tx.execution_info.status {
             KeptVMStatusView::Executed => {
-                info!(
-                    "Executed success tx_has: {}",
-                    tx.execution_info.tx_hash
-                );
+                info!("Executed success tx_has: {}", tx.execution_info.tx_hash);
             }
             _ => {
                 error!("Transfer gases failed {:?}", tx.execution_info.status);
@@ -120,13 +121,9 @@ pub async fn execute_transaction<'a>(
 }
 
 pub fn parse_and_convert(arg: &str, address_mapping: &BTreeMap<String, AccountAddress>) -> Vec<u8> {
-    let mapping = |input: &str| -> Option<AccountAddress> {
-        address_mapping.get(input).cloned()
-    };
+    let mapping = |input: &str| -> Option<AccountAddress> { address_mapping.get(input).cloned() };
     FunctionArg::from_str(arg)
         .unwrap()
         .into_bytes(&mapping)
         .unwrap()
 }
-
-

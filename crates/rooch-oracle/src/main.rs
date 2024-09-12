@@ -32,7 +32,7 @@ async fn main() {
         okx_config,
         binance_config,
         pyth_config,
-        package_id
+        package_id,
     } = config;
     let okx_handle = tokio::spawn({
         let package_id = package_id.clone();
@@ -40,8 +40,7 @@ async fn main() {
             let okx = Okx::new(okx_config).await;
             okx.subscribe(package_id.as_str()).await;
         }
-    }
-    );
+    });
     let binance_handle = tokio::spawn({
         let package_id = package_id.clone();
         async move {
