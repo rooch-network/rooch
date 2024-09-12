@@ -16,6 +16,7 @@ use rooch_types::indexer::state::{
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::transaction::LedgerTransaction;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Indexer write Message
 #[derive(Debug, Clone)]
@@ -150,14 +151,15 @@ impl Message for IndexerApplyObjectStatesMessage {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct IndexerRevertStatesMessage {
+pub struct IndexerRevertMessage {
     pub revert_tx_order: u64,
-    pub revert_ledger_tx: LedgerTransaction,
-    pub revert_execution_info: TransactionExecutionInfo,
+    // pub revert_ledger_tx: LedgerTransaction,
+    // pub revert_execution_info: TransactionExecutionInfo,
     pub revert_state_change_set: StateChangeSetExt,
     pub root: ObjectMeta,
+    pub object_mapping: HashMap<ObjectID, ObjectMeta>,
 }
 
-impl Message for IndexerRevertStatesMessage {
+impl Message for IndexerRevertMessage {
     type Result = Result<()>;
 }

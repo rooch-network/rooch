@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::errors::IndexerError;
-use crate::{INDEXER_EVENTS_TABLE_NAME, INDEXER_TRANSACTIONS_TABLE_NAME};
 use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::indexer::state::{IndexerObjectState, IndexerObjectStateChangeSet};
 use rooch_types::indexer::transaction::IndexerTransaction;

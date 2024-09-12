@@ -1,22 +1,28 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use clap::Parser;
 use metrics::RegistryService;
 use moveos_store::config_store::ConfigStore;
 use moveos_store::transaction_store::TransactionStore as TxExecutionInfoStore;
-use moveos_store::MoveOSStore;
+use moveos_types::access_path::AccessPath;
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::startup_info;
+use moveos_types::state_resolver::{RootObjectResolver, StateReader};
 use rooch_config::{RoochOpt, R_OPT_NET_HELP};
 use rooch_db::RoochDB;
 use rooch_genesis::RoochGenesis;
+use rooch_indexer::store::traits::IndexerStoreTrait;
 use rooch_store::state_store::StateStore;
-use rooch_store::RoochStore;
 use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::indexer::state::{
+    collect_revert_object_change_ids, handle_revert_object_change, IndexerObjectStateChangeSet,
+    IndexerObjectStatesIndexGenerator,
+};
 use rooch_types::rooch_network::RoochChainID;
 use rooch_types::sequencer::SequencerInfo;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::SystemTime;
 
@@ -152,9 +158,79 @@ impl RollbackCommand {
             }
 
             // revert the indexer
-            if state_change_set_ext_opt.is_some() {
+            let previous_tx_order = if tx_order > 0 { tx_order - 1 } else { 0 };
+            let previous_state_change_set_ext_opt = rooch_db
+                .rooch_store
+                .get_state_change_set(previous_tx_order)?;
+            if previous_state_change_set_ext_opt.is_some() && state_change_set_ext_opt.is_some() {
+                // let previoud_state_root = previous_state_change_set_ext_opt.unwrap().state_change_set.state_root;
+                let previous_state_change_set_ext = previous_state_change_set_ext_opt.unwrap();
                 let state_change_set_ext = state_change_set_ext_opt.unwrap();
+
+                let mut object_ids = vec![];
+                for (_feild_key, object_change) in
+                    state_change_set_ext.state_change_set.changes.clone()
+                {
+                    let _ = collect_revert_object_change_ids(object_change, &mut object_ids)?;
+                }
+
+                let root = ObjectMeta::root_metadata(
+                    previous_state_change_set_ext.state_change_set.state_root,
+                    previous_state_change_set_ext.state_change_set.global_size,
+                );
+                let resolver = RootObjectResolver::new(root, &rooch_db.moveos_store);
+                let object_mapping = resolver
+                    .get_states(AccessPath::objects(object_ids))?
+                    .into_iter()
+                    .flatten()
+                    .map(|v| (v.metadata.id.clone(), v.metadata))
+                    .collect::<HashMap<_, _>>();
+                // let
+                // rooch_db.indexer_store.
+
+                // 1. revert indexer transaction
+                rooch_db
+                    .indexer_store
+                    .delete_transactions(vec![tx_order])
+                    .map_err(|e| anyhow!(format!("Revert indexer transactions error: {:?}", e)))?;
+
+                // 2. revert indexer event
+                rooch_db
+                    .indexer_store
+                    .delete_events(vec![tx_order])
+                    .map_err(|e| anyhow!(format!("Revert indexer events error: {:?}", e)))?;
+
+                // 3. revert indexer full object state, including object_states, utxos and inscriptions
+                // indexer object state index generator
+                let mut state_index_generator = IndexerObjectStatesIndexGenerator::default();
+                let mut indexer_object_state_change_set = IndexerObjectStateChangeSet::default();
+
+                // // set genesis tx_order and state_index_generator for new indexer revert
+                // let tx_order: u64 = 0;
+                // let last_state_index = self
+                //     .query_last_state_index_by_tx_order(tx_order, state_type.clone())
+                //     .await?;
+                // let mut state_index_generator = last_state_index.map_or(0, |x| x + 1);
+
+                // let object_mapping = HashMap::<ObjectID, ObjectMeta>::new();
+                for (_feild_key, object_change) in state_change_set_ext.state_change_set.changes {
+                    let _ = handle_revert_object_change(
+                        &mut state_index_generator,
+                        tx_order,
+                        &mut indexer_object_state_change_set,
+                        object_change,
+                        &object_mapping,
+                    )?;
+                }
+                rooch_db
+                    .indexer_store
+                    .apply_object_states(indexer_object_state_change_set)
+                    .map_err(|e| anyhow!(format!("Revert indexer states error: {:?}", e)))?;
             }
+            println!(
+                "revert indexer succ, tx_hash: {:?}, tx_order {}",
+                tx_hash, tx_order
+            );
         }
 
         let rollback_sequencer_info = SequencerInfo {

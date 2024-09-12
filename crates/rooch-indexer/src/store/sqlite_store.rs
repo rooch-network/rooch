@@ -360,7 +360,7 @@ impl SqliteIndexerStore {
             .start_timer();
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
 
-        let tx_orders = tx_orders.into_iter().map(|v| v as i64).collect();
+        let tx_orders: Vec<_> = tx_orders.into_iter().map(|v| v as i64).collect();
         diesel::delete(
             transactions::table.filter(transactions::tx_order.eq_any(tx_orders.as_slice())),
         )
@@ -414,7 +414,7 @@ impl SqliteIndexerStore {
             .start_timer();
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
 
-        let tx_orders = tx_orders.into_iter().map(|v| v as i64).collect();
+        let tx_orders: Vec<_> = tx_orders.into_iter().map(|v| v as i64).collect();
         diesel::delete(events::table.filter(events::tx_order.eq_any(tx_orders.as_slice())))
             .execute(&mut connection)
             .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
