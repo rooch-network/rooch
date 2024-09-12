@@ -1,15 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::service::routing::RpcRouter;
+use crate::service::metrics::{ServiceMetrics, TransportProtocol};
 use axum::extract::{ConnectInfo, State};
 use axum::http::HeaderMap;
 use axum::response::Response;
 use axum::Json;
 use jsonrpsee::types::{ErrorCode, ErrorObject, Id, InvalidRequest, Params, Request};
-use jsonrpsee::{core::server::Methods, ConnectionId, MethodCallback, MethodResponse};
+use jsonrpsee::{core::server::Methods, ConnectionId, MethodCallback, MethodKind, MethodResponse};
 use serde_json::value::RawValue;
 use std::net::SocketAddr;
+use tokio::time::Instant;
 
 pub const MAX_RESPONSE_SIZE: u32 = 2 << 30;
 
@@ -19,7 +20,8 @@ pub const NOT_SUPPORTED_MSG: &str = "Requests are not supported by this server";
 #[derive(Debug, Clone)]
 pub(crate) struct CallData<'a> {
     methods: &'a Methods,
-    // rpc_router: &'a RpcRouter,
+    metrics: &'a ServiceMetrics,
+    request_start: Instant,
     max_response_body_size: u32,
 }
 
@@ -27,22 +29,36 @@ pub(crate) struct CallData<'a> {
 pub struct JsonRpcService {
     /// Registered server methods.
     methods: Methods,
-    // rpc_router: RpcRouter,
+    metrics: ServiceMetrics,
 }
 
 impl JsonRpcService {
-    pub fn new(methods: Methods, _: RpcRouter) -> Self {
-        Self {
-            methods,
-            // rpc_router,
-        }
+    pub fn new(methods: Methods, metrics: ServiceMetrics) -> Self {
+        Self { methods, metrics }
     }
 
     fn call_data(&self) -> CallData<'_> {
         CallData {
             methods: &self.methods,
-            // rpc_router: &self.rpc_router,
+            metrics: &self.metrics,
+            request_start: self.metrics.on_request(TransportProtocol::Http),
             max_response_body_size: MAX_RESPONSE_SIZE,
+        }
+    }
+
+    fn ws_call_data<'c, 'a: 'c, 'b: 'c>(
+        &'a self,
+        bounded_subscriptions: BoundedSubscriptions,
+        sink: &'b MethodSink,
+    ) -> ws::WsCallData<'c, L> {
+        ws::WsCallData {
+            metrics: &self.metrics,
+            methods: &self.methods,
+            max_response_body_size: MAX_RESPONSE_SIZE,
+            request_start: self.logger.on_request(TransportProtocol::Http),
+            bounded_subscriptions,
+            id_provider: &*self.id_provider,
+            sink,
         }
     }
 }
@@ -118,8 +134,9 @@ async fn process_raw_request(
 async fn process_request(req: Request<'_>, call: CallData<'_>) -> MethodResponse {
     let CallData {
         methods,
-        // rpc_router,
         max_response_body_size,
+        metrics,
+        request_start,
     } = call;
 
     let params_str = match req.params().parse::<serde_json::Value>() {
@@ -127,25 +144,47 @@ async fn process_request(req: Request<'_>, call: CallData<'_>) -> MethodResponse
         Err(e) => e.to_string(),
     };
 
-    tracing::event!(
-        tracing::Level::INFO,
-        event = "on_call",
-        method = req.method_name(),
-        params = params_str,
-    );
-
     let conn_id: usize = 0; // unused
     let params = Params::new(req.params.as_ref().map(|params| params.get()));
     let name = &req.method;
+    let name_str = name.as_ref();
     let id = req.id;
 
+    tracing::event!(
+        tracing::Level::INFO,
+        event = "on_call",
+        method = name_str,
+        params = params_str,
+    );
+
     let response = match methods.method_with_name(name) {
-        None => MethodResponse::error(id, ErrorObject::from(ErrorCode::MethodNotFound)),
+        None => {
+            metrics.on_call(
+                name,
+                params.clone(),
+                MethodKind::NotFound,
+                TransportProtocol::Http,
+            );
+            MethodResponse::error(id, ErrorObject::from(ErrorCode::MethodNotFound))
+        }
         Some((_, method)) => match method {
             MethodCallback::Sync(callback) => {
+                metrics.on_call(
+                    name,
+                    params.clone(),
+                    MethodKind::MethodCall,
+                    TransportProtocol::Http,
+                );
                 (callback)(id, params, max_response_body_size as usize, req.extensions)
             }
             MethodCallback::Async(callback) => {
+                metrics.on_call(
+                    name,
+                    params.clone(),
+                    MethodKind::MethodCall,
+                    TransportProtocol::Http,
+                );
+
                 let id = id.into_owned();
                 let params = params.into_owned();
 
@@ -159,10 +198,229 @@ async fn process_request(req: Request<'_>, call: CallData<'_>) -> MethodResponse
                 .await
             }
             MethodCallback::Subscription(_) | MethodCallback::Unsubscription(_) => {
+                metrics.on_call(
+                    name,
+                    params.clone(),
+                    MethodKind::NotFound,
+                    TransportProtocol::Http,
+                );
                 // Subscriptions not supported on HTTP
                 MethodResponse::error(id, ErrorObject::from(ErrorCode::InternalError))
             }
         },
     };
+
+    tracing::event!(
+        tracing::Level::INFO,
+        event = "on_result",
+        method = name_str,
+        result = response.as_result(),
+    );
+
+    metrics.on_result(
+        name,
+        response.is_success(),
+        response.as_error_code(),
+        request_start,
+        TransportProtocol::Http,
+    );
+
     response
+}
+
+pub mod ws {
+    use axum::{
+        extract::{
+            ws::{Message, WebSocket},
+            WebSocketUpgrade,
+        },
+        response::Response,
+    };
+    use tokio::sync::mpsc;
+    use jsonrpsee::{core::server::BoundedSubscriptions, core::server::helpers::MethodSink, server::IdProvider, types::error::reject_too_many_subscriptions, SubscriptionState};
+    use rooch_types::function_arg::FunctionArgType::String;
+    use super::*;
+
+    #[derive(Debug, Clone)]
+    pub(crate) struct WsCallData<'a> {
+        pub bounded_subscriptions: BoundedSubscriptions,
+        pub id_provider: &'a dyn IdProvider,
+        pub methods: &'a Methods,
+        pub max_response_body_size: u32,
+        pub sink: &'a MethodSink,
+        pub metrics: &'a ServiceMetrics,
+        pub request_start: Instant,
+    }
+
+    // A WebSocket handler that echos any message it receives.
+    //
+    // This one we'll be integration testing so it can be written in the regular way.
+    pub async fn ws_json_rpc_upgrade<>(
+        ws: WebSocketUpgrade,
+        State(service): State<JsonRpcService>,
+    ) -> Response {
+        ws.on_upgrade(|ws| ws_json_rpc_handler(ws, service))
+    }
+
+    async fn ws_json_rpc_handler(mut socket: WebSocket, service: JsonRpcService) {
+        // #[allow(clippy::disallowed_methods)]
+        let (tx, mut rx) = mpsc::channel(100);
+
+        let mut sink = MethodSink::new_with_limit(tx, MAX_RESPONSE_SIZE);
+        let bounded_subscriptions = BoundedSubscriptions::new(100);
+
+        loop {
+            tokio::select! {
+                maybe_message = socket.recv() => {
+                    if let Some(Ok(message)) = maybe_message {
+                        if let Message::Text(msg) = message {
+                            let response =
+                                process_raw_request(&service, &msg, bounded_subscriptions.clone(), &sink).await;
+                            if let Some(response) = response {
+                                let _ = sink.try_send(response.to_result());
+                            }
+                        }
+                    } else {
+                        break;
+                    }
+                },
+                Some(response) = rx.recv() => {
+                    if socket.send(Message::Text(response)).await.is_err() {
+                        break;
+                    }
+                },
+            }
+        }
+    }
+
+    async fn process_raw_request(
+        service: &JsonRpcService,
+        raw_request: &str,
+        bounded_subscriptions: BoundedSubscriptions,
+        sink: &MethodSink,
+    ) -> Option<MethodResponse> {
+        if let Ok(request) = serde_json::from_str::<Request>(raw_request) {
+            process_request(request, service.ws_call_data(bounded_subscriptions, sink)).await
+        } else if let Ok(_batch) = serde_json::from_str::<Vec<&RawValue>>(raw_request) {
+            Some(MethodResponse::error(
+                Id::Null,
+                ErrorObject::borrowed(NOT_SUPPORTED_CODE, &NOT_SUPPORTED_MSG, None),
+            ))
+        } else {
+            let (id, code) = prepare_error(raw_request);
+            Some(MethodResponse::error(id, ErrorObject::from(code)))
+        }
+    }
+
+    async fn process_request(
+        req: Request<'_>,
+        call: WsCallData<'_,>,
+    ) -> Option<MethodResponse> {
+        let WsCallData {
+            methods,
+            metrics,
+            max_response_body_size,
+            request_start,
+            bounded_subscriptions,
+            id_provider,
+            sink,
+        } = call;
+        let conn_id = 0; // unused
+
+        let params = Params::new(req.params.map(|params| params.get()));
+        let name = &req.method;
+        let id = req.id;
+
+        let response = match methods.method_with_name(name) {
+            None => {
+                metrics.on_call(
+                    name,
+                    params.clone(),
+                    MethodKind::NotFound,
+                    TransportProtocol::Http,
+                );
+                Some(MethodResponse::error(
+                    id,
+                    ErrorObject::from(ErrorCode::MethodNotFound),
+                ))
+            }
+            Some((name, method)) => match method.inner() {
+                MethodCallback::Sync(callback) => {
+                    metrics.on_call(
+                        name,
+                        params.clone(),
+                        MethodKind::MethodCall,
+                        TransportProtocol::Http,
+                    );
+                    Some((callback)(id, params, max_response_body_size as usize))
+                }
+                MethodCallback::Async(callback) => {
+                    metrics.on_call(
+                        name,
+                        params.clone(),
+                        MethodKind::MethodCall,
+                        TransportProtocol::Http,
+                    );
+
+                    let id = id.into_owned();
+                    let params = params.into_owned();
+
+                    Some(
+                        (callback)(id, params, conn_id, max_response_body_size as usize, None)
+                            .await,
+                    )
+                }
+
+                MethodCallback::Subscription(callback) => {
+                    metrics.on_call(
+                        name,
+                        params.clone(),
+                        MethodKind::Subscription,
+                        TransportProtocol::WebSocket,
+                    );
+                    if let Some(sp) = bounded_subscriptions.acquire() {
+                        let conn_state = SubscriptionState {
+                            conn_id,
+                            subscription_permit: sp,
+                            id_provider,
+                        };
+                        callback(id.clone(), params, sink.clone(), conn_state, None).await;
+                        None
+                    } else {
+                        Some(MethodResponse::error(
+                            id,
+                            reject_too_many_subscriptions(bounded_subscriptions.max()),
+                        ))
+                    }
+                }
+
+                MethodCallback::Unsubscription(callback) => {
+                    metrics.on_call(
+                        name,
+                        params.clone(),
+                        MethodKind::Unsubscription,
+                        TransportProtocol::WebSocket,
+                    );
+
+                    Some(callback(
+                        id,
+                        params,
+                        conn_id,
+                        max_response_body_size as usize,
+                    ))
+                }
+            },
+        };
+
+        if let Some(response) = &response {
+            metrics.on_result(
+                name,
+                response.is_success(),
+                response.as_error_code(),
+                request_start,
+                TransportProtocol::WebSocket,
+            );
+        }
+        response
+    }
 }

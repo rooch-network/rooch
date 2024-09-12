@@ -7,7 +7,7 @@ use crate::server::rooch_server::RoochServer;
 use crate::service::aggregate_service::AggregateService;
 use crate::service::blocklist::{BlockListLayer, BlocklistConfig};
 use crate::service::error::ErrorHandler;
-use crate::service::routing::RpcRouter;
+use crate::service::metrics::ServiceMetrics;
 use crate::service::rpc_service::RpcService;
 use anyhow::{ensure, Error, Result};
 use axum::http::{HeaderValue, Method};
@@ -29,8 +29,6 @@ use rooch_genesis::RoochGenesis;
 use rooch_indexer::actor::indexer::IndexerActor;
 use rooch_indexer::actor::reader_indexer::IndexerReaderActor;
 use rooch_indexer::proxy::IndexerProxy;
-use rooch_open_rpc::Project;
-use rooch_open_rpc_spec_builder::rooch_rpc_doc;
 use rooch_pipeline_processor::actor::processor::PipelineProcessorActor;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_proposer::actor::messages::ProposeBlock;
@@ -60,6 +58,7 @@ use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::{error, info};
+use rooch_types::service_type::ServiceType;
 
 mod axum_router;
 pub mod metrics_server;
@@ -117,7 +116,7 @@ impl Service {
 
 pub struct RpcModuleBuilder {
     module: RpcModule<()>,
-    rpc_doc: Project,
+    // rpc_doc: Project,
 }
 
 impl Default for RpcModuleBuilder {
@@ -130,7 +129,7 @@ impl RpcModuleBuilder {
     pub fn new() -> Self {
         Self {
             module: RpcModule::new(()),
-            rpc_doc: rooch_rpc_doc(env!("CARGO_PKG_VERSION")),
+            // rpc_doc: rooch_rpc_doc(env!("CARGO_PKG_VERSION")),
         }
     }
 
@@ -289,8 +288,8 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         &prometheus_registry,
         Some(event_actor_ref.clone()),
     )?
-    .into_actor(Some("Sequencer"), &actor_system)
-    .await?;
+        .into_actor(Some("Sequencer"), &actor_system)
+        .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
 
     // Init DA
@@ -363,9 +362,9 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
             bitcoin_relayer_config.clone(),
             Some(event_actor_ref),
         )
-        .await?
-        .into_actor(Some("Relayer"), &actor_system)
-        .await?;
+            .await?
+            .into_actor(Some("Relayer"), &actor_system)
+            .await?;
         let relay_tick_in_seconds: u64 = 1;
         let relayer_timer = Timer::start(
             relayer,
@@ -486,14 +485,42 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
 
     let methods_names = rpc_module_builder.module.method_names().collect::<Vec<_>>();
 
-    let rpc_router = RpcRouter::new(rpc_module_builder.rpc_doc.method_routing.clone(), false);
-    let ser =
-        axum_router::JsonRpcService::new(rpc_module_builder.module.clone().into(), rpc_router);
+    let ser = axum_router::JsonRpcService::new(
+        rpc_module_builder.module.clone().into(),
+        ServiceMetrics::new(&prometheus_registry, &methods_names),
+    );
 
     let mut router = axum::Router::new();
-
-    // TODO: support ws or http & ws
-    router = router.route("/", axum::routing::post(axum_router::json_rpc_handler));
+    match opt.service_type {
+        ServiceType::Both => {
+            router = router
+                .route(
+                    "/",
+                    axum::routing::post(crate::axum_router::json_rpc_handler),
+                )
+                .route(
+                    "/",
+                    axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
+                )
+                .route(
+                    "/subscribe",
+                    axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
+                );
+        }
+        ServiceType::Http => {
+            router = router.route("/", axum::routing::post(axum_router::json_rpc_handler));
+        }
+        ServiceType::WebSocket => {
+            router = router.route(
+                "/",
+                axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
+            )
+                .route(
+                    "/subscribe",
+                    axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
+                );
+        }
+    }
 
     let app = router.with_state(ser).layer(middleware);
 
@@ -506,16 +533,16 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
             listener,
             app.into_make_service_with_connect_info::<SocketAddr>(),
         )
-        .with_graceful_shutdown(async move {
-            tokio::select! {
+            .with_graceful_shutdown(async move {
+                tokio::select! {
             _ = shutdown_signal() => {},
             _ = axum_rx.recv() => {
                 info!("shutdown signal received, starting graceful shutdown");
                 },
             }
-        })
-        .await
-        .unwrap();
+            })
+            .await
+            .unwrap();
     });
 
     info!("JSON-RPC HTTP Server start listening {:?}", addr);

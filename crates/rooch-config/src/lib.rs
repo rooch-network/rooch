@@ -14,7 +14,7 @@ use std::fs::create_dir_all;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::{fmt::Debug, path::Path, path::PathBuf};
-
+use rooch_types::service_type::ServiceType;
 use crate::da_config::DAConfig;
 use crate::store_config::StoreConfig;
 
@@ -141,6 +141,9 @@ pub struct RoochOpt {
     #[clap(long)]
     pub traffic_per_second: Option<u64>,
 
+    #[clap(long, default_value_t, value_enum)]
+    pub service_type: ServiceType,
+
     #[serde(skip)]
     #[clap(skip)]
     base: Option<Arc<BaseConfig>>,
@@ -177,6 +180,7 @@ impl RoochOpt {
             traffic_per_second: None,
             traffic_burst_size: None,
             base: None,
+            service_type: ServiceType::default(),
         };
         opt.init()?;
         Ok(opt)
@@ -356,9 +360,6 @@ impl ServerOpt {
     }
 
     pub fn get_active_env(&self) -> String {
-        match self.active_env.clone() {
-            Some(env) => env,
-            None => RoochChainID::default().chain_name(),
-        }
+        self.active_env.clone().unwrap_or_else(|| RoochChainID::default().chain_name())
     }
 }
