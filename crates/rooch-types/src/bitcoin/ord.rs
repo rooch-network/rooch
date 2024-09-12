@@ -42,8 +42,11 @@ impl Default for InscriptionID {
 }
 
 impl InscriptionID {
-    pub fn new(txid: AccountAddress, index: u32) -> Self {
-        Self { txid, index }
+    pub fn new<TID: IntoAddress>(txid: TID, index: u32) -> Self {
+        Self {
+            txid: txid.into_address(),
+            index,
+        }
     }
 
     pub fn object_id(&self) -> ObjectID {
@@ -222,6 +225,66 @@ impl Inscription {
             self.inscription_number as i32
         }
     }
+
+    pub fn metaprotocol(&self) -> Option<&str> {
+        self.metaprotocol.as_ref().map(|s| s.as_str())
+    }
+
+    pub fn metadata(&self) -> &[u8] {
+        &self.metadata
+    }
+
+    pub fn parents(&self) -> &[InscriptionID] {
+        &self.parents
+    }
+
+    pub fn content_type(&self) -> Option<&str> {
+        self.content_type.as_ref().map(|s| s.as_str())
+    }
+
+    pub fn content_encoding(&self) -> Option<&str> {
+        self.content_encoding.as_ref().map(|s| s.as_str())
+    }
+
+    pub fn pointer(&self) -> Option<u64> {
+        self.pointer.as_ref().map(|p| *p)
+    }
+
+    pub fn body(&self) -> &[u8] {
+        &self.body
+    }
+
+    pub fn set_metaprotocol(&mut self, metaprotocol: String) {
+        self.metaprotocol = Some(metaprotocol.into()).into();
+    }
+
+    pub fn set_metadata(&mut self, metadata: Vec<u8>) {
+        self.metadata = metadata;
+    }
+
+    pub fn set_parents(&mut self, parents: Vec<InscriptionID>) {
+        self.parents = parents;
+    }
+
+    pub fn set_content_type(&mut self, content_type: String) {
+        self.content_type = Some(content_type.into()).into();
+    }
+
+    pub fn set_content_encoding(&mut self, content_encoding: String) {
+        self.content_encoding = Some(content_encoding.into()).into();
+    }
+
+    pub fn set_pointer(&mut self, pointer: u64) {
+        self.pointer = Some(pointer).into();
+    }
+
+    pub fn set_body(&mut self, body: Vec<u8>) {
+        self.body = body;
+    }
+
+    pub fn set_rune(&mut self, rune: u128) {
+        self.rune = Some(rune).into();
+    }
 }
 
 pub fn derive_inscription_id(inscription_id: &InscriptionID) -> ObjectID {
@@ -290,6 +353,68 @@ pub struct InscriptionRecord {
     pub pointer: MoveOption<u64>,
     pub unrecognized_even_field: bool,
     pub rune: Option<u128>,
+}
+
+impl InscriptionRecord {
+    pub fn body(&self) -> &[u8] {
+        &self.body
+    }
+
+    pub fn content_type(&self) -> Option<&str> {
+        self.content_type.as_ref().map(|s| s.as_str())
+    }
+
+    pub fn content_encoding(&self) -> Option<&str> {
+        self.content_encoding.as_ref().map(|s| s.as_str())
+    }
+
+    pub fn metadata(&self) -> &[u8] {
+        &self.metadata
+    }
+
+    pub fn metaprotocol(&self) -> Option<&str> {
+        self.metaprotocol.as_ref().map(|s| s.as_str())
+    }
+
+    pub fn parents(&self) -> &[InscriptionID] {
+        &self.parents
+    }
+
+    pub fn pointer(&self) -> Option<u64> {
+        self.pointer.as_ref().map(|p| *p)
+    }
+
+    pub fn rune(&self) -> Option<u128> {
+        self.rune
+    }
+
+    pub fn set_content_type(&mut self, content_type: String) {
+        self.content_type = Some(content_type.into()).into();
+    }
+
+    pub fn set_content_encoding(&mut self, content_encoding: String) {
+        self.content_encoding = Some(content_encoding.into()).into();
+    }
+
+    pub fn set_metadata(&mut self, metadata: Vec<u8>) {
+        self.metadata = metadata;
+    }
+
+    pub fn set_metaprotocol(&mut self, metaprotocol: String) {
+        self.metaprotocol = Some(metaprotocol.into()).into();
+    }
+
+    pub fn set_parents(&mut self, parents: Vec<InscriptionID>) {
+        self.parents = parents;
+    }
+
+    pub fn set_pointer(&mut self, pointer: u64) {
+        self.pointer = Some(pointer).into();
+    }
+
+    pub fn set_rune(&mut self, rune: u128) {
+        self.rune = Some(rune);
+    }
 }
 
 impl Debug for InscriptionRecord {
@@ -388,6 +513,12 @@ impl MoveStructState for InscriptionStore {
 pub struct SatPoint {
     pub outpoint: OutPoint,
     pub offset: u64,
+}
+
+impl SatPoint {
+    pub fn outpoint(&self) -> bitcoin::OutPoint {
+        self.outpoint.clone().into()
+    }
 }
 
 impl MoveStructType for SatPoint {
