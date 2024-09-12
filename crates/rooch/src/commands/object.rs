@@ -133,7 +133,12 @@ impl CommandAction<String> for ObjectCommand {
                 };
                 let result = client
                     .rooch
-                    .query_utxos(utxo_fitler, None, self.limit, Some(query_options))
+                    .query_utxos(
+                        utxo_fitler,
+                        None,
+                        self.limit,
+                        Some(query_options.descending),
+                    )
                     .await?;
                 serde_json::to_string_pretty(&result).unwrap()
             }

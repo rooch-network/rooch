@@ -12,7 +12,7 @@
       "name": "Apache-2.0",
       "url": "https://raw.githubusercontent.com/rooch-network/rooch/main/LICENSE"
     },
-    "version": "0.7.0"
+    "version": "0.7.1"
   },
   "methods": [
     {
@@ -910,7 +910,7 @@
         ],
         "properties": {
           "txid": {
-            "$ref": "#/components/schemas/bitcoin::hash_types::newtypes::Txid"
+            "$ref": "#/components/schemas/bitcoin::blockdata::transaction::Txid"
           },
           "vout": {
             "type": "integer",
@@ -3104,7 +3104,7 @@
             "description": "The txid of the UTXO",
             "allOf": [
               {
-                "$ref": "#/components/schemas/bitcoin::hash_types::newtypes::Txid"
+                "$ref": "#/components/schemas/bitcoin::blockdata::transaction::Txid"
               }
             ]
           },
@@ -3248,7 +3248,7 @@
       "alloc::vec::Vec<u8>": {
         "type": "string"
       },
-      "bitcoin::hash_types::newtypes::Txid": {
+      "bitcoin::blockdata::transaction::Txid": {
         "type": "string"
       },
       "move_binary_format::file_format::Ability": {

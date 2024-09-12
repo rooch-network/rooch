@@ -1,9 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use bitcoin_hashes::{sha256t_hash_newtype, HashEngine};
+use bitcoin_hashes::{hex::FromHex, sha256t_hash_newtype, HashEngine};
 use bytes::Bytes;
-use hex::FromHex;
 use more_asserts::debug_assert_lt;
 use once_cell::sync::Lazy;
 use primitive_types::H256;
@@ -145,7 +144,7 @@ impl SMTNodeHash {
     }
 
     /// Parse a given hex string to a hash value.
-    pub fn from_hex<T: AsRef<[u8]>>(hex: T) -> Result<Self, HashParseError> {
+    pub fn from_hex(hex: &str) -> Result<Self, HashParseError> {
         <[u8; Self::LEN]>::from_hex(hex)
             .map_err(|_| HashParseError)
             .map(Self::new)
@@ -169,18 +168,7 @@ impl SMTNodeHash {
             return Err(HashParseError);
         }
         let literal = literal.strip_prefix("0x").unwrap_or(literal);
-        let hex_len = literal.len();
-        // If the string is too short, pad it
-        if hex_len < Self::LEN * 2 {
-            let mut hex_str = String::with_capacity(Self::LEN * 2);
-            for _ in 0..Self::LEN * 2 - hex_len {
-                hex_str.push('0');
-            }
-            hex_str.push_str(literal);
-            Self::from_hex(hex_str)
-        } else {
-            Self::from_hex(literal)
-        }
+        Self::from_hex(literal)
     }
 }
 

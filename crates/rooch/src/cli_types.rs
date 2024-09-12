@@ -13,6 +13,8 @@ use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::authenticator::Authenticator;
 use rpassword::prompt_password;
 use serde::Serialize;
+use std::fs::File;
+use std::io::Read;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -161,4 +163,34 @@ impl WalletContextOptions {
             Ok(ctx)
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct FileOrHexInput {
+    /// The data decode from file or hex string
+    pub data: Vec<u8>,
+}
+
+impl FromStr for FileOrHexInput {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, anyhow::Error> {
+        let data_hex = if is_file_path(s) {
+            //load hex from file
+            let mut file = File::open(s)
+                .map_err(|e| anyhow::anyhow!("Failed to open file: {}, err:{:?}", s, e))?;
+            let mut hex_str = String::new();
+            file.read_to_string(&mut hex_str)
+                .map_err(|e| anyhow::anyhow!("Failed to read file: {}, err:{:?}", s, e))?;
+            hex_str.strip_prefix("0x").unwrap_or(&hex_str).to_string()
+        } else {
+            s.strip_prefix("0x").unwrap_or(s).to_string()
+        };
+        let data = hex::decode(&data_hex)
+            .map_err(|e| anyhow::anyhow!("Failed to decode hex: {}, err:{:?}", data_hex, e))?;
+        Ok(FileOrHexInput { data })
+    }
+}
+
+pub(crate) fn is_file_path(s: &str) -> bool {
+    s.contains('/') || s.contains('\\') || s.contains('.')
 }

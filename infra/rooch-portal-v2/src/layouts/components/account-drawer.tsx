@@ -3,12 +3,7 @@
 import type { IconButtonProps } from '@mui/material/IconButton';
 
 import { useState, useCallback } from 'react';
-import {
-  useWallets,
-  useWalletStore,
-  useConnectWallet,
-  useCurrentAddress,
-} from '@roochnetwork/rooch-sdk-kit';
+import { useWallets, useWalletStore, useCurrentAddress } from '@roochnetwork/rooch-sdk-kit';
 
 import Box from '@mui/material/Box';
 import { Button } from '@mui/material';
@@ -26,6 +21,7 @@ import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 import { AnimateAvatar } from 'src/components/animate';
 
+import WalletSelectModal from './wallet-select-modal';
 import { DisconnectButton } from './disconnect-button';
 
 export type AccountDrawerProps = IconButtonProps & {};
@@ -34,10 +30,11 @@ export function AccountDrawer() {
   const theme = useTheme();
   const wallets = useWallets();
   const currentAddress = useCurrentAddress();
-  const { mutateAsync: connectWallet } = useConnectWallet();
   const connectionStatus = useWalletStore((state) => state.connectionStatus);
 
   const [open, setOpen] = useState(false);
+
+  const [showWalletSelectModal, setShowWalletSelectModal] = useState(false);
 
   const handleOpenDrawer = useCallback(() => {
     setOpen(true);
@@ -72,13 +69,17 @@ export function AccountDrawer() {
             handleOpenDrawer();
             return;
           }
-          await connectWallet({ wallet: wallets[0] });
+          setShowWalletSelectModal(true);
         }}
       >
         {connectionStatus === 'connected'
           ? shortAddress(currentAddress?.toStr(), 8, 6)
           : 'Connect Wallet'}
       </Button>
+
+      {showWalletSelectModal && (
+        <WalletSelectModal onSelect={() => setShowWalletSelectModal(false)} />
+      )}
 
       <Drawer
         open={open}

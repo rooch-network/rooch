@@ -3,11 +3,12 @@
 
 use crate::jsonrpc_types::StrView;
 use anyhow::Result;
+use bitcoin::XOnlyPublicKey;
 use move_core_types::account_address::AccountAddress;
-use nostr::{key::XOnlyPublicKey, prelude::FromBech32};
 use rooch_types::{
     address::{BitcoinAddress, NostrPublicKey, RoochAddress},
     bitcoin::network::Network,
+    to_bech32::FromBech32,
 };
 use std::str::FromStr;
 
@@ -66,6 +67,7 @@ impl From<RoochAddressView> for AccountAddress {
     }
 }
 
+//TODO directly use UnitedAddress and remove UnitedAddressView
 #[derive(Debug, Clone)]
 pub struct UnitedAddress {
     pub rooch_address: RoochAddress,
@@ -90,6 +92,7 @@ impl std::fmt::Display for UnitedAddressView {
 impl FromStr for UnitedAddressView {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        //TODO use the prefix to determine the type of address
         match RoochAddress::from_str(s) {
             Ok(rooch_address) => Ok(StrView(UnitedAddress {
                 rooch_address,
@@ -163,5 +166,36 @@ impl TryFrom<UnitedAddressView> for NostrPublicKey {
             Some(nostr_public_key) => Ok(nostr_public_key),
             None => Err(anyhow::anyhow!("No Nostr public key found")),
         }
+    }
+}
+
+impl From<BitcoinAddress> for UnitedAddressView {
+    fn from(value: BitcoinAddress) -> Self {
+        StrView(UnitedAddress {
+            rooch_address: value.to_rooch_address(),
+            bitcoin_address: Some(value),
+            nostr_public_key: None,
+        })
+    }
+}
+
+impl From<RoochAddress> for UnitedAddressView {
+    fn from(value: RoochAddress) -> Self {
+        StrView(UnitedAddress {
+            rooch_address: value,
+            bitcoin_address: None,
+            nostr_public_key: None,
+        })
+    }
+}
+
+impl From<bitcoin::Address> for UnitedAddressView {
+    fn from(value: bitcoin::Address) -> Self {
+        let value = BitcoinAddress::from(value);
+        StrView(UnitedAddress {
+            rooch_address: value.to_rooch_address(),
+            bitcoin_address: Some(value),
+            nostr_public_key: None,
+        })
     }
 }

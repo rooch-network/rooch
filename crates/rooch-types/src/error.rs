@@ -156,6 +156,12 @@ impl From<io::Error> for RoochError {
     }
 }
 
+impl From<bitcoin::io::Error> for RoochError {
+    fn from(e: bitcoin::io::Error) -> Self {
+        RoochError::IOError(e.to_string())
+    }
+}
+
 impl From<VMError> for RoochError {
     fn from(e: VMError) -> Self {
         RoochError::VMError(e)
@@ -165,6 +171,18 @@ impl From<VMError> for RoochError {
 impl From<serde_json::Error> for RoochError {
     fn from(e: serde_json::Error) -> Self {
         RoochError::UnexpectedError(e.to_string())
+    }
+}
+
+impl From<bitcoin::psbt::Error> for RoochError {
+    fn from(e: bitcoin::psbt::Error) -> Self {
+        RoochError::CommandArgumentError(e.to_string())
+    }
+}
+
+impl From<hex::FromHexError> for RoochError {
+    fn from(e: hex::FromHexError) -> Self {
+        RoochError::CommandArgumentError(e.to_string())
     }
 }
 

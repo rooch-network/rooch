@@ -225,6 +225,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         let rooch_dao_bitcoin_address = network.mock_genesis_account(&sequencer_keypair)?;
         let rooch_dao_address = rooch_dao_bitcoin_address.to_rooch_address();
         println!("Rooch DAO address: {:?}", rooch_dao_address);
+        println!("Rooch DAO Bitcoin address: {}", rooch_dao_bitcoin_address);
     } else {
         ensure!(
             network.genesis_config.sequencer_account == sequencer_bitcoin_address,
@@ -428,8 +429,8 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     // and thus we need a static reference to it
     let governor_conf = Arc::new(
         GovernorConfigBuilder::default()
-            .per_second(opt.traffic_per_second.unwrap_or(2))
-            .burst_size(opt.traffic_burst_size.unwrap_or(10))
+            .per_second(opt.traffic_per_second.unwrap_or(1))
+            .burst_size(opt.traffic_burst_size.unwrap_or(100))
             .use_headers()
             .error_handler(move |error1| ErrorHandler::default().0(error1))
             .finish()
