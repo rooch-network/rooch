@@ -64,3 +64,20 @@ pub fn read_line() -> Result<String, anyhow::Error> {
     io::stdin().read_line(&mut s)?;
     Ok(s.trim_end().to_string())
 }
+
+pub fn prompt_yes_no(question: &str) -> bool {
+    loop {
+        println!("{} [yes/no] > ", question);
+
+        let Ok(input) = read_line() else {
+            println!("Please answer yes or no.");
+            continue;
+        };
+
+        match input.trim_start().to_lowercase().as_str() {
+            "yes" | "y" => return true,
+            "no" | "n" => return false,
+            _ => println!("Please answer yes or no."),
+        }
+    }
+}
