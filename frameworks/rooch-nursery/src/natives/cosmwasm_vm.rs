@@ -1,7 +1,20 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::VecDeque;
+use std::ffi::CString;
+use std::ops::Deref;
+use std::vec;
+use std::sync::{Arc, Mutex};
+use std::collections::HashSet;
 use log::{debug, warn};
+
+use once_cell::sync::Lazy;
+use serde_json::Value as JSONValue;
+use smallvec::{smallvec, SmallVec};
+use cosmwasm_vm::{Cache, CacheOptions, InstanceOptions, Size, Capability, Checksum};
+use rooch_cosmwasm_vm::backend::{MoveBackendApi, MoveStorage, MoveBackendQuerier, build_move_backend};
+
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_core_types::vm_status::StatusCode;
@@ -10,25 +23,16 @@ use move_vm_types::loaded_data::runtime_types::Type;
 use move_vm_types::natives::function::NativeResult;
 use move_vm_types::pop_arg;
 use move_vm_types::values::{Struct, Value};
-use serde_json::Value as JSONValue;
-use smallvec::{smallvec, SmallVec};
-use core::slice::SlicePattern;
-use std::collections::VecDeque;
-use std::ffi::CString;
-use std::ops::Deref;
-use std::vec;
 
-use std::sync::{Arc, Mutex};
-use std::collections::HashSet;
-use cosmwasm_vm::{Cache, CacheOptions, InstanceOptions, Size, Capability, Checksum};
-use moveos_object_runtime::runtime_object::RuntimeObject;
-use moveos_object_runtime::TypeLayoutLoader;
-use moveos_types::state_resolver::StatelessResolver;
-use once_cell::sync::Lazy;
- 
-use rooch_cosmwasm_vm::backend::{MoveBackendApi, MoveStorage, MoveBackendQuerier, build_move_backend}
+use moveos_object_runtime::{
+    runtime::ObjectRuntimeContext, runtime_object::RuntimeObject, TypeLayoutLoader,
+};
+use moveos_types::{
+    moveos_std::object::ObjectID, state::FieldKey, state_resolver::StatelessResolver,
+};
 
 use moveos_stdlib::natives::helpers::{make_module_natives, make_native};
+
 
 use crate::natives::helper::{pop_object_id, CommonGasParameters};
 
@@ -60,7 +64,7 @@ pub struct CosmWasmCreateInstanceGasParameters {
 
 impl CosmWasmCreateInstanceGasParameters {
     pub fn zeros() -> Self {
-        Self { 
+        Self {
             base: 0.into(),
             per_byte_wasm: InternalGasPerByte::zero(),
         }
@@ -95,18 +99,27 @@ pub fn native_create_instance(
         wasm_bytes,
         move |layout_loader, resolver, rt_obj, wasm_bytes| -> PartialVMResult<(Value, Option<Option<NumBytes>>)> {
             // Save WASM bytecode and get checksum
-            let checksum = WASM_CACHE.save_wasm(wasm_bytes.as_slice())?;
+            let checksum = WASM_CACHE.save_wasm(wasm_bytes.as_slice()).map_err(|e| {
+                  PartialVMError::new(StatusCode::STORAGE_ERROR)
+                       .with_message(format!("Failed to save WASM: {}", e))
+                   })?;
 
             // Create Backend
-            let backend = build_move_backend(Arc::new(Mutex::new(rt_obj.clone())), layout_loader, resolver);
-
+            let backend = build_move_backend(Arc::new(Mutex::new(rt_obj)), layout_loader, resolver);
+ 
             // Create WASM instance
             let instance_options = InstanceOptions {
-                gas_limit: gas_parameters.gas_limit,
+                gas_limit: 10000,
             };
-            WASM_CACHE.get_instance(&checksum, backend, instance_options)?;
 
-            Ok((Value::vector_u8(checksum.to_vec()), Some(Some(NumBytes::new(wasm_bytes.len() as u64)))))
+            WASM_CACHE.get_instance(&checksum, backend, instance_options).map_err(|e| {
+                    PartialVMError::new(StatusCode::STORAGE_ERROR)
+                    .with_message(format!(
+                        "Failed to get WASM instance: {}", e
+                        ))
+                })?;
+
+            Ok((Value::vector_u8(checksum.as_slice().to_vec()), Some(Some(NumBytes::new(wasm_bytes.len() as u64)))))
         },
     )
 }
@@ -151,7 +164,7 @@ fn wasm_instance_fn_dispatch(
 // Helper function: convert PartialVMError to abort code
 fn error_to_abort_code(err: PartialVMError) -> u64 {
     match err.major_status() {
-        StatusCode::ABORTED => err.sub_status().unwrap_or(1),
+        StatusCode::ABORTED => err.unwrap_or(1),
         _ => err.major_status().into(),
     }
 }
@@ -172,7 +185,7 @@ impl CosmWasmDestroyInstanceGasParameters {
  **************************************************************************************************/
 #[inline]
 fn native_destroy_instance(
-    gas_params: &CosmWasmDestroyInstanceGasParameters,
+    gas_params: &GasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut arguments: VecDeque<Value>,
@@ -180,7 +193,7 @@ fn native_destroy_instance(
     assert!(ty_args.len() == 2, "Wrong number of type arguments");
     assert!(arguments.len() == 1, "Wrong number of arguments");
 
-    Ok(NativeResult::ok(gas_params.base, smallvec![Value::u64(0)]))
+    Ok(NativeResult::ok(gas_params.common.load_base, smallvec![Value::u64(0)]))
 }
 
 /***************************************************************************************************
@@ -208,13 +221,14 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
     let natives = [
         (
             "native_create_instance",
-            make_native(gas_params, native_create_instance),
+            make_native(gas_params.clone(), native_create_instance),
         ),
         (
             "native_destroy_instance",
-            make_native(gas_params.native_destroy_instance, native_destroy_instance),
+            make_native(gas_params.clone(), native_destroy_instance),
         ),
     ];
 
     make_module_natives(natives)
 }
+

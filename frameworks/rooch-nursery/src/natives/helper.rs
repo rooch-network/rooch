@@ -24,7 +24,15 @@ pub struct CommonGasParameters {
 }
 
 impl CommonGasParameters {
-    fn calculate_load_cost(&self, loaded: Option<Option<NumBytes>>) -> InternalGas {
+    pub fn zeros() -> Self {
+        Self {
+            load_base: InternalGas::zero(),
+            load_per_byte: InternalGasPerByte::zero(),
+            load_failure: InternalGas::zero(),
+        }
+    }
+
+    pub fn calculate_load_cost(&self, loaded: Option<Option<NumBytes>>) -> InternalGas {
         self.load_base
             + match loaded {
                 Some(Some(num_bytes)) => self.load_per_byte * num_bytes,

@@ -20,7 +20,7 @@ use moveos_types::state::MoveState;
 use moveos_types::state_resolver::StatelessResolver;
 
 pub struct MoveStorage<'a> {
-    object: Arc<Mutex<RuntimeObject>>,
+    object: Arc<Mutex<&'a mut RuntimeObject>>,
     layout_loader: &'a dyn TypeLayoutLoader,
     resolver: &'a dyn StatelessResolver,
     iterator_id_counter: u32,
@@ -29,7 +29,7 @@ pub struct MoveStorage<'a> {
 
 impl<'a> MoveStorage<'a> {
     pub fn new(
-        object: Arc<Mutex<RuntimeObject>>,
+        object: Arc<Mutex<&'a mut RuntimeObject>>,
         layout_loader: &'a dyn TypeLayoutLoader,
         resolver: &'a dyn StatelessResolver,
     ) -> Self {
@@ -271,7 +271,7 @@ impl Querier for MoveBackendQuerier {
 }
 
 pub fn build_move_backend<'a>(
-    object: Arc<Mutex<RuntimeObject>>,
+    object: Arc<Mutex<&'a mut RuntimeObject>>,
     layout_loader: &'a dyn TypeLayoutLoader,
     resolver: &'a dyn StatelessResolver,
 ) -> Backend<MoveBackendApi, MoveStorage<'a>, MoveBackendQuerier> {
