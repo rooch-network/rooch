@@ -195,7 +195,6 @@ pub fn handle_object_change(
 
 pub fn handle_revert_object_change(
     state_index_generator: &mut IndexerObjectStatesIndexGenerator,
-    // revert_state_index_generator: &mut IndexerObjectStatesIndexGenerator,
     tx_order: u64,
     indexer_object_state_change_set: &mut IndexerObjectStateChangeSet,
     object_change: ObjectChange,
@@ -226,11 +225,8 @@ pub fn handle_revert_object_change(
                     );
                     indexer_object_state_change_set.update_object_states(state);
                 }
-                // let state = IndexerObjectState::new(metadata.clone(), tx_order, state_index);
-                // indexer_object_state_change_set.update_object_states(state);
             }
             Op::Delete => {
-                // indexer_object_state_change_set.remove_object_states(object_id, &object_type);
                 // Use the reverted tx_order and state index as the deleted restored tx_order and tx_order
                 if let Some(previous_object_meta) = object_mapping.get(&object_id) {
                     let state = IndexerObjectState::new(
@@ -242,16 +238,9 @@ pub fn handle_revert_object_change(
                 }
             }
             Op::New(_value) => {
-                // let state = IndexerObjectState::new(metadata.clone(), tx_order, state_index);
-                // indexer_object_state_change_set.new_object_states(state);
-
                 indexer_object_state_change_set.remove_object_states(object_id, &object_type);
             }
         }
-    } else {
-        //If value is not changed, do nothing.
-        // let state = IndexerObjectState::new(metadata.clone(), tx_order, state_index);
-        // indexer_object_state_change_set.update_object_states(state);
     }
 
     state_index_generator.incr(&object_type);

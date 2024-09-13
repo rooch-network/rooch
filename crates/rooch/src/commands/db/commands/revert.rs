@@ -13,7 +13,7 @@ use crate::commands::db::commands::init;
 
 /// Revert tx by db command.
 #[derive(Debug, Parser)]
-pub struct RevertTxCommand {
+pub struct RevertCommand {
     #[clap(long, short = 'o')]
     /// tx order
     pub tx_order: u64,
@@ -31,7 +31,7 @@ pub struct RevertTxCommand {
     pub context_options: WalletContextOptions,
 }
 
-impl RevertTxCommand {
+impl RevertCommand {
     pub async fn execute(self) -> RoochResult<()> {
         let tx_order = self.tx_order;
         let (_root, rooch_db, _start_time) = init(self.base_data_dir, self.chain_id);
