@@ -1762,6 +1762,12 @@
               "type"
             ],
             "properties": {
+              "bitcoin_block_hash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "block_hash": {
                 "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
               },

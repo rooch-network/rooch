@@ -110,7 +110,6 @@ impl Handler<GetBlockHeaderInfoMessage> for BitcoinClientActor {
         _ctx: &mut ActorContext,
     ) -> Result<json::GetBlockHeaderResult> {
         let GetBlockHeaderInfoMessage { hash } = msg;
-        println!("Debug GetBlockHeaderInfoMessage msg {:?}", hash);
         Ok(self
             .retry(|| self.rpc_client.get_block_header_info(&hash))
             .await?)
