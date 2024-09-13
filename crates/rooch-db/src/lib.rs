@@ -1,20 +1,29 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
-use anyhow::{Error, Result};
+use anyhow::{anyhow, Error, Result};
+use moveos_store::config_store::ConfigStore;
 use moveos_store::transaction_store::TransactionStore as TxExecutionInfoStore;
 use moveos_store::MoveOSStore;
+use moveos_types::access_path::AccessPath;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectMeta;
+use moveos_types::startup_info::StartupInfo;
+use moveos_types::state_resolver::{RootObjectResolver, StateReader};
 use prometheus::Registry;
 use raw_store::metrics::DBMetrics;
 use raw_store::{rocks::RocksDB, StoreInstance};
 use rooch_config::store_config::StoreConfig;
+use rooch_indexer::store::traits::IndexerStoreTrait;
 use rooch_indexer::{indexer_reader::IndexerReader, IndexerStore};
-use rooch_store::transaction_store::TransactionStore;
+use rooch_store::state_store::StateStore;
 use rooch_store::RoochStore;
+use rooch_types::indexer::state::{
+    collect_revert_object_change_ids, handle_revert_object_change, IndexerObjectStateChangeSet,
+    IndexerObjectStatesIndexGenerator,
+};
 use rooch_types::sequencer::SequencerInfo;
 
 #[derive(Clone)]
@@ -113,27 +122,15 @@ impl RoochDB {
         }
         let sequencer_info = ledger_tx_opt.unwrap().sequence_info;
         let tx_order = sequencer_info.tx_order;
-        // check last order equals to sequencer tx order via tx_hash
-        if sequencer_info.tx_order != last_sequencer_info.last_order {
-            return Err(Error::msg(format!(
-                "the last order {} not match current sequencer info tx order {}, tx_hash {}",
-                last_sequencer_info.last_order, sequencer_info.tx_order, tx_hash
-            )));
-        }
+        assert_eq!(
+            sequencer_info.tx_order, last_sequencer_info.last_order,
+            "the last order {} should match current sequencer info tx order {}, tx_hash {}",
+            last_sequencer_info.last_order, sequencer_info.tx_order, tx_hash
+        );
 
-        // check only write tx sequence info succ, but not write tx execution info
-        let execution_info = self
-            .moveos_store
-            .transaction_store
-            .get_tx_execution_info(tx_hash)?;
-        if execution_info.is_some() {
-            return Err(Error::msg(format!(
-                "the tx execution info already exist via tx_hash {}, revert tx failed",
-                tx_hash
-            )));
-        }
+        self.do_revert_tx_ignore_check(tx_hash)?;
 
-        let previous_tx_order = last_order - 1;
+        let previous_tx_order = if tx_order > 0 { tx_order - 1 } else { 0 };
         let previous_tx_hash_opt = self
             .rooch_store
             .transaction_store
@@ -155,8 +152,19 @@ impl RoochDB {
                 previous_tx_hash
             )));
         }
-        let previous_sequencer_info = previous_ledger_tx_opt.unwrap().sequence_info;
 
+        let previous_execution_info_opt = self
+            .moveos_store
+            .transaction_store
+            .get_tx_execution_info(previous_tx_hash)?;
+        if previous_execution_info_opt.is_none() {
+            return Err(Error::msg(format!(
+                "the previous execution info not exist via tx_hash {}, revert tx failed",
+                previous_tx_hash
+            )));
+        }
+        let previous_sequencer_info = previous_ledger_tx_opt.unwrap().sequence_info;
+        let previous_execution_info = previous_execution_info_opt.unwrap();
         let revert_sequencer_info = SequencerInfo::new(
             previous_tx_order,
             previous_sequencer_info.tx_accumulator_info(),
@@ -164,10 +172,103 @@ impl RoochDB {
         self.rooch_store
             .meta_store
             .save_sequencer_info_ignore_check(revert_sequencer_info)?;
-        self.rooch_store.remove_transaction(tx_hash, tx_order)?;
+
+        let startup_info = StartupInfo::new(
+            previous_execution_info.state_root,
+            previous_execution_info.size,
+        );
+        self.moveos_store.save_startup_info(startup_info)?;
 
         println!(
             "revert tx succ, tx_hash: {:?}, tx_order {}",
+            tx_hash, tx_order
+        );
+
+        Ok(())
+    }
+
+    pub fn do_revert_tx_ignore_check(&self, tx_hash: H256) -> Result<()> {
+        let ledger_tx_opt = self
+            .rooch_store
+            .transaction_store
+            .get_transaction_by_hash(tx_hash)?;
+
+        if ledger_tx_opt.is_none() {
+            println!("the ledger tx not exist via tx_hash {}", tx_hash);
+            return Ok(());
+        }
+
+        let sequencer_info = ledger_tx_opt.unwrap().sequence_info;
+        let tx_order = sequencer_info.tx_order;
+        self.rooch_store
+            .transaction_store
+            .remove_transaction(tx_hash, tx_order)?;
+        self.moveos_store
+            .transaction_store
+            .remove_tx_execution_info(tx_hash)?;
+
+        // remove the state change set
+        let state_change_set_ext_opt = self.rooch_store.get_state_change_set(tx_order)?;
+        if state_change_set_ext_opt.is_some() {
+            self.rooch_store.remove_state_change_set(tx_order)?;
+        }
+
+        // revert the indexer
+        let previous_tx_order = if tx_order > 0 { tx_order - 1 } else { 0 };
+        let previous_state_change_set_ext_opt =
+            self.rooch_store.get_state_change_set(previous_tx_order)?;
+        if previous_state_change_set_ext_opt.is_some() && state_change_set_ext_opt.is_some() {
+            let previous_state_change_set_ext = previous_state_change_set_ext_opt.unwrap();
+            let state_change_set_ext = state_change_set_ext_opt.unwrap();
+
+            let mut object_ids = vec![];
+            for (_feild_key, object_change) in state_change_set_ext.state_change_set.changes.clone()
+            {
+                collect_revert_object_change_ids(object_change, &mut object_ids)?;
+            }
+
+            let root = ObjectMeta::root_metadata(
+                previous_state_change_set_ext.state_change_set.state_root,
+                previous_state_change_set_ext.state_change_set.global_size,
+            );
+            let resolver = RootObjectResolver::new(root, &self.moveos_store);
+            let object_mapping = resolver
+                .get_states(AccessPath::objects(object_ids))?
+                .into_iter()
+                .flatten()
+                .map(|v| (v.metadata.id.clone(), v.metadata))
+                .collect::<HashMap<_, _>>();
+
+            // 1. revert indexer transaction
+            self.indexer_store
+                .delete_transactions(vec![tx_order])
+                .map_err(|e| anyhow!(format!("Revert indexer transactions error: {:?}", e)))?;
+
+            // 2. revert indexer event
+            self.indexer_store
+                .delete_events(vec![tx_order])
+                .map_err(|e| anyhow!(format!("Revert indexer events error: {:?}", e)))?;
+
+            // 3. revert indexer full object state, including object_states, utxos and inscriptions
+            // indexer object state index generator
+            let mut state_index_generator = IndexerObjectStatesIndexGenerator::default();
+            let mut indexer_object_state_change_set = IndexerObjectStateChangeSet::default();
+
+            for (_feild_key, object_change) in state_change_set_ext.state_change_set.changes {
+                handle_revert_object_change(
+                    &mut state_index_generator,
+                    tx_order,
+                    &mut indexer_object_state_change_set,
+                    object_change,
+                    &object_mapping,
+                )?;
+            }
+            self.indexer_store
+                .apply_object_states(indexer_object_state_change_set)
+                .map_err(|e| anyhow!(format!("Revert indexer states error: {:?}", e)))?;
+        }
+        println!(
+            "revert tx and indexer succ, tx_hash: {:?}, tx_order {}",
             tx_hash, tx_order
         );
 
