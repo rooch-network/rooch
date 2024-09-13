@@ -219,7 +219,7 @@ impl Display for MoveAction {
                 }
                 write!(
                     f,
-                    "MoveAction::FunctionCall( function_id: 0x{:?},  type_args: {:?}, args: {:?})",
+                    "MoveAction::FunctionCall( function_id: {},  type_args: {:?}, args: {:?})",
                     function.function_id, function.ty_args, arg_list
                 )
             }
