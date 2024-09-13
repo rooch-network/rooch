@@ -1,0 +1,106 @@
+---
+title: 'Rooch Network 漏洞赏金活动——瓜分20万美元'
+author: omnihand
+category: Campaign
+date: 2024/09/13
+description: ''
+image: '/blog/bug-bounty/bounty-zh.png'
+---
+
+import PostHeader from '/components/blog/postHeader'
+
+<PostHeader />
+
+![](/blog/bug-bounty/bounty-zh.png)
+
+随着 Rooch 准主网的逐步推进，为进一步提升网络的安全性和稳定性，我们将启动为期一个月的漏洞赏金活动。通过这一活动，我们诚邀全球开发者和安全专家加入，发现和修复潜在的安全漏洞，共同守护 Rooch 的稳健发展。此次活动总奖金池高达 20 万美元，期待您的积极参与，详情请见下方具体规则。
+
+## 漏洞类型及奖励
+
+### 高危漏洞（一等奖）
+
+1. **造币、铸币漏洞**：调用系统合约造币或铸币的能力。
+2. **权限提升**：获得系统账户的权限并执行任意交易。
+3. **Move Verifier 绕过**：绕过 Move Verifier 的一个或多个检查，进行不当部署和交易执行。
+4. **私有泛型绕过**：绕过 `private_generics` 属性检查。
+5. **数据结构绕过**：绕过 `data_struct` 属性检查。
+6. **借用限制绕过**：在 `borrow_object` 时绕过只能有一个 mut 借用的限制。
+7. **字节码指令滥用**：在字节码中使用 Move 内置指令并进行不当交易。
+8. **交易验证绕过**：绕过交易的 Validator 检查。
+9. **Gas 费问题**：不支付 Gas 费执行交易。
+10. **网络分叉**：引发网络分叉的行为。
+11. **交易伪造和重放**：伪造或重放交易。
+
+### 中危漏洞（二等奖）
+
+1. **节点崩溃（BTC 交易）**：构造特殊的 BTC 交易导致节点进程崩溃。
+2. **SessionKey 绕过**：绕过 SessionKey 的安全限制。
+3. **RPC 接口崩溃**：通过 RPC 接口提交特殊格式的交易导致节点进程崩溃。
+
+### 低危漏洞（三等奖）
+
+1. **内存占用问题**：通过 RPC 接口提交特殊格式的交易导致节点内存占用过多。
+2. **CPU 升高问题**：通过 RPC 接口提交特殊格式的交易导致节点 CPU 升高。
+3. **拒绝服务攻击**：其他形式的拒绝服务攻击。
+
+### 用户使用以及数据异常（四等奖）
+
+1. Rooch 上的 UTXO 数据和 Bitcoin 主网不一致。
+2. Rooch 上的 Inscription 数据和主网不一致。
+3. CLI 以及 Portal 等面向开发者或者最终用户的产品使用过程中的异常。
+4. Example 以及 Demo 代码中的漏洞。
+
+## 漏洞范围以及排除项说明
+
+本次活动针对的主要仓库 [https://github.com/rooch-network/rooch/](https://github.com/rooch-network/rooch/issues/new/choose) ，主要包含：
+
+1. Rooch 网络的核心代码（Rust）
+2. Rooch Move Framework（Move）
+3. Rooch SDK (Typescript / Javascript)
+4. Rooch Portal (Typescript / Javascript)
+5. 数据异常及功能只针对 Pre Mainnet 网络
+
+以下类型的漏洞不在本次漏洞赏金范围内：
+
+1. 利用算力攻击导致 Bitcoin 网络区块重组 3 个区块以上。Rooch 作为 Bitcoin 的 Layer2，默认延迟 3 个区块确认，如果 Bitcoin 网络重组 3 个区块以上， Rooch 会自动进入维护状态，需要人工介入恢复。
+2. 利用社会工程或者钓鱼方式实现的不同形式的攻击。
+3. 非标准的地址格式或者解锁脚本导致 UTXO 的 Owner 被标识为0x4。
+4. 延迟确认导致的数据不一致问题。
+5. 前端数据或页面状态异常、页面渲染异常等（如数据格式不兼容导致页面渲染异常、JS异常等）
+6. 已经出现在Issues的或者功能还在开发未发布（未上Pre Mainnet、未启用等）的不包含。
+
+## 参与方式
+
+### 提交漏洞报告
+
+如果您在测试网中发现了上述漏洞，请遵循以下步骤提交报告：
+
+1. **准备报告**：
+    - **漏洞类型**：明确标明漏洞的类别。
+    - **漏洞描述**：简要描述漏洞的性质和影响。
+    - **重现步骤**：详细说明如何重现该漏洞。
+    - **环境信息**：包括测试网版本、节点配置等。
+    - **截图或日志**：附上相关截图或错误日志（如适用）。
+2. **提交渠道**：
+    - **GitHub 提交**：在我们的 GitHub 项目中创建一个新 Report a security vulnerability Issue 并附上您的报告，**注意不要创建为公开的 Issue**。https://github.com/rooch-network/rooch/issues/new/choose
+
+![](/blog/bug-bounty/open-issues.png)
+
+### 注意事项
+
+- 所有发现的漏洞信息必须通过上述渠道提交，**不可公开披露**。
+- 请在报告中留下您的联系方式，以便我们与您沟通，发放奖金。如在奖金发放期联系不上作者，视同放弃领取赏金。
+
+## 奖励机制
+
+此次活动的总奖金为 **20万美元**，将根据漏洞类型及影响进行分配。奖励以美元计价，并以 Rooch 主网代币支付。获奖者将在 Rooch 主网代币TGE后统一分发。
+
+## 活动时间
+
+4pm, Sep 13th - 4pm, Oct 13th （UTC+8)
+
+我们将认真评估每一个报告，并在合理时间内与您联系。
+
+## 加入我们，共同提升 Rooch 的安全性！
+
+安全是Rooch 网络的基石，您的贡献将帮助 Rooch Network 提高安全性和稳定性。无论是发现漏洞还是提供改进建议，我们都欢迎您的参与。让我们携手，为 Rooch 的未来发展保驾护航，打造更加安全、可靠的 BTC 原生应用层。感谢您的支持与贡献！期待在这次活动中与您携手共赢！
