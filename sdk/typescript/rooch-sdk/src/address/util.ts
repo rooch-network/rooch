@@ -39,7 +39,7 @@ export function convertToRoochAddressBytes(input: address): Bytes {
     }
 
     if (input.startsWith(ROOCH_BECH32_PREFIX)) {
-      const decode = bech32m.decode(input)
+      const decode = bech32m.decode(input as `${string}1${string}`)
       const bytes = bech32m.fromWords(decode.words)
 
       if (decode.prefix === ROOCH_BECH32_PREFIX && bytes.length === ROOCH_ADDRESS_LENGTH) {
@@ -71,7 +71,7 @@ export function isValidRoochAddress(input: address): input is string {
     }
 
     if (input.startsWith(ROOCH_BECH32_PREFIX)) {
-      const decode = bech32m.decode(input)
+      const decode = bech32m.decode(input as `${string}1${string}`)
       const bytes = bech32m.fromWords(decode.words)
 
       return decode.prefix === ROOCH_BECH32_PREFIX && bytes.length === ROOCH_ADDRESS_LENGTH

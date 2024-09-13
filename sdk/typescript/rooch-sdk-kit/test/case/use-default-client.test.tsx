@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { renderHook, waitFor, act } from '@testing-library/react'
 import {
   ErrorValidateSessionIsExpired,
   JsonRpcError,
@@ -77,7 +77,10 @@ describe('useDefaultClient', () => {
     }
 
     const wrapper = createWalletProviderContextWrapper({}, mockClient)
-    const { result } = renderHook(() => useTestHook(), { wrapper })
+    let result: any
+    await act(async () => {
+      result = renderHook(() => useTestHook(), { wrapper })
+    })
 
     await waitFor(() => {
       expect(result.current.sessions).toHaveLength(2)
@@ -89,9 +92,12 @@ describe('useDefaultClient', () => {
       return cachedCurrentSession!.getAuthKey() === s.getAuthKey()
     }
 
-    await expect(result.current.triggerSessionExpiredError).rejects.toThrow(
-      '[test] session expired',
-    )
+    await act(async () => {
+      await expect(result.current.triggerSessionExpiredError()).rejects.toThrow(
+        '[test] session expired',
+      )
+    })
+
     expect(result.current.sessions).toHaveLength(1)
     expect(result.current.sessions.find(getMatchedSessionByAuthKey)).toBeUndefined()
   })
