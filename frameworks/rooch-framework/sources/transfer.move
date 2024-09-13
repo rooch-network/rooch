@@ -32,6 +32,7 @@ module rooch_framework::transfer {
     ) {
         let btc_address = bitcoin_address::from_string(&to);
         let rooch_address = bitcoin_address::to_rooch_address(&btc_address);
+        address_mapping::bind_bitcoin_address(rooch_address, btc_address);
         account_coin_store::transfer<CoinType>(from, rooch_address, amount)
     }
 
@@ -62,6 +63,7 @@ module rooch_framework::transfer {
         obj: Object<T>) {
         let btc_address = bitcoin_address::from_string(&to);
         let rooch_address = bitcoin_address::to_rooch_address(&btc_address);
+        address_mapping::bind_bitcoin_address(rooch_address, btc_address);
         object::transfer(obj, rooch_address);
     }
 }
