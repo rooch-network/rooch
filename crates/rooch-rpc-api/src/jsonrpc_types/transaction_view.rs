@@ -19,6 +19,7 @@ pub struct L1BlockView {
     pub chain_id: StrView<u64>,
     pub block_height: StrView<u64>,
     pub block_hash: BytesView,
+    pub bitcoin_block_hash: Option<String>,
 }
 
 impl From<L1Block> for L1BlockView {
@@ -26,6 +27,13 @@ impl From<L1Block> for L1BlockView {
         Self {
             chain_id: block.chain_id.id().into(),
             block_height: block.block_height.into(),
+            bitcoin_block_hash: if block.chain_id.is_bitcoin() {
+                bitcoin::BlockHash::from_slice(&block.block_hash)
+                    .map(|hash| hash.to_string())
+                    .ok()
+            } else {
+                None
+            },
             block_hash: block.block_hash.into(),
         }
     }
