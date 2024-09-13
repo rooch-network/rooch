@@ -1,9 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::address::RoochAddress;
 use crate::transaction::{LedgerTransaction, LedgerTxData};
 use anyhow::Result;
+use move_core_types::account_address::AccountAddress;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo};
@@ -18,7 +18,7 @@ pub struct IndexerTransaction {
 
     pub sequence_number: u64,
     // the account address of sender who send the transaction
-    pub sender: RoochAddress,
+    pub sender: AccountAddress,
     pub action_type: u8,
     pub auth_validator_id: u64,
     // the amount of gas used.
@@ -52,7 +52,7 @@ impl IndexerTransaction {
 
             sequence_number: tx_context.sequence_number,
             // the account address of sender who send the transaction
-            sender: tx_context.sender.into(),
+            sender: tx_context.sender,
             action_type: move_action.action_type(),
             auth_validator_id,
             // the amount of gas used.
@@ -69,7 +69,7 @@ impl IndexerTransaction {
 #[serde(rename_all = "camelCase")]
 pub enum TransactionFilter {
     /// Query by sender address.
-    Sender(RoochAddress),
+    Sender(AccountAddress),
     /// Query by the transaction hash list.
     TxHashes(Vec<H256>),
     /// Return transactions in [start_time, end_time) interval

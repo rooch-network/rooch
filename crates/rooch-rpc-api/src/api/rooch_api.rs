@@ -11,8 +11,9 @@ use crate::jsonrpc_types::{
     DryRunTransactionResponseView, EventOptions, EventPageView, ExecuteTransactionResponseView,
     FieldKeyView, FunctionCallView, H256View, IndexerEventPageView, IndexerObjectStatePageView,
     IndexerStateIDView, ModuleABIView, ObjectIDVecView, ObjectIDView, ObjectStateFilterView,
-    ObjectStateView, QueryOptions, RoochAddressView, StateOptions, StatePageView, StrView,
-    StructTagView, TransactionWithInfoPageView, TxOptions,
+    ObjectStateView, QueryOptions, RoochAddressView, StateChangeSetPageView, StateOptions,
+    StatePageView, StrView, StructTagView, SyncStateFilterView, TransactionWithInfoPageView,
+    TxOptions,
 };
 use crate::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -198,4 +199,15 @@ pub trait RoochAPI {
         repair_type: RepairIndexerTypeView,
         repair_params: RepairIndexerParamsView,
     ) -> RpcResult<()>;
+
+    /// Sync state change sets
+    #[method(name = "syncStates")]
+    async fn sync_states(
+        &self,
+        filter: SyncStateFilterView,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<StrView<u64>>,
+        limit: Option<StrView<u64>>,
+        query_option: Option<QueryOptions>,
+    ) -> RpcResult<StateChangeSetPageView>;
 }

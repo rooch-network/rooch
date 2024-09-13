@@ -14,6 +14,7 @@ use moveos_types::state::{MoveStructType, MoveType, ObjectChange, StateChangeSet
 use once_cell::sync::Lazy;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 pub static UTXO_TYPE_TAG: Lazy<TypeTag> = Lazy::new(UTXO::type_tag);
 
@@ -192,6 +193,114 @@ pub fn handle_object_change(
     Ok(())
 }
 
+pub fn handle_revert_object_change(
+    state_index_generator: &mut IndexerObjectStatesIndexGenerator,
+    // revert_state_index_generator: &mut IndexerObjectStatesIndexGenerator,
+    tx_order: u64,
+    indexer_object_state_change_set: &mut IndexerObjectStateChangeSet,
+    object_change: ObjectChange,
+    object_mapping: &HashMap<ObjectID, ObjectMeta>,
+) -> Result<()> {
+    let ObjectChange {
+        metadata,
+        value,
+        fields,
+    } = object_change;
+    let object_id = metadata.id.clone();
+    let object_type = metadata.object_type.clone();
+    let state_index = state_index_generator.get(&object_type);
+
+    // Do not index dynamic field object
+    if is_dynamic_field_type(&object_type) {
+        return Ok(());
+    }
+    if let Some(op) = value {
+        match op {
+            Op::Modify(_value) => {
+                // Keep the tx_order and state index consistent before reverting
+                if let Some(previous_object_meta) = object_mapping.get(&object_id) {
+                    let state = IndexerObjectState::new(
+                        previous_object_meta.clone(),
+                        tx_order,
+                        state_index,
+                    );
+                    indexer_object_state_change_set.update_object_states(state);
+                }
+                // let state = IndexerObjectState::new(metadata.clone(), tx_order, state_index);
+                // indexer_object_state_change_set.update_object_states(state);
+            }
+            Op::Delete => {
+                // indexer_object_state_change_set.remove_object_states(object_id, &object_type);
+                // Use the reverted tx_order and state index as the deleted restored tx_order and tx_order
+                if let Some(previous_object_meta) = object_mapping.get(&object_id) {
+                    let state = IndexerObjectState::new(
+                        previous_object_meta.clone(),
+                        tx_order,
+                        state_index,
+                    );
+                    indexer_object_state_change_set.new_object_states(state);
+                }
+            }
+            Op::New(_value) => {
+                // let state = IndexerObjectState::new(metadata.clone(), tx_order, state_index);
+                // indexer_object_state_change_set.new_object_states(state);
+
+                indexer_object_state_change_set.remove_object_states(object_id, &object_type);
+            }
+        }
+    } else {
+        //If value is not changed, do nothing.
+        // let state = IndexerObjectState::new(metadata.clone(), tx_order, state_index);
+        // indexer_object_state_change_set.update_object_states(state);
+    }
+
+    state_index_generator.incr(&object_type);
+    for (_key, change) in fields {
+        handle_revert_object_change(
+            state_index_generator,
+            tx_order,
+            indexer_object_state_change_set,
+            change,
+            object_mapping,
+        )?;
+    }
+    Ok(())
+}
+
+pub fn collect_revert_object_change_ids(
+    object_change: ObjectChange,
+    object_ids: &mut Vec<ObjectID>,
+) -> Result<()> {
+    let ObjectChange {
+        metadata,
+        value,
+        fields,
+    } = object_change;
+    let object_id = metadata.id.clone();
+    let object_type = metadata.object_type.clone();
+
+    // Do not index dynamic field object
+    if is_dynamic_field_type(&object_type) {
+        return Ok(());
+    }
+    if let Some(op) = value {
+        match op {
+            Op::Modify(_value) => {
+                object_ids.push(object_id);
+            }
+            Op::Delete => {
+                object_ids.push(object_id);
+            }
+            Op::New(_value) => {}
+        }
+    }
+
+    for (_key, change) in fields {
+        collect_revert_object_change_ids(change, object_ids)?;
+    }
+    Ok(())
+}
+
 #[derive(
     Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize, JsonSchema, Default,
 )]
@@ -255,13 +364,6 @@ impl Filter<IndexerObjectState> for ObjectStateFilter {
     fn matches(&self, item: &IndexerObjectState) -> bool {
         self.try_matches(item).unwrap_or_default()
     }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum StateSyncFilter {
-    /// Query by object id.
-    ObjectId(ObjectID),
 }
 
 #[derive(Clone, Debug)]

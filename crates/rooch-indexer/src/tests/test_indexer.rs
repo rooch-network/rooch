@@ -62,7 +62,7 @@ async fn test_transaction_store() -> Result<()> {
     let transactions = vec![indexer_transaction];
     indexer_store.persist_transactions(transactions)?;
 
-    let filter = TransactionFilter::Sender(random_moveos_tx.ctx.sender.into());
+    let filter = TransactionFilter::Sender(random_moveos_tx.ctx.sender);
     let query_transactions =
         indexer_reader.query_transactions_with_filter(filter, None, 1, true)?;
     assert_eq!(query_transactions.len(), 1);
@@ -97,7 +97,7 @@ async fn test_event_store() -> Result<()> {
     let events = vec![indexer_event];
     indexer_store.persist_events(events)?;
 
-    let filter = EventFilter::Sender(random_moveos_tx.ctx.sender.into());
+    let filter = EventFilter::Sender(random_moveos_tx.ctx.sender);
     let query_events = indexer_reader.query_events_with_filter(filter, None, 1, true)?;
     assert_eq!(query_events.len(), 1);
     Ok(())
@@ -250,7 +250,7 @@ async fn test_escape_transaction() -> Result<()> {
     let transactions = vec![indexer_transaction];
     indexer_store.persist_transactions(transactions)?;
 
-    let filter = TransactionFilter::Sender(random_moveos_tx.ctx.sender.into());
+    let filter = TransactionFilter::Sender(random_moveos_tx.ctx.sender);
     let query_transactions =
         indexer_reader.query_transactions_with_filter(filter, None, 1, true)?;
     assert_eq!(query_transactions.len(), 1);

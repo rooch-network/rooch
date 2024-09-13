@@ -39,4 +39,8 @@ pub trait IndexerStoreTrait: Send + Sync {
     ) -> Result<(), IndexerError>;
 
     fn persist_events(&self, events: Vec<IndexerEvent>) -> Result<(), IndexerError>;
+
+    fn delete_transactions(&self, tx_orders: Vec<u64>) -> anyhow::Result<(), IndexerError>;
+
+    fn delete_events(&self, tx_orders: Vec<u64>) -> anyhow::Result<(), IndexerError>;
 }

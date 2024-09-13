@@ -6,7 +6,7 @@ use coerce::actor::message::Message;
 use moveos_types::moveos_std::event::Event;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
 use moveos_types::moveos_std::tx_context::TxContext;
-use moveos_types::state::StateChangeSet;
+use moveos_types::state::{StateChangeSet, StateChangeSetExt};
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
@@ -16,6 +16,7 @@ use rooch_types::indexer::state::{
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::transaction::LedgerTransaction;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Indexer write Message
 #[derive(Debug, Clone)]
@@ -146,5 +147,17 @@ pub struct IndexerApplyObjectStatesMessage {
 }
 
 impl Message for IndexerApplyObjectStatesMessage {
+    type Result = Result<()>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct IndexerRevertMessage {
+    pub revert_tx_order: u64,
+    pub revert_state_change_set: StateChangeSetExt,
+    pub root: ObjectMeta,
+    pub object_mapping: HashMap<ObjectID, ObjectMeta>,
+}
+
+impl Message for IndexerRevertMessage {
     type Result = Result<()>;
 }
