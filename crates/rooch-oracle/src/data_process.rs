@@ -93,6 +93,7 @@ pub struct State {
     pub context: WalletContext,
 }
 
+#[allow(clippy::needless_lifetimes)]
 pub async fn execute_transaction<'a>(
     action: MoveAction,
     state: RwLockWriteGuard<'a, State>,
