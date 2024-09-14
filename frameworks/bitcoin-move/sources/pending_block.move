@@ -8,7 +8,7 @@ module bitcoin_move::pending_block{
     use std::option::{Self, Option};
     use moveos_std::signer;
     use moveos_std::signer::module_signer;
-    use moveos_std::module_store::has_update_permission;
+    use moveos_std::module_store::has_upgrade_permission;
 
     use moveos_std::object::{Self, Object, ObjectID};
     use moveos_std::simple_map::{Self, SimpleMap};
@@ -336,7 +336,7 @@ module bitcoin_move::pending_block{
     public entry fun update_reorg_block_count(signer: &signer, count: u64){
         let module_signer = module_signer<PendingStore>();
         let package_id = signer::address_of(&module_signer);
-        assert!(has_update_permission(package_id, signer), ErrorHasNoPermission);
+        assert!(has_upgrade_permission(package_id, signer::address_of(signer)), ErrorHasNoPermission);
 
         let store = borrow_mut_store();
         store.reorg_block_count = count;

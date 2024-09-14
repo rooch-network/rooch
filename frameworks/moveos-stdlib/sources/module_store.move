@@ -319,18 +319,13 @@ module moveos_std::module_store {
     }
 
     /// Check if the account has the permission to upgrade the package with the package_id.
-    fun has_upgrade_permission(package_id: address, account: address): bool {
+    public fun has_upgrade_permission(package_id: address, account: address): bool {
         let id = object::account_named_object_id<UpgradeCap>(package_id);
         if (!object::exists_object(id)) {
             return false
         };
         let cap = object::borrow_object<UpgradeCap>(id);
         object::owner(cap) == account
-    }
-
-    /// Check if the account has the permission to update with the package_id.
-    public fun has_update_permission(package_id: address, account: &signer): bool {
-        Self::has_upgrade_permission(package_id, signer::address_of(account))
     }
 
     //The following is the bytes and hex of the compiled module: example/counter/sources/counter.move with account 0x42

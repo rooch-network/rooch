@@ -30,7 +30,7 @@
 -  [Function `add_to_allowlist`](#0x2_module_store_add_to_allowlist)
 -  [Function `remove_from_allowlist`](#0x2_module_store_remove_from_allowlist)
 -  [Function `is_in_allowlist`](#0x2_module_store_is_in_allowlist)
--  [Function `has_update_permission`](#0x2_module_store_has_update_permission)
+-  [Function `has_upgrade_permission`](#0x2_module_store_has_upgrade_permission)
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
@@ -362,12 +362,12 @@ Check if a package id is in the allowlist.
 
 
 
-<a name="0x2_module_store_has_update_permission"></a>
+<a name="0x2_module_store_has_upgrade_permission"></a>
 
-## Function `has_update_permission`
+## Function `has_upgrade_permission`
 
-Check if the account has the permission to update with the package_id.
+Check if the account has the permission to upgrade the package with the package_id.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_has_update_permission">has_update_permission</a>(package_id: <b>address</b>, <a href="account.md#0x2_account">account</a>: &<a href="">signer</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_has_upgrade_permission">has_upgrade_permission</a>(package_id: <b>address</b>, <a href="account.md#0x2_account">account</a>: <b>address</b>): bool
 </code></pre>
