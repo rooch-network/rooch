@@ -328,6 +328,12 @@ module moveos_std::module_store {
         object::owner(cap) == account
     }
 
+    /// Ensure the account has the permission to upgrade the package with the package_id.
+    public fun ensure_upgrade_permission(package_id: address, account: &signer) {
+        let has_permission = Self::has_upgrade_permission(package_id, signer::address_of(account));
+        assert!(has_permission, ErrorNoUpgradePermission)
+    }
+
     //The following is the bytes and hex of the compiled module: example/counter/sources/counter.move with account 0x42
     // Run the follow commands to get the bytecode of the module
     //./target/debug/rooch move build -p examples/counter -d

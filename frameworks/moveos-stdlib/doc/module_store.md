@@ -31,6 +31,7 @@
 -  [Function `remove_from_allowlist`](#0x2_module_store_remove_from_allowlist)
 -  [Function `is_in_allowlist`](#0x2_module_store_is_in_allowlist)
 -  [Function `has_upgrade_permission`](#0x2_module_store_has_upgrade_permission)
+-  [Function `ensure_upgrade_permission`](#0x2_module_store_ensure_upgrade_permission)
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
@@ -370,4 +371,16 @@ Check if the account has the permission to upgrade the package with the package_
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_has_upgrade_permission">has_upgrade_permission</a>(package_id: <b>address</b>, <a href="account.md#0x2_account">account</a>: <b>address</b>): bool
+</code></pre>
+
+
+
+<a name="0x2_module_store_ensure_upgrade_permission"></a>
+
+## Function `ensure_upgrade_permission`
+
+Ensure the account has the permission to upgrade the package with the package_id.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_ensure_upgrade_permission">ensure_upgrade_permission</a>(package_id: <b>address</b>, <a href="account.md#0x2_account">account</a>: &<a href="">signer</a>)
 </code></pre>

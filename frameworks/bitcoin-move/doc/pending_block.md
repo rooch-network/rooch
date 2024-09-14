@@ -118,15 +118,6 @@ This is a hot potato struct, can not be store and drop
 
 
 
-<a name="0x4_pending_block_ErrorHasNoPermission"></a>
-
-
-
-<pre><code><b>const</b> <a href="pending_block.md#0x4_pending_block_ErrorHasNoPermission">ErrorHasNoPermission</a>: u64 = 8;
-</code></pre>
-
-
-
 <a name="0x4_pending_block_ErrorNeedToWaitMoreBlocks"></a>
 
 
