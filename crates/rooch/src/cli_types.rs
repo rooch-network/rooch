@@ -85,6 +85,10 @@ pub struct TransactionOptions {
     #[clap(long, alias = "sender-account", value_parser=ParsedAddress::parse, default_value = "default")]
     pub(crate) sender: ParsedAddress,
 
+    /// Custom account's sequence number
+    #[clap(long)]
+    pub(crate) sequence_number: Option<u64>,
+
     /// Custom the transaction's gas limit.
     /// [default: 1_000_000_000] [alias: "gas-limit"]
     #[clap(long, alias = "gas-limit")]
