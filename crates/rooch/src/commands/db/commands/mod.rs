@@ -9,7 +9,7 @@ use rooch_types::rooch_network::RoochChainID;
 use std::path::PathBuf;
 use std::time::SystemTime;
 
-pub mod revert_tx;
+pub mod revert;
 pub mod rollback;
 
 fn init(
