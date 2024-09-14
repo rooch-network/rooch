@@ -196,7 +196,7 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
                 ModuleStore::type_layout(),
             ),
         ],
-        stdlib_version: StdlibVersion::Version(10),
+        stdlib_version: StdlibVersion::Version(8),
     }
 });
 
@@ -290,7 +290,7 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
             RoochToBitcoinAddressMapping::type_layout(),
         ),
     ],
-    stdlib_version: StdlibVersion::Version(10),
+    stdlib_version: StdlibVersion::Version(9),
 });
 
 #[cfg(test)]
