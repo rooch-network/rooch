@@ -10,7 +10,7 @@ pub struct RandomAmountGenerator;
 impl Generator for RandomAmountGenerator {
     fn inscribe_generate(
         &self,
-        _deploy_args: &Vec<u8>,
+        _deploy_args: &[u8],
         seed: &InscribeSeed,
         _recipient: &Address,
         _user_input: Option<String>,
@@ -28,7 +28,7 @@ impl Generator for RandomAmountGenerator {
 
     fn inscribe_verify(
         &self,
-        deploy_args: &Vec<u8>,
+        deploy_args: &[u8],
         seed: &InscribeSeed,
         recipient: &Address,
         user_input: Option<String>,

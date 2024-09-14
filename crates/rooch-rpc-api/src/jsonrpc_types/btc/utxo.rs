@@ -3,7 +3,8 @@
 
 use crate::jsonrpc_types::btc::transaction::TxidView;
 use crate::jsonrpc_types::{
-    H256View, IndexerObjectStateView, IndexerStateIDView, ObjectIDVecView, ObjectIDView, ObjectMetaView, ObjectStateView, StrView, UnitedAddressView
+    H256View, IndexerObjectStateView, IndexerStateIDView, ObjectIDVecView, ObjectIDView,
+    ObjectMetaView, ObjectStateView, StrView, UnitedAddressView,
 };
 use anyhow::Result;
 use bitcoin::hashes::Hash;
@@ -155,7 +156,6 @@ impl UTXOView {
             vout: self.vout,
         }
     }
-
 }
 
 impl From<UTXOView> for UTXO {
@@ -202,7 +202,7 @@ impl TryFrom<IndexerObjectStateView> for UTXOStateView {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct UTXOObjectView{
+pub struct UTXOObjectView {
     #[serde(flatten)]
     pub metadata: ObjectMetaView,
     pub value: UTXOView,
@@ -218,9 +218,11 @@ impl From<UTXOStateView> for UTXOObjectView {
 }
 
 impl UTXOObjectView {
-
     pub fn owner_bitcoin_address(&self) -> Option<BitcoinAddress> {
-        self.metadata.owner_bitcoin_address.as_ref().map(|addr| BitcoinAddress::from_str(addr).ok()).flatten()
+        self.metadata
+            .owner_bitcoin_address
+            .as_ref()
+            .and_then(|addr| BitcoinAddress::from_str(addr).ok())
     }
 
     pub fn outpoint(&self) -> OutPoint {
@@ -236,7 +238,13 @@ impl UTXOObjectView {
         // We convert the owner bitcoin address to script_pubkey here.
         // But if the TxOut is a non-standard script_pubkey, we can not convert it back to bitcoin address.
         // Find a way to keep the original script_pubkey in UTXO.
-        let script_pubkey = self.owner_bitcoin_address().map(|addr| addr.script_pubkey()).transpose()?.ok_or_else(|| anyhow::anyhow!("Can not recognize the owner of UTXO {}", self.outpoint()))?;
+        let script_pubkey = self
+            .owner_bitcoin_address()
+            .map(|addr| addr.script_pubkey())
+            .transpose()?
+            .ok_or_else(|| {
+                anyhow::anyhow!("Can not recognize the owner of UTXO {}", self.outpoint())
+            })?;
         Ok(TxOut {
             value: self.amount(),
             script_pubkey,

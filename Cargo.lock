@@ -9849,6 +9849,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "bitcoin 0.32.2",
+ "bitcoincore-rpc",
  "futures",
  "hex",
  "jsonrpsee 0.23.2",

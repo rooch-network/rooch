@@ -41,7 +41,6 @@ impl From<InscriptionIDView> for InscriptionID {
     }
 }
 
-
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum InscriptionFilterView {
@@ -142,7 +141,7 @@ impl From<InscriptionView> for Inscription {
             id: view.id.0,
             location: view.location.into(),
             sequence_number: view.sequence_number,
-            inscription_number: inscription_number.abs() as u32,
+            inscription_number: inscription_number.unsigned_abs(),
             is_cursed: inscription_number < 0,
             charms: view.charms,
             body: view.body.0,
@@ -184,16 +183,13 @@ impl TryFrom<IndexerObjectStateView> for InscriptionStateView {
 pub struct InscriptionObjectView {
     #[serde(flatten)]
     pub metadata: ObjectMetaView,
-    pub value: InscriptionView, 
+    pub value: InscriptionView,
 }
 
-
 impl InscriptionObjectView {
-
     pub fn location(&self) -> SatPoint {
         self.value.location.clone().into()
     }
-
 }
 
 impl From<InscriptionStateView> for InscriptionObjectView {

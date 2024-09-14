@@ -9,7 +9,6 @@ use crate::commands::bitseed::inscribe::Inscriber;
 use crate::commands::bitseed::operation::deploy_args_cbor_encode;
 use async_trait::async_trait;
 use clap::Parser;
-use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_types::bitcoin::ord::InscriptionID;
 use rooch_types::error::RoochResult;
 
@@ -48,12 +47,6 @@ pub struct DeployCommand {
 impl CommandAction<InscribeOutput> for DeployCommand {
     async fn execute(self) -> RoochResult<InscribeOutput> {
         let context = self.context_options.build_require_password()?;
-        self.run(context).await
-    }
-}
-
-impl DeployCommand {
-    pub async fn run(self, context: WalletContext) -> RoochResult<InscribeOutput> {
         //TODO how to encode the factory args.
         let deploy_args = deploy_args_cbor_encode(self.deploy_args);
 
@@ -68,8 +61,10 @@ impl DeployCommand {
                 self.factory,
                 self.repeat,
                 deploy_args,
-            )?
-            .inscribe()?;
+            )
+            .await?
+            .inscribe()
+            .await?;
         Ok(output)
     }
 }

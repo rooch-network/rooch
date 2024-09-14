@@ -13,6 +13,12 @@ pub struct InscriptionBuilder {
     metadata: MetadataBuilder,
 }
 
+impl Default for InscriptionBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InscriptionBuilder {
     pub fn new() -> Self {
         let mut inscription_record = InscriptionRecord::default();
@@ -61,6 +67,12 @@ pub struct MetadataBuilder {
     metadata: Value,
 }
 
+impl Default for MetadataBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MetadataBuilder {
     pub fn new() -> Self {
         Self {
@@ -69,11 +81,8 @@ impl MetadataBuilder {
     }
 
     pub fn add<S: ToString>(mut self, key: S, value: Value) -> Self {
-        match &mut self.metadata {
-            Value::Map(map) => {
-                map.push((Value::Text(key.to_string()), value));
-            }
-            _ => {}
+        if let Value::Map(map) = &mut self.metadata {
+            map.push((Value::Text(key.to_string()), value));
         }
         self
     }
@@ -194,10 +203,6 @@ impl BitseedInscription {
     pub fn content(&self) -> Option<Content> {
         let content_type = self.inscription.content_type();
         let body = self.inscription.body();
-        if let Some(content_type) = content_type {
-            Some(Content::new(content_type.to_owned(), body.to_vec()))
-        } else {
-            None
-        }
+        content_type.map(|content_type| Content::new(content_type.to_owned(), body.to_vec()))
     }
 }

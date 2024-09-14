@@ -106,10 +106,10 @@ fn fd_write(env: FunctionEnvMut<Env>, _fd: i32, mut iov: i32, iovcnt: i32, pnum:
 
 fn convert_i32_pair_to_i53_checked(lo: i32, hi: i32) -> i32 {
     let p0 = if lo > 0 { 1 } else { 0 };
-    let p1 = (hi + 0x200000) >> 0 < (0x400001 - p0);
+    let p1 = (hi + 0x200000) < (0x400001 - p0);
     if p1 {
         let (e0, _) = (hi as u32).overflowing_add_signed(429496729);
-        let (e1, _) = (lo >> 0).overflowing_add_unsigned(e0);
+        let (e1, _) = lo.overflowing_add_unsigned(e0);
         e1
     } else {
         0
@@ -124,7 +124,7 @@ fn fd_seek(
     _whence: i32,
 ) -> i32 {
     let _offset = convert_i32_pair_to_i53_checked(offset_low as i32, offset_high);
-    return 70;
+    70
 }
 
 fn fd_close(_env: FunctionEnvMut<Env>, _fd: i32) -> i32 {
@@ -147,7 +147,7 @@ fn put_data_on_stack(
         .expect("call stackAlloc failed");
     let return_value = result
         .deref()
-        .get(0)
+        .first()
         .expect("the stackAlloc func does not have return value");
     let offset = return_value
         .i32()
@@ -177,7 +177,7 @@ fn get_data_from_heap(memory: &mut Arc<Mutex<Memory>>, store: &Store, ptr_offset
     data
 }
 
-fn create_wasm_instance(bytecode: &Vec<u8>) -> (Instance, Store) {
+fn create_wasm_instance(bytecode: &[u8]) -> (Instance, Store) {
     let mut store = Store::default();
     let module = Module::new(&store, bytecode).unwrap();
 
@@ -200,7 +200,7 @@ fn create_wasm_instance(bytecode: &Vec<u8>) -> (Instance, Store) {
     let memory = instance.exports.get_memory("memory").unwrap();
     env.as_mut(&mut store).memory = Some(Arc::new(Mutex::new(memory.clone())));
 
-    return (instance, store);
+    (instance, store)
 }
 
 #[derive(Clone)]
@@ -215,7 +215,7 @@ impl WASMGenerator {
 
     fn generate_buffer_final_ptr(
         &self,
-        deploy_args: &Vec<u8>,
+        deploy_args: &[u8],
         seed: &InscribeSeed,
         user_input: Option<String>,
         memory: &mut Arc<Mutex<Memory>>,
@@ -224,7 +224,7 @@ impl WASMGenerator {
     ) -> i32 {
         let mut attrs_buffer_vec = Vec::new();
         for byte in deploy_args.iter() {
-            attrs_buffer_vec.push(serde_json::Value::Number(Number::from(byte.clone())));
+            attrs_buffer_vec.push(serde_json::Value::Number(Number::from(*byte)));
         }
 
         let mut buffer_map = serde_json::Map::new();
@@ -255,7 +255,7 @@ impl WASMGenerator {
 impl Generator for WASMGenerator {
     fn inscribe_generate(
         &self,
-        deploy_args: &Vec<u8>,
+        deploy_args: &[u8],
         seed: &InscribeSeed,
         _recipient: &Address,
         user_input: Option<String>,
@@ -282,7 +282,7 @@ impl Generator for WASMGenerator {
             .call(&mut store, func_args.as_slice())
             .expect("call inscribe_generate failed");
 
-        let return_value = calling_result.deref().get(0).unwrap();
+        let return_value = calling_result.deref().first().unwrap();
         let offset = return_value.i32().unwrap();
 
         let data = get_data_from_heap(&mut memory, &store, offset);
@@ -318,7 +318,7 @@ impl Generator for WASMGenerator {
 
     fn inscribe_verify(
         &self,
-        deploy_args: &Vec<u8>,
+        deploy_args: &[u8],
         seed: &InscribeSeed,
         _recipient: &Address,
         user_input: Option<String>,
@@ -354,7 +354,7 @@ impl Generator for WASMGenerator {
             .call(&mut store, func_args.as_slice())
             .expect("call inscribe_verify failed");
 
-        let return_value = calling_result.deref().get(0).unwrap();
+        let return_value = calling_result.deref().first().unwrap();
         return_value.i32().unwrap() == 1
     }
 }
@@ -438,19 +438,19 @@ fn inscribe_output_to_cbor(inscribe_output: InscribeGenerateOutput) -> Vec<u8> {
 
 #[cfg(test)]
 mod tests {
+    use crate::commands::bitseed::operation::deploy_args_cbor_encode;
+
     use super::*;
-    use crate::generator::Content;
-    use crate::operation::deploy_args_cbor_encode;
     use bitcoin::hashes::sha256d;
+    use bitcoin::Txid;
     use bitcoin::{Address, Network};
-    use bitcoin::{BlockHash, Txid};
-    use env_logger;
+    use sft::Content;
     use std::fs::read;
     use std::str::FromStr;
 
     #[test]
     fn test_inscribe_generate_normal() {
-        env_logger::init();
+        tracing_subscriber::fmt::try_init().ok();
 
         // Read WASM binary from file
         let bytecode = read("./generator/cpp/generator.wasm").expect("failed to read WASM file");
@@ -461,17 +461,17 @@ mod tests {
         let deploy_args = deploy_args_cbor_encode(deploy_args);
 
         // Block hash
-        let block_hash_hex = "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f";
-        let block_hash_inner = sha256d::Hash::from_str(&block_hash_hex).unwrap();
-        let block_hash = BlockHash::from(block_hash_inner);
+        // let block_hash_hex = "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f";
+        // let block_hash_inner = sha256d::Hash::from_str(&block_hash_hex).unwrap();
+        // let block_hash = BlockHash::from(block_hash_inner);
 
         // Txid
         let txid_hex = "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b";
-        let txid_inner = sha256d::Hash::from_str(&txid_hex).unwrap();
+        let txid_inner = sha256d::Hash::from_str(txid_hex).unwrap();
         let txid = Txid::from(txid_inner);
 
         let seed = InscribeSeed {
-            block_hash,
+            // block_hash,
             utxo: bitcoin::OutPoint::new(txid, 0),
         };
 
@@ -501,8 +501,9 @@ mod tests {
         let (_, height_value) = height_entry.unwrap();
         assert!(height_value.is_integer());
         let height = height_value.as_integer().unwrap();
-        assert!(height.try_into().unwrap_or(0) >= 1);
-        assert!(height.try_into().unwrap_or(i128::MAX) <= 1000);
+        let height: i128 = height.into();
+        assert!(height >= 1i128);
+        assert!(height <= 1000i128);
     }
 
     #[test]
@@ -516,17 +517,17 @@ mod tests {
         let deploy_args = deploy_args_cbor_encode(deploy_args);
 
         // Block hash
-        let block_hash_hex = "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f";
-        let block_hash_inner = sha256d::Hash::from_str(&block_hash_hex).unwrap();
-        let block_hash = BlockHash::from(block_hash_inner);
+        // let block_hash_hex = "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f";
+        // let block_hash_inner = sha256d::Hash::from_str(&block_hash_hex).unwrap();
+        // let block_hash = BlockHash::from(block_hash_inner);
 
         // Txid
         let txid_hex = "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b";
-        let txid_inner = sha256d::Hash::from_str(&txid_hex).unwrap();
+        let txid_inner = sha256d::Hash::from_str(txid_hex).unwrap();
         let txid = Txid::from(txid_inner);
 
         let seed = InscribeSeed {
-            block_hash,
+            // block_hash,
             utxo: bitcoin::OutPoint::new(txid, 0),
         };
 
@@ -563,17 +564,17 @@ mod tests {
         let deploy_args = deploy_args_cbor_encode(deploy_args);
 
         // Block hash
-        let block_hash_hex = "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f";
-        let block_hash_inner = sha256d::Hash::from_str(&block_hash_hex).unwrap();
-        let block_hash = BlockHash::from(block_hash_inner);
+        // let block_hash_hex = "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f";
+        // let block_hash_inner = sha256d::Hash::from_str(&block_hash_hex).unwrap();
+        // let block_hash = BlockHash::from(block_hash_inner);
 
         // Txid
         let txid_hex = "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b";
-        let txid_inner = sha256d::Hash::from_str(&txid_hex).unwrap();
+        let txid_inner = sha256d::Hash::from_str(txid_hex).unwrap();
         let txid = Txid::from(txid_inner);
 
         let seed = InscribeSeed {
-            block_hash,
+            // block_hash,
             utxo: bitcoin::OutPoint::new(txid, 0),
         };
 
@@ -600,15 +601,16 @@ mod tests {
 
     #[test]
     fn test_inscribe_output_to_cbor() {
-        let mut attributes = Vec::new();
-        attributes.push((
-            ciborium::Value::Text("height".to_string()),
-            ciborium::Value::Integer(444.into()),
-        ));
-        attributes.push((
-            ciborium::Value::Text("id".to_string()),
-            ciborium::Value::Text("test user input".to_string()),
-        ));
+        let attributes = vec![
+            (
+                ciborium::Value::Text("height".to_string()),
+                ciborium::Value::Integer(444.into()),
+            ),
+            (
+                ciborium::Value::Text("id".to_string()),
+                ciborium::Value::Text("test user input".to_string()),
+            ),
+        ];
 
         let output = InscribeGenerateOutput {
             amount: 1,
@@ -627,15 +629,16 @@ mod tests {
 
     #[test]
     fn test_inscribe_output_to_cbor_without_body() {
-        let mut attributes = Vec::new();
-        attributes.push((
-            ciborium::Value::Text("height".to_string()),
-            ciborium::Value::Integer(444.into()),
-        ));
-        attributes.push((
-            ciborium::Value::Text("id".to_string()),
-            ciborium::Value::Text("test user input".to_string()),
-        ));
+        let attributes = vec![
+            (
+                ciborium::Value::Text("height".to_string()),
+                ciborium::Value::Integer(444.into()),
+            ),
+            (
+                ciborium::Value::Text("id".to_string()),
+                ciborium::Value::Text("test user input".to_string()),
+            ),
+        ];
 
         let output = InscribeGenerateOutput {
             amount: 1,

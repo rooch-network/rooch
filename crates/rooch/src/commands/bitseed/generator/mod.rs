@@ -1,15 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{operation::Operation, sft::Content, GENERATOR_TICK};
-use anyhow::{anyhow, bail, ensure, Result};
+use super::sft::Content;
 use bitcoin::{hashes::Hash, Address, BlockHash};
 use moveos_types::h256::H256;
-use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_types::bitcoin::ord::InscriptionID;
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
-use wasm::wasm_generator::WASMGenerator;
 
 pub(crate) mod hash;
 pub(crate) mod mock;
@@ -29,20 +25,16 @@ pub struct IndexerGenerateOutput {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InscribeSeed {
-    pub block_hash: BlockHash,
     pub utxo: bitcoin::OutPoint,
 }
 
 impl InscribeSeed {
-    pub fn new(block_hash: BlockHash, utxo: bitcoin::OutPoint) -> Self {
-        Self { block_hash, utxo }
+    pub fn new(utxo: bitcoin::OutPoint) -> Self {
+        Self { utxo }
     }
 
     pub fn seed(&self) -> H256 {
-        let mut buffer = self.block_hash.as_byte_array().to_vec();
-
-        let txid_bytes = self.utxo.txid.as_byte_array();
-        buffer.extend_from_slice(txid_bytes);
+        let mut buffer = self.utxo.txid.as_byte_array().to_vec();
 
         let vout_bytes = self.utxo.vout.to_le_bytes();
         buffer.extend_from_slice(&vout_bytes);
@@ -73,13 +65,13 @@ impl IndexerSeed {
     }
 }
 
-pub const TICK: &'static str = "generator";
-pub const CONTENT_TYPE: &'static str = "application/wasm";
+pub const TICK: &str = "generator";
+pub const CONTENT_TYPE: &str = "application/wasm";
 
 pub trait Generator {
     fn inscribe_generate(
         &self,
-        deploy_args: &Vec<u8>,
+        deploy_args: &[u8],
         seed: &InscribeSeed,
         recipient: &Address,
         user_input: Option<String>,
@@ -87,7 +79,7 @@ pub trait Generator {
 
     fn inscribe_verify(
         &self,
-        deploy_args: &Vec<u8>,
+        deploy_args: &[u8],
         seed: &InscribeSeed,
         recipient: &Address,
         user_input: Option<String>,
@@ -128,7 +120,7 @@ impl StaticGenerator {
 impl Generator for StaticGenerator {
     fn inscribe_generate(
         &self,
-        _deploy_args: &Vec<u8>,
+        _deploy_args: &[u8],
         _seed: &InscribeSeed,
         _recipient: &Address,
         _user_input: Option<String>,
@@ -138,7 +130,7 @@ impl Generator for StaticGenerator {
 
     fn inscribe_verify(
         &self,
-        _deploy_args: &Vec<u8>,
+        _deploy_args: &[u8],
         _seed: &InscribeSeed,
         _recipient: &Address,
         _user_input: Option<String>,
@@ -158,41 +150,5 @@ impl Generator for StaticGenerator {
         _recipient: Address,
     ) -> IndexerGenerateOutput {
         self.indexer_output.clone().unwrap()
-    }
-}
-
-pub struct GeneratorLoader {}
-
-impl GeneratorLoader {
-    fn get_operation_by_inscription_id(inscription_id: InscriptionID) -> Result<Operation> {
-        todo!()
-    }
-
-    pub fn load(context: &WalletContext, generator: &str) -> Result<Box<dyn Generator>> {
-        // generator: "/inscription/inscriptioin_id"
-        let path = generator.split('/').collect::<Vec<&str>>();
-        if path.len() != 3 {
-            bail!("Invalid generator path: {:?}", generator);
-        }
-        let inscription_id = InscriptionID::from_str(path[2])?;
-        let operation = Self::get_operation_by_inscription_id(inscription_id)?;
-        let mint_record = operation
-            .as_mint()
-            .ok_or_else(|| anyhow!("Operation is not mint: {:?}", operation))?;
-        if mint_record.sft.tick != GENERATOR_TICK {
-            bail!("Invalid generator tick: {:?}", mint_record.sft.tick);
-        }
-        let content = mint_record
-            .sft
-            .content
-            .as_ref()
-            .ok_or_else(|| anyhow!("No content in generator mint record: {:?}", mint_record))?;
-        ensure!(
-            &content.content_type == CONTENT_TYPE,
-            "Invalid generator content type: {:?}",
-            content.content_type
-        );
-        let wasm_bytecode = &content.body;
-        Ok(Box::new(WASMGenerator::new(wasm_bytecode.clone())))
     }
 }

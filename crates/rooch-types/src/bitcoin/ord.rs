@@ -5,6 +5,8 @@ use super::types::{OutPoint, Transaction};
 use crate::addresses::BITCOIN_MOVE_ADDRESS;
 use crate::into_address::{FromAddress, IntoAddress};
 use anyhow::{bail, Result};
+use bitcoin::constants::MAX_SCRIPT_ELEMENT_SIZE;
+use bitcoin::{opcodes, script};
 use move_core_types::language_storage::{StructTag, TypeTag};
 use move_core_types::value::MoveTypeLayout;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
@@ -23,8 +25,13 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
+use tag::Tag;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("ord");
+pub const PROTOCOL_ID: [u8; 3] = *b"ord";
+pub const BODY_TAG: [u8; 0] = [];
+
+pub mod tag;
 
 #[derive(PartialEq, Clone, Copy, Hash, Eq, PartialOrd, Ord)]
 pub struct InscriptionID {
@@ -414,6 +421,75 @@ impl InscriptionRecord {
 
     pub fn set_rune(&mut self, rune: u128) {
         self.rune = Some(rune);
+    }
+
+    pub fn append_reveal_script_to_builder(&self, mut builder: script::Builder) -> script::Builder {
+        builder = builder
+            .push_opcode(opcodes::OP_FALSE)
+            .push_opcode(opcodes::all::OP_IF)
+            .push_slice(PROTOCOL_ID);
+
+        Tag::ContentType.append(
+            &mut builder,
+            &self
+                .content_type
+                .as_ref()
+                .map(|content_type| content_type.as_str().as_bytes().to_vec()),
+        );
+        Tag::ContentEncoding.append(
+            &mut builder,
+            &self
+                .content_encoding
+                .as_ref()
+                .map(|content_encoding| content_encoding.as_str().as_bytes().to_vec()),
+        );
+        Tag::Metaprotocol.append(
+            &mut builder,
+            &self
+                .metaprotocol
+                .as_ref()
+                .map(|metaprotocol| metaprotocol.as_str().as_bytes().to_vec()),
+        );
+        Tag::Parent.append_array(
+            &mut builder,
+            &self
+                .parents
+                .iter()
+                .map(|parent| {
+                    let mut buffer = parent.txid.to_vec();
+                    buffer.extend_from_slice(&parent.index.to_le_bytes());
+                    buffer
+                })
+                .collect(),
+        );
+        //TODO should support delegate
+        //Tag::Delegate.append(&mut builder, &self.delegate);
+        Tag::Pointer.append(
+            &mut builder,
+            &self
+                .pointer
+                .as_ref()
+                .map(|pointer| pointer.to_le_bytes().to_vec()),
+        );
+        let metadata = if self.metadata.is_empty() {
+            None
+        } else {
+            Some(self.metadata.clone())
+        };
+        Tag::Metadata.append(&mut builder, &metadata);
+        Tag::Rune.append(
+            &mut builder,
+            &self.rune.as_ref().map(|rune| rune.to_le_bytes().to_vec()),
+        );
+
+        if !self.body.is_empty() {
+            builder = builder.push_slice(BODY_TAG);
+            for chunk in self.body.chunks(MAX_SCRIPT_ELEMENT_SIZE) {
+                builder = builder.push_slice::<&script::PushBytes>(chunk.try_into().unwrap());
+            }
+        }
+
+        builder.push_opcode(opcodes::all::OP_ENDIF)
     }
 }
 

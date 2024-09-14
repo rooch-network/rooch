@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use super::{
     inscription::{BitseedInscription, InscriptionBuilder},
     sft::SFT,
@@ -171,12 +174,10 @@ impl Operation {
             "deploy" => {
                 let generator = bitseed_inscription
                     .get_attribute("generator")
-                    .map(|v| v.as_text().map(|txt| txt.to_owned()))
-                    .flatten();
+                    .and_then(|v| v.as_text().map(|txt| txt.to_owned()));
                 let factory = bitseed_inscription
                     .get_attribute("factory")
-                    .map(|v| v.as_text().map(|txt| txt.to_owned()))
-                    .flatten();
+                    .and_then(|v| v.as_text().map(|txt| txt.to_owned()));
                 match (&generator, &factory) {
                     (Some(_), Some(_)) => bail!("generator and factory are mutually exclusive"),
                     (None, None) => bail!("missing generator or factory"),
