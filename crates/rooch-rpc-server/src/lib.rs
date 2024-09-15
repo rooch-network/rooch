@@ -424,44 +424,47 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let (shutdown_tx, mut governor_rx): (broadcast::Sender<()>, broadcast::Receiver<()>) =
         broadcast::channel(16);
 
-    let _ = if network.chain_id != BuiltinChainID::Local.chain_id() {
-        // init limit
-        // Allow bursts with up to x requests per IP address
-        // and replenishes one element every x seconds
-        // We Box it because Axum 0.6 requires all Layers to be Clone
-        // and thus we need a static reference to it
-        let governor_conf = Arc::new(
-            GovernorConfigBuilder::default()
-                .per_second(opt.traffic_per_second.unwrap_or(1))
-                .burst_size(opt.traffic_burst_size.unwrap_or(100))
-                .use_headers()
-                .error_handler(move |error1| ErrorHandler::default().0(error1))
-                .finish()
-                .unwrap(),
-        );
+    let traffic_burst_size: u32;
+    let traffic_per_second: u64;
 
-        let governor_limiter = governor_conf.limiter().clone();
-        let interval = Duration::from_secs(60);
-
-        // a separate background task to clean up
-        std::thread::spawn(move || loop {
-            if governor_rx.try_recv().is_ok() {
-                info!("Background thread received cancel signal, stopping.");
-                break;
-            }
-
-            std::thread::sleep(interval);
-
-            tracing::info!("rate limiting storage size: {}", governor_limiter.len());
-            governor_limiter.retain_recent();
-        });
-
-        Some(GovernorLayer {
-            config: governor_conf,
-        })
+    if network.chain_id != BuiltinChainID::Local.chain_id() {
+        traffic_burst_size = opt.traffic_burst_size.unwrap_or(5000);
+        traffic_per_second = opt.traffic_per_second.unwrap_or(1);
     } else {
-        None
+        traffic_burst_size = opt.traffic_burst_size.unwrap_or(100);
+        traffic_per_second = opt.traffic_per_second.unwrap_or(1);
     };
+
+    // init limit
+    // Allow bursts with up to x requests per IP address
+    // and replenishes one element every x seconds
+    // We Box it because Axum 0.6 requires all Layers to be Clone
+    // and thus we need a static reference to it
+    let governor_conf = Arc::new(
+        GovernorConfigBuilder::default()
+            .per_second(traffic_per_second)
+            .burst_size(traffic_burst_size)
+            .use_headers()
+            .error_handler(move |error1| ErrorHandler::default().0(error1))
+            .finish()
+            .unwrap(),
+    );
+
+    let governor_limiter = governor_conf.limiter().clone();
+    let interval = Duration::from_secs(60);
+
+    // a separate background task to clean up
+    std::thread::spawn(move || loop {
+        if governor_rx.try_recv().is_ok() {
+            info!("Background thread received cancel signal, stopping.");
+            break;
+        }
+
+        std::thread::sleep(interval);
+
+        tracing::info!("rate limiting storage size: {}", governor_limiter.len());
+        governor_limiter.retain_recent();
+    });
 
     let blocklist_config = Arc::new(BlocklistConfig::default());
 
@@ -470,6 +473,9 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         .layer(cors)
         .layer(BlockListLayer {
             config: blocklist_config,
+        })
+        .layer(GovernorLayer {
+            config: governor_conf,
         });
 
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
