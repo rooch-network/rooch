@@ -55,7 +55,6 @@ use std::{env, panic, process};
 use tokio::signal;
 use tokio::sync::broadcast;
 use tokio::sync::broadcast::Sender;
-use tower_governor::key_extractor::PeerIpKeyExtractor;
 use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
