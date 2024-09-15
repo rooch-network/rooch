@@ -445,15 +445,19 @@ mod tests {
     use bitcoin::Txid;
     use bitcoin::{Address, Network};
     use sft::Content;
-    use std::fs::read;
     use std::str::FromStr;
+
+    const CPP_GENERATOR: &[u8] =
+        include_bytes!("../../../../../../../generator/cpp/generator.wasm");
+    const RUST_GENERATOR: &[u8] =
+        include_bytes!("../../../../../../../generator/rust/pkg/generator_bg.wasm");
 
     #[test]
     fn test_inscribe_generate_normal() {
         tracing_subscriber::fmt::try_init().ok();
 
         // Read WASM binary from file
-        let bytecode = read("./generator/cpp/generator.wasm").expect("failed to read WASM file");
+        let bytecode = CPP_GENERATOR.to_vec();
         let generator = WASMGenerator::new(bytecode);
 
         let deploy_args =
@@ -509,7 +513,7 @@ mod tests {
     #[test]
     fn test_inscribe_verify() {
         // Read WASM binary from file
-        let bytecode = read("./generator/cpp/generator.wasm").expect("failed to read WASM file");
+        let bytecode = CPP_GENERATOR.to_vec();
         let generator = WASMGenerator::new(bytecode);
 
         let deploy_args =
@@ -555,8 +559,7 @@ mod tests {
     #[test]
     fn test_inscribe_verify_for_rust() {
         // Read WASM binary from file
-        let bytecode =
-            read("./generator/rust/pkg/generator_bg.wasm").expect("failed to read WASM file");
+        let bytecode = RUST_GENERATOR.to_vec();
         let generator = WASMGenerator::new(bytecode);
 
         let deploy_args =
