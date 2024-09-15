@@ -14,8 +14,6 @@ use moveos_types::{
 };
 use std::collections::VecDeque;
 
-
-
 #[derive(Debug, Clone)]
 pub struct CommonGasParameters {
     pub load_base: InternalGas,

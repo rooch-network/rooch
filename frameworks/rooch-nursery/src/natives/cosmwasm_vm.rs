@@ -1,19 +1,22 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use log::{debug, warn, error};
+use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::ffi::CString;
 use std::ops::Deref;
-use std::vec;
 use std::sync::{Arc, Mutex};
-use std::collections::HashSet;
-use log::{debug, warn};
+use std::vec;
 
+use cosmwasm_std::Checksum;
+use cosmwasm_vm::{capabilities_from_csv, Cache, CacheOptions, Instance, InstanceOptions, Size};
 use once_cell::sync::Lazy;
+use rooch_cosmwasm_vm::backend::{
+    build_mock_backend, MoveBackendApi, MoveBackendQuerier, MoveStorage,
+};
 use serde_json::Value as JSONValue;
 use smallvec::{smallvec, SmallVec};
-use cosmwasm_vm::{Cache, CacheOptions, InstanceOptions, Size, Capability, Checksum};
-use rooch_cosmwasm_vm::backend::{MoveBackendApi, MoveStorage, MoveBackendQuerier, build_move_backend};
 
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
@@ -33,28 +36,20 @@ use moveos_types::{
 
 use moveos_stdlib::natives::helpers::{make_module_natives, make_native};
 
-
 use crate::natives::helper::{pop_object_id, CommonGasParameters};
 
 const E_WASM_ERROR: u64 = 1;
 
-fn supported_capabilities() -> HashSet<Capability> {
-    let mut capabilities = HashSet::new();
-    capabilities.insert(Capability::Iterator);
-    capabilities.insert(Capability::Staking);
-    capabilities
-}
-
-static WASM_CACHE: Lazy<Arc<Cache<MoveBackendApi, MoveStorage, MoveBackendQuerier>>> = Lazy::new(|| {
-    let options = CacheOptions::new(
-        std::env::temp_dir(),
-        supported_capabilities(),
-        Size::mebi(200),
-        Size::mebi(64),
-    );
-    Arc::new(unsafe { Cache::new(options).unwrap() })
-});
-
+static WASM_CACHE: Lazy<Arc<Cache<MoveBackendApi, MoveStorage, MoveBackendQuerier>>> =
+    Lazy::new(|| {
+        let options = CacheOptions::new(
+            std::env::temp_dir(),
+            capabilities_from_csv("iterator,staking"),
+            Size::mebi(200),
+            Size::mebi(64),
+        );
+        Arc::new(unsafe { Cache::new(options).unwrap() })
+    });
 
 #[derive(Debug, Clone)]
 pub struct CosmWasmCreateInstanceGasParameters {
@@ -74,21 +69,24 @@ impl CosmWasmCreateInstanceGasParameters {
 /***************************************************************************************************
  * native fun native_create_instance
  **************************************************************************************************/
- #[inline]
+#[inline]
 pub fn native_create_instance(
     gas_parameters: &GasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    debug_assert!(ty_args.is_empty(), "native_create_instance expects no type arguments");
+    debug_assert!(
+        ty_args.is_empty(),
+        "native_create_instance expects no type arguments"
+    );
     debug_assert_eq!(args.len(), 2, "native_create_instance expects 2 arguments");
 
     let common_gas_parameter = gas_parameters.common.clone();
     let create_instance_gas_parameter = gas_parameters.native_create_instance.clone();
 
-    let wasm_bytes = pop_arg!(args, Vec<u8>);
     let store_obj_id = pop_object_id(&mut args)?;
+    let wasm_code = pop_arg!(args, Vec<u8>);
 
     wasm_instance_fn_dispatch(
         &common_gas_parameter,
@@ -96,30 +94,52 @@ pub fn native_create_instance(
         create_instance_gas_parameter.per_byte_wasm,
         context,
         store_obj_id,
-        wasm_bytes,
-        move |layout_loader, resolver, rt_obj, wasm_bytes| -> PartialVMResult<(Value, Option<Option<NumBytes>>)> {
+        wasm_code,
+        move |_layout_loader,
+              _resolver,
+              _rt_obj,
+              wasm_bytes|
+              -> PartialVMResult<(Value, Option<Option<NumBytes>>)> {
+            // wat2 wasm bytes
+            let bytecode = wasmer::wat2wasm(wasm_bytes.as_slice()).map_err(|e| {
+                PartialVMError::new(StatusCode::STORAGE_ERROR)
+                    .with_message(format!("Failed to cast wat to WASM: {}", e))
+            })?;
+
             // Save WASM bytecode and get checksum
-            let checksum = WASM_CACHE.save_wasm(wasm_bytes.as_slice()).map_err(|e| {
-                  PartialVMError::new(StatusCode::STORAGE_ERROR)
-                       .with_message(format!("Failed to save WASM: {}", e))
-                   })?;
+            let checksum = WASM_CACHE.save_wasm(&bytecode).map_err(|e| {
+                PartialVMError::new(StatusCode::STORAGE_ERROR)
+                    .with_message(format!("Failed to save WASM: {}", e))
+            })?;
 
-            // Create Backend
-            let backend = build_move_backend(Arc::new(Mutex::new(rt_obj)), layout_loader, resolver);
- 
+            //TODO Create real Backend
+            let backend = build_mock_backend();
+
             // Create WASM instance
-            let instance_options = InstanceOptions {
-                gas_limit: 10000,
-            };
+            let instance_options = InstanceOptions { gas_limit: 10000 };
 
-            WASM_CACHE.get_instance(&checksum, backend, instance_options).map_err(|e| {
-                    PartialVMError::new(StatusCode::STORAGE_ERROR)
-                    .with_message(format!(
-                        "Failed to get WASM instance: {}", e
-                        ))
-                })?;
+            let (module, store) = WASM_CACHE.get_module(&checksum).map_err(|e| {
+                PartialVMError::new(StatusCode::STORAGE_ERROR)
+                    .with_message(format!("Failed to get WASM module: {}", e))
+            })?;
 
-            Ok((Value::vector_u8(checksum.as_slice().to_vec()), Some(Some(NumBytes::new(wasm_bytes.len() as u64)))))
+            let _ = Instance::from_module(
+                store,
+                &module,
+                backend,
+                instance_options.gas_limit,
+                None,
+                None,
+            )
+            .map_err(|e| {
+                PartialVMError::new(StatusCode::STORAGE_ERROR)
+                    .with_message(format!("Failed to get WASM instance: {}", e))
+            })?;
+
+            Ok((
+                Value::vector_u8(checksum.as_slice().to_vec()),
+                Some(Some(NumBytes::new(wasm_bytes.len() as u64))),
+            ))
         },
     )
 }
@@ -155,6 +175,7 @@ fn wasm_instance_fn_dispatch(
             smallvec![value],
         )),
         Err(err) => {
+            error!("wasm_instance_fn_dispatch error: {:?}", err);
             let abort_code = error_to_abort_code(err);
             Ok(NativeResult::err(gas_cost, abort_code))
         }
@@ -164,7 +185,6 @@ fn wasm_instance_fn_dispatch(
 // Helper function: convert PartialVMError to abort code
 fn error_to_abort_code(err: PartialVMError) -> u64 {
     match err.major_status() {
-        StatusCode::ABORTED => err.unwrap_or(1),
         _ => err.major_status().into(),
     }
 }
@@ -193,7 +213,10 @@ fn native_destroy_instance(
     assert!(ty_args.len() == 2, "Wrong number of type arguments");
     assert!(arguments.len() == 1, "Wrong number of arguments");
 
-    Ok(NativeResult::ok(gas_params.common.load_base, smallvec![Value::u64(0)]))
+    Ok(NativeResult::ok(
+        gas_params.common.load_base,
+        smallvec![Value::u64(0)],
+    ))
 }
 
 /***************************************************************************************************
@@ -231,4 +254,3 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
 
     make_module_natives(natives)
 }
-

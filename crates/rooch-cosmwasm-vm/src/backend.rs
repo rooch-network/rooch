@@ -20,7 +20,7 @@ use moveos_types::state::MoveState;
 use moveos_types::state_resolver::StatelessResolver;
 
 pub struct MoveStorage<'a> {
-    object: Arc<Mutex<&'a mut RuntimeObject>>,
+    object: &'a mut RuntimeObject,
     layout_loader: &'a dyn TypeLayoutLoader,
     resolver: &'a dyn StatelessResolver,
     iterator_id_counter: u32,
@@ -29,7 +29,7 @@ pub struct MoveStorage<'a> {
 
 impl<'a> MoveStorage<'a> {
     pub fn new(
-        object: Arc<Mutex<&'a mut RuntimeObject>>,
+        object: &'a mut RuntimeObject,
         layout_loader: &'a dyn TypeLayoutLoader,
         resolver: &'a dyn StatelessResolver,
     ) -> Self {
@@ -69,14 +69,15 @@ impl<'a> MoveStorage<'a> {
 
 impl<'a> Storage for MoveStorage<'a> {
     fn get(&self, key: &[u8]) -> BackendResult<Option<Vec<u8>>> {
-        let object = self.object.lock().unwrap();
-
         let hash = h256::sha3_256_of(key);
         let field_key = FieldKey::new(hash.into());
         let move_layout = Vec::<u8>::type_layout();
         let move_type = Type::Vector(Box::new(Type::U8));
 
-        match object.get_field(self.layout_loader, self.resolver, field_key, &move_type) {
+        match self
+            .object
+            .get_field(self.layout_loader, self.resolver, field_key, &move_type)
+        {
             Ok(value) => match self.serialize_value(&move_layout, &value.0) {
                 Ok(bytes) => (Ok(Some(bytes)), GasInfo::new(1, 0)),
                 Err(e) => (Err(e), GasInfo::new(1, 0)),
@@ -95,7 +96,6 @@ impl<'a> Storage for MoveStorage<'a> {
     }
 
     fn set(&mut self, key: &[u8], value: &[u8]) -> BackendResult<()> {
-        let mut object = self.object.lock().unwrap();
         let hash = h256::sha3_256_of(key);
         let field_key = FieldKey::new(hash.into());
         let move_layout = Vec::<u8>::type_layout();
@@ -106,7 +106,7 @@ impl<'a> Storage for MoveStorage<'a> {
             Err(e) => return (Err(e), GasInfo::new(1, 0)),
         };
 
-        match object.add_field(
+        match self.object.add_field(
             self.layout_loader,
             self.resolver,
             field_key,
@@ -122,12 +122,14 @@ impl<'a> Storage for MoveStorage<'a> {
     }
 
     fn remove(&mut self, key: &[u8]) -> BackendResult<()> {
-        let mut object = self.object.lock().unwrap();
         let hash = h256::sha3_256_of(key);
         let field_key = FieldKey::new(hash.into());
         let move_type = Type::Vector(Box::new(Type::U8));
 
-        match object.remove_field(self.layout_loader, self.resolver, field_key, &move_type) {
+        match self
+            .object
+            .remove_field(self.layout_loader, self.resolver, field_key, &move_type)
+        {
             Ok(_) => (Ok(()), GasInfo::new(1, 0)),
             Err(e) => {
                 if e.major_status() == StatusCode::RESOURCE_DOES_NOT_EXIST {
@@ -148,10 +150,9 @@ impl<'a> Storage for MoveStorage<'a> {
         end: Option<&[u8]>,
         order: Order,
     ) -> BackendResult<u32> {
-        let object = self.object.lock().unwrap();
         let cursor = start.map(|s| FieldKey::new(h256::sha3_256_of(s).into()));
 
-        match object.scan_fields(
+        match self.object.scan_fields(
             self.layout_loader,
             self.resolver,
             cursor,
@@ -270,14 +271,51 @@ impl Querier for MoveBackendQuerier {
     }
 }
 
-pub fn build_move_backend<'a>(
-    object: Arc<Mutex<&'a mut RuntimeObject>>,
-    layout_loader: &'a dyn TypeLayoutLoader,
-    resolver: &'a dyn StatelessResolver,
+pub fn build_move_backend<'a, 'b: 'a>(
+    object: &'a mut RuntimeObject,
+    layout_loader: &'b dyn TypeLayoutLoader,
+    resolver: &'b dyn StatelessResolver,
 ) -> Backend<MoveBackendApi, MoveStorage<'a>, MoveBackendQuerier> {
     Backend {
         api: MoveBackendApi,
         storage: MoveStorage::new(object, layout_loader, resolver),
+        querier: MoveBackendQuerier,
+    }
+}
+
+pub struct MockStorage {}
+
+impl Storage for MockStorage {
+    fn get(&self, _key: &[u8]) -> BackendResult<Option<Vec<u8>>> {
+        todo!();
+    }
+
+    fn set(&mut self, _key: &[u8], _value: &[u8]) -> BackendResult<()> {
+        todo!();
+    }
+
+    fn remove(&mut self, _key: &[u8]) -> BackendResult<()> {
+        todo!();
+    }
+
+    fn scan(
+        &mut self,
+        _start: Option<&[u8]>,
+        _end: Option<&[u8]>,
+        _order: Order,
+    ) -> BackendResult<u32> {
+        todo!();
+    }
+
+    fn next(&mut self, _iterator_id: u32) -> BackendResult<Option<Record>> {
+        todo!()
+    }
+}
+
+pub fn build_mock_backend() -> Backend<MoveBackendApi, MockStorage, MoveBackendQuerier> {
+    Backend {
+        api: MoveBackendApi,
+        storage: MockStorage {},
         querier: MoveBackendQuerier,
     }
 }

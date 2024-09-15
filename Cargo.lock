@@ -1256,7 +1256,7 @@ dependencies = [
 name = "bitseed_generator"
 version = "0.1.0"
 dependencies = [
- "cosmwasm-std",
+ "cosmwasm-std 2.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.208",
 ]
 
@@ -2193,6 +2193,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d905990ef3afb5753bb709dc7de88e9e370aa32bcc2f31731d4b533b63e82490"
 
 [[package]]
+name = "cosmwasm-core"
+version = "2.1.3"
+source = "git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81#597d3e8437d8c4d1afce07e5a676c29c751a8a81"
+
+[[package]]
 name = "cosmwasm-crypto"
 version = "2.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2202,7 +2207,29 @@ dependencies = [
  "ark-ec",
  "ark-ff 0.4.2",
  "ark-serialize 0.4.2",
- "cosmwasm-core",
+ "cosmwasm-core 2.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "digest 0.10.7",
+ "ecdsa 0.16.9",
+ "ed25519-zebra",
+ "k256 0.13.3",
+ "num-traits 0.2.19",
+ "p256",
+ "rand_core 0.6.4",
+ "rayon",
+ "sha2 0.10.8",
+ "thiserror",
+]
+
+[[package]]
+name = "cosmwasm-crypto"
+version = "2.1.3"
+source = "git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81#597d3e8437d8c4d1afce07e5a676c29c751a8a81"
+dependencies = [
+ "ark-bls12-381",
+ "ark-ec",
+ "ark-ff 0.4.2",
+ "ark-serialize 0.4.2",
+ "cosmwasm-core 2.1.3 (git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81)",
  "digest 0.10.7",
  "ecdsa 0.16.9",
  "ed25519-zebra",
@@ -2227,6 +2254,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "cosmwasm-derive"
+version = "2.1.3"
+source = "git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81#597d3e8437d8c4d1afce07e5a676c29c751a8a81"
+dependencies = [
+ "proc-macro2 1.0.86",
+ "quote 1.0.37",
+ "syn 2.0.65",
+]
+
+[[package]]
 name = "cosmwasm-std"
 version = "2.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2235,9 +2272,31 @@ dependencies = [
  "base64 0.22.1",
  "bech32 0.11.0",
  "bnum",
- "cosmwasm-core",
- "cosmwasm-crypto",
- "cosmwasm-derive",
+ "cosmwasm-core 2.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cosmwasm-crypto 2.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cosmwasm-derive 2.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "derive_more 1.0.0",
+ "hex",
+ "rand_core 0.6.4",
+ "schemars",
+ "serde 1.0.208",
+ "serde-json-wasm",
+ "sha2 0.10.8",
+ "static_assertions",
+ "thiserror",
+]
+
+[[package]]
+name = "cosmwasm-std"
+version = "2.1.3"
+source = "git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81#597d3e8437d8c4d1afce07e5a676c29c751a8a81"
+dependencies = [
+ "base64 0.22.1",
+ "bech32 0.11.0",
+ "bnum",
+ "cosmwasm-core 2.1.3 (git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81)",
+ "cosmwasm-crypto 2.1.3 (git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81)",
+ "cosmwasm-derive 2.1.3 (git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81)",
  "derive_more 1.0.0",
  "hex",
  "rand_core 0.6.4",
@@ -2252,15 +2311,14 @@ dependencies = [
 [[package]]
 name = "cosmwasm-vm"
 version = "2.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5481dd2f10a04aa7aef8025b342285aebf20b167d6197e653c5e9aadc588f787"
+source = "git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81#597d3e8437d8c4d1afce07e5a676c29c751a8a81"
 dependencies = [
  "bech32 0.11.0",
  "bytes",
  "clru",
- "cosmwasm-core",
- "cosmwasm-crypto",
- "cosmwasm-std",
+ "cosmwasm-core 2.1.3 (git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81)",
+ "cosmwasm-crypto 2.1.3 (git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81)",
+ "cosmwasm-std 2.1.3 (git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81)",
  "crc32fast",
  "derivative",
  "hex",
@@ -9503,7 +9561,7 @@ version = "0.7.0"
 dependencies = [
  "accumulator",
  "anyhow",
- "cosmwasm-std",
+ "cosmwasm-std 2.1.3 (git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81)",
  "cosmwasm-vm",
  "move-binary-format",
  "move-core-types",
@@ -9802,7 +9860,7 @@ dependencies = [
  "bcs",
  "bitcoin 0.31.2",
  "ciborium",
- "cosmwasm-std",
+ "cosmwasm-std 2.1.3 (git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81)",
  "cosmwasm-vm",
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "hex",
