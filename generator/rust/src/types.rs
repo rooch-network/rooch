@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use heapless::{String, Vec, LinearMap};
 use minicbor::{Decode, Encode, Decoder, Encoder, decode::Error };
 use super::constants::{MAX_STRING_LEN, MAX_CONTENT_SIZE, MAX_DEPLOY_ARGS };
