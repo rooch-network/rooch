@@ -4,9 +4,9 @@
 use crate::actor::indexer::IndexerActor;
 use crate::actor::messages::{
     IndexerApplyObjectStatesMessage, IndexerDeleteAnyObjectStatesMessage, IndexerEventsMessage,
-    IndexerPersistOrUpdateAnyObjectStatesMessage, IndexerStatesMessage, IndexerTransactionMessage,
-    QueryIndexerEventsMessage, QueryIndexerObjectIdsMessage, QueryIndexerTransactionsMessage,
-    QueryLastStateIndexByTxOrderMessage, UpdateIndexerMessage,
+    IndexerPersistOrUpdateAnyObjectStatesMessage, IndexerRevertMessage, IndexerStatesMessage,
+    IndexerTransactionMessage, QueryIndexerEventsMessage, QueryIndexerObjectIdsMessage,
+    QueryIndexerTransactionsMessage, QueryLastStateIndexByTxOrderMessage, UpdateIndexerMessage,
 };
 use crate::actor::reader_indexer::IndexerReaderActor;
 use anyhow::{Ok, Result};
@@ -14,7 +14,7 @@ use coerce::actor::ActorRef;
 use moveos_types::moveos_std::event::Event;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
 use moveos_types::moveos_std::tx_context::TxContext;
-use moveos_types::state::StateChangeSet;
+use moveos_types::state::{StateChangeSet, StateChangeSetExt};
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
@@ -23,6 +23,7 @@ use rooch_types::indexer::state::{
 };
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::transaction::LedgerTransaction;
+use std::collections::HashMap;
 
 #[derive(Clone)]
 pub struct IndexerProxy {
@@ -208,5 +209,23 @@ impl IndexerProxy {
                 state_type,
             })
             .await?
+    }
+
+    pub async fn revert_indexer(
+        &self,
+        revert_tx_order: u64,
+        revert_state_change_set: StateChangeSetExt,
+        root: ObjectMeta,
+        object_mapping: HashMap<ObjectID, ObjectMeta>,
+    ) -> Result<()> {
+        self.actor
+            .notify(IndexerRevertMessage {
+                revert_tx_order,
+                revert_state_change_set,
+                root,
+                object_mapping,
+            })
+            .await?;
+        Ok(())
     }
 }

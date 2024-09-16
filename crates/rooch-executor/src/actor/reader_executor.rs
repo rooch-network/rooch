@@ -3,8 +3,8 @@
 
 use super::messages::{
     AnnotatedStatesMessage, ExecuteViewFunctionMessage, GetAnnotatedEventsByEventHandleMessage,
-    GetAnnotatedEventsByEventIDsMessage, GetEventsByEventHandleMessage, RefreshStateMessage,
-    StatesMessage,
+    GetAnnotatedEventsByEventIDsMessage, GetEventsByEventHandleMessage, GetStateChangeSetsMessage,
+    RefreshStateMessage, StatesMessage,
 };
 use crate::actor::messages::{
     GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage,
@@ -24,7 +24,7 @@ use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::moveos_std::event::EventHandle;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event};
 use moveos_types::moveos_std::object::ObjectMeta;
-use moveos_types::state::{AnnotatedState, ObjectState};
+use moveos_types::state::{AnnotatedState, ObjectState, StateChangeSetExt};
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::state_resolver::{AnnotatedStateKV, AnnotatedStateReader, StateKV, StateReader};
 use moveos_types::transaction::TransactionExecutionInfo;
@@ -321,5 +321,19 @@ impl Handler<EventData> for ReaderExecutorActor {
             )?;
         }
         Ok(())
+    }
+}
+
+#[async_trait]
+impl Handler<GetStateChangeSetsMessage> for ReaderExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: GetStateChangeSetsMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<Option<StateChangeSetExt>>> {
+        let GetStateChangeSetsMessage { tx_orders } = msg;
+        self.rooch_store
+            .state_store
+            .multi_get_state_change_set(tx_orders)
     }
 }

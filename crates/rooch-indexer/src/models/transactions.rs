@@ -4,8 +4,8 @@
 use crate::schema::transactions;
 use crate::utils::escape_sql_string;
 use diesel::prelude::*;
+use move_core_types::account_address::AccountAddress;
 use moveos_types::h256::H256;
-use rooch_types::address::RoochAddress;
 use rooch_types::indexer::transaction::IndexerTransaction;
 use std::str::FromStr;
 
@@ -58,7 +58,7 @@ impl TryFrom<StoredTransaction> for IndexerTransaction {
     type Error = anyhow::Error;
 
     fn try_from(transaction: StoredTransaction) -> Result<Self, Self::Error> {
-        let sender = RoochAddress::from_hex_literal(transaction.sender.as_str())?;
+        let sender = AccountAddress::from_str(transaction.sender.as_str())?;
         let tx_hash = H256::from_str(transaction.tx_hash.as_str())?;
 
         let indexer_transaction = IndexerTransaction {

@@ -36,6 +36,7 @@ members = [
     "crates/rooch-open-rpc-macros",
     "crates/rooch-open-rpc-spec",
     "crates/rooch-open-rpc-spec-builder",
+    "crates/rooch-oracle",
     "crates/rooch-pipeline-processor",
     "crates/rooch-proposer",
     "crates/rooch-relayer",
@@ -62,7 +63,8 @@ default-members = [
     "moveos/moveos",
     "frameworks/framework-release",
     "crates/rooch",
-    "crates/rooch-faucet"
+    "crates/rooch-faucet",
+    "crates/rooch-oracle"
 ]
 
 # All workspace members should inherit these keys
@@ -75,7 +77,7 @@ license = "Apache-2.0"
 publish = false
 repository = "https://github.com/rooch-network/rooch"
 rust-version = "1.78.0"
-version = "0.7.1"
+version = "0.7.2"
 
 [workspace.dependencies]
 # Internal crate dependencies.
@@ -169,6 +171,7 @@ ethers = { version = "2.0.7", features = ["legacy"] }
 eyre = "0.6.8"
 fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "56f6223b84ada922b6cb2c672c69db2ea3dc6a13" }
 futures = "0.3.28"
+futures-util = "0.3.30"
 hex = "0.4.3"
 rustc-hex = "2.1"
 itertools = "0.13.0"
@@ -180,7 +183,7 @@ log = "0.4.22"
 more-asserts = "0.3.0"
 num-derive = "0.3.3"
 num-traits = "0.2.15"
-once_cell = "1.10.0"
+once_cell = "1.20.0"
 ordinals = "0.0.9"
 parking_lot = "0.12.3"
 pathdiff = "0.2.1"
@@ -215,16 +218,18 @@ tiny-keccak = { version = "2", features = ["keccak", "sha3"] }
 tiny-bip39 = "1.0.0"
 tokio = { version = "1.40.0", features = ["full"] }
 tokio-util = "0.7.12"
+tokio-tungstenite = { version = "0.23.1", features = ["native-tls"] }
 tonic = { version = "0.8", features = ["gzip"] }
 tracing = "0.1.37"
 tracing-appender = "0.2.2"
 tracing-subscriber = { version = "0.3.15" }
+tungstenite = "0.24.0"
 
 codespan-reporting = "0.11.1"
 codespan = "0.11.1"
 termcolor = "1.1.2"
 versions = "4.1.0"
-pretty_assertions = "1.2.0"
+pretty_assertions = "1.4.1"
 syn = { version = "1.0.104", features = ["full", "extra-traits"] }
 quote = "1.0"
 proc-macro2 = "1.0.86"

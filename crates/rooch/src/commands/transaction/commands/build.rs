@@ -62,6 +62,7 @@ impl CommandAction<Option<FileOutput>> for BuildCommand {
         let context = self.context.build()?;
         let address_mapping = context.address_mapping();
         let sender = context.resolve_address(self.tx_options.sender)?.into();
+        let sequenc_number = self.tx_options.sequence_number;
         let max_gas_amount = self.tx_options.max_gas_amount;
 
         let function_id = self.function.into_function_id(&address_mapping)?;
@@ -82,7 +83,7 @@ impl CommandAction<Option<FileOutput>> for BuildCommand {
         let action = MoveAction::new_function_call(function_id, type_args, args);
 
         let tx_data = context
-            .build_tx_data(sender, action, max_gas_amount)
+            .build_tx_data_with_sequence_number(sender, action, max_gas_amount, sequenc_number)
             .await?;
 
         let output =

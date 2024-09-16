@@ -194,13 +194,26 @@ impl WalletContext {
         action: MoveAction,
         max_gas_amount: Option<u64>,
     ) -> RoochResult<RoochTransactionData> {
+        self.build_tx_data_with_sequence_number(sender, action, max_gas_amount, None)
+            .await
+    }
+
+    pub async fn build_tx_data_with_sequence_number(
+        &self,
+        sender: RoochAddress,
+        action: MoveAction,
+        max_gas_amount: Option<u64>,
+        sequence_number: Option<u64>,
+    ) -> RoochResult<RoochTransactionData> {
         let client = self.get_client().await?;
         let chain_id = client.rooch.get_chain_id().await?;
-        let sequence_number = client
-            .rooch
-            .get_sequence_number(sender)
-            .await
-            .map_err(RoochError::from)?;
+        let sequence_number = sequence_number.unwrap_or(
+            client
+                .rooch
+                .get_sequence_number(sender)
+                .await
+                .map_err(RoochError::from)?,
+        );
         log::debug!("use sequence_number: {}", sequence_number);
         //TODO max gas amount from cli option or dry run estimate
         let tx_data = RoochTransactionData::new(

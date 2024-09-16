@@ -12,7 +12,7 @@ use moveos_types::move_types::type_tag_match;
 use moveos_types::moveos_std::display::{get_object_display_id, RawDisplay};
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
 use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::state::{AnnotatedState, FieldKey, ObjectState};
+use moveos_types::state::{AnnotatedState, FieldKey, ObjectState, StateChangeSet};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
 use rooch_executor::actor::messages::DryRunTransactionResult;
@@ -33,6 +33,7 @@ use rooch_types::indexer::state::{
 };
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::repair::{RepairIndexerParams, RepairIndexerType};
+use rooch_types::state::{StateChangeSetWithTxOrder, SyncStateFilter};
 use rooch_types::transaction::{
     ExecuteTransactionResponse, LedgerTransaction, RoochTransaction, RoochTransactionData,
 };
@@ -708,5 +709,47 @@ impl RpcService {
             }
             Ok(())
         }
+    }
+
+    pub async fn sync_states(
+        &self,
+        tx_orders: Vec<u64>,
+        filter: SyncStateFilter,
+    ) -> Result<Vec<StateChangeSetWithTxOrder>> {
+        let states = self
+            .executor
+            .get_state_change_sets(tx_orders.clone())
+            .await?
+            .into_iter()
+            .zip(tx_orders)
+            .filter(|(x, _y)| x.is_some())
+            .map(|(x, y)| StateChangeSetWithTxOrder::new(y, x.unwrap().state_change_set))
+            .collect::<Vec<_>>();
+
+        let result = match filter {
+            SyncStateFilter::ObjectID(object_id) => {
+                states
+                    .into_iter()
+                    .map(|s| {
+                        let filter_changes = s
+                            .state_change_set
+                            .changes
+                            .into_iter()
+                            // Only includes Global Object, not include Child Object
+                            .filter(|(_, value)| value.metadata.id == object_id)
+                            .collect();
+                        let filter_state_change_set = StateChangeSet::new_with_changes(
+                            s.state_change_set.state_root,
+                            s.state_change_set.global_size,
+                            filter_changes,
+                        );
+                        StateChangeSetWithTxOrder::new(s.tx_order, filter_state_change_set)
+                    })
+                    .collect()
+            }
+            SyncStateFilter::All => states,
+        };
+
+        Ok(result)
     }
 }

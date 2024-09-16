@@ -1,0 +1,104 @@
+---
+title: 'Rooch Network Bug Bounty  Program – Share $200,000 in Rewards'
+author: omnihand
+category: Campaign
+date: 2024/09/13
+description: ''
+image: '/blog/bug-bounty/bounty-en.png'
+---
+
+import PostHeader from '/components/blog/postHeader'
+
+<PostHeader />
+
+![](/blog/bug-bounty/bounty-en.png)
+
+As Rooch progresses toward its pre-mainnet launch, we are initiating a one-month Bug Bounty  Program to further enhance the network's security and stability. We invite global developers and security experts to participate, identify, and fix potential vulnerabilities, safeguarding Rooch’s steady development together. The total prize pool for this event is up to $200,000. We look forward to your active participation. Please see the specific rules below for more details.
+
+## Vulnerability Types and Rewards
+
+### **Critical Vulnerabilities (First Prize)**
+
+1. **Minting/Issuance Vulnerabilities**: The ability to call system contracts to mint or issue tokens.
+2. **Privilege Escalation**: Gaining access to system accounts and executing arbitrary transactions.
+3. **Move Verifier Bypass**: Bypassing one or more checks of the Move Verifier for improper deployment and transaction execution.
+4. **Private Generics Bypass**: Bypassing checks of the `private_generics` attribute.
+5. **Data Structure Bypass**: Bypassing checks of the `data_struct` attribute.
+6. **Borrow Restrictions Bypass**: Bypassing restrictions on having only one mutable borrow during `borrow_object`.
+7. **Bytecode Instruction Abuse**: Using Move built-in instructions in bytecode for improper transactions.
+8. **Transaction Verification Bypass**: Bypassing validator checks for transactions.
+9. **Gas Fee Issues**: Executing transactions without paying gas fees.
+10. **Network Forks**: Actions that cause network forks.
+11. **Transaction Forgery and Replay**: Forging or replaying transactions.
+
+### **Medium Vulnerabilities (Second Prize)**
+
+1. **Node Crash (BTC Transactions)**: Crafting specific BTC transactions that cause node processes to crash.
+2. **SessionKey Bypass**: Bypassing security restrictions of SessionKey.
+3. **RPC Interface Crash**: Submitting specially formatted transactions via the RPC interface that cause node processes to crash.
+
+### **Low Vulnerabilities (Third Prize)**
+
+1. **Memory Issues**: Submitting specially formatted transactions via the RPC interface that cause excessive memory usage.
+2. **CPU Spikes**: Submitting specially formatted transactions via the RPC interface that cause CPU spikes.
+3. **Denial-of-Service Attacks**: Other forms of DoS attacks.
+
+### **User Usage and Data Anomalies (Fourth Prize)**
+
+1. UTXO data on Rooch is inconsistent with the Bitcoin mainnet.
+2. Inscription data on Rooch is inconsistent with the mainnet.
+3. Anomalies encountered in CLI, Portal, and other developer or end-user products.
+4. Vulnerabilities in example or demo code.
+
+## Scope of Vulnerabilities and Exclusions
+
+The event mainly targets the following repository: [https://github.com/rooch-network/rooch/](https://github.com/rooch-network/rooch/issues/new/choose), including:
+
+1. Core code of Rooch Network (Rust)
+2. Rooch Move Framework (Move)
+3. Rooch SDK (Typescript / Javascript)
+4. Rooch Portal (Typescript / Javascript)
+5. Data anomalies and functionalities limited to the Pre Mainnet network
+
+The following types of vulnerabilities are excluded from the bounty:
+
+1. Attacks that use computational power to cause Bitcoin network reorganization of more than three blocks. Rooch, as Bitcoin’s Layer 2, confirms with a three-block delay. If Bitcoin reorganizes beyond three blocks, Rooch automatically enters maintenance mode and requires manual recovery.
+2. Social engineering or phishing attacks.
+3. Non-standard address formats or unlocking scripts that cause the UTXO owner to be identified as 0x4.
+4. Data inconsistencies due to delayed confirmation.
+5. Front-end data or page state anomalies, rendering issues, etc. (e.g., page rendering errors due to incompatible data formats or JS exceptions).
+6. Issues already reported or features still in development and not yet released (not on Pre Mainnet or not activated).
+
+## Participation Instructions
+
+### Submit a Bug Report
+
+If you discover any of the above vulnerabilities on the testnet, please follow these steps to submit your report:
+
+1. **Prepare Your Report**:
+    - **Vulnerability Type**: Clearly specify the category of the vulnerability.
+    - **Description**: Briefly describe the nature and impact of the vulnerability.
+    - **Reproduction Steps**: Provide detailed steps on how to reproduce the vulnerability.
+    - **Environment Information**: Include testnet version, node configuration, etc.
+    - **Screenshots or Logs**: Attach relevant screenshots or error logs (if applicable).
+2. **Submission Channels**:
+    - **GitHub Submission**: Create a new "Report a security vulnerability" issue in our GitHub project and attach your report. **Do not create a public issue**. [**Submit Here](https://github.com/rooch-network/rooch/issues/new/choose).**
+
+![](/blog/bug-bounty/open-issues.png)
+
+### Important Notes
+
+- All discovered vulnerabilities must be submitted through the above channels and **must not be publicly disclosed**.
+- Please include your contact details in your report so we can communicate with you and distribute the rewards. If we cannot reach you during the reward distribution period, it will be considered a forfeiture of the bounty.
+
+## Reward Details
+
+The total prize pool for this event is **$200,000**, allocated based on the type and impact of the vulnerabilities discovered. Rewards are valued in USD and will be paid in Rooch mainnet tokens. Winners will receive the mainnet tokens after Rooch's TGE (Token Generation Event).
+
+## Event Period
+
+4pm, Sep 13th - 4pm, Oct 13th （UTC+8)
+
+## **Join Us to Enhance the Security of Rooch!**
+
+Security is the cornerstone of Rooch Network, and your contributions will help improve the security and stability of Rooch Network. Whether discovering vulnerabilities or providing improvement suggestions, we welcome your participation. Let’s work together to safeguard Rooch’s future, building a more secure and reliable native BTC application layer. Thank you for your support and contributions! We look forward to achieving success with you in this event!

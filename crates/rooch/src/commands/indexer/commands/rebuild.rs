@@ -11,7 +11,7 @@ use std::time::Instant;
 
 use anyhow::{Error, Result};
 use clap::Parser;
-
+use moveos_types::moveos_std::object::is_dynamic_field_type;
 use moveos_types::state::ObjectState;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_indexer::indexer_reader::IndexerReader;
@@ -125,6 +125,9 @@ fn produce_updates(
             match state_result {
                 Ok(state) => {
                     let object_type = state.metadata.object_type.clone();
+                    if is_dynamic_field_type(&object_type) {
+                        continue;
+                    };
                     let state_index = state_index_generator.get(&object_type);
                     let indexer_state =
                         IndexerObjectState::new(state.metadata, tx_order, state_index);

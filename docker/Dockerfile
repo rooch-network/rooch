@@ -98,6 +98,8 @@ COPY --from=builder $RELEASE_PATH/rooch \
      /rooch/
 COPY --from=builder $RELEASE_PATH/rooch-faucet \
   /rooch-faucet/
+COPY --from=builder $RELEASE_PATH/rooch-oracle \
+  /rooch-oracle/
 
 ENTRYPOINT [ "/rooch/rooch" ]
 CMD [ "server", "start" ]
