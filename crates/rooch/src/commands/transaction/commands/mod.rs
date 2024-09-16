@@ -31,6 +31,14 @@ impl FileOutputData {
         }
     }
 
+    pub fn file_count_suffix(&self) -> usize {
+        match self {
+            FileOutputData::RoochTransactionData(_) => 1,
+            FileOutputData::SignedRoochTransaction(_) => 1,
+            FileOutputData::PartiallySignedRoochTransaction(data) => data.signators(),
+        }
+    }
+
     pub fn file_suffix(&self) -> &str {
         match self {
             FileOutputData::RoochTransactionData(_) => "rtd",
@@ -50,7 +58,12 @@ impl FileOutputData {
     pub fn default_output_file_path(&self) -> Result<PathBuf> {
         let temp_dir = env::temp_dir();
         let tx_hash = self.tx_hash();
-        let file_name = format!("{}.{}", hex::encode(&tx_hash[..8]), self.file_suffix());
+        let file_name = format!(
+            "{}.{}.{}",
+            hex::encode(&tx_hash[..8]),
+            self.file_count_suffix(),
+            self.file_suffix()
+        );
         Ok(temp_dir.join(file_name))
     }
 }

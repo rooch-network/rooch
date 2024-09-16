@@ -118,6 +118,10 @@ impl PartiallySignedRoochTransaction {
         self.data.sender
     }
 
+    pub fn signators(&self) -> usize {
+        self.authenticators.len()
+    }
+
     pub fn contains_authenticator(&self, authenticator: &BitcoinAuthenticator) -> bool {
         self.authenticators
             .iter()
