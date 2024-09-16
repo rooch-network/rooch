@@ -428,10 +428,10 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let traffic_per_second: u64;
 
     if network.chain_id != BuiltinChainID::Local.chain_id() {
-        traffic_burst_size = opt.traffic_burst_size.unwrap_or(5000);
+        traffic_burst_size = opt.traffic_burst_size.unwrap_or(100);
         traffic_per_second = opt.traffic_per_second.unwrap_or(1);
     } else {
-        traffic_burst_size = opt.traffic_burst_size.unwrap_or(100);
+        traffic_burst_size = opt.traffic_burst_size.unwrap_or(5000);
         traffic_per_second = opt.traffic_per_second.unwrap_or(1);
     };
 
