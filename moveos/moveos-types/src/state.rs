@@ -971,6 +971,18 @@ impl StateChangeSet {
         }
     }
 
+    pub fn new_with_changes(
+        state_root: H256,
+        global_size: u64,
+        changes: BTreeMap<FieldKey, ObjectChange>,
+    ) -> Self {
+        Self {
+            state_root,
+            global_size,
+            changes,
+        }
+    }
+
     pub fn root_metadata(&self) -> ObjectMeta {
         ObjectMeta::root_metadata(self.state_root, self.global_size)
     }
@@ -1017,6 +1029,24 @@ impl Default for StateChangeSet {
             state_root: *GENESIS_STATE_ROOT,
             global_size: 0,
             changes: BTreeMap::new(),
+        }
+    }
+}
+
+/// Global State change set ext.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct StateChangeSetExt {
+    /// The state change set
+    pub state_change_set: StateChangeSet,
+    /// Sequence number of this transaction corresponding to sender's account.
+    pub sequence_number: u64,
+}
+
+impl StateChangeSetExt {
+    pub fn new(state_change_set: StateChangeSet, sequence_number: u64) -> Self {
+        Self {
+            state_change_set,
+            sequence_number,
         }
     }
 }

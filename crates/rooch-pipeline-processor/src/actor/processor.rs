@@ -8,6 +8,7 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use function_name::named;
 use moveos::moveos::VMPanicError;
+use moveos_types::state::StateChangeSetExt;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use prometheus::Registry;
 use rooch_db::RoochDB;
@@ -274,6 +275,12 @@ impl PipelineProcessorActor {
         // Sync latest state root from writer executor to reader executor
         self.executor
             .refresh_state(root.clone(), output.is_upgrade)
+            .await?;
+        // Save state change set is a notify call, do not block current task
+        let state_change_set_ext =
+            StateChangeSetExt::new(output.changeset.clone(), moveos_tx.ctx.sequence_number);
+        self.executor
+            .save_state_change_set(tx.sequence_info.tx_order, state_change_set_ext)
             .await?;
 
         let indexer = self.indexer.clone();

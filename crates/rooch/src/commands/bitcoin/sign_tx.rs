@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::utils::prompt_yes_no;
 use crate::{
     cli_types::{CommandAction, FileOrHexInput, WalletContextOptions},
     commands::bitcoin::{FileOutput, FileOutputData},
@@ -11,7 +12,7 @@ use async_trait::async_trait;
 use bitcoin::{
     key::{Keypair, Secp256k1, TapTweak},
     sighash::{Prevouts, SighashCache},
-    Psbt, TapLeafHash, TapSighashType, Witness,
+    Address, Network, Psbt, TapLeafHash, TapSighashType, Witness,
 };
 use clap::Parser;
 use moveos_types::module_binding::MoveFunctionCaller;
@@ -39,6 +40,14 @@ pub struct SignTx {
     #[clap(long)]
     output_file: Option<String>,
 
+    /// Automatically answer 'yes' to all prompts
+    #[clap(long = "yes", short = 'y')]
+    answer_yes: bool,
+
+    /// The Bitcoin network to use (mainnet, testnet, regtest, signet)
+    #[clap(long, short = 'n', value_parser = parse_network)]
+    network: Option<Network>,
+
     #[clap(flatten)]
     pub(crate) context_options: WalletContextOptions,
 }
@@ -50,12 +59,16 @@ pub enum SignOutput {
 }
 
 #[async_trait]
-impl CommandAction<FileOutput> for SignTx {
-    async fn execute(self) -> RoochResult<FileOutput> {
+impl CommandAction<Option<FileOutput>> for SignTx {
+    async fn execute(self) -> RoochResult<Option<FileOutput>> {
         let context = self.context_options.build_require_password()?;
         let client = context.get_client().await?;
 
         let psbt = Psbt::deserialize(&self.input.data)?;
+        print_transaction_details(&psbt, self.network);
+        if !self.answer_yes && !prompt_yes_no("Do you want to sign this transaction?") {
+            return Ok(None);
+        }
         debug!("psbt before sign: {:?}", psbt);
         let output = sign_psbt(psbt, self.signer, &context, &client).await?;
         debug!("sign output: {:?}", output);
@@ -65,7 +78,7 @@ impl CommandAction<FileOutput> for SignTx {
             SignOutput::Tx(tx) => FileOutputData::Tx(tx),
         };
         let output = FileOutput::write_to_file(file_output_data, self.output_file)?;
-        Ok(output)
+        Ok(Some(output))
     }
 }
 
@@ -236,4 +249,69 @@ fn is_psbt_finalized(psbt: &Psbt) -> bool {
     psbt.inputs
         .iter()
         .all(|input| input.final_script_sig.is_some() || input.final_script_witness.is_some())
+}
+
+fn print_transaction_details(psbt: &Psbt, network: Option<Network>) {
+    println!("Transaction details before signing:");
+    println!("  Version: {}", psbt.unsigned_tx.version);
+    println!("  Lock time: {}", psbt.unsigned_tx.lock_time);
+    if let Some(net) = network {
+        println!("  Network: {}", net);
+    }
+    println!("  Inputs:");
+    for (i, (unsigned_input, psbt_input)) in psbt
+        .unsigned_tx
+        .input
+        .iter()
+        .zip(psbt.inputs.iter())
+        .enumerate()
+    {
+        println!("    Input {}:", i);
+        println!(
+            "      Previous output: {}:{}",
+            unsigned_input.previous_output.txid, unsigned_input.previous_output.vout
+        );
+        println!("      Sequence: {}", unsigned_input.sequence);
+
+        if let Some(witness_utxo) = &psbt_input.witness_utxo {
+            print_script_or_address(&witness_utxo.script_pubkey, network);
+        } else if let Some(non_witness_utxo) = &psbt_input.non_witness_utxo {
+            let vout = unsigned_input.previous_output.vout as usize;
+            if vout < non_witness_utxo.output.len() {
+                print_script_or_address(&non_witness_utxo.output[vout].script_pubkey, network);
+            }
+        } else {
+            println!("      Script pubkey: Unable to determine (no UTXO information)");
+        }
+    }
+    println!("  Outputs:");
+    for (i, output) in psbt.unsigned_tx.output.iter().enumerate() {
+        println!("    Output {}:", i);
+        println!("      Value: {}", output.value);
+        print_script_or_address(&output.script_pubkey, network);
+    }
+    println!();
+}
+
+fn print_script_or_address(script_pubkey: &bitcoin::ScriptBuf, network: Option<Network>) {
+    if let Some(net) = network {
+        if let Ok(address) = Address::from_script(script_pubkey, net) {
+            println!("      Address: {}", address);
+            return;
+        }
+    }
+    println!("      Script pubkey: {}", script_pubkey);
+}
+
+fn parse_network(s: &str) -> Result<Network, String> {
+    match s.to_lowercase().as_str() {
+        "mainnet" => Ok(Network::Bitcoin),
+        "testnet" => Ok(Network::Testnet),
+        "regtest" => Ok(Network::Regtest),
+        "signet" => Ok(Network::Signet),
+        _ => Err(format!(
+            "Invalid network: {}. Valid options are: mainnet, testnet, regtest, signet",
+            s
+        )),
+    }
 }

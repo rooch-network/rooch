@@ -3,8 +3,8 @@
 
 use crate::actor::messages::{
     IndexerApplyObjectStatesMessage, IndexerDeleteAnyObjectStatesMessage, IndexerEventsMessage,
-    IndexerPersistOrUpdateAnyObjectStatesMessage, IndexerStatesMessage, IndexerTransactionMessage,
-    UpdateIndexerMessage,
+    IndexerPersistOrUpdateAnyObjectStatesMessage, IndexerRevertMessage, IndexerStatesMessage,
+    IndexerTransactionMessage, UpdateIndexerMessage,
 };
 use crate::store::traits::IndexerStoreTrait;
 use crate::IndexerStore;
@@ -15,8 +15,8 @@ use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::transaction::MoveAction;
 use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::indexer::state::{
-    handle_object_change, IndexerObjectStateChangeSet, IndexerObjectStatesIndexGenerator,
-    ObjectStateType,
+    handle_object_change, handle_revert_object_change, IndexerObjectStateChangeSet,
+    IndexerObjectStatesIndexGenerator, ObjectStateType,
 };
 use rooch_types::indexer::transaction::IndexerTransaction;
 
@@ -228,6 +228,46 @@ impl Handler<IndexerApplyObjectStatesMessage> for IndexerActor {
 
         self.indexer_store
             .apply_object_states(object_state_change_set)?;
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl Handler<IndexerRevertMessage> for IndexerActor {
+    async fn handle(&mut self, msg: IndexerRevertMessage, _ctx: &mut ActorContext) -> Result<()> {
+        let IndexerRevertMessage {
+            revert_tx_order,
+            revert_state_change_set,
+            root,
+            object_mapping,
+        } = msg;
+
+        self.root = root;
+
+        // 1. revert indexer transaction
+        self.indexer_store
+            .delete_transactions(vec![revert_tx_order])?;
+
+        // 2. revert indexer event
+        self.indexer_store.delete_events(vec![revert_tx_order])?;
+
+        // 3. revert indexer full object state, including object_states, utxos and inscriptions
+        // indexer object state index generator
+        let mut state_index_generator = IndexerObjectStatesIndexGenerator::default();
+        let mut indexer_object_state_change_set = IndexerObjectStateChangeSet::default();
+
+        for (_feild_key, object_change) in revert_state_change_set.state_change_set.changes {
+            let _ = handle_revert_object_change(
+                &mut state_index_generator,
+                revert_tx_order,
+                &mut indexer_object_state_change_set,
+                object_change,
+                &object_mapping,
+            )?;
+        }
+        self.indexer_store
+            .apply_object_states(indexer_object_state_change_set)?;
+
         Ok(())
     }
 }

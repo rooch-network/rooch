@@ -212,6 +212,16 @@ impl IndexerStoreTrait for IndexerStore {
         self.get_sqlite_store(INDEXER_EVENTS_TABLE_NAME)?
             .persist_events(events)
     }
+
+    fn delete_transactions(&self, tx_orders: Vec<u64>) -> Result<(), IndexerError> {
+        self.get_sqlite_store(INDEXER_TRANSACTIONS_TABLE_NAME)?
+            .delete_transactions(tx_orders)
+    }
+
+    fn delete_events(&self, tx_orders: Vec<u64>) -> Result<(), IndexerError> {
+        self.get_sqlite_store(INDEXER_EVENTS_TABLE_NAME)?
+            .delete_events(tx_orders)
+    }
 }
 
 impl IndexerStore {

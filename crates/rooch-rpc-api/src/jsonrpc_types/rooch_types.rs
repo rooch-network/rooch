@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::event_view::IndexerEventIDView;
-use super::{HumanReadableDisplay, IndexerStateIDView};
+use super::{HumanReadableDisplay, IndexerStateIDView, StateChangeSetWithTxOrderView};
 use crate::jsonrpc_types::account_view::BalanceInfoView;
 use crate::jsonrpc_types::btc::ord::InscriptionStateView;
 use crate::jsonrpc_types::btc::utxo::UTXOStateView;
@@ -29,6 +29,7 @@ pub type IndexerObjectStatePageView = PageView<IndexerObjectStateView, IndexerSt
 
 pub type UTXOPageView = PageView<UTXOStateView, IndexerStateIDView>;
 pub type InscriptionPageView = PageView<InscriptionStateView, IndexerStateIDView>;
+pub type StateChangeSetPageView = PageView<StateChangeSetWithTxOrderView, StrView<u64>>;
 
 /// `next_cursor` points to the last item in the page;
 /// Reading with `next_cursor` will start from the next item after `next_cursor` if

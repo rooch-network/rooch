@@ -346,6 +346,32 @@ impl SqliteIndexerStore {
     }
 
     #[named]
+    pub fn delete_transactions(&self, tx_orders: Vec<u64>) -> Result<(), IndexerError> {
+        if tx_orders.is_empty() {
+            return Ok(());
+        }
+
+        let fn_name = function_name!();
+        let _timer = self
+            .db_metrics
+            .indexer_store_metrics
+            .indexer_persist_or_update_or_delete_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
+        let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
+
+        let tx_orders: Vec<_> = tx_orders.into_iter().map(|v| v as i64).collect();
+        diesel::delete(
+            transactions::table.filter(transactions::tx_order.eq_any(tx_orders.as_slice())),
+        )
+        .execute(&mut connection)
+        .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
+        .context("Failed to delete transactions to SQLiteDB")?;
+
+        Ok(())
+    }
+
+    #[named]
     pub fn persist_events(&self, events: Vec<IndexerEvent>) -> Result<(), IndexerError> {
         if events.is_empty() {
             return Ok(());
@@ -369,6 +395,30 @@ impl SqliteIndexerStore {
             .execute(&mut connection)
             .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
             .context("Failed to write events to SQLiteDB")?;
+
+        Ok(())
+    }
+
+    #[named]
+    pub fn delete_events(&self, tx_orders: Vec<u64>) -> Result<(), IndexerError> {
+        if tx_orders.is_empty() {
+            return Ok(());
+        }
+
+        let fn_name = function_name!();
+        let _timer = self
+            .db_metrics
+            .indexer_store_metrics
+            .indexer_persist_or_update_or_delete_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
+        let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
+
+        let tx_orders: Vec<_> = tx_orders.into_iter().map(|v| v as i64).collect();
+        diesel::delete(events::table.filter(events::tx_order.eq_any(tx_orders.as_slice())))
+            .execute(&mut connection)
+            .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
+            .context("Failed to delete events to SQLiteDB")?;
 
         Ok(())
     }

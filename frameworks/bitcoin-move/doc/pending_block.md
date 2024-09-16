@@ -28,6 +28,7 @@ PendingStore is used to store the pending blocks and txs, and handle the reorg
 -  [Function `get_ready_pending_txs`](#0x4_pending_block_get_ready_pending_txs)
 -  [Function `get_best_block`](#0x4_pending_block_get_best_block)
 -  [Function `get_reorg_block_count`](#0x4_pending_block_get_reorg_block_count)
+-  [Function `update_reorg_block_count`](#0x4_pending_block_update_reorg_block_count)
 -  [Function `update_reorg_block_count_for_local`](#0x4_pending_block_update_reorg_block_count_for_local)
 
 
@@ -35,7 +36,9 @@ PendingStore is used to store the pending blocks and txs, and handle the reorg
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::event</a>;
+<b>use</b> <a href="">0x2::module_store</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x3::chain_id</a>;
@@ -352,6 +355,18 @@ Get the pending txs which are ready to be processed
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="pending_block.md#0x4_pending_block_get_reorg_block_count">get_reorg_block_count</a>(): u64
+</code></pre>
+
+
+
+<a name="0x4_pending_block_update_reorg_block_count"></a>
+
+## Function `update_reorg_block_count`
+
+Update the <code>reorg_block_count</code> config
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="pending_block.md#0x4_pending_block_update_reorg_block_count">update_reorg_block_count</a>(<a href="">signer</a>: &<a href="">signer</a>, count: u64)
 </code></pre>
 
 

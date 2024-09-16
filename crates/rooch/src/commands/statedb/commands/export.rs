@@ -286,7 +286,7 @@ impl ExportCommand {
 
         if let Some(ord_path) = ord_path.clone() {
             let mut ord_writer = ExportWriter::new(Some(ord_output), None);
-            Self::export_ord_store(ord_path, None, &mut ord_writer)?;
+            Self::export_ord_store(ord_path, None, &mut ord_writer, true)?;
         }
 
         if let Some(utxo_path) = utxo_path {
@@ -347,7 +347,7 @@ impl ExportCommand {
                 root_state_root,
                 inscription_store_object_id.field_key(),
             );
-            Self::export_ord_store(ord_path, Some(inscription_store_state_root), writer)?;
+            Self::export_ord_store(ord_path, Some(inscription_store_state_root), writer, false)?;
         } else {
             object_ids.push(BitcoinUTXOStore::object_id());
             object_ids.push(InscriptionStore::object_id());
@@ -361,6 +361,7 @@ impl ExportCommand {
         ord_path: PathBuf,
         obj_state_root: Option<H256>,
         writer: &mut ExportWriter,
+        include_inscription_id: bool, // sequence_number: inscription_id (dynamic field)
     ) -> Result<()> {
         let start_time = Instant::now();
 
@@ -372,6 +373,7 @@ impl ExportCommand {
 
         let mut loop_time = Instant::now();
         let mut sequence_number = 0;
+        let mut exported_count = 0;
         for line in reader.by_ref().lines() {
             let line = line.unwrap();
 
@@ -386,15 +388,20 @@ impl ExportCommand {
             let source = InscriptionSource::from_str(&line);
             let (key, state, inscription_id) = source.gen_update();
             writer.write_record(&key, &state)?;
+            exported_count += 1;
 
-            let (k2, v2) = gen_inscription_id_update(sequence_number, inscription_id);
-            writer.write_record(&k2, &v2)?;
+            if include_inscription_id {
+                let (field_key, object_state) =
+                    gen_inscription_id_update(sequence_number, inscription_id);
+                writer.write_record(&field_key, &object_state)?;
+                exported_count += 1;
+            }
 
             sequence_number += 1;
             if sequence_number % 1_000_000 == 0 {
                 println!(
                     "exporting top_level_fields of object_id: {:?}({}), exported count: {}. cost: {:?}",
-                    object_id, object_name, sequence_number*2, loop_time.elapsed()
+                    object_id, object_name, exported_count, loop_time.elapsed()
                 );
                 loop_time = Instant::now();
             }
@@ -405,7 +412,7 @@ impl ExportCommand {
             object_id,
             object_name,
             obj_state_root,
-            sequence_number*2,
+            exported_count,
             start_time.elapsed()
         );
 

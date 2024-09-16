@@ -24,8 +24,9 @@ use rooch_rpc_api::jsonrpc_types::{
     EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
     IndexerEventPageView, IndexerObjectStatePageView, IndexerStateIDView, ModuleABIView,
     ObjectIDVecView, ObjectStateFilterView, ObjectStateView, QueryOptions,
-    RawTransactionOutputView, RoochAddressView, StateKVView, StateOptions, StatePageView, StrView,
-    StructTagView, TransactionWithInfoPageView, TxOptions, UnitedAddressView,
+    RawTransactionOutputView, RoochAddressView, StateChangeSetPageView,
+    StateChangeSetWithTxOrderView, StateKVView, StateOptions, StatePageView, StrView,
+    StructTagView, SyncStateFilterView, TransactionWithInfoPageView, TxOptions, UnitedAddressView,
 };
 use rooch_rpc_api::{
     api::rooch_api::RoochAPIServer,
@@ -788,6 +789,63 @@ impl RoochAPIServer for RoochServer {
             .repair_indexer(repair_type.0, repair_params.into())
             .await?;
         Ok(())
+    }
+
+    async fn sync_states(
+        &self,
+        filter: SyncStateFilterView,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<StrView<u64>>,
+        limit: Option<StrView<u64>>,
+        query_option: Option<QueryOptions>,
+    ) -> RpcResult<StateChangeSetPageView> {
+        let limit_of = min(
+            limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
+            MAX_RESULT_LIMIT_USIZE,
+        ) as u64;
+        let cursor_of = cursor.map(|v| v.0);
+        // Sync from asc by default
+        let descending_order = query_option.map(|v| v.descending).unwrap_or(false);
+
+        let last_sequencer_order = self.rpc_service.get_sequencer_order().await?;
+        let tx_orders = if descending_order {
+            let start = cursor_of.unwrap_or(last_sequencer_order + 1);
+            let end = if start >= limit_of {
+                start - limit_of
+            } else {
+                0
+            };
+
+            (end..start).rev().collect::<Vec<_>>()
+        } else {
+            let start = cursor_of.unwrap_or(0);
+            let end_check = start
+                .checked_add(limit_of + 1)
+                .ok_or(RpcError::UnexpectedError(
+                    "cursor value is overflow".to_string(),
+                ))?;
+            let end = min(end_check, last_sequencer_order + 1);
+
+            (start..end).collect::<Vec<_>>()
+        };
+
+        let mut data = self
+            .rpc_service
+            .sync_states(tx_orders, filter.into())
+            .await?
+            .into_iter()
+            .map(StateChangeSetWithTxOrderView::from)
+            .collect::<Vec<_>>();
+
+        let has_next_page = data.len() > limit_of as usize;
+        data.truncate(limit_of as usize);
+        let next_cursor = data.last().cloned().map_or(cursor, |t| Some(t.tx_order));
+
+        Ok(StateChangeSetPageView {
+            data,
+            next_cursor,
+            has_next_page,
+        })
     }
 }
 

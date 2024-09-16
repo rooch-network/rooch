@@ -3,7 +3,8 @@
 
 use super::{
     AnnotatedMoveStructView, BytesView, H256View, HumanReadableDisplay, ObjectIDVecView,
-    QueryOptions, RoochAddressView, StrView, StructTagView, TypeTagView, UnitedAddressView,
+    ObjectIDView, QueryOptions, RoochAddressView, StrView, StructTagView, TypeTagView,
+    UnitedAddressView,
 };
 use anyhow::Result;
 use move_core_types::effects::Op;
@@ -15,6 +16,7 @@ use moveos_types::{
     state::{AnnotatedState, ObjectState, StateChangeSet},
 };
 use rooch_types::indexer::state::{IndexerStateID, ObjectStateFilter};
+use rooch_types::state::{StateChangeSetWithTxOrder, SyncStateFilter};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -516,4 +518,37 @@ fn parse_changed_objects(
         deleted_objs.extend(field_deleted_objs);
     }
     (new_objs, modified_objs, deleted_objs)
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum SyncStateFilterView {
+    /// Sync by object id.
+    ObjectID(ObjectIDView),
+    /// Sync all.
+    All,
+}
+
+impl From<SyncStateFilterView> for SyncStateFilter {
+    fn from(state_filter: SyncStateFilterView) -> Self {
+        match state_filter {
+            SyncStateFilterView::ObjectID(object_id) => SyncStateFilter::ObjectID(object_id.into()),
+            SyncStateFilterView::All => SyncStateFilter::All,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct StateChangeSetWithTxOrderView {
+    pub tx_order: StrView<u64>,
+    pub state_change_set: StateChangeSetView,
+}
+
+impl From<StateChangeSetWithTxOrder> for StateChangeSetWithTxOrderView {
+    fn from(state_change_set: StateChangeSetWithTxOrder) -> Self {
+        Self {
+            tx_order: state_change_set.tx_order.into(),
+            state_change_set: state_change_set.state_change_set.into(),
+        }
+    }
 }

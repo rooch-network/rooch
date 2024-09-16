@@ -3,8 +3,8 @@
 
 use super::messages::{
     ConvertL2TransactionData, DryRunTransactionMessage, DryRunTransactionResult,
-    ExecuteTransactionMessage, ExecuteTransactionResult, GetRootMessage, ValidateL1BlockMessage,
-    ValidateL1TxMessage, ValidateL2TxMessage,
+    ExecuteTransactionMessage, ExecuteTransactionResult, GetRootMessage, SaveStateChangeSetMessage,
+    ValidateL1BlockMessage, ValidateL1TxMessage, ValidateL2TxMessage,
 };
 use crate::metrics::ExecutorMetrics;
 use anyhow::Result;
@@ -21,7 +21,7 @@ use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_std::option::MoveOption;
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::moveos_std::tx_context::TxContext;
-use moveos_types::state::ObjectState;
+use moveos_types::state::{ObjectState, StateChangeSetExt};
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::{FunctionCall, MoveOSTransaction, VerifiedMoveAction};
 use moveos_types::transaction::{MoveAction, VerifiedMoveOSTransaction};
@@ -29,6 +29,7 @@ use prometheus::Registry;
 use rooch_event::actor::{EventActor, EventActorSubscribeMessage, GasUpgradeMessage};
 use rooch_event::event::GasUpgradeEvent;
 use rooch_genesis::FrameworksGasParameters;
+use rooch_store::state_store::StateStore;
 use rooch_store::RoochStore;
 use rooch_types::address::{BitcoinAddress, MultiChainAddress};
 use rooch_types::bitcoin::BitcoinModule;
@@ -416,6 +417,15 @@ impl ExecutorActor {
         self.root = root;
         self.moveos.flush_module_cache(is_upgrade)
     }
+
+    pub fn save_state_change_set(
+        &mut self,
+        tx_order: u64,
+        state_change_set: StateChangeSetExt,
+    ) -> Result<()> {
+        self.rooch_store
+            .save_state_change_set(tx_order, state_change_set)
+    }
 }
 
 #[async_trait]
@@ -502,6 +512,17 @@ impl Handler<GetRootMessage> for ExecutorActor {
         _ctx: &mut ActorContext,
     ) -> Result<ObjectState> {
         Ok(ObjectState::new_root(self.root.clone()))
+    }
+}
+
+#[async_trait]
+impl Handler<SaveStateChangeSetMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: SaveStateChangeSetMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<()> {
+        self.save_state_change_set(msg.tx_order, msg.state_change_set)
     }
 }
 

@@ -17,7 +17,6 @@ use moveos_types::{
     transaction::MoveAction,
 };
 use moveos_verifier::build::run_verifier;
-use moveos_verifier::verifier;
 use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{
@@ -101,9 +100,11 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         // Initialize bundles vector and sort modules by dependency order
         let mut bundles: Vec<Vec<u8>> = vec![];
         let sorted_modules = sort_by_dependency_order(modules.iter_modules())?;
-        let resolver = context.get_client().await?;
+        //Because the verify modules function will load many modules from the rpc server,
+        //We need to find a more efficient way to verify the modules.
+        //let resolver = context.get_client().await?;
         // Serialize and collect module binaries into bundles
-        verifier::verify_modules(&sorted_modules, &resolver)?;
+        //verifier::verify_modules(&sorted_modules, &resolver)?;
         for module in sorted_modules {
             let module_address = module.self_id().address().to_owned();
             if module_address != pkg_address {
