@@ -31,11 +31,11 @@ impl FileOutputData {
         }
     }
 
-    pub fn file_count_suffix(&self) -> usize {
+    pub fn file_signatory_suffix(&self) -> String {
         match self {
-            FileOutputData::RoochTransactionData(_) => 1,
-            FileOutputData::SignedRoochTransaction(_) => 1,
-            FileOutputData::PartiallySignedRoochTransaction(data) => data.signators(),
+            FileOutputData::RoochTransactionData(data) => data.sender.to_bech32(),
+            FileOutputData::SignedRoochTransaction(data) => data.sender().to_bech32(),
+            FileOutputData::PartiallySignedRoochTransaction(data) => data.signatories().to_string(),
         }
     }
 
@@ -61,7 +61,7 @@ impl FileOutputData {
         let file_name = format!(
             "{}.{}.{}",
             hex::encode(&tx_hash[..8]),
-            self.file_count_suffix(),
+            self.file_signatory_suffix(),
             self.file_suffix()
         );
         Ok(temp_dir.join(file_name))

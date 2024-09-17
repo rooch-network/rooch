@@ -118,7 +118,7 @@ impl PartiallySignedRoochTransaction {
         self.data.sender
     }
 
-    pub fn signators(&self) -> usize {
+    pub fn signatories(&self) -> usize {
         self.authenticators.len()
     }
 
