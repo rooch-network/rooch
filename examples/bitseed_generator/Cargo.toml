@@ -6,6 +6,10 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib"]
 
+[profile.release]
+opt-level = "z"
+lto = true
+
 [dependencies]
 cosmwasm-std = { version = "2.1.3", features = ["staking"] }
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
