@@ -18,7 +18,11 @@ export type TokenInfo = {
 
 function extractCoinInfoContent(input: string): string | null {
   const regex = /CoinInfo<([^>]+)>/;
-  const match = input.match(regex);
+  let match;
+
+  if (input) {
+    match = input.match(regex);
+  }
 
   if (match && match[1]) {
     return match[1];
@@ -38,11 +42,15 @@ export async function getTokenInfo(
       showDisplay: true,
     },
   });
-  const decode = (((data[0].decoded_value as any).value as any).value as any).value as any;
-  const coinInfo = decode.coin_info as AnnotatedMoveStructView;
-  const coinId = coinInfo.value.id as string;
+  const decode = (((data?.[0]?.decoded_value as any)?.value as any)?.value as any)?.value as any;
+  const coinInfo = decode?.coin_info as AnnotatedMoveStructView;
+  const coinId = coinInfo?.value?.id as string;
 
-  const coinType = extractCoinInfoContent(coinInfo.type)!;
+  const coinType = extractCoinInfoContent(coinInfo?.type)!;
+
+  if (!coinId) {
+    return undefined;
+  }
 
   return client
     .getStates({
@@ -53,7 +61,7 @@ export async function getTokenInfo(
       },
     })
     .then((sv) => {
-      const coinView = (sv[0].decoded_value as any).value as any;
+      const coinView = (sv?.[0]?.decoded_value as any)?.value as any;
       const starTime = decode.start_time as number;
       const endTime = decode.end_time as number;
       const now = Date.now() / 1000;
