@@ -31,6 +31,14 @@ impl FileOutputData {
         }
     }
 
+    pub fn file_signatory_suffix(&self) -> String {
+        match self {
+            FileOutputData::RoochTransactionData(data) => data.sender.to_bech32(),
+            FileOutputData::SignedRoochTransaction(data) => data.sender().to_bech32(),
+            FileOutputData::PartiallySignedRoochTransaction(data) => data.signatories().to_string(),
+        }
+    }
+
     pub fn file_suffix(&self) -> &str {
         match self {
             FileOutputData::RoochTransactionData(_) => "rtd",
@@ -50,7 +58,12 @@ impl FileOutputData {
     pub fn default_output_file_path(&self) -> Result<PathBuf> {
         let temp_dir = env::temp_dir();
         let tx_hash = self.tx_hash();
-        let file_name = format!("{}.{}", hex::encode(&tx_hash[..8]), self.file_suffix());
+        let file_name = format!(
+            "{}.{}.{}",
+            hex::encode(&tx_hash[..8]),
+            self.file_signatory_suffix(),
+            self.file_suffix()
+        );
         Ok(temp_dir.join(file_name))
     }
 }
