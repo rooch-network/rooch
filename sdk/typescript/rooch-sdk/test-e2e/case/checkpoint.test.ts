@@ -98,7 +98,7 @@ describe('Checkpoints Reading API', () => {
 
     const result1 = await testBox.getClient().resolveBTCAddress({
       roochAddress: testBox.keypair.getRoochAddress(),
-      network: BitcoinNetowkType.Testnet,
+      network: BitcoinNetowkType.Regtest,
     })
 
     expect(result1?.toStr()).eq(testBox.keypair.getBitcoinAddress().toStr())
