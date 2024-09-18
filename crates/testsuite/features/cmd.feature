@@ -432,7 +432,7 @@ Feature: Rooch CLI integration tests
       Then stop the server
 
     @serial
-    Scenario: cosmwasm test
+    Scenario: cosmwasm-vm test
       # prepare servers
       Given a server for wasm_test
 
@@ -441,7 +441,7 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # run wasm rust generator
-      Then cmd: "move run --function default::cosmwasm_vm_execution::run_generator_cosmwasm /app/test-data/generator_cosmwasm_opt.wasm --json"
+      Then cmd: "move run --function default::cosmwasm_vm_execution::run_generator_cosmwasm --args 'file:./data/generator_cosmwasm_opt.wasm" --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # release servers

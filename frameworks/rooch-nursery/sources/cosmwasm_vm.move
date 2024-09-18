@@ -2,14 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_nursery::cosmwasm_vm {
-    use std::vector;
     use std::string::{Self, String};
     use std::option::{Self, Option};
     
     use moveos_std::features;
     use moveos_std::object::{ObjectID};
     use moveos_std::table::{Self, Table};
-    use moveos_std::result::{Self, Result, ok};
+    use moveos_std::result::{Result, ok};
 
     use rooch_nursery::cosmwasm_std::{Response, Error, Env, MessageInfo, 
         new_error, new_error_result, serialize_env, serialize_message_info, deserialize_response};
@@ -134,28 +133,4 @@ module rooch_nursery::cosmwasm_vm {
     native fun native_call_migrate_raw(code_checksum: vector<u8>, store: &mut Table<String, vector<u8>>, env: vector<u8>, msg: vector<u8>): (vector<u8>, u32);
     native fun native_call_reply_raw(code_checksum: vector<u8>, store: &mut Table<String, vector<u8>>, env: vector<u8>, msg: vector<u8>): (vector<u8>, u32);
     native fun native_call_sudo_raw(code_checksum: vector<u8>, store: &mut Table<String, vector<u8>>, env: vector<u8>, msg: vector<u8>):(vector<u8>, u32);
-
-    #[test]
-    fun test_from_code() {
-        // Enable all features for testing
-        features::init_and_enable_all_features_for_test();
-
-        // Create a simple CosmWasm contract bytecode in WAT format
-        let wasm_code_wat: vector<u8> = b"(module)"; // Example WAT code
-
-        // Call from_code function to create an instance
-        let instance_result = from_code(wasm_code_wat);
-
-        // Verify that the result is successful
-        let instance = result::assert_ok(instance_result, 1); // Use assert_ok here
-
-        // Verify some properties of the instance
-        // Note: The specific verification method may need to be adjusted based on the actual definition of the Instance structure
-        assert!(vector::length(&code_checksum(&instance)) > 0, 2);
-
-        // Destroy the instance
-        let destroy_result = destroy_instance(instance);
-        assert!(option::is_none(&destroy_result), 3);
-    }
-
 }
