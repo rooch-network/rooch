@@ -172,12 +172,15 @@ fn wasm_instance_fn_dispatch(
     match result {
         Ok((value, wasm_load_gas)) => Ok(NativeResult::ok(
             gas_cost + common_gas_params.calculate_load_cost(wasm_load_gas),
-            smallvec![value],
+            smallvec![value, Value::u32(0)],
         )),
         Err(err) => {
             error!("wasm_instance_fn_dispatch error: {:?}", err);
             let abort_code = error_to_abort_code(err);
-            Ok(NativeResult::err(gas_cost, abort_code))
+            Ok(NativeResult::ok(
+                gas_cost,
+                smallvec![Value::vector_u8(vec![]), Value::u32(abort_code as u32)],
+            ))
         }
     }
 }
@@ -203,21 +206,21 @@ impl CosmWasmDestroyInstanceGasParameters {
 /***************************************************************************************************
  * native fun native_destroy_instance
  **************************************************************************************************/
-#[inline]
-fn native_destroy_instance(
-    gas_params: &GasParameters,
-    context: &mut NativeContext,
-    ty_args: Vec<Type>,
-    mut arguments: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    assert!(ty_args.len() == 2, "Wrong number of type arguments");
-    assert!(arguments.len() == 1, "Wrong number of arguments");
-
-    Ok(NativeResult::ok(
+ #[inline]
+ fn native_destroy_instance(
+     gas_params: &GasParameters,
+     _context: &mut NativeContext,
+     ty_args: Vec<Type>,
+     mut arguments: VecDeque<Value>,
+ ) -> PartialVMResult<NativeResult> {
+     assert!(ty_args.len() == 0, "Wrong number of type arguments");
+     assert!(arguments.len() == 1, "Wrong number of arguments");
+ 
+     Ok(NativeResult::ok(
         gas_params.common.load_base,
-        smallvec![Value::u64(0)],
+        smallvec![Value::u32(0)],
     ))
-}
+ }
 
 /***************************************************************************************************
  * module
