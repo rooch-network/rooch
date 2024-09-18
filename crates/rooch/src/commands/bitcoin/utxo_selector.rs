@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::VecDeque;
+
 use anyhow::{bail, Result};
 use bitcoin::{Address, Amount};
 use moveos_types::moveos_std::object::{ObjectID, GENESIS_STATE_ROOT};
@@ -18,7 +20,7 @@ pub struct UTXOSelector {
     sender: Address,
     specific_utxos: Vec<ObjectID>,
     loaded_page: Option<(Option<IndexerStateIDView>, bool)>,
-    candidate_utxos: Vec<UTXOObjectView>,
+    candidate_utxos: VecDeque<UTXOObjectView>,
     skip_seal_check: bool,
 }
 
@@ -34,7 +36,7 @@ impl UTXOSelector {
             sender,
             specific_utxos,
             loaded_page: None,
-            candidate_utxos: vec![],
+            candidate_utxos: VecDeque::new(),
             skip_seal_check,
         };
         selector.load_specific_utxos().await?;
@@ -70,7 +72,7 @@ impl UTXOSelector {
                     utxo_state_view.metadata
                 );
             }
-            self.candidate_utxos.push(utxo_state_view.into());
+            self.candidate_utxos.push_front(utxo_state_view.into());
         }
         Ok(())
     }
@@ -105,7 +107,9 @@ impl UTXOSelector {
                 );
                 continue;
             }
-            self.candidate_utxos.push(utxo_view.into());
+            // We use deque to make sure the utxos are popped in the order they are loaded, the oldest utxo will be popped first
+            // Avoid bad-txns-premature-spend-of-coinbase error
+            self.candidate_utxos.push_front(utxo_view.into());
         }
         self.loaded_page = Some((utxo_page.next_cursor, utxo_page.has_next_page));
         Ok(())
@@ -116,7 +120,7 @@ impl UTXOSelector {
         if self.candidate_utxos.is_empty() {
             self.load_utxos().await?;
         }
-        Ok(self.candidate_utxos.pop())
+        Ok(self.candidate_utxos.pop_back())
     }
 
     pub async fn select_utxos(&mut self, expected_amount: Amount) -> Result<Vec<UTXOObjectView>> {

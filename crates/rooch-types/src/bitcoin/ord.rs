@@ -699,8 +699,6 @@ pub struct OrdModule<'a> {
 impl<'a> OrdModule<'a> {
     pub const PARSE_INSCRIPTION_FROM_TX_FUNCTION_NAME: &'static IdentStr =
         ident_str!("parse_inscription_from_tx");
-    pub const MATCH_UTXO_AND_GENERATE_SAT_POINT_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("match_utxo_and_generate_sat_point");
 
     pub fn parse_inscription_from_tx(
         &self,

@@ -14,10 +14,11 @@ This directory contains scripts for setting up a local development environment f
 ## Development on rooch
 
 1. Run `rooch server start -n local --btc-sync-block-interval 1 --btc-rpc-url http://127.0.0.1:18443 --btc-rpc-username roochuser --btc-rpc-password roochpass`
-2. Run `rooch account list --json` to get the `bitcoin_address`
+2. Run `rooch account list --json` to get the active account `bitcoin_address`
 3. Run `bitcoin-cli generatetoaddress 101 <bitcoin_address>` to generate 101 blocks to the address
-2. Run `rooch rpc request --method btc_queryUTXOs --params '["all",  null, "2", true]'` to query the UTXO set
-3. Run `rooch rpc request --method btc_queryInscriptions --params '["all",  null, "2", true]'` to query the Inscription set
+4. Run `rooch rpc request --method btc_queryUTXOs --params '["all",  null, "2", true]'` to query the UTXO set
+5. Run `rooch rpc request --method btc_queryInscriptions --params '["all",  null, "2", true]'` to query the Inscription set
+6. Run `rooch account balance` show the balance of active account(Include BTC)
 
 ## Usage
 
@@ -33,7 +34,22 @@ You can also configure the environment using the env script, use `./env.sh -i`
 8. Run `bitcoin-cli generatetoaddress 1 <address>` to mine an inscription
 9. Run `ord wallet inscriptions` to get the reveal transaction ID
 
+## Bitseed
 
+```bash
+rooch bitseed generator --name random --generator generator/cpp/generator.wasm
+rooch bitseed deploy --fee-rate 5000 --generator $the_inscription_from_pre_step --tick bits --amount 210000000000 --deploy-args '{"height":{"type":"range","data":{"min":1,"max":1000}}}'
+rooch bitseed mint --fee-rate 5000 --deploy-inscription-id $the_inscription_from_pre_step --user-input hello_bitseed
+rooch bitseed split --fee-rate 5000 --sft-inscription-id $the_inscription_from_pre_step --amounts 500 --amounts 300
+rooch bitseed merge --fee-rate 5000 --sft-inscription-ids $the_inscription_from_pre_step_0 --sft-inscription-ids $the_inscription_from_pre_step_1 --sft-inscription-ids $the_inscription_from_pre_step_2
+rooch bitseed view --sft-inscription-id $the_inscription_from_pre_step
+```
+
+## More integration test examples
+
+* [bitcoin](../../crates/testsuite/features/bitcoin.feature)  
+* [ord](../../crates/testsuite/features/ord.feature)  
+* [bitseed](../../crates/testsuite/features/bitseed.feature)  
 
 
 ### References

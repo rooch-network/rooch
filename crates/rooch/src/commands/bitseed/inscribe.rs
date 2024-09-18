@@ -123,7 +123,7 @@ pub struct InscribeContext {
     pub taproot_spend_infos: Vec<TaprootSpendInfo>,
     pub commit_tx_addresses: Vec<Address>,
 
-    pub utxos: BTreeMap<OutPoint, UTXOObjectView>,
+    pub utxos: BTreeMap<OutPoint, TxOut>,
     pub reveal_scripts_to_sign: Vec<ScriptBuf>,
     pub control_blocks_to_sign: Vec<ControlBlock>,
     pub reveal_input_start_index: Option<usize>,
@@ -454,10 +454,10 @@ impl Inscriber {
         Ok(())
     }
 
-    fn calculate_fee(tx: &Transaction, utxos: &BTreeMap<OutPoint, UTXOObjectView>) -> Amount {
+    fn calculate_fee(tx: &Transaction, utxos: &BTreeMap<OutPoint, TxOut>) -> Amount {
         tx.input
             .iter()
-            .map(|txin| utxos.get(&txin.previous_output).unwrap().amount())
+            .map(|txin| utxos.get(&txin.previous_output).unwrap().value)
             .sum::<Amount>()
             .checked_sub(tx.output.iter().map(|txout| txout.value).sum::<Amount>())
             .unwrap()
@@ -470,12 +470,7 @@ impl Inscriber {
         let key_pair = Keypair::new(secp256k1, &mut rand::thread_rng());
         let (public_key, _parity) = XOnlyPublicKey::from_keypair(&key_pair);
 
-        let reveal_script = ScriptBuf::builder()
-            .push_slice(public_key.serialize())
-            .push_opcode(opcodes::all::OP_CHECKSIG)
-            .into_script();
-
-        inscription
+        let reveal_script = inscription
             .append_reveal_script_to_builder(
                 ScriptBuf::builder()
                     .push_slice(public_key.serialize())
@@ -512,7 +507,7 @@ impl Inscriber {
                 sequence: Sequence::ENABLE_RBF_NO_LOCKTIME,
                 witness: Witness::new(),
             };
-            ctx.utxos.insert(utxo.outpoint().into(), utxo);
+            ctx.utxos.insert(utxo.outpoint().into(), utxo.tx_output()?);
             additional_inputs.push(input);
         }
 
@@ -597,7 +592,7 @@ impl Inscriber {
         let total_input: Amount = tx
             .input
             .iter()
-            .map(|input| utxos.get(&input.previous_output).unwrap().amount())
+            .map(|input| utxos.get(&input.previous_output).unwrap().value)
             .sum();
 
         let total_output: Amount = tx.output.iter().map(|output| output.value).sum();
@@ -614,7 +609,7 @@ impl Inscriber {
         let total_input: Amount = tx
             .input
             .iter()
-            .map(|input| utxos.get(&input.previous_output).unwrap().amount())
+            .map(|input| utxos.get(&input.previous_output).unwrap().value)
             .sum();
 
         let total_output: Amount = tx.output.iter().map(|output| output.value).sum();
@@ -642,7 +637,7 @@ impl Inscriber {
         let mut utxos = BTreeMap::new();
         utxos.insert(
             self.satpoint.0.outpoint.clone().into(),
-            self.satpoint.1.clone(),
+            self.satpoint.1.tx_output()?,
         );
 
         Ok(InscribeContext {
@@ -721,7 +716,7 @@ impl Inscriber {
                 .utxos
                 .get(&satpoint.outpoint())
                 .expect("inscription utxo not found");
-            total_burn_postage += inscription_output.amount();
+            total_burn_postage += inscription_output.value;
         }
 
         if !self.inscriptions_to_burn.is_empty() {
@@ -854,10 +849,10 @@ impl Inscriber {
             if index >= ctx.reveal_input_start_index.unwrap() {
                 input.previous_output.txid = new_commit_txid;
 
-                // ctx.utxos.insert(
-                //     input.previous_output,
-                //     ctx.commit_tx.output[input.previous_output.vout as usize].clone(),
-                // );
+                ctx.utxos.insert(
+                    input.previous_output,
+                    ctx.commit_tx.output[input.previous_output.vout as usize].clone(),
+                );
             }
         }
 
@@ -882,13 +877,14 @@ impl Inscriber {
             .map(|tx_in| {
                 ctx.utxos
                     .get(&tx_in.previous_output)
-                    .expect("utxo not found")
-                    .tx_output()
+                    .cloned()
+                    .ok_or_else(|| anyhow::anyhow!("utxo {} not found", tx_in.previous_output))
             })
             .collect::<Result<Vec<_>>>()?;
 
+        debug!("Commit tx before sign: {:?}", ctx.commit_tx);
         ctx.signed_commit_tx = Some(sign_tx(&self.context, &ctx.commit_tx, &commit_input_utxos)?);
-
+        debug!("Commit tx after sign: {:?}", ctx.signed_commit_tx);
         Ok(())
     }
 
@@ -902,7 +898,7 @@ impl Inscriber {
             .map(|tx_in| {
                 ctx.utxos
                     .get(&tx_in.previous_output)
-                    .map(|utxo| utxo.tx_output().unwrap())
+                    .cloned()
                     .expect("prevout not found")
             })
             .collect();
@@ -910,6 +906,7 @@ impl Inscriber {
         let mut signed_reveal_tx = ctx.reveal_tx.clone();
 
         // sign the reveal inscription input
+        debug!("Reveal tx before sign: {:?}", signed_reveal_tx);
 
         let mut sighash_cache = SighashCache::new(&mut signed_reveal_tx);
         for (index, ((reveal_script, control_block), keypair)) in ctx
@@ -947,9 +944,16 @@ impl Inscriber {
             witness.push(&control_block.serialize());
         }
 
+        debug!("Reveal tx after reveal part sign: {:?}", signed_reveal_tx);
+
         //sign the burn inscription input
         let signed_reveal_tx = if reveal_input_start_index > 0 {
-            sign_tx(&self.context, &signed_reveal_tx, &prevouts)?
+            let signed_reveal_tx = sign_tx(&self.context, &signed_reveal_tx, &prevouts)?;
+            debug!(
+                "Reveal tx after burn part sign sign: {:?}",
+                signed_reveal_tx
+            );
+            signed_reveal_tx
         } else {
             signed_reveal_tx
         };
@@ -1202,6 +1206,10 @@ pub fn sign_tx(
         let mut signed_input = input.clone();
 
         if script_pubkey.is_p2tr() {
+            //The taproot key spend needs to be signed with the tweaked key
+            let kp = Keypair::from_secret_key(&secp, &kp.secret_key())
+                .tap_tweak(&secp, None)
+                .to_inner();
             let signature = secp.sign_schnorr(&message, &kp);
             signed_input.witness = bitcoin::Witness::from_slice(&[signature.as_ref()]);
         } else {
@@ -1234,3 +1242,21 @@ pub fn sign_tx(
 
     Ok(signed_tx)
 }
+
+// #[cfg(test)]
+// mod tests{
+//     use super::*;
+
+//     fn check_inscription_parse(tx: Transaction){
+
+//     }
+
+//     #[test]
+//     fn test_generator(){
+//         let wallet_context =
+//         let output = Inscriber::new(context, self.inscribe_options)
+//             .await?
+//             .with_generator(self.name, self.generator)
+//             .await?
+//     }
+// }

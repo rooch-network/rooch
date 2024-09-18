@@ -67,6 +67,10 @@ default-members = [
     "crates/rooch-oracle"
 ]
 
+exclude = [
+    "generator/rust",
+]
+
 # All workspace members should inherit these keys
 # for package declarations.
 [workspace.package]
