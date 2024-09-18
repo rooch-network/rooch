@@ -38,7 +38,7 @@ Feature: Rooch CLI bitseed tests
       Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
 
       # deploy
-      Then cmd: "bitseed deploy --fee-rate 5000 --generator {{$.bitseed[-1].inscriptions[0].Id}} --tick bits --amount 210000000000 --deploy-args {"height":{"type":"range","data":{"min":1,"max":1000}}}"
+      Then cmd: "bitseed deploy --fee-rate 6000 --generator {{$.bitseed[-1].inscriptions[0].Id}} --tick bits --amount 210000000000 --deploy-args '{"height":{"type":"range","data":{"min":1,"max":1000}}}'"
       Then assert: "'{{$.bitseed[-1]}}' not_contains error"
 
       # mine a block
@@ -55,7 +55,7 @@ Feature: Rooch CLI bitseed tests
       Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
 
       # mint 
-      Then cmd: "bitseed mint --fee-rate 5000 --deploy-inscription-id {{$.bitseed[-1].inscriptions[0].Id}} --user-input hello_bitseed" 
+      Then cmd: "bitseed mint --fee-rate 6000 --deploy-inscription-id {{$.bitseed[-1].inscriptions[0].Id}} --user-input test" 
       Then assert: "'{{$.bitseed[-1]}}' not_contains error"
 
       # mine a block

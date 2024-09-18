@@ -7,6 +7,7 @@ use super::{
 };
 use anyhow::{anyhow, bail, Result};
 use ciborium::Value;
+use log::debug;
 use rooch_types::bitcoin::ord::{Inscription, InscriptionRecord};
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -110,7 +111,7 @@ impl Operation {
                     Value::Text("repeat".to_string()),
                     Value::Integer(record.repeat.into()),
                 ));
-
+                debug!("inscribe deploy_args {:?} to inscription", cbor_value);
                 att_values.push((Value::Text("deploy_args".to_string()), cbor_value));
 
                 let attributes = ciborium::Value::Map(att_values);
@@ -192,6 +193,12 @@ impl Operation {
                 let deploy_args_value = bitseed_inscription
                     .get_attribute("deploy_args")
                     .ok_or_else(|| anyhow!("missing deploy_args"))?;
+
+                debug!(
+                    "load deploy_args {:?} from inscription: {:?}",
+                    deploy_args_value,
+                    bitseed_inscription.id()
+                );
 
                 let mut deploy_args = Vec::new();
                 ciborium::into_writer(&deploy_args_value, &mut deploy_args)
@@ -284,17 +291,21 @@ impl Operation {
     }
 }
 
-pub fn deploy_args_cbor_encode(deploy_args: Vec<String>) -> Vec<u8> {
+pub fn deploy_args_cbor_encode(deploy_args: Vec<String>) -> Result<Vec<u8>> {
     let mut mint_args_json: Vec<JSONValue> = vec![];
 
     for arg in deploy_args.iter() {
-        let arg_json: JSONValue =
-            serde_json::from_str(arg.as_str()).expect("serde_json unmarshal failed");
+        debug!("deploy arg: {}", arg);
+        let arg_json: JSONValue = serde_json::from_str(arg.as_str())
+            .map_err(|e| anyhow!("failed to parse deploy arg: {}, arg: {}", e, arg))?;
+        if !arg_json.is_object() {
+            bail!("deploy arg must be a json object, got: {}", arg);
+        }
         mint_args_json.push(arg_json);
     }
 
     let mint_args_array = JSONValue::Array(mint_args_json);
     let mut cbor_buffer = Vec::new();
     ciborium::into_writer(&mint_args_array, &mut cbor_buffer).expect("ciborium marshal failed");
-    cbor_buffer
+    Ok(cbor_buffer)
 }

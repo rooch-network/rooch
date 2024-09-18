@@ -6,7 +6,7 @@ use super::{
 };
 use anyhow::{anyhow, bail, ensure, Result};
 use ciborium::{value::Integer, Value};
-use rooch_types::bitcoin::ord::{Inscription, InscriptionRecord};
+use rooch_types::bitcoin::ord::{Inscription, InscriptionID, InscriptionRecord};
 
 pub struct InscriptionBuilder {
     inscription_record: InscriptionRecord,
@@ -136,6 +136,10 @@ impl BitseedInscription {
             inscription,
             metadata,
         })
+    }
+
+    pub fn id(&self) -> InscriptionID {
+        self.inscription.id
     }
 
     pub fn get_metadata(&self) -> &Value {

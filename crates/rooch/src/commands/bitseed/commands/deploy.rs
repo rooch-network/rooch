@@ -48,7 +48,7 @@ impl CommandAction<InscribeOutput> for DeployCommand {
     async fn execute(self) -> RoochResult<InscribeOutput> {
         let context = self.context_options.build_require_password()?;
         //TODO how to encode the factory args.
-        let deploy_args = deploy_args_cbor_encode(self.deploy_args);
+        let deploy_args = deploy_args_cbor_encode(self.deploy_args)?;
 
         //TODO check the tick name is valid
         let tick = self.tick.to_uppercase();

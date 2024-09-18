@@ -9,7 +9,10 @@ use super::{
 };
 use crate::commands::{
     bitcoin::utxo_selector::UTXOSelector,
-    bitseed::generator::{wasm::wasm_generator::WASMGenerator, CONTENT_TYPE},
+    bitseed::{
+        generator::{wasm::wasm_generator::WASMGenerator, CONTENT_TYPE},
+        inscription::BitseedInscription,
+    },
 };
 use anyhow::{anyhow, bail, ensure, Result};
 use bitcoin::{
@@ -251,11 +254,23 @@ impl Inscriber {
             (None, None) => bail!("generator or factory must be provided"),
             _ => {}
         }
-        //TODO check the generator exists.
+        let generator = match generator {
+            Some(generator) => {
+                let inscription_obj = self.get_inscription_object(generator).await?;
+                let bitseed_inscription = BitseedInscription::new(inscription_obj.value.into())?;
+                ensure!(
+                    bitseed_inscription.tick()? == GENERATOR_TICK,
+                    "invalid generator: {}",
+                    generator
+                );
+                Some(format!("/inscription/{}", generator))
+            }
+            None => None,
+        };
         let deploy_record = DeployRecord {
             tick,
             amount,
-            generator: generator.map(|generator| format!("/inscription/{}", generator)),
+            generator,
             factory,
             repeat,
             deploy_args,
