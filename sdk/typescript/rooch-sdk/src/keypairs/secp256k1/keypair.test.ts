@@ -39,6 +39,24 @@ describe('Secp256k1 keypair', () => {
     expect(keypair1.getPublicKey().toBase64()).toEqual(pk)
   })
 
+  it('Create secp256k1 keypair from CLI secret key', () => {
+    const testKey = 'roochsecretkey1q969zv4rhqpuj0nkf2e644yppjf34p6zwr3gq0633qc7n9luzg6w6lycezc'
+    const expectRoochHexAddress =
+      '0xf892b3fd5fd0e93436ba3dc8d504413769d66901266143d00e49441079243ed0'
+    const expectRoochBech32Address =
+      'rooch1lzft8l2l6r5ngd468hyd2pzpxa5av6gpyes585qwf9zpq7fy8mgqh9npj5'
+    const expectNoStrddress = 'npub1h54r2zvulk96qjmfnyy83mtry0pp5acnz6uvk637typxtvn90c8s0lrc0g'
+    const expectBitcoinAddress = 'bcrt1pw9l5h7vepq8cnpugwm848x3at34gg5eq0mamdrjw0krunfjm0zfq65gjzz'
+
+    const sk = Secp256k1Keypair.fromSecretKey(testKey)
+    const addrView = sk.getSchnorrPublicKey().toAddress()
+
+    expect(addrView.roochAddress.toHexAddress()).eq(expectRoochHexAddress)
+    expect(addrView.roochAddress.toBech32Address()).eq(expectRoochBech32Address)
+    expect(addrView.noStrAddress.toStr()).eq(expectNoStrddress)
+    expect(addrView.bitcoinAddress.toStr()).eq(expectBitcoinAddress)
+  })
+
   describe('sign', () => {
     it('should sign data', async () => {
       const keypair = new Secp256k1Keypair()
