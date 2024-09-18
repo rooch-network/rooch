@@ -15,27 +15,10 @@ Feature: Rooch CLI multisign integration tests
       Then cmd: "account create-multisign -t 2 -p {{$.account[-1].account0.public_key}} -p {{$.account[-1].account1.public_key}} -p {{$.account[-1].account2.public_key}} --json"
       Then assert: "'{{$.account[-1]}}' not_contains error"
 
-      # Create and load a wallet
-      Then cmd bitcoin-cli: "createwallet \"test_wallet\""
-      Then cmd bitcoin-cli: "loadwallet \"test_wallet\""
-
       # Prepare funds
-      Then cmd bitcoin-cli: "getnewaddress"
-      
       # mint btc
-      Then cmd bitcoin-cli: "generatetoaddress 101 {{$.getnewaddress[-1]}}"
-
-      # Get UTXO for transaction input
-      Then cmd bitcoin-cli: "listunspent 1 9999999 [\"{{$.getnewaddress[-1]}}\"] true"
-
-      # Create a Bitcoin transaction transfer to multisign account
-      Then cmd bitcoin-cli: "createrawtransaction [{\"txid\":\"{{$.listunspent[-1][0].txid}}\",\"vout\":{{$.listunspent[-1][0].vout}}}] {\"{{$.account[-1].multisign_bitcoin_address}}\":49.999}"
-      Then cmd bitcoin-cli: "signrawtransactionwithwallet {{$.createrawtransaction[-1]}}"
-      Then cmd: "bitcoin broadcast-tx {{$.signrawtransactionwithwallet[-1].hex}}"
-      Then assert: "'{{$.bitcoin[-1]}}' not_contains error"
-
-      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.getnewaddress[-1]}}"
-      Then sleep: "20" # wait for the transaction to be confirmed
+      Then cmd bitcoin-cli: "generatetoaddress 101 {{$.account[-1].multisign_bitcoin_address}}"
+      Then sleep: "10" # wait for the transaction to be confirmed
 
       # l1 transaction
       Then cmd: "bitcoin build-tx --sender {{$.account[-1].multisign_bitcoin_address}} -o {{$.account[-2].account0.bitcoin_address}}:100000000"
@@ -47,7 +30,7 @@ Feature: Rooch CLI multisign integration tests
       Then cmd: "bitcoin broadcast-tx {{$.bitcoin[-1].path}}"
       Then assert: "'{{$.bitcoin[-1]}}' not_contains error"
 
-      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.getnewaddress[-1]}}"
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.account[-1].multisign_bitcoin_address}}"
       Then sleep: "10" # wait for the transaction to be confirmed
 
       Then cmd: "account balance -a {{$.account[-2].account0.address}} --json"
