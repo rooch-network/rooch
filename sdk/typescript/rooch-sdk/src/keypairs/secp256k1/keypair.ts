@@ -55,11 +55,11 @@ export class Secp256k1Keypair extends Keypair {
   }
 
   getBitcoinAddress(): BitcoinAddress {
-    return this.getSchnorrPublicKey().toAddress()
+    return this.getSchnorrPublicKey().toAddress().bitcoinAddress
   }
 
   getRoochAddress(): RoochAddress {
-    return this.getSchnorrPublicKey().toAddress().genRoochAddress()
+    return this.getSchnorrPublicKey().toAddress().roochAddress
   }
 
   /**

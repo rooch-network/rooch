@@ -3,7 +3,6 @@
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { TestBox } from '../setup.js'
-import { BitcoinNetowkType } from '../../src'
 
 describe('Bitcoin Assets API', () => {
   let testBox: TestBox
@@ -20,10 +19,7 @@ describe('Bitcoin Assets API', () => {
   })
 
   it('query utxo should be success', async () => {
-    const addr = testBox.keypair
-      .getSchnorrPublicKey()
-      .buildAddress(1, BitcoinNetowkType.Regtest)
-      .toStr()
+    const addr = testBox.keypair.getSchnorrPublicKey().toAddress().bitcoinAddress.toStr()
     const result = await testBox.bitcoinContainer?.executeRpcCommandRaw([], 'generatetoaddress', [
       '50',
       addr,
