@@ -1,36 +1,48 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::natives::helpers::{make_module_natives, make_native};
+use std::collections::VecDeque;
+use std::str::FromStr;
+
 use anyhow::Result;
 use log::debug;
+use primitive_types::U128 as PrimitiveU128;
+use primitive_types::U256 as PrimitiveU256;
+use serde_json;
+use serde_json::Value as JsonValue;
+use smallvec::smallvec;
+
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::account_address::AccountAddress;
+use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
+use move_core_types::identifier::Identifier;
+use move_core_types::language_storage::StructTag;
 use move_core_types::language_storage::TypeTag;
 use move_core_types::u256::U256;
-use move_core_types::value::MoveStructLayout;
+use move_core_types::value::MoveStruct;
+use move_core_types::value::MoveValue as CoreMoveValue;
+use move_core_types::value::{MoveFieldLayout, MoveStructLayout, MoveTypeLayout};
 use move_core_types::vm_status::StatusCode;
-use move_core_types::{
-    gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
-    value::MoveTypeLayout,
-};
+
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
+
 use move_vm_types::{
     loaded_data::runtime_types::Type,
     natives::function::NativeResult,
     pop_arg,
-    values::{Struct, Value, Vector},
+    values::{values_impl::Reference, Struct, Value as MoveValue, Vector},
 };
+
 use moveos_types::addresses::MOVE_STD_ADDRESS;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::simple_map::{Element, SimpleMap};
 use moveos_types::state::{MoveStructType, MoveType};
-use serde_json;
-use smallvec::smallvec;
-use std::collections::VecDeque;
-use std::str::FromStr;
+
+use crate::natives::helpers::{make_module_natives, make_native};
 
 const E_TYPE_NOT_MATCH: u64 = 1;
+const STATUS_CODE_FAILED_TO_SERIALIZE_VALUE: u64 = 2;
+const E_JSON_SERIALIZATION_FAILURE: u64 = 3;
 
 fn parse_struct_value_from_bytes(
     layout: &MoveStructLayout,
@@ -56,7 +68,7 @@ fn parse_struct_value_from_json(
             let str_value = json_value
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("Invalid string value"))?;
-            Ok(Struct::pack(vec![Value::vector_u8(
+            Ok(Struct::pack(vec![MoveValue::vector_u8(
                 str_value.as_bytes().to_vec(),
             )]))
         } else if struct_type.is_ascii_string(&MOVE_STD_ADDRESS) {
@@ -66,18 +78,18 @@ fn parse_struct_value_from_json(
             if !str_value.is_ascii() {
                 return Err(anyhow::anyhow!("Invalid ascii string value"));
             }
-            Ok(Struct::pack(vec![Value::vector_u8(
+            Ok(Struct::pack(vec![MoveValue::vector_u8(
                 str_value.as_bytes().to_vec(),
             )]))
         } else if struct_type == &SimpleMap::<MoveString, MoveString>::struct_tag() {
             let key_value_pairs = json_obj_to_key_value_pairs(json_value)?;
             let mut key_values = Vec::new();
             for (key, value) in key_value_pairs {
-                key_values.push(Value::struct_(Struct::pack(vec![
-                    Value::struct_(Struct::pack(vec![Value::vector_u8(
+                key_values.push(MoveValue::struct_(Struct::pack(vec![
+                    MoveValue::struct_(Struct::pack(vec![MoveValue::vector_u8(
                         key.as_bytes().to_vec(),
                     )])),
-                    Value::struct_(Struct::pack(vec![Value::vector_u8(
+                    MoveValue::struct_(Struct::pack(vec![MoveValue::vector_u8(
                         value.as_bytes().to_vec(),
                     )])),
                 ])));
@@ -87,14 +99,14 @@ fn parse_struct_value_from_json(
         } else {
             let field_values = fields
                 .iter()
-                .map(|field| -> Result<Value> {
+                .map(|field| -> Result<MoveValue> {
                     let name = field.name.as_str();
                     let json_field = json_value.get(name).ok_or_else(|| {
                         anyhow::anyhow!("type: {}, Missing field {}", struct_type, name)
                     })?;
                     parse_move_value_from_json(&field.layout, json_field, context)
                 })
-                .collect::<Result<Vec<Value>>>()?;
+                .collect::<Result<Vec<MoveValue>>>()?;
             Ok(Struct::pack(field_values))
         }
     } else {
@@ -105,13 +117,13 @@ fn parse_move_value_from_json(
     layout: &MoveTypeLayout,
     json_value: &serde_json::Value,
     context: &NativeContext,
-) -> Result<Value> {
+) -> Result<MoveValue> {
     match layout {
         MoveTypeLayout::Bool => {
             let bool_value = json_value
                 .as_bool()
                 .ok_or_else(|| anyhow::anyhow!("Invalid bool value"))?;
-            Ok(Value::bool(bool_value))
+            Ok(MoveValue::bool(bool_value))
         }
         MoveTypeLayout::U8 => {
             let u64_value = json_value
@@ -120,20 +132,20 @@ fn parse_move_value_from_json(
             if u64_value > (u8::MAX as u64) {
                 return Err(anyhow::anyhow!("Invalid u8 value"));
             }
-            Ok(Value::u8(u64_value as u8))
+            Ok(MoveValue::u8(u64_value as u8))
         }
         MoveTypeLayout::U64 => {
             let u64_value = json_value
                 .as_u64()
                 .ok_or_else(|| anyhow::anyhow!("Invalid u64 value"))?;
-            Ok(Value::u64(u64_value))
+            Ok(MoveValue::u64(u64_value))
         }
         MoveTypeLayout::U128 => {
             let u128_value = json_value
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("Invalid u128 value"))?
                 .parse::<u128>()?;
-            Ok(Value::u128(u128_value))
+            Ok(MoveValue::u128(u128_value))
         }
         MoveTypeLayout::Address => {
             let addr_str = json_value
@@ -141,7 +153,7 @@ fn parse_move_value_from_json(
                 .ok_or_else(|| anyhow::anyhow!("Invalid address value"))?;
             let addr = AccountAddress::from_hex_literal(addr_str)
                 .map_err(|_| anyhow::anyhow!("Invalid address value"))?;
-            Ok(Value::address(addr))
+            Ok(MoveValue::address(addr))
         }
         MoveTypeLayout::Vector(item_layout) => {
             let vec_value = json_value
@@ -157,7 +169,7 @@ fn parse_move_value_from_json(
         }
         MoveTypeLayout::Struct(struct_layout) => {
             let struct_value = parse_struct_value_from_json(struct_layout, json_value, context)?;
-            Ok(Value::struct_(struct_value))
+            Ok(MoveValue::struct_(struct_value))
         }
         MoveTypeLayout::Signer => Err(anyhow::anyhow!("Do not support Signer type")),
         MoveTypeLayout::U16 => {
@@ -167,7 +179,7 @@ fn parse_move_value_from_json(
             if u64_value > (u16::MAX as u64) {
                 return Err(anyhow::anyhow!("Invalid u16 value"));
             }
-            Ok(Value::u16(u64_value as u16))
+            Ok(MoveValue::u16(u64_value as u16))
         }
         MoveTypeLayout::U32 => {
             let u64_value = json_value
@@ -176,7 +188,7 @@ fn parse_move_value_from_json(
             if u64_value > (u32::MAX as u64) {
                 return Err(anyhow::anyhow!("Invalid u32 value"));
             }
-            Ok(Value::u32(u64_value as u32))
+            Ok(MoveValue::u32(u64_value as u32))
         }
         MoveTypeLayout::U256 => {
             let u256_str = json_value
@@ -184,7 +196,7 @@ fn parse_move_value_from_json(
                 .ok_or_else(|| anyhow::anyhow!("Invalid u256 value"))?;
             let u256_value =
                 U256::from_str(u256_str).map_err(|_| anyhow::anyhow!("Invalid u256 value"))?;
-            Ok(Value::u256(u256_value))
+            Ok(MoveValue::u256(u256_value))
         }
     }
 }
@@ -233,7 +245,7 @@ fn native_from_json(
     gas_params: &FromBytesGasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
-    mut args: VecDeque<Value>,
+    mut args: VecDeque<MoveValue>,
 ) -> PartialVMResult<NativeResult> {
     debug_assert_eq!(ty_args.len(), 1);
     debug_assert_eq!(args.len(), 1);
@@ -260,11 +272,14 @@ fn native_from_json(
         let result = match parse_struct_value_from_bytes(&struct_layout, bytes, context) {
             Ok(val) => {
                 //Pack the MoveOption Some
-                Struct::pack(vec![Vector::pack(type_param, vec![Value::struct_(val)])
-                    .map_err(|e| {
-                        PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-                            .with_message(format!("Failed to pack MoveOption: {:?}", e))
-                    })?])
+                Struct::pack(vec![Vector::pack(
+                    type_param,
+                    vec![MoveValue::struct_(val)],
+                )
+                .map_err(|e| {
+                    PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+                        .with_message(format!("Failed to pack MoveOption: {:?}", e))
+                })?])
             }
             Err(e) => {
                 debug!("Failed to parse struct_value: {:?}", e);
@@ -275,9 +290,325 @@ fn native_from_json(
                 })?])
             }
         };
-        Ok(NativeResult::ok(cost, smallvec![Value::struct_(result)]))
+        Ok(NativeResult::ok(
+            cost,
+            smallvec![MoveValue::struct_(result)],
+        ))
     } else {
         Ok(NativeResult::err(cost, E_TYPE_NOT_MATCH))
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ToBytesGasParameters {
+    pub base: InternalGas,
+    pub per_byte_in_str: InternalGasPerByte,
+}
+
+impl ToBytesGasParameters {
+    pub fn zeros() -> Self {
+        Self {
+            base: 0.into(),
+            per_byte_in_str: 0.into(),
+        }
+    }
+}
+
+fn serialize_move_value_to_json(
+    layout: &MoveTypeLayout,
+    value: &CoreMoveValue,
+) -> Result<JsonValue> {
+    use CoreMoveValue as MoveValue;
+    use MoveTypeLayout as L;
+
+    let json_value = match (layout, value) {
+        (L::Struct(layout), MoveValue::Struct(struct_)) => {
+            serialize_move_struct_to_json(layout, struct_)?
+        }
+        (L::Bool, MoveValue::Bool(b)) => JsonValue::Bool(*b),
+        (L::U8, MoveValue::U8(b)) => JsonValue::Number((*b).into()),
+        (L::U16, MoveValue::U16(b)) => JsonValue::Number((*b).into()),
+        (L::U32, MoveValue::U32(b)) => JsonValue::Number((*b).into()),
+        (L::U64, MoveValue::U64(b)) => JsonValue::Number((*b).into()),
+        (L::U128, MoveValue::U128(i)) => {
+            let slice = i.to_le_bytes();
+            let value = PrimitiveU128::from_little_endian(&slice);
+            JsonValue::String(value.to_string())
+        }
+        (L::U256, MoveValue::U256(i)) => {
+            let slice = i.to_le_bytes();
+            let value = PrimitiveU256::from_little_endian(&slice);
+            JsonValue::String(value.to_string())
+        }
+        (L::Address, MoveValue::Address(addr)) => JsonValue::String(addr.to_hex_literal()),
+        (L::Signer, MoveValue::Signer(_a)) => {
+            return Err(anyhow::anyhow!("Do not support Signer type"))
+        }
+        (L::Vector(vec_layout), MoveValue::Vector(vec)) => {
+            let layout = vec_layout.as_ref();
+
+            if let L::U8 = layout {
+                let mut json_vec = Vec::new();
+
+                for item in vec.iter() {
+                    if let MoveValue::U8(b) = item {
+                        json_vec.push(JsonValue::Number((*b).into()));
+                    }
+                }
+
+                JsonValue::Array(json_vec)
+            } else {
+                let mut json_vec = Vec::new();
+
+                for item in vec.iter() {
+                    let json_value = serialize_move_value_to_json(layout, item)?;
+                    json_vec.push(json_value);
+                }
+
+                JsonValue::Array(json_vec)
+            }
+        }
+        _ => {
+            return Err(anyhow::anyhow!(
+                "Invalid combination of MoveStructLayout and MoveStruct"
+            ))
+        }
+    };
+
+    Ok(json_value)
+}
+
+fn serialize_move_struct_to_json(
+    layout: &MoveStructLayout,
+    struct_: &MoveStruct,
+) -> Result<JsonValue> {
+    use CoreMoveValue as MoveValue;
+    use MoveStructLayout as L;
+
+    let value = match (layout, struct_) {
+        (L::Runtime(layouts), MoveStruct::Runtime(s)) => {
+            let mut json_array = Vec::new();
+            for (layout, v) in layouts.iter().zip(s) {
+                let json_value = serialize_move_value_to_json(layout, v)?;
+                json_array.push(json_value);
+            }
+            JsonValue::Array(json_array)
+        }
+        (L::WithFields(layout_fields), MoveStruct::WithFields(value_fields)) => {
+            serialize_move_fields_to_json(layout_fields, value_fields)?
+        }
+        (
+            L::WithTypes {
+                type_: struct_type,
+                fields: layout_fields,
+            },
+            MoveStruct::WithTypes {
+                type_: _,
+                fields: value_fields,
+            },
+        ) => {
+            if struct_type.is_ascii_string(&MOVE_STD_ADDRESS)
+                || struct_type.is_std_string(&MOVE_STD_ADDRESS)
+            {
+                let bytes_field = value_fields
+                    .first()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid bytes field"))?;
+
+                match &bytes_field.1 {
+                    MoveValue::Vector(vec) => {
+                        let bytes = MoveValue::vec_to_vec_u8(vec.clone())?;
+                        let string = String::from_utf8(bytes)
+                            .map_err(|_| anyhow::anyhow!("Invalid utf8 String"))?;
+                        JsonValue::String(string)
+                    }
+                    _ => return Err(anyhow::anyhow!("Invalid string")),
+                }
+            } else if is_std_option(struct_type, &MOVE_STD_ADDRESS) {
+                let vec_layout = layout_fields
+                    .first()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid std option layout"))?;
+                let vec_field = value_fields
+                    .first()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid std option field"))?;
+
+                match (&vec_layout.layout, &vec_field.1) {
+                    (MoveTypeLayout::Vector(vec_layout), MoveValue::Vector(vec)) => {
+                        let item_layout = vec_layout.as_ref();
+
+                        if !vec.is_empty() {
+                            serialize_move_value_to_json(item_layout, vec.first().unwrap())?
+                        } else {
+                            JsonValue::Null
+                        }
+                    }
+                    _ => return Err(anyhow::anyhow!("Invalid std option")),
+                }
+            } else if struct_type == &SimpleMap::<MoveString, Vec<u8>>::struct_tag() {
+                let data_field = value_fields
+                    .iter()
+                    .find(|(name, _)| name.as_str() == "data")
+                    .ok_or_else(|| anyhow::anyhow!("Missing data field in SimpleMap"))?;
+
+                let data_vector = match &data_field.1 {
+                    MoveValue::Vector(vec) => vec,
+                    _ => return Err(anyhow::anyhow!("Invalid data field in SimpleMap")),
+                };
+
+                let key_value_pairs = data_vector
+                    .iter()
+                    .map(|element| {
+                        let struct_ = match element {
+                            MoveValue::Struct(s) => s,
+                            _ => return Err(anyhow::anyhow!("Invalid element in SimpleMap data")),
+                        };
+
+                        let fields = match struct_ {
+                            MoveStruct::WithTypes {
+                                type_: _,
+                                fields: value_fields,
+                            } => value_fields,
+                            _ => return Err(anyhow::anyhow!("Invalid element in SimpleMap data")),
+                        };
+
+                        let key = match &fields[0].1 {
+                            MoveValue::Struct(struct_) => {
+                                let value_fields = match struct_ {
+                                    MoveStruct::WithTypes {
+                                        type_: _,
+                                        fields: value_fields,
+                                    } => value_fields,
+                                    _ => {
+                                        return Err(anyhow::anyhow!(
+                                            "Invalid element in SimpleMap data"
+                                        ))
+                                    }
+                                };
+
+                                let bytes_field = value_fields
+                                    .first()
+                                    .ok_or_else(|| anyhow::anyhow!("Invalid bytes field"))?;
+
+                                match bytes_field.1.clone() {
+                                    MoveValue::Vector(vec) => {
+                                        let bytes = MoveValue::vec_to_vec_u8(vec)?;
+                                        String::from_utf8(bytes)
+                                            .map_err(|_| anyhow::anyhow!("Invalid utf8 String"))?
+                                    }
+                                    _ => return Err(anyhow::anyhow!("Invalid std string")),
+                                }
+                            }
+                            _ => return Err(anyhow::anyhow!("Invalid key in SimpleMap")),
+                        };
+
+                        let json_value = match &fields[1].1 {
+                            MoveValue::Vector(vec) => {
+                                let bytes = MoveValue::vec_to_vec_u8(vec.clone())?;
+                                let json_value: JsonValue = serde_json::from_slice(&bytes)
+                                    .map_err(|_| {
+                                        anyhow::anyhow!("Invalid JSON value in SimpleMap")
+                                    })?;
+                                json_value
+                            }
+                            _ => return Err(anyhow::anyhow!("Invalid value in SimpleMap")),
+                        };
+
+                        Ok((key, json_value))
+                    })
+                    .collect::<Result<Vec<_>>>()?;
+
+                JsonValue::Object(key_value_pairs.into_iter().collect())
+            } else {
+                serialize_move_fields_to_json(layout_fields, value_fields)?
+            }
+        }
+        _ => {
+            debug!(
+                "Invalid combination of MoveStructLayout and MoveStruct, layout:{:?}, struct:{:?}",
+                layout, struct_
+            );
+
+            return Err(anyhow::anyhow!(
+                "Invalid combination of MoveStructLayout and MoveStruct"
+            ));
+        }
+    };
+
+    Ok(value)
+}
+
+fn is_std_option(struct_tag: &StructTag, move_std_addr: &AccountAddress) -> bool {
+    struct_tag.address == *move_std_addr
+        && struct_tag.module.as_str().eq("option")
+        && struct_tag.name.as_str().eq("Option")
+}
+
+fn serialize_move_fields_to_json(
+    layout_fields: &[MoveFieldLayout],
+    value_fields: &Vec<(Identifier, CoreMoveValue)>,
+) -> Result<JsonValue> {
+    let mut fields = serde_json::Map::new();
+
+    for (field_layout, (name, value)) in layout_fields.iter().zip(value_fields) {
+        let json_value = serialize_move_value_to_json(&field_layout.layout, value)?;
+        fields.insert(name.clone().into_string(), json_value);
+    }
+
+    Ok(JsonValue::Object(fields))
+}
+
+#[inline]
+fn native_to_json(
+    gas_params: &ToBytesGasParameters,
+    context: &mut NativeContext,
+    mut ty_args: Vec<Type>,
+    mut args: VecDeque<MoveValue>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert_eq!(ty_args.len(), 1);
+    debug_assert_eq!(args.len(), 1);
+
+    let mut cost = gas_params.base;
+
+    // pop type and value
+    let ref_to_val = pop_arg!(args, Reference);
+    let arg_type = ty_args.pop().unwrap();
+
+    // get type layout
+    let layout = match context.type_to_type_layout(&arg_type)? {
+        Some(layout) => layout,
+        None => {
+            return Ok(NativeResult::err(cost, E_JSON_SERIALIZATION_FAILURE));
+        }
+    };
+
+    let move_val = ref_to_val.read_ref()?.as_move_value(&layout);
+
+    let annotated_layout = match context.type_to_fully_annotated_layout(&arg_type)? {
+        Some(layout) => layout,
+        None => {
+            return Ok(NativeResult::err(cost, E_JSON_SERIALIZATION_FAILURE));
+        }
+    };
+
+    let annotated_move_val = move_val.decorate(&annotated_layout);
+
+    match serialize_move_value_to_json(&annotated_layout, &annotated_move_val) {
+        Ok(json_value) => {
+            let json_string = json_value.to_string();
+            cost += gas_params.per_byte_in_str * NumBytes::new(json_string.len() as u64);
+
+            Ok(NativeResult::ok(
+                cost,
+                smallvec![MoveValue::vector_u8(json_string.into_bytes())],
+            ))
+        }
+        Err(e) => {
+            debug!("Failed to serialize value: {:?}", e);
+
+            Ok(NativeResult::err(
+                cost,
+                STATUS_CODE_FAILED_TO_SERIALIZE_VALUE,
+            ))
+        }
     }
 }
 
@@ -288,21 +619,29 @@ fn native_from_json(
 #[derive(Debug, Clone)]
 pub struct GasParameters {
     pub from_bytes: FromBytesGasParameters,
+    pub to_bytes: ToBytesGasParameters,
 }
 
 impl GasParameters {
     pub fn zeros() -> Self {
         Self {
             from_bytes: FromBytesGasParameters::zeros(),
+            to_bytes: ToBytesGasParameters::zeros(),
         }
     }
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
-    let natives = [(
-        "native_from_json",
-        make_native(gas_params.from_bytes, native_from_json),
-    )];
+    let natives = [
+        (
+            "native_from_json",
+            make_native(gas_params.from_bytes, native_from_json),
+        ),
+        (
+            "native_to_json",
+            make_native(gas_params.to_bytes, native_to_json),
+        ),
+    ];
 
     make_module_natives(natives)
 }

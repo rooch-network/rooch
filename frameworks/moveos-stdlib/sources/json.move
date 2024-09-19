@@ -40,8 +40,16 @@ module moveos_std::json{
         option::destroy_some(opt_result)
     }
 
-    native fun native_from_json<T>(json_str: vector<u8>): Option<T>;
+    /// Serialize a value of type T to JSON string bytes.
+    public fun to_json<T>(value: &T): vector<u8> {
+        native_to_json(value)
+    }
 
+    native fun native_from_json<T>(json_str: vector<u8>): Option<T>;
+    native fun native_to_json<T>(value: &T): vector<u8>;
+
+    #[test_only]
+    use std::debug;
     #[test_only]
     use std::vector;
     #[test_only]
@@ -115,5 +123,144 @@ module moveos_std::json{
         let invalid_json = b"abcd";
         let obj = from_json_option<Test>(invalid_json);
         assert!(option::is_none(&obj), 1);
+    }
+
+    #[test]
+    fun test_to_json_basic_types() {
+        // Test u8
+        let u8_value = 255u8;
+        let u8_json = to_json(&u8_value);
+        assert!(string::utf8(u8_json) == string::utf8(b"255"), 1);
+
+        // Test u64
+        let u64_value = 18446744073709551615u64;
+        let u64_json = to_json(&u64_value);
+        assert!(string::utf8(u64_json) == string::utf8(b"18446744073709551615"), 2);
+
+        // Test u128
+        let u128_value = 340282366920938463463374607431768211455u128;
+        let u128_json = to_json(&u128_value);
+        assert!(string::utf8(u128_json) == string::utf8(b"\"340282366920938463463374607431768211455\""), 3);
+
+        // Test address
+        let address_value = @0x42;
+        let address_json = to_json(&address_value);
+        assert!(string::utf8(address_json) == string::utf8(b"\"0x42\""), 4);
+
+        // Test String
+        let string_value = string::utf8(b"rooch.network");
+        let string_json = to_json(&string_value);
+        assert!(string::utf8(string_json) == string::utf8(b"\"rooch.network\""), 5);
+
+        // Test vector<u8>
+        let bytes_value = vector::empty<u8>();
+        vector::push_back(&mut bytes_value, 1u8);
+        vector::push_back(&mut bytes_value, 2u8);
+        vector::push_back(&mut bytes_value, 3u8);
+        let bytes_json = to_json(&bytes_value);
+        assert!(string::utf8(bytes_json) == string::utf8(b"[1,2,3]"), 6);
+    }
+
+    #[test_only]
+    #[data_struct]
+    struct InnerStruct has copy, drop {
+        inner_value: u64
+    }
+
+    #[test_only]
+    #[data_struct]
+    struct OuterStruct has copy, drop {
+        outer_value: u64,
+        inner_struct: InnerStruct
+    }
+
+    #[test_only]
+    #[data_struct]
+    struct SimpleStruct has copy, drop {
+        value: u64
+    }
+
+    #[test]
+    fun test_to_json_composite_types() {
+        let inner_struct = InnerStruct { inner_value: 42 };
+        let outer_struct = OuterStruct { outer_value: 100, inner_struct: inner_struct };
+        let outer_json = to_json(&outer_struct);
+        assert!(string::utf8(outer_json) == string::utf8(b"{\"outer_value\":100,\"inner_struct\":{\"inner_value\":42}}"), 1);
+
+        // Test array of structs
+        let struct_array = vector::empty<SimpleStruct>();
+        vector::push_back(&mut struct_array, SimpleStruct { value: 1 });
+        vector::push_back(&mut struct_array, SimpleStruct { value: 2 });
+        vector::push_back(&mut struct_array, SimpleStruct { value: 3 });
+        let array_json = to_json(&struct_array);
+        assert!(string::utf8(array_json) == string::utf8(b"[{\"value\":1},{\"value\":2},{\"value\":3}]"), 2);
+    }
+
+    #[test_only]
+    #[data_struct]
+    struct StructWithEmptyString has copy, drop {
+        value: u64,
+        empty_string: String
+    }
+
+    #[test]
+    fun test_to_json_boundary_conditions() {
+        // Test empty array
+        let empty_array = vector::empty<u8>();
+        let empty_array_json = to_json(&empty_array);
+        assert!(string::utf8(empty_array_json) == string::utf8(b"[]"), 1);
+
+        // Test struct with empty string
+        let empty_string_struct = StructWithEmptyString {
+            value: 0,
+            empty_string: string::utf8(b"")
+        };
+        let empty_string_json = to_json(&empty_string_struct);
+        assert!(string::utf8(empty_string_json) == string::utf8(b"{\"value\":0,\"empty_string\":\"\"}"), 2);
+    }
+
+    #[test]
+    fun test_to_json_boolean_and_null() {
+        // Test boolean values
+        let bool_true = true;
+        let bool_true_json = to_json(&bool_true);
+        assert!(string::utf8(bool_true_json) == string::utf8(b"true"), 1);
+
+        let bool_false = false;
+        let bool_false_json = to_json(&bool_false);
+        assert!(string::utf8(bool_false_json) == string::utf8(b"false"), 2);
+
+        // Test null value
+        let null_value = option::none<u64>();
+        let null_json = to_json(&null_value);
+        assert!(string::utf8(null_json) == string::utf8(b"null"), 3);
+    }
+
+    #[test]
+    fun test_to_json_composite_all() {
+        let inner = Inner { value: 100 };
+        let inner_array = vector::empty<Inner>();
+        vector::push_back(&mut inner_array, Inner { value: 101 });
+
+        let test_obj = Test {
+            balance: 170141183460469231731687303715884105728u128,
+            utf8_string: string::utf8(b"rooch.network"),
+            age: 30u8,
+            inner: inner,
+            bytes: vector::empty<u8>(),
+            inner_array: inner_array,
+            account: @0x42,
+        };
+
+        let json_str = to_json(&test_obj);
+
+        let map = to_map(json_str);
+        assert!(simple_map::borrow(&map, &string::utf8(b"balance")) == &string::utf8(b"170141183460469231731687303715884105728"), 1);
+        assert!(simple_map::borrow(&map, &string::utf8(b"utf8_string")) == &string::utf8(b"rooch.network"), 2);
+        assert!(simple_map::borrow(&map, &string::utf8(b"age")) == &string::utf8(b"30"), 3);
+        assert!(simple_map::borrow(&map, &string::utf8(b"inner")) == &string::utf8(b"{\"value\":100}"), 4);
+        assert!(simple_map::borrow(&map, &string::utf8(b"bytes")) == &string::utf8(b"[]"), 5);
+        assert!(simple_map::borrow(&map, &string::utf8(b"inner_array")) == &string::utf8(b"[{\"value\":101}]"), 6);
+        assert!(simple_map::borrow(&map, &string::utf8(b"account")) == &string::utf8(b"0x42"), 7);
     }
 }
