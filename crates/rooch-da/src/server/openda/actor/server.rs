@@ -22,15 +22,10 @@ pub struct DAServerOpenDAActor {
     operator: Operator,
 }
 
-// TODO get request and response
-// 1. get by block number
-// 2. get by batch hash
-// 3. pull by stream
-//
+pub const DEFAULT_MAX_SEGMENT_SIZE: u64 = 4 * 1024 * 1024;
 
 impl Actor for DAServerOpenDAActor {}
 
-// TODO add FEC get for SDC protection (wrong response attacks)
 impl DAServerOpenDAActor {
     pub async fn new(cfg: &DAServerOpenDAConfig) -> Result<DAServerOpenDAActor> {
         let mut config = cfg.clone();
@@ -113,7 +108,7 @@ impl DAServerOpenDAActor {
         };
 
         Ok(Self {
-            max_segment_size: cfg.max_segment_size.unwrap_or(4 * 1024 * 1024) as usize,
+            max_segment_size: cfg.max_segment_size.unwrap_or(DEFAULT_MAX_SEGMENT_SIZE) as usize,
             operator: op,
         })
     }
@@ -123,9 +118,26 @@ impl DAServerOpenDAActor {
         let segments = chunk.to_segments(self.max_segment_size);
         for segment in segments {
             let bytes = segment.to_bytes();
-            self.operator
+            match self
+                .operator
                 .write(&segment.get_id().to_string(), bytes)
-                .await?;
+                .await
+            {
+                Ok(_) => {
+                    log::info!(
+                        "submitted segment to open-da node, segment: {:?}",
+                        segment.get_id(),
+                    );
+                }
+                Err(e) => {
+                    log::warn!(
+                        "failed to submit segment to open-da node, segment_id: {:?}, error:{:?}",
+                        segment.get_id(),
+                        e,
+                    );
+                    return Err(e.into());
+                }
+            }
         }
 
         Ok(())

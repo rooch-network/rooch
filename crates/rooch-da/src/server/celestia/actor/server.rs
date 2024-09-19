@@ -19,15 +19,8 @@ pub struct DAServerCelestiaActor {
     backend: Backend,
 }
 
-// TODO get request and response
-// 1. get by block number
-// 2. get by batch hash
-// 3. pull by stream
-//
-
 impl Actor for DAServerCelestiaActor {}
 
-// TODO add FEC get for SDC protection (wrong response attacks)
 impl DAServerCelestiaActor {
     pub async fn new(cfg: &DAServerCelestiaConfig) -> Self {
         let namespace_str = cfg.namespace.as_ref().unwrap().clone();
@@ -45,7 +38,14 @@ impl DAServerCelestiaActor {
         let chunk: ChunkV0 = batch_msg.batch.into();
         let segments = chunk.to_segments(self.max_segment_size);
         for segment in segments {
-            self.backend.submit(segment).await?;
+            let result = self.backend.submit(segment).await?;
+            log::info!(
+                "submitted segment to celestia node, segment_id: {:?}, namespace: {:?}, commitment: {:?}, height: {}",
+                result.segment_id,
+                result.namespace,
+                result.commitment,
+                result.height,
+            );
         }
 
         Ok(())

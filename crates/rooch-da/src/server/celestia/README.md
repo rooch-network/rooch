@@ -1,3 +1,3 @@
 # Celestia Server
 
-server implementation of using Celestia as DA backend.
+DA Server implementation of using Celestia as DA backend.
