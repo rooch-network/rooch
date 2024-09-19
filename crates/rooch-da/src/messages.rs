@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use moveos_types::h256::H256;
 
+/// The batch in Rooch is constructed by the batch submitter, representing a batch of transactions, mapping to a L2 block
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Batch {
     /// each batch maps to a L2 block
@@ -18,9 +19,9 @@ pub struct Batch {
     /// The tx accumulator root after the last transaction append to the accumulator
     pub tx_accumulator_root: H256,
 
-    // sha256h of data
+    /// sha256h of data
     pub batch_hash: H256,
-    // encoded tx(LedgerTransaction) list
+    /// encoded tx(LedgerTransaction) list
     pub data: Vec<u8>,
 }
 

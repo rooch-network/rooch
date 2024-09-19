@@ -1,18 +1,19 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::fmt;
-use std::str::FromStr;
-
 use crate::chunk::ChunkVersion;
 use serde::Serialize;
+use std::fmt;
+use std::str::FromStr;
 use xxhash_rust::xxh3::xxh3_64;
 
 // Segment is the unit submitted to DA backend, designed to comply with the block size restrictions of the DA backend.
-pub trait Segment: Send {
+pub trait Segment: fmt::Debug + Send {
     fn to_bytes(&self) -> Vec<u8>;
     fn get_version(&self) -> ChunkVersion;
     fn get_id(&self) -> SegmentID;
+    fn get_data(&self) -> Vec<u8>;
+    fn is_last(&self) -> bool;
 }
 
 pub const SEGMENT_V0_DATA_OFFSET: usize = 42;
@@ -91,6 +92,14 @@ impl Segment for SegmentV0 {
 
     fn get_id(&self) -> SegmentID {
         self.id.clone()
+    }
+
+    fn get_data(&self) -> Vec<u8> {
+        self.data.clone()
+    }
+
+    fn is_last(&self) -> bool {
+        self.is_last
     }
 }
 
