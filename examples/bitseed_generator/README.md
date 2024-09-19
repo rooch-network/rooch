@@ -1,6 +1,6 @@
-# Inscribe Generate Contract
+# Inscribe Generate Bitseed Contract
 
-A CosmWasm smart contract for generating and verifying custom attributes for digital assets or NFTs.
+A CosmWasm smart contract for generating and verifying custom attributes for bitseed assets or NFTs.
 
 ## Features
 
