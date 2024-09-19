@@ -49,8 +49,6 @@ module moveos_std::json{
     native fun native_to_json<T>(value: &T): vector<u8>;
 
     #[test_only]
-    use std::debug;
-    #[test_only]
     use std::vector;
     #[test_only]
     use std::string;
@@ -162,20 +160,17 @@ module moveos_std::json{
     }
 
     #[test_only]
-    #[data_struct]
     struct InnerStruct has copy, drop {
         inner_value: u64
     }
 
     #[test_only]
-    #[data_struct]
     struct OuterStruct has copy, drop {
         outer_value: u64,
         inner_struct: InnerStruct
     }
 
     #[test_only]
-    #[data_struct]
     struct SimpleStruct has copy, drop {
         value: u64
     }
@@ -197,7 +192,6 @@ module moveos_std::json{
     }
 
     #[test_only]
-    #[data_struct]
     struct StructWithEmptyString has copy, drop {
         value: u64,
         empty_string: String
