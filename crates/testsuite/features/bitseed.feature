@@ -14,11 +14,7 @@ Feature: Rooch CLI bitseed tests
 
       # mint utxos
       Then cmd bitcoin-cli: "generatetoaddress 101 {{$.account[-1].default.bitcoin_address}}"
-      Then sleep: "10" # wait rooch to sync 
-
-      # publish bitseed runner
-      Then cmd: "move publish -p ../../examples/bitseed_runner  --named-addresses rooch_examples=default --json"
-      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      Then sleep: "10" # wait rooch to sync  
 
       # generator
       Then cmd: "bitseed generator --fee-rate 5000 --name random --generator ../../generator/cpp/generator.wasm"
@@ -28,8 +24,8 @@ Feature: Rooch CLI bitseed tests
       Then cmd bitcoin-cli: "generatetoaddress 1 {{$.account[-1].default.bitcoin_address}}"
       Then sleep: "10"
 
-      # Sync bitseed
-      Then cmd: "move run --function default::bitseed_runner::run --json"
+      # process bitseed inscription event
+      Then cmd: "move run --function 0xa::inscribe_factory::process_bitseed_event --args u64:10 --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # Check mint generator validity
@@ -46,7 +42,7 @@ Feature: Rooch CLI bitseed tests
       Then sleep: "10"
 
       # Sync bitseed
-      Then cmd: "move run --function default::bitseed_runner::run --json"
+      Then cmd: "move run --function 0xa::inscribe_factory::process_bitseed_event --args u64:10 --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # Check deploy validity
@@ -54,8 +50,15 @@ Feature: Rooch CLI bitseed tests
       Then assert: "{{$.move[-1].vm_status}} == Executed"
       Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
 
-      # mint 
+      # mint 1
       Then cmd: "bitseed mint --fee-rate 6000 --deploy-inscription-id {{$.bitseed[-1].inscriptions[0].Id}} --user-input test" 
+      Then assert: "'{{$.bitseed[-1]}}' not_contains error"
+
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.account[-1].default.bitcoin_address}}"
+      Then sleep: "5"
+
+      # mint 2
+      Then cmd: "bitseed mint --fee-rate 7000 --deploy-inscription-id {{$.bitseed[-2].inscriptions[0].Id}} --user-input test2" 
       Then assert: "'{{$.bitseed[-1]}}' not_contains error"
 
       # mine a block
@@ -63,10 +66,28 @@ Feature: Rooch CLI bitseed tests
       Then sleep: "10"
 
       # Sync bitseed
-      Then cmd: "move run --function default::bitseed_runner::run --json"
+      Then cmd: "move run --function 0xa::inscribe_factory::process_bitseed_event --args u64:10 --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # Check mint bits validity
+      Then cmd: "move view --function 0x4::ord::view_validity --args string:{{$.bitseed[-1].inscriptions[0].Id}} "
+      Then assert: "{{$.move[-1].vm_status}} == Executed"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
+
+      Then cmd: "move view --function 0x4::ord::view_validity --args string:{{$.bitseed[-2].inscriptions[0].Id}} "
+      Then assert: "{{$.move[-1].vm_status}} == Executed"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
+
+      Then cmd: "bitseed merge --fee-rate 6000 --sft-inscription-ids {{$.bitseed[-1].inscriptions[0].Id}} --sft-inscription-ids {{$.bitseed[-2].inscriptions[0].Id}}" 
+      Then assert: "'{{$.bitseed[-1]}}' not_contains error" 
+
+      # mine a block
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.account[-1].default.bitcoin_address}}"
+      Then sleep: "10"
+
+      Then cmd: "move run --function 0xa::inscribe_factory::process_bitseed_event --args u64:10 --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
       Then cmd: "move view --function 0x4::ord::view_validity --args string:{{$.bitseed[-1].inscriptions[0].Id}} "
       Then assert: "{{$.move[-1].vm_status}} == Executed"
       Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
@@ -88,14 +109,10 @@ Feature: Rooch CLI bitseed tests
 
       # mint utxos
       Then cmd bitcoin-cli: "generatetoaddress 101 {{$.account[-1].default.bitcoin_address}}"
-      Then sleep: "10" # wait ord sync and index
-
-      # publish bitseed runner
-      Then cmd: "move publish -p ../../examples/bitseed_runner  --named-addresses rooch_examples=default --json"
-      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      Then sleep: "10" # wait ord sync and index 
 
       # Sync bitseed
-      Then cmd: "move run --function default::bitseed_runner::run --json"
+      Then cmd: "move run --function 0xa::inscribe_factory::process_bitseed_event --args u64:10 --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # deploy
@@ -107,7 +124,7 @@ Feature: Rooch CLI bitseed tests
       Then sleep: "10"
 
       # Sync bitseed
-      Then cmd: "move run --function default::bitseed_runner::run --json"
+      Then cmd: "move run --function 0xa::inscribe_factory::process_bitseed_event --args u64:10 --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # Check deploy validity

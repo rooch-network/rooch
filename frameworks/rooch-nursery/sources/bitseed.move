@@ -49,7 +49,7 @@ module rooch_nursery::bitseed {
         content_attributes_hash: address,
     }
 
-    public fun metaprotocol(): String{
+    public fun default_metaprotocol(): String{
         string::utf8(METAPROTOCOL)
     }
 
@@ -133,12 +133,63 @@ module rooch_nursery::bitseed {
         split_bitseed
     }
 
+    public(friend) fun burn(bitseed_obj: Object<Bitseed>) : u64{
+        let bitseed = object::remove(bitseed_obj);
+        let amount = bitseed.amount;
+        drop(bitseed);
+        amount
+    }
+
+    // ==================== Get functions ==================== //
+
+    public fun metaprotocol(bitseed: &Bitseed): String {
+        bitseed.metaprotocol
+    }
+    
+    public fun amount(bitseed: &Bitseed): u64 {
+        bitseed.amount
+    }
+
+    public fun tick(bitseed: &Bitseed): String {
+        bitseed.tick
+    }
+
+    public fun bid(bitseed: &Bitseed): address {
+        bitseed.bid
+    }
+
+    public fun content_type(bitseed: &Bitseed): &Option<String> {
+        &bitseed.content_type
+    }
+
+    public fun body(bitseed: &Bitseed): &vector<u8> {
+        &bitseed.body
+    }
+
+    public fun attributes(bitseed: &Bitseed): &SimpleMap<String, Any> {
+        &bitseed.attributes
+    }
+
+    public fun content_attributes_hash(bitseed: &Bitseed): address {
+        bitseed.content_attributes_hash
+    }
+
+    // ========= Metaprotocol delegate function ========= //
+
     public(friend) fun seal_metaprotocol_validity(inscription_id: InscriptionID, is_valid: bool, invalid_reason: Option<String>){
         ord::seal_metaprotocol_validity<Bitseed>(inscription_id, is_valid, invalid_reason)
     }
 
     public(friend) fun add_metaprotocol_attachment(inscription_id: InscriptionID, attachment: Object<Bitseed>){
         ord::add_metaprotocol_attachment<Bitseed>(inscription_id, attachment)
+    }
+
+    public(friend) fun exists_metaprotocol_attachment(inscription_id: InscriptionID): bool{
+        ord::exists_metaprotocol_attachment<Bitseed>(inscription_id)
+    }
+
+    public(friend) fun remove_metaprotocol_attachment(inscription_id: InscriptionID): Object<Bitseed>{
+        ord::remove_metaprotocol_attachment<Bitseed>(inscription_id)
     }
 
     fun drop(bitseed: Bitseed) {

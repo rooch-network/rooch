@@ -63,9 +63,9 @@ module rooch_nursery::tick_info {
         //u64max
         let max = 18_446_744_073_709_551_615u64;
         
-        deploy_tick(bitseed::metaprotocol(), tick, option::none(), option::none(), max, repeat, has_user_input, option::none());
+        deploy_tick(bitseed::default_metaprotocol(), tick, option::none(), option::none(), max, repeat, has_user_input, option::none());
         let module_signer = moveos_std::signer::module_signer<TickInfoStore>();
-        ord::register_metaprotocol_via_system<Bitseed>(&module_signer, bitseed::metaprotocol());
+        ord::register_metaprotocol_via_system<Bitseed>(&module_signer, bitseed::default_metaprotocol());
     }
     
     /// Check if the tick is deployed.
@@ -160,6 +160,15 @@ module rooch_nursery::tick_info {
         let bitseed = bitseed::new(metaprotocol, tick, bid, real_amount, option::none(), vector::empty());
         tick_info.supply = tick_info.supply + amount;
         bitseed
+    }
+
+    public fun burn(bitseed_obj: Object<Bitseed>){
+        let bitseed = object::borrow(&bitseed_obj);
+        let metaprotocol = bitseed::metaprotocol(bitseed);
+        let tick = bitseed::tick(bitseed);
+        let tick_info = borrow_mut_tick_info(metaprotocol, tick);
+        let amount = bitseed::burn(bitseed_obj);
+        tick_info.supply = tick_info.supply - amount;
     }
 
     public(friend) fun mint_on_bitcoin(metaprotocol: String, tick: String, amount: u64) : Result<Object<Bitseed>,String>{

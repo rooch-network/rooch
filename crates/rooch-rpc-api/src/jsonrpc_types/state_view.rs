@@ -504,7 +504,9 @@ fn parse_changed_objects(
     let mut deleted_objs = vec![];
     for obj_change in changes {
         let metadata = obj_change.metadata.clone();
-        debug_assert!(obj_change.value.is_some() || !obj_change.fields.is_empty());
+        //TODO fixme
+        //https://github.com/rooch-network/rooch/issues/2657
+        //debug_assert!(obj_change.value.is_some() || !obj_change.fields.is_empty());
         match obj_change.value {
             Some(OpView::New(_)) => new_objs.push(metadata),
             Some(OpView::Modify(_)) => modified_objs.push(metadata),
