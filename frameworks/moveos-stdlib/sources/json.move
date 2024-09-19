@@ -116,4 +116,32 @@ module moveos_std::json{
         let obj = from_json_option<Test>(invalid_json);
         assert!(option::is_none(&obj), 1);
     }
+
+    native fun native_to_json<T>(value: T): vector<u8>;
+
+    fun to_json<T>(value: T): vector<u8> {
+        native_to_json(value)
+    }
+
+    #[test]
+    fun test_to_json() {
+        let inner = Inner { value: 100 };
+        let inner_array = vector::empty<Inner>();
+        vector::push_back(&mut inner_array, Inner { value: 101 });
+
+        let test_obj = Test {
+            balance: 170141183460469231731687303715884105728u128,
+            utf8_string: string::utf8(b"rooch.network"),
+            age: 30u8,
+            inner: inner,
+            bytes: vector::empty<u8>(),
+            inner_array: inner_array,
+            account: @0x42,
+        };
+
+        let json_str = to_json(test_obj);
+        let expected_json_str = b"{\"balance\":\"170141183460469231731687303715884105728\",\"utf8_string\":\"rooch.network\",\"age\":30,\"inner\":{\"value\":100},\"bytes\":[],\"inner_array\":[{\"value\":101}],\"account\":\"0x42\"}";
+
+        assert!(json_str == expected_json_str, 1);
+    }
 }

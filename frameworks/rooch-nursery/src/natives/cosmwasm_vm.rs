@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use log::{debug, warn, error};
+use log::{debug, error, warn};
 use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::ffi::CString;
@@ -10,7 +10,9 @@ use std::sync::{Arc, Mutex};
 use std::vec;
 
 use cosmwasm_std::{Checksum, Empty};
-use cosmwasm_vm::{capabilities_from_csv, call_instantiate, Cache, CacheOptions, Instance, InstanceOptions, Size};
+use cosmwasm_vm::{
+    call_instantiate, capabilities_from_csv, Cache, CacheOptions, Instance, InstanceOptions, Size,
+};
 use once_cell::sync::Lazy;
 use rooch_cosmwasm_vm::backend::{
     build_mock_backend, MoveBackendApi, MoveBackendQuerier, MoveStorage,
@@ -117,7 +119,9 @@ pub fn native_create_instance(
             let backend = build_mock_backend();
 
             // Create WASM instance
-            let instance_options = InstanceOptions { gas_limit: DEFAULT_GAS_LIMIT };
+            let instance_options = InstanceOptions {
+                gas_limit: DEFAULT_GAS_LIMIT,
+            };
 
             let (module, store) = WASM_CACHE.get_module(&checksum).map_err(|e| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR)
@@ -207,31 +211,37 @@ impl CosmWasmDestroyInstanceGasParameters {
 /***************************************************************************************************
  * native fun native_destroy_instance
  **************************************************************************************************/
- #[inline]
- fn native_destroy_instance(
-     gas_params: &GasParameters,
-     _context: &mut NativeContext,
-     ty_args: Vec<Type>,
-     mut arguments: VecDeque<Value>,
- ) -> PartialVMResult<NativeResult> {
-     assert!(ty_args.len() == 0, "Wrong number of type arguments");
-     assert!(arguments.len() == 1, "Wrong number of arguments");
- 
-     Ok(NativeResult::ok(
+#[inline]
+fn native_destroy_instance(
+    gas_params: &GasParameters,
+    _context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut arguments: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    assert!(ty_args.len() == 0, "Wrong number of type arguments");
+    assert!(arguments.len() == 1, "Wrong number of arguments");
+
+    Ok(NativeResult::ok(
         gas_params.common.load_base,
         smallvec![Value::u32(0)],
     ))
- }
+}
 
- #[inline]
+#[inline]
 fn native_call_instantiate_raw(
     gas_params: &GasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut arguments: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    debug_assert!(ty_args.is_empty(), "native_call_instantiate_raw expects no type arguments");
-    debug_assert!(arguments.len() == 5, "native_call_instantiate_raw expects 5 arguments");
+    debug_assert!(
+        ty_args.is_empty(),
+        "native_call_instantiate_raw expects no type arguments"
+    );
+    debug_assert!(
+        arguments.len() == 5,
+        "native_call_instantiate_raw expects 5 arguments"
+    );
 
     let code_checksum = pop_arg!(arguments, Vec<u8>);
     let store_obj_id = pop_object_id(&mut arguments)?;
@@ -244,25 +254,31 @@ fn native_call_instantiate_raw(
     let mut object_runtime = binding.write();
     let resolver = object_runtime.resolver();
     let (rt_obj, object_load_gas) = object_runtime.load_object(context, &store_obj_id)?;
-    
-    let gas_cost = gas_params.common.load_base + gas_params.common.calculate_load_cost(Some(Some(NumBytes::new(code_checksum.len() as u64))));
+
+    let gas_cost = gas_params.common.load_base
+        + gas_params
+            .common
+            .calculate_load_cost(Some(Some(NumBytes::new(code_checksum.len() as u64))));
 
     let result = instantiate_contract(context, resolver, rt_obj, code_checksum, env, info, msg);
 
     match result {
         Ok((response, wasm_gas_used)) => {
             let total_gas = gas_cost + InternalGas::new(wasm_gas_used);
-            Ok(NativeResult::ok(total_gas, smallvec![
-                Value::vector_u8(response),
-                Value::u32(0) // success
-            ]))
+            Ok(NativeResult::ok(
+                total_gas,
+                smallvec![
+                    Value::vector_u8(response),
+                    Value::u32(0) // success
+                ],
+            ))
         }
         Err(err) => {
             let error_code = error_to_abort_code(err);
-            Ok(NativeResult::ok(gas_cost, smallvec![
-                Value::vector_u8(vec![]),
-                Value::u32(error_code as u32)
-            ]))
+            Ok(NativeResult::ok(
+                gas_cost,
+                smallvec![Value::vector_u8(vec![]), Value::u32(error_code as u32)],
+            ))
         }
     }
 }
@@ -280,7 +296,9 @@ fn instantiate_contract(
     let (module, store) = WASM_CACHE.get_module(&checksum).map_err(|e| vm_error(e))?;
 
     let backend = build_mock_backend();
-    let instance_options = InstanceOptions { gas_limit: DEFAULT_GAS_LIMIT };
+    let instance_options = InstanceOptions {
+        gas_limit: DEFAULT_GAS_LIMIT,
+    };
     let mut instance = Instance::from_module(
         store,
         &module,
@@ -295,14 +313,11 @@ fn instantiate_contract(
     })?;
 
     let env = serde_json::from_slice::<cosmwasm_std::Env>(&env).map_err(|e| vm_error(e))?;
-    let info = serde_json::from_slice::<cosmwasm_std::MessageInfo>(&info).map_err(|e| vm_error(e))?;
+    let info =
+        serde_json::from_slice::<cosmwasm_std::MessageInfo>(&info).map_err(|e| vm_error(e))?;
 
-    let result = call_instantiate::<_, _, _, Empty>(
-        &mut instance,
-        &env,
-        &info,
-        msg.as_slice(),
-    ).map_err(|e| vm_error(e))?;
+    let result = call_instantiate::<_, _, _, Empty>(&mut instance, &env, &info, msg.as_slice())
+        .map_err(|e| vm_error(e))?;
 
     let response = serde_json::to_vec(&result).map_err(|e| vm_error(e))?;
     let gas_used = instance.get_gas_left();
@@ -313,7 +328,6 @@ fn instantiate_contract(
 fn vm_error(err: impl std::fmt::Display) -> PartialVMError {
     PartialVMError::new(StatusCode::VM_EXTENSION_ERROR).with_message(format!("{}", err))
 }
-
 
 /***************************************************************************************************
  * module
