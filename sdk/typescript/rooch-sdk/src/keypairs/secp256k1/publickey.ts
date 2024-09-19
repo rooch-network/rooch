@@ -87,6 +87,7 @@ export class Secp256k1PublicKey extends PublicKey<BitcoinAddress> {
       bech32m.encode(
         new BitcoinNetwork(network).bech32HRP(),
         [version].concat(bech32m.toWords(tweakedPubkey)),
+        false,
       ),
     )
   }

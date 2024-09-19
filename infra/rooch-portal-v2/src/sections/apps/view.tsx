@@ -24,7 +24,7 @@ const AppList: AppItemProps[] = [
     logoUrl: `${CONFIG.site.basePath}/logo/logo-single.svg`,
     profileUrl: `${CONFIG.site.basePath}/assets/apps/clicker-app.jpg`,
     type: 'Demo',
-    url: 'https://rooch-clicker.vercel.app',
+    url: 'https://clicker.rooch.io',
   },
 ];
 

@@ -7,7 +7,7 @@ use crate::server::rooch_server::RoochServer;
 use crate::service::aggregate_service::AggregateService;
 use crate::service::blocklist::{BlockListLayer, BlocklistConfig};
 use crate::service::error::ErrorHandler;
-use crate::service::routing::RpcRouter;
+use crate::service::metrics::ServiceMetrics;
 use crate::service::rpc_service::RpcService;
 use anyhow::{ensure, Error, Result};
 use axum::http::{HeaderValue, Method};
@@ -29,8 +29,6 @@ use rooch_genesis::RoochGenesis;
 use rooch_indexer::actor::indexer::IndexerActor;
 use rooch_indexer::actor::reader_indexer::IndexerReaderActor;
 use rooch_indexer::proxy::IndexerProxy;
-use rooch_open_rpc::Project;
-use rooch_open_rpc_spec_builder::rooch_rpc_doc;
 use rooch_pipeline_processor::actor::processor::PipelineProcessorActor;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_proposer::actor::messages::ProposeBlock;
@@ -47,6 +45,7 @@ use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::address::RoochAddress;
 use rooch_types::error::{GenesisError, RoochError};
 use rooch_types::rooch_network::BuiltinChainID;
+use rooch_types::service_type::ServiceType;
 use serde_json::json;
 use std::fmt::Debug;
 use std::net::SocketAddr;
@@ -117,7 +116,7 @@ impl Service {
 
 pub struct RpcModuleBuilder {
     module: RpcModule<()>,
-    rpc_doc: Project,
+    // rpc_doc: Project,
 }
 
 impl Default for RpcModuleBuilder {
@@ -130,7 +129,7 @@ impl RpcModuleBuilder {
     pub fn new() -> Self {
         Self {
             module: RpcModule::new(()),
-            rpc_doc: rooch_rpc_doc(env!("CARGO_PKG_VERSION")),
+            // rpc_doc: rooch_rpc_doc(env!("CARGO_PKG_VERSION")),
         }
     }
 
@@ -422,6 +421,20 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         .allow_origin(acl)
         .allow_headers([axum::http::header::CONTENT_TYPE]);
 
+    let (shutdown_tx, mut governor_rx): (broadcast::Sender<()>, broadcast::Receiver<()>) =
+        broadcast::channel(16);
+
+    let traffic_burst_size: u32;
+    let traffic_per_second: u64;
+
+    if network.chain_id != BuiltinChainID::Local.chain_id() {
+        traffic_burst_size = opt.traffic_burst_size.unwrap_or(100);
+        traffic_per_second = opt.traffic_per_second.unwrap_or(1);
+    } else {
+        traffic_burst_size = opt.traffic_burst_size.unwrap_or(5000);
+        traffic_per_second = opt.traffic_per_second.unwrap_or(1);
+    };
+
     // init limit
     // Allow bursts with up to x requests per IP address
     // and replenishes one element every x seconds
@@ -429,8 +442,8 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     // and thus we need a static reference to it
     let governor_conf = Arc::new(
         GovernorConfigBuilder::default()
-            .per_second(opt.traffic_per_second.unwrap_or(1))
-            .burst_size(opt.traffic_burst_size.unwrap_or(100))
+            .per_second(traffic_per_second)
+            .burst_size(traffic_burst_size)
             .use_headers()
             .error_handler(move |error1| ErrorHandler::default().0(error1))
             .finish()
@@ -439,8 +452,6 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
 
     let governor_limiter = governor_conf.limiter().clone();
     let interval = Duration::from_secs(60);
-    let (shutdown_tx, mut governor_rx): (broadcast::Sender<()>, broadcast::Receiver<()>) =
-        broadcast::channel(16);
 
     // a separate background task to clean up
     std::thread::spawn(move || loop {
@@ -460,7 +471,6 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let middleware = tower::ServiceBuilder::new()
         .layer(TraceLayer::new_for_http())
         .layer(cors)
-        // .layer_fn(RpcLogger)
         .layer(BlockListLayer {
             config: blocklist_config,
         })
@@ -486,14 +496,43 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
 
     let methods_names = rpc_module_builder.module.method_names().collect::<Vec<_>>();
 
-    let rpc_router = RpcRouter::new(rpc_module_builder.rpc_doc.method_routing.clone(), false);
-    let ser =
-        axum_router::JsonRpcService::new(rpc_module_builder.module.clone().into(), rpc_router);
+    let ser = axum_router::JsonRpcService::new(
+        rpc_module_builder.module.clone().into(),
+        ServiceMetrics::new(&prometheus_registry, &methods_names),
+    );
 
     let mut router = axum::Router::new();
-
-    // TODO: support ws or http & ws
-    router = router.route("/", axum::routing::post(axum_router::json_rpc_handler));
+    match opt.service_type {
+        ServiceType::Both => {
+            router = router
+                .route(
+                    "/",
+                    axum::routing::post(crate::axum_router::json_rpc_handler),
+                )
+                .route(
+                    "/",
+                    axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
+                )
+                .route(
+                    "/subscribe",
+                    axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
+                );
+        }
+        ServiceType::Http => {
+            router = router.route("/", axum::routing::post(axum_router::json_rpc_handler));
+        }
+        ServiceType::WebSocket => {
+            router = router
+                .route(
+                    "/",
+                    axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
+                )
+                .route(
+                    "/subscribe",
+                    axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
+                );
+        }
+    }
 
     let app = router.with_state(ser).layer(middleware);
 

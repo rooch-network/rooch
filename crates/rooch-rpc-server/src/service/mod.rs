@@ -9,3 +9,4 @@ pub mod rpc_service;
 pub mod routing;
 
 pub mod blocklist;
+pub mod metrics;
