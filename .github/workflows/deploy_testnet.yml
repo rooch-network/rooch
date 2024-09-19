@@ -68,7 +68,7 @@ jobs:
           sudo apt install -y --no-install-recommends openssh-server
           BRANCH=$(basename ${{ github.ref }})
           ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST \
-            "cd /root/rooch && git fetch origin && git checkout -B $BRANCH origin/$BRANCH || git checkout $BRANCH && bash scripts/deploy_rooch.sh \
+            "cd /root/rooch && git fetch origin && git checkout -B $BRANCH origin/$BRANCH || git checkout $BRANCH && bash scripts/deploy_rooch_testnet.sh \
             '${{ env.REF }}' \
             '${{ secrets.BTC_TEST_RPC_URL }}' \
             '${{ secrets.BTC_TEST_RPC_PWD }}' \

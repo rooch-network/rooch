@@ -23,6 +23,7 @@ pub struct DAServerOpenDAActor {
 }
 
 pub const DEFAULT_MAX_SEGMENT_SIZE: u64 = 4 * 1024 * 1024;
+pub const DEFAULT_MAX_RETRY_TIMES: usize = 4;
 
 impl Actor for DAServerOpenDAActor {}
 
@@ -166,7 +167,7 @@ async fn new_retry_operator(
     max_retry_times: Option<usize>,
 ) -> Result<Operator> {
     let mut op = Operator::via_map(scheme, config)?;
-    let max_times = max_retry_times.unwrap_or(4);
+    let max_times = max_retry_times.unwrap_or(DEFAULT_MAX_RETRY_TIMES);
     op = op
         .layer(RetryLayer::new().with_max_times(max_times))
         .layer(LoggingLayer::default());
