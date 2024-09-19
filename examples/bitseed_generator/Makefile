@@ -9,10 +9,9 @@ test:
 	cargo test
 
 optimize: build
-	docker run -u 1000 --rm -v "$(CURDIR)":/code \
-		--entrypoint /code/scripts/optimize.sh \
-		cosmwasm/optimizer:0.16.0 .
+	@mkdir -p ./artifacts
+	@wasm-opt -Os --signext-lowering "./target/wasm32-unknown-unknown/release/bitseed_generator.wasm" -o "./artifacts/bitseed_generator_opt.wasm"
+	@wasm-snip --snip-rust-fmt-code --snip-rust-panicking-code --skip-producers-section ./artifacts/bitseed_generator_opt.wasm -o ./artifacts/bitseed_generator_snip.wasm
 
 clean:
 	rm -rf ./artifacts && rm -rf ./target
-
