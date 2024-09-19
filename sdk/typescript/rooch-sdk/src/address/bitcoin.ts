@@ -44,11 +44,11 @@ export class BitcoinNetwork {
 
   static fromBech32Prefix(prefix: string) {
     switch (prefix) {
-      case 'bc' || 'BC':
+      case 'bc':
         return new BitcoinNetwork(BitcoinNetowkType.Bitcoin)
-      case 'tb' || 'TB':
+      case 'tb':
         return new BitcoinNetwork(BitcoinNetowkType.Testnet)
-      case 'bcrt' || 'bcrt':
+      case 'bcrt':
         return new BitcoinNetwork(BitcoinNetowkType.Regtest)
       default:
         return undefined
@@ -101,7 +101,8 @@ export class BitcoinAddress extends ThirdPartyAddress implements Address {
           const hrp = new BitcoinNetwork(network).bech32HRP()
           const words = bech32.toWords(Buffer.from(this.bytes.slice(2)))
           words.unshift(version)
-          this.rawAddress = version === 0 ? bech32.encode(hrp, words) : bech32m.encode(hrp, words)
+          this.rawAddress =
+            version === 0 ? bech32.encode(hrp, words, false) : bech32m.encode(hrp, words, false)
       }
     } else {
       let info = this.decode()
@@ -141,7 +142,7 @@ export class BitcoinAddress extends ThirdPartyAddress implements Address {
   }
 
   decode() {
-    let input = this.rawAddress
+    let input = this.rawAddress as `${string}1${string}`
     if (input.length < 14 || input.length > 74) throw new Error('Invalid address length')
 
     const bech32_network = (() => {

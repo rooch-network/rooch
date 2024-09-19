@@ -17,7 +17,7 @@ export class RoochAddress implements Address {
       if (isHex(address)) {
         this.address = fromHEX(address)
       } else {
-        this.address = bech32m.fromWords(bech32m.decode(address).words)
+        this.address = bech32m.fromWords(bech32m.decode(address as `${string}1${string}`).words)
       }
     } else {
       this.address = address
@@ -37,6 +37,6 @@ export class RoochAddress implements Address {
   }
 
   toBech32Address(): string {
-    return bech32m.encode(ROOCH_BECH32_PREFIX, bech32m.toWords(this.address))
+    return bech32m.encode(ROOCH_BECH32_PREFIX, bech32m.toWords(this.address), false)
   }
 }
