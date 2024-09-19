@@ -3,9 +3,9 @@ on:
   workflow_dispatch:
     inputs:
       tagName:
-        description: 'Tag Name to Checkout'
+        description: 'Tag or branch to deploy'
+        default: 'main'
         required: true
-        default: 'latest'
   # workflow_run:
   #   workflows: ["Build Docker And Deploy Seed"]
   #   types:
@@ -13,7 +13,7 @@ on:
 
 jobs:
   deploy-rooch-mainnet:
-    name: deploy rooch mainnet
+    name: Deploy Rooch Mainnet
     runs-on: self-hosted
     steps:
       - name: Deploy to GCP MAINNET VM
@@ -26,5 +26,11 @@ jobs:
           chmod 600 private_key.pem
           sudo apt update
           sudo apt install -y --no-install-recommends openssh-server
-          ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST bash -c "'sleep 30' && && docker image prune -a -f && docker ps | grep rooch | awk '{print \$1}' | xargs -r docker stop && docker ps -a | grep rooch | awk '{print \$1}' | xargs -r docker rm -f && docker pull 'ghcr.io/rooch-network/rooch:${{ github.event.inputs.tagName }}' && docker run -d -v /data:/root -p 6767:6767 'ghcr.io/rooch-network/rooch:${{ github.event.inputs.tagName }}' server start -n main --btc-rpc-url '${{secrets.BTC_MAIN_RPC_URL}}' --btc-rpc-username rooch-main --btc-rpc-password '${{secrets.BTC_MAIN_RPC_PWD}}' --btc-start-block-height 0 --btc-end-block-height 767420 --data-import-mode 1"
-
+          BRANCH=$(basename ${{ github.ref }})
+          ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST \
+            "cd /root/rooch && git fetch origin && git checkout -B $BRANCH origin/$BRANCH || git checkout $BRANCH && bash scripts/deploy_rooch_mainnet.sh \
+            '${{ env.REF }}' \
+            '${{ secrets.BTC_MAIN_RPC_URL }}' \
+            '${{ secrets.BTC_MAIN_RPC_PWD }}' \
+            '${{ secrets.OPENDA_GCP_MAINNET_BUCKET }}' \
+            '${{ secrets.OPENDA_GCP_MAINNET_CREDENTIAL }}'"

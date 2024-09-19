@@ -32,7 +32,6 @@ impl Backend {
         }
     }
 
-    // TODO return segment id, height, commitment
     pub async fn submit(&self, segment: Box<dyn Segment + Send>) -> Result<SubmitBackendResult> {
         let data = segment.to_bytes();
         let blob = Blob::new(self.namespace, data).unwrap();
@@ -53,9 +52,8 @@ impl Backend {
             }),
             Err(e) => {
                 log::warn!(
-                    "failed to submit segment to celestia node, chunk: {}, segment: {}, commitment: {:?}, error:{:?}",
-                    segment_id.chunk_id,
-                    segment_id.segment_number,
+                    "failed to submit segment to celestia node, segment_id: {:?}, commitment: {:?}, error:{:?}",
+                    segment_id,
                     blob.commitment,
                     e,
                 );

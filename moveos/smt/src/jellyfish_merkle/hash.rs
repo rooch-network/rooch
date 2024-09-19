@@ -24,11 +24,11 @@ sha256t_hash_newtype! {
 #[cfg(any(test, feature = "fuzzing"))]
 impl Arbitrary for SMTNodeHash {
     type Parameters = ();
-    type Strategy = BoxedStrategy<Self>;
-
     fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
         any::<[u8; 32]>().prop_map(SMTNodeHash::new).boxed()
     }
+
+    type Strategy = BoxedStrategy<Self>;
 }
 
 pub(crate) fn merkle_hash(left: SMTNodeHash, right: SMTNodeHash) -> SMTNodeHash {

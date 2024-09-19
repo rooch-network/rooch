@@ -76,7 +76,7 @@ impl Handler<ProposeBlock> for ProposerActor {
                 log::debug!("[ProposeBlock] no transaction to propose block");
             }
         };
-        //TODO submit to the on-chain SCC contract use the proposer key
+        // TODO submit to the on-chain SCC contract use the proposer key
         let _proposer_key = &self.proposer_key;
         let batch_size = block.map(|v| v.batch_size).unwrap_or(0u64);
         self.metrics

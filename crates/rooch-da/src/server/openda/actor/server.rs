@@ -12,26 +12,21 @@ use rooch_config::config::retrieve_map_config_value;
 use std::collections::HashMap;
 use std::path::Path;
 
-use crate::chunk::DABatchV0;
+use crate::chunk::{Chunk, ChunkV0};
 use rooch_config::da_config::{DAServerOpenDAConfig, OpenDAScheme};
 
 use crate::messages::PutBatchInternalDAMessage;
-use crate::segment::{Segment, SegmentID, SegmentV0};
 
 pub struct DAServerOpenDAActor {
     max_segment_size: usize,
     operator: Operator,
 }
 
-// TODO get request and response
-// 1. get by block number
-// 2. get by batch hash
-// 3. pull by stream
-//
+pub const DEFAULT_MAX_SEGMENT_SIZE: u64 = 4 * 1024 * 1024;
+pub const DEFAULT_MAX_RETRY_TIMES: usize = 4;
 
 impl Actor for DAServerOpenDAActor {}
 
-// TODO add FEC get for SDC protection (wrong response attacks)
 impl DAServerOpenDAActor {
     pub async fn new(cfg: &DAServerOpenDAConfig) -> Result<DAServerOpenDAActor> {
         let mut config = cfg.clone();
@@ -114,55 +109,36 @@ impl DAServerOpenDAActor {
         };
 
         Ok(Self {
-            max_segment_size: cfg.max_segment_size.unwrap_or(4 * 1024 * 1024) as usize,
+            max_segment_size: cfg.max_segment_size.unwrap_or(DEFAULT_MAX_SEGMENT_SIZE) as usize,
             operator: op,
         })
     }
 
-    pub async fn pub_batch(&self, batch: PutBatchInternalDAMessage) -> Result<()> {
-        // TODO using chunk builder to make segments:
-        // 1. persist batch into buffer then return ok
-        // 2. collect batch for better compression ratio
-        // 3. split chunk into segments
-        // 4. submit segments to celestia node
-        // 5. record segment id in order
-        // 6. clean up batch buffer
-
-        // TODO more chunk version supports
-        let chunk = DABatchV0 {
-            version: 0,
-            block_number: batch.batch.block_number,
-            batch_hash: batch.batch.batch_hash,
-            data: batch.batch.data,
-        };
-        let chunk_bytes = bcs::to_bytes(&chunk).unwrap();
-        let segs = chunk_bytes.chunks(self.max_segment_size);
-        let total = segs.len();
-
-        // TODO explain why block number is a good idea: easy to get next block number for segments, then we could request chunk by block number
-        let chunk_id = batch.batch.block_number;
-        let segments = segs
-            .enumerate()
-            .map(|(i, data)| {
-                SegmentV0 {
-                    id: SegmentID {
-                        chunk_id,
-                        segment_number: i as u64,
-                    },
-                    is_last: i == total - 1, // extra info overhead is much smaller than max_block_size - max_segment_size
-                    data_checksum: 0,
-                    checksum: 0,
-                    data: data.to_vec(),
-                }
-            })
-            .collect::<Vec<_>>();
-
+    pub async fn pub_batch(&self, batch_msg: PutBatchInternalDAMessage) -> Result<()> {
+        let chunk: ChunkV0 = batch_msg.batch.into();
+        let segments = chunk.to_segments(self.max_segment_size);
         for segment in segments {
             let bytes = segment.to_bytes();
-
-            // TODO record ok segment in order
-            // TODO segment indexer trait (local file, db, etc)
-            self.operator.write(&segment.id.to_string(), bytes).await?; // TODO retry logic
+            match self
+                .operator
+                .write(&segment.get_id().to_string(), bytes)
+                .await
+            {
+                Ok(_) => {
+                    log::info!(
+                        "submitted segment to open-da node, segment: {:?}",
+                        segment.get_id(),
+                    );
+                }
+                Err(e) => {
+                    log::warn!(
+                        "failed to submit segment to open-da node, segment_id: {:?}, error:{:?}",
+                        segment.get_id(),
+                        e,
+                    );
+                    return Err(e.into());
+                }
+            }
         }
 
         Ok(())
@@ -191,7 +167,7 @@ async fn new_retry_operator(
     max_retry_times: Option<usize>,
 ) -> Result<Operator> {
     let mut op = Operator::via_map(scheme, config)?;
-    let max_times = max_retry_times.unwrap_or(4);
+    let max_times = max_retry_times.unwrap_or(DEFAULT_MAX_RETRY_TIMES);
     op = op
         .layer(RetryLayer::new().with_max_times(max_times))
         .layer(LoggingLayer::default());
