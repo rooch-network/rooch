@@ -9,7 +9,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Block {
     /// The index if the block
-    //TODO should we use the U256?
     pub block_number: u128,
     /// How many transactions in the block
     pub batch_size: u64,

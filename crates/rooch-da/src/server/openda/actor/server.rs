@@ -12,11 +12,10 @@ use rooch_config::config::retrieve_map_config_value;
 use std::collections::HashMap;
 use std::path::Path;
 
-use crate::chunk::DABatchV0;
+use crate::chunk::{Chunk, ChunkV0};
 use rooch_config::da_config::{DAServerOpenDAConfig, OpenDAScheme};
 
 use crate::messages::PutBatchInternalDAMessage;
-use crate::segment::{Segment, SegmentID, SegmentV0};
 
 pub struct DAServerOpenDAActor {
     max_segment_size: usize,
@@ -119,50 +118,14 @@ impl DAServerOpenDAActor {
         })
     }
 
-    pub async fn pub_batch(&self, batch: PutBatchInternalDAMessage) -> Result<()> {
-        // TODO using chunk builder to make segments:
-        // 1. persist batch into buffer then return ok
-        // 2. collect batch for better compression ratio
-        // 3. split chunk into segments
-        // 4. submit segments to celestia node
-        // 5. record segment id in order
-        // 6. clean up batch buffer
-
-        // TODO more chunk version supports
-        let chunk = DABatchV0 {
-            version: 0,
-            block_number: batch.batch.block_number,
-            batch_hash: batch.batch.batch_hash,
-            data: batch.batch.data,
-        };
-        let chunk_bytes = bcs::to_bytes(&chunk).unwrap();
-        let segs = chunk_bytes.chunks(self.max_segment_size);
-        let total = segs.len();
-
-        // TODO explain why block number is a good idea: easy to get next block number for segments, then we could request chunk by block number
-        let chunk_id = batch.batch.block_number;
-        let segments = segs
-            .enumerate()
-            .map(|(i, data)| {
-                SegmentV0 {
-                    id: SegmentID {
-                        chunk_id,
-                        segment_number: i as u64,
-                    },
-                    is_last: i == total - 1, // extra info overhead is much smaller than max_block_size - max_segment_size
-                    data_checksum: 0,
-                    checksum: 0,
-                    data: data.to_vec(),
-                }
-            })
-            .collect::<Vec<_>>();
-
+    pub async fn pub_batch(&self, batch_msg: PutBatchInternalDAMessage) -> Result<()> {
+        let chunk: ChunkV0 = batch_msg.batch.into();
+        let segments = chunk.to_segments(self.max_segment_size);
         for segment in segments {
             let bytes = segment.to_bytes();
-
-            // TODO record ok segment in order
-            // TODO segment indexer trait (local file, db, etc)
-            self.operator.write(&segment.id.to_string(), bytes).await?; // TODO retry logic
+            self.operator
+                .write(&segment.get_id().to_string(), bytes)
+                .await?;
         }
 
         Ok(())

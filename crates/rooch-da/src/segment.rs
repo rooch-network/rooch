@@ -4,38 +4,14 @@
 use std::fmt;
 use std::str::FromStr;
 
+use crate::chunk::ChunkVersion;
 use serde::Serialize;
 use xxhash_rust::xxh3::xxh3_64;
 
-#[derive(Debug, PartialEq, Eq)]
-pub enum SegmentVersion {
-    V0,
-    Unknown(u8),
-}
-
-impl From<u8> for SegmentVersion {
-    fn from(num: u8) -> Self {
-        match num {
-            0 => SegmentVersion::V0,
-            // ...
-            _ => Self::Unknown(num),
-        }
-    }
-}
-
-impl From<SegmentVersion> for u8 {
-    fn from(version: SegmentVersion) -> Self {
-        match version {
-            SegmentVersion::V0 => 0,
-            SegmentVersion::Unknown(num) => num,
-        }
-    }
-}
-
-// `Segment` is the basic unit of storage in DA server.
+// Segment is the unit submitted to DA backend, designed to comply with the block size restrictions of the DA backend.
 pub trait Segment: Send {
     fn to_bytes(&self) -> Vec<u8>;
-    fn get_version(&self) -> SegmentVersion;
+    fn get_version(&self) -> ChunkVersion;
     fn get_id(&self) -> SegmentID;
 }
 
@@ -97,7 +73,7 @@ impl SegmentV0 {
 impl Segment for SegmentV0 {
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(SEGMENT_V0_DATA_OFFSET + self.data.len());
-        bytes.push(SegmentVersion::V0.into()); // version
+        bytes.push(ChunkVersion::V0.into()); // version
         bytes.extend_from_slice(&self.id.chunk_id.to_le_bytes());
         bytes.extend_from_slice(&self.id.segment_number.to_le_bytes());
         bytes.push(self.is_last as u8);
@@ -109,8 +85,8 @@ impl Segment for SegmentV0 {
         bytes
     }
 
-    fn get_version(&self) -> SegmentVersion {
-        SegmentVersion::V0
+    fn get_version(&self) -> ChunkVersion {
+        ChunkVersion::V0
     }
 
     fn get_id(&self) -> SegmentID {
@@ -118,21 +94,20 @@ impl Segment for SegmentV0 {
     }
 }
 
-pub fn get_data_offset(version: SegmentVersion) -> usize {
+pub fn get_data_offset(version: ChunkVersion) -> usize {
     match version {
-        SegmentVersion::V0 => SEGMENT_V0_DATA_OFFSET,
-        SegmentVersion::Unknown(_) => panic!("unsupported segment version"),
+        ChunkVersion::V0 => SEGMENT_V0_DATA_OFFSET,
+        ChunkVersion::Unknown(_) => panic!("unsupported segment version"),
     }
 }
 
-// falling back to Result here to cater for corrupted data etc
 pub fn segment_from_bytes(bytes: &[u8]) -> anyhow::Result<Box<dyn Segment>> {
     let version = bytes[0];
 
-    match SegmentVersion::from(version) {
-        SegmentVersion::V0 => Ok(Box::new(SegmentV0::from_bytes(bytes)?)),
+    match ChunkVersion::from(version) {
+        ChunkVersion::V0 => Ok(Box::new(SegmentV0::from_bytes(bytes)?)),
         // ...
-        SegmentVersion::Unknown(_) => Err(anyhow::anyhow!("unsupported segment version")),
+        ChunkVersion::Unknown(_) => Err(anyhow::anyhow!("unsupported segment version")),
     }
 }
 
@@ -207,7 +182,7 @@ mod tests {
             let version = segment.get_version();
 
             match version {
-                SegmentVersion::V0 => {
+                ChunkVersion::V0 => {
                     let recovered_segment =
                         SegmentV0::from_bytes(&bytes).expect("successful deserialization");
                     segment_v0.checksum = recovered_segment.checksum;
