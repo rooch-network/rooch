@@ -1,11 +1,11 @@
 name: Deploy MAINNET Seed
+
 on:
   workflow_dispatch:
     inputs:
-      tagName:
+      ref:
         description: 'Tag or branch to deploy'
         default: 'main'
-        required: true
   # workflow_run:
   #   workflows: ["Build Docker And Deploy Seed"]
   #   types:
