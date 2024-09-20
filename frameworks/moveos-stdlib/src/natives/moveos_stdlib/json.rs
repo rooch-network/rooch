@@ -294,17 +294,23 @@ fn native_from_json(
 }
 
 #[derive(Debug, Clone)]
-pub struct ToBytesGasParameters {
-    pub base: InternalGas,
-    pub per_byte_in_str: InternalGasPerByte,
+pub struct ToBytesGasParametersOption {
+    pub base: Option<InternalGas>,
+    pub per_byte_in_str: Option<InternalGasPerByte>,
 }
 
-impl ToBytesGasParameters {
+impl ToBytesGasParametersOption {
     pub fn zeros() -> Self {
         Self {
-            base: 0.into(),
-            per_byte_in_str: 0.into(),
+            base: Some(0.into()),
+            per_byte_in_str: Some(0.into()),
         }
+    }
+}
+
+impl ToBytesGasParametersOption {
+    pub fn is_empty(&self) -> bool {
+        self.base.is_none() || self.per_byte_in_str.is_none()
     }
 }
 
@@ -547,7 +553,7 @@ fn serialize_move_fields_to_json(
 
 #[inline]
 fn native_to_json(
-    gas_params: &ToBytesGasParameters,
+    gas_params: &ToBytesGasParametersOption,
     context: &mut NativeContext,
     mut ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -555,7 +561,12 @@ fn native_to_json(
     debug_assert_eq!(ty_args.len(), 1);
     debug_assert_eq!(args.len(), 1);
 
-    let mut cost = gas_params.base;
+    let gas_base = gas_params.base.expect("base gas is missing");
+    let per_byte_in_str = gas_params
+        .per_byte_in_str
+        .expect("per byte in str gas is missing");
+
+    let mut cost = gas_base;
 
     // pop type and value
     let ref_to_val = pop_arg!(args, Reference);
@@ -583,7 +594,7 @@ fn native_to_json(
     match serialize_move_value_to_json(&annotated_layout, &annotated_move_val) {
         Ok(json_value) => {
             let json_string = json_value.to_string();
-            cost += gas_params.per_byte_in_str * NumBytes::new(json_string.len() as u64);
+            cost += per_byte_in_str * NumBytes::new(json_string.len() as u64);
 
             Ok(NativeResult::ok(
                 cost,
@@ -608,29 +619,31 @@ fn native_to_json(
 #[derive(Debug, Clone)]
 pub struct GasParameters {
     pub from_bytes: FromBytesGasParameters,
-    pub to_bytes: ToBytesGasParameters,
+    pub to_bytes: ToBytesGasParametersOption,
 }
 
 impl GasParameters {
     pub fn zeros() -> Self {
         Self {
             from_bytes: FromBytesGasParameters::zeros(),
-            to_bytes: ToBytesGasParameters::zeros(),
+            to_bytes: ToBytesGasParametersOption::zeros(),
         }
     }
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
-    let natives = [
-        (
-            "native_from_json",
-            make_native(gas_params.from_bytes, native_from_json),
-        ),
-        (
+    let mut natives = [(
+        "native_from_json",
+        make_native(gas_params.from_bytes, native_from_json),
+    )]
+    .to_vec();
+
+    if !gas_params.to_bytes.is_empty() {
+        natives.push((
             "native_to_json",
             make_native(gas_params.to_bytes, native_to_json),
-        ),
-    ];
+        ));
+    }
 
     make_module_natives(natives)
 }
