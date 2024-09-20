@@ -10,3 +10,4 @@ packages:
   - 'sdk/typescript/bitseed-sdk'
   - 'sdk/typescript/test-suite'
   - 'docs/**'
+  - 'examples-web'
