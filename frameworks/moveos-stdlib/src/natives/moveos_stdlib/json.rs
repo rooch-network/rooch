@@ -20,7 +20,7 @@ use move_core_types::language_storage::StructTag;
 use move_core_types::language_storage::TypeTag;
 use move_core_types::u256::U256;
 use move_core_types::value::MoveStruct;
-use move_core_types::value::MoveValue as CoreMoveValue;
+use move_core_types::value::MoveValue;
 use move_core_types::value::{MoveFieldLayout, MoveStructLayout, MoveTypeLayout};
 use move_core_types::vm_status::StatusCode;
 
@@ -30,7 +30,7 @@ use move_vm_types::{
     loaded_data::runtime_types::Type,
     natives::function::NativeResult,
     pop_arg,
-    values::{values_impl::Reference, Struct, Value as MoveValue, Vector},
+    values::{values_impl::Reference, Struct, Value, Vector},
 };
 
 use moveos_types::addresses::MOVE_STD_ADDRESS;
@@ -50,13 +50,13 @@ fn parse_struct_value_from_bytes(
     context: &NativeContext,
 ) -> Result<Struct> {
     let json_str = std::str::from_utf8(&bytes)?;
-    let json_obj: serde_json::Value = serde_json::from_str(json_str)?;
+    let json_obj: JsonValue = serde_json::from_str(json_str)?;
     parse_struct_value_from_json(layout, &json_obj, context)
 }
 
 fn parse_struct_value_from_json(
     layout: &MoveStructLayout,
-    json_value: &serde_json::Value,
+    json_value: &JsonValue,
     context: &NativeContext,
 ) -> Result<Struct> {
     if let MoveStructLayout::WithTypes {
@@ -68,7 +68,7 @@ fn parse_struct_value_from_json(
             let str_value = json_value
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("Invalid string value"))?;
-            Ok(Struct::pack(vec![MoveValue::vector_u8(
+            Ok(Struct::pack(vec![Value::vector_u8(
                 str_value.as_bytes().to_vec(),
             )]))
         } else if struct_type.is_ascii_string(&MOVE_STD_ADDRESS) {
@@ -78,18 +78,18 @@ fn parse_struct_value_from_json(
             if !str_value.is_ascii() {
                 return Err(anyhow::anyhow!("Invalid ascii string value"));
             }
-            Ok(Struct::pack(vec![MoveValue::vector_u8(
+            Ok(Struct::pack(vec![Value::vector_u8(
                 str_value.as_bytes().to_vec(),
             )]))
         } else if struct_type == &SimpleMap::<MoveString, MoveString>::struct_tag() {
             let key_value_pairs = json_obj_to_key_value_pairs(json_value)?;
             let mut key_values = Vec::new();
             for (key, value) in key_value_pairs {
-                key_values.push(MoveValue::struct_(Struct::pack(vec![
-                    MoveValue::struct_(Struct::pack(vec![MoveValue::vector_u8(
+                key_values.push(Value::struct_(Struct::pack(vec![
+                    Value::struct_(Struct::pack(vec![Value::vector_u8(
                         key.as_bytes().to_vec(),
                     )])),
-                    MoveValue::struct_(Struct::pack(vec![MoveValue::vector_u8(
+                    Value::struct_(Struct::pack(vec![Value::vector_u8(
                         value.as_bytes().to_vec(),
                     )])),
                 ])));
@@ -99,14 +99,14 @@ fn parse_struct_value_from_json(
         } else {
             let field_values = fields
                 .iter()
-                .map(|field| -> Result<MoveValue> {
+                .map(|field| -> Result<Value> {
                     let name = field.name.as_str();
                     let json_field = json_value.get(name).ok_or_else(|| {
                         anyhow::anyhow!("type: {}, Missing field {}", struct_type, name)
                     })?;
                     parse_move_value_from_json(&field.layout, json_field, context)
                 })
-                .collect::<Result<Vec<MoveValue>>>()?;
+                .collect::<Result<Vec<Value>>>()?;
             Ok(Struct::pack(field_values))
         }
     } else {
@@ -115,15 +115,15 @@ fn parse_struct_value_from_json(
 }
 fn parse_move_value_from_json(
     layout: &MoveTypeLayout,
-    json_value: &serde_json::Value,
+    json_value: &JsonValue,
     context: &NativeContext,
-) -> Result<MoveValue> {
+) -> Result<Value> {
     match layout {
         MoveTypeLayout::Bool => {
             let bool_value = json_value
                 .as_bool()
                 .ok_or_else(|| anyhow::anyhow!("Invalid bool value"))?;
-            Ok(MoveValue::bool(bool_value))
+            Ok(Value::bool(bool_value))
         }
         MoveTypeLayout::U8 => {
             let u64_value = json_value
@@ -132,20 +132,20 @@ fn parse_move_value_from_json(
             if u64_value > (u8::MAX as u64) {
                 return Err(anyhow::anyhow!("Invalid u8 value"));
             }
-            Ok(MoveValue::u8(u64_value as u8))
+            Ok(Value::u8(u64_value as u8))
         }
         MoveTypeLayout::U64 => {
             let u64_value = json_value
                 .as_u64()
                 .ok_or_else(|| anyhow::anyhow!("Invalid u64 value"))?;
-            Ok(MoveValue::u64(u64_value))
+            Ok(Value::u64(u64_value))
         }
         MoveTypeLayout::U128 => {
             let u128_value = json_value
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("Invalid u128 value"))?
                 .parse::<u128>()?;
-            Ok(MoveValue::u128(u128_value))
+            Ok(Value::u128(u128_value))
         }
         MoveTypeLayout::Address => {
             let addr_str = json_value
@@ -153,7 +153,7 @@ fn parse_move_value_from_json(
                 .ok_or_else(|| anyhow::anyhow!("Invalid address value"))?;
             let addr = AccountAddress::from_hex_literal(addr_str)
                 .map_err(|_| anyhow::anyhow!("Invalid address value"))?;
-            Ok(MoveValue::address(addr))
+            Ok(Value::address(addr))
         }
         MoveTypeLayout::Vector(item_layout) => {
             let vec_value = json_value
@@ -169,7 +169,7 @@ fn parse_move_value_from_json(
         }
         MoveTypeLayout::Struct(struct_layout) => {
             let struct_value = parse_struct_value_from_json(struct_layout, json_value, context)?;
-            Ok(MoveValue::struct_(struct_value))
+            Ok(Value::struct_(struct_value))
         }
         MoveTypeLayout::Signer => Err(anyhow::anyhow!("Do not support Signer type")),
         MoveTypeLayout::U16 => {
@@ -179,7 +179,7 @@ fn parse_move_value_from_json(
             if u64_value > (u16::MAX as u64) {
                 return Err(anyhow::anyhow!("Invalid u16 value"));
             }
-            Ok(MoveValue::u16(u64_value as u16))
+            Ok(Value::u16(u64_value as u16))
         }
         MoveTypeLayout::U32 => {
             let u64_value = json_value
@@ -188,7 +188,7 @@ fn parse_move_value_from_json(
             if u64_value > (u32::MAX as u64) {
                 return Err(anyhow::anyhow!("Invalid u32 value"));
             }
-            Ok(MoveValue::u32(u64_value as u32))
+            Ok(Value::u32(u64_value as u32))
         }
         MoveTypeLayout::U256 => {
             let u256_str = json_value
@@ -196,21 +196,21 @@ fn parse_move_value_from_json(
                 .ok_or_else(|| anyhow::anyhow!("Invalid u256 value"))?;
             let u256_value =
                 U256::from_str(u256_str).map_err(|_| anyhow::anyhow!("Invalid u256 value"))?;
-            Ok(MoveValue::u256(u256_value))
+            Ok(Value::u256(u256_value))
         }
     }
 }
 
-fn json_obj_to_key_value_pairs(json_obj: &serde_json::Value) -> Result<Vec<(String, String)>> {
-    if let serde_json::Value::Object(obj) = json_obj {
+fn json_obj_to_key_value_pairs(json_obj: &JsonValue) -> Result<Vec<(String, String)>> {
+    if let JsonValue::Object(obj) = json_obj {
         let mut key_value_pairs = Vec::new();
         for (key, value) in obj.iter() {
             let key = key.to_string();
             let value = match value {
-                serde_json::Value::String(s) => s.to_string(),
-                serde_json::Value::Number(n) => n.to_string(),
-                serde_json::Value::Bool(b) => b.to_string(),
-                serde_json::Value::Null => "null".to_string(),
+                JsonValue::String(s) => s.to_string(),
+                JsonValue::Number(n) => n.to_string(),
+                JsonValue::Bool(b) => b.to_string(),
+                JsonValue::Null => "null".to_string(),
                 //convert array and object to string
                 value => value.to_string(),
             };
@@ -245,7 +245,7 @@ fn native_from_json(
     gas_params: &FromBytesGasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
-    mut args: VecDeque<MoveValue>,
+    mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     debug_assert_eq!(ty_args.len(), 1);
     debug_assert_eq!(args.len(), 1);
@@ -272,14 +272,11 @@ fn native_from_json(
         let result = match parse_struct_value_from_bytes(&struct_layout, bytes, context) {
             Ok(val) => {
                 //Pack the MoveOption Some
-                Struct::pack(vec![Vector::pack(
-                    type_param,
-                    vec![MoveValue::struct_(val)],
-                )
-                .map_err(|e| {
-                    PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-                        .with_message(format!("Failed to pack MoveOption: {:?}", e))
-                })?])
+                Struct::pack(vec![Vector::pack(type_param, vec![Value::struct_(val)])
+                    .map_err(|e| {
+                        PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+                            .with_message(format!("Failed to pack MoveOption: {:?}", e))
+                    })?])
             }
             Err(e) => {
                 debug!("Failed to parse struct_value: {:?}", e);
@@ -290,10 +287,7 @@ fn native_from_json(
                 })?])
             }
         };
-        Ok(NativeResult::ok(
-            cost,
-            smallvec![MoveValue::struct_(result)],
-        ))
+        Ok(NativeResult::ok(cost, smallvec![Value::struct_(result)]))
     } else {
         Ok(NativeResult::err(cost, E_TYPE_NOT_MATCH))
     }
@@ -314,11 +308,7 @@ impl ToBytesGasParameters {
     }
 }
 
-fn serialize_move_value_to_json(
-    layout: &MoveTypeLayout,
-    value: &CoreMoveValue,
-) -> Result<JsonValue> {
-    use CoreMoveValue as MoveValue;
+fn serialize_move_value_to_json(layout: &MoveTypeLayout, value: &MoveValue) -> Result<JsonValue> {
     use MoveTypeLayout as L;
 
     let json_value = match (layout, value) {
@@ -382,7 +372,6 @@ fn serialize_move_struct_to_json(
     layout: &MoveStructLayout,
     struct_: &MoveStruct,
 ) -> Result<JsonValue> {
-    use CoreMoveValue as MoveValue;
     use MoveStructLayout as L;
 
     let value = match (layout, struct_) {
@@ -544,7 +533,7 @@ fn is_std_option(struct_tag: &StructTag, move_std_addr: &AccountAddress) -> bool
 
 fn serialize_move_fields_to_json(
     layout_fields: &[MoveFieldLayout],
-    value_fields: &Vec<(Identifier, CoreMoveValue)>,
+    value_fields: &Vec<(Identifier, MoveValue)>,
 ) -> Result<JsonValue> {
     let mut fields = serde_json::Map::new();
 
@@ -561,7 +550,7 @@ fn native_to_json(
     gas_params: &ToBytesGasParameters,
     context: &mut NativeContext,
     mut ty_args: Vec<Type>,
-    mut args: VecDeque<MoveValue>,
+    mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     debug_assert_eq!(ty_args.len(), 1);
     debug_assert_eq!(args.len(), 1);
@@ -598,7 +587,7 @@ fn native_to_json(
 
             Ok(NativeResult::ok(
                 cost,
-                smallvec![MoveValue::vector_u8(json_string.into_bytes())],
+                smallvec![Value::vector_u8(json_string.into_bytes())],
             ))
         }
         Err(e) => {
