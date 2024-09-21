@@ -13,6 +13,13 @@ console.log(
 );
 
 const { networkConfig, useNetworkVariable, useNetworkVariables } = createNetworkConfig({
+  mainnet:{
+    url: "https://main-seed.rooch.network",
+    variables: {
+      roochOperatingAddress: ROOCH_NFT_OPERATING_ADDRESS,
+      mintAddress: ROOCH_MINT_OPERATING_ADDRESS,
+    },
+  },
   testnet: {
     url: getRoochNodeUrl('testnet'),
     variables: {
