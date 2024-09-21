@@ -16,12 +16,14 @@ use crate::chunk::{Chunk, ChunkV0};
 use rooch_config::da_config::{DAServerOpenDAConfig, OpenDAScheme};
 
 use crate::messages::PutBatchInternalDAMessage;
+use crate::segment::SegmentID;
 
 pub struct DAServerOpenDAActor {
     max_segment_size: usize,
     operator: Operator,
 }
 
+pub const CHUNK_V0_PREFIX: &str = "chunk_v0";
 pub const DEFAULT_MAX_SEGMENT_SIZE: u64 = 4 * 1024 * 1024;
 pub const DEFAULT_MAX_RETRY_TIMES: usize = 4;
 
@@ -119,9 +121,9 @@ impl DAServerOpenDAActor {
         let segments = chunk.to_segments(self.max_segment_size);
         for segment in segments {
             let bytes = segment.to_bytes();
+
             match self
-                .operator
-                .write(&segment.get_id().to_string(), bytes)
+                .write_segment(segment.get_id(), bytes, CHUNK_V0_PREFIX.to_string())
                 .await
             {
                 Ok(_) => {
@@ -136,11 +138,24 @@ impl DAServerOpenDAActor {
                         segment.get_id(),
                         e,
                     );
-                    return Err(e.into());
+                    return Err(e);
                 }
             }
         }
 
+        Ok(())
+    }
+
+    async fn write_segment(
+        &self,
+        segment_id: SegmentID,
+        segment_bytes: Vec<u8>,
+        prefix: String,
+    ) -> Result<()> {
+        let path = format!("{}/{}", prefix, segment_id);
+        let mut w = self.operator.writer(&path).await?;
+        w.write(segment_bytes).await?;
+        w.close().await?;
         Ok(())
     }
 }

@@ -97,6 +97,7 @@ impl Chunk for ChunkV0 {
                         segment_number: i as u64,
                     },
                     is_last: i == segments_count - 1, // extra info overhead is much smaller than max_block_size - max_segment_size
+                    data_len: data.len() as u64,
                     // *_checksum will be filled in to_bytes method of Segment
                     data_checksum: 0,
                     checksum: 0,
