@@ -7,75 +7,86 @@ module rooch_nursery::cosmwasm_std {
     use std::option::Option;
 
     use moveos_std::result::{Result, err};
+    use moveos_std::json;
+    use moveos_std::timestamp;
+    use moveos_std::tx_context;
 
     // Basic types
-    struct Coin {
+    #[data_struct]
+    struct Coin has store, copy, drop {
         denom: String,
         amount: u128,
     }
 
-    struct Addr {
-        address: String,
-    }
-
     // Environment information
-    struct BlockInfo {
+    #[data_struct]
+    struct BlockInfo has store, copy, drop {
         height: u64,
         time: u64,
         chain_id: String,
     }
 
-    struct TransactionInfo {
+    #[data_struct]
+    struct TransactionInfo has store, copy, drop {
         index: u64,
     }
 
-    struct ContractInfo {
-        address: Addr,
+    #[data_struct]
+    struct ContractInfo has store, copy, drop {
+        address: address,
     }
 
-    struct Env {
+    #[data_struct]
+    struct Env has store, copy, drop {
         block: BlockInfo,
         contract: ContractInfo,
         transaction: Option<TransactionInfo>,
     }
 
-    struct MessageInfo {
-        sender: Addr,
+    #[data_struct]
+    struct MessageInfo has store, copy, drop {
+        sender: address,
         funds: vector<Coin>,
     }
 
     // Response types
-    struct Attribute {
+    #[data_struct]
+    struct Attribute has store, copy, drop {
         key: String,
         value: String,
     }
 
-    struct Event {
+    #[data_struct]
+    struct Event has store, copy, drop {
         ty: String,
         attributes: vector<Attribute>
     }
 
-    struct Response {
+    #[data_struct]
+    struct Response has store, copy, drop {
         messages: vector<SubMsg>,
         attributes: vector<Attribute>,
         events: vector<Event>,
         data: vector<u8>
     }
 
-    struct SubMsg {
+    #[data_struct]
+    struct SubMsg has store, copy, drop {
         id: u64,
         msg: vector<u8>,
         gas_limit: Option<u64>,
         reply_on: ReplyOn,
     }
 
+    #[data_struct]
     struct Error has store, copy, drop {
         code: u32,
         message: String,
     }
 
     // Enums
-    struct ReplyOn {
+    #[data_struct]
+    struct ReplyOn has store, copy, drop {
         value: u8,
     }
 
@@ -115,10 +126,6 @@ module rooch_nursery::cosmwasm_std {
         Coin { denom, amount }
     }
 
-    public fun new_addr(address: String): Addr {
-        Addr { address }
-    }
-
     public fun new_sub_msg(id: u64, msg: vector<u8>, gas_limit: Option<u64>, reply_on: u8): SubMsg {
         SubMsg {
             id,
@@ -138,24 +145,13 @@ module rooch_nursery::cosmwasm_std {
 
     // Helper functions
 
-    public fun addr_to_string(addr: &Addr): String {
-        addr.address
-    }
-
-    public fun string_to_addr(s: String): Addr {
-        Addr { address: s }
-    }
-
-
     // Helper functions (these would need to be implemented)
-    public fun serialize_env(_env: &Env): vector<u8> {
-        // Implementation to serialize Env struct to bytes
-        vector::empty<u8>() // Placeholder
+    public fun serialize_env(env: &Env): vector<u8> {
+        json::to_json(env)
     }
 
-    public fun serialize_message_info(_info: &MessageInfo): vector<u8> {
-        // Implementation to serialize MessageInfo struct to bytes
-        vector::empty<u8>() // Placeholder
+    public fun serialize_message_info(info: &MessageInfo): vector<u8> {
+        json::to_json(info)
     }
 
     public fun deserialize_response(raw: vector<u8>): Response {
@@ -178,4 +174,32 @@ module rooch_nursery::cosmwasm_std {
         std::string::utf8(vector::empty()) // Placeholder
     }
 
+    public fun current_env(): Env {
+        let sender = tx_context::sender();
+        let sequence_number = tx_context::sequence_number();
+        let tx_hash = tx_context::tx_hash();
+
+        Env {
+            block: BlockInfo {
+                height: sequence_number,
+                time: timestamp::now_milliseconds(),
+                chain_id: std::string::utf8(b"rooch"),
+            },
+            contract: ContractInfo {
+                address: sender,
+            },
+            transaction: std::option::some(TransactionInfo {
+                index: 0, 
+            }),
+        }
+    }
+
+    public fun current_message_info(): MessageInfo {
+        let sender = tx_context::sender();
+        
+        MessageInfo {
+            sender: sender,
+            funds: vector::empty(), 
+        }
+    }
 }

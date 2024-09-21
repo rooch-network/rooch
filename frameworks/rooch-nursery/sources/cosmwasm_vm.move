@@ -6,6 +6,7 @@ module rooch_nursery::cosmwasm_vm {
     use std::option::{Self, Option};
     
     use moveos_std::features;
+    use moveos_std::json;
     use moveos_std::object::{ObjectID};
     use moveos_std::table::{Self, Table};
     use moveos_std::result::{Result, ok};
@@ -44,8 +45,14 @@ module rooch_nursery::cosmwasm_vm {
         }
     }
     
-    public fun call_instantiate(instance: &mut Instance, env: &Env, info: &MessageInfo, msg: vector<u8>): Result<Response, Error> {
-        let (raw_response, error_code) = native_call_instantiate_raw(instance.code_checksum, &mut instance.store, serialize_env(env), serialize_message_info(info), msg);
+    #[data_struct(T)]
+    public fun call_instantiate<T: drop>(instance: &mut Instance, env: &Env, info: &MessageInfo, msg: &T): Result<Response, Error> {
+        let store_handle = table::handle(&mut instance.store);
+        let env_bytes = json::to_json(env);
+        let info_bytes = json::to_json(info);
+        let msg_bytes = json::to_json(msg);
+
+        let (raw_response, error_code) = native_call_instantiate_raw(instance.code_checksum, store_handle, env_bytes, info_bytes, msg_bytes);
         if (error_code == 0) {
             ok(deserialize_response(raw_response))
         } else {
@@ -53,8 +60,14 @@ module rooch_nursery::cosmwasm_vm {
         }
     }
 
-    public fun call_execute(instance: &mut Instance, env: &Env, info: &MessageInfo, msg: vector<u8>): Result<Response, Error> {
-        let (raw_response, error_code) = native_call_execute_raw(instance.code_checksum, &mut instance.store, serialize_env(env), serialize_message_info(info), msg);
+    #[data_struct(T)]
+    public fun call_execute<T: drop>(instance: &mut Instance, env: &Env, info: &MessageInfo, msg: &T): Result<Response, Error> {
+        let store_handle = table::handle(&mut instance.store);
+        let env_bytes = json::to_json(env);
+        let info_bytes = json::to_json(info);
+        let msg_bytes = json::to_json(msg);
+
+        let (raw_response, error_code) = native_call_execute_raw(instance.code_checksum, store_handle, env_bytes, info_bytes, msg_bytes);
         if (error_code == 0) {
             ok(deserialize_response(raw_response))
         } else {
@@ -62,8 +75,13 @@ module rooch_nursery::cosmwasm_vm {
         }
     }
 
-    public fun call_query(instance: &Instance, env: &Env, msg: vector<u8>): Result<Response, Error> {
-        let (raw_response, error_code) = native_call_query_raw(instance.code_checksum, &instance.store, serialize_env(env), msg);
+    #[data_struct(T)]
+    public fun call_query<T: drop>(instance: &Instance, env: &Env, msg: &T): Result<Response, Error> {
+        let store_handle = table::handle(&instance.store);
+        let env_bytes = json::to_json(env);
+        let msg_bytes = json::to_json(msg);
+
+        let (raw_response, error_code) = native_call_query_raw(instance.code_checksum, store_handle, env_bytes, msg_bytes);
         if (error_code == 0) {
             ok(deserialize_response(raw_response))
         } else {
@@ -72,7 +90,9 @@ module rooch_nursery::cosmwasm_vm {
     }
 
     public fun call_migrate(instance: &mut Instance, env: &Env, msg: vector<u8>): Result<Response, Error> {
-        let (raw_response, error_code) = native_call_migrate_raw(instance.code_checksum, &mut instance.store, serialize_env(env), msg);
+        let store_handle = table::handle(&mut instance.store);
+
+        let (raw_response, error_code) = native_call_migrate_raw(instance.code_checksum, store_handle, serialize_env(env), msg);
         if (error_code == 0) {
             ok(deserialize_response(raw_response))
         } else {
@@ -81,7 +101,9 @@ module rooch_nursery::cosmwasm_vm {
     }
 
     public fun call_reply(instance: &mut Instance, env: &Env, msg: vector<u8>): Result<Response, Error> {
-        let (raw_response, error_code) = native_call_reply_raw(instance.code_checksum, &mut instance.store, serialize_env(env), msg);
+        let store_handle = table::handle(&mut instance.store);
+
+        let (raw_response, error_code) = native_call_reply_raw(instance.code_checksum, store_handle, serialize_env(env), msg);
         if (error_code == 0) {
             ok(deserialize_response(raw_response))
         } else {
@@ -90,7 +112,9 @@ module rooch_nursery::cosmwasm_vm {
     }
 
     public fun call_sudo(instance: &mut Instance, env: &Env, msg: vector<u8>): Result<Response, Error> {
-        let (raw_response, error_code) = native_call_sudo_raw(instance.code_checksum, &mut instance.store, serialize_env(env), msg);
+        let store_handle = table::handle(&mut instance.store);
+
+        let (raw_response, error_code) = native_call_sudo_raw(instance.code_checksum, store_handle, serialize_env(env), msg);
         if (error_code == 0) {
             ok(deserialize_response(raw_response))
         } else {
@@ -111,26 +135,13 @@ module rooch_nursery::cosmwasm_vm {
         }
     }
 
-    /// Deserialize a slice of bytes into the given type T.
-    /// This function mimics the behavior of cosmwasm_vm::from_slice.
-    public fun from_slice<T>(_data: vector<u8>): Result<T, Error> {
-        new_error_result(1, string::utf8(b"native_destroy_instance_error"))
-    }
-
-    /// Serialize the given data to a vector of bytes.
-    /// This function mimics the behavior of cosmwasm_vm::to_vec.
-    public fun to_vec<T>(_data: &T): Result<vector<u8>, Error> {
-        new_error_result(1, string::utf8(b"native_destroy_instance_error"))
-    }
- 
-
     // Native function declarations
     native fun native_create_instance(code: vector<u8>, store_handle: ObjectID): (vector<u8>, u32);
     native fun native_destroy_instance(code_checksum: vector<u8>): u32;
-    native fun native_call_instantiate_raw(code_checksum: vector<u8>, store: &mut Table<String, vector<u8>>, env: vector<u8>, info: vector<u8>, msg: vector<u8>): (vector<u8>, u32);
-    native fun native_call_execute_raw(code_checksum: vector<u8>, store: &mut Table<String, vector<u8>>, env: vector<u8>, info: vector<u8>, msg: vector<u8>): (vector<u8>, u32);
-    native fun native_call_query_raw(code_checksum: vector<u8>, store: &Table<String, vector<u8>>, env: vector<u8>, msg: vector<u8>): (vector<u8>, u32);
-    native fun native_call_migrate_raw(code_checksum: vector<u8>, store: &mut Table<String, vector<u8>>, env: vector<u8>, msg: vector<u8>): (vector<u8>, u32);
-    native fun native_call_reply_raw(code_checksum: vector<u8>, store: &mut Table<String, vector<u8>>, env: vector<u8>, msg: vector<u8>): (vector<u8>, u32);
-    native fun native_call_sudo_raw(code_checksum: vector<u8>, store: &mut Table<String, vector<u8>>, env: vector<u8>, msg: vector<u8>):(vector<u8>, u32);
+    native fun native_call_instantiate_raw(code_checksum: vector<u8>, store_handle: ObjectID, env: vector<u8>, info: vector<u8>, msg: vector<u8>): (vector<u8>, u32);
+    native fun native_call_execute_raw(code_checksum: vector<u8>, store_handle: ObjectID, env: vector<u8>, info: vector<u8>, msg: vector<u8>): (vector<u8>, u32);
+    native fun native_call_query_raw(code_checksum: vector<u8>, store_handle: ObjectID, env: vector<u8>, msg: vector<u8>): (vector<u8>, u32);
+    native fun native_call_migrate_raw(code_checksum: vector<u8>, store_handle: ObjectID, env: vector<u8>, msg: vector<u8>): (vector<u8>, u32);
+    native fun native_call_reply_raw(code_checksum: vector<u8>, store_handle: ObjectID, env: vector<u8>, msg: vector<u8>): (vector<u8>, u32);
+    native fun native_call_sudo_raw(code_checksum: vector<u8>, store_handle: ObjectID, env: vector<u8>, msg: vector<u8>):(vector<u8>, u32);
 }

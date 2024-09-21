@@ -446,7 +446,7 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # run wasm rust generator
-      Then cmd: "move run --function default::cosmwasm_vm_execution::run_cosmwasm_bitseed_generator --sender default --args 'file:./data/generator_cosmwasm_opt.wasm' --json"
+      Then cmd: "move run --function default::cosmwasm_vm_execution::run_cosmwasm_bitseed_generator --sender default --args 'file:./data/cosmwasm_vm_execution_opt.wasm' --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # release servers

@@ -6,7 +6,6 @@
 
 
 -  [Struct `Coin`](#0xa_cosmwasm_std_Coin)
--  [Struct `Addr`](#0xa_cosmwasm_std_Addr)
 -  [Struct `BlockInfo`](#0xa_cosmwasm_std_BlockInfo)
 -  [Struct `TransactionInfo`](#0xa_cosmwasm_std_TransactionInfo)
 -  [Struct `ContractInfo`](#0xa_cosmwasm_std_ContractInfo)
@@ -25,22 +24,24 @@
 -  [Function `set_data`](#0xa_cosmwasm_std_set_data)
 -  [Function `add_message`](#0xa_cosmwasm_std_add_message)
 -  [Function `new_coin`](#0xa_cosmwasm_std_new_coin)
--  [Function `new_addr`](#0xa_cosmwasm_std_new_addr)
 -  [Function `new_sub_msg`](#0xa_cosmwasm_std_new_sub_msg)
 -  [Function `new_error`](#0xa_cosmwasm_std_new_error)
 -  [Function `new_error_result`](#0xa_cosmwasm_std_new_error_result)
--  [Function `addr_to_string`](#0xa_cosmwasm_std_addr_to_string)
--  [Function `string_to_addr`](#0xa_cosmwasm_std_string_to_addr)
 -  [Function `serialize_env`](#0xa_cosmwasm_std_serialize_env)
 -  [Function `serialize_message_info`](#0xa_cosmwasm_std_serialize_message_info)
 -  [Function `deserialize_response`](#0xa_cosmwasm_std_deserialize_response)
 -  [Function `deserialize_error`](#0xa_cosmwasm_std_deserialize_error)
 -  [Function `error_code_to_string`](#0xa_cosmwasm_std_error_code_to_string)
+-  [Function `current_env`](#0xa_cosmwasm_std_current_env)
+-  [Function `current_message_info`](#0xa_cosmwasm_std_current_message_info)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x2::json</a>;
 <b>use</b> <a href="">0x2::result</a>;
+<b>use</b> <a href="">0x2::timestamp</a>;
+<b>use</b> <a href="">0x2::tx_context</a>;
 </code></pre>
 
 
@@ -51,18 +52,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_Coin">Coin</a>
-</code></pre>
-
-
-
-<a name="0xa_cosmwasm_std_Addr"></a>
-
-## Struct `Addr`
-
-
-
-<pre><code><b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_Addr">Addr</a>
+<pre><code>#[data_struct]
+<b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_Coin">Coin</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -73,7 +64,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_BlockInfo">BlockInfo</a>
+<pre><code>#[data_struct]
+<b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_BlockInfo">BlockInfo</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -84,7 +76,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_TransactionInfo">TransactionInfo</a>
+<pre><code>#[data_struct]
+<b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_TransactionInfo">TransactionInfo</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -95,7 +88,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_ContractInfo">ContractInfo</a>
+<pre><code>#[data_struct]
+<b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_ContractInfo">ContractInfo</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -106,7 +100,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_Env">Env</a>
+<pre><code>#[data_struct]
+<b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_Env">Env</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -117,7 +112,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_MessageInfo">MessageInfo</a>
+<pre><code>#[data_struct]
+<b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_MessageInfo">MessageInfo</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -128,7 +124,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_Attribute">Attribute</a>
+<pre><code>#[data_struct]
+<b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_Attribute">Attribute</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -139,7 +136,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_Event">Event</a>
+<pre><code>#[data_struct]
+<b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_Event">Event</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -150,7 +148,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_Response">Response</a>
+<pre><code>#[data_struct]
+<b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_Response">Response</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -161,7 +160,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_SubMsg">SubMsg</a>
+<pre><code>#[data_struct]
+<b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_SubMsg">SubMsg</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -172,7 +172,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_Error">Error</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code>#[data_struct]
+<b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_Error">Error</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -183,7 +184,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_ReplyOn">ReplyOn</a>
+<pre><code>#[data_struct]
+<b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_ReplyOn">ReplyOn</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -286,17 +288,6 @@
 
 
 
-<a name="0xa_cosmwasm_std_new_addr"></a>
-
-## Function `new_addr`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_new_addr">new_addr</a>(<b>address</b>: <a href="_String">string::String</a>): <a href="cosmwasm_std.md#0xa_cosmwasm_std_Addr">cosmwasm_std::Addr</a>
-</code></pre>
-
-
-
 <a name="0xa_cosmwasm_std_new_sub_msg"></a>
 
 ## Function `new_sub_msg`
@@ -330,35 +321,13 @@
 
 
 
-<a name="0xa_cosmwasm_std_addr_to_string"></a>
-
-## Function `addr_to_string`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_addr_to_string">addr_to_string</a>(addr: &<a href="cosmwasm_std.md#0xa_cosmwasm_std_Addr">cosmwasm_std::Addr</a>): <a href="_String">string::String</a>
-</code></pre>
-
-
-
-<a name="0xa_cosmwasm_std_string_to_addr"></a>
-
-## Function `string_to_addr`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_string_to_addr">string_to_addr</a>(s: <a href="_String">string::String</a>): <a href="cosmwasm_std.md#0xa_cosmwasm_std_Addr">cosmwasm_std::Addr</a>
-</code></pre>
-
-
-
 <a name="0xa_cosmwasm_std_serialize_env"></a>
 
 ## Function `serialize_env`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_serialize_env">serialize_env</a>(_env: &<a href="cosmwasm_std.md#0xa_cosmwasm_std_Env">cosmwasm_std::Env</a>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_serialize_env">serialize_env</a>(env: &<a href="cosmwasm_std.md#0xa_cosmwasm_std_Env">cosmwasm_std::Env</a>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -369,7 +338,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_serialize_message_info">serialize_message_info</a>(_info: &<a href="cosmwasm_std.md#0xa_cosmwasm_std_MessageInfo">cosmwasm_std::MessageInfo</a>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_serialize_message_info">serialize_message_info</a>(info: &<a href="cosmwasm_std.md#0xa_cosmwasm_std_MessageInfo">cosmwasm_std::MessageInfo</a>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -403,4 +372,26 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_error_code_to_string">error_code_to_string</a>(_code: u64): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0xa_cosmwasm_std_current_env"></a>
+
+## Function `current_env`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_current_env">current_env</a>(): <a href="cosmwasm_std.md#0xa_cosmwasm_std_Env">cosmwasm_std::Env</a>
+</code></pre>
+
+
+
+<a name="0xa_cosmwasm_std_current_message_info"></a>
+
+## Function `current_message_info`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_current_message_info">current_message_info</a>(): <a href="cosmwasm_std.md#0xa_cosmwasm_std_MessageInfo">cosmwasm_std::MessageInfo</a>
 </code></pre>

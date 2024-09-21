@@ -1215,13 +1215,8 @@ dependencies = [
 name = "bitseed_generator"
 version = "0.1.0"
 dependencies = [
-<<<<<<< HEAD
  "cosmwasm-std 2.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.208",
-=======
- "cosmwasm-std",
  "serde 1.0.210",
->>>>>>> 91161c74ebd7cf64e1016b925a3c13e205a663df
 ]
 
 [[package]]
@@ -2157,14 +2152,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d905990ef3afb5753bb709dc7de88e9e370aa32bcc2f31731d4b533b63e82490"
 
 [[package]]
-<<<<<<< HEAD
 name = "cosmwasm-core"
 version = "2.1.3"
 source = "git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81#597d3e8437d8c4d1afce07e5a676c29c751a8a81"
 
 [[package]]
-=======
->>>>>>> 91161c74ebd7cf64e1016b925a3c13e205a663df
 name = "cosmwasm-crypto"
 version = "2.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2174,7 +2166,6 @@ dependencies = [
  "ark-ec",
  "ark-ff 0.4.2",
  "ark-serialize 0.4.2",
-<<<<<<< HEAD
  "cosmwasm-core 2.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "digest 0.10.7",
  "ecdsa 0.16.9",
@@ -2198,9 +2189,6 @@ dependencies = [
  "ark-ff 0.4.2",
  "ark-serialize 0.4.2",
  "cosmwasm-core 2.1.3 (git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81)",
-=======
- "cosmwasm-core",
->>>>>>> 91161c74ebd7cf64e1016b925a3c13e205a663df
  "digest 0.10.7",
  "ecdsa 0.16.9",
  "ed25519-zebra",
@@ -2225,7 +2213,6 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
 name = "cosmwasm-derive"
 version = "2.1.3"
 source = "git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81#597d3e8437d8c4d1afce07e5a676c29c751a8a81"
@@ -2236,8 +2223,6 @@ dependencies = [
 ]
 
 [[package]]
-=======
->>>>>>> 91161c74ebd7cf64e1016b925a3c13e205a663df
 name = "cosmwasm-std"
 version = "2.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2246,7 +2231,6 @@ dependencies = [
  "base64 0.22.1",
  "bech32 0.11.0",
  "bnum",
-<<<<<<< HEAD
  "cosmwasm-core 2.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "cosmwasm-crypto 2.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "cosmwasm-derive 2.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2254,7 +2238,7 @@ dependencies = [
  "hex",
  "rand_core 0.6.4",
  "schemars",
- "serde 1.0.208",
+ "serde 1.0.210",
  "serde-json-wasm",
  "sha2 0.10.8",
  "static_assertions",
@@ -2272,20 +2256,11 @@ dependencies = [
  "cosmwasm-core 2.1.3 (git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81)",
  "cosmwasm-crypto 2.1.3 (git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81)",
  "cosmwasm-derive 2.1.3 (git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81)",
-=======
- "cosmwasm-core",
- "cosmwasm-crypto",
- "cosmwasm-derive",
->>>>>>> 91161c74ebd7cf64e1016b925a3c13e205a663df
  "derive_more 1.0.0",
  "hex",
  "rand_core 0.6.4",
  "schemars",
-<<<<<<< HEAD
- "serde 1.0.208",
-=======
  "serde 1.0.210",
->>>>>>> 91161c74ebd7cf64e1016b925a3c13e205a663df
  "serde-json-wasm",
  "sha2 0.10.8",
  "static_assertions",
@@ -2293,7 +2268,6 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
 name = "cosmwasm-vm"
 version = "2.1.3"
 source = "git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81#597d3e8437d8c4d1afce07e5a676c29c751a8a81"
@@ -2309,7 +2283,7 @@ dependencies = [
  "hex",
  "rand_core 0.6.4",
  "schemars",
- "serde 1.0.208",
+ "serde 1.0.210",
  "serde_json",
  "sha2 0.10.8",
  "strum",
@@ -2320,8 +2294,14 @@ dependencies = [
 ]
 
 [[package]]
-=======
->>>>>>> 91161c74ebd7cf64e1016b925a3c13e205a663df
+name = "cosmwasm_vm_execution"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std 2.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.210",
+]
+
+[[package]]
 name = "cpp_demangle"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7762,11 +7742,7 @@ checksum = "fb572a6faac38e826e5a6e8a143d6104d47ce75757a93dfd31912a0b91cada8d"
 dependencies = [
  "bitcoin 0.30.2",
  "derive_more 0.99.18",
-<<<<<<< HEAD
- "serde 1.0.208",
-=======
  "serde 1.0.210",
->>>>>>> 91161c74ebd7cf64e1016b925a3c13e205a663df
  "serde_with 3.9.0",
  "thiserror",
 ]
@@ -9623,7 +9599,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-cosmwasm-vm"
-version = "0.7.0"
+version = "0.7.2"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9940,12 +9916,8 @@ dependencies = [
  "moveos-stdlib",
  "moveos-types",
  "moveos-wasm",
-<<<<<<< HEAD
- "musig2",
  "once_cell",
  "rooch-cosmwasm-vm",
-=======
->>>>>>> 91161c74ebd7cf64e1016b925a3c13e205a663df
  "rooch-framework",
  "rooch-types",
  "serde_json",
@@ -10291,11 +10263,7 @@ dependencies = [
  "bitcoincore-rpc",
  "bs58 0.5.1",
  "chacha20poly1305",
-<<<<<<< HEAD
- "clap 4.5.13",
-=======
  "clap 4.5.17",
->>>>>>> 91161c74ebd7cf64e1016b925a3c13e205a663df
  "derive_more 0.99.18",
  "enum_dispatch",
  "ethers",
@@ -10972,11 +10940,7 @@ version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f05da0d153dd4595bdffd5099dc0e9ce425b205ee648eb93437ff7302af8c9a5"
 dependencies = [
-<<<<<<< HEAD
- "serde 1.0.208",
-=======
  "serde 1.0.210",
->>>>>>> 91161c74ebd7cf64e1016b925a3c13e205a663df
 ]
 
 [[package]]

@@ -1,24 +1,22 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use log::{debug, error, warn};
-use std::collections::HashSet;
+use log::error;
 use std::collections::VecDeque;
-use std::ffi::CString;
-use std::ops::Deref;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::vec;
 
-use cosmwasm_std::{Checksum, Empty};
+use cosmwasm_std::Checksum;
 use cosmwasm_vm::{
-    call_instantiate, capabilities_from_csv, Cache, CacheOptions, Instance, InstanceOptions, Size,
+    call_execute_raw, call_instantiate_raw, call_migrate_raw, call_query_raw, call_reply_raw,
+    call_sudo_raw, capabilities_from_csv, Cache, CacheOptions, Instance, InstanceOptions, Size,
+    VmResult,
 };
 use once_cell::sync::Lazy;
 use rooch_cosmwasm_vm::backend::{
-    build_mock_backend, MoveBackendApi, MoveBackendQuerier, MoveStorage,
+    build_mock_backend, MockStorage, MoveBackendApi, MoveBackendQuerier,
 };
-use serde_json::Value as JSONValue;
-use smallvec::{smallvec, SmallVec};
+use smallvec::smallvec;
 
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
@@ -27,23 +25,20 @@ use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::loaded_data::runtime_types::Type;
 use move_vm_types::natives::function::NativeResult;
 use move_vm_types::pop_arg;
-use move_vm_types::values::{Struct, Value};
+use move_vm_types::values::Value;
 
 use moveos_object_runtime::{
     runtime::ObjectRuntimeContext, runtime_object::RuntimeObject, TypeLayoutLoader,
 };
-use moveos_types::{
-    moveos_std::object::ObjectID, state::FieldKey, state_resolver::StatelessResolver,
-};
+use moveos_types::{moveos_std::object::ObjectID, state_resolver::StatelessResolver};
 
 use moveos_stdlib::natives::helpers::{make_module_natives, make_native};
 
 use crate::natives::helper::{pop_object_id, CommonGasParameters};
 
-const DEFAULT_GAS_LIMIT: u64 = 10000;
-const E_WASM_ERROR: u64 = 1;
+const DEFAULT_GAS_LIMIT: u64 = 10000000;
 
-static WASM_CACHE: Lazy<Arc<Cache<MoveBackendApi, MoveStorage, MoveBackendQuerier>>> =
+static WASM_CACHE: Lazy<Arc<Cache<MoveBackendApi, MockStorage, MoveBackendQuerier>>> =
     Lazy::new(|| {
         let options = CacheOptions::new(
             std::env::temp_dir(),
@@ -67,6 +62,10 @@ impl CosmWasmCreateInstanceGasParameters {
             per_byte_wasm: InternalGasPerByte::zero(),
         }
     }
+}
+
+fn vm_error(err: impl std::fmt::Display) -> PartialVMError {
+    PartialVMError::new(StatusCode::VM_EXTENSION_ERROR).with_message(format!("{}", err))
 }
 
 /***************************************************************************************************
@@ -216,7 +215,7 @@ fn native_destroy_instance(
     gas_params: &GasParameters,
     _context: &mut NativeContext,
     ty_args: Vec<Type>,
-    mut arguments: VecDeque<Value>,
+    arguments: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     assert!(ty_args.len() == 0, "Wrong number of type arguments");
     assert!(arguments.len() == 1, "Wrong number of arguments");
@@ -227,71 +226,62 @@ fn native_destroy_instance(
     ))
 }
 
-#[inline]
-fn native_call_instantiate_raw(
+/***************************************************************************************************
+ * native_call_instantiate_raw
+ **************************************************************************************************/
+
+fn native_contract_call<F>(
     gas_params: &GasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut arguments: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
+    expected_args: usize,
+    operation_name: &str,
+    contract_operation: F,
+) -> PartialVMResult<NativeResult>
+where
+    F: FnOnce(
+        &mut Instance<MoveBackendApi, MockStorage, MoveBackendQuerier>,
+        &[u8],
+        Option<&[u8]>,
+        &[u8],
+    ) -> VmResult<Vec<u8>>,
+{
     debug_assert!(
         ty_args.is_empty(),
-        "native_call_instantiate_raw expects no type arguments"
+        "{} expects no type arguments",
+        operation_name
     );
-    debug_assert!(
-        arguments.len() == 5,
-        "native_call_instantiate_raw expects 5 arguments"
+    debug_assert_eq!(
+        arguments.len(),
+        expected_args,
+        "{} expects {} arguments",
+        operation_name,
+        expected_args
     );
 
-    let code_checksum = pop_arg!(arguments, Vec<u8>);
-    let store_obj_id = pop_object_id(&mut arguments)?;
-    let env = pop_arg!(arguments, Vec<u8>);
-    let info = pop_arg!(arguments, Vec<u8>);
     let msg = pop_arg!(arguments, Vec<u8>);
+    let info = if expected_args == 5 {
+        Some(pop_arg!(arguments, Vec<u8>))
+    } else {
+        None
+    };
+    let env = pop_arg!(arguments, Vec<u8>);
+    let store_obj_id = pop_object_id(&mut arguments)?;
+    let code_checksum = pop_arg!(arguments, Vec<u8>);
 
     let object_context = context.extensions().get::<ObjectRuntimeContext>();
     let binding = object_context.object_runtime();
     let mut object_runtime = binding.write();
-    let resolver = object_runtime.resolver();
-    let (rt_obj, object_load_gas) = object_runtime.load_object(context, &store_obj_id)?;
+    let _resolver = object_runtime.resolver();
+    let (_rt_obj, object_load_gas) = object_runtime.load_object(context, &store_obj_id)?;
 
     let gas_cost = gas_params.common.load_base
+        + gas_params.common.calculate_load_cost(object_load_gas)
         + gas_params
             .common
             .calculate_load_cost(Some(Some(NumBytes::new(code_checksum.len() as u64))));
 
-    let result = instantiate_contract(context, resolver, rt_obj, code_checksum, env, info, msg);
-
-    match result {
-        Ok((response, wasm_gas_used)) => {
-            let total_gas = gas_cost + InternalGas::new(wasm_gas_used);
-            Ok(NativeResult::ok(
-                total_gas,
-                smallvec![
-                    Value::vector_u8(response),
-                    Value::u32(0) // success
-                ],
-            ))
-        }
-        Err(err) => {
-            let error_code = error_to_abort_code(err);
-            Ok(NativeResult::ok(
-                gas_cost,
-                smallvec![Value::vector_u8(vec![]), Value::u32(error_code as u32)],
-            ))
-        }
-    }
-}
-
-fn instantiate_contract(
-    context: &NativeContext,
-    resolver: &dyn StatelessResolver,
-    rt_obj: &mut RuntimeObject,
-    code_checksum: Vec<u8>,
-    env: Vec<u8>,
-    info: Vec<u8>,
-    msg: Vec<u8>,
-) -> PartialVMResult<(Vec<u8>, u64)> {
     let checksum = Checksum::try_from(code_checksum.as_slice()).map_err(|e| vm_error(e))?;
     let (module, store) = WASM_CACHE.get_module(&checksum).map_err(|e| vm_error(e))?;
 
@@ -307,26 +297,195 @@ fn instantiate_contract(
         None,
         None,
     )
-    .map_err(|e| {
-        PartialVMError::new(StatusCode::STORAGE_ERROR)
-            .with_message(format!("Failed to get WASM instance: {}", e))
-    })?;
+    .map_err(|e| vm_error(format!("Failed to get WASM instance: {}", e)))?;
 
-    let env = serde_json::from_slice::<cosmwasm_std::Env>(&env).map_err(|e| vm_error(e))?;
-    let info =
-        serde_json::from_slice::<cosmwasm_std::MessageInfo>(&info).map_err(|e| vm_error(e))?;
+    let result = contract_operation(
+        &mut instance,
+        env.as_slice(),
+        info.as_ref().map(AsRef::as_ref),
+        msg.as_slice(),
+    );
 
-    let result = call_instantiate::<_, _, _, Empty>(&mut instance, &env, &info, msg.as_slice())
-        .map_err(|e| vm_error(e))?;
+    match result {
+        Ok(response) => {
+            let gas_used = instance.get_gas_left();
+            let total_gas = gas_cost + InternalGas::new(gas_used);
+            Ok(NativeResult::ok(
+                total_gas,
+                smallvec![
+                    Value::vector_u8(response),
+                    Value::u32(0) // success
+                ],
+            ))
+        }
+        Err(err) => {
+            error!("{} error: {:?}", operation_name, err);
 
-    let response = serde_json::to_vec(&result).map_err(|e| vm_error(e))?;
-    let gas_used = instance.get_gas_left();
-
-    Ok((response, gas_used))
+            let error_code = StatusCode::VM_EXTENSION_ERROR;
+            Ok(NativeResult::ok(
+                gas_cost,
+                smallvec![Value::vector_u8(vec![]), Value::u32(error_code as u32)],
+            ))
+        }
+    }
 }
 
-fn vm_error(err: impl std::fmt::Display) -> PartialVMError {
-    PartialVMError::new(StatusCode::VM_EXTENSION_ERROR).with_message(format!("{}", err))
+/***************************************************************************************************
+ * call_instantiate_raw
+ **************************************************************************************************/
+
+#[inline]
+fn native_call_instantiate_raw(
+    gas_params: &GasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    arguments: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    native_contract_call(
+        gas_params,
+        context,
+        ty_args,
+        arguments,
+        5, // code_checksum, store_obj_id, env, info, msg
+        "call_instantiate_raw",
+        move |instance: &mut Instance<MoveBackendApi, MockStorage, MoveBackendQuerier>,
+              env: &[u8],
+              info: Option<&[u8]>,
+              msg: &[u8]|
+              -> VmResult<Vec<u8>> {
+            call_instantiate_raw(instance, env, info.unwrap(), msg)
+        },
+    )
+}
+
+/***************************************************************************************************
+ * native_call_execute_raw
+ **************************************************************************************************/
+
+#[inline]
+fn native_call_execute_raw(
+    gas_params: &GasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    arguments: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    native_contract_call(
+        gas_params,
+        context,
+        ty_args,
+        arguments,
+        5, // code_checksum, store_obj_id, env, info, msg
+        "call_execute_raw",
+        move |instance: &mut Instance<MoveBackendApi, MockStorage, MoveBackendQuerier>,
+              env: &[u8],
+              info: Option<&[u8]>,
+              msg: &[u8]|
+              -> VmResult<Vec<u8>> { call_execute_raw(instance, env, info.unwrap(), msg) },
+    )
+}
+
+/***************************************************************************************************
+ * native_call_query_raw
+ **************************************************************************************************/
+
+#[inline]
+fn native_call_query_raw(
+    gas_params: &GasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    arguments: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    native_contract_call(
+        gas_params,
+        context,
+        ty_args,
+        arguments,
+        4, // code_checksum, store_obj_id, env, msg
+        "call_query_raw",
+        move |instance: &mut Instance<MoveBackendApi, MockStorage, MoveBackendQuerier>,
+              env: &[u8],
+              _info: Option<&[u8]>,
+              msg: &[u8]|
+              -> VmResult<Vec<u8>> { call_query_raw(instance, env, msg) },
+    )
+}
+
+/***************************************************************************************************
+ * native_call_migrate_raw
+ **************************************************************************************************/
+
+#[inline]
+fn native_call_migrate_raw(
+    gas_params: &GasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    arguments: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    native_contract_call(
+        gas_params,
+        context,
+        ty_args,
+        arguments,
+        4, // code_checksum, store_obj_id, env, msg
+        "call_migrate_raw",
+        move |instance: &mut Instance<MoveBackendApi, MockStorage, MoveBackendQuerier>,
+              env: &[u8],
+              _info: Option<&[u8]>,
+              msg: &[u8]|
+              -> VmResult<Vec<u8>> { call_migrate_raw(instance, env, msg) },
+    )
+}
+
+/***************************************************************************************************
+ * native_call_reply_raw
+ **************************************************************************************************/
+
+#[inline]
+fn native_call_reply_raw(
+    gas_params: &GasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    arguments: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    native_contract_call(
+        gas_params,
+        context,
+        ty_args,
+        arguments,
+        4, // code_checksum, store_obj_id, env, msg
+        "call_reply_raw",
+        move |instance: &mut Instance<MoveBackendApi, MockStorage, MoveBackendQuerier>,
+              env: &[u8],
+              _info: Option<&[u8]>,
+              msg: &[u8]|
+              -> VmResult<Vec<u8>> { call_reply_raw(instance, env, msg) },
+    )
+}
+
+/***************************************************************************************************
+ * native_call_sudo_raw
+ **************************************************************************************************/
+
+#[inline]
+fn native_call_sudo_raw(
+    gas_params: &GasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    arguments: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    native_contract_call(
+        gas_params,
+        context,
+        ty_args,
+        arguments,
+        4, // code_checksum, store_obj_id, env, msg
+        "call_sudo_raw",
+        move |instance: &mut Instance<MoveBackendApi, MockStorage, MoveBackendQuerier>,
+              env: &[u8],
+              _info: Option<&[u8]>,
+              msg: &[u8]|
+              -> VmResult<Vec<u8>> { call_sudo_raw(instance, env, msg) },
+    )
 }
 
 /***************************************************************************************************
@@ -359,6 +518,30 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         (
             "native_destroy_instance",
             make_native(gas_params.clone(), native_destroy_instance),
+        ),
+        (
+            "native_call_instantiate_raw",
+            make_native(gas_params.clone(), native_call_instantiate_raw),
+        ),
+        (
+            "native_call_execute_raw",
+            make_native(gas_params.clone(), native_call_execute_raw),
+        ),
+        (
+            "native_call_query_raw",
+            make_native(gas_params.clone(), native_call_query_raw),
+        ),
+        (
+            "native_call_migrate_raw",
+            make_native(gas_params.clone(), native_call_migrate_raw),
+        ),
+        (
+            "native_call_reply_raw",
+            make_native(gas_params.clone(), native_call_reply_raw),
+        ),
+        (
+            "native_call_sudo_raw",
+            make_native(gas_params.clone(), native_call_sudo_raw),
         ),
     ];
 
