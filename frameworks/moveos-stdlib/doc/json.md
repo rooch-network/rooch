@@ -9,6 +9,7 @@
 -  [Function `from_json`](#0x2_json_from_json)
 -  [Function `from_json_option`](#0x2_json_from_json_option)
 -  [Function `to_map`](#0x2_json_to_map)
+-  [Function `to_json`](#0x2_json_to_json)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -81,4 +82,16 @@ If the field type is primitive type, it will be parsed to String, array or objec
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="json.md#0x2_json_to_map">to_map</a>(json_str: <a href="">vector</a>&lt;u8&gt;): <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="_String">string::String</a>&gt;
+</code></pre>
+
+
+
+<a name="0x2_json_to_json"></a>
+
+## Function `to_json`
+
+Serialize a value of type T to JSON string bytes.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="json.md#0x2_json_to_json">to_json</a>&lt;T&gt;(value: &T): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
