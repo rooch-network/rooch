@@ -72,6 +72,4 @@ jobs:
             "cd /root/rooch && git fetch origin && git checkout -B $BRANCH origin/$BRANCH || git checkout $BRANCH && bash scripts/deploy_rooch_mainnet.sh \
             '${{ env.REF }}' \
             '${{ secrets.BTC_MAIN_RPC_URL }}' \
-            '${{ secrets.BTC_MAIN_RPC_PWD }}' \
-            '${{ secrets.OPENDA_GCP_MAINNET_BUCKET }}' \
-            '${{ secrets.OPENDA_GCP_MAINNET_CREDENTIAL }}'"
+            '${{ secrets.BTC_MAIN_RPC_PWD }}'"
