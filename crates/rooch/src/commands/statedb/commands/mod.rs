@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::commands::statedb::commands::inscription::{derive_inscription_ids, InscriptionSource};
-use anyhow::Result;
+use anyhow::{Error, Result};
 use bitcoin::hashes::Hash;
 use bitcoin::OutPoint;
 use csv::Writer;
 use metrics::RegistryService;
 use moveos_store::MoveOSStore;
+use moveos_types::h256::H256;
 use moveos_types::move_std::option::MoveOption;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
@@ -17,7 +18,10 @@ use rooch_common::fs::file_cache::FileCacheManager;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
 use rooch_types::bitcoin::ord::{Inscription, InscriptionID};
+use rooch_types::error::RoochError;
 use rooch_types::rooch_network::RoochChainID;
+use smt::{TreeChangeSet, UpdateSet};
+use std::collections::BTreeMap;
 use std::fmt::{Debug, Display};
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Read, Write};
@@ -29,9 +33,10 @@ use xxhash_rust::xxh3::xxh3_64;
 
 pub mod export;
 pub mod genesis;
+pub mod genesis_ord;
 pub mod genesis_utxo;
 pub mod genesis_verify;
-pub mod import;
+pub mod re_genesis;
 
 mod inscription;
 mod utxo;
@@ -47,15 +52,19 @@ lazy_static::lazy_static! {
     };
 }
 
+fn init_rooch_db(base_data_dir: Option<PathBuf>, chain_id: Option<RoochChainID>) -> RoochDB {
+    let opt = RoochOpt::new_with_default(base_data_dir.clone(), chain_id.clone(), None).unwrap();
+    let registry_service = RegistryService::default();
+    RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap()
+}
+
 fn init_job(
     base_data_dir: Option<PathBuf>,
     chain_id: Option<RoochChainID>,
 ) -> (ObjectMeta, MoveOSStore, Instant) {
     let start_time = Instant::now();
 
-    let opt = RoochOpt::new_with_default(base_data_dir.clone(), chain_id.clone(), None).unwrap();
-    let registry_service = RegistryService::default();
-    let rooch_db = RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
+    let rooch_db = init_rooch_db(base_data_dir, chain_id);
     let root = rooch_db
         .latest_root()
         .unwrap()
@@ -137,6 +146,7 @@ fn derive_utxo_inscription_seal(
     }
 }
 
+// outpoint(original):inscriptions(original inscription_id) map
 pub(crate) struct OutpointInscriptionsMap {
     items: Vec<OutpointInscriptions>,
     key_filter: Option<BinaryFuse8>,
@@ -177,7 +187,8 @@ impl OutpointInscriptionsMap {
                 }
             }
             let src: InscriptionSource = InscriptionSource::from_str(&line);
-            let satpoint_output = OutPoint::from_str(src.satpoint_outpoint.as_str()).unwrap();
+            let satpoint_output = OutPoint::from_str(src.satpoint_outpoint.as_str())
+                .unwrap_or_else(|_| panic!("Invalid outpoint: {}", src.satpoint_outpoint));
             if satpoint_output == unbound_outpoint() {
                 unbound_count += 1;
                 continue; // skip unbounded outpoint
@@ -453,6 +464,40 @@ impl ExportWriter {
             Ok(())
         }
     }
+}
+
+// csv format: c1,c2
+// c1: FieldKey, c2: ObjectState
+pub fn parse_states_csv_fields(line: &str) -> Result<(String, String)> {
+    let str_list: Vec<&str> = line.trim().split(',').collect();
+    if str_list.len() != 2 {
+        return Err(Error::from(RoochError::from(Error::msg(format!(
+            "Invalid csv line: {}",
+            line
+        )))));
+    }
+    let c1 = str_list[0].to_string();
+    let c2 = str_list[1].to_string();
+    Ok((c1, c2))
+}
+
+pub fn apply_fields<I>(
+    moveos_store: &MoveOSStore,
+    pre_state_root: H256,
+    update_set: I,
+) -> Result<TreeChangeSet>
+where
+    I: Into<UpdateSet<FieldKey, ObjectState>>,
+{
+    let tree_change_set = moveos_store
+        .state_store
+        .update_fields(pre_state_root, update_set)?;
+    Ok(tree_change_set)
+}
+
+pub fn apply_nodes(moveos_store: &MoveOSStore, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
+    moveos_store.state_store.node_store.write_nodes(nodes)?;
+    Ok(())
 }
 
 #[cfg(test)]

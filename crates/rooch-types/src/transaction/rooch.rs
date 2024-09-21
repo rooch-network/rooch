@@ -63,6 +63,13 @@ impl RoochTransactionData {
         bcs::to_bytes(self).expect("encode transaction should success")
     }
 
+    pub fn decode(bytes: &[u8]) -> Result<Self>
+    where
+        Self: std::marker::Sized,
+    {
+        bcs::from_bytes::<Self>(bytes).map_err(Into::into)
+    }
+
     pub fn tx_hash(&self) -> H256 {
         moveos_types::h256::sha3_256_of(self.encode().as_slice())
     }
@@ -109,6 +116,10 @@ impl PartiallySignedRoochTransaction {
 
     pub fn sender(&self) -> RoochAddress {
         self.data.sender
+    }
+
+    pub fn signatories(&self) -> usize {
+        self.authenticators.len()
     }
 
     pub fn contains_authenticator(&self, authenticator: &BitcoinAuthenticator) -> bool {

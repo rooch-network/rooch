@@ -12,6 +12,7 @@ use crate::{
 };
 use anyhow::{anyhow, bail};
 use bech32::{encode, Bech32, EncodeError};
+use bitcoin::secp256k1::SecretKey;
 use derive_more::{AsMut, AsRef, From};
 pub use enum_dispatch::enum_dispatch;
 use eyre::eyre;
@@ -37,7 +38,6 @@ use fastcrypto::{
     secp256k1::{Secp256k1PublicKey, Secp256k1Signature, Secp256k1SignatureAsBytes},
 };
 use moveos_types::serde::Readable;
-use nostr::prelude::ToBech32;
 use schemars::JsonSchema;
 use serde::ser::Serializer;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -132,6 +132,33 @@ impl RoochKeyPair {
         match self {
             RoochKeyPair::Ed25519(kp) => kp.as_bytes(),
             RoochKeyPair::Secp256k1(kp) => kp.as_bytes(),
+        }
+    }
+
+    /// Get the secp256k1 keypair
+    pub fn secp256k1_keypair(&self) -> Option<bitcoin::key::Keypair> {
+        match self.secp256k1_secret_key() {
+            Some(sk) => {
+                let keypair = bitcoin::key::Keypair::from_secret_key(
+                    &bitcoin::secp256k1::Secp256k1::new(),
+                    &sk,
+                );
+                Some(keypair)
+            }
+            None => None,
+        }
+    }
+
+    /// Get the secp256k1 private key
+    pub fn secp256k1_secret_key(&self) -> Option<SecretKey> {
+        match self {
+            RoochKeyPair::Secp256k1(kp) => {
+                SecretKey::from_slice(kp.secret.as_bytes()).ok()
+                //The bitcoin and fastcrypto dependent on different version secp256k1 library
+                //So we cannot directly return the private key
+                //Some(&kp.secret.privkey)
+            }
+            _ => None,
         }
     }
 
@@ -345,15 +372,14 @@ impl PublicKey {
         }
     }
 
-    pub fn nostr_bech32_public_key(&self) -> Result<String, anyhow::Error> {
+    pub fn xonly_public_key(&self) -> Result<bitcoin::XOnlyPublicKey, anyhow::Error> {
         match self {
             PublicKey::Secp256k1(pk) => {
-                let xonly_pubkey = nostr::secp256k1::XOnlyPublicKey::from(
-                    nostr::secp256k1::PublicKey::from_slice(&pk.0)?,
-                );
-                Ok(xonly_pubkey.to_bech32()?)
+                let xonly_pubkey =
+                    bitcoin::XOnlyPublicKey::from(bitcoin::PublicKey::from_slice(&pk.0)?);
+                Ok(xonly_pubkey)
             }
-            _ => bail!("Only secp256k1 public key can be converted to nostr bech32 public key"),
+            _ => bail!("Only secp256k1 public key can be converted to xonly public key"),
         }
     }
 
@@ -367,6 +393,10 @@ impl PublicKey {
 
     pub fn from_hex(hex: &str) -> Result<Self, anyhow::Error> {
         let bytes = hex::decode(hex.strip_prefix("0x").unwrap_or(hex))?;
+        Self::from_bytes(&bytes)
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, anyhow::Error> {
         match SignatureScheme::from_flag_byte(
             *bytes
                 .first()
@@ -392,6 +422,12 @@ impl PublicKey {
             },
             Err(e) => Err(anyhow!("Invalid bytes :{}", e)),
         }
+    }
+
+    pub fn from_bitcoin_pubkey(pk: &bitcoin::PublicKey) -> Result<Self, anyhow::Error> {
+        let bytes = pk.to_bytes();
+        let pk = Secp256k1PublicKey::from_bytes(&bytes)?;
+        Ok(PublicKey::Secp256k1((&pk).into()))
     }
 }
 

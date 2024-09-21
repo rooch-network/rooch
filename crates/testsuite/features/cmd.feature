@@ -37,6 +37,11 @@ Feature: Rooch CLI integration tests
 
       Then cmd: "account create"
       Then cmd: "account list --json"
+      # account sign and verify
+      Then cmd: "account sign -a {{$.account[-1].account0.address}} -m 'empty' --json"
+      Then cmd: "account verify -s {{$.account[-1]}} -m 'empty' --json"
+      Then assert: "{{$.account[-1]}} == true"
+      Then cmd: "account list --json"
       Then cmd: "account export"
       Then cmd: "account export -a {{$.account[-1].account0.address}} --json"
       # use bitcoin_address
@@ -70,7 +75,7 @@ Feature: Rooch CLI integration tests
       Then cmd: "transaction get-transactions-by-hash --hashes {{$.transaction[-1].data[0].execution_info.tx_hash}}"
       Then cmd: "transaction build --function rooch_framework::empty::empty --json"
       Then assert: "'{{$.transaction[-1]}}' not_contains error"
-      Then cmd: "transaction sign {{$.transaction[-1].path}} --json"
+      Then cmd: "transaction sign {{$.transaction[-1].path}} --json -y"
       Then assert: "'{{$.transaction[-1]}}' not_contains error"
       Then cmd: "transaction submit {{$.transaction[-1].path}}"
       Then assert: "{{$.transaction[-1].execution_info.status.type}} == executed"

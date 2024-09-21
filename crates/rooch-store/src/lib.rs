@@ -3,12 +3,14 @@
 
 use crate::accumulator_store::{AccumulatorStore, TransactionAccumulatorStore};
 use crate::meta_store::{MetaDBStore, MetaStore};
+use crate::state_store::{StateDBStore, StateStore};
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
 use accumulator::AccumulatorTreeStore;
 use anyhow::Result;
 use moveos_config::store_config::RocksdbConfig;
 use moveos_config::DataDirPath;
 use moveos_types::h256::H256;
+use moveos_types::state::StateChangeSetExt;
 use once_cell::sync::Lazy;
 use prometheus::Registry;
 use raw_store::metrics::DBMetrics;
@@ -22,6 +24,7 @@ use std::sync::Arc;
 
 pub mod accumulator_store;
 pub mod meta_store;
+pub mod state_store;
 #[cfg(test)]
 mod tests;
 pub mod transaction_store;
@@ -33,6 +36,8 @@ pub const TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME: ColumnFamilyName =
 pub const META_SEQUENCER_INFO_COLUMN_FAMILY_NAME: ColumnFamilyName = "meta_sequencer_info";
 pub const TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME: ColumnFamilyName = "transaction_acc_node";
 
+pub const STATE_CHANGE_SET_COLUMN_FAMILY_NAME: ColumnFamilyName = "state_change_set";
+
 ///db store use cf_name vec to init
 /// Please note that adding a column family needs to be added in vec simultaneously, remember！！
 static VEC_COLUMN_FAMILY_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
@@ -41,6 +46,7 @@ static VEC_COLUMN_FAMILY_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME,
         META_SEQUENCER_INFO_COLUMN_FAMILY_NAME,
         TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME,
+        STATE_CHANGE_SET_COLUMN_FAMILY_NAME,
     ]
 });
 
@@ -58,6 +64,7 @@ pub struct RoochStore {
     pub transaction_store: TransactionDBStore,
     pub meta_store: MetaDBStore,
     pub transaction_accumulator_store: AccumulatorStore<TransactionAccumulatorStore>,
+    pub state_store: StateDBStore,
 }
 
 impl RoochStore {
@@ -79,8 +86,9 @@ impl RoochStore {
             transaction_store: TransactionDBStore::new(instance.clone()),
             meta_store: MetaDBStore::new(instance.clone()),
             transaction_accumulator_store: AccumulatorStore::new_transaction_accumulator_store(
-                instance,
+                instance.clone(),
             ),
+            state_store: StateDBStore::new(instance),
         };
         Ok(store)
     }
@@ -103,6 +111,10 @@ impl RoochStore {
 
     pub fn get_transaction_accumulator_store(&self) -> Arc<dyn AccumulatorTreeStore> {
         Arc::new(self.transaction_accumulator_store.clone())
+    }
+
+    pub fn get_state_store(&self) -> &StateDBStore {
+        &self.state_store
     }
 }
 
@@ -149,5 +161,39 @@ impl MetaStore for RoochStore {
 
     fn save_sequencer_info(&self, sequencer_info: SequencerInfo) -> Result<()> {
         self.get_meta_store().save_sequencer_info(sequencer_info)
+    }
+
+    fn remove_sequencer_info(&self) -> Result<()> {
+        self.get_meta_store().remove_sequence_info()
+    }
+}
+
+impl StateStore for RoochStore {
+    // Setting TTL directly in RocksDB may not be a good choice.
+    // RocksDB uses compaction to remove expired keys,
+    // and it may also have performance impact.
+    // TODO Cleaning up data regularly may be an option
+    fn save_state_change_set(
+        &self,
+        tx_order: u64,
+        state_change_set: StateChangeSetExt,
+    ) -> Result<()> {
+        self.get_state_store()
+            .save_state_change_set(tx_order, state_change_set)
+    }
+
+    fn get_state_change_set(&self, tx_order: u64) -> Result<Option<StateChangeSetExt>> {
+        self.get_state_store().get_state_change_set(tx_order)
+    }
+
+    fn multi_get_state_change_set(
+        &self,
+        tx_orders: Vec<u64>,
+    ) -> Result<Vec<Option<StateChangeSetExt>>> {
+        self.get_state_store().multi_get_state_change_set(tx_orders)
+    }
+
+    fn remove_state_change_set(&self, tx_order: u64) -> Result<()> {
+        self.get_state_store().remove_state_change_set(tx_order)
     }
 }

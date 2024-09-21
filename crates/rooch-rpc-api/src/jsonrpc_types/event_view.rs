@@ -9,6 +9,7 @@ use moveos_types::moveos_std::{
     event::{AnnotatedEvent, Event, EventID, TransactionEvent},
     object::ObjectID,
 };
+use rooch_types::address::RoochAddress;
 use rooch_types::indexer::event::{
     AnnotatedIndexerEvent, EventFilter, IndexerEvent, IndexerEventID,
 };
@@ -164,7 +165,7 @@ impl From<IndexerEvent> for IndexerEventView {
             event_type: event.event_type.into(),
             event_data: StrView(event.event_data.unwrap_or_default()),
             tx_hash: event.tx_hash.into(),
-            sender: event.sender.into(),
+            sender: RoochAddress::from(event.sender).into(),
             created_at: event.created_at.into(),
 
             decoded_event_data: None,
@@ -180,7 +181,7 @@ impl From<AnnotatedIndexerEvent> for IndexerEventView {
             event_type: event.event.event_type.into(),
             event_data: StrView(event.event.event_data.unwrap_or_default()),
             tx_hash: event.event.tx_hash.into(),
-            sender: event.event.sender.into(),
+            sender: RoochAddress::from(event.event.sender).into(),
             created_at: event.event.created_at.into(),
             decoded_event_data: Some(event.decoded_event_data.into()),
         }
@@ -224,11 +225,11 @@ impl From<EventFilterView> for EventFilter {
             EventFilterView::EventTypeWithSender { event_type, sender } => {
                 Self::EventTypeWithSender {
                     event_type: event_type.into(),
-                    sender: sender.into(),
+                    sender: sender.0.rooch_address.into(),
                 }
             }
             EventFilterView::EventType(event_type) => Self::EventType(event_type.into()),
-            EventFilterView::Sender(address) => Self::Sender(address.into()),
+            EventFilterView::Sender(address) => Self::Sender(address.0.rooch_address.into()),
             EventFilterView::TxHash(tx_hash) => Self::TxHash(tx_hash.into()),
             EventFilterView::TimeRange {
                 start_time,

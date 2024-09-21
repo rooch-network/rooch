@@ -5,14 +5,14 @@ use crate::metrics_server::{init_metrics, start_basic_prometheus_server};
 use crate::server::btc_server::BtcServer;
 use crate::server::rooch_server::RoochServer;
 use crate::service::aggregate_service::AggregateService;
-use crate::service::rpc_logger::RpcLogger;
+use crate::service::blocklist::{BlockListLayer, BlocklistConfig};
+use crate::service::error::ErrorHandler;
+use crate::service::metrics::ServiceMetrics;
 use crate::service::rpc_service::RpcService;
 use anyhow::{ensure, Error, Result};
 use axum::http::{HeaderValue, Method};
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
-use jsonrpsee::server::middleware::rpc::RpcServiceBuilder;
-use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
 use moveos_eventbus::bus::EventBus;
 use raw_store::errors::RawStoreError;
@@ -45,15 +45,22 @@ use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::address::RoochAddress;
 use rooch_types::error::{GenesisError, RoochError};
 use rooch_types::rooch_network::BuiltinChainID;
+use rooch_types::service_type::ServiceType;
 use serde_json::json;
 use std::fmt::Debug;
 use std::net::SocketAddr;
+use std::sync::Arc;
 use std::time::Duration;
 use std::{env, panic, process};
+use tokio::signal;
+use tokio::sync::broadcast;
+use tokio::sync::broadcast::Sender;
+use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::{error, info};
 
+mod axum_router;
 pub mod metrics_server;
 pub mod server;
 pub mod service;
@@ -62,7 +69,7 @@ pub mod service;
 static R_EXIT_CODE_NEED_HELP: i32 = 120;
 
 pub struct ServerHandle {
-    handle: jsonrpsee::server::ServerHandle,
+    shutdown_tx: Sender<()>,
     timers: Vec<Timer>,
     _opt: RoochOpt,
     _prometheus_registry: prometheus::Registry,
@@ -73,16 +80,14 @@ impl ServerHandle {
         for timer in self.timers {
             timer.stop();
         }
-        self.handle.stop()?;
+        let _ = self.shutdown_tx.send(());
         Ok(())
     }
 }
 
 impl Debug for ServerHandle {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ServerHandle")
-            .field("handle", &self.handle)
-            .finish()
+        f.debug_struct("ServerHandle").finish()
     }
 }
 
@@ -111,6 +116,7 @@ impl Service {
 
 pub struct RpcModuleBuilder {
     module: RpcModule<()>,
+    // rpc_doc: Project,
 }
 
 impl Default for RpcModuleBuilder {
@@ -123,6 +129,7 @@ impl RpcModuleBuilder {
     pub fn new() -> Self {
         Self {
             module: RpcModule::new(()),
+            // rpc_doc: rooch_rpc_doc(env!("CARGO_PKG_VERSION")),
         }
     }
 
@@ -217,6 +224,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         let rooch_dao_bitcoin_address = network.mock_genesis_account(&sequencer_keypair)?;
         let rooch_dao_address = rooch_dao_bitcoin_address.to_rooch_address();
         println!("Rooch DAO address: {:?}", rooch_dao_address);
+        println!("Rooch DAO Bitcoin address: {}", rooch_dao_bitcoin_address);
     } else {
         ensure!(
             network.genesis_config.sequencer_account == sequencer_bitcoin_address,
@@ -286,7 +294,6 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
 
     // Init DA
     let da_config = opt.da_config().clone();
-
     let da_proxy = DAProxy::new(
         DAActor::new(da_config, &actor_system)
             .await?
@@ -406,6 +413,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     };
     info!(?acl);
 
+    // init cors
     let cors: CorsLayer = CorsLayer::new()
         // Allow `POST` when accessing the resource
         .allow_methods([Method::POST])
@@ -413,22 +421,64 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         .allow_origin(acl)
         .allow_headers([axum::http::header::CONTENT_TYPE]);
 
+    let (shutdown_tx, mut governor_rx): (broadcast::Sender<()>, broadcast::Receiver<()>) =
+        broadcast::channel(16);
+
+    let traffic_burst_size: u32;
+    let traffic_per_second: u64;
+
+    if network.chain_id != BuiltinChainID::Local.chain_id() {
+        traffic_burst_size = opt.traffic_burst_size.unwrap_or(100);
+        traffic_per_second = opt.traffic_per_second.unwrap_or(1);
+    } else {
+        traffic_burst_size = opt.traffic_burst_size.unwrap_or(5000);
+        traffic_per_second = opt.traffic_per_second.unwrap_or(1);
+    };
+
+    // init limit
+    // Allow bursts with up to x requests per IP address
+    // and replenishes one element every x seconds
+    // We Box it because Axum 0.6 requires all Layers to be Clone
+    // and thus we need a static reference to it
+    let governor_conf = Arc::new(
+        GovernorConfigBuilder::default()
+            .per_second(traffic_per_second)
+            .burst_size(traffic_burst_size)
+            .use_headers()
+            .error_handler(move |error1| ErrorHandler::default().0(error1))
+            .finish()
+            .unwrap(),
+    );
+
+    let governor_limiter = governor_conf.limiter().clone();
+    let interval = Duration::from_secs(60);
+
+    // a separate background task to clean up
+    std::thread::spawn(move || loop {
+        if governor_rx.try_recv().is_ok() {
+            info!("Background thread received cancel signal, stopping.");
+            break;
+        }
+
+        std::thread::sleep(interval);
+
+        tracing::info!("rate limiting storage size: {}", governor_limiter.len());
+        governor_limiter.retain_recent();
+    });
+
+    let blocklist_config = Arc::new(BlocklistConfig::default());
+
     let middleware = tower::ServiceBuilder::new()
         .layer(TraceLayer::new_for_http())
-        .layer(cors);
+        .layer(cors)
+        .layer(BlockListLayer {
+            config: blocklist_config,
+        })
+        .layer(GovernorLayer {
+            config: governor_conf,
+        });
 
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
-
-    let rpc_middleware = RpcServiceBuilder::new().layer_fn(RpcLogger);
-
-    // Build server
-    let server = ServerBuilder::default()
-        .max_request_body_size(12 * 1024 * 1024)
-        .max_response_body_size(12 * 1024 * 1024)
-        .set_http_middleware(middleware)
-        .set_rpc_middleware(rpc_middleware)
-        .build(&addr)
-        .await?;
 
     let mut rpc_module_builder = RpcModuleBuilder::new();
     rpc_module_builder.register_module(RoochServer::new(
@@ -444,19 +494,100 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
             )
         })?;
 
-    // let rpc_api = build_rpc_api(rpc_api);
     let methods_names = rpc_module_builder.module.method_names().collect::<Vec<_>>();
-    let handle = server.start(rpc_module_builder.module);
+
+    let ser = axum_router::JsonRpcService::new(
+        rpc_module_builder.module.clone().into(),
+        ServiceMetrics::new(&prometheus_registry, &methods_names),
+    );
+
+    let mut router = axum::Router::new();
+    match opt.service_type {
+        ServiceType::Both => {
+            router = router
+                .route(
+                    "/",
+                    axum::routing::post(crate::axum_router::json_rpc_handler),
+                )
+                .route(
+                    "/",
+                    axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
+                )
+                .route(
+                    "/subscribe",
+                    axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
+                );
+        }
+        ServiceType::Http => {
+            router = router.route("/", axum::routing::post(axum_router::json_rpc_handler));
+        }
+        ServiceType::WebSocket => {
+            router = router
+                .route(
+                    "/",
+                    axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
+                )
+                .route(
+                    "/subscribe",
+                    axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
+                );
+        }
+    }
+
+    let app = router.with_state(ser).layer(middleware);
+
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
+    let addr = listener.local_addr()?;
+
+    let mut axum_rx = shutdown_tx.subscribe();
+    tokio::spawn(async move {
+        axum::serve(
+            listener,
+            app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .with_graceful_shutdown(async move {
+            tokio::select! {
+            _ = shutdown_signal() => {},
+            _ = axum_rx.recv() => {
+                info!("shutdown signal received, starting graceful shutdown");
+                },
+            }
+        })
+        .await
+        .unwrap();
+    });
 
     info!("JSON-RPC HTTP Server start listening {:?}", addr);
     info!("Available JSON-RPC methods : {:?}", methods_names);
 
     Ok(ServerHandle {
-        handle,
+        shutdown_tx,
         timers,
         _opt: opt,
         _prometheus_registry: prometheus_registry,
     })
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+    tokio::select! {
+        () = ctrl_c => {},
+        () = terminate => {},
+    }
+    info!("Terminate signal received");
 }
 
 fn _build_rpc_api<M: Send + Sync + 'static>(mut rpc_module: RpcModule<M>) -> RpcModule<M> {

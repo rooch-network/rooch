@@ -3,6 +3,7 @@ Feature: Rooch CLI multisign integration tests
    
     @serial
     Scenario: multisign_account
+      Given a bitcoind server for multisign_account
       Given a server for multisign_account
 
       Then cmd: "account create"
@@ -14,19 +15,58 @@ Feature: Rooch CLI multisign integration tests
       Then cmd: "account create-multisign -t 2 -p {{$.account[-1].account0.public_key}} -p {{$.account[-1].account1.public_key}} -p {{$.account[-1].account2.public_key}} --json"
       Then assert: "'{{$.account[-1]}}' not_contains error"
 
-      #transfer some gas to multisign account
-      Then cmd: "account transfer --to {{$.account[-1].multisign_address}} --amount 10000000000 --coin-type rooch_framework::gas_coin::RGas"
-      Then assert: "{{$.account[-1].execution_info.status.type}} == executed"  
+      # Create and load a wallet
+      Then cmd bitcoin-cli: "createwallet \"test_wallet\""
+      Then cmd bitcoin-cli: "loadwallet \"test_wallet\""
 
-      # transaction
-      Then cmd: "tx build --sender {{$.account[-2].multisign_address}}  --function rooch_framework::empty::empty --json"
+      # Prepare funds
+      Then cmd bitcoin-cli: "getnewaddress"
+      
+      # mint btc
+      Then cmd bitcoin-cli: "generatetoaddress 101 {{$.getnewaddress[-1]}}"
+
+      # Get UTXO for transaction input
+      Then cmd bitcoin-cli: "listunspent 1 9999999 [\"{{$.getnewaddress[-1]}}\"] true"
+
+      # Create a Bitcoin transaction transfer to multisign account
+      Then cmd bitcoin-cli: "createrawtransaction [{\"txid\":\"{{$.listunspent[-1][0].txid}}\",\"vout\":{{$.listunspent[-1][0].vout}}}] {\"{{$.account[-1].multisign_bitcoin_address}}\":49.999}"
+      Then cmd bitcoin-cli: "signrawtransactionwithwallet {{$.createrawtransaction[-1]}}"
+      Then cmd: "bitcoin broadcast-tx {{$.signrawtransactionwithwallet[-1].hex}}"
+      Then assert: "'{{$.bitcoin[-1]}}' not_contains error"
+
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.getnewaddress[-1]}}"
+      Then sleep: "20" # wait for the transaction to be confirmed
+
+      # l1 transaction
+      Then cmd: "bitcoin build-tx --sender {{$.account[-1].multisign_bitcoin_address}} -o {{$.account[-2].account0.bitcoin_address}}:100000000"
+      Then assert: "'{{$.bitcoin[-1]}}' not_contains error"
+      Then cmd: "bitcoin sign-tx -s {{$.account[-1].participants[0].participant_address}}   {{$.bitcoin[-1].path}} -y"
+      Then assert: "'{{$.bitcoin[-1]}}' not_contains error"
+      Then cmd: "bitcoin sign-tx -s {{$.account[-1].participants[2].participant_address}}   {{$.bitcoin[-1].path}} -y"
+      Then assert: "'{{$.bitcoin[-1]}}' not_contains error"
+      Then cmd: "bitcoin broadcast-tx {{$.bitcoin[-1].path}}"
+      Then assert: "'{{$.bitcoin[-1]}}' not_contains error"
+
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.getnewaddress[-1]}}"
+      Then sleep: "10" # wait for the transaction to be confirmed
+
+      Then cmd: "account balance -a {{$.account[-2].account0.address}} --json"
+      Then assert: "{{$.account[-1].Bitcoin.balance}} == 100000000"
+
+      #transfer some gas to multisign account
+      Then cmd: "account transfer --to {{$.account[-2].multisign_address}} --amount 10000000000 --coin-type rooch_framework::gas_coin::RGas"
+      Then assert: "{{$.account[-1].execution_info.status.type}} == executed"
+
+      # l2 transaction
+      Then cmd: "tx build --sender {{$.account[-3].multisign_address}}  --function rooch_framework::empty::empty --json"
       Then assert: "'{{$.tx[-1]}}' not_contains error"
-      Then cmd: "tx sign {{$.tx[-1].path}} -s {{$.account[-2].participants[0].participant_address}}  --json"
+      Then cmd: "tx sign {{$.tx[-1].path}} -s {{$.account[-3].participants[0].participant_address}}  --json -y"
       Then assert: "'{{$.tx[-1]}}' not_contains error"
-      Then cmd: "tx sign {{$.tx[-1].path}} -s {{$.account[-2].participants[1].participant_address}}  --json"
+      Then cmd: "tx sign {{$.tx[-1].path}} -s {{$.account[-3].participants[1].participant_address}}  --json -y"
       Then assert: "'{{$.tx[-1]}}' not_contains error"
       Then cmd: "tx submit {{$.tx[-1].path}} --json"
       Then assert: "{{$.tx[-1].execution_info.status.type}} == executed"
 
 
       Then stop the server
+      Then stop the bitcoind server 

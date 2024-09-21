@@ -10,7 +10,7 @@ use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
 use moveos_types::moveos_std::object::ObjectMeta;
-use moveos_types::state::{AnnotatedState, FieldKey, ObjectState};
+use moveos_types::state::{AnnotatedState, FieldKey, ObjectState, StateChangeSetExt};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
@@ -212,4 +212,23 @@ pub struct GetRootMessage {}
 
 impl Message for GetRootMessage {
     type Result = Result<ObjectState>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SaveStateChangeSetMessage {
+    pub tx_order: u64,
+    pub state_change_set: StateChangeSetExt,
+}
+
+impl Message for SaveStateChangeSetMessage {
+    type Result = Result<()>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetStateChangeSetsMessage {
+    pub tx_orders: Vec<u64>,
+}
+
+impl Message for GetStateChangeSetsMessage {
+    type Result = Result<Vec<Option<StateChangeSetExt>>>;
 }

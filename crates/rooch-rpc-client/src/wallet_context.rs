@@ -4,6 +4,10 @@
 use crate::client_config::{ClientConfig, DEFAULT_EXPIRATION_SECS};
 use crate::Client;
 use anyhow::{anyhow, Result};
+use bitcoin::key::Secp256k1;
+use bitcoin::psbt::{GetKey, KeyRequest};
+use bitcoin::secp256k1::Signing;
+use bitcoin::PrivateKey;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::moveos_std::gas_schedule::GasScheduleConfig;
 use moveos_types::transaction::MoveAction;
@@ -15,18 +19,22 @@ use rooch_key::keystore::Keystore;
 use rooch_rpc_api::jsonrpc_types::{
     DryRunTransactionResponseView, ExecuteTransactionResponseView, KeptVMStatusView, TxOptions,
 };
-use rooch_types::address::ParsedAddress;
 use rooch_types::address::RoochAddress;
-use rooch_types::addresses;
+use rooch_types::address::{BitcoinAddress, ParsedAddress};
+use rooch_types::bitcoin::network::Network;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
 use rooch_types::transaction::rooch::{RoochTransaction, RoochTransactionData};
+use rooch_types::{addresses, crypto};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
+use tracing::{debug, info};
 
+#[derive(Debug)]
 pub struct WalletContext {
     client: Arc<RwLock<Option<Client>>>,
     pub client_config: PersistedConfig<ClientConfig>,
@@ -48,7 +56,7 @@ impl WalletContext {
             )
         })?;
 
-        let client_config = client_config.persisted(&client_config_path);
+        let mut client_config = client_config.persisted(&client_config_path);
 
         let keystore_result = FileBasedKeystore::load(&client_config.keystore_path);
         let keystore = match keystore_result {
@@ -60,7 +68,21 @@ impl WalletContext {
         address_mapping.extend(addresses::rooch_framework_named_addresses());
 
         //TODO support account name alias name.
-        if let Some(active_address) = client_config.active_address {
+        if let Some(active_address) = &client_config.active_address {
+            let active_address = if !keystore.contains_address(active_address) {
+                //The active address is not in the keystore, maybe the user reset the keystore.
+                //We auto change the active address to the first address in the keystore.
+                let first_address = keystore
+                    .addresses()
+                    .pop()
+                    .ok_or_else(|| anyhow!("No address in the keystore"))?;
+                info!("The active address {} is not in the keystore, auto change the active address to the first address in the keystore: {}", active_address, first_address);
+                client_config.active_address = Some(first_address);
+                client_config.save()?;
+                first_address
+            } else {
+                *active_address
+            };
             address_mapping.insert("default".to_string(), active_address.into());
         }
 
@@ -83,12 +105,50 @@ impl WalletContext {
     }
 
     pub fn resolve_address(&self, parsed_address: ParsedAddress) -> RoochResult<AccountAddress> {
+        self.resolve_rooch_address(parsed_address)
+            .map(|address| address.into())
+    }
+
+    pub fn resolve_rooch_address(
+        &self,
+        parsed_address: ParsedAddress,
+    ) -> RoochResult<RoochAddress> {
         match parsed_address {
-            ParsedAddress::Numerical(address) => Ok(address.into()),
-            ParsedAddress::Named(name) => {
-                self.address_mapping.get(&name).cloned().ok_or_else(|| {
+            ParsedAddress::Numerical(address) => Ok(address),
+            ParsedAddress::Named(name) => self
+                .address_mapping
+                .get(&name)
+                .cloned()
+                .map(|address| address.into())
+                .ok_or_else(|| {
                     RoochError::CommandArgumentError(format!("Unknown named address: {}", name))
-                })
+                }),
+            ParsedAddress::Bitcoin(address) => Ok(address.to_rooch_address()),
+        }
+    }
+
+    pub async fn resolve_bitcoin_address(
+        &self,
+        parsed_address: ParsedAddress,
+    ) -> RoochResult<BitcoinAddress> {
+        match parsed_address {
+            ParsedAddress::Bitcoin(address) => Ok(address),
+            _ => {
+                let address = self.resolve_rooch_address(parsed_address)?;
+                let account = self.keystore.get_account(&address, self.password.clone())?;
+                if let Some(account) = account {
+                    let bitcoin_address = account.bitcoin_address;
+                    Ok(bitcoin_address)
+                } else {
+                    let client = self.get_client().await?;
+                    let bitcoin_address = client.rooch.resolve_bitcoin_address(address).await?;
+                    bitcoin_address.ok_or_else(|| {
+                        RoochError::CommandArgumentError(format!(
+                            "Cannot resolve bitcoin address from {}",
+                            address
+                        ))
+                    })
+                }
             }
         }
     }
@@ -134,13 +194,26 @@ impl WalletContext {
         action: MoveAction,
         max_gas_amount: Option<u64>,
     ) -> RoochResult<RoochTransactionData> {
+        self.build_tx_data_with_sequence_number(sender, action, max_gas_amount, None)
+            .await
+    }
+
+    pub async fn build_tx_data_with_sequence_number(
+        &self,
+        sender: RoochAddress,
+        action: MoveAction,
+        max_gas_amount: Option<u64>,
+        sequence_number: Option<u64>,
+    ) -> RoochResult<RoochTransactionData> {
         let client = self.get_client().await?;
         let chain_id = client.rooch.get_chain_id().await?;
-        let sequence_number = client
-            .rooch
-            .get_sequence_number(sender)
-            .await
-            .map_err(RoochError::from)?;
+        let sequence_number = sequence_number.unwrap_or(
+            client
+                .rooch
+                .get_sequence_number(sender)
+                .await
+                .map_err(RoochError::from)?,
+        );
         log::debug!("use sequence_number: {}", sequence_number);
         //TODO max gas amount from cli option or dry run estimate
         let tx_data = RoochTransactionData::new(
@@ -241,5 +314,51 @@ impl WalletContext {
 
     pub fn get_password(&self) -> Option<String> {
         self.password.clone()
+    }
+
+    pub async fn get_rooch_network(&self) -> Result<RoochNetwork> {
+        let client = self.get_client().await?;
+        let chain_id = client.rooch.get_chain_id().await?;
+        //TODO support custom chain id
+        let builtin_chain_id = BuiltinChainID::try_from(chain_id)?;
+        Ok(builtin_chain_id.into())
+    }
+
+    pub async fn get_bitcoin_network(&self) -> Result<Network> {
+        let rooch_network = self.get_rooch_network().await?;
+        let bitcoin_network = rooch_types::bitcoin::network::Network::from(
+            rooch_network.genesis_config.bitcoin_network,
+        );
+        Ok(bitcoin_network)
+    }
+}
+
+impl GetKey for WalletContext {
+    type Error = anyhow::Error;
+
+    fn get_key<C: Signing>(
+        &self,
+        key_request: KeyRequest,
+        _secp: &Secp256k1<C>,
+    ) -> Result<Option<PrivateKey>, Self::Error> {
+        debug!("Get key for key_request: {:?}", key_request);
+        let address = match key_request {
+            KeyRequest::Pubkey(pubkey) => {
+                let rooch_public_key = crypto::PublicKey::from_bitcoin_pubkey(&pubkey)?;
+                rooch_public_key.rooch_address()?
+            }
+            KeyRequest::Bip32(_key_source) => {
+                anyhow::bail!("BIP32 key source is not supported");
+            }
+            _ => anyhow::bail!("Unsupported key request: {:?}", key_request),
+        };
+        debug!("Get key for address: {:?}", address);
+        let kp = self
+            .keystore
+            .get_key_pair(&address, self.password.clone())?;
+        Ok(Some(PrivateKey::from_slice(
+            kp.private(),
+            bitcoin::Network::Bitcoin,
+        )?))
     }
 }

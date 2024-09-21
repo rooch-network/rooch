@@ -20,6 +20,7 @@ pub trait MetaStore {
     fn get_sequencer_info(&self) -> Result<Option<SequencerInfo>>;
 
     fn save_sequencer_info(&self, sequencer_info: SequencerInfo) -> Result<()>;
+    fn remove_sequencer_info(&self) -> Result<()>;
 }
 
 #[derive(Clone)]
@@ -37,6 +38,11 @@ impl MetaDBStore {
     pub fn get_sequencer_info(&self) -> Result<Option<SequencerInfo>> {
         self.sequencer_info_store
             .kv_get(SEQUENCER_INFO_KEY.to_string())
+    }
+
+    pub fn remove_sequence_info(&self) -> Result<()> {
+        self.sequencer_info_store
+            .remove(SEQUENCER_INFO_KEY.to_string())
     }
 
     pub fn save_sequencer_info(&self, sequencer_info: SequencerInfo) -> Result<()> {

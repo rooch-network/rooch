@@ -36,7 +36,6 @@ impl Actor for DAActor {}
 impl DAActor {
     pub async fn new(da_config: DAConfig, actor_system: &ActorSystem) -> Result<Self> {
         // internal servers
-
         let mut servers: Vec<Arc<dyn DAServerProxy + Send + Sync>> = Vec::new();
         let mut submit_threshold = 1;
         let mut success_count = 0;

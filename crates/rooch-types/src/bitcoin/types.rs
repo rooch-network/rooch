@@ -169,7 +169,7 @@ pub struct Transaction {
 impl From<bitcoin::Transaction> for Transaction {
     fn from(tx: bitcoin::Transaction) -> Self {
         Self {
-            id: tx.txid().into_address(),
+            id: tx.compute_txid().into_address(),
             version: tx.version.0 as u32,
             lock_time: tx.lock_time.to_consensus_u32(),
             input: tx.input.into_iter().map(|tx_in| tx_in.into()).collect(),
@@ -307,6 +307,15 @@ impl From<bitcoin::OutPoint> for OutPoint {
     fn from(out_point: bitcoin::OutPoint) -> Self {
         Self {
             txid: out_point.txid.into_address(),
+            vout: out_point.vout,
+        }
+    }
+}
+
+impl From<OutPoint> for bitcoin::OutPoint {
+    fn from(out_point: OutPoint) -> Self {
+        Self {
+            txid: Txid::from_address(out_point.txid),
             vout: out_point.vout,
         }
     }

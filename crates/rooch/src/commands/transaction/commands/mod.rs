@@ -16,10 +16,6 @@ pub mod query;
 pub mod sign;
 pub mod submit;
 
-pub(crate) fn is_file_path(s: &str) -> bool {
-    s.contains('/') || s.contains('\\') || s.contains('.')
-}
-
 pub(crate) enum FileOutputData {
     RoochTransactionData(RoochTransactionData),
     SignedRoochTransaction(RoochTransaction),
@@ -32,6 +28,14 @@ impl FileOutputData {
             FileOutputData::RoochTransactionData(data) => data.tx_hash(),
             FileOutputData::SignedRoochTransaction(data) => data.data.tx_hash(),
             FileOutputData::PartiallySignedRoochTransaction(data) => data.data.tx_hash(),
+        }
+    }
+
+    pub fn file_signatory_suffix(&self) -> String {
+        match self {
+            FileOutputData::RoochTransactionData(data) => data.sender.to_bech32(),
+            FileOutputData::SignedRoochTransaction(data) => data.sender().to_bech32(),
+            FileOutputData::PartiallySignedRoochTransaction(data) => data.signatories().to_string(),
         }
     }
 
@@ -54,7 +58,12 @@ impl FileOutputData {
     pub fn default_output_file_path(&self) -> Result<PathBuf> {
         let temp_dir = env::temp_dir();
         let tx_hash = self.tx_hash();
-        let file_name = format!("{}.{}", hex::encode(&tx_hash[..8]), self.file_suffix());
+        let file_name = format!(
+            "{}.{}.{}",
+            hex::encode(&tx_hash[..8]),
+            self.file_signatory_suffix(),
+            self.file_suffix()
+        );
         Ok(temp_dir.join(file_name))
     }
 }

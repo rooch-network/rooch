@@ -20,7 +20,6 @@ smallvec = { workspace = true }
 hex = { workspace = true }
 tracing = { workspace = true }
 bitcoin = { workspace = true }
-musig2 = { workspace = true }
 log = { workspace = true }
 serde_json = { workspace = true }
 ciborium = { workspace = true }

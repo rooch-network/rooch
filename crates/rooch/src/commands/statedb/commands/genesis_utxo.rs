@@ -6,7 +6,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
 use std::sync::mpsc::{Receiver, SyncSender};
-use std::sync::{mpsc, Arc, RwLock};
+use std::sync::{mpsc, Arc};
 use std::thread;
 use std::time::SystemTime;
 
@@ -24,46 +24,39 @@ use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
-use crate::commands::statedb::commands::import::{apply_fields, apply_nodes, finish_import_job};
-use crate::commands::statedb::commands::utxo::{
-    create_genesis_rooch_to_bitcoin_address_mapping_object, create_genesis_utxo_store_object,
-    UTXORawData,
+use crate::commands::statedb::commands::utxo::UTXORawData;
+use crate::commands::statedb::commands::{
+    apply_fields, apply_nodes, init_rooch_db, OutpointInscriptionsMap,
 };
-use crate::commands::statedb::commands::{init_job, OutpointInscriptionsMap};
 
-/// Import UTXO for development and testing.
+/// Import UTXO & rooch_address:BTC_address mapping only for genesis in development and testing env
 #[derive(Debug, Parser)]
 pub struct GenesisUTXOCommand {
     // #[clap(long, short = 'i', parse(from_os_str))]
     #[clap(long, short = 'i')]
-    /// import input file. like ~/.rooch/local/utxo.csv or utxo.csv
+    /// import from utxo_source. like ~/.rooch/local/utxo.csv or utxo.csv
     /// The file format is csv, and the first line is the header, the header is as follows:
     /// count,txid,vout,height,coinbase,amount,script,type,address
-    pub input: PathBuf,
+    pub utxo_source: PathBuf,
+    #[clap(long, short = 'b', default_value = "1048576")]
+    pub batch_size: Option<usize>,
 
     #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
     pub base_data_dir: Option<PathBuf>,
-
     /// If local chainid, start the service with a temporary data store.
     /// All data will be deleted when the service is stopped.
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
     pub chain_id: Option<RoochChainID>,
-
-    #[clap(long, short = 'b', default_value = "1048576")]
-    pub batch_size: Option<usize>,
 }
 
 impl GenesisUTXOCommand {
     pub async fn execute(self) -> RoochResult<()> {
-        let (root, moveos_store, start_time) =
-            init_job(self.base_data_dir.clone(), self.chain_id.clone());
-        let root_size = root.size;
-        let pre_root_state_root = root.state_root();
-        let startup_update_set = Arc::new(RwLock::new(UpdateSet::new()));
+        let rooch_db = init_rooch_db(self.base_data_dir.clone(), self.chain_id.clone());
+        let moveos_store = rooch_db.moveos_store;
         let moveos_store_arc = Arc::new(moveos_store);
 
-        let utxo_input_path = Arc::new(self.input.clone());
+        let utxo_input_path = Arc::new(self.utxo_source.clone());
         let utxo_input_path_clone1 = Arc::clone(&utxo_input_path);
         let utxo_input_path_clone2 = Arc::clone(&utxo_input_path);
         let (addr_tx, addr_rx) = mpsc::sync_channel(2);
@@ -80,27 +73,18 @@ impl GenesisUTXOCommand {
             )
         });
         let moveos_store_clone = Arc::clone(&moveos_store_arc);
-        let startup_update_set_clone = Arc::clone(&startup_update_set);
         let apply_addr_updates_thread = thread::spawn(move || {
-            apply_address_updates(addr_rx, moveos_store_clone, startup_update_set_clone);
+            apply_address_updates(addr_rx, moveos_store_clone);
         });
         let moveos_store_clone = Arc::clone(&moveos_store_arc);
-        let startup_update_set_clone = Arc::clone(&startup_update_set);
         let apply_utxo_updates_thread = thread::spawn(move || {
-            apply_utxo_updates(utxo_rx, moveos_store_clone, startup_update_set_clone);
+            apply_utxo_updates(utxo_rx, moveos_store_clone);
         });
         produce_utxo_updates_thread.join().unwrap();
         produce_addr_updates_thread.join().unwrap();
         apply_addr_updates_thread.join().unwrap();
         apply_utxo_updates_thread.join().unwrap();
 
-        finish_import_job(
-            Arc::clone(&moveos_store_arc),
-            root_size,
-            pre_root_state_root,
-            start_time,
-            Some(Arc::clone(&startup_update_set)),
-        );
         Ok(())
     }
 }
@@ -110,7 +94,7 @@ pub(crate) fn produce_address_map_updates(
     input: Arc<PathBuf>,
     batch_size: usize,
 ) {
-    let mut reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input.as_ref()).unwrap());
+    let mut reader = BufReader::with_capacity(256 * 1024, File::open(input.as_ref()).unwrap());
     let mut is_title_line = true;
     let mut added_address_set: FxHashSet<String> =
         FxHashSet::with_capacity_and_hasher(60_000_000, Default::default());
@@ -165,7 +149,7 @@ pub(crate) fn produce_utxo_updates(
     // produce utxo updates is slower than produce address map updates, so we put cache manager to drop cache here
     let file_cache_mgr = FileCacheManager::new(input).unwrap();
     let mut cache_drop_offset: u64 = 0;
-    let mut reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
+    let mut reader = BufReader::with_capacity(256 * 1024, File::open(input).unwrap());
     let mut is_title_line = true;
     let mut max_height = 0;
 
@@ -213,7 +197,6 @@ pub(crate) fn produce_utxo_updates(
 pub(crate) fn apply_address_updates(
     rx: Receiver<UpdateSet<FieldKey, ObjectState>>,
     moveos_store: Arc<MoveOSStore>,
-    startup_update_set: Arc<RwLock<UpdateSet<FieldKey, ObjectState>>>,
 ) {
     let mut address_mapping_count = 0;
     let mut rooch_to_bitcoin_address_mapping_state_root = *GENESIS_STATE_ROOT;
@@ -260,19 +243,6 @@ pub(crate) fn apply_address_updates(
             rooch_to_bitcoin_address_mapping_state_root;
     }
 
-    let mut genesis_rooch_to_bitcoin_address_mapping_object =
-        create_genesis_rooch_to_bitcoin_address_mapping_object();
-    genesis_rooch_to_bitcoin_address_mapping_object.size += address_mapping_count;
-    genesis_rooch_to_bitcoin_address_mapping_object.state_root =
-        Some(rooch_to_bitcoin_address_mapping_state_root);
-
-    let mut startup_update_set = startup_update_set.write().unwrap();
-    startup_update_set.put(
-        genesis_rooch_to_bitcoin_address_mapping_object
-            .id
-            .field_key(),
-        genesis_rooch_to_bitcoin_address_mapping_object.into_state(),
-    );
     println!(
         "genesis RoochToBitcoinAddressMapping object updated, state_root: {:?}, count: {}",
         rooch_to_bitcoin_address_mapping_state_root, address_mapping_count
@@ -282,7 +252,6 @@ pub(crate) fn apply_address_updates(
 pub(crate) fn apply_utxo_updates(
     rx: Receiver<UpdateSet<FieldKey, ObjectState>>,
     moveos_store: Arc<MoveOSStore>,
-    startup_update_set: Arc<RwLock<UpdateSet<FieldKey, ObjectState>>>,
 ) {
     let moveos_store = &moveos_store.clone();
     let mut utxo_count = 0;
@@ -331,15 +300,6 @@ pub(crate) fn apply_utxo_updates(
         last_utxo_store_state_root = utxo_store_state_root;
     }
 
-    let mut startup_update_set = startup_update_set.write().unwrap();
-
-    let mut genesis_utxostore_object = create_genesis_utxo_store_object();
-    genesis_utxostore_object.metadata.size += utxo_count;
-    genesis_utxostore_object.metadata.state_root = Some(utxo_store_state_root);
-    startup_update_set.put(
-        genesis_utxostore_object.metadata.id.field_key(),
-        genesis_utxostore_object,
-    );
     println!(
         "genesis BitcoinUTXOStore object updated, state_root: {:?}, count: {}",
         utxo_store_state_root, utxo_count

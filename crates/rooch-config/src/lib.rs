@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::da_config::DAConfig;
+use crate::store_config::StoreConfig;
 use anyhow::Result;
 use clap::Parser;
 use moveos_config::{temp_dir, DataDirPath};
@@ -9,14 +11,12 @@ use rooch_types::crypto::RoochKeyPair;
 use rooch_types::genesis_config::GenesisConfig;
 use rooch_types::rooch_network::{BuiltinChainID, RoochChainID, RoochNetwork};
 use rooch_types::service_status::ServiceStatus;
+use rooch_types::service_type::ServiceType;
 use serde::{Deserialize, Serialize};
 use std::fs::create_dir_all;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::{fmt::Debug, path::Path, path::PathBuf};
-
-use crate::da_config::DAConfig;
-use crate::store_config::StoreConfig;
 
 pub mod config;
 pub mod da_config;
@@ -135,6 +135,15 @@ pub struct RoochOpt {
     #[clap(long, default_value_t, value_enum)]
     pub service_status: ServiceStatus,
 
+    #[clap(long)]
+    pub traffic_burst_size: Option<u32>,
+
+    #[clap(long)]
+    pub traffic_per_second: Option<u64>,
+
+    #[clap(long, default_value_t, value_enum)]
+    pub service_type: ServiceType,
+
     #[serde(skip)]
     #[clap(skip)]
     base: Option<Arc<BaseConfig>>,
@@ -168,7 +177,10 @@ impl RoochOpt {
             proposer_account: None,
             da: DAConfig::default(),
             service_status: ServiceStatus::default(),
+            traffic_per_second: None,
+            traffic_burst_size: None,
             base: None,
+            service_type: ServiceType::default(),
         };
         opt.init()?;
         Ok(opt)
@@ -348,9 +360,8 @@ impl ServerOpt {
     }
 
     pub fn get_active_env(&self) -> String {
-        match self.active_env.clone() {
-            Some(env) => env,
-            None => RoochChainID::default().chain_name(),
-        }
+        self.active_env
+            .clone()
+            .unwrap_or_else(|| RoochChainID::default().chain_name())
     }
 }

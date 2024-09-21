@@ -12,6 +12,7 @@ module rooch_framework::address_mapping{
     friend rooch_framework::genesis;
     friend rooch_framework::bitcoin_validator;
     friend rooch_framework::transaction_validator;
+    friend rooch_framework::transfer;
     
     const ErrorMultiChainAddressInvalid: u64 = 1;
     const ErrorUnsupportedAddress: u64 = 2;

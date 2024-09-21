@@ -331,7 +331,7 @@ export class RoochDataSource implements IDatasource {
       throw new Error(`Transaction with id ${txId} not found`)
     }
 
-    const btcTxOption = txResult.return_values[0].decoded_value.value.vec[0]
+    const btcTxOption = txResult.return_values?.[0]?.decoded_value?.value?.vec?.[0]
     if (!btcTxOption) {
       throw new Error(`Transaction with id ${txId} not found`)
     }

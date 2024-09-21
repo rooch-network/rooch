@@ -17,16 +17,17 @@ import { RTL } from './with-settings/right-to-left';
 import { schemeConfig } from './color-scheme-script';
 
 type Props = {
+  nonce: string;
   children: React.ReactNode;
 };
 
-export function ThemeProvider({ children }: Props) {
+export function ThemeProvider({ nonce, children }: Props) {
   const settings = useSettingsContext();
 
   const theme = createTheme(settings);
 
   return (
-    <AppRouterCacheProvider options={{ key: 'css' }}>
+    <AppRouterCacheProvider options={{ key: 'css', nonce }}>
       <CssVarsProvider
         theme={theme}
         defaultMode={schemeConfig.defaultMode}

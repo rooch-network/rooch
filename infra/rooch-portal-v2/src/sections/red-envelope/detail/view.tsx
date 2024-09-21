@@ -48,7 +48,7 @@ export default function RedEnvelopeDetail({ redEnvelopeId }: { redEnvelopeId: st
   console.log('🚀 ~ file: view.tsx:21 ~ RedEnvelopeDetail ~ data:', redEnvelopeObject);
 
   const redEnvelopeInfo = useMemo(() => {
-    const info = redEnvelopeObject?.data[0].decoded_value?.value as unknown as
+    const info = redEnvelopeObject?.data?.[0]?.decoded_value?.value as unknown as
       | RedEnvelopeItem
       | undefined;
     return info;

@@ -6,7 +6,10 @@ use crate::{
     transaction::RoochTransactionData,
 };
 use anyhow::{ensure, Result};
-use bitcoin::consensus::{Decodable, Encodable};
+use bitcoin::{
+    consensus::{Decodable, Encodable},
+    io::BufRead,
+};
 use fastcrypto::{
     hash::Sha256,
     secp256k1::{Secp256k1PublicKey, Secp256k1Signature},
@@ -18,15 +21,15 @@ use moveos_types::{
     h256::{sha2_256_of, H256},
     state::{MoveStructState, MoveStructType},
 };
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::io;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("auth_payload");
 
 /// The original message prefix of the Bitcoin wallet includes the length of the message `x18`
 /// We remove the length because the bitcoin consensus codec serialization format already contains the length information
-const MESSAGE_INFO_PREFIX: &[u8] = b"Bitcoin Signed Message:\n";
-const MESSAGE_INFO: &[u8] = b"Rooch Transaction:\n";
+pub const MESSAGE_INFO_PREFIX: &[u8] = b"Bitcoin Signed Message:\n";
+pub const MESSAGE_INFO: &[u8] = b"Rooch Transaction:\n";
 
 const TX_HASH_HEX_LENGTH: usize = 64;
 
@@ -54,8 +57,22 @@ impl SignData {
         }
     }
 
+    pub fn new_without_tx_hash(
+        message_prefix: Vec<u8>,
+        message_info_without_tx_hash: Vec<u8>,
+    ) -> Self {
+        SignData {
+            message_prefix,
+            message_info: message_info_without_tx_hash,
+        }
+    }
+
     pub fn new_with_default(tx_data: &RoochTransactionData) -> Self {
         Self::new(MESSAGE_INFO_PREFIX.to_vec(), MESSAGE_INFO.to_vec(), tx_data)
+    }
+
+    pub fn new_without_tx_hash_with_default() -> Self {
+        Self::new_without_tx_hash(MESSAGE_INFO_PREFIX.to_vec(), MESSAGE_INFO.to_vec())
     }
 
     pub fn encode(&self) -> Vec<u8> {
@@ -77,14 +94,17 @@ impl SignData {
 }
 
 impl Encodable for SignData {
-    fn consensus_encode<S: io::Write + ?Sized>(&self, s: &mut S) -> Result<usize, io::Error> {
+    fn consensus_encode<S: bitcoin::io::Write + ?Sized>(
+        &self,
+        s: &mut S,
+    ) -> Result<usize, bitcoin::io::Error> {
         let len = self.message_prefix.consensus_encode(s)?;
         Ok(len + self.message_info.consensus_encode(s)?)
     }
 }
 
 impl Decodable for SignData {
-    fn consensus_decode<D: io::Read + ?Sized>(
+    fn consensus_decode<D: BufRead + ?Sized>(
         d: &mut D,
     ) -> Result<Self, bitcoin::consensus::encode::Error> {
         Ok(SignData {
@@ -94,7 +114,7 @@ impl Decodable for SignData {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct AuthPayload {
     // Message signature
     pub signature: Vec<u8>,
@@ -149,6 +169,21 @@ impl AuthPayload {
         }
     }
 
+    pub fn new_without_tx_hash(
+        sign_data: SignData,
+        signature: Signature,
+        bitcoin_address: String,
+    ) -> Self {
+        debug_assert_eq!(signature.scheme(), SignatureScheme::Secp256k1);
+        AuthPayload {
+            signature: signature.signature_bytes().to_vec(),
+            message_prefix: sign_data.message_prefix,
+            message_info: sign_data.message_info,
+            public_key: signature.public_key_bytes().to_vec(),
+            from_address: bitcoin_address.into_bytes(),
+        }
+    }
+
     pub fn verify(&self, tx_data: &RoochTransactionData) -> Result<()> {
         let pk = Secp256k1PublicKey::from_bytes(&self.public_key)?;
         let sign_data = SignData::new(
@@ -156,6 +191,17 @@ impl AuthPayload {
             self.message_info.clone(),
             tx_data,
         );
+        let message = sign_data.encode();
+        let message_hash = sha2_256_of(&message).0.to_vec();
+        let signature = Secp256k1Signature::from_bytes(&self.signature)?;
+        pk.verify_with_hash::<Sha256>(&message_hash, &signature)?;
+        Ok(())
+    }
+
+    pub fn verify_without_tx_hash(&self) -> Result<()> {
+        let pk = Secp256k1PublicKey::from_bytes(&self.public_key)?;
+        let sign_data =
+            SignData::new_without_tx_hash(self.message_prefix.clone(), self.message_info.clone());
         let message = sign_data.encode();
         let message_hash = sha2_256_of(&message).0.to_vec();
         let signature = Secp256k1Signature::from_bytes(&self.signature)?;

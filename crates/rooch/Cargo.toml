@@ -24,6 +24,8 @@ tokio = { features = ["full"], workspace = true }
 serde = { workspace = true }
 serde_yaml = { workspace = true }
 serde_json = { workspace = true }
+serde_with = { workspace = true }
+serde-reflection = { workspace = true }
 once_cell = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
@@ -33,7 +35,6 @@ termcolor = { workspace = true }
 itertools = { workspace = true }
 hex = { workspace = true }
 regex = { workspace = true }
-serde-reflection = { workspace = true }
 parking_lot = { workspace = true }
 rpassword = { workspace = true }
 fastcrypto = { workspace = true }
@@ -50,6 +51,7 @@ vergen-pretty = { workspace = true }
 prometheus = { workspace = true }
 lazy_static = { workspace = true }
 schemars = { workspace = true }
+bitcoin = { workspace = true }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }
@@ -85,7 +87,6 @@ framework-builder = { workspace = true }
 framework-types = { workspace = true }
 raw-store = { workspace = true }
 smt = { workspace = true }
-bitcoin = { workspace = true }
 bitcoin-move = { workspace = true }
 
 rooch-key = { workspace = true }

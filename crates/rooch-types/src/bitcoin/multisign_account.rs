@@ -3,11 +3,12 @@
 
 use crate::address::BitcoinAddress;
 use crate::addresses::BITCOIN_MOVE_ADDRESS;
-use anyhow::Result;
+use anyhow::{ensure, Result};
+use bitcoin::bip32::{DerivationPath, Fingerprint};
 use bitcoin::key::constants::SCHNORR_PUBLIC_KEY_SIZE;
 use bitcoin::key::Secp256k1;
-use bitcoin::taproot::TaprootBuilder;
-use bitcoin::{ScriptBuf, XOnlyPublicKey};
+use bitcoin::taproot::{LeafVersion, TaprootBuilder};
+use bitcoin::{PublicKey, ScriptBuf, TapLeafHash, XOnlyPublicKey};
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use moveos_types::moveos_std::simple_map::SimpleMap;
 use moveos_types::moveos_std::tx_context::TxContext;
@@ -18,6 +19,8 @@ use moveos_types::{
     transaction::MoveAction,
 };
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+use tracing::debug;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("multisign_account");
 
@@ -57,6 +60,23 @@ pub struct ParticipantInfo {
     pub public_key: Vec<u8>,
 }
 
+impl ParticipantInfo {
+    pub fn public_key(&self) -> Result<PublicKey> {
+        PublicKey::from_slice(&self.public_key).map_err(|e| {
+            anyhow::anyhow!(
+                "Failed to parse public key: {}, hex: {}",
+                e,
+                hex::encode(&self.public_key)
+            )
+        })
+    }
+
+    pub fn x_only_public_key(&self) -> Result<XOnlyPublicKey> {
+        let pubkey = self.public_key()?;
+        Ok(XOnlyPublicKey::from(pubkey))
+    }
+}
+
 impl MoveStructType for ParticipantInfo {
     const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
@@ -77,27 +97,27 @@ pub fn generate_multisign_address(
     threshold: usize,
     public_keys: Vec<Vec<u8>>,
 ) -> Result<BitcoinAddress> {
+    ensure!(
+        threshold > 0 && threshold <= public_keys.len(),
+        "Invalid threshold: {}",
+        threshold
+    );
     let mut x_only_public_keys = public_keys
         .into_iter()
         .map(|pk| {
             let x_only_pk = if pk.len() == SCHNORR_PUBLIC_KEY_SIZE {
-                pk
+                XOnlyPublicKey::from_slice(&pk)?
             } else {
                 let pubkey = bitcoin::PublicKey::from_slice(&pk)?;
-                XOnlyPublicKey::from(pubkey).serialize().to_vec()
+                XOnlyPublicKey::from(pubkey)
             };
             Ok(x_only_pk)
         })
         .collect::<Result<Vec<_>>>()?;
 
     // Sort public keys to ensure the same script is generated for the same set of keys
-    // Note: we sort on the x-only public key bytes
     x_only_public_keys.sort();
 
-    let x_only_public_keys = x_only_public_keys
-        .into_iter()
-        .map(|pk| XOnlyPublicKey::from_slice(&pk))
-        .collect::<Result<Vec<_>, bitcoin::secp256k1::Error>>()?;
     let multisig_script = create_multisig_script(threshold, &x_only_public_keys);
 
     let builder = TaprootBuilder::new().add_leaf(0, multisig_script)?;
@@ -117,6 +137,7 @@ pub fn generate_multisign_address(
 
 /// Create a multisig script, the caller should ensure the public keys are sorted
 fn create_multisig_script(threshold: usize, public_keys: &Vec<XOnlyPublicKey>) -> ScriptBuf {
+    debug_assert!(threshold <= public_keys.len());
     let mut builder = bitcoin::script::Builder::new();
 
     for pubkey in public_keys {
@@ -132,6 +153,73 @@ fn create_multisig_script(threshold: usize, public_keys: &Vec<XOnlyPublicKey>) -
     builder = builder.push_opcode(bitcoin::opcodes::all::OP_GREATERTHANOREQUAL);
 
     builder.into_script()
+}
+
+pub fn update_multisig_psbt(
+    psbt_input: &mut bitcoin::psbt::Input,
+    account_info: &MultisignAccountInfo,
+) -> Result<()> {
+    let secp = Secp256k1::new();
+
+    let threshold = account_info.threshold as usize;
+    let mut participant_pubkeys = account_info
+        .participants
+        .values()
+        .into_iter()
+        .map(|info| info.x_only_public_key())
+        .collect::<Result<Vec<_>>>()?;
+
+    // Sort public keys to ensure the same script is generated for the same set of keys
+    participant_pubkeys.sort();
+
+    debug!(
+        "Ordered public keys when build psbt sign: {:?}",
+        participant_pubkeys
+    );
+
+    let multisig_script = create_multisig_script(threshold, &participant_pubkeys);
+
+    let mut builder = TaprootBuilder::new();
+    builder = builder.add_leaf(0, multisig_script.clone())?;
+
+    let internal_key = participant_pubkeys[0];
+    let tap_tree = builder
+        .finalize(&secp, internal_key)
+        .map_err(|_| anyhow::anyhow!("Failed to finalize taproot tree"))?;
+
+    let tap_leaf_hash = TapLeafHash::from_script(&multisig_script, LeafVersion::TapScript);
+
+    let mut tap_key_origins = BTreeMap::new();
+    for pubkey in &participant_pubkeys {
+        let default_key_source = (Fingerprint::default(), DerivationPath::default());
+        tap_key_origins.insert(*pubkey, (vec![tap_leaf_hash], default_key_source));
+    }
+
+    psbt_input.tap_internal_key = Some(internal_key);
+    psbt_input.tap_key_origins = tap_key_origins.clone();
+    psbt_input.tap_merkle_root = tap_tree.merkle_root();
+
+    let control_block = tap_tree
+        .control_block(&(multisig_script.clone(), LeafVersion::TapScript))
+        .unwrap();
+    psbt_input.tap_scripts.insert(
+        control_block,
+        (multisig_script.clone(), LeafVersion::TapScript),
+    );
+
+    let address = bitcoin::Address::p2tr(
+        &secp,
+        internal_key,
+        tap_tree.merkle_root(),
+        bitcoin::Network::Bitcoin,
+    );
+    let rebuild_address = BitcoinAddress::from(address);
+    if rebuild_address != account_info.multisign_bitcoin_address {
+        anyhow::bail!(
+            "The multisign address in the psbt is not equal to the on-chain multisign address"
+        );
+    }
+    Ok(())
 }
 
 /// Rust bindings for multisign_acount module

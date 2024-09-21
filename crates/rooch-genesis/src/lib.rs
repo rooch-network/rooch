@@ -19,7 +19,7 @@ use moveos_types::h256::H256;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::gas_schedule::{GasEntry, GasSchedule, GasScheduleConfig};
 use moveos_types::moveos_std::object::ObjectMeta;
-use moveos_types::state::ObjectState;
+use moveos_types::state::{ObjectState, StateChangeSetExt};
 use moveos_types::transaction::{MoveAction, MoveOSTransaction, RawTransactionOutput};
 use moveos_types::{h256, state_resolver};
 use once_cell::sync::Lazy;
@@ -30,6 +30,7 @@ use rooch_framework::natives::gas_parameter::gas_member::{
 use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
 use rooch_indexer::store::traits::IndexerStoreTrait;
 use rooch_store::meta_store::MetaStore;
+use rooch_store::state_store::StateStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::error::GenesisError;
@@ -437,6 +438,15 @@ impl RoochGenesis {
         let sequencer_info = SequencerInfo::new(genesis_tx_order, genesis_tx_accmulator_info);
         rooch_db.rooch_store.save_sequencer_info(sequencer_info)?;
         rooch_db.rooch_store.save_transaction(ledger_tx.clone())?;
+
+        // Save genesis tx state change set
+        let state_change_set_ext = StateChangeSetExt::new(
+            output.changeset.clone(),
+            self.genesis_moveos_tx().ctx.sequence_number,
+        );
+        rooch_db
+            .rooch_store
+            .save_state_change_set(genesis_tx_order, state_change_set_ext)?;
 
         // Save the genesis to indexer
         // 1. update indexer transaction
