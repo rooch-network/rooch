@@ -57,6 +57,7 @@ members = [
     "frameworks/moveos-stdlib",
     "frameworks/rooch-framework",
     "frameworks/rooch-nursery",
+    "examples/bitseed_generator",
 ]
 
 default-members = [
