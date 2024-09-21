@@ -1,0 +1,6 @@
+{
+  "checkOnSave": {
+    "command": "clippy"
+  },
+  "rust-analyzer.cargo.features": ["debug"]
+}

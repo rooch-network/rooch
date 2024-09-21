@@ -575,7 +575,8 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                     second
                 ),
                 "not_contains" => assert!(
-                    !first.contains(&second),
+                    !first.contains(&second)
+                        && !first.to_lowercase().contains(&second.to_lowercase()),
                     "Assert {:?} not_contains {:?} failed",
                     first,
                     second

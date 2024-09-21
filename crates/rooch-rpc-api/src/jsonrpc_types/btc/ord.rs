@@ -1,12 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::utxo::BitcoinOutPointView;
+use super::utxo::OutPointView;
+use crate::jsonrpc_types::ObjectStateView;
 use crate::jsonrpc_types::{
     BytesView, IndexerObjectStateView, IndexerStateIDView, MoveStringView, ObjectIDVecView,
     ObjectMetaView, StrView, UnitedAddressView,
 };
 use anyhow::Result;
+use moveos_types::move_std::option::MoveOption;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::state::MoveState;
 use moveos_types::state::MoveStructType;
@@ -30,6 +32,12 @@ impl FromStr for InscriptionIDView {
 impl Display for InscriptionIDView {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+impl From<InscriptionIDView> for InscriptionID {
+    fn from(view: InscriptionIDView) -> Self {
+        view.0
     }
 }
 
@@ -68,7 +76,7 @@ impl InscriptionFilterView {
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct SatPointView {
-    pub output: BitcoinOutPointView,
+    pub output: OutPointView,
     pub offset: StrView<u64>,
 }
 
@@ -77,6 +85,15 @@ impl From<SatPoint> for SatPointView {
         SatPointView {
             output: sat_point.outpoint.into(),
             offset: StrView(sat_point.offset),
+        }
+    }
+}
+
+impl From<SatPointView> for SatPoint {
+    fn from(view: SatPointView) -> Self {
+        SatPoint {
+            outpoint: view.output.into(),
+            offset: view.offset.0,
         }
     }
 }
@@ -117,6 +134,28 @@ impl From<Inscription> for InscriptionView {
     }
 }
 
+impl From<InscriptionView> for Inscription {
+    fn from(view: InscriptionView) -> Self {
+        let inscription_number = view.inscription_number;
+        Inscription {
+            id: view.id.0,
+            location: view.location.into(),
+            sequence_number: view.sequence_number,
+            inscription_number: inscription_number.unsigned_abs(),
+            is_cursed: inscription_number < 0,
+            charms: view.charms,
+            body: view.body.0,
+            content_encoding: view.content_encoding.map(|v| v.0).into(),
+            content_type: view.content_type.map(|v| v.0).into(),
+            metadata: view.metadata.0,
+            metaprotocol: view.metaprotocol.map(|v| v.0).into(),
+            parents: view.parents.into_iter().map(Into::into).collect(),
+            pointer: view.pointer.map(|v| v.0).into(),
+            rune: MoveOption::none(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct InscriptionStateView {
     #[serde(flatten)]
@@ -136,6 +175,41 @@ impl TryFrom<IndexerObjectStateView> for InscriptionStateView {
             metadata: state.metadata,
             value: inscription_view,
             indexer_id: state.indexer_id,
+        })
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub struct InscriptionObjectView {
+    #[serde(flatten)]
+    pub metadata: ObjectMetaView,
+    pub value: InscriptionView,
+}
+
+impl InscriptionObjectView {
+    pub fn location(&self) -> SatPoint {
+        self.value.location.clone().into()
+    }
+}
+
+impl From<InscriptionStateView> for InscriptionObjectView {
+    fn from(state: InscriptionStateView) -> Self {
+        InscriptionObjectView {
+            metadata: state.metadata,
+            value: state.value,
+        }
+    }
+}
+
+impl TryFrom<ObjectStateView> for InscriptionObjectView {
+    type Error = anyhow::Error;
+
+    fn try_from(state: ObjectStateView) -> Result<Self, Self::Error> {
+        let inscription = Inscription::from_bytes(&state.value.0)?;
+        let inscription_view = InscriptionView::from(inscription);
+        Ok(InscriptionObjectView {
+            metadata: state.metadata,
+            value: inscription_view,
         })
     }
 }

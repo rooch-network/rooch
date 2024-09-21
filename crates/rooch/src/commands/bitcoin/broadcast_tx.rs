@@ -22,7 +22,7 @@ impl CommandAction<String> for BroadcastTx {
 
         Ok(client
             .rooch
-            .broadcast_bitcoin_tx(self.input.data.into(), None)
+            .broadcast_bitcoin_tx(&self.input.data, None, None)
             .await?)
     }
 }

@@ -45,6 +45,14 @@ impl<E> MoveOption<E> {
             MoveOption::some(f(self.vec.pop().expect("MoveOption is not empty")))
         }
     }
+
+    pub fn as_ref(&self) -> Option<&E> {
+        if self.vec.is_empty() {
+            None
+        } else {
+            Some(&self.vec[0])
+        }
+    }
 }
 
 impl<E> MoveStructType for MoveOption<E>
