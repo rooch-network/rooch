@@ -7,4 +7,6 @@ use moveos_stdlib::natives::moveos_stdlib::json::GasParameters;
 crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasParameters, "json", [
     [.from_bytes.base, "from_bytes.base", 1000 * MUL],
     [.from_bytes.per_byte_in_str, "from_bytes.per_byte_in_str", 20 * MUL],
+    [.to_bytes.base, optional "to_bytes.base", 1000 * MUL],
+    [.to_bytes.per_byte_in_str, optional "to_bytes.per_byte_in_str", 20 * MUL],
 ]);
