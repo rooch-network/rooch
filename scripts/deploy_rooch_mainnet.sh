@@ -5,8 +5,6 @@
 REF="$1"
 BTC_MAIN_RPC_URL="$2"
 BTC_MAIN_RPC_PWD="$3"
-OPENDA_GCP_MAINNET_BUCKET="$4"
-OPENDA_GCP_MAINNET_CREDENTIAL="$5"
 
 sleep 30
 docker image prune -a -f
@@ -17,5 +15,4 @@ docker run -d --name rooch-mainnet --restart unless-stopped -v /data:/root -p 67
     server start -n main \
     --btc-rpc-url "$BTC_MAIN_RPC_URL" \
     --btc-rpc-username rooch-main \
-    --btc-rpc-password "$BTC_MAIN_RPC_PWD" \
-    --da "{\"internal-da-server\": {\"servers\": [{\"open-da\": {\"scheme\": \"gcs\", \"config\": {\"bucket\": \"$OPENDA_GCP_MAINNET_BUCKET\", \"credential\": \"$OPENDA_GCP_MAINNET_CREDENTIAL\"}}}]}}"
+    --btc-rpc-password "$BTC_MAIN_RPC_PWD"

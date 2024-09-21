@@ -1,8 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::BTreeMap;
-
 use crate::actor::messages::TransactionProposeMessage;
 use moveos_types::h256;
 use moveos_types::h256::H256;
@@ -14,7 +12,7 @@ use rooch_types::block::Block;
 /// This SCC is a mirror of the on-chain SCC
 pub struct StateCommitmentChain {
     //TODO save to the storage
-    blocks: BTreeMap<u128, Block>,
+    last_block: Option<Block>,
     buffer: Vec<TransactionProposeMessage>,
     da: DAProxy,
 }
@@ -23,7 +21,7 @@ impl StateCommitmentChain {
     /// Create a new SCC
     pub fn new(da_proxy: DAProxy) -> Self {
         Self {
-            blocks: BTreeMap::new(),
+            last_block: None,
             buffer: Vec::new(),
             da: da_proxy,
         }
@@ -33,19 +31,19 @@ impl StateCommitmentChain {
         self.buffer.push(tx);
     }
 
-    /// Append a new block to the SCC
-    fn append_block(&mut self, block: Block) {
-        self.blocks.insert(block.block_number, block);
+    /// Update last block of the SCC
+    fn update_last_block(&mut self, block: Block) {
+        self.last_block = Some(block);
     }
 
     /// Get the last block of the SCC
     pub fn last_block(&self) -> Option<&Block> {
-        self.blocks.values().last()
+        self.last_block.as_ref()
     }
 
     /// Get the last block number of the SCC
     pub fn last_block_number(&self) -> Option<u128> {
-        self.blocks.keys().last().copied()
+        self.last_block.as_ref().map(|block| block.block_number)
     }
 
     /// Trigger the proposer to propose a new block
@@ -104,7 +102,7 @@ impl StateCommitmentChain {
             tx_accumulator_root,
             state_roots,
         );
-        self.append_block(new_block);
+        self.update_last_block(new_block);
         self.buffer.clear();
         self.last_block()
     }
