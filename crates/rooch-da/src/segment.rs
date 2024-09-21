@@ -48,6 +48,15 @@ impl SegmentV0 {
         let data_len = u64::from_le_bytes(bytes[26..34].try_into()?);
         let data_checksum = u64::from_le_bytes(bytes[34..42].try_into()?);
         let checksum = u64::from_le_bytes(bytes[42..SEGMENT_V0_DATA_OFFSET].try_into()?);
+        // check bytes has enough length
+        if bytes.len() < SEGMENT_V0_DATA_OFFSET + data_len as usize {
+            return Err(anyhow::anyhow!(format!(
+                "segment_v0: bytes:{} less than exp header:{} + data:{}",
+                bytes.len(),
+                SEGMENT_V0_DATA_OFFSET,
+                data_len as usize
+            )));
+        }
         let data =
             bytes[SEGMENT_V0_DATA_OFFSET..SEGMENT_V0_DATA_OFFSET + data_len as usize].to_vec();
 
