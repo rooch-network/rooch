@@ -940,23 +940,6 @@
           }
         }
       },
-      "BitcoinOutPointView": {
-        "type": "object",
-        "required": [
-          "txid",
-          "vout"
-        ],
-        "properties": {
-          "txid": {
-            "$ref": "#/components/schemas/bitcoin::blockdata::transaction::Txid"
-          },
-          "vout": {
-            "type": "integer",
-            "format": "uint32",
-            "minimum": 0.0
-          }
-        }
-      },
       "DisplayFieldsView": {
         "type": "object",
         "required": [
@@ -2378,6 +2361,23 @@
           }
         ]
       },
+      "OutPointView": {
+        "type": "object",
+        "required": [
+          "txid",
+          "vout"
+        ],
+        "properties": {
+          "txid": {
+            "$ref": "#/components/schemas/bitcoin::blockdata::transaction::Txid"
+          },
+          "vout": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0.0
+          }
+        }
+      },
       "PageView_for_BalanceInfoView_and_IndexerStateIDView": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
@@ -2720,7 +2720,7 @@
             "$ref": "#/components/schemas/u64"
           },
           "output": {
-            "$ref": "#/components/schemas/BitcoinOutPointView"
+            "$ref": "#/components/schemas/OutPointView"
           }
         }
       },

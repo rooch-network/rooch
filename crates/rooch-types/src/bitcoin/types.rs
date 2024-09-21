@@ -301,6 +301,10 @@ impl OutPoint {
     pub fn is_null(&self) -> bool {
         *self == OutPoint::null()
     }
+
+    pub fn txid(&self) -> Txid {
+        Txid::from_address(self.txid)
+    }
 }
 
 impl From<bitcoin::OutPoint> for OutPoint {

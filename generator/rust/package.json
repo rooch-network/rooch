@@ -1,0 +1,13 @@
+{
+  "name": "generator-rust",
+  "version": "0.1.0",
+  "main": "index.js",
+  "license": "Apache-2.0",
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {
+    "cbor": "^9.0.2",
+    "jest": "^29.7.0"
+  }
+}

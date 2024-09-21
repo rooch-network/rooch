@@ -719,6 +719,11 @@ impl BitcoinAddress {
         Ok(addr)
     }
 
+    pub fn script_pubkey(&self) -> Result<bitcoin::ScriptBuf> {
+        let bitcoin_address = self.to_bitcoin_address(network::Network::Bitcoin)?;
+        Ok(bitcoin_address.script_pubkey())
+    }
+
     ///  Format the base58 as a hexadecimal string
     pub fn format<N: Into<network::Network>>(&self, network: N) -> Result<String, anyhow::Error> {
         if self.bytes.is_empty() {
@@ -751,6 +756,14 @@ impl BitcoinAddress {
                 Ok(address_formatter)
             }
         }
+    }
+
+    pub fn is_witness(&self) -> bool {
+        if self.bytes.is_empty() {
+            return false;
+        }
+        let payload_type = BitcoinAddressPayloadType::try_from(self.bytes[0]).unwrap();
+        payload_type == BitcoinAddressPayloadType::WitnessProgram
     }
 }
 

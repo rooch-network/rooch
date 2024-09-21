@@ -454,28 +454,28 @@ module rooch_nursery::inscribe_factory {
         // seed tx
         let seed_txid = types::outpoint_txid(commit_outpoint);
         let seed_vout = types::outpoint_vout(commit_outpoint);
+        // remove block hash from seed
+        // let seed_height_option = bitcoin::get_tx_height(seed_txid);
+        // if (option::is_none(&seed_height_option)) {
+        //     return vector::empty()
+        // };
 
-        let seed_height_option = bitcoin::get_tx_height(seed_txid);
-        if (option::is_none(&seed_height_option)) {
-            return vector::empty()
-        };
+        // let seed_height = *option::borrow(&seed_height_option);
 
-        let seed_height = *option::borrow(&seed_height_option);
+        // let seed_block_hash_option = bitcoin::get_block_hash_by_height(seed_height);
+        // if (option::is_none(&seed_block_hash_option)) {
+        //     return vector::empty()
+        // };
 
-        let seed_block_hash_option = bitcoin::get_block_hash_by_height(seed_height);
-        if (option::is_none(&seed_block_hash_option)) {
-            return vector::empty()
-        };
-
-        let seed_block_hash = *option::borrow(&seed_block_hash_option);
-        let seed_hex = generate_seed_from_inscription_inner(seed_block_hash, seed_txid, seed_vout);
+        // let seed_block_hash = *option::borrow(&seed_block_hash_option);
+        let seed_hex = generate_seed_from_inscription_inner(seed_txid, seed_vout);
 
         seed_hex
     }
 
-    fun generate_seed_from_inscription_inner(block_hash: address, txid: address, vout: u32) : vector<u8> {
+    fun generate_seed_from_inscription_inner(txid: address, vout: u32) : vector<u8> {
         let buf = vector::empty();
-        vector::append(&mut buf, address::to_bytes(&block_hash));
+        //vector::append(&mut buf, address::to_bytes(&block_hash));
         vector::append(&mut buf, address::to_bytes(&txid));
         vector::append(&mut buf, bcs::to_bytes(&vout));
         hash::sha3_256(buf)
@@ -874,13 +874,13 @@ module rooch_nursery::inscribe_factory {
 
     #[test]
     fun test_generate_seed_from_inscription_inner() {
-        let block_hash = address::from_bytes(x"89753cc1cdc61a89d49d5b267ab8353d4e984e08cda587f54e813add2b6d207c");
         let txid = address::from_bytes(x"1a49883e4248bd8b2e423af8157a1795cd457ece0eb4d1f453266874dc1da262");
         let vout = 1;
 
-        let seed = generate_seed_from_inscription_inner(block_hash, txid, vout);
+        let seed = generate_seed_from_inscription_inner(txid, vout);
         let hex_seed = hex::encode(seed);
-        assert!(hex_seed == b"1700b4e1d726ef40b2832eb1d5f91fd88d36ddf79eb235789c9b417c997279bc", 1);
+        //std::debug::print(&hex_seed);
+        assert!(hex_seed == x"65343932653661643734373265393439656634663039623735613761643934323237363566373035353161363732633739353963316133333665363437396634", 1);
     }
 
 
