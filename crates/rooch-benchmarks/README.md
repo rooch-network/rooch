@@ -70,7 +70,7 @@ in `target/criterion/<bench_group_name>/<bench_id>/profile` dir.
 e.g., profiling `bench_tx_exec` for 3.1 seconds:
 
 ```shell
-cargo bench --bench bench_tx_exec -- --profile-time=3.1
+cargo bench --bench bench_tx_exec -- --profile-time=3
 ```
 
 for PPROF_OUT output location:
@@ -98,7 +98,8 @@ Coming soon...
 
 ### How to prepare the Bitcoin blocks
 
-Run the benchmark with Bitcoin RPC config, it will download the blocks from Bitcoin network and save them in `target/btc_blocks` dir.
+Run the benchmark with Bitcoin RPC config, it will download the blocks from Bitcoin network and save them in
+`target/btc_blocks` dir.
 
 ```shell
 ROOCH_BENCH_TX_TYPE=btc_tx ROOCH_BENCH_BTC_RPC_URL=http://localhost:8332 ROOCH_BENCH_BTC_RPC_USERNAME=YourBTCUser ROOCH_BENCH_BTC_RPC_PASSWORD=YourBTCPass cargo bench -p rooch-benchmarks --bench bench_tx_exec
