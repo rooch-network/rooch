@@ -84,6 +84,14 @@ module rooch_nursery::cosmwasm_std {
         message: String,
     }
 
+    #[data_struct]
+    struct Reply has store, copy, drop {
+        id: u64,
+        payload: vector<u8>,
+        gas_used: u64,
+        //result: SubMsgResult, TOOD support SubMsgResult
+    }
+
     // Enums
     #[data_struct]
     struct ReplyOn has store, copy, drop {
@@ -141,6 +149,14 @@ module rooch_nursery::cosmwasm_std {
 
     public fun new_error_result<T>(code: u32, message: String): Result<T, Error> {
         err(new_error(code, message))
+    }
+
+    public fun new_reply(id: u64, payload: vector<u8>, gas_used: u64): Reply {
+        Reply {
+            id: id,
+            payload: payload,
+            gas_used: gas_used,
+        }
     }
 
     // Helper functions

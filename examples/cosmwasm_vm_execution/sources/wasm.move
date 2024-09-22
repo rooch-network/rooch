@@ -32,24 +32,35 @@ module rooch_examples::cosmwasm_vm_execution {
       get_value: GetValue
    }
 
+   #[data_struct]
+   struct MigreateMsg has store, copy, drop {
+      new_value: u64
+   }
+
+   #[data_struct]
+   struct UpdateValue has store, copy, drop {
+      value: u64 
+   }
+
+   #[data_struct]
+   struct SudoMsg has store, copy, drop {
+      update_value: UpdateValue
+   }
+
    entry public fun run_cosmwasm_bitseed_generator(_account: &signer, wasm_bytes: vector<u8>) {
       debug::print(&string::utf8(b"run_cosmwasm_bitseed_generator start"));
 
       // 1. create wasm VM instance (required step)
       let instance_result = cosmwasm_vm::from_code(wasm_bytes);
-
-      debug::print(&string::utf8(b"run_cosmwasm_bitseed_generator debug 1"));
+      debug::print(&string::utf8(b"instance_result:"));
+      debug::print(&instance_result);
 
       // Verify that the result is successful
       let instance = result::assert_ok(instance_result, 1); // Use assert_ok here
 
-      debug::print(&string::utf8(b"run_cosmwasm_bitseed_generator debug 2"));
-
       // 2. Verify some properties of the instance
       // Note: The specific verification method may need to be adjusted based on the actual definition of the Instance structure
       assert!(vector::length(&cosmwasm_vm::code_checksum(&instance)) > 0, 2);
-
-      debug::print(&string::utf8(b"run_cosmwasm_bitseed_generator debug 3"));
 
       let env = cosmwasm_std::current_env();
       let info = cosmwasm_std::current_message_info();
@@ -83,7 +94,37 @@ module rooch_examples::cosmwasm_vm_execution {
       debug::print(&string::utf8(b"query_resp:"));
       debug::print(&query_resp);
 
-      // 6. Destroy the instance
+      // 6. call migrate of the instance
+      let msg = MigreateMsg{
+         new_value: 2
+      };
+
+      let migrate_result = cosmwasm_vm::call_migrate(&mut instance, &env, &msg);
+      let migrate_resp = result::assert_ok(migrate_result, 4); // Use assert_ok here
+      debug::print(&string::utf8(b"migrate_resp:"));
+      debug::print(&migrate_resp);
+
+      // 7. call reply of the instance
+      let msg = cosmwasm_std::new_reply(1, b"hello", 10);
+
+      let reply_result = cosmwasm_vm::call_reply(&mut instance, &env, &msg);
+      let reply_resp = result::assert_ok(reply_result, 4); // Use assert_ok here
+      debug::print(&string::utf8(b"reply_resp:"));
+      debug::print(&reply_resp);
+
+      // 7. call sudo of the instance
+      let msg = SudoMsg{
+         update_value: UpdateValue {
+            value: 2
+         }
+      };
+
+      let sudo_result = cosmwasm_vm::call_sudo(&mut instance, &env, &msg);
+      let sudo_resp = result::assert_ok(sudo_result, 4); // Use assert_ok here
+      debug::print(&string::utf8(b"sudo_resp:"));
+      debug::print(&sudo_resp);
+
+      // 8. Destroy the instance
       let destroy_result = cosmwasm_vm::destroy_instance(instance);
       assert!(option::is_none(&destroy_result), 4);
    }

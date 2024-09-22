@@ -16,6 +16,7 @@
 -  [Struct `Response`](#0xa_cosmwasm_std_Response)
 -  [Struct `SubMsg`](#0xa_cosmwasm_std_SubMsg)
 -  [Struct `Error`](#0xa_cosmwasm_std_Error)
+-  [Struct `Reply`](#0xa_cosmwasm_std_Reply)
 -  [Struct `ReplyOn`](#0xa_cosmwasm_std_ReplyOn)
 -  [Constants](#@Constants_0)
 -  [Function `new_response`](#0xa_cosmwasm_std_new_response)
@@ -27,6 +28,7 @@
 -  [Function `new_sub_msg`](#0xa_cosmwasm_std_new_sub_msg)
 -  [Function `new_error`](#0xa_cosmwasm_std_new_error)
 -  [Function `new_error_result`](#0xa_cosmwasm_std_new_error_result)
+-  [Function `new_reply`](#0xa_cosmwasm_std_new_reply)
 -  [Function `serialize_env`](#0xa_cosmwasm_std_serialize_env)
 -  [Function `serialize_message_info`](#0xa_cosmwasm_std_serialize_message_info)
 -  [Function `deserialize_response`](#0xa_cosmwasm_std_deserialize_response)
@@ -178,6 +180,18 @@
 
 
 
+<a name="0xa_cosmwasm_std_Reply"></a>
+
+## Struct `Reply`
+
+
+
+<pre><code>#[data_struct]
+<b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_Reply">Reply</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
 <a name="0xa_cosmwasm_std_ReplyOn"></a>
 
 ## Struct `ReplyOn`
@@ -317,6 +331,17 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_new_error_result">new_error_result</a>&lt;T&gt;(code: u32, message: <a href="_String">string::String</a>): <a href="_Result">result::Result</a>&lt;T, <a href="cosmwasm_std.md#0xa_cosmwasm_std_Error">cosmwasm_std::Error</a>&gt;
+</code></pre>
+
+
+
+<a name="0xa_cosmwasm_std_new_reply"></a>
+
+## Function `new_reply`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_new_reply">new_reply</a>(id: u64, payload: <a href="">vector</a>&lt;u8&gt;, gas_used: u64): <a href="cosmwasm_std.md#0xa_cosmwasm_std_Reply">cosmwasm_std::Reply</a>
 </code></pre>
 
 

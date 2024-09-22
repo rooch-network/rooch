@@ -5,7 +5,7 @@
 
 
 
--  [Struct `Instance`](#0xa_cosmwasm_vm_Instance)
+-  [Resource `Instance`](#0xa_cosmwasm_vm_Instance)
 -  [Function `code_checksum`](#0xa_cosmwasm_vm_code_checksum)
 -  [Function `store`](#0xa_cosmwasm_vm_store)
 -  [Function `from_code`](#0xa_cosmwasm_vm_from_code)
@@ -32,11 +32,11 @@
 
 <a name="0xa_cosmwasm_vm_Instance"></a>
 
-## Struct `Instance`
+## Resource `Instance`
 
 
 
-<pre><code><b>struct</b> <a href="cosmwasm_vm.md#0xa_cosmwasm_vm_Instance">Instance</a>
+<pre><code><b>struct</b> <a href="cosmwasm_vm.md#0xa_cosmwasm_vm_Instance">Instance</a> <b>has</b> store, key
 </code></pre>
 
 
@@ -116,7 +116,8 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_vm.md#0xa_cosmwasm_vm_call_migrate">call_migrate</a>(instance: &<b>mut</b> <a href="cosmwasm_vm.md#0xa_cosmwasm_vm_Instance">cosmwasm_vm::Instance</a>, env: &<a href="cosmwasm_std.md#0xa_cosmwasm_std_Env">cosmwasm_std::Env</a>, msg: <a href="">vector</a>&lt;u8&gt;): <a href="_Result">result::Result</a>&lt;<a href="cosmwasm_std.md#0xa_cosmwasm_std_Response">cosmwasm_std::Response</a>, <a href="cosmwasm_std.md#0xa_cosmwasm_std_Error">cosmwasm_std::Error</a>&gt;
+<pre><code>#[data_struct(#[T])]
+<b>public</b> <b>fun</b> <a href="cosmwasm_vm.md#0xa_cosmwasm_vm_call_migrate">call_migrate</a>&lt;T: drop&gt;(instance: &<b>mut</b> <a href="cosmwasm_vm.md#0xa_cosmwasm_vm_Instance">cosmwasm_vm::Instance</a>, env: &<a href="cosmwasm_std.md#0xa_cosmwasm_std_Env">cosmwasm_std::Env</a>, msg: &T): <a href="_Result">result::Result</a>&lt;<a href="cosmwasm_std.md#0xa_cosmwasm_std_Response">cosmwasm_std::Response</a>, <a href="cosmwasm_std.md#0xa_cosmwasm_std_Error">cosmwasm_std::Error</a>&gt;
 </code></pre>
 
 
@@ -127,7 +128,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_vm.md#0xa_cosmwasm_vm_call_reply">call_reply</a>(instance: &<b>mut</b> <a href="cosmwasm_vm.md#0xa_cosmwasm_vm_Instance">cosmwasm_vm::Instance</a>, env: &<a href="cosmwasm_std.md#0xa_cosmwasm_std_Env">cosmwasm_std::Env</a>, msg: <a href="">vector</a>&lt;u8&gt;): <a href="_Result">result::Result</a>&lt;<a href="cosmwasm_std.md#0xa_cosmwasm_std_Response">cosmwasm_std::Response</a>, <a href="cosmwasm_std.md#0xa_cosmwasm_std_Error">cosmwasm_std::Error</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_vm.md#0xa_cosmwasm_vm_call_reply">call_reply</a>(instance: &<b>mut</b> <a href="cosmwasm_vm.md#0xa_cosmwasm_vm_Instance">cosmwasm_vm::Instance</a>, env: &<a href="cosmwasm_std.md#0xa_cosmwasm_std_Env">cosmwasm_std::Env</a>, reply: &<a href="cosmwasm_std.md#0xa_cosmwasm_std_Reply">cosmwasm_std::Reply</a>): <a href="_Result">result::Result</a>&lt;<a href="cosmwasm_std.md#0xa_cosmwasm_std_Response">cosmwasm_std::Response</a>, <a href="cosmwasm_std.md#0xa_cosmwasm_std_Error">cosmwasm_std::Error</a>&gt;
 </code></pre>
 
 
@@ -138,7 +139,8 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_vm.md#0xa_cosmwasm_vm_call_sudo">call_sudo</a>(instance: &<b>mut</b> <a href="cosmwasm_vm.md#0xa_cosmwasm_vm_Instance">cosmwasm_vm::Instance</a>, env: &<a href="cosmwasm_std.md#0xa_cosmwasm_std_Env">cosmwasm_std::Env</a>, msg: <a href="">vector</a>&lt;u8&gt;): <a href="_Result">result::Result</a>&lt;<a href="cosmwasm_std.md#0xa_cosmwasm_std_Response">cosmwasm_std::Response</a>, <a href="cosmwasm_std.md#0xa_cosmwasm_std_Error">cosmwasm_std::Error</a>&gt;
+<pre><code>#[data_struct(#[T])]
+<b>public</b> <b>fun</b> <a href="cosmwasm_vm.md#0xa_cosmwasm_vm_call_sudo">call_sudo</a>&lt;T: drop&gt;(instance: &<b>mut</b> <a href="cosmwasm_vm.md#0xa_cosmwasm_vm_Instance">cosmwasm_vm::Instance</a>, env: &<a href="cosmwasm_std.md#0xa_cosmwasm_std_Env">cosmwasm_std::Env</a>, msg: &T): <a href="_Result">result::Result</a>&lt;<a href="cosmwasm_std.md#0xa_cosmwasm_std_Response">cosmwasm_std::Response</a>, <a href="cosmwasm_std.md#0xa_cosmwasm_std_Error">cosmwasm_std::Error</a>&gt;
 </code></pre>
 
 

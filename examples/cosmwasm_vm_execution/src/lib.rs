@@ -3,7 +3,7 @@
 
 use cosmwasm_std::{
     entry_point, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
-    SubMsg, Repy,
+    Reply, SubMsgResponse, SubMsgResult,
 };
 use serde::{Deserialize, Serialize};
 
@@ -36,7 +36,7 @@ pub struct MigrateMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "snake_case")]
-pub enum CustomSudoMsg {
+pub enum SudoMsg {
     UpdateValue { value: u64 },
 }
 
@@ -100,16 +100,10 @@ pub fn reply(_deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
 #[entry_point]
 pub fn sudo(deps: DepsMut, _env: Env, msg: SudoMsg) -> StdResult<Response> {
     match msg {
-        SudoMsg::Custom(sudo_msg) => {
-            let custom_msg: CustomSudoMsg = serde_json::from_slice(&sudo_msg)?;
-            match custom_msg {
-                CustomSudoMsg::UpdateValue { value } => {
-                    deps.storage.set(b"value", &value.to_be_bytes());
-                    Ok(Response::new().add_attribute("action", "sudo_update_value").add_attribute("new_value", value.to_string()))
-                }
-            }
+        SudoMsg::UpdateValue{ value } => {
+            deps.storage.set(b"value", &value.to_be_bytes());
+            Ok(Response::new().add_attribute("action", "sudo_update_value").add_attribute("new_value", value.to_string()))
         }
-        _ => Err(cosmwasm_std::StdError::generic_err("Unsupported sudo message")),
     }
 }
 
@@ -117,13 +111,15 @@ pub fn sudo(deps: DepsMut, _env: Env, msg: SudoMsg) -> StdResult<Response> {
 mod tests {
     use super::*;
     use cosmwasm_std::from_json;
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use cosmwasm_std::testing::{mock_dependencies, mock_env, message_info};
 
     #[test]
     fn test_instantiate() {
         let mut deps = mock_dependencies();
         let env = mock_env();
-        let info = mock_info("creator", &[]);
+
+        let creator = deps.api.addr_make("creator");
+        let info = message_info(&creator, &[]);
         let msg = InstantiateMsg { initial_value: 100 };
 
         let res = instantiate(deps.as_mut(), env, info, msg).unwrap();
@@ -138,7 +134,8 @@ mod tests {
     fn test_execute_add() {
         let mut deps = mock_dependencies();
         let env = mock_env();
-        let info = mock_info("creator", &[]);
+        let creator = deps.api.addr_make("creator");
+        let info = message_info(&creator, &[]);
         let init_msg = InstantiateMsg { initial_value: 100 };
         instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg).unwrap();
 
@@ -155,7 +152,8 @@ mod tests {
     fn test_query_value() {
         let mut deps = mock_dependencies();
         let env = mock_env();
-        let info = mock_info("creator", &[]);
+        let creator = deps.api.addr_make("creator");
+        let info = message_info(&creator, &[]);
         let init_msg = InstantiateMsg { initial_value: 100 };
         instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg).unwrap();
 
@@ -168,7 +166,8 @@ mod tests {
     fn test_migrate() {
         let mut deps = mock_dependencies();
         let env = mock_env();
-        let info = mock_info("creator", &[]);
+        let creator = deps.api.addr_make("creator");
+        let info = message_info(&creator, &[]);
         let init_msg = InstantiateMsg { initial_value: 100 };
         instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg).unwrap();
 
@@ -185,7 +184,19 @@ mod tests {
     fn test_reply() {
         let mut deps = mock_dependencies();
         let env = mock_env();
-        let reply_msg = Reply { id: 1, result: cosmwasm_std::SubMsgResult::Ok(SubMsg::new("")) };
+
+        let result = SubMsgResult::Ok(SubMsgResponse {
+            data: None,
+            msg_responses: vec![],
+            events: vec![],
+        });
+
+        let reply_msg = Reply { 
+            id: 1, 
+            payload: Binary::new(vec![1, 2, 3]), 
+            gas_used: 0, 
+            result: result,
+        };
         let res = reply(deps.as_mut(), env, reply_msg).unwrap();
 
         assert_eq!(res.attributes.len(), 2);
@@ -199,11 +210,12 @@ mod tests {
     fn test_sudo() {
         let mut deps = mock_dependencies();
         let env = mock_env();
-        let info = mock_info("creator", &[]);
+        let creator = deps.api.addr_make("creator");
+        let info = message_info(&creator, &[]);
         let init_msg = InstantiateMsg { initial_value: 100 };
         instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg).unwrap();
 
-        let sudo_msg = SudoMsg::Custom(to_json_binary(&CustomSudoMsg::UpdateValue { value: 300 }).unwrap());
+        let sudo_msg = SudoMsg::UpdateValue { value: 300 };
         let res = sudo(deps.as_mut(), env.clone(), sudo_msg).unwrap();
         assert_eq!(res.attributes.len(), 2);
 
