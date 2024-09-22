@@ -7,15 +7,26 @@
 
 -  [Resource `Bitseed`](#0xa_bitseed_Bitseed)
 -  [Constants](#@Constants_0)
--  [Function `metaprotocol`](#0xa_bitseed_metaprotocol)
+-  [Function `default_metaprotocol`](#0xa_bitseed_default_metaprotocol)
 -  [Function `new`](#0xa_bitseed_new)
 -  [Function `is_same_type`](#0xa_bitseed_is_same_type)
 -  [Function `is_mergeable`](#0xa_bitseed_is_mergeable)
 -  [Function `merge`](#0xa_bitseed_merge)
 -  [Function `is_splitable`](#0xa_bitseed_is_splitable)
 -  [Function `split`](#0xa_bitseed_split)
+-  [Function `burn`](#0xa_bitseed_burn)
+-  [Function `metaprotocol`](#0xa_bitseed_metaprotocol)
+-  [Function `amount`](#0xa_bitseed_amount)
+-  [Function `tick`](#0xa_bitseed_tick)
+-  [Function `bid`](#0xa_bitseed_bid)
+-  [Function `content_type`](#0xa_bitseed_content_type)
+-  [Function `body`](#0xa_bitseed_body)
+-  [Function `attributes`](#0xa_bitseed_attributes)
+-  [Function `content_attributes_hash`](#0xa_bitseed_content_attributes_hash)
 -  [Function `seal_metaprotocol_validity`](#0xa_bitseed_seal_metaprotocol_validity)
 -  [Function `add_metaprotocol_attachment`](#0xa_bitseed_add_metaprotocol_attachment)
+-  [Function `exists_metaprotocol_attachment`](#0xa_bitseed_exists_metaprotocol_attachment)
+-  [Function `remove_metaprotocol_attachment`](#0xa_bitseed_remove_metaprotocol_attachment)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -108,13 +119,13 @@ Bitseed is a SFT asset type.
 
 
 
-<a name="0xa_bitseed_metaprotocol"></a>
+<a name="0xa_bitseed_default_metaprotocol"></a>
 
-## Function `metaprotocol`
+## Function `default_metaprotocol`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_metaprotocol">metaprotocol</a>(): <a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_default_metaprotocol">default_metaprotocol</a>(): <a href="_String">string::String</a>
 </code></pre>
 
 
@@ -189,6 +200,105 @@ Split the bitseed and return the new bitseed.
 
 
 
+<a name="0xa_bitseed_burn"></a>
+
+## Function `burn`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bitseed.md#0xa_bitseed_burn">burn</a>(bitseed_obj: <a href="_Object">object::Object</a>&lt;<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>&gt;): u64
+</code></pre>
+
+
+
+<a name="0xa_bitseed_metaprotocol"></a>
+
+## Function `metaprotocol`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_metaprotocol">metaprotocol</a>(<a href="bitseed.md#0xa_bitseed">bitseed</a>: &<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0xa_bitseed_amount"></a>
+
+## Function `amount`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_amount">amount</a>(<a href="bitseed.md#0xa_bitseed">bitseed</a>: &<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>): u64
+</code></pre>
+
+
+
+<a name="0xa_bitseed_tick"></a>
+
+## Function `tick`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_tick">tick</a>(<a href="bitseed.md#0xa_bitseed">bitseed</a>: &<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0xa_bitseed_bid"></a>
+
+## Function `bid`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_bid">bid</a>(<a href="bitseed.md#0xa_bitseed">bitseed</a>: &<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>): <b>address</b>
+</code></pre>
+
+
+
+<a name="0xa_bitseed_content_type"></a>
+
+## Function `content_type`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_content_type">content_type</a>(<a href="bitseed.md#0xa_bitseed">bitseed</a>: &<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>): &<a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
+</code></pre>
+
+
+
+<a name="0xa_bitseed_body"></a>
+
+## Function `body`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_body">body</a>(<a href="bitseed.md#0xa_bitseed">bitseed</a>: &<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>): &<a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0xa_bitseed_attributes"></a>
+
+## Function `attributes`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_attributes">attributes</a>(<a href="bitseed.md#0xa_bitseed">bitseed</a>: &<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>): &<a href="_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="_Any">copyable_any::Any</a>&gt;
+</code></pre>
+
+
+
+<a name="0xa_bitseed_content_attributes_hash"></a>
+
+## Function `content_attributes_hash`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_content_attributes_hash">content_attributes_hash</a>(<a href="bitseed.md#0xa_bitseed">bitseed</a>: &<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>): <b>address</b>
+</code></pre>
+
+
+
 <a name="0xa_bitseed_seal_metaprotocol_validity"></a>
 
 ## Function `seal_metaprotocol_validity`
@@ -207,4 +317,26 @@ Split the bitseed and return the new bitseed.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bitseed.md#0xa_bitseed_add_metaprotocol_attachment">add_metaprotocol_attachment</a>(inscription_id: <a href="_InscriptionID">ord::InscriptionID</a>, attachment: <a href="_Object">object::Object</a>&lt;<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>&gt;)
+</code></pre>
+
+
+
+<a name="0xa_bitseed_exists_metaprotocol_attachment"></a>
+
+## Function `exists_metaprotocol_attachment`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bitseed.md#0xa_bitseed_exists_metaprotocol_attachment">exists_metaprotocol_attachment</a>(inscription_id: <a href="_InscriptionID">ord::InscriptionID</a>): bool
+</code></pre>
+
+
+
+<a name="0xa_bitseed_remove_metaprotocol_attachment"></a>
+
+## Function `remove_metaprotocol_attachment`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bitseed.md#0xa_bitseed_remove_metaprotocol_attachment">remove_metaprotocol_attachment</a>(inscription_id: <a href="_InscriptionID">ord::InscriptionID</a>): <a href="_Object">object::Object</a>&lt;<a href="bitseed.md#0xa_bitseed_Bitseed">bitseed::Bitseed</a>&gt;
 </code></pre>

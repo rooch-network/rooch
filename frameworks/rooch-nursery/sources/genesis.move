@@ -4,6 +4,7 @@
 module rooch_nursery::genesis {
     use rooch_nursery::ethereum;
     use rooch_nursery::tick_info;
+    use rooch_nursery::inscribe_factory;
 
     const ErrorInvalidChainId: u64 = 1;
 
@@ -13,6 +14,7 @@ module rooch_nursery::genesis {
     fun init(genesis_account: &signer){
         ethereum::genesis_init(genesis_account);
         tick_info::genesis_init();
+        inscribe_factory::genesis_init();
     }
 
     #[test_only]
