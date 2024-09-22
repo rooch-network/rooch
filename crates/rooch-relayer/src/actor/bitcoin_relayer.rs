@@ -118,7 +118,7 @@ impl BitcoinRelayer {
 
         let mut next_block_hash = start_block_hash;
 
-        let mut batch = vec![];
+        let mut batch_count = 0;
         while let Some(next_hash) = next_block_hash {
             let header_info = self.rpc_client.get_block_header_info(next_hash).await?;
             let block = self.rpc_client.get_block(next_hash).await?;
@@ -137,12 +137,13 @@ impl BitcoinRelayer {
                 "BitcoinRelayer buffer block, height: {}, hash: {}",
                 next_block_height, header_info.hash
             );
-            batch.push(BlockResult { header_info, block });
-            if batch.len() > self.batch_size {
+            self.buffer.push(BlockResult { header_info, block });
+            if batch_count > self.batch_size {
                 break;
             }
+            batch_count += 1;
         }
-        self.buffer.extend(batch);
+
         Ok(())
     }
 
