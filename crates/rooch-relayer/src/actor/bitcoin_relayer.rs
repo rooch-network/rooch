@@ -58,12 +58,12 @@ impl BitcoinRelayer {
             sync_block_interval,
             latest_sync_timestamp: 0u64,
             sync_to_latest: false,
-            batch_size: 10,
+            batch_size: 5,
         })
     }
 
     async fn sync_block(&mut self) -> Result<()> {
-        if !self.buffer.is_empty() {
+        if self.buffer.len() > self.batch_size {
             return Ok(());
         }
         if self.sync_to_latest
@@ -76,7 +76,17 @@ impl BitcoinRelayer {
         self.latest_sync_timestamp = chrono::Utc::now().timestamp() as u64;
 
         let pending_block_module = self.move_caller.as_module_binding::<PendingBlockModule>();
-        let best_block_in_rooch = pending_block_module.get_best_block()?;
+        let best_block_in_rooch = if self.buffer.is_empty() {
+            pending_block_module.get_best_block()?
+        } else {
+            let last_block = self.buffer.last().unwrap();
+            let last_block_hash = last_block.header_info.hash;
+            let last_block_height = last_block.header_info.height;
+            Some(BlockHeightHash {
+                block_hash: last_block_hash.into_address(),
+                block_height: last_block_height as u64,
+            })
+        };
         let best_block_hash_in_bitcoin = self.rpc_client.get_best_block_hash().await?;
 
         //The start block is included
@@ -118,6 +128,7 @@ impl BitcoinRelayer {
 
         let mut next_block_hash = start_block_hash;
 
+        let mut batch_count = 0;
         while let Some(next_hash) = next_block_hash {
             let header_info = self.rpc_client.get_block_header_info(next_hash).await?;
             let block = self.rpc_client.get_block(next_hash).await?;
@@ -132,11 +143,17 @@ impl BitcoinRelayer {
                 );
                 break;
             }
+            info!(
+                "BitcoinRelayer buffer block, height: {}, hash: {}",
+                next_block_height, header_info.hash
+            );
             self.buffer.push(BlockResult { header_info, block });
-            if self.buffer.len() > self.batch_size {
+            if batch_count > self.batch_size {
                 break;
             }
+            batch_count += 1;
         }
+
         Ok(())
     }
 
