@@ -15,6 +15,7 @@ docker ps -a | grep rooch | grep -v faucet | awk '{print $1}' | xargs -r docker 
 docker pull "ghcr.io/rooch-network/rooch:$REF"
 docker run -d --name rooch-testnet --restart unless-stopped -v /data:/root -p 6767:6767 -p 9184:9184 -e RUST_BACKTRACE=full  "ghcr.io/rooch-network/rooch:$REF" \
     server start -n test \
+    --btc-sync-block-interval 3 \
     --btc-rpc-url "$BTC_TEST_RPC_URL" \
     --btc-rpc-username rooch-test \
     --btc-rpc-password "$BTC_TEST_RPC_PWD" \

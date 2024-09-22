@@ -50,4 +50,8 @@ impl RelayerProxy {
             Self::Ethereum(actor) => actor.send(GetReadyL1TxsMessage {}).await?,
         }
     }
+
+    pub fn is_bitcoin(&self) -> bool {
+        matches!(self, Self::Bitcoin(_))
+    }
 }
