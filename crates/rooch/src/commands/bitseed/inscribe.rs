@@ -23,7 +23,7 @@ use bitcoin::{
     EcdsaSighashType, OutPoint,
 };
 use clap::Parser;
-use rooch_rpc_api::jsonrpc_types::btc::{ord::InscriptionObjectView, utxo::UTXOObjectView};
+use rooch_rpc_api::jsonrpc_types::btc::ord::InscriptionObjectView;
 use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_types::{
     address::{BitcoinAddress, ParsedAddress},
@@ -129,7 +129,7 @@ pub struct InscribeContext {
     pub utxos: BTreeMap<OutPoint, TxOut>,
     pub reveal_scripts_to_sign: Vec<ScriptBuf>,
     pub control_blocks_to_sign: Vec<ControlBlock>,
-    pub reveal_input_start_index: Option<usize>,
+    pub burn_input_start_index: Option<usize>,
 
     pub total_burn_postage: Option<f64>,
 }
@@ -148,7 +148,8 @@ pub struct Inscriber {
     option: InscribeOptions,
     inscriptions: Vec<InscriptionRecord>,
     inscriptions_to_burn: Vec<InscriptionID>,
-    satpoint: (SatPoint, UTXOObjectView),
+    satpoint: SatPoint,
+    utxos: BTreeMap<OutPoint, TxOut>,
     network: bitcoin::Network,
     destination: Address,
     change_address: Address,
@@ -200,13 +201,17 @@ impl Inscriber {
             }
         };
 
+        let mut utxos = BTreeMap::new();
+        utxos.insert(satpoint.outpoint.clone().into(), utxo.tx_output()?);
+
         Ok(Self {
             context,
             utxo_selector,
             option,
             inscriptions: Vec::new(),
             inscriptions_to_burn: Vec::new(),
-            satpoint: (satpoint, utxo),
+            satpoint,
+            utxos,
             network: bitcoin_network.into(),
             destination: destination.to_bitcoin_address(bitcoin_network)?,
             change_address: change_address.to_bitcoin_address(bitcoin_network)?,
@@ -296,7 +301,7 @@ impl Inscriber {
         })?;
         let generator = self.load_generator(generator_id).await?;
 
-        let seed_utxo = self.satpoint.0.outpoint.clone();
+        let seed_utxo = self.satpoint.outpoint.clone();
 
         let seed = InscribeSeed::new(seed_utxo.into());
 
@@ -344,7 +349,7 @@ impl Inscriber {
         );
 
         let mut remaining_amount = sft.amount;
-        let mut result = self.with_burn(asset_inscription_id).await;
+        let mut result = self.with_burn(asset_inscription_id).await?;
 
         let amounts_len = amounts.len();
 
@@ -395,7 +400,7 @@ impl Inscriber {
             };
 
             sft_to_merge.push(sft);
-            result = result.with_burn(inscription_id).await;
+            result = result.with_burn(inscription_id).await?;
         }
 
         let mut merged_sft = sft_to_merge[0].clone();
@@ -404,10 +409,11 @@ impl Inscriber {
                 merged_sft.tick == sft.tick,
                 "All SFTs must have the same tick to be merged"
             );
-            ensure!(
-                merged_sft.attributes == sft.attributes,
-                "All SFTs must have the same attributes to be merged"
-            );
+            //TODO enable the attributes check
+            // ensure!(
+            //     merged_sft.attributes == sft.attributes,
+            //     "All SFTs must have the same attributes to be merged"
+            // );
             ensure!(
                 merged_sft.content == sft.content,
                 "All SFTs must have the same content to be merged"
@@ -421,9 +427,13 @@ impl Inscriber {
         Ok(result)
     }
 
-    pub async fn with_burn(mut self, inscription_id: InscriptionID) -> Self {
+    pub async fn with_burn(mut self, inscription_id: InscriptionID) -> Result<Self> {
+        let inscription_obj = self.get_inscription_object(inscription_id).await?;
+        let outpoint = inscription_obj.location().outpoint.clone();
+        let utxo_obj = self.utxo_selector.get_utxo(&outpoint).await?;
         self.inscriptions_to_burn.push(inscription_id);
-        self
+        self.utxos.insert(outpoint.into(), utxo_obj.tx_output()?);
+        Ok(self)
     }
 
     fn with_operation(mut self, operation: Operation) -> Self {
@@ -569,12 +579,12 @@ impl Inscriber {
         control_blocks: &[ControlBlock],
     ) -> Amount {
         let mut reveal_tx = ctx.reveal_tx.clone();
-        let reveal_input_start_index = ctx.reveal_input_start_index.unwrap_or(0);
+        let burn_input_start_index = ctx.burn_input_start_index.unwrap_or(0);
 
         for (current_index, txin) in reveal_tx.input.iter_mut().enumerate() {
-            if current_index >= reveal_input_start_index {
-                let reveal_script = &reveal_scripts[current_index - reveal_input_start_index];
-                let control_block = &control_blocks[current_index - reveal_input_start_index];
+            if current_index < burn_input_start_index {
+                let reveal_script = &reveal_scripts[current_index];
+                let control_block = &control_blocks[current_index];
 
                 txin.witness.push(
                     Signature::from_slice(&[0; SCHNORR_SIGNATURE_SIZE])
@@ -649,12 +659,6 @@ impl Inscriber {
             version: Version::TWO,
         };
 
-        let mut utxos = BTreeMap::new();
-        utxos.insert(
-            self.satpoint.0.outpoint.clone().into(),
-            self.satpoint.1.tx_output()?,
-        );
-
         Ok(InscribeContext {
             commit_tx,
             reveal_tx,
@@ -667,10 +671,10 @@ impl Inscriber {
             taproot_spend_infos: Vec::new(),
             commit_tx_addresses: Vec::new(),
 
-            utxos,
+            utxos: self.utxos.clone(),
             reveal_scripts_to_sign: Vec::new(),
             control_blocks_to_sign: Vec::new(),
-            reveal_input_start_index: None,
+            burn_input_start_index: None,
             total_burn_postage: None,
         })
     }
@@ -680,7 +684,7 @@ impl Inscriber {
 
         // set satpoint
         ctx.commit_tx.input.push(TxIn {
-            previous_output: self.satpoint.0.outpoint.clone().into(),
+            previous_output: self.satpoint.outpoint.clone().into(),
             script_sig: ScriptBuf::new(),
             sequence: Sequence::ENABLE_RBF_NO_LOCKTIME,
             witness: Witness::new(),
@@ -713,43 +717,7 @@ impl Inscriber {
     }
 
     async fn build_reveal(&self, ctx: &mut InscribeContext) -> Result<()> {
-        // Process the logic of inscription destruction
-        let mut total_burn_postage = Amount::ZERO;
-
-        for inscription_to_burn in &self.inscriptions_to_burn {
-            let inscription_id = *inscription_to_burn;
-            let satpoint = self.get_inscription_satpoint(inscription_id).await?;
-            let input = TxIn {
-                previous_output: satpoint.outpoint(),
-                script_sig: ScriptBuf::new(),
-                sequence: Sequence::ENABLE_RBF_NO_LOCKTIME,
-                witness: Witness::new(),
-            };
-            ctx.reveal_tx.input.push(input);
-
-            let inscription_output = ctx
-                .utxos
-                .get(&satpoint.outpoint())
-                .expect("inscription utxo not found");
-            total_burn_postage += inscription_output.value;
-        }
-
-        if !self.inscriptions_to_burn.is_empty() {
-            let msg = b"bitseed".to_vec();
-            let msg_push_bytes =
-                script::PushBytesBuf::try_from(msg.clone()).expect("burn message should fit");
-
-            let script = ScriptBuf::new_op_return(msg_push_bytes);
-            let output = TxOut {
-                script_pubkey: script,
-                value: total_burn_postage,
-            };
-            ctx.reveal_tx.output.push(output);
-            ctx.total_burn_postage = Some(total_burn_postage.to_btc());
-        }
-
         // Process the logic of inscription revelation
-        let reveal_input_start_index = ctx.reveal_tx.input.len();
 
         for (index, ((_, control_block), reveal_script)) in ctx
             .commit_tx_addresses
@@ -784,7 +752,45 @@ impl Inscriber {
         }
 
         // Set the commit input index in the context
-        ctx.reveal_input_start_index = Some(reveal_input_start_index);
+        let burn_input_start_index = ctx.reveal_tx.input.len();
+        ctx.burn_input_start_index = Some(burn_input_start_index);
+
+        // Process the logic of inscription destruction
+        // The ordinals protocol require the inscribe input should be first input,
+        // So we need to put the burn input after the reveal input.
+        let mut total_burn_postage = Amount::ZERO;
+
+        for inscription_to_burn in &self.inscriptions_to_burn {
+            let inscription_id = *inscription_to_burn;
+            let satpoint = self.get_inscription_satpoint(inscription_id).await?;
+            let input = TxIn {
+                previous_output: satpoint.outpoint(),
+                script_sig: ScriptBuf::new(),
+                sequence: Sequence::ENABLE_RBF_NO_LOCKTIME,
+                witness: Witness::new(),
+            };
+            ctx.reveal_tx.input.push(input);
+
+            let inscription_output = ctx
+                .utxos
+                .get(&satpoint.outpoint())
+                .expect("inscription utxo not found");
+            total_burn_postage += inscription_output.value;
+        }
+
+        if !self.inscriptions_to_burn.is_empty() {
+            let msg = b"bitseed".to_vec();
+            let msg_push_bytes =
+                script::PushBytesBuf::try_from(msg.clone()).expect("burn message should fit");
+
+            let script = ScriptBuf::new_op_return(msg_push_bytes);
+            let output = TxOut {
+                script_pubkey: script,
+                value: total_burn_postage,
+            };
+            ctx.reveal_tx.output.push(output);
+            ctx.total_burn_postage = Some(total_burn_postage.to_btc());
+        }
 
         Ok(())
     }
@@ -861,7 +867,7 @@ impl Inscriber {
         // Update the reveal transaction inputs to reference the new commit transaction outputs
         let new_commit_txid = ctx.commit_tx.compute_txid();
         for (index, input) in ctx.reveal_tx.input.iter_mut().enumerate() {
-            if index >= ctx.reveal_input_start_index.unwrap() {
+            if index < ctx.burn_input_start_index.unwrap() {
                 input.previous_output.txid = new_commit_txid;
 
                 ctx.utxos.insert(
@@ -904,7 +910,7 @@ impl Inscriber {
     }
 
     fn sign_reveal_tx(&self, ctx: &mut InscribeContext) -> Result<()> {
-        let reveal_input_start_index = ctx.reveal_input_start_index.unwrap();
+        let burn_input_start_index = ctx.burn_input_start_index.unwrap();
 
         let prevouts: Vec<_> = ctx
             .reveal_tx
@@ -933,7 +939,7 @@ impl Inscriber {
         {
             let sighash = sighash_cache
                 .taproot_script_spend_signature_hash(
-                    reveal_input_start_index + index,
+                    index,
                     &Prevouts::All(&prevouts),
                     TapLeafHash::from_script(reveal_script, LeafVersion::TapScript),
                     TapSighashType::Default,
@@ -944,7 +950,7 @@ impl Inscriber {
             let sig = secp.sign_schnorr(&sighash.into(), keypair);
 
             let witness = sighash_cache
-                .witness_mut(reveal_input_start_index + index)
+                .witness_mut(index)
                 .expect("getting mutable witness reference should work");
 
             witness.push(
@@ -962,7 +968,7 @@ impl Inscriber {
         debug!("Reveal tx after reveal part sign: {:?}", signed_reveal_tx);
 
         //sign the burn inscription input
-        let signed_reveal_tx = if reveal_input_start_index > 0 {
+        let signed_reveal_tx = if burn_input_start_index < signed_reveal_tx.input.len() {
             let signed_reveal_tx = sign_tx(&self.context, &signed_reveal_tx, &prevouts)?;
             debug!(
                 "Reveal tx after burn part sign sign: {:?}",

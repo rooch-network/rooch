@@ -6,13 +6,16 @@
 Bitseed inscribe inscription factory
 
 
+-  [Struct `MergeState`](#0xa_inscribe_factory_MergeState)
+-  [Resource `BitseedEventStore`](#0xa_inscribe_factory_BitseedEventStore)
 -  [Struct `InscribeGenerateArgs`](#0xa_inscribe_factory_InscribeGenerateArgs)
 -  [Struct `InscribeGenerateOutput`](#0xa_inscribe_factory_InscribeGenerateOutput)
 -  [Constants](#@Constants_0)
+-  [Function `genesis_init`](#0xa_inscribe_factory_genesis_init)
 -  [Function `bitseed_deploy_key`](#0xa_inscribe_factory_bitseed_deploy_key)
 -  [Function `bitseed_mint_key`](#0xa_inscribe_factory_bitseed_mint_key)
 -  [Function `inscribe_verify`](#0xa_inscribe_factory_inscribe_verify)
--  [Function `process_inscription`](#0xa_inscribe_factory_process_inscription)
+-  [Function `process_bitseed_event`](#0xa_inscribe_factory_process_bitseed_event)
 
 
 <pre><code><b>use</b> <a href="">0x1::bcs</a>;
@@ -21,6 +24,7 @@ Bitseed inscribe inscription factory
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::address</a>;
 <b>use</b> <a href="">0x2::cbor</a>;
+<b>use</b> <a href="">0x2::event_queue</a>;
 <b>use</b> <a href="">0x2::hash</a>;
 <b>use</b> <a href="">0x2::hex</a>;
 <b>use</b> <a href="">0x2::object</a>;
@@ -33,6 +37,28 @@ Bitseed inscribe inscription factory
 <b>use</b> <a href="bitseed.md#0xa_bitseed">0xa::bitseed</a>;
 <b>use</b> <a href="tick_info.md#0xa_tick_info">0xa::tick_info</a>;
 <b>use</b> <a href="wasm.md#0xa_wasm">0xa::wasm</a>;
+</code></pre>
+
+
+
+<a name="0xa_inscribe_factory_MergeState"></a>
+
+## Struct `MergeState`
+
+
+
+<pre><code><b>struct</b> <a href="inscribe_factory.md#0xa_inscribe_factory_MergeState">MergeState</a> <b>has</b> store
+</code></pre>
+
+
+
+<a name="0xa_inscribe_factory_BitseedEventStore"></a>
+
+## Resource `BitseedEventStore`
+
+
+
+<pre><code><b>struct</b> <a href="inscribe_factory.md#0xa_inscribe_factory_BitseedEventStore">BitseedEventStore</a> <b>has</b> key
 </code></pre>
 
 
@@ -92,6 +118,17 @@ Bitseed inscribe inscription factory
 
 
 
+<a name="0xa_inscribe_factory_genesis_init"></a>
+
+## Function `genesis_init`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="inscribe_factory.md#0xa_inscribe_factory_genesis_init">genesis_init</a>()
+</code></pre>
+
+
+
 <a name="0xa_inscribe_factory_bitseed_deploy_key"></a>
 
 ## Function `bitseed_deploy_key`
@@ -125,11 +162,11 @@ Bitseed inscribe inscription factory
 
 
 
-<a name="0xa_inscribe_factory_process_inscription"></a>
+<a name="0xa_inscribe_factory_process_bitseed_event"></a>
 
-## Function `process_inscription`
+## Function `process_bitseed_event`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="inscribe_factory.md#0xa_inscribe_factory_process_inscription">process_inscription</a>(inscription: &<a href="_Inscription">ord::Inscription</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="inscribe_factory.md#0xa_inscribe_factory_process_bitseed_event">process_bitseed_event</a>(batch_size: u64)
 </code></pre>
