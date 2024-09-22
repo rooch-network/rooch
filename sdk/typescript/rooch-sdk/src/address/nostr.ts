@@ -12,7 +12,13 @@ export class NoStrAddress {
   private readonly str: string
   private readonly bytes: Bytes
 
-  constructor(input: Bytes) {
+  constructor(input: string | Bytes) {
+    if (typeof input === 'string') {
+      this.str = input
+      this.bytes = bech32.fromWords(bech32.decode(input).words)
+      return
+    }
+
     this.bytes = input
     this.str = bech32.encode(PREFIX_BECH32_PUBLIC_KEY, bech32.toWords(input))
   }
